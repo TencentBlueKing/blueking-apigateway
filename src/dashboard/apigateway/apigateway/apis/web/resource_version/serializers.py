@@ -18,6 +18,7 @@
 #
 from rest_framework import serializers
 
+from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, OpenAPIFormatEnum
@@ -95,7 +96,10 @@ class ResourceInfoSLZ(serializers.Serializer):
             if backend and "resource_backend_configs" in self.context:
                 backend_config = self.context["resource_backend_configs"].get(backend_id)
                 if backend_config:
-                    backend_info["config"] = backend_config.get_config_for_display()
+                    if backend.is_ai:
+                        backend_info["config"] = serialize_ai_backend_config_for_web(backend_config)
+                    else:
+                        backend_info["config"] = backend_config.get_config_for_display()
 
             proxy["backend"] = backend_info
 

@@ -1884,8 +1884,9 @@ paths:
                           timeout:
                             type: integer
                             minimum: 1
-                            default: 30
-                            description: 超时时间，单位秒
+                            maximum: 300
+                            default: 300
+                            description: 超时时间，单位秒，范围 1..300
                           instances:
                             type: array
                             minItems: 1
@@ -1895,7 +1896,6 @@ paths:
                               required:
                                 - name
                                 - provider
-                                - options
                               properties:
                                 name:
                                   type: string
@@ -1911,6 +1911,7 @@ paths:
                                   default: 0
                                 auth:
                                   type: object
+                                  description: 认证 Header 映射，可包含多个 Header
                                   properties:
                                     header:
                                       type: object
@@ -1918,6 +1919,7 @@ paths:
                                         type: string
                                 options:
                                   type: object
+                                  description: 可选模型参数对象；model 可选，其他 JSON 字段完整保存
                                   properties:
                                     model:
                                       type: string
@@ -1929,7 +1931,7 @@ paths:
                                       type: string
                                 model_endpoint:
                                   type: string
-                                  description: dashboard 编辑及连接测试使用，不下发到网关
+                                  description: 自定义 Models API；连接测试使用，不下发到网关
                 plugin_configs:
                   type: array
                   nullable: true
@@ -4964,8 +4966,9 @@ paths:
                           timeout:
                             type: integer
                             minimum: 1
-                            default: 30
-                            description: 超时时间（单位：秒）
+                            maximum: 300
+                            default: 300
+                            description: 超时时间（单位：秒），范围 1..300
                           instances:
                             type: array
                             minItems: 1
@@ -4975,7 +4978,6 @@ paths:
                               required:
                                 - name
                                 - provider
-                                - options
                               properties:
                                 name:
                                   type: string
@@ -4992,6 +4994,7 @@ paths:
                                   default: 0
                                 auth:
                                   type: object
+                                  description: 认证 Header 映射，可包含多个 Header
                                   properties:
                                     header:
                                       type: object
@@ -4999,6 +5002,7 @@ paths:
                                         type: string
                                 options:
                                   type: object
+                                  description: 可选模型参数对象；model 可选，其他 JSON 字段完整保存
                                   properties:
                                     model:
                                       type: string
@@ -5010,7 +5014,7 @@ paths:
                                       type: string
                                 model_endpoint:
                                   type: string
-                                  description: dashboard 编辑及连接测试使用，不下发到网关
+                                  description: 自定义 Models API；连接测试使用，不下发到网关
                 plugin_configs:
                   type: array
                   nullable: true

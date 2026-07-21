@@ -192,7 +192,7 @@ class TestGatewayApisixResourceConvertor:
                 backend_kind=BackendKindEnum.AI.value,
                 backend_type=BackendTypeEnum.HTTP.value,
                 config={
-                    "timeout": 45000,
+                    "timeout": 45,
                     "instances": [
                         {
                             "name": "primary",
@@ -245,6 +245,7 @@ class TestGatewayApisixResourceConvertor:
             "summaries": True,
             "payloads": False,
         }
+        assert service_payload["plugins"]["ai-proxy"]["timeout"] == 45000
         assert service.labels.get_label(LABEL_KEY_BACKEND_ID) == "10"
         assert service.labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16
         assert route_payload["service_id"] == service_payload["id"]

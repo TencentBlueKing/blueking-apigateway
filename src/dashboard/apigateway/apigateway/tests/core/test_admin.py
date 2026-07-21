@@ -7,7 +7,7 @@ from apigateway.core.models import Backend, BackendConfig
 
 def _ai_config(model="gpt-4o"):
     return {
-        "timeout": 30000,
+        "timeout": 300,
         "instances": [
             {
                 "name": "primary",

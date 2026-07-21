@@ -27,7 +27,7 @@ from apigateway.biz.audit import Auditor
 
 def _display_ai_config():
     return {
-        "timeout": 30000,
+        "timeout": 300,
         "instances": [
             {
                 "name": "primary",

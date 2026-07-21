@@ -237,7 +237,7 @@ class TestReleaseData:
             config=standard_config,
         )
         ai_backend_config = {
-            "timeout": 30000,
+            "timeout": 300,
             "instances": [
                 {
                     "name": "primary",

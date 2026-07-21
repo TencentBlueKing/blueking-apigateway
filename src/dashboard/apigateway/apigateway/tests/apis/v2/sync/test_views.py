@@ -58,14 +58,12 @@ def _model_backend(name="openai-primary"):
     return {
         "name": name,
         "config": {
-            "timeout": 30000,
+            "timeout": 300,
             "instances": [
                 {
                     "name": "primary",
                     "provider": "openai",
-                    "weight": 1,
                     "auth": {"header": {"Authorization": "Bearer secret"}},
-                    "options": {"model": "gpt-4o", "temperature": 0.7},
                 }
             ],
         },
@@ -127,7 +125,8 @@ class TestSyncApi:
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
         assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
-        assert backend_config.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
+        assert backend_config.config["instances"][0]["weight"] == 0
+        assert "options" not in backend_config.config["instances"][0]
 
     def test_stage_sync_normal_gateway_rejects_ai_backends(self, request_view, fake_gateway, disable_app_permission):
         resp = request_view(
@@ -225,7 +224,7 @@ class TestSyncApi:
         assert initial.status_code == 200, initial.json()
         model_backend = _model_backend()
         model_backend["config"]["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
-        model_backend["config"]["instances"][0]["options"]["model"] = "gpt-4o-mini"
+        model_backend["config"]["instances"][0]["options"] = {"model": "gpt-4o-mini"}
 
         updated = request_view(
             method="POST",

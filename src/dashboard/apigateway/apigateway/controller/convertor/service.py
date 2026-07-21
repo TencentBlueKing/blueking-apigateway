@@ -18,6 +18,7 @@
 
 import base64
 import logging
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
@@ -47,6 +48,8 @@ from apigateway.controller.models.constants import (
     UpstreamTypeEnum,
 )
 from apigateway.controller.uri_render import URIRender
+from apigateway.core.ai_backend import get_ai_backend_provider_config
+from apigateway.core.backend_config import AIBackendConfig
 from apigateway.core.constants import BackendKindEnum, LoadBalanceTypeEnum
 from apigateway.service.plugin import AI_COMPATIBLE_PLUGIN_CODES
 
@@ -60,32 +63,39 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _build_published_ai_instance(instance: Dict[str, Any]) -> Dict[str, Any]:
+    published = deepcopy(instance)
+    published.pop("model_endpoint", None)
+    published.setdefault("auth", {})
+    provider_config = get_ai_backend_provider_config(published["provider"])
+    if provider_config is not None:
+        if not provider_config.openai_compatible:
+            raise ValueError(f"AI backend provider is not OpenAI compatible: {published['provider']}")
+        published["provider"] = "openai-compatible"
+        published["override"] = {"endpoint": provider_config.endpoint}
+    return published
+
+
 def _build_ai_proxy_plugins(config: Dict[str, Any]) -> Dict[str, Plugin]:
+    normalized = AIBackendConfig.model_validate(config).to_config()
     common_config = {
-        "timeout": config.get("timeout", 30) * 1000,
+        "timeout": normalized["timeout"] * 1000,
         "ssl_verify": True,
         "logging": {"summaries": True, "payloads": False},
     }
 
-    instances = [
-        {key: value for key, value in instance.items() if key != "model_endpoint"} for instance in config["instances"]
-    ]
+    instances = [_build_published_ai_instance(instance) for instance in normalized["instances"]]
     if len(instances) > 1:
         plugin_config: Dict[str, Any] = {"instances": instances, **common_config}
         for key in ("balancer", "fallback_strategy"):
-            if key in config:
-                plugin_config[key] = config[key]
+            if key in normalized:
+                plugin_config[key] = normalized[key]
         return {"ai-proxy-multi": Plugin(**plugin_config)}
 
     instance = instances[0]
-    plugin_config = {
-        "provider": instance["provider"],
-        "auth": instance.get("auth", {}),
-        "options": instance["options"],
-        **common_config,
-    }
-    if "override" in instance:
-        plugin_config["override"] = instance["override"]
+    plugin_config = {key: instance[key] for key in ("provider", "auth", "options", "override") if key in instance}
+    plugin_config.setdefault("auth", {})
+    plugin_config.update(common_config)
     return {"ai-proxy": Plugin(**plugin_config)}
 
 

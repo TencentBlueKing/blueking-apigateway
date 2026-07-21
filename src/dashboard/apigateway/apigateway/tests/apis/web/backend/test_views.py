@@ -28,12 +28,22 @@ from apigateway.core.models import Backend, BackendConfig
 def _ai_config(stage_id):
     return {
         "stage_id": stage_id,
-        "timeout": 30000,
+        "provider": "openai",
+        "api_key": "secret",
+        "model": "gpt-4o",
+        "model_options": {"temperature": 0.7},
+        "timeout": 300,
+    }
+
+
+def _stored_ai_config():
+    return {
+        "timeout": 300,
         "instances": [
             {
                 "name": "primary",
                 "provider": "openai",
-                "weight": 1,
+                "weight": 0,
                 "auth": {"header": {"Authorization": "Bearer secret"}},
                 "options": {"model": "gpt-4o", "temperature": 0.7},
             }
@@ -90,7 +100,9 @@ class TestBackendApi:
         backend = Backend.objects.get(gateway=fake_stage.gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         stored = BackendConfig.objects.get(backend=backend)
-        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == ("Bearer secret")
+        assert stored.config["instances"][0]["name"] == "primary"
+        assert stored.config["instances"][0]["weight"] == 0
+        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
         assert stored.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
         response = request_view(
@@ -100,7 +112,12 @@ class TestBackendApi:
             gateway=fake_stage.gateway,
         )
         assert response.json()["data"]["kind"] == BackendKindEnum.AI.value
-        assert response.json()["data"]["configs"][0]["instances"][0]["auth"]["header"]["Authorization"] == ("Be****et")
+        output = response.json()["data"]["configs"][0]
+        assert output["stage_id"] == fake_stage.id
+        assert output["api_key"] == "se****et"
+        assert output["model"] == "gpt-4o"
+        assert output["model_options"] == {"temperature": 0.7}
+        assert "instances" not in output
 
         response = request_view(
             "GET",
@@ -129,7 +146,7 @@ class TestBackendApi:
 
     @pytest.mark.parametrize(
         ("incoming_secret", "expected_secret"),
-        [("Be****et", "Bearer secret"), ("Bearer new-secret", "Bearer new-secret")],
+        [("se****et", "Bearer secret"), ("new-secret", "Bearer new-secret")],
     )
     def test_update_ai_backend_header(self, request_view, fake_stage, incoming_secret, expected_secret):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -143,10 +160,10 @@ class TestBackendApi:
             gateway=fake_stage.gateway,
             backend=backend,
             stage=fake_stage,
-            config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
+            config=_stored_ai_config(),
         )
         config = _ai_config(fake_stage.id)
-        config["instances"][0]["auth"]["header"]["Authorization"] = incoming_secret
+        config["api_key"] = incoming_secret
 
         response = request_view(
             "PUT",
@@ -174,24 +191,27 @@ class TestBackendApi:
             name="openai-compatible",
             kind=BackendKindEnum.AI.value,
         )
-        stored_config = _ai_config(fake_stage.id)
+        stored_config = _stored_ai_config()
         stored_instance = stored_config["instances"][0]
         stored_instance["provider"] = "openai-compatible"
         stored_instance["auth"]["header"] = {"X-Api-Key": "secret"}
-        stored_instance["override"] = {"endpoint": "https://example.com/v1"}
+        stored_instance["override"] = {"endpoint": "https://example.com/v1/chat/completions"}
         stored_instance["model_endpoint"] = "https://example.com/models"
         BackendConfig.objects.create(
             gateway=fake_stage.gateway,
             backend=backend,
             stage=fake_stage,
-            config={key: value for key, value in stored_config.items() if key != "stage_id"},
+            config=stored_config,
         )
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance.pop("auth")
-        instance["override"] = {"endpoint": "https://example.com/v1"}
-        instance["model_endpoint"] = "https://example.com/models"
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://example.com/v1/chat/completions",
+                "model_endpoint": "https://example.com/models",
+            }
+        )
+        config.pop("api_key")
 
         response = request_view(
             "PUT",
@@ -223,7 +243,7 @@ class TestBackendApi:
             gateway=fake_stage.gateway,
             backend=backend,
             stage=fake_stage,
-            config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
+            config=_stored_ai_config(),
         )
 
         response = request_view(
@@ -377,8 +397,9 @@ class TestBackendConnectivityApi:
     def test_builtin_provider_returns_model_ids(self, mocker, request_view, fake_stage, provider, expected_url):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         config = _ai_config(fake_stage.id)
-        config["instances"][0]["provider"] = provider
+        config["provider"] = provider
         http_get = _mock_model_response(
             mocker,
             {
@@ -412,17 +433,21 @@ class TestBackendConnectivityApi:
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance["auth"]["header"] = {"X-Api-Key": "secret"}
-        instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions?api-version=2026-01-01"}
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions?api-version=2026-01-01",
+                "auth_header": {"name": "X-Api-Key", "value": "secret"},
+            }
+        )
+        config.pop("api_key")
         resolver = mocker.patch(
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("8.8.8.8", 443))],
         )
         http_get = _mock_model_response(mocker, {"data": [{"id": "custom-model"}]})
         model_endpoint = "https://catalog.example.com/custom/models?api-version=2026-01-01"
-        instance["model_endpoint"] = model_endpoint
+        config["model_endpoint"] = model_endpoint
 
         response = request_view(
             "POST",
@@ -441,15 +466,24 @@ class TestBackendConnectivityApi:
             verify=True,
             allow_redirects=False,
         )
-        assert resolver.call_count == 1
+        assert resolver.call_count == 2
 
-    def test_openai_compatible_requires_model_endpoint(self, request_view, fake_stage):
+    def test_inferred_models_failure_requests_explicit_model_endpoint(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = mocker.patch(
+            "apigateway.biz.backend.connectivity.http_get",
+            return_value=(False, {"error": "Authorization: Bearer upstream-secret"}),
+        )
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions"}
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions",
+            }
+        )
+        config.pop("api_key")
 
         response = request_view(
             "POST",
@@ -459,16 +493,25 @@ class TestBackendConnectivityApi:
             data={"config": config},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 500
+        assert "model_endpoint" in str(response.json())
+        assert "upstream-secret" not in str(response.json())
+        assert "secret" not in str(response.json())
+        assert http_get.call_count == 1
+        assert http_get.call_args.args[0] == "https://models.example.com/v1/models"
 
     def test_custom_provider_rejects_link_local_resolved_address(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions"}
-        instance["model_endpoint"] = "https://models.example.com/v1/models"
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions",
+                "model_endpoint": "https://models.example.com/v1/models",
+            }
+        )
+        config.pop("api_key")
         mocker.patch(
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("169.254.169.254", 443))],
@@ -490,10 +533,14 @@ class TestBackendConnectivityApi:
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance["override"] = {"endpoint": "https://models.internal.example/v1/chat/completions"}
-        instance["model_endpoint"] = "https://models.internal.example/v1/models"
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.internal.example/v1/chat/completions",
+                "model_endpoint": "https://models.internal.example/v1/models",
+            }
+        )
+        config.pop("api_key")
         mocker.patch(
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("10.0.0.1", 443))],
@@ -515,10 +562,14 @@ class TestBackendConnectivityApi:
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions"}
-        instance["model_endpoint"] = "https://models.example.com/v1/models"
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions",
+                "model_endpoint": "https://models.example.com/v1/models",
+            }
+        )
+        config.pop("api_key")
         mocker.patch(
             "socket.getaddrinfo",
             return_value=[(10, 1, 6, "", ("2001:4860:4860::abcd", 443, 0, 0))],
@@ -539,8 +590,9 @@ class TestBackendConnectivityApi:
     def test_connectivity_uses_fixed_timeout(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         config = _ai_config(fake_stage.id)
-        config["timeout"] = 300000
+        config["timeout"] = 300
         http_get = _mock_model_response(mocker, {"data": []})
 
         response = request_view(
@@ -557,6 +609,7 @@ class TestBackendConnectivityApi:
     def test_existing_backend_restores_masked_header(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         backend = Backend.objects.create(
             gateway=fake_stage.gateway,
             name="openai-primary",
@@ -566,10 +619,10 @@ class TestBackendConnectivityApi:
             gateway=fake_stage.gateway,
             backend=backend,
             stage=fake_stage,
-            config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
+            config=_stored_ai_config(),
         )
         config = _ai_config(fake_stage.id)
-        config["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
+        config["api_key"] = "se****et"
         http_get = _mock_model_response(mocker, {"data": [{"id": "gpt-4o"}]})
 
         response = request_view(
@@ -597,14 +650,18 @@ class TestBackendConnectivityApi:
             gateway=fake_stage.gateway,
             backend=backend,
             stage=fake_stage,
-            config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
+            config=_stored_ai_config(),
         )
         config = _ai_config(fake_stage.id)
-        instance = config["instances"][0]
-        instance["provider"] = "openai-compatible"
-        instance["auth"]["header"]["Authorization"] = "Be****et"
-        instance["override"] = {"endpoint": "https://attacker.example.com/v1"}
-        instance["model_endpoint"] = "https://attacker.example.com/models"
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://attacker.example.com/v1/chat/completions",
+                "model_endpoint": "https://attacker.example.com/models",
+                "auth_header": {"name": "Authorization", "value": "se****et"},
+            }
+        )
+        config.pop("api_key")
         http_get = _mock_model_response(mocker, {"data": []})
 
         response = request_view(
@@ -665,6 +722,7 @@ class TestBackendConnectivityApi:
     def test_provider_failure_does_not_expose_credentials(self, caplog, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         http_get = mocker.patch(
             "apigateway.biz.backend.connectivity.http_get",
             return_value=(False, {"error": "Authorization: Bearer secret"}),
@@ -687,6 +745,7 @@ class TestBackendConnectivityApi:
     def test_provider_redirect_is_rejected(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         http_get = _mock_model_response(mocker, {"status_code": 302}, success=False)
 
         response = request_view(
@@ -703,6 +762,7 @@ class TestBackendConnectivityApi:
     def test_rejects_malformed_provider_response(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         http_get = _mock_model_response(mocker, {"data": [{"name": "missing-id"}]})
 
         response = request_view(
