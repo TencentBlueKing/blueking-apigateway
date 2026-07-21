@@ -12,14 +12,14 @@ from apigateway.core.models import Backend, BackendConfig
 @pytest.fixture
 def ai_backend_config():
     return {
-        "timeout": 30000,
+        "timeout": 300,
         "instances": [
             {
                 "name": "primary",
                 "provider": "openai",
-                "weight": 1,
-                "auth": {"header": {"Authorization": "Bearer secret", "X-Organization": "org-1"}},
-                "options": {"model": "gpt-4o"},
+                "weight": 0,
+                "auth": {"header": {"Authorization": "Bearer secret"}},
+                "options": {},
             }
         ],
     }
@@ -228,17 +228,65 @@ def test_ai_backend_config_preserves_additional_json_options(ai_backend_config):
     assert config.to_config() == ai_backend_config
 
 
+def test_ai_backend_config_accepts_multiple_instances_and_multi_fields(ai_backend_config):
+    secondary = {
+        "name": "fallback",
+        "provider": "openai-compatible",
+        "auth": {"header": {"X-Api-Key": "secret"}},
+        "override": {"endpoint": "https://llm.example.com/v1/chat/completions"},
+        "model_endpoint": "https://catalog.example.com/v1/models",
+    }
+    value = {
+        **ai_backend_config,
+        "instances": [ai_backend_config["instances"][0], secondary],
+        "balancer": {"algorithm": "roundrobin"},
+        "fallback_strategy": ["http_429", "http_5xx"],
+    }
+
+    stored = AIBackendConfig.model_validate(value).to_config()
+
+    assert stored["instances"][1]["weight"] == 0
+    assert stored["balancer"] == {"algorithm": "roundrobin"}
+    assert stored["fallback_strategy"] == ["http_429", "http_5xx"]
+
+
+def test_ai_backend_config_validates_every_instance(ai_backend_config):
+    invalid = dict(ai_backend_config["instances"][0])
+    invalid["name"] = ""
+
+    with pytest.raises(ValueError, match="name"):
+        AIBackendConfig.model_validate(
+            {**ai_backend_config, "instances": [ai_backend_config["instances"][0], invalid]}
+        )
+
+
+@pytest.mark.parametrize("field", ["balancer", "fallback_strategy"])
+def test_ai_backend_config_rejects_multi_only_fields_for_single_instance(ai_backend_config, field):
+    value = {**ai_backend_config, field: {"algorithm": "roundrobin"}}
+    if field == "fallback_strategy":
+        value[field] = ["http_5xx"]
+
+    with pytest.raises(ValueError, match="require multiple instances"):
+        AIBackendConfig.model_validate(value)
+
+
+@pytest.mark.parametrize("timeout", [0, 301])
+def test_ai_backend_config_rejects_timeout_outside_seconds_range(ai_backend_config, timeout):
+    with pytest.raises(ValueError, match="timeout"):
+        AIBackendConfig.model_validate({**ai_backend_config, "timeout": timeout})
+
+
 def test_ai_backend_config_defaults_optional_instance_fields(ai_backend_config):
     ai_backend_config.pop("timeout")
     instance = ai_backend_config["instances"][0]
     instance.pop("weight")
-    instance["options"] = {}
+    instance.pop("options")
 
     stored = AIBackendConfig.model_validate(ai_backend_config).to_config()
 
-    assert stored["timeout"] == 30
+    assert stored["timeout"] == 300
     assert stored["instances"][0]["weight"] == 0
-    assert stored["instances"][0]["options"] == {}
+    assert "options" not in stored["instances"][0]
 
 
 def test_backend_config_optional_fields_reject_explicit_null(ai_backend_config):
