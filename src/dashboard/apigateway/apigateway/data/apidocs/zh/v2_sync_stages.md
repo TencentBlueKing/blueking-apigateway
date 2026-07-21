@@ -59,7 +59,7 @@ ai_backends.config 参数说明
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
-| `timeout` | integer | 否 | 超时时间，单位秒，默认 `30` |
+| `timeout` | integer | 否 | 超时时间，单位秒，默认 `300`，范围 `1..300` |
 | `instances` | array[object] | 是 | 模型实例列表；第一期必须且只能配置 1 个实例 |
 
 instances 参数说明
@@ -69,10 +69,11 @@ instances 参数说明
 | `name` | string | 是 | 实例名称 |
 | `provider` | string | 是 | `openai`、`deepseek` 或 `openai-compatible` |
 | `weight` | integer | 否 | 实例权重，默认 `0` |
-| `auth.header` | object | 否 | 发往模型服务的认证 Header；凭证入库时加密 |
-| `options.model` | string | 否 | 模型名称 |
+| `auth.header` | object | 否 | 发往模型服务的认证 Header 映射，可包含多个 Header；凭证入库时加密 |
+| `options` | object | 否 | 模型参数对象，除 `model` 外的 JSON 字段会完整保存并发布 |
+| `options.model` | string | 否 | 固定模型名称；未配置时不强制覆盖请求中的 model |
 | `override.endpoint` | string | 否 | 自定义模型服务地址；`provider=openai-compatible` 时必填 |
-| `model_endpoint` | string | 否 | dashboard 编辑及连接测试使用的模型列表地址，不下发到网关 |
+| `model_endpoint` | string | 否 | 自定义 Models API；连接测试使用，不下发到网关。未提供时从 `/chat/completions` 推导 `/models` |
 
 plugin_configs 参数说明
 每个插件配置对象包含：
@@ -111,18 +112,32 @@ plugin_configs 参数说明
     {
       "name": "openai-primary",
       "config": {
-        "timeout": 30,
+        "timeout": 300,
+        "instances": [
+          {
+            "name": "primary",
+            "provider": "openai",
+            "auth": {
+              "header": {
+                "Authorization": "Bearer <token>"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "custom-models",
+      "config": {
         "instances": [
           {
             "name": "primary",
             "provider": "openai-compatible",
             "auth": {
               "header": {
-                "Authorization": "Bearer <token>"
+                "X-Api-Key": "<token>",
+                "X-Tenant": "tenant-a"
               }
-            },
-            "options": {
-              "model": "gpt-4o"
             },
             "override": {
               "endpoint": "https://llm.example.com/v1/chat/completions"

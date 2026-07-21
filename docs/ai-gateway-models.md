@@ -20,7 +20,7 @@ AI Gateway 继续复用现有网关、环境、后端服务、资源和发布模
 - 模型代理 API 不能配置为 MCP Server 的工具资源，MCP Server 只允许关联 `Resource.kind=standard` 的 API。
 - 模型代理 API 保留用户配置的外部 Resource.path，HTTP Method 固定为 POST；第一期只支持 Chat Completions。
 - Chat Completions 默认同时支持普通响应和流式响应，不增加网关产品层的流式开关或额外限制。
-- 每个模型 instance 必须配置固定模型，客户端请求中的 model 不参与实际模型选择。
+- 模型 instance 可选配置固定模型；配置后由网关覆盖客户端请求中的 model，未配置时不覆盖。
 
 ## 2. 模型关系
 
@@ -115,11 +115,12 @@ unique(gateway, backend, stage)
 
 ```json
 {
-  "timeout": 30,
+  "timeout": 300,
   "instances": [
     {
       "name": "primary",
       "provider": "openai",
+      "weight": 0,
       "auth": {
         "header": {
           "Authorization": "Bearer <secret>"
@@ -136,14 +137,14 @@ unique(gateway, backend, stage)
 
 `instances[]` 以 [APISIX `ai-proxy-multi.instances`](https://apisix.apache.org/docs/apisix/plugins/ai-proxy-multi/) 的字段结构为基础，不增加 `ModelInstance` 数据表。dashboard 额外保存 `model_endpoint` 用于编辑和连接测试，controller 发布时移除该字段。
 
-第一期约束：
+存储契约约束：
 
-- 顶层只允许 `instances` 和 `timeout`，拒绝其他字段。
-- `instances` 必须存在。
-- `len(instances) == 1`。
-- `instances[0].provider` 只允许 `openai`、`deepseek`、`openai-compatible`。
-- `instances[0].options` 必须是 JSON 对象；`model` 可选，提供时必须是非空字符串，并允许配置其他合法 JSON 键值对。
-- 不允许接受无法转换为单实例 `ai-proxy` 语义的多实例策略，不得静默丢弃用户配置。
+- 顶层只允许 `instances`、`timeout`、`balancer` 和 `fallback_strategy`，拒绝其他字段。
+- `instances` 必须存在且至少包含一个实例；核心模型和发布转换支持多个实例。
+- 第一期 Web API 和 open/v2 自动化同步 API 分别在自己的输入边界限制 `len(instances) == 1`。
+- 每个 instance 的 `provider` 只允许 `openai`、`deepseek`、`openai-compatible`。
+- `options` 和其中的 `model` 都可选；提供 `model` 时必须是非空字符串，其他合法 JSON 键值对完整保存。
+- 单实例配置拒绝 `balancer` 和 `fallback_strategy`；多实例配置允许这两个 `ai-proxy-multi` 字段。
 
 第一期 provider 允许列表由 dashboard 代码显式维护，不直接等同于 APISIX 当前支持的全部 provider。APISIX 后续新增 provider 或升级版本时不能自动进入产品 API，必须同步增加 Pydantic 类型、凭证处理和发布转换测试后才能开放。
 
@@ -154,14 +155,14 @@ unique(gateway, backend, stage)
 | `name` | 必填，非空字符串；作为未来开放多 instance 时的稳定标识 |
 | `provider` | 必填，只允许第一期 provider 允许列表 |
 | `weight` | 可选，未提供时默认 `0`；提供时必须是非负整数 |
-| `auth.header` | 允许配置字符串 Header 映射；Web 展示时对 Header value 脱敏 |
-| `options` | 必填 JSON 对象；`model` 可选，提供时必须为非空字符串；允许配置其他合法 JSON 键值对 |
+| `auth.header` | 可选字符串 Header 映射；自动化协议允许多个 Header，Web 第一期只表示一个 Header |
+| `options` | 可选 JSON 对象；`model` 可选，提供时必须为非空字符串；允许配置其他合法 JSON 键值对 |
 | `override.endpoint` | 仅 `openai-compatible` 允许且必须提供 |
 | `model_endpoint` | 可选；dashboard 编辑和连接测试使用，controller 发布时移除 |
 
 `options` 的 key 必须是合法 JSON 字符串，value 可以是字符串、数字、布尔值、`null`、对象或数组。Pydantic `options` 类型允许额外字段；dashboard 必须完整保存，controller 必须原样透传，不能丢弃除 `model` 外的配置。
 
-`openai` 和 `deepseek` 使用 APISIX 内置官方 endpoint，不允许配置 `override`。第一期不开放：
+`openai` 和 `deepseek` 的 Chat Completions/Models endpoint 由 dashboard provider registry 维护，存储时不允许配置 `override`。发布时统一转换为 APISIX `openai-compatible` 并写入 registry 中的 `override.endpoint`，避免依赖 APISIX 内置 provider 的维护节奏。第一期不开放：
 
 - `priority`。
 - `checks`。
@@ -171,12 +172,12 @@ unique(gateway, backend, stage)
 Model BackendConfig 顶层只开放 `timeout`：
 
 - `timeout` 使用 dashboard 语义，单位为秒，必须是正整数。
-- `AIBackendConfig` 在用户未提供时显式写入默认值 `30`。
+- `timeout` 范围为 `1..300`，`AIBackendConfig` 在用户未提供时显式写入默认值 `300`。
 - controller 发布时将 `timeout` 转换为 APISIX 使用的毫秒值。
 - `ssl_verify` 固定为 `true`，不允许通过 Model BackendConfig 关闭。
 - `keepalive`、`keepalive_timeout`、`keepalive_pool` 使用 APISIX 默认值，第一期不对用户开放。
 - `logging` 不属于用户 BackendConfig，由 controller 固定生成 `summaries=true`、`payloads=false`。
-- 第一期不接受 `balancer`、`fallback_strategy` 等多 instance 顶层字段。
+- `balancer`、`fallback_strategy` 仅在多 instance 存储配置中允许，发布到 `ai-proxy-multi`。
 
 #### 2.4.1 auth 凭证
 
@@ -190,35 +191,55 @@ provider 约束：
 
 写入流程：
 
-1. serializer 使用对应的 Pydantic BackendConfig 类型校验并归一化用户输入。
-2. Web 更新 API 收到掩码形态的 Header value 时，使用 ORM 返回的同名 Header 明文替换该值。
-3. biz 再次校验完整配置，将 Pydantic 对象转换为 JSON 后赋值给 `BackendConfig.config`。
+1. Web serializer 只校验扁平表单字段，`AIBackendWebConfigAdapter` 将其转换为单 instance 存储配置。
+2. open/v2 自动化接口直接接收存储协议，并在各自接口边界限制一个 instance。
+3. 两条路径都使用 `AIBackendConfig` 校验归一化结果后赋值给 `BackendConfig.config`。
 4. `BackendConfig.config` 仅在 AI 配置的数据库写入边界加密完整 JSON；普通配置保持原样。
 
 更新语义：
 
 - 明文长度小于 4 时，掩码统一为 `****`；否则保留前 2 位和后 2 位，中间使用 `****`，例如 `sk****9z`。
-- Web 更新 API 只判断 value 是否为掩码形态；如果数据库配置存在同名 Header，就恢复数据库中的 value，不再比较掩码是否由已有 value 生成。
+- Web 更新 API 仅在 provider、目标地址和 Header 名称未改变，且请求 value 精确等于已有凭证的展示掩码时恢复数据库明文。
+- provider、目标地址或 Header 名称变化后提交掩码值必须报错并要求重新输入凭证。
 - 非掩码 value 保持请求原值；未提供的 Header 不从数据库补回，因为更新请求提交的是完整配置。
 - 同步和其他非 Web 更新入口不解析掩码，输入值按完整明文配置处理。
 - 显式提交空的 `auth.header` 表示清空全部 Header；仅 `openai-compatible` 允许保存空认证，`openai` 和 `deepseek` 应校验失败。
 
 读取和使用约束：
 
-- Web API 输出 serializer 通过 `BackendConfig.get_config_for_display()` 对所有 auth Header value 按上述规则输出掩码，不得输出明文或数据库密文；审计事件在写入日志前同样显式脱敏。
+- Web API 输出经 `AIBackendWebConfigAdapter` 转回与输入一致的扁平协议并输出掩码，不得输出明文、数据库密文或 `instances/auth/override` 等内部字段；审计事件使用同一转换结果。
+- 第一阶段 Web DTO 只支持一个 `auth_header`；如果自动化写入了多个 Header，Web 查询或编辑必须明确报错，不能静默丢弃。未来可扩展 Web DTO 支持多个 Header，不改变存储协议。
 - controller 从 `BackendConfig.config` 取得只存在于内存中的明文 auth，并注入生成的 `ai-proxy` 配置；ORM 解密失败必须终止发布。
 - controller、发布记录、异常消息和日志不得序列化解密后的 auth。
 - APISIX 运行配置最终需要包含可用凭证，因此 APISIX 与 etcd 属于凭证信任边界，必须依赖其访问控制和日志脱敏，不能把 dashboard 数据库加密误认为端到端加密。
-- `BackendConfig` Django model 负责持久化边界的透明加解密，并提供显式的展示副本，不负责配置校验；所有接收外部配置的 view 和 biz 写入路径必须先通过 Pydantic 类型完成处理。Django Admin 与 controller 属于可信内部调用方，直接使用 `config` 明文；Web API output serializer 使用 `get_config_for_display()`，审计和日志输出必须显式脱敏。
+- `BackendConfig` Django model 负责持久化边界的透明加解密，并提供显式的展示副本，不负责配置校验；所有接收外部配置的 view 和 biz 写入路径必须先通过 Pydantic 类型完成处理。Django Admin 与 controller 属于可信内部调用方，直接使用 `config` 明文；Web API 和审计输出统一使用 Web adapter 脱敏。
 
 模型选择权属于 Model BackendConfig：
 
 - 客户端 Chat Completions 请求可以省略 `model`，也可以为兼容 SDK 而携带该字段。
-- controller 生成 `ai-proxy` 配置后，APISIX 必须使用 `instances[0].options.model` 覆盖客户端请求中的 model。
+- 当 `instances[].options.model` 存在时，APISIX 使用该值覆盖客户端请求中的 model；未配置时不强制固定模型。
 - 不允许客户端借用当前 Model Backend 的凭证选择其他模型。
 - 可观测数据分别保留客户端请求模型和最终调用模型，不能把两者合并成一个字段。
 
-后续支持多实例时，只需放宽 `instances` 数量限制并开放对应的负载均衡、重试、故障转移和健康检查配置，不需要迁移存储结构。
+未来 Web/自动化入口开放多实例时，只需放宽各自 API 边界并展示已经存在的多实例字段，不需要迁移存储结构或修改发布选择逻辑。
+
+#### 2.4.2 Web、存储与发布协议
+
+```mermaid
+flowchart LR
+    Web[Web Input/Output SLZ<br/>扁平表单协议] <--> Adapter[AIBackendWebConfigAdapter]
+    Adapter <--> Stored[AIBackendConfig<br/>加密存储，支持多个 instances]
+    Automation[open/v2 自动化同步<br/>原始存储协议] --> Stored
+    Stored --> Convertor[ServiceConvertor<br/>provider 归一化、timeout 转毫秒]
+    Convertor --> Single[1 instance: ai-proxy]
+    Convertor --> Multi[多 instances: ai-proxy-multi]
+```
+
+Web 输入和输出保持同一字段集合：`provider`、`endpoint`、`model_endpoint`、`api_key`、`auth_header`、`model`、`model_options`、`timeout`，backend 配置列表额外包含 `stage_id`。Web 不接收 `instances`、`auth`、`override`、`balancer`、`fallback_strategy` 等存储/APISIX 字段。
+
+内置 provider 的 Web `endpoint`、`model_endpoint` 可省略；如果前端回传只读值，必须与 registry 完全一致。自定义 `openai-compatible` 必须提供完整 Chat Completions endpoint；`model_endpoint` 可选且只保存在 instance 内供编辑和连接测试使用。
+
+连接测试只请求 Models API，选择顺序为：显式 `model_endpoint`、内置 registry、从以 `/chat/completions` 结尾的 endpoint 推导为 `/models`。推导后的请求失败时不尝试 Chat Completions，也不使用其他回退地址，直接提示用户显式配置 `model_endpoint`。
 
 ### 2.5 BackendConfig 配置校验
 
@@ -232,7 +253,7 @@ AIBackendConfig
     -> 模型后端的字段校验与 JSON 转换
 ```
 
-serializer 调用对应的 Pydantic 类型完成输入校验和默认值归一化，并将 Pydantic 错误转换为 API 校验错误。只有 Web 更新 serializer 会将掩码形态的 Header value 替换为数据库中的同名 value；Pydantic 类型和 biz 不合并新旧配置。biz 在持久化前再次构造对应类型。AI 配置赋值给 `BackendConfig.config` 时自动加密完整 JSON，读取该属性时自动解密；普通配置原样读写。Web output serializer 调用 `get_config_for_display()`，controller 和 Django Admin 直接使用可信明文；审计数据在写入日志的边界显式脱敏。
+自动化 serializer 调用 Pydantic 类型完成输入校验和默认值归一化；Web serializer 先校验扁平 DTO，再由 adapter 转换并调用同一 Pydantic 类型。Pydantic 错误统一转换为 API 校验错误。AI 配置赋值给 `BackendConfig.config` 时自动加密完整 JSON，读取该属性时自动解密；普通配置原样读写。Web output serializer 和审计数据通过 adapter 输出扁平脱敏结果，controller 和 Django Admin 直接使用可信明文。
 
 `Backend.kind` 与 Pydantic 类型的对应关系为：
 
@@ -251,7 +272,8 @@ Backend.kind=ai
 ```text
 apigateway/core/backend_config.py -> Pydantic 类型与 JSON 转换
 apigateway/core/models.py         -> BackendConfig.config 按 Backend.kind 持久化加解密；展示方法脱敏
-apigateway/apis/backend_config.py -> Web 更新 API 的掩码 Header value 恢复
+apigateway/apis/web/ai_backend/  -> Web DTO、双向转换和掩码 Header value 恢复
+apigateway/apis/backend_config.py -> 自动化输入使用的 Pydantic 错误转换和单实例边界
 ```
 
 Pydantic 类型主要负责：
@@ -260,14 +282,14 @@ Pydantic 类型主要负责：
 - 数组长度与嵌套结构。
 - 拒绝未声明字段，避免字段拼写错误被静默入库。
 - 通过 Backend.kind 对应关系拒绝结构不匹配的配置。
-- 第一期模型配置的 `instances` 数量必须等于 1。
+- 核心配置允许多个 `instances`；第一期 Web 和自动化 API 在各自边界限制数量必须等于 1。
 
 forbidden host、scheme 与 Backend.type 的关系等 API 上下文规则仍由 serializer 或业务 validator 负责；provider 与凭证规则由 Pydantic 类型直接校验。
 
 外部配置入库前必须在显式边界处理：
 
-- API serializer 使用对应 Pydantic 类型校验并归一化输入。
-- Web 更新 serializer 只恢复已有同名 Header 的掩码 value；非掩码 value 和缺省 Header 不处理。
+- 自动化 API serializer 使用对应 Pydantic 类型校验并归一化输入。
+- Web API serializer 只声明表单字段，adapter 转换后再使用 Pydantic 类型校验；掩码恢复同时校验 provider、目标 origin 和 Header 名称。
 - biz 写入路径再次构造对应类型，不读取已有配置进行合并。
 - 直接保存单个 BackendConfig 的 view 必须保存校验后的完整配置。
 - Django model、manager 和 queryset 不承载配置校验规则；`config` property 只按 `self.backend.kind` 完成加解密，`_config` 映射已有数据库 `config` 列。管理命令、数据修复等可信内部调用如果直接写 ORM，仍应按输入可信度决定是否调用 Pydantic 类型。
@@ -523,7 +545,7 @@ common service plugins
 | --- | --- | --- |
 | 通用网关能力 | `bk-real-ip`、`bk-auth-validate`、`bk-auth-verify`、`bk-permission`、`bk-delete-sensitive`、`bk-delete-cookie`、`bk-stage-context`、`bk-resource-context`、`bk-backend-context`、`bk-debug`、租户校验、并发限制，以及 `bk-jwt`、`bk-break-recursive-call`、`bk-log-context`、`bk-error-wrapper` | 模型 Service 保留 |
 | 通用可观测性 | `prometheus`、`bk-request-id`、`bk-response-check`、`file-logger` | 保留；模型 Service 使用安全日志 Profile |
-| 模型 Service 专用 | controller 自动生成的 `ai-proxy` | 仅模型 Service 下发；第一期只生成 `ai-proxy` |
+| 模型 Service 专用 | controller 自动生成的 `ai-proxy` / `ai-proxy-multi` | 仅模型 Service 下发；按 instances 数量选择 |
 
 具体约束：
 
@@ -594,15 +616,15 @@ len(instances) == 1
     -> ai-proxy
     -> 将唯一 instance 的 provider/auth/options/override
        转换为 ai-proxy 的顶层配置
-    -> options.model 覆盖客户端请求中的 model
+    -> options.model 存在时覆盖客户端请求中的 model
 
 len(instances) > 1
     -> ai-proxy-multi
     -> 保留 instances 数组及多实例策略
 ```
 
-第一期只允许一个 instance，因此只生成 `ai-proxy`。
-controller 同时将 BackendConfig.timeout 原样转换为 `ai-proxy.timeout`，并注入固定的 SSL 与日志安全配置。
+第一期 Web 和自动化输入只允许一个 instance；核心存储与 controller 已支持多个 instance，内部可信配置可生成 `ai-proxy-multi`。
+controller 发布时将内置 provider 归一化为 `openai-compatible` 并补充 registry endpoint，移除 `model_endpoint`，将 BackendConfig.timeout 从秒乘以 `1000` 转为插件毫秒值，并注入固定的 SSL 与日志安全配置。
 
 ### 8.5 APISIX Service
 
@@ -680,13 +702,13 @@ bk_backend_name = Backend.name
 
 - 数据迁移：存量 Backend 和 Resource 的 kind 均为 `standard`，旧 ResourceVersion 缺少 kind 时仍按普通资源发布。
 - 不可变性：Gateway、Backend 和 Resource 创建后不能通过 Web API、导入或同步改变类别；Gateway 同步更新中的 kind 按约定忽略。
-- BackendConfig：两个 Pydantic 类型覆盖模型 provider、单 instance、固定 model、`options` 合法 JSON 键值及无损透传、endpoint、timeout 和未知字段约束的正反例。
+- BackendConfig：Pydantic 类型覆盖模型 provider、多 instance、可选 model/options、多实例策略、endpoint、timeout 和未知字段约束；Web/自动化边界分别覆盖第一期单实例限制。
 - 凭证：AI 配置经 view/biz 写入后数据库只保存完整配置 JSON 的嵌套密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；普通配置及其存量记录保持原始 JSON 明文。ORM 读取与 Django Admin 返回可信明文，Web API 与审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；Web 更新 API 对掩码 value 的恢复、非掩码替换、清空和解密失败路径均有覆盖。
 - Stage 同步：普通网关拒绝 `ai_backends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
 - Resource：Web 创建/更新和 `/apis/open`、`/apis/v2/sync` 同步均拒绝 kind 与 Backend.kind 不一致的关系；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
 - 插件兼容性：Web Stage 绑定和 Stage 同步不按 Backend.kind 限制；普通 Service 保留全部 Stage 插件，模型 Service 发布时过滤不兼容 Stage 插件并记录不含配置或凭证的日志；Web Resource 绑定和 `/apis/open`、`/apis/v2/sync` Resource 插件同步仍拒绝不兼容关系。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。
-- controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、包含 `bk-error-wrapper` 的安全插件 Profile 和关联 service_id 的 Route；Route 转换信任持久化的 Resource/Backend 关系，不重复校验 kind。
+- controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 按实例数量生成 `ai-proxy` 或 `ai-proxy-multi`，内置 provider 发布为 `openai-compatible`，只在发布时将 timeout 转为毫秒，并生成无 upstream 的 Service、安全插件 Profile 和关联 service_id 的 Route。
 - data plane：AI Gateway 仅允许绑定 APISIX 3.16 及以上版本的数据面，创建和同步在持久化绑定前失败；controller 在生成资源前保留同一规则的防御性检查。普通网关继续支持 APISIX 3.13，且不包含 AI 专用变更。
 - 请求链路：普通响应和 SSE 流式响应均可用；BlueKing 网关插件错误由 `bk-error-wrapper` 统一包装，`ai-proxy` 和模型服务错误保持原始响应；第一期不增加 AI 专用出站 Header 过滤。
 - 回归：普通网关、可编程网关以及 AI Gateway 中的普通 Backend/Resource 沿用现有行为。
@@ -695,4 +717,4 @@ bk_backend_name = Backend.name
 
 以下内容不阻塞第一期实现，后续开放前需要重新设计并确认：
 
-- APISIX `ai-proxy-multi` 真正开放多实例时的负载均衡、重试、故障转移和健康检查产品形态。
+- Web 和自动化 API 对多实例配置、负载均衡、重试、故障转移和健康检查的产品形态。
