@@ -162,7 +162,7 @@ class TestPublishBackendKindValidation:
 
     def test_invalid_ai_backend_config_does_not_expose_credentials(self, fake_gateway, fake_stage):
         invalid_config = _ai_backend_config()
-        invalid_config["instances"][0]["options"] = {}
+        invalid_config["instances"][0]["options"] = {"model": ""}
         backend, _ = _create_backend_config(
             fake_gateway,
             fake_stage,

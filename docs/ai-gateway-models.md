@@ -115,12 +115,11 @@ unique(gateway, backend, stage)
 
 ```json
 {
-  "timeout": 30000,
+  "timeout": 30,
   "instances": [
     {
       "name": "primary",
       "provider": "openai",
-      "weight": 1,
       "auth": {
         "header": {
           "Authorization": "Bearer <secret>"
@@ -135,7 +134,7 @@ unique(gateway, backend, stage)
 }
 ```
 
-`instances[]` 直接采用 [APISIX `ai-proxy-multi.instances`](https://apisix.apache.org/docs/apisix/plugins/ai-proxy-multi/) 的字段结构，不增加 `ModelInstance` 数据表，也不定义一套产品中间字段再转换。
+`instances[]` 以 [APISIX `ai-proxy-multi.instances`](https://apisix.apache.org/docs/apisix/plugins/ai-proxy-multi/) 的字段结构为基础，不增加 `ModelInstance` 数据表。dashboard 额外保存 `model_endpoint` 用于编辑和连接测试，controller 发布时移除该字段。
 
 第一期约束：
 
@@ -143,7 +142,7 @@ unique(gateway, backend, stage)
 - `instances` 必须存在。
 - `len(instances) == 1`。
 - `instances[0].provider` 只允许 `openai`、`deepseek`、`openai-compatible`。
-- `instances[0].options` 必须是 JSON 对象，其中 `model` 必须是非空字符串，并允许配置其他合法 JSON 键值对。
+- `instances[0].options` 必须是 JSON 对象；`model` 可选，提供时必须是非空字符串，并允许配置其他合法 JSON 键值对。
 - 不允许接受无法转换为单实例 `ai-proxy` 语义的多实例策略，不得静默丢弃用户配置。
 
 第一期 provider 允许列表由 dashboard 代码显式维护，不直接等同于 APISIX 当前支持的全部 provider。APISIX 后续新增 provider 或升级版本时不能自动进入产品 API，必须同步增加 Pydantic 类型、凭证处理和发布转换测试后才能开放。
@@ -154,10 +153,11 @@ unique(gateway, backend, stage)
 | --- | --- |
 | `name` | 必填，非空字符串；作为未来开放多 instance 时的稳定标识 |
 | `provider` | 必填，只允许第一期 provider 允许列表 |
-| `weight` | 必填且固定为 `1` |
+| `weight` | 可选，未提供时默认 `0`；提供时必须是非负整数 |
 | `auth.header` | 允许配置字符串 Header 映射；Web 展示时对 Header value 脱敏 |
-| `options` | 必填 JSON 对象；`model` 必填且为非空字符串；允许配置其他合法 JSON 键值对 |
+| `options` | 必填 JSON 对象；`model` 可选，提供时必须为非空字符串；允许配置其他合法 JSON 键值对 |
 | `override.endpoint` | 仅 `openai-compatible` 允许且必须提供 |
+| `model_endpoint` | 可选；dashboard 编辑和连接测试使用，controller 发布时移除 |
 
 `options` 的 key 必须是合法 JSON 字符串，value 可以是字符串、数字、布尔值、`null`、对象或数组。Pydantic `options` 类型允许额外字段；dashboard 必须完整保存，controller 必须原样透传，不能丢弃除 `model` 外的配置。
 
@@ -170,8 +170,9 @@ unique(gateway, backend, stage)
 
 Model BackendConfig 顶层只开放 `timeout`：
 
-- `timeout` 使用 APISIX 语义，单位为毫秒，必须是正整数。
-- `AIBackendConfig` 在用户未提供时显式写入默认值 `30000`。
+- `timeout` 使用 dashboard 语义，单位为秒，必须是正整数。
+- `AIBackendConfig` 在用户未提供时显式写入默认值 `30`。
+- controller 发布时将 `timeout` 转换为 APISIX 使用的毫秒值。
 - `ssl_verify` 固定为 `true`，不允许通过 Model BackendConfig 关闭。
 - `keepalive`、`keepalive_timeout`、`keepalive_pool` 使用 APISIX 默认值，第一期不对用户开放。
 - `logging` 不属于用户 BackendConfig，由 controller 固定生成 `summaries=true`、`payloads=false`。

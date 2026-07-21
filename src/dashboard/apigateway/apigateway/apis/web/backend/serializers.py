@@ -68,9 +68,11 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
         config = config_slz.validated_data
         if (
             config["instances"][0]["provider"] == AIBackendProviderEnum.OPENAI_COMPATIBLE.value
-            and "model_endpoint" not in config
+            and "model_endpoint" not in config["instances"][0]
         ):
-            raise serializers.ValidationError({"config": {"model_endpoint": _("必须提供模型列表地址。")}})
+            raise serializers.ValidationError(
+                {"config": {"instances": [{"model_endpoint": _("必须提供模型列表地址。")}]}}
+            )
 
         backend_id = attrs.get("backend_id")
         if backend_id is not None:
@@ -146,7 +148,7 @@ def _get_ai_backend_destination_identity(config):
     return (
         provider,
         _get_url_origin(instance.get("override", {}).get("endpoint")),
-        _get_url_origin(config.get("model_endpoint")),
+        _get_url_origin(instance.get("model_endpoint")),
     )
 
 

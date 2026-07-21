@@ -62,12 +62,14 @@ logger = logging.getLogger(__name__)
 
 def _build_ai_proxy_plugins(config: Dict[str, Any]) -> Dict[str, Plugin]:
     common_config = {
-        "timeout": config.get("timeout", 30000),
+        "timeout": config.get("timeout", 30) * 1000,
         "ssl_verify": True,
         "logging": {"summaries": True, "payloads": False},
     }
 
-    instances = config["instances"]
+    instances = [
+        {key: value for key, value in instance.items() if key != "model_endpoint"} for instance in config["instances"]
+    ]
     if len(instances) > 1:
         plugin_config: Dict[str, Any] = {"instances": instances, **common_config}
         for key in ("balancer", "fallback_strategy"):

@@ -179,7 +179,7 @@ class TestBackendApi:
         stored_instance["provider"] = "openai-compatible"
         stored_instance["auth"]["header"] = {"X-Api-Key": "secret"}
         stored_instance["override"] = {"endpoint": "https://example.com/v1"}
-        stored_config["model_endpoint"] = "https://example.com/models"
+        stored_instance["model_endpoint"] = "https://example.com/models"
         BackendConfig.objects.create(
             gateway=fake_stage.gateway,
             backend=backend,
@@ -191,7 +191,7 @@ class TestBackendApi:
         instance["provider"] = "openai-compatible"
         instance.pop("auth")
         instance["override"] = {"endpoint": "https://example.com/v1"}
-        config["model_endpoint"] = "https://example.com/models"
+        instance["model_endpoint"] = "https://example.com/models"
 
         response = request_view(
             "PUT",
@@ -422,7 +422,7 @@ class TestBackendConnectivityApi:
         )
         http_get = _mock_model_response(mocker, {"data": [{"id": "custom-model"}]})
         model_endpoint = "https://catalog.example.com/custom/models?api-version=2026-01-01"
-        config["model_endpoint"] = model_endpoint
+        instance["model_endpoint"] = model_endpoint
 
         response = request_view(
             "POST",
@@ -468,7 +468,7 @@ class TestBackendConnectivityApi:
         instance = config["instances"][0]
         instance["provider"] = "openai-compatible"
         instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions"}
-        config["model_endpoint"] = "https://models.example.com/v1/models"
+        instance["model_endpoint"] = "https://models.example.com/v1/models"
         mocker.patch(
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("169.254.169.254", 443))],
@@ -493,7 +493,7 @@ class TestBackendConnectivityApi:
         instance = config["instances"][0]
         instance["provider"] = "openai-compatible"
         instance["override"] = {"endpoint": "https://models.internal.example/v1/chat/completions"}
-        config["model_endpoint"] = "https://models.internal.example/v1/models"
+        instance["model_endpoint"] = "https://models.internal.example/v1/models"
         mocker.patch(
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("10.0.0.1", 443))],
@@ -518,7 +518,7 @@ class TestBackendConnectivityApi:
         instance = config["instances"][0]
         instance["provider"] = "openai-compatible"
         instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions"}
-        config["model_endpoint"] = "https://models.example.com/v1/models"
+        instance["model_endpoint"] = "https://models.example.com/v1/models"
         mocker.patch(
             "socket.getaddrinfo",
             return_value=[(10, 1, 6, "", ("2001:4860:4860::abcd", 443, 0, 0))],
@@ -604,7 +604,7 @@ class TestBackendConnectivityApi:
         instance["provider"] = "openai-compatible"
         instance["auth"]["header"]["Authorization"] = "Be****et"
         instance["override"] = {"endpoint": "https://attacker.example.com/v1"}
-        config["model_endpoint"] = "https://attacker.example.com/models"
+        instance["model_endpoint"] = "https://attacker.example.com/models"
         http_get = _mock_model_response(mocker, {"data": []})
 
         response = request_view(

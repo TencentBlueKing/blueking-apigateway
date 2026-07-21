@@ -29,7 +29,7 @@ def get_ai_backend_model_ids(config: dict) -> list[str]:
     provider = instance["provider"]
     endpoint = AI_PROVIDER_MODELS_ENDPOINTS.get(provider)
     if endpoint is None:
-        endpoint = config["model_endpoint"]
+        endpoint = instance["model_endpoint"]
         _resolve_endpoint(endpoint)
 
     headers = {
