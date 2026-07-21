@@ -6,9 +6,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from apigateway.common.security import is_forbidden_host
 from apigateway.core.constants import (
     AI_BACKEND_BUILTIN_PROVIDERS,
+    STAGE_VAR_PATTERN,
     AIBackendProviderEnum,
     BackendKindEnum,
 )
+
+_FORBIDDEN_AI_BACKEND_HEADERS = frozenset({"host", "content-length", "transfer-encoding", "connection"})
 
 
 def mask_header_value(value: str) -> str:
@@ -20,6 +23,16 @@ def _validate_object_keys(data: dict[str, Any], *, allowed: set[str], required: 
         raise ValueError(f"{path}: missing required field: {min(missing)}")
     if unknown := data.keys() - allowed:
         raise ValueError(f"{path}: unknown field: {min(unknown)}")
+
+
+def _contains_stage_var(value: Any) -> bool:
+    if isinstance(value, str):
+        return STAGE_VAR_PATTERN.search(value) is not None
+    if isinstance(value, dict):
+        return any(_contains_stage_var(key) or _contains_stage_var(item) for key, item in value.items())
+    if isinstance(value, list):
+        return any(_contains_stage_var(item) for item in value)
+    return False
 
 
 class StandardBackendConfig(BaseModel):
@@ -70,6 +83,13 @@ class AIBackendConfig(BaseModel):
     model_endpoint: str | None = None
     instances: list[dict[str, Any]] = Field(min_length=1, max_length=1)
 
+    @model_validator(mode="before")
+    @classmethod
+    def reject_stage_vars(cls, data: Any) -> Any:
+        if _contains_stage_var(data):
+            raise ValueError("AI backend config must not contain environment variables")
+        return data
+
     @field_validator("instances")
     @classmethod
     def validate_instances(cls, instances: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -110,6 +130,8 @@ class AIBackendConfig(BaseModel):
         normalized: set[str] = set()
         for key in headers:
             normalized_key = key.casefold()
+            if normalized_key in _FORBIDDEN_AI_BACKEND_HEADERS:
+                raise ValueError(f"{path}.header: header is forbidden: {key}")
             if normalized_key in normalized:
                 raise ValueError(f"{path}.header: duplicate header: {key}")
             normalized.add(normalized_key)

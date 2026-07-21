@@ -414,11 +414,7 @@ class TestBackendConnectivityApi:
         config = _ai_config(fake_stage.id)
         instance = config["instances"][0]
         instance["provider"] = "openai-compatible"
-        instance["auth"]["header"] = {
-            "X-Api-Key": "secret",
-            "Host": "internal.example",
-            "Content-Length": "999",
-        }
+        instance["auth"]["header"] = {"X-Api-Key": "secret"}
         instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions?api-version=2026-01-01"}
         resolver = mocker.patch(
             "socket.getaddrinfo",
