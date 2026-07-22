@@ -140,8 +140,10 @@ class ReleasedResourceHandler:
         released_stage_names = Release.objects.get_resource_version_released_stage_names(resource_version_ids)
 
         # 按照资源版本从小到大排序，可使最新版本数据覆盖前面版本的数据
-        released_resources = ReleasedResource.objects.filter(resource_id__in=resource_ids).order_by(
-            "resource_id", "resource_version_id"
+        released_resources = (
+            ReleasedResource.objects.filter(resource_id__in=resource_ids)
+            .select_related("gateway")
+            .order_by("resource_id", "resource_version_id")
         )
 
         doc_links = {}

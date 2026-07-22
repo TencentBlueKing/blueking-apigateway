@@ -86,7 +86,7 @@ class StageQuerySetMixin:
     ),
 )
 class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
-    queryset = Stage.objects.order_by("id")
+    queryset = Stage.objects.select_related("gateway").order_by("id")
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()

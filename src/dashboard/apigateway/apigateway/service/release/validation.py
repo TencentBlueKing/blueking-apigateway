@@ -216,7 +216,7 @@ class PublishValidator:
                 scope_id=self.stage.id,
                 scope_type=PluginBindingScopeEnum.STAGE.value,
             )
-            .prefetch_related("config")
+            .select_related("config__type")
             .all()
         )
         stage_plugin_type_set = set()
