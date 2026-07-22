@@ -36,6 +36,7 @@ DB storage ──publish──▶ PluginConvertorFactory convertor ──▶ API
 | **Checker** | `service/plugin/checker.py` (`PluginConfigYamlChecker`) | Plugin-specific validation with human-readable error messages |
 | **Validator** | `service/plugin/validator.py` (`PluginConfigYamlValidator`) | Orchestrates checker + JSON Schema validation |
 | **Service-layer convertor** | `service/plugin/convertor.py` (`PluginConvertorFactory`) | Converts DB storage format to APISIX-native config for publishing. New plugins use `DefaultPluginConvertor` (identity) automatically |
+| **Compatibility policy** | `service/plugin/compatibility.py` | Defines AI-only, controller-managed, and AI-compatible plugin sets plus resource-kind compatibility |
 | **API-layer convertor (LEGACY)** | `apis/web/plugin/convertor.py` (`PluginConfigYamlConvertor`) | **Legacy only** — used by `bk-rate-limit` and `bk-ip-restriction`. Do NOT add new plugins here |
 | **Release mapping** | `controller/release_data.py` (`PluginData`) | Maps plugin type_code to APISIX plugin name (only needed when they differ) |
 
@@ -78,6 +79,28 @@ There are two independent convertor layers.
 > The form data = DB storage = APISIX config. `DefaultPluginConvertor` (identity) handles it automatically.
 >
 > `PluginConfigYamlConvertor` is frozen — it only serves 2 legacy plugins and must not be extended.
+
+### AI Gateway Compatibility Boundaries
+
+Plugin compatibility is not determined by fixture visibility alone. Keep these
+current boundaries aligned with `service/plugin/compatibility.py` and its tests:
+
+- `AI_ONLY_PLUGIN_CODES` are exposed only for AI resources.
+- `CONTROLLER_MANAGED_PLUGIN_CODES` such as `ai-proxy` and `ai-proxy-multi`
+  cannot be user-bound; the controller generates them during publication.
+- An AI resource accepts only `AI_COMPATIBLE_PLUGIN_CODES`. Keep list filtering
+  aligned with those policy sets, and reuse
+  `is_plugin_compatible_with_resource_kind()` at create, update, and
+  resource-import validation boundaries so one entrypoint cannot bypass the
+  policy.
+- Stage plugin configuration remains permissive. When publishing an AI Service,
+  `ServiceConvertor` filters incompatible Stage plugins and logs the skipped
+  type codes without configs or credentials.
+
+When adding a plugin, decide explicitly whether it is AI-only, AI-compatible,
+or standard-only. Update the policy set and
+`tests/service/plugin/test_compatibility.py` only when that classification is
+part of the requested product contract.
 
 ## How to Add a New Plugin
 
@@ -180,10 +203,8 @@ class TestMyPluginChecker:
 
 Run tests:
 ```bash
-cd src/dashboard/apigateway && \
-  set -a; . apigateway/conf/unittest_env; set +a; \
-  python3 -m pytest --nomigrations --ds apigateway.settings -x -q --tb=short \
-  apigateway/tests/service/plugin/test_checkers.py
+cd src/dashboard
+uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -x -q --tb=short apigateway/tests/service/plugin/test_checkers.py'
 ```
 
 ### Checklist
@@ -193,6 +214,8 @@ cd src/dashboard/apigateway && \
 - [ ] Add `plugin.plugintype` entry in `fixtures/plugins.yaml`
 - [ ] Add checker in `service/plugin/checker.py` and register in `type_code_to_checker`
 - [ ] Add tests for the checker in `tests/service/plugin/test_checkers.py`
+- [ ] Classify AI compatibility when the product contract requires it; update
+  `service/plugin/compatibility.py` and its tests together
 - [ ] Verify: no API-layer convertor needed (new plugin rule)
 - [ ] Verify: no service-layer convertor needed (store APISIX-native format)
 - [ ] Verify: no `release_data.py` mapping needed (plugin name = APISIX name)

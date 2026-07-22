@@ -6,14 +6,43 @@ applies.
 
 ## Scope
 
+- Read this file through **Post-Implementation Requirements** before running
+  commands; the runtime and final gates are documented after the architecture.
 - Work from `src/dashboard` unless a command says otherwise.
 - Do not touch sibling projects (`src/dashboard-front`, `src/core-api`,
   `src/mcp-proxy`, `src/esb`) for dashboard-only requests.
-- Before changing code, read the target file, its immediate caller or URL route,
-  the serializer/form it depends on, and the nearest tests.
+- Start from the exact path, endpoint, traceback, SQL, commit, PR, or report named
+  by the user and verify it against the active checkout.
+- Before changing code, read the target file and, as applicable, its immediate
+  caller or URL route, serializer/form, and nearest tests.
 - Keep changes surgical. Do not reformat or refactor adjacent code unless the
   requested change requires it.
+- During refactors, preserve useful comments and keep unchanged control flow in
+  contiguous blocks when that makes the diff easier to review.
 - This subproject is Python-only. Frontend code lives in `src/dashboard-front`.
+
+## Command Roots And Runtime
+
+Follow the repository-root checkout/worktree rules before selecting a branch or
+PR. Do not hard-code workspace prefixes such as `/root/workspace` or
+`/data/workspace`; derive the dashboard root from the active checkout:
+
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+DASHBOARD_ROOT="$REPO_ROOT/src/dashboard"
+cd "$DASHBOARD_ROOT"
+```
+
+Run repository-level `git`, `gh`, and worktree commands from `REPO_ROOT`. Run
+dashboard `make`, `uv`, lint, test, and management commands from
+`DASHBOARD_ROOT`. Use `uv run` for Python-backed Make targets so a global pyenv,
+stale `.venv`, or missing shell executable is not mistaken for a code failure.
+
+For direct Django pytest, use the wrapper in **Testing**; plain pytest does not
+load `apigateway/conf/unittest_env` or the required Django settings. If a command
+reports a missing executable, wrong Python version, unconfigured Django settings,
+or an unrelated PR, stop and re-check the worktree, command root, and runtime
+before interpreting the result as a product failure.
 
 ## Project Overview
 
@@ -51,6 +80,10 @@ Current stack, from the checked-in files:
 - `apigateway/apigateway/fixtures/plugins.yaml` - plugin type, schema, and form fixtures.
 - `apigateway/apigateway/apis/web/plugin/AGENTS.md` - local plugin subsystem guide; read it before changing plugins.
 - `apigateway/apigateway/tests/` - pytest suite, mirroring source structure.
+- Repository root `docs/ai-gateway-models.md` - AI Gateway domain contract.
+- Repository root
+  `docs/superpowers/specs/2026-07-21-ai-backend-web-protocol-decoupling-design.md`
+  describes the current AI Backend Web/storage/publish protocol design.
 
 ## Architecture
 
@@ -217,6 +250,42 @@ instead of surface-specific view flow.
 - Settings are selected by `BKPAAS_ENVIRONMENT`, loading
   `apigateway.conf.settings_<environment>`; default is `dev`.
 
+## AI Gateway And Backend Configuration
+
+Read both AI Gateway documents listed in **Important Paths** before changing AI
+models, APIs, connectivity checks, plugin compatibility, or publishing. Current
+code and tests take precedence when an older plan or review report disagrees.
+
+- `Gateway.kind` is stored as the numeric `GatewayKindEnum`; API names use
+  `GatewayKindNameEnum` conversion. `Backend.kind` and `Resource.kind` use the
+  string values `standard` and `ai`. Do not repurpose transport `type` fields as
+  kind discriminators.
+- Keep three representations separate: the flat Web DTO and
+  `AIBackendWebConfigAdapter`, the normalized stored `AIBackendConfig`, and the
+  APISIX plugin config compiled by `ServiceConvertor`. Open/v2 automation APIs
+  intentionally accept the stored protocol rather than the Web DTO.
+- `core/ai_backend.py` is the runtime-critical built-in provider registry used
+  by Web conversion, connectivity tests, and publishing. A provider change must
+  update choices, registry entries, adapter rules, tests, and API documentation.
+- Store built-in providers as their product identity. Convert compatible built-ins
+  to APISIX `openai-compatible`, add `override.endpoint`, strip
+  `model_endpoint`, and convert timeout seconds to milliseconds only at the
+  publish boundary.
+- Web and automation inputs are single-instance in the first phase, while the
+  core config and converter support multiple instances. Keep that external
+  restriction out of the core model.
+- `BackendConfig.config` transparently encrypts AI config at the ORM persistence
+  boundary. Web and audit outputs must mask credentials; API responses, logs,
+  exceptions, and publish history must not expose plaintext or encrypted
+  payloads. Generated APISIX/etcd runtime config is a credential trust boundary.
+- Resource plugin compatibility is enforced across list, bind/update, and
+  import paths. Stage configuration stays permissive; AI Service publishing
+  filters incompatible Stage plugins. `ai-proxy` and `ai-proxy-multi` are
+  controller-managed and must not be user-bound.
+- In controller convertor changes, preserve the standard Service/Route blocks
+  and their comments; isolate AI-specific behavior in narrow branches unless a
+  behavior change requires a broader refactor.
+
 ## Runtime Setup
 
 Use `uv` as the source of truth for the environment.
@@ -292,9 +361,9 @@ For plugin type/schema/form maintenance:
 
 ```bash
 cd src/dashboard
-make load_fixtures
+uv run make load_fixtures
 # edit through Django admin or update fixtures intentionally
-make dump_fixtures
+uv run make dump_fixtures
 ```
 
 New APISIX plugins should normally store APISIX-native YAML and should not add
@@ -308,17 +377,17 @@ activated through `editionctl`.
 
 ```bash
 cd src/dashboard
-make edition
-make edition-ee
-make edition-te
-make edition-develop
-make edition-reset
-make edition-modules
+uv run make edition
+uv run make edition-ee
+uv run make edition-te
+uv run make edition-develop
+uv run make edition-reset
+uv run make edition-modules
 ```
 
-CI runs lint and tests after `make edition-ee`. Run `make edition-ee` before
-local lint or test gates unless you are intentionally checking a different
-edition.
+CI runs lint and tests after the `edition-ee` target. Run
+`uv run make edition-ee` before local lint or test gates unless you are
+intentionally checking a different edition.
 
 ## Linting
 
@@ -333,14 +402,15 @@ Commands:
 
 ```bash
 cd src/dashboard
-make lint
-make lint-check
+uv run make lint-check
+uv run make lint
 ```
 
-Use `make lint` for local code edits because it auto-formats and fixes what it
-can. Use `make lint-check` when you need the CI-style non-mutating check; note
-that `lint-check` does not run `ruff format --check`, so formatting is enforced
-locally by `make lint` or pre-commit rather than by this CI step.
+Use `uv run make lint-check` as the default agent gate because it is
+non-mutating. `uv run make lint` formats and fixes files; run it only when those
+edits are intended, then inspect the resulting diff. `lint-check` does not run
+`ruff format --check`, so use pre-commit or an explicit non-mutating Ruff format
+check when formatting evidence is required.
 
 ## Testing
 
@@ -348,8 +418,8 @@ The normal full test gate is:
 
 ```bash
 cd src/dashboard
-make edition-ee
-make test
+uv run make edition-ee
+uv run make test
 ```
 
 `make test` runs pytest with `--reuse-db`, `-n auto`, and `--dist loadscope`.
@@ -358,9 +428,9 @@ Useful variants:
 
 ```bash
 cd src/dashboard
-make test-lf
-make test-cov
-make test-pdb
+uv run make test-lf
+uv run make test-cov
+uv run make test-pdb
 ```
 
 Focused pytest pattern for agents:
@@ -400,14 +470,14 @@ Available commands:
 
 ```bash
 cd src/dashboard
-make lint-openapi
-make lint-openapi-help
-make lint-openapi SCOPE=v2_open
-make lint-openapi SCOPE=v2_inner
-make lint-openapi SCOPE=v2_sync
-make lint-openapi API=v2_sync_gateway
-make lint-openapi JSON=1
-make lint-openapi FIX=1
+uv run make lint-openapi
+uv run make lint-openapi-help
+uv run make lint-openapi SCOPE=v2_open
+uv run make lint-openapi SCOPE=v2_inner
+uv run make lint-openapi SCOPE=v2_sync
+uv run make lint-openapi API=v2_sync_gateway
+uv run make lint-openapi JSON=1
+uv run make lint-openapi FIX=1
 ```
 
 For changed or new endpoints, update the matching markdown doc with method,
@@ -436,9 +506,9 @@ and local artifacts before building.
 
 ```bash
 cd src/dashboard
-make image-ee
-make image-te
-make dev-ee-image
+uv run make image-ee
+uv run make image-te
+uv run make dev-ee-image
 ```
 
 Runtime scripts source `${BK_HOME}/etc/bk_apigateway/bk_apigateway.env` when it
@@ -466,11 +536,11 @@ For code changes:
 1. Add or update focused tests under `apigateway/apigateway/tests/`.
 2. Update API docs and gateway YAML definitions when an API contract changes.
 3. Run the narrow relevant pytest target first.
-4. Run `make edition-ee && make lint-check` for the CI-style lint gate, or
-   `make edition-ee && make lint` first if you want auto-format/fix behavior.
+4. Run `uv run make edition-ee && uv run make lint-check` for the CI-style lint
+   gate. Use `uv run make lint` only when auto-format/fix changes are intended.
    This lint gate includes the OpenAPI consistency check; use
-   `make lint-openapi` only when you need a focused rerun of that checker.
-5. Run `make edition-ee && make test` for broad code changes or when shared
-   behavior is touched.
+   `uv run make lint-openapi` only when you need a focused rerun of that checker.
+5. Run `uv run make edition-ee && uv run make test` for broad code changes or
+   when shared behavior is touched.
 
 If a required verification command is skipped, say exactly why.
