@@ -48,6 +48,7 @@ result = client.api.get_released_resources(
             {
                 "id": 3,
                 "name": "echo",
+                "kind": "standard",
                 "description": "",
                 "method": "GET",
                 "url": "https://bkapi.example.com/api/echo/prod/echo/",
@@ -85,6 +86,7 @@ data.results 中字段说明
 | ---------------------- | -------- | ------------------------------------------------------------------- |
 | id                     | int      | ID                                                                  |
 | name                   | string   | 资源名称                                                            |
+| kind                   | string   | 资源类型，`standard`：普通 API，`ai`：模型代理 API                    |
 | description            | string   | 资源描述                                                            |
 | method                 | string   | 资源请求方法                                                        |
 | url                    | string   | 资源请求地址                                                        |

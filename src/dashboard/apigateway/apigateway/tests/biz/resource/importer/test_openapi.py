@@ -24,6 +24,7 @@ from openapi_spec_validator.versions import get_spec_version
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.openapi import OpenAPIImportManager
+from apigateway.biz.openapi.schema import openapi_validator_mapping
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.core.constants import DEFAULT_BACKEND_NAME
 from apigateway.core.models import Backend, Gateway
@@ -767,6 +768,44 @@ class TestOpenAPIImportManagerParse:
         manager.version = get_spec_version(data)
         return manager
 
+    @pytest.mark.parametrize("openapi_version", ["2.0", "3.0.1", "3.1.0"])
+    @pytest.mark.parametrize("resource_kind", [None, "standard"])
+    def test_schema_rejects_name_only_backend_for_standard_resource(self, openapi_version, resource_kind):
+        data = self._name_only_backend_document(openapi_version, resource_kind)
+
+        errors = list(openapi_validator_mapping[get_spec_version(data)].cls(data).iter_errors())
+
+        assert errors
+
+    @pytest.mark.parametrize("openapi_version", ["2.0", "3.0.1", "3.1.0"])
+    def test_schema_accepts_name_only_backend_for_ai_resource(self, openapi_version):
+        data = self._name_only_backend_document(openapi_version, "ai")
+
+        errors = list(openapi_validator_mapping[get_spec_version(data)].cls(data).iter_errors())
+
+        assert not errors
+
+    @staticmethod
+    def _name_only_backend_document(openapi_version, resource_kind):
+        extension = {"backend": {"name": "openai-primary"}}
+        if resource_kind is not None:
+            extension["kind"] = resource_kind
+
+        version = {"swagger": openapi_version} if openapi_version == "2.0" else {"openapi": openapi_version}
+        return {
+            **version,
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/chat": {
+                    "post": {
+                        "operationId": "chat",
+                        "responses": {"200": {"description": "OK"}},
+                        "x-bk-apigateway-resource": extension,
+                    }
+                }
+            },
+        }
+
     def test_parse_swagger2_dict(self):
         data = {
             "swagger": "2.0",
@@ -958,6 +997,22 @@ paths:
 
 
 class TestOpenAPIExporter:
+    def test_generate_ai_resource_extension(self, fake_resource_dict):
+        resource = dict(fake_resource_dict)
+        resource.update(
+            {
+                "kind": "ai",
+                "method": "POST",
+                "backend": {"name": "openai-primary", "config": {}},
+            }
+        )
+
+        operation = BaseExporter()._gen_swagger_paths([resource])[resource["path"]]["post"]
+        extension = operation["x-bk-apigateway-resource"]
+
+        assert extension["kind"] == "ai"
+        assert extension["backend"] == {"name": "openai-primary"}
+
     def test_get_swagger_by_paths(self):
         paths = {
             "/user": {

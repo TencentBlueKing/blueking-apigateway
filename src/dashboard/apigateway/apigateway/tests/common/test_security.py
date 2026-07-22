@@ -37,8 +37,11 @@ class TestIsForbiddenHost:
             ("example.com:abc", True),
             ("example.com:22", True),
             ("192.168.1.1:3306", True),
+            ("[2001:4860:4860::8888]:22", True),
             ("app.example.com:8080", False),
+            ("2001:4860:4860::8888", False),
             ("localhost", True),
+            ("LOCALHOST", True),
             ("127.0.0.1", True),
             ("0.0.0.0", True),
         ]

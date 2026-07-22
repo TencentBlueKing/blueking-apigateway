@@ -25,6 +25,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
 )
@@ -44,9 +45,7 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
-from apigateway.components.bkuser import query_display_names_for_readonly
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewayKindNameEnum, GatewayStatusEnum, convert_gateway_kind_to_name
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
     build_mcp_server_detail_url,
@@ -67,23 +66,10 @@ def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
     return context.get("categories", {}).get(obj.id, [])
 
 
-def _get_gateway_maintainers_display_names(obj) -> List[str]:
-    if not settings.ENABLE_MULTI_TENANT_MODE:
-        return obj.maintainers
-
-    # 已知问题：list 场景仍会在序列化阶段按网关同步查询 bk-user。
-    # 这次先保留现状，后续如需优化再改为视图层批量预取。
-    tenant_id = get_tenant_id_for_gateway_maintainers(obj.tenant_mode, obj.tenant_id)
-    try:
-        return query_display_names_for_readonly(tenant_id, obj.maintainers)
-    except Exception:  # pylint: disable=broad-except
-        logger.exception("failed to query gateway maintainer display names: gateway_id=%s", obj.id)
-        return obj.maintainers
-
-
 class GatewayListInputSLZ(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListInputSLZ"
@@ -95,12 +81,20 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return _get_gateway_maintainers_display_names(obj)
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.tenant_mode,
+            obj.tenant_id,
+            obj.maintainers,
+        )
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
@@ -112,12 +106,20 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return _get_gateway_maintainers_display_names(obj)
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.tenant_mode,
+            obj.tenant_id,
+            obj.maintainers,
+        )
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayRetrieveOutputSLZ"
@@ -408,6 +410,10 @@ class MCPServerBaseSLZ(serializers.Serializer):
     )
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方")
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
@@ -420,6 +426,11 @@ class MCPServerBaseSLZ(serializers.Serializer):
 
     def get_categories(self, obj) -> List[Dict[str, str]]:
         return _get_categories_from_context(self.context, obj)
+
+    def get_is_official(self, obj) -> bool:
+        return any(
+            cat["name"] == OFFICIAL_MCP_CATEGORY_NAME for cat in _get_categories_from_context(self.context, obj)
+        )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
@@ -787,15 +798,6 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
     )
     time_start = TimestampField(required=True, help_text="开始时间")
     time_end = TimestampField(required=True, help_text="结束时间")
-    offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
-    limit = serializers.IntegerField(
-        label="限制条数",
-        required=False,
-        min_value=1,
-        max_value=100,
-        default=10,
-        help_text="限制条数",
-    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListInputSLZ"

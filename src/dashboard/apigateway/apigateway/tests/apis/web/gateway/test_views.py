@@ -22,7 +22,7 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
-from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
@@ -76,6 +76,57 @@ class TestGatewayListCreateApi:
         assert auth_config["allow_delete_sensitive_params"] is False
 
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
+
+    def test_create_and_filter_ai_gateway(self, request_view, unique_gateway_name, default_data_plane):
+        response = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data={
+                "name": unique_gateway_name,
+                "description": "AI gateway",
+                "maintainers": ["admin"],
+                "is_public": False,
+                "kind": GatewayKindEnum.AI.value,
+                "tenant_mode": "single",
+                "tenant_id": "default",
+            },
+        )
+
+        assert response.status_code == 201
+        gateway = Gateway.objects.get(name=unique_gateway_name)
+        assert gateway.kind == GatewayKindEnum.AI.value
+
+        response = request_view(
+            method="GET",
+            view_name="gateways.list_create",
+            data={"kind": GatewayKindEnum.AI.value},
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["data"]["results"]] == [gateway.id]
+
+    def test_create_ai_gateway_rejects_older_default_data_plane(
+        self, request_view, unique_gateway_name, default_data_plane
+    ):
+        DataPlane.objects.filter(id=default_data_plane.id).update(apisix_version="3.13")
+
+        response = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data={
+                "name": unique_gateway_name,
+                "description": "AI gateway",
+                "maintainers": ["admin"],
+                "is_public": False,
+                "kind": GatewayKindEnum.AI.value,
+                "tenant_mode": "single",
+                "tenant_id": "default",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "APISIX 3.16 or later" in response.json()["error"]["message"]
+        assert not Gateway.objects.filter(name=unique_gateway_name).exists()
 
     def test_create_programmable_gateway_without_repo_authorization__non_te(
         self,

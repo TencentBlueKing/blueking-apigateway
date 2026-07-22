@@ -1369,7 +1369,9 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
             },
         )
 
-        assert resp.status_code == 400
+        result = resp.json()
+        assert resp.status_code == 409
+        assert result["error"]["code"] == "CONFLICT"
         assert (
             MCPServerAppPermissionApply.objects.filter(
                 bk_app_code="test-app",

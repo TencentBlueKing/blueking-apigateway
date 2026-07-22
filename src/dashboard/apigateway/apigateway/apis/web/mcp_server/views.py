@@ -54,13 +54,14 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Stage
-from apigateway.service.resource_version import get_resource_names_set
+from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import now_datetime
 
 from .serializers import (
     GatewayMCPServerAppPermissionExportInputSLZ,
+    GatewayMCPServerAppPermissionExportOutputSLZ,
     GatewayMCPServerAppPermissionListInputSLZ,
     GatewayMCPServerAppPermissionListOutputSLZ,
     MCPServerAppPermissionAppCodeListInputSLZ,
@@ -686,7 +687,7 @@ class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
             return OKJsonResponse(data=data)
 
         changed_mcp_servers = []
-        valid_resource_names = get_resource_names_set(resource_version_id, raise_exception=True)
+        valid_resource_names = get_standard_resource_names_set(resource_version_id, raise_exception=True)
         for mcp_server in mcp_servers:
             mcp_server_resource_names = set(mcp_server.resource_names)
             changed_resource_names = mcp_server_resource_names - valid_resource_names
@@ -1287,7 +1288,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             queryset = queryset.filter(id__in=data["selected_ids"])
 
         permissions = list(queryset.order_by("mcp_server__name", "bk_app_code"))
-        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+        slz = GatewayMCPServerAppPermissionExportOutputSLZ(
             permissions,
             many=True,
             context={
@@ -1303,6 +1304,13 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         response = DownloadableResponse(content, filename=filename)
         response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
         return response
+
+    def _get_export_grant_type_display(self, grant_type: str) -> str:
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.GRANT.value:
+            return _("主动授权")
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.APPLY.value:
+            return _("申请审批")
+        return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(grant_type))
 
     def _get_csv_content(self, data):
         headers = [
@@ -1329,7 +1337,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
                 "applied_by": item["applied_by"],
                 "effective_time": item["effective_time"],
                 "handled_by": item["handled_by"],
-                "grant_type_display": item["grant_type_display"],
+                "grant_type_display": self._get_export_grant_type_display(item["grant_type"]),
             }
             for item in data
         ]

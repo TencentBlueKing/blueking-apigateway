@@ -21,6 +21,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
@@ -49,6 +50,16 @@ from .serializers import (
     StageStatusInputSLZ,
     StageVarsSLZ,
 )
+
+
+def _get_backend_config_dict(instance: BackendConfig) -> dict:
+    data = get_model_dict(instance)
+    data.pop("_config")
+    if instance.backend.is_ai:
+        data["config"] = serialize_ai_backend_config_for_web(instance)
+    else:
+        data["config"] = instance.get_config_for_display()
+    return data
 
 
 class StageQuerySetMixin:
@@ -367,9 +378,12 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
-        data_before = get_model_dict(instance)
+        data_before = _get_backend_config_dict(instance)
 
-        slz = self.get_serializer(data=request.data, context={"backend": instance.backend})
+        slz = self.get_serializer(
+            data=request.data,
+            context={"backend": instance.backend, "existing_config": instance.config},
+        )
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -383,7 +397,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
             instance_id=instance.id,
             instance_name=f"{instance.stage.name}:{instance.backend.name}",
             data_before=data_before,
-            data_after=get_model_dict(instance),
+            data_after=_get_backend_config_dict(instance),
         )
 
         username = request.user.username

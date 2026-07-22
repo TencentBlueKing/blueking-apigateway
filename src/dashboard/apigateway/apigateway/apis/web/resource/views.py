@@ -191,6 +191,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
     def _check_if_changed(self, input_data: Dict[str, Any], instance: Resource) -> bool:
         resource_fields = [
+            "kind",
             "name",
             "description",
             "method",
@@ -213,7 +214,10 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
         proxy = Proxy.objects.get(resource_id=instance.id)
         current_backend = {"id": proxy.backend.id, "config": proxy.config}
-        input_backend = {"id": input_data["backend"].id, "config": dict(input_data["backend_config"])}
+        input_backend = {
+            "id": input_data["backend"].id,
+            "config": dict(input_data["backend_config"]) if input_data["backend_config"] else {},
+        }
         if input_backend != current_backend:
             return True
 
@@ -719,7 +723,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
 class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """过滤出需要认证用户的资源列表"""
-        resources = list(self.get_queryset().values("id", "name"))
+        resources = list(self.get_queryset().values("id", "name", "kind"))
         resource_ids = list(map(operator.itemgetter("id"), resources))
         auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
 

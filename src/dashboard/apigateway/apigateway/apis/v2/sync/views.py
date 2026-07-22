@@ -180,6 +180,7 @@ class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
 class GatewayStageSyncViewSet(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         data_before = get_model_dict(instance) if instance else {}
@@ -636,7 +637,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             raise error_codes.NOT_FOUND.format(
                 _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
             )
-        resource_name_to_schema = ResourceVersionHandler().get_resource_name_to_schema_by_resource_version(
+        resource_name_to_schema = ResourceVersionHandler().get_standard_resource_name_to_schema_by_resource_version(
             validate_resource_version_id
         )
 

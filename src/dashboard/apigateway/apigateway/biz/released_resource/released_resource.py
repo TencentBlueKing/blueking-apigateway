@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.core.utils import get_path_display
 from apigateway.service.utils import get_resource_doc_link
@@ -36,6 +36,7 @@ class ReleasedResourceData:
     match_subpath: bool = field(default=False)
     enable_websocket: bool = field(default=False)
     is_public: bool = field(default=False)
+    kind: str = field(default=ResourceKindEnum.STANDARD.value)
     allow_apply_permission: bool = field(default=False)
     disabled_stages: List[str] = field(default_factory=list)
     contexts: Dict[str, Any] = field(default_factory=dict)
@@ -62,6 +63,7 @@ class ReleasedResourceData:
             match_subpath=released_resource_data.get("match_subpath", False),
             enable_websocket=released_resource_data.get("enable_websocket", False),
             is_public=released_resource_data["is_public"],
+            kind=released_resource_data.get("kind") or ResourceKindEnum.STANDARD.value,
             allow_apply_permission=released_resource_data.get("allow_apply_permission", True),
             disabled_stages=released_resource_data.get("disabled_stages") or [],
             contexts=released_resource_data["contexts"],
@@ -178,6 +180,18 @@ class ReleasedResourceHandler:
         if is_only_public:
             return list(filter(lambda resource: resource.is_public, resources))
         return resources
+
+    @staticmethod
+    def get_public_standard_released_resource_data_list(
+        gateway_id: int, stage_name: str, is_only_public: Optional[bool] = True
+    ) -> List[ReleasedResourceData]:
+        """获取网关环境下，已发布的普通资源数据"""
+        resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+            gateway_id,
+            stage_name,
+            is_only_public,
+        )
+        return [resource for resource in resources if resource.kind == ResourceKindEnum.STANDARD.value]
 
     @staticmethod
     def get_released_resource(gateway_id: int, stage_name: str, resource_name: str) -> Optional[ReleasedResource]:

@@ -17,12 +17,22 @@
 #
 
 from .backend import BackendHandler
+from .connectivity import (
+    AIBackendConnectivityError,
+    AIBackendEndpointError,
+    AIBackendModelEndpointRequiredError,
+    get_ai_backend_model_ids,
+)
 
 __all__ = [
     # constant
     # Enum
     # class
+    "AIBackendConnectivityError",
+    "AIBackendEndpointError",
+    "AIBackendModelEndpointRequiredError",
     "BackendHandler",
     # functions
+    "get_ai_backend_model_ids",
     # others
 ]

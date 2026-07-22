@@ -33,12 +33,14 @@ Current stack, from the checked-in files:
 
 ## Important Paths
 
-- `Makefile` - setup, lint, tests, edition switching, Docker image build, OpenAPI checks.
+- `Makefile` - setup, lint, tests, edition switching, Docker image build, OpenAPI consistency lint.
 - `pyproject.toml` - dependencies, ruff, mypy, pytest, import-linter contracts.
 - `uv.lock` - dependency lockfile; keep it in sync with `pyproject.toml`.
 - `Dockerfile` - production image, currently based on `hub.bktencent.com/blueking/python:3.14-tencentos4`.
 - `bin/start.sh` - Gunicorn entrypoint; keeps Prometheus multiprocess metrics in `/tmp/`.
 - `bin/start_celery.sh` and `bin/start_beat.sh` - Celery entrypoints; worker concurrency defaults to `12` and can be overridden with `BK_APIGW_CELERY_WORKER_CONCURRENCY`.
+- `scripts/check_api_consistency.py` - deterministic OpenAPI consistency lint for API code, YAML definitions, and docs.
+- `scripts/config.yaml` - OpenAPI consistency lint allowlists and special-case config.
 - `apigateway/manage.py` - Django management command entrypoint.
 - `apigateway/apigateway/urls.py` - top-level URL routing.
 - `apigateway/apigateway/conf/default.py` - base settings.
@@ -389,25 +391,30 @@ When changing an open API, keep these three surfaces aligned:
 - Gateway YAML definitions: `apigateway/apigateway/data/apigw-definitions/`.
 - Markdown docs: `apigateway/apigateway/data/apidocs/zh/`.
 
-Run the consistency checker:
+The consistency checker is a deterministic dashboard lint script at
+`scripts/check_api_consistency.py`. Both `make lint` and `make lint-check` run
+it by default. Use the dedicated target below when you want to rerun only this
+gate.
+
+Available commands:
 
 ```bash
 cd src/dashboard
-make check-openapi
-make check-openapi-help
-make check-openapi SCOPE=v2_open
-make check-openapi SCOPE=v2_inner
-make check-openapi SCOPE=v2_sync
-make check-openapi API=v2_sync_gateway
-make check-openapi JSON=1
-make check-openapi FIX=1
+make lint-openapi
+make lint-openapi-help
+make lint-openapi SCOPE=v2_open
+make lint-openapi SCOPE=v2_inner
+make lint-openapi SCOPE=v2_sync
+make lint-openapi API=v2_sync_gateway
+make lint-openapi JSON=1
+make lint-openapi FIX=1
 ```
 
 For changed or new endpoints, update the matching markdown doc with method,
 path, parameters or request body, response fields, status codes, and error
 examples. The frontend team uses these docs for integration. CI runs
-`make check-openapi` for dashboard changes, so API, YAML, serializer, and docs
-drift should be fixed before push.
+the same check through `make lint-check`, so keep API, YAML, serializer, and
+docs aligned before push.
 
 ## Response And Validation Patterns
 
@@ -461,9 +468,9 @@ For code changes:
 3. Run the narrow relevant pytest target first.
 4. Run `make edition-ee && make lint-check` for the CI-style lint gate, or
    `make edition-ee && make lint` first if you want auto-format/fix behavior.
-5. Run `make check-openapi` if any open API, YAML definition, serializer, or API
-   markdown doc changed; CI runs it for all dashboard changes.
-6. Run `make edition-ee && make test` for broad code changes or when shared
+   This lint gate includes the OpenAPI consistency check; use
+   `make lint-openapi` only when you need a focused rerun of that checker.
+5. Run `make edition-ee && make test` for broad code changes or when shared
    behavior is touched.
 
-If a verification command is skipped, say exactly why.
+If a required verification command is skipped, say exactly why.

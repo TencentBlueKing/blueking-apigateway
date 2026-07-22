@@ -307,6 +307,10 @@
             "descriptionEn": {
               "type": ["string", "null"]
             },
+            "kind": {
+              "type": "string",
+              "enum": ["standard", "ai"]
+            },
             "isPublic": {
               "type": "boolean"
             },
@@ -393,6 +397,17 @@
                     "type",
                     "statusCode"
                   ]
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
                 }
               ]
             },
@@ -432,7 +447,36 @@
                 "type": "string"
               }
             }
-          }
+          },
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "required": ["kind"],
+                  "properties": {
+                    "kind": {
+                      "enum": ["ai"]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "backend": {
+                      "not": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["name"]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       },
       "required": [

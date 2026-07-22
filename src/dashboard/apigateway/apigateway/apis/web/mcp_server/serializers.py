@@ -43,10 +43,48 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.django.translation import get_current_language_code
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
+from apigateway.core.models import Release
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_mcp_tool_resource_names(
+    resource_names: List[str], valid_resource_names: set[str], gateway_id: int, stage_id: int
+) -> None:
+    release = (
+        Release.objects.filter(
+            gateway_id=gateway_id,
+            stage_id=stage_id,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+        .select_related("resource_version")
+        .first()
+    )
+    ai_resource_names = (
+        {
+            resource["name"]
+            for resource in release.resource_version.data
+            if resource.get("kind") == ResourceKindEnum.AI.value
+        }
+        if release
+        else set()
+    )
+
+    # 必须遍历所有提交的资源检查 AI 类型，不能依赖 valid_resource_names 只包含普通 API 这一上游约定。
+    # 即使调用方错误地将 AI 资源放入 valid_resource_names，后端防御校验仍然需要拒绝保存。
+    for resource_name in resource_names:
+        if resource_name in ai_resource_names:
+            raise serializers.ValidationError(_("模型代理 API 不能作为 MCP Tool") + f": resource_name={resource_name}")
+
+    # 排除 AI 资源后，其余不在普通资源集合中的名称沿用原有“不存在或已失效”错误。
+    for resource_name in resource_names:
+        if resource_name not in valid_resource_names:
+            raise serializers.ValidationError(
+                _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                + f"resource_name={resource_name}"
+            )
 
 
 class MCPServerCategoryOutputSLZ(serializers.Serializer):
@@ -267,12 +305,12 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         if len(resource_names) != len(set(resource_names)):
             raise serializers.ValidationError(_("资源名称列表中不能存在重复的资源名称"))
 
-        for resource_name in resource_names:
-            if resource_name not in valid_resource_names:
-                raise serializers.ValidationError(
-                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                    + f"resource_name={resource_name}"
-                )
+        _validate_mcp_tool_resource_names(
+            resource_names,
+            valid_resource_names,
+            gateway_id=self.context["gateway"].id,
+            stage_id=self.initial_data["stage_id"],
+        )
         return resource_names
 
     def validate_tool_names(self, tool_names):
@@ -476,12 +514,12 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         if len(resource_names) != len(set(resource_names)):
             raise serializers.ValidationError(_("资源名称列表中不能存在重复的资源名称"))
 
-        for resource_name in resource_names:
-            if resource_name not in valid_resource_names:
-                raise serializers.ValidationError(
-                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                    + f"resource_name={resource_name}"
-                )
+        _validate_mcp_tool_resource_names(
+            resource_names,
+            valid_resource_names,
+            gateway_id=self.instance.gateway_id,
+            stage_id=self.instance.stage_id,
+        )
         return resource_names
 
     def validate_tool_names(self, tool_names):
@@ -1014,6 +1052,42 @@ class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
 
     def get_grant_type_display(self, obj):
         return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(obj.grant_type))
+
+
+class GatewayMCPServerAppPermissionExportOutputSLZ(GatewayMCPServerAppPermissionListOutputSLZ):
+    """网关下 MCPServer 应用权限导出输出序列化器"""
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionExportOutputSLZ"
+
+    def _convert_gateway_user_to_display_name(self, username: str) -> str:
+        if not username:
+            return ""
+
+        display_names = ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            self.context.get("gateway_tenant_mode"),
+            self.context.get("gateway_tenant_id"),
+            [username],
+        )
+        return display_names[0] if display_names else username
+
+    def get_applied_by(self, obj):
+        apply_record = self._get_apply_record(obj)
+        if apply_record:
+            # 申请审批的申请人属于应用租户，需按 bk_app_code 查询展示名
+            return ResourcePermissionHandler.convert_applied_by_to_display_name(
+                obj.bk_app_code,
+                apply_record.applied_by,
+                "",
+                "",
+                force_convert=True,
+            )
+
+        # 主动授权没有申请单，这里展示的是网关侧操作人
+        return self._convert_gateway_user_to_display_name(obj.updated_by or obj.created_by or "")
+
+    def get_handled_by(self, obj):
+        return self._convert_gateway_user_to_display_name(super().get_handled_by(obj))
 
 
 class GatewayMCPServerAppPermissionExportInputSLZ(GatewayMCPServerAppPermissionListInputSLZ):

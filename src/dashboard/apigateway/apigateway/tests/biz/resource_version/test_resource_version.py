@@ -26,7 +26,7 @@ from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, Ope
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
@@ -241,6 +241,35 @@ class TestResourceVersionHandler:
         resource_version_3 = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", created_time=now_datetime())
         result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
         assert result == resource_version_3.version
+
+    def test_get_standard_resource_name_to_schema_by_resource_version(self, fake_resource_version):
+        fake_resource_version.data = [
+            {"id": 1, "name": "legacy-resource"},
+            {"id": 2, "name": "empty-kind-resource", "kind": None},
+            {"id": 3, "name": "standard-resource", "kind": ResourceKindEnum.STANDARD.value},
+            {"id": 4, "name": "ai-resource", "kind": ResourceKindEnum.AI.value},
+        ]
+        fake_resource_version.save()
+        G(
+            OpenAPIResourceSchemaVersion,
+            resource_version=fake_resource_version,
+            schema=[
+                {"resource_id": 1, "schema": {"operationId": "legacy-resource"}},
+                {"resource_id": 2, "schema": {"operationId": "empty-kind-resource"}},
+                {"resource_id": 3, "schema": {"operationId": "standard-resource"}},
+                {"resource_id": 4, "schema": {"operationId": "ai-resource"}},
+            ],
+        )
+
+        result = ResourceVersionHandler.get_standard_resource_name_to_schema_by_resource_version(
+            fake_resource_version.id
+        )
+
+        assert result == {
+            "legacy-resource": {"operationId": "legacy-resource"},
+            "empty-kind-resource": {"operationId": "empty-kind-resource"},
+            "standard-resource": {"operationId": "standard-resource"},
+        }
 
     def test_is_resource_version_referenced_by_release(self, fake_gateway):
         rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")

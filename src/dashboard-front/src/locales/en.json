@@ -2540,7 +2540,7 @@
   "请求被拦截时返回的消息": "Message when rejected",
   "开发者中心": "Developer Center",
   "个人设置": "Personal Settings",
-  "显示仅存在文档更新的资源": "Show resources diff only in document update",
+  "隐藏仅文档更新的资源": "Hide resources with documentation-only updates",
   "不能包含 =, &, #, ?": "Cannot contain =, &, #, ?",
   "需要在开发者中心申请该网关API权限": "Need to apply for permission in developer center",
   "请先开启主动健康检查": "Please enable active health check first"

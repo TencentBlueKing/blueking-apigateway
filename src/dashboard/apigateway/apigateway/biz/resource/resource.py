@@ -58,6 +58,9 @@ class ResourceHandler:
         if condition.get("method"):
             queryset = queryset.filter(method__in=condition["method"].split(","))
 
+        if condition.get("kind"):
+            queryset = queryset.filter(kind=condition["kind"])
+
         if condition.get("backend_id"):
             resource_ids = Proxy.objects.filter(
                 resource__gateway_id=gateway_id, backend_id=condition["backend_id"]

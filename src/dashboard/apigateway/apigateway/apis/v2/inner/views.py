@@ -61,7 +61,12 @@ from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.constants import (
+    GatewayKindNameEnum,
+    GatewayStatusEnum,
+    PublishSourceEnum,
+    convert_gateway_kind_name_to_value,
+)
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils import time as time_utils
@@ -107,13 +112,14 @@ class GatewayListApi(generics.ListAPIView):
         - 1. 已启用
         - 2. 公开
         - 3. 已发布
-        - 4. 满足 name 过滤条件
+        - 4. 满足 name / kind 过滤条件
         """
         slz = serializers.GatewayListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         name = slz.validated_data.get("name")
         fuzzy = slz.validated_data.get("fuzzy")
+        kind = slz.validated_data.get("kind")
 
         queryset = GatewayHandler.list_public_released_gateways()
 
@@ -129,6 +135,12 @@ class GatewayListApi(generics.ListAPIView):
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
+
+        if kind:
+            kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
+            if kind == GatewayKindNameEnum.NORMAL.value:
+                kind_query |= Q(kind__isnull=True)
+            queryset = queryset.filter(kind_query)
 
         output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
@@ -593,6 +605,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
 class AppRequestLogListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
     serializer_class = serializers.AppRequestLogListInputSLZ
+    pagination_class = None
 
     _output_fields = [
         "request_id",
@@ -710,14 +723,16 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 is_deleted=False,
             )
             .order_by("-applied_time")
-            .values("mcp_server_id", "status", "handled_by")
+            .values("mcp_server_id", "status", "handled_by", "itsm_ticket_id")
         )
 
         mcp_server_permission_handled_by: Dict[int, str] = {}
+        mcp_server_permission_itsm_ticket_id: Dict[int, str] = {}
         for obj in mcp_server_permission_apply_status:
             mcp_server_permission_handled_by[obj["mcp_server_id"]] = obj["handled_by"]
             if not mcp_server_permission_status.get(obj["mcp_server_id"]):
                 mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
+                mcp_server_permission_itsm_ticket_id[obj["mcp_server_id"]] = obj.get("itsm_ticket_id") or ""
 
         # 3. 已有实际权限的 mcp_server，状态覆盖为 OWNED
         for mcp_server_id in granted_mcp_server_ids:
@@ -735,6 +750,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
             )
             handled_by = mcp_server_permission_handled_by.get(obj.id)
+            itsm_ticket_id = mcp_server_permission_itsm_ticket_id.get(obj.id, "")
 
             if permission_status in [
                 MCPServerPermissionStatusEnum.REJECTED.value,
@@ -754,6 +770,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "handled_by": [handled_by] if handled_by else obj.gateway.maintainers,
                         "mcp_server_id": obj.id,
                         "gateway_id": obj.gateway_id,
+                        "itsm_ticket_id": itsm_ticket_id,
                     },
                 }
             )

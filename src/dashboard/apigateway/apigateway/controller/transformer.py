@@ -19,6 +19,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
+from apigateway.apps.data_plane.constants import get_ai_gateway_apisix_version_error
 from apigateway.controller.convertor import (
     BkReleaseConvertor,
     RouteConvertor,
@@ -79,6 +80,11 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         publish_id: Optional[int] = None,
         revoke_flag: Optional[bool] = False,
     ):
+        if not revoke_flag and release.gateway.is_ai_gateway:
+            compatibility_error = get_ai_gateway_apisix_version_error(apisix_version)
+            if compatibility_error:
+                raise ValueError(compatibility_error)
+
         if release.resource_version.is_schema_v2 or revoke_flag:
             # note: revoke_flag is True, allow to use schema v1 to revoke resources
             self._release_data = ReleaseData(release)

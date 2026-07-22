@@ -26,9 +26,9 @@ from django.utils.translation import gettext as _
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.models import PluginType
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY
+from apigateway.core.constants import HTTP_METHOD_ANY, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.service.plugin import PluginConfigYamlValidator
+from apigateway.service.plugin import PluginConfigYamlValidator, is_plugin_compatible_with_resource_kind
 from apigateway.utils.list import get_duplicate_items
 
 from .schema import SchemaValidateErr
@@ -59,6 +59,7 @@ class ResourceImportValidator:
     def validate(self):
         self._validate_method_path()
         self._validate_method()
+        self._validate_kind()
         self._validate_name()
         self._validate_match_subpath()
         self._validate_resource_count()
@@ -66,6 +67,7 @@ class ResourceImportValidator:
         self._validate_label_count()
         self._validate_label_name()
         self._validate_plugin_type()
+        self._validate_ai_only_plugins()
         self._validate_plugin_config()
         self._validate_backend()
         return self.schema_validate_result
@@ -204,6 +206,8 @@ class ResourceImportValidator:
 
     def _validate_match_subpath(self):
         for resource_data in self.resource_data_list:
+            if resource_data.backend_config is None:
+                continue
             if resource_data.match_subpath != resource_data.backend_config.match_subpath:
                 validate_err = SchemaValidateErr(
                     _(
@@ -213,6 +217,26 @@ class ResourceImportValidator:
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
+
+    def _validate_kind(self):
+        for resource_data in self.resource_data_list:
+            path = f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource"
+            if resource_data.kind == ResourceKindEnum.AI.value and not self.gateway.is_ai_gateway:
+                self.schema_validate_result.append(
+                    SchemaValidateErr(_("普通网关不支持模型代理资源"), f"{path}.kind", absolute_path=[])
+                )
+            if resource_data.kind == ResourceKindEnum.AI.value and resource_data.method != "POST":
+                self.schema_validate_result.append(
+                    SchemaValidateErr(_("模型代理资源只支持 POST"), f"{path}.kind", absolute_path=[])
+                )
+            if resource_data.resource and resource_data.resource.kind != resource_data.kind:
+                self.schema_validate_result.append(
+                    SchemaValidateErr(_("资源 kind 创建后不能修改"), f"{path}.kind", absolute_path=[])
+                )
+            if resource_data.backend and resource_data.backend.kind != resource_data.kind:
+                self.schema_validate_result.append(
+                    SchemaValidateErr(_("资源 kind 与后端服务 kind 不一致"), f"{path}.backend", absolute_path=[])
+                )
 
     def _validate_resource_count(self):
         count = len(self.resource_data_list) + len(self._unchanged_resources)
@@ -425,6 +449,30 @@ class ResourceImportValidator:
                     )
                     self.schema_validate_result.append(validate_err)
 
+    def _validate_ai_only_plugins(self):
+        for resource_data in self.resource_data_list:
+            if resource_data.plugin_configs is None:
+                continue
+
+            incompatible_plugin_codes = [
+                config.type
+                for config in resource_data.plugin_configs
+                if not is_plugin_compatible_with_resource_kind(config.type, resource_data.kind)
+            ]
+            if not incompatible_plugin_codes:
+                continue
+
+            self.schema_validate_result.append(
+                SchemaValidateErr(
+                    _("资源绑定了与资源类型不兼容的插件，资源名称：{resource_name}，插件类型：{plugin_types}").format(
+                        resource_name=resource_data.name,
+                        plugin_types=", ".join(incompatible_plugin_codes),
+                    ),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
+                    absolute_path=[],
+                )
+            )
+
     def _validate_backend(self):
         """
         校验resource 绑定的backend
@@ -440,7 +488,7 @@ class ResourceImportValidator:
                 validate_err = SchemaValidateErr(
                     _("资源的后端服务校验失败，资源名称：{resource_name}，后端服务：{backend_name} 不存在").format(
                         resource_name=resource_data.name,
-                        plugin_type_code=resource_data.backend.name,
+                        backend_name=resource_data.backend.name,
                     ),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource.backend",
                     absolute_path=[],

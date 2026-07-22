@@ -27,7 +27,12 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.constants import STAGE_VAR_FOR_PATH_PATTERN
 from apigateway.core import constants as core_constants
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, GatewayStatusEnum
+from apigateway.core.backend_config import AIBackendConfig
+from apigateway.core.constants import (
+    HOST_WITHOUT_SCHEME_PATTERN,
+    BackendKindEnum,
+    GatewayStatusEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, ResourceVersion, Stage
 from apigateway.service.resource_version import get_used_stage_vars
 
@@ -146,15 +151,18 @@ class PublishValidator:
     def _validate_stage_backends(self):
         """校验待发布环境的backend配置"""
         resource_version = self.resource_version or ResourceVersion.objects.get_latest_version(self.gateway.id)
+        resource_configs = resource_version.data if resource_version and resource_version.data else []
 
-        if resource_version and resource_version.data:
-            backend_ids = {resource["proxy"]["backend_id"] for resource in resource_version.data}
+        if resource_configs:
+            backend_ids = {resource["proxy"]["backend_id"] for resource in resource_configs}
         else:
             backend_ids = set(
                 Proxy.objects.filter(resource__gateway=self.gateway).values_list("backend_id", flat=True).distinct()
             )
 
-        backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
+        backend_configs = list(
+            BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids).select_related("backend")
+        )
         configured_backend_ids = {bc.backend_id for bc in backend_configs}
 
         # 检查资源用到的 backend 是否都有 stage 配置
@@ -170,7 +178,34 @@ class PublishValidator:
                 )
             )
 
-        self._validate_backend_hosts(backend_configs)
+        for backend_config in backend_configs:
+            if backend_config.backend.kind == BackendKindEnum.AI.value:
+                try:
+                    config = backend_config.config
+                except ValueError:
+                    raise ReleaseValidationError(
+                        _(
+                            "网关环境【{stage_name}】中的模型后端服务【{backend_name}】配置解密失败，不允许发布。"
+                        ).format(
+                            stage_name=self.stage.name,
+                            backend_name=backend_config.backend.name,
+                        )
+                    ) from None
+
+                try:
+                    AIBackendConfig.model_validate(config)
+                except ValueError:
+                    raise ReleaseValidationError(
+                        _(
+                            "网关环境【{stage_name}】中的模型后端服务【{backend_name}】配置结构不合法，不允许发布。"
+                        ).format(
+                            stage_name=self.stage.name,
+                            backend_name=backend_config.backend.name,
+                        )
+                    ) from None
+                continue
+
+            self._validate_backend_hosts([backend_config])
 
     def _validate_stage_plugins(self):
         """校验待发布环境的plugin配置"""

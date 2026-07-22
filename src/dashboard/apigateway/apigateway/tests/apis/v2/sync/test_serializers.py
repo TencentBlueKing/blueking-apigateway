@@ -18,7 +18,80 @@
 #
 import pytest
 
-from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.apis.v2.sync.serializers import (
+    AIBackendConfigSLZ,
+    AIBackendSLZ,
+    GatewaySyncInputSLZ,
+    SDKGenerateInputSLZ,
+    StageSyncInputSLZ,
+)
+from apigateway.core.constants import GatewayKindEnum
+
+
+def _custom_instance(name):
+    return {
+        "name": name,
+        "provider": "openai-compatible",
+        "auth": {"header": {"X-Api-Key": "secret", "X-Tenant": "tenant"}},
+        "override": {"endpoint": "https://llm.example.com/v1/chat/completions"},
+    }
+
+
+def test_ai_backend_config_rejects_non_mapping_instance():
+    slz = AIBackendConfigSLZ(data={"instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
+def test_automation_defaults_weight_and_accepts_multiple_headers():
+    slz = AIBackendConfigSLZ(data={"instances": [_custom_instance("primary")]})
+
+    slz.is_valid(raise_exception=True)
+
+    assert slz.validated_data["timeout"] == 300
+    assert slz.validated_data["instances"][0]["weight"] == 0
+    assert slz.validated_data["instances"][0]["auth"]["header"]["X-Tenant"] == "tenant"
+    assert "options" not in slz.validated_data["instances"][0]
+
+
+def test_automation_rejects_multiple_instances_in_first_phase():
+    slz = AIBackendConfigSLZ(data={"instances": [_custom_instance("primary"), _custom_instance("fallback")]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
+def test_ai_backend_ignores_unknown_outer_field():
+    slz = AIBackendSLZ(
+        data={
+            "name": "openai-primary",
+            "config": {
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "weight": 1,
+                        "auth": {"header": {"Authorization": "Bearer secret"}},
+                        "options": {"model": "gpt-4o"},
+                    }
+                ]
+            },
+            "unknown": True,
+        }
+    )
+
+    slz.is_valid(raise_exception=True)
+
+    assert "unknown" not in slz.validated_data
+
+
+def test_gateway_sync_input_maps_ai_kind():
+    slz = GatewaySyncInputSLZ(data={"name": "ai-gateway", "kind": "ai"})
+
+    slz.is_valid(raise_exception=True)
+
+    assert slz.validated_data["kind"] == GatewayKindEnum.AI.value
 
 
 class TestSDKGenerateInputSLZ:

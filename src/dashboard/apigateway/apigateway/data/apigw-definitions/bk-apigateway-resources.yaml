@@ -12,6 +12,17 @@ paths:
       description: 查询网关列表
       tags:
       - v1
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - normal
+              - programmable
+              - ai
+          description: 网关类型；不传返回所有类型
       responses:
         '200':
           description: 成功返回网关列表
@@ -51,6 +62,14 @@ paths:
                             type: string
                           description: 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表
                           example: ["张三"]
+                        kind:
+                          type: string
+                          enum:
+                            - normal
+                            - programmable
+                            - ai
+                          description: 网关类型
+                          example: normal
               example:
                 code: 0
                 message: OK
@@ -59,6 +78,7 @@ paths:
                     name: bk-apigateway
                     description: ""
                     maintainers: ["admin"]
+                    kind: normal
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -836,6 +856,11 @@ paths:
                             name:
                               type: string
                               example: echo
+                            kind:
+                              type: string
+                              enum: [standard, ai]
+                              description: 资源类型，standard：普通 API，ai：模型代理 API
+                              example: standard
                             description:
                               type: string
                               example: ""
@@ -930,6 +955,11 @@ paths:
                         type: string
                         description: 资源名称
                         example: updatePet
+                      kind:
+                        type: string
+                        enum: [standard, ai]
+                        description: 资源类型，standard：普通 API，ai：模型代理 API
+                        example: standard
                       method:
                         type: string
                         description: 资源请求方法
@@ -1124,7 +1154,7 @@ paths:
               properties:
                 content:
                   type: string
-                  description: 网关资源 swagger 描述，可为 yaml 格式文本
+                  description: 网关资源 OpenAPI 描述，可为 yaml 格式文本；AI 资源通过 x-bk-apigateway-resource.kind=ai 声明
                   example: "xxx"
                 delete:
                   type: boolean
@@ -1298,7 +1328,7 @@ paths:
         descriptionEn: List resource versions
     post:
       operationId: create_resource_version
-      description: 创建资源版本
+      description: 创建资源版本，资源快照保留 standard/ai 类型
       tags:
       - v1
       parameters:
@@ -1722,7 +1752,6 @@ paths:
               type: object
               required:
                 - name
-                - proxy_http
               properties:
                 name:
                   type: string
@@ -1732,6 +1761,10 @@ paths:
                   type: string
                   description: 描述
                   example: 正式环境
+                description_en:
+                  type: string
+                  description: 英文描述
+                  example: Production
                 vars:
                   type: object
                   additionalProperties:
@@ -1788,6 +1821,132 @@ paths:
                           items:
                             type: string
                           description: 删除 Header
+                backends:
+                  type: array
+                  nullable: true
+                  minItems: 1
+                  description: 普通后端服务配置；与 ai_backends 至少提供一种
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - config
+                    properties:
+                      name:
+                        type: string
+                        description: 后端服务名称
+                      config:
+                        type: object
+                        required:
+                          - timeout
+                          - loadbalance
+                          - hosts
+                        properties:
+                          timeout:
+                            type: integer
+                            minimum: 1
+                            maximum: 300
+                            description: 超时时间，单位秒
+                          loadbalance:
+                            type: string
+                            enum:
+                              - roundrobin
+                          hosts:
+                            type: array
+                            items:
+                              type: object
+                              required:
+                                - host
+                              properties:
+                                host:
+                                  type: string
+                                weight:
+                                  type: integer
+                                  minimum: 1
+                ai_backends:
+                  type: array
+                  minItems: 1
+                  description: 模型服务配置，仅 AI 网关支持；与 proxy_http、backends 至少提供一种
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - config
+                    properties:
+                      name:
+                        type: string
+                        description: 模型服务名称
+                      config:
+                        type: object
+                        required:
+                          - instances
+                        properties:
+                          timeout:
+                            type: integer
+                            minimum: 1
+                            maximum: 300
+                            default: 300
+                            description: 超时时间，单位秒，范围 1..300
+                          instances:
+                            type: array
+                            minItems: 1
+                            maxItems: 1
+                            items:
+                              type: object
+                              required:
+                                - name
+                                - provider
+                              properties:
+                                name:
+                                  type: string
+                                provider:
+                                  type: string
+                                  enum:
+                                    - openai
+                                    - deepseek
+                                    - openai-compatible
+                                weight:
+                                  type: integer
+                                  minimum: 0
+                                  default: 0
+                                auth:
+                                  type: object
+                                  description: 认证 Header 映射，可包含多个 Header
+                                  properties:
+                                    header:
+                                      type: object
+                                      additionalProperties:
+                                        type: string
+                                options:
+                                  type: object
+                                  description: 可选模型参数对象；model 可选，其他 JSON 字段完整保存
+                                  properties:
+                                    model:
+                                      type: string
+                                override:
+                                  type: object
+                                  description: provider 为 openai-compatible 时必须提供 endpoint
+                                  properties:
+                                    endpoint:
+                                      type: string
+                                model_endpoint:
+                                  type: string
+                                  description: 自定义 Models API；连接测试使用，不下发到网关
+                plugin_configs:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - yaml
+                    properties:
+                      type:
+                        type: string
+                        description: 插件类型
+                      yaml:
+                        type: string
+                        description: YAML 格式的插件配置
             example:
               name: prod
               description: 正式环境
@@ -1835,6 +1994,7 @@ paths:
                 data:
                   id: 1
                   name: demo
+                  kind: ai
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2035,10 +2195,18 @@ paths:
                   type: boolean
                   description: 网关是否公开，默认公开
                   example: true
+                kind:
+                  type: string
+                  enum:
+                    - normal
+                    - ai
+                  default: normal
+                  description: 网关类型；仅创建时生效，更新已有网关时忽略
             example:
               description: just for test
               maintainers: ["admin"]
               is_public: true
+              kind: ai
       responses:
         '200':
           description: 成功同步网关
@@ -2064,12 +2232,18 @@ paths:
                         type: string
                         description: 网关名称
                         example: demo
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: ai
               example:
                 code: 0
                 message: OK
                 data:
                   id: 1
                   name: demo
+                  kind: ai
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2112,6 +2286,14 @@ paths:
             type: string
           description: 搜索关键字，模糊匹配 name 或 description
           example: apigateway
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [normal, programmable, ai]
+          description: 网关类型；不传返回所有类型
+          example: normal
       responses:
         '200':
           description: 成功返回网关列表
@@ -2133,6 +2315,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
+                          example: normal
                         description:
                           type: string
                           description: 网关描述
@@ -2153,6 +2340,7 @@ paths:
                 data:
                   - id: 1
                     name: bk-apigateway
+                    kind: normal
                     description: 蓝鲸 API 网关
                     maintainers: ["admin"]
                     doc_maintainers: ["admin"]
@@ -2222,6 +2410,10 @@ paths:
                         description:
                           type: string
                           description: 网关描述
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2272,6 +2464,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: bk-apigateway
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: normal
                       description:
                         type: string
                         description: 网关描述
@@ -2286,6 +2483,7 @@ paths:
                 data:
                   id: 1
                   name: bk-apigateway
+                  kind: normal
                   description: ""
                   maintainers: ["admin"]
       x-bk-apigateway-resource:
@@ -2331,6 +2529,10 @@ paths:
                           name:
                             type: string
                             description: 资源name
+                          kind:
+                            type: string
+                            enum: [standard, ai]
+                            description: 资源类型，standard：普通 API，ai：模型代理 API
                           description:
                             type: string
                             description: 资源描述
@@ -2429,6 +2631,10 @@ paths:
                   name:
                     type: string
                     description: 资源名称
+                  kind:
+                    type: string
+                    enum: [standard, ai]
+                    description: 资源类型，standard：普通 API，ai：模型代理 API
                   description:
                     type: string
                     description: 资源描述（中文）
@@ -2543,6 +2749,26 @@ paths:
                 properties:
                   data:
                     type: object
+                    properties:
+                      count:
+                        type: integer
+                      has_next:
+                        type: boolean
+                      has_previous:
+                        type: boolean
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            kind:
+                              type: string
+                              enum: [standard, ai]
+                              description: 资源类型，standard：普通 API，ai：模型代理 API
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2595,6 +2821,15 @@ paths:
                 properties:
                   data:
                     type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      kind:
+                        type: string
+                        enum: [standard, ai]
+                        description: 资源类型，standard：普通 API，ai：模型代理 API
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2648,6 +2883,10 @@ paths:
                       name:
                         type: string
                         description: 资源名称
+                      kind:
+                        type: string
+                        enum: [standard, ai]
+                        description: 资源类型，standard：普通 API，ai：模型代理 API
                       description:
                         type: string
                         description: 资源描述
@@ -4643,7 +4882,6 @@ paths:
               type: object
               required:
                 - name
-                - backends
               properties:
                 name:
                   type: string
@@ -4666,6 +4904,8 @@ paths:
                     api_sub_path: "/test"
                 backends:
                   type: array
+                  minItems: 1
+                  description: 普通后端服务配置；AI 网关可与 ai_backends 同时配置
                   items:
                     type: object
                     required:
@@ -4695,6 +4935,8 @@ paths:
                             type: array
                             items:
                               type: object
+                              required:
+                                - host
                               properties:
                                 host:
                                   type: string
@@ -4702,10 +4944,85 @@ paths:
                                 weight:
                                   type: integer
                                   description: 权重
-                plugin_configs:
+                ai_backends:
                   type: array
+                  minItems: 1
+                  description: 模型服务配置，仅 AI 网关支持；创建环境时与 backends 至少提供一种
                   items:
                     type: object
+                    required:
+                      - name
+                      - config
+                    properties:
+                      name:
+                        type: string
+                        description: 模型服务名称
+                        example: openai-primary
+                      config:
+                        type: object
+                        required:
+                          - instances
+                        properties:
+                          timeout:
+                            type: integer
+                            minimum: 1
+                            maximum: 300
+                            default: 300
+                            description: 超时时间（单位：秒），范围 1..300
+                          instances:
+                            type: array
+                            minItems: 1
+                            maxItems: 1
+                            items:
+                              type: object
+                              required:
+                                - name
+                                - provider
+                              properties:
+                                name:
+                                  type: string
+                                  example: primary
+                                provider:
+                                  type: string
+                                  enum:
+                                    - openai
+                                    - deepseek
+                                    - openai-compatible
+                                weight:
+                                  type: integer
+                                  minimum: 0
+                                  default: 0
+                                auth:
+                                  type: object
+                                  description: 认证 Header 映射，可包含多个 Header
+                                  properties:
+                                    header:
+                                      type: object
+                                      additionalProperties:
+                                        type: string
+                                options:
+                                  type: object
+                                  description: 可选模型参数对象；model 可选，其他 JSON 字段完整保存
+                                  properties:
+                                    model:
+                                      type: string
+                                override:
+                                  type: object
+                                  description: provider 为 openai-compatible 时必须提供 endpoint
+                                  properties:
+                                    endpoint:
+                                      type: string
+                                model_endpoint:
+                                  type: string
+                                  description: 自定义 Models API；连接测试使用，不下发到网关
+                plugin_configs:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - yaml
                     properties:
                       type:
                         type: string
@@ -4929,10 +5246,18 @@ paths:
                   type: boolean
                   description: 网关是否公开，默认公开
                   example: true
+                kind:
+                  type: string
+                  enum:
+                    - normal
+                    - ai
+                  default: normal
+                  description: 网关类型；仅创建时生效，更新已有网关时忽略
             example:
               description: just for test
               maintainers: ["admin"]
               is_public: true
+              kind: ai
       responses:
         '200':
           description: 成功同步网关
@@ -4952,6 +5277,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: demo
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: ai
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -4994,7 +5324,7 @@ paths:
               properties:
                 content:
                   type: string
-                  description: 网关资源 swagger 描述，可为 yaml 格式文本
+                  description: 网关资源 OpenAPI 描述，可为 yaml 格式文本；AI 资源通过 x-bk-apigateway-resource.kind=ai 声明
                   example: "xxx"
                 delete:
                   type: boolean
@@ -5376,7 +5706,7 @@ paths:
   /api/v2/sync/gateways/{gateway_name}/resource_versions/:
     post:
       operationId: v2_sync_create_resource_version
-      description: 网关资源版本创建
+      description: 网关资源版本创建，资源快照保留 standard/ai 类型
       tags:
         - v2_sync
       parameters:
@@ -5657,6 +5987,27 @@ paths:
       description: 获取网关列表
       tags:
       - v2_inner
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: 网关名称，用于过滤网关
+          example: bk-apigateway
+        - name: fuzzy
+          in: query
+          schema:
+            type: boolean
+          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          example: true
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [normal, programmable, ai]
+          description: 网关类型；不传返回所有类型
+          example: normal
       x-bk-apigateway-noneSchema: true
       responses:
         '200':
@@ -5679,6 +6030,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
+                          example: normal
                         description:
                           type: string
                           description: 网关描述
@@ -5761,6 +6117,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: bk-apigateway
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: normal
                       description:
                         type: string
                         description: 网关描述

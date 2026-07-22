@@ -223,7 +223,7 @@ class TestLegacyBackendCreator:
             backend=b1,
             gateway=fake_gateway,
             stage=fake_stage,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 50,
                 "loadbalance": "roundrobin",
@@ -235,7 +235,7 @@ class TestLegacyBackendCreator:
             backend=b2,
             gateway=fake_gateway,
             stage=fake_stage,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 50,
                 "loadbalance": "roundrobin",
@@ -343,7 +343,7 @@ class TestLegacyUpstreamToBackendSynchronizer:
             gateway=fake_gateway,
             stage=fake_stage,
             backend=backend,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",

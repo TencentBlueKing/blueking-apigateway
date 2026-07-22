@@ -25,6 +25,7 @@ from apigateway.biz.released_resource import (
     ReleasedResourceHandler,
     get_released_resource_data,
 )
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
@@ -145,6 +146,25 @@ class TestReleasedResourceHandler:
 
         result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, "")
         assert len(result) == 0
+
+    def test_get_public_standard_released_resource_data_list_filters_ai_resources(
+        self, fake_gateway, fake_stage, fake_release
+    ):
+        resources = fake_release.resource_version.data
+        resources[0]["kind"] = ResourceKindEnum.AI.value
+        resources[1]["kind"] = None
+        fake_release.resource_version.data = resources
+        fake_release.resource_version.save()
+
+        result = ReleasedResourceHandler.get_public_standard_released_resource_data_list(
+            fake_gateway.id,
+            fake_stage.name,
+        )
+
+        assert {resource.name for resource in result} == {resource["name"] for resource in resources[1:]}
+        assert next(resource for resource in result if resource.name == resources[1]["name"]).kind == (
+            ResourceKindEnum.STANDARD.value
+        )
 
     def test_get_released_resource(self, fake_gateway, fake_stage, fake_released_resource):
         result = ReleasedResourceHandler.get_released_resource(

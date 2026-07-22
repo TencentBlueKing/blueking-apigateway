@@ -16,8 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import csv
 import datetime
 import json
+from io import StringIO
 
 import pytest
 from ddf import G
@@ -1193,7 +1195,7 @@ class TestMCPServerStageReleaseCheckApi:
 
     def test_check_with_mcp_servers(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.get_resource_names_set",
+            "apigateway.apis.web.mcp_server.views.get_standard_resource_names_set",
             return_value={"resource1"},
         )
 
@@ -1871,7 +1873,7 @@ class TestMCPServerStageReleaseCheckApiNoChanges:
 
     def test_check_no_changes(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.get_resource_names_set",
+            "apigateway.apis.web.mcp_server.views.get_standard_resource_names_set",
             return_value={"resource1", "resource2"},  # 包含所有 mcp_server 的资源
         )
 
@@ -3721,6 +3723,124 @@ class TestGatewayMCPServerAppPermissionExportApi:
             },
         )
         assert resp.status_code == 200
+
+    def test_export_display_values(self, mocker, request_view, settings, fake_gateway, fake_mcp_server):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        mocker.patch(
+            "apigateway.biz.permission.permission.get_app_tenant_info_cached",
+            return_value=("single", "tenant-1"),
+        )
+        mocker.patch(
+            "apigateway.biz.permission.permission.query_display_names_cached",
+            side_effect=lambda _tenant_id, username: [{"display_name": f"display-{username}"}],
+        )
+        mocker.patch(
+            "apigateway.biz.permission.permission.query_display_names_for_readonly",
+            side_effect=lambda _tenant_id, usernames: [f"display-{username}" for username in usernames],
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="grant-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            created_by="grant-user",
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            applied_by="apply-user",
+            applied_time=now_datetime(),
+            handled_by="handled-user",
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"export_type": ExportTypeEnum.ALL.value},
+        )
+        assert resp.status_code == 200
+
+        content = b"".join(resp.streaming_content).decode(resp.charset)
+        rows = list(csv.DictReader(StringIO(content)))
+        rows_by_app = {row["蓝鲸应用ID"]: row for row in rows}
+        assert rows_by_app["grant-app"]["申请人"] == "display-grant-user"
+        assert rows_by_app["grant-app"]["审批人/授权人"] == "display-grant-user"
+        assert rows_by_app["grant-app"]["授权类型"] == "主动授权"
+        assert rows_by_app["apply-app"]["申请人"] == "display-apply-user"
+        assert rows_by_app["apply-app"]["审批人/授权人"] == "display-handled-user"
+        assert rows_by_app["apply-app"]["授权类型"] == "申请审批"
+
+    def test_export_single_tenant_converts_app_applied_by(
+        self, mocker, request_view, settings, fake_gateway, fake_mcp_server
+    ):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        fake_gateway.tenant_mode = "single"
+        fake_gateway.tenant_id = "tenant-1"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        mocker.patch(
+            "apigateway.biz.permission.permission.get_app_tenant_info_cached",
+            return_value=("single", "tenant-1"),
+        )
+        mocker.patch(
+            "apigateway.biz.permission.permission.query_display_names_cached",
+            side_effect=lambda _tenant_id, username: [{"display_name": f"display-{username}"}],
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="grant-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            created_by="grant-user",
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            applied_by="apply-user",
+            applied_time=now_datetime(),
+            handled_by="handled-user",
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"export_type": ExportTypeEnum.ALL.value},
+        )
+        assert resp.status_code == 200
+
+        content = b"".join(resp.streaming_content).decode(resp.charset)
+        rows = list(csv.DictReader(StringIO(content)))
+        rows_by_app = {row["蓝鲸应用ID"]: row for row in rows}
+        assert rows_by_app["grant-app"]["申请人"] == "grant-user"
+        assert rows_by_app["grant-app"]["审批人/授权人"] == "grant-user"
+        assert rows_by_app["apply-app"]["申请人"] == "display-apply-user"
+        assert rows_by_app["apply-app"]["审批人/授权人"] == "handled-user"
 
     def test_export_selected_empty_ids(self, request_view, fake_gateway):
         resp = request_view(

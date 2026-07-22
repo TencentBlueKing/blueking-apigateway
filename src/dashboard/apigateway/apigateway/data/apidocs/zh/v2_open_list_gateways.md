@@ -15,6 +15,7 @@
 | name | string | 否 | 网关名称，用于过滤网关 |
 | fuzzy | boolean | 否 | 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配 |
 | keyword | string | 否 | 搜索关键字，模糊匹配 name 或 description |
+| kind | string | 否 | 网关类型：`normal`、`programmable` 或 `ai`；不传返回所有类型 |
 
 ### 响应示例
 
@@ -24,6 +25,7 @@
         {
             "id": 1,
             "name": "bk-apigateway",
+            "kind": "normal",
             "description": "蓝鲸 API 网关",
             "maintainers": [
                 "admin"
@@ -48,6 +50,7 @@ data[]
 | -------- | -------- | ---- |
 | id | int | 网关 ID |
 | name | string | 网关名称 |
+| kind | string | 网关类型：`normal`、`programmable` 或 `ai` |
 | description | string | 网关描述 |
 | maintainers | array | 网关管理员 |
 | doc_maintainers | array | 文档管理员 |

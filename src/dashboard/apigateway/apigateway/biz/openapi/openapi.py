@@ -122,7 +122,7 @@ class OpenAPIImportManager:
 
         try:
             self.parse()
-        except ResolutionError as err:
+        except (ResolutionError, ValueError) as err:
             return [SchemaValidateErr(str(err), "$", [])]
 
         validator = ResourceImportValidator(

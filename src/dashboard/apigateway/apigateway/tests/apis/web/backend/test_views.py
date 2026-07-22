@@ -16,7 +16,39 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.models import Backend
+import logging
+
+import pytest
+from django.urls import get_resolver
+
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
+from apigateway.core.models import Backend, BackendConfig
+
+
+def _ai_config(stage_id):
+    return {
+        "stage_id": stage_id,
+        "provider": "openai",
+        "api_key": "secret",
+        "model": "gpt-4o",
+        "model_options": {"temperature": 0.7},
+        "timeout": 300,
+    }
+
+
+def _stored_ai_config():
+    return {
+        "timeout": 300,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 0,
+                "auth": {"header": {"Authorization": "Bearer secret"}},
+                "options": {"model": "gpt-4o", "temperature": 0.7},
+            }
+        ],
+    }
 
 
 def _create(request_view, fake_stage):
@@ -47,6 +79,196 @@ def _create(request_view, fake_stage):
 
 
 class TestBackendApi:
+    def test_create_retrieve_and_filter_ai_backend(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": "openai-primary",
+                "description": "OpenAI",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [_ai_config(fake_stage.id)],
+            },
+        )
+
+        assert response.status_code == 201, response.json()
+        backend = Backend.objects.get(gateway=fake_stage.gateway, name="openai-primary")
+        assert backend.kind == BackendKindEnum.AI.value
+        stored = BackendConfig.objects.get(backend=backend)
+        assert stored.config["instances"][0]["name"] == "primary"
+        assert stored.config["instances"][0]["weight"] == 0
+        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert stored.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
+
+        response = request_view(
+            "GET",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+        )
+        assert response.json()["data"]["kind"] == BackendKindEnum.AI.value
+        output = response.json()["data"]["configs"][0]
+        assert output["stage_id"] == fake_stage.id
+        assert output["api_key"] == "se****et"
+        assert output["model"] == "gpt-4o"
+        assert output["model_options"] == {"temperature": 0.7}
+        assert "instances" not in output
+
+        response = request_view(
+            "GET",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"kind": BackendKindEnum.AI.value},
+        )
+        assert [item["id"] for item in response.json()["data"]["results"]] == [backend.id]
+
+    def test_create_ai_backend_rejects_normal_gateway(self, request_view, fake_stage):
+        response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": "openai-primary",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [_ai_config(fake_stage.id)],
+            },
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.parametrize(
+        ("incoming_secret", "expected_secret"),
+        [("se****et", "Bearer secret"), ("new-secret", "Bearer new-secret")],
+    )
+    def test_update_ai_backend_header(self, request_view, fake_stage, incoming_secret, expected_secret):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config=_stored_ai_config(),
+        )
+        config = _ai_config(fake_stage.id)
+        config["api_key"] = incoming_secret
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": backend.name,
+                "description": "updated",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [config],
+            },
+        )
+
+        assert response.status_code == 200, response.json()
+        stored = BackendConfig.objects.get(backend=backend)
+        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == expected_secret
+
+    def test_update_ai_backend_does_not_restore_missing_header(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-compatible",
+            kind=BackendKindEnum.AI.value,
+        )
+        stored_config = _stored_ai_config()
+        stored_instance = stored_config["instances"][0]
+        stored_instance["provider"] = "openai-compatible"
+        stored_instance["auth"]["header"] = {"X-Api-Key": "secret"}
+        stored_instance["override"] = {"endpoint": "https://example.com/v1/chat/completions"}
+        stored_instance["model_endpoint"] = "https://example.com/models"
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config=stored_config,
+        )
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://example.com/v1/chat/completions",
+                "model_endpoint": "https://example.com/models",
+            }
+        )
+        config.pop("api_key")
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": backend.name,
+                "description": "updated",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [config],
+            },
+        )
+
+        assert response.status_code == 200, response.json()
+        stored = BackendConfig.objects.get(backend=backend)
+        assert "auth" not in stored.config["instances"][0]
+
+    def test_update_rejects_kind_change(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config=_stored_ai_config(),
+        )
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": backend.name,
+                "kind": BackendKindEnum.STANDARD.value,
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 30,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}],
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 400
+
     def test_create(self, request_view, fake_stage):
         _create(request_view, fake_stage)
         backend = Backend.objects.filter(gateway=fake_stage.gateway).first()
@@ -154,6 +376,405 @@ class TestBackendApi:
             gateway=fake_gateway,
         )
         assert response.status_code == 204
+
+
+def _mock_model_response(mocker, data, *, success=True):
+    _ = get_resolver().url_patterns
+    return mocker.patch(
+        "apigateway.biz.backend.connectivity.http_get",
+        return_value=(success, data),
+    )
+
+
+class TestBackendConnectivityApi:
+    @pytest.mark.parametrize(
+        ("provider", "expected_url"),
+        [
+            ("openai", "https://api.openai.com/v1/models"),
+            ("deepseek", "https://api.deepseek.com/models"),
+        ],
+    )
+    def test_builtin_provider_returns_model_ids(self, mocker, request_view, fake_stage, provider, expected_url):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        config = _ai_config(fake_stage.id)
+        config["provider"] = provider
+        http_get = _mock_model_response(
+            mocker,
+            {
+                "data": [
+                    {"id": "model-b"},
+                    {"id": "model-a"},
+                ]
+            },
+        )
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["data"] == {"models": ["model-b", "model-a"]}
+        http_get.assert_called_once_with(
+            expected_url,
+            {},
+            headers={"Authorization": "Bearer secret"},
+            timeout=30,
+            verify=True,
+            allow_redirects=False,
+        )
+
+    def test_openai_compatible_uses_custom_models_endpoint(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions?api-version=2026-01-01",
+                "auth_header": {"name": "X-Api-Key", "value": "secret"},
+            }
+        )
+        config.pop("api_key")
+        resolver = mocker.patch(
+            "socket.getaddrinfo",
+            return_value=[(2, 1, 6, "", ("8.8.8.8", 443))],
+        )
+        http_get = _mock_model_response(mocker, {"data": [{"id": "custom-model"}]})
+        model_endpoint = "https://catalog.example.com/custom/models?api-version=2026-01-01"
+        config["model_endpoint"] = model_endpoint
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        http_get.assert_called_once_with(
+            model_endpoint,
+            {},
+            headers={"X-Api-Key": "secret"},
+            timeout=30,
+            verify=True,
+            allow_redirects=False,
+        )
+        assert resolver.call_count == 2
+
+    def test_inferred_models_failure_requests_explicit_model_endpoint(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = mocker.patch(
+            "apigateway.biz.backend.connectivity.http_get",
+            return_value=(False, {"error": "Authorization: Bearer upstream-secret"}),
+        )
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions",
+            }
+        )
+        config.pop("api_key")
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 500
+        assert "model_endpoint" in str(response.json())
+        assert "upstream-secret" not in str(response.json())
+        assert "secret" not in str(response.json())
+        assert http_get.call_count == 1
+        assert http_get.call_args.args[0] == "https://models.example.com/v1/models"
+
+    def test_custom_provider_rejects_link_local_resolved_address(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions",
+                "model_endpoint": "https://models.example.com/v1/models",
+            }
+        )
+        config.pop("api_key")
+        mocker.patch(
+            "socket.getaddrinfo",
+            return_value=[(2, 1, 6, "", ("169.254.169.254", 443))],
+        )
+        http_get = _mock_model_response(mocker, {"data": []})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 400
+        http_get.assert_not_called()
+
+    def test_custom_provider_allows_private_resolved_address(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.internal.example/v1/chat/completions",
+                "model_endpoint": "https://models.internal.example/v1/models",
+            }
+        )
+        config.pop("api_key")
+        mocker.patch(
+            "socket.getaddrinfo",
+            return_value=[(2, 1, 6, "", ("10.0.0.1", 443))],
+        )
+        http_get = _mock_model_response(mocker, {"data": [{"id": "internal-model"}]})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        http_get.assert_called_once()
+
+    def test_custom_provider_allows_public_ipv6_address(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://models.example.com/v1/chat/completions",
+                "model_endpoint": "https://models.example.com/v1/models",
+            }
+        )
+        config.pop("api_key")
+        mocker.patch(
+            "socket.getaddrinfo",
+            return_value=[(10, 1, 6, "", ("2001:4860:4860::abcd", 443, 0, 0))],
+        )
+        http_get = _mock_model_response(mocker, {"data": [{"id": "ipv6-model"}]})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        http_get.assert_called_once()
+
+    def test_connectivity_uses_fixed_timeout(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        config = _ai_config(fake_stage.id)
+        config["timeout"] = 300
+        http_get = _mock_model_response(mocker, {"data": []})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        assert http_get.call_args.kwargs["timeout"] == 30
+
+    def test_existing_backend_restores_masked_header(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config=_stored_ai_config(),
+        )
+        config = _ai_config(fake_stage.id)
+        config["api_key"] = "se****et"
+        http_get = _mock_model_response(mocker, {"data": [{"id": "gpt-4o"}]})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"backend_id": backend.id, "config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        assert http_get.call_args.kwargs["headers"] == {"Authorization": "Bearer secret"}
+
+    def test_existing_backend_does_not_restore_masked_header_for_changed_destination(
+        self, mocker, request_view, fake_stage
+    ):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config=_stored_ai_config(),
+        )
+        config = _ai_config(fake_stage.id)
+        config.update(
+            {
+                "provider": "openai-compatible",
+                "endpoint": "https://attacker.example.com/v1/chat/completions",
+                "model_endpoint": "https://attacker.example.com/models",
+                "auth_header": {"name": "Authorization", "value": "se****et"},
+            }
+        )
+        config.pop("api_key")
+        http_get = _mock_model_response(mocker, {"data": []})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"backend_id": backend.id, "config": config},
+        )
+
+        assert response.status_code == 400
+        assert "重新输入" in str(response.json())
+        http_get.assert_not_called()
+
+    def test_existing_backend_reports_corrupted_config(self, caplog, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        ciphertext = "backend-connectivity-ciphertext-sentinel"
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            _config={"encrypted": ciphertext},
+        )
+
+        with caplog.at_level(logging.ERROR):
+            response = request_view(
+                "POST",
+                "backend.test-connection",
+                path_params={"gateway_id": fake_stage.gateway.id},
+                gateway=fake_stage.gateway,
+                data={"backend_id": backend.id, "config": _ai_config(fake_stage.id)},
+            )
+
+        assert response.status_code == 400
+        assert "已有后端配置无法读取" in str(response.json())
+        assert ciphertext not in caplog.text
+
+    def test_rejects_normal_gateway_without_requesting_provider(self, mocker, request_view, fake_stage):
+        http_get = mocker.patch("apigateway.biz.backend.connectivity.http_get")
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": _ai_config(fake_stage.id)},
+        )
+
+        assert response.status_code == 400
+        http_get.assert_not_called()
+
+    def test_provider_failure_does_not_expose_credentials(self, caplog, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = mocker.patch(
+            "apigateway.biz.backend.connectivity.http_get",
+            return_value=(False, {"error": "Authorization: Bearer secret"}),
+        )
+
+        with caplog.at_level(logging.WARNING):
+            response = request_view(
+                "POST",
+                "backend.test-connection",
+                path_params={"gateway_id": fake_stage.gateway.id},
+                gateway=fake_stage.gateway,
+                data={"config": _ai_config(fake_stage.id)},
+            )
+
+        assert response.status_code == 500
+        assert "Bearer secret" not in str(response.json())
+        assert "Bearer secret" not in caplog.text
+        http_get.assert_called_once()
+
+    def test_provider_redirect_is_rejected(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = _mock_model_response(mocker, {"status_code": 302}, success=False)
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": _ai_config(fake_stage.id)},
+        )
+
+        assert response.status_code == 500
+        http_get.assert_called_once()
+
+    def test_rejects_malformed_provider_response(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = _mock_model_response(mocker, {"data": [{"name": "missing-id"}]})
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": _ai_config(fake_stage.id)},
+        )
+
+        assert response.status_code == 500
+        http_get.assert_called_once()
 
 
 class TestBackendHealthCheckApi:

@@ -24,6 +24,7 @@ from django_dynamic_fixture import G
 from apigateway.apis.open.gateway import views
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.core.constants import GatewayKindEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.tests.utils.testing import get_response_json
@@ -67,6 +68,52 @@ class TestGatewayListApi:
 
         queryset = view._filter_list_queryset(user_auth_type="not-exist")
         assert queryset.count() == 0
+
+    def test_filter_list_queryset_by_ai_kind(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        G(Release, gateway=fake_gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset(kind="ai")
+
+        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
+
+    def test_filter_list_queryset_by_normal_kind_includes_legacy_null(self, fake_gateway):
+        fake_gateway.kind = None
+        fake_gateway.save(update_fields=["kind"])
+        G(Release, gateway=fake_gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset(kind="normal")
+
+        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
+
+    def test_filter_list_queryset_by_programmable_kind(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+        fake_gateway.save()
+        G(Release, gateway=fake_gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset(kind="programmable")
+
+        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
+
+    def test_filter_list_queryset_without_kind_returns_all_kinds(self, fake_gateway):
+        G(Release, gateway=fake_gateway)
+        gateways = [fake_gateway]
+        for kind in [GatewayKindEnum.PROGRAMMABLE.value, GatewayKindEnum.AI.value]:
+            gateway = G(
+                Gateway,
+                kind=kind,
+                status=1,
+                is_public=True,
+                tenant_mode="single",
+                tenant_id="default",
+            )
+            G(Release, gateway=gateway)
+            gateways.append(gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset()
+
+        assert {gateway.id for gateway in gateways}.issubset(set(queryset.values_list("id", flat=True)))
 
 
 class TestGatewayRetrieveApi:
@@ -113,6 +160,21 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
+    def test_post_creates_ai_gateway(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        response = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["kind"] == "ai"
+        assert Gateway.objects.get(name=unique_gateway_name).kind == GatewayKindEnum.AI.value
+
     def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane):
         resp = request_view(
             method="POST",

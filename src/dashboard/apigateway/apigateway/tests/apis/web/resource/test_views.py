@@ -31,7 +31,7 @@ from apigateway.apis.web.resource.views import (
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler, ResourcesSaver
 from apigateway.core import constants
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import (
     Backend,
     BackendConfig,
@@ -48,6 +48,129 @@ from apigateway.service.contexts import ResourceAuthContext
 
 
 class TestResourceListCreateApi:
+    def test_create_list_and_retrieve_ai_resource(self, request_view, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+        data = {
+            "name": "chat_completions",
+            "description": "chat",
+            "kind": ResourceKindEnum.AI.value,
+            "is_public": True,
+            "method": "POST",
+            "path": "/chat/completions",
+            "match_subpath": False,
+            "enable_websocket": False,
+            "label_ids": [],
+            "backend": {"id": backend.id, "config": {}},
+            "auth_config": {
+                "auth_verified_required": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+            },
+        }
+
+        created = request_view(
+            method="POST",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert created.status_code == 201, created.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="chat_completions")
+        assert resource.kind == ResourceKindEnum.AI.value
+        proxy = Proxy.objects.get(resource=resource)
+        assert proxy.backend == backend
+        assert proxy.config == {}
+
+        listed = request_view(
+            method="GET",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"kind": ResourceKindEnum.AI.value},
+        )
+        assert [item["id"] for item in listed.json()["data"]["results"]] == [resource.id]
+        assert listed.json()["data"]["results"][0]["kind"] == ResourceKindEnum.AI.value
+        assert listed.json()["data"]["results"][0]["backend"] == {
+            "id": backend.id,
+            "name": backend.name,
+            "kind": BackendKindEnum.AI.value,
+        }
+
+        retrieved = request_view(
+            method="GET",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": resource.id},
+            gateway=fake_gateway,
+        )
+        assert retrieved.json()["data"]["kind"] == ResourceKindEnum.AI.value
+        assert retrieved.json()["data"]["backend"] == {"id": backend.id, "config": {}}
+
+    def test_create_ai_resource_rejects_normal_gateway(self, request_view, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+        response = request_view(
+            method="POST",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "name": "chat_completions",
+                "kind": ResourceKindEnum.AI.value,
+                "method": "POST",
+                "path": "/chat/completions",
+                "match_subpath": False,
+                "enable_websocket": False,
+                "label_ids": [],
+                "backend": {"id": backend.id, "config": {}},
+                "auth_config": {},
+            },
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.parametrize(
+        "resource_kind, backend_kind, method",
+        [
+            (ResourceKindEnum.AI.value, BackendKindEnum.AI.value, "GET"),
+            (ResourceKindEnum.AI.value, BackendKindEnum.STANDARD.value, "POST"),
+            (ResourceKindEnum.STANDARD.value, BackendKindEnum.AI.value, "POST"),
+        ],
+    )
+    def test_create_resource_rejects_invalid_kind_contract(
+        self, request_view, fake_gateway, resource_kind, backend_kind, method
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=backend_kind)
+        backend_config = (
+            {}
+            if resource_kind == ResourceKindEnum.AI.value
+            else {"method": "POST", "path": "/chat/completions", "match_subpath": False, "timeout": 30}
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "name": "chat_completions",
+                "kind": resource_kind,
+                "method": method,
+                "path": "/chat/completions",
+                "match_subpath": False,
+                "enable_websocket": False,
+                "label_ids": [],
+                "backend": {"id": backend.id, "config": backend_config},
+                "auth_config": {},
+            },
+        )
+
+        assert response.status_code == 400
+
     @pytest.mark.parametrize(
         "data, expected",
         [
@@ -149,6 +272,104 @@ class TestResourceListCreateApi:
 
 
 class TestResourceRetrieveUpdateDestroyApi:
+    def test_create_and_update_ai_resource_without_standard_transport_fields(self, request_view, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+        data = {
+            "name": "chat_completions",
+            "description": "chat",
+            "kind": ResourceKindEnum.AI.value,
+            "is_public": True,
+            "method": "POST",
+            "path": "/chat/completions",
+            "label_ids": [],
+            "backend": {"id": backend.id, "config": {}},
+            "auth_config": {},
+        }
+
+        created = request_view(
+            method="POST",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        resource = Resource.objects.get(gateway=fake_gateway, name="chat_completions")
+
+        assert created.status_code == 201, created.json()
+        assert resource.match_subpath is False
+        assert resource.enable_websocket is False
+
+        updated = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": resource.id},
+            gateway=fake_gateway,
+            data={**data, "is_public": False},
+        )
+
+        assert updated.status_code == 204, updated.json()
+        resource.refresh_from_db()
+        assert resource.is_public is False
+        assert resource.match_subpath is False
+        assert resource.enable_websocket is False
+
+    def test_update_rejects_resource_kind_change(self, fake_resource, request_view):
+        fake_gateway = fake_resource.gateway
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+            gateway=fake_gateway,
+            data={
+                "name": fake_resource.name,
+                "kind": ResourceKindEnum.AI.value,
+                "method": "POST",
+                "path": fake_resource.path,
+                "match_subpath": False,
+                "enable_websocket": False,
+                "label_ids": [],
+                "backend": {"id": backend.id, "config": {}},
+                "auth_config": {},
+            },
+        )
+
+        assert response.status_code == 400
+
+    def test_update_rejects_backend_kind_mismatch(self, fake_resource, request_view):
+        fake_gateway = fake_resource.gateway
+        original_backend_id = Proxy.objects.get(resource=fake_resource).backend_id
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+            gateway=fake_gateway,
+            data={
+                "name": fake_resource.name,
+                "kind": ResourceKindEnum.STANDARD.value,
+                "method": fake_resource.method,
+                "path": fake_resource.path,
+                "match_subpath": False,
+                "enable_websocket": False,
+                "label_ids": [],
+                "backend": {
+                    "id": backend.id,
+                    "config": {"method": "POST", "path": "/", "match_subpath": False, "timeout": 30},
+                },
+                "auth_config": {},
+            },
+        )
+
+        assert response.status_code == 400
+        assert Proxy.objects.get(resource=fake_resource).backend_id == original_backend_id
+
     def test_retrieve(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
 
@@ -581,6 +802,7 @@ class TestResourceImportCheckApi:
                 [
                     {
                         "id": None,
+                        "kind": "standard",
                         "name": "http_get_mapping_user_id",
                         "description": "test",
                         "description_en": None,
@@ -659,6 +881,7 @@ class TestResourceImportCheckApi:
                 [
                     {
                         "id": None,
+                        "kind": "standard",
                         "name": "http_get_mapping_user_id",
                         "description": "test",
                         "description_en": None,
@@ -738,6 +961,7 @@ class TestResourceImportCheckApi:
                 [
                     {
                         "id": None,
+                        "kind": "standard",
                         "name": "http_get_mapping_list",
                         "description": "test",
                         "description_en": None,
@@ -782,8 +1006,77 @@ class TestResourceImportCheckApi:
         assert resp.status_code == 200
         assert result["data"] == expected
 
+    def test_post_ai_resource(self, request_view, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": {
+                                "kind": "ai",
+                                "backend": {"name": "openai-primary"},
+                            },
+                        }
+                    }
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="resource.import.check",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"content": content},
+        )
+
+        assert response.status_code == 200, response.json()
+        item = response.json()["data"][0]
+        assert item["kind"] == ResourceKindEnum.AI.value
+        assert item["backend"] == {"name": "openai-primary", "config": {}}
+
 
 class TestResourceImportApi:
+    def test_post_ai_resource(self, request_view, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+
+        response = request_view(
+            method="POST",
+            view_name="resource.import",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "import_resources": [
+                    {
+                        "kind": "ai",
+                        "name": "chat",
+                        "method": "POST",
+                        "path": "/chat",
+                        "match_subpath": False,
+                        "enable_websocket": False,
+                        "auth_config": {},
+                        "backend_name": backend.name,
+                        "backend_config": None,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 204, response.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="chat")
+        assert resource.kind == ResourceKindEnum.AI.value
+        assert Proxy.objects.get(resource=resource).config == {}
+
     @pytest.mark.parametrize(
         "data, expected",
         [
@@ -965,7 +1258,12 @@ class TestBackendPathCheckApi:
             gateway=fake_gateway,
             stage=stage,
             backend=backend,
-            config={"type": "node", "hosts": [{"host": "api.demo.com", "scheme": "http"}]},
+            _config={
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"host": "api.demo.com", "scheme": "http"}],
+            },
         )
 
         data = {
@@ -998,7 +1296,12 @@ class TestBackendPathCheckApi:
             gateway=fake_gateway,
             stage=stage,
             backend=backend,
-            config={"type": "node", "hosts": [{"host": "api.demo.com", "scheme": "http"}]},
+            _config={
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"host": "api.demo.com", "scheme": "http"}],
+            },
         )
 
         view = BackendPathCheckApi()
@@ -1011,7 +1314,12 @@ class TestBackendPathCheckApi:
         result = view._get_backend_hosts(backend.id)
         assert result == {stage.id: ["http://api.demo.com"]}
 
-        backend_config.config = {"type": "node", "hosts": [{"host": "", "scheme": "http"}]}
+        backend_config.config = {
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"host": "", "scheme": "http"}],
+        }
         backend_config.save()
 
         with pytest.raises(BackendHostIsEmpty):
@@ -1035,7 +1343,7 @@ class TestBackendPathCheckApi:
 
 class TestResourcesWithVerifiedUserRequiredApi:
     def test_list(self, request_view, fake_gateway):
-        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway, kind=ResourceKindEnum.AI.value)
         resource_2 = G(Resource, gateway=fake_gateway)
 
         auth_config = ResourceHandler.get_default_auth_config()
@@ -1051,3 +1359,4 @@ class TestResourcesWithVerifiedUserRequiredApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) == 1
+        assert result["data"][0]["kind"] == ResourceKindEnum.AI.value

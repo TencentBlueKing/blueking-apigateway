@@ -38,6 +38,7 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.constants import GatewayKindNameEnum, ResourceKindEnum, convert_gateway_kind_to_name
 from apigateway.core.models import Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.mcp import (
@@ -64,6 +65,7 @@ class GatewayListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字，模糊匹配 name 或 description"
     )
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayListInputSLZ"
@@ -75,12 +77,16 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return obj.maintainers
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayListOutputSLZ"
@@ -92,12 +98,16 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return obj.maintainers
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayRetrieveOutputSLZ"
@@ -468,6 +478,12 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        read_only=True,
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型",
+    )
     description = SerializerTranslatedField(
         default_field="description_i18n", translated_fields={"en": "description_en"}
     )
@@ -516,6 +532,12 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        read_only=True,
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型",
+    )
     description = SerializerTranslatedField(
         default_field="description_i18n",
         translated_fields={"en": "description_en"},
@@ -761,6 +783,10 @@ class GatewayBatchQueryOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
+    kind = serializers.SerializerMethodField()
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayBatchQueryOutputSLZ"
@@ -783,6 +809,12 @@ class GatewayResourceListInputSLZ(serializers.Serializer):
 class GatewayResourceRetrieveByNameOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        read_only=True,
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型",
+    )
     description = SerializerTranslatedField(
         default_field="description_i18n", translated_fields={"en": "description_en"}
     )
@@ -803,6 +835,9 @@ class GatewayReleasedResourceOutputSLZ(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(), read_only=True, default=ResourceKindEnum.STANDARD.value
+    )
     method = serializers.CharField(read_only=True)
     path = serializers.CharField(read_only=True)
     schema = serializers.DictField(read_only=True, help_text="参数协议")
@@ -816,6 +851,9 @@ class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(), read_only=True, default=ResourceKindEnum.STANDARD.value
+    )
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     method = serializers.CharField(read_only=True)
     url = serializers.SerializerMethodField()

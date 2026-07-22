@@ -37,8 +37,9 @@ import (
 
 // ApisixConfigSynchronizer synchronizes the API Gateway configuration.
 type ApisixConfigSynchronizer struct {
-	store    *store.ApisixEtcdStore
-	flushMux sync.Mutex
+	store          *store.ApisixEtcdStore
+	gatewaySyncSem chan struct{}
+	syncMux        sync.RWMutex
 
 	apisixHealthzURI string
 
@@ -46,9 +47,18 @@ type ApisixConfigSynchronizer struct {
 }
 
 // NewSynchronizer create new Synchronizer
-func NewSynchronizer(store *store.ApisixEtcdStore, apisixHealthzURI string) *ApisixConfigSynchronizer {
+func NewSynchronizer(
+	store *store.ApisixEtcdStore,
+	apisixHealthzURI string,
+	gatewaySyncConcurrency int,
+) *ApisixConfigSynchronizer {
+	if gatewaySyncConcurrency <= 0 {
+		gatewaySyncConcurrency = cfg.DefaultGatewaySyncConcurrency
+	}
 	syncer := &ApisixConfigSynchronizer{
-		store:            store,
+		store:          store,
+		gatewaySyncSem: make(chan struct{}, gatewaySyncConcurrency),
+
 		apisixHealthzURI: apisixHealthzURI,
 		logger:           logging.GetLogger().Named("apisix-config-synchronizer"),
 	}
@@ -66,8 +76,12 @@ func (as *ApisixConfigSynchronizer) SyncRelease(
 	}
 	key := releaseInfo.GetStageKey()
 
-	as.flushMux.Lock()
-	defer as.flushMux.Unlock()
+	as.gatewaySyncSem <- struct{}{}
+	defer func() {
+		<-as.gatewaySyncSem
+	}()
+	as.syncMux.RLock()
+	defer as.syncMux.RUnlock()
 
 	as.logger.Debugw("flush changes", append(releaseInfo.LogFields(), "key", key, "config", config)...)
 	err := as.store.AlterStage(ctx, releaseInfo, config)
@@ -90,8 +104,8 @@ func (as *ApisixConfigSynchronizer) SyncGlobal(
 	ctx context.Context,
 	config *entity.ApisixGlobalResource,
 ) error {
-	as.flushMux.Lock()
-	defer as.flushMux.Unlock()
+	as.syncMux.Lock()
+	defer as.syncMux.Unlock()
 	as.logger.Debugw("flush global changes", "config", config)
 	err := as.store.AlterGlobal(ctx, config)
 	if err != nil {
