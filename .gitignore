@@ -19,5 +19,16 @@ bkcodeai.json
 .worktrees
 
 *.png
+
 docs/superpowers
 specs/
+.specify/
+.superpowers/
+.codex/
+.codebuddy/
+.venv
+node_modules
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.benchmarks

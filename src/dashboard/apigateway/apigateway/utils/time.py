@@ -22,7 +22,6 @@ from typing import Union
 
 import arrow
 from dateutil.tz import tzutc
-from django.conf import settings
 from django.utils import timezone
 
 ARROW_FORMAT_WITH_TZ = "YYYY-MM-DD HH:mm:ssZ"
@@ -84,13 +83,6 @@ def timestamp(value, *args, **kwargs):
     if isinstance(value, datetime.datetime):
         value = aware_time(value)
     return arrow.get(value, *args, **kwargs).int_timestamp
-
-
-def far_away_future():
-    if settings.USE_TZ:
-        return datetime.datetime(year=2050, month=1, day=1, tzinfo=datetime.timezone.utc)
-
-    return datetime.datetime(year=2050, month=1, day=1)
 
 
 def to_datetime_from_now(days: Union[int, None] = None) -> datetime.datetime:

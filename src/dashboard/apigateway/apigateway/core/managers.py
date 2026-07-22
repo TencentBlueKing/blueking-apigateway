@@ -19,7 +19,6 @@
 import itertools
 import json
 import operator
-from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
@@ -64,20 +63,6 @@ class StageManager(models.Manager):
 
     def get_name_id_map(self, gateway_id: int):
         return dict(self.filter(gateway_id=gateway_id).values_list("name", "id"))
-
-    def get_gateway_name_to_active_stage_names(self, gateways) -> Dict[str, List[str]]:
-        gateway_id_to_name = {g.id: g.name for g in gateways}
-
-        gateway_name_to_stage_names = defaultdict(list)
-        stages = self.filter(gateway_id__in=gateway_id_to_name.keys(), status=StageStatusEnum.ACTIVE.value).values(
-            "gateway_id", "name"
-        )
-        for stage in stages:
-            gateway_id = stage["gateway_id"]
-            gateway_name = gateway_id_to_name[gateway_id]
-            gateway_name_to_stage_names[gateway_name].append(stage["name"])
-
-        return gateway_name_to_stage_names
 
     def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
         return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()

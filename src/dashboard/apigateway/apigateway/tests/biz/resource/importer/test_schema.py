@@ -16,17 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
-
 from apigateway.biz.openapi.schema import (
     SchemaValidateErr,
     convert_openapi2_formdata_to_openapi,
     convert_openapi2_parameters_to_openapi,
     convert_openapi2_response_headers_to_openapi,
     convert_operation_v3_to_v2,
-    convert_parameters_to_openapi2,
-    convert_request_body_to_openapi2,
-    convert_responses_to_openapi2,
+    convert_parameters,
+    convert_request_body,
+    convert_responses,
 )
 
 
@@ -85,33 +83,33 @@ class TestSchema:
         result = convert_openapi2_response_headers_to_openapi(headers)
         assert result == expected_output
 
-    def test_convert_parameters_to_openapi2(self):
+    def test_convert_parameters(self):
         openapi_parameters = [{"name": "id", "in": "query", "schema": {"type": "integer"}, "required": True}]
 
         expected_output = [{"name": "id", "in": "query", "type": "integer", "required": True}]
 
-        result = convert_parameters_to_openapi2(openapi_parameters)
+        result = convert_parameters(openapi_parameters, [])
         assert result == expected_output
 
-    def test_convert_request_body_to_openapi2(self):
+    def test_convert_request_body(self):
         request_body = {
             "content": {"application/json": {"schema": {"type": "object", "properties": {"name": {"type": "string"}}}}}
         }
 
-        expected_output = [
+        expected_parameters = [
             {
                 "in": "body",
                 "name": "body",
                 "required": False,
                 "schema": {"type": "object", "properties": {"name": {"type": "string"}}},
-                "consumes": ["application/json"],
             }
         ]
 
-        result = convert_request_body_to_openapi2(request_body)
-        assert result == expected_output
+        parameters, consumes = convert_request_body(request_body)
+        assert parameters == expected_parameters
+        assert consumes == ["application/json"]
 
-    def test_convert_responses_to_openapi2(self):
+    def test_convert_responses(self):
         responses = {
             "200": {
                 "description": "Success",
@@ -128,14 +126,9 @@ class TestSchema:
             }
         }
 
-        result = convert_responses_to_openapi2(responses)
+        result, produces = convert_responses(responses)
         assert result == expected_output
-
-    @pytest.fixture(autouse=True)
-    def mock_convert_functions(self, mocker):
-        mocker.patch("apigateway.biz.openapi.schema.convert_request_body", return_value=([], []))
-        mocker.patch("apigateway.biz.openapi.schema.convert_parameters", return_value=[])
-        mocker.patch("apigateway.biz.openapi.schema.convert_responses", return_value=({}, []))
+        assert produces == ["application/json"]
 
     def test_convert_operation_v3_to_v2(self):
         v3_operation = {
@@ -164,10 +157,23 @@ class TestSchema:
             "summary": "Get User",
             "operationId": "getUser",
             "tags": ["user"],
-            "parameters": [],
-            "consumes": [],
-            "responses": {},
-            "produces": [],
+            "parameters": [
+                {
+                    "in": "body",
+                    "name": "body",
+                    "required": False,
+                    "schema": {"type": "object", "properties": {"id": {"type": "string"}}},
+                },
+                {"name": "userId", "in": "path", "required": True, "type": "string"},
+            ],
+            "consumes": ["application/json"],
+            "responses": {
+                "200": {
+                    "description": "successful operation",
+                    "schema": {"type": "object", "properties": {"name": {"type": "string"}}},
+                }
+            },
+            "produces": ["application/json"],
         }
 
         result = convert_operation_v3_to_v2(v3_operation)
