@@ -233,62 +233,6 @@ def convert_openapi2_response_headers_to_openapi(headers: dict) -> dict:
     return openapi_headers
 
 
-def convert_parameters_to_openapi2(openapi_parameters):
-    """
-    转换 OpenAPI 3.0 的参数列表到 OpenAPI 2.0 的格式。
-    """
-    parameters_openapi2 = []
-    for param in openapi_parameters:
-        v2_param = param.copy()  # 复制参数对象
-        if "schema" in param:
-            # OpenAPI 3.0 中的 'schema' 需要被展开到参数对象的根级别
-            v2_param.update(param["schema"])
-            del v2_param["schema"]
-        if "content" in param:
-            # 对于参数的 'content'，我们只能选择一个媒体类型
-            content_type, content_value = next(iter(param["content"].items()))
-            v2_param["type"] = content_value["schema"]["type"]
-            del v2_param["content"]
-        parameters_openapi2.append(v2_param)
-    return parameters_openapi2
-
-
-def convert_request_body_to_openapi2(request_body):
-    """
-    转换 OpenAPI 3.0 的请求体到 OpenAPI 2.0 的参数格式。
-    """
-    parameters = []
-    for content_type, content_value in request_body["content"].items():
-        if "schema" not in content_value:
-            continue
-        param = {
-            "in": "body",
-            "name": "body",
-            "required": request_body.get("required", False),
-            "schema": content_value["schema"],
-            "consumes": [content_type],
-        }
-        # 添加对应媒体类型的 'consumes' 字段
-        parameters.append(param)
-    return parameters
-
-
-def convert_responses_to_openapi2(responses):
-    """
-    转换 OpenAPI 3.0 的响应对象到 OpenAPI 2.0 的格式。
-    """
-    responses_openapi2 = {}
-    for status_code, response3 in responses.items():
-        response2 = {"description": response3.get("description", ""), "schema": {}}
-        # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
-        for content_value in response3.get("content", {}).values():
-            if "schema" not in content_value:
-                continue
-            response2["schema"] = content_value["schema"]  # 直接取 schema，不区分媒体类型
-        responses_openapi2[status_code] = response2
-    return responses_openapi2
-
-
 def convert_operation_v3_to_v2(v3_operation):
     """
     将 OpenAPI 3.0 的 operation 对象转换为 OpenAPI 2.0 的 operation 对象。

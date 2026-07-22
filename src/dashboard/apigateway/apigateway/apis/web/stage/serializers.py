@@ -370,13 +370,6 @@ class StageStatusInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.stage.serializers.StageStatusInputSLZ"
 
 
-class StageDeployInputSLZ(serializers.Serializer):
-    resource_version = serializers.SerializerMethodField(help_text="当前生效资源版本")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.stage.serializers.StageDeployInputSLZ"
-
-
 class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
     branch = serializers.CharField(help_text="部署分支", default="", required=False)
     deploy_id = serializers.CharField(help_text="部署ID", default="", required=False)

@@ -91,16 +91,6 @@ class TestStageManager:
         assert Stage.objects.filter(gateway=gateway, name="prod").exists()
         assert Stage.objects.filter(gateway=gateway, name="stag").exists()
 
-    def test_get_gateway_name_to_active_stage_names(self):
-        gateway = G(Gateway)
-
-        s1 = G(Stage, gateway=gateway, name="s1", status=StageStatusEnum.ACTIVE.value)
-        s2 = G(Stage, gateway=gateway, name="s2", status=StageStatusEnum.INACTIVE.value)
-        s3 = G(Stage, gateway=gateway, name="s3", status=StageStatusEnum.ACTIVE.value)
-
-        result = Stage.objects.get_gateway_name_to_active_stage_names([gateway])
-        assert result == {gateway.name: ["s1", "s3"]}
-
     def test_get_name(self, fake_gateway):
         s = G(Stage, gateway=fake_gateway)
 

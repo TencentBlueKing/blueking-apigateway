@@ -26,11 +26,7 @@ from apigateway.apps.plugin.constants import (
     PluginBindingSourceEnum,
     PluginTypeScopeEnum,
 )
-from apigateway.apps.plugin.managers import (
-    PluginBindingManager,
-    PluginConfigManager,
-    PluginTypeManager,
-)
+from apigateway.apps.plugin.managers import PluginBindingManager, PluginTypeManager
 from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
@@ -105,8 +101,6 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     description = description_i18n.default_field()
     description_en = description_i18n.field("en")
     yaml = models.TextField(blank=True, default=None, null=True)
-
-    objects: ClassVar[PluginConfigManager] = PluginConfigManager()
 
     class Meta:
         db_table = "plugin_config"

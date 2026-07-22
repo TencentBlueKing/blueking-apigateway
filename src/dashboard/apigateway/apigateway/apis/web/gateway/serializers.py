@@ -414,13 +414,6 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         }
 
 
-class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
-    feature_flags = serializers.DictField(help_text="网关特性集")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.gateway.serializers.GatewayFeatureFlagsOutputSLZ"
-
-
 class GatewayTenantAppInfoTenant(serializers.Serializer):
     mode = serializers.CharField(help_text="租户模式")
     id = serializers.CharField(help_text="租户 ID")
