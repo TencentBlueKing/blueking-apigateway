@@ -59,19 +59,35 @@
             />
           </BkSelect>
         </BkFormItem>
-        <BkFormItem :label="t('后端服务')">
+        <BkFormItem :label="t('后端/模型服务')">
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 150px;"
+            style="width: 250px;"
             @change="handleBackendChange"
           >
-            <BkOption
-              v-for="option in backendList"
-              :id="option.id"
-              :key="option.id"
-              :name="option.name"
-            />
+            <BkOptionGroup
+              :label="t('后端服务')"
+              collapsible
+            >
+              <BkOption
+                v-for="option in standardBackendList"
+                :id="option.id"
+                :key="option.id"
+                :name="option.name"
+              />
+            </BkOptionGroup>
+            <BkOptionGroup
+              :label="t('模型服务')"
+              collapsible
+            >
+              <BkOption
+                v-for="option in aiBackendList"
+                :id="option.id"
+                :key="option.id"
+                :name="option.name"
+              />
+            </BkOptionGroup>
           </BkSelect>
         </BkFormItem>
         <BkFormItem :label="t('资源')">
@@ -539,6 +555,8 @@ const excludeObj = ref<string[]>([]);
 const chartData: Record<string, any> = ref({});
 const stageList = ref<IStageItem[]>([]);
 const backendList = ref<IBackendItem[]>([]);
+const standardBackendList = computed(() => backendList.value.filter(item => item?.kind === 'standard'));
+const aiBackendList = computed(() => backendList.value.filter(item => item?.kind === 'ai'));
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
