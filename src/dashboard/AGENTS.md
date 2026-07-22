@@ -63,10 +63,9 @@ importable package is `apigateway/apigateway/`.
 - `scripts/check_api_consistency.py` and `scripts/config.yaml` - deterministic
   API/YAML/documentation consistency checks.
 - `apigateway/apigateway/tests/` - pytest suite, mirroring source structure.
-- `apigateway/apigateway/core/AGENTS.md` - core model, manager, kind, and backend
-  configuration rules.
-- `apigateway/apigateway/service/AGENTS.md` - service placement, packaging, and
-  public API rules.
+- `apigateway/apigateway/` layer guides: `apis/AGENTS.md`, `biz/AGENTS.md`,
+  `controller/AGENTS.md`, `service/AGENTS.md`, and `core/AGENTS.md`; read the
+  guide under the directory being changed.
 - `apigateway/apigateway/apis/web/plugin/AGENTS.md` - plugin fixtures,
   conversion, compatibility, and focused verification.
 - Repository-root `docs/ai-gateway-models.md` - AI Gateway domain contract.
@@ -88,11 +87,12 @@ appropriate layer instead of adding an import exception.
 Layer ownership:
 
 - `apis/` owns HTTP surfaces, serializers, boundary validation, parameter
-  shaping, and response assembly. Views should stay thin and avoid N+1 queries.
+  shaping, and response assembly. Read `apigateway/apigateway/apis/AGENTS.md`.
 - `biz/` owns use-case workflows, permission-aware decisions, lifecycle
   branching, audit or side-effect orchestration, transactions, and sequencing.
+  Read `apigateway/apigateway/biz/AGENTS.md`.
 - `controller/` owns release compilation, APISIX conversion, distribution, and
-  publisher tasks.
+  publisher tasks. Read `apigateway/apigateway/controller/AGENTS.md`.
 - `service/` owns focused reusable leaf capabilities over domain data. It must
   not absorb workflow decisions merely to bypass a `biz` import boundary. Read
   `apigateway/apigateway/service/AGENTS.md` before changing it.
@@ -114,23 +114,6 @@ When placing a function:
 5. Keep reusable single-model queryset logic in managers; do not put
    multi-model business queries there.
 
-For `biz/<domain>/` packages covered by the public API contract, callers from
-`apis/` and `apps/` must import public symbols from
-`apigateway.biz.<domain>`, not forbidden leaf modules. Keep `__all__` sections
-in the established `constant`, `Enum`, `class`, `functions`, `others` order.
-
-The API surfaces are intentionally independent:
-
-- `apigateway.apis.web` - dashboard APIs consumed by `dashboard-front`.
-- `apigateway.apis.open` - legacy open APIs with compatibility formats.
-- `apigateway.apis.v2.open` - public open APIs.
-- `apigateway.apis.v2.inner` - BlueKing internal APIs.
-- `apigateway.apis.v2.sync` - gateway automation and SDK sync APIs.
-
-Do not import view or serializer code across API surfaces. Duplicate small
-surface-specific logic when necessary; move code down only when it is genuinely
-shared business, service, or utility behavior.
-
 ## Domain Notes
 
 - The main model chain is
@@ -140,8 +123,8 @@ shared business, service, or utility behavior.
 - Stage and resource plugins use `PluginBinding`.
 - Scoped authentication and configuration live in `Context` records.
 - Backends are gateway-scoped, with stage-specific `BackendConfig` records.
-- Multi-tenant behavior is controlled by `ENABLE_MULTI_TENANT_MODE`.
-- `BKPAAS_ENVIRONMENT` selects the settings module; the default is `dev`.
+- `ENABLE_MULTI_TENANT_MODE` controls tenancy; `BKPAAS_ENVIRONMENT` selects the
+  settings module and defaults to `dev`.
 
 ## AI Gateway And Backend Configuration
 
@@ -151,19 +134,13 @@ code and tests take precedence over older plans or review reports.
 
 Keep these representations separate:
 
-1. The flat Web DTO and `AIBackendWebConfigAdapter`.
+1. The flat Web DTO and `AIBackendWebConfigAdapter`, owned by `apis/`.
 2. The normalized stored `AIBackendConfig` owned by `core/`.
-3. The APISIX plugin configuration compiled by `ServiceConvertor`.
+3. The APISIX plugin configuration compiled by `controller/`.
 
-Open and v2 automation APIs intentionally use the stored protocol rather than
-the Web DTO. Provider identity plus configuration persistence and encryption
-rules live in `core/AGENTS.md`. APISIX-specific provider conversion and timeout
-conversion happen only at the controller publish boundary.
-
-Plugin compatibility is enforced at several entry points; follow the plugin
-guide rather than changing only one path. In controller convertor changes,
-preserve the standard Service and Route blocks and their comments, and isolate
-AI-specific behavior in narrow branches.
+Follow the owning API, core, controller, and plugin guides when changing a
+representation or its transition. Do not repair one representation by leaking
+its surface-specific rules into another layer.
 
 ## Runtime Setup
 
@@ -238,36 +215,6 @@ uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && se
   database setup.
 - Reuse fixtures from `tests/conftest.py`; model setup commonly uses `G()` from
   `django_dynamic_fixture`.
-- API tests usually call URLs by `view_name` and assert through `resp.json()`.
-
-## OpenAPI And API Docs
-
-When changing an open API, keep these surfaces aligned:
-
-- Views and serializers under `apigateway/apigateway/apis/`.
-- Gateway YAML under `apigateway/apigateway/data/apigw-definitions/`.
-- Markdown docs under `apigateway/apigateway/data/apidocs/zh/`.
-
-Both lint targets run the consistency checker. For a focused rerun:
-
-```bash
-cd src/dashboard
-uv run make lint-openapi
-uv run make lint-openapi-help
-```
-
-The help target documents supported scope, API, JSON, and intentional fix
-options. Keep method, path, request, response, status, and error documentation
-aligned before push.
-
-## Response And Validation Patterns
-
-- Prefer serializer validation at the API boundary.
-- Web and v2 APIs commonly use `OKJsonResponse` / `FailJsonResponse`; legacy
-  open APIs may require `V1OKJsonResponse` / `V1FailJsonResponse`.
-- Sanitize client-visible security errors and log original exceptions with
-  `logger.exception(...)`.
-- Preserve unique drf-yasg `Meta.ref_name` values when adding serializers.
 
 ## Security And Secrets
 
