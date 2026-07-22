@@ -35,7 +35,7 @@
             :valid-date-range="['now-7d/d', 'now/d']"
             class="date-choose"
             format="YYYY-MM-DD HH:mm:ss"
-            style="min-width: 154px;background: #fff;"
+            style="min-width: 150px;background: #fff;"
             @update:model-value="(handleValueChange as any)"
           />
         </BkFormItem>
@@ -53,19 +53,35 @@
             />
           </BkSelect>
         </BkFormItem>
-        <BkFormItem :label="t('后端服务')">
+        <BkFormItem :label="t('后端/模型服务')">
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 150px;"
+            style="width: 300px;"
             @change="handleBackendChange"
           >
-            <BkOption
-              v-for="option in backendList"
-              :id="option.id"
-              :key="option.id"
-              :name="option.name"
-            />
+            <BkOptionGroup
+              :label="t('后端服务')"
+              collapsible
+            >
+              <BkOption
+                v-for="option in standardBackendList"
+                :id="option.id"
+                :key="option.id"
+                :name="option.name"
+              />
+            </BkOptionGroup>
+            <BkOptionGroup
+              :label="t('模型服务')"
+              collapsible
+            >
+              <BkOption
+                v-for="option in aiBackendList"
+                :id="option.id"
+                :key="option.id"
+                :name="option.name"
+              />
+            </BkOptionGroup>
           </BkSelect>
         </BkFormItem>
         <BkFormItem :label="t('资源')">
@@ -74,7 +90,7 @@
             :list="resourceList"
             :need-prefix="false"
             :placeholder="t('请输入资源名称或资源URL链接')"
-            style="min-width: 296.5px;"
+            style="min-width: 300px;"
           />
         </BkFormItem>
       </BkForm>
@@ -310,6 +326,8 @@ const stageList = ref<IStageItem[]>([]);
 const resourceList = ref<IResourceItem[]>([]);
 const backend_id = ref('');
 const backendList = ref<IBackendItem[]>([]);
+const standardBackendList = computed(() => backendList.value.filter(item => item?.kind === 'standard'));
+const aiBackendList = computed(() => backendList.value.filter(item => item?.kind === 'ai'));
 const dateTime = ref<[string, string]>([
   'now-10m',
   'now',

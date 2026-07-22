@@ -175,6 +175,7 @@ export interface IBackendListOutput {
   resource_count: string
   deletable: string
   updated_time: string | null
+  kind: string
 }
 
 /**

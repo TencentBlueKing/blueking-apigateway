@@ -275,6 +275,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-copy:before {
 	content: "\e14c";
 }
+.icon-ag-cube-1:before {
+	content: "\e21a";
+}
 .icon-ag-plugin-generic-fill:before {
 	content: "\e1a8";
 }
@@ -736,4 +739,13 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-yuan-tishi:before {
 	content: "\e216";
+}
+.icon-ag-apiwangguan:before {
+	content: "\e223";
+}
+.icon-ag-kebiancheng:before {
+	content: "\e224";
+}
+.icon-ag-AIwangguan:before {
+	content: "\e229";
 }
