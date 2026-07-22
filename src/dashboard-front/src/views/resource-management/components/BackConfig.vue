@@ -257,10 +257,7 @@ import { backendsPathCheck } from '@/services/source/resource.ts';
 // import mitt from '@/common/event-bus';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
-import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
-
-type IBackendConfig = IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number];
+import type { IBackendListOutput, IStandardBackendConfigOutput } from '@/services/types/responses/gateways.ts';
 
 interface IProps {
   detail?: any
@@ -302,9 +299,9 @@ const baseInfo = ref({
 // 服务列表下拉框数据
 const servicesData = ref<IBackendListOutput[]>([]);
 // 服务详情
-const servicesConfigs = ref<IBackendConfig[]>([]);
+const servicesConfigs = ref<IStandardBackendConfigOutput[]>([]);
 // 服务详情缓存数据
-const servicesConfigsStorage = ref<IBackendConfig[]>([]);
+const servicesConfigsStorage = ref<IStandardBackendConfigOutput[]>([]);
 // 校验列表
 const servicesCheckData = ref<{
   stage: {
@@ -541,7 +538,7 @@ async function handleServiceChange(backendId: number) {
     servicesConfigs.value,
     servicesConfigsStorage.value,
   ] = [
-    cloneDeep(res.configs || []),
+    cloneDeep(res.configs as IStandardBackendConfigOutput[] || []),
     cloneDeep(resStorage.configs || []),
   ];
   backConfigData.value.name = res.name;

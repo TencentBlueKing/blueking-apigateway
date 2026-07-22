@@ -28,7 +28,7 @@
       <BkButton
         class="new-btn"
         theme="primary"
-        @click="handleUnavailable"
+        @click="handleAdd"
       >
         {{ t('新建') }}
       </BkButton>
@@ -50,6 +50,10 @@
         @clear-filter="handleClearFilterKey"
       />
     </div>
+    <AddModelService
+      ref="addModelServiceRef"
+      @done="handleModelServiceAdded"
+    />
   </div>
 </template>
 
@@ -63,6 +67,7 @@ import {
   getBackendServiceList,
 } from '@/services/source/backend-services.ts';
 import { useGateway } from '@/stores';
+import AddModelService from './components/AddModelService.vue';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -73,13 +78,28 @@ const filterData = ref({
 });
 
 const tableRef = useTemplateRef('tableRef');
+const addModelServiceEl = useTemplateRef<InstanceType<typeof AddModelService> & {
+  show: (serviceId?: number) => Promise<void>
+  showClone: (serviceId: number) => Promise<void>
+}>(
+  'addModelServiceRef',
+);
 
-const apigwId = computed(() => gatewayStore.apigwId);
+const gatewayId = computed(() => gatewayStore.apigwId);
 
 const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     title: t('名称'),
     colKey: 'name',
+    ellipsis: true,
+    cell: (h: any, { row }: { row: any }) => (
+      <span
+        class="color-#3a84ff cursor-pointer"
+        onClick={() => handleEdit(row)}
+      >
+        { row.name }
+      </span>
+    ),
   },
   {
     title: t('描述'),
@@ -123,14 +143,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         <bk-button
           text
           theme="primary"
-          onClick={handleUnavailable}
+          onClick={() => handleEdit(row)}
         >
           { t('编辑') }
         </bk-button>
         <bk-button
           text
           theme="primary"
-          onClick={handleUnavailable}
+          onClick={() => handleClone(row)}
         >
           { t('克隆') }
         </bk-button>
@@ -185,10 +205,29 @@ watch(filterData, () => {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
 }, { deep: true });
 
-const getTableData = (params: Record<string, any> = {}) => getBackendServiceList(apigwId.value, {
+// 不是 AI 网关，跳转到 standard 后端服务页面
+watch(() => gatewayStore.currentGateway, () => {
+  if (([0, 1] as any[]).includes(gatewayStore.currentGateway?.kind)) {
+    router.replace({ name: 'BackendService' });
+  }
+}, { deep: true });
+
+const getTableData = (params: Record<string, any> = {}) => getBackendServiceList(gatewayId.value, {
   ...params,
   kind: 'ai',
 });
+
+const handleAdd = () => {
+  addModelServiceEl.value?.show();
+};
+
+const handleEdit = (row: TableRowData) => {
+  addModelServiceEl.value?.show(row.id);
+};
+
+const handleClone = (row: TableRowData) => {
+  addModelServiceEl.value?.showClone(row.id);
+};
 
 const handleSearch = () => {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
@@ -202,7 +241,7 @@ const handleClearFilterKey = () => {
 const handleResource = (id: number) => {
   const params = {
     name: 'ResourceSetting',
-    params: { id: apigwId.value },
+    params: { id: gatewayId.value },
     query: { backend_id: id },
   };
   router.push(params);
@@ -217,7 +256,7 @@ const handleDelete = (row: TableRowData) => {
     confirmText: t('删除'),
     confirmButtonTheme: 'danger',
     onConfirm: async () => {
-      await deleteBackendService(apigwId.value, row.id);
+      await deleteBackendService(gatewayId.value, row.id);
       Message({
         message: t('删除成功'),
         theme: 'success',
@@ -227,9 +266,10 @@ const handleDelete = (row: TableRowData) => {
   });
 };
 
-const handleUnavailable = () => {
-  Message({ message: t('该功能正在建设中') });
+const handleModelServiceAdded = () => {
+  tableRef.value?.fetchData(filterData.value);
 };
+
 </script>
 
 <style lang="scss" scoped>
