@@ -147,7 +147,7 @@ its surface-specific rules into another layer.
 Use `uv`, `pyproject.toml`, and `uv.lock` as the environment source of truth:
 
 ```bash
-cd src/dashboard
+cd "$DASHBOARD_ROOT"
 make init
 uv sync --locked --all-extras --dev
 uv run python --version
@@ -157,7 +157,7 @@ Refresh a stale `.venv` with `uv sync` before trusting lint or test results.
 After dependency changes, run:
 
 ```bash
-cd src/dashboard
+cd "$DASHBOARD_ROOT"
 make uv.lock
 uv lock --check
 ```
@@ -168,7 +168,7 @@ Edition-specific code lives under `apigateway/apigateway/editions/`. CI uses
 the enterprise edition before lint and tests:
 
 ```bash
-cd src/dashboard
+cd "$DASHBOARD_ROOT"
 uv run make edition-ee
 ```
 
@@ -181,7 +181,7 @@ requires another edition or an edition reset.
 in `pyproject.toml` and the Makefile.
 
 ```bash
-cd src/dashboard
+cd "$DASHBOARD_ROOT"
 uv run make lint-check
 uv run make lint
 ```
@@ -196,7 +196,7 @@ explicit non-mutating Ruff format check when formatting evidence is required.
 The full test gate is:
 
 ```bash
-cd src/dashboard
+cd "$DASHBOARD_ROOT"
 uv run make edition-ee
 uv run make test
 ```
@@ -204,7 +204,7 @@ uv run make test
 For a focused Django pytest target:
 
 ```bash
-cd src/dashboard
+cd "$DASHBOARD_ROOT"
 uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
 ```
 

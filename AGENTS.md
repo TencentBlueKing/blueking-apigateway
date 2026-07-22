@@ -36,6 +36,7 @@ runtime, architecture, and verification commands.
     ├── cases/              # BDD test cases in Chinese markdown
     ├── scripts/            # Generated Playwright test scripts
     ├── runtime/            # Runner helpers, setup, teardown, and config
+    │   └── package-lock.json # Additional tracked runtime lockfile
     ├── package.json
     └── package-lock.json
 ```

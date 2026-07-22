@@ -87,15 +87,18 @@ current boundaries aligned with `service/plugin/compatibility.py` and its tests:
 
 - `AI_ONLY_PLUGIN_CODES` are exposed only for AI resources.
 - `CONTROLLER_MANAGED_PLUGIN_CODES` such as `ai-proxy` and `ai-proxy-multi`
-  cannot be user-bound; the controller generates them during publication.
+  cannot be user-bound to Resources; the controller generates them when
+  compiling AI Services for publication.
 - An AI resource accepts only `AI_COMPATIBLE_PLUGIN_CODES`. Keep list filtering
   aligned with those policy sets, and reuse
   `is_plugin_compatible_with_resource_kind()` at create, update, and
   resource-import validation boundaries so one entrypoint cannot bypass the
   policy.
-- Stage plugin configuration remains permissive. When publishing an AI Service,
-  `ServiceConvertor` filters incompatible Stage plugins and logs the skipped
-  type codes without configs or credentials.
+- Stage plugin configuration remains permissive, including for
+  controller-managed plugin codes. When publishing an AI Service,
+  `ServiceConvertor` filters Stage plugins against `AI_COMPATIBLE_PLUGIN_CODES`,
+  the same policy set used by `is_plugin_compatible_with_resource_kind()` for
+  AI resources, and logs the skipped type codes without configs or credentials.
 
 When adding a plugin, decide explicitly whether it is AI-only, AI-compatible,
 or standard-only. Update the policy set and
