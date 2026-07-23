@@ -126,7 +126,15 @@
 
 <script setup lang="tsx">
 // @ts-nocheck
-import { cloneDeep, memoize, sortBy, sortedUniq, throttle, uniq } from 'lodash-es';
+import {
+  cloneDeep,
+  isEqual,
+  memoize,
+  sortBy,
+  sortedUniq,
+  throttle,
+  uniq,
+} from 'lodash-es';
 import {
   type BkUiSettings,
   PrimaryTable,
@@ -572,6 +580,19 @@ watch([selections, selectedRowKeys], () => {
     }
   }
 }, { deep: true });
+
+watch(
+  () => hiddenColumn,
+  (newVal: string[], oldVal: string[]) => {
+    if ((!showSettings || !newVal) && isEqual(newVal, oldVal)) return;
+    // 清空旧配置，触发重新初始化
+    tableSettings.value = null;
+    nextTick(() => {
+      tableKey.value = Date.now();
+    });
+  },
+  { deep: true },
+);
 
 const fetchData = (
   params: Record<string, any> = {},

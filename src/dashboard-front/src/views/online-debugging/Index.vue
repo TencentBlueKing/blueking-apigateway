@@ -79,19 +79,29 @@
                     <li
                       v-for="component of group.resources"
                       :key="component.name"
-                      :title="component.name"
                       :class="{ 'active': curComponentName === component.name }"
                       @click="() => handleShowDoc(component)"
                     >
-                      <p
-                        v-bk-xss-html="hightlight(component.name)"
-                        v-bk-overflow-tips
-                        class="name"
-                      />
+                      <div>
+                        <div class="flex">
+                          <p
+                            v-bk-xss-html="hightlight(component.name)"
+                            class="min-w-10px name"
+                            :title="component.name"
+                          />
+                          <BkTag
+                            v-if="component?.kind === 'ai'"
+                            theme="info"
+                            class="ml-6px"
+                          >
+                            {{ t('模型代理 API') }}
+                          </BkTag>
+                        </div>
+                      </div>
                       <p
                         v-bk-xss-html="hightlight(component.description) || t('暂无描述')"
-                        v-bk-overflow-tips
                         class="label"
+                        :title="component.description"
                       />
                     </li>
                   </ul>
@@ -205,6 +215,12 @@
             />
             <span class="source-title">{{ curResource?.name }}</span>
             <span class="source-subtitle">（ {{ curResource?.description }} ）</span>
+            <BkTag
+              v-if="curResource?.kind === 'ai'"
+              theme="info"
+            >
+              {{ t('模型代理 API') }}
+            </BkTag>
           </div>
           <div
             class="request-setting-content"
