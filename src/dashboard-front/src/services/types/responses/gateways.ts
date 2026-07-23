@@ -126,6 +126,7 @@ export interface IGatewayRetrieveOutput {
   api_domain: string
   docs_url: string
   public_key_fingerprint: string
+  description_en: string
   bk_app_codes: string[]
   related_app_codes: string[]
   tenant_mode: string

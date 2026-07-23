@@ -665,11 +665,6 @@
       :data="basicInfoData"
       @done="getBasicInfo"
     />
-    <CreateGateway
-      v-model="createGatewayShow"
-      :init-data="basicInfoDetailData"
-      @done="getBasicInfo"
-    />
     <AgSideslider
       v-model="isShowMarkdown"
       :title="t('查看开发指引')"
@@ -683,8 +678,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
-import { cloneDeep } from 'lodash-es';
 import {
   InfoBox,
   Message,
@@ -704,7 +697,6 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
-import CreateGateway from '@/components/create-gateway/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import Guide from '@/components/guide/Index.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
@@ -730,7 +722,6 @@ const gatewayStore = useGateway();
 const apigwId = ref(0);
 const formRemoveConfirmApigw = ref('');
 const basicInfoDetailLoading = ref(false);
-const createGatewayShow = ref(false);
 const isShowMarkdown = ref(false);
 const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
@@ -785,7 +776,6 @@ const basicInfoData = ref<IBasicInfoType>({
     password: '',
   },
 });
-const basicInfoDetailData = ref(cloneDeep(basicInfoData.value));
 const delApigwDialog = ref({
   isShow: false,
   loading: false,
@@ -1030,8 +1020,11 @@ const handleOperate = async (type: string) => {
   }
 
   if (['edit'].includes(type)) {
-    basicInfoDetailData.value = cloneDeep(basicInfoData.value);
-    createGatewayShow.value = true;
+    gatewayStore.setCurrentGateway(basicInfoData.value);
+    router.push({
+      name: 'CreateGateway',
+      query: { from: 'basic-info' },
+    });
     return;
   }
 
@@ -1042,7 +1035,7 @@ const handleOperate = async (type: string) => {
   }
 };
 
-const handleOpenNav = (url: string) => {
+const handleOpenNav = (url?: string) => {
   if (url) {
     window.open(url, '_blank');
   }
