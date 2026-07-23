@@ -551,6 +551,7 @@ const getApigwResources = async () => {
     path: resource.path,
     method: resource.method,
     resourceName: `${resource.method}：${resource.path}`,
+    kind: resource.kind,
   }));
   resourceList.value = sortByKey(results, 'name');
   if (resourceIdOption) {

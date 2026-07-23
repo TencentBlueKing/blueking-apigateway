@@ -18,7 +18,7 @@
 
 <template>
   <div
-    v-show="!gatewayStore.isProgrammableGateway"
+    v-show="!isProgrammableGateway"
     class="h-full"
   >
     <TopBar
@@ -72,20 +72,41 @@
               :class="{'flex-col gap-y-16px': !isCollapsed}"
             >
               <div class="flex-grow-1 flex items-center">
-                <div class="mr-8px">
-                  <BkButton
-                    v-show="!showBatch"
-                    class="w-142px"
-                    :class="{ 'super-big-button': !isCollapsed }"
-                    theme="primary"
-                    @click="handleCreateResource"
-                  >
-                    {{ t('新建') }}
-                  </BkButton>
-                </div>
+                <BkButton
+                  v-show="!showBatch && !isAIGateway"
+                  class="w-142px mr-8px"
+                  :class="{ 'super-big-button': !isCollapsed }"
+                  theme="primary"
+                  @click="handleCreateResource"
+                >
+                  {{ t('新建') }}
+                </BkButton>
+                <AgDropdown
+                  v-show="isAIGateway"
+                  theme="primary"
+                  placement="bottom-start"
+                  :text="t('新建')"
+                >
+                  <div class="px-8px py-3px w-250px add-resource-list">
+                    <div
+                      v-for="item of RESOURCE_TYPE_LIST"
+                      :key="item.value"
+                      class="hover-bg-#f5f7fa cursor-pointer p-8px add-resource-item"
+                      @click.stop="() => handleCreateResource(item)"
+                    >
+                      <div class="color-#313238 lh-20px font-700">
+                        {{ item.label }}
+                      </div>
+                      <div class="color-#4d4f56 lh-20px">
+                        {{ item.description }}
+                      </div>
+                    </div>
+                  </div>
+                </AgDropdown>
                 <BkButton
                   v-show="!showBatch"
-                  class="mr-8px"
+                  theme="primary"
+                  outline
                   @click="handleShowBatch"
                 >
                   {{ t('批量操作') }}
@@ -113,7 +134,6 @@
                     :popover-delay="0"
                   >
                     <BkButton
-                      class="mr-8px"
                       :disabled="!selectedRowKeys?.length"
                       @click="() => handleBatchOperate('delete')"
                     >
@@ -121,52 +141,11 @@
                     </BkButton>
                   </BkPopover>
                 </div>
-                <AgDropdown
-                  v-show="!isCollapsed"
-                  :text="t('更多')"
-                >
-                  <div class="nest-dropdown">
-                    <AgDropdown
-                      :dropdown-list="importDropData"
-                      is-text
-                      :text="t('导入')"
-                      placement="right-start"
-                      @on-change="handleImport"
-                    />
-                    <AgDropdown
-                      :dropdown-list="exportDropData"
-                      :is-disabled="!tableData.length"
-                      is-text
-                      :text="t('导出')"
-                      placement="right-start"
-                      @on-change="handleExport"
-                    />
-                  </div>
-                </AgDropdown>
-                <section
+                <Divider
                   v-show="isCollapsed"
-                  class="flex items-center"
-                >
-                  <AgDropdown
-                    v-show="!showBatch"
-                    :dropdown-list="importDropData"
-                    :text="t('导入')"
-                    @on-change="handleImport"
-                  />
-                  <AgDropdown
-                    :dropdown-list="exportDropData"
-                    :is-disabled="!tableData.length"
-                    :text="t('导出')"
-                    @on-change="handleExport"
-                  />
-                </section>
-
-                <span
-                  v-show="isCollapsed"
-                  class="split-line"
-                  :class="[showBatch ? 'batch' : '']"
+                  direction="vertical"
+                  class="h-12px"
                 />
-
                 <div
                   v-show="!showBatch && isCollapsed"
                   class="operate-btn-wrapper"
@@ -208,6 +187,51 @@
                     {{ t('生成版本') }}
                   </BkButton>
                 </div>
+                <Divider
+                  v-show="isCollapsed"
+                  direction="vertical"
+                  class="h-12px"
+                />
+                <AgDropdown
+                  v-show="!isCollapsed"
+                  :text="t('更多')"
+                  class="ml-8px"
+                >
+                  <div class="nest-dropdown">
+                    <AgDropdown
+                      :dropdown-list="importDropData"
+                      is-text
+                      :text="t('导入')"
+                      placement="right-start"
+                      @on-change="handleImport"
+                    />
+                    <AgDropdown
+                      :dropdown-list="exportDropData"
+                      :is-disabled="!tableData.length"
+                      is-text
+                      :text="t('导出')"
+                      placement="right-start"
+                      @on-change="handleExport"
+                    />
+                  </div>
+                </AgDropdown>
+                <section
+                  v-show="isCollapsed"
+                  class="flex items-center"
+                >
+                  <AgDropdown
+                    v-show="!showBatch"
+                    :dropdown-list="importDropData"
+                    :text="t('导入')"
+                    @on-change="handleImport"
+                  />
+                  <AgDropdown
+                    :dropdown-list="exportDropData"
+                    :is-disabled="!tableData.length"
+                    :text="t('导出')"
+                    @on-change="handleExport"
+                  />
+                </section>
                 <BkButton
                   v-show="showBatch"
                   class="operate-btn"
@@ -237,13 +261,13 @@
               <AgTable
                 ref="tableRef"
                 v-model:table-data="tableData"
+                show-settings
                 :api-method="getTableData"
                 :columns="columns"
+                :hidden-column="hiddenColumns"
                 :show-selection="isShowSelection"
                 :show-first-full-row="selectedRows.length > 0"
-                table-row-key="id"
-                show-settings
-                resizable
+                :filter-value="getFilterValue"
                 @filter-change="handleFilterChange"
                 @sort-change="handleSortChange"
                 @selection-change="handleSelectionChange"
@@ -406,7 +430,7 @@
       </template>
     </BkSideslider>
   </div>
-  <PageNotFound v-if="gatewayStore.isProgrammableGateway" />
+  <PageNotFound v-if="isProgrammableGateway" />
 </template>
 
 <script setup lang="tsx">
@@ -414,7 +438,25 @@ import {
   cloneDeep,
   differenceBy,
 } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { useRouteQuery } from '@vueuse/router';
+import { Divider, Message } from 'bkui-vue';
+import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
+import type {
+  IDialog,
+  IDropList,
+  IExportDialog,
+  IExportParams,
+} from '@/types/common';
+import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
+import { METHOD_THEMES } from '@/enums';
+import { isAfter24h } from '@/utils';
+import {
+  useFeatureFlag,
+  useGateway,
+  useResourceSetting,
+  useResourceVersion,
+} from '@/stores';
+import { usePopInfoBox, useTableFilterChange } from '@/hooks';
 import {
   exportDocs,
   getGatewayLabels,
@@ -428,37 +470,19 @@ import {
   getResourceList,
   getVersionList,
 } from '@/services/source/resource';
-import ResourceDetail from './components/ResourceDetail.vue';
-import SelectCheckBox from './components/SelectCheckBox.vue';
+import ResourceDetail from '@/views/resource-management/settings/components/ResourceDetail.vue';
+import SelectCheckBox from '@/views/resource-management/settings/components/SelectCheckBox.vue';
+import ResourceDocViewer from '@/views/resource-management/settings/components/ResourceDocViewer.vue';
+import TopBar from '@/views/resource-management/components/TopBar.vue';
+import ExportResourceDialog from '@/views/resource-management/components/ExportResourceDialog.vue';
+import ResourceDocSlider from '@/views/resource-management/components/ResourceDocSlider.vue';
+import PageNotFound from '@/views/404.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin-manage/Index.vue';
-import ResourceDocViewer from './components/ResourceDocViewer.vue';
 import AgTable from '@/components/ag-table/Index.vue';
-import TopBar from './components/TopBar.vue';
-import PageNotFound from '@/views/404.vue';
-// import mitt from '@/common/event-bus';
-import {
-  type IDialog,
-  type IDropList,
-  type IExportDialog,
-  type IExportParams,
-} from '@/types/common';
-import { isAfter24h } from '@/utils';
-import {
-  useFeatureFlag,
-  useGateway,
-  useResourceSetting,
-  useResourceVersion,
-} from '@/stores';
-import { HTTP_METHODS } from '@/constants';
-import { METHOD_THEMES } from '@/enums';
-import { type PrimaryTableProps } from '@blueking/tdesign-ui';
-import ExportResourceDialog from '../components/ExportResourceDialog.vue';
 import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';
-import ResourceDocSlider from '../components/ResourceDocSlider.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
-import { useRouteQuery } from '@vueuse/router';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -473,6 +497,7 @@ const gatewayStore = useGateway();
 const resourceVersionStore = useResourceVersion();
 const resourceSettingStore = useResourceSetting();
 const featureFlagStore = useFeatureFlag();
+const { handleTableFilterChange } = useTableFilterChange();
 
 // 资源列表 url query
 const queryKeyword = useRouteQuery('keyword');
@@ -487,15 +512,18 @@ const tableRef = useTemplateRef('tableRef');
 const tableQueries = ref<Record<string, any>>({});
 const selectedRowKeys = ref<number[]>([]);
 const selectedRows = ref<any[]>([]);
+const deleteLoading = ref(false);
 // 导入下拉
-const importDropData = ref([{
-  value: 'config',
-  label: t('资源配置'),
-},
-{
-  value: 'doc',
-  label: t('资源文档'),
-}]);
+const importDropData = ref<ApigwIDropList[]>([
+  {
+    value: 'config',
+    label: t('资源配置'),
+  },
+  {
+    value: 'doc',
+    label: t('资源文档'),
+  },
+]);
 
 // 导出下拉
 const exportDropData = ref<ApigwIDropList[]>([
@@ -537,12 +565,7 @@ const active = ref('resourceInfo');
 const isComponentLoading = ref(false);
 
 const searchValue = ref<any[]>([]);
-const searchData = shallowRef([
-  // {
-  //   name: t('模糊查询'),
-  //   id: 'keyword',
-  //   placeholder: t('请输入资源名称，前端请求路径'),
-  // },
+const searchData = ref([
   {
     name: t('资源名称'),
     id: 'name',
@@ -665,11 +688,10 @@ const deleteTableColumns = [
 ];
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-
-const isShowSelection = computed(() => {
-  return showBatch.value;
-});
-
+const isShowSelection = computed(() => showBatch.value);
+const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
+const hiddenColumns = computed(() => !gatewayStore.isAIGateway ? ['kind'] : []);
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
     label: item.name,
@@ -684,7 +706,6 @@ const customMethodsList = computed(() => {
     ...methods,
   ];
 });
-
 const labelsList = computed(() => {
   if (!labelsData.value.length) {
     return [];
@@ -695,7 +716,6 @@ const labelsList = computed(() => {
     value: item.id,
   }));
 });
-
 const columns = computed<PrimaryTableProps['columns']>(() => {
   const cols: PrimaryTableProps['columns'] = [
     {
@@ -703,40 +723,12 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       title: t('资源名称'),
       minWidth: 170,
       fixed: 'left',
-      ellipsis: {
-        props: { placement: 'right' },
-        content: (h, { row }) => (
-          <div>
-            {row.has_updated
-              ? <div class="inline-block w-8px h-8px mr-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1" />
-              : ''}
-            <span>{row.name}</span>
-            {
-              row.auth_config?.auth_verified_required === false && row.auth_config.app_verified_required === false
-                ? (
-                  <ag-icon
-                    v-bk-tooltips={{
-                      content: t('该资源未配置认证方式，存在安全风险。')
-                        + t('请点击"编辑"按钮为资源配置适当的认证方式。')
-                        + t('如当前配置符合预期，可忽略该提示。'),
-                    }}
-                    name="exclamation-circle-fill"
-                    class="ml-6px color-#F59500"
-                  />
-                )
-                : ''
-            }
-          </div>
-        ),
-      },
       cell: (h, { row }) => (
-        <span
-          class={
-            [
-              'name color-#3A84FF cursor-pointer overflow-hidden whitespace-nowrap text-ellipsis',
-              { 'name-updated': row.has_updated },
-            ]
-          }
+        <div
+          class={[
+            'name color-#3a84ff cursor-pointer flex items-center gap-x-6px w-full',
+            { 'name-updated': row.has_updated },
+          ]}
           onClick={() => handleShowInfo(row.id)}
         >
           {row.has_updated
@@ -746,36 +738,78 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                   content: t('资源已更新'),
                   delay: 300,
                 }}
-                class="inline-block w-8px h-8px mr-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1"
-              >
-              </div>
+                class="w-8px h-8px border border-solid border-#ff9c01 rounded-full bg-#fff3e1 flex-shrink-0"
+              />
             )
-            : ''}
-          <span>
-            {row.name}
-          </span>
-          {
-            row.auth_config?.auth_verified_required === false && row.auth_config.app_verified_required === false
-              ? (
-                <ag-icon
-                  v-bk-tooltips={{
-                    content: t('该资源未配置认证方式，存在安全风险。')
-                      + t('请点击"编辑"按钮为资源配置适当的认证方式。')
-                      + t('如当前配置符合预期，可忽略该提示。'),
-                  }}
-                  name="exclamation-circle-fill"
-                  class="ml-6px color-#F59500"
-                />
-              )
-              : ''
-          }
-        </span>
+            : null}
+          <div
+            v-bk-tooltips={{
+              placement: 'top',
+              content: row.name,
+              disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
+            }}
+            class="lh-20px truncate"
+            onMouseenter={(e: MouseEvent) =>
+              tableRef.value?.handleCellEnter({
+                e,
+                row,
+              } as {
+                e: MouseEvent
+                row: TableRowData
+              })}
+            onMouseleave={(e: MouseEvent) =>
+              tableRef.value?.handleCellLeave({
+                e,
+                row,
+              } as {
+                e: MouseEvent
+                row: TableRowData
+              })}
+          >
+            { row.name || '--' }
+          </div>
+          {(row.auth_config?.auth_verified_required && row.auth_config?.app_verified_required)
+            ? (
+              <ag-icon
+                v-bk-tooltips={{
+                  content:
+              t('该资源未配置认证方式，存在安全风险。')
+              + t('请点击"编辑"按钮为资源配置适当的认证方式。')
+              + t('如当前配置符合预期，可忽略该提示。'),
+                }}
+                name="exclamation-circle-fill"
+                class="min-w-14px flex-shrink-0 color-#f59500"
+              />
+            )
+            : null}
+        </div>
       ),
     },
     {
+      colKey: 'kind',
+      title: t('资源类型'),
+      ellipsis: true,
+      minWidth: 150,
+      filter: {
+        type: 'single',
+        showConfirmAndReset: true,
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        list: RESOURCE_TYPE_LIST,
+      },
+      cell: (h, { row }) => {
+        const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
+        return (
+          <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
+            {resourceTypeData?.label ?? t('普通 API')}
+          </bk-tag>
+        );
+      },
+    },
+    {
       colKey: 'backend.name',
-      title: t('后端服务'),
-      width: 130,
+      title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
+      minWidth: 130,
       ellipsis: true,
     },
     {
@@ -909,43 +943,81 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'act',
       title: t('操作'),
       fixed: 'right',
-      width: 150,
       cell: (h, { row }) => (
-        <div class="flex gap-12px">
+        <div class="flex">
           <bk-button
             text
             theme="primary"
-            onClick={() => handleEditResource(row.id, 'edit')}
+            onClick={() => handleEditResource(row.id, row.kind, 'edit')}
           >
             { t('编辑') }
           </bk-button>
-          <bk-button
-            class="px-10px"
-            text
-            theme="primary"
-            onClick={() => handleEditResource(row.id, 'clone')}
+          <div
+            class="ml-12px"
+            onClick={(e: MouseEvent) => e?.preventDefault()}
           >
-            { t('克隆') }
-          </bk-button>
-          <bk-pop-confirm
-            content={t('删除操作无法撤回，请谨慎操作')}
-            title={t('确认删除资源{resourceName}？', { resourceName: row.name || '' })}
-            trigger="click"
-            width="288"
-            onConfirm={() => handleDeleteResource(row.id)}
-          >
-            <bk-button
-              text
-              theme="primary"
+            <bk-dropdown
+              trigger="click"
+              popoverOptions={{
+                clickContentAutoHide: true,
+                hideIgnoreReference: true,
+              }}
             >
-              { t('删除') }
-            </bk-button>
-          </bk-pop-confirm>
+              {{
+                default: () => (
+                  <ag-icon
+                    class="flex items-center justify-center w-16px h-16px color-#3a84ff cursor-pointer"
+                    name="more-fill"
+                    size="16"
+                  />
+                ),
+                content: () => (
+                  <bk-dropdown-menu>
+                    <div>
+                      <bk-dropdown-item onClick={() => handleEditResource(row.id, row.kind, 'clone')}>
+                        <bk-button
+                          size="small"
+                          text
+                        >
+                          { t('克隆') }
+                        </bk-button>
+                      </bk-dropdown-item>
+                      <bk-dropdown-item onClick={() => handleConfirmDelete(row)}>
+                        <bk-button
+                          size="small"
+                          text
+                        >
+                          { t('删除') }
+                        </bk-button>
+                      </bk-dropdown-item>
+                    </div>
+                  </bk-dropdown-menu>
+                ),
+              }}
+            </bk-dropdown>
+          </div>
         </div>
       ),
     },
   ];
+
   return cols;
+});
+const getFilterValue = computed(() => {
+  const resultObj: Record<string, string | string[]> = {};
+  Object.keys(tableQueries.value).forEach((key) => {
+    const val = tableQueries.value[key];
+    if (!val) return;
+
+    if (Array.isArray(val) || !val.includes(',')) {
+      resultObj[key] = val;
+    }
+    else {
+      resultObj[key] = String(val).split(',');
+    }
+  });
+
+  return resultObj;
 });
 
 watch(
@@ -1034,6 +1106,7 @@ watch(
     tableQueries.value = {
       order_by: tableQueries.value.order_by,
       label_ids: tableQueries.value.label_ids,
+      kind: tableQueries.value.kind,
     };
 
     if (route.query?.backend_id) {
@@ -1083,7 +1156,10 @@ watch(
       });
     }
     else {
-      tableQueries.value = { label_ids: tableQueries.value.label_ids };
+      tableQueries.value = {
+        label_ids: tableQueries.value.label_ids,
+        kind: tableQueries.value.kind,
+      };
       queryKeyword.value = undefined;
       queryName.value = undefined;
       queryPath.value = undefined;
@@ -1253,29 +1329,72 @@ const handlePublicChange = () => {
 };
 
 // 新建资源
-const handleCreateResource = () => {
-  router.push({ name: 'ResourceCreate' });
+const handleCreateResource = (payload?: Record<string, string>) => {
+  if (isAIGateway.value) {
+    if (payload?.value === 'ai') {
+      router.push({
+        name: 'ResourceCreate',
+        query: {
+          kind: 'ai',
+        },
+      });
+      return;
+    }
+    router.push({
+      name: 'ResourceCreate',
+      query: {
+        kind: 'standard',
+      },
+    });
+  }
+  else {
+    router.push({
+      name: 'ResourceCreate',
+    });
+  }
 };
 
 // 编辑资源
-const handleEditResource = (id: number, type: string) => {
+const handleEditResource = (id: number, kind: string, type: string) => {
   const name = type === 'edit' ? 'ResourceEdit' : 'ResourceClone';
   resourceVersionStore.setPageStatus({ isCollapsed: isCollapsed.value });
   router.push({
     name,
-    params: { resourceId: id },
+    params: {
+      resourceId: id,
+    },
+    query: {
+      kind,
+    },
   });
 };
 
 // 删除资源
-const handleDeleteResource = async (id: number) => {
-  await deleteResources(gatewayId, id);
-  Message({
-    message: t('删除成功'),
-    theme: 'success',
-    width: 'auto',
+const handleConfirmDelete = (row: TableRowData) => {
+  usePopInfoBox({
+    isShow: true,
+    title: t('确认删除资源{resourceName}？', { resourceName: row.name || '' }),
+    type: 'warning',
+    subTitle: t('删除操作无法撤回，请谨慎操作'),
+    confirmText: t('删除'),
+    cancelText: t('取消'),
+    confirmButtonTheme: 'danger',
+    onConfirm: async () => {
+      try {
+        deleteLoading.value = true;
+        await deleteResources(gatewayId, row.id);
+        Message({
+          message: t('删除成功'),
+          theme: 'success',
+          width: 'auto',
+        });
+        handleSuccess();
+      }
+      finally {
+        deleteLoading.value = false;
+      }
+    },
   });
-  handleSuccess();
 };
 
 // 展示右边内容
@@ -1614,7 +1733,9 @@ onBeforeRouteLeave((to) => {
   }
 });
 
-const getTableData = async (params: Record<string, any> = {}) => getResourceList(gatewayId, params);
+const getTableData = async (params: Record<string, any> = {}) => {
+  return getResourceList(gatewayId, params);
+};
 
 const handleClearSelection = () => {
   selectedRows.value = [];
@@ -1628,45 +1749,12 @@ const handleClearQueries = () => {
   tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) => {
-  Object.entries(filterValue).forEach(([colKey, checkValues]) => {
-    if (checkValues.length) {
-      if (colKey === 'method') {
-        Object.assign(tableQueries.value, { method: checkValues.join(',') });
-        const methodSearchItem = searchValue.value.find((searchItem: any) => searchItem.id === 'method');
-        if (methodSearchItem) {
-          methodSearchItem.values = checkValues.map((item: string) => ({
-            id: item,
-            name: item,
-          }));
-        }
-        else {
-          searchValue.value.push({
-            id: 'method',
-            name: t('前端请求方法'),
-            values: checkValues.map((item: string) => ({
-              id: item,
-              name: item,
-            })),
-          });
-        }
-      }
-      else if (colKey === 'label_ids') {
-        Object.assign(tableQueries.value, { label_ids: checkValues.join(',') });
-      }
-      else {
-        Object.assign(tableQueries.value, { [colKey]: checkValues });
-      }
-    }
-    else {
-      if (colKey === 'method') {
-        const methodSearchItemIndex = searchValue.value.findIndex((searchItem: any) => searchItem.id === 'method');
-        if (methodSearchItemIndex > -1) {
-          searchValue.value.splice(methodSearchItemIndex, 1);
-        }
-      }
-      delete tableQueries.value[colKey];
-    }
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem) => {
+  handleTableFilterChange({
+    filterItem,
+    filterData: tableQueries,
+    searchOptions: searchData,
+    searchParams: searchValue,
   });
 };
 
@@ -1772,18 +1860,6 @@ onMounted(() => {
     width: 240px;
     margin-top: 0 !important;
     margin-left: 16px;
-  }
-}
-
-.split-line {
-  width: 1px;
-  height: 14px;
-  margin-right: 8px;
-  background-color: #C4C6CC;
-
-  &.batch {
-    margin-right: 12px;
-    margin-left: 4px;
   }
 }
 

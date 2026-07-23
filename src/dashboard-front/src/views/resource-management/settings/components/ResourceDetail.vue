@@ -607,7 +607,7 @@
                     :resizable="false"
                   >
                     <template #default="{ data }">
-                      <div v-if="data.hosts.length">
+                      <div v-if="data?.hosts?.length">
                         <div
                           v-for="host in data.hosts"
                           :key="host.host"

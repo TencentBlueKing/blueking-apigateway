@@ -25,6 +25,15 @@
     @validate="setInvalidPropId"
   >
     <BkFormItem
+      v-if="isAIGateway"
+      :label="t('资源类型')"
+      required
+    >
+      <BkTag theme="info">
+        {{ isModelProxy ? t('模型代理 API') : t('普通 API') }}
+      </BkTag>
+    </BkFormItem>
+    <BkFormItem
       :label="t('名称')"
       property="name"
       required
@@ -32,11 +41,14 @@
       <BkInput
         id="base-info-name"
         v-model="formData.name"
-        :placeholder="t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符')"
+        :placeholder="isModelProxy ? modelProxyNamePlaceholder : standardNamePlaceholder"
         class="name"
         clearable
       />
-      <div class="text-12px! color-#979ba5!">
+      <div
+        v-if="!isModelProxy"
+        class="text-12px color-#979ba5"
+      >
         {{ t("资源名称在网关下唯一，将在SDK中用作操作名称，若修改，请联系 SDK 用户做相应调整") }}
       </div>
     </BkFormItem>
@@ -76,7 +88,10 @@
         <span v-else>--</span>
       </div>
     </BkFormItem>
-    <BkFormItem :label="t('认证方式')">
+    <BkFormItem
+      :label="t('认证方式')"
+      required
+    >
       <BkCheckbox
         v-model="formData.auth_config.app_verified_required"
         :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
@@ -100,6 +115,7 @@
       v-if="formData.auth_config.app_verified_required"
       :label="t('检验应用权限')"
       :description="t('蓝鲸应用需申请资源访问权限')"
+      required
     >
       <BkSwitcher
         v-model="formData.auth_config.resource_perm_required"
@@ -112,6 +128,7 @@
       :label="t('是否公开')"
       :description="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
       property="is_public"
+      required
     >
       <div class="flex items-center public-switch">
         <BkSwitcher
@@ -137,10 +154,10 @@
 </template>
 
 <script setup lang="ts">
-import SelectCheckBox from '../settings/components/SelectCheckBox.vue';
-import { getGatewayLabels } from '@/services/source/gateway.ts';
-import { useRouteParams } from '@vueuse/router';
+import { useRouteParams, useRouteQuery } from '@vueuse/router';
 import { useGateway } from '@/stores';
+import { getGatewayLabels } from '@/services/source/gateway.ts';
+import SelectCheckBox from '@/views/resource-management/settings/components/SelectCheckBox.vue';
 
 interface IProps {
   detail?: any
@@ -158,9 +175,11 @@ const {
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
+const queryKind = useRouteQuery('kind');
 
 const formRef = ref(null);
 const formData = ref({
+  kind: queryKind.value,
   name: '',
   description: '',
   label_ids: [] as number[],
@@ -178,6 +197,19 @@ const labelsData = ref<{
   name: string
 }[]>([]);
 
+const resourcePermRequiredBackup = ref(false);
+
+// 错误表单项的 #id
+const invalidFormElementIds = ref<string[]>([]);
+
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
+// 是否是模型代理 API
+const isModelProxy = computed(() => isAIGateway && queryKind.value === 'ai');
+
+const standardNamePlaceholder = t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符');
+
+const modelProxyNamePlaceholder = t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符');
+
 const rules = {
   name: [
     {
@@ -185,21 +217,25 @@ const rules = {
       message: t('请填写名称'),
       trigger: 'blur',
     },
-    {
-      validator: (value: string) => {
-        const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,255}$|^$/;
-        return reg.test(value);
+    isModelProxy.value
+      ? {
+        trigger: 'blur',
+        message: modelProxyNamePlaceholder,
+        validator: (value: string) => {
+          const reg = /^[a-zA-Z][a-zA-Z0-9_]{3,28}$/;
+          return reg.test(value);
+        },
+      }
+      : {
+        trigger: 'blur',
+        message: standardNamePlaceholder,
+        validator: (value: string) => {
+          const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,255}$|^$/;
+          return reg.test(value);
+        },
       },
-      message: '由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符',
-      trigger: 'blur',
-    },
   ],
 };
-
-const resourcePermRequiredBackup = ref(false);
-
-// 错误表单项的 #id
-const invalidFormElementIds = ref<string[]>([]);
 
 watch(
   () => detail,
@@ -227,6 +263,7 @@ watch(
         }
       }
       formData.value = {
+        kind: queryKind.value,
         name: isClone ? `${name}_clone` : name,
         description,
         auth_config: { ...auth_config },

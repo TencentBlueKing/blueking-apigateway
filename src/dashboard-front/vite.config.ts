@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
         template: {
           compilerOptions: {
           // 多租户名称展示标签不要解析为组件
-            isCustomElement: tag => tag === 'bk-user-display-name',
+            isCustomElement: tag => tag === 'bk-user-display-name' || tag === 'status-tag',
           },
         },
       }),

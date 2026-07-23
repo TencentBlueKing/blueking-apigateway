@@ -238,7 +238,7 @@ const isMenuCollapsed = ref(false);
 const version113UpdateNoticeRef = ref();
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const menuList = computed<IMenu[]>(() => [
   {
     name: 'StageManagement',
@@ -263,6 +263,12 @@ const menuList = computed<IMenu[]>(() => [
     enabled: true,
     title: t('后端服务'),
     icon: 'fuwuguanli',
+  },
+  {
+    name: 'ModelService',
+    title: t('模型服务'),
+    icon: 'cube-1',
+    enabled: gatewayStore.isAIGateway,
   },
   {
     name: 'ResourceManagement',
@@ -390,6 +396,7 @@ const menuList = computed<IMenu[]>(() => [
 const needBkuiTablePage = computed(() => {
   return [
     'BackendService',
+    'ModelService',
     'PermissionApply',
     'PermissionRecord',
     'PermissionApp',
@@ -417,6 +424,16 @@ const routerViewWrapperClass = computed(() => {
   return `${initClass} ${displayBkuiTable}`;
 });
 
+const setBreadcrumbTitle = (payload: typeof route) => {
+  const { title, aiTitle = '', standardTitle = '' } = payload?.meta ?? {};
+  if (isAIGateway.value && aiTitle) {
+    headerTitle.value = (payload.query?.kind === 'ai' ? aiTitle as string : standardTitle as string) ?? '';
+  }
+  else {
+    headerTitle.value = (title as string) ?? '';
+  }
+};
+
 // 监听当前路由
 watch(
   [
@@ -427,9 +444,10 @@ watch(
   () => {
     activeMenuKey.value = (route.meta?.matchRoute || route.name) as string;
     gatewayId.value = Number(route.params.id || 0);
-    headerTitle.value = route.meta.title as string;
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(gatewayId.value);
+    // 设置面包屑标题
+    setBreadcrumbTitle(route);
     // if (!route.meta?.isMenu) {
     //   needMenu.value = false;
     // }
@@ -499,7 +517,7 @@ const handleCollapse = (collapsed: boolean) => {
 
 const handleGoPage = (routeName: string) => {
   gatewayStore.setApigwId(gatewayId.value);
-  // 如果是可编辑网关不存在资源配置，需要跳转到环境概览
+  // 如果是可编程网关，则不展示资源配置，需要跳转到环境概览
   const isEditGateway = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value)?.kind === 1;
   router.push({
     name: ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName,

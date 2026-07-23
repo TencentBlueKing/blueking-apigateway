@@ -81,7 +81,6 @@
                 <div>
                   <BkForm
                     ref="baseInfoRef"
-                    class="base-info-form"
                     :model="baseInfo"
                     form-type="vertical"
                   >
@@ -456,7 +455,7 @@ interface ILocalStageConfig {
 }
 
 interface IProps {
-  editId?: number
+  editId?: number | string
   disabled?: boolean
   base: {
     name: string

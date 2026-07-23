@@ -56,6 +56,7 @@ export interface IGatewaysBackendsListQuery {
   offset?: number
   name?: string
   type?: string
+  kind?: string
 }
 
 /** /gateways/{gateway_id}/labels/ [GET] */
