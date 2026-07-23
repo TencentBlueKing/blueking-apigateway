@@ -265,6 +265,12 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'fuwuguanli',
   },
   {
+    name: 'ModelService',
+    title: t('模型服务'),
+    icon: 'cube-1',
+    enabled: gatewayStore.isAIGateway,
+  },
+  {
     name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
@@ -390,6 +396,7 @@ const menuList = computed<IMenu[]>(() => [
 const needBkuiTablePage = computed(() => {
   return [
     'BackendService',
+    'ModelService',
     'PermissionApply',
     'PermissionRecord',
     'PermissionApp',
@@ -510,7 +517,7 @@ const handleCollapse = (collapsed: boolean) => {
 
 const handleGoPage = (routeName: string) => {
   gatewayStore.setApigwId(gatewayId.value);
-  // 如果是可编辑网关不存在资源配置，需要跳转到环境概览
+  // 如果是可编程网关，则不展示资源配置，需要跳转到环境概览
   const isEditGateway = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value)?.kind === 1;
   router.push({
     name: ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName,

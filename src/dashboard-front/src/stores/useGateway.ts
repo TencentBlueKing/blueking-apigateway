@@ -21,8 +21,6 @@ import { getGatewayDetail } from '@/services/source/gateway';
 
 type GatewayDetailType = Awaited<ReturnType<typeof getGatewayDetail>>;
 
-const { BK_DASHBOARD_URL } = window;
-
 export const useGateway = defineStore('useGateway', {
   state: (): {
     currentGateway: Partial<GatewayDetailType> | null
@@ -42,9 +40,8 @@ export const useGateway = defineStore('useGateway', {
   getters: {
     // 网关是否为可编程网关 kind === 1
     isProgrammableGateway: state => state.currentGateway?.kind === 1,
-    // 网关是否是ai网关
+    // 网关是否为 AI 网关 kind === 2
     isAIGateway: state => state.currentGateway?.kind === 2,
-    aiCompletionAPI: state => `${BK_DASHBOARD_URL}/gateways/${state.currentGateway?.id}/ai/completion/`,
   },
   actions: {
     // 设置网关id

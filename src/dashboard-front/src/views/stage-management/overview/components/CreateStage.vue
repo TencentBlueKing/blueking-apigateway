@@ -43,6 +43,7 @@
       </template>
       <template #default>
         <BkLoading :loading="isDialogLoading">
+          <!-- 新增/编辑态 -->
           <div
             v-if="actionType !== 'check'"
             class="sideslider-content"
@@ -108,6 +109,7 @@
                 </template>
               </BkCollapsePanel>
 
+              <!-- Standard 后端服务 -->
               <BkCollapsePanel name="stage-config">
                 <template #header>
                   <div class="panel-header">
@@ -321,8 +323,79 @@
                   </div>
                 </template>
               </BkCollapsePanel>
+
+              <!-- AI 模型服务 -->
+              <div
+                v-if="gatewayStore.isAIGateway && curStageData.aiBackends?.length"
+                class="pt-24px"
+              >
+                <BkCollapsePanel name="ai-backend-config">
+                  <template #header>
+                    <div class="panel-header">
+                      <AgIcon
+                        name="down-shape"
+                        :class="[activeKey?.includes('ai-backend-config') ? 'panel-header-show' : 'panel-header-hide']"
+                      />
+                      <div class="title">
+                        {{ t('环境的模型服务配置') }}
+                      </div>
+                    </div>
+                  </template>
+                  <template #content>
+                    <BkAlert
+                      class="ai-backend-alert"
+                      theme="info"
+                      :title="t('模型服务不支持负载均衡；创建时需配置所有环境，变更过的环境需重新连通测试')"
+                    />
+                    <BkCollapse
+                      v-model="activeAIBackendIds"
+                      class="ai-backend-list"
+                    >
+                      <BkCollapsePanel
+                        v-for="(backend, index) in curStageData.aiBackends"
+                        :key="backend.id"
+                        :name="backend.id"
+                      >
+                        <template #header>
+                          <div class="ai-backend-header">
+                            <AgIcon
+                              name="down-shape"
+                              class="ai-backend-toggle"
+                              :class="activeAIBackendIds.includes(backend.id)
+                                ? 'panel-header-show'
+                                : 'panel-header-hide'"
+                            />
+                            <span class="ai-backend-name">{{ backend.name }}</span>
+                            <BkTag :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].theme">
+                              <status-tag
+                                type="filled"
+                                :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].tagTheme"
+                                status=""
+                                class="mr--4px"
+                              />{{ t(AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].text) }}
+                            </BkTag>
+                          </div>
+                        </template>
+                        <template #content>
+                          <div class="ai-backend-content">
+                            <AIBackendConfigForm
+                              :ref="(el: any) => setAIBackendFormRef(el, index)"
+                              v-model="backend.config"
+                              :apigw-id="gatewayId"
+                              :backend-id="backend.id"
+                              :stage-id="stageId"
+                            />
+                          </div>
+                        </template>
+                      </BkCollapsePanel>
+                    </BkCollapse>
+                  </template>
+                </BkCollapsePanel>
+              </div>
             </BkCollapse>
           </div>
+
+          <!-- 只读态 -->
           <div
             v-else
             class="sideslider-content check-mode"
@@ -789,13 +862,40 @@ import {
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
 import type { IExtractApiReturn } from '@/services/types/utils';
+import AIBackendConfigForm from '@/views/model-services/components/AIBackendConfigForm.vue';
+import {
+  AI_BACKEND_TEST_STATUS_META,
+  type IAIBackendConfigFormData,
+  type IAIBackendConfigFormMethod,
+  type IStageAIBackendConfigOutput,
+  buildStageAIBackendConfig,
+  createDefaultAIBackendConfigFormData,
+  createEditAIBackendConfigFormData,
+  isAIBackendConfigTestPassed,
+} from '@/views/model-services/utils/ai-backend-config.ts';
 
 type IStageBackend = IExtractApiReturn<typeof getStageBackends>[number];
+type IStandardStageBackendConfig = Extract<IStageBackend['config'], { hosts: unknown }>;
+
+interface IStandardStageBackend {
+  id: number
+  name: string
+  kind: 'standard'
+  config: IStandardStageBackendConfig
+}
+
+interface IAIStageBackend {
+  id: number
+  name: string
+  kind: 'ai'
+  config: IAIBackendConfigFormData
+}
 
 interface ICurStageData {
   name: string
   description: string
-  backends: IStageBackend[]
+  backends: IStandardStageBackend[]
+  aiBackends: IAIStageBackend[]
 }
 
 interface IProps { stageId?: number }
@@ -815,8 +915,9 @@ const featureFlagStore = useFeatureFlag();
 
 const isShow = ref(false);
 const isAdsorb = ref(false);
-const activeKey = ref(['base-info', 'stage-config']);
-const activeIndex = ref([0]);
+const activeKey = ref(['base-info', 'stage-config', 'ai-backend-config']);
+const activeIndex = ref<number[]>([]);
+const activeAIBackendIds = ref<number[]>([]);
 const actionType = ref('add');
 // 需要高亮的后端服务名称
 const selectedBackendName = ref('');
@@ -824,24 +925,8 @@ const selectedBackendName = ref('');
 const curStageData = ref<ICurStageData>({
   name: '',
   description: '',
-  backends: [
-    {
-      id: 0,
-      name: '',
-      config: {
-        type: 'node',
-        timeout: 30,
-        loadbalance: 'weighted-roundrobin',
-        hosts: [
-          {
-            scheme: 'http',
-            host: '',
-            weight: 100,
-          },
-        ],
-      },
-    },
-  ],
+  backends: [],
+  aiBackends: [],
 });
 
 // 侧边loading
@@ -959,6 +1044,7 @@ const rules = {
 };
 
 const backendConfigFormRefs: InstanceType<typeof Form>[] = [];
+const aiBackendFormRefs = ref<Array<IAIBackendConfigFormMethod | null>>([]);
 
 const healthCheckRefMap: Record<number, InstanceType<typeof HealthChecks>> = {};
 
@@ -1001,7 +1087,7 @@ watch(
 );
 
 // 默认值
-const defaultConfig = () => {
+const defaultConfig = (): IStandardStageBackendConfig => {
   return {
     type: 'node',
     timeout: 30,
@@ -1022,39 +1108,86 @@ const setBackendConfigRef = (el: InstanceType<typeof Form>) => {
   }
 };
 
+const setAIBackendFormRef = (el: IAIBackendConfigFormMethod, index: number) => {
+  if (el) {
+    aiBackendFormRefs.value[index] = el;
+  }
+};
 const setHealthChecksRef = (el: InstanceType<typeof HealthChecks>, backend: { id: number }) => {
   if (el && backend.id) {
     healthCheckRefMap[backend.id] = el;
   }
 };
 
+const setStageBackendList = (backendList: IStageBackend[]) => {
+  curStageData.value.backends = backendList
+    .filter(backend => backend.kind === 'standard')
+    .map(backend => ({
+      id: backend.id,
+      name: backend.name,
+      kind: 'standard',
+      config: backend.config as IStandardStageBackendConfig,
+    }));
+  curStageData.value.aiBackends = backendList
+    .filter(backend => backend.kind === 'ai')
+    .map(backend => ({
+      id: backend.id,
+      name: backend.name,
+      kind: 'ai',
+      config: createEditAIBackendConfigFormData(
+        backend.config as IStageAIBackendConfigOutput,
+        stageId,
+      ),
+    }));
+  activeIndex.value = curStageData.value.backends.map((_, index) => index);
+  activeAIBackendIds.value = curStageData.value.aiBackends.map(backend => backend.id);
+};
+
 // 新建初始化（新建）
 const addInit = async () => {
   isDialogLoading.value = true;
-  // 获取当前网关下的backends(获取后端服务列表)
-  const res = await getBackendServiceList(gatewayId.value);
-  // console.log('获取all后端服务列表', res);
-  activeIndex.value = [];
-  curStageData.value.backends = res.results.map((item: any, index: number) => {
-    activeIndex.value.push(index);
-    // 后端服务配置默认值
-    return {
+  try {
+    const [standardResult, aiResult] = await Promise.all([
+      getBackendServiceList(gatewayId.value, {
+        kind: 'standard',
+        limit: 10000,
+      }),
+      getBackendServiceList(gatewayId.value, {
+        kind: 'ai',
+        limit: 10000,
+      }),
+    ]);
+    curStageData.value.backends = standardResult.results.map(item => ({
       id: item.id,
       name: item.name,
+      kind: 'standard',
       config: defaultConfig(),
-    };
-  });
-  isDialogLoading.value = false;
-  // initSidebarFormData(curStageData.value);
+    }));
+    curStageData.value.aiBackends = aiResult.results.map(item => ({
+      id: item.id,
+      name: item.name,
+      kind: 'ai',
+      config: createDefaultAIBackendConfigFormData(),
+    }));
+    activeIndex.value = curStageData.value.backends.map((_, index) => index);
+    activeAIBackendIds.value = curStageData.value.aiBackends.map(backend => backend.id);
+  }
+  finally {
+    isDialogLoading.value = false;
+  }
 };
 
 // 查看态初始化
 const checkInit = async () => {
   isDialogLoading.value = true;
   try {
-    const data = await getStageDetail(gatewayId.value, stageId!);
+    const [data, backendList] = await Promise.all([
+      getStageDetail(gatewayId.value, stageId),
+      getStageBackends(gatewayId.value, stageId),
+    ]);
     curStageData.value.name = data.name;
-    curStageData.value.backends = await getStageBackends(gatewayId.value, stageId!);
+    curStageData.value.description = data.description || '';
+    setStageBackendList(backendList);
   }
   finally {
     isDialogLoading.value = false;
@@ -1063,7 +1196,7 @@ const checkInit = async () => {
 
 // 获取环境详情（编辑）
 const getStageDetailFun = async () => {
-  const data = await getStageDetail(gatewayId.value, stageId!);
+  const data = await getStageDetail(gatewayId.value, stageId);
   curStageData.value.name = data.name;
   curStageData.value.description = data.description || '';
 };
@@ -1071,31 +1204,31 @@ const getStageDetailFun = async () => {
 // 获取环境后端服务详情（编辑）
 const getStageBackendList = async () => {
   isDialogLoading.value = true;
-  const backendList = await getStageBackends(gatewayId.value, stageId!);
-  curStageData.value.backends = backendList;
-  activeIndex.value = [];
-  backendList?.forEach((item: IStageBackend, index: number) => {
-    activeIndex.value.push(index);
-  });
-  // 数据转换
-  isDialogLoading.value = false;
+  try {
+    const backendList = await getStageBackends(gatewayId.value, stageId);
+    setStageBackendList(backendList);
+  }
+  finally {
+    isDialogLoading.value = false;
+  }
 };
 
 // 关闭侧边栏回调
 const handleCloseSideSlider = () => {
-  // 数据重置
   curStageData.value = {
     name: '',
     description: '',
-    backends: [
-      {
-        id: 0,
-        name: '',
-        config: defaultConfig(),
-      },
-    ],
+    backends: [],
+    aiBackends: [],
   };
-  activeIndex.value = [0];
+  activeKey.value = ['base-info', 'stage-config', 'ai-backend-config'];
+  activeIndex.value = [];
+  activeAIBackendIds.value = [];
+  backendConfigFormRefs.length = 0;
+  aiBackendFormRefs.value = [];
+  Object.keys(healthCheckRefMap).forEach((backendId) => {
+    delete healthCheckRefMap[Number(backendId)];
+  });
 };
 
 // 显示侧边栏
@@ -1106,7 +1239,7 @@ const handleShowSideslider = async (type: string, { backendName = '' } = {}) => 
   // 新建环境获取当前网关下的所有后端服务进行配置
   if (type === 'add') {
     isAdd.value = true;
-    addInit();
+    await addInit();
   }
   else if (type === 'edit') {
     isAdd.value = false;
@@ -1127,7 +1260,7 @@ const handleShowSideslider = async (type: string, { backendName = '' } = {}) => 
 };
 
 const handleLoadBalanceChange = (value: string, stageId: number) => {
-  const stage = curStageData.value.backends.find((item: IStageBackend) => item.id === stageId);
+  const stage = curStageData.value.backends.find((item: IStandardStageBackend) => item.id === stageId);
   if (stage) {
     if (value === 'chash') {
       stage.config.hash_on = 'vars';
@@ -1141,7 +1274,7 @@ const handleLoadBalanceChange = (value: string, stageId: number) => {
 };
 
 const handleHashOnChange = (value: string, stageId: number) => {
-  const stage = curStageData.value.backends.find((item: IStageBackend) => item.id === stageId);
+  const stage = curStageData.value.backends.find((item: IStandardStageBackend) => item.id === stageId);
   if (stage) {
     if (value === 'vars') {
       stage.config.key = 'remote_addr';
@@ -1153,18 +1286,87 @@ const handleHashOnChange = (value: string, stageId: number) => {
 };
 
 const handleHashOnKeyChange = (config: any) => {
-  const stage = curStageData.value.backends.find((item: IStageBackend) => item.id === config.id);
+  const stage = curStageData.value.backends.find((item: IStandardStageBackend) => item.id === config.id);
   if (stage) {
     stage.config.key = config.config.key;
   }
 };
 
 // 确定
+const validateForms = async () => {
+  try {
+    await baseInfoRef.value.validate();
+    for (const item of backendConfigFormRefs) {
+      await item?.validate();
+    }
+  }
+  catch {
+    return false;
+  }
+
+  for (let index = 0; index < aiBackendFormRefs.value.length; index++) {
+    const form = aiBackendFormRefs.value[index];
+    if (form && !await form.validate()) {
+      const backendId = curStageData.value.aiBackends[index]?.id;
+      if (backendId && !activeAIBackendIds.value.includes(backendId)) {
+        activeAIBackendIds.value.push(backendId);
+      }
+      return false;
+    }
+  }
+
+  const untestedBackend = curStageData.value.aiBackends.find((backend) => {
+    return !isAIBackendConfigTestPassed(backend.config, stageId);
+  });
+  if (untestedBackend) {
+    if (!activeKey.value.includes('ai-backend-config')) {
+      activeKey.value.push('ai-backend-config');
+    }
+    if (!activeAIBackendIds.value.includes(untestedBackend.id)) {
+      activeAIBackendIds.value.push(untestedBackend.id);
+    }
+    Message({
+      message: t('配置变更后需重新测试'),
+      theme: 'warning',
+    });
+    return false;
+  }
+  return true;
+};
+
+const buildStageParams = () => {
+  const standardBackends = cloneDeep(curStageData.value.backends);
+  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
+    Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
+      const backend = standardBackends.find(item => item.id === Number(backendId));
+      if (backend) {
+        const checks = healthCheckRef.getValue();
+        if (checks) {
+          Object.assign(backend.config, { checks });
+        }
+      }
+    });
+  }
+
+  return {
+    name: curStageData.value.name,
+    description: curStageData.value.description,
+    backends: [
+      ...standardBackends.map(backend => ({
+        id: backend.id,
+        config: backend.config,
+      })),
+      ...curStageData.value.aiBackends.map(backend => ({
+        id: backend.id,
+        config: buildStageAIBackendConfig(backend.config),
+      })),
+    ],
+  };
+};
+
 const handleConfirm = async () => {
-  // 表单校验
-  await baseInfoRef.value.validate();
-  for (const item of backendConfigFormRefs) {
-    item?.validate();
+  if (!await validateForms()) {
+    return;
   }
   if (isAdd.value) {
     await handleConfirmCreate();
@@ -1176,59 +1378,24 @@ const handleConfirm = async () => {
 
 // 新建环境
 const handleConfirmCreate = async () => {
-  const params = cloneDeep(curStageData.value);
-  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
-    Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
-      const backend = params.backends.find((backend: IStageBackend) => backend.id === Number(backendId));
-      if (backend) {
-        const checks = healthCheckRef.getValue();
-        if (checks) {
-          Object.assign(backend.config, { checks });
-        }
-      }
-    });
-  }
-  // 删除冗余参数
-  params.backends.forEach((v: any) => {
-    delete v.name;
-  });
-  await createStage(gatewayId.value, params);
+  await createStage(gatewayId.value, buildStageParams());
   Message({
     message: t('创建成功'),
     theme: 'success',
   });
   emit('done');
-  // 数据重置
   handleCloseSideSlider();
-  // 关闭dialog
   isShow.value = false;
 };
 
 // 编辑环境
 const handleConfirmEdit = async () => {
-  const params = cloneDeep(curStageData.value);
-  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
-    Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
-      const backend = params.backends.find((backend: IStageBackend) => backend.id === Number(backendId));
-      if (backend) {
-        const checks = healthCheckRef.getValue();
-        if (checks) {
-          Object.assign(backend.config, { checks });
-        }
-      }
-    });
-  }
-  // 删除冗余参数
-  params.backends.forEach((v: any) => {
-    delete v.name;
-  });
-  await putStage(gatewayId.value, stageId!, params);
+  await putStage(gatewayId.value, stageId, buildStageParams());
   Message({
     message: t('更新成功'),
     theme: 'success',
   });
   emit('done');
-  // 关闭dialog
   isShow.value = false;
 };
 
@@ -1245,7 +1412,7 @@ const handleCancel = () => {
 
 // 添加服务地址
 const handleAddServiceAddress = (name: string) => {
-  curStageData.value.backends.forEach((v: IStageBackend) => {
+  curStageData.value.backends.forEach((v: IStandardStageBackend) => {
     if (v.name === name) {
       v.config.hosts.push({
         scheme: 'http',
@@ -1259,7 +1426,7 @@ const handleAddServiceAddress = (name: string) => {
 
 // 删除服务地址
 const handleDeleteServiceAddress = (name: string, index: number) => {
-  curStageData.value.backends.forEach((v: IStageBackend) => {
+  curStageData.value.backends.forEach((v: IStandardStageBackend) => {
     if (v.name === name) {
       v.config.hosts.splice(index, 1);
     }
@@ -1632,6 +1799,66 @@ defineExpose({ handleShowSideslider });
         font-size: 13px;
       }
     }
+  }
+
+  .ai-backend-alert {
+    margin: 8px 0 12px;
+  }
+
+  .ai-backend-list {
+
+    :deep(.bk-collapse-item) {
+      margin-bottom: 24px;
+      background: #f5f7fb;
+
+      .bk-collapse-header {
+        height: 40px;
+        line-height: 40px;
+        background: #f0f1f5;
+      }
+
+      .bk-collapse-content {
+        padding: 0 32px;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .ai-backend-header {
+    display: flex;
+    width: 100%;
+    height: 40px;
+    padding: 0 16px;
+    color: #4d4f56;
+    background: #eaebf0;
+    align-items: center;
+    box-sizing: border-box;
+
+    .ai-backend-toggle {
+      margin-right: 8px;
+      transition: transform .2s;
+    }
+
+    .panel-header-show {
+      transform: rotate(0deg);
+    }
+
+    .panel-header-hide {
+      transform: rotate(-90deg);
+    }
+
+    .ai-backend-name {
+      font-weight: 700;
+      flex: 1;
+    }
+  }
+
+  .ai-backend-content {
+    padding: 20px 0 24px;
+    background: #f5f7fa;
   }
 
   .last-form-item {

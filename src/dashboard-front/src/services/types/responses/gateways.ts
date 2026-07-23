@@ -172,10 +172,45 @@ export interface IBackendListOutput {
   id: number
   name: string
   description: string
-  resource_count: string
-  deletable: string
+  resource_count: number
+  deletable: boolean
   updated_time: string | null
   kind: string
+  type: string
+}
+
+export interface IStandardBackendConfigOutput {
+  checks?: IHealthCheck
+  hosts: {
+    scheme: string
+    host: string
+    weight: number
+  }[]
+  loadbalance: string
+  stage: {
+    id: number
+    name: string
+  }
+  timeout: number
+  type: string
+  hash_on?: string
+  key?: string
+}
+
+export interface IAIBackendConfigOutput {
+  api_key: string | null
+  auth_header: Record<string, any> | null
+  endpoint: string
+  model: string | null
+  model_endpoint: string | null
+  model_options: Record<string, unknown>
+  provider: 'openai' | 'deepseek' | 'openai-compatible'
+  stage_id: number
+  timeout: number
+}
+
+export interface IBackendTestConnectionOutput {
+  models: string[]
 }
 
 /**
@@ -185,23 +220,9 @@ export interface IBackendRetrieveOutput {
   id: number
   name: string
   description: string | null
-  configs: {
-    checks?: IHealthCheck
-    hosts: {
-      scheme: string
-      host: string
-      weight: number
-    }[]
-    loadbalance: string
-    stage: {
-      id: number
-      name: string
-    }
-    timeout: number
-    type: string
-    hash_on?: string
-    key?: string
-  }[]
+  kind: string
+  type: string
+  configs: (IStandardBackendConfigOutput | IAIBackendConfigOutput)[]
 }
 
 /**
@@ -1369,58 +1390,72 @@ export interface IStageRetrieveOutput {
   new_resource_version: string
 }
 
+interface IStandardStageBackendConfigOutput {
+  type?: string
+  timeout: number
+  loadbalance: string
+  hash_on?: string
+  key?: string
+  hosts: {
+    scheme: string
+    host: string
+    weight?: number
+  }[]
+  checks?: {
+    active?: {
+      type?: string
+      timeout?: number
+      concurrency?: number
+      http_path?: string
+      https_verify_certificate?: boolean
+      healthy?: {
+        http_statuses?: number[]
+        successes?: number
+        interval?: number
+      }
+      unhealthy?: {
+        http_statuses?: number[]
+        http_failures?: number
+        tcp_failures?: number
+        timeouts?: number
+        interval?: number
+      }
+    }
+    passive?: {
+      type?: string
+      healthy?: {
+        http_statuses?: number[]
+        successes?: number
+      }
+      unhealthy?: {
+        http_statuses?: number[]
+        http_failures?: number
+        tcp_failures?: number
+        timeouts?: number
+      }
+    }
+  }
+}
+
+interface IAIStageBackendConfigOutput {
+  api_key: string | null
+  auth_header: Record<string, any> | null
+  endpoint: string
+  model: string | null
+  model_endpoint: string | null
+  model_options: Record<string, unknown>
+  provider: 'openai' | 'deepseek' | 'openai-compatible'
+  timeout: number
+}
+
 /**
  * GET /gateways/{gateway_id}/stages/{id}/backends/
  */
 export interface IStageBackendListOutput {
   id: number
   name: string
-  config: {
-    type?: string
-    timeout: number
-    loadbalance: string
-    hash_on?: string
-    key?: string
-    hosts: {
-      scheme: string
-      host: string
-      weight?: number
-    }[]
-    checks?: {
-      active?: {
-        type?: string
-        timeout?: number
-        concurrency?: number
-        http_path?: string
-        https_verify_certificate?: boolean
-        healthy?: {
-          http_statuses?: number[]
-          successes?: number
-          interval?: number
-        }
-        unhealthy?: {
-          http_statuses?: number[]
-          http_failures?: number
-          tcp_failures?: number
-          timeouts?: number
-          interval?: number
-        }
-      }
-      passive?: {
-        type?: string
-        healthy?: {
-          http_statuses?: number[]
-          successes?: number
-        }
-        unhealthy?: {
-          http_statuses?: number[]
-          http_failures?: number
-          tcp_failures?: number
-          timeouts?: number
-        }
-      }
-    }
-  }
+  kind: string
+  config: IStandardStageBackendConfigOutput | IAIStageBackendConfigOutput
 }
 
 /**
