@@ -235,7 +235,7 @@ flowchart LR
     Convertor --> Multi[多 instances: ai-proxy-multi]
 ```
 
-Web 输入和输出保持同一字段集合：`provider`、`endpoint`、`model_endpoint`、`api_key`、`auth_header`、`model`、`model_options`、`timeout`，backend 配置列表额外包含 `stage_id`。Web 不接收 `instances`、`auth`、`override`、`balancer`、`fallback_strategy` 等存储/APISIX 字段。
+Web 输入和输出的 AI 配置字段保持一致：`provider`、`endpoint`、`model_endpoint`、`api_key`、`auth_header`、`model`、`model_options`、`timeout`。backend 配置列表输入使用 `stage_id`，输出与普通 backend 一致，使用 `stage: {id, name}`。Web 不接收 `instances`、`auth`、`override`、`balancer`、`fallback_strategy` 等存储/APISIX 字段。
 
 内置 provider 的 Web `endpoint`、`model_endpoint` 可省略；如果前端回传只读值，必须与 registry 完全一致。自定义 `openai-compatible` 必须提供完整 Chat Completions endpoint；`model_endpoint` 可选且只保存在 instance 内供编辑和连接测试使用。
 

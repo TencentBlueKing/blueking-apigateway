@@ -90,7 +90,8 @@ Each stage configuration uses the following product-facing fields:
 
 | Field | Input rule | Output rule |
 | --- | --- | --- |
-| `stage_id` | Required stage identifier | Returned unchanged |
+| `stage_id` | Required stage identifier | Not returned |
+| `stage` | Not accepted | Returned as `{id, name}` |
 | `provider` | Required; `openai`, `deepseek`, or `openai-compatible` | Returned as the product provider stored in the database |
 | `endpoint` | Full Chat Completions URL; conditional rules below | Always returned |
 | `model_endpoint` | Optional only for `openai-compatible` | Registry value for built-ins; explicit stored value or `null` for custom providers |
