@@ -46,16 +46,6 @@
           {{ t('模型代理 API') }}
         </BkTag>
       </div>
-      <div class="h-24px position-relative">
-        <Chat
-          v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
-          :default-user-list="userList"
-          :owner="curUser.username"
-          :name="chatName"
-          :content="chatContent"
-          is-query
-        />
-      </div>
 
       <BkTab
         v-model:active="active"
@@ -111,7 +101,6 @@
               </div>
             </div>
           </div>
-          <!-- eslint-disable-next-line vue/no-v-html -->
           <div
             id="markdown"
             :key="renderHtmlIndex"
@@ -125,22 +114,16 @@
 </template>
 
 <script setup lang="ts">
-import {
-  useFeatureFlag,
-  useGateway,
-  useUserInfo,
-} from '@/stores';
+import { useGateway } from '@/stores';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import {
   getApigwResourceDocDocs,
   getApigwResourceSDKDocs,
-  // getApigwSDKDocs,
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
 import { getResourcesOnline } from '@/services/source/online-debugging';
-import Chat from '@/components/chat/Index.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
 import type { IDocsGatewaysResourcesListResponse } from '@/services/types/responses/docs.ts';
@@ -158,9 +141,7 @@ const {
 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const userStore = useUserInfo();
 const gatewayStore = useGateway();
-const featureFlagStore = useFeatureFlag();
 
 type IGatewayDocsDetail = IExtractApiReturn<typeof getGatewaysDetailsDocs>;
 
@@ -194,18 +175,6 @@ const curApigw = ref<Partial<IGatewayDocsDetail>>({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
-// const curSdk = ref({});
-// const sdks = ref([]);
-
-const curUser = computed(() => userStore.info);
-const userList = computed(() => {
-  // 去重
-  const set = new Set([curUser.value?.username, ...(curApigw.value?.maintainers ?? [])].filter(Boolean) as string[]);
-  return [...set];
-});
-const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
-const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
-// const SDKInfo = computed(() => t('网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK', { curStageText: stageName }));
 
 const md = new MarkdownIt({
   linkify: false,
