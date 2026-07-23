@@ -54,6 +54,8 @@ import 'highlight.js/styles/github.css';
 import '@blueking/bk-user-selector/vue3/vue3.css';
 // tdesign 表格样式
 import '@blueking/tdesign-ui/vue3/index.css';
+// status tag 业务组件
+import('@blueking/status-tag');
 
 const app = createApp(App);
 

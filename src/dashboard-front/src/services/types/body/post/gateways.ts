@@ -74,25 +74,50 @@ export interface IHealthCheck {
   }
 }
 
+export interface IStandardBackendConfigInput {
+  type?: string
+  timeout: number
+  loadbalance: string
+  hash_on?: string
+  key?: string
+  hosts: {
+    scheme: string
+    host: string
+    weight?: number
+  }[]
+  checks?: IHealthCheck
+  stage_id: number
+}
+
+export interface IAIBackendAuthHeaderInput {
+  name: string
+  value: string
+}
+
+export interface IAIBackendConfigInput {
+  stage_id: number
+  provider: 'openai' | 'deepseek' | 'openai-compatible'
+  endpoint?: string
+  model_endpoint?: string | null
+  api_key?: string | null
+  auth_header?: IAIBackendAuthHeaderInput | null
+  model?: string | null
+  model_options: Record<string, unknown>
+  timeout: number
+}
+
+export interface IBackendTestConnectionInputSLZ {
+  backend_id?: number
+  config: IAIBackendConfigInput
+}
+
 // POST /gateways/{gateway_id}/backends/ - 创建后端服务
 export interface IBackendInputSLZ {
   name: string
   description?: string
   type?: string
-  configs: {
-    type?: string
-    timeout: number
-    loadbalance: string
-    hash_on?: string
-    key?: string
-    hosts: {
-      scheme: string
-      host: string
-      weight?: number
-    }[]
-    checks?: IHealthCheck
-    stage_id: number
-  }[]
+  kind?: string
+  configs: (IStandardBackendConfigInput | IAIBackendConfigInput)[]
 }
 
 // POST /gateways/{gateway_id}/docs/archive/parse/ - 导入资源文档前，检查归档文件是否正确
@@ -449,57 +474,70 @@ export interface IGatewaySDKGenerateInputSLZ {
   version?: string
 }
 
+interface IStageStandardBackendConfigInput {
+  type?: string
+  timeout: number
+  loadbalance: string
+  hash_on?: string
+  key?: string
+  hosts: {
+    scheme: string
+    host: string
+    weight?: number
+  }[]
+  checks?: {
+    active?: {
+      type?: string
+      timeout?: number
+      concurrency?: number
+      http_path?: string
+      https_verify_certificate?: boolean
+      healthy?: {
+        http_statuses?: number[]
+        successes?: number
+        interval?: number
+      }
+      unhealthy?: {
+        http_statuses?: number[]
+        http_failures?: number
+        tcp_failures?: number
+        timeouts?: number
+        interval?: number
+      }
+    }
+    passive?: {
+      type?: string
+      healthy?: {
+        http_statuses?: number[]
+        successes?: number
+      }
+      unhealthy?: {
+        http_statuses?: number[]
+        http_failures?: number
+        tcp_failures?: number
+        timeouts?: number
+      }
+    }
+  }
+}
+
+interface IStageAIBackendConfigInput {
+  provider: 'openai' | 'deepseek' | 'openai-compatible'
+  endpoint?: string
+  model_endpoint?: string | null
+  api_key?: string | null
+  auth_header?: IAIBackendAuthHeaderInput | null
+  model?: string | null
+  model_options: Record<string, unknown>
+  timeout: number
+}
+
 // POST /gateways/{gateway_id}/stages/ - 创建环境
 export interface IStageInputSLZ {
   name: string
   description?: string
   backends: {
     id: number
-    config: {
-      type?: string
-      timeout: number
-      loadbalance: string
-      hash_on?: string
-      key?: string
-      hosts: {
-        scheme: string
-        host: string
-        weight?: number
-      }[]
-      checks?: {
-        active?: {
-          type?: string
-          timeout?: number
-          concurrency?: number
-          http_path?: string
-          https_verify_certificate?: boolean
-          healthy?: {
-            http_statuses?: number[]
-            successes?: number
-            interval?: number
-          }
-          unhealthy?: {
-            http_statuses?: number[]
-            http_failures?: number
-            tcp_failures?: number
-            timeouts?: number
-            interval?: number
-          }
-        }
-        passive?: {
-          type?: string
-          healthy?: {
-            http_statuses?: number[]
-            successes?: number
-          }
-          unhealthy?: {
-            http_statuses?: number[]
-            http_failures?: number
-            tcp_failures?: number
-            timeouts?: number
-          }
-        }
-      }
-    }
+    config: IStageStandardBackendConfigInput | IStageAIBackendConfigInput
   }[]
 }

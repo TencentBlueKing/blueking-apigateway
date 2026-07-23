@@ -81,7 +81,6 @@
                 <div>
                   <BkForm
                     ref="baseInfoRef"
-                    class="base-info-form"
                     :model="baseInfo"
                     form-type="vertical"
                   >
