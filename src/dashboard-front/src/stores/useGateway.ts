@@ -42,6 +42,8 @@ export const useGateway = defineStore('useGateway', {
   getters: {
     // 网关是否为可编程网关 kind === 1
     isProgrammableGateway: state => state.currentGateway?.kind === 1,
+    // 网关是否是ai网关
+    isAIGateway: state => state.currentGateway?.kind === 2,
     aiCompletionAPI: state => `${BK_DASHBOARD_URL}/gateways/${state.currentGateway?.id}/ai/completion/`,
   },
   actions: {

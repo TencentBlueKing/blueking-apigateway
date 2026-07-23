@@ -31,6 +31,7 @@
     </template>
     <BkButton
       v-else
+      :theme="theme"
       :disabled="isDisabled"
     >
       {{ text }}
@@ -75,6 +76,7 @@ interface IProps {
   isDisabled?: boolean
   isText?: boolean
   placement?: string
+  theme?: string
 }
 
 const {
@@ -84,6 +86,7 @@ const {
   isDisabled = false,
   isText = false,
   placement = 'bottom',
+  theme = '',
 } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'on-change': [data: IDropList] }>();

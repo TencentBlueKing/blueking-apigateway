@@ -25,47 +25,51 @@
     @validate="setInvalidPropId"
   >
     <BkFormItem
-      :label="t('服务')"
-      required
+      id="back-config-id"
       class="item-service"
+      property="id"
+      :label="t(serviceLabel)"
+      required
     >
-      <BkSelect
-        v-model="backConfigData.id"
-        :input-search="false"
-        class="service"
-        :popover-options="{ extCls: 'service-select-popover' }"
-        @change="handleServiceChange"
-      >
-        <BkOption
-          v-for="(item, index) in servicesData"
-          :key="index"
-          :value="item.id"
-          :label="item.name"
+      <div class="flex items-center gap-10px">
+        <BkSelect
+          v-model="backConfigData.id"
+          :input-search="false"
+          class="service"
+          :placeholder="t(`请选择${serviceLabel}`)"
+          :popover-options="{ extCls: 'service-select-popover' }"
+          @change="handleServiceChange"
         >
-          <div class="service-select-item">
-            <span>{{ item.name }}</span>
-            <template v-if="item.description">
-              <span
-                class="desc"
-                :title="item.description"
-              >（{{ item.description }}）</span>
-            </template>
-          </div>
-        </BkOption>
-      </BkSelect>
-      <BkButton
-        v-if="isEditService"
-        theme="primary"
-        class="ml-10px"
-        @click="editService"
-      >
-        {{ t('编辑服务') }}
-      </BkButton>
+          <BkOption
+            v-for="(item, index) of servicesData"
+            :key="index"
+            :value="item.id"
+            :label="item.name"
+          >
+            <div class="service-select-item">
+              <span>{{ item.name }}</span>
+              <template v-if="item.description">
+                <span
+                  class="desc"
+                  :title="item.description"
+                >（{{ item.description }}）</span>
+              </template>
+            </div>
+          </BkOption>
+        </BkSelect>
+        <BkButton
+          v-if="isEditService"
+          theme="primary"
+          @click="handleEditService"
+        >
+          {{ t('编辑服务') }}
+        </BkButton>
+      </div>
     </BkFormItem>
     <BkAlert
       v-if="isEditService"
       theme="error"
-      title="后端服务地址不允许为空，请更新"
+      :title="t('后端服务地址不允许为空，请更新')"
       class="table-warning"
     />
     <BkTable
@@ -81,15 +85,42 @@
         :resizable="false"
       >
         <template #default="{ data }">
-          {{ data?.stage?.name }}
+          {{ data?.stage?.name || '--' }}
         </template>
       </BkTableColumn>
+      <template v-if="isModelProxy">
+        <BkTableColumn
+          label="Provider"
+          :resizable="false"
+        >
+          <template #default="{ data }">
+            {{ data?.provider || '--' }}
+          </template>
+        </BkTableColumn>
+        <BkTableColumn
+          label="Endpoint"
+          :resizable="false"
+        >
+          <template #default="{ data }">
+            {{ data?.endpoint || '--' }}
+          </template>
+        </BkTableColumn>
+        <BkTableColumn
+          label="Model"
+          :resizable="false"
+        >
+          <template #default="{ data }">
+            {{ data?.model || '--' }}
+          </template>
+        </BkTableColumn>
+      </template>
       <BkTableColumn
+        v-if="!isModelProxy"
         :label="t('后端服务地址')"
         :resizable="false"
       >
         <template #default="{ data }">
-          <div v-if="data.hosts.length">
+          <div v-if="data?.hosts?.length">
             <div
               v-for="host in data.hosts"
               :key="host.host"
@@ -142,98 +173,100 @@
         </template>
       </BkTableColumn>
     </BkTable>
-    <BkFormItem
-      :label="t('请求方法')"
-      required
-    >
-      <BkSelect
-        v-model="backConfigData.config.method"
-        :input-search="false"
-        :clearable="false"
-        class="method"
+    <template v-if="!isModelProxy">
+      <BkFormItem
+        :label="t('请求方法')"
+        required
       >
-        <BkOption
-          v-for="item in HTTP_METHODS"
-          :key="item.id"
-          :value="item.id"
-          :label="item.name"
-        />
-      </BkSelect>
-    </BkFormItem>
-    <BkFormItem
-      :label="t('请求路径')"
-      property="config.path"
-      required
-    >
-      <div class="flex items-center">
-        <BkInput
-          id="back-config-path"
-          v-model="backConfigData.config.path"
-          :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
-          clearable
-          class="w568"
-          @change="isPathValid = false"
-          @input="isPathValid = false"
-        />
-        <BkButton
-          theme="primary"
-          outline
-          class="ml-10px"
-          :disabled="!backConfigData.id || !backConfigData.config.path"
-          @click="handleCheckPath"
+        <BkSelect
+          v-model="backConfigData.config.method"
+          :input-search="false"
+          :clearable="false"
+          class="method"
         >
-          {{ t('校验并查看地址') }}
-        </BkButton>
-        <BkCheckbox
-          v-model="backConfigData.config.match_subpath"
-          class="ml-12px!"
-          disabled
-        >
-          {{ t('追加匹配的子路径') }}
-        </BkCheckbox>
-      </div>
-      <div class="text-12px! color-#979ba5!">
-        <!-- {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中，比如：/users/{id}/{env.type}/。") }} -->
-        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{'{}'}中") }}
+          <BkOption
+            v-for="item in HTTP_METHODS"
+            :key="item.id"
+            :value="item.id"
+            :label="item.name"
+          />
+        </BkSelect>
+      </BkFormItem>
+      <BkFormItem
+        :label="t('请求路径')"
+        property="config.path"
+        required
+      >
+        <div class="flex items-center">
+          <BkInput
+            id="back-config-path"
+            v-model="backConfigData.config.path"
+            :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
+            clearable
+            class="max-w-568px"
+            @change="isPathValid = false"
+            @input="isPathValid = false"
+          />
+          <BkButton
+            theme="primary"
+            outline
+            class="ml-10px"
+            :disabled="!backConfigData.id || !backConfigData.config.path"
+            @click="handleCheckPath"
+          >
+            {{ t('校验并查看地址') }}
+          </BkButton>
+          <BkCheckbox
+            v-model="backConfigData.config.match_subpath"
+            class="ml-12px!"
+            disabled
+          >
+            {{ t('追加匹配的子路径') }}
+          </BkCheckbox>
+        </div>
+        <div class="text-12px! color-#979ba5!">
+          <!-- {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中，比如：/users/{id}/{env.type}/。") }} -->
+          {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在{'{}'}中") }}
         <!-- <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a> -->
-      </div>
-      <div v-if="servicesCheckData.length && isPathValid">
-        <BkAlert
-          theme="success"
-          class="w-70% max-w-700px mt-10px"
-          :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
-        />
-        <BkTable
-          class="w-70% max-w-700px mt-10px"
-          :data="servicesCheckData"
-          :border="['outer', 'col']"
-        >
-          <BkTableColumn
-            :label="t('环境名称')"
-            :rowspan="({ row }: any) => row.rowSpan"
+        </div>
+        <div v-if="servicesCheckData.length && isPathValid">
+          <BkAlert
+            theme="success"
+            class="w-70% max-w-700px mt-10px"
+            :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
+          />
+          <BkTable
+            class="w-70% max-w-700px mt-10px"
+            :data="servicesCheckData"
+            :border="['outer', 'col']"
           >
-            <template #default="{ data }">
-              {{ data.stage?.name }}
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            :label="t('请求类型')"
-            width="100"
-          >
-            <template #default="{ data }">
-              {{ backConfigData?.config?.method || data?.stage?.name }}
-            </template>
-          </BkTableColumn>
-          <BkTableColumn :label="t('请求地址')">
-            <template #default="{ data }">
-              <span v-bk-tooltips="{ content: data.backend_url, disabled: !data.backend_url }">
-                {{ data.backend_url }}
-              </span>
-            </template>
-          </BkTableColumn>
-        </BkTable>
-      </div>
-    </BkFormItem>
+            <BkTableColumn
+              :label="t('环境名称')"
+              :rowspan="({ row }: any) => row.rowSpan"
+            >
+              <template #default="{ data }">
+                {{ data.stage?.name }}
+              </template>
+            </BkTableColumn>
+            <BkTableColumn
+              :label="t('请求类型')"
+              width="100"
+            >
+              <template #default="{ data }">
+                {{ backConfigData?.config?.method || data?.stage?.name }}
+              </template>
+            </BkTableColumn>
+            <BkTableColumn :label="t('请求地址')">
+              <template #default="{ data }">
+                <span v-bk-tooltips="{ content: data.backend_url, disabled: !data.backend_url }">
+                  {{ data.backend_url }}
+                </span>
+              </template>
+            </BkTableColumn>
+          </BkTable>
+        </div>
+      </BkFormItem>
+    </template>
   </BkForm>
 
   <AddBackendService
@@ -249,12 +282,12 @@
 import { cloneDeep } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import { useGateway } from '@/stores';
+import { t } from '@/locales';
 import {
   getBackendServiceDetail,
   getBackendServiceList,
 } from '@/services/source/backend-services.ts';
 import { backendsPathCheck } from '@/services/source/resource.ts';
-// import mitt from '@/common/event-bus';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
@@ -270,17 +303,20 @@ interface IProps {
     match_subpath: boolean
     enable_websocket: boolean
   }
+  serviceLabel?: string
+  isModelProxy?: boolean
 }
 
 const {
   detail = {},
   frontConfig,
+  serviceLabel = '服务',
+  isModelProxy = false,
 } = defineProps<IProps>();
 
 // 获取到服务数据后抛出一个事件
 const emit = defineEmits(['service-init']);
 
-const { t } = useI18n();
 const gatewayStore = useGateway();
 
 const backRef = ref();
@@ -323,6 +359,13 @@ const addBackendServiceRef = ref(null);
 const isServiceInit = ref(false);
 
 const rules = {
+  'id': [
+    {
+      required: true,
+      message: t(`请选择${serviceLabel}`),
+      trigger: 'change',
+    },
+  ],
   'config.path': [
     {
       required: true,
@@ -349,12 +392,12 @@ const isEditService = computed(() => {
   let flag = false;
   for (let i = 0; i < servicesConfigs.value?.length; i++) {
     const item = servicesConfigs.value[i];
-    if (!item?.hosts[0].host) {
+    if (!item?.hosts?.[0]?.host) {
       flag = true;
       break;
     }
   }
-  return flag;
+  return flag && !isModelProxy;
 });
 
 watch(
@@ -451,6 +494,14 @@ const handleClickOutSide = (e: Event) => {
 };
 
 const renderTimeOutLabel = () => {
+  if (isModelProxy) {
+    return (
+      <div>
+        <span>{t('超时时间')}</span>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div class="back-config-timeout">
@@ -462,56 +513,60 @@ const renderTimeOutLabel = () => {
           title={t('批量修改超时时间')}
           extCls="back-config-timeout-popover"
           is-show={isShowPopConfirm.value}
-          content={(
-            <div class="back-config-timeout-wrapper">
-              <div class="back-config-timeout-content">
-                <div class="back-config-timeout-input">
-                  <bk-input
-                    v-model={timeOutValue.value}
-                    maxlength={3}
-                    overMaxLengthLimit={true}
-                    class={isTimeEmpty.value ? 'time-empty-error' : ''}
-                    placeholder={t('请输入超时时间')}
-                    onInput={(value: string) => {
-                      handleTimeOutInput(value);
-                    }}
-                    // nativeOnKeypress={(value: string) => {
-                    //   value = value.replace(/\d/g, '');
-                    // }}
-                    autofocus={true}
-                    suffix="s"
-                    onEnter={() => handleConfirmTime()}
-                  />
-                </div>
-                <div class="back-config-timeout-tip">{t('最大 300s')}</div>
-              </div>
-              {
-                isTimeEmpty.value
-                  ? (
-                    <div class="time-empty-error">
-                      {t('超时时间不能为空')}
-                      {isTimeEmpty.value}
-                    </div>
-                  )
-                  : ''
-              }
-            </div>
-          )}
           onConfirm={() => handleConfirmTime()}
           onCancel={() => handleCancelTime()}
         >
-          <i
-            class="apigateway-icon icon-ag-bulk-edit edit-action"
-            v-bk-tooltips={{
-              content: (
-                <div>
-                  {t('自定义超时时间')}
+          {{
+            default: () => (
+              <i
+                class="apigateway-icon icon-ag-bulk-edit edit-action"
+                v-bk-tooltips={{
+                  content: (
+                    <div>
+                      {t('自定义超时时间')}
+                    </div>
+                  ),
+                }}
+                onClick={() => handleShowPopover()}
+                v-clickOutSide={(e: any) => handleClickOutSide(e)}
+              />
+            ),
+            content: () => (
+              <div class="back-config-timeout-wrapper">
+                <div class="back-config-timeout-content">
+                  <div class="back-config-timeout-input">
+                    <bk-input
+                      v-model={timeOutValue.value}
+                      maxlength={3}
+                      overMaxLengthLimit={true}
+                      class={isTimeEmpty.value ? 'time-empty-error' : ''}
+                      placeholder={t('请输入超时时间')}
+                      onInput={(value: string) => {
+                        handleTimeOutInput(value);
+                      }}
+                      // nativeOnKeypress={(value: string) => {
+                      //   value = value.replace(/\d/g, '');
+                      // }}
+                      autofocus={true}
+                      suffix="s"
+                      onEnter={() => handleConfirmTime()}
+                    />
+                  </div>
+                  <div class="back-config-timeout-tip">{t('最大 300s')}</div>
                 </div>
-              ),
-            }}
-            onClick={() => handleShowPopover()}
-            v-clickOutSide={(e: any) => handleClickOutSide(e)}
-          />
+                {
+                  isTimeEmpty.value
+                    ? (
+                      <div class="time-empty-error">
+                        {t('超时时间不能为空')}
+                        {isTimeEmpty.value}
+                      </div>
+                    )
+                    : ''
+                }
+              </div>
+            ),
+          }}
         </bk-pop-confirm>
         <i
           class="apigateway-icon icon-ag-undo-2 refresh-icon"
@@ -552,8 +607,8 @@ async function handleServiceChange(backendId: number) {
   }
 }
 
-const editService = () => {
-  const service = servicesData.value?.filter((item: any) => item.id === backConfigData.value.id)[0];
+const handleEditService = () => {
+  const service = servicesData.value?.filter((item: any) => item.id === backConfigData.value.id)?.[0];
   if (service) {
     baseInfo.value = {
       name: service.name,
@@ -670,7 +725,7 @@ const init = async () => {
 // 监听表单校验时间，收集 #id
 const setInvalidPropId = (property: string, result: boolean) => {
   if (!result) {
-    let _property = '';
+    let _property = property;
     if (property.includes('.')) {
       const paths = property.split('.');
       _property = paths[paths.length - 1];
@@ -684,20 +739,21 @@ const validate = async () => {
   let isHost = true;
   for (let i = 0; i < servicesConfigs.value?.length; i++) {
     const item = servicesConfigs.value[i];
-    if (!item?.hosts[0]?.host) {
+    if (!item?.hosts?.[0]?.host) {
       isHost = false;
       break;
     }
   }
-  if (isHost) {
+  if (isHost || isModelProxy) {
     await backRef.value?.validate();
   }
   else {
+    const msg = t('请先配置后端服务地址');
     Message({
       theme: 'warning',
-      message: '请先配置后端服务地址',
+      message: msg,
     });
-    return Promise.reject('请先配置后端服务地址');
+    return Promise.reject(msg);
   }
 };
 
@@ -742,7 +798,7 @@ defineExpose({
   .item-service {
 
     :deep(.bk-form-content) {
-      display: flex;
+      display: block;
     }
   }
 
@@ -752,20 +808,12 @@ defineExpose({
   }
 
   .service {
-    display: inline-block;
     flex: 1;
-  }
 
-  .w700 {
-    max-width: 700px !important;
-
-    // width: 70% !important;
-  }
-
-  .w568 {
-    max-width: 568px !important;
-
-    // width: 55% !important;
+    :deep(.bk-select-input) {
+      height: 32px;
+      line-height: 32px;
+    }
   }
 
   .ag-primary {
@@ -836,6 +884,7 @@ defineExpose({
 
 <style lang="scss">
 .back-config-timeout-wrapper {
+  margin-bottom: 16px;
 
   .back-config-timeout-content {
     display: flex;
@@ -856,9 +905,10 @@ defineExpose({
     }
 
     .back-config-timeout-tip {
+      min-width: fit-content;
       margin-left: 10px;
       font-size: 12px;
-      color: #63656E;
+      color: #63656e;
     }
   }
 
