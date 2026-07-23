@@ -82,8 +82,8 @@
               field="description"
               width="600px"
               :placeholder="t('请输入描述')"
-              :content="basicInfoData.description"
-              @on-change="(e:Record<string, any>) => handleInfoChange(e)"
+              :content="basicInfoData.description ?? ''"
+              @on-change="(e:Record<string, string>) => handleInfoChange(e)"
             />
           </div>
           <div class="header-info-button">
@@ -257,7 +257,7 @@
                   :content="basicInfoData.maintainers"
                   :is-error-class="'maintainers-error-tip'"
                   :error-value="t('维护人员不能为空')"
-                  @on-submit="(e:Record<string, any>) => handleMaintainerChange(e)"
+                  @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
                 />
                 <TenantUserSelector
                   v-else
@@ -269,7 +269,7 @@
                   field="maintainers"
                   mode="edit"
                   width="600px"
-                  @on-submit="(e:Record<string, any>) => handleMaintainerChange(e)"
+                  @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
                 />
               </div>
             </div>
@@ -500,7 +500,7 @@
                 </div>
                 <div class="item-values">
                   <div
-                    v-for="(item, index) in basicInfoData.links?.develop"
+                    v-for="(item, index) in linksData?.develop"
                     :key="item.name"
                     class="item"
                   >
@@ -510,7 +510,7 @@
                       target="_blank"
                     >{{ item.name }}</a>
                     <span
-                      v-if="index !== basicInfoData.links?.develop?.length - 1"
+                      v-if="index !== (linksData.develop?.length ?? 0) - 1"
                       class="line"
                     />
                   </div>
@@ -523,7 +523,7 @@
                 </div>
                 <div class="item-values">
                   <div
-                    v-for="(item, index) in basicInfoData.links?.logging"
+                    v-for="(item, index) in linksData?.logging"
                     :key="item.name"
                     class="item"
                   >
@@ -533,7 +533,7 @@
                       target="_blank"
                     >{{ item.name }}</a>
                     <span
-                      v-if="index !== basicInfoData.links?.logging?.length - 1"
+                      v-if="index !== (linksData.logging?.length ?? 0) - 1"
                       class="line"
                     />
                   </div>
@@ -546,7 +546,7 @@
                 </div>
                 <div class="item-values">
                   <div
-                    v-for="(item, index) in basicInfoData.links?.more"
+                    v-for="(item, index) in linksData?.more"
                     :key="item.name"
                     class="item"
                   >
@@ -556,7 +556,7 @@
                       target="_blank"
                     >{{ item.name }}</a>
                     <span
-                      v-if="index !== basicInfoData.links?.more?.length - 1"
+                      v-if="index !== (linksData.more?.length ?? 0) - 1"
                       class="line"
                     />
                   </div>
@@ -692,6 +692,7 @@ import {
   toggleStatus,
 } from '@/services/source/gateway.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
 import EditDesc from './components/EditDesc.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
@@ -709,7 +710,13 @@ import { usePopInfoBox } from '@/hooks';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 
-type IBasicInfoType = IExtractApiReturn<typeof getGatewayDetail>;
+interface IBasicInfoType extends IExtractApiReturn<typeof getGatewayDetail> {
+  programmable_gateway_git_info?: {
+    repository: string
+    account: string
+    password: string
+  }
+}
 
 const { t } = useI18n();
 const route = useRoute();
@@ -747,8 +754,9 @@ const dropdownItemDisabled = (item: { value: string }) => {
   return false;
 };
 
-// 当前网关基本信息
+// 当前网关基本信息（默认值仅在 API 数据加载前作为占位，会在 getBasicInfo 中立即替换）
 const basicInfoData = ref<IBasicInfoType>({
+  id: 0,
   status: 1,
   name: '',
   description: '',
@@ -760,12 +768,32 @@ const basicInfoData = ref<IBasicInfoType>({
   api_domain: '',
   created_by: '',
   created_time: '',
+  updated_time: '',
   public_key: '',
   maintainers: [],
   developers: [],
   is_public: true,
   is_official: false,
   kind: 0,
+  api_type: null,
+  user_auth_type: '',
+  allow_update_gateway_auth: false,
+  gateways_of_accessed_by_user: [],
+  gateways_of_accessed_by_gateway: [],
+  related_applications: null,
+  links: '',
+  is_deprecated: false,
+  deprecated_note: '',
+  tenant_mode: '',
+  tenant_id: '',
+  doc_maintainers: {
+    type: '',
+    contacts: [],
+    service_account: {
+      name: '',
+      link: '',
+    },
+  },
   extra_info: {
     language: 'python',
     repository: '',
@@ -775,7 +803,7 @@ const basicInfoData = ref<IBasicInfoType>({
     account: '',
     password: '',
   },
-});
+} as IBasicInfoType);
 const delApigwDialog = ref({
   isShow: false,
   loading: false,
@@ -797,9 +825,24 @@ const delTips = computed(() => {
   return t(`请完整输入<code class="gateway-del-tips">${basicInfoData.value.name}</code> 来确认删除网关！`);
 });
 
+const linksData = computed(() => (basicInfoData.value.links as unknown) as {
+  develop?: {
+    name: string
+    link: string
+  }[]
+  logging?: {
+    name: string
+    link: string
+  }[]
+  more?: {
+    name: string
+    link: string
+  }[]
+});
+
 // 获取网关基本信息
 const getBasicInfo = async () => {
-  basicInfoData.value = await getGatewayDetail(apigwId.value);
+  basicInfoData.value = await getGatewayDetail(apigwId.value) as IBasicInfoType;
 };
 
 const getCurrentReleasingStatus = async () => {
@@ -899,7 +942,7 @@ const handleDeleteApigw = async () => {
 
 const handleChangePublic = async (value: boolean) => {
   basicInfoData.value.is_public = value;
-  await patchGateway(apigwId.value, basicInfoData.value);
+  await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
   Message({
     message: t('更新成功'),
     theme: 'success',
@@ -952,7 +995,7 @@ const handleDeprecatedClick = (type: string) => {
         basicInfoData.value.is_deprecated = false;
         basicInfoData.value.deprecated_note = '';
 
-        await patchGateway(apigwId.value, basicInfoData.value);
+        await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
         Message({
           message: t('更新成功'),
           theme: 'success',
@@ -972,7 +1015,7 @@ const handleDeprecatedConfirm = async () => {
     basicInfoData.value.is_deprecated = true;
     basicInfoData.value.deprecated_note = deprecated_note;
 
-    await patchGateway(apigwId.value, basicInfoData.value);
+    await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
     Message({
       message: t('更新成功'),
       theme: 'success',
@@ -1063,7 +1106,7 @@ const handleInfoChange = async (payload: Record<string, string>) => {
     ...basicInfoData.value,
     ...payload,
   };
-  await patchGateway(apigwId.value, params);
+  await patchGateway(apigwId.value, params as IGatewayUpdateInputSLZ);
   basicInfoData.value = Object.assign(basicInfoData.value, params);
   Message({
     message: t('编辑成功'),
@@ -1072,8 +1115,8 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   });
 };
 
-const handleMaintainerChange = async (payload: { maintainers: string[] }) => {
-  await putGatewayBasics(apigwId.value, payload);
+const handleMaintainerChange = async (payload: Record<string, string[]>) => {
+  await putGatewayBasics(apigwId.value, payload as { maintainers: string[] });
   basicInfoData.value = Object.assign(basicInfoData.value, payload);
   Message({
     message: t('编辑成功'),
