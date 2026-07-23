@@ -455,7 +455,7 @@ interface ILocalStageConfig {
 }
 
 interface IProps {
-  editId?: number
+  editId?: number | string
   disabled?: boolean
   base: {
     name: string

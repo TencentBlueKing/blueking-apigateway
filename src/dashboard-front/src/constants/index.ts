@@ -326,3 +326,19 @@ export const GRANT_DIMENSION_TYPE_LIST = [
     value: 'resource',
   },
 ];
+
+// 资源类型列表
+export const RESOURCE_TYPE_LIST = [
+  {
+    label: t('普通 API'),
+    value: 'standard',
+    theme: 'default',
+    description: t('将后端服务暴露为 API 资源，可配置 MCP Tool'),
+  },
+  {
+    label: t('模型代理 API'),
+    value: 'ai',
+    theme: 'info',
+    description: t('固定 POST，引用一个模型服务，暴露 OpenAI 兼容的 chat/completions'),
+  },
+];

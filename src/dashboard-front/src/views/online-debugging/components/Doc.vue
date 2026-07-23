@@ -19,21 +19,32 @@
 <template>
   <div class="component-doc">
     <div class="component-content">
-      <div class="component-mate mb-10px">
-        <strong
-          v-bk-tooltips.top="curComponent.name"
-          class="name mr-5px"
-        >{{ curComponent.name || '--' }}</strong>
-        <span
-          v-bk-tooltips.top="{
-            content: curComponent.description,
-            disabled: !curComponent.description,
-            allowHTML: false,
-          }"
-          class="label"
+      <div class="component-mate mb-12px">
+        <div class="min-w-0 truncate">
+          <strong
+            v-bk-tooltips.top="curComponent.name"
+            class="name mr-4px"
+          >
+            {{ curComponent.name || '--' }}
+          </strong>
+          <span
+            v-bk-tooltips.top="{
+              content: curComponent.description,
+              disabled: !curComponent.description,
+              allowHTML: false,
+            }"
+            class="label"
+          >
+            ({{ curComponent.description || t('暂无描述') }})
+          </span>
+        </div>
+        <BkTag
+          v-if="curComponent?.kind === 'ai'"
+          theme="info"
+          class="flex-shrink-0"
         >
-          ({{ curComponent.description || t('暂无描述') }})
-        </span>
+          {{ t('模型代理 API') }}
+        </BkTag>
       </div>
       <div class="h-24px position-relative">
         <Chat
@@ -153,12 +164,15 @@ const featureFlagStore = useFeatureFlag();
 
 type IGatewayDocsDetail = IExtractApiReturn<typeof getGatewaysDetailsDocs>;
 
-const active = ref('doc');
-const curComponent = ref<IDocsGatewaysResourcesListResponse & {
+type IDocCom = IDocsGatewaysResourcesListResponse & {
   content: string
   innerHtml: string
   markdownHtml: string
-}>({
+  kind?: string
+};
+
+const active = ref('doc');
+const curComponent = ref<IDocCom>({
   id: 0,
   name: '',
   description: '',
@@ -506,22 +520,20 @@ defineExpose({ init });
   }
 
   .component-mate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
     .name {
       font-size: 22px;
       line-height: 30px;
       color: #313238;
-      text-align: left;
     }
 
     .label {
       font-size: 14px;
       line-height: 30px;
       color: #63656e;
-      text-align: left;
     }
   }
 }
