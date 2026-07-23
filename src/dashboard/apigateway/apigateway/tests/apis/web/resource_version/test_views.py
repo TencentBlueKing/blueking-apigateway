@@ -489,6 +489,7 @@ class TestResourceVersionDiffApi:
                 "add": [
                     {
                         "id": fake_resource.id,
+                        "kind": ResourceKindEnum.STANDARD.value,
                         "name": fake_resource.name,
                         "description": fake_resource.description,
                         "method": fake_resource.method,
@@ -529,6 +530,40 @@ class TestResourceVersionDiffApi:
                 "update": [],
             }
         }
+
+    def test_resource_version_diff_with_ai_resource(
+        self,
+        request_view,
+        fake_backend,
+        fake_gateway,
+        fake_resource,
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save(update_fields=["kind"])
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.method = "POST"
+        fake_resource.match_subpath = False
+        fake_resource.enable_websocket = False
+        fake_resource.save(update_fields=["kind", "method", "match_subpath", "enable_websocket"])
+        proxy = Proxy.objects.get(resource=fake_resource)
+        Proxy.objects.filter(id=proxy.id).update(_config="{}")
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.diff",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"source_resource_version_id": "", "target_resource_version_id": ""},
+        )
+
+        assert resp.status_code == 200
+        resource = resp.json()["data"]["add"][0]
+        assert resource["id"] == fake_resource.id
+        assert resource["kind"] == ResourceKindEnum.AI.value
+        assert resource["proxy"]["backend_id"] == fake_backend.id
+        assert resource["proxy"]["config"] == {}
 
     def test_resource_version_diff_with_resource_version(
         self,

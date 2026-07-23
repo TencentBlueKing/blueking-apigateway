@@ -18,7 +18,9 @@
 #
 from typing import Any, Dict, List, Literal, Optional, Text, Tuple, Union
 
-from pydantic import BaseModel, Field, Json, field_validator
+from pydantic import BaseModel, Field, Json, ValidationInfo, field_validator
+
+from apigateway.core.constants import ResourceKindEnum
 
 
 class DiffMixin:
@@ -96,6 +98,15 @@ class ResourceMockProxy(BaseModel, DiffMixin):
         return self.config.diff(target.config)
 
 
+class ResourceAIProxy(BaseModel, DiffMixin):
+    type: Literal["http"]
+    config: Json[Dict[Text, Any]]
+    backend_id: Optional[int] = 0
+
+    def diff_config(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
+        return self._diff_with_field_value(target, "config")
+
+
 class ResourceAuthConfig(BaseModel, DiffMixin):
     auth_verified_required: bool
     app_verified_required: bool
@@ -125,6 +136,7 @@ class ResourcePluginConfig(BaseModel, DiffMixin):
 
 class ResourceDifferHandler(BaseModel, DiffMixin):
     id: int
+    kind: Literal["standard", "ai"] = ResourceKindEnum.STANDARD.value
     name: Text
     description: Optional[Text] = ""
     method: Text
@@ -133,13 +145,23 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     enable_websocket: bool = False
     is_public: bool = True
     allow_apply_permission: bool = True
-    proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
+    proxy: Union[ResourceHTTPProxy, ResourceMockProxy, ResourceAIProxy]
     api_labels: List[int] = Field(default_factory=list)
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
     plugins: List[ResourcePluginConfig] = Field(default_factory=list)
     openapi_schema: Dict[str, Any] = Field(default_factory=dict)
     doc_updated_time: Dict[str, str]
+
+    @field_validator("proxy", mode="before")
+    @classmethod
+    def validate_proxy(cls, value, info: ValidationInfo):
+        if info.data.get("kind", ResourceKindEnum.STANDARD.value) == ResourceKindEnum.AI.value:
+            return ResourceAIProxy.model_validate(value)
+
+        if value.get("type") == "http":
+            return ResourceHTTPProxy.model_validate(value)
+        return ResourceMockProxy.model_validate(value)
 
     def diff_proxy(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         if not isinstance(self.proxy, type(target.proxy)):
