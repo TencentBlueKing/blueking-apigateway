@@ -2592,5 +2592,8 @@
   "斜线(/)开头的合法URL路径，不包含http(s)开头的域名，如/ai/chat/completions": "Valid URL path starting with a slash (/), without domain names prefixed with http (s), e.g./ai/chat/completions",
   "网关对外暴露的调用路径：模型代理API不支持「匹配所有子路径」与WebSocket": "External access path exposed by the gateway: Model Proxy API does not support wildcard matching for all subpaths or WebSocket",
   "请先配置后端服务地址": "Please configure the backend service address first",
-  "校验失败": "Validation Failed"
+  "校验失败": "Validation Failed",
+  "环境的模型服务配置": "Model Service",
+  "连通正常": "Connection Normal",
+  "连通失败": "Connection Failed"
 }
