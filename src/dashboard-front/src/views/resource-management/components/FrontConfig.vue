@@ -32,9 +32,10 @@
     >
       <BkSelect
         v-model="frontConfigData.method"
+        class="method"
         :input-search="false"
         :clearable="false"
-        class="method"
+        :disabled="isModelProxy"
         @change="clearValidate"
       >
         <BkOption
@@ -44,6 +45,12 @@
           :label="item.name"
         />
       </BkSelect>
+      <div
+        v-if="isModelProxy"
+        class="text-12px color-#979ba5"
+      >
+        {{ t('模型代理API请求方法固定为POST，不可更改') }}
+      </div>
     </BkFormItem>
     <BkFormItem
       :label="t('请求路径')"
@@ -54,23 +61,25 @@
         <BkInput
           id="front-config-path"
           v-model="frontConfigData.path"
-          :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
+          :placeholder="renderPathPlaceholder"
           clearable
           class="w-70% max-w-700px"
           @input="clearValidate"
         />
         <BkCheckbox
+          v-if="!isModelProxy"
           v-model="frontConfigData.match_subpath"
           class="ml-12px!"
         >
           {{ t('匹配所有子路径') }}
         </BkCheckbox>
       </div>
-      <div class="text-12px! color-#979ba5!">
-        {{ t("资源请求路径支持路径变量，包含在{'{}'}中，如：/users/{id}/", {id: '{id}'}) }}
+      <div class="text-12px color-#979ba5">
+        {{ renderPathDesc }}
       </div>
     </BkFormItem>
     <BkFormItem
+      v-if="!isModelProxy"
       :label="t('启用 WebSocket')"
       property="enable_websocket"
       required
@@ -85,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-// import mitt from '@/common/event-bus';
+import { useRouteQuery } from '@vueuse/router';
 import { HTTP_METHODS } from '@/constants';
 
 interface IProps {
@@ -98,12 +107,18 @@ const { detail = {}, isClone = false } = defineProps<IProps>();
 const emit = defineEmits<{ change: [data: typeof frontConfigData.value] }>();
 
 const { t } = useI18n();
+const queryKind = useRouteQuery('kind');
+
+const standardPathPlaceholder = t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名');
+
+// 是否是模型代理 API
+const isModelProxy = computed(() => queryKind.value === 'ai');
 
 const frontRef = ref();
 const cloneTips = ref(t('请求方法+请求路径在网关下唯一，请至少调整其中一项'));
 const frontConfigData = ref({
   path: '',
-  method: 'GET',
+  method: isModelProxy.value ? 'POST' : 'GET',
   match_subpath: false,
   enable_websocket: false,
 });
@@ -117,7 +132,7 @@ const rules = ref<any>({
   method: [
     {
       validator: (value: string) => {
-        if (!value) return true;
+        if (!value || isModelProxy.value) return true;
         return value !== cloneData.value.method || frontConfigData.value.path !== cloneData.value.path;
       },
       message: cloneTips.value,
@@ -140,7 +155,7 @@ const rules = ref<any>({
     },
     {
       validator: (value: string) => /^\/[\w{}/.!-]*$/.test(value),
-      message: t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名'),
+      message: standardPathPlaceholder,
       trigger: 'blur',
     },
   ],
@@ -148,6 +163,16 @@ const rules = ref<any>({
 
 // 错误表单项的 #id
 const invalidFormElementIds = ref<string[]>([]);
+
+const renderPathPlaceholder = computed(() => isModelProxy.value
+  ? t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名，如/ai/chat/completions')
+  : standardPathPlaceholder,
+);
+
+const renderPathDesc = computed(() => isModelProxy.value
+  ? t('网关对外暴露的调用路径：模型代理API不支持「匹配所有子路径」与WebSocket')
+  : t('资源请求路径支持路径变量，包含在{\'{}\'}中，如：/users/{id}/', { id: '{id}' }),
+);
 
 watch(
   () => detail,

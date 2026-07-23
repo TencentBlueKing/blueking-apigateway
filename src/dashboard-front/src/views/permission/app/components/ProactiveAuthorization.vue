@@ -124,8 +124,20 @@
                   @change="handleResourceChange"
                 >
                   <template #source-option="data">
-                    <div class="transfer-source-item">
-                      {{ data.name }}
+                    <div class="w-full flex items-center">
+                      <span
+                        :title="data.name"
+                        class="min-w-0 flex-1 transfer-source-item"
+                      >
+                        {{ data.name }}
+                      </span>
+                      <BkTag
+                        v-if="data.kind === 'ai'"
+                        theme="info"
+                        class="ml-6px flex-shrink-0"
+                      >
+                        {{ t('模型代理 API') }}
+                      </BkTag>
                     </div>
                   </template>
                   <template #target-option="data">

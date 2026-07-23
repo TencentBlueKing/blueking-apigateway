@@ -238,7 +238,7 @@ const isMenuCollapsed = ref(false);
 const version113UpdateNoticeRef = ref();
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const menuList = computed<IMenu[]>(() => [
   {
     name: 'StageManagement',
@@ -417,6 +417,16 @@ const routerViewWrapperClass = computed(() => {
   return `${initClass} ${displayBkuiTable}`;
 });
 
+const setBreadcrumbTitle = (payload: typeof route) => {
+  const { title, aiTitle = '', standardTitle = '' } = payload?.meta ?? {};
+  if (isAIGateway.value && aiTitle) {
+    headerTitle.value = (payload.query?.kind === 'ai' ? aiTitle as string : standardTitle as string) ?? '';
+  }
+  else {
+    headerTitle.value = (title as string) ?? '';
+  }
+};
+
 // 监听当前路由
 watch(
   [
@@ -427,9 +437,10 @@ watch(
   () => {
     activeMenuKey.value = (route.meta?.matchRoute || route.name) as string;
     gatewayId.value = Number(route.params.id || 0);
-    headerTitle.value = route.meta.title as string;
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(gatewayId.value);
+    // 设置面包屑标题
+    setBreadcrumbTitle(route);
     // if (!route.meta?.isMenu) {
     //   needMenu.value = false;
     // }

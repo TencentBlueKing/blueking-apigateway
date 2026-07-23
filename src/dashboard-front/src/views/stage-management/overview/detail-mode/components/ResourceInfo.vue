@@ -87,9 +87,9 @@ import CreateStage from '../../components/CreateStage.vue';
 import { copy } from '@/utils';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { METHOD_THEMES } from '@/enums';
-import { HTTP_METHODS } from '@/constants';
+import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
 import { cloneDeep } from 'lodash-es';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
@@ -100,8 +100,8 @@ interface IProps {
   stageAddress: string
   stageId: number
   versionId: number
+  stage: Record<string, any>
 }
-
 const {
   stageAddress,
   stageId,
@@ -156,182 +156,218 @@ const renderResourceTag = computed(() => {
   return <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span>;
 });
 
-const columns = computed<any>(() => [
-  {
-    colKey: 'backend',
-    title: t('后端服务'),
-    cell: (_h: any, { row }: { row: any }) => (
-      <bk-button
-        theme="primary"
-        text
-        onClick={() => {
-          highlightRowId.value = row.id;
-          handleCheckStage({
-            resourceName: row.name,
-            backendName: row.proxy?.backend?.name,
-          });
-        }}
-      >
-        { row.proxy?.backend?.name ?? '--' }
-      </bk-button>
-    ),
-  },
-  {
-    colKey: 'name',
-    title: t('资源名称'),
-    ellipsis: (h: any, { row }: { row: IVersionResource }) => row.name,
-    minWidth: 150,
-    cell: (h: any, { row }: { row: IVersionResource }) => (
-      <span
-        class="color-#3A84FF cursor-pointer"
-        onClick={() => showDetails(row)}
-      >
-        <span>{ row.name }</span>
-        <span>
-          {
-            hasNoVerification(row)
-              ? (
-                <ag-icon
-                  v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('如当前配置符合预期，可忽略该提示。') }}
-                  name="exclamation-circle-fill"
-                  class="ml-6px color-#F59500"
-                />
-              )
-              : ''
-          }
-        </span>
-      </span>
-    ),
-  },
-  {
-    colKey: 'method',
-    title: t('前端请求方法'),
-    cell: (h: any, { row }: { row: IVersionResource }) => (
-      <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
-        {row.method}
-      </bk-tag>
-    ),
-    filter: {
-      type: 'multiple',
-      showConfirmAndReset: true,
-      resetValue: [],
-      list: customMethodsList.value,
-    },
-  },
-  {
-    colKey: 'path',
-    title: t('前端请求路径'),
-    ellipsis: true,
-  },
-  {
-    colKey: 'label_ids',
-    title: t('标签'),
-    filter: {
-      type: 'multiple',
-      showConfirmAndReset: true,
-      resetValue: [],
-      list: labelsList.value,
-    },
-    cell: (h: any, { row }: { row: any }) => (
-      labels.value?.filter((label: IGatewayLabelItem) =>
-        row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name).length
-        ? (
-          <RenderTagOverflow
-            data={labels.value?.filter((label: IGatewayLabelItem) =>
-              row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name)}
-          />
-        )
-        : <span>--</span>
-    ),
-  },
-  {
-    colKey: 'plugins',
-    displayTitle: t('生效的插件'),
-    title: () => {
-      return (
-        <div>
-          <bk-popover
-            allow-html
-            content="#plugins_header_tip"
-            theme="light"
-            popoverDelay={0}
-          >
-            <div class="underline decoration-dashed underline-offset-4">
-              {t('生效的插件')}
-            </div>
-          </bk-popover>
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
-          <div id="plugins_header_tip">
-            <div class="mb-16px break-all">
-              { t('当环境与资源同时启用同一个插件时，资源的优先级将高于环境')}
-            </div>
-            <div class="mb-8px">
-              { renderResourceTag.value }
-              <span class="ml-8px">{t('代表“ 资源中配置的插件生效 ”')}</span>
-            </div>
-            <div>
-              { renderStageTag.value }
-              <span class="ml-8px">{t('代表“ 环境中配置的插件生效 ”')}</span>
-            </div>
-          </div>
-        </div>
-      );
+const columns = computed<PrimaryTableProps['columns']>(() => {
+  const backendCol: PrimaryTableProps['columns'] = [
+    {
+      colKey: 'backend',
+      title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
+      ellipsis: true,
+      cell: (_, { row }: { row: TableRowData }) => (
+        <span
+          class="color-#3a84ff cursor-pointer"
+          onClick={() => {
+            highlightRowId.value = row.id;
+            handleCheckStage({
+              resourceName: row.name,
+              backendName: row.proxy?.backend?.name,
+            });
+          }}
+        >
+          { row.proxy?.backend?.name ?? '--' }
+        </span>
+      ),
     },
-    ellipsis: true,
-    cell: (h: any, { row }: { row: IVersionResource }) => (
-      row.plugins?.length
-        ? (
-          <div class="flex items-center">
-            {row.plugins.map((plugin: IVersionResource['plugins'][number]) => (
-              <div class="flex items-center" key={plugin.id}>
-                {plugin.binding_type === 'stage' ? renderStageTag.value : ''}
-                {plugin.binding_type === 'resource' ? renderResourceTag.value : ''}
-                <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
-              </div>
-            ))}
-          </div>
-        )
-        : <span>--</span>
-    ),
-  },
-  {
-    colKey: 'is_public',
-    title: t('是否公开'),
-    cell: (h: any, { row }: { row: IVersionResource }) => (
-      <span class={{
-        'color-#FE9C00': row.is_public,
-        'color-#63656e': !row.is_public,
-      }}
-      >
-        { row.is_public ? t('是') : t('否')}
-      </span>
-    ),
-  },
-  {
-    colKey: 'act',
-    title: t('操作'),
-    width: 200,
-    cell: (h: any, { row }: { row: IVersionResource }) => (
-      <>
-        <bk-button
-          text
-          theme="primary"
-          class="mr-10px"
+  ];
+  // ai网关需要展示的列
+  const aiCols: PrimaryTableProps['columns'] = isAIGateway.value
+    ? [
+      ...backendCol,
+      {
+        colKey: 'kind',
+        title: t('资源类型'),
+        ellipsis: true,
+        minWidth: 100,
+        filter: {
+          type: 'single',
+          showConfirmAndReset: true,
+          popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+          list: RESOURCE_TYPE_LIST,
+        },
+        cell: (h, { row }) => {
+          const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
+          return (
+            <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
+              {resourceTypeData?.label ?? t('普通 API')}
+            </bk-tag>
+          );
+        },
+      },
+    ]
+    : backendCol;
+
+  const cols: PrimaryTableProps['columns'] = [
+    ...aiCols,
+    {
+      colKey: 'name',
+      title: t('资源名称'),
+      ellipsis: (h, { row }) => row.name,
+      minWidth: 150,
+      cell: (h, { row }) => (
+        <span
+          class="color-#3A84FF cursor-pointer"
           onClick={() => showDetails(row)}
         >
-          { t('查看资源详情') }
-        </bk-button>
-        <bk-button
-          text
-          theme="primary"
-          onClick={() => copyPath(row)}
+          <span>{ row.name }</span>
+          <span>
+            {
+              hasNoVerification(row)
+                ? (
+                  <ag-icon
+                    v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('如当前配置符合预期，可忽略该提示。') }}
+                    name="exclamation-circle-fill"
+                    class="ml-6px color-#F59500"
+                  />
+                )
+                : ''
+            }
+          </span>
+        </span>
+      ),
+    },
+    {
+      colKey: 'method',
+      title: t('前端请求方法'),
+      cell: (h, { row }) => (
+        <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
+          {row.method}
+        </bk-tag>
+      ),
+      filter: {
+        type: 'multiple',
+        showConfirmAndReset: true,
+        resetValue: [],
+        list: customMethodsList.value,
+      },
+    },
+    {
+      colKey: 'path',
+      title: t('前端请求路径'),
+      ellipsis: true,
+    },
+    {
+      colKey: 'label_ids',
+      title: t('标签'),
+      filter: {
+        type: 'multiple',
+        showConfirmAndReset: true,
+        resetValue: [],
+        list: labelsList.value,
+      },
+      cell: (_, { row }) => (
+        labels.value?.filter((label: IGatewayLabelItem) =>
+          row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name).length
+          ? (
+            <RenderTagOverflow
+              data={labels.value?.filter((label: IGatewayLabelItem) =>
+                row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name)}
+            />
+          )
+          : <span>--</span>
+      ),
+    },
+    {
+      colKey: 'plugins',
+      displayTitle: t('生效的插件'),
+      title: () => {
+        return (
+          <div>
+            <bk-popover
+              allow-html
+              content="#plugins_header_tip"
+              theme="light"
+              popoverDelay={0}
+            >
+              <div class="underline decoration-dashed underline-offset-4">
+                {t('生效的插件')}
+              </div>
+            </bk-popover>
+
+            <div id="plugins_header_tip">
+              <div class="mb-16px break-all">
+                { t('当环境与资源同时启用同一个插件时，资源的优先级将高于环境')}
+              </div>
+              <div class="mb-8px">
+                { renderResourceTag.value }
+                <span class="ml-8px">{t('代表“ 资源中配置的插件生效 ”')}</span>
+              </div>
+              <div>
+                { renderStageTag.value }
+                <span class="ml-8px">{t('代表“ 环境中配置的插件生效 ”')}</span>
+              </div>
+            </div>
+          </div>
+        );
+      },
+      ellipsis: true,
+      cell: (h: unknown, { row }: { row: TableRowData }) => (
+        row.plugins?.length
+          ? (
+            <div class="flex items-center">
+              {row.plugins.map((plugin: IVersionResource['plugins'][number]) => (
+                <div class="flex items-center" key={plugin.id}>
+                  {plugin.binding_type === 'stage' ? renderStageTag.value : ''}
+                  {plugin.binding_type === 'resource' ? renderResourceTag.value : ''}
+                  <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
+                </div>
+              ))}
+            </div>
+          )
+          : <span>--</span>
+      ),
+    } as Record<string, any>,
+    {
+      colKey: 'is_public',
+      title: t('是否公开'),
+      cell: (_, { row }) => (
+        <span class={{
+          'color-#FE9C00': row.is_public,
+          'color-#63656e': !row.is_public,
+        }}
         >
-          { t('复制资源地址') }
-        </bk-button>
-      </>
-    ),
-  },
-]);
+          { row.is_public ? t('是') : t('否')}
+        </span>
+      ),
+    },
+    {
+      colKey: 'act',
+      title: t('操作'),
+      width: 200,
+      cell: (_, { row }) => (
+        <>
+          <bk-button
+            text
+            theme="primary"
+            class="mr-8px"
+            onClick={() => showDetails(row)}
+          >
+            { t('查看资源详情') }
+          </bk-button>
+          <bk-button
+            text
+            theme="primary"
+            onClick={() => copyPath(row)}
+          >
+            { t('复制资源地址') }
+          </bk-button>
+        </>
+      ),
+    },
+  ];
+
+  return cols;
+});
 
 const labelsList = computed(() => {
   if (!labels.value?.length) {
@@ -361,6 +397,9 @@ watch(filterValue, () => {
     }
     if (result && filterValue.value.method && filterValue.value.method.length) {
       result = filterValue.value.method.includes(row.method);
+    }
+    if (result && filterValue.value.kind) {
+      result = filterValue.value.kind.includes(row.kind);
     }
     if (result && filterValue.value.label_ids && filterValue.value.label_ids.length) {
       result = filterValue.value.label_ids.some(
@@ -452,6 +491,7 @@ const handleClearQueries = () => {
 };
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
+  console.log(filters, 5555555555);
   Object.assign(
     filterValue.value,
     filters,
