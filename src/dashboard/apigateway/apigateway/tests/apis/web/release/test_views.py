@@ -243,6 +243,23 @@ class TestReleaseHistoryListApi:
             result = resp.json()
             assert result["data"]["count"] == test["expected"]["count"]
 
+    def test_list_selects_stage_and_resource_version(self, request_view, django_assert_num_queries, fake_gateway):
+        for index in range(3):
+            stage = G(Stage, gateway=fake_gateway, name=f"stage-{index}")
+            resource_version = G(ResourceVersion, gateway=fake_gateway, version=f"1.0.{index}")
+            G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+
+        with django_assert_num_queries(4):
+            resp = request_view(
+                method="GET",
+                view_name="gateway.release_histories.list",
+                path_params={"gateway_id": fake_gateway.id},
+            )
+            result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 3
+
 
 class TestReleaseHistoryEventsRetrieveAPI:
     def test_retrieve(self, request_view, fake_gateway):

@@ -140,6 +140,30 @@ class TestReleasedResourceHandler:
             result = ReleasedResourceHandler.get_stage_release(fake_gateway, test["stage_ids"])
             assert result == test["expected"]
 
+    def test_get_latest_doc_link_selects_gateway(self, django_assert_num_queries, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway, name="prod", status=1)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(Release, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+        resource_ids = []
+        for index in range(3):
+            resource_id = index + 1
+            G(
+                ReleasedResource,
+                gateway=fake_gateway,
+                resource_version_id=resource_version.id,
+                resource_id=resource_id,
+                resource_name=f"resource-{index}",
+                resource_method="GET",
+                resource_path=f"/resource-{index}/",
+                data={},
+            )
+            resource_ids.append(resource_id)
+
+        with django_assert_num_queries(3):
+            result = ReleasedResourceHandler.get_latest_doc_link(resource_ids)
+
+        assert set(result) == set(resource_ids)
+
     def test_get_public_released_resource_data_list(self, fake_gateway, fake_stage, fake_release):
         result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, fake_stage.name)
         assert len(result) >= 1

@@ -86,6 +86,42 @@ class TestStageApi:
         data = response.json()
         assert len(data["data"]) == 1
 
+    def test_list_selects_gateway(
+        self,
+        request_view,
+        django_assert_num_queries,
+        fake_gateway,
+        mocker,
+    ):
+        for index in range(3):
+            G(Stage, gateway=fake_gateway, name=f"stage-{index}")
+
+        mocker.patch(
+            "apigateway.apis.web.stage.views.ReleasedResourceHandler.get_stage_release",
+            return_value={},
+        )
+        mocker.patch(
+            "apigateway.apis.web.stage.views.ReleaseHandler.batch_get_stage_release_status",
+            return_value={},
+        )
+        mocker.patch(
+            "apigateway.apis.web.stage.views.ResourceVersionHandler.get_latest_version_by_gateway",
+            return_value="",
+        )
+        mocker.patch("apigateway.apis.web.stage.serializers.PublishValidator.__call__", return_value=None)
+
+        with django_assert_num_queries(2):
+            response = request_view(
+                "GET",
+                "stage.list-create",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+            )
+            data = response.json()
+
+        assert response.status_code == 200
+        assert len(data["data"]) == 3
+
     def test_create(self, request_view, fake_gateway, fake_default_backend):
         data = {
             "name": "stage-test",

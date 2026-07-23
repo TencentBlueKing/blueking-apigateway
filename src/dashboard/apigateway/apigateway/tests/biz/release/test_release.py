@@ -259,3 +259,34 @@ class TestReleaseHandler:
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.SUCCESS.value
         )
+
+    def test_batch_get_stage_release_status_uses_constant_queries(self, django_assert_num_queries, fake_gateway):
+        stage_ids = []
+        for index in range(3):
+            stage = G(Stage, gateway=fake_gateway, name=f"stage-{index}")
+            resource_version = G(ResourceVersion, gateway=fake_gateway, version=f"1.0.{index}")
+            G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+            stage_ids.append(stage.id)
+
+        with django_assert_num_queries(2):
+            result = ReleaseHandler.batch_get_stage_release_status(stage_ids)
+
+        assert set(result) == set(stage_ids)
+
+    def test_batch_get_stage_release_status_uses_latest_release_history(self, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway)
+        old_resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        latest_resource_version = G(ResourceVersion, gateway=fake_gateway, version="2.0.0")
+        G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=old_resource_version)
+        latest_release_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=stage,
+            resource_version=latest_resource_version,
+        )
+
+        result = ReleaseHandler.batch_get_stage_release_status([stage.id])[stage.id]
+
+        assert result["publish_id"] == latest_release_history.id
+        assert result["resource_version_id"] == latest_resource_version.id
+        assert result["resource_version_display"] == latest_resource_version.object_display
