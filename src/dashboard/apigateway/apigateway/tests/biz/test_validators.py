@@ -342,6 +342,30 @@ class TestPublishValidator:
         with django_assert_num_queries(1), pytest.raises(ReleaseValidationError):
             publish_validator._validate_stage_plugins()
 
+    @pytest.mark.parametrize("missing_relation", ["config", "type"])
+    def test_validate_stage_plugins_rejects_missing_config_relation(
+        self,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version,
+        missing_relation,
+    ):
+        plugin_config = None
+        if missing_relation == "type":
+            plugin_config = G(PluginConfig, gateway=fake_gateway, type=None)
+
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=plugin_config,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
+
+        with pytest.raises(ReleaseValidationError, match="插件配置或插件类型为空"):
+            publish_validator._validate_stage_plugins()
+
     def test_validate_stage_backends(self, fake_stage, fake_gateway):
         backend = G(
             Backend,

@@ -272,3 +272,21 @@ class TestReleaseHandler:
             result = ReleaseHandler.batch_get_stage_release_status(stage_ids)
 
         assert set(result) == set(stage_ids)
+
+    def test_batch_get_stage_release_status_uses_latest_release_history(self, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway)
+        old_resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        latest_resource_version = G(ResourceVersion, gateway=fake_gateway, version="2.0.0")
+        G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=old_resource_version)
+        latest_release_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=stage,
+            resource_version=latest_resource_version,
+        )
+
+        result = ReleaseHandler.batch_get_stage_release_status([stage.id])[stage.id]
+
+        assert result["publish_id"] == latest_release_history.id
+        assert result["resource_version_id"] == latest_resource_version.id
+        assert result["resource_version_display"] == latest_resource_version.object_display

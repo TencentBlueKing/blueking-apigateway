@@ -221,14 +221,23 @@ class PublishValidator:
         )
         stage_plugin_type_set = set()
         for stage_plugin in stage_plugins:
-            if stage_plugin.config.type.code in stage_plugin_type_set:
+            plugin_config = stage_plugin.config
+            if plugin_config is None or plugin_config.type is None:
+                raise ReleaseValidationError(
+                    _("网关环境【{stage_name}】存在插件配置或插件类型为空的插件绑定，不允许发布。").format(
+                        stage_name=self.stage.name,
+                    )
+                )
+
+            plugin_code = plugin_config.type.code
+            if plugin_code in stage_plugin_type_set:
                 raise ReleaseValidationError(
                     _("网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。").format(
                         stage_name=self.stage.name,
-                        plugin_code=stage_plugin.config.type.code,
+                        plugin_code=plugin_code,
                     )
                 )
-            stage_plugin_type_set.add(stage_plugin.config.type.code)
+            stage_plugin_type_set.add(plugin_code)
 
     def _validate_stage_vars(self, stage: Stage, resource_version_id: int):
         validator = StageVarsValuesValidator()
