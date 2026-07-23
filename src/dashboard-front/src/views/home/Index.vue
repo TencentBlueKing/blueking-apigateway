@@ -34,7 +34,7 @@
         <BkButton
           theme="primary"
           class="mr8"
-          @click="showAddDialog"
+          @click="toCreate"
         >
           {{ t('新建网关') }}
         </BkButton>
@@ -88,7 +88,7 @@
         <BkButton
           theme="primary"
           class="mr-4px"
-          @click="showAddDialog"
+          @click="toCreate"
         >
           {{ t('新建网关') }}
         </BkButton>
@@ -425,11 +425,6 @@
       {{ copyright }}
     </p>
   </div>
-
-  <CreateGateway
-    v-model="createGatewayShow"
-    @done="resetAndReload"
-  />
 </template>
 
 <script setup lang="ts">
@@ -441,7 +436,6 @@ import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway';
 import { vIntersectionObserver } from '@vueuse/components';
 import AgIcon from '@/components/ag-icon/Index.vue';
-import CreateGateway from '@/components/create-gateway/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
@@ -467,7 +461,6 @@ const filterData = ref({
   keyword: '',
   kind: 'all',
 });
-const createGatewayShow = ref(false);
 
 // 网关列表数据
 const gatewaysList = ref<ConvertedGatewayType[]>([]);
@@ -762,8 +755,8 @@ const calcPageLimit = (): number => {
   return Math.ceil(wrapperHeight / listItemHeight);
 };
 
-const showAddDialog = () => {
-  createGatewayShow.value = true;
+const toCreate = () => {
+  router.push({ name: 'CreateGateway' });
 };
 
 const handleViewDoc = () => {
