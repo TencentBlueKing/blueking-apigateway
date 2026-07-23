@@ -257,14 +257,12 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
         for backend_config in backend_configs:
             if obj.kind == BackendKindEnum.AI.value:
                 config = serialize_ai_backend_config_for_web(backend_config, error_field="configs")
-                data.append({"stage_id": backend_config.stage_id, **config})
-                continue
-            config = backend_config.get_config_for_display()
+            else:
+                config = backend_config.get_config_for_display()
             config["stage"] = {
                 "id": backend_config.stage.id,
                 "name": backend_config.stage.name,
             }
-
             data.append(config)
 
         return data

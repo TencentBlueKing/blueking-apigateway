@@ -113,7 +113,8 @@ class TestBackendApi:
         )
         assert response.json()["data"]["kind"] == BackendKindEnum.AI.value
         output = response.json()["data"]["configs"][0]
-        assert output["stage_id"] == fake_stage.id
+        assert output["stage"] == {"id": fake_stage.id, "name": fake_stage.name}
+        assert "stage_id" not in output
         assert output["api_key"] == "se****et"
         assert output["model"] == "gpt-4o"
         assert output["model_options"] == {"temperature": 0.7}
