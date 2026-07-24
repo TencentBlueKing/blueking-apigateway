@@ -228,6 +228,7 @@
   </div>
   <JsonEditorSlider
     v-model="isEditorSliderVisible"
+    type="response"
     @confirm="handleEditorConfirm"
   />
 </template>
