@@ -313,6 +313,17 @@ const { t } = useI18n();
 
 const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 
+const PROVIDER_ENDPOINT = {
+  openai: {
+    endpoint: 'api.openai.com/v1/chat/completions',
+    modelsEndpoint: 'https://api.openai.com/v1/models',
+  },
+  deepseek: {
+    endpoint: 'api.deepseek.com/chat/completions',
+    modelsEndpoint: 'https://api.deepseek.com/models',
+  },
+};
+
 const requiredRule = {
   required: true,
   message: t('必填项'),
@@ -381,7 +392,7 @@ const formatOptionValue = (value: unknown) => {
   return typeof value === 'string' ? value : JSON.stringify(value) ?? '';
 };
 
-const handleProviderChange = async () => {
+const handleProviderChange = async (provider: string) => {
   config.value.endpoint = '';
   config.value.modelsEndpoint = '';
   config.value.apiKey = '';
@@ -391,6 +402,18 @@ const handleProviderChange = async () => {
   config.value.models = [];
   await nextTick();
   formRef.value?.clearValidate();
+  if (provider === 'openai') {
+    const { endpoint, modelsEndpoint } = PROVIDER_ENDPOINT.openai;
+    config.value.endpoint = endpoint;
+    config.value.modelsEndpoint = modelsEndpoint;
+    config.value.endpointScheme = 'https';
+  }
+  else if (provider === 'deepseek') {
+    const { endpoint, modelsEndpoint } = PROVIDER_ENDPOINT.deepseek;
+    config.value.endpoint = endpoint;
+    config.value.modelsEndpoint = modelsEndpoint;
+    config.value.endpointScheme = 'https';
+  }
 };
 
 const handleOptionsTextInput = (value: string) => {
