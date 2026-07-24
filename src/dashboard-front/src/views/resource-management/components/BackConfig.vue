@@ -291,6 +291,7 @@ import { backendsPathCheck } from '@/services/source/resource.ts';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
 import type { IBackendListOutput, IStandardBackendConfigOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
 
 interface IProps {
   detail?: any
@@ -352,7 +353,7 @@ const timeOutValue = ref('');
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);
 // const timeInputRef = ref(null);
-const addBackendServiceRef = ref(null);
+const addBackendServiceRef = ref<InstanceType <typeof AddBackendService>>();
 const isServiceInit = ref(false);
 
 const rules = {
@@ -384,6 +385,7 @@ const isPathValid = ref(false);
 const invalidFormElementIds = ref<string[]>([]);
 
 const gatewayId = computed(() => gatewayStore.apigwId);
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
 const isEditService = computed(() => {
   let flag = false;
@@ -605,14 +607,14 @@ async function handleServiceChange(backendId: number) {
 }
 
 const handleEditService = () => {
-  const service = servicesData.value?.filter((item: any) => item.id === backConfigData.value.id)?.[0];
+  const service = servicesData.value?.filter((item: IBackendListOutput) => item.id === backConfigData.value.id)?.[0];
   if (service) {
     baseInfo.value = {
       name: service.name,
       description: service.description,
     };
 
-    (addBackendServiceRef.value as any)?.show();
+    addBackendServiceRef.value?.show();
   }
 };
 
@@ -704,10 +706,16 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
 };
 
 const init = async () => {
-  const res = await getBackendServiceList(gatewayId.value, {
+  const params: IGatewaysBackendsListQuery = {
     offset: 0,
     limit: 1000,
-  });
+  };
+
+  if (isAIGateway.value) {
+    params.kind = isModelProxy ? 'ai' : 'standard';
+  }
+
+  const res = await getBackendServiceList(gatewayId.value, params);
   servicesData.value = res.results;
   // 检查传进来的资源的 backend 有没有 id，没有的话用 name 匹配一下以正确获取服务数据
   if (!detail?.backend?.id) {
@@ -754,15 +762,10 @@ const validate = async () => {
   }
 };
 
-onMounted(() => {
-  setTimeout(() => {
-  // 事件总线监听重新获取环境列表
-  // mitt.on('front-config', (value: any) => {
-  //   frontPath.value = value.path;
-  //   backConfigData.value.config.match_subpath = value.match_subpath;
-  // });
-    init();
-  });
+watch(() => isAIGateway.value, () => {
+  init();
+}, {
+  immediate: true,
 });
 
 defineExpose({

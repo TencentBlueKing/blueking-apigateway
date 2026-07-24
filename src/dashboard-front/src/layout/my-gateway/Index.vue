@@ -68,13 +68,13 @@
                     {{ item.name }}
                   </span>
                   <BkPopover
-                    v-if="item.kind === 1"
+                    v-if="[1, 2].includes(item.kind)"
                     placement="right"
-                    :content="t('可编程网关')"
+                    :content="item.kind === 1 ? t('可编程网关') : t('AI 网关')"
                     :popover-delay="0"
                   >
                     <AgIcon
-                      name="square-program"
+                      :name="item.kind === 1 ? 'square-program' : 'AIwangguan'"
                       size="16"
                       class="ml-4px color-#3a84ff"
                       :class="[
@@ -268,7 +268,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'ModelService',
     title: t('模型服务'),
     icon: 'cube-1',
-    enabled: gatewayStore.isAIGateway,
+    enabled: isAIGateway.value,
   },
   {
     name: 'ResourceManagement',
@@ -446,11 +446,11 @@ watch(
     gatewayId.value = Number(route.params.id || 0);
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(gatewayId.value);
-    // 设置面包屑标题
-    setBreadcrumbTitle(route);
     // if (!route.meta?.isMenu) {
     //   needMenu.value = false;
     // }
+    // 设置面包屑标题
+    setBreadcrumbTitle(route);
 
     // 设置一下默认展开的菜单项
     for (let i = 0; i < menuList.value.length; i++) {
@@ -469,6 +469,17 @@ watch(
     immediate: true,
     deep: true,
   },
+);
+
+watch(
+  () => gatewayStore.currentGateway,
+  (newGateway) => {
+    // 仅当网关数据存在，并且和当前页面网关id一致，才刷新标题
+    if (newGateway && newGateway?.id === gatewayId.value) {
+      setBreadcrumbTitle(route);
+    }
+  },
+  { flush: 'post' },
 );
 
 const getGatewayData = async () => {

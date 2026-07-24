@@ -160,6 +160,12 @@
                                   class="res-item-name mr-8px"
                                 />
                                 <BkTag
+                                  v-if="curTargetBasics?.kind === 2"
+                                  theme="info"
+                                >
+                                  {{ t('模型代理 API') }}
+                                </BkTag>
+                                <BkTag
                                   v-if="curTargetBasics?.is_deprecated"
                                   theme="danger"
                                 >
