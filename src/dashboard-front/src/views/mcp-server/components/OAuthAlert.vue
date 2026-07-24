@@ -26,14 +26,25 @@
         v-if="!appAuthStatusList.length"
         class="color-#299e56 text-12px "
       >
-        <div class="font-700 px-30px">
+        <div class="flex items-center justify-between px-30px">
+          <div class="font-700">
+            <AgIcon
+              name="check-circle-shape"
+              size="12"
+            />
+            <span class="ml-8px">{{ t('无安全风险') }}</span>
+          </div>
           <AgIcon
-            name="check-circle-shape"
-            size="12"
+            name="ps-arrow-right"
+            class="cursor-pointer"
+            :class="[isCollapse ? 'rotate--90deg' : '']"
+            @click.stop="handleExpandAlert"
           />
-          <span class="ml-8px">{{ t('无安全风险') }}</span>
         </div>
-        <div class="mt-12px pl-50px">
+        <div
+          v-show="isCollapse"
+          class="mt-12px pl-50px"
+        >
           {{ t('当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。') }}
         </div>
       </div>
@@ -41,14 +52,25 @@
         v-else
         class="color-#e71818 text-12px"
       >
-        <div class="font-700 px-26px">
+        <div class="flex items-center justify-between px-26px">
+          <div class="font-700">
+            <AgIcon
+              name="zhiming"
+              size="16"
+            />
+            <span class="ml-8px">{{ t('存在安全风险 — 请谨慎评估') }}</span>
+          </div>
           <AgIcon
-            name="zhiming"
-            size="16"
+            name="ps-arrow-right"
+            class="cursor-pointer"
+            :class="[isCollapse ? 'rotate--90deg' : '']"
+            @click.stop="handleExpandAlert"
           />
-          <span class="ml-8px">{{ t('存在安全风险 — 请谨慎评估') }}</span>
         </div>
-        <div class="mt-12px pl-50px pr-24px">
+        <div
+          v-show="isCollapse"
+          class="mt-12px pl-50px pr-24px"
+        >
           <div class="lh-20px mb-6px">
             {{ t('当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。') }}
           </div>
@@ -83,6 +105,10 @@ interface IProps { appAuthStatusList?: IMCPToolSelections[] }
 
 const { appAuthStatusList = [] } = defineProps<IProps>();
 
+const emit = defineEmits<{ 'on-expand': [data: boolean] }>();
+
+const isCollapse = ref(false);
+
 const renderAlertStyles = computed(() => {
   // 应用态数据样式
   if (appAuthStatusList.length) {
@@ -97,6 +123,7 @@ const renderAlertStyles = computed(() => {
     backgroundColor: '#ebfaf0',
   };
 });
+
 const renderToolData = computed(() => {
   const results = appAuthStatusList.map((item: IMCPToolSelections) => {
     const config = item?.contexts?.resource_auth?.config as string;
@@ -117,6 +144,11 @@ const renderToolData = computed(() => {
   });
   return results.map((item: IMCPToolSelections) => item.name).join('、');
 });
+
+const handleExpandAlert = () => {
+  isCollapse.value = !isCollapse.value;
+  emit('on-expand', isCollapse.value);
+};
 </script>
 
 <style lang="scss" scoped>
