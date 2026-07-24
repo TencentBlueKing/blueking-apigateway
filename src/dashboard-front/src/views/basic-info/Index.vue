@@ -54,7 +54,7 @@
                 v-if="basicInfoData.is_official"
                 class="website"
               >
-                {{ t('官网') }}
+                {{ t('官方') }}
               </BkTag>
               <div v-if="basicInfoData.status > 0">
                 <BkTag class="enabling">
