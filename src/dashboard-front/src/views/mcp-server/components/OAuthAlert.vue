@@ -101,13 +101,19 @@ import { locale, t } from '@/locales';
 import type { IAuthConfig } from '@/types/resource';
 import type { IMCPToolSelections } from '@/services/source/mcp-server';
 
-interface IProps { appAuthStatusList?: IMCPToolSelections[] }
+interface IProps {
+  isEditMode?: boolean
+  appAuthStatusList?: IMCPToolSelections[]
+}
 
-const { appAuthStatusList = [] } = defineProps<IProps>();
+const {
+  isEditMode = false,
+  appAuthStatusList = [],
+} = defineProps<IProps>();
 
 const emit = defineEmits<{ 'on-expand': [data: boolean] }>();
 
-const isCollapse = ref(false);
+const isCollapse = ref(!isEditMode);
 
 const renderAlertStyles = computed(() => {
   // 应用态数据样式
