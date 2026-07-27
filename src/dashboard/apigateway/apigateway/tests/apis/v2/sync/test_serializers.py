@@ -18,7 +18,18 @@
 #
 import pytest
 
-from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.apis.v2.sync.serializers import GatewaySyncInputSLZ, SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.core.constants import GatewayTypeEnum
+
+
+class TestGatewaySyncInputSLZ:
+    def test_validate_name_allows_whitelisted_official_gateway(self, settings):
+        settings.IGNORE_GATEWAY_NAME_CHECK_WHITELIST = ["paasv3"]
+        settings.OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
+
+        slz = GatewaySyncInputSLZ()
+
+        slz._validate_name("paasv3", GatewayTypeEnum.OFFICIAL_API.value)
 
 
 class TestSDKGenerateInputSLZ:
