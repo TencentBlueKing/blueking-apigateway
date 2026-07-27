@@ -1010,6 +1010,8 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "itsm_ticket_id": instance.itsm_ticket_id,
                 "mcp_server_id": instance.mcp_server_id,  # 添加 mcp_server_id 用于构建审批 URL
                 "gateway_id": instance.mcp_server.gateway_id,  # 在 record 中也添加 gateway_id
+                "tenant_mode": instance.mcp_server.gateway.tenant_mode,
+                "tenant_id": instance.mcp_server.gateway.tenant_id,
             },
         }
 

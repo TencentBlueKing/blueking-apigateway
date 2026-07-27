@@ -545,7 +545,7 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     applied_by = serializers.SerializerMethodField(help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
-    handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
+    handled_by = serializers.SerializerMethodField(help_text="处理人")
     handled_time = serializers.DateTimeField(read_only=True, help_text="处理时间")
     apply_status = serializers.CharField(read_only=True, help_text="审批状态")
     apply_status_display = serializers.CharField(read_only=True)
@@ -576,6 +576,26 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
             logger.warning("Failed to build approval URL for object: %s", obj)
 
         return ""
+
+    def get_handled_by(self, obj):
+        """获取处理人 display_name"""
+        if isinstance(obj, dict):
+            handled_by = obj.get("handled_by") or []
+            return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+                obj.get("tenant_mode", ""),
+                obj.get("tenant_id", ""),
+                handled_by,
+            )
+
+        if hasattr(obj, "mcp_server"):
+            handled_by = [obj.handled_by] if obj.handled_by else obj.mcp_server.gateway.maintainers
+            return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+                obj.mcp_server.gateway.tenant_mode,
+                obj.mcp_server.gateway.tenant_id,
+                handled_by,
+            )
+
+        return getattr(obj, "handled_by", [])
 
     def get_applied_by(self, obj):
         """获取申请人 display_name"""
