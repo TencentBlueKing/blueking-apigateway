@@ -305,7 +305,7 @@
                                         content: checks.tool_name || checks.name,
                                         disabled: !isOverflow
                                       }"
-                                      class="min-w-20px color-#3a84ff text-12px truncate name"
+                                      class="min-w-20px color-#4d4f56 text-12px truncate name"
                                       @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
                                       @mouseleave="handleMouseleave"
                                     >
@@ -379,6 +379,7 @@
           v-if="isExistOAuthData"
           class="py-8px"
           :app-auth-status-list="appAuthStatusList"
+          @on-expand="getSliderContentHeight"
         />
         <BkButton
           :disabled="noValidStage"
