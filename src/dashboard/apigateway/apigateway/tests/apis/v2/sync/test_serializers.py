@@ -25,7 +25,7 @@ from apigateway.apis.v2.sync.serializers import (
     SDKGenerateInputSLZ,
     StageSyncInputSLZ,
 )
-from apigateway.core.constants import GatewayKindEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayTypeEnum
 
 
 def _custom_instance(name):
@@ -92,6 +92,16 @@ def test_gateway_sync_input_maps_ai_kind():
     slz.is_valid(raise_exception=True)
 
     assert slz.validated_data["kind"] == GatewayKindEnum.AI.value
+
+
+class TestGatewaySyncInputSLZ:
+    def test_validate_name_allows_whitelisted_official_gateway(self, settings):
+        settings.IGNORE_GATEWAY_NAME_CHECK_WHITELIST = ["paasv3"]
+        settings.OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
+
+        slz = GatewaySyncInputSLZ()
+
+        slz._validate_name("paasv3", GatewayTypeEnum.OFFICIAL_API.value)
 
 
 class TestSDKGenerateInputSLZ:
