@@ -378,6 +378,7 @@
         <OAuthAlert
           v-if="isExistOAuthData"
           class="py-8px"
+          :is-edit-mode="isEditMode"
           :app-auth-status-list="appAuthStatusList"
           @on-expand="getSliderContentHeight"
         />
