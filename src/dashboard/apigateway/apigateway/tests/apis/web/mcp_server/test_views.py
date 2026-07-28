@@ -1358,6 +1358,50 @@ class TestMCPServerAppPermissionDestroyApi:
         )
         assert audit_log.op_type == "delete"
 
+    @pytest.mark.parametrize(
+        ("setting_name", "bk_app_code"),
+        [
+            ("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public-client"),
+            ("MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE", "personal-client"),
+        ],
+    )
+    def test_destroy_oauth2_builtin_client_permission_is_forbidden(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        fake_mcp_server,
+        settings,
+        setting_name,
+        bk_app_code,
+    ):
+        setattr(settings, setting_name, bk_app_code)
+        mock_sync_permissions = mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
+            return_value=None,
+        )
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code=bk_app_code,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="DELETE",
+            view_name="mcp_server.app-permission.destroy",
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "mcp_server_id": fake_mcp_server.id,
+                "id": permission.id,
+            },
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 400
+        assert MCPServerAppPermission.objects.filter(id=permission.id).exists()
+        mock_sync_permissions.assert_not_called()
+
 
 class TestMCPServerAppPermissionApplyListApi:
     def test_list_pending_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server, settings):
