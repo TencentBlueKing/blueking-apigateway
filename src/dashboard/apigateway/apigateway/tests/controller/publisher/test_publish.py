@@ -37,6 +37,10 @@ from apigateway.core.models import Gateway, Release, ReleaseHistory, ResourceVer
 class TestTriggerRollingUpdate:
     """Test _trigger_rolling_update function"""
 
+    @pytest.fixture(autouse=True)
+    def mock_oauth2_reconciler(self, mocker):
+        return mocker.patch("apigateway.controller.publisher.publish.OAuth2BuiltinPermissionReconciler").return_value
+
     @pytest.fixture
     def mock_gateway(self):
         """Create a mock gateway"""
@@ -288,6 +292,44 @@ class TestTriggerRollingUpdate:
         assert reporter.report_config_validate_failure.call_count == 2
         assert "apisix-3-13 (3.13)" in reporter.report_config_validate_failure.call_args.args[1]
         check_ready.assert_not_called()
+        delay.assert_not_called()
+
+    def test_trigger_rolling_update_preparation_failure_is_reported_and_not_queued(
+        self, mocker, mock_release, mock_oauth2_reconciler
+    ):
+        data_plane = Mock(spec=DataPlane)
+        data_plane.id = 1
+        data_plane.name = "plane-1"
+        data_plane.apisix_version = "3.16"
+        mocker.patch(
+            "apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes",
+            return_value=[data_plane],
+        )
+        history = Mock(spec=ReleaseHistory)
+        mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_save_release_history",
+            return_value=history,
+        )
+        mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing",
+            return_value=(True, ""),
+        )
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+        reporter = mocker.patch("apigateway.controller.publisher.publish.PublishEventReporter")
+        delay = mocker.patch("apigateway.controller.publisher.publish.delay_on_commit")
+
+        result = _trigger_rolling_update(
+            PublishSourceEnum.GATEWAY_ENABLE,
+            "test_user",
+            [mock_release],
+            is_sync=False,
+        )
+
+        assert result is False
+        reporter.report_config_validate_failure.assert_called_once_with(
+            history,
+            "prepare OAuth2 built-in permissions failed: redis unavailable",
+        )
         delay.assert_not_called()
 
 

@@ -36,6 +36,7 @@ from apigateway.controller.distributor.connection import (
     DistributorConnectionError,
     check_gateway_distributor_connection,
 )
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -209,6 +210,18 @@ class GatewayReleaser:
                 history = self._save_release_history(data_plane=data_plane)
                 PublishEventReporter.report_config_validate_failure(history, message)
                 raise ReleaseError(message) from err
+
+        try:
+            OAuth2BuiltinPermissionReconciler().prepare_publish(
+                self.gateway,
+                self.stage,
+                self.resource_version,
+            )
+        except Exception as err:
+            message = f"prepare OAuth2 built-in permissions failed: {err}"
+            history = self._save_release_history(data_plane=data_planes[0])
+            PublishEventReporter.report_config_validate_failure(history, message)
+            raise ReleaseError(message) from err
 
     def _validate(self):
         """校验待发布数据"""

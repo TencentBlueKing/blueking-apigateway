@@ -26,7 +26,7 @@ from django.utils import timezone
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.permission.models import AppResourcePermission
-from apigateway.biz.permission import OAuth2BuiltinPermissionReconciler
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -113,7 +113,7 @@ def make_history_event(release, data_plane, status: str, *, resource_version=Non
 
 @pytest.fixture(autouse=True)
 def mock_permission_lock(mocker):
-    return mocker.patch("apigateway.biz.permission.oauth2_builtin.Lock")
+    return mocker.patch("apigateway.controller.tasks.oauth2_builtin.Lock")
 
 
 def test_reconcile_calculates_permissions_from_real_snapshot_flags(fake_gateway):

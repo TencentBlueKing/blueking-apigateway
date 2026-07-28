@@ -27,6 +27,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.controller.tasks.syncing import rolling_update_release
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, Stage
@@ -122,6 +123,21 @@ class Command(BaseCommand):
                 # NOTE: should not mark as failed, it ok for some stage has no release
                 continue
 
+            try:
+                OAuth2BuiltinPermissionReconciler().prepare_publish(
+                    gateway,
+                    stage,
+                    release.resource_version,
+                )
+            except Exception:
+                logger.exception(
+                    "failed to prepare OAuth2 built-in permissions: gateway=%s, stage=%s",
+                    gateway.name,
+                    stage.name,
+                )
+                publish_to_all_stages_success = False
+                break
+
             # NOTE: publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID, would not change the stage status
             # only update release.updated_time and release.updated_by
             ok = rolling_update_release(
@@ -142,6 +158,13 @@ class Command(BaseCommand):
                 gateway_id=gateway.id,
                 data_plane_id=data_plane.id,
             )
+            try:
+                OAuth2BuiltinPermissionReconciler().reconcile_gateway(gateway)
+            except Exception:
+                logger.exception(
+                    "failed to reconcile OAuth2 built-in permissions after binding rollback: gateway=%s",
+                    gateway.name,
+                )
             audit_writer.write(
                 result="failed",
                 reason="publish_to_all_stages_failed",

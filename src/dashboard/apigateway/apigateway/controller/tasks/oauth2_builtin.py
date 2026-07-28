@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+"""Coordinate OAuth2 built-in permissions with data-plane publication state."""
+
 import json
 from dataclasses import dataclass
 from typing import TypeAlias

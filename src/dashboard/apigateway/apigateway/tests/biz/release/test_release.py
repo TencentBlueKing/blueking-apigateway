@@ -40,6 +40,55 @@ pytestmark = pytest.mark.django_db
 
 
 class TestGatewayReleaser:
+    @pytest.fixture(autouse=True)
+    def mock_oauth2_reconciler(self, mocker):
+        return mocker.patch("apigateway.biz.release.gateway_releaser.OAuth2BuiltinPermissionReconciler").return_value
+
+    def test_pre_release_prepares_oauth2_permissions_after_connection_checks(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=[data_plane])
+        mocker.patch.object(releaser, "_validate")
+        calls = mocker.Mock()
+        calls.attach_mock(
+            mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection"),
+            "check_connection",
+        )
+        calls.attach_mock(mock_oauth2_reconciler.prepare_publish, "prepare_publish")
+
+        releaser._pre_release()
+
+        assert calls.mock_calls == [
+            call.check_connection(mocker.ANY, data_plane),
+            call.prepare_publish(fake_gateway, fake_stage, fake_resource_version),
+        ]
+
+    def test_pre_release_records_failure_when_oauth2_permission_preparation_fails(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=[data_plane])
+        mocker.patch.object(releaser, "_validate")
+        mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+        report_failure = mocker.patch(
+            "apigateway.biz.release.gateway_releaser.PublishEventReporter.report_config_validate_failure"
+        )
+        do_release = mocker.patch.object(releaser, "_do_release")
+
+        with pytest.raises(ReleaseError, match="prepare OAuth2 built-in permissions failed"):
+            releaser.release()
+
+        history = ReleaseHistory.objects.get(gateway=fake_gateway)
+        report_failure.assert_called_once_with(
+            history,
+            "prepare OAuth2 built-in permissions failed: redis unavailable",
+        )
+        do_release.assert_not_called()
+
     @pytest.mark.parametrize(
         "oauth2_config",
         [

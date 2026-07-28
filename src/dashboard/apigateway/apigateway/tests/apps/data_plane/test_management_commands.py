@@ -50,6 +50,18 @@ def setup_crypto(settings):
     settings.BKKRILL_ENCRYPT_SECRET_KEY = BK_KRILL_ENCRYPT_SECRET_KEY
 
 
+@pytest.fixture(autouse=True)
+def mock_oauth2_permission_reconcilers(mocker):
+    bind_reconciler = mocker.patch(
+        "apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.OAuth2BuiltinPermissionReconciler"
+    ).return_value
+    unbind_reconciler = mocker.patch(
+        "apigateway.apps.data_plane.management.commands."
+        "unbind_gateways_from_data_plane.OAuth2BuiltinPermissionReconciler"
+    ).return_value
+    return bind_reconciler, unbind_reconciler
+
+
 class TestCreateDataPlaneCommand:
     @patch("apigateway.apps.data_plane.management.commands.create_data_plane.GlobalResourceDistributor")
     def test_create_success_triggers_global_sync(self, mock_distributor_cls):
@@ -157,6 +169,58 @@ class TestCreateDataPlaneCommand:
 
 
 class TestBindGatewaysToDataPlaneCommand:
+    def test_bind_prepares_permissions_before_publish(self, mocker, tmp_path, mock_oauth2_permission_reconcilers):
+        rolling_update = mocker.patch(
+            "apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release",
+            return_value=True,
+        )
+        prepare = mock_oauth2_permission_reconcilers[0].prepare_publish
+        data_plane = G(DataPlane, name="plane-a")
+        gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        release = G(Release, gateway=gateway, stage=stage)
+
+        BindCommand().handle(
+            gateway_names=gateway.name,
+            gateway_names_file="",
+            data_plane_name=data_plane.name,
+            skip_gateway_names="",
+            skip_gateway_names_file="",
+            log_file=str(tmp_path / "bind.log"),
+            operator="tester",
+            dry_run=False,
+        )
+
+        prepare.assert_called_once_with(gateway, stage, release.resource_version)
+        rolling_update.assert_called_once()
+
+    def test_bind_rollback_reconciles_after_binding_is_removed(
+        self, mocker, tmp_path, mock_oauth2_permission_reconcilers
+    ):
+        mocker.patch(
+            "apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release",
+            return_value=False,
+        )
+        reconciler = mock_oauth2_permission_reconcilers[0]
+        data_plane = G(DataPlane, name="plane-a")
+        gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage)
+
+        BindCommand().handle(
+            gateway_names=gateway.name,
+            gateway_names_file="",
+            data_plane_name=data_plane.name,
+            skip_gateway_names="",
+            skip_gateway_names_file="",
+            log_file=str(tmp_path / "bind.log"),
+            operator="tester",
+            dry_run=False,
+        )
+
+        assert not GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=data_plane).exists()
+        reconciler.reconcile_gateway.assert_called_once_with(gateway)
+
     @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
     def test_bind_success(self, mock_rolling_update_release, tmp_path):
         mock_rolling_update_release.return_value = True
@@ -494,6 +558,54 @@ class TestBindGatewaysToDataPlaneCommand:
 
 
 class TestUnbindGatewaysFromDataPlaneCommand:
+    def test_unbind_reconciles_after_binding_removal(self, mocker, tmp_path, mock_oauth2_permission_reconcilers):
+        mocker.patch(
+            "apigateway.apps.data_plane.management.commands.unbind_gateways_from_data_plane.revoke_release",
+            return_value=True,
+        )
+        reconcile = mock_oauth2_permission_reconcilers[1].reconcile_gateway
+        data_plane_a = G(DataPlane, name="plane-a")
+        data_plane_b = G(DataPlane, name="plane-b")
+        gateway = G(Gateway, name="gw-a")
+        G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane_a)
+        G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane_b)
+
+        UnbindCommand().handle(
+            gateway_names=gateway.name,
+            gateway_names_file="",
+            data_plane_name=data_plane_a.name,
+            skip_gateway_names="",
+            skip_gateway_names_file="",
+            log_file=str(tmp_path / "unbind.log"),
+            operator="tester",
+            dry_run=False,
+            force_unbind_last=False,
+        )
+
+        reconcile.assert_called_once_with(gateway)
+
+    def test_unbind_dry_run_does_not_reconcile(self, tmp_path, mock_oauth2_permission_reconcilers):
+        reconcile = mock_oauth2_permission_reconcilers[1].reconcile_gateway
+        data_plane_a = G(DataPlane, name="plane-a")
+        data_plane_b = G(DataPlane, name="plane-b")
+        gateway = G(Gateway, name="gw-a")
+        G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane_a)
+        G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane_b)
+
+        UnbindCommand().handle(
+            gateway_names=gateway.name,
+            gateway_names_file="",
+            data_plane_name=data_plane_a.name,
+            skip_gateway_names="",
+            skip_gateway_names_file="",
+            log_file=str(tmp_path / "unbind.log"),
+            operator="tester",
+            dry_run=True,
+            force_unbind_last=False,
+        )
+
+        reconcile.assert_not_called()
+
     @patch("apigateway.apps.data_plane.management.commands.unbind_gateways_from_data_plane.revoke_release")
     def test_unbind_last_binding_blocked_without_force(self, mock_revoke_release, tmp_path):
         mock_revoke_release.return_value = True

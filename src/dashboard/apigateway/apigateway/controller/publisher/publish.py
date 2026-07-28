@@ -27,6 +27,7 @@ from apigateway.apps.data_plane.constants import (
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.tasks import revoke_release, rolling_update_release
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.core.constants import (
     PublishSourceEnum,
     PublishSourceTriggerPublishTypeMapping,
@@ -76,6 +77,7 @@ def _trigger_rolling_update(
                 [(data_plane.name, data_plane.apisix_version) for data_plane in data_planes]
             )
 
+        permission_prepared = False
         for data_plane in data_planes:
             if source is PublishSourceEnum.CLI_SYNC:
                 # NOTE: this release history is not been saved to db
@@ -101,6 +103,21 @@ def _trigger_rolling_update(
                 PublishEventReporter.report_config_validate_failure(release_history, msg)
                 has_failure = True
                 continue
+
+            if not permission_prepared:
+                try:
+                    OAuth2BuiltinPermissionReconciler().prepare_publish(
+                        release.gateway,
+                        release.stage,
+                        release.resource_version,
+                    )
+                except Exception as err:
+                    message = f"prepare OAuth2 built-in permissions failed: {err}"
+                    logger.exception(message)
+                    PublishEventReporter.report_config_validate_failure(release_history, message)
+                    has_failure = True
+                    break
+                permission_prepared = True
 
             PublishEventReporter.report_config_validate_success(release_history)
             PublishEventReporter.report_create_publish_task_doing(release_history)
