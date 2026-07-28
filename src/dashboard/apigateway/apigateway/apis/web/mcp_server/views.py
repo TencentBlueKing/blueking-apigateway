@@ -216,7 +216,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
 
         slz.save()
 
-        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
+        # sync permissions (including OAuth2 built-in client permissions)
         MCPServerHandler.sync_permissions(slz.instance.id)
 
         # record audit log
@@ -323,7 +323,7 @@ class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.Retriev
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
+        # sync permissions (including OAuth2 built-in client permissions)
         MCPServerHandler.sync_permissions(instance.id)
 
         Auditor.record_mcp_server_op_success(

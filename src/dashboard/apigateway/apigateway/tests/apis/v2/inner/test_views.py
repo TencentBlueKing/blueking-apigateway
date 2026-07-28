@@ -2102,6 +2102,7 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=True,
+            oauth2_personal_client_enabled=True,
         )
 
         resp = request_view(
@@ -2118,6 +2119,7 @@ class TestMCPServerListApi:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is True
+        assert mcp_data["oauth2_personal_client_enabled"] is True
 
     def test_list_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
@@ -2136,6 +2138,7 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=False,
+            oauth2_personal_client_enabled=False,
         )
 
         resp = request_view(
@@ -2152,6 +2155,7 @@ class TestMCPServerListApi:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is False
+        assert mcp_data["oauth2_personal_client_enabled"] is False
 
     def test_list_returns_tool_names(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 tool_names（含重命名场景）"""
