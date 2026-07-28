@@ -1,6 +1,6 @@
 # API Resource OAuth2 Public and Personal Client Support Design
 
-Status: design discussion approved; written specification awaiting review
+Status: approved
 
 Date: 2026-07-28
 
@@ -136,14 +136,12 @@ Rules:
 
 1. Both OAuth2 fields are independent booleans with a default of `false`.
 2. If either OAuth2 field is `true`, `auth_verified_required` must be `true`.
-3. Turning off user authentication in the frontend also turns off both OAuth2
-   switches before saving.
-4. Backend APIs validate the resulting desired state and reject an invalid
+3. Backend APIs validate the resulting desired state and reject an invalid
    combination. They do not silently publish OAuth2 with user authentication
    disabled.
-5. Historical resource versions that do not contain the fields behave as
+4. Historical resource versions that do not contain the fields behave as
    though both values are `false`.
-6. `app_verified_required` and `resource_perm_required` do not control whether
+5. `app_verified_required` and `resource_perm_required` do not control whether
    OAuth2 is available. They only determine whether the accepted OAuth2 app
    code subsequently needs a synchronized resource permission.
 
@@ -399,21 +397,16 @@ The check applies equally to standard and AI resources. A mixed data-plane set
 is rejected if any target is incompatible. Resources with both OAuth2 fields
 disabled do not add a new compatibility requirement.
 
-## 15. API and UI Behavior
+## 15. API Behavior
 
-The resource form displays public and personal OAuth2 switches only as part of
-the authentication settings. The switches are configurable only while user
-authentication is enabled.
+Dashboard backend resource APIs expose the public and personal OAuth2 switches
+as part of the authentication settings. Backend validation rejects any caller
+that explicitly submits an inconsistent combination where OAuth2 is enabled
+while user authentication is disabled.
 
-When the user disables user authentication:
-
-- The UI immediately turns both OAuth2 switches off.
-- The submitted desired state includes both values as `false`.
-- Backend validation still rejects any caller that explicitly submits an
-  inconsistent combination.
-
-Resource detail, version detail, and released resource views display the two
-values using the terminology already used by MCP Server.
+This phase does not include `src/dashboard-front` changes. A later frontend
+delivery can add resource editing and display controls against the backend
+contract defined here.
 
 OpenAPI import and export map:
 
@@ -432,7 +425,6 @@ Exports include both values explicitly. Imports default missing values to
 - Both fields default to `false`.
 - Web, sync, and OpenAPI inputs accept valid combinations.
 - All backend inputs reject OAuth2 enabled with user authentication disabled.
-- Frontend user-authentication disablement resets both switches.
 - Web, snapshot, version, export, and re-import round trips preserve both
   values.
 - Tests cover the existing internal, response, OpenAPI, and APISIX user-field
@@ -476,7 +468,6 @@ After implementation:
 
 - Run focused Dashboard tests first.
 - Run Dashboard edition setup, lint check, and the full test gate.
-- Run dashboard-front type checking, lint, and focused unit tests.
 - Report any integration or full gate that could not be run.
 
 ## 17. Rollout
@@ -484,8 +475,8 @@ After implementation:
 1. Deploy data-plane versions containing the existing four OAuth2 plugins.
 2. Deploy Dashboard fixture and compatibility metadata that treats the plugins
    as system managed.
-3. Deploy the resource contract, publish conversion, permission reconciler, and
-   UI.
+3. Deploy the resource contract, publish conversion, and permission
+   reconciler.
 4. Run the management command in dry-run mode for selected gateways and inspect
    literal `public` and `personal` permissions.
 5. Apply reconciliation in a controlled rollout.
