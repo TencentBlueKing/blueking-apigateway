@@ -25,6 +25,10 @@ from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.data_plane.constants import (
+    get_oauth2_resource_data_planes_compatibility_error,
+    resource_version_uses_oauth2,
+)
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
@@ -176,6 +180,12 @@ class GatewayReleaser:
 
         try:
             self._validate()
+            if resource_version_uses_oauth2(self.resource_version):
+                compatibility_error = get_oauth2_resource_data_planes_compatibility_error(
+                    [(data_plane.name, data_plane.apisix_version) for data_plane in data_planes]
+                )
+                if compatibility_error:
+                    raise ReleaseValidationError(compatibility_error)
         except (ValidationError, ReleaseValidationError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
             if data_planes:

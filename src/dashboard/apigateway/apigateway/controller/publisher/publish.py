@@ -20,6 +20,10 @@ from typing import TYPE_CHECKING, List, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
+from apigateway.apps.data_plane.constants import (
+    get_oauth2_resource_data_planes_compatibility_error,
+    resource_version_uses_oauth2,
+)
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.tasks import revoke_release, rolling_update_release
@@ -66,6 +70,12 @@ def _trigger_rolling_update(
             has_failure = True
             continue
 
+        compatibility_error = None
+        if resource_version_uses_oauth2(release.resource_version):
+            compatibility_error = get_oauth2_resource_data_planes_compatibility_error(
+                [(data_plane.name, data_plane.apisix_version) for data_plane in data_planes]
+            )
+
         for data_plane in data_planes:
             if source is PublishSourceEnum.CLI_SYNC:
                 # NOTE: this release history is not been saved to db
@@ -77,6 +87,12 @@ def _trigger_rolling_update(
                 # Create release history for each data plane
                 release_history = _pre_publish_save_release_history(release, source, author, data_plane=data_plane)
                 publish_id = release_history.pk
+
+            if compatibility_error:
+                logger.warning(compatibility_error)
+                PublishEventReporter.report_config_validate_failure(release_history, compatibility_error)
+                has_failure = True
+                continue
 
             # 发布 check
             ok, msg = _pre_publish_check_is_gateway_ready_for_releasing(release, source)

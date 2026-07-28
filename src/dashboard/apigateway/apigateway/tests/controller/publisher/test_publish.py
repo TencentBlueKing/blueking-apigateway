@@ -56,6 +56,7 @@ class TestTriggerRollingUpdate:
         """Create a mock resource version"""
         resource_version = Mock(spec=ResourceVersion)
         resource_version.pk = 1
+        resource_version.data = []
         return resource_version
 
     @pytest.fixture
@@ -240,6 +241,54 @@ class TestTriggerRollingUpdate:
 
         assert result is True
         mock_delay_on_commit.assert_called_once()
+
+    def test_trigger_rolling_update_rejects_incompatible_oauth2_data_plane(self, mocker, mock_release):
+        mock_release.resource_version.data = [
+            {
+                "contexts": {
+                    "resource_auth": {
+                        "config": '{"oauth2_public_client_enabled": true}',
+                    }
+                }
+            }
+        ]
+        old_data_plane = Mock(spec=DataPlane)
+        old_data_plane.id = 1
+        old_data_plane.name = "apisix-3-13"
+        old_data_plane.apisix_version = "3.13"
+        current_data_plane = Mock(spec=DataPlane)
+        current_data_plane.id = 2
+        current_data_plane.name = "apisix-3-16"
+        current_data_plane.apisix_version = "3.16"
+        data_planes = [old_data_plane, current_data_plane]
+        mocker.patch(
+            "apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes",
+            return_value=data_planes,
+        )
+        save_history = mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_save_release_history",
+            side_effect=[Mock(spec=ReleaseHistory), Mock(spec=ReleaseHistory)],
+        )
+        check_ready = mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing",
+            return_value=(True, ""),
+        )
+        reporter = mocker.patch("apigateway.controller.publisher.publish.PublishEventReporter")
+        delay = mocker.patch("apigateway.controller.publisher.publish.delay_on_commit")
+
+        result = _trigger_rolling_update(
+            PublishSourceEnum.GATEWAY_ENABLE,
+            "test_user",
+            [mock_release],
+            is_sync=False,
+        )
+
+        assert result is False
+        assert save_history.call_count == 2
+        assert reporter.report_config_validate_failure.call_count == 2
+        assert "apisix-3-13 (3.13)" in reporter.report_config_validate_failure.call_args.args[1]
+        check_ready.assert_not_called()
+        delay.assert_not_called()
 
 
 class TestTriggerRevokeDisable:
