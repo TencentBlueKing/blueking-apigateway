@@ -22,6 +22,8 @@ import pytest
 from ddf import G
 from openapi_spec_validator.versions import get_spec_version
 
+from apigateway.apps.plugin.constants import PluginTypeScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.openapi import OpenAPIImportManager
 from apigateway.biz.openapi.schema import openapi_validator_mapping
@@ -818,6 +820,45 @@ class TestOpenAPIImportManagerParse:
 
         assert len(errors) == 1
         assert "require user authentication" in errors[0].message
+
+    @pytest.mark.parametrize("is_official, expect_errors", [(False, True), (True, False)])
+    def test_controller_managed_oauth2_plugins_require_official_gateway(self, is_official, expect_errors):
+        plugin_codes = [
+            "bk-oauth2-protected-resource",
+            "bk-oauth2-verify",
+            "bk-oauth2-appcode-validate",
+            "bk-oauth2-audience-validate",
+        ]
+        gateway = G(Gateway, is_official=is_official)
+        G(Backend, gateway=gateway, name=DEFAULT_BACKEND_NAME)
+        for code in plugin_codes:
+            G(PluginType, code=code, is_public=True, scope=PluginTypeScopeEnum.RESOURCE.value)
+
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "get_users",
+                        "responses": {"200": {"description": "OK"}},
+                        "x-bk-apigateway-resource": {
+                            "backend": {
+                                "type": "HTTP",
+                                "method": "get",
+                                "path": "/users",
+                            },
+                            "pluginConfigs": [{"type": code, "yaml": "{}"} for code in plugin_codes],
+                        },
+                    }
+                }
+            },
+        }
+
+        errors = OpenAPIImportManager(gateway=gateway, data=data).validate()
+
+        assert bool(errors) is expect_errors, [error.message for error in errors]
 
     @staticmethod
     def _name_only_backend_document(openapi_version, resource_kind):

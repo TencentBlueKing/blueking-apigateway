@@ -35,6 +35,13 @@ from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, ProxyTyp
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
 
+OAUTH2_PLUGIN_CODES = {
+    "bk-oauth2-protected-resource",
+    "bk-oauth2-verify",
+    "bk-oauth2-appcode-validate",
+    "bk-oauth2-audience-validate",
+}
+
 
 def _backend_snapshot(backend_id, kind):
     return StageBackendConfig(
@@ -62,6 +69,22 @@ def _ai_resource(*, path="/v1/chat/completions"):
         },
         "contexts": {"resource_auth": {"config": json.dumps({})}},
         "plugins": [],
+    }
+
+
+def _standard_resource():
+    return {
+        "id": 1,
+        "name": "test-resource",
+        "method": "GET",
+        "path": "/test/path",
+        "disabled_stages": [],
+        "proxy": {
+            "type": ProxyTypeEnum.HTTP.value,
+            "backend_id": 1,
+            "config": json.dumps({"method": "GET", "path": "/backend/path"}),
+        },
+        "contexts": {"resource_auth": {"config": json.dumps({})}},
     }
 
 
@@ -311,6 +334,84 @@ class TestRouteConvertor:
         route = convertor._convert_http_route(resource)
 
         assert "bk-resource-header-rewrite" in route.plugins
+
+    @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
+    @pytest.mark.parametrize(
+        "support_public, support_personal",
+        [
+            (False, False),
+            (True, False),
+            (False, True),
+            (True, True),
+        ],
+    )
+    def test_convert_route_injects_oauth2_plugins(
+        self,
+        mock_release_data,
+        resource_kind,
+        support_public,
+        support_personal,
+    ):
+        resource = _standard_resource() if resource_kind == ResourceKindEnum.STANDARD.value else _ai_resource()
+        resource["contexts"]["resource_auth"]["config"] = json.dumps(
+            {
+                "oauth2_public_client_enabled": support_public,
+                "oauth2_personal_client_enabled": support_personal,
+            }
+        )
+        backend_service_mapping = (
+            {1: "standard-service"} if resource_kind == ResourceKindEnum.STANDARD.value else {10: "ai-service"}
+        )
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping=backend_service_mapping,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+
+        route = convertor._convert_http_route(resource)
+        oauth2_plugins = {
+            code: route.plugins[code].model_dump(exclude_none=True)
+            for code in OAUTH2_PLUGIN_CODES
+            if code in route.plugins
+        }
+
+        if not support_public and not support_personal:
+            assert oauth2_plugins == {}
+            return
+
+        assert oauth2_plugins == {
+            "bk-oauth2-protected-resource": {},
+            "bk-oauth2-verify": {},
+            "bk-oauth2-appcode-validate": {
+                "support_public": support_public,
+                "support_personal": support_personal,
+            },
+            "bk-oauth2-audience-validate": {},
+        }
+
+    def test_generated_oauth2_plugin_overwrites_historical_resource_binding(self, convertor, mock_release_data):
+        resource = _standard_resource()
+        resource["contexts"]["resource_auth"]["config"] = json.dumps(
+            {
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": False,
+            }
+        )
+        mock_release_data.get_resource_plugins.return_value = [
+            PluginData(
+                "bk-oauth2-appcode-validate",
+                {"support_public": False, "support_personal": True},
+                "resource",
+            )
+        ]
+
+        route = convertor._convert_http_route(resource)
+
+        assert route.plugins["bk-oauth2-appcode-validate"].model_dump(exclude_none=True) == {
+            "support_public": True,
+            "support_personal": False,
+        }
 
     @pytest.mark.parametrize(
         ("resource_kind", "backend_kind"),

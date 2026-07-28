@@ -22,6 +22,7 @@ from apigateway.service.plugin import (
     AI_COMPATIBLE_PLUGIN_CODES,
     AI_ONLY_PLUGIN_CODES,
     CONTROLLER_MANAGED_PLUGIN_CODES,
+    OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES,
     is_plugin_compatible_with_resource_kind,
 )
 
@@ -38,6 +39,10 @@ def test_ai_plugin_policy_sets():
     assert {
         "ai-proxy",
         "ai-proxy-multi",
+        "bk-oauth2-protected-resource",
+        "bk-oauth2-verify",
+        "bk-oauth2-appcode-validate",
+        "bk-oauth2-audience-validate",
     } == CONTROLLER_MANAGED_PLUGIN_CODES
     assert {
         "bk-header-rewrite",
@@ -45,6 +50,31 @@ def test_ai_plugin_policy_sets():
         "bk-traffic-label",
         "ai-rate-limiting",
     } <= AI_COMPATIBLE_PLUGIN_CODES
+    assert {
+        "bk-oauth2-protected-resource",
+        "bk-oauth2-verify",
+        "bk-oauth2-appcode-validate",
+        "bk-oauth2-audience-validate",
+    } == OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES
+
+
+@pytest.mark.parametrize("resource_kind", [None, ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
+@pytest.mark.parametrize(
+    "plugin_type_code",
+    [
+        "bk-oauth2-protected-resource",
+        "bk-oauth2-verify",
+        "bk-oauth2-appcode-validate",
+        "bk-oauth2-audience-validate",
+    ],
+)
+def test_controller_managed_oauth2_plugins_require_explicit_opt_in(resource_kind, plugin_type_code):
+    assert not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind)
+    assert is_plugin_compatible_with_resource_kind(
+        plugin_type_code,
+        resource_kind,
+        allow_controller_managed=True,
+    )
 
 
 @pytest.mark.parametrize(

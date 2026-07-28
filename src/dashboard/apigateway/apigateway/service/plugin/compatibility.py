@@ -30,11 +30,23 @@ AI_ONLY_PLUGIN_CODES = frozenset(
     }
 )
 
-CONTROLLER_MANAGED_PLUGIN_CODES = frozenset(
+OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES = frozenset(
     {
-        "ai-proxy",
-        "ai-proxy-multi",
+        PluginTypeCodeEnum.BK_OAUTH2_PROTECTED_RESOURCE.value,
+        PluginTypeCodeEnum.BK_OAUTH2_VERIFY.value,
+        PluginTypeCodeEnum.BK_OAUTH2_APPCODE_VALIDATE.value,
+        PluginTypeCodeEnum.BK_OAUTH2_AUDIENCE_VALIDATE.value,
     }
+)
+
+CONTROLLER_MANAGED_PLUGIN_CODES = (
+    frozenset(
+        {
+            "ai-proxy",
+            "ai-proxy-multi",
+        }
+    )
+    | OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES
 )
 
 AI_COMPATIBLE_PLUGIN_CODES = (
@@ -50,6 +62,7 @@ AI_COMPATIBLE_PLUGIN_CODES = (
             PluginTypeCodeEnum.BK_USERNAME_REQUIRED.value,
             PluginTypeCodeEnum.BK_OAUTH2_PROTECTED_RESOURCE.value,
             PluginTypeCodeEnum.BK_OAUTH2_VERIFY.value,
+            PluginTypeCodeEnum.BK_OAUTH2_APPCODE_VALIDATE.value,
             PluginTypeCodeEnum.BK_OAUTH2_AUDIENCE_VALIDATE.value,
             PluginTypeCodeEnum.URI_BLOCKER.value,
             PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
@@ -61,9 +74,14 @@ AI_COMPATIBLE_PLUGIN_CODES = (
 )
 
 
-def is_plugin_compatible_with_resource_kind(plugin_code: str, resource_kind: str | None) -> bool:
+def is_plugin_compatible_with_resource_kind(
+    plugin_code: str,
+    resource_kind: str | None,
+    *,
+    allow_controller_managed: bool = False,
+) -> bool:
     if plugin_code in CONTROLLER_MANAGED_PLUGIN_CODES:
-        return False
+        return allow_controller_managed
 
     if plugin_code in AI_ONLY_PLUGIN_CODES:
         return resource_kind == ResourceKindEnum.AI.value
