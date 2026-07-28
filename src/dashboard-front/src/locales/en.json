@@ -2620,5 +2620,6 @@
   "连通失败": "Connection Failed",
   "去配置": "Go to configure",
   "MCP Server 名称 + 工具名称不得超过 64 字符，超限可能导致部分客户端调用失败。": "The combined length of the MCP Server name and tool name must not exceed 64 characters. Exceeding the limit may cause partial client call failures.",
-  "请缩短工具名称。": "Please shorten the tool name."
+  "请缩短工具名称。": "Please shorten the tool name.",
+  "OAuth2 内置客户端的 MCPServer 应用权限不允许删除。": "The MCPServer app permission of the OAuth2 built-in client cannot be deleted."
 }
