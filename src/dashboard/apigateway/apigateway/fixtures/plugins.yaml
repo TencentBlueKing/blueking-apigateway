@@ -416,6 +416,18 @@
     priority: 17678
     _tags: "认证,Authentication"
     schema: null
+- model: plugin.plugintype
+  fields:
+    code: bk-oauth2-appcode-validate
+    name: OAuth2 App Code 校验
+    name_en: OAuth2 App Code Validate
+    description: OAuth2 app code validate plugin
+    description_en: OAuth2 app code validate plugin
+    is_public: true
+    scope: resource
+    priority: 17677
+    _tags: "认证,Authentication"
+    schema: null
 - model: schema.schema
   fields:
     created_time: 2023-02-02 14:54:21.010753+00:00
