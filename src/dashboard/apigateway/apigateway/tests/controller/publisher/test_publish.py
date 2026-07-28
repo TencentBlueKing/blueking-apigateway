@@ -470,13 +470,20 @@ class TestTriggerRevokeDisable:
         mock_user_credentials,
     ):
         """Test revoke disable in sync mode"""
-        mock_release_history = Mock(spec=ReleaseHistory)
-        mock_release_history.id = 123
-        mock_save_history.return_value = mock_release_history
+        events = []
+        release_histories = [Mock(spec=ReleaseHistory), Mock(spec=ReleaseHistory)]
+        release_histories[0].id = 123
+        release_histories[1].id = 456
+        mock_save_history.side_effect = lambda *args, **kwargs: (
+            events.append("save"),
+            release_histories.pop(0),
+        )[1]
         mock_check.return_value = (True, "")
-        mock_data_plane = Mock(spec=DataPlane)
-        mock_data_plane.id = 1
-        mock_get_data_planes.return_value = [mock_data_plane]
+        data_planes = [Mock(spec=DataPlane), Mock(spec=DataPlane)]
+        data_planes[0].id = 1
+        data_planes[1].id = 2
+        mock_get_data_planes.return_value = data_planes
+        mock_revoke_release.side_effect = lambda **kwargs: (events.append("revoke"), True)[1]
 
         result = _trigger_revoke_disable(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -487,11 +494,11 @@ class TestTriggerRevokeDisable:
         )
 
         assert result is True
-        mock_revoke_release.assert_called_once_with(
-            release_id=1,
-            publish_id=123,
-            data_plane_id=1,
-        )
+        assert events == ["save", "save", "revoke", "revoke"]
+        assert [item.kwargs for item in mock_revoke_release.call_args_list] == [
+            {"release_id": 1, "publish_id": 123, "data_plane_id": 1},
+            {"release_id": 1, "publish_id": 456, "data_plane_id": 2},
+        ]
 
     @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.delay_on_commit")
