@@ -43,6 +43,7 @@ from apigateway.biz.validators import (
     SchemeHostInputValidator,
     StageVarsValidator,
     UpstreamValidator,
+    UserManagedBKAppCodeValidator,
 )
 from apigateway.common.constants import (
     DOMAIN_PATTERN,
@@ -686,7 +687,9 @@ class GatewayAppPermissionGrantInputSLZ(serializers.Serializer):
     ]
 
     # 主动授权时，应用可能尚未创建，因此不校验 app_code 是否存在
-    target_app_code = serializers.CharField(label="", max_length=32, required=True)
+    target_app_code = serializers.CharField(
+        label="", max_length=32, required=True, validators=[UserManagedBKAppCodeValidator()]
+    )
     expire_days = serializers.IntegerField(required=False)
     grant_dimension = serializers.ChoiceField(choices=GRANT_DIMENSION_CHOICES)
     resource_names = serializers.ListField(

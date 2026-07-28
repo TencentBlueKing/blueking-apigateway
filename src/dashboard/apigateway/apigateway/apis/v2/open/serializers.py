@@ -36,7 +36,7 @@ from apigateway.apps.permission.constants import (
 from apigateway.biz.constants import BK_USERNAME_PATTERN
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
-from apigateway.biz.validators import BKAppCodeValidator
+from apigateway.biz.validators import BKAppCodeValidator, UserManagedBKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import GatewayKindNameEnum, ResourceKindEnum, convert_gateway_kind_to_name
 from apigateway.core.models import Resource
@@ -122,7 +122,7 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
     """
 
     # target_app_code 与发送请求的应用账号一致，此 app_code 必定已存在，不需要重复校验
-    target_app_code = serializers.CharField()
+    target_app_code = serializers.CharField(validators=[UserManagedBKAppCodeValidator()])
     reason = serializers.CharField(allow_blank=True, required=False, default="")
     expire_days = serializers.ChoiceField(
         choices=PermissionApplyExpireDaysEnum.get_choices(),

@@ -21,8 +21,11 @@ import operator
 from typing import List
 
 from django.conf import settings
+from django.utils.translation import gettext as _
+from rest_framework import serializers
 
 from apigateway.apps.permission.constants import (
+    OAUTH2_BUILTIN_APP_CODES,
     ApplyStatusEnum,
     GrantTypeEnum,
 )
@@ -43,6 +46,23 @@ from apigateway.core.models import Gateway, Resource
 
 
 class ResourcePermissionHandler:
+    @staticmethod
+    def validate_user_managed_app_code(bk_app_code: str):
+        if bk_app_code in OAUTH2_BUILTIN_APP_CODES:
+            raise serializers.ValidationError(
+                _("应用【{app_code}】的 API 权限由系统管理。").format(app_code=bk_app_code)
+            )
+
+    @staticmethod
+    def validate_user_managed_permissions(queryset):
+        builtin_app_codes = sorted(
+            set(queryset.filter(bk_app_code__in=OAUTH2_BUILTIN_APP_CODES).values_list("bk_app_code", flat=True))
+        )
+        if builtin_app_codes:
+            raise serializers.ValidationError(
+                _("应用【{app_codes}】的 API 权限由系统管理。").format(app_codes=", ".join(builtin_app_codes))
+            )
+
     @staticmethod
     def get_pending_apply_queryset_for_maintainer(username: str, tenant_id: str):
         """获取指定用户作为网关管理员待审批的 API 网关权限申请列表"""
@@ -131,12 +151,12 @@ class ResourcePermissionHandler:
         if not ids:
             return [], [], []
 
-        data_before = list(
-            AppResourcePermission.objects.filter(
-                gateway=gateway,
-                id__in=ids,
-            )
+        queryset = AppResourcePermission.objects.filter(
+            gateway=gateway,
+            id__in=ids,
         )
+        ResourcePermissionHandler.validate_user_managed_permissions(queryset)
+        data_before = list(queryset)
         AppResourcePermission.objects.renew_by_ids(
             gateway=gateway,
             ids=ids,
@@ -158,12 +178,12 @@ class ResourcePermissionHandler:
         if not ids:
             return [], [], []
 
-        data_before = list(
-            AppGatewayPermission.objects.filter(
-                gateway=gateway,
-                id__in=ids,
-            )
+        queryset = AppGatewayPermission.objects.filter(
+            gateway=gateway,
+            id__in=ids,
         )
+        ResourcePermissionHandler.validate_user_managed_permissions(queryset)
+        data_before = list(queryset)
         AppGatewayPermission.objects.renew_by_ids(
             gateway=gateway,
             ids=ids,
