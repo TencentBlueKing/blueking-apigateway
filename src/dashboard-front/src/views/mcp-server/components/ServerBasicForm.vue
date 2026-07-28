@@ -266,6 +266,10 @@ interface IProps {
 
 interface IEmits { 'stage-change': [number] }
 
+type BkInputInstance = InstanceType<typeof Input> & {
+  focus: () => void
+};
+
 const formData = defineModel<IMCPFormData>('formData', {
   type: Object,
   required: true,
@@ -284,15 +288,15 @@ const emit = defineEmits<IEmits>();
 const envStore = useEnv();
 const gatewayStore = useGateway();
 
-const nameRef = ref<InstanceType<typeof Input> | null>(null);
-const titleRef = ref<InstanceType<typeof Input> | null>(null);
-const descriptionRef = ref<InstanceType<typeof Input> | null>(null);
+const nameRef = ref<BkInputInstance | null>(null);
+const titleRef = ref<BkInputInstance | null>(null);
+const descriptionRef = ref<BkInputInstance | null>(null);
 const categoriesRef = ref<InstanceType<typeof TagInput> | null>(null);
 const isOverflow = ref(false);
 const isCategoryFocus = ref(false);
 
 const isCategoryEmpty = computed(() => !formData.value.categories.length && isCategoryFocus.value);
-const stage = computed(() => stageList.find((st: any) => st.id === formData.value.stage_id));
+const stage = computed(() => stageList.find(st => st.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
 const serverNamePrefix = computed(() => `${gatewayStore.currentGateway!.name}-${stageName.value}-`);
 const previewUrl = computed(() => {
@@ -319,29 +323,42 @@ const handleStageSelectChange = (value: number) => {
   emit('stage-change', value);
 };
 
-const renderCategoryTpl = (node: any, highlightKeyword: any, h: any) => {
+/**
+ * TagInput下拉选项渲染模板
+ */
+const renderCategoryTpl = (
+  node: IMCPServerCategory,
+  highlightKeyword: (text: string) => string,
+  renderH: typeof h,
+): VNode => {
   // 先转义原始内容，再执行高亮（确保高亮后的 HTML 仅包含安全标签）
   const escapedName = escape(node.name);
   const escapedDisplayName = escape(node.display_name);
   const highlightedName = highlightKeyword(escapedName);
   const innerHTML = `${highlightedName} (${escapedDisplayName})`;
 
-  return h('div', { class: 'bk-selector-node' }, [
-    h('span', {
+  return renderH('div', { class: 'bk-selector-node' }, [
+    renderH('span', {
       class: 'text',
       innerHTML,
     }),
   ]);
 };
 
-const renderCategoryTagTpl = (node: any, h: any) => {
+/**
+ * TagInput选中标签渲染模板
+ */
+const renderCategoryTagTpl = (
+  node: IMCPServerCategory,
+  renderH: typeof h,
+): VNode => {
   // 转义所有用户输入内容，避免恶意代码执行
   const escapedName = escape(node.name);
   const escapedDisplayName = escape(node.display_name);
   const innerHTML = `<span>${escapedName}</span> (${escapedDisplayName})`;
 
-  return h('div', { class: 'tag' }, [
-    h('span', {
+  return renderH('div', { class: 'tag' }, [
+    renderH('span', {
       class: 'text',
       innerHTML,
     }),
@@ -379,15 +396,15 @@ const validateForm = () => {
 
   // 自动focus到必填项
   if (!name) {
-    (nameRef.value as any)?.focus();
+    nameRef.value?.focus();
     return nameRef.value;
   }
-  if (title?.trim().length < 3) {
-    (titleRef.value as any)?.focus();
+  if ((title?.trim().length ?? 0) < 3) {
+    titleRef.value?.focus();
     return titleRef.value;
   }
-  if (description.length < 10) {
-    (descriptionRef.value as any)?.focus();
+  if ((description?.trim().length ?? 0) < 10) {
+    descriptionRef.value?.focus();
     return descriptionRef.value;
   }
 

@@ -144,7 +144,7 @@ import {
 import { ConfigProvider } from 'tdesign-vue-next';
 import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
 import enConfig from 'tdesign-vue-next/es/locale/en_US';
-import { Checkbox, Loading } from 'bkui-vue';
+import { Checkbox, Loading, Popover } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import type { ITableMethod, ITableSettings } from '@/types/common';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
@@ -370,37 +370,48 @@ const selectionColumns = computed(() => [{
     const isChecked = selections.value.map(item => item[tableRowKey]).includes(row[tableRowKey]);
 
     return (
-      <Checkbox
-        modelValue={isChecked}
-        v-bk-tooltips={{
-          content: row.selectionTip ?? '',
-          disabled: typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row),
-        }}
-        class="custom-ag-table-checkbox"
-        disabled={isDisabled}
-        onChange={(isCheck: boolean, e: MouseEvent) => {
-          e?.stopPropagation();
-          if (isDisabled) {
-            return;
-          }
-          // 这里可以增加disabled逻辑
-          handleCustomSelectChange({
-            isCheck,
-            tableRowKey,
-            row,
-          });
-          const selectionTable = filteredTableData.value;
-          const checkedIds = selectionsRowKeys.value.filter((id: number | string) =>
-            selectionTable.some(item => item[tableRowKey] === id),
-          );
-          isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+      <Popover
+        trigger="hover"
+        placement="top"
+        disabled={typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row)}
+      >
+        {{
+          default: () => (
+            <Checkbox
+              modelValue={isChecked}
+              class="custom-ag-table-checkbox"
+              disabled={isDisabled}
+              onChange={(isCheck: boolean, e: MouseEvent) => {
+                e?.stopPropagation();
 
-          emit('selection-change', {
-            selectionsRowKeys: checkedIds,
-            selections: selections.value,
-          });
+                if (isDisabled) return;
+
+                // 这里可以增加disabled逻辑
+                handleCustomSelectChange({
+                  isCheck,
+                  tableRowKey,
+                  row,
+                });
+                const selectionTable = filteredTableData.value;
+                const checkedIds = selectionsRowKeys.value.filter((id: number | string) =>
+                  selectionTable.some(item => item[tableRowKey] === id),
+                );
+                isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+
+                emit('selection-change', {
+                  selectionsRowKeys: checkedIds,
+                  selections: selections.value,
+                });
+              }}
+            />
+          ),
+          content: () => (
+            <div>
+              {slots?.selectionPopoverContent?.(row) ?? row.selectionTip}
+            </div>
+          ),
         }}
-      />
+      </Popover>
     );
   },
 }]);
