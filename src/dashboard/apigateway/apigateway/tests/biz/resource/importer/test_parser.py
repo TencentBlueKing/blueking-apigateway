@@ -370,11 +370,15 @@ class TestBaseParser:
                     "userVerifiedRequired": True,
                     "appVerifiedRequired": True,
                     "resourcePermissionRequired": True,
+                    "oauth2PublicClientEnabled": True,
+                    "oauth2PersonalClientEnabled": False,
                 },
                 {
                     "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -387,6 +391,8 @@ class TestBaseParser:
                     "auth_verified_required": False,
                     "app_verified_required": False,
                     "resource_perm_required": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -399,6 +405,8 @@ class TestBaseParser:
                     "auth_verified_required": False,
                     "app_verified_required": False,
                     "resource_perm_required": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
         ],

@@ -785,6 +785,40 @@ class TestOpenAPIImportManagerParse:
 
         assert not errors
 
+    @pytest.mark.parametrize("openapi_version", ["2.0", "3.0.1", "3.1.0"])
+    @pytest.mark.parametrize(
+        "oauth2_value, expect_errors",
+        [
+            (True, False),
+            ("true", True),
+        ],
+    )
+    def test_schema_validates_oauth2_client_fields(self, openapi_version, oauth2_value, expect_errors):
+        data = self._name_only_backend_document(openapi_version, "ai")
+        data["paths"]["/chat"]["post"]["x-bk-apigateway-resource"]["authConfig"] = {
+            "oauth2PublicClientEnabled": oauth2_value,
+            "oauth2PersonalClientEnabled": False,
+        }
+
+        errors = list(openapi_validator_mapping[get_spec_version(data)].cls(data).iter_errors())
+
+        assert bool(errors) is expect_errors
+
+    def test_validate_rejects_oauth2_client_without_user_authentication(self):
+        data = self._name_only_backend_document("2.0", "ai")
+        extension = data["paths"]["/chat"]["post"]["x-bk-apigateway-resource"]
+        extension["backend"]["name"] = DEFAULT_BACKEND_NAME
+        extension["authConfig"] = {
+            "userVerifiedRequired": False,
+            "oauth2PublicClientEnabled": True,
+        }
+        manager = self._make_manager(data)
+
+        errors = manager.validate()
+
+        assert len(errors) == 1
+        assert "require user authentication" in errors[0].message
+
     @staticmethod
     def _name_only_backend_document(openapi_version, resource_kind):
         extension = {"backend": {"name": "openai-primary"}}
@@ -1063,6 +1097,8 @@ class TestOpenAPIExporter:
                     "userVerifiedRequired": fake_resource_dict["auth_config"]["auth_verified_required"],
                     "appVerifiedRequired": True,
                     "resourcePermissionRequired": True,
+                    "oauth2PublicClientEnabled": False,
+                    "oauth2PersonalClientEnabled": False,
                 },
                 "pluginConfigs": [],
             },
@@ -1159,6 +1195,8 @@ class TestOpenAPIExporter:
                     "userVerifiedRequired": True,
                     "appVerifiedRequired": True,
                     "resourcePermissionRequired": True,
+                    "oauth2PublicClientEnabled": False,
+                    "oauth2PersonalClientEnabled": False,
                 },
             ),
             (
@@ -1171,6 +1209,8 @@ class TestOpenAPIExporter:
                     "userVerifiedRequired": False,
                     "appVerifiedRequired": False,
                     "resourcePermissionRequired": False,
+                    "oauth2PublicClientEnabled": False,
+                    "oauth2PersonalClientEnabled": False,
                 },
             ),
             (
@@ -1183,6 +1223,8 @@ class TestOpenAPIExporter:
                     "userVerifiedRequired": False,
                     "appVerifiedRequired": False,
                     "resourcePermissionRequired": False,
+                    "oauth2PublicClientEnabled": False,
+                    "oauth2PersonalClientEnabled": False,
                 },
             ),
         ],
@@ -1191,6 +1233,25 @@ class TestOpenAPIExporter:
         exporter = BaseExporter()
         result = exporter._adapt_auth_config(auth_config)
         assert result == expected
+
+    def test_oauth2_client_settings_round_trip(self, fake_resource_dict):
+        gateway = G(Gateway)
+        G(Backend, gateway=gateway, name=DEFAULT_BACKEND_NAME)
+        resource = {
+            **fake_resource_dict,
+            "auth_config": {
+                "auth_verified_required": True,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": False,
+            },
+        }
+        content = OpenAPIExportManager().get_swagger_by_resources([resource], OpenAPIFormatEnum.JSON.value)
+        manager = OpenAPIImportManager.load_from_content(gateway=gateway, content=content)
+        manager.parse()
+
+        assert manager.get_resource_list(raw=True)[0]["auth_config"] == resource["auth_config"]
 
     def test_generate_paths__plugin_configs_dict(self, fake_resource_dict):
         """plugin_configs 为 dict 列表时（资源版本导出路径），pluginConfigs 应正确填充。"""
