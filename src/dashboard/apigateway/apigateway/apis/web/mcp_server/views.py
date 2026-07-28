@@ -20,6 +20,7 @@
 import csv
 from io import StringIO
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Case, DateTimeField, F, OuterRef, Q, Subquery, When
 from django.db.models.functions import Coalesce
@@ -829,6 +830,14 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        if instance.bk_app_code in {
+            settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE,
+        }:
+            raise error_codes.FAILED_PRECONDITION.format(
+                _("OAuth2 内置客户端的 MCPServer 应用权限不允许删除。"), replace=True
+            )
+
         data_before = get_model_dict(instance)
         instance_id = instance.id
         bk_app_code = instance.bk_app_code
