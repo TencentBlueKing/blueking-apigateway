@@ -84,3 +84,10 @@ def test_resource_version_uses_oauth2(auth_config, expected):
     ]
 
     assert constants.resource_version_uses_oauth2(resource_version) is expected
+
+
+def test_resource_version_without_resource_auth_context_does_not_use_oauth2():
+    resource_version = Mock(spec=ResourceVersion)
+    resource_version.data = [{"id": 1}]
+
+    assert constants.resource_version_uses_oauth2(resource_version) is False

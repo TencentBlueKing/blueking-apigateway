@@ -161,6 +161,8 @@ class TestResourceSavers:
             "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
+            "oauth2_public_client_enabled": False,
+            "oauth2_personal_client_enabled": False,
         }
 
         ctx.config = {
@@ -180,6 +182,8 @@ class TestResourceSavers:
             "auth_verified_required": True,
             "app_verified_required": False,
             "resource_perm_required": True,
+            "oauth2_public_client_enabled": False,
+            "oauth2_personal_client_enabled": False,
         }
 
     def test_save_resource_labels(self, fake_resource, fake_resource_data):

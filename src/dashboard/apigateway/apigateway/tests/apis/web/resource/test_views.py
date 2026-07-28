@@ -826,6 +826,8 @@ class TestResourceImportCheckApi:
                             "auth_verified_required": True,
                             "app_verified_required": True,
                             "resource_perm_required": True,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": False,
                         },
                         "backend": {
                             "name": "default",
@@ -905,6 +907,8 @@ class TestResourceImportCheckApi:
                             "auth_verified_required": True,
                             "app_verified_required": True,
                             "resource_perm_required": True,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": False,
                         },
                         "backend": {
                             "name": "default",
@@ -985,6 +989,8 @@ class TestResourceImportCheckApi:
                             "auth_verified_required": True,
                             "app_verified_required": True,
                             "resource_perm_required": True,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": False,
                         },
                         "backend": {
                             "name": "default",

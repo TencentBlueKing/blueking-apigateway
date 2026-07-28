@@ -95,9 +95,16 @@ def get_oauth2_resource_data_planes_compatibility_error(
     return f"{OAUTH2_RESOURCE_APISIX_VERSION_ERROR}; incompatible data planes: {', '.join(incompatible_data_planes)}"
 
 
+def get_resource_auth_config(resource: dict) -> dict:
+    config = resource.get("contexts", {}).get("resource_auth", {}).get("config")
+    if not config:
+        return {}
+    return json.loads(config)
+
+
 def resource_version_uses_oauth2(resource_version: "ResourceVersion") -> bool:
     for resource in resource_version.data:
-        auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        auth_config = get_resource_auth_config(resource)
         if auth_config.get("oauth2_public_client_enabled", False):
             return True
         if auth_config.get("oauth2_personal_client_enabled", False):

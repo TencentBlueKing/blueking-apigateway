@@ -18,13 +18,13 @@
 
 """Coordinate OAuth2 built-in permissions with data-plane publication state."""
 
-import json
 from dataclasses import dataclass
 from typing import TypeAlias
 
 from django.conf import settings
 from django.db import transaction
 
+from apigateway.apps.data_plane.constants import get_resource_auth_config
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES, GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
@@ -67,7 +67,7 @@ def _required_permissions(resource_version: ResourceVersion, stage: Stage) -> se
         if stage.name in resource.get("disabled_stages", []):
             continue
 
-        auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        auth_config = get_resource_auth_config(resource)
         if not auth_config.get("app_verified_required", True):
             continue
         if not auth_config.get("resource_perm_required", True):

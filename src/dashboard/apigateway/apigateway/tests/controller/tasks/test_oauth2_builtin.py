@@ -162,6 +162,14 @@ def test_reconcile_calculates_permissions_from_real_snapshot_flags(fake_gateway)
     assert not AppResourcePermission.objects.filter(gateway=fake_gateway).exists()
 
 
+def test_reconcile_ignores_snapshot_without_resource_auth_context(fake_gateway):
+    make_stage_release(fake_gateway, "prod", "1.0.0", [{"id": 1}])
+
+    result = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway, apply=False)
+
+    assert result.desired == frozenset()
+
+
 def test_reconcile_uses_union_of_active_release_snapshots_not_editing_resources(fake_gateway):
     make_stage_release(
         fake_gateway,
