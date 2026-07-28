@@ -46,6 +46,16 @@ class TestResourceHandler:
         ResourceHandler().save_resource_labels(fake_gateway, fake_resource, [label_2.id])
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
 
+    def test_get_default_auth_config(self):
+        assert ResourceHandler.get_default_auth_config() == {
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+            "oauth2_public_client_enabled": False,
+            "oauth2_personal_client_enabled": False,
+        }
+
     def test_save_auth_config(self):
         resource = G(Resource)
         data = [
@@ -60,6 +70,8 @@ class TestResourceHandler:
                     "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             },
             {
@@ -74,6 +86,8 @@ class TestResourceHandler:
                     "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             },
         ]
@@ -103,6 +117,8 @@ class TestResourceHandler:
                     "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             },
             {
@@ -117,6 +133,8 @@ class TestResourceHandler:
                     "auth_verified_required": True,
                     "app_verified_required": False,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             },
         ]

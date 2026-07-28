@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from openapi_schema_validator import OAS30Validator, OAS31Validator
 from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
+from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -34,7 +35,7 @@ from apigateway.apis.web.resource.validators import (
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayLabelHandler
-from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource import ResourceAuthConfig, ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -165,17 +166,29 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
     auth_verified_required = serializers.BooleanField(
-        required=False, help_text="是否需要认证用户，true：需要，false：不需要"
+        default=True, required=False, help_text="是否需要认证用户，true：需要，false：不需要"
     )
     app_verified_required = serializers.BooleanField(
-        required=False, help_text="是否需要认证应用，true：需要，false：不需要"
+        default=True, required=False, help_text="是否需要认证应用，true：需要，false：不需要"
     )
     resource_perm_required = serializers.BooleanField(
-        required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
+        default=True, required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
+    )
+    oauth2_public_client_enabled = serializers.BooleanField(
+        default=False, required=False, help_text="是否允许 OAuth2 public client 调用"
+    )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        default=False, required=False, help_text="是否允许 OAuth2 personal client 调用"
     )
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceAuthConfigSLZ"
+
+    def validate(self, attrs):
+        try:
+            return ResourceAuthConfig.model_validate(attrs).model_dump()
+        except PydanticValidationError as err:
+            raise serializers.ValidationError(err.errors()[0]["msg"]) from err
 
 
 class HttpBackendConfigSLZ(serializers.Serializer):

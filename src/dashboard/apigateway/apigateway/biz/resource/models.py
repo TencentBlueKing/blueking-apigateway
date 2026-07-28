@@ -28,6 +28,16 @@ class ResourceAuthConfig(BaseModel):
     auth_verified_required: bool = Field(default=True)
     app_verified_required: bool = Field(default=True)
     resource_perm_required: bool = Field(default=True)
+    oauth2_public_client_enabled: bool = Field(default=False)
+    oauth2_personal_client_enabled: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def validate_oauth2_client_requires_user_authentication(self):
+        if (
+            self.oauth2_public_client_enabled or self.oauth2_personal_client_enabled
+        ) and not self.auth_verified_required:
+            raise ValueError("OAuth2 public/personal clients require user authentication")
+        return self
 
 
 class ResourceBackendConfig(BaseModel):

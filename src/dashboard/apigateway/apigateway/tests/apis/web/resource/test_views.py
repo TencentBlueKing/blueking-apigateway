@@ -231,9 +231,11 @@ class TestResourceListCreateApi:
                     }
                 },
                 "auth_config": {
-                    "auth_verified_required": False,
+                    "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
             },
         ],
@@ -265,9 +267,11 @@ class TestResourceListCreateApi:
         )
         assert context.config == {
             "skip_auth_verification": False,
-            "auth_verified_required": False,
+            "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
+            "oauth2_public_client_enabled": True,
+            "oauth2_personal_client_enabled": False,
         }
 
 
@@ -435,9 +439,11 @@ class TestResourceRetrieveUpdateDestroyApi:
                 },
             },
             "auth_config": {
-                "auth_verified_required": False,
+                "auth_verified_required": True,
                 "app_verified_required": True,
                 "resource_perm_required": True,
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": True,
             },
         }
 
@@ -456,9 +462,11 @@ class TestResourceRetrieveUpdateDestroyApi:
         auth_config = ResourceAuthContext().get_config(fake_resource.id)
         assert auth_config == {
             "skip_auth_verification": False,
-            "auth_verified_required": False,
+            "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
+            "oauth2_public_client_enabled": False,
+            "oauth2_personal_client_enabled": True,
         }
 
     def test_destroy(self, request_view, fake_resource):
