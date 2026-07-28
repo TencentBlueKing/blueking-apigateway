@@ -414,6 +414,9 @@ class MCPServerBaseSLZ(serializers.Serializer):
     oauth2_public_client_enabled = serializers.BooleanField(
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
     )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权"
+    )
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
@@ -654,6 +657,9 @@ class MCPServerListOutputSLZ(serializers.Serializer):
 
     oauth2_public_client_enabled = serializers.BooleanField(
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权"
     )
 
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
