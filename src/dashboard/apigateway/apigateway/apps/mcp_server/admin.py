@@ -77,6 +77,7 @@ class MCPServerAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.Mo
         "stage",
         "is_public",
         "oauth2_public_client_enabled",
+        "oauth2_personal_client_enabled",
         "status",
         "get_categories_display",
         "created_by",
@@ -84,12 +85,30 @@ class MCPServerAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.Mo
         "updated_time",
     ]
     search_fields = ["id", "name", "title", "gateway__name", "_labels"]
-    list_filter = ["gateway", "is_public", "status", "oauth2_public_client_enabled", "categories"]
+    list_filter = [
+        "gateway",
+        "is_public",
+        "status",
+        "oauth2_public_client_enabled",
+        "oauth2_personal_client_enabled",
+        "categories",
+    ]
     filter_horizontal = ["categories"]
 
     fieldsets = (
         (None, {"fields": ("name", "title", "description", "gateway", "stage")}),
-        ("状态和权限", {"fields": ("status", "is_public", "oauth2_public_client_enabled", "protocol_type")}),
+        (
+            "状态和权限",
+            {
+                "fields": (
+                    "status",
+                    "is_public",
+                    "oauth2_public_client_enabled",
+                    "oauth2_personal_client_enabled",
+                    "protocol_type",
+                )
+            },
+        ),
         ("分类", {"fields": ("categories",)}),
         ("资源配置", {"fields": ("_labels", "_resource_names"), "classes": ("collapse",)}),
     )

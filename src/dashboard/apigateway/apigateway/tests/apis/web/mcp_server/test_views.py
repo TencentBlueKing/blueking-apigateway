@@ -3054,6 +3054,7 @@ class TestMCPServerOAuth2Enabled:
     def test_list_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
         """测试列表接口返回 oauth2_public_client_enabled 字段"""
         fake_mcp_server.oauth2_public_client_enabled = True
+        fake_mcp_server.oauth2_personal_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -3071,6 +3072,7 @@ class TestMCPServerOAuth2Enabled:
         )
         assert mcp_server_data is not None
         assert mcp_server_data["oauth2_public_client_enabled"] is True
+        assert mcp_server_data["oauth2_personal_client_enabled"] is True
 
     def test_list_returns_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
         """测试列表接口返回 oauth2_public_client_enabled=False"""
@@ -3096,6 +3098,7 @@ class TestMCPServerOAuth2Enabled:
     def test_retrieve_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
         """测试详情接口返回 oauth2_public_client_enabled 字段"""
         fake_mcp_server.oauth2_public_client_enabled = True
+        fake_mcp_server.oauth2_personal_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -3108,6 +3111,7 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 200
         assert result["data"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["oauth2_personal_client_enabled"] is True
 
     def test_retrieve_returns_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
         """测试详情接口返回 oauth2_public_client_enabled=False"""

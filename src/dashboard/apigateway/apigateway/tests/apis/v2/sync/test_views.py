@@ -524,6 +524,52 @@ class TestSyncApi:
 class TestSyncApiOAuth2:
     """测试 MCPServer 同步接口的 OAuth2 功能"""
 
+    def test_mcp_server_sync_create_with_oauth2_personal_client_enabled(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        make_resource_schema_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "oauth2-personal-server",
+                    "resource_names": [fake_resource.name],
+                    "tool_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "oauth2 personal test server",
+                    "status": 1,
+                    "oauth2_personal_client_enabled": True,
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        mcp_server_id = resp.json()["data"][0]["id"]
+        mcp_server = MCPServer.objects.get(id=mcp_server_id)
+        assert mcp_server.oauth2_personal_client_enabled is True
+        assert MCPServerAppPermission.objects.filter(
+            mcp_server_id=mcp_server_id,
+            bk_app_code=settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE,
+        ).exists()
+
     def test_mcp_server_sync_create_with_oauth2_public_client_enabled(
         self,
         request_view,

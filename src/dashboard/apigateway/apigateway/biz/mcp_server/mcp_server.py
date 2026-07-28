@@ -314,40 +314,52 @@ class MCPServerHandler:
         ).delete()
 
     @staticmethod
-    @transaction.atomic
-    def sync_permissions(mcp_server_id: int) -> None:
-        """同步 MCPServer 的权限，包括 OAuth2 权限（bk_app_code=public）
-        Args:
-            mcp_server_id (int): mcp_server 的 id
-        """
-        mcp_server = MCPServer.objects.get(id=mcp_server_id)
-
-        # 同步 OAuth2 权限：根据 oauth2_public_client_enabled 开启/关闭 public app 权限
-        public_app_code = settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE
-        if mcp_server.oauth2_public_client_enabled:
+    def _sync_oauth2_client_permission(mcp_server_id: int, app_code: str, enabled: bool) -> None:
+        if enabled:
             MCPServerAppPermission.objects.save_permission(
                 mcp_server_id=mcp_server_id,
-                bk_app_code=public_app_code,
+                bk_app_code=app_code,
                 grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
                 expire_days=None,
             )
             logger.info(
                 "sync oauth2 permissions for mcp_server %d, granted bk_app_code=%s",
                 mcp_server_id,
-                public_app_code,
+                app_code,
             )
-        else:
-            deleted_count, _ = MCPServerAppPermission.objects.filter(
-                mcp_server_id=mcp_server_id,
-                bk_app_code=public_app_code,
-            ).delete()
-            if deleted_count:
-                logger.info(
-                    "sync oauth2 permissions for mcp_server %d, revoked bk_app_code=%s, deleted %d",
-                    mcp_server_id,
-                    public_app_code,
-                    deleted_count,
-                )
+            return
+
+        deleted_count, _ = MCPServerAppPermission.objects.filter(
+            mcp_server_id=mcp_server_id,
+            bk_app_code=app_code,
+        ).delete()
+        if deleted_count:
+            logger.info(
+                "sync oauth2 permissions for mcp_server %d, revoked bk_app_code=%s, deleted %d",
+                mcp_server_id,
+                app_code,
+                deleted_count,
+            )
+
+    @staticmethod
+    @transaction.atomic
+    def sync_permissions(mcp_server_id: int) -> None:
+        """同步 MCPServer 的权限，包括 OAuth2 内置客户端权限
+        Args:
+            mcp_server_id (int): mcp_server 的 id
+        """
+        mcp_server = MCPServer.objects.get(id=mcp_server_id)
+
+        MCPServerHandler._sync_oauth2_client_permission(
+            mcp_server_id,
+            settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            mcp_server.oauth2_public_client_enabled,
+        )
+        MCPServerHandler._sync_oauth2_client_permission(
+            mcp_server_id,
+            settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE,
+            mcp_server.oauth2_personal_client_enabled,
+        )
 
         # 1. fetch the app codes in mcp_server_app_permission
         app_codes = MCPServerAppPermission.objects.filter(mcp_server=mcp_server).values_list("bk_app_code", flat=True)

@@ -231,6 +231,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         default=False,
         help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权",
+    )
     raw_response_enabled = serializers.BooleanField(
         required=False,
         default=False,
@@ -253,6 +258,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
             "protocol_type",
             "category_ids",
             "oauth2_public_client_enabled",
+            "oauth2_personal_client_enabled",
             "raw_response_enabled",
         )
         lookup_field = "id"
@@ -358,6 +364,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     oauth2_public_client_enabled = serializers.BooleanField(
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
     )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权"
+    )
 
     raw_response_enabled = serializers.BooleanField(
         read_only=True,
@@ -462,6 +471,10 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         required=False,
         help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        required=False,
+        help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权",
+    )
     raw_response_enabled = serializers.BooleanField(
         required=False,
         help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
@@ -515,6 +528,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             "protocol_type",
             "category_ids",
             "oauth2_public_client_enabled",
+            "oauth2_personal_client_enabled",
             "raw_response_enabled",
         )
         lookup_field = "id"

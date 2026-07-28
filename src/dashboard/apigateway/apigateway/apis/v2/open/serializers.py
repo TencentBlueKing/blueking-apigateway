@@ -283,6 +283,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     oauth2_public_client_enabled = serializers.BooleanField(
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
     )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权"
+    )
 
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
 
@@ -608,6 +611,9 @@ class MCPServerRetrieveOutputSLZ(serializers.Serializer):
     )
     oauth2_public_client_enabled = serializers.BooleanField(
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权"
     )
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
     guideline = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
