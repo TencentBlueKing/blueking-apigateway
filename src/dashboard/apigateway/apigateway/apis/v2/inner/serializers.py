@@ -445,23 +445,12 @@ class MCPServerPermissionBaseSLZ(serializers.Serializer):
 
     def get_approval_url(self, obj) -> str:
         """获取审批 URL"""
-        try:
-            if isinstance(obj, dict):
-                mcp_server_id = obj.get("mcp_server_id")
-                gateway_id = obj.get("gateway_id")
-                itsm_ticket_id = obj.get("itsm_ticket_id", "")
+        mcp_server_id = obj.get("mcp_server_id")
+        gateway_id = obj.get("gateway_id")
+        itsm_ticket_id = obj.get("itsm_ticket_id", "")
 
-                if gateway_id and mcp_server_id:
-                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id, itsm_ticket_id)
-
-            # 如果是模型实例
-            if hasattr(obj, "mcp_server"):
-                return build_mcp_server_permission_approval_url(
-                    obj.mcp_server.gateway_id, obj.mcp_server_id, getattr(obj, "itsm_ticket_id", "")
-                )
-        except Exception:
-            # 记录错误但不中断响应
-            logger.warning("Failed to build approval URL for object: %s", obj)
+        if gateway_id and mcp_server_id:
+            return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id, itsm_ticket_id)
 
         return ""
 
@@ -545,7 +534,7 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     applied_by = serializers.SerializerMethodField(help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
-    handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
+    handled_by = serializers.SerializerMethodField(help_text="处理人")
     handled_time = serializers.DateTimeField(read_only=True, help_text="处理时间")
     apply_status = serializers.CharField(read_only=True, help_text="审批状态")
     apply_status_display = serializers.CharField(read_only=True)
@@ -558,52 +547,34 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
     def get_approval_url(self, obj) -> str:
         """获取审批 URL"""
         try:
-            if isinstance(obj, dict):
-                mcp_server_id = obj.get("mcp_server_id")
-                gateway_id = obj.get("gateway_id")
-                itsm_ticket_id = obj.get("itsm_ticket_id", "")
+            mcp_server_id = obj.get("mcp_server_id")
+            gateway_id = obj.get("gateway_id")
+            itsm_ticket_id = obj.get("itsm_ticket_id", "")
 
-                if gateway_id and mcp_server_id:
-                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id, itsm_ticket_id)
-
-            # 如果是模型实例
-            if hasattr(obj, "mcp_server"):
-                return build_mcp_server_permission_approval_url(
-                    obj.mcp_server.gateway_id, obj.mcp_server_id, getattr(obj, "itsm_ticket_id", "")
-                )
+            if gateway_id and mcp_server_id:
+                return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id, itsm_ticket_id)
         except Exception:
             # 记录错误但不中断响应
             logger.warning("Failed to build approval URL for object: %s", obj)
 
         return ""
 
+    def get_handled_by(self, obj):
+        """获取处理人 display_name"""
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.get("tenant_mode", ""),
+            obj.get("tenant_id", ""),
+            obj.get("handled_by") or [],
+        )
+
     def get_applied_by(self, obj):
         """获取申请人 display_name"""
-        if isinstance(obj, dict):
-            try:
-                return ResourcePermissionHandler.convert_applied_by_to_display_name(
-                    obj.get("bk_app_code", ""),
-                    obj.get("applied_by", ""),
-                    obj.get("tenant_mode", ""),
-                    obj.get("tenant_id", ""),
-                )
-            except Exception:
-                logger.warning("Failed to convert applied_by for dict object: %s", obj, exc_info=True)
-                return obj.get("applied_by", "")
-
-        if hasattr(obj, "mcp_server"):
-            try:
-                return ResourcePermissionHandler.convert_applied_by_to_display_name(
-                    obj.bk_app_code,
-                    obj.applied_by,
-                    obj.mcp_server.gateway.tenant_mode,
-                    obj.mcp_server.gateway.tenant_id,
-                )
-            except Exception:
-                logger.warning("Failed to convert applied_by for model object: %s", obj, exc_info=True)
-                return getattr(obj, "applied_by", "")
-
-        return getattr(obj, "applied_by", "")
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.get("bk_app_code", ""),
+            obj.get("applied_by", ""),
+            obj.get("tenant_mode", ""),
+            obj.get("tenant_id", ""),
+        )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordBaseSLZ"
