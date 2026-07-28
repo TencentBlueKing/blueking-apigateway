@@ -2527,5 +2527,6 @@
   "隐藏仅文档更新的资源": "Hide resources with documentation-only updates",
   "不能包含 =, &, #, ?": "Cannot contain =, &, #, ?",
   "需要在开发者中心申请该网关API权限": "Need to apply for permission in developer center",
-  "请先开启主动健康检查": "Please enable active health check first"
+  "请先开启主动健康检查": "Please enable active health check first",
+  "OAuth2 内置客户端的 MCPServer 应用权限不允许删除。": "The MCPServer app permission of the OAuth2 built-in client cannot be deleted."
 }
