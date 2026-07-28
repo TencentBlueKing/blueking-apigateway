@@ -159,7 +159,31 @@
                               @clear-selection="handleToolClearSelection"
                               @selection-change="handleToolSelectionChange"
                               @page-change="renderPreviewViewWidth"
-                            />
+                            >
+                              <template #selectionPopoverContent="row">
+                                <div class="flex items-center">
+                                  <div>{{ row?.selectionTip }}</div>
+                                  <div
+                                    v-if="!row.has_openapi_schema "
+                                    class="ml-16px color-#699df4 cursor-pointer"
+                                    @click="handleToolNameClick(row)"
+                                  >
+                                    <AgIcon
+                                      name="jump"
+                                      color="#699df4"
+                                      class="mr-6px"
+                                    />
+                                    {{ t('去配置') }}
+                                  </div>
+                                  <div
+                                    v-if="isExceedMaxCharacters(row) && row.has_openapi_schema"
+                                    class="font-700"
+                                  >
+                                    {{ t('请缩短工具名称。') }}
+                                  </div>
+                                </div>
+                              </template>
+                            </AgTable>
                           </BkLoading>
                         </div>
                         <template v-if="['prompt'].includes(activeTab)">
@@ -411,6 +435,7 @@ import {
   Input,
   Message,
   PopConfirm,
+  Popover,
   ResizeLayout,
 } from 'bkui-vue';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
@@ -534,6 +559,7 @@ const promptLabels = ref<ISearchItem[]>([]);
 const filterPromptValues = ref<ISearchSelectFilter[]>([]);
 const categoriesList = ref<IMCPServerCategory[]>([]);
 const hiddenCategoriesList = ref<IMCPServerCategory[]>([]);
+const toolNameList = ref<string[]>([]);
 
 const customMethodsList = computed<IMethodFilterItem[]>(() => {
   const methods = HTTP_METHODS.map(item => ({
@@ -567,45 +593,87 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('资源名称'),
     colKey: 'name',
-    ellipsis: true,
     cell: (_, { row }) => {
       if (!row.name) {
         return '--';
       };
+
       return (
-        <div class="flex-row">
+        <div class="flex-row items-center relative overflow-hidden">
           <div
             v-bk-tooltips={{
               placement: 'top',
               content: row.name,
               disabled: !row.isOverflow,
-              extCls: 'max-w-480px',
             }}
             class={[
               'truncate mr-4px',
-              { 'color-#3a84ff cursor-pointer': gatewayStore.currentGateway?.kind === 0 },
-              { 'color-#979ba5! hover:color-#3a84ff!': !row.has_openapi_schema },
+              gatewayStore.currentGateway?.kind === 0
+                ? 'color-#3a84ff cursor-pointer'
+                : '',
+              !row.has_openapi_schema && 'color-#979ba5!',
             ]}
-            onMouseenter={(e: MouseEvent) =>
+            onMouseenter={(e: MouseEvent) => {
               toolTableRef.value?.handleCellEnter({
                 e,
                 row,
               } as {
                 e: MouseEvent
                 row: IMCPServerTool
-              })}
-            onMouseleave={(e: MouseEvent) =>
+              });
+            }}
+            onMouseleave={(e: MouseEvent) => {
               toolTableRef.value?.handleCellLeave({
                 e,
                 row,
               } as {
                 e: MouseEvent
                 row: IMCPServerTool
-              })}
-            onClick={() => handleToolNameClick(row as IMCPServerTool)}
+              });
+            }}
+            onClick={() => {
+              if (toolDisabledSelection(row) && !row.has_openapi_schema) return;
+
+              handleToolNameClick(row as IMCPServerTool);
+            }}
           >
-            { row.name }
+            {row.name}
           </div>
+
+          {(toolDisabledSelection(row) && !row.has_openapi_schema) && (
+            <Popover
+              trigger="hover"
+              placement="top"
+              popoverDelay={0}
+            >
+              {{
+                default: () => (
+                  <ag-icon
+                    name="exclamation-circle-fill"
+                    class="min-w-14px flex-shrink-0 color-#f59500 cursor-pointer"
+                  />
+                ),
+                content: () => (
+                  <div class="flex items-center">
+                    <div>
+                      { row.selectionTip }
+                    </div>
+                    <div
+                      class="ml-16px color-#699df4 cursor-pointer"
+                      onClick={() => handleToolNameClick(row as IMCPServerTool)}
+                    >
+                      <ag-icon
+                        name="jump"
+                        color="#699df4"
+                        class="mr-6px"
+                      />
+                      {t('去配置')}
+                    </div>
+                  </div>
+                ),
+              }}
+            </Popover>
+          )}
         </div>
       );
     },
@@ -613,13 +681,15 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('工具名称'),
     colKey: 'tool_name',
-    ellipsis: true,
     cell: (_, payload) => {
       const row = payload.row as IMCPServerTool;
+
       row.tool_name = row.tool_name ?? row.name;
+
       if (!row.tool_name) {
         return '--';
       }
+
       return (
         <div class="flex-row items-center relative overflow-hidden tool-name">
           <div
@@ -627,7 +697,6 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
               placement: 'top',
               content: row.tool_name,
               disabled: !row.isOverflow,
-              extCls: 'max-w-480px',
             }}
             class={[
               'truncate mr-4px',
@@ -654,82 +723,111 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
             { row.tool_name }
           </div>
           { row.has_openapi_schema && (
-            <PopConfirm
-              ref={popoverConfirmRef}
-              // @ts-ignore
-              trigger="manual"
-              width="400"
-              placement="right"
-              extCls="tool-name-popover"
-              is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
-              onConfirm={() => handleConfirmToolName(row as IMCPServerTool)}
-              onCancel={() => handleCancelToolName()}
-            >
-              {{
-                default: () => (
-                  <ag-icon
-                    name="edit-line"
-                    class="hidden cursor-pointer vertical-mid tool-name-edit-icon"
-                    onClick={(e: MouseEvent) => {
-                      e?.stopPropagation();
-                      handleEditToolName(row);
-                    }}
-                  />
-                ),
-                content: () => (
-                  <div class="w-full break-all tool-name-popover-content">
-                    <span class="text-16px color-#313238">
-                      <span class="min-w-64px lh-24px">
-                        {t('工具名称')}
+            <div class="flex items-center">
+              <PopConfirm
+                ref={popoverConfirmRef}
+                // @ts-ignore
+                trigger="manual"
+                width="400"
+                placement="right"
+                extCls="tool-name-popover"
+                arrow={false}
+                is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
+                onConfirm={() => handleConfirmToolName(row as IMCPServerTool)}
+                onCancel={() => handleCancelToolName()}
+              >
+                {{
+                  default: () => (
+                    <ag-icon
+                      name="edit-line"
+                      class="hidden cursor-pointer vertical-mid tool-name-edit-icon"
+                      onClick={(e: MouseEvent) => {
+                        e?.stopPropagation();
+                        handleEditToolName(row);
+                      }}
+                    />
+                  ),
+                  content: () => (
+                    <div class="w-full break-all tool-name-popover-content">
+                      <span class="text-16px color-#313238">
+                        <span class="min-w-64px lh-24px">
+                          {t('工具名称')}
+                        </span>
+                        <Divider
+                          direction="vertical"
+                          type="solid"
+                        />
+                        <span class="text-14px color-#979ba5 lh-22px">
+                          { t('资源名称：{value}', { value: row.tool_name }) }
+                        </span>
                       </span>
-                      <Divider
-                        direction="vertical"
-                        type="solid"
-                      />
-                      <span class="text-14px color-#979ba5 lh-22px">
-                        { t('资源名称：{value}', { value: row.tool_name }) }
-                      </span>
-                    </span>
-                    <div class="mt-16px">
-                      <Form
-                        ref={toolNameRef}
-                        form-type="vertical"
-                        model={toolNameRowData.value}
-                        rules={toolNameRules}
-                      >
-                        <Form.FormItem
-                          label={t('工具名称')}
-                          required={true}
-                          property="tool_name"
-                          class="tool-name-form-item"
+                      <div class="mt-16px">
+                        <Form
+                          ref={toolNameRef}
+                          form-type="vertical"
+                          model={toolNameRowData.value}
+                          rules={toolNameRules}
                         >
-                          <Input
-                            v-model={toolNameRowData.value.tool_name}
-                            placeholder={t('请输入工具名称')}
-                            maxlength={128}
-                            tooltipsOptions={{
-                              content: () => (
-                                <div>
-                                  { t('长度限制：最多 128 个字符') }
-                                  <br />
-                                  { t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）') }
-                                  <br />
-                                  { t('中间字符：允许字母、数字、连字符（-）、下划线（_）、点号（.）') }
-                                </div>
-                              ),
-                              placement: 'right',
-                              disabled: false,
-                              allowHtml: true,
-                            }}
-                            autofocus={true}
-                          />
-                        </Form.FormItem>
-                      </Form>
+                          <Form.FormItem
+                            label={t('工具名称')}
+                            required={true}
+                            property="tool_name"
+                            class="tool-name-form-item"
+                          >
+                            <Input
+                              v-model={toolNameRowData.value.tool_name}
+                              placeholder={t('请输入工具名称')}
+                              maxlength={128}
+                              tooltipsOptions={{
+                                content: () => (
+                                  <div>
+                                    { t('长度限制：最多 128 个字符') }
+                                    <br />
+                                    { t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）') }
+                                    <br />
+                                    { t('中间字符：允许字母、数字、连字符（-）、下划线（_）、点号（.）') }
+                                  </div>
+                                ),
+                                placement: 'right',
+                                disabled: false,
+                                allowHtml: true,
+                              }}
+                              autofocus={true}
+                            />
+                          </Form.FormItem>
+                        </Form>
+                      </div>
                     </div>
-                  </div>
-                ),
-              }}
-            </PopConfirm>
+                  ),
+                }}
+              </PopConfirm>
+              { isExceedMaxCharacters(row) && (
+                <Popover
+                  trigger="hover"
+                  placement="top"
+                  popoverDelay={0}
+                >
+                  {{
+                    default: () => (
+                      <ag-icon
+                        name="exclamation-circle-fill"
+                        class="ml-4px min-w-14px color-#f59500 cursor-pointer"
+                      />
+                    ),
+                    content: () => (
+                      <div>
+                        <span class="font-400">
+                          {t('MCP Server 名称 + 工具名称不得超过 64 字符，超限可能导致部分客户端调用失败。')}
+                        </span>
+                        <span class="font-700">
+                          {t('请缩短工具名称。')}
+                        </span>
+                      </div>
+                    ),
+                  }}
+                </Popover>
+              )}
+            </div>
           )}
         </div>
       );
@@ -1121,6 +1219,22 @@ const handleIsShowChange = async (isShowVal: boolean) => {
 
 watch(isShow, handleIsShowChange, { immediate: false });
 
+const isExceedMaxCharacters = (row: TableRowData) => {
+  const toolName = row.tool_name ?? row.name;
+  const name = isEditMode.value ? `${serverNamePrefix.value}${formData.value.name}` : formData.value.name;
+  const results = `${name}${toolName}`.length > 64;
+  // 编辑模式需要过滤掉已选的工具，避免影响旧存量数据
+  if (isEditMode.value) {
+    const isStockResource = toolSelections.value.some(tCheck => tCheck.id === row.id);
+
+    if (isStockResource) return false;
+
+    return results;
+  }
+
+  return results;
+};
+
 const getDiffFormData = () => {
   return {
     formData: formData.value,
@@ -1149,20 +1263,31 @@ const resetResizeLayout = () => {
   });
 };
 
-const toolDisabledSelection = (row: TableRowData) => {
-  const toolRow = row as unknown as IMCPServerTool;
-  // 先判断当前行是否已被勾选（存在于 toolSelections 中）
-  const isSelected = toolSelections.value.some(item => item.id === toolRow.id);
+// 先判断当前行是否已被勾选（存在于 toolSelections 中）
+const isSelectedTool = (row: TableRowData) => {
+  const isSelected = toolSelections.value.some(toolChecked => toolChecked.id === row.id);
+  return isSelected;
+};
 
-  // 设置禁用提示语
-  row.selectionTip = isSelected
-    ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
-    : t('该资源未配置请求参数声明，不能添加到 MCP');
+const toolDisabledSelection = (row: TableRowData): boolean => {
+  // 工具是否已选中
+  const selected = isSelectedTool(row);
+  // 无openapi_schema 优先级最高
+  if (!row.has_openapi_schema) {
+    row.selectionTip = selected
+      ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
+      : t('该资源未配置请求参数声明，不能添加到 MCP');
+    // 未选中才禁用；已选中只是改提示，不禁用
+    return !selected;
+  }
 
-  // 已勾选（isSelected=true）→ 允许取消勾选（返回 false，不禁用）
-  // 未勾选（isSelected=false）+ 无openapi_schema → 禁止勾选（返回 true，禁用）
-  // 有openapi_schema → 正常勾选（返回 false，不禁用）
-  return !row.has_openapi_schema && !isSelected;
+  // 存在 openapi_schema，再判断字符超限逻辑
+  if (isExceedMaxCharacters(row) && row.has_openapi_schema) {
+    row.selectionTip = t('MCP Server 名称 + 工具名称不得超过 64 字符，超限可能导致部分客户端调用失败。');
+    return true;
+  }
+
+  return false;
 };
 
 const handleMouseenter = (e: MouseEvent) => {
@@ -1569,6 +1694,8 @@ const fetchServer = async () => {
       protocol_type,
       categories: (categories as IMCPServerCategory[]).map((item: IMCPServerCategory) => item.name || ''),
     };
+    // 缓存已存量的工具
+    toolNameList.value = tool_names;
     // 获取已存在但不需要显示在页面上的分类
     hiddenCategoriesList.value = (categories as IMCPServerCategory[]).filter((item: IMCPServerCategory) =>
       !categoriesList.value.map((v: IMCPServerCategory) => v.name).includes(item.name));
@@ -1914,6 +2041,7 @@ const resetSliderData = () => {
   noPermPrompt.value = [];
   categoriesList.value = [];
   hiddenCategoriesList.value = [];
+  toolNameList.value = [];
   filterKeyword.value = '';
   activeTab.value = 'tool';
   curPromptData.value = {};
