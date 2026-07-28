@@ -413,9 +413,33 @@
     description_en: OAuth2 audience validate plugin
     is_public: true
     scope: resource
-    priority: 17678
+    priority: 17677
     _tags: "认证,Authentication"
     schema: null
+- model: schema.schema
+  fields:
+    created_time: 2026-07-28 00:00:00.000000+00:00
+    updated_time: 2026-07-28 00:00:00.000000+00:00
+    name: bk-oauth2-appcode-validate
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "support_public": {
+            "type": "boolean",
+            "default": false
+          },
+          "support_personal": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    description: '-'
+    example: '-'
 - model: plugin.plugintype
   fields:
     code: bk-oauth2-appcode-validate
@@ -425,9 +449,12 @@
     description_en: OAuth2 app code validate plugin
     is_public: true
     scope: resource
-    priority: 17677
+    priority: 17678
     _tags: "认证,Authentication"
-    schema: null
+    schema:
+    - bk-oauth2-appcode-validate
+    - plugin
+    - '0'
 - model: schema.schema
   fields:
     created_time: 2023-02-02 14:54:21.010753+00:00
