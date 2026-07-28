@@ -110,7 +110,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { Button, Form, Message, PopConfirm } from 'bkui-vue';
+import {
+  Button,
+  Form,
+  Message,
+  PopConfirm,
+  Popover,
+} from 'bkui-vue';
 import type {
   FilterValue,
   PrimaryTableProps,
@@ -210,12 +216,18 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             getList();
           }}
         >
-          <Button
-            text
-            theme="primary"
+          <Popover
+            content={t('OAuth2 内置客户端的 MCPServer 应用权限不允许删除。')}
+            disabled={!isDisabledDel(row)}
           >
-            { t('删除') }
-          </Button>
+            <Button
+              text
+              theme="primary"
+              disabled={isDisabledDel(row)}
+            >
+              { t('删除') }
+            </Button>
+          </Popover>
         </PopConfirm>
       );
     },
@@ -281,6 +293,10 @@ const renderDisplayNameColumn = (value: string) => {
 
 const handleExportApp = (payload: IDropList) => {
   handleExport(gatewayId.value, payload, filterData);
+};
+
+const isDisabledDel = (row: TableRowData) => {
+  return ['public', 'personal'].includes(row.bk_app_code);
 };
 
 const showAuthorizeDia = () => {
