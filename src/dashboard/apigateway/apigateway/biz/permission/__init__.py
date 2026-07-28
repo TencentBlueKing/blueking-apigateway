@@ -27,6 +27,11 @@ from .manager import (
     PermissionDimensionManager,
     ResourcePermissionDimensionManager,
 )
+from .oauth2_builtin import (
+    OAuth2BuiltinPermissionReconciler,
+    OAuth2BuiltinPermissionResult,
+    ReconciliationBlocker,
+)
 from .permission import (
     ResourcePermissionHandler,
 )
@@ -39,6 +44,9 @@ __all__ = [
     "PermissionDimensionManager",
     "ResourcePermissionDimensionManager",
     "ResourcePermissionHandler",
+    "OAuth2BuiltinPermissionReconciler",
+    "OAuth2BuiltinPermissionResult",
+    "ReconciliationBlocker",
     "AppPermissionBuilder",
     "ResourcePermission",
     "ResourcePermissionBuilder",
