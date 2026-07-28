@@ -387,7 +387,7 @@
     name_en: OAuth2 Protected Resource
     description: OAuth2 protected resource plugin
     description_en: OAuth2 protected resource plugin
-    is_public: true
+    is_public: false
     scope: resource
     priority: 18740
     _tags: "认证,Authentication"
@@ -399,7 +399,7 @@
     name_en: OAuth2 Verify
     description: OAuth2 verify plugin
     description_en: OAuth2 verify plugin
-    is_public: true
+    is_public: false
     scope: resource
     priority: 18732
     _tags: "认证,Authentication"
@@ -411,7 +411,7 @@
     name_en: OAuth2 Audience Validate
     description: OAuth2 audience validate plugin
     description_en: OAuth2 audience validate plugin
-    is_public: true
+    is_public: false
     scope: resource
     priority: 17677
     _tags: "认证,Authentication"
@@ -447,7 +447,7 @@
     name_en: OAuth2 App Code Validate
     description: OAuth2 app code validate plugin
     description_en: OAuth2 app code validate plugin
-    is_public: true
+    is_public: false
     scope: resource
     priority: 17678
     _tags: "认证,Authentication"
