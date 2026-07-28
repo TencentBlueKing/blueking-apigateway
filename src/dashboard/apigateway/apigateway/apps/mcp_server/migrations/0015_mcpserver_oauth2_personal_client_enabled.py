@@ -1,0 +1,18 @@
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ("mcp_server", "0014_add_itsm_ticket_id"),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name="mcpserver",
+            name="oauth2_personal_client_enabled",
+            field=models.BooleanField(
+                default=False,
+                help_text="是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权",
+            ),
+        ),
+    ]

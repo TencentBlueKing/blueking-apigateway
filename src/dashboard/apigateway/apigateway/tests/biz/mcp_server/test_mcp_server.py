@@ -228,6 +228,44 @@ class TestMCPServerHandler:
             assert permission.expires == NeverExpiresTime.time
             assert permission.grant_type == GrantTypeEnum.SYNC.value
 
+    def test_sync_permissions_grants_and_revokes_oauth2_personal_client(self, fake_gateway, fake_stage, settings):
+        resource = G(Resource, gateway=fake_gateway, name="resource1")
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=resource.name,
+            oauth2_personal_client_enabled=True,
+        )
+        personal_app_code = settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE
+        virtual_app_code = f"v_mcp_{mcp_server.id}_{personal_app_code}"
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert MCPServerAppPermission.objects.filter(
+            mcp_server=mcp_server,
+            bk_app_code=personal_app_code,
+        ).exists()
+        assert AppResourcePermission.objects.filter(
+            gateway=fake_gateway,
+            bk_app_code=virtual_app_code,
+            resource_id=resource.id,
+        ).exists()
+
+        mcp_server.oauth2_personal_client_enabled = False
+        mcp_server.save(update_fields=["oauth2_personal_client_enabled"])
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert not MCPServerAppPermission.objects.filter(
+            mcp_server=mcp_server,
+            bk_app_code=personal_app_code,
+        ).exists()
+        assert not AppResourcePermission.objects.filter(
+            gateway=fake_gateway,
+            bk_app_code=virtual_app_code,
+            resource_id=resource.id,
+        ).exists()
+
     def test_sync_permissions_excludes_ai_resources_from_release_snapshot(self, fake_gateway, fake_stage):
         standard_resource = G(
             Resource,

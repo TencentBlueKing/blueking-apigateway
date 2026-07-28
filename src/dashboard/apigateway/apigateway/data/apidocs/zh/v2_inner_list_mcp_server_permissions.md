@@ -32,7 +32,8 @@ mcp_server 申请权限列表
           {"name": "ai", "display_name": "AI"}
         ],
         "is_official": true,
-        "oauth2_public_client_enabled": false
+        "oauth2_public_client_enabled": false,
+        "oauth2_personal_client_enabled": false
       },
       "permission": {
         "status": "pending",
@@ -55,7 +56,8 @@ mcp_server 申请权限列表
         "doc_link": "",
         "categories": [],
         "is_official": false,
-        "oauth2_public_client_enabled": false
+        "oauth2_public_client_enabled": false,
+        "oauth2_personal_client_enabled": false
       },
       "permission": {
         "status": "need_apply",
@@ -98,6 +100,7 @@ mcp_server 申请权限列表
 | categories      | array  | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 | is_official     | bool   | 是否为官方 MCPServer |
 | oauth2_public_client_enabled | bool | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权 |
+| oauth2_personal_client_enabled | bool | 是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权 |
 
 #### data.permission
 
