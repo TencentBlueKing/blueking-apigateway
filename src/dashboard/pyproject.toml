@@ -311,6 +311,7 @@ ignore_imports = [
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.constants",
     "apigateway.apps.data_plane.management.commands.create_data_plane -> apigateway.controller.distributor.etcd",
+    "apigateway.apps.permission.management.commands.reconcile_oauth2_builtin_permissions -> apigateway.controller.tasks.oauth2_builtin",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
@@ -463,6 +464,7 @@ ignore_imports = [
     "apigateway.apps.gateway.management.commands.export_inactive_gateways_by_stage -> apigateway.core.constants",
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
     "apigateway.apps.data_plane.management.commands.create_data_plane -> apigateway.controller.distributor.etcd",
+    "apigateway.apps.permission.management.commands.reconcile_oauth2_builtin_permissions -> apigateway.controller.tasks.oauth2_builtin",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
     # -- esb legacy
