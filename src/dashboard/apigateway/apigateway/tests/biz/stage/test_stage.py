@@ -71,6 +71,24 @@ class TestStageHandler:
         stage.delete.assert_called_once_with()
         reconcile.assert_called_once_with(gateway)
 
+    def test_delete_stops_when_revoke_fails(self, mocker):
+        gateway = Mock(id=1)
+        stage = Mock(id=2, gateway=gateway)
+        mocker.patch("apigateway.biz.stage.stage.trigger_gateway_publish", return_value=False)
+        backend_configs = mocker.patch("apigateway.biz.stage.stage.BackendConfig.objects.filter")
+        delete_releases = mocker.patch("apigateway.biz.stage.stage.Release.objects.delete_by_stage_ids")
+        reconcile = mocker.patch(
+            "apigateway.biz.stage.stage.OAuth2BuiltinPermissionReconciler"
+        ).return_value.reconcile_gateway
+
+        with pytest.raises(serializers.ValidationError, match="环境下架失败"):
+            StageHandler.delete(stage)
+
+        backend_configs.assert_not_called()
+        delete_releases.assert_not_called()
+        stage.delete.assert_not_called()
+        reconcile.assert_not_called()
+
 
 def test_stage_sync_preserves_backend_health_checks():
     config = StageSyncHandler.build_backend_config(

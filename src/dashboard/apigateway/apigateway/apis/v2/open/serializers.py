@@ -471,6 +471,10 @@ class AuthConfigOutputSLZ(serializers.Serializer):
     user_verified_required = serializers.BooleanField(read_only=True, help_text="是否需要用户认证")
     app_verified_required = serializers.BooleanField(read_only=True, help_text="是否需要应用认证")
     resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否需要资源权限")
+    oauth2_public_client_enabled = serializers.BooleanField(read_only=True, help_text="是否允许 OAuth2 Public Client")
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否允许 OAuth2 Personal Client"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.AuthConfigOutputSLZ"
@@ -517,6 +521,8 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
                 "user_verified_required": auth_config.get("auth_verified_required", False),
                 "app_verified_required": auth_config.get("app_verified_required", True),
                 "resource_perm_required": auth_config.get("resource_perm_required", False),
+                "oauth2_public_client_enabled": auth_config.get("oauth2_public_client_enabled", False),
+                "oauth2_personal_client_enabled": auth_config.get("oauth2_personal_client_enabled", False),
             }
         ).data
 
@@ -868,6 +874,8 @@ class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
     app_verified_required = serializers.BooleanField(read_only=True)
     resource_perm_required = serializers.BooleanField(read_only=True)
     user_verified_required = serializers.BooleanField(read_only=True)
+    oauth2_public_client_enabled = serializers.BooleanField(read_only=True)
+    oauth2_personal_client_enabled = serializers.BooleanField(read_only=True)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayReleasedResourceListItemOutputSLZ"

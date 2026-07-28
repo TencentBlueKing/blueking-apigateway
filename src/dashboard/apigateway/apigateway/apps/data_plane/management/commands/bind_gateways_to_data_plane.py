@@ -19,6 +19,10 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
+from apigateway.apps.data_plane.constants import (
+    get_oauth2_resource_data_planes_compatibility_error,
+    resource_version_uses_oauth2,
+)
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
     AuditWriter,
     parse_comma_separated_names,
@@ -87,6 +91,8 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write(f"[DRY RUN] would bind gateway={gateway.name} to data_plane={data_plane.name}")
             return "success"
+
+        self._validate_oauth2_compatibility(gateway, data_plane)
 
         GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
             gateway=gateway,
@@ -177,6 +183,24 @@ class Command(BaseCommand):
             **audit_log_common_args,
         )
         return "success"
+
+    @staticmethod
+    def _validate_oauth2_compatibility(gateway: Gateway, data_plane: DataPlane) -> None:
+        if not gateway.is_active:
+            return
+
+        releases = Release.objects.filter(
+            gateway=gateway,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).select_related("resource_version")
+        if not any(resource_version_uses_oauth2(release.resource_version) for release in releases):
+            return
+
+        compatibility_error = get_oauth2_resource_data_planes_compatibility_error(
+            [(data_plane.name, data_plane.apisix_version)]
+        )
+        if compatibility_error:
+            raise CommandError(compatibility_error)
 
     def handle(self, *args, **options) -> None:
         gateway_names = parse_gateway_names(options["gateway_names"], options["gateway_names_file"])

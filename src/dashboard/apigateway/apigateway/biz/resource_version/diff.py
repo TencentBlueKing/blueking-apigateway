@@ -111,6 +111,8 @@ class ResourceAuthConfig(BaseModel, DiffMixin):
     auth_verified_required: bool
     app_verified_required: bool
     resource_perm_required: bool
+    oauth2_public_client_enabled: bool = False
+    oauth2_personal_client_enabled: bool = False
 
 
 class ResourceAuth(BaseModel, DiffMixin):

@@ -21,6 +21,7 @@
 from dataclasses import dataclass
 from typing import TypeAlias
 
+import redis_lock
 from django.conf import settings
 from django.db import transaction
 
@@ -33,7 +34,8 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
 )
 from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
-from apigateway.utils.redis_utils import Lock
+from apigateway.utils.exception import LockTimeout
+from apigateway.utils.redis_utils import get_default_redis_client
 from apigateway.utils.time import NeverExpiresTime
 
 BuiltinPermission: TypeAlias = tuple[str, int]
@@ -116,17 +118,27 @@ class OAuth2BuiltinPermissionReconciler:
         allow_delete: bool,
         apply: bool,
     ) -> OAuth2BuiltinPermissionResult:
-        with Lock(
+        lock = redis_lock.Lock(
+            get_default_redis_client(),
             f"oauth2_builtin_permission:{gateway.id}",
-            timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
-            try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+            expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+            auto_renewal=True,
+            strict=False,
+        )
+        if not lock.acquire(
+            blocking=True,
+            timeout=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
         ):
+            raise LockTimeout("Timeout while waiting for OAuth2 built-in permission lock")
+        try:
             return self._reconcile_locked(
                 gateway,
                 candidate=candidate,
                 allow_delete=allow_delete,
                 apply=apply,
             )
+        finally:
+            lock.release()
 
     def _reconcile_locked(
         self,

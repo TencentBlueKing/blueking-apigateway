@@ -685,6 +685,8 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
                 "user_verified_required": resource_data.verified_user_required,
                 "app_verified_required": resource_data.verified_app_required,
                 "resource_perm_required": resource_data.resource_perm_required,
+                "oauth2_public_client_enabled": resource_data.oauth2_public_client_enabled,
+                "oauth2_personal_client_enabled": resource_data.oauth2_personal_client_enabled,
             },
         }
 

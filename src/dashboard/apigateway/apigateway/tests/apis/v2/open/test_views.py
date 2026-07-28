@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 from datetime import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -1359,7 +1360,16 @@ class TestGatewayResourceDetailApi:
             path="/chat/completions",
             is_public=True,
             kind=ResourceKindEnum.AI.value,
-            contexts={"resource_auth": {"config": "{}"}},
+            contexts={
+                "resource_auth": {
+                    "config": json.dumps(
+                        {
+                            "oauth2_public_client_enabled": True,
+                            "oauth2_personal_client_enabled": False,
+                        }
+                    )
+                }
+            },
         )
         mocker.patch(
             "apigateway.apis.v2.open.views.Release.objects.get_released_resource_version_id",
@@ -1383,6 +1393,8 @@ class TestGatewayResourceDetailApi:
 
         assert response.status_code == 200
         assert result["data"]["kind"] == ResourceKindEnum.AI.value
+        assert result["data"]["auth_config"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["auth_config"]["oauth2_personal_client_enabled"] is False
 
 
 class TestGatewayReleasedResourceListApi:
@@ -1402,6 +1414,8 @@ class TestGatewayReleasedResourceListApi:
                 "app_verified_required": True,
                 "resource_perm_required": True,
                 "user_verified_required": True,
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": False,
             }
         ]
         get_released_public_resources_mock = mocker.patch(
@@ -1423,6 +1437,8 @@ class TestGatewayReleasedResourceListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["name"] == "test"
         assert result["data"]["results"][0]["kind"] == ResourceKindEnum.AI.value
+        assert result["data"]["results"][0]["oauth2_public_client_enabled"] is True
+        assert result["data"]["results"][0]["oauth2_personal_client_enabled"] is False
         get_released_public_resources_mock.assert_called_once_with(fake_gateway.id, stage_name="prod")
 
 

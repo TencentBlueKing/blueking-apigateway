@@ -113,7 +113,31 @@ def make_history_event(release, data_plane, status: str, *, resource_version=Non
 
 @pytest.fixture(autouse=True)
 def mock_permission_lock(mocker):
-    return mocker.patch("apigateway.controller.tasks.oauth2_builtin.Lock")
+    return mocker.patch("apigateway.controller.tasks.oauth2_builtin.redis_lock.Lock")
+
+
+def test_reconcile_uses_auto_renewing_owned_lock(fake_gateway, mock_permission_lock, mocker, settings):
+    settings.REDIS_PUBLISH_LOCK_TIMEOUT = 5
+    settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES = 3
+    redis_client = mocker.patch(
+        "apigateway.controller.tasks.oauth2_builtin.get_default_redis_client",
+        return_value=mocker.sentinel.redis_client,
+    )
+    lock = mock_permission_lock.return_value
+    lock.acquire.return_value = True
+
+    OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway, apply=False)
+
+    redis_client.assert_called_once_with()
+    mock_permission_lock.assert_called_once_with(
+        mocker.sentinel.redis_client,
+        f"oauth2_builtin_permission:{fake_gateway.id}",
+        expire=5,
+        auto_renewal=True,
+        strict=False,
+    )
+    lock.acquire.assert_called_once_with(blocking=True, timeout=3)
+    lock.release.assert_called_once_with()
 
 
 def test_reconcile_calculates_permissions_from_real_snapshot_flags(fake_gateway):

@@ -116,6 +116,28 @@ class TestResourceVersionManager:
         )
 
         assert resources[resource_id]["kind"] == constants.ResourceKindEnum.STANDARD.value
+        assert resources[resource_id]["oauth2_public_client_enabled"] is False
+        assert resources[resource_id]["oauth2_personal_client_enabled"] is False
+        ResourceVersion.objects.get_resources.cache_clear()
+
+    def test_get_resources_includes_oauth2_client_switches(self, fake_resource_version_v2):
+        data = fake_resource_version_v2.data
+        resource_id = data[0]["id"]
+        auth_config = json.loads(data[0]["contexts"]["resource_auth"]["config"])
+        auth_config["oauth2_public_client_enabled"] = True
+        auth_config["oauth2_personal_client_enabled"] = True
+        data[0]["contexts"]["resource_auth"]["config"] = json.dumps(auth_config)
+        fake_resource_version_v2.data = data
+        fake_resource_version_v2.save(update_fields=["_data"])
+        ResourceVersion.objects.get_resources.cache_clear()
+
+        resources = ResourceVersion.objects.get_resources(
+            fake_resource_version_v2.gateway_id,
+            fake_resource_version_v2.id,
+        )
+
+        assert resources[resource_id]["oauth2_public_client_enabled"] is True
+        assert resources[resource_id]["oauth2_personal_client_enabled"] is True
         ResourceVersion.objects.get_resources.cache_clear()
 
     def test_get_id_to_fields_map(self):
@@ -415,6 +437,8 @@ class TestReleasedResourceManager:
         assert len(result) == 2
         assert result[0]["name"] == "test1-2"
         assert result[1]["name"] == "test2-1"
+        assert result[0]["oauth2_public_client_enabled"] is False
+        assert result[0]["oauth2_personal_client_enabled"] is False
 
     def test_filter_resource_version_ids(self):
         fake_gateway = G(Gateway)

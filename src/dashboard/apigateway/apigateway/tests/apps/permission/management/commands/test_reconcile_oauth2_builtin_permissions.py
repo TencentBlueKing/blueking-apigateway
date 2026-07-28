@@ -36,7 +36,9 @@ COMMAND_NAME = "reconcile_oauth2_builtin_permissions"
 
 @pytest.fixture(autouse=True)
 def mock_permission_lock(mocker):
-    return mocker.patch("apigateway.controller.tasks.oauth2_builtin.Lock")
+    lock = mocker.patch("apigateway.controller.tasks.oauth2_builtin.redis_lock.Lock").return_value
+    lock.acquire.return_value = True
+    return lock
 
 
 def test_gateway_argument_is_required():

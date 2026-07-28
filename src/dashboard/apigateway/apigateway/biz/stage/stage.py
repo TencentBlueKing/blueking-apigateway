@@ -111,7 +111,14 @@ class StageHandler:
     def delete(stage: Stage):
         gateway = stage.gateway
         # 删除 stage CR  先删除 crd，发布过程需要用到，发布过程中有用到 release 相关数据，这里需要同步发布
-        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway.id, stage.id, is_sync=True)
+        if not trigger_gateway_publish(
+            PublishSourceEnum.STAGE_DELETE,
+            "admin",
+            stage.gateway.id,
+            stage.id,
+            is_sync=True,
+        ):
+            raise serializers.ValidationError(_("环境下架失败，不能删除环境。"))
 
         with transaction.atomic():
             BackendConfig.objects.filter(gateway=stage.gateway, stage=stage).delete()
