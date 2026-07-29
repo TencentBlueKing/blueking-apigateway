@@ -1221,7 +1221,7 @@ watch(isShow, handleIsShowChange, { immediate: false });
 
 const isExceedMaxCharacters = (row: TableRowData) => {
   const toolName = row.tool_name ?? row.name;
-  const name = isEditMode.value ? `${serverNamePrefix.value}${formData.value.name}` : formData.value.name;
+  const name = isEditMode.value ? formData.value.name : `${serverNamePrefix.value}${formData.value.name}`;
   const results = `${name}${toolName}`.length > 64;
   // 编辑模式需要过滤掉已选的工具，避免影响旧存量数据
   if (isEditMode.value) {
