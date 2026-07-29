@@ -43,6 +43,10 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.apps.permission.constants import (
+    OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    OAUTH2_PUBLIC_CLIENT_APP_CODE,
+)
 from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, ResourceVersion, Stage
@@ -1359,10 +1363,10 @@ class TestMCPServerAppPermissionDestroyApi:
         assert audit_log.op_type == "delete"
 
     @pytest.mark.parametrize(
-        ("setting_name", "bk_app_code"),
+        "bk_app_code",
         [
-            ("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public-client"),
-            ("MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE", "personal-client"),
+            OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            OAUTH2_PERSONAL_CLIENT_APP_CODE,
         ],
     )
     def test_destroy_oauth2_builtin_client_permission_is_forbidden(
@@ -1371,11 +1375,8 @@ class TestMCPServerAppPermissionDestroyApi:
         request_view,
         fake_gateway,
         fake_mcp_server,
-        settings,
-        setting_name,
         bk_app_code,
     ):
-        setattr(settings, setting_name, bk_app_code)
         mock_sync_permissions = mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
             return_value=None,

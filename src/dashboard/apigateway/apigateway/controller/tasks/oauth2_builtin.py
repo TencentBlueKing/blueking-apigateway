@@ -38,7 +38,12 @@ from django.db import transaction
 
 from apigateway.apps.data_plane.constants import get_resource_auth_config
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES, GrantTypeEnum
+from apigateway.apps.permission.constants import (
+    OAUTH2_BUILTIN_APP_CODES,
+    OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    OAUTH2_PUBLIC_CLIENT_APP_CODE,
+    GrantTypeEnum,
+)
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.core.constants import (
     PublishEventStatusEnum,
@@ -94,9 +99,9 @@ def _required_permissions(resource_version: ResourceVersion, stage: Stage) -> se
 
         resource_id = resource["id"]
         if auth_config.get("oauth2_public_client_enabled", False):
-            required.add(("public", resource_id))
+            required.add((OAUTH2_PUBLIC_CLIENT_APP_CODE, resource_id))
         if auth_config.get("oauth2_personal_client_enabled", False):
-            required.add(("personal", resource_id))
+            required.add((OAUTH2_PERSONAL_CLIENT_APP_CODE, resource_id))
     return required
 
 

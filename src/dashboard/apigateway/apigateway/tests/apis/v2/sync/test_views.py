@@ -28,6 +28,10 @@ from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
+from apigateway.apps.permission.constants import (
+    OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    OAUTH2_PUBLIC_CLIENT_APP_CODE,
+)
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
@@ -983,7 +987,7 @@ class TestSyncApiOAuth2:
         assert mcp_server.oauth2_personal_client_enabled is True
         assert MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PERSONAL_CLIENT_APP_CODE,
         ).exists()
 
     def test_mcp_server_sync_create_with_oauth2_public_client_enabled(
@@ -1037,7 +1041,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 已被授权
         assert MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
         # 验证 target_app_codes 的权限也存在
@@ -1092,7 +1096,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 没有被授权
         assert not MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
     def test_mcp_server_sync_update_enable_oauth2(
@@ -1121,7 +1125,7 @@ class TestSyncApiOAuth2:
         # 确认 public 权限不存在
         assert not MCPServerAppPermission.objects.filter(
             mcp_server=mcp_server,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
         data = {
@@ -1156,7 +1160,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 已被授权
         assert MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
     def test_mcp_server_sync_update_disable_oauth2(
@@ -1181,12 +1185,12 @@ class TestSyncApiOAuth2:
         mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-disable-oauth2"
         mcp_server.status = 1
         mcp_server.save()
-        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE)
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE)
 
         # 确认 public 权限存在
         assert MCPServerAppPermission.objects.filter(
             mcp_server=mcp_server,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
         data = {
@@ -1220,7 +1224,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 的权限已被撤销
         assert not MCPServerAppPermission.objects.filter(
             mcp_server=mcp_server,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
 

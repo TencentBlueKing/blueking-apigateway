@@ -101,4 +101,11 @@ RENEWABLE_EXPIRE_DAYS = 360
 VIRTUAL_APP_CODE_PREFIX = "v_mcp_"
 
 # OAuth2 public/personal 内置应用，其 API 权限由系统管理
-OAUTH2_BUILTIN_APP_CODES = frozenset({"public", "personal"})
+OAUTH2_PUBLIC_CLIENT_APP_CODE = "public"
+OAUTH2_PERSONAL_CLIENT_APP_CODE = "personal"
+OAUTH2_BUILTIN_APP_CODES = frozenset(
+    {
+        OAUTH2_PUBLIC_CLIENT_APP_CODE,
+        OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    }
+)
