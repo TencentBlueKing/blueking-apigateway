@@ -172,6 +172,8 @@ def snapshot_resource(
     else:
         data["contexts"] = context_map[resource.pk]
 
+    # resource_auth 快照继续沿用 Context 的完整认证配置；OAuth2 开关的编辑区数据存储在 Resource 列中，
+    # 因此创建版本时在这里合并回 config，保持发布侧既有的资源快照协议不变。
     resource_auth = data["contexts"].get("resource_auth")
     if resource_auth:
         resource_auth["config"] = json.dumps(
