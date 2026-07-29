@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from ddf import G
 
 from apigateway.core.constants import ResourceKindEnum
@@ -75,12 +77,17 @@ def test_get_resource_use_stage_vars():
 
 
 def test_snapshot_resource(fake_resource):
+    fake_resource.oauth2_public_client_enabled = True
+    fake_resource.oauth2_personal_client_enabled = False
     snapshot = snapshot_resource(fake_resource, as_dict=True)
 
     assert snapshot["id"] == fake_resource.id
     assert snapshot["kind"] == ResourceKindEnum.STANDARD.value
     assert snapshot["proxy"]["type"] == "http"
     assert "contexts" in snapshot
+    auth_config = json.loads(snapshot["contexts"]["resource_auth"]["config"])
+    assert auth_config["oauth2_public_client_enabled"] is True
+    assert auth_config["oauth2_personal_client_enabled"] is False
 
 
 def test_snapshot_ai_resource_does_not_parse_standard_proxy_path(fake_resource):

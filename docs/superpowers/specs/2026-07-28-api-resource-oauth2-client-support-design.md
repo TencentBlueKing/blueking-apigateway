@@ -132,6 +132,20 @@ auth_config:
   oauth2_personal_client_enabled: false
 ```
 
+The API contract and persistence ownership are intentionally different:
+
+- API inputs and outputs continue to place both fields under `auth_config`.
+- The editing-area source of truth is two indexed boolean columns on
+  `core_resource`: `oauth2_public_client_enabled` and
+  `oauth2_personal_client_enabled`.
+- `core_context.resource_auth.config` remains authoritative only for the
+  legacy authentication fields. It must not persist either OAuth2 client
+  switch, avoiding a split-brain dual write.
+- Resource-version creation materializes the two `core_resource` values into
+  `ResourceVersion.data[].contexts.resource_auth.config`. That immutable
+  snapshot, rather than the editing row, remains authoritative for publication
+  and permission reconciliation.
+
 Rules:
 
 1. Both OAuth2 fields are independent booleans with a default of `false`.
@@ -153,6 +167,10 @@ The fields must survive every resource lifecycle path:
 - Resource version snapshot creation and reading.
 - OpenAPI export and re-import.
 - Released resource display.
+
+This layout supports high-volume filtering directly through `core_resource`
+while preserving the existing `auth_config` transport shape and historical
+resource-version contract.
 
 ## 7. System-managed Plugin Generation
 

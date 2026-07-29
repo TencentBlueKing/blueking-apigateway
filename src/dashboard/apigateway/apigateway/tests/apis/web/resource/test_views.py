@@ -193,8 +193,22 @@ class TestResourceListCreateApi:
         ],
     )
     def test_list(self, request_view, fake_gateway, fake_backend, data, expected):
-        resource_1 = G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
-        resource_2 = G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
+        resource_1 = G(
+            Resource,
+            gateway=fake_gateway,
+            path="/echo/",
+            method="GET",
+            name="echo",
+            oauth2_public_client_enabled=True,
+        )
+        resource_2 = G(
+            Resource,
+            gateway=fake_gateway,
+            path="/test/",
+            method="GET",
+            name="test",
+            oauth2_personal_client_enabled=True,
+        )
         auth_config = ResourceHandler.get_default_auth_config()
         ResourceAuthContext().save(resource_1.id, dict(auth_config, auth_verified_required=True))
         ResourceAuthContext().save(resource_2.id, dict(auth_config, auth_verified_required=False))
@@ -210,6 +224,13 @@ class TestResourceListCreateApi:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]["results"]) == expected
+        resources = {resource["id"]: resource for resource in result["data"]["results"]}
+        if resource_1.id in resources:
+            assert resources[resource_1.id]["auth_config"]["oauth2_public_client_enabled"] is True
+            assert resources[resource_1.id]["auth_config"]["oauth2_personal_client_enabled"] is False
+        if resource_2.id in resources:
+            assert resources[resource_2.id]["auth_config"]["oauth2_public_client_enabled"] is False
+            assert resources[resource_2.id]["auth_config"]["oauth2_personal_client_enabled"] is True
 
     @pytest.mark.parametrize(
         "data",
@@ -256,6 +277,8 @@ class TestResourceListCreateApi:
         resource = Resource.objects.get(gateway=fake_gateway, method=data["method"], path=data["path"])
         assert resource.is_public == data["is_public"]
         assert resource.match_subpath == data["match_subpath"]
+        assert resource.oauth2_public_client_enabled is True
+        assert resource.oauth2_personal_client_enabled is False
 
         proxy = Proxy.objects.get(resource=resource)
         assert proxy.backend_id == backend.id
@@ -270,8 +293,6 @@ class TestResourceListCreateApi:
             "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
-            "oauth2_public_client_enabled": True,
-            "oauth2_personal_client_enabled": False,
         }
 
 
@@ -376,6 +397,14 @@ class TestResourceRetrieveUpdateDestroyApi:
 
     def test_retrieve(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.oauth2_personal_client_enabled = True
+        fake_resource.save(
+            update_fields=[
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
 
         resp = request_view(
             method="GET",
@@ -386,6 +415,8 @@ class TestResourceRetrieveUpdateDestroyApi:
 
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_resource.id
+        assert result["data"]["auth_config"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["auth_config"]["oauth2_personal_client_enabled"] is True
 
     def test_retrieve_with_released_stages(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
@@ -465,9 +496,10 @@ class TestResourceRetrieveUpdateDestroyApi:
             "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
-            "oauth2_public_client_enabled": False,
-            "oauth2_personal_client_enabled": True,
         }
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is False
+        assert fake_resource.oauth2_personal_client_enabled is True
 
     def test_destroy(self, request_view, fake_resource):
         fake_gateway = fake_resource.gateway

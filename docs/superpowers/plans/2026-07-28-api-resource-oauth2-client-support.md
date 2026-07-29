@@ -4,7 +4,15 @@
 
 **Goal:** Add backend support for versioned API-resource OAuth2 public/personal clients, system-managed APISIX Route plugins, and safe built-in resource-permission reconciliation.
 
-**Architecture:** The resource auth context is the configuration source of truth and is copied into `ResourceVersion.data`. Route conversion derives the four OAuth2 plugins from that immutable snapshot. A Dashboard domain reconciler derives literal `public`/`personal` resource permissions from the union of released version snapshots, adds permissions before publication, and deletes only after per-data-plane publish histories prove that the whole gateway is converged.
+**Architecture:** The two OAuth2 client switches are direct `core_resource`
+boolean columns so editing-area queries and filters do not parse Context JSON.
+The API continues to expose them under `auth_config`; resource-version creation
+materializes the columns into `ResourceVersion.data[].contexts.resource_auth.config`.
+Route conversion derives the four OAuth2 plugins from that immutable snapshot.
+A Dashboard domain reconciler derives literal `public`/`personal` resource
+permissions from the union of released version snapshots, adds permissions
+before publication, and deletes only after per-data-plane publish histories
+prove that the whole gateway is converged.
 
 **Tech Stack:** Python 3.14, Django, Django REST Framework, Pydantic v2, Celery, Redis locks, pytest, Ruff, mypy, import-linter.
 
@@ -22,6 +30,10 @@
   - APISIX resource context: `verified_user_required`
 - Both `STANDARD` and `AI` resources get identical OAuth2 behavior.
 - A resource may enable either OAuth2 client only when `auth_verified_required` is true.
+- `core_resource` is the editing-area source of truth for both OAuth2 switches;
+  `core_context.resource_auth.config` must not retain duplicate copies.
+- API `auth_config` and resource-version snapshot `contexts.resource_auth.config`
+  remain compatibility representations synthesized from the Resource columns.
 - The four OAuth2 Route plugins are system-managed and must win over any historical same-name resource binding.
 - Direct API built-in permissions use literal `public` and `personal`; never create or alter `v_mcp_*`.
 - Permission calculations read resource IDs and auth configuration from `ResourceVersion.data`, not the editing `Resource` table.
@@ -1272,6 +1284,117 @@ fix was required, list the literal changed paths with `git status --short`,
 stage only the proven fix and its regression test, inspect `git diff --cached`,
 then commit with `fix(oauth2): address integration verification`. Do not use a
 broad `git add`.
+
+---
+
+### Task 10: Move editing OAuth2 switches to indexed Resource columns
+
+**Files:**
+
+- Modify: `src/dashboard/apigateway/apigateway/core/models.py`
+- Create: `src/dashboard/apigateway/apigateway/core/migrations/0055_resource_oauth2_client_fields.py`
+- Modify: `src/dashboard/apigateway/apigateway/biz/resource/savers.py`
+- Modify: `src/dashboard/apigateway/apigateway/biz/resource/resource.py`
+- Modify: `src/dashboard/apigateway/apigateway/service/contexts/resource_auth.py`
+- Modify: `src/dashboard/apigateway/apigateway/service/resource/snapshot.py`
+- Modify: `src/dashboard/apigateway/apigateway/apis/web/resource/serializers.py`
+- Modify: `src/dashboard/apigateway/apigateway/apis/web/resource/views.py`
+- Modify: `src/dashboard/apigateway/apigateway/apis/v2/open/serializers.py`
+- Test: `src/dashboard/apigateway/apigateway/tests/core/test_models.py`
+- Test: `src/dashboard/apigateway/apigateway/tests/biz/resource/test_savers.py`
+- Test: `src/dashboard/apigateway/apigateway/tests/biz/resource/test_resource.py`
+- Test: `src/dashboard/apigateway/apigateway/tests/service/resource/test_snapshot.py`
+- Test: `src/dashboard/apigateway/apigateway/tests/apis/web/resource/test_views.py`
+- Test: `src/dashboard/apigateway/apigateway/tests/apis/v2/open/test_views.py`
+
+**Interfaces:**
+
+- Consumes: the existing nested API contract `ResourceAuthConfig`.
+- Produces: indexed `Resource.oauth2_public_client_enabled` and
+  `Resource.oauth2_personal_client_enabled` columns as the editing source of
+  truth.
+- Preserves: resource-version
+  `contexts.resource_auth.config.oauth2_*_client_enabled` fields for immutable
+  publication and permission reconciliation.
+
+- [ ] **Step 1: Write failing persistence and boundary tests**
+
+Add tests proving:
+
+- `ResourcesSaver` persists both OAuth2 values on `Resource`;
+- `core_context.resource_auth.config` does not retain either OAuth2 key;
+- Web list/detail and Open API resource responses still expose both values
+  under `auth_config`;
+- snapshot creation materializes the Resource column values into
+  `contexts.resource_auth.config`;
+- missing historical values still read as false.
+
+- [ ] **Step 2: Run the focused tests and confirm failure**
+
+```bash
+cd /root/workspace/tx/wklken/blueking-apigateway/src/dashboard
+uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short \
+apigateway/tests/biz/resource/test_savers.py \
+apigateway/tests/biz/resource/test_resource.py \
+apigateway/tests/service/resource/test_snapshot.py \
+apigateway/tests/apis/web/resource/test_views.py \
+apigateway/tests/apis/v2/open/test_views.py'
+```
+
+Expected: FAIL because the current saver writes both fields only to Context and
+`Resource` has no corresponding columns.
+
+- [ ] **Step 3: Add the indexed Resource columns and migration**
+
+Add two `BooleanField(default=False, db_index=True)` fields to `Resource` and
+generate migration `0055_resource_oauth2_client_fields.py`. Do not add a data
+migration: this feature branch has not been merged or released, so there is no
+production Context data requiring backfill.
+
+- [ ] **Step 4: Make Resource the sole editing-area writer**
+
+Update `ResourcesSaver` so it writes both values from
+`resource_data.auth_config` into Resource on create/update. Strip both keys
+before persisting the remaining auth config to `core_context`; remove stale
+copies from existing Context configs during the same save.
+
+Update `ResourceHandler.save_auth_config`, used by fixtures and compatibility
+tests, to follow the same ownership rule.
+
+- [ ] **Step 5: Preserve transport and snapshot mirrors**
+
+Add one shared shaping helper that combines legacy Context authentication fields
+with the two Resource column values. Use it in Web/Open API response serializers
+and update comparison.
+
+During `snapshot_resource`, inject both Resource values into the serialized
+`resource_auth.config` string. Do not change the immutable snapshot schema or
+the publication consumers.
+
+- [ ] **Step 6: Run focused tests and migration verification**
+
+Run the command from Step 2, then:
+
+```bash
+cd /root/workspace/tx/wklken/blueking-apigateway/src/dashboard
+uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python manage.py makemigrations core --check --dry-run'
+```
+
+Expected: all focused tests pass and no OAuth2 field migration is detected.
+The current branch inherits four unrelated `core` field drifts
+(`Gateway.tenant_id`, `Gateway.tenant_mode`, `Proxy.type`, and
+`ReleaseHistory.source`); do not include them in this task's migration.
+
+- [ ] **Step 7: Run final Dashboard gates**
+
+```bash
+cd /root/workspace/tx/wklken/blueking-apigateway/src/dashboard
+uv run make edition-ee
+uv run make lint-check
+uv run make test
+```
+
+Expected: PASS.
 
 ## Final Self-Review Checklist
 

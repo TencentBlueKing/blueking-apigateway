@@ -29,6 +29,7 @@ from apigateway.apps.label.models import ResourceLabel
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.schema.models import Schema
+from apigateway.service.contexts import build_resource_auth_config
 from apigateway.utils import time
 
 if TYPE_CHECKING:
@@ -170,6 +171,13 @@ def snapshot_resource(
         data["contexts"] = {c.type: c.snapshot(as_dict=True) for c in contexts}
     else:
         data["contexts"] = context_map[resource.pk]
+
+    resource_auth = data["contexts"].get("resource_auth")
+    if resource_auth:
+        resource_auth["config"] = json.dumps(
+            build_resource_auth_config(resource, json.loads(resource_auth["config"])),
+            separators=(",", ":"),
+        )
 
     if disabled_stage_map is None:
         data["disabled_stages"] = list(
