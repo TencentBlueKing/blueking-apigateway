@@ -16,7 +16,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-"""Coordinate OAuth2 built-in permissions with data-plane publication state."""
+"""同步 OAuth2 public/personal 内置应用的资源权限。
+
+本模块由发布流程同步调用，并非独立的 Celery 任务：
+
+1. 配置下发前调用 ``prepare_publish``，根据待发布版本和其它环境的已发布版本补齐权限。
+   此阶段只新增或规范化权限，不删除，避免旧配置仍在数据面生效时权限被提前回收。
+2. 发布、滚动更新或下架成功，以及环境或数据面绑定关系删除后，调用 ``reconcile_gateway``，
+   根据所有生效环境的版本重新收敛权限。只有相关发布或下架操作在全部活跃数据面完成后，
+   才会删除不再需要的权限；该入口也可通过管理命令执行检查或修复。
+
+期望权限以资源版本快照为准，不读取编辑区资源；同一网关的计算和写入由 Redis 锁串行化。
+"""
 
 from dataclasses import dataclass
 from typing import TypeAlias
@@ -43,6 +54,8 @@ BuiltinPermission: TypeAlias = tuple[str, int]
 
 @dataclass(frozen=True)
 class ReconciliationBlocker:
+    """记录阻止旧权限删除的环境和数据面发布状态。"""
+
     stage_id: int
     stage_name: str
     data_plane_id: int
@@ -53,6 +66,8 @@ class ReconciliationBlocker:
 
 @dataclass(frozen=True)
 class OAuth2BuiltinPermissionResult:
+    """权限收敛结果，也用于 ``apply=False`` 时预览差异。"""
+
     desired: frozenset[BuiltinPermission]
     missing: frozenset[BuiltinPermission]
     extra: frozenset[BuiltinPermission]
@@ -64,6 +79,8 @@ class OAuth2BuiltinPermissionResult:
 
 
 def _required_permissions(resource_version: ResourceVersion, stage: Stage) -> set[BuiltinPermission]:
+    """从指定环境的资源版本快照中提取需要授予内置应用的权限。"""
+
     required: set[BuiltinPermission] = set()
     for resource in resource_version.data:
         if stage.name in resource.get("disabled_stages", []):
@@ -84,12 +101,20 @@ def _required_permissions(resource_version: ResourceVersion, stage: Stage) -> se
 
 
 class OAuth2BuiltinPermissionReconciler:
+    """将网关的 OAuth2 内置应用权限收敛到已发布配置所需的状态。
+
+    收敛包含新增缺失权限、规范化已有权限，以及在数据面状态安全时删除多余权限。
+    所有操作只影响 ``public`` 和 ``personal`` 两个内置应用，不处理普通 SaaS 或 MCP 虚拟应用。
+    """
+
     def prepare_publish(
         self,
         gateway: Gateway,
         stage: Stage,
         candidate_version: ResourceVersion,
     ) -> OAuth2BuiltinPermissionResult:
+        """在配置下发前准备权限，使用待发布版本替换目标环境版本且不删除旧权限。"""
+
         return self._run(
             gateway,
             candidate=(stage, candidate_version),
@@ -103,6 +128,12 @@ class OAuth2BuiltinPermissionReconciler:
         *,
         apply: bool = True,
     ) -> OAuth2BuiltinPermissionResult:
+        """在发布状态变化后按所有生效环境重新收敛权限。
+
+        发布、滚动更新或下架成功，以及环境或数据面绑定关系删除后都会触发此方法；管理命令
+        也通过此入口检查或修复权限。``apply=False`` 仅计算并返回差异，不写入数据库。
+        """
+
         return self._run(
             gateway,
             candidate=None,
@@ -152,13 +183,13 @@ class OAuth2BuiltinPermissionReconciler:
         desired = self._get_desired_permissions(gateway, releases, candidate)
         blockers = self._get_convergence_blockers(gateway, releases)
 
-        permissions = list(
-            AppResourcePermission.objects.filter(
+        permission_map = {
+            (permission.bk_app_code, permission.resource_id): permission
+            for permission in AppResourcePermission.objects.filter(
                 gateway=gateway,
                 bk_app_code__in=OAUTH2_BUILTIN_APP_CODES,
             )
-        )
-        permission_map = {(permission.bk_app_code, permission.resource_id): permission for permission in permissions}
+        }
         existing = frozenset(permission_map)
         desired_frozen = frozenset(desired)
         missing = desired_frozen - existing
@@ -194,6 +225,8 @@ class OAuth2BuiltinPermissionReconciler:
         releases: list[Release],
         candidate: tuple[Stage, ResourceVersion] | None,
     ) -> set[BuiltinPermission]:
+        """合并各生效环境的权限；发布前以候选版本替换目标环境的当前版本。"""
+
         desired: set[BuiltinPermission] = set()
         candidate_stage_id = candidate[0].id if candidate else None
 
@@ -214,6 +247,12 @@ class OAuth2BuiltinPermissionReconciler:
         gateway: Gateway,
         releases: list[Release],
     ) -> tuple[ReconciliationBlocker, ...]:
+        """找出尚未收敛到当前发布状态的环境和活跃数据面组合。
+
+        新权限可以提前添加，但只要存在任一阻塞项，就保留全部旧权限。这样可避免多数据面灰度
+        发布期间，仍运行旧配置的数据面因权限被提前删除而拒绝请求。
+        """
+
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(gateway.id)
         if not releases or not data_planes:
             return ()
@@ -221,15 +260,11 @@ class OAuth2BuiltinPermissionReconciler:
         stage_ids = [release.stage_id for release in releases]
         data_plane_ids = [data_plane.id for data_plane in data_planes]
         latest_history_map: dict[tuple[int, int], ReleaseHistory] = {}
-        histories = (
-            ReleaseHistory.objects.filter(
-                gateway=gateway,
-                stage_id__in=stage_ids,
-                data_plane_id__in=data_plane_ids,
-            )
-            .select_related("resource_version")
-            .order_by("stage_id", "data_plane_id", "-id")
-        )
+        histories = ReleaseHistory.objects.filter(
+            gateway=gateway,
+            stage_id__in=stage_ids,
+            data_plane_id__in=data_plane_ids,
+        ).order_by("stage_id", "data_plane_id", "-id")
         for history in histories:
             latest_history_map.setdefault(
                 (history.stage_id, history.data_plane_id),
@@ -243,55 +278,38 @@ class OAuth2BuiltinPermissionReconciler:
         for release in releases:
             for data_plane in data_planes:
                 history = latest_history_map.get((release.stage_id, data_plane.id))
+                status: str | None
                 if history is None:
-                    blockers.append(
-                        self._make_blocker(
-                            release,
-                            data_plane,
-                            release_history_id=None,
-                            status="missing_history",
-                        )
-                    )
-                    continue
+                    status = "missing_history"
+                else:
+                    latest_event = latest_event_map.get(history.id)
+                    if latest_event is None:
+                        status = "missing_event"
+                    else:
+                        status = self._get_blocker_status(latest_event)
+                        if (
+                            status is None
+                            and release.stage.is_active
+                            and history.resource_version_id != release.resource_version_id
+                        ):
+                            status = "version_mismatch"
 
-                latest_event = latest_event_map.get(history.id)
-                if latest_event is None:
+                if status is not None:
                     blockers.append(
                         self._make_blocker(
                             release,
                             data_plane,
-                            release_history_id=history.id,
-                            status="missing_event",
-                        )
-                    )
-                    continue
-
-                status = self._get_blocker_status(latest_event)
-                if status:
-                    blockers.append(
-                        self._make_blocker(
-                            release,
-                            data_plane,
-                            release_history_id=history.id,
+                            release_history_id=history.id if history is not None else None,
                             status=status,
-                        )
-                    )
-                    continue
-
-                if release.stage.is_active and history.resource_version_id != release.resource_version_id:
-                    blockers.append(
-                        self._make_blocker(
-                            release,
-                            data_plane,
-                            release_history_id=history.id,
-                            status="version_mismatch",
                         )
                     )
 
         return tuple(blockers)
 
     @staticmethod
-    def _get_blocker_status(latest_event: PublishEvent) -> str:
+    def _get_blocker_status(latest_event: PublishEvent) -> str | None:
+        """将最新发布事件转换为阻塞原因；成功时返回 ``None``。"""
+
         known_event_statuses = {
             PublishEventStatusEnum.SUCCESS.value,
             PublishEventStatusEnum.FAILURE.value,
@@ -303,7 +321,7 @@ class OAuth2BuiltinPermissionReconciler:
 
         status = latest_event.get_release_history_status()
         if status == ReleaseHistoryStatusEnum.SUCCESS.value:
-            return ""
+            return None
         if status == ReleaseHistoryStatusEnum.FAILURE.value:
             if latest_event.status == PublishEventStatusEnum.FAILURE.value:
                 return "failure"
@@ -345,7 +363,9 @@ class OAuth2BuiltinPermissionReconciler:
         missing: frozenset[BuiltinPermission],
         extra: frozenset[BuiltinPermission],
         allow_delete: bool,
-    ):
+    ) -> None:
+        """在一个事务中新增、规范化并按需删除内置应用权限。"""
+
         defaults = {
             "expires": NeverExpiresTime.time,
             "grant_type": GrantTypeEnum.OAUTH2_BUILTIN.value,

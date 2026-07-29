@@ -135,7 +135,7 @@ auth_config:
 The API contract and persistence ownership are intentionally different:
 
 - API inputs and outputs continue to place both fields under `auth_config`.
-- The editing-area source of truth is two indexed boolean columns on
+- The editing-area source of truth is two boolean columns on
   `core_resource`: `oauth2_public_client_enabled` and
   `oauth2_personal_client_enabled`.
 - `core_context.resource_auth.config` remains authoritative only for the

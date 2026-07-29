@@ -821,8 +821,8 @@ class TestOpenAPIImportManagerParse:
         assert len(errors) == 1
         assert "require user authentication" in errors[0].message
 
-    @pytest.mark.parametrize("is_official, expect_errors", [(False, True), (True, False)])
-    def test_controller_managed_oauth2_plugins_require_official_gateway(self, is_official, expect_errors):
+    @pytest.mark.parametrize("is_official", [False, True])
+    def test_controller_managed_oauth2_plugins_are_rejected_for_all_gateways(self, is_official):
         plugin_codes = [
             "bk-oauth2-protected-resource",
             "bk-oauth2-verify",
@@ -858,7 +858,9 @@ class TestOpenAPIImportManagerParse:
 
         errors = OpenAPIImportManager(gateway=gateway, data=data).validate()
 
-        assert bool(errors) is expect_errors, [error.message for error in errors]
+        assert len(errors) == 1
+        for code in plugin_codes:
+            assert code in errors[0].message
 
     @staticmethod
     def _name_only_backend_document(openapi_version, resource_kind):

@@ -42,17 +42,11 @@ from apigateway.core.models import (
 
 
 class TestResourceAuthConfigSLZ:
-    def test_defaults(self):
+    def test_omitted_fields_are_not_added(self):
         slz = ResourceAuthConfigSLZ(data={})
         slz.is_valid(raise_exception=True)
 
-        assert slz.validated_data == {
-            "auth_verified_required": True,
-            "app_verified_required": True,
-            "resource_perm_required": True,
-            "oauth2_public_client_enabled": False,
-            "oauth2_personal_client_enabled": False,
-        }
+        assert slz.validated_data == {}
 
     @pytest.mark.parametrize(
         "oauth2_config",

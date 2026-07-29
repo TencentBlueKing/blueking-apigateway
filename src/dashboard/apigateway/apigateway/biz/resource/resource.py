@@ -54,8 +54,8 @@ class ResourceHandler:
             auth_config = cls.get_default_auth_config()
 
         # 用传入的配置，覆盖当前的配置
+        auth_config.update(config)
         auth_config = strip_resource_oauth2_client_config(auth_config)
-        auth_config.update(strip_resource_oauth2_client_config(config))
 
         ResourceAuthContext().save(resource_id, auth_config)
 

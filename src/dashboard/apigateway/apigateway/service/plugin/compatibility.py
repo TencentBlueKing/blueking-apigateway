@@ -77,11 +77,9 @@ AI_COMPATIBLE_PLUGIN_CODES = (
 def is_plugin_compatible_with_resource_kind(
     plugin_code: str,
     resource_kind: str | None,
-    *,
-    allow_controller_managed: bool = False,
 ) -> bool:
     if plugin_code in CONTROLLER_MANAGED_PLUGIN_CODES:
-        return allow_controller_managed
+        return False
 
     if plugin_code in AI_ONLY_PLUGIN_CODES:
         return resource_kind == ResourceKindEnum.AI.value

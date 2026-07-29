@@ -12,11 +12,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="resource",
             name="oauth2_personal_client_enabled",
-            field=models.BooleanField(db_index=True, default=False),
+            field=models.BooleanField(default=False),
         ),
         migrations.AddField(
             model_name="resource",
             name="oauth2_public_client_enabled",
-            field=models.BooleanField(db_index=True, default=False),
+            field=models.BooleanField(default=False),
         ),
     ]

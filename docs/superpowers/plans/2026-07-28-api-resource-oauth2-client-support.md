@@ -1287,7 +1287,7 @@ broad `git add`.
 
 ---
 
-### Task 10: Move editing OAuth2 switches to indexed Resource columns
+### Task 10: Move editing OAuth2 switches to Resource columns
 
 **Files:**
 
@@ -1310,7 +1310,7 @@ broad `git add`.
 **Interfaces:**
 
 - Consumes: the existing nested API contract `ResourceAuthConfig`.
-- Produces: indexed `Resource.oauth2_public_client_enabled` and
+- Produces: `Resource.oauth2_public_client_enabled` and
   `Resource.oauth2_personal_client_enabled` columns as the editing source of
   truth.
 - Preserves: resource-version
@@ -1344,9 +1344,9 @@ apigateway/tests/apis/v2/open/test_views.py'
 Expected: FAIL because the current saver writes both fields only to Context and
 `Resource` has no corresponding columns.
 
-- [ ] **Step 3: Add the indexed Resource columns and migration**
+- [ ] **Step 3: Add the Resource columns and migration**
 
-Add two `BooleanField(default=False, db_index=True)` fields to `Resource` and
+Add two `BooleanField(default=False)` fields to `Resource` and
 generate migration `0055_resource_oauth2_client_fields.py`. Do not add a data
 migration: this feature branch has not been merged or released, so there is no
 production Context data requiring backfill.

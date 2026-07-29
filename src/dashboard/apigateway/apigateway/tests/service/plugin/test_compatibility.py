@@ -68,13 +68,8 @@ def test_ai_plugin_policy_sets():
         "bk-oauth2-audience-validate",
     ],
 )
-def test_controller_managed_oauth2_plugins_require_explicit_opt_in(resource_kind, plugin_type_code):
+def test_controller_managed_oauth2_plugins_are_always_incompatible(resource_kind, plugin_type_code):
     assert not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind)
-    assert is_plugin_compatible_with_resource_kind(
-        plugin_type_code,
-        resource_kind,
-        allow_controller_managed=True,
-    )
 
 
 @pytest.mark.parametrize(

@@ -166,19 +166,19 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
     auth_verified_required = serializers.BooleanField(
-        default=True, required=False, help_text="是否需要认证用户，true：需要，false：不需要"
+        required=False, help_text="是否需要认证用户，true：需要，false：不需要"
     )
     app_verified_required = serializers.BooleanField(
-        default=True, required=False, help_text="是否需要认证应用，true：需要，false：不需要"
+        required=False, help_text="是否需要认证应用，true：需要，false：不需要"
     )
     resource_perm_required = serializers.BooleanField(
-        default=True, required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
+        required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
     )
     oauth2_public_client_enabled = serializers.BooleanField(
-        default=False, required=False, help_text="是否允许 OAuth2 public client 调用"
+        required=False, help_text="是否允许 OAuth2 public client 调用"
     )
     oauth2_personal_client_enabled = serializers.BooleanField(
-        default=False, required=False, help_text="是否允许 OAuth2 personal client 调用"
+        required=False, help_text="是否允许 OAuth2 personal client 调用"
     )
 
     class Meta:
@@ -186,9 +186,10 @@ class ResourceAuthConfigSLZ(serializers.Serializer):
 
     def validate(self, attrs):
         try:
-            return ResourceAuthConfig.model_validate(attrs).model_dump()
+            ResourceAuthConfig.model_validate(attrs)
         except PydanticValidationError as err:
             raise serializers.ValidationError(err.errors()[0]["msg"]) from err
+        return attrs
 
 
 class HttpBackendConfigSLZ(serializers.Serializer):
