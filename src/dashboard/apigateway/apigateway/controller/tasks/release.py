@@ -27,6 +27,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersi
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     PublishEvent,
@@ -227,6 +228,15 @@ def update_release_data_after_success(
         release.stage.id,
         resource_version.id,
     )
+
+    try:
+        OAuth2BuiltinPermissionReconciler().reconcile_gateway(release.gateway)
+    except Exception:
+        logger.exception(
+            "reconcile OAuth2 built-in permissions failed after release success: gateway_id=%s, publish_id=%s",
+            release.gateway_id,
+            publish_id,
+        )
 
 
 def clear_unreleased_resource(gateway_id: int) -> None:

@@ -40,6 +40,8 @@ class TestReleasedResource:
                 {
                     "verified_user_required": False,
                     "resource_perm_required": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -51,6 +53,8 @@ class TestReleasedResource:
                 {
                     "verified_user_required": False,
                     "resource_perm_required": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -58,10 +62,14 @@ class TestReleasedResource:
                     "skip_auth_verification": False,
                     "auth_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
                 {
                     "verified_user_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -69,10 +77,14 @@ class TestReleasedResource:
                     "skip_auth_verification": True,
                     "auth_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": True,
                 },
                 {
                     "verified_user_required": False,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": True,
                 },
             ),
         ],
@@ -88,6 +100,8 @@ class TestReleasedResource:
         )
         assert data.verified_user_required == expected["verified_user_required"]
         assert data.resource_perm_required == expected["resource_perm_required"]
+        assert data.oauth2_public_client_enabled == expected["oauth2_public_client_enabled"]
+        assert data.oauth2_personal_client_enabled == expected["oauth2_personal_client_enabled"]
 
     def test_get_released_resource_data(self, fake_gateway, fake_stage, fake_resource1, fake_released_resource):
         result = get_released_resource_data(fake_gateway, fake_stage, fake_resource1.id)

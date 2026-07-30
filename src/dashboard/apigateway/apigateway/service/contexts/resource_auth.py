@@ -22,8 +22,28 @@ from django.utils.functional import cached_property
 
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.core.models import Resource
 
 from .context import BaseContext
+
+RESOURCE_OAUTH2_CLIENT_FIELDS = (
+    "oauth2_public_client_enabled",
+    "oauth2_personal_client_enabled",
+)
+
+
+def build_resource_auth_config(resource: Resource, context_config: dict) -> dict:
+    config = dict(context_config)
+    for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS:
+        config[field_name] = getattr(resource, field_name)
+    return config
+
+
+def strip_resource_oauth2_client_config(config: dict) -> dict:
+    context_config = dict(config)
+    for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS:
+        context_config.pop(field_name, None)
+    return context_config
 
 
 class ResourceAuthContext(BaseContext):
@@ -34,5 +54,12 @@ class ResourceAuthContext(BaseContext):
     def schema(self):
         return SchemaFactory().get_context_resource_bkauth_schema()
 
+    def get_config_for_resource(self, resource: Resource) -> dict:
+        return build_resource_auth_config(resource, self.get_config(resource.id))
+
     def get_resource_id_to_auth_config(self, resource_ids: List[int]) -> Dict[int, dict]:
-        return {context.scope_id: context.config for context in self.filter_contexts(resource_ids)}
+        context_config_map = {context.scope_id: context.config for context in self.filter_contexts(resource_ids)}
+        return {
+            resource.id: build_resource_auth_config(resource, context_config_map.get(resource.id, {}))
+            for resource in Resource.objects.filter(id__in=resource_ids)
+        }

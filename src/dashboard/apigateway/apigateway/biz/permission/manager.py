@@ -43,6 +43,8 @@ from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
 
+from .permission import ResourcePermissionHandler
+
 logger = logging.getLogger(__name__)
 
 
@@ -271,6 +273,7 @@ class GatewayPermissionDimensionManager(PermissionDimensionManager):
         part_resource_ids=None,
     ) -> AppPermissionRecord:
         if status == ApplyStatusEnum.APPROVED.value:
+            ResourcePermissionHandler.validate_user_managed_app_code(apply.bk_app_code)
             AppGatewayPermission.objects.save_permissions(
                 gateway=gateway,
                 bk_app_code=apply.bk_app_code,
@@ -373,6 +376,7 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
         # 如果审批同意，则更新权限信息
         # 如果审批驳回，则不做任何处理
         if approved_resource_ids:
+            ResourcePermissionHandler.validate_user_managed_app_code(apply.bk_app_code)
             AppResourcePermission.objects.save_permissions(
                 gateway=gateway,
                 resource_ids=approved_resource_ids,

@@ -16,8 +16,35 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from pydantic import ValidationError
 
-from apigateway.biz.resource import ResourceBackendConfig
+from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig
+
+
+class TestResourceAuthConfig:
+    def test_defaults(self):
+        assert ResourceAuthConfig().model_dump() == {
+            "auth_verified_required": True,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+            "oauth2_public_client_enabled": False,
+            "oauth2_personal_client_enabled": False,
+        }
+
+    @pytest.mark.parametrize(
+        "oauth2_config",
+        [
+            {"oauth2_public_client_enabled": True},
+            {"oauth2_personal_client_enabled": True},
+            {
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": True,
+            },
+        ],
+    )
+    def test_oauth2_client_requires_user_authentication(self, oauth2_config):
+        with pytest.raises(ValidationError, match="require user authentication"):
+            ResourceAuthConfig(auth_verified_required=False, **oauth2_config)
 
 
 class TestResourceBackendConfig:

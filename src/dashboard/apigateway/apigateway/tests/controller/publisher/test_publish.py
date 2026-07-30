@@ -37,6 +37,10 @@ from apigateway.core.models import Gateway, Release, ReleaseHistory, ResourceVer
 class TestTriggerRollingUpdate:
     """Test _trigger_rolling_update function"""
 
+    @pytest.fixture(autouse=True)
+    def mock_oauth2_reconciler(self, mocker):
+        return mocker.patch("apigateway.controller.publisher.publish.OAuth2BuiltinPermissionReconciler").return_value
+
     @pytest.fixture
     def mock_gateway(self):
         """Create a mock gateway"""
@@ -56,6 +60,7 @@ class TestTriggerRollingUpdate:
         """Create a mock resource version"""
         resource_version = Mock(spec=ResourceVersion)
         resource_version.pk = 1
+        resource_version.data = []
         return resource_version
 
     @pytest.fixture
@@ -241,6 +246,92 @@ class TestTriggerRollingUpdate:
         assert result is True
         mock_delay_on_commit.assert_called_once()
 
+    def test_trigger_rolling_update_rejects_incompatible_oauth2_data_plane(self, mocker, mock_release):
+        mock_release.resource_version.data = [
+            {
+                "contexts": {
+                    "resource_auth": {
+                        "config": '{"oauth2_public_client_enabled": true}',
+                    }
+                }
+            }
+        ]
+        old_data_plane = Mock(spec=DataPlane)
+        old_data_plane.id = 1
+        old_data_plane.name = "apisix-3-13"
+        old_data_plane.apisix_version = "3.13"
+        current_data_plane = Mock(spec=DataPlane)
+        current_data_plane.id = 2
+        current_data_plane.name = "apisix-3-16"
+        current_data_plane.apisix_version = "3.16"
+        data_planes = [old_data_plane, current_data_plane]
+        mocker.patch(
+            "apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes",
+            return_value=data_planes,
+        )
+        save_history = mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_save_release_history",
+            side_effect=[Mock(spec=ReleaseHistory), Mock(spec=ReleaseHistory)],
+        )
+        check_ready = mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing",
+            return_value=(True, ""),
+        )
+        reporter = mocker.patch("apigateway.controller.publisher.publish.PublishEventReporter")
+        delay = mocker.patch("apigateway.controller.publisher.publish.delay_on_commit")
+
+        result = _trigger_rolling_update(
+            PublishSourceEnum.GATEWAY_ENABLE,
+            "test_user",
+            [mock_release],
+            is_sync=False,
+        )
+
+        assert result is False
+        assert save_history.call_count == 2
+        assert reporter.report_config_validate_failure.call_count == 2
+        assert "apisix-3-13 (3.13)" in reporter.report_config_validate_failure.call_args.args[1]
+        check_ready.assert_not_called()
+        delay.assert_not_called()
+
+    def test_trigger_rolling_update_preparation_failure_is_reported_and_not_queued(
+        self, mocker, mock_release, mock_oauth2_reconciler
+    ):
+        data_plane = Mock(spec=DataPlane)
+        data_plane.id = 1
+        data_plane.name = "plane-1"
+        data_plane.apisix_version = "3.16"
+        mocker.patch(
+            "apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes",
+            return_value=[data_plane],
+        )
+        history = Mock(spec=ReleaseHistory)
+        mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_save_release_history",
+            return_value=history,
+        )
+        mocker.patch(
+            "apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing",
+            return_value=(True, ""),
+        )
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+        reporter = mocker.patch("apigateway.controller.publisher.publish.PublishEventReporter")
+        delay = mocker.patch("apigateway.controller.publisher.publish.delay_on_commit")
+
+        result = _trigger_rolling_update(
+            PublishSourceEnum.GATEWAY_ENABLE,
+            "test_user",
+            [mock_release],
+            is_sync=False,
+        )
+
+        assert result is False
+        reporter.report_config_validate_failure.assert_called_once_with(
+            history,
+            "prepare OAuth2 built-in permissions failed: redis unavailable",
+        )
+        delay.assert_not_called()
+
 
 class TestTriggerRevokeDisable:
     """Test _trigger_revoke_disable function"""
@@ -379,13 +470,20 @@ class TestTriggerRevokeDisable:
         mock_user_credentials,
     ):
         """Test revoke disable in sync mode"""
-        mock_release_history = Mock(spec=ReleaseHistory)
-        mock_release_history.id = 123
-        mock_save_history.return_value = mock_release_history
+        events = []
+        release_histories = [Mock(spec=ReleaseHistory), Mock(spec=ReleaseHistory)]
+        release_histories[0].id = 123
+        release_histories[1].id = 456
+        mock_save_history.side_effect = lambda *args, **kwargs: (
+            events.append("save"),
+            release_histories.pop(0),
+        )[1]
         mock_check.return_value = (True, "")
-        mock_data_plane = Mock(spec=DataPlane)
-        mock_data_plane.id = 1
-        mock_get_data_planes.return_value = [mock_data_plane]
+        data_planes = [Mock(spec=DataPlane), Mock(spec=DataPlane)]
+        data_planes[0].id = 1
+        data_planes[1].id = 2
+        mock_get_data_planes.return_value = data_planes
+        mock_revoke_release.side_effect = lambda **kwargs: (events.append("revoke"), True)[1]
 
         result = _trigger_revoke_disable(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -396,11 +494,11 @@ class TestTriggerRevokeDisable:
         )
 
         assert result is True
-        mock_revoke_release.assert_called_once_with(
-            release_id=1,
-            publish_id=123,
-            data_plane_id=1,
-        )
+        assert events == ["save", "save", "revoke", "revoke"]
+        assert [item.kwargs for item in mock_revoke_release.call_args_list] == [
+            {"release_id": 1, "publish_id": 123, "data_plane_id": 1},
+            {"release_id": 1, "publish_id": 456, "data_plane_id": 2},
+        ]
 
     @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.delay_on_commit")

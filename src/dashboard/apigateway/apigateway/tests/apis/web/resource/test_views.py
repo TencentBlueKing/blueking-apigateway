@@ -70,8 +70,22 @@ class TestResourceListCreateApi:
         ],
     )
     def test_list(self, request_view, fake_gateway, fake_backend, data, expected):
-        resource_1 = G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
-        resource_2 = G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
+        resource_1 = G(
+            Resource,
+            gateway=fake_gateway,
+            path="/echo/",
+            method="GET",
+            name="echo",
+            oauth2_public_client_enabled=True,
+        )
+        resource_2 = G(
+            Resource,
+            gateway=fake_gateway,
+            path="/test/",
+            method="GET",
+            name="test",
+            oauth2_personal_client_enabled=True,
+        )
         auth_config = ResourceHandler.get_default_auth_config()
         ResourceAuthContext().save(resource_1.id, dict(auth_config, auth_verified_required=True))
         ResourceAuthContext().save(resource_2.id, dict(auth_config, auth_verified_required=False))
@@ -87,6 +101,13 @@ class TestResourceListCreateApi:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]["results"]) == expected
+        resources = {resource["id"]: resource for resource in result["data"]["results"]}
+        if resource_1.id in resources:
+            assert resources[resource_1.id]["auth_config"]["oauth2_public_client_enabled"] is True
+            assert resources[resource_1.id]["auth_config"]["oauth2_personal_client_enabled"] is False
+        if resource_2.id in resources:
+            assert resources[resource_2.id]["auth_config"]["oauth2_public_client_enabled"] is False
+            assert resources[resource_2.id]["auth_config"]["oauth2_personal_client_enabled"] is True
 
     @pytest.mark.parametrize(
         "data",
@@ -108,9 +129,11 @@ class TestResourceListCreateApi:
                     }
                 },
                 "auth_config": {
-                    "auth_verified_required": False,
+                    "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
             },
         ],
@@ -131,6 +154,8 @@ class TestResourceListCreateApi:
         resource = Resource.objects.get(gateway=fake_gateway, method=data["method"], path=data["path"])
         assert resource.is_public == data["is_public"]
         assert resource.match_subpath == data["match_subpath"]
+        assert resource.oauth2_public_client_enabled is True
+        assert resource.oauth2_personal_client_enabled is False
 
         proxy = Proxy.objects.get(resource=resource)
         assert proxy.backend_id == backend.id
@@ -142,15 +167,70 @@ class TestResourceListCreateApi:
         )
         assert context.config == {
             "skip_auth_verification": False,
-            "auth_verified_required": False,
+            "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
         }
 
 
 class TestResourceRetrieveUpdateDestroyApi:
+    @staticmethod
+    def _prepare_update_target(resource: Resource) -> None:
+        resource.name = "echo"
+        resource.method = "GET"
+        resource.path = "/echo/"
+        resource.match_subpath = False
+        resource.enable_websocket = False
+        resource.save(
+            update_fields=[
+                "name",
+                "method",
+                "path",
+                "match_subpath",
+                "enable_websocket",
+            ]
+        )
+
+        proxy = Proxy.objects.get(resource=resource)
+        proxy.config = {
+            "method": "GET",
+            "path": "/echo/",
+            "match_subpath": False,
+            "timeout": 30,
+        }
+        proxy.save(update_fields=["_config"])
+
+    @staticmethod
+    def _make_update_data(resource: Resource, auth_config: dict) -> dict:
+        proxy = Proxy.objects.get(resource=resource)
+        return {
+            "name": resource.name,
+            "description": resource.description,
+            "description_en": resource.description_en,
+            "method": resource.method,
+            "path": resource.path,
+            "match_subpath": resource.match_subpath,
+            "enable_websocket": resource.enable_websocket,
+            "is_public": resource.is_public,
+            "allow_apply_permission": resource.allow_apply_permission,
+            "label_ids": list(ResourceLabel.objects.filter(resource=resource).values_list("api_label_id", flat=True)),
+            "backend": {
+                "id": proxy.backend_id,
+                "config": proxy.config,
+            },
+            "auth_config": auth_config,
+        }
+
     def test_retrieve(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.oauth2_personal_client_enabled = True
+        fake_resource.save(
+            update_fields=[
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
 
         resp = request_view(
             method="GET",
@@ -161,6 +241,8 @@ class TestResourceRetrieveUpdateDestroyApi:
 
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_resource.id
+        assert result["data"]["auth_config"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["auth_config"]["oauth2_personal_client_enabled"] is True
 
     def test_retrieve_with_released_stages(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
@@ -214,9 +296,11 @@ class TestResourceRetrieveUpdateDestroyApi:
                 },
             },
             "auth_config": {
-                "auth_verified_required": False,
+                "auth_verified_required": True,
                 "app_verified_required": True,
                 "resource_perm_required": True,
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": True,
             },
         }
 
@@ -235,10 +319,76 @@ class TestResourceRetrieveUpdateDestroyApi:
         auth_config = ResourceAuthContext().get_config(fake_resource.id)
         assert auth_config == {
             "skip_auth_verification": False,
-            "auth_verified_required": False,
+            "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
         }
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is False
+        assert fake_resource.oauth2_personal_client_enabled is True
+
+    def test_update_preserves_omitted_oauth2_client_switches_without_marking_changed(
+        self,
+        request_view,
+        fake_resource,
+    ):
+        self._prepare_update_target(fake_resource)
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.oauth2_personal_client_enabled = True
+        fake_resource.save(
+            update_fields=[
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
+        initial_updated_time = fake_resource.updated_time
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=self._make_update_data(
+                fake_resource,
+                {
+                    "auth_verified_required": True,
+                    "app_verified_required": True,
+                    "resource_perm_required": True,
+                },
+            ),
+        )
+
+        assert response.status_code == 204, response.json()
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
+        assert fake_resource.oauth2_personal_client_enabled is True
+        assert fake_resource.updated_time == initial_updated_time
+
+    def test_update_validates_omitted_oauth2_switches_against_existing_values(
+        self,
+        request_view,
+        fake_resource,
+    ):
+        self._prepare_update_target(fake_resource)
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.save(update_fields=["oauth2_public_client_enabled"])
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=self._make_update_data(
+                fake_resource,
+                {
+                    "auth_verified_required": False,
+                    "app_verified_required": True,
+                    "resource_perm_required": True,
+                },
+            ),
+        )
+
+        assert response.status_code == 400
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
 
     def test_destroy(self, request_view, fake_resource):
         fake_gateway = fake_resource.gateway
@@ -596,6 +746,8 @@ class TestResourceImportCheckApi:
                             "auth_verified_required": True,
                             "app_verified_required": True,
                             "resource_perm_required": True,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": False,
                         },
                         "backend": {
                             "name": "default",
@@ -674,6 +826,8 @@ class TestResourceImportCheckApi:
                             "auth_verified_required": True,
                             "app_verified_required": True,
                             "resource_perm_required": True,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": False,
                         },
                         "backend": {
                             "name": "default",
@@ -753,6 +907,8 @@ class TestResourceImportCheckApi:
                             "auth_verified_required": True,
                             "app_verified_required": True,
                             "resource_perm_required": True,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": False,
                         },
                         "backend": {
                             "name": "default",
@@ -886,6 +1042,86 @@ class TestResourceExportApi:
         )
 
         assert resp.status_code == 200
+
+    def test_exported_oauth2_client_settings_can_be_imported(self, request_view, fake_resource):
+        fake_gateway = fake_resource.gateway
+        fake_resource.method = "GET"
+        fake_resource.path = "/users"
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.oauth2_personal_client_enabled = True
+        fake_resource.save(
+            update_fields=[
+                "method",
+                "path",
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
+        proxy = Proxy.objects.get(resource=fake_resource)
+        proxy.config = {
+            "method": "GET",
+            "path": "/backend/users",
+            "match_subpath": False,
+            "timeout": 30,
+        }
+        proxy.save()
+
+        export_response = request_view(
+            method="POST",
+            view_name="resource.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"export_type": "all", "file_type": "json"},
+        )
+
+        assert export_response.status_code == 200
+        content = b"".join(export_response.streaming_content).decode(export_response.charset)
+        operation = json.loads(content)["paths"][fake_resource.path][fake_resource.method.lower()]
+        assert operation["x-bk-apigateway-resource"]["authConfig"] == {
+            "userVerifiedRequired": True,
+            "appVerifiedRequired": True,
+            "resourcePermissionRequired": True,
+            "oauth2PublicClientEnabled": True,
+            "oauth2PersonalClientEnabled": True,
+        }
+
+        fake_resource.oauth2_public_client_enabled = False
+        fake_resource.oauth2_personal_client_enabled = False
+        fake_resource.save(
+            update_fields=[
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
+
+        check_response = request_view(
+            method="POST",
+            view_name="resource.import.check",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"content": content},
+        )
+
+        assert check_response.status_code == 200, check_response.json()
+        imported_resource = check_response.json()["data"][0]
+        assert imported_resource["auth_config"]["oauth2_public_client_enabled"] is True
+        assert imported_resource["auth_config"]["oauth2_personal_client_enabled"] is True
+
+        backend = imported_resource.pop("backend")
+        imported_resource["backend_name"] = backend["name"]
+        imported_resource["backend_config"] = backend["config"]
+        import_response = request_view(
+            method="POST",
+            view_name="resource.import",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"import_resources": [imported_resource]},
+        )
+
+        assert import_response.status_code == 204, import_response.json()
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
+        assert fake_resource.oauth2_personal_client_enabled is True
 
 
 class TestBackendPathCheckApi:

@@ -26,6 +26,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.web.resource.serializers import (
     BackendPathCheckInputSLZ,
     HttpBackendConfigSLZ,
+    ResourceAuthConfigSLZ,
     ResourceDataImportSLZ,
     ResourceExportOutputSLZ,
     ResourceInputSLZ,
@@ -37,6 +38,32 @@ from apigateway.core.models import (
     Resource,
     Stage,
 )
+
+
+class TestResourceAuthConfigSLZ:
+    def test_omitted_fields_are_not_added(self):
+        slz = ResourceAuthConfigSLZ(data={})
+        slz.is_valid(raise_exception=True)
+
+        assert slz.validated_data == {}
+
+    @pytest.mark.parametrize(
+        "oauth2_config",
+        [
+            {"oauth2_public_client_enabled": True},
+            {"oauth2_personal_client_enabled": True},
+        ],
+    )
+    def test_oauth2_client_requires_user_authentication(self, oauth2_config):
+        slz = ResourceAuthConfigSLZ(
+            data={
+                "auth_verified_required": False,
+                **oauth2_config,
+            }
+        )
+
+        assert not slz.is_valid()
+        assert "non_field_errors" in slz.errors
 
 
 class TestResourceListOutputSLZ:

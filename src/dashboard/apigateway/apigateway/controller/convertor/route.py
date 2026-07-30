@@ -187,7 +187,25 @@ class RouteConvertor(GatewayResourceConvertor):
             }
         )
 
+        plugins.update(self._build_oauth2_plugins(resource))
         return plugins
+
+    def _build_oauth2_plugins(self, resource: Dict[str, Any]) -> Dict[str, Plugin]:
+        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        support_public = resource_auth_config.get("oauth2_public_client_enabled", False)
+        support_personal = resource_auth_config.get("oauth2_personal_client_enabled", False)
+        if not support_public and not support_personal:
+            return {}
+
+        return {
+            "bk-oauth2-protected-resource": Plugin(),
+            "bk-oauth2-verify": Plugin(),
+            "bk-oauth2-appcode-validate": Plugin(
+                support_public=support_public,
+                support_personal=support_personal,
+            ),
+            "bk-oauth2-audience-validate": Plugin(),
+        }
 
     def _build_bk_proxy_rewrite_config(self, resource_proxy: Dict[str, Any]) -> Dict[str, Any]:
         # dashboard only make method+path here

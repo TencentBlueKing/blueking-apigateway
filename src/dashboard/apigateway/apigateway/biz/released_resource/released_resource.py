@@ -42,6 +42,8 @@ class ReleasedResourceData:
     verified_app_required: bool = field(init=False)
     verified_user_required: bool = field(init=False)
     resource_perm_required: bool = field(init=False)
+    oauth2_public_client_enabled: bool = field(init=False)
+    oauth2_personal_client_enabled: bool = field(init=False)
     gateway_labels: List[int] = field(default_factory=list)
 
     def __post_init__(self):
@@ -49,6 +51,8 @@ class ReleasedResourceData:
         self.verified_app_required = bool(resource_auth_config.get("app_verified_required", True))
         self.verified_user_required = self._get_verified_user_required(resource_auth_config)
         self.resource_perm_required = self._get_resource_perm_required(resource_auth_config)
+        self.oauth2_public_client_enabled = bool(resource_auth_config.get("oauth2_public_client_enabled", False))
+        self.oauth2_personal_client_enabled = bool(resource_auth_config.get("oauth2_personal_client_enabled", False))
 
     @classmethod
     def from_data(cls, released_resource_data: Dict[str, Any]) -> "ReleasedResourceData":

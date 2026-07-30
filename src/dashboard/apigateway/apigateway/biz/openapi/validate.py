@@ -24,6 +24,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES
 from apigateway.apps.plugin.models import PluginType
 from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY
@@ -386,6 +387,17 @@ class ResourceImportValidator:
             if not_exist_types:
                 validate_err = SchemaValidateErr(
                     _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types)),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
+
+            system_managed_types = types & OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES
+            if system_managed_types:
+                validate_err = SchemaValidateErr(
+                    _("插件类型 {plugin_types} 由网关系统管理，不能手动配置。").format(
+                        plugin_types=", ".join(sorted(system_managed_types))
+                    ),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
                     absolute_path=[],
                 )
