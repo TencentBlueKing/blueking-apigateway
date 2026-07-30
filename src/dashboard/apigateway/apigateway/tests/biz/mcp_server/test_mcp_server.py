@@ -36,7 +36,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
-from apigateway.apps.permission.constants import GrantTypeEnum
+from apigateway.apps.permission.constants import OAUTH2_PERSONAL_CLIENT_APP_CODE, GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
@@ -223,7 +223,7 @@ class TestMCPServerHandler:
             assert permission.expires == NeverExpiresTime.time
             assert permission.grant_type == GrantTypeEnum.SYNC.value
 
-    def test_sync_permissions_grants_and_revokes_oauth2_personal_client(self, fake_gateway, fake_stage, settings):
+    def test_sync_permissions_grants_and_revokes_oauth2_personal_client(self, fake_gateway, fake_stage):
         resource = G(Resource, gateway=fake_gateway, name="resource1")
         mcp_server = G(
             MCPServer,
@@ -232,7 +232,7 @@ class TestMCPServerHandler:
             _resource_names=resource.name,
             oauth2_personal_client_enabled=True,
         )
-        personal_app_code = settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE
+        personal_app_code = OAUTH2_PERSONAL_CLIENT_APP_CODE
         virtual_app_code = f"v_mcp_{mcp_server.id}_{personal_app_code}"
 
         MCPServerHandler.sync_permissions(mcp_server.id)

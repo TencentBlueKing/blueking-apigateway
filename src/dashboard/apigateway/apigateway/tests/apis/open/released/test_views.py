@@ -208,6 +208,8 @@ class TestReleasedResourceListByGatewayNameApi:
                         "app_verified_required": True,
                         "resource_perm_required": True,
                         "user_verified_required": True,
+                        "oauth2_public_client_enabled": True,
+                        "oauth2_personal_client_enabled": False,
                     },
                     {
                         "id": 2,
@@ -220,6 +222,8 @@ class TestReleasedResourceListByGatewayNameApi:
                         "app_verified_required": False,
                         "resource_perm_required": False,
                         "user_verified_required": False,
+                        "oauth2_public_client_enabled": False,
+                        "oauth2_personal_client_enabled": True,
                     },
                 ],
                 {
@@ -238,6 +242,8 @@ class TestReleasedResourceListByGatewayNameApi:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                             "user_verified_required": True,
+                            "oauth2_public_client_enabled": True,
+                            "oauth2_personal_client_enabled": False,
                         },
                         {
                             "id": 2,
@@ -250,6 +256,8 @@ class TestReleasedResourceListByGatewayNameApi:
                             "app_verified_required": False,
                             "resource_perm_required": False,
                             "user_verified_required": False,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": True,
                         },
                     ],
                 },

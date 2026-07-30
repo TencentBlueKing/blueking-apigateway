@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 import pytest
 from ddf import G
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
@@ -85,6 +86,40 @@ class TestResourcePermissionHandler:
         api_perm.save()
         ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
         assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 1
+
+    @pytest.mark.parametrize("permission_model", [AppGatewayPermission, AppResourcePermission])
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_validate_user_managed_permissions_rejects_oauth2_builtin(
+        self, permission_model, app_code, fake_gateway, fake_resource
+    ):
+        kwargs = {
+            "gateway": fake_gateway,
+            "bk_app_code": app_code,
+            "expires": None,
+            "grant_type": "oauth2_builtin",
+        }
+        if permission_model is AppResourcePermission:
+            kwargs["resource_id"] = fake_resource.id
+        permission = G(permission_model, **kwargs)
+
+        with pytest.raises(ValidationError):
+            ResourcePermissionHandler.validate_user_managed_permissions(
+                permission_model.objects.filter(id=permission.id)
+            )
+
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_renew_resource_permissions_by_ids_rejects_oauth2_builtin(self, app_code, fake_gateway, fake_resource):
+        permission = G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            resource_id=fake_resource.id,
+            bk_app_code=app_code,
+            expires=None,
+            grant_type="oauth2_builtin",
+        )
+
+        with pytest.raises(ValidationError):
+            ResourcePermissionHandler.renew_resource_permissions_by_ids(fake_gateway, [permission.id], 180)
 
 
 def test_build_permission_display_preserves_gateway_name(fake_gateway):

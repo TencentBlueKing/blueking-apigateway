@@ -49,7 +49,11 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
-from apigateway.apps.permission.constants import GrantTypeEnum
+from apigateway.apps.permission.constants import (
+    OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    OAUTH2_PUBLIC_CLIENT_APP_CODE,
+    GrantTypeEnum,
+)
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
@@ -352,12 +356,12 @@ class MCPServerHandler:
 
         MCPServerHandler._sync_oauth2_client_permission(
             mcp_server_id,
-            settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            OAUTH2_PUBLIC_CLIENT_APP_CODE,
             mcp_server.oauth2_public_client_enabled,
         )
         MCPServerHandler._sync_oauth2_client_permission(
             mcp_server_id,
-            settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE,
+            OAUTH2_PERSONAL_CLIENT_APP_CODE,
             mcp_server.oauth2_personal_client_enabled,
         )
 

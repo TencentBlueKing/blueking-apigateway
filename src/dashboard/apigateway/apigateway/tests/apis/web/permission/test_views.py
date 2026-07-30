@@ -167,6 +167,34 @@ class TestAppPermissionRenewViewSet(TestCase):
             assert json.loads(audit_log.data_before)[0]["handled_by"] == "old-admin"
             assert json.loads(audit_log.data_after)[0]["handled_by"] == "admin"
 
+    def test_renew_rejects_oauth2_builtin_permissions(self):
+        resource = G(Resource, gateway=self.gateway)
+
+        for app_code in ["public", "personal"]:
+            permission = G(
+                models.AppResourcePermission,
+                gateway=self.gateway,
+                bk_app_code=app_code,
+                resource_id=resource.id,
+                grant_type="oauth2_builtin",
+                handled_by="",
+            )
+            request = self.factory.post(
+                f"/gateways/{self.gateway.id}/permissions/app-permissions/renew/",
+                data={
+                    "resource_dimension_ids": [permission.id],
+                    "gateway_dimension_ids": [],
+                    "expire_days": 180,
+                },
+            )
+
+            response = views.AppPermissionRenewApi.as_view()(request, gateway_id=self.gateway.id)
+
+            self.assertEqual(response.status_code, 400)
+            permission.refresh_from_db()
+            self.assertEqual(permission.grant_type, "oauth2_builtin")
+            self.assertEqual(permission.handled_by, "")
+
 
 class TestAppPermissionDeleteViewSet(TestCase):
     @classmethod
@@ -228,6 +256,37 @@ class TestAppPermissionDeleteViewSet(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("权限不存在", str(response.data))
+
+    def test_destroy_rejects_batch_containing_oauth2_builtin_permission(self):
+        resource = G(Resource, gateway=self.gateway)
+
+        for app_code in ["public", "personal"]:
+            builtin_permission = G(
+                models.AppResourcePermission,
+                gateway=self.gateway,
+                bk_app_code=app_code,
+                resource_id=resource.id,
+                grant_type="oauth2_builtin",
+            )
+            normal_permission = G(
+                models.AppGatewayPermission,
+                gateway=self.gateway,
+                bk_app_code=f"normal-{app_code}",
+            )
+            request = self.factory.delete(
+                f"/gateways/{self.gateway.id}/permissions/app-permissions/batch/",
+                data={
+                    "resource_dimension_ids": [builtin_permission.id],
+                    "gateway_dimension_ids": [normal_permission.id],
+                },
+                format="json",
+            )
+
+            response = views.AppPermissionDeleteApi.as_view()(request, gateway_id=self.gateway.id)
+
+            self.assertEqual(response.status_code, 400)
+            self.assertTrue(models.AppResourcePermission.objects.filter(id=builtin_permission.id).exists())
+            self.assertTrue(models.AppGatewayPermission.objects.filter(id=normal_permission.id).exists())
 
 
 class TestAppResourcePermissionViewSet:

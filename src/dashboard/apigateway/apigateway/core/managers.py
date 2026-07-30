@@ -96,6 +96,8 @@ class ResourceVersionManager(models.Manager):
                 "resource_perm_required": resource_auth_config["resource_perm_required"],
                 "app_verified_required": resource_auth_config["app_verified_required"],
                 "user_verified_required": resource_auth_config["auth_verified_required"],
+                "oauth2_public_client_enabled": resource_auth_config.get("oauth2_public_client_enabled", False),
+                "oauth2_personal_client_enabled": resource_auth_config.get("oauth2_personal_client_enabled", False),
             }
         return resources
 
@@ -340,6 +342,8 @@ class ReleasedResourceManager(models.Manager):
             "app_verified_required": resource_auth_config["app_verified_required"],
             "resource_perm_required": resource_auth_config["resource_perm_required"],
             "user_verified_required": resource_auth_config["auth_verified_required"],
+            "oauth2_public_client_enabled": resource_auth_config.get("oauth2_public_client_enabled", False),
+            "oauth2_personal_client_enabled": resource_auth_config.get("oauth2_personal_client_enabled", False),
         }
 
 

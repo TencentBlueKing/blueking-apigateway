@@ -270,6 +270,8 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
 
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
+    oauth2_public_client_enabled = models.BooleanField(default=False)
+    oauth2_personal_client_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"

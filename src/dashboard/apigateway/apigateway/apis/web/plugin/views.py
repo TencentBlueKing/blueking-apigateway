@@ -21,11 +21,13 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import get_language
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import (
+    OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES,
     PLUGIN_TYPE_TAGS,
     PLUGIN_TYPE_TAGS_EN,
     PluginBindingScopeEnum,
@@ -123,6 +125,8 @@ class PluginTypeListApi(generics.ListAPIView):
         queryset = PluginType.objects.filter(is_public=True).filter(
             Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
         )
+        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            queryset = queryset.exclude(code__in=OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES)
 
         # 支持 keyword=abc 搜索
         keyword = data.get("keyword")
@@ -181,6 +185,16 @@ class PluginTypeCodeValidationMixin:
         if type_id and plugin_type != type_id:
             raise error_codes.INVALID_ARGUMENT.format(
                 f"code {code} in query_string is not matched the type_id={type_id.id}(code={type_id.code}) in body"
+            )
+
+    def validate_plugin_binding(self):
+        if self.kwargs["scope_type"] != PluginBindingScopeEnum.RESOURCE.value:
+            return
+
+        plugin_type_code = self.kwargs["code"]
+        if plugin_type_code in OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES:
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("插件 {plugin_type_code} 与当前资源类型不兼容。").format(plugin_type_code=plugin_type_code)
             )
 
 
@@ -242,6 +256,7 @@ class PluginConfigCreateApi(
     def perform_create(self, serializer):
         self.validate_scope()
         self.validate_code(type_id=serializer.validated_data["type_id"])
+        self.validate_plugin_binding()
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
 
@@ -334,6 +349,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
     def perform_update(self, serializer):
         self.validate_scope()
         self.validate_code(type_id=serializer.validated_data["type_id"])
+        self.validate_plugin_binding()
 
         if self._check_if_changed(dict(serializer.validated_data), serializer.instance):
             data_before = get_model_dict(serializer.instance)

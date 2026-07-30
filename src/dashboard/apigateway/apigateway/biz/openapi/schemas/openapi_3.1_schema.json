@@ -519,6 +519,12 @@
                 },
                 "resourcePermissionRequired": {
                   "type": "boolean"
+                },
+                "oauth2PublicClientEnabled": {
+                  "type": "boolean"
+                },
+                "oauth2PersonalClientEnabled": {
+                  "type": "boolean"
                 }
               }
             },

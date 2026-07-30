@@ -570,10 +570,6 @@ BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
 # AIDEV 平台配置（配置了 AIDEV_AGENT_CREATE_URL 则启用 AIDev）
 AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 
-# MCP Server OAuth2 内置客户端的 bk_app_code
-MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public")
-MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE", "personal")
-
 # ==============================================================================
 # ITSM v4 配置
 # ==============================================================================

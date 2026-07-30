@@ -436,6 +436,51 @@ class TestResourceDocUpdatedTimeDiffer:
         assert result == expected
 
 
+@pytest.mark.parametrize("field", ["oauth2_public_client_enabled", "oauth2_personal_client_enabled"])
+def test_resource_auth_diff_includes_oauth2_client_switches(field):
+    resource_data = {
+        "id": 1,
+        "name": "resource",
+        "method": "GET",
+        "path": "/",
+        "proxy": {
+            "type": "http",
+            "config": json.dumps(
+                {
+                    "method": "GET",
+                    "path": "/",
+                    "timeout": 30,
+                }
+            ),
+        },
+        "contexts": {
+            "resource_auth": {
+                "config": json.dumps(
+                    {
+                        "auth_verified_required": True,
+                        "app_verified_required": True,
+                        "resource_perm_required": True,
+                        "oauth2_public_client_enabled": False,
+                        "oauth2_personal_client_enabled": False,
+                    }
+                )
+            }
+        },
+        "doc_updated_time": {},
+    }
+    target_data = json.loads(json.dumps(resource_data))
+    target_auth_config = json.loads(target_data["contexts"]["resource_auth"]["config"])
+    target_auth_config[field] = True
+    target_data["contexts"]["resource_auth"]["config"] = json.dumps(target_auth_config)
+
+    source_diff, target_diff = ResourceDifferHandler.model_validate(resource_data).diff(
+        ResourceDifferHandler.model_validate(target_data)
+    )
+
+    assert source_diff["contexts"]["resource_auth"]["config"][field] is False
+    assert target_diff["contexts"]["resource_auth"]["config"][field] is True
+
+
 class ResourceProxyHTTPConfig:
     @pytest.mark.parametrize(
         "source, target, expected",

@@ -117,6 +117,8 @@ class TestReleaseAvailableResourceListApi:
                                         "skip_auth_verification": True,
                                         "auth_verified_required": True,
                                         "resource_perm_required": True,
+                                        "oauth2_public_client_enabled": True,
+                                        "oauth2_personal_client_enabled": False,
                                     }
                                 )
                             }
@@ -149,6 +151,8 @@ class TestReleaseAvailableResourceListApi:
                     "verified_user_required": False,
                     "verified_app_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                     "is_public": True,
                     "labels": [],
                 }

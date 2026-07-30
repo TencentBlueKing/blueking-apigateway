@@ -42,7 +42,7 @@ from apigateway.apps.permission.constants import (
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import ResourcePermissionHandler
-from apigateway.biz.validators import BKAppCodeValidator
+from apigateway.biz.validators import BKAppCodeValidator, UserManagedBKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import GatewayStatusEnum
@@ -145,7 +145,9 @@ class GatewayAppPermissionApplyCreateInputSLZ(serializers.Serializer):
     - 应用页面申请授权，仅可申请限定有效期的权限，网关平台按规则主动续期权限
     """
 
-    target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
+    target_app_code = serializers.CharField(
+        label="", validators=[BKAppCodeValidator(), UserManagedBKAppCodeValidator()]
+    )
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
         # validators=[ResourceIDValidator()], PaaS中的列表资源本身获取的就是网关所有环境生效资源版本资源的并集，这里不需要再进行校验
@@ -223,7 +225,9 @@ class AppResourcePermissionListOutputSLZ(serializers.Serializer):
 
 
 class AppPermissionRenewInputSLZ(serializers.Serializer):
-    target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
+    target_app_code = serializers.CharField(
+        label="", validators=[BKAppCodeValidator(), UserManagedBKAppCodeValidator()]
+    )
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,

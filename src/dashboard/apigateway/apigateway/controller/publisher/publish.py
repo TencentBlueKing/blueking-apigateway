@@ -20,9 +20,14 @@ from typing import TYPE_CHECKING, List, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
+from apigateway.apps.data_plane.constants import (
+    get_oauth2_resource_data_planes_compatibility_error,
+    resource_version_uses_oauth2,
+)
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.tasks import revoke_release, rolling_update_release
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.core.constants import (
     PublishSourceEnum,
     PublishSourceTriggerPublishTypeMapping,
@@ -66,6 +71,13 @@ def _trigger_rolling_update(
             has_failure = True
             continue
 
+        compatibility_error = None
+        if resource_version_uses_oauth2(release.resource_version):
+            compatibility_error = get_oauth2_resource_data_planes_compatibility_error(
+                [(data_plane.name, data_plane.apisix_version) for data_plane in data_planes]
+            )
+
+        permission_prepared = False
         for data_plane in data_planes:
             if source is PublishSourceEnum.CLI_SYNC:
                 # NOTE: this release history is not been saved to db
@@ -78,6 +90,12 @@ def _trigger_rolling_update(
                 release_history = _pre_publish_save_release_history(release, source, author, data_plane=data_plane)
                 publish_id = release_history.pk
 
+            if compatibility_error:
+                logger.warning(compatibility_error)
+                PublishEventReporter.report_config_validate_failure(release_history, compatibility_error)
+                has_failure = True
+                continue
+
             # 发布 check
             ok, msg = _pre_publish_check_is_gateway_ready_for_releasing(release, source)
             if not ok:
@@ -85,6 +103,21 @@ def _trigger_rolling_update(
                 PublishEventReporter.report_config_validate_failure(release_history, msg)
                 has_failure = True
                 continue
+
+            if not permission_prepared:
+                try:
+                    OAuth2BuiltinPermissionReconciler().prepare_publish(
+                        release.gateway,
+                        release.stage,
+                        release.resource_version,
+                    )
+                except Exception as err:
+                    message = f"prepare OAuth2 built-in permissions failed: {err}"
+                    logger.exception(message)
+                    PublishEventReporter.report_config_validate_failure(release_history, message)
+                    has_failure = True
+                    break
+                permission_prepared = True
 
             PublishEventReporter.report_config_validate_success(release_history)
             PublishEventReporter.report_create_publish_task_doing(release_history)
@@ -132,11 +165,15 @@ def _trigger_revoke_disable(
             has_failure = True
             continue
 
+        release_histories = [
+            (
+                data_plane,
+                _pre_publish_save_release_history(release, source, author, data_plane=data_plane),
+            )
+            for data_plane in data_planes
+        ]
         is_programmable_offline_called = False
-        for data_plane in data_planes:
-            # 创建发布历史
-            release_history = _pre_publish_save_release_history(release, source, author, data_plane=data_plane)
-
+        for data_plane, release_history in release_histories:
             # make sure programmable gateway offline is called only once
             if not is_programmable_offline_called:
                 # 如果是编程网关需要特殊处理

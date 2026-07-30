@@ -36,6 +36,12 @@ class ResourceOutputSLZ(serializers.Serializer):
     verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
     verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
     resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否允许 OAuth2 public client 调用"
+    )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否允许 OAuth2 personal client 调用"
+    )
     allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否需要申请权限")
     labels = serializers.SerializerMethodField(help_text="资源标签列表")
 

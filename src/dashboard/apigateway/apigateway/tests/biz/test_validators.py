@@ -35,6 +35,8 @@ from apigateway.biz.validators import (
     SchemeHostInputValidator,
     StageVarsValidator,
     UpstreamValidator,
+    UserManagedBKAppCodeListValidator,
+    UserManagedBKAppCodeValidator,
 )
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
@@ -153,6 +155,26 @@ class TestBKAppCodeValidator:
         slz = self.RecordSLZ(data={"bk_app_code": "invalid#"})
         with pytest.raises(ValidationError):
             slz.is_valid(raise_exception=True)
+
+
+class TestUserManagedBKAppCodeValidator:
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_reject_oauth2_builtin_app_code(self, app_code):
+        with pytest.raises(ValidationError):
+            UserManagedBKAppCodeValidator()(app_code)
+
+    def test_allow_normal_app_code(self):
+        assert UserManagedBKAppCodeValidator()("exist-app") is None
+
+
+class TestUserManagedBKAppCodeListValidator:
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_reject_oauth2_builtin_app_code(self, app_code):
+        with pytest.raises(ValidationError):
+            UserManagedBKAppCodeListValidator()(["exist-app", app_code])
+
+    def test_allow_normal_app_codes(self):
+        assert UserManagedBKAppCodeListValidator()(["app-1", "app-2"]) is None
 
 
 class TestResourceVersionValidator:

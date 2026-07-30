@@ -46,6 +46,8 @@ class ReleasedResourceListV1InputSLZ(ResourceV1SLZ):
     app_verified_required = serializers.BooleanField()
     resource_perm_required = serializers.BooleanField()
     user_verified_required = serializers.BooleanField()
+    oauth2_public_client_enabled = serializers.BooleanField()
+    oauth2_personal_client_enabled = serializers.BooleanField()
     url = serializers.SerializerMethodField()
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     match_subpath = serializers.BooleanField()

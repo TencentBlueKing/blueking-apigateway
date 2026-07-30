@@ -99,6 +99,19 @@ class TestGateway:
     #     assert gateway._extra_info == {}
 
 
+class TestResource:
+    @pytest.mark.parametrize(
+        "field_name",
+        ["oauth2_public_client_enabled", "oauth2_personal_client_enabled"],
+    )
+    def test_oauth2_client_fields_are_unindexed_booleans(self, field_name):
+        field = models.Resource._meta.get_field(field_name)
+
+        assert field.get_internal_type() == "BooleanField"
+        assert field.default is False
+        assert field.db_index is False
+
+
 class TestPublishEvent:
     def test_meta_indexes(self):
         assert any(index.fields == ["gateway", "publish"] for index in models.PublishEvent._meta.indexes)

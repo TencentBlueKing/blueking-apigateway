@@ -25,9 +25,14 @@ from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.data_plane.constants import (
+    get_oauth2_resource_data_planes_compatibility_error,
+    resource_version_uses_oauth2,
+)
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -166,12 +171,17 @@ class GatewayReleaser:
         # 环境、部署信息校验
         # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
         # 因此，将普通参数校验，环境参数校验分开处理
+        data_planes = self._get_active_data_planes()
         try:
             self._validate()
+            if resource_version_uses_oauth2(self.resource_version):
+                compatibility_error = get_oauth2_resource_data_planes_compatibility_error(
+                    [(data_plane.name, data_plane.apisix_version) for data_plane in data_planes]
+                )
+                if compatibility_error:
+                    raise ReleaseValidationError(compatibility_error)
         except (ValidationError, ReleaseValidationError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            # Get the first active data_plane for error recording
-            data_planes = self._get_active_data_planes()
             if data_planes:
                 history = self._save_release_history(data_plane=data_planes[0])
                 PublishEventReporter.report_config_validate_failure(history, message)
@@ -179,6 +189,25 @@ class GatewayReleaser:
                 # No data planes available - log the error but still raise
                 logger.exception(
                     "Gateway(id=%s) validation failed but has no data planes to record failure: %s",
+                    self.gateway.id,
+                    message,
+                )
+            raise ReleaseError(message) from err
+
+        try:
+            OAuth2BuiltinPermissionReconciler().prepare_publish(
+                self.gateway,
+                self.stage,
+                self.resource_version,
+            )
+        except Exception as err:
+            message = f"prepare OAuth2 built-in permissions failed: {err}"
+            if data_planes:
+                history = self._save_release_history(data_plane=data_planes[0])
+                PublishEventReporter.report_config_validate_failure(history, message)
+            else:
+                logger.exception(
+                    "Gateway(id=%s) permission preparation failed but has no data planes to record failure: %s",
                     self.gateway.id,
                     message,
                 )

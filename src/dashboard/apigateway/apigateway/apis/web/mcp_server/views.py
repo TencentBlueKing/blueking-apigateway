@@ -20,7 +20,6 @@
 import csv
 from io import StringIO
 
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Case, DateTimeField, F, OuterRef, Q, Subquery, When
 from django.db.models.functions import Coalesce
@@ -48,6 +47,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
 from apigateway.common.constants import CallSourceTypeEnum
@@ -830,10 +830,7 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.bk_app_code in {
-            settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
-            settings.MCP_SERVER_OAUTH2_PERSONAL_CLIENT_APP_CODE,
-        }:
+        if instance.bk_app_code in OAUTH2_BUILTIN_APP_CODES:
             raise error_codes.FAILED_PRECONDITION.format(
                 _("OAuth2 内置客户端的 MCPServer 应用权限不允许删除。"), replace=True
             )
