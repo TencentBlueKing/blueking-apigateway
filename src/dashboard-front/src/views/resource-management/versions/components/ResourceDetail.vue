@@ -122,6 +122,19 @@
                         :col="14"
                         :margin="6"
                       >
+                        <BkRow v-if="isAIGateway">
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("资源类型") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              <BkTag :theme="resource.kind === 'ai' ? 'info' : 'default'">
+                                {{ resource.kind === 'ai' ? t('模型代理 API') : t('普通 API') }}
+                              </BkTag>
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
                         <BkRow>
                           <BkCol :span="4">
                             <label class="ag-key">{{ t("资源名称") }}:</label>
@@ -202,11 +215,7 @@
                           </BkCol>
                           <BkCol :span="10">
                             <div class="ag-value">
-                              {{
-                                getPermRequired(
-                                  resource.contexts?.resource_auth?.config
-                                )
-                              }}
+                              {{ getPermRequired(resource.contexts?.resource_auth?.config) }}
                             </div>
                           </BkCol>
                         </BkRow>
@@ -260,7 +269,7 @@
                           </BkCol>
                         </BkRow>
 
-                        <BkRow>
+                        <BkRow v-if="resource.kind !== 'ai'">
                           <BkCol :span="4">
                             <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
                           </BkCol>
@@ -272,40 +281,42 @@
                         </BkRow>
                       </BkContainer>
 
-                      <p class="title mt-15px">
-                        {{ t("请求参数") }}
-                      </p>
-                      <div>
-                        <BkContainer
-                          v-if="!Object.keys(resource.openapi_schema || {}).length
-                            || resource.openapi_schema.none_schema"
-                          class="ag-kv-box pb-24px"
-                          :col="14"
-                          :margin="6"
-                        >
-                          <BkRow class="mb-0!">
-                            <BkCol :span="4">
-                              <label class="ag-key invisible">
-                                {{ t("请求方法") }}
-                              </label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ t('该资源无请求参数') }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-                        </BkContainer>
-                        <RequestParams
-                          v-else
-                          :detail="resource"
-                          readonly
-                        />
-                      </div>
+                      <template v-if="resource.kind !== 'ai'">
+                        <p class="title mt-15px">
+                          {{ t("请求参数") }}
+                        </p>
+                        <div>
+                          <BkContainer
+                            v-if="!Object.keys(resource.openapi_schema || {}).length
+                              || resource.openapi_schema.none_schema"
+                            class="ag-kv-box pb-24px"
+                            :col="14"
+                            :margin="6"
+                          >
+                            <BkRow class="mb-0!">
+                              <BkCol :span="4">
+                                <label class="ag-key invisible">
+                                  {{ t("请求方法") }}
+                                </label>
+                              </BkCol>
+                              <BkCol :span="10">
+                                <div class="ag-value">
+                                  {{ t('该资源无请求参数') }}
+                                </div>
+                              </BkCol>
+                            </BkRow>
+                          </BkContainer>
+                          <RequestParams
+                            v-else
+                            :detail="resource"
+                            readonly
+                          />
+                        </div>
+                      </template>
 
                       <template v-if="info.schema_version === '2.0'">
-                        <p class="title mt-15px">
-                          {{ t("后端配置") }}
+                        <p class="title mt-16px">
+                          {{ resource.kind === 'ai' ? t('模型服务配置') : t("后端配置") }}
                         </p>
                         <BkContainer
                           class="ag-kv-box"
@@ -314,88 +325,85 @@
                         >
                           <BkRow>
                             <BkCol :span="4">
-                              <label class="ag-key">{{ t("后端服务") }}:</label>
+                              <label class="ag-key">
+                                {{ resource.kind === 'ai' ? t('模型服务') : t("后端服务") }}:
+                              </label>
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{
-                                  resource.proxy?.backend?.name
-                                }}
+                                {{ resource.proxy?.backend?.name }}
                               </div>
                             </BkCol>
                           </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("请求方法") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                <BkTag :theme="getMethodsTheme(resource.proxy?.config?.method)">
-                                  {{
-                                    resource.proxy?.config?.method
-                                  }}
-                                </BkTag>
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("自定义超时时间") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{
-                                  resource.proxy?.config?.timeout
-                                }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("请求路径") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{
-                                  resource.proxy?.config?.path
-                                }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-                        </BkContainer>
-
-                        <p class="title mt-15px">
-                          {{ t("响应参数") }}
-                        </p>
-                        <div>
-                          <ResponseParams
-                            v-if="Object.keys(resource.openapi_schema?.responses || {}).length"
-                            :detail="resource"
-                            readonly
-                          />
-                          <BkContainer
-                            v-else
-                            class="ag-kv-box pb-24px"
-                            :col="14"
-                            :margin="6"
-                          >
-                            <BkRow class="mb-0!">
+                          <template v-if="resource.kind !== 'ai'">
+                            <BkRow>
                               <BkCol :span="4">
-                                <label class="ag-key invisible">
-                                  {{ t("响应参数") }}
-                                </label>
+                                <label class="ag-key">{{ t("请求方法") }}:</label>
                               </BkCol>
                               <BkCol :span="10">
                                 <div class="ag-value">
-                                  {{ t('该资源无响应参数') }}
+                                  <BkTag :theme="getMethodsTheme(resource.proxy?.config?.method)">
+                                    {{ resource.proxy?.config?.method }}
+                                  </BkTag>
                                 </div>
                               </BkCol>
                             </BkRow>
-                          </BkContainer>
-                        </div>
+
+                            <BkRow>
+                              <BkCol :span="4">
+                                <label class="ag-key">{{ t("自定义超时时间") }}:</label>
+                              </BkCol>
+                              <BkCol :span="10">
+                                <div class="ag-value">
+                                  {{ resource.proxy?.config?.timeout }}
+                                </div>
+                              </BkCol>
+                            </BkRow>
+
+                            <BkRow>
+                              <BkCol :span="4">
+                                <label class="ag-key">{{ t("请求路径") }}:</label>
+                              </BkCol>
+                              <BkCol :span="10">
+                                <div class="ag-value">
+                                  {{ resource.proxy?.config?.path }}
+                                </div>
+                              </BkCol>
+                            </BkRow>
+                          </template>
+                        </BkContainer>
+
+                        <template v-if="resource.kind !== 'ai'">
+                          <p class="title mt-15px">
+                            {{ t("响应参数") }}
+                          </p>
+                          <div>
+                            <ResponseParams
+                              v-if="Object.keys(resource.openapi_schema?.responses || {}).length"
+                              :detail="resource"
+                              readonly
+                            />
+                            <BkContainer
+                              v-else
+                              class="ag-kv-box pb-24px"
+                              :col="14"
+                              :margin="6"
+                            >
+                              <BkRow class="mb-0!">
+                                <BkCol :span="4">
+                                  <label class="ag-key invisible">
+                                    {{ t("响应参数") }}
+                                  </label>
+                                </BkCol>
+                                <BkCol :span="10">
+                                  <div class="ag-value">
+                                    {{ t('该资源无响应参数') }}
+                                  </div>
+                                </BkCol>
+                              </BkRow>
+                            </BkContainer>
+                          </div>
+                        </template>
                       </template>
 
                       <p class="title mt-15px">
@@ -458,6 +466,7 @@
 import { getGatewayLabels } from '@/services/source/gateway.ts';
 import { getVersionDetail } from '@/services/source/resource.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import { useGateway } from '@/stores';
 import { getMethodsTheme } from '@/utils';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import RequestParams from '../../components/request-params/Index.vue';
@@ -477,6 +486,7 @@ const emits = defineEmits<{ hidden: [void] }>();
 
 const { t } = useI18n();
 const route = useRoute();
+const gatewayStore = useGateway();
 
 const openedCollapsePanelNames = ref<string[]>(['fixed']);
 const info = ref<any>({});
@@ -542,6 +552,8 @@ useInfiniteScroll(
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
+
+const isAIGateway = computed(() => gatewayStore?.currentGateway?.kind === 2);
 
 // 筛选后资源列表
 const filteredResources = computed(() => {
