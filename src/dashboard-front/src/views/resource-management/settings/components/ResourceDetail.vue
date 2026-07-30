@@ -30,6 +30,30 @@
           {{ t('基本信息') }}
         </div>
         <div class="label-content-grid">
+          <div
+            v-if="isAIGateway"
+            class="label-content-group"
+          >
+            <div class="label">
+              {{ t('资源类型') }}
+            </div>
+            <div class="content">
+              <div
+                class="value-container"
+              >
+                <BkTag
+                  class="value-cls "
+                  :class="[{
+                    'color-#63656e!': formData.kind !== 'ai',
+                    'color-#3a84ff!': formData.kind === 'ai'
+                  }]"
+                  :theme="formData.kind === 'ai' ? 'info' : 'default'"
+                >
+                  {{ formData.kind === 'ai' ? t('模型代理 API') : t('普通 API') }}
+                </BkTag>
+              </div>
+            </div>
+          </div>
           <div class="label-content-group">
             <div class="label">
               {{ t('名称') }}
@@ -305,7 +329,12 @@
               </div>
             </div>
           </div>
-          <div class="label-content-group">
+          <div
+            class="label-content-group"
+            :class="[{
+              'stages': isAIGateway
+            }]"
+          >
             <div class="label">
               <span
                 v-bk-tooltips="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
@@ -359,7 +388,7 @@
 
       <div class="mb-30px">
         <div class="title">
-          {{ t('前端配置') }}
+          {{ t('请求配置') }}
         </div>
         <div class="label-content-grid">
           <div class="label-content-group">
@@ -374,7 +403,10 @@
                 <BkTag :theme="(METHOD_THEMES as any)[formData?.method]">
                   {{ formData?.method }}
                 </BkTag>
-                <span class="operate-btn">
+                <span
+                  v-if="formData.kind !== 'ai'"
+                  class="operate-btn"
+                >
                   <AgIcon
                     name="edit-line"
                     @click="frontMethodEdit = true"
@@ -403,7 +435,10 @@
               </div>
             </div>
           </div>
-          <div class="label-content-group">
+          <div
+            v-if="formData.kind !== 'ai'"
+            class="label-content-group"
+          >
             <div class="label">
               {{ t('启用 WebSocket') }}
             </div>
@@ -435,7 +470,12 @@
               </div>
             </div>
           </div>
-          <div class="label-content-group path">
+          <div
+            class="label-content-group"
+            :class="[{
+              'path': formData.kind !== 'ai'
+            }]"
+          >
             <div class="label">
               {{ t('请求路径') }}
             </div>
@@ -519,326 +559,441 @@
         </div>
       </div>
 
-      <div class="mb-30px">
-        <div class="title">
-          {{ t('请求参数') }}
-        </div>
-        <div>
-          <RequestParams
-            v-if="formData.openapi_schema?.parameters || formData.openapi_schema?.requestBody"
-            :detail="formData"
-            readonly
-          />
-          <span
-            v-else
-            class="text-12px"
-          >{{ t('该资源无请求参数') }}</span>
-        </div>
-      </div>
-
-      <div class="mb-30px">
-        <div class="title">
-          {{ t('后端配置') }}
-        </div>
-        <div class="label-content-grid">
-          <div class="label-content-group service">
-            <div class="label">
-              {{ t('服务') }}
-            </div>
-            <div class="content">
-              <div class="h-42px w-full pl-16px flex items-center border-b-1px border-b-solid border-b-#DCDEE5">
-                <div
-                  v-if="!backServicesEdit"
-                  class="value-container"
-                >
-                  <BkButton
-                    text
-                    class="color-#1768ef!"
-                    @click="() => handleServiceNameClick(servicesData)"
-                  >
-                    {{ servicesData.name }}
-                  </BkButton>
-                  <span class="operate-btn">
-                    <AgIcon
-                      name="edit-line"
-                      @click="backServicesEdit = true"
-                    />
-                  </span>
-                </div>
-                <div
-                  v-else
-                  class="edit-name"
-                >
-                  <BkSelect
-                    v-model="formData.backend.id"
-                    :input-search="false"
-                    :clearable="false"
-                    class="service"
-                    @change="() => getServiceData(true)"
-                  >
-                    <BkOption
-                      v-for="item in backendsList"
-                      :key="item.id"
-                      :value="item.id"
-                      :label="item.name"
-                    />
-                  </BkSelect>
-                </div>
+      <div>
+        <div
+          v-if="formData.kind === 'ai'"
+          class="mb-30px"
+        >
+          <div class="title">
+            {{ t('模型服务配置') }}
+          </div>
+          <div class="label-content-grid">
+            <div class="label-content-group service">
+              <div class="label">
+                {{ t('模型服务') }}
               </div>
-
-              <div class="p-16px">
-                <BkTable
-                  v-if="formData.id"
-                  :data="servicesData.config"
-                  :border="['outer']"
-                  @row-mouse-enter="backServicesEdit ? handleMouseEnter : ''"
-                  @row-mouse-leave="backServicesEdit ? handleMouseLeave : ''"
-                >
-                  <BkTableColumn
-                    :label="t('环境名称')"
-                    :resizable="false"
-                  >
-                    <template #default="{ data }">
-                      {{ data?.stage?.name }}
-                    </template>
-                  </BkTableColumn>
-                  <BkTableColumn
-                    :label="t('后端服务地址')"
-                    :resizable="false"
-                  >
-                    <template #default="{ data }">
-                      <div v-if="data?.hosts?.length">
-                        <div
-                          v-for="host in data.hosts"
-                          :key="host.host"
-                          class="lh-22px"
-                        >
-                          {{ host.scheme }}://{{ host.host }}
-                        </div>
-                      </div>
-                      <span v-else>--</span>
-                    </template>
-                  </BkTableColumn>
-                  <BkTableColumn
+              <div class="content">
+                <div class="h-42px w-full pl-16px flex items-center border-b-1px border-b-solid border-b-#dcdee5">
+                  <div
                     v-if="!backServicesEdit"
-                    :label="t('超时时间')"
-                    prop="timeout"
-                    :resizable="false"
+                    class="value-container"
                   >
-                    <template #default="{ data }">
-                      <span>{{ data?.timeout || '0' }}s</span>
-                    </template>
-                  </BkTableColumn>
-                  <BkTableColumn
+                    <BkButton
+                      text
+                      class="color-#1768ef!"
+                      @click="() => handleServiceNameClick(servicesData)"
+                    >
+                      {{ servicesData.name }}
+                    </BkButton>
+                    <span class="operate-btn">
+                      <AgIcon
+                        name="edit-line"
+                        @click="backServicesEdit = true"
+                      />
+                    </span>
+                  </div>
+                  <div
                     v-else
-                    :label="renderTimeOutLabel"
-                    prop="timeout"
-                    :resizable="false"
+                    class="edit-name"
                   >
-                    <template #default="{ data }">
-                      <span>{{ data?.timeout || '0' }}s</span>
-                      <BkTag
-                        v-if="data?.isCustom"
-                        theme="warning"
-                      >
-                        {{ t('自定义') }}
-                      </BkTag>
-                    </template>
-                  </BkTableColumn>
-                </BkTable>
-              </div>
-            </div>
-          </div>
-          <div class="label-content-group">
-            <div class="label">
-              {{ t('请求方法') }}
-            </div>
-            <div class="content">
-              <div
-                v-if="!backMethodEdit"
-                class="value-container"
-              >
-                <BkTag :theme="(METHOD_THEMES as any)[formData.backend?.config?.method]">
-                  {{ formData.backend?.config?.method }}
-                </BkTag>
-                <span class="operate-btn">
-                  <AgIcon
-                    name="edit-line"
-                    @click="backMethodEdit = true"
-                  />
-                </span>
-              </div>
+                    <BkSelect
+                      v-model="formData.backend.id"
+                      :input-search="false"
+                      :clearable="false"
+                      class="service"
+                      @change="() => getServiceData(true)"
+                    >
+                      <BkOption
+                        v-for="item in backendsList"
+                        :key="item.id"
+                        :value="item.id"
+                        :label="item.name"
+                      />
+                    </BkSelect>
+                  </div>
+                </div>
 
-              <div
-                v-else
-                class="edit-name"
-              >
-                <BkSelect
-                  v-model="formData.backend.config.method"
-                  :input-search="false"
-                  :clearable="false"
-                  class="method"
-                  @change="handleEditSave"
-                >
-                  <BkOption
-                    v-for="item in HTTP_METHODS"
-                    :key="item.id"
-                    :value="item.id"
-                    :label="item.name"
-                  />
-                </BkSelect>
-              </div>
-            </div>
-          </div>
-          <div class="label-content-group">
-            <div class="label">
-              {{ t('请求路径') }}
-            </div>
-            <div class="content">
-              <div
-                v-if="!backPathEdit"
-                class="value-container"
-              >
-                <span class="value-cls">{{ formData.backend?.config?.path }}</span>
-                <span class="operate-btn">
-                  <AgIcon
-                    name="edit-line"
-                    @click="backPathEdit = true"
-                  />
-                  <AgIcon
-                    name="copy-info"
-                    @click="() => copy(formData.backend?.config?.path)"
-                  />
-                </span>
-              </div>
-
-              <div
-                v-else
-                class="edit-name"
-              >
-                <BkPopover
-                  disable-outside-click
-                  trigger="click"
-                  :is-show="backPathEdit"
-                  :component-event-delay="300"
-                  :offset="16"
-                  placement="bottom"
-                  theme="light"
-                  width="740"
-                >
-                  <span class="value-cls">{{ formData.backend?.config?.path_copy }}</span>
-                  <template #content>
-                    <div class="p-4px">
-                      <BkForm
-                        :model="formData"
-                        form-type="vertical"
-                      >
-                        <BkFormItem
-                          :label="t('请求路径')"
-                          class="mb-8px"
-                        >
-                          <div class="flex items-center">
-                            <BkInput
-                              v-model="formData.backend.config.path_copy"
-                              :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
-                              clearable
-                            />
-                            <BkButton
-                              theme="primary"
-                              outline
-                              class="ml-10px"
-                              :disabled="!formData.backend.id || !formData.backend?.config?.path"
-                              @click="handleCheckPath"
-                            >
-                              {{ t('校验并查看地址') }}
-                            </BkButton>
-                          </div>
-                          <BkCheckbox
-                            v-model="formData.backend.config.match_subpath"
-                            disabled
-                          >
-                            {{ t('追加匹配的子路径') }}
-                          </BkCheckbox>
-                          <div class="text-12px! color-#979ba5!">
-                            {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
-                          </div>
-                          <div v-if="servicesCheckData?.length">
-                            <BkAlert
-                              theme="success"
-                              class="w-70%! max-w-700px! mt-10px!"
-                              :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
-                            />
-                            <BkTable
-                              class="w-70%! max-w-700px! mt-10px"
-                              :data="servicesCheckData"
-                              :border="['outer']"
-                            >
-                              <BkTableColumn
-                                :label="t('环境名称')"
-                              >
-                                <template #default="{ data }">
-                                  {{ data?.stage?.name }}
-                                </template>
-                              </BkTableColumn>
-                              <BkTableColumn
-                                :label="t('请求类型')"
-                              >
-                                <template #default="{ data }">
-                                  {{ formData.backend.config.method || data?.stage?.name }}
-                                </template>
-                              </BkTableColumn>
-                              <BkTableColumn
-                                :label="t('请求地址')"
-                              >
-                                <template #default="{ data }">
-                                  {{ data?.backend_urls[0] }}
-                                </template>
-                              </BkTableColumn>
-                            </BkTable>
-                          </div>
-                        </BkFormItem>
-                        <BkFormItem class="mb-0 text-right">
-                          <BkButton
-                            theme="primary"
-                            native-type="button"
-                            @click="backPathSubmit"
-                          >
-                            {{ t('确定') }}
-                          </BkButton>
-                          <BkButton
-                            class="ml-8px"
-                            @click="backPathCancel"
-                          >
-                            {{ t('取消') }}
-                          </BkButton>
-                        </BkFormItem>
-                      </BkForm>
-                    </div>
-                  </template>
-                </BkPopover>
+                <div class="p-16px">
+                  <BkTable
+                    v-if="formData.id"
+                    :data="servicesData.config"
+                    :border="['outer']"
+                    show-overflow-tooltip
+                    @row-mouse-enter="backServicesEdit ? handleMouseEnter : ''"
+                    @row-mouse-leave="backServicesEdit ? handleMouseLeave : ''"
+                  >
+                    <BkTableColumn
+                      :label="t('环境名称')"
+                      :resizable="false"
+                    >
+                      <template #default="{ data }">
+                        {{ data?.stage?.name }}
+                      </template>
+                    </BkTableColumn>
+                    <BkTableColumn
+                      label="Provider"
+                      :resizable="false"
+                    >
+                      <template #default="{ data }">
+                        {{ data?.provider || '--' }}
+                      </template>
+                    </BkTableColumn>
+                    <BkTableColumn
+                      label="Endpoint"
+                      :resizable="false"
+                    >
+                      <template #default="{ data }">
+                        {{ data?.endpoint || '--' }}
+                      </template>
+                    </BkTableColumn>
+                    <BkTableColumn
+                      label="Model"
+                      :resizable="false"
+                    >
+                      <template #default="{ data }">
+                        {{ data?.model || '--' }}
+                      </template>
+                    </BkTableColumn>
+                    <BkTableColumn
+                      :label="t('超时时间')"
+                      prop="timeout"
+                      :resizable="false"
+                    >
+                      <template #default="{ data }">
+                        <span>{{ data?.timeout || '0' }}s</span>
+                      </template>
+                    </BkTableColumn>
+                  </BkTable>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="mb-30px">
-        <div class="title">
-          {{ t('响应参数') }}
-        </div>
-        <div>
-          <ResponseParams
-            v-if="Object.keys(formData.openapi_schema?.responses || {}).length"
-            :detail="formData"
-            readonly
-          />
+        <template v-else>
           <div
-            v-else
-            class="text-12px"
+            class="mb-30px"
           >
-            {{ t('该资源无响应参数') }}
+            <div class="title">
+              {{ t('请求参数') }}
+            </div>
+            <div>
+              <RequestParams
+                v-if="formData.openapi_schema?.parameters || formData.openapi_schema?.requestBody"
+                :detail="formData"
+                readonly
+              />
+              <span
+                v-else
+                class="text-12px"
+              >{{ t('该资源无请求参数') }}</span>
+            </div>
           </div>
-        </div>
+
+          <div class="mb-30px">
+            <div class="title">
+              {{ t('后端配置') }}
+            </div>
+            <div class="label-content-grid">
+              <div class="label-content-group service">
+                <div class="label">
+                  {{ t('服务') }}
+                </div>
+                <div class="content">
+                  <div class="h-42px w-full pl-16px flex items-center border-b-1px border-b-solid border-b-#DCDEE5">
+                    <div
+                      v-if="!backServicesEdit"
+                      class="value-container"
+                    >
+                      <BkButton
+                        text
+                        class="color-#1768ef!"
+                        @click="() => handleServiceNameClick(servicesData)"
+                      >
+                        {{ servicesData.name }}
+                      </BkButton>
+                      <span class="operate-btn">
+                        <AgIcon
+                          name="edit-line"
+                          @click="backServicesEdit = true"
+                        />
+                      </span>
+                    </div>
+                    <div
+                      v-else
+                      class="edit-name"
+                    >
+                      <BkSelect
+                        v-model="formData.backend.id"
+                        :input-search="false"
+                        :clearable="false"
+                        class="service"
+                        @change="() => getServiceData(true)"
+                      >
+                        <BkOption
+                          v-for="item in backendsList"
+                          :key="item.id"
+                          :value="item.id"
+                          :label="item.name"
+                        />
+                      </BkSelect>
+                    </div>
+                  </div>
+
+                  <div class="p-16px">
+                    <BkTable
+                      v-if="formData.id"
+                      :data="servicesData.config"
+                      :border="['outer']"
+                      @row-mouse-enter="backServicesEdit ? handleMouseEnter : ''"
+                      @row-mouse-leave="backServicesEdit ? handleMouseLeave : ''"
+                    >
+                      <BkTableColumn
+                        :label="t('环境名称')"
+                        :resizable="false"
+                      >
+                        <template #default="{ data }">
+                          {{ data?.stage?.name }}
+                        </template>
+                      </BkTableColumn>
+                      <BkTableColumn
+                        :label="t('后端服务地址')"
+                        :resizable="false"
+                      >
+                        <template #default="{ data }">
+                          <div v-if="data?.hosts?.length">
+                            <div
+                              v-for="host in data.hosts"
+                              :key="host.host"
+                              class="lh-22px"
+                            >
+                              {{ host.scheme }}://{{ host.host }}
+                            </div>
+                          </div>
+                          <span v-else>--</span>
+                        </template>
+                      </BkTableColumn>
+                      <BkTableColumn
+                        v-if="!backServicesEdit"
+                        :label="t('超时时间')"
+                        prop="timeout"
+                        :resizable="false"
+                      >
+                        <template #default="{ data }">
+                          <span>{{ data?.timeout || '0' }}s</span>
+                        </template>
+                      </BkTableColumn>
+                      <BkTableColumn
+                        v-else
+                        :label="renderTimeOutLabel"
+                        prop="timeout"
+                        :resizable="false"
+                      >
+                        <template #default="{ data }">
+                          <span>{{ data?.timeout || '0' }}s</span>
+                          <BkTag
+                            v-if="data?.isCustom"
+                            theme="warning"
+                          >
+                            {{ t('自定义') }}
+                          </BkTag>
+                        </template>
+                      </BkTableColumn>
+                    </BkTable>
+                  </div>
+                </div>
+              </div>
+              <div class="label-content-group">
+                <div class="label">
+                  {{ t('请求方法') }}
+                </div>
+                <div class="content">
+                  <div
+                    v-if="!backMethodEdit"
+                    class="value-container"
+                  >
+                    <BkTag :theme="(METHOD_THEMES as any)[formData.backend?.config?.method]">
+                      {{ formData.backend?.config?.method }}
+                    </BkTag>
+                    <span class="operate-btn">
+                      <AgIcon
+                        name="edit-line"
+                        @click="backMethodEdit = true"
+                      />
+                    </span>
+                  </div>
+
+                  <div
+                    v-else
+                    class="edit-name"
+                  >
+                    <BkSelect
+                      v-model="formData.backend.config.method"
+                      :input-search="false"
+                      :clearable="false"
+                      class="method"
+                      @change="handleEditSave"
+                    >
+                      <BkOption
+                        v-for="item in HTTP_METHODS"
+                        :key="item.id"
+                        :value="item.id"
+                        :label="item.name"
+                      />
+                    </BkSelect>
+                  </div>
+                </div>
+              </div>
+              <div class="label-content-group">
+                <div class="label">
+                  {{ t('请求路径') }}
+                </div>
+                <div class="content">
+                  <div
+                    v-if="!backPathEdit"
+                    class="value-container"
+                  >
+                    <span class="value-cls">{{ formData.backend?.config?.path }}</span>
+                    <span class="operate-btn">
+                      <AgIcon
+                        name="edit-line"
+                        @click="backPathEdit = true"
+                      />
+                      <AgIcon
+                        name="copy-info"
+                        @click="() => copy(formData.backend?.config?.path)"
+                      />
+                    </span>
+                  </div>
+
+                  <div
+                    v-else
+                    class="edit-name"
+                  >
+                    <BkPopover
+                      disable-outside-click
+                      trigger="click"
+                      :is-show="backPathEdit"
+                      :component-event-delay="300"
+                      :offset="16"
+                      placement="bottom"
+                      theme="light"
+                      width="740"
+                    >
+                      <span class="value-cls">{{ formData.backend?.config?.path_copy }}</span>
+                      <template #content>
+                        <div class="p-4px">
+                          <BkForm
+                            :model="formData"
+                            form-type="vertical"
+                          >
+                            <BkFormItem
+                              :label="t('请求路径')"
+                              class="mb-8px"
+                            >
+                              <div class="flex items-center">
+                                <BkInput
+                                  v-model="formData.backend.config.path_copy"
+                                  :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
+                                  clearable
+                                />
+                                <BkButton
+                                  theme="primary"
+                                  outline
+                                  class="ml-10px"
+                                  :disabled="!formData.backend.id || !formData.backend?.config?.path"
+                                  @click="handleCheckPath"
+                                >
+                                  {{ t('校验并查看地址') }}
+                                </BkButton>
+                              </div>
+                              <BkCheckbox
+                                v-model="formData.backend.config.match_subpath"
+                                disabled
+                              >
+                                {{ t('追加匹配的子路径') }}
+                              </BkCheckbox>
+                              <div class="text-12px! color-#979ba5!">
+                                {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
+                              </div>
+                              <div v-if="servicesCheckData?.length">
+                                <BkAlert
+                                  theme="success"
+                                  class="w-70%! max-w-700px! mt-10px!"
+                                  :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
+                                />
+                                <BkTable
+                                  class="w-70%! max-w-700px! mt-10px"
+                                  :data="servicesCheckData"
+                                  :border="['outer']"
+                                >
+                                  <BkTableColumn
+                                    :label="t('环境名称')"
+                                  >
+                                    <template #default="{ data }">
+                                      {{ data?.stage?.name }}
+                                    </template>
+                                  </BkTableColumn>
+                                  <BkTableColumn
+                                    :label="t('请求类型')"
+                                  >
+                                    <template #default="{ data }">
+                                      {{ formData.backend.config.method || data?.stage?.name }}
+                                    </template>
+                                  </BkTableColumn>
+                                  <BkTableColumn
+                                    :label="t('请求地址')"
+                                  >
+                                    <template #default="{ data }">
+                                      {{ data?.backend_urls[0] }}
+                                    </template>
+                                  </BkTableColumn>
+                                </BkTable>
+                              </div>
+                            </BkFormItem>
+                            <BkFormItem class="mb-0 text-right">
+                              <BkButton
+                                theme="primary"
+                                native-type="button"
+                                @click="backPathSubmit"
+                              >
+                                {{ t('确定') }}
+                              </BkButton>
+                              <BkButton
+                                class="ml-8px"
+                                @click="backPathCancel"
+                              >
+                                {{ t('取消') }}
+                              </BkButton>
+                            </BkFormItem>
+                          </BkForm>
+                        </div>
+                      </template>
+                    </BkPopover>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-30px">
+            <div class="title">
+              {{ t('响应参数') }}
+            </div>
+            <div>
+              <ResponseParams
+                v-if="Object.keys(formData.openapi_schema?.responses || {}).length"
+                :detail="formData"
+                readonly
+              />
+              <div
+                v-else
+                class="text-12px"
+              >
+                {{ t('该资源无响应参数') }}
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -880,6 +1035,7 @@ import {
 import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/backend-services.ts';
 import { getGatewayLabels } from '@/services/source/gateway';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
 import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
 import { Input as BkInput, PopConfirm as BkPopConfirm, Message } from 'bkui-vue';
 import { copy } from '@/utils';
@@ -898,11 +1054,13 @@ type IBackendPathCheckItem = IExtractApiReturn<typeof backendsPathCheck>[number]
 interface IProps {
   resourceId?: number
   gatewayId?: number
+  curResource?: Record<string, any>
 }
 
 const {
   resourceId = 0,
   gatewayId = 0,
+  curResource = {},
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -962,6 +1120,8 @@ const truncatedDesc = computed(() => {
   }
   return formData.value.description;
 });
+
+const isAIGateway = computed(() => gatewayStore?.currentGateway?.kind === 2);
 
 // 资源详情
 const getResourceDetails = async () => {
@@ -1050,7 +1210,11 @@ const getServiceData = async (update?: boolean) => {
 
 // 获取服务列表数据
 const getBackendsList = async () => {
-  const res = await getBackendServiceList(gatewayId);
+  const params: IGatewaysBackendsListQuery = {};
+  if (isAIGateway.value) {
+    params.kind = curResource.kind;
+  }
+  const res = await getBackendServiceList(gatewayId, params);
   backendsList.value = res.results;
 };
 getBackendsList();
@@ -1476,8 +1640,7 @@ onUnmounted(() => {
     z-index: 9;
     width: 100%;
     padding-left: 24px;
-    background-color: #fff;
-    box-shadow: 0 -2px 4px 0 #0000000f;
+    background-color: #ffffff;
     transition: .3s;
   }
 }

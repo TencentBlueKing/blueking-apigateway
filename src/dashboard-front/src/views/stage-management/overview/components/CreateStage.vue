@@ -799,6 +799,65 @@
                 </template>
               </BkContainer>
             </template>
+
+            <template
+              v-for="modelServices of curStageData.aiBackends"
+              :key="modelServices.name"
+            >
+              <div
+                class="title truncate w-full"
+                :class="{ highlighted: modelServices.name === selectedBackendName }"
+              >
+                <span>{{ `${t('模型服务')}:` }}</span>
+                <span class="ml-8px">{{ modelServices.name }}</span>
+              </div>
+              <BkContainer
+                class="ag-kv-box"
+                :class="{ highlighted: modelServices.name === selectedBackendName }"
+                :col="14"
+              >
+                <BkRow>
+                  <BkCol :span="2">
+                    <label class="ag-key">Provider:</label>
+                  </BkCol>
+                  <BkCol :span="12">
+                    <div class="ag-value">
+                      {{ modelServices.config.provider }}
+                    </div>
+                  </BkCol>
+                </BkRow>
+                <BkRow>
+                  <BkCol :span="2">
+                    <label class="ag-key">Endpoint:</label>
+                  </BkCol>
+                  <BkCol :span="12">
+                    <div class="ag-value">
+                      {{ modelServices.config.endpoint }}
+                    </div>
+                  </BkCol>
+                </BkRow>
+                <BkRow>
+                  <BkCol :span="2">
+                    <label class="ag-key">Model:</label>
+                  </BkCol>
+                  <BkCol :span="12">
+                    <div class="ag-value">
+                      {{ modelServices.config.model }}
+                    </div>
+                  </BkCol>
+                </BkRow>
+                <BkRow>
+                  <BkCol :span="2">
+                    <label class="ag-key">{{ t("超时时间") }}:</label>
+                  </BkCol>
+                  <BkCol :span="12">
+                    <div class="ag-value">
+                      {{ `${modelServices.config.timeout}秒` }}
+                    </div>
+                  </BkCol>
+                </BkRow>
+              </BkContainer>
+            </template>
           </div>
 
           <div
