@@ -21,6 +21,8 @@ from datetime import timedelta
 
 import pytest
 from ddf import G
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
@@ -136,7 +138,7 @@ def test_reconcile_uses_auto_renewing_owned_lock(fake_gateway, mock_permission_l
         auto_renewal=True,
         strict=False,
     )
-    lock.acquire.assert_called_once_with(blocking=True, timeout=3)
+    lock.acquire.assert_called_once_with(blocking=True, timeout=5)
     lock.release.assert_called_once_with()
 
 
@@ -316,11 +318,19 @@ def test_reconcile_normalizes_desired_rows_and_preserves_unrelated_permissions(f
     assert (saas.grant_type, saas.handled_by) == ("initialize", "admin")
     assert (virtual.grant_type, virtual.handled_by) == ("initialize", "admin")
 
-    repeated = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
+    with CaptureQueriesContext(connection) as queries:
+        repeated = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
+
+    permission_updates = [
+        query["sql"]
+        for query in queries
+        if query["sql"].lstrip().upper().startswith("UPDATE") and "permission_app_resource" in query["sql"]
+    ]
     assert repeated.missing == frozenset()
     assert repeated.extra == frozenset()
     assert repeated.normalized == frozenset()
     assert repeated.unchanged == frozenset({("public", 1)})
+    assert permission_updates == []
 
 
 @pytest.mark.parametrize(

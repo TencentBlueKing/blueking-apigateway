@@ -163,7 +163,7 @@ class OAuth2BuiltinPermissionReconciler:
         )
         if not lock.acquire(
             blocking=True,
-            timeout=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+            timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
         ):
             raise LockTimeout("Timeout while waiting for OAuth2 built-in permission lock")
         try:
@@ -207,8 +207,8 @@ class OAuth2BuiltinPermissionReconciler:
         if apply:
             self._apply(
                 gateway,
-                desired=desired_frozen,
                 missing=missing,
+                to_normalize=normalized | missing,
                 extra=extra,
                 allow_delete=allow_delete and not blockers,
             )
@@ -364,8 +364,8 @@ class OAuth2BuiltinPermissionReconciler:
     def _apply(
         gateway: Gateway,
         *,
-        desired: frozenset[BuiltinPermission],
         missing: frozenset[BuiltinPermission],
+        to_normalize: frozenset[BuiltinPermission],
         extra: frozenset[BuiltinPermission],
         allow_delete: bool,
     ) -> None:
@@ -392,7 +392,7 @@ class OAuth2BuiltinPermissionReconciler:
 
             for app_code in OAUTH2_BUILTIN_APP_CODES:
                 resource_ids = [
-                    resource_id for desired_app_code, resource_id in desired if desired_app_code == app_code
+                    resource_id for normalized_app_code, resource_id in to_normalize if normalized_app_code == app_code
                 ]
                 if resource_ids:
                     AppResourcePermission.objects.filter(

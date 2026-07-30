@@ -297,6 +297,54 @@ class TestResourceListCreateApi:
 
 
 class TestResourceRetrieveUpdateDestroyApi:
+    @staticmethod
+    def _prepare_update_target(resource: Resource) -> None:
+        resource.name = "echo"
+        resource.method = "GET"
+        resource.path = "/echo/"
+        resource.match_subpath = False
+        resource.enable_websocket = False
+        resource.save(
+            update_fields=[
+                "name",
+                "method",
+                "path",
+                "match_subpath",
+                "enable_websocket",
+            ]
+        )
+
+        proxy = Proxy.objects.get(resource=resource)
+        proxy.config = {
+            "method": "GET",
+            "path": "/echo/",
+            "match_subpath": False,
+            "timeout": 30,
+        }
+        proxy.save(update_fields=["_config"])
+
+    @staticmethod
+    def _make_update_data(resource: Resource, auth_config: dict) -> dict:
+        proxy = Proxy.objects.get(resource=resource)
+        return {
+            "kind": resource.kind,
+            "name": resource.name,
+            "description": resource.description,
+            "description_en": resource.description_en,
+            "method": resource.method,
+            "path": resource.path,
+            "match_subpath": resource.match_subpath,
+            "enable_websocket": resource.enable_websocket,
+            "is_public": resource.is_public,
+            "allow_apply_permission": resource.allow_apply_permission,
+            "label_ids": list(ResourceLabel.objects.filter(resource=resource).values_list("api_label_id", flat=True)),
+            "backend": {
+                "id": proxy.backend_id,
+                "config": proxy.config,
+            },
+            "auth_config": auth_config,
+        }
+
     def test_create_and_update_ai_resource_without_standard_transport_fields(self, request_view, fake_gateway):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
@@ -500,6 +548,69 @@ class TestResourceRetrieveUpdateDestroyApi:
         fake_resource.refresh_from_db()
         assert fake_resource.oauth2_public_client_enabled is False
         assert fake_resource.oauth2_personal_client_enabled is True
+
+    def test_update_preserves_omitted_oauth2_client_switches_without_marking_changed(
+        self,
+        request_view,
+        fake_resource,
+    ):
+        self._prepare_update_target(fake_resource)
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.oauth2_personal_client_enabled = True
+        fake_resource.save(
+            update_fields=[
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
+        initial_updated_time = fake_resource.updated_time
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=self._make_update_data(
+                fake_resource,
+                {
+                    "auth_verified_required": True,
+                    "app_verified_required": True,
+                    "resource_perm_required": True,
+                },
+            ),
+        )
+
+        assert response.status_code == 204, response.json()
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
+        assert fake_resource.oauth2_personal_client_enabled is True
+        assert fake_resource.updated_time == initial_updated_time
+
+    def test_update_validates_omitted_oauth2_switches_against_existing_values(
+        self,
+        request_view,
+        fake_resource,
+    ):
+        self._prepare_update_target(fake_resource)
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.save(update_fields=["oauth2_public_client_enabled"])
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=self._make_update_data(
+                fake_resource,
+                {
+                    "auth_verified_required": False,
+                    "app_verified_required": True,
+                    "resource_perm_required": True,
+                },
+            ),
+        )
+
+        assert response.status_code == 400
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
 
     def test_destroy(self, request_view, fake_resource):
         fake_gateway = fake_resource.gateway

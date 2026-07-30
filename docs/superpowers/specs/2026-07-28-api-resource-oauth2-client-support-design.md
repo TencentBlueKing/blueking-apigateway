@@ -149,13 +149,17 @@ The API contract and persistence ownership are intentionally different:
 Rules:
 
 1. Both OAuth2 fields are independent booleans with a default of `false`.
-2. If either OAuth2 field is `true`, `auth_verified_required` must be `true`.
-3. Backend APIs validate the resulting desired state and reject an invalid
+2. For backward compatibility, a Web update of an existing resource preserves
+   the current `core_resource` value when either field is omitted. An explicit
+   `false` still disables the corresponding client. Resource creation and
+   OpenAPI import continue to default omitted fields to `false`.
+3. If either OAuth2 field is `true`, `auth_verified_required` must be `true`.
+4. Backend APIs validate the resulting desired state and reject an invalid
    combination. They do not silently publish OAuth2 with user authentication
    disabled.
-4. Historical resource versions that do not contain the fields behave as
+5. Historical resource versions that do not contain the fields behave as
    though both values are `false`.
-5. `app_verified_required` and `resource_perm_required` do not control whether
+6. `app_verified_required` and `resource_perm_required` do not control whether
    OAuth2 is available. They only determine whether the accepted OAuth2 app
    code subsequently needs a synchronized resource permission.
 
@@ -341,6 +345,33 @@ older Route may still need the older permission.
 Environment revoke, gateway unbinding, and successful retry use the same final
 reconciliation entry point after their data-plane state has converged.
 
+### 11.3 Migration-time data-plane binding
+
+A gateway may temporarily have multiple active data-plane bindings during a
+data-plane migration. The binding management command performs a targeted
+command-line synchronization using
+`NO_NEED_REPORT_EVENT_PUBLISH_ID`; that synchronization does not persist a
+`ReleaseHistory` for the new release and data-plane combination.
+
+The resulting `missing_history` is an accepted conservative state:
+
+- It does not fail permission preparation or configuration publication.
+- It does not prevent an existing data plane from continuing to serve traffic.
+- Missing desired permissions are still added and existing desired permissions
+  are still normalized.
+- It only prevents deletion of extra built-in permissions for the gateway,
+  leaving a temporary safe permission superset.
+
+A later normal Dashboard publication creates per-data-plane publication
+histories. Deletion becomes eligible again after every relevant release and
+active data-plane combination has converged successfully. If the gateway has
+multiple released environments, each unresolved environment must converge.
+Removing the temporary data-plane binding also removes that data plane from the
+convergence requirement.
+
+This exception is intended for infrequent migration operations, not as a
+reason to weaken the no-convergence-evidence/no-deletion invariant.
+
 ## 12. Permission Reconciler Boundary
 
 Dashboard owns one idempotent domain service with two public operations:
@@ -382,6 +413,10 @@ implementing independent permission calculations.
 - An unresolved publication in any environment blocks deletion for the whole
   gateway; this prevents another environment's successful callback from
   deleting permissions still needed by the unresolved environment.
+- A migration-time targeted data-plane synchronization without persisted
+  publication history is treated as unresolved. It does not block publication
+  or traffic; it only delays deletion until a normal publication succeeds or
+  the temporary binding is removed.
 - Concurrent publication and retry tasks serialize through the gateway-scoped
   lock and then recalculate from current state.
 
@@ -471,6 +506,8 @@ Exports include both values explicitly. Imports default missing values to
 - Application authentication and resource permission conditions are enforced.
 - Preparation only adds.
 - Failed and partial multi-data-plane publications never delete.
+- A migration binding with missing publication history remains add-only and
+  does not fail publication.
 - Full success converges to the gateway-wide union.
 - Repeated and concurrent reconciliation is idempotent and does not over-delete.
 - Revoke and the management command converge the final set.
