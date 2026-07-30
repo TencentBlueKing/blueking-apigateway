@@ -37,9 +37,11 @@ class TestResourceVersionHandler:
             fake_resource.id,
             {
                 "skip_auth_verification": False,
-                "auth_verified_required": False,
+                "auth_verified_required": True,
                 "app_verified_required": True,
                 "resource_perm_required": True,
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": False,
             },
         )
 
@@ -52,9 +54,11 @@ class TestResourceVersionHandler:
         assert data[0]["contexts"]["resource_auth"]["config"] == json.dumps(
             {
                 "skip_auth_verification": False,
-                "auth_verified_required": False,
+                "auth_verified_required": True,
                 "app_verified_required": True,
                 "resource_perm_required": True,
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": False,
             },
             separators=(",", ":"),
         )

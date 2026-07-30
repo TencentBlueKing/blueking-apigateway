@@ -19,6 +19,10 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
+from apigateway.apps.data_plane.constants import (
+    get_oauth2_resource_data_planes_compatibility_error,
+    resource_version_uses_oauth2,
+)
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
     AuditWriter,
     parse_comma_separated_names,
@@ -27,6 +31,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.controller.tasks.syncing import rolling_update_release
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, Stage
@@ -87,6 +92,8 @@ class Command(BaseCommand):
             self.stdout.write(f"[DRY RUN] would bind gateway={gateway.name} to data_plane={data_plane.name}")
             return "success"
 
+        self._validate_oauth2_compatibility(gateway, data_plane)
+
         GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
             gateway=gateway,
             data_plane=data_plane,
@@ -122,6 +129,21 @@ class Command(BaseCommand):
                 # NOTE: should not mark as failed, it ok for some stage has no release
                 continue
 
+            try:
+                OAuth2BuiltinPermissionReconciler().prepare_publish(
+                    gateway,
+                    stage,
+                    release.resource_version,
+                )
+            except Exception:
+                logger.exception(
+                    "failed to prepare OAuth2 built-in permissions: gateway=%s, stage=%s",
+                    gateway.name,
+                    stage.name,
+                )
+                publish_to_all_stages_success = False
+                break
+
             # NOTE: publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID, would not change the stage status
             # only update release.updated_time and release.updated_by
             ok = rolling_update_release(
@@ -142,6 +164,13 @@ class Command(BaseCommand):
                 gateway_id=gateway.id,
                 data_plane_id=data_plane.id,
             )
+            try:
+                OAuth2BuiltinPermissionReconciler().reconcile_gateway(gateway)
+            except Exception:
+                logger.exception(
+                    "failed to reconcile OAuth2 built-in permissions after binding rollback: gateway=%s",
+                    gateway.name,
+                )
             audit_writer.write(
                 result="failed",
                 reason="publish_to_all_stages_failed",
@@ -154,6 +183,24 @@ class Command(BaseCommand):
             **audit_log_common_args,
         )
         return "success"
+
+    @staticmethod
+    def _validate_oauth2_compatibility(gateway: Gateway, data_plane: DataPlane) -> None:
+        if not gateway.is_active:
+            return
+
+        releases = Release.objects.filter(
+            gateway=gateway,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).select_related("resource_version")
+        if not any(resource_version_uses_oauth2(release.resource_version) for release in releases):
+            return
+
+        compatibility_error = get_oauth2_resource_data_planes_compatibility_error(
+            [(data_plane.name, data_plane.apisix_version)]
+        )
+        if compatibility_error:
+            raise CommandError(compatibility_error)
 
     def handle(self, *args, **options) -> None:
         gateway_names = parse_gateway_names(options["gateway_names"], options["gateway_names_file"])

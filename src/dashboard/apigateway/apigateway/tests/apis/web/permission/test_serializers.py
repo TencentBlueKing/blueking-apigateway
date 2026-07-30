@@ -78,6 +78,13 @@ class TestAppPermissionInputSLZ:
             with pytest.raises(ValidationError):
                 slz.is_valid(raise_exception=True)
 
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_reject_oauth2_builtin_app_code(self, app_code):
+        field = serializers.AppPermissionInputSLZ().fields["bk_app_code"]
+
+        with pytest.raises(ValidationError):
+            field.run_validation(app_code)
+
 
 class TestAppPermissionOutputSLZ(TestCase):
     def test_to_representation(self):

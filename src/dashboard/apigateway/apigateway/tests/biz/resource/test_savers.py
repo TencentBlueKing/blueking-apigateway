@@ -80,6 +80,31 @@ class TestResourceSavers:
             == 2
         )
 
+    def test_save_oauth2_client_switches_on_resource_only(self, fake_resource, fake_resource_data):
+        resource_data = fake_resource_data.model_copy(
+            update={
+                "resource": fake_resource,
+                "auth_config": ResourceAuthConfig(
+                    oauth2_public_client_enabled=True,
+                    oauth2_personal_client_enabled=True,
+                ),
+            },
+            deep=True,
+        )
+
+        ResourcesSaver(fake_resource.gateway, [resource_data], "admin").save()
+
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
+        assert fake_resource.oauth2_personal_client_enabled is True
+        context = Context.objects.get(
+            scope_id=fake_resource.id,
+            scope_type=ContextScopeTypeEnum.RESOURCE.value,
+            type=ContextTypeEnum.RESOURCE_AUTH.value,
+        )
+        assert "oauth2_public_client_enabled" not in context.config
+        assert "oauth2_personal_client_enabled" not in context.config
+
     # FIXME: should check the error here
     # def test_save__error(self, fake_resource, fake_resource_data):
     #     resource_data_list = [

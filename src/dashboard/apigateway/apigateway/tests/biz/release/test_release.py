@@ -16,14 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 from unittest.mock import call
 
 import pytest
 from ddf import G
 
 import apigateway.biz.release as release_biz
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.release.gateway_releaser import ReleaseError, release_gateway
+from apigateway.biz.release.gateway_releaser import GatewayReleaser, ReleaseError, release_gateway
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -35,6 +37,154 @@ from apigateway.tests.utils.testing import dummy_time
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
+
+
+class TestGatewayReleaser:
+    @pytest.fixture(autouse=True)
+    def mock_oauth2_reconciler(self, mocker):
+        return mocker.patch("apigateway.biz.release.gateway_releaser.OAuth2BuiltinPermissionReconciler").return_value
+
+    def test_pre_release_prepares_oauth2_permissions_after_connection_checks(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=[data_plane])
+        mocker.patch.object(releaser, "_validate")
+        calls = mocker.Mock()
+        calls.attach_mock(
+            mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection"),
+            "check_connection",
+        )
+        calls.attach_mock(mock_oauth2_reconciler.prepare_publish, "prepare_publish")
+
+        releaser._pre_release()
+
+        assert calls.mock_calls == [
+            call.check_connection(mocker.ANY, data_plane),
+            call.prepare_publish(fake_gateway, fake_stage, fake_resource_version),
+        ]
+
+    def test_pre_release_records_failure_when_oauth2_permission_preparation_fails(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=[data_plane])
+        mocker.patch.object(releaser, "_validate")
+        mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+        report_failure = mocker.patch(
+            "apigateway.biz.release.gateway_releaser.PublishEventReporter.report_config_validate_failure"
+        )
+        do_release = mocker.patch.object(releaser, "_do_release")
+
+        with pytest.raises(ReleaseError, match="prepare OAuth2 built-in permissions failed"):
+            releaser.release()
+
+        history = ReleaseHistory.objects.get(gateway=fake_gateway)
+        report_failure.assert_called_once_with(
+            history,
+            "prepare OAuth2 built-in permissions failed: redis unavailable",
+        )
+        do_release.assert_not_called()
+
+    def test_release_preserves_permission_preparation_error_when_data_plane_binding_disappears(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", side_effect=[[data_plane], []])
+        mocker.patch.object(releaser, "_validate")
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+
+        with pytest.raises(ReleaseError, match="prepare OAuth2 built-in permissions failed") as exc_info:
+            releaser.release()
+
+        assert isinstance(exc_info.value.__cause__, RuntimeError)
+        assert not ReleaseHistory.objects.filter(gateway=fake_gateway).exists()
+
+    @pytest.mark.parametrize(
+        "oauth2_config",
+        [
+            {"oauth2_public_client_enabled": True},
+            {"oauth2_personal_client_enabled": True},
+        ],
+    )
+    def test_pre_release_rejects_incompatible_oauth2_data_plane(
+        self,
+        fake_gateway,
+        fake_stage,
+        mocker,
+        oauth2_config,
+    ):
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            _data=json.dumps(
+                [
+                    {
+                        "contexts": {
+                            "resource_auth": {
+                                "config": json.dumps(oauth2_config),
+                            }
+                        }
+                    }
+                ]
+            ),
+        )
+        data_planes = [
+            G(DataPlane, name="apisix-3-13", apisix_version="3.13"),
+            G(DataPlane, name="apisix-3-16", apisix_version="3.16"),
+        ]
+        releaser = GatewayReleaser(fake_gateway, fake_stage, resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=data_planes)
+        mocker.patch.object(releaser, "_validate")
+        check_connection = mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+
+        with pytest.raises(ReleaseError, match=r"apisix-3-13 \(3\.13\)"):
+            releaser._pre_release()
+
+        check_connection.assert_not_called()
+
+    def test_pre_release_keeps_resources_without_oauth2_unchanged(
+        self,
+        fake_gateway,
+        fake_stage,
+        mocker,
+    ):
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            _data=json.dumps(
+                [
+                    {
+                        "contexts": {
+                            "resource_auth": {
+                                "config": json.dumps(
+                                    {
+                                        "oauth2_public_client_enabled": False,
+                                        "oauth2_personal_client_enabled": False,
+                                    }
+                                ),
+                            }
+                        }
+                    }
+                ]
+            ),
+        )
+        data_planes = [
+            G(DataPlane, name="apisix-3-13", apisix_version="3.13"),
+            G(DataPlane, name="apisix-3-16", apisix_version="3.16"),
+        ]
+        releaser = GatewayReleaser(fake_gateway, fake_stage, resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=data_planes)
+        mocker.patch.object(releaser, "_validate")
+        check_connection = mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+
+        releaser._pre_release()
+
+        assert check_connection.call_count == 2
 
 
 class TestReleaseHandler:

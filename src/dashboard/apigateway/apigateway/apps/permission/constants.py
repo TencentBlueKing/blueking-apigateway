@@ -69,6 +69,8 @@ class GrantTypeEnum(StructuredEnum):
     AUTO_RENEW = EnumField("auto_renew", label=_("自动续期"))
     # 资源权限同步自按网关权限
     SYNC = EnumField("sync", label=_("按网关授权同步"))
+    # OAuth2 public/personal 内置应用授权
+    OAUTH2_BUILTIN = EnumField("oauth2_builtin", label=_("OAuth2 内置应用授权"))
 
 
 class GrantDimensionEnum(StructuredEnum):
@@ -97,3 +99,13 @@ RENEWABLE_EXPIRE_DAYS = 360
 
 # 虚拟应用前缀
 VIRTUAL_APP_CODE_PREFIX = "v_mcp_"
+
+# OAuth2 public/personal 内置应用，其 API 权限由系统管理
+OAUTH2_PUBLIC_CLIENT_APP_CODE = "public"
+OAUTH2_PERSONAL_CLIENT_APP_CODE = "personal"
+OAUTH2_BUILTIN_APP_CODES = frozenset(
+    {
+        OAUTH2_PUBLIC_CLIENT_APP_CODE,
+        OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    }
+)

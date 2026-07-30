@@ -46,6 +46,14 @@ class TestResourceHandler:
         ResourceHandler().save_resource_labels(fake_gateway, fake_resource, [label_2.id])
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
 
+    def test_get_default_auth_config(self):
+        assert ResourceHandler.get_default_auth_config() == {
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+        }
+
     def test_save_auth_config(self):
         resource = G(Resource)
         data = [
@@ -54,6 +62,8 @@ class TestResourceHandler:
                     "auth_verified_required": True,
                     "app_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
                 "expected": {
                     "skip_auth_verification": False,
@@ -61,6 +71,8 @@ class TestResourceHandler:
                     "app_verified_required": True,
                     "resource_perm_required": True,
                 },
+                "expected_public": True,
+                "expected_personal": False,
             },
             {
                 "config": {
@@ -75,11 +87,16 @@ class TestResourceHandler:
                     "app_verified_required": True,
                     "resource_perm_required": True,
                 },
+                "expected_public": True,
+                "expected_personal": False,
             },
         ]
         for test in data:
             ResourceHandler.save_auth_config(resource.id, test["config"])
             assert ResourceAuthContext().get_config(resource.id) == test["expected"]
+            resource.refresh_from_db()
+            assert resource.oauth2_public_client_enabled is test["expected_public"]
+            assert resource.oauth2_personal_client_enabled is test["expected_personal"]
 
         # test skip_auth_verification=True in database
         ResourceHandler.save_auth_config(
@@ -104,6 +121,8 @@ class TestResourceHandler:
                     "app_verified_required": True,
                     "resource_perm_required": True,
                 },
+                "expected_public": True,
+                "expected_personal": False,
             },
             {
                 "config": {
@@ -118,11 +137,16 @@ class TestResourceHandler:
                     "app_verified_required": False,
                     "resource_perm_required": True,
                 },
+                "expected_public": True,
+                "expected_personal": False,
             },
         ]
         for test in data:
             ResourceHandler.save_auth_config(resource.id, test["config"])
             assert ResourceAuthContext().get_config(resource.id) == test["expected"]
+            resource.refresh_from_db()
+            assert resource.oauth2_public_client_enabled is test["expected_public"]
+            assert resource.oauth2_personal_client_enabled is test["expected_personal"]
 
     def test_filter_by_resource_filter_condition(self, fake_gateway):
         resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test")

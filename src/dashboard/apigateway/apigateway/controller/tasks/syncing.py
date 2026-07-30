@@ -25,6 +25,7 @@ from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.core.constants import (
     PublishSourceEnum,
     StageStatusEnum,
@@ -147,6 +148,14 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
 
         PublishEventReporter.report_distribute_config_success(release_history)
         procedure_logger.info("distribute succeeded")
+        try:
+            OAuth2BuiltinPermissionReconciler().reconcile_gateway(release.gateway)
+        except Exception:
+            logger.exception(
+                "reconcile OAuth2 built-in permissions failed after rolling update: gateway_id=%s, publish_id=%s",
+                release.gateway_id,
+                publish_id,
+            )
 
     return is_success
 
@@ -212,6 +221,14 @@ def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
         stage = release.stage
         stage.status = StageStatusEnum.INACTIVE.value
         stage.save()
+        try:
+            OAuth2BuiltinPermissionReconciler().reconcile_gateway(release.gateway)
+        except Exception:
+            logger.exception(
+                "reconcile OAuth2 built-in permissions failed after revoke: gateway_id=%s, publish_id=%s",
+                release.gateway_id,
+                publish_id,
+            )
 
     return is_success
 

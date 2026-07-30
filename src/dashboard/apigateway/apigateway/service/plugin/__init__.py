@@ -37,6 +37,7 @@ from .compatibility import (
     AI_COMPATIBLE_PLUGIN_CODES,
     AI_ONLY_PLUGIN_CODES,
     CONTROLLER_MANAGED_PLUGIN_CODES,
+    OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES,
     is_plugin_compatible_with_resource_kind,
 )
 from .convertor import (
@@ -65,6 +66,7 @@ __all__ = [
     "AI_COMPATIBLE_PLUGIN_CODES",
     "AI_ONLY_PLUGIN_CODES",
     "CONTROLLER_MANAGED_PLUGIN_CODES",
+    "OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES",
     # Enum
     # class
     "AIProxyConvertor",

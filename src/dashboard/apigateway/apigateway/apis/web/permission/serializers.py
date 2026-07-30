@@ -29,7 +29,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.permission import ResourcePermissionHandler
-from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
+from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator, UserManagedBKAppCodeValidator
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
@@ -148,7 +148,12 @@ class AppPermissionDeleteInputSLZ(serializers.Serializer):
 
 
 class AppPermissionInputSLZ(serializers.Serializer):
-    bk_app_code = serializers.CharField(label="", max_length=32, required=True, validators=[BKAppCodeValidator()])
+    bk_app_code = serializers.CharField(
+        label="",
+        max_length=32,
+        required=True,
+        validators=[BKAppCodeValidator(), UserManagedBKAppCodeValidator()],
+    )
     expire_days = serializers.IntegerField(allow_null=True, required=True, help_text="过期天数")
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),

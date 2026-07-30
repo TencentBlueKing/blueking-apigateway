@@ -309,6 +309,8 @@ class BaseParser:
             "auth_verified_required": auth_config.get("userVerifiedRequired", True),
             "app_verified_required": auth_config.get("appVerifiedRequired", True),
             "resource_perm_required": auth_config.get("resourcePermissionRequired", True),
+            "oauth2_public_client_enabled": auth_config.get("oauth2PublicClientEnabled", False),
+            "oauth2_personal_client_enabled": auth_config.get("oauth2PersonalClientEnabled", False),
         }
 
         if config["app_verified_required"] is False:

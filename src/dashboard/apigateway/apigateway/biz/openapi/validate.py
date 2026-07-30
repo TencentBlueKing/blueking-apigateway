@@ -457,7 +457,10 @@ class ResourceImportValidator:
             incompatible_plugin_codes = [
                 config.type
                 for config in resource_data.plugin_configs
-                if not is_plugin_compatible_with_resource_kind(config.type, resource_data.kind)
+                if not is_plugin_compatible_with_resource_kind(
+                    config.type,
+                    resource_data.kind,
+                )
             ]
             if not incompatible_plugin_codes:
                 continue

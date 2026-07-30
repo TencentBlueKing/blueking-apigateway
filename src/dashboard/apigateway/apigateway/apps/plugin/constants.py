@@ -49,6 +49,7 @@ class PluginTypeCodeEnum(StructuredEnum):
 
     BK_OAUTH2_PROTECTED_RESOURCE = EnumField("bk-oauth2-protected-resource", label=_("OAuth2 保护资源"))
     BK_OAUTH2_VERIFY = EnumField("bk-oauth2-verify", label=_("OAuth2 验证"))
+    BK_OAUTH2_APPCODE_VALIDATE = EnumField("bk-oauth2-appcode-validate", label=_("OAuth2 应用编码验证"))
     BK_OAUTH2_AUDIENCE_VALIDATE = EnumField("bk-oauth2-audience-validate", label=_("OAuth2 受众验证"))
 
     URI_BLOCKER = EnumField("uri-blocker", label=_("URI 阻断"))

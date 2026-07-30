@@ -16,7 +16,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from apigateway.controller.tasks.syncing import distribute_global_resources
+from unittest.mock import Mock
+
+from apigateway.controller.constants import DELETE_PUBLISH_ID
+from apigateway.controller.tasks.syncing import (
+    distribute_global_resources,
+    revoke_release,
+    rolling_update_release,
+)
+from apigateway.core.constants import PublishSourceEnum
 
 
 class TestDistributeGlobalResources:
@@ -81,3 +89,90 @@ class TestDistributeGlobalResources:
 
         assert result is False
         distributor_cls.assert_not_called()
+
+
+def test_rolling_update_success_reconciles_gateway(mocker):
+    gateway = Mock(id=1)
+    stage = Mock()
+    release = Mock(id=2, gateway=gateway, stage=stage)
+    history = Mock(created_by="admin", source=PublishSourceEnum.GATEWAY_ENABLE.value)
+    data_plane = Mock(id=3, name="plane-1")
+    mocker.patch("apigateway.controller.tasks.syncing.Release.objects.get", return_value=release)
+    mocker.patch(
+        "apigateway.controller.tasks.syncing.ReleaseHistory.objects.get",
+        return_value=history,
+    )
+    mocker.patch(
+        "apigateway.controller.tasks.syncing.DataPlane.objects.get",
+        return_value=data_plane,
+    )
+    mocker.patch("apigateway.controller.tasks.syncing.wait_another_release_done")
+    distributor = mocker.patch("apigateway.controller.tasks.syncing.GatewayResourceDistributor").return_value
+    distributor.distribute.return_value = (True, "")
+    mocker.patch("apigateway.controller.tasks.syncing.PublishEventReporter")
+    reconcile = mocker.patch(
+        "apigateway.controller.tasks.syncing.OAuth2BuiltinPermissionReconciler"
+    ).return_value.reconcile_gateway
+
+    result = rolling_update_release(
+        gateway_id=1,
+        publish_id=4,
+        release_id=2,
+        data_plane_id=3,
+    )
+
+    assert result is True
+    reconcile.assert_called_once_with(gateway)
+
+
+def test_revoke_success_reconciles_after_stage_becomes_inactive(mocker):
+    gateway = Mock(id=1)
+    stage = Mock()
+    release = Mock(id=2, gateway=gateway, stage=stage)
+    history = Mock(pk=4)
+    data_plane = Mock(id=3, name="plane-1")
+    mocker.patch("apigateway.controller.tasks.syncing.Release.objects.get", return_value=release)
+    mocker.patch(
+        "apigateway.controller.tasks.syncing.ReleaseHistory.objects.get",
+        return_value=history,
+    )
+    mocker.patch(
+        "apigateway.controller.tasks.syncing.DataPlane.objects.get",
+        return_value=data_plane,
+    )
+    mocker.patch("apigateway.controller.tasks.syncing.wait_another_release_done")
+    distributor = mocker.patch("apigateway.controller.tasks.syncing.GatewayResourceDistributor").return_value
+    distributor.revoke.return_value = (True, "")
+    mocker.patch("apigateway.controller.tasks.syncing.PublishEventReporter")
+    reconcile = mocker.patch(
+        "apigateway.controller.tasks.syncing.OAuth2BuiltinPermissionReconciler"
+    ).return_value.reconcile_gateway
+
+    result = revoke_release(release_id=2, publish_id=4, data_plane_id=3)
+
+    assert result is True
+    stage.save.assert_called_once()
+    reconcile.assert_called_once_with(gateway)
+
+
+def test_delete_revoke_does_not_reconcile_before_release_is_deleted(mocker):
+    gateway = Mock(id=1)
+    release = Mock(id=2, gateway=gateway)
+    data_plane = Mock(id=3, name="plane-1")
+    mocker.patch("apigateway.controller.tasks.syncing.Release.objects.get", return_value=release)
+    mocker.patch(
+        "apigateway.controller.tasks.syncing.DataPlane.objects.get",
+        return_value=data_plane,
+    )
+    distributor = mocker.patch("apigateway.controller.tasks.syncing.GatewayResourceDistributor").return_value
+    distributor.revoke.return_value = (True, "")
+    reconciler = mocker.patch("apigateway.controller.tasks.syncing.OAuth2BuiltinPermissionReconciler")
+
+    result = revoke_release(
+        release_id=2,
+        publish_id=DELETE_PUBLISH_ID,
+        data_plane_id=3,
+    )
+
+    assert result is True
+    reconciler.assert_not_called()

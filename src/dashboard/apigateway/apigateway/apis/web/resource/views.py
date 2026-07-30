@@ -207,7 +207,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             if input_data[field] != current_resource_data[field]:
                 return True
 
-        current_auth_config = ResourceAuthContext().get_config(instance.id)
+        current_auth_config = ResourceAuthContext().get_config_for_resource(instance)
         input_data["auth_config"]["skip_auth_verification"] = False
         if input_data["auth_config"] != current_auth_config:
             return True
@@ -238,7 +238,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         slz = ResourceOutputSLZ(
             instance,
             context={
-                "auth_config": ResourceAuthContext().get_config(instance.id),
+                "auth_config": ResourceAuthContext().get_config_for_resource(instance),
                 "labels": get_resource_id_to_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
                 "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),

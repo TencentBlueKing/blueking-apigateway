@@ -38,6 +38,13 @@ AI_INCOMPATIBLE_PLUGIN_CODES = (
     "bk-legacy-invalid-params",
 )
 
+OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES = (
+    "bk-oauth2-protected-resource",
+    "bk-oauth2-verify",
+    "bk-oauth2-appcode-validate",
+    "bk-oauth2-audience-validate",
+)
+
 
 def _create_ai_only_plugin_type(plugin_type_code):
     return G(
@@ -318,6 +325,46 @@ class TestPluginConfigCreateApi:
             scope_id=fake_resource.id,
         ).exists()
 
+    @pytest.mark.parametrize("plugin_type_code", OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES)
+    def test_create_rejects_system_managed_oauth2_plugin_for_resource(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        plugin_type_code,
+    ):
+        plugin_type = G(
+            PluginType,
+            code=plugin_type_code,
+            is_public=True,
+            scope=PluginTypeScopeEnum.RESOURCE.value,
+        )
+
+        response = request_view(
+            "POST",
+            "plugins.config.create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+                "code": plugin_type.code,
+            },
+            data={
+                "type_id": plugin_type.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({}),
+            },
+        )
+
+        assert response.status_code == 400
+        assert not PluginBinding.objects.filter(
+            gateway=fake_gateway,
+            scope_type="resource",
+            scope_id=fake_resource.id,
+        ).exists()
+
     @pytest.mark.parametrize("plugin_type_code", [*AI_ONLY_PLUGIN_CODES, "ai-proxy", "ai-proxy-multi"])
     def test_create_allows_plugin_for_stage(
         self,
@@ -511,6 +558,42 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.parametrize("plugin_type_code", OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES)
+    def test_update_rejects_system_managed_oauth2_plugin_for_resource(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        fake_plugin_bk_header_rewrite,
+        fake_plugin_type_bk_header_rewrite,
+        fake_plugin_resource_bk_header_rewrite_binding,
+        plugin_type_code,
+    ):
+        fake_plugin_type_bk_header_rewrite.code = plugin_type_code
+        fake_plugin_type_bk_header_rewrite.save(update_fields=["code"])
+
+        response = request_view(
+            "PUT",
+            "plugins.config.details",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+                "code": plugin_type_code,
+                "id": fake_plugin_bk_header_rewrite.id,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({"set": {"foo": "bar"}, "remove": []}),
+            },
+        )
+
+        assert response.status_code == 400
+        assert "不兼容" in str(response.json())
 
     def test_delete(
         self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, echo_plugin_stage_binding

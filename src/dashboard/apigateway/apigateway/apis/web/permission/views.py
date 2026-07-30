@@ -406,6 +406,11 @@ class AppPermissionDeleteApi(AppPermissionQuerySetMixin, generics.DestroyAPIView
         if not resource_permissions and not gateway_permissions:
             raise serializers.ValidationError(_("权限不存在。"))
 
+        if resource_query_set is not None:
+            ResourcePermissionHandler.validate_user_managed_permissions(resource_query_set)
+        if gateway_query_set is not None:
+            ResourcePermissionHandler.validate_user_managed_permissions(gateway_query_set)
+
         if resource_permissions:
             audit_data = [(instance.id, str(instance), get_model_dict(instance)) for instance in resource_permissions]
             resource_query_set.delete()
@@ -552,6 +557,7 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
         if not queryset.exists():
             raise Http404
 
+        ResourcePermissionHandler.validate_user_managed_permissions(queryset)
         instance = queryset[0]
         instance_id = instance.id
         bk_app_code = instance.bk_app_code
@@ -674,6 +680,7 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
         if not queryset.exists():
             raise Http404
 
+        ResourcePermissionHandler.validate_user_managed_permissions(queryset)
         instance = queryset[0]
         instance_id = instance.id
         bk_app_code = instance.bk_app_code

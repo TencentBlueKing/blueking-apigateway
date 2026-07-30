@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
 from typing import TYPE_CHECKING
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
@@ -23,6 +24,8 @@ from packaging.version import InvalidVersion, Version
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from apigateway.core.models import ResourceVersion
 
 
 class DataPlaneStatusEnum(StructuredEnum):
@@ -42,6 +45,10 @@ class DataPlaneApisixVersionEnum(StructuredEnum):
 CURRENT_DATA_PLANE_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
 AI_GATEWAY_MIN_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
 AI_GATEWAY_APISIX_VERSION_ERROR = f"AI Gateway requires APISIX {AI_GATEWAY_MIN_APISIX_VERSION} or later"
+OAUTH2_RESOURCE_MIN_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
+OAUTH2_RESOURCE_APISIX_VERSION_ERROR = (
+    f"OAuth2 public/personal resource clients require APISIX {OAUTH2_RESOURCE_MIN_APISIX_VERSION} or later"
+)
 
 
 def is_apisix_version_supported_for_ai_gateway(apisix_version: str) -> bool:
@@ -66,6 +73,43 @@ def get_ai_gateway_data_planes_compatibility_error(data_planes: Iterable[tuple[s
     if not incompatible_data_planes:
         return None
     return f"{AI_GATEWAY_APISIX_VERSION_ERROR}; incompatible data planes: {', '.join(incompatible_data_planes)}"
+
+
+def is_apisix_version_supported_for_oauth2_resource(apisix_version: str) -> bool:
+    try:
+        return Version(apisix_version) >= Version(OAUTH2_RESOURCE_MIN_APISIX_VERSION)
+    except InvalidVersion, TypeError:
+        return False
+
+
+def get_oauth2_resource_data_planes_compatibility_error(
+    data_planes: Iterable[tuple[str, str]],
+) -> str | None:
+    incompatible_data_planes = [
+        f"{name} ({apisix_version})"
+        for name, apisix_version in data_planes
+        if not is_apisix_version_supported_for_oauth2_resource(apisix_version)
+    ]
+    if not incompatible_data_planes:
+        return None
+    return f"{OAUTH2_RESOURCE_APISIX_VERSION_ERROR}; incompatible data planes: {', '.join(incompatible_data_planes)}"
+
+
+def get_resource_auth_config(resource: dict) -> dict:
+    config = resource.get("contexts", {}).get("resource_auth", {}).get("config")
+    if not config:
+        return {}
+    return json.loads(config)
+
+
+def resource_version_uses_oauth2(resource_version: "ResourceVersion") -> bool:
+    for resource in resource_version.data:
+        auth_config = get_resource_auth_config(resource)
+        if auth_config.get("oauth2_public_client_enabled", False):
+            return True
+        if auth_config.get("oauth2_personal_client_enabled", False):
+            return True
+    return False
 
 
 class BkPluginsDataPlaneGrayStageEnum(StructuredEnum):

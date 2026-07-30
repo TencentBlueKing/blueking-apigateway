@@ -64,6 +64,10 @@ def get_release_data(gateway):
 
 
 class TestGatewayReleaserBase:
+    @pytest.fixture(autouse=True)
+    def mock_oauth2_permission_reconciler(self, mocker):
+        return mocker.patch("apigateway.biz.release.gateway_releaser.OAuth2BuiltinPermissionReconciler").return_value
+
     def test_from_data(self, fake_gateway, fake_stage, fake_resource_version):
         releaser = GatewayReleaser.from_data(
             fake_gateway,

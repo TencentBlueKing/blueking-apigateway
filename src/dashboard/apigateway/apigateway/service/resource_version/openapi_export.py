@@ -270,6 +270,8 @@ class BaseExporter:
             "userVerifiedRequired": auth_config.get("auth_verified_required", True),
             "appVerifiedRequired": auth_config.get("app_verified_required", True),
             "resourcePermissionRequired": auth_config.get("resource_perm_required", True),
+            "oauth2PublicClientEnabled": auth_config.get("oauth2_public_client_enabled", False),
+            "oauth2PersonalClientEnabled": auth_config.get("oauth2_personal_client_enabled", False),
         }
 
         if config["appVerifiedRequired"] is False:
