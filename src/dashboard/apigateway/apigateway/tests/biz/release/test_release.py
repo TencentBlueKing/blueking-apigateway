@@ -89,6 +89,21 @@ class TestGatewayReleaser:
         )
         do_release.assert_not_called()
 
+    def test_release_preserves_permission_preparation_error_when_data_plane_binding_disappears(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", side_effect=[[data_plane], []])
+        mocker.patch.object(releaser, "_validate")
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+
+        with pytest.raises(ReleaseError, match="prepare OAuth2 built-in permissions failed") as exc_info:
+            releaser.release()
+
+        assert isinstance(exc_info.value.__cause__, RuntimeError)
+        assert not ReleaseHistory.objects.filter(gateway=fake_gateway).exists()
+
     @pytest.mark.parametrize(
         "oauth2_config",
         [

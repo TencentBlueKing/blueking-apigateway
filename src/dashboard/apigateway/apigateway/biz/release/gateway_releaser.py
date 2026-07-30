@@ -219,8 +219,15 @@ class GatewayReleaser:
             )
         except Exception as err:
             message = f"prepare OAuth2 built-in permissions failed: {err}"
-            history = self._save_release_history(data_plane=data_planes[0])
-            PublishEventReporter.report_config_validate_failure(history, message)
+            if data_planes:
+                history = self._save_release_history(data_plane=data_planes[0])
+                PublishEventReporter.report_config_validate_failure(history, message)
+            else:
+                logger.exception(
+                    "Gateway(id=%s) permission preparation failed but has no data planes to record failure: %s",
+                    self.gateway.id,
+                    message,
+                )
             raise ReleaseError(message) from err
 
     def _validate(self):
