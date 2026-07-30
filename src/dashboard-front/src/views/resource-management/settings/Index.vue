@@ -769,14 +769,18 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           >
             { row.name || '--' }
           </div>
-          {(row.auth_config?.auth_verified_required && row.auth_config?.app_verified_required)
+          {(
+            row.auth_config?.auth_verified_required === false
+            && row.auth_config?.app_verified_required === false
+            && row.auth_config?.oauth2_public_client_enabled === false
+            && row.auth_config?.oauth2_personal_client_enabled === false
+          )
             ? (
               <ag-icon
                 v-bk-tooltips={{
-                  content:
-              t('该资源未配置认证方式，存在安全风险。')
-              + t('请点击"编辑"按钮为资源配置适当的认证方式。')
-              + t('如当前配置符合预期，可忽略该提示。'),
+                  content: t('该资源未配置认证方式，存在安全风险。')
+                    + t('请点击"编辑"按钮为资源配置适当的认证方式。')
+                    + t('如当前配置符合预期，可忽略该提示。'),
                 }}
                 name="exclamation-circle-fill"
                 class="min-w-14px flex-shrink-0 color-#f59500"
