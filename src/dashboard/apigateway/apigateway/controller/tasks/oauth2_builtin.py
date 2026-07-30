@@ -21,9 +21,9 @@
 本模块由发布流程同步调用，并非独立的 Celery 任务：
 
 1. 配置下发前调用 ``prepare_publish``，根据待发布版本和其它环境的已发布版本补齐权限。
-   此阶段只新增或规范化权限，不删除，避免旧配置仍在数据面生效时权限被提前回收。
+   此阶段只新增权限，不删除，避免旧配置仍在数据面生效时权限被提前回收。
 2. 发布、滚动更新或下架成功，以及环境或数据面绑定关系删除后，调用 ``reconcile_gateway``，
-   根据所有生效环境的版本重新收敛权限。只有相关发布或下架操作在全部活跃数据面完成后，
+   根据所有生效环境的版本再次同步权限。只有相关发布或下架操作在全部活跃数据面完成后，
    才会删除不再需要的权限；该入口也可通过管理命令执行检查或修复。
 
 期望权限以资源版本快照为准，不读取编辑区资源；同一网关的计算和写入由 Redis 锁串行化。
@@ -71,13 +71,12 @@ class ReconciliationBlocker:
 
 @dataclass(frozen=True)
 class OAuth2BuiltinPermissionResult:
-    """权限收敛结果，也用于 ``apply=False`` 时预览差异。"""
+    """权限同步结果，也用于 ``apply=False`` 时预览差异。"""
 
     desired: frozenset[BuiltinPermission]
     missing: frozenset[BuiltinPermission]
-    extra: frozenset[BuiltinPermission]
+    to_delete: frozenset[BuiltinPermission]
     unchanged: frozenset[BuiltinPermission]
-    normalized: frozenset[BuiltinPermission]
     deletion_blocked: bool
     blockers: tuple[ReconciliationBlocker, ...]
     applied: bool
@@ -106,9 +105,9 @@ def _required_permissions(resource_version: ResourceVersion, stage: Stage) -> se
 
 
 class OAuth2BuiltinPermissionReconciler:
-    """将网关的 OAuth2 内置应用权限收敛到已发布配置所需的状态。
+    """将网关的 OAuth2 内置应用权限同步到已发布配置所需的状态。
 
-    收敛包含新增缺失权限、规范化已有权限，以及在数据面状态安全时删除多余权限。
+    同步包含新增缺失权限，以及在数据面状态安全时删除多余权限。
     所有操作只影响 ``public`` 和 ``personal`` 两个内置应用，不处理普通 SaaS 或 MCP 虚拟应用。
     """
 
@@ -133,7 +132,7 @@ class OAuth2BuiltinPermissionReconciler:
         *,
         apply: bool = True,
     ) -> OAuth2BuiltinPermissionResult:
-        """在发布状态变化后按所有生效环境重新收敛权限。
+        """在发布状态变化后按所有生效环境再次同步权限。
 
         发布、滚动更新或下架成功，以及环境或数据面绑定关系删除后都会触发此方法；管理命令
         也通过此入口检查或修复权限。``apply=False`` 仅计算并返回差异，不写入数据库。
@@ -186,39 +185,34 @@ class OAuth2BuiltinPermissionReconciler:
     ) -> OAuth2BuiltinPermissionResult:
         releases = list(Release.objects.filter(gateway=gateway).select_related("stage", "resource_version"))
         desired = self._get_desired_permissions(gateway, releases, candidate)
-        blockers = self._get_convergence_blockers(gateway, releases)
+        desired_frozen = frozenset(desired)
 
-        permission_map = {
-            (permission.bk_app_code, permission.resource_id): permission
-            for permission in AppResourcePermission.objects.filter(
+        existing = frozenset(
+            AppResourcePermission.objects.filter(
                 gateway=gateway,
                 bk_app_code__in=OAUTH2_BUILTIN_APP_CODES,
-            )
-        }
-        existing = frozenset(permission_map)
-        desired_frozen = frozenset(desired)
-        missing = desired_frozen - existing
-        extra = existing - desired_frozen
-        unchanged = desired_frozen & existing
-        normalized = frozenset(
-            permission for permission in unchanged if self._needs_normalization(permission_map[permission])
+            ).values_list("bk_app_code", "resource_id")
         )
+
+        missing = desired_frozen - existing
+        to_delete = existing - desired_frozen
+        unchanged = desired_frozen & existing
+
+        blockers = self._get_sync_blockers(gateway, releases)
 
         if apply:
             self._apply(
                 gateway,
                 missing=missing,
-                to_normalize=normalized | missing,
-                extra=extra,
+                to_delete=to_delete,
                 allow_delete=allow_delete and not blockers,
             )
 
         return OAuth2BuiltinPermissionResult(
             desired=desired_frozen,
             missing=missing,
-            extra=extra,
+            to_delete=to_delete,
             unchanged=unchanged,
-            normalized=normalized,
             deletion_blocked=bool(blockers),
             blockers=blockers,
             applied=apply,
@@ -247,12 +241,12 @@ class OAuth2BuiltinPermissionReconciler:
 
         return desired
 
-    def _get_convergence_blockers(
+    def _get_sync_blockers(
         self,
         gateway: Gateway,
         releases: list[Release],
     ) -> tuple[ReconciliationBlocker, ...]:
-        """找出尚未收敛到当前发布状态的环境和活跃数据面组合。
+        """找出尚未同步到当前发布状态的环境和活跃数据面组合。
 
         新权限可以提前添加，但只要存在任一阻塞项，就保留全部旧权限。这样可避免多数据面灰度
         发布期间，仍运行旧配置的数据面因权限被提前删除而拒绝请求。
@@ -353,23 +347,14 @@ class OAuth2BuiltinPermissionReconciler:
         )
 
     @staticmethod
-    def _needs_normalization(permission: AppResourcePermission) -> bool:
-        return (
-            permission.expires != NeverExpiresTime.time
-            or permission.grant_type != GrantTypeEnum.OAUTH2_BUILTIN.value
-            or permission.handled_by != "system"
-        )
-
-    @staticmethod
     def _apply(
         gateway: Gateway,
         *,
         missing: frozenset[BuiltinPermission],
-        to_normalize: frozenset[BuiltinPermission],
-        extra: frozenset[BuiltinPermission],
+        to_delete: frozenset[BuiltinPermission],
         allow_delete: bool,
     ) -> None:
-        """在一个事务中新增、规范化并按需删除内置应用权限。"""
+        """在一个事务中新增并按需删除内置应用权限。"""
 
         defaults = {
             "expires": NeverExpiresTime.time,
@@ -390,20 +375,11 @@ class OAuth2BuiltinPermissionReconciler:
                 ignore_conflicts=True,
             )
 
-            for app_code in OAUTH2_BUILTIN_APP_CODES:
-                resource_ids = [
-                    resource_id for normalized_app_code, resource_id in to_normalize if normalized_app_code == app_code
-                ]
-                if resource_ids:
-                    AppResourcePermission.objects.filter(
-                        gateway=gateway,
-                        bk_app_code=app_code,
-                        resource_id__in=resource_ids,
-                    ).update(**defaults)
-
             if allow_delete:
                 for app_code in OAUTH2_BUILTIN_APP_CODES:
-                    resource_ids = [resource_id for extra_app_code, resource_id in extra if extra_app_code == app_code]
+                    resource_ids = [
+                        resource_id for to_delete_app_code, resource_id in to_delete if to_delete_app_code == app_code
+                    ]
                     if resource_ids:
                         AppResourcePermission.objects.filter(
                             gateway=gateway,

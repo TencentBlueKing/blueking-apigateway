@@ -63,7 +63,7 @@ def test_default_is_dry_run_and_apply_is_idempotent(fake_gateway):
     call_command(COMMAND_NAME, gateway=fake_gateway.name, stdout=dry_run_output)
 
     assert AppResourcePermission.objects.filter(id=permission.id).exists()
-    assert "extra count=1 rows=public:100" in dry_run_output.getvalue()
+    assert "to_delete count=1 rows=public:100" in dry_run_output.getvalue()
     assert "applied=false" in dry_run_output.getvalue()
 
     apply_output = StringIO()
@@ -78,9 +78,8 @@ def test_output_is_complete_sorted_and_reports_blockers(fake_gateway, mocker):
     result = OAuth2BuiltinPermissionResult(
         desired=frozenset({("public", 20), ("personal", 10)}),
         missing=frozenset({("public", 20)}),
-        extra=frozenset({("personal", 30)}),
+        to_delete=frozenset({("personal", 30)}),
         unchanged=frozenset({("personal", 10)}),
-        normalized=frozenset({("personal", 10)}),
         deletion_blocked=True,
         blockers=(
             ReconciliationBlocker(
@@ -108,9 +107,8 @@ def test_output_is_complete_sorted_and_reports_blockers(fake_gateway, mocker):
         "gateway={}".format(fake_gateway.name),
         "desired count=2 rows=personal:10,public:20",
         "missing count=1 rows=public:20",
-        "extra count=1 rows=personal:30",
+        "to_delete count=1 rows=personal:30",
         "unchanged count=1 rows=personal:10",
-        "normalized count=1 rows=personal:10",
         "applied=false",
         "deletion_blocked=true",
         "blocked stage=prod(2) data_plane=default(3) release_history=4 status=doing",
@@ -121,9 +119,8 @@ def test_apply_flag_is_forwarded(fake_gateway, mocker):
     result = OAuth2BuiltinPermissionResult(
         desired=frozenset(),
         missing=frozenset(),
-        extra=frozenset(),
+        to_delete=frozenset(),
         unchanged=frozenset(),
-        normalized=frozenset(),
         deletion_blocked=False,
         blockers=(),
         applied=True,

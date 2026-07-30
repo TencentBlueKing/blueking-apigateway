@@ -261,7 +261,7 @@ def test_prepare_publish_replaces_target_stage_and_never_deletes(fake_gateway):
     result = OAuth2BuiltinPermissionReconciler().prepare_publish(fake_gateway, target_stage, candidate)
 
     assert result.desired == frozenset({("personal", 2), ("public", 3), ("personal", 3)})
-    assert result.extra == frozenset({("public", 1), ("personal", 99)})
+    assert result.to_delete == frozenset({("public", 1), ("personal", 99)})
     assert {
         (permission.bk_app_code, permission.resource_id)
         for permission in AppResourcePermission.objects.filter(gateway=fake_gateway)
@@ -274,20 +274,12 @@ def test_prepare_publish_replaces_target_stage_and_never_deletes(fake_gateway):
     }
 
 
-def test_reconcile_normalizes_desired_rows_and_preserves_unrelated_permissions(fake_gateway):
+def test_reconcile_creates_desired_rows_without_follow_up_updates_and_preserves_unrelated_permissions(fake_gateway):
     make_stage_release(
         fake_gateway,
         "prod",
         "1.0.0",
         [make_resource_snapshot(1, stage_name="prod", support_public=True, support_personal=False)],
-    )
-    builtin = G(
-        AppResourcePermission,
-        gateway=fake_gateway,
-        resource_id=1,
-        bk_app_code="public",
-        grant_type="initialize",
-        handled_by="admin",
     )
     saas = G(
         AppResourcePermission,
@@ -306,10 +298,10 @@ def test_reconcile_normalizes_desired_rows_and_preserves_unrelated_permissions(f
         handled_by="admin",
     )
 
-    result = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
+    with CaptureQueriesContext(connection) as queries:
+        result = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
 
-    assert result.normalized == frozenset({("public", 1)})
-    builtin.refresh_from_db()
+    builtin = AppResourcePermission.objects.get(gateway=fake_gateway, resource_id=1, bk_app_code="public")
     assert builtin.expires == NeverExpiresTime.time
     assert builtin.grant_type == "oauth2_builtin"
     assert builtin.handled_by == "system"
@@ -318,18 +310,14 @@ def test_reconcile_normalizes_desired_rows_and_preserves_unrelated_permissions(f
     assert (saas.grant_type, saas.handled_by) == ("initialize", "admin")
     assert (virtual.grant_type, virtual.handled_by) == ("initialize", "admin")
 
-    with CaptureQueriesContext(connection) as queries:
-        repeated = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
-
     permission_updates = [
         query["sql"]
         for query in queries
         if query["sql"].lstrip().upper().startswith("UPDATE") and "permission_app_resource" in query["sql"]
     ]
-    assert repeated.missing == frozenset()
-    assert repeated.extra == frozenset()
-    assert repeated.normalized == frozenset()
-    assert repeated.unchanged == frozenset({("public", 1)})
+    assert result.missing == frozenset({("public", 1)})
+    assert result.to_delete == frozenset()
+    assert result.unchanged == frozenset()
     assert permission_updates == []
 
 
@@ -345,7 +333,7 @@ def test_reconcile_normalizes_desired_rows_and_preserves_unrelated_permissions(f
         ("version_mismatch", "version_mismatch"),
     ],
 )
-def test_reconcile_blocks_deletion_until_data_plane_converges(history_state, expected_status, fake_gateway):
+def test_reconcile_blocks_deletion_until_data_plane_is_synced(history_state, expected_status, fake_gateway):
     _, _, release = make_stage_release(
         fake_gateway,
         "prod",
@@ -353,7 +341,7 @@ def test_reconcile_blocks_deletion_until_data_plane_converges(history_state, exp
         [make_resource_snapshot(1, stage_name="prod", support_public=False, support_personal=False)],
     )
     data_plane = bind_data_plane(fake_gateway, "plane-1")
-    extra = G(
+    to_delete = G(
         AppResourcePermission,
         gateway=fake_gateway,
         resource_id=99,
@@ -395,7 +383,7 @@ def test_reconcile_blocks_deletion_until_data_plane_converges(history_state, exp
     assert result.deletion_blocked is True
     assert len(result.blockers) == 1
     assert result.blockers[0].status == expected_status
-    assert AppResourcePermission.objects.filter(id=extra.id).exists()
+    assert AppResourcePermission.objects.filter(id=to_delete.id).exists()
 
 
 def test_reconcile_requires_every_active_data_plane_and_deletes_after_success(fake_gateway):
@@ -409,7 +397,7 @@ def test_reconcile_requires_every_active_data_plane_and_deletes_after_success(fa
     plane_2 = bind_data_plane(fake_gateway, "plane-2")
     make_history_event(release, plane_1, PublishEventStatusEnum.SUCCESS.value)
     make_history_event(release, plane_2, PublishEventStatusEnum.DOING.value)
-    extra = G(
+    to_delete = G(
         AppResourcePermission,
         gateway=fake_gateway,
         resource_id=99,
@@ -421,16 +409,16 @@ def test_reconcile_requires_every_active_data_plane_and_deletes_after_success(fa
     blocked = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
     assert blocked.deletion_blocked is True
     assert {blocker.data_plane_name for blocker in blocked.blockers} == {"plane-2"}
-    assert AppResourcePermission.objects.filter(id=extra.id).exists()
+    assert AppResourcePermission.objects.filter(id=to_delete.id).exists()
 
     make_history_event(release, plane_2, PublishEventStatusEnum.SUCCESS.value)
-    converged = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
-    assert converged.deletion_blocked is False
-    assert converged.blockers == ()
-    assert not AppResourcePermission.objects.filter(id=extra.id).exists()
+    synced = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
+    assert synced.deletion_blocked is False
+    assert synced.blockers == ()
+    assert not AppResourcePermission.objects.filter(id=to_delete.id).exists()
 
 
-def test_inactive_stage_must_converge_before_permission_cleanup(fake_gateway):
+def test_inactive_stage_must_be_synced_before_permission_cleanup(fake_gateway):
     _, _, release = make_stage_release(
         fake_gateway,
         "prod",
@@ -440,7 +428,7 @@ def test_inactive_stage_must_converge_before_permission_cleanup(fake_gateway):
     )
     data_plane = bind_data_plane(fake_gateway, "plane-1")
     make_history_event(release, data_plane, PublishEventStatusEnum.FAILURE.value)
-    extra = G(
+    to_delete = G(
         AppResourcePermission,
         gateway=fake_gateway,
         resource_id=1,
@@ -452,12 +440,12 @@ def test_inactive_stage_must_converge_before_permission_cleanup(fake_gateway):
     blocked = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
     assert blocked.desired == frozenset()
     assert blocked.deletion_blocked is True
-    assert AppResourcePermission.objects.filter(id=extra.id).exists()
+    assert AppResourcePermission.objects.filter(id=to_delete.id).exists()
 
     make_history_event(release, data_plane, PublishEventStatusEnum.SUCCESS.value)
-    converged = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
-    assert converged.deletion_blocked is False
-    assert not AppResourcePermission.objects.filter(id=extra.id).exists()
+    synced = OAuth2BuiltinPermissionReconciler().reconcile_gateway(fake_gateway)
+    assert synced.deletion_blocked is False
+    assert not AppResourcePermission.objects.filter(id=to_delete.id).exists()
 
 
 def test_inactive_gateway_has_empty_desired_permissions(fake_gateway):

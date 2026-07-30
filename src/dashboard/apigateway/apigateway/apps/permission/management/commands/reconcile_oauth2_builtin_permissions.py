@@ -51,7 +51,7 @@ class Command(BaseCommand):
             apply=options["apply"],
         )
         self.stdout.write(f"gateway={gateway.name}")
-        for name in ("desired", "missing", "extra", "unchanged", "normalized"):
+        for name in ("desired", "missing", "to_delete", "unchanged"):
             permissions = getattr(result, name)
             self.stdout.write(f"{name} count={len(permissions)} rows={_format_permissions(permissions)}")
         self.stdout.write(f"applied={str(result.applied).lower()}")
