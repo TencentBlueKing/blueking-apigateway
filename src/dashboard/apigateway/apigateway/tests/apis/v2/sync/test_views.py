@@ -75,6 +75,83 @@ def _model_backend(name="openai-primary"):
 
 
 class TestSyncApi:
+    def test_resource_sync_updates_and_resets_oauth2_client_settings(
+        self, request_view, fake_gateway, disable_app_permission
+    ):
+        backend = G(Backend, gateway=fake_gateway, name="default")
+        resource_extension = {
+            "backend": {
+                "name": backend.name,
+                "type": "HTTP",
+                "method": "get",
+                "path": "/backend/users",
+                "timeout": 30,
+            },
+            "authConfig": {
+                "userVerifiedRequired": True,
+                "oauth2PublicClientEnabled": True,
+                "oauth2PersonalClientEnabled": False,
+            },
+        }
+        openapi = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "API Gateway Swagger"},
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "get_users",
+                        "x-bk-apigateway-resource": resource_extension,
+                    }
+                }
+            },
+        }
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="get_users")
+        assert resource.oauth2_public_client_enabled is True
+        assert resource.oauth2_personal_client_enabled is False
+
+        resource_extension["authConfig"] = {
+            "userVerifiedRequired": True,
+            "oauth2PublicClientEnabled": False,
+            "oauth2PersonalClientEnabled": True,
+        }
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource.refresh_from_db()
+        assert resource.oauth2_public_client_enabled is False
+        assert resource.oauth2_personal_client_enabled is True
+
+        resource_extension.pop("authConfig")
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource.refresh_from_db()
+        assert resource.oauth2_public_client_enabled is False
+        assert resource.oauth2_personal_client_enabled is False
+
     def test_resource_sync_ai_resource(self, request_view, fake_gateway, disable_app_permission):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()

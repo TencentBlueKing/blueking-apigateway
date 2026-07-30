@@ -1337,6 +1337,86 @@ class TestResourceExportApi:
 
         assert resp.status_code == 200
 
+    def test_exported_oauth2_client_settings_can_be_imported(self, request_view, fake_resource):
+        fake_gateway = fake_resource.gateway
+        fake_resource.method = "GET"
+        fake_resource.path = "/users"
+        fake_resource.oauth2_public_client_enabled = True
+        fake_resource.oauth2_personal_client_enabled = True
+        fake_resource.save(
+            update_fields=[
+                "method",
+                "path",
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
+        proxy = Proxy.objects.get(resource=fake_resource)
+        proxy.config = {
+            "method": "GET",
+            "path": "/backend/users",
+            "match_subpath": False,
+            "timeout": 30,
+        }
+        proxy.save()
+
+        export_response = request_view(
+            method="POST",
+            view_name="resource.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"export_type": "all", "file_type": "json"},
+        )
+
+        assert export_response.status_code == 200
+        content = b"".join(export_response.streaming_content).decode(export_response.charset)
+        operation = json.loads(content)["paths"][fake_resource.path][fake_resource.method.lower()]
+        assert operation["x-bk-apigateway-resource"]["authConfig"] == {
+            "userVerifiedRequired": True,
+            "appVerifiedRequired": True,
+            "resourcePermissionRequired": True,
+            "oauth2PublicClientEnabled": True,
+            "oauth2PersonalClientEnabled": True,
+        }
+
+        fake_resource.oauth2_public_client_enabled = False
+        fake_resource.oauth2_personal_client_enabled = False
+        fake_resource.save(
+            update_fields=[
+                "oauth2_public_client_enabled",
+                "oauth2_personal_client_enabled",
+            ]
+        )
+
+        check_response = request_view(
+            method="POST",
+            view_name="resource.import.check",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"content": content},
+        )
+
+        assert check_response.status_code == 200, check_response.json()
+        imported_resource = check_response.json()["data"][0]
+        assert imported_resource["auth_config"]["oauth2_public_client_enabled"] is True
+        assert imported_resource["auth_config"]["oauth2_personal_client_enabled"] is True
+
+        backend = imported_resource.pop("backend")
+        imported_resource["backend_name"] = backend["name"]
+        imported_resource["backend_config"] = backend["config"]
+        import_response = request_view(
+            method="POST",
+            view_name="resource.import",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"import_resources": [imported_resource]},
+        )
+
+        assert import_response.status_code == 204, import_response.json()
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
+        assert fake_resource.oauth2_personal_client_enabled is True
+
 
 class TestBackendPathCheckApi:
     @pytest.mark.parametrize(
