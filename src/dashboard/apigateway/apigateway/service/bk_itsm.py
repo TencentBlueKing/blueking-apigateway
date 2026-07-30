@@ -89,6 +89,7 @@ class ItsmPermissionApplyHelper:
         apply_resource_names: List[str],
         applied_by: str = "",
         apply_record_id: int = 0,
+        apply_reason: str = "",
         approvers: Optional[List[str]] = None,
         callback_token: str = "",
     ) -> Dict[str, Any]:
@@ -101,6 +102,7 @@ class ItsmPermissionApplyHelper:
         :param apply_resource_names: 申请的资源名称列表
         :param applied_by: 申请人（必填且不能为空）
         :param apply_record_id: 权限申请记录 ID
+        :param apply_reason: 权限申请理由
         :param approvers: 审批人列表（必填且不能为空）
         :return: ITSM 工单创建响应
         """
@@ -129,6 +131,7 @@ class ItsmPermissionApplyHelper:
             "gateway_name": gateway_name,
             "grant_dimension": grant_dimension,
             "apply_resources": apply_resources,
+            "apply_reason": apply_reason,
             "bk_app_code": bk_app_code,
             "apply_record_id": apply_record_id,
             "instance_approvers": normalized_approvers,

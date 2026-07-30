@@ -544,6 +544,78 @@
                 }
               }
             }
+          },
+          "apply_reason": {
+            "translations": {
+              "name": "申请理由",
+              "name_en": "Apply Reason",
+              "name_zh_hans": "申请理由"
+            },
+            "key": "apply_reason",
+            "name": "申请理由",
+            "type": "textarea",
+            "is_builtin": false,
+            "jsonschema": {
+              "translations": {
+                "title": "",
+                "title_en": "",
+                "title_zh_hans": ""
+              },
+              "type": "string",
+              "title": "",
+              "render_code": null,
+              "maxLength": 2000,
+              "minLength": null,
+              "maximum": null,
+              "minimum": null,
+              "number_unit": "",
+              "table_relation": null,
+              "into_todo": [],
+              "out_todo": [],
+              "attr_relation": null,
+              "itsm_jmespath": null,
+              "itsm_options": null,
+              "itsm_options_type": null,
+              "format": null,
+              "columns": null,
+              "properties": null,
+              "items": null
+            },
+            "meta": {
+              "key": "apply_reason",
+              "desc": "申请理由",
+              "tips": "申请理由",
+              "type": "textarea",
+              "title": {
+                "value": "申请理由",
+                "isHide": false
+              },
+              "permission": {
+                "readonly": [
+                  "title",
+                  "key",
+                  "tips",
+                  "desc"
+                ]
+              },
+              "translations": {
+                "desc": {
+                  "name": "申请理由",
+                  "name_en": "Apply Reason",
+                  "name_zh_hans": "申请理由"
+                },
+                "tips": {
+                  "name": "申请理由",
+                  "name_en": "Apply Reason",
+                  "name_zh_hans": "申请理由"
+                },
+                "title": {
+                  "name": "申请理由",
+                  "name_en": "Apply Reason",
+                  "name_zh_hans": "申请理由"
+                }
+              }
+            }
           }
         },
         "fields_order": [
@@ -552,6 +624,7 @@
           "bk_app_code",
           "apply_record_id",
           "apply_resources",
+          "apply_reason",
           "instance_approvers"
         ],
         "components": null
@@ -853,6 +926,10 @@
                 "grant_dimension": {
                   "state": "readonly",
                   "required": true
+                },
+                "apply_reason": {
+                  "state": "readonly",
+                  "required": false
                 }
               },
               "buttons": [
@@ -1022,7 +1099,9 @@
                     "slot": [],
                     "tips": "网关权限申请",
                     "type": "text",
-                    "class": [],
+                    "class": [
+                      "header"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "标题",
@@ -1087,7 +1166,9 @@
                     "slot": [],
                     "tips": "申请资源所属网关名",
                     "type": "text",
-                    "class": [],
+                    "class": [
+                      "gateway"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "网关名",
@@ -1155,7 +1236,9 @@
                     "desc": "申请权限维度",
                     "slot": [],
                     "type": "radio",
-                    "class": [],
+                    "class": [
+                      "scope"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "权限维度",
@@ -1244,7 +1327,9 @@
                     "slot": [],
                     "tips": "权限对象",
                     "type": "textarea",
-                    "class": [],
+                    "class": [
+                      "target"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "权限对象",
@@ -1304,13 +1389,83 @@
               {
                 "list": [
                   {
+                    "key": "apply_reason",
+                    "desc": "申请理由",
+                    "rows": 4,
+                    "slot": [],
+                    "tips": "申请理由",
+                    "type": "textarea",
+                    "class": [
+                      "reason"
+                    ],
+                    "state": "readonly",
+                    "title": {
+                      "value": "申请理由",
+                      "isHide": false
+                    },
+                    "width": "COL_12",
+                    "columnId": "apply_reason",
+                    "location": "form",
+                    "sceneKey": "apply_reason",
+                    "permission": {
+                      "readonly": [
+                        "title",
+                        "key",
+                        "tips",
+                        "desc"
+                      ]
+                    },
+                    "defaultValue": "",
+                    "translations": {
+                      "desc": {
+                        "name": "申请理由",
+                        "name_en": "Apply Reason",
+                        "name_zh_hans": "申请理由"
+                      },
+                      "tips": {
+                        "name": "申请理由",
+                        "name_en": "Apply Reason",
+                        "name_zh_hans": "申请理由"
+                      },
+                      "title": {
+                        "name": "申请理由",
+                        "name_en": "Apply Reason",
+                        "name_zh_hans": "申请理由"
+                      }
+                    },
+                    "verification": {
+                      "required": {
+                        "value": false,
+                        "enabled": false
+                      },
+                      "wordLimit": {
+                        "value": {
+                          "max": 2000,
+                          "min": 0
+                        },
+                        "enabled": false
+                      },
+                      "formatLimit": {
+                        "value": "",
+                        "enabled": false
+                      }
+                    }
+                  }
+                ],
+                "type": "row"
+              },
+              {
+                "list": [
+                  {
                     "id": "bk_app_code",
                     "key": "bk_app_code",
                     "desc": "申请的应用",
                     "slot": [],
                     "tips": "申请应用",
                     "type": "text",
-                    "class": [],
+                    "class": [
+                      "app"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "申请应用",
@@ -1379,7 +1534,9 @@
                     "slot": [],
                     "tips": "网关申请单据id",
                     "type": "number",
-                    "class": [],
+                    "class": [
+                      "ticket"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "网关申请单据id",
@@ -1445,7 +1602,9 @@
                     "slot": [],
                     "tips": "审批人",
                     "type": "multiUser",
-                    "class": [],
+                    "class": [
+                      "approver"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "审批人",
@@ -1513,10 +1672,20 @@
               }
             ],
             "actions": [],
-            "styleCode": "",
+            "styleCode": ":root {\n  \n  --text-primary: #0f172a;\n  --text-title-value: #0b1220;\n\n  \n  --text-secondary: #8b97a8;\n  --text-highlight-label: #7d8a9c;\n\n  \n  --text-body: #1f2937;\n\n  \n  --bg-default: #ffffff;\n  --bg-default-hover: #fafbfd;\n  --bg-highlight: #f7f9fc;\n  --bg-highlight-hover: #eef4fb;\n\n  --divider: #edf0f4;\n}\n\n.header,\n.gateway,\n.scope,\n.target,\n.app,\n.reason,\n.ticket,\n.approver {\n  box-sizing: border-box;\n\n  margin-bottom: 8px;\n  padding: 10px 16px;\n\n  background: var(--bg-default);\n  border: none;\n  border-radius: 6px;\n\n  color: var(--text-primary);\n  font-size: 14px;\n  line-height: 1.5;\n\n  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.025);\n\n  transition:\n    background-color 0.2s ease,\n    box-shadow 0.2s ease,\n    transform 0.2s ease;\n}\n\n.header,\n.reason {\n  background: var(--bg-highlight);\n}\n\n.header .field-label,\n.header .label-text,\n.header .title,\n.header .label,\n.header .property-name,\n.header .bk-form-label,\n.gateway .field-label,\n.gateway .label-text,\n.gateway .title,\n.gateway .label,\n.gateway .property-name,\n.gateway .bk-form-label,\n.scope .field-label,\n.scope .label-text,\n.scope .title,\n.scope .label,\n.scope .property-name,\n.scope .bk-form-label,\n.target .field-label,\n.target .label-text,\n.target .title,\n.target .label,\n.target .property-name,\n.target .bk-form-label,\n.app .field-label,\n.app .label-text,\n.app .title,\n.app .label,\n.app .property-name,\n.app .bk-form-label,\n.reason .field-label,\n.reason .label-text,\n.reason .title,\n.reason .label,\n.reason .property-name,\n.reason .bk-form-label,\n.ticket .field-label,\n.ticket .label-text,\n.ticket .title,\n.ticket .label,\n.ticket .property-name,\n.ticket .bk-form-label,\n.approver .field-label,\n.approver .label-text,\n.approver .title,\n.approver .label,\n.approver .property-name,\n.approver .bk-form-label {\n  display: block;\n\n  margin-bottom: 3px;\n\n  color: #8b97a8 !important;\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 19px;\n}\n\n.header .label-text > span,\n.gateway .label-text > span,\n.scope .label-text > span,\n.target .label-text > span,\n.app .label-text > span,\n.reason .label-text > span,\n.ticket .label-text > span,\n.approver .label-text > span {\n  color: #8b97a8 !important;\n  font-weight: 400;\n}\n\n.header .field-label,\n.header .label-text,\n.header .title,\n.header .label,\n.header .property-name,\n.header .bk-form-label,\n.reason .field-label,\n.reason .label-text,\n.reason .title,\n.reason .label,\n.reason .property-name,\n.reason .bk-form-label,\n.header .label-text > span,\n.reason .label-text > span {\n  color: #7d8a9c !important;\n  font-weight: 500;\n}\n\n.gateway .text-overflow-content,\n.gateway .read-only,\n.gateway .readonly,\n.gateway .field-component,\n.scope .text-overflow-content,\n.scope .read-only,\n.scope .readonly,\n.scope .field-component,\n.target .text-overflow-content,\n.target .read-only,\n.target .readonly,\n.target .field-component,\n.app .text-overflow-content,\n.app .read-only,\n.app .readonly,\n.app .field-component,\n.ticket .text-overflow-content,\n.ticket .read-only,\n.ticket .readonly,\n.ticket .field-component,\n.approver .text-overflow-content,\n.approver .read-only,\n.approver .readonly,\n.approver .field-component {\n  padding: 0 !important;\n\n  color: var(--text-primary) !important;\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 22px;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.header .text-overflow-content,\n.header .read-only,\n.header .readonly,\n.header .field-component {\n  padding: 0 !important;\n\n  color: var(--text-title-value) !important;\n  font-size: 15px;\n  font-weight: 600;\n  line-height: 23px;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.reason {\n  padding-top: 12px;\n  padding-bottom: 12px;\n\n  word-break: break-word;\n  overflow-wrap: anywhere;\n}\n\n.reason .text-overflow-content,\n.reason .read-only,\n.reason .readonly,\n.reason .field-component {\n  padding: 0 !important;\n\n  color: var(--text-body) !important;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 1.7;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.target,\n.ticket,\n.reason {\n  word-break: break-word;\n  overflow-wrap: anywhere;\n}\n\n.target .text-overflow-content,\n.scope .text-overflow-content,\n.reason .text-overflow-content,\n.ticket .text-overflow-content,\n.approver .text-overflow-content {\n  height: auto !important;\n  min-height: 22px !important;\n  max-height: none !important;\n\n  overflow: visible !important;\n  white-space: normal !important;\n\n  word-break: break-word !important;\n  overflow-wrap: anywhere !important;\n}\n\n.target .text-overflow-content,\n.ticket .text-overflow-content,\n.ticket .read-only,\n.ticket .readonly {\n  word-break: break-all !important;\n}\n\n.ticket .text-overflow-content,\n.ticket .read-only,\n.ticket .readonly {\n  font-variant-numeric: tabular-nums;\n}\n\n.approver .bg-grey {\n  padding: 0 !important;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.header:hover,\n.gateway:hover,\n.scope:hover,\n.target:hover,\n.app:hover,\n.reason:hover,\n.ticket:hover,\n.approver:hover {\n  background: var(--bg-default-hover);\n\n  box-shadow:\n    0 2px 4px rgba(15, 23, 42, 0.04),\n    0 6px 16px rgba(15, 23, 42, 0.06);\n\n  transform: translateY(-1px);\n}\n\n.header:hover,\n.reason:hover {\n  background: var(--bg-highlight-hover);\n}\n\n.gateway:hover .text-overflow-content,\n.gateway:hover .read-only,\n.gateway:hover .readonly,\n.gateway:hover .field-component,\n.scope:hover .text-overflow-content,\n.scope:hover .read-only,\n.scope:hover .readonly,\n.scope:hover .field-component,\n.target:hover .text-overflow-content,\n.target:hover .read-only,\n.target:hover .readonly,\n.target:hover .field-component,\n.app:hover .text-overflow-content,\n.app:hover .read-only,\n.app:hover .readonly,\n.app:hover .field-component,\n.ticket:hover .text-overflow-content,\n.ticket:hover .read-only,\n.ticket:hover .readonly,\n.ticket:hover .field-component,\n.approver:hover .text-overflow-content,\n.approver:hover .read-only,\n.approver:hover .readonly,\n.approver:hover .field-component {\n  color: #0b1220 !important;\n}\n\n.header:last-child,\n.gateway:last-child,\n.scope:last-child,\n.target:last-child,\n.app:last-child,\n.reason:last-child,\n.ticket:last-child,\n.approver:last-child {\n  margin-bottom: 0;\n}\n",
             "dataLinkage": [],
             "verification": [],
-            "customVariables": []
+            "customVariables": [],
+            "classList": [
+              "header",
+              "gateway",
+              "scope",
+              "target",
+              "app",
+              "reason",
+              "ticket",
+              "approver"
+            ]
           },
           "jsonschema": {
             "type": "object",
@@ -1761,6 +1930,32 @@
                   "properties": null,
                   "items": null
                 }
+              },
+              "apply_reason": {
+                "translations": {
+                  "title": "申请理由",
+                  "title_en": "Apply Reason",
+                  "title_zh_hans": "申请理由"
+                },
+                "type": "string",
+                "title": "申请理由",
+                "render_code": null,
+                "maxLength": 2000,
+                "minLength": null,
+                "maximum": null,
+                "minimum": null,
+                "number_unit": "",
+                "table_relation": null,
+                "into_todo": [],
+                "out_todo": [],
+                "attr_relation": null,
+                "itsm_jmespath": null,
+                "itsm_options": null,
+                "itsm_options_type": null,
+                "format": null,
+                "columns": null,
+                "properties": null,
+                "items": null
               }
             },
             "additionalProperties": false
@@ -2710,7 +2905,12 @@
             ],
             "meta": {
               "label": "submit",
-              "fields": {},
+              "fields": {
+                "apply_reason": {
+                  "state": "readonly",
+                  "required": false
+                }
+              },
               "buttons": [
                 {
                   "key": "submit",
@@ -2878,7 +3078,9 @@
                     "slot": [],
                     "tips": "请输入",
                     "type": "text",
-                    "class": [],
+                    "class": [
+                      "header"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "标题",
@@ -2938,7 +3140,9 @@
                     "slot": [],
                     "tips": "申请资源所属网关名",
                     "type": "text",
-                    "class": [],
+                    "class": [
+                      "gateway"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "网关名",
@@ -3006,7 +3210,9 @@
                     "desc": "申请权限维度",
                     "slot": [],
                     "type": "radio",
-                    "class": [],
+                    "class": [
+                      "scope"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "权限维度",
@@ -3095,7 +3301,9 @@
                     "slot": [],
                     "tips": "权限对象",
                     "type": "textarea",
-                    "class": [],
+                    "class": [
+                      "target"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "权限对象",
@@ -3155,13 +3363,83 @@
               {
                 "list": [
                   {
+                    "key": "apply_reason",
+                    "desc": "申请理由",
+                    "rows": 4,
+                    "slot": [],
+                    "tips": "申请理由",
+                    "type": "textarea",
+                    "class": [
+                      "reason"
+                    ],
+                    "state": "readonly",
+                    "title": {
+                      "value": "申请理由",
+                      "isHide": false
+                    },
+                    "width": "COL_12",
+                    "columnId": "apply_reason",
+                    "location": "form",
+                    "sceneKey": "apply_reason",
+                    "permission": {
+                      "readonly": [
+                        "title",
+                        "key",
+                        "tips",
+                        "desc"
+                      ]
+                    },
+                    "defaultValue": "",
+                    "translations": {
+                      "desc": {
+                        "name": "申请理由",
+                        "name_en": "Apply Reason",
+                        "name_zh_hans": "申请理由"
+                      },
+                      "tips": {
+                        "name": "申请理由",
+                        "name_en": "Apply Reason",
+                        "name_zh_hans": "申请理由"
+                      },
+                      "title": {
+                        "name": "申请理由",
+                        "name_en": "Apply Reason",
+                        "name_zh_hans": "申请理由"
+                      }
+                    },
+                    "verification": {
+                      "required": {
+                        "value": false,
+                        "enabled": false
+                      },
+                      "wordLimit": {
+                        "value": {
+                          "max": 2000,
+                          "min": 0
+                        },
+                        "enabled": false
+                      },
+                      "formatLimit": {
+                        "value": "",
+                        "enabled": false
+                      }
+                    }
+                  }
+                ],
+                "type": "row"
+              },
+              {
+                "list": [
+                  {
                     "id": "bk_app_code",
                     "key": "bk_app_code",
                     "desc": "申请的应用",
                     "slot": [],
                     "tips": "申请应用",
                     "type": "text",
-                    "class": [],
+                    "class": [
+                      "app"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "申请应用",
@@ -3230,7 +3508,9 @@
                     "slot": [],
                     "tips": "网关申请单据id",
                     "type": "number",
-                    "class": [],
+                    "class": [
+                      "ticket"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "网关申请单据id",
@@ -3296,7 +3576,9 @@
                     "slot": [],
                     "tips": "审批人",
                     "type": "multiUser",
-                    "class": [],
+                    "class": [
+                      "approver"
+                    ],
                     "state": "readonly",
                     "title": {
                       "value": "审批人",
@@ -3364,10 +3646,20 @@
               }
             ],
             "actions": [],
-            "styleCode": "",
+            "styleCode": ":root {\n  \n  --text-primary: #0f172a;\n  --text-title-value: #0b1220;\n\n  \n  --text-secondary: #8b97a8;\n  --text-highlight-label: #7d8a9c;\n\n  \n  --text-body: #1f2937;\n\n  \n  --bg-default: #ffffff;\n  --bg-default-hover: #fafbfd;\n  --bg-highlight: #f7f9fc;\n  --bg-highlight-hover: #eef4fb;\n\n  --divider: #edf0f4;\n}\n\n.header,\n.gateway,\n.scope,\n.target,\n.app,\n.reason,\n.ticket,\n.approver {\n  box-sizing: border-box;\n\n  margin-bottom: 8px;\n  padding: 10px 16px;\n\n  background: var(--bg-default);\n  border: none;\n  border-radius: 6px;\n\n  color: var(--text-primary);\n  font-size: 14px;\n  line-height: 1.5;\n\n  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.025);\n\n  transition:\n    background-color 0.2s ease,\n    box-shadow 0.2s ease,\n    transform 0.2s ease;\n}\n\n.header,\n.reason {\n  background: var(--bg-highlight);\n}\n\n.header .field-label,\n.header .label-text,\n.header .title,\n.header .label,\n.header .property-name,\n.header .bk-form-label,\n.gateway .field-label,\n.gateway .label-text,\n.gateway .title,\n.gateway .label,\n.gateway .property-name,\n.gateway .bk-form-label,\n.scope .field-label,\n.scope .label-text,\n.scope .title,\n.scope .label,\n.scope .property-name,\n.scope .bk-form-label,\n.target .field-label,\n.target .label-text,\n.target .title,\n.target .label,\n.target .property-name,\n.target .bk-form-label,\n.app .field-label,\n.app .label-text,\n.app .title,\n.app .label,\n.app .property-name,\n.app .bk-form-label,\n.reason .field-label,\n.reason .label-text,\n.reason .title,\n.reason .label,\n.reason .property-name,\n.reason .bk-form-label,\n.ticket .field-label,\n.ticket .label-text,\n.ticket .title,\n.ticket .label,\n.ticket .property-name,\n.ticket .bk-form-label,\n.approver .field-label,\n.approver .label-text,\n.approver .title,\n.approver .label,\n.approver .property-name,\n.approver .bk-form-label {\n  display: block;\n\n  margin-bottom: 3px;\n\n  color: #8b97a8 !important;\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 19px;\n}\n\n.header .label-text > span,\n.gateway .label-text > span,\n.scope .label-text > span,\n.target .label-text > span,\n.app .label-text > span,\n.reason .label-text > span,\n.ticket .label-text > span,\n.approver .label-text > span {\n  color: #8b97a8 !important;\n  font-weight: 400;\n}\n\n.header .field-label,\n.header .label-text,\n.header .title,\n.header .label,\n.header .property-name,\n.header .bk-form-label,\n.reason .field-label,\n.reason .label-text,\n.reason .title,\n.reason .label,\n.reason .property-name,\n.reason .bk-form-label,\n.header .label-text > span,\n.reason .label-text > span {\n  color: #7d8a9c !important;\n  font-weight: 500;\n}\n\n.gateway .text-overflow-content,\n.gateway .read-only,\n.gateway .readonly,\n.gateway .field-component,\n.scope .text-overflow-content,\n.scope .read-only,\n.scope .readonly,\n.scope .field-component,\n.target .text-overflow-content,\n.target .read-only,\n.target .readonly,\n.target .field-component,\n.app .text-overflow-content,\n.app .read-only,\n.app .readonly,\n.app .field-component,\n.ticket .text-overflow-content,\n.ticket .read-only,\n.ticket .readonly,\n.ticket .field-component,\n.approver .text-overflow-content,\n.approver .read-only,\n.approver .readonly,\n.approver .field-component {\n  padding: 0 !important;\n\n  color: var(--text-primary) !important;\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 22px;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.header .text-overflow-content,\n.header .read-only,\n.header .readonly,\n.header .field-component {\n  padding: 0 !important;\n\n  color: var(--text-title-value) !important;\n  font-size: 15px;\n  font-weight: 600;\n  line-height: 23px;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.reason {\n  padding-top: 12px;\n  padding-bottom: 12px;\n\n  word-break: break-word;\n  overflow-wrap: anywhere;\n}\n\n.reason .text-overflow-content,\n.reason .read-only,\n.reason .readonly,\n.reason .field-component {\n  padding: 0 !important;\n\n  color: var(--text-body) !important;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 1.7;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.target,\n.ticket,\n.reason {\n  word-break: break-word;\n  overflow-wrap: anywhere;\n}\n\n.target .text-overflow-content,\n.scope .text-overflow-content,\n.reason .text-overflow-content,\n.ticket .text-overflow-content,\n.approver .text-overflow-content {\n  height: auto !important;\n  min-height: 22px !important;\n  max-height: none !important;\n\n  overflow: visible !important;\n  white-space: normal !important;\n\n  word-break: break-word !important;\n  overflow-wrap: anywhere !important;\n}\n\n.target .text-overflow-content,\n.ticket .text-overflow-content,\n.ticket .read-only,\n.ticket .readonly {\n  word-break: break-all !important;\n}\n\n.ticket .text-overflow-content,\n.ticket .read-only,\n.ticket .readonly {\n  font-variant-numeric: tabular-nums;\n}\n\n.approver .bg-grey {\n  padding: 0 !important;\n\n  background: transparent !important;\n  border: none !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n}\n\n.header:hover,\n.gateway:hover,\n.scope:hover,\n.target:hover,\n.app:hover,\n.reason:hover,\n.ticket:hover,\n.approver:hover {\n  background: var(--bg-default-hover);\n\n  box-shadow:\n    0 2px 4px rgba(15, 23, 42, 0.04),\n    0 6px 16px rgba(15, 23, 42, 0.06);\n\n  transform: translateY(-1px);\n}\n\n.header:hover,\n.reason:hover {\n  background: var(--bg-highlight-hover);\n}\n\n.gateway:hover .text-overflow-content,\n.gateway:hover .read-only,\n.gateway:hover .readonly,\n.gateway:hover .field-component,\n.scope:hover .text-overflow-content,\n.scope:hover .read-only,\n.scope:hover .readonly,\n.scope:hover .field-component,\n.target:hover .text-overflow-content,\n.target:hover .read-only,\n.target:hover .readonly,\n.target:hover .field-component,\n.app:hover .text-overflow-content,\n.app:hover .read-only,\n.app:hover .readonly,\n.app:hover .field-component,\n.ticket:hover .text-overflow-content,\n.ticket:hover .read-only,\n.ticket:hover .readonly,\n.ticket:hover .field-component,\n.approver:hover .text-overflow-content,\n.approver:hover .read-only,\n.approver:hover .readonly,\n.approver:hover .field-component {\n  color: #0b1220 !important;\n}\n\n.header:last-child,\n.gateway:last-child,\n.scope:last-child,\n.target:last-child,\n.app:last-child,\n.reason:last-child,\n.ticket:last-child,\n.approver:last-child {\n  margin-bottom: 0;\n}\n",
             "dataLinkage": [],
             "verification": [],
-            "customVariables": []
+            "customVariables": [],
+            "classList": [
+              "header",
+              "gateway",
+              "scope",
+              "target",
+              "app",
+              "reason",
+              "ticket",
+              "approver"
+            ]
           },
           "jsonschema": {
             "type": "object",
@@ -3612,6 +3904,32 @@
                   "properties": null,
                   "items": null
                 }
+              },
+              "apply_reason": {
+                "translations": {
+                  "title": "申请理由",
+                  "title_en": "Apply Reason",
+                  "title_zh_hans": "申请理由"
+                },
+                "type": "string",
+                "title": "申请理由",
+                "render_code": null,
+                "maxLength": 2000,
+                "minLength": null,
+                "maximum": null,
+                "minimum": null,
+                "number_unit": "",
+                "table_relation": null,
+                "into_todo": [],
+                "out_todo": [],
+                "attr_relation": null,
+                "itsm_jmespath": null,
+                "itsm_options": null,
+                "itsm_options_type": null,
+                "format": null,
+                "columns": null,
+                "properties": null,
+                "items": null
               }
             },
             "additionalProperties": false

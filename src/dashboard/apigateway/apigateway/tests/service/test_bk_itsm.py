@@ -18,6 +18,7 @@
 #
 
 import argparse
+import json
 import os
 
 import pytest
@@ -54,6 +55,7 @@ class TestItsmPermissionApplyHelper:
             apply_resource_names=["resource-a", "resource-b"],
             applied_by="admin",
             apply_record_id=123,
+            apply_reason="need access for daily ops",
             approvers=["u1", "u2"],
         )
 
@@ -65,6 +67,7 @@ class TestItsmPermissionApplyHelper:
         assert kwargs["form_data"]["apply_record_id"] == 123
         assert kwargs["form_data"]["grant_dimension"] == "resource"
         assert kwargs["form_data"]["apply_resources"] == "resource-a, resource-b"
+        assert kwargs["form_data"]["apply_reason"] == "need access for daily ops"
         assert kwargs["form_data"]["instance_approvers"] == ["u1", "u2"]
         assert kwargs["options"] == {
             "grant_dimension": [{"name": "resource", "key": "resource", "parent": None}],
@@ -230,6 +233,122 @@ class TestItsmPermissionApplyHelper:
 
         assert options.template_file.endswith("apps/bk_itsm/management/system_bk-apigateway.json")
         assert os.path.exists(options.template_file)
+
+    def test_register_to_itsm_form_model_update_options(self):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args(["--update-form-model", "--form-model-key", "fm-001"])
+
+        assert options.update_form_model is True
+        assert options.form_model_key == "fm-001"
+
+    def test_register_to_itsm_build_form_model_update_payload(self):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args([])
+
+        with open(options.template_file, encoding="utf-8") as fp:
+            template = json.load(fp)
+
+        payload = RegisterToItsmCommand._build_form_model_update_payload("bk-apigateway", template)
+
+        assert payload["key"] == "20260506180400004501"
+        assert payload["name"] == "bk-apigateway"
+        assert payload["app_id"] == "core"
+        assert payload["system_id"] == "bk-apigateway"
+        assert payload["meta"]["fields"]["apply_reason"]["type"] == "textarea"
+        assert "styleCode" not in payload["meta"]
+
+    def test_register_to_itsm_update_form_model_when_system_registered(self, mocker):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args(["--update-form-model"])
+
+        with open(options.template_file, encoding="utf-8") as fp:
+            template = json.load(fp)
+
+        field_keys = set(template["form_models"][0]["meta"]["fields"].keys())
+        remote_properties = {key: {} for key in field_keys if key != "apply_reason"}
+        command = RegisterToItsmCommand()
+        mocker.patch.object(
+            command,
+            "_get_system_workflow_list",
+            return_value={
+                "count": 1,
+                "results": [{"form_schema": {"properties": remote_properties}}],
+            },
+        )
+        mocker.patch.object(command, "_ensure_config_from_template")
+        mock_form_models_update = mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.form_models_update",
+            return_value={"result": True, "data": {"meta": {"fields": {"apply_reason": {}}}}},
+        )
+        mock_system_migrate = mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
+        )
+
+        command.handle(**vars(options))
+
+        mock_system_migrate.assert_not_called()
+        mock_form_models_update.assert_called_once()
+        assert mock_form_models_update.call_args.kwargs["key"] == "20260506180400004501"
+        assert "apply_reason" in mock_form_models_update.call_args.kwargs["meta"]["fields"]
+
+    def test_register_to_itsm_default_template_contains_apply_reason_and_style(self):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args([])
+
+        with open(options.template_file, encoding="utf-8") as fp:
+            template = json.load(fp)
+
+        form_model_meta = template["form_models"][0]["meta"]
+        assert form_model_meta["fields"]["apply_reason"]["type"] == "textarea"
+        for translation in form_model_meta["fields"]["apply_reason"]["meta"]["translations"].values():
+            assert translation["name_en"] == "Apply Reason"
+            assert translation["name_zh_hans"] == "申请理由"
+        assert form_model_meta["fields_order"] == [
+            "gateway_name",
+            "grant_dimension",
+            "bk_app_code",
+            "apply_record_id",
+            "apply_resources",
+            "apply_reason",
+            "instance_approvers",
+        ]
+
+        for workflow_item in template["workflows"]:
+            version = workflow_item["version"]
+            submit_activity = next(
+                activity for activity in version["activities"].values() if activity["type"] == "SUBMIT"
+            )
+            assert submit_activity["meta"]["fields"]["apply_reason"] == {"state": "readonly", "required": False}
+
+            form_canvas_data = version["form_canvas_data"]
+            assert form_canvas_data["jsonschema"]["properties"]["apply_reason"]["maxLength"] == 2000
+            assert "apply_reason" in {
+                field["key"] for row in form_canvas_data["form_data"]["layout"] for field in row["list"]
+            }
+            apply_reason_layout = next(
+                field
+                for row in form_canvas_data["form_data"]["layout"]
+                for field in row["list"]
+                if field["key"] == "apply_reason"
+            )
+            for translation in apply_reason_layout["translations"].values():
+                assert translation["name_en"] == "Apply Reason"
+                assert translation["name_zh_hans"] == "申请理由"
+            assert ".reason" in form_canvas_data["form_data"]["styleCode"]
+            assert form_canvas_data["form_data"]["classList"] == [
+                "header",
+                "gateway",
+                "scope",
+                "target",
+                "app",
+                "reason",
+                "ticket",
+                "approver",
+            ]
 
     def test_build_callback_url_uses_configured_path(self, settings):
         settings.BK_API_URL_TMPL = "https://bkapi.example.com/api/{api_name}"

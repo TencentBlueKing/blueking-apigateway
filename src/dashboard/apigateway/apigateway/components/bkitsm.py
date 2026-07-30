@@ -123,6 +123,40 @@ def system_workflow_list(
     )
 
 
+def form_models_update(
+    key: str,
+    name: str,
+    meta: Dict[str, Any],
+    desc: str = "",
+    app_id: str = "",
+    system_id: str = "",
+) -> Dict[str, Any]:
+    """
+    更新 ITSM 表单模型
+
+    调用接口: form_models_update (POST)
+    路径: /api/v1/form_models/update/
+    """
+    data: Dict[str, Any] = {
+        "key": key,
+        "name": name,
+        "meta": meta,
+    }
+    if desc:
+        data["desc"] = desc
+    if app_id:
+        data["app_id"] = app_id
+    if system_id:
+        data["system_id"] = system_id
+
+    return _call_bkitsm_api(
+        http_post,
+        "/api/v1/form_models/update/",
+        data,
+        timeout=settings.BK_ITSM4_API_TIMEOUT,
+    )
+
+
 def create_system_workflow(
     system_id: str,
     name: str,

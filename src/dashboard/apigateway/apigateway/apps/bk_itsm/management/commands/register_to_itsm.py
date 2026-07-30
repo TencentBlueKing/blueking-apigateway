@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
 import json
 import logging
 import os
@@ -24,7 +25,7 @@ from django.core.management.base import BaseCommand
 from django.db.utils import OperationalError, ProgrammingError
 
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
-from apigateway.components.bkitsm import system_migrate, system_workflow_list
+from apigateway.components.bkitsm import form_models_update, system_migrate, system_workflow_list
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,24 @@ class Command(BaseCommand):
             default=False,
             help="Strict mode: fail fast on migrate errors instead of idempotent fallback",
         )
+        parser.add_argument(
+            "--update-form-model",
+            action="store_true",
+            default=False,
+            help="Update existing ITSM form model fields from template instead of skipping registered systems",
+        )
+        parser.add_argument(
+            "--form-model-key",
+            type=str,
+            default="",
+            help="Existing ITSM form model key. Defaults to normalized form_models[0].key from template",
+        )
 
     def handle(self, *args, **options):
         template_file = options["template_file"]
         strict_mode = options["strict"]
+        update_form_model = options["update_form_model"]
+        form_model_key = options["form_model_key"]
 
         template_data = self._load_template(template_file)
         template_data = self._normalize_template_for_migrate(template_data)
@@ -58,8 +73,20 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Start register_to_itsm, system_code={system_code}")
 
+        workflow_list_resp = self._get_system_workflow_list(system_code)
+
         # 先查询 ITSM 侧该系统是否已注册过流程，避免重复 migrate 导致 400 报错
-        if self._is_system_registered_in_itsm(system_code):
+        if self._is_system_registered_response(workflow_list_resp):
+            if update_form_model:
+                self._update_form_model_from_template(
+                    system_code=system_code,
+                    template_data=template_data,
+                    workflow_list_resp=workflow_list_resp,
+                    form_model_key=form_model_key,
+                )
+                self._ensure_config_from_template(system_code, template_data)
+                return
+
             self.stdout.write(f"System {system_code} already registered in ITSM, skip migrate")
             self._ensure_config_from_template(system_code, template_data)
             return
@@ -80,13 +107,130 @@ class Command(BaseCommand):
     @staticmethod
     def _is_system_registered_in_itsm(system_code: str) -> bool:
         """通过 system_workflow_list 接口查询系统是否已在 ITSM 注册"""
+        return Command._is_system_registered_response(Command._get_system_workflow_list(system_code))
+
+    @staticmethod
+    def _get_system_workflow_list(system_code: str):
         try:
-            resp = system_workflow_list(system_id=system_code)
+            return system_workflow_list(system_id=system_code)
         except Exception:
             logger.warning("failed to query system_workflow_list, assume not registered", exc_info=True)
-            return False
+            return {}
 
+    @staticmethod
+    def _is_system_registered_response(resp) -> bool:
         return resp.get("count", 0) > 0
+
+    def _update_form_model_from_template(
+        self, system_code: str, template_data, workflow_list_resp, form_model_key: str
+    ):
+        payload = self._build_form_model_update_payload(system_code, template_data, form_model_key)
+        missing_field_keys = self._get_missing_form_model_field_keys(workflow_list_resp, payload["meta"]["fields"])
+        if not missing_field_keys:
+            self.stdout.write(self.style.SUCCESS("ITSM form model already contains all template fields, skip update"))
+            return
+
+        self.stdout.write(f"Start updating ITSM form model, key={payload['key']}, missing_fields={missing_field_keys}")
+        resp = form_models_update(**payload)
+        self._validate_form_model_update_response(resp, missing_field_keys)
+        self.stdout.write(self.style.SUCCESS(f"ITSM form model updated: key={payload['key']}"))
+        self.stdout.write(
+            self.style.WARNING(
+                "form_models_update only updates form model fields; form_canvas_data/styleCode/layout are not updated."
+            )
+        )
+
+    @staticmethod
+    def _build_form_model_update_payload(system_code: str, template_data, form_model_key: str = ""):
+        form_models = template_data.get("form_models", [])
+        if not form_models:
+            raise RuntimeError("invalid template: form_models is required")
+
+        form_model = form_models[0]
+        key = form_model_key or Command._normalize_form_model_key(form_model.get("key", ""))
+        if not key:
+            raise RuntimeError("invalid form model key, please provide --form-model-key")
+
+        meta = copy.deepcopy(form_model.get("meta") or {})
+        fields = meta.get("fields")
+        if not isinstance(fields, dict) or not fields:
+            raise RuntimeError("invalid template: form_models[0].meta.fields is required")
+
+        return {
+            "key": key,
+            "name": form_model.get("name", ""),
+            "desc": form_model.get("desc", ""),
+            "app_id": form_model.get("app_id", ""),
+            "system_id": system_code,
+            "meta": meta,
+        }
+
+    @staticmethod
+    def _normalize_form_model_key(form_model_key: str) -> str:
+        form_model_key = str(form_model_key or "").strip()
+        if form_model_key.startswith("$FormModel"):
+            return form_model_key[len("$FormModel") :]
+        return form_model_key
+
+    @staticmethod
+    def _get_missing_form_model_field_keys(workflow_list_resp, template_fields) -> list:
+        remote_field_keys = Command._extract_form_schema_field_keys(workflow_list_resp)
+        if not remote_field_keys:
+            return sorted(template_fields.keys())
+
+        return sorted(set(template_fields.keys()) - remote_field_keys)
+
+    @staticmethod
+    def _extract_form_schema_field_keys(workflow_list_resp) -> set:
+        workflow_items = Command._extract_workflow_items(workflow_list_resp)
+        field_keys: set[str] = set()
+        for item in workflow_items:
+            form_schema = item.get("form_schema") or {}
+            properties = form_schema.get("properties") or {}
+            field_keys.update(properties.keys())
+        return field_keys
+
+    @staticmethod
+    def _extract_workflow_items(resp) -> list:
+        if not isinstance(resp, dict):
+            return []
+
+        items = []
+        if isinstance(resp.get("form_schema"), dict):
+            items.append(resp)
+
+        for key in ("results", "items"):
+            value = resp.get(key)
+            if isinstance(value, list):
+                items.extend([item for item in value if isinstance(item, dict)])
+
+        data = resp.get("data")
+        if isinstance(data, list):
+            items.extend([item for item in data if isinstance(item, dict)])
+        elif isinstance(data, dict):
+            if isinstance(data.get("form_schema"), dict):
+                items.append(data)
+            for key in ("results", "items"):
+                value = data.get(key)
+                if isinstance(value, list):
+                    items.extend([item for item in value if isinstance(item, dict)])
+
+        return items
+
+    @staticmethod
+    def _validate_form_model_update_response(resp, missing_field_keys):
+        if isinstance(resp, dict) and resp.get("result") is False:
+            raise RuntimeError(f"form_models_update failed: {resp}")
+
+        updated_fields = (
+            ((resp or {}).get("data") or {}).get("meta", {}).get("fields", {}) if isinstance(resp, dict) else {}
+        )
+        if not updated_fields:
+            return
+
+        still_missing = sorted(set(missing_field_keys) - set(updated_fields.keys()))
+        if still_missing:
+            raise RuntimeError(f"form_models_update response missing fields: {still_missing}")
 
     def _ensure_config_from_template(self, system_code: str, template_data):
         """确保配置表有完整数据，有则复用，无则从模板写入"""

@@ -502,6 +502,7 @@ class TestPermissionDimensionManagerItsmIntegration:
         assert apply.itsm_callback_token == "cb-token-001"
         helper.create_permission_apply_ticket.assert_called_once()
         assert helper.create_permission_apply_ticket.call_args.kwargs["callback_token"] == "cb-token-001"
+        assert helper.create_permission_apply_ticket.call_args.kwargs["apply_reason"] == "reason"
 
     def test_create_apply_record_with_itsm_ticket_fallback_applicant(
         self, settings, mocker, fake_gateway, fake_resource
