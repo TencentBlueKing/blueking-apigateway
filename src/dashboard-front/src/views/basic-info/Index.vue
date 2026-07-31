@@ -660,6 +660,11 @@
       </template>
     </BkDialog>
 
+    <CreateGateway
+      v-model="createGatewayShow"
+      :init-data="(basicInfoDetailData as ParamType)"
+      @done="getBasicInfo"
+    />
     <EditAPIDoc
       v-model="isShowApiDoc"
       :data="basicInfoData"
@@ -694,12 +699,14 @@ import {
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
 import EditDesc from './components/EditDesc.vue';
+import { cloneDeep } from 'lodash-es';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import Guide from '@/components/guide/Index.vue';
+import CreateGateway, { type ParamType } from '@/components/create-gateway/Index.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import {
   useEnv,
@@ -809,7 +816,8 @@ const delApigwDialog = ref({
   loading: false,
 });
 const statusChanging = ref(false);
-
+const createGatewayShow = ref(false);
+const basicInfoDetailData = ref(cloneDeep(basicInfoData.value));
 const deprecatedFormRef = ref<InstanceType<typeof import('bkui-vue')['Form']>>();
 const deprecatedDialog = ref({
   isShow: false,
@@ -1063,11 +1071,8 @@ const handleOperate = async (type: string) => {
   }
 
   if (['edit'].includes(type)) {
-    gatewayStore.setCurrentGateway(basicInfoData.value);
-    router.push({
-      name: 'CreateGateway',
-      query: { from: 'basic-info' },
-    });
+    basicInfoDetailData.value = cloneDeep(basicInfoData.value);
+    createGatewayShow.value = true;
     return;
   }
 
