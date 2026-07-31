@@ -252,6 +252,7 @@
                 <BkButton
                   theme="primary"
                   class="w-100px"
+                  :loading="publishLoading"
                   @click="showPublishConfirmInfoBox"
                 >
                   <!-- {{ isRollback ? t('确认回滚') : t('确认发布') }} -->
@@ -381,6 +382,7 @@ const rules = {
   ],
 };
 const publishId = ref();
+const publishLoading = ref(false);
 const chooseAssets = ref(currentAssets);
 const stageList = ref<IStageListItem[]>([]);
 const mcpCheckColumns = [
@@ -523,6 +525,7 @@ const showPublishConfirmInfoBox = () => {
 };
 
 const handlePublish = async () => {
+  publishLoading.value = true;
   try {
     const params = {
       stage_id: chooseAssets.value.id,
@@ -572,6 +575,9 @@ const handlePublish = async () => {
         message: msg,
       });
     }
+  }
+  finally {
+    publishLoading.value = false;
   }
 };
 
