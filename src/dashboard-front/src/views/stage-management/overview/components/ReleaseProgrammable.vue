@@ -163,6 +163,7 @@
               <BkButton
                 class="w-100px"
                 theme="primary"
+                :loading="publishLoading"
                 @click="showPublishDia"
               >
                 {{ t('确认发布') }}
@@ -297,6 +298,7 @@ const currentCommitInfo = ref<ICommitInfo>({
   type: '',
 });
 const isLoading = ref(false);
+const publishLoading = ref(false);
 
 watch(() => formData.value.branch, () => {
   const commitInfo = stageDetail.value.repo_info.branch_commit_info[formData.value.branch];
@@ -388,6 +390,7 @@ const showPublishDia = () => {
 };
 
 const handlePublish = async () => {
+  publishLoading.value = true;
   try {
     const params = {
       // stage_id: currentStage.id,
@@ -436,6 +439,9 @@ const handlePublish = async () => {
         message: msg,
       });
     }
+  }
+  finally {
+    publishLoading.value = false;
   }
 };
 
