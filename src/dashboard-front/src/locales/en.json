@@ -2309,7 +2309,7 @@
   "表单加载失败": "Failed to load form",
   "响应参数中有重复的状态码，请修改": "Has duplicate status code in response parameters, please modify",
   "工具名称不可重复": "The tool name cannot be repeated",
-  "长度限制：最多 128 个字符": "Length limit: up to 128 characters",
+  "剩余可输入 {count} 字符": "{count} characters remaining",
   "中间字符：允许字母、数字、连字符（-）、下划线（_）、点号（.）": "Middle character: allows letters, numbers, hyphens (-), underscores (_), and periods (.)",
   "首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）": "First and last character: Must start and end with a letter or number (a-z, A-Z, 0-9)",
   "MCP 名称": "MCP name",
@@ -2619,6 +2619,7 @@
   "连通正常": "Connection Normal",
   "连通失败": "Connection Failed",
   "去配置": "Go to configure",
+  "MCP Server 名称 + 工具名称不得超过 64 字符": "The combined length of the MCP Server name and tool name must not exceed 64 characters.",
   "MCP Server 名称 + 工具名称不得超过 64 字符，超限可能导致部分客户端调用失败。": "The combined length of the MCP Server name and tool name must not exceed 64 characters. Exceeding the limit may cause partial client call failures.",
   "请缩短工具名称。": "Please shorten the tool name.",
   "OAuth2 内置客户端的 MCPServer 应用权限不允许删除。": "The MCPServer app permission of the OAuth2 built-in client cannot be deleted."

@@ -559,7 +559,7 @@ const promptLabels = ref<ISearchItem[]>([]);
 const filterPromptValues = ref<ISearchSelectFilter[]>([]);
 const categoriesList = ref<IMCPServerCategory[]>([]);
 const hiddenCategoriesList = ref<IMCPServerCategory[]>([]);
-const toolNameList = ref<string[]>([]);
+const resourceNameList = ref<string[]>([]);
 
 const customMethodsList = computed<IMethodFilterItem[]>(() => {
   const methods = HTTP_METHODS.map(item => ({
@@ -576,7 +576,7 @@ const customMethodsList = computed<IMethodFilterItem[]>(() => {
   ];
 });
 
-const toolNameRowData = shallowRef<ToolNameRowType>({} as ToolNameRowType);
+const toolNameRowData = ref<ToolNameRowType>({} as ToolNameRowType);
 const resourceTabList = shallowRef<IResourceTabItem[]>([
   {
     label: t('工具'),
@@ -777,11 +777,13 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                             <Input
                               v-model={toolNameRowData.value.tool_name}
                               placeholder={t('请输入工具名称')}
-                              maxlength={128}
+                              maxlength={64 - mcpServerName.value.length}
                               tooltipsOptions={{
                                 content: () => (
                                   <div>
-                                    { t('长度限制：最多 128 个字符') }
+                                    { t('MCP Server 名称 + 工具名称不得超过 64 字符') }
+                                    ，
+                                    { t('剩余可输入 {count} 字符', { count: maxToolNameLen.value }) }
                                     <br />
                                     { t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）') }
                                     <br />
@@ -1120,6 +1122,10 @@ const isExistOAuthData = computed<boolean>(() =>
     renderOAuthConfig(auth).auth_verified_required || renderOAuthConfig(auth).app_verified_required,
   ),
 );
+// 获取动态的MCP Server 名称
+const mcpServerName = computed(() => isEditMode.value ? formData.value.name : `${serverNamePrefix.value}${formData.value.name}`);
+// 获取动态可输入的最大工具名长度
+const maxToolNameLen = computed(() => 64 - mcpServerName.value.length - (toolNameRowData.value.tool_name?.length ?? 0));
 
 // 开启OAuth2 公开客户端模式才展示工具应用态或用户态
 const isEnabledOAuthTag = (payload: IMCPServerResource | IMCPSelections): boolean => {
@@ -1161,7 +1167,9 @@ const renderPreviewViewWidth = () => {
   const initH = 32;
   const toolClientH = (toolTableRef.value?.TDesignTableRef?.$el?.offsetHeight ?? 0) + initH;
   const promptClientH = (promptTableRef.value?.TDesignTableRef?.$el?.offsetHeight ?? 0) + initH;
-  return { maxHeight: `${activeTab.value.includes('tool') ? toolClientH : promptClientH}px` };
+  return {
+    maxHeight: `${activeTab.value.includes('tool') ? toolClientH : promptClientH}px`,
+  };
 };
 
 /**
@@ -1221,11 +1229,11 @@ watch(isShow, handleIsShowChange, { immediate: false });
 
 const isExceedMaxCharacters = (row: TableRowData) => {
   const toolName = row.tool_name ?? row.name;
-  const name = isEditMode.value ? formData.value.name : `${serverNamePrefix.value}${formData.value.name}`;
-  const results = `${name}${toolName}`.length > 64;
+  const results = `${mcpServerName.value}${toolName}`.length > 64;
   // 编辑模式需要过滤掉已选的工具，避免影响旧存量数据
   if (isEditMode.value) {
-    const isStockResource = toolSelections.value.some(tCheck => tCheck.id === row.id);
+    const isStockResource
+      = toolSelections.value.some(tCheck => tCheck.id === row.id) && resourceNameList.value.includes(row.name);
 
     if (isStockResource) return false;
 
@@ -1447,7 +1455,7 @@ const handleSubmit = async (): Promise<void> => {
       params = {
         ...params,
         ...formData.value,
-        name: `${serverNamePrefix.value}${formData.value.name}`,
+        name: mcpServerName.value,
       };
       await createServer(gatewayId.value!, params);
       Message({
@@ -1695,7 +1703,7 @@ const fetchServer = async () => {
       categories: (categories as IMCPServerCategory[]).map((item: IMCPServerCategory) => item.name || ''),
     };
     // 缓存已存量的工具
-    toolNameList.value = tool_names;
+    resourceNameList.value = resource_names;
     // 获取已存在但不需要显示在页面上的分类
     hiddenCategoriesList.value = (categories as IMCPServerCategory[]).filter((item: IMCPServerCategory) =>
       !categoriesList.value.map((v: IMCPServerCategory) => v.name).includes(item.name));
@@ -2041,7 +2049,7 @@ const resetSliderData = () => {
   noPermPrompt.value = [];
   categoriesList.value = [];
   hiddenCategoriesList.value = [];
-  toolNameList.value = [];
+  resourceNameList.value = [];
   filterKeyword.value = '';
   activeTab.value = 'tool';
   curPromptData.value = {};
