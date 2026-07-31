@@ -196,12 +196,13 @@
                   @click.stop="() => handleGoPage('StageManagement', item)"
                 >
                   <span
-                    v-if="item.kind === 1"
-                    v-bk-tooltips="{ content: t('可编程网关') }"
+                    v-bk-tooltips="{
+                      content: item.kind === 0 ? t('API 网关') : item.kind === 1 ? t('可编程网关') : t('AI 网关'),
+                    }"
                     class="kind-program"
                   >
                     <AgIcon
-                      name="program"
+                      :name="item.kind === 0 ? 'apiwangguan': item.kind === 1 ? 'program' : 'AIwangguan'"
                       size="12"
                     />
                   </span>
