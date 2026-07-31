@@ -564,7 +564,7 @@
               "type": "string",
               "title": "",
               "render_code": null,
-              "maxLength": 2000,
+              "maxLength": 512,
               "minLength": null,
               "maximum": null,
               "minimum": null,
@@ -1372,7 +1372,7 @@
                       },
                       "wordLimit": {
                         "value": {
-                          "max": 2000,
+                          "max": 512,
                           "min": 0
                         },
                         "enabled": false
@@ -1440,7 +1440,7 @@
                       },
                       "wordLimit": {
                         "value": {
-                          "max": 2000,
+                          "max": 512,
                           "min": 0
                         },
                         "enabled": false
@@ -1940,7 +1940,7 @@
                 "type": "string",
                 "title": "申请理由",
                 "render_code": null,
-                "maxLength": 2000,
+                "maxLength": 512,
                 "minLength": null,
                 "maximum": null,
                 "minimum": null,
@@ -3346,7 +3346,7 @@
                       },
                       "wordLimit": {
                         "value": {
-                          "max": 2000,
+                          "max": 512,
                           "min": 0
                         },
                         "enabled": false
@@ -3414,7 +3414,7 @@
                       },
                       "wordLimit": {
                         "value": {
-                          "max": 2000,
+                          "max": 512,
                           "min": 0
                         },
                         "enabled": false
@@ -3914,7 +3914,7 @@
                 "type": "string",
                 "title": "申请理由",
                 "render_code": null,
-                "maxLength": 2000,
+                "maxLength": 512,
                 "minLength": null,
                 "maximum": null,
                 "minimum": null,

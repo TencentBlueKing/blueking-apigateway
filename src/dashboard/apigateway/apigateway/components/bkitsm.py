@@ -123,13 +123,14 @@ def system_workflow_list(
     )
 
 
-def form_models_update(
+def update_form_model(
     key: str,
     name: str,
     meta: Dict[str, Any],
     desc: str = "",
     app_id: str = "",
     system_id: str = "",
+    system_token: str = "",
 ) -> Dict[str, Any]:
     """
     更新 ITSM 表单模型
@@ -149,10 +150,17 @@ def form_models_update(
     if system_id:
         data["system_id"] = system_id
 
+    more_headers = {}
+    if system_token:
+        more_headers["SYSTEM-TOKEN"] = system_token
+    elif system_id and settings.BK_ITSM4_SYSTEM_TOKEN:
+        more_headers["SYSTEM-TOKEN"] = settings.BK_ITSM4_SYSTEM_TOKEN
+
     return _call_bkitsm_api(
         http_post,
         "/api/v1/form_models/update/",
         data,
+        more_headers=more_headers,
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
 

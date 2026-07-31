@@ -55,7 +55,7 @@ class TestItsmPermissionApplyHelper:
             apply_resource_names=["resource-a", "resource-b"],
             applied_by="admin",
             apply_record_id=123,
-            apply_reason="need access for daily ops",
+            apply_reason="  need access for daily ops  ",
             approvers=["u1", "u2"],
         )
 
@@ -74,6 +74,34 @@ class TestItsmPermissionApplyHelper:
         }
         assert "reason" not in kwargs["form_data"]
         assert "expire_days" not in kwargs["form_data"]
+
+    def test_create_permission_apply_ticket_normalizes_none_apply_reason(self, mocker):
+        config = G(
+            ItsmSystemConfig,
+            system_code="bk-apigateway",
+            itsm_system_id="bk-apigateway",
+            system_token="token-001",
+            workflow_key_map={"gateway": "wf-001", "resource": "wf-001"},
+            is_registered=True,
+        )
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+
+        mock_create_ticket = mocker.patch("apigateway.service.bk_itsm.create_ticket", return_value={"id": "t-001"})
+        mocker.patch.object(helper, "_build_callback_url", return_value="http://example.com/callback")
+
+        helper.create_permission_apply_ticket(
+            bk_app_code="bk-test",
+            gateway_name="demo-gateway",
+            grant_dimension="resource",
+            apply_resource_names=["resource-a"],
+            applied_by="admin",
+            apply_record_id=123,
+            apply_reason=None,
+            approvers=["u1"],
+        )
+
+        _, kwargs = mock_create_ticket.call_args
+        assert kwargs["form_data"]["apply_reason"] == ""
 
     def test_create_permission_apply_ticket_use_mcp_workflow_key(self, mocker):
         config = G(
@@ -242,6 +270,32 @@ class TestItsmPermissionApplyHelper:
         assert options.update_form_model is True
         assert options.form_model_key == "fm-001"
 
+    def test_register_to_itsm_form_model_key_requires_update_form_model(self):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args(["--form-model-key", "fm-001"])
+
+        with pytest.raises(RuntimeError, match="--form-model-key requires --update-form-model"):
+            RegisterToItsmCommand().handle(**vars(options))
+
+    def test_register_to_itsm_update_form_model_fails_when_workflow_list_query_failed(self, mocker):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args(["--update-form-model"])
+
+        mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_workflow_list",
+            side_effect=Exception("ITSM 503"),
+        )
+        mock_system_migrate = mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
+        )
+
+        with pytest.raises(RuntimeError, match="failed to query system_workflow_list"):
+            RegisterToItsmCommand().handle(**vars(options))
+
+        mock_system_migrate.assert_not_called()
+
     def test_register_to_itsm_build_form_model_update_payload(self):
         parser = argparse.ArgumentParser()
         RegisterToItsmCommand().add_arguments(parser)
@@ -259,6 +313,36 @@ class TestItsmPermissionApplyHelper:
         assert payload["meta"]["fields"]["apply_reason"]["type"] == "textarea"
         assert "styleCode" not in payload["meta"]
 
+    def test_register_to_itsm_missing_workflow_schema_fields_require_all_workflows(self):
+        missing_field_keys = RegisterToItsmCommand._get_missing_workflow_schema_field_keys(
+            {
+                "count": 2,
+                "results": [
+                    {"form_schema": {"properties": {"apply_reason": {}, "gateway_name": {}}}},
+                    {"form_schema": {"properties": {"gateway_name": {}}}},
+                ],
+            },
+            {
+                "apply_reason": {},
+                "gateway_name": {},
+            },
+        )
+
+        assert missing_field_keys == ["apply_reason"]
+
+    def test_register_to_itsm_extract_workflow_items_requires_results_shape(self):
+        workflow_items = RegisterToItsmCommand._extract_workflow_items(
+            {"count": 1, "results": [{"form_schema": {"properties": {}}}]}
+        )
+
+        assert workflow_items == [{"form_schema": {"properties": {}}}]
+
+        with pytest.raises(TypeError, match="results must be a list"):
+            RegisterToItsmCommand._extract_workflow_items({"count": 1, "data": []})
+
+        with pytest.raises(TypeError, match="results items must be objects"):
+            RegisterToItsmCommand._extract_workflow_items({"count": 1, "results": ["invalid"]})
+
     def test_register_to_itsm_update_form_model_when_system_registered(self, mocker):
         parser = argparse.ArgumentParser()
         RegisterToItsmCommand().add_arguments(parser)
@@ -273,15 +357,21 @@ class TestItsmPermissionApplyHelper:
         mocker.patch.object(
             command,
             "_get_system_workflow_list",
-            return_value={
-                "count": 1,
-                "results": [{"form_schema": {"properties": remote_properties}}],
-            },
+            side_effect=[
+                {
+                    "count": 1,
+                    "results": [{"form_schema": {"properties": remote_properties}}],
+                },
+                {
+                    "count": 1,
+                    "results": [{"form_schema": {"properties": {key: {} for key in field_keys}}}],
+                },
+            ],
         )
         mocker.patch.object(command, "_ensure_config_from_template")
-        mock_form_models_update = mocker.patch(
-            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.form_models_update",
-            return_value={"result": True, "data": {"meta": {"fields": {"apply_reason": {}}}}},
+        mock_update_form_model = mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
+            return_value={"meta": {"fields": {"apply_reason": {}}}},
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
@@ -290,9 +380,48 @@ class TestItsmPermissionApplyHelper:
         command.handle(**vars(options))
 
         mock_system_migrate.assert_not_called()
-        mock_form_models_update.assert_called_once()
-        assert mock_form_models_update.call_args.kwargs["key"] == "20260506180400004501"
-        assert "apply_reason" in mock_form_models_update.call_args.kwargs["meta"]["fields"]
+        mock_update_form_model.assert_called_once()
+        assert mock_update_form_model.call_args.kwargs["key"] == "20260506180400004501"
+        assert "apply_reason" in mock_update_form_model.call_args.kwargs["meta"]["fields"]
+
+    def test_register_to_itsm_update_form_model_requires_workflow_schema_updated(self, mocker):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args(["--update-form-model"])
+
+        with open(options.template_file, encoding="utf-8") as fp:
+            template = json.load(fp)
+
+        field_keys = set(template["form_models"][0]["meta"]["fields"].keys())
+        remote_properties = {key: {} for key in field_keys if key != "apply_reason"}
+        command = RegisterToItsmCommand()
+        mocker.patch.object(
+            command,
+            "_get_system_workflow_list",
+            side_effect=[
+                {
+                    "count": 1,
+                    "results": [{"form_schema": {"properties": remote_properties}}],
+                },
+                {
+                    "count": 1,
+                    "results": [{"form_schema": {"properties": remote_properties}}],
+                },
+            ],
+        )
+        mocker.patch.object(command, "_ensure_config_from_template")
+        mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
+            return_value={"meta": {"fields": {"apply_reason": {}}}},
+        )
+        mock_system_migrate = mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
+        )
+
+        with pytest.raises(RuntimeError, match="workflow schema still missing fields"):
+            command.handle(**vars(options))
+
+        mock_system_migrate.assert_not_called()
 
     def test_register_to_itsm_default_template_contains_apply_reason_and_style(self):
         parser = argparse.ArgumentParser()
@@ -325,7 +454,7 @@ class TestItsmPermissionApplyHelper:
             assert submit_activity["meta"]["fields"]["apply_reason"] == {"state": "readonly", "required": False}
 
             form_canvas_data = version["form_canvas_data"]
-            assert form_canvas_data["jsonschema"]["properties"]["apply_reason"]["maxLength"] == 2000
+            assert form_canvas_data["jsonschema"]["properties"]["apply_reason"]["maxLength"] == 512
             assert "apply_reason" in {
                 field["key"] for row in form_canvas_data["form_data"]["layout"] for field in row["list"]
             }
@@ -338,6 +467,7 @@ class TestItsmPermissionApplyHelper:
             for translation in apply_reason_layout["translations"].values():
                 assert translation["name_en"] == "Apply Reason"
                 assert translation["name_zh_hans"] == "申请理由"
+            assert apply_reason_layout["verification"]["wordLimit"]["value"]["max"] == 512
             assert ".reason" in form_canvas_data["form_data"]["styleCode"]
             assert form_canvas_data["form_data"]["classList"] == [
                 "header",

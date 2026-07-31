@@ -40,3 +40,10 @@ def random_string(length=10):
 
 def generate_unique_id():
     return uuid.uuid4().hex
+
+
+def strip_template_ref_prefix(value: object, prefix: str) -> str:
+    value = str(value or "").strip()
+    if value.startswith(prefix):
+        return value[len(prefix) :]
+    return value

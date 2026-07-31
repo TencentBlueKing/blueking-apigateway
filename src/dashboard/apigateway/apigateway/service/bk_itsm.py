@@ -27,6 +27,7 @@ from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import create_ticket
+from apigateway.utils.string import strip_template_ref_prefix
 from apigateway.utils.url import url_join
 
 logger = logging.getLogger(__name__)
@@ -119,6 +120,7 @@ class ItsmPermissionApplyHelper:
         if not normalized_approvers:
             raise error_codes.FAILED_PRECONDITION.format("ITSM approvers is required and cannot be empty.")
 
+        normalized_apply_reason = str(apply_reason or "").strip()
         apply_resources = self._build_apply_resources_display(
             grant_dimension=grant_dimension,
             gateway_name=gateway_name,
@@ -131,7 +133,7 @@ class ItsmPermissionApplyHelper:
             "gateway_name": gateway_name,
             "grant_dimension": grant_dimension,
             "apply_resources": apply_resources,
-            "apply_reason": apply_reason,
+            "apply_reason": normalized_apply_reason,
             "bk_app_code": bk_app_code,
             "apply_record_id": apply_record_id,
             "instance_approvers": normalized_approvers,
@@ -174,10 +176,7 @@ class ItsmPermissionApplyHelper:
 
     @staticmethod
     def _normalize_workflow_key(workflow_key: str) -> str:
-        workflow_key = str(workflow_key or "").strip()
-        if workflow_key.startswith("$Workflow"):
-            return workflow_key[len("$Workflow") :]
-        return workflow_key
+        return strip_template_ref_prefix(workflow_key, "$Workflow")
 
     @staticmethod
     def _build_form_options(grant_dimension: str) -> Dict[str, List[Dict[str, Optional[str]]]]:

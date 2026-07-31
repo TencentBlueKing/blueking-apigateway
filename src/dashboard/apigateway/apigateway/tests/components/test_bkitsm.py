@@ -17,7 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from apigateway.components.bkitsm import _call_bkitsm_api, create_system_workflow, create_ticket
+from apigateway.components.bkitsm import (
+    _call_bkitsm_api,
+    create_system_workflow,
+    create_ticket,
+    update_form_model,
+)
 
 
 def test_call_bkitsm_api_with_operation_tenant_headers(settings, mocker):
@@ -83,6 +88,43 @@ def test_create_ticket_fallback_to_global_token(settings, mocker):
         workflow_key="wf-001",
         form_data={"ticket__title": "test"},
         system_id="bk_apigateway",
+    )
+
+    _, kwargs = mock_call.call_args
+    assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "fallback-token"}
+
+
+def test_update_form_model_prefers_system_token(settings, mocker):
+    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
+    settings.BK_ITSM4_API_TIMEOUT = 30
+    settings.BK_ITSM4_SYSTEM_TOKEN = "fallback-token"
+
+    mock_call = mocker.patch("apigateway.components.bkitsm._call_bkitsm_api", return_value={"key": "fm-001"})
+
+    update_form_model(
+        key="fm-001",
+        name="bk-apigateway",
+        meta={"fields": {}},
+        system_id="bk-apigateway",
+        system_token="explicit-token",
+    )
+
+    _, kwargs = mock_call.call_args
+    assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "explicit-token"}
+
+
+def test_update_form_model_fallback_to_global_token(settings, mocker):
+    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
+    settings.BK_ITSM4_API_TIMEOUT = 30
+    settings.BK_ITSM4_SYSTEM_TOKEN = "fallback-token"
+
+    mock_call = mocker.patch("apigateway.components.bkitsm._call_bkitsm_api", return_value={"key": "fm-001"})
+
+    update_form_model(
+        key="fm-001",
+        name="bk-apigateway",
+        meta={"fields": {}},
+        system_id="bk-apigateway",
     )
 
     _, kwargs = mock_call.call_args
