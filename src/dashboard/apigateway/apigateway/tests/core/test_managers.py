@@ -355,6 +355,47 @@ class TestReleaseManager:
 
 
 class TestReleasedResourceManager:
+    @staticmethod
+    def _make_resource_snapshot(auth_config=None):
+        if auth_config is None:
+            auth_config = json.dumps(
+                {
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
+                }
+            )
+
+        return {
+            "id": 101,
+            "name": "get_user",
+            "method": "GET",
+            "path": "/users/{id}",
+            "is_public": True,
+            "contexts": {"resource_auth": {"config": auth_config}},
+        }
+
+    def test_save_released_resource_projects_oauth2_scope_fields(self, fake_resource_version):
+        fake_resource_version.data = [self._make_resource_snapshot()]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert released.is_public is True
+        assert released.oauth2_public_client_enabled is True
+        assert released.oauth2_personal_client_enabled is False
+
+    def test_save_released_resource_projects_malformed_auth_config_as_disabled(self, fake_resource_version):
+        fake_resource_version.data = [self._make_resource_snapshot(auth_config="not-json")]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert released.is_public is True
+        assert released.oauth2_public_client_enabled is False
+        assert released.oauth2_personal_client_enabled is False
+
     def test_filter_latest_released_resources(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway)
         r2 = G(Resource, gateway=fake_gateway)
