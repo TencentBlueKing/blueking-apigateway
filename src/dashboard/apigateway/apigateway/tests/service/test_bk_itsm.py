@@ -304,31 +304,57 @@ class TestItsmPermissionApplyHelper:
         with open(options.template_file, encoding="utf-8") as fp:
             template = json.load(fp)
 
-        payload = RegisterToItsmCommand._build_form_model_update_payload("bk-apigateway", template)
+        payload = RegisterToItsmCommand._build_form_model_update_payload("bk-apigateway-20260803", template)
 
-        assert payload["key"] == "20260506180400004501"
-        assert payload["name"] == "bk-apigateway"
+        assert payload["key"] == "20260803110000000101"
+        assert payload["name"] == "bk-apigateway-20260803"
         assert payload["app_id"] == "core"
-        assert payload["system_id"] == "bk-apigateway"
+        assert payload["system_id"] == "bk-apigateway-20260803"
         assert payload["meta"]["fields"]["apply_reason"]["type"] == "textarea"
         assert "styleCode" not in payload["meta"]
 
-    def test_register_to_itsm_missing_workflow_schema_fields_require_all_workflows(self):
-        missing_field_keys = RegisterToItsmCommand._get_missing_workflow_schema_field_keys(
+    def test_register_to_itsm_extract_common_workflow_schema_field_keys(self):
+        field_keys = RegisterToItsmCommand._extract_common_workflow_schema_field_keys(
             {
                 "count": 2,
                 "results": [
-                    {"form_schema": {"properties": {"apply_reason": {}, "gateway_name": {}}}},
-                    {"form_schema": {"properties": {"gateway_name": {}}}},
+                    {
+                        "form_schema": {
+                            "properties": {
+                                "ticket_info_group": {
+                                    "type": "object",
+                                    "format": "group",
+                                    "properties": {"apply_reason": {}, "gateway_name": {}},
+                                },
+                                "ticket_handle_group": {
+                                    "type": "object",
+                                    "format": "group",
+                                    "properties": {"instance_approvers": {}},
+                                },
+                            }
+                        }
+                    },
+                    {
+                        "form_schema": {
+                            "properties": {
+                                "ticket_info_group": {
+                                    "type": "object",
+                                    "format": "group",
+                                    "properties": {"gateway_name": {}},
+                                },
+                                "ticket_handle_group": {
+                                    "type": "object",
+                                    "format": "group",
+                                    "properties": {"instance_approvers": {}},
+                                },
+                            }
+                        }
+                    },
                 ],
-            },
-            {
-                "apply_reason": {},
-                "gateway_name": {},
-            },
+            }
         )
 
-        assert missing_field_keys == ["apply_reason"]
+        assert field_keys == {"gateway_name", "instance_approvers", "ticket_handle_group", "ticket_info_group"}
 
     def test_register_to_itsm_extract_workflow_items_requires_results_shape(self):
         workflow_items = RegisterToItsmCommand._extract_workflow_items(
@@ -371,7 +397,7 @@ class TestItsmPermissionApplyHelper:
         mocker.patch.object(command, "_ensure_config_from_template")
         mock_update_form_model = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
-            return_value={"meta": {"fields": {"apply_reason": {}}}},
+            return_value={"meta": {"fields": {key: {} for key in field_keys}}},
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
@@ -381,10 +407,10 @@ class TestItsmPermissionApplyHelper:
 
         mock_system_migrate.assert_not_called()
         mock_update_form_model.assert_called_once()
-        assert mock_update_form_model.call_args.kwargs["key"] == "20260506180400004501"
+        assert mock_update_form_model.call_args.kwargs["key"] == "20260803110000000101"
         assert "apply_reason" in mock_update_form_model.call_args.kwargs["meta"]["fields"]
 
-    def test_register_to_itsm_update_form_model_requires_workflow_schema_updated(self, mocker):
+    def test_register_to_itsm_update_form_model_does_not_require_workflow_schema_updated(self, mocker):
         parser = argparse.ArgumentParser()
         RegisterToItsmCommand().add_arguments(parser)
         options = parser.parse_args(["--update-form-model"])
@@ -393,35 +419,29 @@ class TestItsmPermissionApplyHelper:
             template = json.load(fp)
 
         field_keys = set(template["form_models"][0]["meta"]["fields"].keys())
-        remote_properties = {key: {} for key in field_keys if key != "apply_reason"}
+        remote_properties = {"ticket_info_group": {}, "ticket_handle_group": {}}
         command = RegisterToItsmCommand()
         mocker.patch.object(
             command,
             "_get_system_workflow_list",
-            side_effect=[
-                {
-                    "count": 1,
-                    "results": [{"form_schema": {"properties": remote_properties}}],
-                },
-                {
-                    "count": 1,
-                    "results": [{"form_schema": {"properties": remote_properties}}],
-                },
-            ],
+            return_value={
+                "count": 1,
+                "results": [{"form_schema": {"properties": remote_properties}}],
+            },
         )
-        mocker.patch.object(command, "_ensure_config_from_template")
+        mock_ensure_config = mocker.patch.object(command, "_ensure_config_from_template")
         mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
-            return_value={"meta": {"fields": {"apply_reason": {}}}},
+            return_value={"meta": {"fields": {key: {} for key in field_keys}}},
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
         )
 
-        with pytest.raises(RuntimeError, match="workflow schema still missing fields"):
-            command.handle(**vars(options))
+        command.handle(**vars(options))
 
         mock_system_migrate.assert_not_called()
+        mock_ensure_config.assert_called_once()
 
     def test_register_to_itsm_default_template_contains_apply_reason_and_style(self):
         parser = argparse.ArgumentParser()
@@ -455,15 +475,25 @@ class TestItsmPermissionApplyHelper:
 
             form_canvas_data = version["form_canvas_data"]
             assert form_canvas_data["jsonschema"]["properties"]["apply_reason"]["maxLength"] == 512
-            assert "apply_reason" in {
-                field["key"] for row in form_canvas_data["form_data"]["layout"] for field in row["list"]
-            }
-            apply_reason_layout = next(
-                field
-                for row in form_canvas_data["form_data"]["layout"]
-                for field in row["list"]
-                if field["key"] == "apply_reason"
-            )
+
+            def iter_layout_fields(layout):
+                for row in layout:
+                    for field in row["list"]:
+                        yield field
+                        yield from iter_layout_fields(field.get("list", []))
+
+            layout = form_canvas_data["form_data"]["layout"]
+            assert [field["key"] for row in layout for field in row["list"]] == [
+                "ticket_info_group",
+                "ticket_handle_group",
+            ]
+            assert [field["key"] for field in layout[0]["list"][0]["list"][0]["list"]] == [
+                "ticket__title",
+                "gateway_name",
+            ]
+            layout_fields = list(iter_layout_fields(layout))
+            assert "apply_reason" in {field["key"] for field in layout_fields}
+            apply_reason_layout = next(field for field in layout_fields if field["key"] == "apply_reason")
             for translation in apply_reason_layout["translations"].values():
                 assert translation["name_en"] == "Apply Reason"
                 assert translation["name_zh_hans"] == "申请理由"

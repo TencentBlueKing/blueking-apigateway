@@ -131,29 +131,23 @@ class Command(BaseCommand):
         form_model_key: str,
     ):
         payload = self._build_form_model_update_payload(system_code, template_data, form_model_key)
-        missing_field_keys = self._get_missing_workflow_schema_field_keys(
-            workflow_list_resp, payload["meta"]["fields"]
-        )
-        if not missing_field_keys:
+        template_field_keys = sorted(payload["meta"]["fields"].keys())
+        workflow_schema_field_keys = self._extract_common_workflow_schema_field_keys(workflow_list_resp)
+        if workflow_schema_field_keys and set(template_field_keys).issubset(workflow_schema_field_keys):
             self.stdout.write(
                 self.style.SUCCESS("ITSM workflow schema already contains all template fields, skip update")
             )
             return
 
-        self.stdout.write(f"Start updating ITSM form model, key={payload['key']}, missing_fields={missing_field_keys}")
+        self.stdout.write(f"Start updating ITSM form model, key={payload['key']}, fields={template_field_keys}")
         resp = update_form_model(**payload)
-        self._validate_form_model_update_response(resp, missing_field_keys)
-        self.stdout.write(f"ITSM form model updated, verifying workflow schema, key={payload['key']}")
-
-        latest_workflow_list_resp = self._get_system_workflow_list(system_code, fail_on_error=True)
-        self._validate_workflow_schema_fields(
-            latest_workflow_list_resp,
-            missing_field_keys,
-        )
-        self.stdout.write(self.style.SUCCESS(f"ITSM workflow schema updated: key={payload['key']}"))
+        self._validate_form_model_update_response(resp, template_field_keys)
+        self.stdout.write(self.style.SUCCESS(f"ITSM form model updated: key={payload['key']}"))
         self.stdout.write(
             self.style.WARNING(
-                "update_form_model only updates form model fields; form_canvas_data/styleCode/layout are not updated."
+                "update_form_model only updates form model fields; form_canvas_data/styleCode/layout are not updated. "
+                "system_workflow_list may expose workflow group schema instead of form model fields, "
+                "please verify in ITSM form model page or create a test ticket."
             )
         )
 
@@ -187,30 +181,28 @@ class Command(BaseCommand):
         }
 
     @staticmethod
-    def _get_missing_workflow_schema_field_keys(
-        workflow_list_resp: Dict[str, Any],
-        template_fields: Dict[str, Any],
-    ) -> List[str]:
-        remote_field_keys = Command._extract_common_workflow_schema_field_keys(workflow_list_resp)
-        if not remote_field_keys:
-            return sorted(template_fields.keys())
-
-        return sorted(set(template_fields.keys()) - remote_field_keys)
-
-    @staticmethod
     def _extract_common_workflow_schema_field_keys(workflow_list_resp: Dict[str, Any]) -> Set[str]:
         workflow_items = Command._extract_workflow_items(workflow_list_resp)
         common_field_keys: Optional[Set[str]] = None
         for item in workflow_items:
             form_schema = item.get("form_schema") or {}
-            properties = form_schema.get("properties") or {}
-            current_field_keys = set(properties.keys())
+            current_field_keys = Command._extract_jsonschema_field_keys(form_schema)
             if common_field_keys is None:
                 common_field_keys = current_field_keys
             else:
                 common_field_keys &= current_field_keys
 
         return common_field_keys or set()
+
+    @staticmethod
+    def _extract_jsonschema_field_keys(schema: Dict[str, Any]) -> Set[str]:
+        properties = schema.get("properties") or {}
+        field_keys = set(properties.keys())
+        for field_schema in properties.values():
+            if isinstance(field_schema, dict):
+                field_keys |= Command._extract_jsonschema_field_keys(field_schema)
+
+        return field_keys
 
     @staticmethod
     def _extract_workflow_items(resp: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -241,16 +233,6 @@ class Command(BaseCommand):
         still_missing = sorted(set(missing_field_keys) - set(updated_fields.keys()))
         if still_missing:
             raise RuntimeError(f"update_form_model response missing fields: {still_missing}")
-
-    @staticmethod
-    def _validate_workflow_schema_fields(workflow_list_resp: Dict[str, Any], expected_field_keys: List[str]):
-        remote_field_keys = Command._extract_common_workflow_schema_field_keys(workflow_list_resp)
-        still_missing = sorted(set(expected_field_keys) - remote_field_keys)
-        if still_missing:
-            raise RuntimeError(
-                "update_form_model succeeded but workflow schema still missing fields: "
-                f"{still_missing}. Please update and publish the workflow in ITSM, then verify by system_workflow_list."
-            )
 
     def _ensure_config_from_template(self, system_code: str, template_data):
         """确保配置表有完整数据，有则复用，无则从模板写入"""
