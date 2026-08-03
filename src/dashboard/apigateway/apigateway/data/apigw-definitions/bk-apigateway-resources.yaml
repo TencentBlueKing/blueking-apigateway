@@ -7144,3 +7144,139 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/inner/oauth2/client-scopes/mcp-servers/:
+    get:
+      operationId: v2_inner_list_oauth2_mcp_server_scopes
+      description: 获取 OAuth2 客户端可选的 MCP Server 范围
+      tags:
+      - v2_inner
+      parameters:
+        - name: oauth_client_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [personal, public]
+          description: OAuth2 客户端类型
+        - name: gateway_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: 网关名称，包含匹配
+        - name: mcp_server_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: MCP Server 名称，包含匹配
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+          description: 每页网关数量
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 网关分页偏移量
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/oauth2/client-scopes/mcp-servers/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/oauth2/client-scopes/resources/:
+    get:
+      operationId: v2_inner_list_oauth2_resource_scopes
+      description: 获取 OAuth2 客户端可选的 API 资源范围
+      tags:
+      - v2_inner
+      parameters:
+        - name: oauth_client_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [personal, public]
+          description: OAuth2 客户端类型
+        - name: gateway_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+          description: 网关名称，包含匹配
+        - name: resource_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: 资源名称，包含匹配
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+          description: 每页网关数量
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 网关分页偏移量
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/oauth2/client-scopes/resources/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None

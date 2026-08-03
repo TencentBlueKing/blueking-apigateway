@@ -138,6 +138,23 @@ urlpatterns = [
         ),
     ),
     path(
+        "oauth2/client-scopes/",
+        include(
+            [
+                path(
+                    "mcp-servers/",
+                    views.OAuth2MCPServerScopeListApi.as_view(),
+                    name="openapi.v2.inner.oauth2.mcp_server_scopes.list",
+                ),
+                path(
+                    "resources/",
+                    views.OAuth2ResourceScopeListApi.as_view(),
+                    name="openapi.v2.inner.oauth2.resource_scopes.list",
+                ),
+            ]
+        ),
+    ),
+    path(
         "mcp-server/permissions/",
         include(
             [
