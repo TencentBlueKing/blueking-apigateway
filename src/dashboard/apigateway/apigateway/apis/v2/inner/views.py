@@ -57,6 +57,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
+from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
@@ -69,6 +70,12 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.service.oauth2_client_scope import (
+    get_oauth2_mcp_server_scope_gateways,
+    get_oauth2_mcp_server_scope_map,
+    get_oauth2_resource_scope_gateways,
+    get_oauth2_resource_scope_map,
+)
 from apigateway.utils import time as time_utils
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
@@ -79,6 +86,113 @@ logger = logging.getLogger(__name__)
 
 
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
+
+
+class OAuth2ClientScopePagination(StandardLimitOffsetPagination):
+    default_limit = 10
+    max_limit: int = 20
+
+    def get_limit(self, request):
+        raw_limit = request.query_params.get(self.limit_query_param)
+        if raw_limit is not None:
+            try:
+                limit = int(raw_limit)
+            except TypeError, ValueError:
+                raise ValidationError({"limit": [_("limit 必须为整数。")]})
+            if not 1 <= limit <= self.max_limit:
+                raise ValidationError({"limit": [_("limit 必须在 1 到 20 之间。")]})
+        return super().get_limit(request)
+
+    def get_offset(self, request):
+        raw_offset = request.query_params.get(self.offset_query_param)
+        if raw_offset is not None:
+            try:
+                offset = int(raw_offset)
+            except TypeError, ValueError:
+                raise ValidationError({"offset": [_("offset 必须为整数。")]})
+            if offset < 0:
+                raise ValidationError({"offset": [_("offset 必须大于或等于 0。")]})
+        return super().get_offset(request)
+
+
+def _get_oauth2_scope_tenant_id(request) -> str | None:
+    if not settings.ENABLE_MULTI_TENANT_MODE:
+        return None
+    if not request.tenant_id:
+        raise ValidationError("tenant_id is required in multi-tenant mode")
+    return request.tenant_id
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 OAuth2 客户端可选的 MCP Server 范围",
+        query_serializer=serializers.OAuth2MCPServerScopeListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.OAuth2MCPServerScopeGatewayOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class OAuth2MCPServerScopeListApi(generics.ListAPIView):
+    serializer_class = serializers.OAuth2MCPServerScopeGatewayOutputSLZ
+    permission_classes = [OpenAPIV2Permission]
+    pagination_class = OAuth2ClientScopePagination
+
+    def list(self, request, *args, **kwargs):
+        input_slz = serializers.OAuth2MCPServerScopeListInputSLZ(data=request.query_params)
+        input_slz.is_valid(raise_exception=True)
+        data = input_slz.validated_data
+
+        queryset = get_oauth2_mcp_server_scope_gateways(
+            oauth_client_type=data["oauth_client_type"],
+            tenant_id=_get_oauth2_scope_tenant_id(request),
+            gateway_name=data.get("gateway_name", ""),
+            mcp_server_name=data.get("mcp_server_name", ""),
+        )
+        page = self.paginate_queryset(queryset)
+        scope_map = get_oauth2_mcp_server_scope_map(
+            gateway_ids=[gateway.id for gateway in page],
+            oauth_client_type=data["oauth_client_type"],
+            mcp_server_name=data.get("mcp_server_name", ""),
+        )
+        context = {**self.get_serializer_context(), "scope_map": scope_map}
+        output_slz = self.get_serializer(page, many=True, context=context)
+        return self.get_paginated_response(output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 OAuth2 客户端可选的 API 资源范围",
+        query_serializer=serializers.OAuth2ResourceScopeListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.OAuth2ResourceScopeGatewayOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class OAuth2ResourceScopeListApi(generics.ListAPIView):
+    serializer_class = serializers.OAuth2ResourceScopeGatewayOutputSLZ
+    permission_classes = [OpenAPIV2Permission]
+    pagination_class = OAuth2ClientScopePagination
+
+    def list(self, request, *args, **kwargs):
+        input_slz = serializers.OAuth2ResourceScopeListInputSLZ(data=request.query_params)
+        input_slz.is_valid(raise_exception=True)
+        data = input_slz.validated_data
+
+        queryset = get_oauth2_resource_scope_gateways(
+            oauth_client_type=data["oauth_client_type"],
+            tenant_id=_get_oauth2_scope_tenant_id(request),
+            gateway_name=data.get("gateway_name", ""),
+            resource_name=data.get("resource_name", ""),
+        )
+        page = self.paginate_queryset(queryset)
+        scope_map = get_oauth2_resource_scope_map(
+            gateway_ids=[gateway.id for gateway in page],
+            oauth_client_type=data["oauth_client_type"],
+            resource_name=data.get("resource_name", ""),
+        )
+        context = {**self.get_serializer_context(), "scope_map": scope_map}
+        output_slz = self.get_serializer(page, many=True, context=context)
+        return self.get_paginated_response(output_slz.data)
 
 
 def _validate_resource_ids_in_released_resources(resource_ids: list[int], released_resources: list[dict]):
