@@ -27,6 +27,7 @@ from apigateway.core.constants import (
     GatewayKindEnum,
     StageStatusEnum,
 )
+from apigateway.core.managers import get_released_resource_oauth2_flags
 from apigateway.core.models import (
     Gateway,
     Release,
@@ -37,6 +38,48 @@ from apigateway.core.models import (
 )
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.mark.parametrize(
+    ("config", "expected"),
+    [
+        (
+            json.dumps(
+                {
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
+                }
+            ),
+            (True, False),
+        ),
+        (
+            {
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": True,
+            },
+            (False, True),
+        ),
+        ("not-json", (False, False)),
+        (json.dumps([]), (False, False)),
+        (
+            json.dumps(
+                {
+                    "oauth2_public_client_enabled": "true",
+                    "oauth2_personal_client_enabled": 1,
+                }
+            ),
+            (False, False),
+        ),
+    ],
+)
+def test_get_released_resource_oauth2_flags(config, expected):
+    resource = {"contexts": {"resource_auth": {"config": config}}}
+
+    assert get_released_resource_oauth2_flags(resource) == expected
+
+
+def test_get_released_resource_oauth2_flags_with_missing_config():
+    assert get_released_resource_oauth2_flags({}) == (False, False)
 
 
 class TestStageManager:

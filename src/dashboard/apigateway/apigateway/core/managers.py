@@ -249,9 +249,10 @@ class ReleaseManager(models.Manager):
         return ids[0]
 
 
-def _get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
     try:
-        config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        raw_config = resource["contexts"]["resource_auth"]["config"]
+        config = json.loads(raw_config) if isinstance(raw_config, str) else raw_config
     except KeyError, TypeError, ValueError:
         return False, False
 
@@ -288,7 +289,7 @@ class ReleasedResourceManager(models.Manager):
 
         resource_to_add = []
         for resource in resource_version.data:
-            oauth2_public_enabled, oauth2_personal_enabled = _get_released_resource_oauth2_flags(resource)
+            oauth2_public_enabled, oauth2_personal_enabled = get_released_resource_oauth2_flags(resource)
             resource_to_add.append(
                 self.model(
                     gateway_id=resource_version.gateway_id,

@@ -33,6 +33,20 @@ def _get_oauth2_released_resources(
     )
     if resource_name:
         queryset = queryset.filter(resource_name__contains=resource_name)
+
+    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # SELECT rr.*
+    # FROM core_released_resource AS rr
+    # WHERE rr.is_public = TRUE
+    #   AND rr.<oauth2_enabled_field> = TRUE
+    #   AND EXISTS (
+    #       SELECT 1
+    #       FROM core_release AS rel
+    #       WHERE rel.api_id = rr.api_id
+    #         AND rel.resource_version_id = rr.resource_version_id
+    #   )
+    #   /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */;
+    # The commented predicate is included only when resource_name is provided.
     return queryset
 
 
@@ -76,6 +90,47 @@ def get_oauth2_resource_scope_gateways(
     scope_count = (
         eligible_for_gateway.values("gateway_id").annotate(value=Count("resource_id", distinct=True)).values("value")
     )
+
+    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # SELECT api.*,
+    #        (
+    #            SELECT COUNT(DISTINCT rr.resource_id)
+    #            FROM core_released_resource AS rr
+    #            WHERE rr.api_id = api.id
+    #              AND rr.is_public = TRUE
+    #              AND rr.<oauth2_enabled_field> = TRUE
+    #              AND EXISTS (
+    #                  SELECT 1
+    #                  FROM core_release AS rel
+    #                  WHERE rel.api_id = rr.api_id
+    #                    AND rel.resource_version_id = rr.resource_version_id
+    #              )
+    #              /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */
+    #        ) AS scope_count
+    # FROM core_api AS api
+    # WHERE api.status = 1
+    #   AND api.is_public = TRUE
+    #   /* AND (
+    #          api.tenant_mode = 'global'
+    #          OR (api.tenant_mode = 'single' AND api.tenant_id = %(tenant_id)s)
+    #      ) */
+    #   /* AND api.name LIKE CONCAT('%', %(gateway_name)s, '%') */
+    #   AND EXISTS (
+    #       SELECT 1
+    #       FROM core_released_resource AS rr
+    #       WHERE rr.api_id = api.id
+    #         AND rr.is_public = TRUE
+    #         AND rr.<oauth2_enabled_field> = TRUE
+    #         AND EXISTS (
+    #             SELECT 1
+    #             FROM core_release AS rel
+    #             WHERE rel.api_id = rr.api_id
+    #               AND rel.resource_version_id = rr.resource_version_id
+    #         )
+    #         /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */
+    #   )
+    # ORDER BY api.name, api.id;
+    # Commented predicates are included only when their corresponding argument is provided.
     return (
         queryset.filter(Exists(eligible_for_gateway))
         .annotate(scope_count=Subquery(scope_count))
@@ -138,6 +193,41 @@ def get_oauth2_mcp_server_scope_gateways(
         gateway_id=OuterRef("pk")
     )
     scope_count = eligible_for_gateway.values("gateway_id").annotate(value=Count("id", distinct=True)).values("value")
+
+    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # SELECT api.*,
+    #        (
+    #            SELECT COUNT(DISTINCT mcp.id)
+    #            FROM mcp_server AS mcp
+    #            INNER JOIN core_stage AS stage ON stage.id = mcp.stage_id
+    #            WHERE mcp.gateway_id = api.id
+    #              AND mcp.status = 1
+    #              AND mcp.is_public = TRUE
+    #              AND mcp.<oauth2_enabled_field> = TRUE
+    #              AND stage.status = 1
+    #              /* AND mcp.name LIKE CONCAT('%', %(mcp_server_name)s, '%') */
+    #        ) AS scope_count
+    # FROM core_api AS api
+    # WHERE api.status = 1
+    #   AND api.is_public = TRUE
+    #   /* AND (
+    #          api.tenant_mode = 'global'
+    #          OR (api.tenant_mode = 'single' AND api.tenant_id = %(tenant_id)s)
+    #      ) */
+    #   /* AND api.name LIKE CONCAT('%', %(gateway_name)s, '%') */
+    #   AND EXISTS (
+    #       SELECT 1
+    #       FROM mcp_server AS mcp
+    #       INNER JOIN core_stage AS stage ON stage.id = mcp.stage_id
+    #       WHERE mcp.gateway_id = api.id
+    #         AND mcp.status = 1
+    #         AND mcp.is_public = TRUE
+    #         AND mcp.<oauth2_enabled_field> = TRUE
+    #         AND stage.status = 1
+    #         /* AND mcp.name LIKE CONCAT('%', %(mcp_server_name)s, '%') */
+    #   )
+    # ORDER BY api.name, api.id;
+    # Commented predicates are included only when their corresponding argument is provided.
     return (
         queryset.filter(Exists(eligible_for_gateway))
         .annotate(scope_count=Subquery(scope_count))
