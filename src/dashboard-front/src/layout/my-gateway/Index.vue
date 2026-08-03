@@ -39,16 +39,16 @@
           >
             <template #prefix>
               <div
-                v-bk-tooltips="{
-                  content: t('可编程网关'),
-                  placement: 'right',
-                  disabled: !gatewayStore.isProgrammableGateway
-                }"
+                v-if="isProgrammableGateway || isAIGateway"
                 class="gateway-selector-prefix"
+                :style="{ left: `${iconLeft}px` }"
               >
                 <AgIcon
-                  v-if="gatewayStore.isProgrammableGateway"
-                  name="square-program"
+                  v-bk-tooltips="{
+                    content: isAIGateway ? t('AI 网关') : t('可编程网关'),
+                    placement: 'right',
+                  }"
+                  :name="isAIGateway ? 'AIwangguan' : 'square-program'"
                   size="16"
                 />
               </div>
@@ -60,7 +60,7 @@
               :name="item.name"
             >
               <div class="w-full flex items-center justify-between">
-                <div class="gateway-select-option">
+                <div class="flex items-center justify-center">
                   <span
                     class="text-ov"
                     :style="{ maxWidth: getOptionTextWidth(item) }"
@@ -76,7 +76,7 @@
                     <AgIcon
                       :name="item.kind === 1 ? 'square-program' : 'AIwangguan'"
                       size="16"
-                      class="ml-4px color-#3a84ff"
+                      class="ml-6px color-#3a84ff"
                       :class="[
                         {
                           'mr-4px': !item.status
@@ -124,7 +124,7 @@
                   </template>
                   <template v-for="child in menu.children">
                     <BkMenuItem
-                      v-if="child.enabled && !(child.hideInProgrammable && gatewayStore.isProgrammableGateway)"
+                      v-if="child.enabled && !(child.hideInProgrammable && isProgrammableGateway)"
                       :key="child.name"
                       @click.stop="() => handleGoPage(child.name)"
                     >
@@ -142,7 +142,7 @@
               </template>
               <template v-else>
                 <BkMenuItem
-                  v-if="!(menu.hideInProgrammable && gatewayStore.isProgrammableGateway)"
+                  v-if="!(menu.hideInProgrammable && isProgrammableGateway)"
                   :key="menu.name"
                   @click.stop="() => handleGoPage(menu.name)"
                 >
@@ -231,6 +231,7 @@ const needMenu = ref(true);
 const pageName = ref('');
 // 当前网关Id
 const gatewayId = ref(0);
+const iconLeft = ref(6);
 // 页面header名
 const headerTitle = ref('');
 
@@ -239,6 +240,7 @@ const version113UpdateNoticeRef = ref();
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
+const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
 const menuList = computed<IMenu[]>(() => [
   {
     name: 'StageManagement',
@@ -485,15 +487,19 @@ watch(
 const getGatewayData = async () => {
   const response = await getGatewayList({ limit: 10000 });
   gatewayList.value = response.results || [];
+  const name = gatewayList.value.find(gw => gw.id === gatewayId.value)?.name ?? '';
+  getGatewayIconDistance(name);
 };
 
 // 获取权限审批的数量
 const getPermissionData = async () => {
   const res = await getPermissionApplyList(
-    gatewayId.value, {
+    gatewayId.value,
+    {
       offset: 0,
       limit: 10,
-    });
+    },
+  );
   permissionStore.setCount(res.count);
 };
 
@@ -522,6 +528,20 @@ const getOptionTextWidth = (gateway: GatewayItemType) => {
   return '200px';
 };
 
+const getGatewayTextWidth = (text: string, font: string = '14px Microsoft Yahei,Helvetica,Aria') => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  if (!ctx) return 0;
+  ctx.font = font;
+  return ctx.measureText(text).width;
+};
+
+// 动态获取网关icon的边距
+const getGatewayIconDistance = (name: string) => {
+  if (name) {
+    iconLeft.value = getGatewayTextWidth(name) > 168 ? 176 : getGatewayTextWidth(name) + 20;
+  }
+};
+
 const handleCollapse = (collapsed: boolean) => {
   isMenuCollapsed.value = !collapsed;
 };
@@ -529,11 +549,13 @@ const handleCollapse = (collapsed: boolean) => {
 const handleGoPage = (routeName: string) => {
   gatewayStore.setApigwId(gatewayId.value);
   // 如果是可编程网关，则不展示资源配置，需要跳转到环境概览
-  const isEditGateway = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value)?.kind === 1;
+  const gatewayData = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value);
+  const isEditGateway = gatewayData?.kind === 1;
   router.push({
     name: ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName,
     params: { id: gatewayId.value },
   });
+  getGatewayIconDistance(gatewayData?.name ?? '');
   getPermissionData();
 };
 
@@ -786,42 +808,43 @@ onMounted(() => {
       }
     }
   }
+}
 
-  :deep(.header-select) {
-    width: 224px;
+:deep(.header-select) {
+  width: 224px;
 
-    .bk-input {
-      background: #f5f7fa;
-      border: none;
-      border-radius: 2px;
-      box-shadow: none;
+  .bk-input {
+    display: flex;
+    align-items: center;
+    background-color: #f5f7fa;
+    border: none;
+    border-radius: 2px;
+    box-shadow: none;
+    position: relative;
 
-      .bk-input--text {
-        font-size: 14px;
-        color: #63656e;
-        background: #f5f7fa;
-      }
+    .bk-input--text {
+      font-size: 14px;
+      color: #63656e;
+      background-color: transparent;
+      max-width: fit-content;
+      margin-left: 6px;
+      order: 1;
     }
 
-    &.is-focus {
-      border: 1px solid #3a84ff;
+    .gateway-selector-prefix {
+      width: 20px;
+      flex-shrink: 0;
+      color: #3a84ff;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      order: 2;
     }
   }
-}
 
-.gateway-selector-prefix {
-  display: flex;
-  width: 20px;
-  margin-left: 6px;
-  color: #3a84ff;
-  justify-content: center;
-  align-items: center;
-}
-
-.gateway-select-option {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  &.is-focus {
+    border: 1px solid #3a84ff;
+  }
 }
 </style>
 

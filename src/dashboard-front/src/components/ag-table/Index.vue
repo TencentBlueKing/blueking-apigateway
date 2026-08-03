@@ -373,6 +373,7 @@ const selectionColumns = computed(() => [{
       <Popover
         trigger="hover"
         placement="top"
+        popoverDelay={0}
         disabled={typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row)}
       >
         {{

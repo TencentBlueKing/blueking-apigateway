@@ -32,3 +32,6 @@ node_modules
 .pytest_cache
 .ruff_cache
 .benchmarks
+docs/reqs
+docs/superpowers/
+.agents/skills/harness-engineering/
