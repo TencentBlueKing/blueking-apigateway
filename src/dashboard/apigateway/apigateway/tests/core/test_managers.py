@@ -396,6 +396,27 @@ class TestReleasedResourceManager:
         assert released.oauth2_public_client_enabled is False
         assert released.oauth2_personal_client_enabled is False
 
+    @pytest.mark.parametrize("invalid_value", ["false", 1])
+    def test_save_released_resource_projects_non_boolean_flags_as_disabled(self, fake_resource_version, invalid_value):
+        resource = self._make_resource_snapshot(
+            auth_config=json.dumps(
+                {
+                    "oauth2_public_client_enabled": invalid_value,
+                    "oauth2_personal_client_enabled": invalid_value,
+                }
+            )
+        )
+        resource["is_public"] = invalid_value
+        fake_resource_version.data = [resource]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert released.is_public is False
+        assert released.oauth2_public_client_enabled is False
+        assert released.oauth2_personal_client_enabled is False
+
     def test_filter_latest_released_resources(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway)
         r2 = G(Resource, gateway=fake_gateway)
