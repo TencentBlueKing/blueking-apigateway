@@ -75,7 +75,10 @@ def get_oauth2_resource_scope_gateways(
     gateway_name: str = "",
     resource_name: str = "",
 ) -> QuerySet[Gateway]:
+    eligible_resources = _get_oauth2_released_resources(oauth_client_type, resource_name)
+    gateway_ids = list(eligible_resources.order_by().values_list("gateway_id", flat=True).distinct())
     queryset = Gateway.objects.filter(
+        id__in=gateway_ids,
         status=GatewayStatusEnum.ACTIVE.value,
         is_public=True,
     )
@@ -84,14 +87,26 @@ def get_oauth2_resource_scope_gateways(
     if gateway_name:
         queryset = queryset.filter(name__contains=gateway_name)
 
-    eligible_for_gateway = _get_oauth2_released_resources(oauth_client_type, resource_name).filter(
-        gateway_id=OuterRef("pk")
-    )
+    eligible_for_gateway = eligible_resources.filter(gateway_id=OuterRef("pk"))
     scope_count = (
         eligible_for_gateway.values("gateway_id").annotate(value=Count("resource_id", distinct=True)).values("value")
     )
 
     # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # -- Query 1: materialize the selective gateway ID list.
+    # SELECT DISTINCT rr.api_id
+    # FROM core_released_resource AS rr
+    # WHERE rr.is_public = TRUE
+    #   AND rr.<oauth2_enabled_field> = TRUE
+    #   AND EXISTS (
+    #       SELECT 1
+    #       FROM core_release AS rel
+    #       WHERE rel.api_id = rr.api_id
+    #         AND rel.resource_version_id = rr.resource_version_id
+    #   )
+    #   /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */;
+    #
+    # -- Query 2: filter, count, and page only the materialized gateways.
     # SELECT api.*,
     #        (
     #            SELECT COUNT(DISTINCT rr.resource_id)
@@ -108,34 +123,17 @@ def get_oauth2_resource_scope_gateways(
     #              /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */
     #        ) AS scope_count
     # FROM core_api AS api
-    # WHERE api.status = 1
+    # WHERE api.id IN (%(gateway_ids)s)
+    #   AND api.status = 1
     #   AND api.is_public = TRUE
     #   /* AND (
     #          api.tenant_mode = 'global'
     #          OR (api.tenant_mode = 'single' AND api.tenant_id = %(tenant_id)s)
     #      ) */
     #   /* AND api.name LIKE CONCAT('%', %(gateway_name)s, '%') */
-    #   AND EXISTS (
-    #       SELECT 1
-    #       FROM core_released_resource AS rr
-    #       WHERE rr.api_id = api.id
-    #         AND rr.is_public = TRUE
-    #         AND rr.<oauth2_enabled_field> = TRUE
-    #         AND EXISTS (
-    #             SELECT 1
-    #             FROM core_release AS rel
-    #             WHERE rel.api_id = rr.api_id
-    #               AND rel.resource_version_id = rr.resource_version_id
-    #         )
-    #         /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */
-    #   )
     # ORDER BY api.name, api.id;
     # Commented predicates are included only when their corresponding argument is provided.
-    return (
-        queryset.filter(Exists(eligible_for_gateway))
-        .annotate(scope_count=Subquery(scope_count))
-        .order_by("name", "id")
-    )
+    return queryset.annotate(scope_count=Subquery(scope_count)).order_by("name", "id")
 
 
 def get_oauth2_resource_scope_map(
@@ -180,7 +178,10 @@ def get_oauth2_mcp_server_scope_gateways(
     gateway_name: str = "",
     mcp_server_name: str = "",
 ) -> QuerySet[Gateway]:
+    eligible_mcp_servers = _get_oauth2_mcp_servers(oauth_client_type, mcp_server_name)
+    gateway_ids = list(eligible_mcp_servers.order_by().values_list("gateway_id", flat=True).distinct())
     queryset = Gateway.objects.filter(
+        id__in=gateway_ids,
         status=GatewayStatusEnum.ACTIVE.value,
         is_public=True,
     )
@@ -189,12 +190,24 @@ def get_oauth2_mcp_server_scope_gateways(
     if gateway_name:
         queryset = queryset.filter(name__contains=gateway_name)
 
-    eligible_for_gateway = _get_oauth2_mcp_servers(oauth_client_type, mcp_server_name).filter(
-        gateway_id=OuterRef("pk")
-    )
+    eligible_for_gateway = eligible_mcp_servers.filter(gateway_id=OuterRef("pk"))
     scope_count = eligible_for_gateway.values("gateway_id").annotate(value=Count("id", distinct=True)).values("value")
 
     # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # -- Query 1: materialize the selective gateway ID list.
+    # SELECT DISTINCT mcp.gateway_id
+    # FROM mcp_server AS mcp
+    # INNER JOIN core_api AS eligible_api ON eligible_api.id = mcp.gateway_id
+    # INNER JOIN core_stage AS stage ON stage.id = mcp.stage_id
+    # WHERE eligible_api.status = 1
+    #   AND eligible_api.is_public = TRUE
+    #   AND mcp.status = 1
+    #   AND mcp.is_public = TRUE
+    #   AND mcp.<oauth2_enabled_field> = TRUE
+    #   AND stage.status = 1
+    #   /* AND mcp.name LIKE CONCAT('%', %(mcp_server_name)s, '%') */;
+    #
+    # -- Query 2: filter, count, and page only the materialized gateways.
     # SELECT api.*,
     #        (
     #            SELECT COUNT(DISTINCT mcp.id)
@@ -208,31 +221,17 @@ def get_oauth2_mcp_server_scope_gateways(
     #              /* AND mcp.name LIKE CONCAT('%', %(mcp_server_name)s, '%') */
     #        ) AS scope_count
     # FROM core_api AS api
-    # WHERE api.status = 1
+    # WHERE api.id IN (%(gateway_ids)s)
+    #   AND api.status = 1
     #   AND api.is_public = TRUE
     #   /* AND (
     #          api.tenant_mode = 'global'
     #          OR (api.tenant_mode = 'single' AND api.tenant_id = %(tenant_id)s)
     #      ) */
     #   /* AND api.name LIKE CONCAT('%', %(gateway_name)s, '%') */
-    #   AND EXISTS (
-    #       SELECT 1
-    #       FROM mcp_server AS mcp
-    #       INNER JOIN core_stage AS stage ON stage.id = mcp.stage_id
-    #       WHERE mcp.gateway_id = api.id
-    #         AND mcp.status = 1
-    #         AND mcp.is_public = TRUE
-    #         AND mcp.<oauth2_enabled_field> = TRUE
-    #         AND stage.status = 1
-    #         /* AND mcp.name LIKE CONCAT('%', %(mcp_server_name)s, '%') */
-    #   )
     # ORDER BY api.name, api.id;
     # Commented predicates are included only when their corresponding argument is provided.
-    return (
-        queryset.filter(Exists(eligible_for_gateway))
-        .annotate(scope_count=Subquery(scope_count))
-        .order_by("name", "id")
-    )
+    return queryset.annotate(scope_count=Subquery(scope_count)).order_by("name", "id")
 
 
 def get_oauth2_mcp_server_scope_map(

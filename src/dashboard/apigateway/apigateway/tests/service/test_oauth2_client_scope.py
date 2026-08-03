@@ -294,6 +294,16 @@ def test_mcp_scope_filters_gateway_stage_mcp_visibility_and_client_type():
     assert [item["name"] for item in scope_map[valid_gateway.id]] == ["valid_mcp"]
 
 
+def test_mcp_scope_deduplicates_gateways_and_counts_all_matching_servers():
+    gateway = _make_gateway("mcp-deduplicate-gateway")
+    _make_mcp_server(gateway, name="first_mcp", public_enabled=True)
+    _make_mcp_server(gateway, name="second_mcp", public_enabled=True)
+
+    gateways = list(get_oauth2_mcp_server_scope_gateways(oauth_client_type="public"))
+
+    assert [(item.id, item.scope_count) for item in gateways] == [(gateway.id, 2)]
+
+
 def test_mcp_scope_applies_global_and_current_tenant_visibility():
     global_gateway = _make_gateway("global_gateway")
     tenant_a_gateway = _make_gateway(
@@ -363,7 +373,7 @@ def test_mcp_scope_map_returns_empty_without_gateways():
     )
 
 
-def test_resource_scope_page_uses_three_queries(django_assert_num_queries):
+def test_resource_scope_page_uses_four_queries(django_assert_num_queries):
     gateway = _make_gateway("resource-query-budget-gateway")
     _make_released_resource(
         gateway,
@@ -372,7 +382,7 @@ def test_resource_scope_page_uses_three_queries(django_assert_num_queries):
         public_enabled=True,
     )
 
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(4):
         gateways = get_oauth2_resource_scope_gateways(oauth_client_type="public")
         assert gateways.count() == 1
         page = list(gateways[:20])
@@ -383,11 +393,11 @@ def test_resource_scope_page_uses_three_queries(django_assert_num_queries):
         assert len(scope_map[page[0].id]) == 1
 
 
-def test_mcp_scope_page_uses_three_queries(django_assert_num_queries):
+def test_mcp_scope_page_uses_four_queries(django_assert_num_queries):
     gateway = _make_gateway("mcp-query-budget-gateway")
     _make_mcp_server(gateway, name="query_budget_mcp", public_enabled=True)
 
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(4):
         gateways = get_oauth2_mcp_server_scope_gateways(oauth_client_type="public")
         assert gateways.count() == 1
         page = list(gateways[:20])
