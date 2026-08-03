@@ -35,12 +35,6 @@ urlpatterns = [
             [
                 # GET /api/v2/open/gateways/
                 path("", views.GatewayListApi.as_view(), name="openapi.v2.open.gateway.list"),
-                # POST /api/v2/open/gateways/batch-query/
-                path(
-                    "batch-query/",
-                    views.GatewayBatchQueryApi.as_view(),
-                    name="openapi.v2.open.gateway.batch_query",
-                ),
                 path(
                     "<slug:gateway_name>/",
                     include(
@@ -61,13 +55,6 @@ urlpatterns = [
                                 "resources/<str:resource_name>/",
                                 views.GatewayResourceDetailApi.as_view(),
                                 name="openapi.v2.open.gateway.resources.detail",
-                            ),
-                            # GET .../resources/{resource_name}/info/ — NOT env-specific: returns basic info
-                            # (id, name, method, path) from resource definition, no stage required
-                            path(
-                                "resources/<str:resource_name>/info/",
-                                views.GatewayResourceRetrieveByNameApi.as_view(),
-                                name="openapi.v2.open.gateway.resources.info",
                             ),
                             # GET /api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/
                             # release-specific: returns released resources from target stage

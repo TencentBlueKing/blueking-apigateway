@@ -67,13 +67,10 @@ from apigateway.utils.responses import OKJsonResponse
 from . import serializers
 from .serializers import (
     GatewayAppPermissionApplyOutputSLZ,
-    GatewayBatchQueryInputSLZ,
-    GatewayBatchQueryOutputSLZ,
     GatewayResourceDetailInputSLZ,
     GatewayResourceDetailOutputSLZ,
     GatewayResourceListInputSLZ,
     GatewayResourceListOutputSLZ,
-    GatewayResourceRetrieveByNameOutputSLZ,
     GetCurrentUnixTimestampOutputSLZ,
     GetDatetimeInputSLZ,
     GetDatetimeOutputSLZ,
@@ -908,78 +905,7 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="批量根据网关名称查询网关展示名称和描述",
-        request_body=GatewayBatchQueryInputSLZ,
-        responses={status.HTTP_200_OK: GatewayBatchQueryOutputSLZ(many=True)},
-        tags=["OpenAPI.V2.Open"],
-    ),
-)
-class GatewayBatchQueryApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIV2Permission]
-
-    def create(self, request, *args, **kwargs):
-        slz = GatewayBatchQueryInputSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        queryset = Gateway.objects.filter(
-            status=GatewayStatusEnum.ACTIVE.value,
-            is_public=True,
-        )
-
-        if slz.validated_data.get("ids"):
-            queryset = queryset.filter(id__in=slz.validated_data["ids"])
-        if slz.validated_data.get("names"):
-            queryset = queryset.filter(name__in=slz.validated_data["names"])
-
-        output_slz = GatewayBatchQueryOutputSLZ(queryset, many=True)
-        data = output_slz.data
-
-        allowed_fields = {"id", "name"}
-        fields_str = slz.validated_data.get("fields")
-        if fields_str:
-            allowed_fields = {f.strip() for f in fields_str.split(",") if f.strip()}
-        data = [{k: v for k, v in item.items() if k in allowed_fields} for item in data]
-
-        return OKJsonResponse(data=data)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="根据资源名称获取网关下单个资源的基本信息",
-        responses={status.HTTP_200_OK: GatewayResourceRetrieveByNameOutputSLZ()},
-        tags=["OpenAPI.V2.Open"],
-    ),
-)
-class GatewayResourceRetrieveByNameApi(generics.RetrieveAPIView):
-    permission_classes = [OpenAPIV2GatewayNamePermission]
-    serializer_class = GatewayResourceRetrieveByNameOutputSLZ
-    lookup_url_kwarg = "resource_name"
-    lookup_field = "name"
-
-    def get_queryset(self):
-        return Resource.objects.all()
-
-    def retrieve(self, request, *args, **kwargs):
-        resource_name = self.kwargs.get("resource_name")
-        resource = Resource.objects.filter(
-            gateway=request.gateway,
-            name=resource_name,
-        ).first()
-
-        if not resource:
-            raise error_codes.NOT_FOUND.format(
-                _("资源【{resource_name}】不存在").format(resource_name=resource_name), replace=True
-            )
-
-        output_slz = self.get_serializer(resource)
-        return OKJsonResponse(data=output_slz.data)
-
-
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
-        operation_description="批量根据 MCPServer 名称查询 MCPServer 展示名称、描述和分类",
+        operation_description="批量根据 MCPServer 名称查询 MCPServer 展示名称、描述和分类(deprecated, remove soon)",
         request_body=MCPServerBatchQueryInputSLZ,
         responses={status.HTTP_200_OK: MCPServerBatchQueryOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Open"],
