@@ -291,6 +291,25 @@
                 <span class="link">{{ basicInfoData.created_time || '--' }}</span>
               </div>
             </div>
+            <div
+              v-if="featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED"
+              class="detail-item-content-item"
+            >
+              <div class="label">
+                {{ `${t('关联蓝鲸应用')}：` }}
+              </div>
+              <div class="value">
+                <span class="link">{{ basicInfoData.bk_app_codes?.join(',') || '--' }}</span>
+              </div>
+            </div>
+            <div class="detail-item-content-item">
+              <div class="label">
+                {{ `${t('管理网关的应用列表')}：` }}
+              </div>
+              <div class="value">
+                <span class="link">{{ basicInfoData.related_app_codes?.join(',') || '--' }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
