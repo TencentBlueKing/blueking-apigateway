@@ -905,7 +905,7 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="批量根据 MCPServer 名称查询 MCPServer 展示名称、描述和分类",
+        operation_description="批量根据 MCPServer 名称查询 MCPServer 展示名称、描述和分类(deprecated, remove soon)",
         request_body=MCPServerBatchQueryInputSLZ,
         responses={status.HTTP_200_OK: MCPServerBatchQueryOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Open"],

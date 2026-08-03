@@ -3001,7 +3001,7 @@ paths:
                                 type: string
                                 description: 分类显示名称
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
