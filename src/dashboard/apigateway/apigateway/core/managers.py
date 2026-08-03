@@ -249,6 +249,22 @@ class ReleaseManager(models.Manager):
         return ids[0]
 
 
+def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+    try:
+        raw_config = resource["contexts"]["resource_auth"]["config"]
+        config = json.loads(raw_config) if isinstance(raw_config, str) else raw_config
+    except KeyError, TypeError, ValueError:
+        return False, False
+
+    if not isinstance(config, dict):
+        return False, False
+
+    return (
+        config.get("oauth2_public_client_enabled") is True,
+        config.get("oauth2_personal_client_enabled") is True,
+    )
+
+
 class ReleasedResourceManager(models.Manager):
     def get_released_resource_version_ids_by_resource(self, gateway_id: int, resource_id: int) -> List[int]:
         return list(
@@ -271,18 +287,23 @@ class ReleasedResourceManager(models.Manager):
         if exists:
             queryset.delete()
 
-        resource_to_add = [
-            self.model(
-                gateway_id=resource_version.gateway_id,
-                resource_version_id=resource_version.id,
-                resource_id=resource["id"],
-                resource_name=resource["name"],
-                resource_method=resource["method"],
-                resource_path=resource["path"],
-                data=resource,
+        resource_to_add = []
+        for resource in resource_version.data:
+            oauth2_public_enabled, oauth2_personal_enabled = get_released_resource_oauth2_flags(resource)
+            resource_to_add.append(
+                self.model(
+                    gateway_id=resource_version.gateway_id,
+                    resource_version_id=resource_version.id,
+                    resource_id=resource["id"],
+                    resource_name=resource["name"],
+                    resource_method=resource["method"],
+                    resource_path=resource["path"],
+                    is_public=resource.get("is_public") is True,
+                    oauth2_public_client_enabled=oauth2_public_enabled,
+                    oauth2_personal_client_enabled=oauth2_personal_enabled,
+                    data=resource,
+                )
             )
-            for resource in resource_version.data
-        ]
         # 异步同时(多个stage同时发布同一版本)更新会存在一些冲突问题
         self.bulk_create(resource_to_add, batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE, ignore_conflicts=True)
 

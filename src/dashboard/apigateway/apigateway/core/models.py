@@ -645,6 +645,9 @@ class ReleasedResource(TimestampedModelMixin):
     resource_name = models.CharField(max_length=256, default="", blank=True, null=False)
     resource_method = models.CharField(max_length=10, blank=False, null=False)
     resource_path = models.CharField(max_length=2048, blank=False, null=False)
+    is_public = models.BooleanField(default=False)
+    oauth2_public_client_enabled = models.BooleanField(default=False)
+    oauth2_personal_client_enabled = models.BooleanField(default=False)
     data = JSONField(help_text="resource data in resource version")
 
     objects: ClassVar[managers.ReleasedResourceManager] = managers.ReleasedResourceManager()
@@ -656,11 +659,29 @@ class ReleasedResource(TimestampedModelMixin):
         verbose_name = "ReleasedResource"
         verbose_name_plural = "ReleasedResource"
         unique_together = ("gateway", "resource_version_id", "resource_id")
+        indexes = [
+            models.Index(
+                fields=[
+                    "oauth2_public_client_enabled",
+                    "is_public",
+                    "gateway",
+                    "resource_version_id",
+                    "resource_id",
+                ],
+                name="rr_oauth_pub_scope_idx",
+            ),
+            models.Index(
+                fields=[
+                    "oauth2_personal_client_enabled",
+                    "is_public",
+                    "gateway",
+                    "resource_version_id",
+                    "resource_id",
+                ],
+                name="rr_oauth_personal_scope_idx",
+            ),
+        ]
         db_table = "core_released_resource"
-
-    @property
-    def is_public(self) -> bool:
-        return self.data.get("is_public", False)
 
 
 class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):

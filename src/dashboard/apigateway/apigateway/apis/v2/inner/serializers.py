@@ -51,6 +51,7 @@ from apigateway.service.mcp import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
 )
+from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
@@ -871,3 +872,73 @@ class AppRequestLogListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListOutputSLZ"
+
+
+class OAuth2MCPServerScopeListInputSLZ(serializers.Serializer):
+    oauth_client_type = serializers.ChoiceField(choices=OAUTH2_CLIENT_TYPES)
+    gateway_name = serializers.CharField(required=False, allow_blank=True, max_length=64)
+    mcp_server_name = serializers.CharField(required=False, allow_blank=True, max_length=64)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.OAuth2MCPServerScopeListInputSLZ"
+
+
+class OAuth2ResourceScopeListInputSLZ(serializers.Serializer):
+    oauth_client_type = serializers.ChoiceField(choices=OAUTH2_CLIENT_TYPES)
+    gateway_name = serializers.CharField(required=False, allow_blank=True, max_length=64)
+    resource_name = serializers.CharField(required=False, allow_blank=True, max_length=256)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.OAuth2ResourceScopeListInputSLZ"
+
+
+class OAuth2MCPServerScopeOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    title = serializers.CharField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.OAuth2MCPServerScopeOutputSLZ"
+
+
+class OAuth2ResourceScopeOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"},
+        allow_blank=True,
+        read_only=True,
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.OAuth2ResourceScopeOutputSLZ"
+
+
+class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    is_official = serializers.BooleanField(read_only=True)
+    mcp_server_count = serializers.IntegerField(source="scope_count", read_only=True)
+    mcp_servers = serializers.SerializerMethodField()
+
+    def get_mcp_servers(self, obj):
+        mcp_servers = self.context["scope_map"].get(obj.id, [])
+        return OAuth2MCPServerScopeOutputSLZ(mcp_servers, many=True, context=self.context).data
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.OAuth2MCPServerScopeGatewayOutputSLZ"
+
+
+class OAuth2ResourceScopeGatewayOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    is_official = serializers.BooleanField(read_only=True)
+    resource_count = serializers.IntegerField(source="scope_count", read_only=True)
+    resources = serializers.SerializerMethodField()
+
+    def get_resources(self, obj):
+        resources = self.context["scope_map"].get(obj.id, [])
+        return OAuth2ResourceScopeOutputSLZ(resources, many=True, context=self.context).data
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.OAuth2ResourceScopeGatewayOutputSLZ"
