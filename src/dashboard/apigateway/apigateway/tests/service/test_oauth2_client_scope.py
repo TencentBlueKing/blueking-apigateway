@@ -146,6 +146,23 @@ def test_resource_scope_requires_public_and_switch_in_same_snapshot():
     assert get_oauth2_resource_scope_gateways(oauth_client_type="personal").count() == 0
 
 
+def test_resource_scope_excludes_inactive_and_private_gateways():
+    active_gateway = _make_gateway("active_gateway")
+    inactive_gateway = _make_gateway("inactive_gateway", status=GatewayStatusEnum.INACTIVE.value)
+    private_gateway = _make_gateway("private_gateway", is_public=False)
+    for resource_id, gateway in enumerate([active_gateway, inactive_gateway, private_gateway], start=1):
+        _make_released_resource(
+            gateway,
+            resource_id=resource_id,
+            name=f"resource_{resource_id}",
+            public_enabled=True,
+        )
+
+    names = list(get_oauth2_resource_scope_gateways(oauth_client_type="public").values_list("name", flat=True))
+
+    assert names == ["active_gateway"]
+
+
 def test_resource_scope_deduplicates_and_uses_latest_qualifying_snapshot():
     gateway = _make_gateway("scope-deduplicate-gateway")
     _make_released_resource(
@@ -277,6 +294,31 @@ def test_mcp_scope_filters_gateway_stage_mcp_visibility_and_client_type():
     assert [item["name"] for item in scope_map[valid_gateway.id]] == ["valid_mcp"]
 
 
+def test_mcp_scope_applies_global_and_current_tenant_visibility():
+    global_gateway = _make_gateway("global_gateway")
+    tenant_a_gateway = _make_gateway(
+        "tenant_a_gateway",
+        tenant_mode=TenantModeEnum.SINGLE.value,
+        tenant_id="tenant-a",
+    )
+    tenant_b_gateway = _make_gateway(
+        "tenant_b_gateway",
+        tenant_mode=TenantModeEnum.SINGLE.value,
+        tenant_id="tenant-b",
+    )
+    for gateway in [global_gateway, tenant_a_gateway, tenant_b_gateway]:
+        _make_mcp_server(gateway, name=f"{gateway.name}_mcp", public_enabled=True)
+
+    names = set(
+        get_oauth2_mcp_server_scope_gateways(
+            oauth_client_type="public",
+            tenant_id="tenant-a",
+        ).values_list("name", flat=True)
+    )
+
+    assert names == {"global_gateway", "tenant_a_gateway"}
+
+
 def test_mcp_scope_title_falls_back_to_name_and_name_filters_have_and_semantics():
     gateway = _make_gateway("blue_mcp_gateway")
     user_mcp = _make_mcp_server(gateway, name="user_tools", personal_enabled=True)
@@ -297,6 +339,28 @@ def test_mcp_scope_title_falls_back_to_name_and_name_filters_have_and_semantics(
 
     assert gateways[0].scope_count == 1
     assert scope_map[gateway.id] == [{"id": user_mcp.id, "name": "user_tools", "title": "user_tools"}]
+
+
+def test_resource_scope_map_returns_empty_without_gateways():
+    assert (
+        get_oauth2_resource_scope_map(
+            gateway_ids=[],
+            oauth_client_type="public",
+            resource_name="user",
+        )
+        == {}
+    )
+
+
+def test_mcp_scope_map_returns_empty_without_gateways():
+    assert (
+        get_oauth2_mcp_server_scope_map(
+            gateway_ids=[],
+            oauth_client_type="public",
+            mcp_server_name="tools",
+        )
+        == {}
+    )
 
 
 def test_resource_scope_page_uses_three_queries(django_assert_num_queries):

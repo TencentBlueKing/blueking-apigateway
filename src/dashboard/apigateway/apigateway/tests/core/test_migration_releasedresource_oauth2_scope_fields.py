@@ -1,4 +1,6 @@
 import json
+from importlib import import_module
+from types import SimpleNamespace
 
 import pytest
 from django.db import connections
@@ -33,6 +35,7 @@ EXPECTED_INDEX_COLUMNS = {
         "resource_id",
     ],
 }
+MIGRATION_MODULE = import_module("apigateway.core.migrations.0054_releasedresource_oauth2_scope_fields")
 
 
 def _column_names(connection, table_name):
@@ -73,6 +76,38 @@ def _resource_data(*, is_public, public_enabled=False, personal_enabled=False, a
         "is_public": is_public,
         "contexts": {"resource_auth": {"config": auth_config}},
     }
+
+
+def test_released_resource_scope_backfill_flushes_full_batches_and_remainder(mocker, monkeypatch):
+    resources = [
+        SimpleNamespace(data=_resource_data(is_public=True, public_enabled=True)),
+        SimpleNamespace(data=_resource_data(is_public=False, personal_enabled=True)),
+        SimpleNamespace(data=_resource_data(is_public=True, auth_config="not-json")),
+    ]
+    manager = mocker.Mock()
+    manager.only.return_value.order_by.return_value.iterator.return_value = iter(resources)
+    flushed_batch_sizes = []
+    manager.bulk_update.side_effect = lambda objects, fields, batch_size: flushed_batch_sizes.append(len(objects))
+    released_resource_model = type("ReleasedResource", (), {"objects": manager})
+    apps = mocker.Mock()
+    apps.get_model.return_value = released_resource_model
+    monkeypatch.setattr(MIGRATION_MODULE, "BATCH_SIZE", 2)
+
+    MIGRATION_MODULE.backfill_released_resource_scope_fields(apps, mocker.Mock())
+
+    assert flushed_batch_sizes == [2, 1]
+    assert [
+        (
+            resource.is_public,
+            resource.oauth2_public_client_enabled,
+            resource.oauth2_personal_client_enabled,
+        )
+        for resource in resources
+    ] == [
+        (True, True, False),
+        (False, False, True),
+        (True, False, False),
+    ]
 
 
 def test_released_resource_oauth2_scope_fields_are_backfilled_and_reversible():
