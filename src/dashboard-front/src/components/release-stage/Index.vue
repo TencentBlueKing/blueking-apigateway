@@ -315,11 +315,14 @@ type VersionType = {
 };
 
 interface IProps {
-  currentAssets: any
+  currentAssets?: IStageListItem
   version?: any
 }
 
-const { currentAssets, version = {} } = defineProps<IProps>();
+const {
+  currentAssets = {},
+  version = {},
+} = defineProps<IProps>();
 
 const emit = defineEmits<{
   'release-success': [void]
