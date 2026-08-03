@@ -779,30 +779,6 @@ class GatewayResourceListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceListInputSLZ"
 
 
-class GatewayResourceRetrieveByNameOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
-    name = serializers.CharField(read_only=True, help_text="资源名称")
-    kind = serializers.ChoiceField(
-        choices=ResourceKindEnum.get_choices(),
-        read_only=True,
-        default=ResourceKindEnum.STANDARD.value,
-        help_text="资源类型",
-    )
-    description = SerializerTranslatedField(
-        default_field="description_i18n", translated_fields={"en": "description_en"}
-    )
-    method = serializers.CharField(read_only=True, help_text="请求方法")
-    path = serializers.SerializerMethodField(help_text="资源路径")
-    match_subpath = serializers.BooleanField(read_only=True, help_text="是否匹配子路径")
-    is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceRetrieveByNameOutputSLZ"
-
-    def get_path(self, obj):
-        return obj.path_display
-
-
 class GatewayReleasedResourceOutputSLZ(serializers.Serializer):
     """已发布资源详情输出"""
 

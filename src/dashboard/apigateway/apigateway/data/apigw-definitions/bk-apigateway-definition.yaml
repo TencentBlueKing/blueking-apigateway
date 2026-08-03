@@ -131,7 +131,6 @@ grant_permissions:
     grant_dimension: "resource"
     resource_names:
       - v2_open_batch_query_mcp_servers
-      - v2_open_retrieve_gateway_resource_info
       - v2_open_list_gateways
       - v2_open_list_gateway_resources
       - v2_open_list_mcp_server
