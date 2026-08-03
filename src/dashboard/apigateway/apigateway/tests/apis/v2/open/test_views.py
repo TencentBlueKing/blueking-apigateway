@@ -1163,47 +1163,6 @@ class TestGatewayListApiKeyword:
         assert len(result["data"]) >= 1
 
 
-class TestGatewayResourceRetrieveByNameApi:
-    def test_retrieve_existing_resource(self, request_to_view, request_factory, fake_gateway):
-        resource = G(
-            Resource,
-            gateway=fake_gateway,
-            name="get_user_info",
-            description="获取用户信息",
-            method="GET",
-            path="/api/v1/users/",
-            is_public=True,
-        )
-
-        request = request_factory.get("")
-        request.gateway = fake_gateway
-        request.app = mock.MagicMock(app_code="test")
-
-        response = request_to_view(
-            request,
-            view_name="openapi.v2.open.gateway.resources.info",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": "get_user_info"},
-        )
-        result = get_response_json(response)
-
-        assert response.status_code == 200
-        assert result["data"]["name"] == "get_user_info"
-        assert result["data"]["id"] == resource.id
-
-    def test_retrieve_nonexistent_resource(self, request_to_view, request_factory, fake_gateway):
-        request = request_factory.get("")
-        request.gateway = fake_gateway
-        request.app = mock.MagicMock(app_code="test")
-
-        response = request_to_view(
-            request,
-            view_name="openapi.v2.open.gateway.resources.info",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": "nonexistent"},
-        )
-
-        assert response.status_code == 404
-
-
 class TestGatewayReleasedResourceListApi:
     def test_list_by_stage(self, settings, mocker, request_to_view, request_factory, fake_gateway):
         settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{resource_path}"

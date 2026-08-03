@@ -71,7 +71,6 @@ from .serializers import (
     GatewayResourceDetailOutputSLZ,
     GatewayResourceListInputSLZ,
     GatewayResourceListOutputSLZ,
-    GatewayResourceRetrieveByNameOutputSLZ,
     GetCurrentUnixTimestampOutputSLZ,
     GetDatetimeInputSLZ,
     GetDatetimeOutputSLZ,
@@ -900,39 +899,6 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
         total_count, logs = LogHandler.search_logs_by_request_id(request_id)
 
         output_slz = LogSearchByRequestIdOutputSLZ(logs, many=True)
-        return OKJsonResponse(data=output_slz.data)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="根据资源名称获取网关下单个资源的基本信息",
-        responses={status.HTTP_200_OK: GatewayResourceRetrieveByNameOutputSLZ()},
-        tags=["OpenAPI.V2.Open"],
-    ),
-)
-class GatewayResourceRetrieveByNameApi(generics.RetrieveAPIView):
-    permission_classes = [OpenAPIV2GatewayNamePermission]
-    serializer_class = GatewayResourceRetrieveByNameOutputSLZ
-    lookup_url_kwarg = "resource_name"
-    lookup_field = "name"
-
-    def get_queryset(self):
-        return Resource.objects.all()
-
-    def retrieve(self, request, *args, **kwargs):
-        resource_name = self.kwargs.get("resource_name")
-        resource = Resource.objects.filter(
-            gateway=request.gateway,
-            name=resource_name,
-        ).first()
-
-        if not resource:
-            raise error_codes.NOT_FOUND.format(
-                _("资源【{resource_name}】不存在").format(resource_name=resource_name), replace=True
-            )
-
-        output_slz = self.get_serializer(resource)
         return OKJsonResponse(data=output_slz.data)
 
 
