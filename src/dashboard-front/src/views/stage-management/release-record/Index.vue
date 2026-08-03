@@ -49,7 +49,6 @@
 
     <AgTable
       ref="tableRef"
-      row-key="deploy_id"
       show-settings
       show-cell-empty-content
       :api-method="getTableData"

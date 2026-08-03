@@ -248,7 +248,7 @@
                 ref="tableRef"
                 v-model:table-data="tableData"
                 v-model:settings="settings"
-                row-key="request_id"
+                table-row-key="request_id"
                 show-settings
                 expand-on-row-click
                 resizable

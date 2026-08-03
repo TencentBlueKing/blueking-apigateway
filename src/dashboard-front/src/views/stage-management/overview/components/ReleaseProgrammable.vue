@@ -235,9 +235,11 @@ type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
 interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
 
-interface IProps { currentStage: ILocalStageItem }
+interface IProps {
+  currentStage?: Partial<ILocalStageItem>
+}
 
-const { currentStage } = defineProps<IProps>();
+const { currentStage = {} } = defineProps<IProps>();
 
 const emit = defineEmits<{
   'release-success': [void]
@@ -336,7 +338,7 @@ watch(isShow, async (val: boolean) => {
     try {
       isLoading.value = true;
       await fetchStageList();
-      stageDetail.value = await getProgrammableStageDetail(apigwId.value, currentStage!.id);
+      stageDetail.value = await getProgrammableStageDetail(apigwId.value, currentStage?.id as number);
       const { version } = await getVersion();
       formData.value.version = version;
       formData.value.branch = stageDetail.value.branch || stageDetail.value.latest_deployment?.branch || '';
@@ -499,7 +501,7 @@ const getVersion = async (): Promise<{ version: string }> => {
   return await getStageNextVersion(
     apigwId.value,
     {
-      stage_name: currentStage.name,
+      stage_name: currentStage?.name as string,
       version_type: semVerType.value as 'patch' | 'minor' | 'major',
     },
   );

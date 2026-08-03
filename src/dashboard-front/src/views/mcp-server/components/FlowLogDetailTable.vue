@@ -22,7 +22,7 @@
       ref="tableRef"
       v-model:table-data="tableData"
       class="flow-log-detail-table"
-      row-key="tempUniqueId"
+      table-row-key="tempUniqueId"
       show-settings
       show-cell-empty-content
       height="auto"
