@@ -1360,7 +1360,7 @@ onUnmounted(() => {
           }
 
           .label {
-            min-width: 70px;
+            min-width: 120px;
             color: #63656E;
             text-align: right;
 
