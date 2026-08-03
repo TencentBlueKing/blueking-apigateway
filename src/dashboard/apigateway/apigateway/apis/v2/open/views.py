@@ -67,8 +67,6 @@ from apigateway.utils.responses import OKJsonResponse
 from . import serializers
 from .serializers import (
     GatewayAppPermissionApplyOutputSLZ,
-    GatewayBatchQueryInputSLZ,
-    GatewayBatchQueryOutputSLZ,
     GatewayResourceDetailInputSLZ,
     GatewayResourceDetailOutputSLZ,
     GatewayResourceListInputSLZ,
@@ -903,44 +901,6 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
 
         output_slz = LogSearchByRequestIdOutputSLZ(logs, many=True)
         return OKJsonResponse(data=output_slz.data)
-
-
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
-        operation_description="批量根据网关名称查询网关展示名称和描述",
-        request_body=GatewayBatchQueryInputSLZ,
-        responses={status.HTTP_200_OK: GatewayBatchQueryOutputSLZ(many=True)},
-        tags=["OpenAPI.V2.Open"],
-    ),
-)
-class GatewayBatchQueryApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIV2Permission]
-
-    def create(self, request, *args, **kwargs):
-        slz = GatewayBatchQueryInputSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        queryset = Gateway.objects.filter(
-            status=GatewayStatusEnum.ACTIVE.value,
-            is_public=True,
-        )
-
-        if slz.validated_data.get("ids"):
-            queryset = queryset.filter(id__in=slz.validated_data["ids"])
-        if slz.validated_data.get("names"):
-            queryset = queryset.filter(name__in=slz.validated_data["names"])
-
-        output_slz = GatewayBatchQueryOutputSLZ(queryset, many=True)
-        data = output_slz.data
-
-        allowed_fields = {"id", "name"}
-        fields_str = slz.validated_data.get("fields")
-        if fields_str:
-            allowed_fields = {f.strip() for f in fields_str.split(",") if f.strip()}
-        data = [{k: v for k, v in item.items() if k in allowed_fields} for item in data]
-
-        return OKJsonResponse(data=data)
 
 
 @method_decorator(
