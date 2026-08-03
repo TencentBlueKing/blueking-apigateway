@@ -1,13 +1,15 @@
 import json
 
 import pytest
-from django.db import connections
+from django.db import DatabaseError, connections, models
 from django.db.migrations.executor import MigrationExecutor
+from django.db.migrations.recorder import MigrationRecorder
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
 MIGRATE_FROM = [("core", "0055_resource_oauth2_client_fields")]
 MIGRATE_TO = [("core", "0056_releasedresource_oauth2_scope_fields")]
+RELEASE_BACKPORT_MIGRATION = ("core", "0054_releasedresource_oauth2_scope_fields")
 PROJECTED_FIELDS = {
     "is_public",
     "oauth2_public_client_enabled",
@@ -16,6 +18,22 @@ PROJECTED_FIELDS = {
 INDEX_NAMES = {
     "rr_oauth_pub_scope_idx",
     "rr_oauth_personal_scope_idx",
+}
+INDEX_COLUMNS = {
+    "rr_oauth_pub_scope_idx": [
+        "oauth2_public_client_enabled",
+        "is_public",
+        "gateway_id",
+        "resource_version_id",
+        "resource_id",
+    ],
+    "rr_oauth_personal_scope_idx": [
+        "oauth2_personal_client_enabled",
+        "is_public",
+        "gateway_id",
+        "resource_version_id",
+        "resource_id",
+    ],
 }
 
 
@@ -33,6 +51,21 @@ def _column_names(connection, table_name):
 def _constraint_names(connection, table_name):
     with connection.cursor() as cursor:
         return set(connection.introspection.get_constraints(cursor, table_name))
+
+
+def _add_release_backport_schema(connection, released_resource_model):
+    with connection.schema_editor() as schema_editor:
+        for field_name in PROJECTED_FIELDS:
+            field = models.BooleanField(null=True)
+            field.set_attributes_from_name(field_name)
+            field.model = released_resource_model
+            schema_editor.add_field(released_resource_model, field)
+
+        quote_name = schema_editor.quote_name
+        table_name = quote_name(released_resource_model._meta.db_table)
+        for index_name, columns in INDEX_COLUMNS.items():
+            quoted_columns = ", ".join(quote_name(column) for column in columns)
+            schema_editor.execute(f"CREATE INDEX {quote_name(index_name)} ON {table_name} ({quoted_columns})")
 
 
 def _resource_data(*, is_public, public_enabled=False, personal_enabled=False, auth_config=None):
@@ -113,5 +146,47 @@ def test_released_resource_oauth2_scope_fields_are_backfilled_and_reversible():
         executor.migrate(MIGRATE_FROM)
         assert PROJECTED_FIELDS.isdisjoint(_column_names(connection, migrated_released_resource._meta.db_table))
     finally:
+        executor = MigrationExecutor(connection)
+        executor.migrate(latest_migrations)
+
+
+def test_released_resource_scope_migration_accepts_schema_created_by_release_backport(monkeypatch):
+    connection = connections["default"]
+    executor = MigrationExecutor(connection)
+    latest_migrations = executor.loader.graph.leaf_nodes()
+    recorder = MigrationRecorder(connection)
+
+    try:
+        executor.migrate(MIGRATE_FROM)
+        old_apps = executor.loader.project_state(MIGRATE_FROM).apps
+        ReleasedResource = old_apps.get_model("core", "ReleasedResource")
+        _add_release_backport_schema(connection, ReleasedResource)
+        recorder.record_applied(*RELEASE_BACKPORT_MIGRATION)
+
+        schema_editor_class = connection.SchemaEditorClass
+        original_add_field = schema_editor_class.add_field
+
+        def reject_duplicate_columns(schema_editor, model, field):
+            if field.column in _column_names(connection, model._meta.db_table):
+                raise DatabaseError(f"duplicate column: {field.column}")
+            return original_add_field(schema_editor, model, field)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(schema_editor_class, "add_field", reject_duplicate_columns)
+            executor = MigrationExecutor(connection)
+            executor.migrate(MIGRATE_TO)
+
+        assert _column_names(connection, ReleasedResource._meta.db_table) >= PROJECTED_FIELDS
+        assert _constraint_names(connection, ReleasedResource._meta.db_table) >= INDEX_NAMES
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(MIGRATE_FROM)
+        assert _column_names(connection, ReleasedResource._meta.db_table) >= PROJECTED_FIELDS
+        assert _constraint_names(connection, ReleasedResource._meta.db_table) >= INDEX_NAMES
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(MIGRATE_TO)
+    finally:
+        recorder.record_unapplied(*RELEASE_BACKPORT_MIGRATION)
         executor = MigrationExecutor(connection)
         executor.migrate(latest_migrations)
