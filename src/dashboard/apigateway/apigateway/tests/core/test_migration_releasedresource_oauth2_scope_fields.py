@@ -74,6 +74,8 @@ def test_released_resource_oauth2_scope_fields_are_backfilled_and_reversible():
             (11, 1, _resource_data(is_public=True, public_enabled=True)),
             (12, 2, _resource_data(is_public=False, personal_enabled=True)),
             (13, 3, _resource_data(is_public=True, auth_config="not-json")),
+            (14, 4, _resource_data(is_public="false", public_enabled="false", personal_enabled="false")),
+            (15, 5, _resource_data(is_public=1, public_enabled=1, personal_enabled=1)),
         ]
         for resource_version_id, resource_id, data in rows:
             ReleasedResource.objects.create(
@@ -102,6 +104,8 @@ def test_released_resource_oauth2_scope_fields_are_backfilled_and_reversible():
             (True, True, False),
             (False, False, True),
             (True, False, False),
+            (False, False, False),
+            (False, False, False),
         ]
         assert _constraint_names(connection, migrated_released_resource._meta.db_table) >= INDEX_NAMES
 

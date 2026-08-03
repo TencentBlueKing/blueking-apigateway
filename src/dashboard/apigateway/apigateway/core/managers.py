@@ -255,8 +255,8 @@ def _get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool,
         return False, False
 
     return (
-        bool(config.get("oauth2_public_client_enabled", False)),
-        bool(config.get("oauth2_personal_client_enabled", False)),
+        config.get("oauth2_public_client_enabled") is True,
+        config.get("oauth2_personal_client_enabled") is True,
     )
 
 
@@ -293,7 +293,7 @@ class ReleasedResourceManager(models.Manager):
                     resource_name=resource["name"],
                     resource_method=resource["method"],
                     resource_path=resource["path"],
-                    is_public=bool(resource.get("is_public", False)),
+                    is_public=resource.get("is_public") is True,
                     oauth2_public_client_enabled=oauth2_public_enabled,
                     oauth2_personal_client_enabled=oauth2_personal_enabled,
                     data=resource,

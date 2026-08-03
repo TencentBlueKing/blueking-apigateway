@@ -18,8 +18,8 @@ def _get_flags(data):
         return False, False
 
     return (
-        bool(config.get("oauth2_public_client_enabled", False)),
-        bool(config.get("oauth2_personal_client_enabled", False)),
+        config.get("oauth2_public_client_enabled") is True,
+        config.get("oauth2_personal_client_enabled") is True,
     )
 
 
@@ -31,7 +31,7 @@ def backfill_released_resource_scope_fields(apps, schema_editor):
     for released in queryset.iterator(chunk_size=BATCH_SIZE):
         data = released.data if isinstance(released.data, dict) else {}
         public_enabled, personal_enabled = _get_flags(data)
-        released.is_public = bool(data.get("is_public", False))
+        released.is_public = data.get("is_public") is True
         released.oauth2_public_client_enabled = public_enabled
         released.oauth2_personal_client_enabled = personal_enabled
         pending.append(released)
