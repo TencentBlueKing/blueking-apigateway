@@ -777,7 +777,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                             <Input
                               v-model={toolNameRowData.value.tool_name}
                               placeholder={t('请输入工具名称')}
-                              maxlength={64 - mcpServerName.value.length}
+                              maxlength={toolNameMaxLen.value}
                               tooltipsOptions={{
                                 content: () => (
                                   <div>
@@ -938,6 +938,14 @@ const toolNameRules = {
       required: true,
       message: t('请输入工具名称'),
       trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        const results = value?.length > 0 && value?.length <= toolNameMaxLen.value;
+        return results;
+      },
+      message: () => `${t('MCP Server 名称 + 工具名称不得超过 64 字符')}, ${t('剩余可输入 {count} 字符', { count: maxToolNameLen.value })}`,
+      trigger: 'change',
     },
     {
       validator: (value: string) => {
@@ -1124,8 +1132,15 @@ const isExistOAuthData = computed<boolean>(() =>
 );
 // 获取动态的MCP Server 名称
 const mcpServerName = computed(() => isEditMode.value ? formData.value.name : `${serverNamePrefix.value}${formData.value.name}`);
+const toolNameMaxLen = computed(() => 64 - mcpServerName.value.length);
 // 获取动态可输入的最大工具名长度
-const maxToolNameLen = computed(() => 64 - mcpServerName.value.length - (toolNameRowData.value.tool_name?.length ?? 0));
+const maxToolNameLen = computed(() => {
+  const count = toolNameMaxLen.value - (toolNameRowData.value.tool_name?.length ?? 0);
+  if (count < 0) {
+    return 0;
+  }
+  return count;
+});
 
 // 开启OAuth2 公开客户端模式才展示工具应用态或用户态
 const isEnabledOAuthTag = (payload: IMCPServerResource | IMCPSelections): boolean => {
