@@ -35,12 +35,6 @@ urlpatterns = [
             [
                 # GET /api/v2/open/gateways/
                 path("", views.GatewayListApi.as_view(), name="openapi.v2.open.gateway.list"),
-                # POST /api/v2/open/gateways/batch-query/
-                path(
-                    "batch-query/",
-                    views.GatewayBatchQueryApi.as_view(),
-                    name="openapi.v2.open.gateway.batch_query",
-                ),
                 path(
                     "<slug:gateway_name>/",
                     include(

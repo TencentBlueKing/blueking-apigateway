@@ -765,45 +765,6 @@ class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.open.serializers.LogSearchByRequestIdOutputSLZ"
 
 
-class GatewayBatchQueryInputSLZ(serializers.Serializer):
-    ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        required=False,
-        help_text="网关 ID 列表",
-    )
-    names = serializers.ListField(
-        child=serializers.CharField(),
-        required=False,
-        help_text="网关名称列表",
-    )
-    fields = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        help_text="指定返回的字段列表，逗号分隔，如 fields=id,name,description；不传默认返回 id 和 name",
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.open.serializers.GatewayBatchQueryInputSLZ"
-
-    def validate(self, data):
-        if not data.get("ids") and not data.get("names"):
-            raise serializers.ValidationError("ids 和 names 至少提供一个")
-        return data
-
-
-class GatewayBatchQueryOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="网关 ID")
-    name = serializers.CharField(read_only=True, help_text="网关名称")
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
-    kind = serializers.SerializerMethodField()
-
-    def get_kind(self, obj):
-        return convert_gateway_kind_to_name(obj.kind)
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.open.serializers.GatewayBatchQueryOutputSLZ"
-
-
 class GatewayResourceListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字，模糊匹配资源 name、description 或标签名称"
