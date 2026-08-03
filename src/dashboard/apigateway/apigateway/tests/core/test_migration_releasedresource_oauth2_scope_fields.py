@@ -17,6 +17,22 @@ INDEX_NAMES = {
     "rr_oauth_pub_scope_idx",
     "rr_oauth_personal_scope_idx",
 }
+EXPECTED_INDEX_COLUMNS = {
+    "rr_oauth_pub_scope_idx": [
+        "oauth2_public_client_enabled",
+        "is_public",
+        "api_id",
+        "resource_version_id",
+        "resource_id",
+    ],
+    "rr_oauth_personal_scope_idx": [
+        "oauth2_personal_client_enabled",
+        "is_public",
+        "api_id",
+        "resource_version_id",
+        "resource_id",
+    ],
+}
 
 
 def _column_names(connection, table_name):
@@ -33,6 +49,12 @@ def _column_names(connection, table_name):
 def _constraint_names(connection, table_name):
     with connection.cursor() as cursor:
         return set(connection.introspection.get_constraints(cursor, table_name))
+
+
+def _index_columns(connection, table_name):
+    with connection.cursor() as cursor:
+        constraints = connection.introspection.get_constraints(cursor, table_name)
+    return {name: constraints[name]["columns"] for name in INDEX_NAMES}
 
 
 def _resource_data(*, is_public, public_enabled=False, personal_enabled=False, auth_config=None):
@@ -108,6 +130,7 @@ def test_released_resource_oauth2_scope_fields_are_backfilled_and_reversible():
             (False, False, False),
         ]
         assert _constraint_names(connection, migrated_released_resource._meta.db_table) >= INDEX_NAMES
+        assert _index_columns(connection, migrated_released_resource._meta.db_table) == EXPECTED_INDEX_COLUMNS
 
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_FROM)
