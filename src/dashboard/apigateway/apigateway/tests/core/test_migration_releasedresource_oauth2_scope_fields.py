@@ -19,18 +19,34 @@ INDEX_NAMES = {
     "rr_oauth_pub_scope_idx",
     "rr_oauth_personal_scope_idx",
 }
-INDEX_COLUMNS = {
+INDEX_FIELDS = {
     "rr_oauth_pub_scope_idx": [
         "oauth2_public_client_enabled",
         "is_public",
-        "gateway_id",
+        "gateway",
         "resource_version_id",
         "resource_id",
     ],
     "rr_oauth_personal_scope_idx": [
         "oauth2_personal_client_enabled",
         "is_public",
-        "gateway_id",
+        "gateway",
+        "resource_version_id",
+        "resource_id",
+    ],
+}
+EXPECTED_INDEX_COLUMNS = {
+    "rr_oauth_pub_scope_idx": [
+        "oauth2_public_client_enabled",
+        "is_public",
+        "api_id",
+        "resource_version_id",
+        "resource_id",
+    ],
+    "rr_oauth_personal_scope_idx": [
+        "oauth2_personal_client_enabled",
+        "is_public",
+        "api_id",
         "resource_version_id",
         "resource_id",
     ],
@@ -53,19 +69,21 @@ def _constraint_names(connection, table_name):
         return set(connection.introspection.get_constraints(cursor, table_name))
 
 
+def _index_columns(connection, table_name):
+    with connection.cursor() as cursor:
+        constraints = connection.introspection.get_constraints(cursor, table_name)
+    return {name: constraints[name]["columns"] for name in INDEX_NAMES}
+
+
 def _add_release_backport_schema(connection, released_resource_model):
     with connection.schema_editor() as schema_editor:
         for field_name in PROJECTED_FIELDS:
             field = models.BooleanField(null=True)
-            field.set_attributes_from_name(field_name)
-            field.model = released_resource_model
+            field.contribute_to_class(released_resource_model, field_name)
             schema_editor.add_field(released_resource_model, field)
 
-        quote_name = schema_editor.quote_name
-        table_name = quote_name(released_resource_model._meta.db_table)
-        for index_name, columns in INDEX_COLUMNS.items():
-            quoted_columns = ", ".join(quote_name(column) for column in columns)
-            schema_editor.execute(f"CREATE INDEX {quote_name(index_name)} ON {table_name} ({quoted_columns})")
+        for index_name, fields in INDEX_FIELDS.items():
+            schema_editor.add_index(released_resource_model, models.Index(fields=fields, name=index_name))
 
 
 def _resource_data(*, is_public, public_enabled=False, personal_enabled=False, auth_config=None):
@@ -178,11 +196,13 @@ def test_released_resource_scope_migration_accepts_schema_created_by_release_bac
 
         assert _column_names(connection, ReleasedResource._meta.db_table) >= PROJECTED_FIELDS
         assert _constraint_names(connection, ReleasedResource._meta.db_table) >= INDEX_NAMES
+        assert _index_columns(connection, ReleasedResource._meta.db_table) == EXPECTED_INDEX_COLUMNS
 
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_FROM)
         assert _column_names(connection, ReleasedResource._meta.db_table) >= PROJECTED_FIELDS
         assert _constraint_names(connection, ReleasedResource._meta.db_table) >= INDEX_NAMES
+        assert _index_columns(connection, ReleasedResource._meta.db_table) == EXPECTED_INDEX_COLUMNS
 
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_TO)
