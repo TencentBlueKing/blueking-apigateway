@@ -1901,6 +1901,129 @@ class TestAppRequestLogListApi:
 class TestMCPServerListApi:
     """测试 MCPServerListApi - 获取全量的 MCPServer 列表"""
 
+    def test_list_with_dynamic_fields_skips_unneeded_context_building(self, request_view, fake_gateway, mocker):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save(update_fields=["status"])
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="test-mcp-server",
+            title="Test MCP Server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        build_list_context = mocker.patch.object(
+            inner_views.MCPServerHandler, "build_list_context", side_effect=AssertionError("unexpected context build")
+        )
+        get_prompts_count_map = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "get_prompts_count_map",
+            side_effect=AssertionError("unexpected context build"),
+        )
+        build_categories_map = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "build_categories_map",
+            side_effect=AssertionError("unexpected context build"),
+        )
+        get_least_privileges = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "get_least_privileges",
+            side_effect=AssertionError("unexpected context build"),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "name,title"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"] == [
+            {
+                "name": "test-mcp-server",
+                "title": "Test MCP Server",
+            }
+        ]
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "id,protocol_type"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"] == [
+            {
+                "id": mcp_server.id,
+                "protocol_type": MCPServerProtocolTypeEnum.SSE.value,
+            }
+        ]
+        build_list_context.assert_not_called()
+        get_prompts_count_map.assert_not_called()
+        build_categories_map.assert_not_called()
+        get_least_privileges.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("fields", "expected_helper"),
+        [
+            ("stage,gateway", "build_list_context"),
+            ("prompts_count", "get_prompts_count_map"),
+            ("categories", "build_categories_map"),
+            ("url", "get_least_privileges"),
+        ],
+    )
+    def test_list_with_dynamic_fields_builds_only_required_context(
+        self, request_view, fake_gateway, mocker, fields, expected_helper
+    ):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save(update_fields=["status"])
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        helpers = {
+            "build_list_context": mocker.patch.object(
+                inner_views.MCPServerHandler,
+                "build_list_context",
+                return_value={
+                    "stages": {stage.id: {"id": stage.id, "name": stage.name}},
+                    "gateways": {fake_gateway.id: {"id": fake_gateway.id, "name": fake_gateway.name}},
+                },
+            ),
+            "get_prompts_count_map": mocker.patch.object(
+                inner_views.MCPServerHandler, "get_prompts_count_map", return_value={mcp_server.id: 1}
+            ),
+            "build_categories_map": mocker.patch.object(
+                inner_views.MCPServerHandler, "build_categories_map", return_value={mcp_server.id: []}
+            ),
+            "get_least_privileges": mocker.patch.object(
+                inner_views.MCPServerHandler, "get_least_privileges", return_value={}
+            ),
+        }
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": fields},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert set(resp.json()["data"]["results"][0]) == set(fields.split(","))
+        for helper_name, helper in helpers.items():
+            if helper_name == expected_helper:
+                helper.assert_called_once()
+            else:
+                helper.assert_not_called()
+
     def test_list_public_active_mcp_servers(self, request_view, fake_gateway):
         """测试获取活跃的 MCPServer 列表"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value

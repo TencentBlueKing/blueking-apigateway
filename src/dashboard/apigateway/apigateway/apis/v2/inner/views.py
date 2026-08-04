@@ -1175,18 +1175,29 @@ class MCPServerListApi(generics.ListAPIView):
         )
 
         page = self.paginate_queryset(queryset)
-        context = MCPServerHandler.build_list_context(page)
+        fields_str = slz.validated_data.get("fields")
+        fields = {field.strip() for field in fields_str.split(",") if field.strip()} if fields_str else None
+        include_all_fields = fields is None
 
-        mcp_server_ids = [mcp_server.id for mcp_server in page]
-        context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+        context = {}
+        if include_all_fields or fields & {"stage", "gateway"}:
+            context.update(MCPServerHandler.build_list_context(page))
 
-        # Add categories map
-        context["categories"] = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
+        mcp_server_ids = (
+            [mcp_server.id for mcp_server in page]
+            if include_all_fields or fields & {"prompts_count", "categories"}
+            else []
+        )
+        if include_all_fields or "prompts_count" in fields:
+            context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
 
-        # 计算最低权限级别，用于判断是否展示应用态 URL
-        context["least_privileges"] = MCPServerHandler.get_least_privileges(page)
+        if include_all_fields or "categories" in fields:
+            context["categories"] = MCPServerHandler.build_categories_map(mcp_server_ids)
 
-        output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context)
+        if include_all_fields or "url" in fields:
+            context["least_privileges"] = MCPServerHandler.get_least_privileges(page)
+
+        output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context, fields=fields)
         return self.get_paginated_response(output_slz.data)
 
 
