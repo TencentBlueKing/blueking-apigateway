@@ -21,7 +21,7 @@ from typing import Optional
 
 class ResourceOpenAPISchemaHandler:
     @staticmethod
-    def has_openapi_schem(schema: Optional[dict] = None) -> bool:
+    def has_openapi_schema(schema: Optional[dict] = None) -> bool:
         if not schema:
             return False
         if "none_schema" in schema and schema["none_schema"] is True:

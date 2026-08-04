@@ -142,7 +142,7 @@ class ResourceInfoSLZ(serializers.Serializer):
 
     def _has_openapi_schema(self, obj) -> bool:
         schema = self.context["resource_id_with_schema_dict"].get(obj["id"])
-        return ResourceOpenAPISchemaHandler.has_openapi_schem(schema)
+        return ResourceOpenAPISchemaHandler.has_openapi_schema(schema)
 
     def get_openapi_schema(self, obj):
         if self._has_openapi_schema(obj):

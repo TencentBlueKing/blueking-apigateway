@@ -80,6 +80,7 @@ def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
     return tenant_mode, tenant_id
 
 
+@cached(cache=TTLCache(maxsize=100, ttl=60))
 def get_app_tenant_info_cached(app_code: str) -> Tuple[str, str]:
     return get_app_tenant_info(app_code)
 

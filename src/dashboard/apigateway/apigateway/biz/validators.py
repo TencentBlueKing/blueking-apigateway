@@ -450,7 +450,7 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         schema_map = context.get("resource_name_to_schema", {})
         for name in resource_names:
             schema = schema_map.get(name)
-            if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
+            if not ResourceOpenAPISchemaHandler.has_openapi_schema(schema):
                 raise serializers.ValidationError(_(f"请检查当前资源:{name}对应的资源请求参数是否已经确认"))
 
 
