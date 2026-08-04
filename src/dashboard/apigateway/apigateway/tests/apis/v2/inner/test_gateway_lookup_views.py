@@ -1,0 +1,348 @@
+from unittest import mock
+
+import pytest
+from ddf import G
+from django.urls import reverse
+from django.utils import translation
+
+from apigateway.apis.v2.inner import serializers as inner_serializers
+from apigateway.common.tenant.constants import TenantModeEnum
+from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
+
+
+def _release_version(gateway, resource_version, stage_name):
+    return G(
+        Release,
+        gateway=gateway,
+        stage=G(Stage, gateway=gateway, name=stage_name, status=0),
+        resource_version=resource_version,
+    )
+
+
+def _make_snapshot(gateway, resource_version, *, resource_id, name):
+    return G(
+        ReleasedResource,
+        gateway=gateway,
+        resource_version_id=resource_version.id,
+        resource_id=resource_id,
+        resource_name=name,
+        resource_method="GET",
+        resource_path=f"/{name}",
+        is_public=False,
+        oauth2_public_client_enabled=False,
+        oauth2_personal_client_enabled=False,
+        data={
+            "id": resource_id,
+            "name": name,
+            "description": f"{name} description",
+            "description_en": f"{name} description en",
+        },
+    )
+
+
+def test_gateway_lookup_and_retrieve_urls_do_not_collide():
+    assert reverse("openapi.v2.inner.gateway.lookup") == "/backend/api/v2/inner/gateways/-/lookup/"
+    assert (
+        reverse(
+            "openapi.v2.inner.gateway.retrieve",
+            kwargs={"gateway_name": "lookup"},
+        )
+        == "/backend/api/v2/inner/gateways/lookup/"
+    )
+
+
+def test_gateway_released_resource_url():
+    assert (
+        reverse(
+            "openapi.v2.inner.gateway.released_resource.list",
+            kwargs={"gateway_name": "gateway-a"},
+        )
+        == "/backend/api/v2/inner/gateways/gateway-a/released-resources/"
+    )
+
+
+@pytest.mark.parametrize("data", [{}, {"gateway_names": ""}, {"gateway_names": ", ,"}])
+def test_gateway_lookup_input_rejects_missing_or_empty_names(data):
+    slz = inner_serializers.GatewayLookupInputSLZ(data=data)
+    assert slz.is_valid() is False
+
+
+def test_lookup_inputs_normalize_names_and_fields():
+    gateway_slz = inner_serializers.GatewayLookupInputSLZ(
+        data={"gateway_names": " gateway-b,gateway-a,gateway-b ", "fields": "id,name,id"}
+    )
+    resource_slz = inner_serializers.GatewayReleasedResourceListInputSLZ(
+        data={"resource_names": " resource-b,resource-a,resource-b ", "fields": ""}
+    )
+
+    gateway_slz.is_valid(raise_exception=True)
+    resource_slz.is_valid(raise_exception=True)
+
+    assert gateway_slz.validated_data == {
+        "gateway_names": ["gateway-b", "gateway-a"],
+        "fields": {"id", "name"},
+    }
+    assert resource_slz.validated_data == {
+        "resource_names": ["resource-b", "resource-a"],
+        "fields": None,
+    }
+
+
+@pytest.mark.parametrize(
+    ("serializer_class", "data"),
+    [
+        (inner_serializers.GatewayLookupInputSLZ, {"gateway_names": "g1", "fields": "unknown"}),
+        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"fields": "unknown"}),
+        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"limit": 0}),
+        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"limit": 21}),
+        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"offset": -1}),
+    ],
+)
+def test_lookup_inputs_reject_invalid_values(serializer_class, data):
+    assert serializer_class(data=data).is_valid() is False
+
+
+@pytest.mark.parametrize(
+    ("serializer_class", "field_name", "required_data"),
+    [
+        (inner_serializers.GatewayLookupInputSLZ, "gateway_names", {}),
+        (inner_serializers.GatewayReleasedResourceListInputSLZ, "resource_names", {}),
+    ],
+)
+def test_lookup_inputs_limit_names_to_50(serializer_class, field_name, required_data):
+    accepted = serializer_class(data={**required_data, field_name: ",".join(f"name-{i}" for i in range(50))})
+    rejected = serializer_class(data={**required_data, field_name: ",".join(f"name-{i}" for i in range(51))})
+
+    assert accepted.is_valid() is True
+    assert rejected.is_valid() is False
+
+
+class TestGatewayLookupApi:
+    @mock.patch(
+        "apigateway.apis.v2.inner.serializers.ResourcePermissionHandler.convert_gateway_maintainers_to_display_names"
+    )
+    def test_returns_requested_gateways_without_availability_filters(
+        self,
+        mock_convert_maintainers,
+        request_view,
+    ):
+        private = G(Gateway, name="private", status=GatewayStatusEnum.ACTIVE.value, is_public=False)
+        inactive = G(Gateway, name="inactive", status=GatewayStatusEnum.INACTIVE.value, is_public=True)
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.lookup",
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"gateway_names": "private,inactive,missing", "fields": "id,name"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"] == [
+            {"id": inactive.id, "name": "inactive"},
+            {"id": private.id, "name": "private"},
+        ]
+        mock_convert_maintainers.assert_not_called()
+
+    def test_returns_all_fields_by_default(self, request_view):
+        gateway = G(Gateway, name="all-fields", _maintainers="admin")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.lookup",
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"gateway_names": gateway.name},
+        )
+
+        assert response.status_code == 200
+        assert set(response.json()["data"][0]) == {
+            "id",
+            "name",
+            "description",
+            "maintainers",
+            "doc_maintainers",
+            "kind",
+        }
+
+    def test_preserves_tenant_visibility(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        global_gateway = G(
+            Gateway,
+            name="global-gateway",
+            tenant_mode=TenantModeEnum.GLOBAL.value,
+            tenant_id="",
+        )
+        tenant_a = G(
+            Gateway,
+            name="tenant-a-gateway",
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="tenant-a",
+        )
+        G(
+            Gateway,
+            name="tenant-b-gateway",
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="tenant-b",
+        )
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.lookup",
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"gateway_names": "global-gateway,tenant-a-gateway,tenant-b-gateway", "fields": "id,name"},
+            HTTP_X_BK_TENANT_ID="tenant-a",
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"] == [
+            {"id": global_gateway.id, "name": "global-gateway"},
+            {"id": tenant_a.id, "name": "tenant-a-gateway"},
+        ]
+
+        missing_tenant = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.lookup",
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"gateway_names": "global-gateway"},
+        )
+        assert missing_tenant.status_code == 400
+
+
+class TestGatewayReleasedResourceListApi:
+    def test_returns_current_release_union_without_visibility_filters(self, request_view):
+        gateway = G(
+            Gateway,
+            name="released-resource-gateway",
+            status=GatewayStatusEnum.INACTIVE.value,
+            is_public=False,
+        )
+        old_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        new_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
+        _release_version(gateway, old_version, "prod")
+        _release_version(gateway, new_version, "test")
+        first = _make_snapshot(gateway, old_version, resource_id=1, name="first_resource")
+        _make_snapshot(gateway, old_version, resource_id=2, name="shared_old")
+        latest = _make_snapshot(gateway, new_version, resource_id=2, name="shared_new")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "data": {
+                "count": 2,
+                "results": [
+                    {"id": first.resource_id, "name": "first_resource", "description": "first_resource description"},
+                    {"id": latest.resource_id, "name": "shared_new", "description": "shared_new description"},
+                ],
+            }
+        }
+
+    def test_resource_names_is_exact_and_fields_are_selective(self, request_view):
+        gateway = G(Gateway, name="released-resource-filter")
+        old_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        new_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
+        _release_version(gateway, old_version, "prod")
+        _release_version(gateway, new_version, "test")
+        old = _make_snapshot(gateway, old_version, resource_id=1, name="exact_name")
+        _make_snapshot(gateway, new_version, resource_id=1, name="renamed")
+        _make_snapshot(gateway, new_version, resource_id=2, name="exact_name_suffix")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"resource_names": " exact_name,missing,exact_name ", "fields": "id,name"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"data": {"count": 1, "results": [{"id": old.resource_id, "name": "exact_name"}]}}
+
+    def test_translates_description_from_snapshot_data(self, request_view):
+        gateway = G(Gateway, name="translated-released-resource")
+        version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        _release_version(gateway, version, "prod")
+        snapshot = _make_snapshot(gateway, version, resource_id=1, name="translated")
+
+        with translation.override("en"):
+            response = request_view(
+                method="GET",
+                view_name="openapi.v2.inner.gateway.released_resource.list",
+                path_params={"gateway_name": gateway.name},
+                app=mock.MagicMock(app_code="bk_auth"),
+            )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["results"] == [
+            {"id": snapshot.resource_id, "name": "translated", "description": "translated description en"}
+        ]
+
+    def test_empty_page_missing_gateway_and_tenant_visibility(self, request_view, settings):
+        gateway = G(Gateway, name="no-current-release")
+        version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        _make_snapshot(gateway, version, resource_id=1, name="orphan")
+
+        empty = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+        )
+        missing = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": "missing"},
+            app=mock.MagicMock(app_code="bk_auth"),
+        )
+
+        assert empty.status_code == 200
+        assert empty.json() == {"data": {"count": 0, "results": []}}
+        assert missing.status_code == 404
+
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        cross_tenant = G(
+            Gateway,
+            name="tenant-b-resource-gateway",
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="tenant-b",
+        )
+        hidden = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": cross_tenant.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+            HTTP_X_BK_TENANT_ID="tenant-a",
+        )
+        missing_tenant = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": cross_tenant.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+        )
+        assert hidden.status_code == 404
+        assert missing_tenant.status_code == 400
+
+    def test_paginates_after_deduplication(self, request_view):
+        gateway = G(Gateway, name="released-resource-pagination")
+        version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        _release_version(gateway, version, "prod")
+        for resource_id in range(1, 22):
+            _make_snapshot(gateway, version, resource_id=resource_id, name=f"resource-{resource_id:02d}")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"fields": "id,name", "limit": 20, "offset": 10},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["count"] == 21
+        assert len(response.json()["data"]["results"]) == 11
+        assert response.json()["data"]["results"][0] == {"id": 11, "name": "resource-11"}

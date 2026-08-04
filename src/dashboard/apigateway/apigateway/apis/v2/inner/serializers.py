@@ -57,6 +57,25 @@ from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
 
+MAX_LOOKUP_NAMES = 50
+GATEWAY_LOOKUP_FIELDS = frozenset({"id", "name", "description", "maintainers", "doc_maintainers", "kind"})
+RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
+
+
+def _split_comma_separated_values(value: str) -> list[str]:
+    return list(dict.fromkeys(item.strip() for item in value.split(",") if item.strip()))
+
+
+def _validate_output_fields(value: str, allowed_fields: frozenset[str]) -> set[str] | None:
+    fields = set(_split_comma_separated_values(value))
+    if not fields:
+        return None
+
+    unknown_fields = fields - allowed_fields
+    if unknown_fields:
+        raise serializers.ValidationError(_("不支持的字段：{fields}").format(fields=", ".join(sorted(unknown_fields))))
+    return fields
+
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
     least_privileges = context.get("least_privileges", {})
@@ -100,6 +119,74 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
+
+
+class GatewayLookupInputSLZ(serializers.Serializer):
+    gateway_names = serializers.CharField()
+    fields = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_gateway_names(self, value) -> list[str]:
+        names = _split_comma_separated_values(value)
+        if not names:
+            raise serializers.ValidationError(_("gateway_names 不能为空"))
+        if len(names) > MAX_LOOKUP_NAMES:
+            raise serializers.ValidationError(_("gateway_names 最多支持 50 个"))
+        return names
+
+    def validate_fields(self, value) -> set[str] | None:
+        return _validate_output_fields(value, GATEWAY_LOOKUP_FIELDS)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupInputSLZ"
+
+
+class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
+    resource_names = serializers.CharField(required=False, allow_blank=True)
+    fields = serializers.CharField(required=False, allow_blank=True)
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=20)
+    offset = serializers.IntegerField(required=False, min_value=0)
+
+    def validate_resource_names(self, value) -> list[str]:
+        names = _split_comma_separated_values(value)
+        if len(names) > MAX_LOOKUP_NAMES:
+            raise serializers.ValidationError(_("resource_names 最多支持 50 个"))
+        return names
+
+    def validate_fields(self, value) -> set[str] | None:
+        return _validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceListInputSLZ"
+
+
+class _SelectableFieldsOutputSLZMixin:
+    def __init__(self, *args, fields: set[str] | None = None, **kwargs):
+        self._output_fields = fields
+        super().__init__(*args, **kwargs)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        if self._output_fields is None:
+            return fields
+        return {name: field for name, field in fields.items() if name in self._output_fields}
+
+
+class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, GatewayListOutputSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupOutputSLZ"
+
+
+class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"},
+        allow_blank=True,
+        read_only=True,
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceOutputSLZ"
 
 
 class GatewayRetrieveOutputSLZ(serializers.Serializer):
