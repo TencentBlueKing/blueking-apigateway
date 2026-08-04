@@ -74,11 +74,6 @@ def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerPro
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"
 
 
-def build_mcp_streamable_http_url(mcp_server_name: str) -> str:
-    """构建 MCP Server Streamable HTTP 协议的 URL（便捷方法）"""
-    return build_mcp_server_url(mcp_server_name, MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value)
-
-
 def build_mcp_server_application_url(
     mcp_server_name: str, protocol_type: str = MCPServerProtocolTypeEnum.SSE.value
 ) -> str:
