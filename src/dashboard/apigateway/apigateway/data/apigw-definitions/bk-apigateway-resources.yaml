@@ -5968,7 +5968,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official
           example: id,name
       x-bk-apigateway-noneSchema: true
       responses:
@@ -6005,6 +6005,9 @@ paths:
                           type: string
                           enum: [normal, programmable, ai]
                           description: 网关类型
+                        is_official:
+                          type: boolean
+                          description: 是否为官方网关
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false

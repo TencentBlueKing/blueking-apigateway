@@ -33,6 +33,7 @@ from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
+from apigateway.apis.v2.tenant import get_request_tenant_id
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerPermissionActionEnum,
@@ -117,14 +118,6 @@ class OAuth2ClientScopePagination(StandardLimitOffsetPagination):
         return super().get_offset(request)
 
 
-def _get_inner_api_tenant_id(request) -> str | None:
-    if not settings.ENABLE_MULTI_TENANT_MODE:
-        return None
-    if not request.tenant_id:
-        raise ValidationError("tenant_id is required in multi-tenant mode")
-    return request.tenant_id
-
-
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -146,7 +139,7 @@ class OAuth2MCPServerScopeListApi(generics.ListAPIView):
 
         queryset = get_oauth2_mcp_server_scope_gateways(
             oauth_client_type=data["oauth_client_type"],
-            tenant_id=_get_inner_api_tenant_id(request),
+            tenant_id=get_request_tenant_id(request),
             gateway_name=data.get("gateway_name", ""),
             mcp_server_name=data.get("mcp_server_name", ""),
         )
@@ -182,7 +175,7 @@ class OAuth2ResourceScopeListApi(generics.ListAPIView):
 
         queryset = get_oauth2_resource_scope_gateways(
             oauth_client_type=data["oauth_client_type"],
-            tenant_id=_get_inner_api_tenant_id(request),
+            tenant_id=get_request_tenant_id(request),
             gateway_name=data.get("gateway_name", ""),
             resource_name=data.get("resource_name", ""),
         )
@@ -224,7 +217,7 @@ class GatewayLookupApi(generics.ListAPIView):
         data = input_slz.validated_data
 
         queryset = Gateway.objects.filter(name__in=data["gateway_names"])
-        tenant_id = _get_inner_api_tenant_id(request)
+        tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
         queryset = queryset.order_by("name", "id")
@@ -263,7 +256,7 @@ class GatewayReleasedResourceListApi(generics.ListAPIView):
         data = input_slz.validated_data
 
         gateway_queryset = Gateway.objects.filter(name=gateway_name)
-        tenant_id = _get_inner_api_tenant_id(request)
+        tenant_id = get_request_tenant_id(request)
         if tenant_id:
             gateway_queryset = gateway_filter_by_app_tenant_id(gateway_queryset, tenant_id)
         gateway = get_object_or_404(gateway_queryset)
@@ -325,11 +318,7 @@ class GatewayListApi(generics.ListAPIView):
         queryset = GatewayHandler.list_public_released_gateways()
 
         # 可以看到 全租户网关 + 本租户网关
-        tenant_id = None
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            if not request.tenant_id:
-                raise ValidationError("tenant_id is required in multi-tenant mode")
-            tenant_id = request.tenant_id
+        tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
 

@@ -127,25 +127,31 @@ class TestGatewayLookupApi:
         mock_convert_maintainers,
         request_view,
     ):
-        private = G(Gateway, name="private", status=GatewayStatusEnum.ACTIVE.value, is_public=False)
+        private = G(
+            Gateway,
+            name="private",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=False,
+            is_official=True,
+        )
         inactive = G(Gateway, name="inactive", status=GatewayStatusEnum.INACTIVE.value, is_public=True)
 
         response = request_view(
             method="GET",
             view_name="openapi.v2.inner.gateway.lookup",
             app=mock.MagicMock(app_code="bk_auth"),
-            data={"gateway_names": "private,inactive,missing", "fields": "id,name"},
+            data={"gateway_names": "private,inactive,missing", "fields": "id,name,is_official"},
         )
 
         assert response.status_code == 200
         assert response.json()["data"] == [
-            {"id": inactive.id, "name": "inactive"},
-            {"id": private.id, "name": "private"},
+            {"id": inactive.id, "name": "inactive", "is_official": False},
+            {"id": private.id, "name": "private", "is_official": True},
         ]
         mock_convert_maintainers.assert_not_called()
 
     def test_returns_all_fields_by_default(self, request_view):
-        gateway = G(Gateway, name="all-fields", _maintainers="admin")
+        gateway = G(Gateway, name="all-fields", _maintainers="admin", is_official=True)
 
         response = request_view(
             method="GET",
@@ -162,7 +168,9 @@ class TestGatewayLookupApi:
             "maintainers",
             "doc_maintainers",
             "kind",
+            "is_official",
         }
+        assert response.json()["data"][0]["is_official"] is True
 
     def test_preserves_tenant_visibility(self, request_view, settings):
         settings.ENABLE_MULTI_TENANT_MODE = True

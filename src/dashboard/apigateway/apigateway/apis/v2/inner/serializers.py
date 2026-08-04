@@ -58,7 +58,9 @@ from apigateway.utils import time
 logger = logging.getLogger(__name__)
 
 MAX_LOOKUP_NAMES = 50
-GATEWAY_LOOKUP_FIELDS = frozenset({"id", "name", "description", "maintainers", "doc_maintainers", "kind"})
+GATEWAY_LOOKUP_FIELDS = frozenset(
+    {"id", "name", "description", "maintainers", "doc_maintainers", "kind", "is_official"}
+)
 RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
 
 
@@ -172,6 +174,8 @@ class _SelectableFieldsOutputSLZMixin:
 
 
 class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, GatewayListOutputSLZ):
+    is_official = serializers.BooleanField(read_only=True)
+
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupOutputSLZ"
 

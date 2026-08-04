@@ -11,7 +11,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
 | gateway_names | string | 是 | 网关名称列表，多个以逗号分隔，去重后最多 50 个 |
-| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`maintainers`、`doc_maintainers`、`kind`，不传返回全部字段 |
+| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`maintainers`、`doc_maintainers`、`kind`、`is_official`，不传返回全部字段 |
 
 ### 响应示例
 
@@ -20,7 +20,8 @@
   "data": [
     {
       "id": 1,
-      "name": "bk-apigateway"
+      "name": "bk-apigateway",
+      "is_official": true
     }
   ]
 }
@@ -37,3 +38,4 @@
 | data[].maintainers | array | 网关管理员 display_name 列表 |
 | data[].doc_maintainers | object | 网关文档维护人员 |
 | data[].kind | string | 网关类型：`normal`、`programmable` 或 `ai` |
+| data[].is_official | bool | 是否为官方网关 |
