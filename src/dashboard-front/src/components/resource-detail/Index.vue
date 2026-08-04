@@ -210,58 +210,61 @@
           </div>
         </BkCol>
       </BkRow>
+      <template v-if="localData.kind !== 'ai'">
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
+          <BkCol :span="5">
+            <label class="ag-key">{{ t("匹配所有子路径") }}:</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ localData.match_subpath ? t("是") : t("否") }}
+            </div>
+          </BkCol>
+        </BkRow>
 
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
-        <BkCol :span="5">
-          <label class="ag-key">{{ t("匹配所有子路径") }}:</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{ localData.match_subpath ? t("是") : t("否") }}
-          </div>
-        </BkCol>
-      </BkRow>
-
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
-        <BkCol :span="5">
-          <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{ localData.enable_websocket ? t("是") : t("否") }}
-          </div>
-        </BkCol>
-      </BkRow>
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
+          <BkCol :span="5">
+            <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ localData.enable_websocket ? t("是") : t("否") }}
+            </div>
+          </BkCol>
+        </BkRow>
+      </template>
     </BkContainer>
 
-    <p
-      :class="{
-        'ag-diff': checkDiff('localData.openapi_schema'),
-      }"
-      class="title mt-15px"
-    >
-      {{ t("请求/响应参数") }}
-    </p>
-    <BkContainer
-      :col="15"
-      :margin="6"
-      class="ag-kv-box"
-    >
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
-        <BkCol :span="5">
-          <label class="ag-key">&nbsp;</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{ isSource ? '--' : (checkDiff('localData.openapi_schema') ? t('有更新') : '--') }}
-          </div>
-        </BkCol>
-      </BkRow>
-    </BkContainer>
-
-    <template v-if="localData.proxy?.backend_id">
+    <template v-if="localData.kind !== 'ai'">
       <p
+        :class="{
+          'ag-diff': checkDiff('localData.openapi_schema'),
+        }"
         class="title mt-15px"
+      >
+        {{ t("请求/响应参数") }}
+      </p>
+      <BkContainer
+        :col="15"
+        :margin="6"
+        class="ag-kv-box"
+      >
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
+          <BkCol :span="5">
+            <label class="ag-key">&nbsp;</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ isSource ? '--' : (checkDiff('localData.openapi_schema') ? t('有更新') : '--') }}
+            </div>
+          </BkCol>
+        </BkRow>
+      </BkContainer>
+    </template>
+
+    <template v-if="localData.proxy?.backend_id && localData.kind !== 'ai'">
+      <p
+        class="title mt-16px"
         :class="{
           'ag-diff':
             checkDiff('localData.proxy.backend_name') ||
@@ -391,6 +394,29 @@
         </template>
       </BkContainer>
     </template>
+
+    <template v-if="localData.kind === 'ai'">
+      <p class="title mt-16px">
+        {{ t("模型服务配置") }}
+      </p>
+      <BkContainer
+        class="ag-kv-box"
+        :col="15"
+        :margin="6"
+      >
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }">
+          <BkCol :span="5">
+            <label class="ag-key">{{ t("模型服务") }}:</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ localData.proxy.backend_name || "--" }}
+            </div>
+          </BkCol>
+        </BkRow>
+      </BkContainer>
+    </template>
+
     <p
       class="title mt-15px"
       :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }"
