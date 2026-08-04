@@ -67,7 +67,7 @@
           >
             <span class="normal-text">
               <span>{{ t('已选') }}</span>
-              <span class="count">{{ selections.length }}</span>
+              <span class="mx-4px count">{{ selections.length }}</span>
               <span>{{ t('条') }}</span>
               <span class="m-r4px">,</span>
             </span>
@@ -373,7 +373,7 @@ const selectionColumns = computed(() => [{
       <Popover
         trigger="hover"
         placement="top"
-        popoverDelay={0}
+        popoverDelay={100}
         disabled={typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row)}
       >
         {{
