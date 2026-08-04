@@ -469,15 +469,11 @@ class MCPServerHandler:
         Returns:
             {(gateway_id, stage_id): Release} 映射
         """
-        gateway_stage_pairs = {(mcp_server.gateway_id, mcp_server.stage_id) for mcp_server in mcp_servers}
-        if not gateway_stage_pairs:
+        stage_ids = {mcp_server.stage_id for mcp_server in mcp_servers}
+        if not stage_ids:
             return {}
 
-        release_filters = Q()
-        for gateway_id, stage_id in gateway_stage_pairs:
-            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
-
-        releases = Release.objects.filter(release_filters).select_related("resource_version")
+        releases = Release.objects.filter(stage_id__in=stage_ids).select_related("resource_version")
         return {(r.gateway_id, r.stage_id): r for r in releases}
 
     @staticmethod

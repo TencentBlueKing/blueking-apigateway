@@ -20,6 +20,8 @@ from unittest.mock import patch
 
 import pytest
 from ddf import G
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -964,6 +966,26 @@ class TestMCPServerHandler:
 
         assert (fake_gateway.id, fake_stage.id) in result
         assert result[(fake_gateway.id, fake_stage.id)].id == release.id
+
+    def test_get_releases_for_mcp_servers_uses_stage_id_in_query(self, fake_gateway, fake_stage):
+        """批量查询 Release 时应使用 stage_id IN，避免按网关环境组合生成大量 OR 条件"""
+        another_stage = G(Stage, gateway=fake_gateway)
+        rv = self._make_resource_version_with_data(fake_gateway, [{"name": "tool_a"}])
+        releases = [
+            G(Release, gateway=fake_gateway, stage=stage, resource_version=rv) for stage in [fake_stage, another_stage]
+        ]
+        mcp_servers = [
+            G(MCPServer, gateway=fake_gateway, stage=stage, _resource_names="tool_a")
+            for stage in [fake_stage, another_stage]
+        ]
+
+        with CaptureQueriesContext(connection) as queries:
+            result = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
+
+        assert set(result) == {(release.gateway_id, release.stage_id) for release in releases}
+        assert len(queries) == 1
+        assert '"core_release"."stage_id" IN (' in queries[0]["sql"]
+        assert " OR " not in queries[0]["sql"]
 
     def test_get_releases_for_mcp_servers_empty(self):
         """空列表应返回空字典"""
