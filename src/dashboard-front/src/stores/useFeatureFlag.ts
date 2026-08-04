@@ -47,6 +47,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT: false,
       ENABLE_ITSM4_PERMISSION_APPLY: false,
       ENABLE_MCP_SERVER_OBSERVABILITY: false,
+      ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT: false,
       GATEWAY_APP_BINDING_ENABLED: false,
       MENU_ITEM_ESB_API: false,
       MENU_ITEM_ESB_API_DOC: false,
