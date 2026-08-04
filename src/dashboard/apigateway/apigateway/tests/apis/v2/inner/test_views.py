@@ -2167,6 +2167,42 @@ class TestMCPServerListApi:
         assert mcp_server3.id in result_ids
         assert mcp_server2.id not in result_ids
 
+    def test_list_with_mcp_server_names_filter(self, request_view, fake_gateway):
+        """测试使用 mcp_server_names 精确筛选 MCPServer，未命中的名称被忽略"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        private_mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="private-server",
+            title="Private Server",
+            is_public=False,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="unrequested-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_names": "private-server,missing-server"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        results = resp.json()["data"]["results"]
+        assert [item["id"] for item in results] == [private_mcp_server.id]
+        assert results[0]["title"] == "Private Server"
+
     def test_list_with_mcp_server_ids_empty(self, request_view, fake_gateway):
         """测试 mcp_server_ids 为空时返回所有"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value

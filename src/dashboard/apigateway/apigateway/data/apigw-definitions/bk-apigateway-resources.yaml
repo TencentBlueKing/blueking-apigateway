@@ -7340,6 +7340,12 @@ paths:
             type: string
           description: MCPServer ID 列表，多个以逗号分割，最多 50 个
           example: "1,2,3"
+        - name: mcp_server_names
+          in: query
+          schema:
+            type: string
+          description: MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个
+          example: "server-1,server-2"
       responses:
         default:
           description: ''
