@@ -1,18 +1,18 @@
 {
   "system": {
-    "code": "bk-apigateway-20260803",
-    "name": "bk-apigateway-20260803"
+    "code": "bk-apigateway-20260804",
+    "name": "bk-apigateway-20260804"
   },
   "form_models": [
     {
-      "key": "$FormModel20260803110000000101",
-      "name": "bk-apigateway-20260803",
+      "key": "$FormModel20260804110000000101",
+      "name": "bk-apigateway-20260804",
       "desc": "网关申请权限",
       "portal_id": "DEFAULT",
       "app_id": "core",
       "translations": {
-        "name": "bk-apigateway-20260803",
-        "name_en": "bk-apigateway-20260803",
+        "name": "bk-apigateway-20260804",
+        "name_en": "bk-apigateway-20260804",
         "desc": "网关申请权限",
         "desc_en": "网关申请权限"
       },
@@ -635,19 +635,19 @@
   "workflows": [
     {
       "workflow": {
-        "key": "$Workflow20260803110000000201",
-        "name": "网关 MCP Server 权限申请",
+        "key": "$Workflow20260804110000000201",
+        "name": "网关 MCP Server 权限申请-20260804",
         "portal_id": "DEFAULT",
         "desc": "网关权限申请",
         "category": "DEFAULT_DEFAULT",
         "translations": {
-          "name": "网关 MCP Server 权限申请",
-          "name_en": "网关 MCP Server 权限申请",
+          "name": "网关 MCP Server 权限申请-20260804",
+          "name_en": "网关 MCP Server 权限申请-20260804",
           "desc": "网关权限申请",
           "desc_en": "网关权限申请"
         },
         "engine_pattern": "FORMAL",
-        "form_model_key": "$FormModel20260803110000000101",
+        "form_model_key": "$FormModel20260804110000000101",
         "app_id": "core",
         "meta": {
           "workflow_button": [
@@ -736,17 +736,17 @@
       },
       "version": {
         "key": "20260507143900061102",
-        "workflow_key": "$Workflow20260803110000000201",
+        "workflow_key": "$Workflow20260804110000000201",
         "desc": null,
         "workflows": {
-          "$Workflow20260803110000000201": {
+          "$Workflow20260804110000000201": {
             "translations": {
-              "name": "网关 MCP Server 权限申请",
-              "name_en": "网关 MCP Server 权限申请",
-              "name_zh_hans": "网关 MCP Server 权限申请"
+              "name": "网关 MCP Server 权限申请-20260804",
+              "name_en": "网关 MCP Server 权限申请-20260804",
+              "name_zh_hans": "网关 MCP Server 权限申请-20260804"
             },
-            "key": "$Workflow20260803110000000201",
-            "name": "网关 MCP Server 权限申请",
+            "key": "$Workflow20260804110000000201",
+            "name": "网关 MCP Server 权限申请-20260804",
             "desc": "网关权限申请",
             "type": "",
             "is_sub": false,
@@ -806,7 +806,7 @@
               "name_zh_hant": "審批節點"
             },
             "key": "activityobject_20260507144339_1",
-            "workflow_key": "$Workflow20260803110000000201",
+            "workflow_key": "$Workflow20260804110000000201",
             "name": "审批节点",
             "desc": "",
             "type": "APPROVE_TASK",
@@ -886,7 +886,7 @@
               "name_zh_hans": "提单"
             },
             "key": "activityobject20260507120400025101",
-            "workflow_key": "$Workflow20260803110000000201",
+            "workflow_key": "$Workflow20260804110000000201",
             "name": "提单",
             "desc": "",
             "type": "SUBMIT",
@@ -981,7 +981,7 @@
               "name_zh_hant": "結束"
             },
             "key": "eventobject_20260507142959_1",
-            "workflow_key": "$Workflow20260803110000000201",
+            "workflow_key": "$Workflow20260804110000000201",
             "name": "结束",
             "desc": "",
             "type": "end",
@@ -998,7 +998,7 @@
               "name_zh_hans": "开始"
             },
             "key": "eventobject20260507120400025101",
-            "workflow_key": "$Workflow20260803110000000201",
+            "workflow_key": "$Workflow20260804110000000201",
             "name": "开始",
             "desc": "",
             "type": "start",
@@ -2685,19 +2685,19 @@
     },
     {
       "workflow": {
-        "key": "$Workflow20260803110000000301",
-        "name": "网关权限申请",
+        "key": "$Workflow20260804110000000301",
+        "name": "网关权限申请-20260804",
         "portal_id": "DEFAULT",
         "desc": "网关权限申请",
         "category": "DEFAULT_DEFAULT",
         "translations": {
-          "name": "网关权限申请",
-          "name_en": "网关权限申请",
+          "name": "网关权限申请-20260804",
+          "name_en": "网关权限申请-20260804",
           "desc": "网关权限申请",
           "desc_en": "网关权限申请"
         },
         "engine_pattern": "FORMAL",
-        "form_model_key": "$FormModel20260803110000000101",
+        "form_model_key": "$FormModel20260804110000000101",
         "app_id": "core",
         "meta": {
           "workflow_button": [
@@ -2786,17 +2786,17 @@
       },
       "version": {
         "key": "20260507144500061201",
-        "workflow_key": "$Workflow20260803110000000301",
+        "workflow_key": "$Workflow20260804110000000301",
         "desc": null,
         "workflows": {
-          "$Workflow20260803110000000301": {
+          "$Workflow20260804110000000301": {
             "translations": {
-              "name": "网关权限申请",
-              "name_en": "网关权限申请",
-              "name_zh_hans": "网关权限申请"
+              "name": "网关权限申请-20260804",
+              "name_en": "网关权限申请-20260804",
+              "name_zh_hans": "网关权限申请-20260804"
             },
-            "key": "$Workflow20260803110000000301",
-            "name": "网关权限申请",
+            "key": "$Workflow20260804110000000301",
+            "name": "网关权限申请-20260804",
             "desc": "网关权限申请",
             "type": "",
             "is_sub": false,
@@ -2856,7 +2856,7 @@
               "name_zh_hant": "審批節點"
             },
             "key": "activityobject_20260507144605_1",
-            "workflow_key": "$Workflow20260803110000000301",
+            "workflow_key": "$Workflow20260804110000000301",
             "name": "审批节点",
             "desc": "",
             "type": "APPROVE_TASK",
@@ -2936,7 +2936,7 @@
               "name_zh_hans": "提单"
             },
             "key": "activityobject20260507144500025201",
-            "workflow_key": "$Workflow20260803110000000301",
+            "workflow_key": "$Workflow20260804110000000301",
             "name": "提单",
             "desc": "",
             "type": "SUBMIT",
@@ -3003,7 +3003,7 @@
               "name_zh_hant": "結束"
             },
             "key": "eventobject_20260507144752_1",
-            "workflow_key": "$Workflow20260803110000000301",
+            "workflow_key": "$Workflow20260804110000000301",
             "name": "结束",
             "desc": "",
             "type": "end",
@@ -3020,7 +3020,7 @@
               "name_zh_hans": "开始"
             },
             "key": "eventobject20260507144500025201",
-            "workflow_key": "$Workflow20260803110000000301",
+            "workflow_key": "$Workflow20260804110000000301",
             "name": "开始",
             "desc": "",
             "type": "start",
@@ -4703,12 +4703,12 @@
   ],
   "key_mapping": {
     "form_models": {
-      "20260803110000000101": "$FormModel20260803110000000101"
+      "20260804110000000101": "$FormModel20260804110000000101"
     },
     "workflow_categories": {},
     "workflows": {
-      "20260803110000000201": "$Workflow20260803110000000201",
-      "20260803110000000301": "$Workflow20260803110000000301"
+      "20260804110000000201": "$Workflow20260804110000000201",
+      "20260804110000000301": "$Workflow20260804110000000301"
     }
   }
 }

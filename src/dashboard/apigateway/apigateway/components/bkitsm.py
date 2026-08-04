@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from django.conf import settings
@@ -28,6 +29,106 @@ from .http import http_get, http_post
 from .utils import do_blueking_http_request, gen_gateway_headers
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ItsmWorkflow:
+    form_schema: Dict[str, Any]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_response_item(cls, item: Any):
+        if not isinstance(item, dict):
+            raise TypeError("invalid system_workflow_list response: results items must be objects")
+
+        form_schema = item.get("form_schema") or {}
+        if not isinstance(form_schema, dict):
+            raise TypeError("invalid system_workflow_list response: form_schema must be an object")
+
+        return cls(form_schema=form_schema, raw=item)
+
+    def extract_jsonschema_field_keys(self) -> set[str]:
+        return _extract_jsonschema_field_keys(self.form_schema)
+
+
+@dataclass(frozen=True)
+class ItsmWorkflowList:
+    count: int
+    workflows: tuple[ItsmWorkflow, ...]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def empty(cls):
+        return cls(count=0, workflows=(), raw={})
+
+    @classmethod
+    def from_response(cls, resp: Any):
+        if not isinstance(resp, dict):
+            raise TypeError("invalid system_workflow_list response: response must be an object")
+
+        count = resp.get("count", 0)
+        if not isinstance(count, int):
+            raise TypeError("invalid system_workflow_list response: count must be an integer")
+
+        results = resp.get("results")
+        if not isinstance(results, list):
+            raise TypeError("invalid system_workflow_list response: results must be a list")
+
+        return cls(
+            count=count,
+            workflows=tuple(ItsmWorkflow.from_response_item(item) for item in results),
+            raw=resp,
+        )
+
+    @property
+    def is_registered(self) -> bool:
+        return self.count > 0
+
+    def extract_common_schema_field_keys(self) -> set[str]:
+        common_field_keys: set[str] | None = None
+        for workflow in self.workflows:
+            current_field_keys = workflow.extract_jsonschema_field_keys()
+            if common_field_keys is None:
+                common_field_keys = current_field_keys
+            else:
+                common_field_keys &= current_field_keys
+
+        return common_field_keys or set()
+
+
+@dataclass(frozen=True)
+class ItsmFormModelUpdateResult:
+    updated_field_keys: frozenset[str]
+    raw: Any
+
+    @classmethod
+    def from_response(cls, resp: Any):
+        if isinstance(resp, dict) and resp.get("result") is False:
+            raise RuntimeError(f"update_form_model failed: {resp}")
+
+        response_data = resp.get("data") if isinstance(resp, dict) and isinstance(resp.get("data"), dict) else resp
+        updated_fields = (
+            ((response_data or {}).get("meta") or {}).get("fields", {}) if isinstance(response_data, dict) else {}
+        )
+        if not updated_fields:
+            raise RuntimeError(f"update_form_model response missing meta.fields: {resp}")
+        if not isinstance(updated_fields, dict):
+            raise TypeError("invalid update_form_model response: meta.fields must be an object")
+
+        return cls(updated_field_keys=frozenset(updated_fields.keys()), raw=resp)
+
+
+def _extract_jsonschema_field_keys(schema: Dict[str, Any]) -> set[str]:
+    properties = schema.get("properties") or {}
+    if not isinstance(properties, dict):
+        return set()
+
+    field_keys = set(properties.keys())
+    for field_schema in properties.values():
+        if isinstance(field_schema, dict):
+            field_keys |= _extract_jsonschema_field_keys(field_schema)
+
+    return field_keys
 
 
 def _call_bkitsm_api(
@@ -95,7 +196,7 @@ def system_workflow_list(
     system_token: str = "",
     page: int = 1,
     page_size: int = 100,
-) -> Dict[str, Any]:
+) -> ItsmWorkflowList:
     """
     获取 ITSM 系统下的流程列表
 
@@ -114,13 +215,14 @@ def system_workflow_list(
     elif settings.BK_ITSM4_SYSTEM_TOKEN:
         more_headers["SYSTEM-TOKEN"] = settings.BK_ITSM4_SYSTEM_TOKEN
 
-    return _call_bkitsm_api(
+    resp = _call_bkitsm_api(
         http_get,
         "/api/v1/system_workflow/list/",
         data,
         more_headers=more_headers,
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
+    return ItsmWorkflowList.from_response(resp)
 
 
 def update_form_model(
@@ -130,8 +232,7 @@ def update_form_model(
     desc: str = "",
     app_id: str = "",
     system_id: str = "",
-    system_token: str = "",
-) -> Dict[str, Any]:
+) -> ItsmFormModelUpdateResult:
     """
     更新 ITSM 表单模型
 
@@ -151,18 +252,17 @@ def update_form_model(
         data["system_id"] = system_id
 
     more_headers = {}
-    if system_token:
-        more_headers["SYSTEM-TOKEN"] = system_token
-    elif system_id and settings.BK_ITSM4_SYSTEM_TOKEN:
+    if system_id and settings.BK_ITSM4_SYSTEM_TOKEN:
         more_headers["SYSTEM-TOKEN"] = settings.BK_ITSM4_SYSTEM_TOKEN
 
-    return _call_bkitsm_api(
+    resp = _call_bkitsm_api(
         http_post,
         "/api/v1/form_models/update/",
         data,
         more_headers=more_headers,
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
+    return ItsmFormModelUpdateResult.from_response(resp)
 
 
 def create_system_workflow(

@@ -20,13 +20,19 @@ import copy
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List
 
 from django.core.management.base import BaseCommand
 from django.db.utils import OperationalError, ProgrammingError
 
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
-from apigateway.components.bkitsm import system_migrate, system_workflow_list, update_form_model
+from apigateway.components.bkitsm import (
+    ItsmFormModelUpdateResult,
+    ItsmWorkflowList,
+    system_migrate,
+    system_workflow_list,
+    update_form_model,
+)
 from apigateway.utils.string import strip_template_ref_prefix
 
 logger = logging.getLogger(__name__)
@@ -77,15 +83,15 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Start register_to_itsm, system_code={system_code}")
 
-        workflow_list_resp = self._get_system_workflow_list(system_code, fail_on_error=update_form_model)
+        workflow_list = self._get_system_workflow_list(system_code, fail_on_error=update_form_model)
 
         # 先查询 ITSM 侧该系统是否已注册过流程，避免重复 migrate 导致 400 报错
-        if self._is_system_registered_response(workflow_list_resp):
+        if workflow_list.is_registered:
             if update_form_model:
                 self._update_form_model_from_template(
                     system_code=system_code,
                     template_data=template_data,
-                    workflow_list_resp=workflow_list_resp,
+                    workflow_list=workflow_list,
                     form_model_key=form_model_key,
                 )
                 self._ensure_config_from_template(system_code, template_data)
@@ -109,7 +115,7 @@ class Command(BaseCommand):
         self._ensure_config_from_template(system_code, template_data)
 
     @staticmethod
-    def _get_system_workflow_list(system_code: str, fail_on_error: bool = False) -> Dict[str, Any]:
+    def _get_system_workflow_list(system_code: str, fail_on_error: bool = False) -> ItsmWorkflowList:
         try:
             return system_workflow_list(system_id=system_code)
         except Exception as err:
@@ -117,22 +123,18 @@ class Command(BaseCommand):
                 raise RuntimeError(f"failed to query system_workflow_list, system_code={system_code}") from err
 
             logger.warning("failed to query system_workflow_list, assume not registered", exc_info=True)
-            return {}
-
-    @staticmethod
-    def _is_system_registered_response(resp: Dict[str, Any]) -> bool:
-        return resp.get("count", 0) > 0
+            return ItsmWorkflowList.empty()
 
     def _update_form_model_from_template(
         self,
         system_code: str,
         template_data: Dict[str, Any],
-        workflow_list_resp: Dict[str, Any],
+        workflow_list: ItsmWorkflowList,
         form_model_key: str,
     ):
         payload = self._build_form_model_update_payload(system_code, template_data, form_model_key)
         template_field_keys = sorted(payload["meta"]["fields"].keys())
-        workflow_schema_field_keys = self._extract_common_workflow_schema_field_keys(workflow_list_resp)
+        workflow_schema_field_keys = workflow_list.extract_common_schema_field_keys()
         if workflow_schema_field_keys and set(template_field_keys).issubset(workflow_schema_field_keys):
             self.stdout.write(
                 self.style.SUCCESS("ITSM workflow schema already contains all template fields, skip update")
@@ -140,8 +142,8 @@ class Command(BaseCommand):
             return
 
         self.stdout.write(f"Start updating ITSM form model, key={payload['key']}, fields={template_field_keys}")
-        resp = update_form_model(**payload)
-        self._validate_form_model_update_response(resp, template_field_keys)
+        result = update_form_model(**payload)
+        self._validate_form_model_update_result(result, template_field_keys)
         self.stdout.write(self.style.SUCCESS(f"ITSM form model updated: key={payload['key']}"))
         self.stdout.write(
             self.style.WARNING(
@@ -181,56 +183,8 @@ class Command(BaseCommand):
         }
 
     @staticmethod
-    def _extract_common_workflow_schema_field_keys(workflow_list_resp: Dict[str, Any]) -> Set[str]:
-        workflow_items = Command._extract_workflow_items(workflow_list_resp)
-        common_field_keys: Optional[Set[str]] = None
-        for item in workflow_items:
-            form_schema = item.get("form_schema") or {}
-            current_field_keys = Command._extract_jsonschema_field_keys(form_schema)
-            if common_field_keys is None:
-                common_field_keys = current_field_keys
-            else:
-                common_field_keys &= current_field_keys
-
-        return common_field_keys or set()
-
-    @staticmethod
-    def _extract_jsonschema_field_keys(schema: Dict[str, Any]) -> Set[str]:
-        properties = schema.get("properties") or {}
-        field_keys = set(properties.keys())
-        for field_schema in properties.values():
-            if isinstance(field_schema, dict):
-                field_keys |= Command._extract_jsonschema_field_keys(field_schema)
-
-        return field_keys
-
-    @staticmethod
-    def _extract_workflow_items(resp: Dict[str, Any]) -> List[Dict[str, Any]]:
-        if not isinstance(resp, dict):
-            raise TypeError("invalid system_workflow_list response: response must be an object")
-
-        results = resp.get("results")
-        if not isinstance(results, list):
-            raise TypeError("invalid system_workflow_list response: results must be a list")
-
-        if not all(isinstance(item, dict) for item in results):
-            raise TypeError("invalid system_workflow_list response: results items must be objects")
-
-        return results
-
-    @staticmethod
-    def _validate_form_model_update_response(resp: Any, missing_field_keys: List[str]):
-        if isinstance(resp, dict) and resp.get("result") is False:
-            raise RuntimeError(f"update_form_model failed: {resp}")
-
-        response_data = resp.get("data") if isinstance(resp, dict) and isinstance(resp.get("data"), dict) else resp
-        updated_fields = (
-            ((response_data or {}).get("meta") or {}).get("fields", {}) if isinstance(response_data, dict) else {}
-        )
-        if not updated_fields:
-            raise RuntimeError(f"update_form_model response missing meta.fields: {resp}")
-
-        still_missing = sorted(set(missing_field_keys) - set(updated_fields.keys()))
+    def _validate_form_model_update_result(result: ItsmFormModelUpdateResult, missing_field_keys: List[str]):
+        still_missing = sorted(set(missing_field_keys) - set(result.updated_field_keys))
         if still_missing:
             raise RuntimeError(f"update_form_model response missing fields: {still_missing}")
 

@@ -27,6 +27,7 @@ from ddf import G
 from apigateway.apps.bk_itsm.management.commands.register_to_itsm import Command as RegisterToItsmCommand
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
+from apigateway.components.bkitsm import ItsmFormModelUpdateResult, ItsmWorkflowList
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 pytestmark = pytest.mark.django_db
@@ -251,8 +252,14 @@ class TestItsmPermissionApplyHelper:
         assert helper.is_ready() is False
 
     def test_default_system_code_should_match_template_system_code(self):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args([])
+        with open(options.template_file, encoding="utf-8") as fp:
+            template = json.load(fp)
+
         helper = ItsmPermissionApplyHelper()
-        assert helper.system_code == "bk-apigateway"
+        assert helper.system_code == template["system"]["code"]
 
     def test_register_to_itsm_default_template_file_should_exist(self):
         parser = argparse.ArgumentParser()
@@ -304,70 +311,14 @@ class TestItsmPermissionApplyHelper:
         with open(options.template_file, encoding="utf-8") as fp:
             template = json.load(fp)
 
-        payload = RegisterToItsmCommand._build_form_model_update_payload("bk-apigateway-20260803", template)
+        payload = RegisterToItsmCommand._build_form_model_update_payload("bk-apigateway-20260804", template)
 
-        assert payload["key"] == "20260803110000000101"
-        assert payload["name"] == "bk-apigateway-20260803"
+        assert payload["key"] == "20260804110000000101"
+        assert payload["name"] == "bk-apigateway-20260804"
         assert payload["app_id"] == "core"
-        assert payload["system_id"] == "bk-apigateway-20260803"
+        assert payload["system_id"] == "bk-apigateway-20260804"
         assert payload["meta"]["fields"]["apply_reason"]["type"] == "textarea"
         assert "styleCode" not in payload["meta"]
-
-    def test_register_to_itsm_extract_common_workflow_schema_field_keys(self):
-        field_keys = RegisterToItsmCommand._extract_common_workflow_schema_field_keys(
-            {
-                "count": 2,
-                "results": [
-                    {
-                        "form_schema": {
-                            "properties": {
-                                "ticket_info_group": {
-                                    "type": "object",
-                                    "format": "group",
-                                    "properties": {"apply_reason": {}, "gateway_name": {}},
-                                },
-                                "ticket_handle_group": {
-                                    "type": "object",
-                                    "format": "group",
-                                    "properties": {"instance_approvers": {}},
-                                },
-                            }
-                        }
-                    },
-                    {
-                        "form_schema": {
-                            "properties": {
-                                "ticket_info_group": {
-                                    "type": "object",
-                                    "format": "group",
-                                    "properties": {"gateway_name": {}},
-                                },
-                                "ticket_handle_group": {
-                                    "type": "object",
-                                    "format": "group",
-                                    "properties": {"instance_approvers": {}},
-                                },
-                            }
-                        }
-                    },
-                ],
-            }
-        )
-
-        assert field_keys == {"gateway_name", "instance_approvers", "ticket_handle_group", "ticket_info_group"}
-
-    def test_register_to_itsm_extract_workflow_items_requires_results_shape(self):
-        workflow_items = RegisterToItsmCommand._extract_workflow_items(
-            {"count": 1, "results": [{"form_schema": {"properties": {}}}]}
-        )
-
-        assert workflow_items == [{"form_schema": {"properties": {}}}]
-
-        with pytest.raises(TypeError, match="results must be a list"):
-            RegisterToItsmCommand._extract_workflow_items({"count": 1, "data": []})
-
-        with pytest.raises(TypeError, match="results items must be objects"):
-            RegisterToItsmCommand._extract_workflow_items({"count": 1, "results": ["invalid"]})
 
     def test_register_to_itsm_update_form_model_when_system_registered(self, mocker):
         parser = argparse.ArgumentParser()
@@ -384,20 +335,24 @@ class TestItsmPermissionApplyHelper:
             command,
             "_get_system_workflow_list",
             side_effect=[
-                {
-                    "count": 1,
-                    "results": [{"form_schema": {"properties": remote_properties}}],
-                },
-                {
-                    "count": 1,
-                    "results": [{"form_schema": {"properties": {key: {} for key in field_keys}}}],
-                },
+                ItsmWorkflowList.from_response(
+                    {
+                        "count": 1,
+                        "results": [{"form_schema": {"properties": remote_properties}}],
+                    }
+                ),
+                ItsmWorkflowList.from_response(
+                    {
+                        "count": 1,
+                        "results": [{"form_schema": {"properties": {key: {} for key in field_keys}}}],
+                    }
+                ),
             ],
         )
         mocker.patch.object(command, "_ensure_config_from_template")
         mock_update_form_model = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
-            return_value={"meta": {"fields": {key: {} for key in field_keys}}},
+            return_value=ItsmFormModelUpdateResult(updated_field_keys=frozenset(field_keys), raw={}),
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
@@ -407,7 +362,7 @@ class TestItsmPermissionApplyHelper:
 
         mock_system_migrate.assert_not_called()
         mock_update_form_model.assert_called_once()
-        assert mock_update_form_model.call_args.kwargs["key"] == "20260803110000000101"
+        assert mock_update_form_model.call_args.kwargs["key"] == "20260804110000000101"
         assert "apply_reason" in mock_update_form_model.call_args.kwargs["meta"]["fields"]
 
     def test_register_to_itsm_update_form_model_does_not_require_workflow_schema_updated(self, mocker):
@@ -424,15 +379,17 @@ class TestItsmPermissionApplyHelper:
         mocker.patch.object(
             command,
             "_get_system_workflow_list",
-            return_value={
-                "count": 1,
-                "results": [{"form_schema": {"properties": remote_properties}}],
-            },
+            return_value=ItsmWorkflowList.from_response(
+                {
+                    "count": 1,
+                    "results": [{"form_schema": {"properties": remote_properties}}],
+                }
+            ),
         )
         mock_ensure_config = mocker.patch.object(command, "_ensure_config_from_template")
         mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
-            return_value={"meta": {"fields": {key: {} for key in field_keys}}},
+            return_value=ItsmFormModelUpdateResult(updated_field_keys=frozenset(field_keys), raw={}),
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
