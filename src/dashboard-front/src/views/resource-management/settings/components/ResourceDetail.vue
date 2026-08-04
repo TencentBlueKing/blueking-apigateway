@@ -1345,7 +1345,7 @@ const renderTimeOutLabel = () => {
               ),
             }}
             onClick={() => handleShowPopover()}
-            v-clickOutSide={(e: any) => handleClickOutSide(e)}
+            v-clickOutSide={(e: MouseEvent) => handleClickOutSide(e)}
           />
         </BkPopConfirm>
         <i
@@ -1389,6 +1389,17 @@ const verifiedRequired = (auth_config: any = {}) => {
 // 修改资源
 const handleEditSave = async () => {
   const params = { ...formData.value };
+  // AI网关模型代理不需要这些表单项
+  if (params.kind === 'ai') {
+    delete params.enable_websocket;
+    delete params.match_subpath;
+    delete params.openapi_schema;
+    params.backend.config = {};
+  }
+
+  if (!isAIGateway.value) {
+    delete params.kind;
+  }
   await updateResources(gatewayId, resourceId, params);
   Message({
     message: t('更新成功'),
