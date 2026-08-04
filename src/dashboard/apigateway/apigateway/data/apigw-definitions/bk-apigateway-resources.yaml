@@ -6993,6 +6993,12 @@ paths:
             type: string
           description: MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个
           example: "server-1,server-2"
+        - name: fields
+          in: query
+          schema:
+            type: string
+          description: 指定返回的字段列表，多个以逗号分割；不传时返回全部字段
+          example: name,title
       responses:
         default:
           description: ''
