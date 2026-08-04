@@ -127,24 +127,6 @@ def _call_bkitsm_api(
     return do_blueking_http_request("bkitsm", http_func, url, data, headers, timeout, **kwargs)
 
 
-def create_system(name: str, code: str, token: str, desc: str = "") -> Dict[str, Any]:
-    """
-    在 ITSM 中创建系统
-
-    调用接口: system_create (POST)
-    路径: /api/v1/system/create/
-    """
-    data = {
-        "name": name,
-        "code": code,
-        "token": token,
-    }
-    if desc:
-        data["desc"] = desc
-
-    return _call_bkitsm_api(http_post, "/api/v1/system/create/", data, timeout=settings.BK_ITSM4_API_TIMEOUT)
-
-
 def system_migrate(workflow_template: Dict[str, Any]) -> Dict[str, Any]:
     """
     在 ITSM 中通过模板导入系统初始化资源
@@ -236,48 +218,6 @@ def update_form_model(
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
     return ItsmFormModelUpdateResult.from_response(resp)
-
-
-def create_system_workflow(
-    system_id: str,
-    name: str,
-    form_schema: Dict[str, Any],
-    portal_id: str = "DEFAULT",
-    desc: str = "",
-    workflow_category: str = "",
-    predefined_approver: Optional[Dict[str, Any]] = None,
-    system_token: str = "",
-) -> Dict[str, Any]:
-    """
-    在 ITSM 中创建系统流程
-
-    调用接口: system_workflow_create (POST)
-    路径: /api/v1/system_workflow/create/
-    """
-    data: Dict[str, Any] = {
-        "system_id": system_id,
-        "name": name,
-        "form_schema": form_schema,
-        "portal_id": portal_id,
-    }
-    if desc:
-        data["desc"] = desc
-    if workflow_category:
-        data["workflow_category"] = workflow_category
-    if predefined_approver:
-        data["predefined_approver"] = predefined_approver
-
-    more_headers = {}
-    if system_token:
-        more_headers["SYSTEM-TOKEN"] = system_token
-
-    return _call_bkitsm_api(
-        http_post,
-        "/api/v1/system_workflow/create/",
-        data,
-        more_headers=more_headers,
-        timeout=settings.BK_ITSM4_API_TIMEOUT,
-    )
 
 
 def create_ticket(

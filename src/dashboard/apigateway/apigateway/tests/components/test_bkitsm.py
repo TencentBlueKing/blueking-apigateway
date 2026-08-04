@@ -23,7 +23,6 @@ from apigateway.components.bkitsm import (
     ItsmFormModelUpdateResult,
     ItsmWorkflowList,
     _call_bkitsm_api,
-    create_system_workflow,
     create_ticket,
     update_form_model,
 )
@@ -62,25 +61,6 @@ def test_itsm_form_model_update_result_extract_updated_fields():
     )
 
     assert result.updated_field_keys == frozenset({"apply_reason", "gateway_name"})
-
-
-def test_create_system_workflow_with_system_token(settings, mocker):
-    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
-    settings.BK_ITSM4_API_TIMEOUT = 30
-
-    mock_call = mocker.patch("apigateway.components.bkitsm._call_bkitsm_api", return_value={"key": "wf-001"})
-
-    create_system_workflow(
-        system_id="bk_apigateway",
-        name="网关权限申请",
-        form_schema={"type": "object", "properties": {}},
-        portal_id="DEFAULT",
-        predefined_approver={"type": "Variable", "id": ["approvers"]},
-        system_token="token-001",
-    )
-
-    _, kwargs = mock_call.call_args
-    assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "token-001"}
 
 
 def test_create_ticket_prefers_system_token(settings, mocker):
