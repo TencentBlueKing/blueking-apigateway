@@ -44,56 +44,6 @@ def test_call_bkitsm_api_with_operation_tenant_headers(settings, mocker):
     mock_request.assert_called_once()
 
 
-def test_itsm_workflow_list_extract_common_schema_field_keys():
-    workflow_list = ItsmWorkflowList.from_response(
-        {
-            "count": 2,
-            "results": [
-                {
-                    "form_schema": {
-                        "properties": {
-                            "ticket_info_group": {
-                                "type": "object",
-                                "format": "group",
-                                "properties": {"apply_reason": {}, "gateway_name": {}},
-                            },
-                            "ticket_handle_group": {
-                                "type": "object",
-                                "format": "group",
-                                "properties": {"instance_approvers": {}},
-                            },
-                        }
-                    }
-                },
-                {
-                    "form_schema": {
-                        "properties": {
-                            "ticket_info_group": {
-                                "type": "object",
-                                "format": "group",
-                                "properties": {"gateway_name": {}},
-                            },
-                            "ticket_handle_group": {
-                                "type": "object",
-                                "format": "group",
-                                "properties": {"instance_approvers": {}},
-                            },
-                        }
-                    }
-                },
-            ],
-        }
-    )
-
-    assert workflow_list.is_registered is True
-    assert workflow_list.extract_common_schema_field_keys() == {
-        "gateway_name",
-        "instance_approvers",
-        "ticket_handle_group",
-        "ticket_info_group",
-    }
-
-
 def test_itsm_workflow_list_requires_results_shape():
     workflow_list = ItsmWorkflowList.from_response({"count": 1, "results": [{"form_schema": {"properties": {}}}]})
 

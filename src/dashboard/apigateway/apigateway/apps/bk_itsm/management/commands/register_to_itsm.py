@@ -91,7 +91,6 @@ class Command(BaseCommand):
                 self._update_form_model_from_template(
                     system_code=system_code,
                     template_data=template_data,
-                    workflow_list=workflow_list,
                     form_model_key=form_model_key,
                 )
                 self._ensure_config_from_template(system_code, template_data)
@@ -129,17 +128,10 @@ class Command(BaseCommand):
         self,
         system_code: str,
         template_data: Dict[str, Any],
-        workflow_list: ItsmWorkflowList,
         form_model_key: str,
     ):
         payload = self._build_form_model_update_payload(system_code, template_data, form_model_key)
         template_field_keys = sorted(payload["meta"]["fields"].keys())
-        workflow_schema_field_keys = workflow_list.extract_common_schema_field_keys()
-        if workflow_schema_field_keys and set(template_field_keys).issubset(workflow_schema_field_keys):
-            self.stdout.write(
-                self.style.SUCCESS("ITSM workflow schema already contains all template fields, skip update")
-            )
-            return
 
         self.stdout.write(f"Start updating ITSM form model, key={payload['key']}, fields={template_field_keys}")
         result = update_form_model(**payload)

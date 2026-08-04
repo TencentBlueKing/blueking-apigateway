@@ -329,25 +329,17 @@ class TestItsmPermissionApplyHelper:
             template = json.load(fp)
 
         field_keys = set(template["form_models"][0]["meta"]["fields"].keys())
-        remote_properties = {key: {} for key in field_keys if key != "apply_reason"}
+        remote_properties = {key: {} for key in field_keys}
         command = RegisterToItsmCommand()
         mocker.patch.object(
             command,
             "_get_system_workflow_list",
-            side_effect=[
-                ItsmWorkflowList.from_response(
-                    {
-                        "count": 1,
-                        "results": [{"form_schema": {"properties": remote_properties}}],
-                    }
-                ),
-                ItsmWorkflowList.from_response(
-                    {
-                        "count": 1,
-                        "results": [{"form_schema": {"properties": {key: {} for key in field_keys}}}],
-                    }
-                ),
-            ],
+            return_value=ItsmWorkflowList.from_response(
+                {
+                    "count": 1,
+                    "results": [{"form_schema": {"properties": remote_properties}}],
+                }
+            ),
         )
         mocker.patch.object(command, "_ensure_config_from_template")
         mock_update_form_model = mocker.patch(

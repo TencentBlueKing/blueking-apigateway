@@ -47,9 +47,6 @@ class ItsmWorkflow:
 
         return cls(form_schema=form_schema, raw=item)
 
-    def extract_jsonschema_field_keys(self) -> set[str]:
-        return _extract_jsonschema_field_keys(self.form_schema)
-
 
 @dataclass(frozen=True)
 class ItsmWorkflowList:
@@ -84,17 +81,6 @@ class ItsmWorkflowList:
     def is_registered(self) -> bool:
         return self.count > 0
 
-    def extract_common_schema_field_keys(self) -> set[str]:
-        common_field_keys: set[str] | None = None
-        for workflow in self.workflows:
-            current_field_keys = workflow.extract_jsonschema_field_keys()
-            if common_field_keys is None:
-                common_field_keys = current_field_keys
-            else:
-                common_field_keys &= current_field_keys
-
-        return common_field_keys or set()
-
 
 @dataclass(frozen=True)
 class ItsmFormModelUpdateResult:
@@ -116,19 +102,6 @@ class ItsmFormModelUpdateResult:
             raise TypeError("invalid update_form_model response: meta.fields must be an object")
 
         return cls(updated_field_keys=frozenset(updated_fields.keys()), raw=resp)
-
-
-def _extract_jsonschema_field_keys(schema: Dict[str, Any]) -> set[str]:
-    properties = schema.get("properties") or {}
-    if not isinstance(properties, dict):
-        return set()
-
-    field_keys = set(properties.keys())
-    for field_schema in properties.values():
-        if isinstance(field_schema, dict):
-            field_keys |= _extract_jsonschema_field_keys(field_schema)
-
-    return field_keys
 
 
 def _call_bkitsm_api(
