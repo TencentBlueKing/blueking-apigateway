@@ -13,6 +13,7 @@
 | order_by | string | 否  | 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time |
 | mcp_server_ids | string | 否  | MCPServer ID 列表，多个以逗号分割，最多 50 个。例如：1,2,3 |
 | mcp_server_names | string | 否  | MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个。例如：server-1,server-2 |
+| fields | string | 否  | 指定返回的字段列表，多个以逗号分割，例如 `fields=name,title`；不传时返回全部字段 |
 
 
 ### 响应示例
