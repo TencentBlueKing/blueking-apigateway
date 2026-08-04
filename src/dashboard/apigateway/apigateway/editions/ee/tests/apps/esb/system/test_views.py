@@ -87,7 +87,7 @@ class TestSystemViewSet:
         request = self.factory.put(
             "/",
             data={
-                "name": "test_udpate",
+                "name": "test_update",
                 "description": "desc",
                 "comment": "comment",
                 "timeout": 30,

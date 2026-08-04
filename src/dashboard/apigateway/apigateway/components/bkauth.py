@@ -64,7 +64,7 @@ def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
     """get app tenant info
 
     Args:
-        app_code (str): _description_
+        app_code (str): application code
 
     Returns:
         Tuple[str, str]: tenant mode and tenant id

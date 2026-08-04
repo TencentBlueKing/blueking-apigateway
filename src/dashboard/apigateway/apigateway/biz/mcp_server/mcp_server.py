@@ -49,6 +49,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.apps.mcp_server.validators import validate_mcp_prompts_payload
 from apigateway.apps.permission.constants import (
     OAUTH2_PERSONAL_CLIENT_APP_CODE,
     OAUTH2_PUBLIC_CLIENT_APP_CODE,
@@ -64,7 +65,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
-from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
+from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,

@@ -46,6 +46,10 @@ class TestResourceVersionInfoSLZ:
 
 
 class TestResourceVersionListOutputSLZ:
+    def test_sdk_count_help_text(self):
+        slz = serializers.ResourceVersionListOutputSLZ()
+        assert slz.fields["sdk_count"].help_text == "生成 SDK 数量"
+
     def test_to_representation(self):
         gateway = G(Gateway)
         resource_version = G(

@@ -447,7 +447,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     def _validate_match_subpath(self, data):
         if data.get("match_subpath", False) != data["backend"]["config"].get("match_subpath", False):
             raise serializers.ValidationError(
-                _("资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必需相同。")
+                _("资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必须相同。")
             )
 
     def _exclude_current_instance(self, queryset):

@@ -252,7 +252,7 @@ class TestResourceInputSLZ:
     )
     def test_validate_match_subpath__error(self, data):
         slz = ResourceInputSLZ()
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="值必须相同"):
             slz._validate_match_subpath(data)
 
     def test_validate_backend_id(self, fake_gateway):
@@ -275,7 +275,7 @@ class TestResourceDataImportSLZ:
             (None, None),
         ],
     )
-    def validate_description_en(self, description_en, expected):
+    def test_validate_description_en(self, description_en, expected):
         slz = ResourceDataImportSLZ()
         result = slz.validate_description_en(description_en)
         assert result == expected

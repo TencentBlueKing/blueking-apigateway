@@ -176,11 +176,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         )
 
         # 如果启用了 ITSM 权限申请工单，创建 ITSM 工单
-        if getattr(
-            settings,
-            "ENABLE_ITSM4_PERMISSION_APPLY",
-            getattr(settings, "BK_ITSM4_PERMISSION_APPLY_ENABLED", False),
-        ):
+        if settings.ENABLE_ITSM4_PERMISSION_APPLY:
             self._create_itsm_ticket(
                 record=record,
                 gateway=gateway,

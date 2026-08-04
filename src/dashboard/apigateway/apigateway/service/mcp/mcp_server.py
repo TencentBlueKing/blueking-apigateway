@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, List
+from typing import List
 
 from django.conf import settings
 
@@ -58,16 +58,6 @@ def update_stage_mcp_server_related_resource_names(
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
 
 
-def validate_mcp_prompts_payload(prompts: Any) -> None:
-    """Validate MCP prompts payload shape."""
-    if not isinstance(prompts, list):
-        raise TypeError("prompts must be a list")
-
-    for prompt in prompts:
-        if not isinstance(prompt, dict):
-            raise TypeError("prompt item must be a dict")
-
-
 def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerProtocolTypeEnum.SSE.value) -> str:
     """构建 MCP Server 访问 URL
 
@@ -82,11 +72,6 @@ def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerPro
     if protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
         return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/mcp/"
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"
-
-
-def build_mcp_streamable_http_url(mcp_server_name: str) -> str:
-    """构建 MCP Server Streamable HTTP 协议的 URL（便捷方法）"""
-    return build_mcp_server_url(mcp_server_name, MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value)
 
 
 def build_mcp_server_application_url(

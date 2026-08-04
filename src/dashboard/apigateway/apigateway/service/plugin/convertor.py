@@ -42,7 +42,7 @@ class DefaultPluginConvertor(PluginConvertor):
         """convert to apisix plugin config
         default is the PluginConfig.config(`yaml.loads(yaml_)`)
 
-        if need covert, overwrite this method
+        if conversion is needed, override this method
         """
         return config
 

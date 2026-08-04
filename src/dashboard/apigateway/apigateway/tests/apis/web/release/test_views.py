@@ -26,12 +26,18 @@ from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
 from openapi_schema_to_json_schema import to_json_schema
 
+from apigateway.apis.web.release.views import ProgrammableDeployRetrieveApi
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
+
+
+def test_programmable_deploy_retrieve_api_description():
+    schema = ProgrammableDeployRetrieveApi.get._swagger_auto_schema
+    assert schema["operation_description"] == "可编程网关 PaaS 部署详情查询"
 
 
 class TestReleaseCreateApi:
