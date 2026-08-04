@@ -306,7 +306,7 @@ BkApiClient 表示一个网关封装，方法定义：
 | BkApiUrlTmpl        | string                     | 网关地址模板   | 否   | 环境变量 `BK_API_URL_TMPL`                                                      |
 | Stage               | string                     | 环境名称       | 否   | `"prod"`                                                                        |
 | AppCode             | string                     | 应用代号       | 否   | 环境变量 `BK_APP_CODE`                                                          |
-| AppSecret           | string                     | 应用名称       | 否   | 环境变量 `BK_APP_SECRET`                                                        |
+| AppSecret           | string                     | 应用密钥       | 否   | 环境变量 `BK_APP_SECRET`                                                        |
 | AccessToken         | string                     | 访问令牌       | 否   |                                                                                 |
 | AuthorizationParams | string                     | 额外认证参数   | 否   |                                                                                 |
 | Logger              | logging.Logger             | 日志实现       | 否   | `logging.GetLogger("github.com/TencentBlueKing/bk-apigateway-sdks/core/bkapi")` |

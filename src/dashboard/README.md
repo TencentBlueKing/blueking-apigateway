@@ -16,7 +16,7 @@ make edition
 make edition-ee
 
 # 进入开发模式
-make develop
+make edition-develop
 ```
 
 当在 editions 目录中增加了新的目录时，为了让 mypy 正确运行，需要同时创建 __init__.pyi 文件，也可以使用以下命令完成：

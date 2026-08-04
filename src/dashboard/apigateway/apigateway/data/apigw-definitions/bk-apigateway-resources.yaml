@@ -123,7 +123,7 @@ paths:
               properties:
                 target_app_code:
                   type: string
-                  description: 申请权限的应用，应于当前请求的应用一致
+                  description: 申请权限的应用，应与当前请求的应用一致
                   example: my-app
                 expire_days:
                   type: integer
@@ -2922,7 +2922,7 @@ paths:
               properties:
                 target_app_code:
                   type: string
-                  description: 申请权限的应用，应于当前请求的应用一致
+                  description: 申请权限的应用，应与当前请求的应用一致
                   example: my-app
                 expire_days:
                   type: integer
@@ -6135,7 +6135,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 申请权限的应用，应于当前请求的应用一致
+          description: 申请权限的应用，应与当前请求的应用一致
           example: bk-001
       responses:
         '200':
@@ -6266,7 +6266,7 @@ paths:
               properties:
                 target_app_code:
                   type: string
-                  description: 申请权限的应用，应于当前请求的应用一致
+                  description: 申请权限的应用，应与当前请求的应用一致
                   example: bk-001
                 resource_ids:
                   type: array
@@ -6365,7 +6365,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 申请权限的应用，应于当前请求的应用一致
+          description: 申请权限的应用，应与当前请求的应用一致
           example: bk-001
         - name: expire_days_range
           in: query
@@ -6491,7 +6491,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 申请权限的应用，应于当前请求的应用一致
+          description: 申请权限的应用，应与当前请求的应用一致
           example: bk-001
       responses:
         '200':
@@ -6621,7 +6621,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 申请权限的应用，应于当前请求的应用一致
+          description: 申请权限的应用，应与当前请求的应用一致
           example: bk-001
       responses:
         '200':
@@ -6745,7 +6745,7 @@ paths:
               properties:
                 target_app_code:
                   type: string
-                  description: 申请权限的应用，应于当前请求的应用一致
+                  description: 申请权限的应用，应与当前请求的应用一致
                   example: bk-001
                 component_ids:
                   type: array
@@ -6932,7 +6932,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 申请权限的应用，应于当前请求的应用一致
+          description: 申请权限的应用，应与当前请求的应用一致
           example: bk-001
         - name: applied_by
           in: query
@@ -7069,7 +7069,7 @@ paths:
               properties:
                 target_app_code:
                   type: string
-                  description: 申请权限的应用，应于当前请求的应用一致
+                  description: 申请权限的应用，应与当前请求的应用一致
                   example: test
                 mcp_server_ids:
                   type: array
@@ -7159,7 +7159,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 申请权限的应用，应于当前请求的应用一致
+          description: 申请权限的应用，应与当前请求的应用一致
           example: bk-001
         - name: applied_by
           in: query

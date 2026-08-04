@@ -651,7 +651,7 @@ class TestRouteConvertor:
         assert "method" not in config
 
     def test_build_bk_proxy_rewrite_config_with_upstream_uri(self, convertor, mock_release_data):
-        # uri should with ${env.varName}
+        # URI should be rendered with ${env.varName}
         resource_proxy = {"path": "/api/{env.env}/users/{userId}/profile", "method": "GET"}
         config = convertor._build_bk_proxy_rewrite_config(resource_proxy)
         assert config["uri"] == "/api/test/users/${userId}/profile"

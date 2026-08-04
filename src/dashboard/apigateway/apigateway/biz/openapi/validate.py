@@ -211,7 +211,7 @@ class ResourceImportValidator:
             if resource_data.match_subpath != resource_data.backend_config.match_subpath:
                 validate_err = SchemaValidateErr(
                     _(
-                        "当前配置数据中，资源 method={method}, path={path}，前端配置中的 match_subpath 与后端配置中的 match_subpath 值必需相同。"
+                        "当前配置数据中，资源 method={method}, path={path}，前端配置中的 match_subpath 与后端配置中的 match_subpath 值必须相同。"
                     ).format(method=resource_data.method, path=resource_data.path),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource.matchSubpath",
                     absolute_path=[],

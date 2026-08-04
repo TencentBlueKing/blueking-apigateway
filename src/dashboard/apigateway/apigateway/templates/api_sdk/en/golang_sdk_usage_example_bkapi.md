@@ -4,11 +4,11 @@ Create a gateway {{gateway_name}} Client and call the API resource {{resource_na
 
 The following naming conventions are used in the bkapi package:
 
-| Patterns | Types | Meaning | Reference Documents |
-| --------------------- | ---- | --------------------------------------- | --------- |
-| bkapi. Opt * | Functions | Options that can work on both Client and Operation | option.go |
-| bkapi. * BodyProvider | Structure | Interface that provides request body serialization encapsulation | json.go |
-| bkapi. * ResultProvider | Structure | Interface to provide response body deserialization encapsulation | json.go |
+| Patterns                 | Types     | Meaning                                                            | Reference Documents |
+| ------------------------ | --------- | ------------------------------------------------------------------ | ------------------- |
+| bkapi.Opt*               | Functions | Options that can work on both Client and Operation                  | option.go           |
+| bkapi.*BodyProvider      | Structure | Interface that provides request body serialization encapsulation   | json.go             |
+| bkapi.*ResultProvider    | Structure | Interface that provides response body deserialization encapsulation | json.go             |
 
 ### Use the `bkapi` base library for `bk-apigateway-sdks` directly.
 
@@ -16,67 +16,63 @@ The following naming conventions are used in the bkapi package:
 package demo
 
 import (
-	“fmt”
-	“log”
+	"fmt"
+	"log"
 
-	“github.com/TencentBlueKing/bk-apigateway-sdks/core/bkapi”
-	“github.com/TencentBlueKing/bk-apigateway-sdks/core/define”
+	"github.com/TencentBlueKing/bk-apigateway-sdks/core/bkapi"
+	"github.com/TencentBlueKing/bk-apigateway-sdks/core/define"
 )
 
 type QueryUserDemoBodyRequest struct {
-	Name string `json: “name”`
-	Age int `json: “age”`
+	Name string `json:"name"`
+	Age  int    `json:"age"`
 }
 
 type QueryUserDemoResponse struct {
-	Name string `json: “name”`
-	Age int `json: “age”`
-	Address string `json: “address”`
-	Gender string `json: “gender”`
+	Name    string `json:"name"`
+	Age     int    `json:"age"`
+	Address string `json:"address"`
+	Gender  string `json:"gender"`
 }
 
 func clientExample() {
-
 	// Initialize the client
-
-	client, err := bkapi.NewBkApiClient(“demo”, bkapi.ClientConfig{
-		Endpoint: “http://special-api.example.com/prod”,// a specific gateway address
+	client, err := bkapi.NewBkApiClient("demo", bkapi.ClientConfig{
+		Endpoint: "http://special-api.example.com/prod", // a specific gateway address
 		ClientOptions: []define.BkApiClientOption{
-			// Set some general client configuration, eg. 
-			bkapi.OptSetRequestHeader(“X-Api-Key”, “123456”),// set the uniform header
-			bkapi.OptJsonResultProvider(),// Declare all responses from this gateway to be JSON
+			// Set some general client configuration, e.g.
+			bkapi.OptSetRequestHeader("X-Api-Key", "123456"), // set the uniform header
+			bkapi.OptJsonResultProvider(),                    // declare all responses from this gateway to be JSON
 			bkapi.OptJsonBodyProvider(), // Declare that all body requests from this gateway are JSON.
-		}, })
+		},
 	})
-	if err ! = nil {
-		log.Printf(“client init error: %v”, err)
-		log.Printf(“client init error: %v”, err)
+	if err != nil {
+		log.Printf("client init error: %v", err)
+		return
 	}
-
-
 
 	// Create the api operation
 	apiOperation := client.NewOperation(
 		// Fill in the interface configuration
 		bkapi.OperationConfig{
-			Name: “query_team_user_demo”,
-			Method: “GET”,
-			Path: “/get/{team_id}/user/”,
-		}, // Set the header parameter. 
-		// Set the header parameter 
-		bkapi.OptSetRequestHeader(“X-Bkapi-Header”, “demo”),
+			Name:   "query_team_user_demo",
+			Method: "GET",
+			Path:   "/get/{team_id}/user/",
+		},
+		// Set the header parameter
+		bkapi.OptSetRequestHeader("X-Bkapi-Header", "demo"),
 		// Set the path parameter
 		bkapi.OptSetRequestPathParams(
 			map[string]string{
-				“team_id": `1`,, // Set the path parameters.
+				"team_id": `1`,
 			},
-		), // Set the query parameters.
+		),
 		// Set the query parameters
-		bkapi.OptSetRequestQueryParam(“name”, “demo”), // set the body parameter: customize the constructor.
+		bkapi.OptSetRequestQueryParam("name", "demo"),
 		// Set the body parameter: custom struct
-		bkapi.OptSetRequestBody(QueryUserDemoBodyRequest{Name: “demo”}), // set the body parameter: map[map], “demo”, // set the body parameter.
+		bkapi.OptSetRequestBody(QueryUserDemoBodyRequest{Name: "demo"}),
 		// Set the body parameter: map[string]string
-		bkapi.OptSetRequestBody(map[string]string{“name”: “demo”}), )
+		bkapi.OptSetRequestBody(map[string]string{"name": "demo"}),
 	)
 
 	// Create the result variable
@@ -85,20 +81,19 @@ func clientExample() {
 	// Call the interface (Request() returns: *http.Response,err, depending on the case if it needs to be handled)
 
 	//// pass the parameter directly through the api operation
-	//_,_=apiOperation.SetHeaders(map[string]string{“X-Bkapi-Header”: “demo”}).
-	// SetPathParams(map[string]string{“team_id”: `1`}).
-	// SetBody(QueryUserDemoBodyRequest{Name: “demo”}).
-	// SetQueryParams(map[string]string{“name”: “demo”}).
-	// SetResult(&result).Request()
+	//_,_=apiOperation.SetHeaders(map[string]string{"X-Bkapi-Header": "demo"}).
+	//	SetPathParams(map[string]string{"team_id": `1`}).
+	//	SetBody(QueryUserDemoBodyRequest{Name: "demo"}).
+	//	SetQueryParams(map[string]string{"name": "demo"}).
+	//	SetResult(&result).Request()
 
 	//_, _ = client.StatusCode(bkapi.OptSetRequestQueryParams(map[string]string{
-	// “code”: `200`, //})).SetResults(bkapi.
+	//	"code": `200`,
 	//})).SetResult(&result).Request()
 
 	_, _ = apiOperation.SetResult(&result).Request()
 	// The result will be automatically populated into result
-	fmt.Printf(“%#v”, result)
-
+	fmt.Printf("%#v", result)
 }
 ```
 
@@ -111,12 +106,12 @@ Contents of the generated sdk
 package {{gateway_name}}
 
 import (
-	"github.com/TencentBlueKing/bk-apgateway-sdks/core/bkapi"
+	"github.com/TencentBlueKing/bk-apigateway-sdks/core/bkapi"
 	"github.com/TencentBlueKing/bk-apigateway-sdks/core/define"
 )
 
 // VERSION for resource definitions
-const VERSION = “{{sdk_version}}”
+const VERSION = "{{sdk_version}}"
 
 // Client for bkapi {{gateway_name_with_underscore}}
 type Client struct {
@@ -124,9 +119,9 @@ type Client struct {
 }
 
 // New {{gateway_name_with_underscore}} client
-func New(configProvider define.ClientConfigProvider, opts . .define.BkApiClientOption) (*Client, error) {
-	client, err := bkapi.NewBkApiClient(“httpbin”, configProvider, opts ...)
-	if err ! = nil {
+func New(configProvider define.ClientConfigProvider, opts ...define.BkApiClientOption) (*Client, error) {
+	client, err := bkapi.NewBkApiClient("httpbin", configProvider, opts...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -136,11 +131,11 @@ func New(configProvider define.ClientConfigProvider, opts . .define.BkApiClientO
 
 // {{resource_name}} for bkapi resource {{resource_name}}
 // Returns anything passed in request data.
-func (c *Client) {{resource_name}} (opts ... .define.OperationOption) define.Operation {
+func (c *Client) {{resource_name}}(opts ...define.OperationOption) define.Operation {
 	return c.BkApiClient.NewOperation(bkapi.OperationConfig{
-		Name: “{{resource_name}}”,
-		Method: “{{method}}”,
-		Path: “xxxx/xxxx”, }, opts...
+		Name:   "{{resource_name}}",
+		Method: "{{method}}",
+		Path:   "xxxx/xxxx",
 	}, opts...)
 }
 
@@ -156,53 +151,50 @@ The log output will take the Context corresponding to the request with it, which
 See [github.com/TencentBlueKing/gopkg/logging](https://github.com/TencentBlueKing/gopkg/tree/master/logging) for details.
 
 ### Configuration Center
-You can use `ClientConfigRegistry` to simplify the repetitive work of passing gateway address, authentication information, etc. every time you initialize a client. `ClientConfigRegistry` itself has been implemented as a `ClientConfigProvider`, which can be used as a direct replacement for `ClientConfig` to to be used directly instead of `ClientConfig`:
+You can use `ClientConfigRegistry` to simplify the repetitive work of passing gateway address, authentication information, etc. every time you initialize a client. `ClientConfigRegistry` itself has been implemented as a `ClientConfigProvider`, which can be used directly instead of `ClientConfig`:
 
 ```golang
 // Initialize the client through the ClientConfigRegistry.
 
 // Initialize the client using the default global configuration center
-registry: = bkapi.GetGlobalClientConfigRegistry()
+registry := bkapi.GetGlobalClientConfigRegistry()
 
 // Way 1: register the default configuration (regardless of gateway)
-err: = registry.RegisterDefaultConfig(bkapi.ClientConfig {
-        BkApiUrlTmpl: “http://{api_name}.example.com/”, // gateway generic address
-        Stage: “prod”, //Configure.ClientConfig
+err := registry.RegisterDefaultConfig(bkapi.ClientConfig{
+        BkApiUrlTmpl: "http://{api_name}.example.com/", // gateway generic address
+        Stage: "prod",
 })
-if err ! = nil {
-        log.Printf(“registry default config error: %v”, err)
-        log.Printf(“registry default config error: %v”, err)
+if err != nil {
+        log.Printf("registry default config error: %v", err)
+        return
 }
 // Use the default configuration and specify the gateway when creating the client
-client, err: = bkapi.NewBkApiClient(“my-gateway”, registry)
-if err ! = nil {
-        log.Fatalf(“create bkapi client error: %v”, err)
+client, err := bkapi.NewBkApiClient("my-gateway", registry)
+if err != nil {
+        log.Fatalf("create bkapi client error: %v", err)
         return
 }
 
-
-
 // Method 2: Register the specified gateway configuration
-err = registry.RegisterClientConfig(“my-gateway”, bkapi.ClientConfig {
-        Endpoint: “http://special-api.example.com/prod”, // a specific gateway address
-        ClientOptions: [] define.BkApiClientOption {
-        // Set some general client configuration, eg. 
-        bkapi.OptSetRequestHeader(“X-Api-Key”, “123456”), // set the uniform header
-        bkapi.OptJsonResultProvider(), // Declare all responses from this gateway to be JSON
-        bkapi.OptJsonBodyProvider(), // Declare that all body requests for this gateway are JSON
-       }, })
-    })
+err = registry.RegisterClientConfig("my-gateway", bkapi.ClientConfig{
+        Endpoint: "http://special-api.example.com/prod", // a specific gateway address
+        ClientOptions: []define.BkApiClientOption{
+                // Set some general client configuration, e.g.
+                bkapi.OptSetRequestHeader("X-Api-Key", "123456"), // set the uniform header
+                bkapi.OptJsonResultProvider(),                    // declare all responses from this gateway to be JSON
+                bkapi.OptJsonBodyProvider(),                      // declare that all body requests for this gateway are JSON
+        },
+})
 
-if err ! = nil {
-        log.Fatalf(“set bkapi client config error: %v”, err)
-        if err != nil { log.
+if err != nil {
+        log.Fatalf("set bkapi client config error: %v", err)
+        return
 }
 
-
-client, err = bkapi.NewBkApiClient(“my-gateway”, registry)
-NewBkApiClient(“my-gateway”, registry) if err ! = nil {
-        log.Fatalf(“create bkapi client error: %v”, err)
-        log.Fatalf(“create bkapi client error: %v”, err)
+client, err = bkapi.NewBkApiClient("my-gateway", registry)
+if err != nil {
+        log.Fatalf("create bkapi client error: %v", err)
+        return
 }
 ```
 
@@ -214,8 +206,8 @@ The *github.com/prometheus/client_golang/prometheus* module implements the Prome
 ```golang
 // Enable the metrics plugin with the metrics prefix
 prometheus.Enable(prometheus.PrometheusOptions{
-	Namespace: “project”,
-	Subsystem: “module”, })
+	Namespace: "project",
+	Subsystem: "module",
 })
 ```
 
@@ -242,15 +234,15 @@ Operation represents a gateway resource wrapper, method definition:
 | SetHeaders | Set request headers |
 | SetQueryParams | Set request parameters (querystring) |
 | SetPathParams | Set path variables |
-| | SetBodyReader | Set request content (`io.Reader`) |
-| | SetBody | Set request parameters (to be handled by the request parameter serializer) |
+| SetBodyReader | Set request content (`io.Reader`) |
+| SetBody | Set request parameters (to be handled by the request parameter serializer) |
 | SetBodyProvider | Set the request parameter serializer (with `SetBody`) |
 | SetResult | Set the response structure (to be handled by the response serializer) |
-| | SetResultProvider | Set the response serializer (with `SetResult`) |
-| SetContext | Set the request context | | SetContentType | | SetContactType
-| | SetContentType | Sets the request `Content-Type` header, which is available to custom serializers |
+| SetResultProvider | Set the response serializer (with `SetResult`) |
+| SetContext | Set the request context |
+| SetContentType | Sets the request `Content-Type` header, which is available to custom serializers |
 | SetContentLength | Set the request `Content-Length` header, available to custom serializers |
-| Apply | Add additional options | | Request | Send a request.
+| Apply | Add additional options |
 | Request | Send Request |
 
 
@@ -259,24 +251,24 @@ Operation represents a gateway resource wrapper, method definition:
 apiOperation := client.NewOperation(
     // Fill in the interface configuration
     bkapi.OperationConfig{
-        Name: “query_team_user_demo”,
-        Method: “GET”,
-        Path: “/get/{team_id}/user/”,
-    }, // Set the header parameter.
+        Name:   "query_team_user_demo",
+        Method: "GET",
+        Path:   "/get/{team_id}/user/",
+    },
     // Set the header parameter
-    bkapi.OptSetRequestHeader(“X-Bkapi-Header”, “demo”),
+    bkapi.OptSetRequestHeader("X-Bkapi-Header", "demo"),
     // Set the path parameter
     bkapi.OptSetRequestPathParams(
         map[string]string{
-        “team_id": `1`,, // Set the path parameters.
+        "team_id": `1`,
         },
-    ), // Set the query parameters.
+    ),
     // Set the query parameters
-    bkapi.OptSetRequestQueryParam(“name”, “demo”), // set the body parameter: customize the constructor.
+    bkapi.OptSetRequestQueryParam("name", "demo"),
     // Set the body parameter: custom struct
-    bkapi.OptSetRequestBody(QueryUserDemoBodyRequest{Name: “demo”}), // set the body parameter: map[map], “demo”, // set the body parameter.
+    bkapi.OptSetRequestBody(QueryUserDemoBodyRequest{Name: "demo"}),
     // Set the body parameter: map[string]string
-    bkapi.OptSetRequestBody(map[string]string{“name”: “demo”}), )
+    bkapi.OptSetRequestBody(map[string]string{"name": "demo"}),
 )
 
 // Create the result variable
@@ -285,15 +277,15 @@ var result QueryUserDemoResponse
 // Call the interface (Request() returns: *http.Response,err, depending on the case if it needs to be handled)
 
 //// pass the parameter directly through the api operation
-//_,_=apiOperation.SetHeaders(map[string]string{“X-Bkapi-Header”: “demo”}).
-// SetPathParams(map[string]string{“team_id”: `1`}).
-// SetBody(QueryUserDemoBodyRequest{Name: “demo”}).
-// SetQueryParams(map[string]string{“name”: “demo”}).
-// SetResult(&result).Request()
+//_,_=apiOperation.SetHeaders(map[string]string{"X-Bkapi-Header": "demo"}).
+//	SetPathParams(map[string]string{"team_id": `1`}).
+//	SetBody(QueryUserDemoBodyRequest{Name: "demo"}).
+//	SetQueryParams(map[string]string{"name": "demo"}).
+//	SetResult(&result).Request()
 
 _, _ = apiOperation.SetResult(&result).Request()
 // The result will be automatically populated into result
-fmt.Printf(“%#v”, result)
+fmt.Printf("%#v", result)
 ```
 
 ### Client wrappers
@@ -304,7 +296,7 @@ BkApiClient represents a gateway wrapper, method definition:
 | ------------------- | ------------------------------------ |
 | Apply | Add additional options (for BkApiClient) |
 | AddOperationOptions | Add resource generic options (for Operation) |
-| | AddOperationOptions | Add Resource Generic Options (acts on Operation) | | NewOperation | Creates the associated resource wrapper and applies the generic options |
+| NewOperation | Creates the associated resource wrapper and applies the generic options |
 
 ### Client configuration
 The client configuration is passed in through the `bkapi.ClientConfig` type, and some parameters are automatically filled in:
@@ -315,7 +307,7 @@ The client configuration is passed in through the `bkapi.ClientConfig` type, and
 | BkApiUrlTmpl | string | Gateway address template | No | Environment variable `BK_API_URL_TMPL` |
 | Stage | string | Environment name | No | `"prod"` |
 | AppCode | string | Application code | No | Environment variable `BK_APP_CODE` |
-| AppSecret | string | Application name | No | Environment variable `BK_APP_SECRET` |
+| AppSecret | string | Application secret | No | Environment variable `BK_APP_SECRET` |
 | AccessToken | string | Access token | No | |
 | AuthorizationParams | string | Additional authentication parameters | No | |
 | Logger | logging.Logger | Log implementation | No | `logging.GetLogger("github.com/TencentBlueKing/bk-apigateway-sdks/core/bkapi")` |

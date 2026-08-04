@@ -295,6 +295,7 @@ class TestResourceImportValidator:
         validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
         validator._validate_match_subpath()
         assert len(validator.schema_validate_result) > 0
+        assert "值必须相同" in validator.schema_validate_result[0].message
 
     def test_validate_resource_count__error(self, settings, fake_resource, fake_resource_data):
         settings.API_GATEWAY_RESOURCE_LIMITS = {

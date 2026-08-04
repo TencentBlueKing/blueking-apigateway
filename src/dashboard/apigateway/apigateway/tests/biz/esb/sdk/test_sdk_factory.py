@@ -51,7 +51,7 @@ class TestPythonSDK:
             "board": "open",
             "board_label": "Open",
             "sdk_name": "blueking-component-open",
-            "sdk_description": "accss open apis",
+            "sdk_description": "access open APIs",
             "sdk_version_number": "0.0.1",
             "sdk_download_url": "http://bking.com/blueking-component-open-0.0.1.tar.gz",
             "sdk_install_command": "pip install blueking-component-open",

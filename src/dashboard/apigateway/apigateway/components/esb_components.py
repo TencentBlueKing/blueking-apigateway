@@ -20,7 +20,7 @@
 管理访问 ESB 非公开组件
 
 ESB 非公开组件未包含在 bkapi_component.open 中，
-为方便调用这些组件，此处基于 bkapi_client_core 中的 ESBClient，并参照 bkapi_componet.open 实现，对这些组件进行封装
+为方便调用这些组件，此处基于 bkapi_client_core 中的 ESBClient，并参照 bkapi_component.open 实现，对这些组件进行封装
 """
 
 from bkapi_client_core.esb import ESBClient, Operation, OperationGroup, bind_property

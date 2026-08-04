@@ -51,4 +51,4 @@ def test_python_generator_uses_safe_setup_py_description(
     )
     description_arg = next(keyword for keyword in setup_call.keywords if keyword.arg == "description")
     assert isinstance(description_arg.value, ast.Constant)
-    assert description_arg.value.value == "an sdk for demo-gateway on bk-apigateway"
+    assert description_arg.value.value == "an SDK for demo-gateway on bk-apigateway"

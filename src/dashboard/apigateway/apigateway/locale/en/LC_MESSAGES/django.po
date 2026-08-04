@@ -2397,7 +2397,7 @@ msgstr ""
 #, python-brace-format
 msgid ""
 "当前配置数据中，资源 method={method}, path={path}，前端配置中的 "
-"match_subpath 与后端配置中的 match_subpath 值必需相同。"
+"match_subpath 与后端配置中的 match_subpath 值必须相同。"
 msgstr ""
 "The matchSubpath of resource [method={method}, path={path}] value in "
 "frontend config must be the same as the matchSubpath value in backend config."
@@ -2753,7 +2753,7 @@ msgstr "An internal error occurred while processing the request"
 
 #: apigateway/common/error_codes.py:136
 msgid "请求失败"
-msgstr "Reuqest Failed"
+msgstr "Request Failed"
 
 #: apigateway/common/factories/schema.py:31
 msgid "Schema 不存在。"
