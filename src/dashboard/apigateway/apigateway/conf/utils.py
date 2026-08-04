@@ -218,6 +218,10 @@ def get_default_feature_flags(
         "ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT": env.bool(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT", True
         ),
+        # 是否开启 MCP Server OAuth2 个人客户端模式
+        "ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT": env.bool(
+            "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", True
+        ),
         # 是否开启 BK CLI 展示
         "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
         # 是否开启 ITSM 权限申请
