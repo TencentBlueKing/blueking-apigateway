@@ -1156,6 +1156,7 @@ class MCPServerListApi(generics.ListAPIView):
             keyword=slz.validated_data.get("keyword"),
             order_by=slz.validated_data.get("order_by", "-updated_time"),
             ids=slz.validated_data.get("mcp_server_ids") or None,
+            names=slz.validated_data.get("mcp_server_names") or None,
         )
 
         page = self.paginate_queryset(queryset)

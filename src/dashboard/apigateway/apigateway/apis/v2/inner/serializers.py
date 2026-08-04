@@ -644,6 +644,9 @@ class MCPServerListInputSLZ(serializers.Serializer):
     mcp_server_ids = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer ID 列表，多个以逗号 , 分割"
     )
+    mcp_server_names = serializers.CharField(
+        allow_blank=True, required=False, help_text="MCPServer 名称列表，多个以逗号 , 分割"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
@@ -658,6 +661,14 @@ class MCPServerListInputSLZ(serializers.Serializer):
         if len(ids) > 50:
             raise serializers.ValidationError(_("MCPServer ID 列表最多支持 50 个"))
         return ids
+
+    def validate_mcp_server_names(self, value):
+        if not value:
+            return []
+        names = [x.strip() for x in value.split(",")]
+        if len(names) > 50:
+            raise serializers.ValidationError(_("MCPServer 名称列表最多支持 50 个"))
+        return names
 
 
 class MCPServerListOutputSLZ(serializers.Serializer):
