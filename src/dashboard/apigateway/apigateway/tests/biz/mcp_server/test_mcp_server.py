@@ -1626,6 +1626,32 @@ class TestMCPServerHandler:
         assert server.id in result_ids
         assert 999999 not in result_ids
 
+    def test_build_list_queryset_with_names(self, fake_gateway, fake_stage):
+        """按名称列表精确筛选，忽略不存在的名称"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="requested-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="unrequested-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        result = MCPServerHandler.build_list_queryset(names=[server.name, "missing-server"])
+
+        assert list(result.values_list("id", flat=True)) == [server.id]
+
     # ========== build_list_context 测试 ==========
 
     def test_build_list_context_basic(self, fake_gateway, fake_stage):

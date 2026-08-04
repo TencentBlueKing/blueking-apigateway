@@ -130,6 +130,7 @@ grant_permissions:
   - bk_app_code: bk_auth
     grant_dimension: "resource"
     resource_names:
+      - v2_inner_list_mcp_server
       - v2_open_batch_query_mcp_servers
       - v2_open_list_gateways
       - v2_open_list_gateway_resources

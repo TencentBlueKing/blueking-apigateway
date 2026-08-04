@@ -720,6 +720,7 @@ class MCPServerHandler:
         is_public: Optional[bool] = None,
         order_by: str = "-updated_time",
         ids: Optional[List[int]] = None,
+        names: Optional[List[str]] = None,
     ) -> QuerySet:
         """构建 MCPServer 列表的通用 queryset
 
@@ -732,6 +733,7 @@ class MCPServerHandler:
             is_public: 是否公开
             order_by: 排序字段
             ids: MCPServer ID 列表，用于批量筛选
+            names: MCPServer 名称列表，用于批量精确筛选
 
         Returns:
             构建好的 queryset
@@ -742,6 +744,9 @@ class MCPServerHandler:
 
         if ids:
             queryset = queryset.filter(id__in=ids)
+
+        if names:
+            queryset = queryset.filter(name__in=names)
 
         if is_public is not None:
             queryset = queryset.filter(is_public=is_public)
