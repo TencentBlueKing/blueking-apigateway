@@ -163,7 +163,6 @@ class TestGatewayLookupApi:
             "name",
             "description",
             "doc_maintainers",
-            "kind",
             "is_official",
         }
         assert response.json()["data"][0]["is_official"] is True
