@@ -26,14 +26,25 @@
         v-if="!appAuthStatusList.length"
         class="color-#299e56 text-12px "
       >
-        <div class="font-700 px-30px">
+        <div class="flex items-center justify-between px-30px">
+          <div class="font-700">
+            <AgIcon
+              name="check-circle-shape"
+              size="12"
+            />
+            <span class="ml-8px">{{ t('无安全风险') }}</span>
+          </div>
           <AgIcon
-            name="check-circle-shape"
-            size="12"
+            name="ps-arrow-right"
+            class="cursor-pointer"
+            :class="[isCollapse ? 'rotate--90deg' : '']"
+            @click.stop="handleExpandAlert"
           />
-          <span class="ml-8px">{{ t('无安全风险') }}</span>
         </div>
-        <div class="mt-12px pl-50px">
+        <div
+          v-show="isCollapse"
+          class="mt-12px pl-50px"
+        >
           {{ t('当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。') }}
         </div>
       </div>
@@ -41,20 +52,49 @@
         v-else
         class="color-#e71818 text-12px"
       >
-        <div class="font-700 px-26px">
-          <AgIcon
-            name="zhiming"
-            size="16"
-          />
-          <span class="ml-8px">{{ t('存在安全风险 — 请谨慎评估') }}</span>
-        </div>
-        <div class="mt-12px pl-50px pr-24px">
-          <div class="lh-20px mb-6px">
-            {{ t('当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。') }}
+        <div class="flex items-center justify-between px-26px">
+          <div class="font-700">
+            <AgIcon
+              name="zhiming"
+              size="16"
+            />
+            <span class="ml-8px">{{ t('存在安全风险 — 请谨慎评估') }}</span>
           </div>
-          <div class="lh-20px mb-6px flex items-baseline">
+          <AgIcon
+            name="ps-arrow-right"
+            class="cursor-pointer"
+            :class="[isCollapse ? 'rotate--90deg' : '']"
+            @click.stop="handleExpandAlert"
+          />
+        </div>
+        <div
+          v-show="isCollapse"
+          class="mt-12px pl-50px pr-24px"
+        >
+          <div class="lh-20px mb-6px">
+            {{
+              isEnabledPersonalClient
+                ? t('当前已选择的工具中，有 {count} 个工具包含「应用态」鉴权：', { count: appAuthCount })
+                : t('当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。')
+            }}
+          </div>
+          <div
+            v-if="isEnabledPublicClient"
+            class="lh-20px mb-6px flex items-baseline"
+          >
             <span class="oauth-alter-circle" />
-            <span>{{ t('开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。') }}</span>
+            <span>
+              {{ t('开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。') }}
+            </span>
+          </div>
+          <div
+            v-if="isEnabledPersonalClient"
+            class="lh-20px mb-6px flex items-baseline"
+          >
+            <span class="oauth-alter-circle" />
+            <span>
+              {{ t('开启个人令牌后，任何人授权后即可调用。') }}
+            </span>
           </div>
           <div class="lh-20px mb-6px">
             <span class="oauth-alter-circle" />
@@ -79,9 +119,23 @@ import { locale, t } from '@/locales';
 import type { IAuthConfig } from '@/types/resource';
 import type { IMCPToolSelections } from '@/services/source/mcp-server';
 
-interface IProps { appAuthStatusList?: IMCPToolSelections[] }
+interface IProps {
+  isEditMode?: boolean
+  isEnabledPublicClient?: boolean
+  isEnabledPersonalClient?: boolean
+  appAuthStatusList?: IMCPToolSelections[]
+}
 
-const { appAuthStatusList = [] } = defineProps<IProps>();
+const {
+  isEditMode = false,
+  isEnabledPublicClient = false,
+  isEnabledPersonalClient = false,
+  appAuthStatusList = [],
+} = defineProps<IProps>();
+
+const emit = defineEmits<{ 'on-expand': [data: boolean] }>();
+
+const isCollapse = ref(!isEditMode);
 
 const renderAlertStyles = computed(() => {
   // 应用态数据样式
@@ -97,26 +151,59 @@ const renderAlertStyles = computed(() => {
     backgroundColor: '#ebfaf0',
   };
 });
+
+/**
+ * 统计：包含应用态鉴权(app_verified_required=true)的工具数量
+ */
+const appAuthCount = computed(() => {
+  return appAuthStatusList.filter((item) => {
+    const configStr = item?.contexts?.resource_auth?.config as string;
+    if (!configStr) return false;
+    try {
+      const authConfig = JSON.parse(configStr) as IAuthConfig;
+      return !!authConfig?.app_verified_required;
+    }
+    catch {
+      return false;
+    }
+  }).length;
+});
+
+/**
+ * 渲染带鉴权标签的工具名称列表字符串
+ */
 const renderToolData = computed(() => {
   const results = appAuthStatusList.map((item: IMCPToolSelections) => {
-    const config = item?.contexts?.resource_auth?.config as string;
-    if (config?.length) {
-      const authConfig = JSON.parse(config) as IAuthConfig;
-      const displayName = item.tool_name || item.name;
-      if (authConfig?.auth_verified_required && !authConfig?.app_verified_required) {
-        return { name: `${displayName} (${t('仅用户态')})` };
+    const configStr = item?.contexts?.resource_auth?.config as string;
+    const displayName = item.tool_name || item.name || '';
+    if (!configStr) return displayName;
+
+    try {
+      const authConfig = JSON.parse(configStr) as IAuthConfig;
+      const { auth_verified_required, app_verified_required } = authConfig;
+
+      if (auth_verified_required && !app_verified_required) {
+        return `${displayName} (${t('仅用户态')})`;
       }
-      if (!authConfig?.auth_verified_required && authConfig?.app_verified_required) {
-        return { name: `${displayName} (${t('仅应用态')})` };
+      if (!auth_verified_required && app_verified_required) {
+        return `${displayName} (${t('仅应用态')})`;
       }
-      if (authConfig?.auth_verified_required && authConfig?.app_verified_required) {
-        return { name: `${displayName} (${t('应用态 + 用户态')})` };
+      if (auth_verified_required && app_verified_required) {
+        return `${displayName} (${t('应用态 + 用户态')})`;
       }
+      return displayName;
     }
-    return item;
+    catch {
+      return displayName;
+    }
   });
-  return results.map((item: IMCPToolSelections) => item.name).join('、');
+  return results.join('、');
 });
+
+const handleExpandAlert = () => {
+  isCollapse.value = !isCollapse.value;
+  emit('on-expand', isCollapse.value);
+};
 </script>
 
 <style lang="scss" scoped>

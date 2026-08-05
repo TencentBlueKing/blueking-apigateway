@@ -63,7 +63,21 @@
             <div class="bg-white p-16px mb-24px">
               <OAuthSwitcher
                 v-model:form-data="formData"
-                @oauth-change="handleOAuthChange"
+                field="oauth2_public_client_enabled"
+                :is-show="isShowPublicClient"
+                :title="t('OAuth2 公开客户端模式')"
+                :description="t('开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。')"
+                :icon="'oauth2'"
+                @oauth-change="getSliderContentHeight"
+              />
+              <OAuthSwitcher
+                v-model:form-data="formData"
+                field="oauth2_personal_client_enabled"
+                :is-show="isShowPersonalClient"
+                :title="t('个人令牌')"
+                :description="t('开启后，用户可以使用个人令牌调用该 MCP Server。')"
+                :icon="'user-token'"
+                @oauth-change="getSliderContentHeight"
               />
               <!-- 资源选择表格 -->
               <BkFormItem :class="`resource-table-form-item ${activeTab}`">
@@ -305,7 +319,7 @@
                                         content: checks.tool_name || checks.name,
                                         disabled: !isOverflow
                                       }"
-                                      class="min-w-20px color-#3a84ff text-12px truncate name"
+                                      class="min-w-20px text-12px truncate name"
                                       @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
                                       @mouseleave="handleMouseleave"
                                     >
@@ -378,7 +392,10 @@
         <OAuthAlert
           v-if="isExistOAuthData"
           class="py-8px"
+          :is-enabled-personal-client="isEnabledPersonalClient"
+          :is-enabled-public-client="isEnabledPublicClient"
           :app-auth-status-list="appAuthStatusList"
+          @on-expand="getSliderContentHeight"
         />
         <BkButton
           :disabled="noValidStage"
@@ -505,6 +522,7 @@ const defaultFormData = ref<IMCPFormData>({
   stage_id: 0,
   is_public: true,
   oauth2_public_client_enabled: false,
+  oauth2_personal_client_enabled: false,
   raw_response_enabled: false,
   labels: [] as string[],
   categories: [] as string[],
@@ -1005,10 +1023,18 @@ const noValidStage = computed<boolean>(() =>
   stageList.value.length > 0 && stageList.value.every(sg => sg.status === 0));
 const isCurrentStageValid = computed<boolean>(() =>
   stageList.value.find(sg => sg.id === formData.value.stage_id)?.status === 1);
-// 处理工具oauth态
-const isEnabledOAuth = computed<boolean>(() =>
-  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && formData.value.oauth2_public_client_enabled,
+const isShowPublicClient = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT);
+const isShowPersonalClient = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT);
+// 公开客户端
+const isEnabledPublicClient = computed<boolean>(() =>
+  isShowPublicClient.value && formData.value.oauth2_public_client_enabled,
 );
+// 个人令牌
+const isEnabledPersonalClient = computed<boolean>(() =>
+  isShowPersonalClient.value && formData.value.oauth2_personal_client_enabled,
+);
+// 处理工具oauth态
+const isEnabledOAuth = computed<boolean>(() => isEnabledPublicClient.value || isEnabledPersonalClient.value);
 // 选中的应用态工具数据
 const appAuthStatusList = computed<IMCPSelections[]>(() => {
   if (!isEnabledOAuth.value) return [];
@@ -1297,6 +1323,7 @@ const handleSubmit = async (): Promise<void> => {
         description,
         is_public,
         oauth2_public_client_enabled,
+        oauth2_personal_client_enabled,
         raw_response_enabled,
         protocol_type,
         labels,
@@ -1305,6 +1332,7 @@ const handleSubmit = async (): Promise<void> => {
         description,
         is_public,
         oauth2_public_client_enabled,
+        oauth2_personal_client_enabled,
         raw_response_enabled,
         protocol_type,
         labels,
@@ -1544,6 +1572,7 @@ const fetchServer = async () => {
       protocol_type = 'streamable_http',
       labels = [] as string[],
       oauth2_public_client_enabled = false,
+      oauth2_personal_client_enabled = false,
       is_public = true,
       raw_response_enabled = false,
       stage = { id: 0 },
@@ -1562,6 +1591,7 @@ const fetchServer = async () => {
       labels,
       is_public,
       oauth2_public_client_enabled,
+      oauth2_personal_client_enabled,
       raw_response_enabled,
       stage_id: stage.id || 0,
       protocol_type,
@@ -1895,11 +1925,6 @@ const handleMcpTypeChange = (tab: string) => {
     },
   };
   return tabMap[tab]?.();
-};
-
-// 切换oauth是否开启同步更新节点宽度
-const handleOAuthChange = () => {
-  getSliderContentHeight();
 };
 
 const resetSliderData = () => {
