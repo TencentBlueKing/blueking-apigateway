@@ -328,7 +328,7 @@
                   { 'color-#3A84FF': item.hasOwnProperty('resource_count') }
                 ]"
               >
-                <template v-if="item.kind === 0">
+                <template v-if="item.kind !== 1">
                   {{ item.resource_count }}
                 <!--                <RouterLink -->
                 <!--                  :to="{ name: 'ResourceSetting', params: { id: item.id } }" -->
