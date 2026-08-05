@@ -5968,7 +5968,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
           example: id,name
       x-bk-apigateway-noneSchema: true
       responses:
@@ -6195,7 +6195,7 @@ paths:
   /api/v2/inner/gateways/{gateway_name}/released-resources/:
     get:
       operationId: v2_inner_list_gateway_released_resources
-      description: 获取网关当前已发布资源
+      description: 获取网关当前已发布资源，仅统计启用环境（stage.status = ACTIVE）的 Release
       tags:
       - v2_inner
       parameters:

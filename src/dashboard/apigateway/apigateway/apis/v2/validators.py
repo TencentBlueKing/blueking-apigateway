@@ -28,6 +28,43 @@ from apigateway.utils.string import split_comma_separated_values
 if TYPE_CHECKING:
     from collections.abc import Collection
 
+MAX_LOOKUP_NAMES = 50
+
+
+def validate_comma_separated_names(
+    value: str,
+    *,
+    max_count: int = MAX_LOOKUP_NAMES,
+    max_count_error: str,
+    required: bool = False,
+    required_error: str | None = None,
+) -> list[str]:
+    names = split_comma_separated_values(value, deduplicate=True)
+    if required and not names:
+        raise serializers.ValidationError(required_error)
+    if len(names) > max_count:
+        raise serializers.ValidationError(max_count_error.format(max_count=max_count))
+    return names
+
+
+def validate_comma_separated_ints(
+    value: str,
+    *,
+    max_count: int = MAX_LOOKUP_NAMES,
+    max_count_error: str,
+    invalid_error: str,
+) -> list[int]:
+    if not value:
+        return []
+    parts = split_comma_separated_values(value, deduplicate=False)
+    try:
+        ids = [int(part) for part in parts]
+    except ValueError:
+        raise serializers.ValidationError(invalid_error)
+    if len(ids) > max_count:
+        raise serializers.ValidationError(max_count_error.format(max_count=max_count))
+    return ids
+
 
 def validate_output_fields(value: str, allowed_fields: Collection[str]) -> set[str] | None:
     fields = set(split_comma_separated_values(value, deduplicate=True))

@@ -1,5 +1,6 @@
 from ddf import G
 
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.service.gateway_released_resource import get_gateway_released_resources
 
@@ -25,11 +26,11 @@ def _make_released_resource(gateway, resource_version, *, resource_id, name):
     )
 
 
-def _release(gateway, resource_version, stage_name):
+def _release(gateway, resource_version, stage_name, *, stage_status=StageStatusEnum.ACTIVE.value):
     return G(
         Release,
         gateway=gateway,
-        stage=G(Stage, gateway=gateway, name=stage_name, status=0),
+        stage=G(Stage, gateway=gateway, name=stage_name, status=stage_status),
         resource_version=resource_version,
     )
 
@@ -45,6 +46,20 @@ def test_uses_only_current_release_versions():
     result = list(get_gateway_released_resources(gateway_id=gateway.id))
 
     assert [(item.resource_id, item.resource_name) for item in result] == [(current.resource_id, "current")]
+
+
+def test_excludes_inactive_stage_releases():
+    gateway = G(Gateway, name="inactive-stage-gateway")
+    active_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+    offline_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
+    _release(gateway, active_version, "prod")
+    _release(gateway, offline_version, "offline", stage_status=StageStatusEnum.INACTIVE.value)
+    active = _make_released_resource(gateway, active_version, resource_id=1, name="active_only")
+    _make_released_resource(gateway, offline_version, resource_id=2, name="offline_only")
+
+    result = list(get_gateway_released_resources(gateway_id=gateway.id))
+
+    assert [(item.resource_id, item.resource_name) for item in result] == [(active.resource_id, "active_only")]
 
 
 def test_merges_versions_and_ignores_visibility_flags():

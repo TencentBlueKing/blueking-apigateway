@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, ReleasedResource
 
 if TYPE_CHECKING:
@@ -16,7 +17,12 @@ def get_gateway_released_resources(
     resource_names: list[str] | None = None,
 ) -> QuerySet[ReleasedResource]:
     resource_version_ids = list(
-        Release.objects.filter(gateway_id=gateway_id).values_list("resource_version_id", flat=True).distinct()
+        Release.objects.filter(
+            gateway_id=gateway_id,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+        .values_list("resource_version_id", flat=True)
+        .distinct()
     )
     eligible = ReleasedResource.objects.filter(
         gateway_id=gateway_id,

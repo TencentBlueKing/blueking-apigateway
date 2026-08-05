@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import copy
 import logging
 import math
 from typing import Dict, List
@@ -25,7 +24,12 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.v2.validators import validate_output_fields
+from apigateway.apis.v2.validators import (
+    MAX_LOOKUP_NAMES,
+    validate_comma_separated_ints,
+    validate_comma_separated_names,
+    validate_output_fields,
+)
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
@@ -55,14 +59,12 @@ from apigateway.service.mcp import (
 )
 from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
-from apigateway.utils.string import split_comma_separated_values
 
 logger = logging.getLogger(__name__)
-
-MAX_LOOKUP_NAMES = 50
 GATEWAY_LOOKUP_FIELDS = frozenset(
     {"id", "name", "description", "maintainers", "doc_maintainers", "kind", "is_official"}
 )
+GATEWAY_LOOKUP_DEFAULT_FIELDS = GATEWAY_LOOKUP_FIELDS - {"maintainers"}
 RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
 MCP_SERVER_LIST_FIELDS = frozenset(
     {
@@ -142,12 +144,12 @@ class GatewayLookupInputSLZ(serializers.Serializer):
     fields = serializers.CharField(required=False, allow_blank=True)
 
     def validate_gateway_names(self, value) -> list[str]:
-        names = split_comma_separated_values(value, deduplicate=True)
-        if not names:
-            raise serializers.ValidationError(_("gateway_names 不能为空"))
-        if len(names) > MAX_LOOKUP_NAMES:
-            raise serializers.ValidationError(_("gateway_names 最多支持 50 个"))
-        return names
+        return validate_comma_separated_names(
+            value,
+            required=True,
+            required_error=_("gateway_names 不能为空"),
+            max_count_error=_("gateway_names 最多支持 {max_count} 个"),
+        )
 
     def validate_fields(self, value) -> set[str] | None:
         return validate_output_fields(value, GATEWAY_LOOKUP_FIELDS)
@@ -161,10 +163,10 @@ class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
     fields = serializers.CharField(required=False, allow_blank=True)
 
     def validate_resource_names(self, value) -> list[str]:
-        names = split_comma_separated_values(value, deduplicate=True)
-        if len(names) > MAX_LOOKUP_NAMES:
-            raise serializers.ValidationError(_("resource_names 最多支持 50 个"))
-        return names
+        return validate_comma_separated_names(
+            value,
+            max_count_error=_("resource_names 最多支持 {max_count} 个"),
+        )
 
     def validate_fields(self, value) -> set[str] | None:
         return validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
@@ -584,8 +586,8 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
-        max_length=50,
-        help_text="MCPServer ID 列表，最多 50 个",
+        max_length=MAX_LOOKUP_NAMES,
+        help_text="MCPServer ID 列表，最多 {max_count} 个".format(max_count=MAX_LOOKUP_NAMES),
     )
     applied_by = serializers.CharField(required=True, help_text="申请人")
     reason = serializers.CharField(required=True, help_text="申请原因")
@@ -741,29 +743,23 @@ class MCPServerListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
 
     def validate_mcp_server_ids(self, value):
-        if not value:
-            return []
-        try:
-            ids = [int(x.strip()) for x in value.split(",")]
-        except ValueError:
-            raise serializers.ValidationError(_("MCPServer ID 必须为整数，多个以逗号分割"))
-        if len(ids) > 50:
-            raise serializers.ValidationError(_("MCPServer ID 列表最多支持 50 个"))
-        return ids
+        return validate_comma_separated_ints(
+            value,
+            invalid_error=_("MCPServer ID 必须为整数，多个以逗号分割"),
+            max_count_error=_("MCPServer ID 列表最多支持 {max_count} 个"),
+        )
 
     def validate_mcp_server_names(self, value):
-        if not value:
-            return []
-        names = [x.strip() for x in value.split(",")]
-        if len(names) > 50:
-            raise serializers.ValidationError(_("MCPServer 名称列表最多支持 50 个"))
-        return names
+        return validate_comma_separated_names(
+            value,
+            max_count_error=_("MCPServer 名称列表最多支持 {max_count} 个"),
+        )
 
     def validate_fields(self, value) -> set[str] | None:
         return validate_output_fields(value, MCP_SERVER_LIST_FIELDS)
 
 
-class MCPServerListOutputSLZ(serializers.Serializer):
+class MCPServerListOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
     title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
@@ -804,16 +800,6 @@ class MCPServerListOutputSLZ(serializers.Serializer):
     created_by = serializers.CharField(read_only=True, help_text="创建人")
     updated_time = serializers.DateTimeField(read_only=True, help_text="更新时间")
     created_time = serializers.DateTimeField(read_only=True, help_text="创建时间")
-
-    def __init__(self, *args, fields=None, **kwargs):
-        self._output_fields = fields
-        super().__init__(*args, **kwargs)
-
-    def get_fields(self):
-        fields = self._declared_fields
-        if self._output_fields is not None:
-            fields = {name: field for name, field in fields.items() if name in self._output_fields}
-        return copy.deepcopy(fields)
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name

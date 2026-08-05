@@ -7,15 +7,15 @@ from django.utils import translation
 
 from apigateway.apis.v2.inner import serializers as inner_serializers
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 
 
-def _release_version(gateway, resource_version, stage_name):
+def _release_version(gateway, resource_version, stage_name, *, stage_status=StageStatusEnum.ACTIVE.value):
     return G(
         Release,
         gateway=gateway,
-        stage=G(Stage, gateway=gateway, name=stage_name, status=0),
+        stage=G(Stage, gateway=gateway, name=stage_name, status=stage_status),
         resource_version=resource_version,
     )
 
@@ -147,7 +147,7 @@ class TestGatewayLookupApi:
         ]
         mock_convert_maintainers.assert_not_called()
 
-    def test_returns_all_fields_by_default(self, request_view):
+    def test_returns_default_fields_without_maintainers(self, request_view):
         gateway = G(Gateway, name="all-fields", _maintainers="admin", is_official=True)
 
         response = request_view(
@@ -162,12 +162,48 @@ class TestGatewayLookupApi:
             "id",
             "name",
             "description",
-            "maintainers",
             "doc_maintainers",
             "kind",
             "is_official",
         }
         assert response.json()["data"][0]["is_official"] is True
+
+    @mock.patch(
+        "apigateway.apis.v2.inner.serializers.ResourcePermissionHandler.convert_gateway_maintainers_to_display_names"
+    )
+    def test_default_fields_do_not_query_bk_user(self, mock_convert_maintainers, request_view):
+        G(Gateway, name="gateway-a", _maintainers="admin")
+        G(Gateway, name="gateway-b", _maintainers="admin")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.lookup",
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"gateway_names": "gateway-a,gateway-b"},
+        )
+
+        assert response.status_code == 200
+        mock_convert_maintainers.assert_not_called()
+
+    @mock.patch(
+        "apigateway.apis.v2.inner.serializers.ResourcePermissionHandler.convert_gateway_maintainers_to_display_names"
+    )
+    def test_maintainers_requires_explicit_fields(self, mock_convert_maintainers, request_view):
+        mock_convert_maintainers.return_value = ["Admin User"]
+        gateway = G(Gateway, name="with-maintainers", _maintainers="admin")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.lookup",
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={"gateway_names": gateway.name, "fields": "id,name,maintainers"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"] == [
+            {"id": gateway.id, "name": "with-maintainers", "maintainers": ["Admin User"]},
+        ]
+        mock_convert_maintainers.assert_called_once()
 
     def test_preserves_tenant_visibility(self, request_view, settings):
         settings.ENABLE_MULTI_TENANT_MODE = True
@@ -214,7 +250,7 @@ class TestGatewayLookupApi:
 
 
 class TestGatewayReleasedResourceListApi:
-    def test_returns_current_release_union_without_visibility_filters(self, request_view):
+    def test_returns_active_stage_release_union_without_gateway_visibility_filters(self, request_view):
         gateway = G(
             Gateway,
             name="released-resource-gateway",
@@ -267,6 +303,36 @@ class TestGatewayReleasedResourceListApi:
 
         assert response.status_code == 200
         assert response.json() == {"data": {"count": 1, "results": [{"id": old.resource_id, "name": "exact_name"}]}}
+
+    def test_excludes_inactive_stage_releases(self, request_view):
+        gateway = G(Gateway, name="inactive-stage-released-resource")
+        active_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        offline_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
+        _release_version(gateway, active_version, "prod")
+        _release_version(gateway, offline_version, "offline", stage_status=StageStatusEnum.INACTIVE.value)
+        active = _make_snapshot(gateway, active_version, resource_id=1, name="active_resource")
+        _make_snapshot(gateway, offline_version, resource_id=2, name="offline_resource")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "data": {
+                "count": 1,
+                "results": [
+                    {
+                        "id": active.resource_id,
+                        "name": "active_resource",
+                        "description": "active_resource description",
+                    },
+                ],
+            }
+        }
 
     def test_translates_description_from_snapshot_data(self, request_view):
         gateway = G(Gateway, name="translated-released-resource")
@@ -331,6 +397,29 @@ class TestGatewayReleasedResourceListApi:
         )
         assert hidden.status_code == 404
         assert missing_tenant.status_code == 400
+
+    @pytest.mark.parametrize(
+        "query",
+        [
+            {"limit": 0},
+            {"limit": 21},
+            {"limit": "invalid"},
+            {"offset": -1},
+            {"offset": "invalid"},
+        ],
+    )
+    def test_rejects_invalid_pagination(self, request_view, query):
+        gateway = G(Gateway, name="released-resource-pagination-validation")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.list",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+            data=query,
+        )
+
+        assert response.status_code == 400
 
     def test_paginates_after_deduplication(self, request_view):
         gateway = G(Gateway, name="released-resource-pagination")

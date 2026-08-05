@@ -25,7 +25,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -59,7 +59,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
-from apigateway.common.pagination import StandardLimitOffsetPagination
+from apigateway.common.pagination import BoundedLimitOffsetPagination
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
@@ -91,31 +91,14 @@ logger = logging.getLogger(__name__)
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
 
 
-class OAuth2ClientScopePagination(StandardLimitOffsetPagination):
-    default_limit = 10
-    max_limit: int = 20
+# Inner list endpoints share the same bounded pagination contract documented in OpenAPI.
+INNER_BOUNDED_LIST_DEFAULT_LIMIT = 10
+INNER_BOUNDED_LIST_MAX_LIMIT = 20
 
-    def get_limit(self, request):
-        raw_limit = request.query_params.get(self.limit_query_param)
-        if raw_limit is not None:
-            try:
-                limit = int(raw_limit)
-            except TypeError, ValueError:
-                raise ValidationError({"limit": [_("limit 必须为整数。")]})
-            if not 1 <= limit <= self.max_limit:
-                raise ValidationError({"limit": [_("limit 必须在 1 到 20 之间。")]})
-        return super().get_limit(request)
 
-    def get_offset(self, request):
-        raw_offset = request.query_params.get(self.offset_query_param)
-        if raw_offset is not None:
-            try:
-                offset = int(raw_offset)
-            except TypeError, ValueError:
-                raise ValidationError({"offset": [_("offset 必须为整数。")]})
-            if offset < 0:
-                raise ValidationError({"offset": [_("offset 必须大于或等于 0。")]})
-        return super().get_offset(request)
+class OAuth2ClientScopePagination(BoundedLimitOffsetPagination):
+    default_limit = INNER_BOUNDED_LIST_DEFAULT_LIMIT
+    max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
 
 
 @method_decorator(
@@ -226,14 +209,14 @@ class GatewayLookupApi(generics.ListAPIView):
             queryset,
             many=True,
             context=self.get_serializer_context(),
-            fields=data.get("fields"),
+            fields=data.get("fields") or serializers.GATEWAY_LOOKUP_DEFAULT_FIELDS,
         )
         return OKJsonResponse(data=output_slz.data)
 
 
-class GatewayReleasedResourcePagination(StandardLimitOffsetPagination):
-    default_limit = 10
-    max_limit: int = 20
+class GatewayReleasedResourcePagination(BoundedLimitOffsetPagination):
+    default_limit = INNER_BOUNDED_LIST_DEFAULT_LIMIT
+    max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
 
 
 @method_decorator(
@@ -247,7 +230,7 @@ class GatewayReleasedResourcePagination(StandardLimitOffsetPagination):
 )
 class GatewayReleasedResourceListApi(generics.ListAPIView):
     serializer_class = serializers.GatewayReleasedResourceOutputSLZ
-    permission_classes = [OpenAPIV2Permission]
+    permission_classes = [OpenAPIV2GatewayNamePermission]
     pagination_class = GatewayReleasedResourcePagination
 
     def list(self, request, gateway_name, *args, **kwargs):
@@ -255,11 +238,15 @@ class GatewayReleasedResourceListApi(generics.ListAPIView):
         input_slz.is_valid(raise_exception=True)
         data = input_slz.validated_data
 
-        gateway_queryset = Gateway.objects.filter(name=gateway_name)
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
-            gateway_queryset = gateway_filter_by_app_tenant_id(gateway_queryset, tenant_id)
-        gateway = get_object_or_404(gateway_queryset)
+            visible = gateway_filter_by_app_tenant_id(
+                Gateway.objects.filter(pk=request.gateway.pk),
+                tenant_id,
+            ).exists()
+            if not visible:
+                raise Http404
+        gateway = request.gateway
 
         queryset = get_gateway_released_resources(
             gateway_id=gateway.id,

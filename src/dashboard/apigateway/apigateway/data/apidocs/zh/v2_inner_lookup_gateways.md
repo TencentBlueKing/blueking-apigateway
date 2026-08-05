@@ -11,7 +11,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
 | gateway_names | string | 是 | 网关名称列表，多个以逗号分隔，去重后最多 50 个 |
-| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`maintainers`、`doc_maintainers`、`kind`、`is_official`，不传返回全部字段 |
+| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`maintainers`、`doc_maintainers`、`kind`、`is_official`；不传时默认返回除 `maintainers` 外的全部字段，`maintainers` 需显式指定 |
 
 ### 响应示例
 
