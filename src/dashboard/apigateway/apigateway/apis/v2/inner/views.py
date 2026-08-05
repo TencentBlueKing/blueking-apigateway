@@ -1251,8 +1251,7 @@ class MCPServerListApi(generics.ListAPIView):
         )
 
         page = self.paginate_queryset(queryset)
-        fields_str = slz.validated_data.get("fields")
-        fields = {field.strip() for field in fields_str.split(",") if field.strip()} if fields_str else None
+        fields = slz.validated_data.get("fields")
         include_all_fields = fields is None
 
         context = {}

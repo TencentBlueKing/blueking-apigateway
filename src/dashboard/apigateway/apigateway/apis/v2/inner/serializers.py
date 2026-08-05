@@ -25,6 +25,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.validators import validate_output_fields
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
@@ -63,17 +64,33 @@ GATEWAY_LOOKUP_FIELDS = frozenset(
     {"id", "name", "description", "maintainers", "doc_maintainers", "kind", "is_official"}
 )
 RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
-
-
-def _validate_output_fields(value: str, allowed_fields: frozenset[str]) -> set[str] | None:
-    fields = set(split_comma_separated_values(value, deduplicate=True))
-    if not fields:
-        return None
-
-    unknown_fields = fields - allowed_fields
-    if unknown_fields:
-        raise serializers.ValidationError(_("不支持的字段：{fields}").format(fields=", ".join(sorted(unknown_fields))))
-    return fields
+MCP_SERVER_LIST_FIELDS = frozenset(
+    {
+        "id",
+        "name",
+        "title",
+        "description",
+        "is_public",
+        "labels",
+        "resource_names",
+        "tool_names",
+        "status",
+        "protocol_type",
+        "oauth2_public_client_enabled",
+        "oauth2_personal_client_enabled",
+        "categories",
+        "stage",
+        "gateway",
+        "tools_count",
+        "prompts_count",
+        "url",
+        "detail_url",
+        "updated_by",
+        "created_by",
+        "updated_time",
+        "created_time",
+    }
+)
 
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
@@ -133,7 +150,7 @@ class GatewayLookupInputSLZ(serializers.Serializer):
         return names
 
     def validate_fields(self, value) -> set[str] | None:
-        return _validate_output_fields(value, GATEWAY_LOOKUP_FIELDS)
+        return validate_output_fields(value, GATEWAY_LOOKUP_FIELDS)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupInputSLZ"
@@ -150,7 +167,7 @@ class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
         return names
 
     def validate_fields(self, value) -> set[str] | None:
-        return _validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
+        return validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceListInputSLZ"
@@ -741,6 +758,9 @@ class MCPServerListInputSLZ(serializers.Serializer):
         if len(names) > 50:
             raise serializers.ValidationError(_("MCPServer 名称列表最多支持 50 个"))
         return names
+
+    def validate_fields(self, value) -> set[str] | None:
+        return validate_output_fields(value, MCP_SERVER_LIST_FIELDS)
 
 
 class MCPServerListOutputSLZ(serializers.Serializer):
