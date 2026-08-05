@@ -31,9 +31,9 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
+from apigateway.apis.v2.tenant import get_request_tenant_id
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import (
     MCPServer,
@@ -133,11 +133,7 @@ class GatewayListApi(generics.ListAPIView):
         queryset = GatewayHandler.list_public_released_gateways()
 
         # 可以看到 全租户网关 + 本租户网关
-        tenant_id = None
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            if not request.tenant_id:
-                raise ValidationError("tenant_id is required in multi-tenant mode")
-            tenant_id = request.tenant_id
+        tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
 

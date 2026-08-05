@@ -5530,7 +5530,19 @@ paths:
       description: 获取网关列表
       tags:
       - v2_inner
-      x-bk-apigateway-noneSchema: true
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: 网关名称，用于过滤网关
+          example: bk-apigateway
+        - name: fuzzy
+          in: query
+          schema:
+            type: boolean
+          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          example: true
       responses:
         '200':
           description: 成功返回网关列表
@@ -5601,6 +5613,77 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/inner/gateways/-/lookup/:
+    get:
+      operationId: v2_inner_lookup_gateways
+      description: 按名称批量查询网关
+      tags:
+      - v2_inner
+      parameters:
+        - name: gateway_names
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 网关名称列表，多个以逗号分隔，去重后最多 50 个
+          example: bk-apigateway,bk-esb
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
+          example: id,name
+      responses:
+        '200':
+          description: 成功返回匹配的网关列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 网关 ID
+                        name:
+                          type: string
+                          description: 网关名称
+                        description:
+                          type: string
+                          description: 网关描述
+                        maintainers:
+                          type: array
+                          items:
+                            type: string
+                          description: 网关管理员
+                        doc_maintainers:
+                          type: object
+                          description: 网关文档维护人员
+                        is_official:
+                          type: boolean
+                          description: 是否为官方网关
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/gateways/-/lookup/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Batch lookup gateways by name
   /api/v2/inner/gateways/{gateway_name}/:
     get:
       operationId: v2_inner_get_gateway
@@ -5763,6 +5846,93 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: Update gateway status (disable/enable), only supports gateways starting with bp-
+  /api/v2/inner/gateways/{gateway_name}/released-resources/:
+    get:
+      operationId: v2_inner_list_gateway_released_resources
+      description: 获取网关当前已发布资源，仅统计启用环境（stage.status = ACTIVE）的 Release
+      tags:
+      - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+        - name: resource_names
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 资源名称列表，精确匹配，多个以逗号分隔，最多 50 个
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+          description: 每页数量，最大 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 分页偏移量
+      responses:
+        '200':
+          description: 成功返回当前各环境 Release 引用资源版本的资源并集
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        description: 去重后的资源总数
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: 资源 ID
+                            name:
+                              type: string
+                              description: 资源名称
+                            description:
+                              type: string
+                              description: 资源描述
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/gateways/{gateway_name}/released-resources/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: List resources referenced by the gateway current releases
   /api/v2/inner/gateways/{gateway_name}/permissions/resources/:
     get:
       operationId: v2_inner_list_gateway_permission_resources

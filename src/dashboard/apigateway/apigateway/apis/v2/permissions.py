@@ -26,6 +26,11 @@ from apigateway.core.models import Gateway, GatewayRelatedApp
 from apigateway.utils.django import get_object_or_None
 
 
+def _set_request_tenant_id(request) -> None:
+    if settings.ENABLE_MULTI_TENANT_MODE:
+        request.tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
+
+
 class OpenAPIV2Permission(permissions.BasePermission):
     """仅验证来自于网关的请求
     适用：申请网关接口权限后，就能访问的接口，路径参数中没有 gateway_id or gateway_name
@@ -38,8 +43,7 @@ class OpenAPIV2Permission(permissions.BasePermission):
         if not hasattr(request, "app"):
             return False
 
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            request.tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
+        _set_request_tenant_id(request)
 
         return True
 
@@ -55,6 +59,8 @@ class OpenAPIV2GatewayNamePermission(permissions.BasePermission):
         # openapi 的请求来源必须是网关，此时经过网关的中间件（所有都开启了应用认证）, 请求中会注入 app 对象
         if not hasattr(request, "app"):
             return False
+
+        _set_request_tenant_id(request)
 
         # 路径参数 gateway_id 必须存在
         gateway_obj = self.get_gateway_object(view)

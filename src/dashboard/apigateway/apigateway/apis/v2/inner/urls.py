@@ -60,6 +60,12 @@ urlpatterns = [
             [
                 # GET /api/v2/inner/gateways/
                 path("", views.GatewayListApi.as_view(), name="openapi.v2.inner.gateway.list"),
+                # GET /api/v2/inner/gateways/-/lookup/
+                path(
+                    "-/lookup/",
+                    views.GatewayLookupApi.as_view(),
+                    name="openapi.v2.inner.gateway.lookup",
+                ),
                 path(
                     "<slug:gateway_name>/",
                     include(
@@ -74,6 +80,12 @@ urlpatterns = [
                                 "status/",
                                 views.GatewayUpdateStatusApi.as_view(),
                                 name="openapi.v2.inner.gateway.update_status",
+                            ),
+                            # GET /api/v2/inner/gateways/{gateway_name}/released-resources/
+                            path(
+                                "released-resources/",
+                                views.GatewayReleasedResourceListApi.as_view(),
+                                name="openapi.v2.inner.gateway.released_resource.list",
                             ),
                             path(
                                 "permissions/",
