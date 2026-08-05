@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import copy
 import logging
 import math
 from typing import Dict, List
@@ -25,6 +24,12 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.validators import (
+    MAX_LOOKUP_NAMES,
+    validate_comma_separated_ints,
+    validate_comma_separated_names,
+    validate_output_fields,
+)
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
@@ -56,6 +61,34 @@ from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
+RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
+MCP_SERVER_LIST_FIELDS = frozenset(
+    {
+        "id",
+        "name",
+        "title",
+        "description",
+        "is_public",
+        "labels",
+        "resource_names",
+        "tool_names",
+        "status",
+        "protocol_type",
+        "oauth2_public_client_enabled",
+        "oauth2_personal_client_enabled",
+        "categories",
+        "stage",
+        "gateway",
+        "tools_count",
+        "prompts_count",
+        "url",
+        "detail_url",
+        "updated_by",
+        "created_by",
+        "updated_time",
+        "created_time",
+    }
+)
 
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
@@ -76,7 +109,7 @@ class GatewayListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListInputSLZ"
 
 
-class GatewayListOutputSLZ(serializers.Serializer):
+class GatewayBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
@@ -94,26 +127,87 @@ class GatewayListOutputSLZ(serializers.Serializer):
         return obj.doc_maintainers
 
     class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayBaseOutputSLZ"
+
+
+class GatewayListOutputSLZ(GatewayBaseOutputSLZ):
+    class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
 
 
-class GatewayRetrieveOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
-    maintainers = serializers.SerializerMethodField()
-    doc_maintainers = serializers.SerializerMethodField()
+class GatewayLookupInputSLZ(serializers.Serializer):
+    gateway_names = serializers.CharField()
+    fields = serializers.CharField(required=False, allow_blank=True)
 
-    def get_maintainers(self, obj):
-        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
-            obj.tenant_mode,
-            obj.tenant_id,
-            obj.maintainers,
+    def validate_gateway_names(self, value) -> list[str]:
+        return validate_comma_separated_names(
+            value,
+            required=True,
+            required_error=_("gateway_names 不能为空"),
+            max_count_error=_("gateway_names 最多支持 {max_count} 个"),
         )
 
-    def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+    def validate_fields(self, value) -> set[str] | None:
+        return validate_output_fields(value, GATEWAY_LOOKUP_FIELDS)
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupInputSLZ"
+
+
+class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
+    resource_names = serializers.CharField(required=False, allow_blank=True)
+    fields = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_resource_names(self, value) -> list[str]:
+        return validate_comma_separated_names(
+            value,
+            max_count_error=_("resource_names 最多支持 {max_count} 个"),
+        )
+
+    def validate_fields(self, value) -> set[str] | None:
+        return validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceListInputSLZ"
+
+
+class _SelectableFieldsOutputSLZMixin:
+    def __init__(self, *args, fields: set[str] | None = None, **kwargs):
+        self._output_fields = fields
+        super().__init__(*args, **kwargs)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        if self._output_fields is None:
+            return fields
+        return {name: field for name, field in fields.items() if name in self._output_fields}
+
+
+class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, GatewayBaseOutputSLZ):
+    is_official = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupOutputSLZ"
+
+
+GATEWAY_LOOKUP_FIELDS = frozenset(GatewayLookupOutputSLZ._declared_fields)
+GATEWAY_LOOKUP_DEFAULT_FIELDS = GATEWAY_LOOKUP_FIELDS - {"maintainers"}
+
+
+class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"},
+        allow_blank=True,
+        read_only=True,
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceOutputSLZ"
+
+
+class GatewayRetrieveOutputSLZ(GatewayBaseOutputSLZ):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayRetrieveOutputSLZ"
 
@@ -483,8 +577,8 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
-        max_length=50,
-        help_text="MCPServer ID 列表，最多 50 个",
+        max_length=MAX_LOOKUP_NAMES,
+        help_text="MCPServer ID 列表，最多 {max_count} 个".format(max_count=MAX_LOOKUP_NAMES),
     )
     applied_by = serializers.CharField(required=True, help_text="申请人")
     reason = serializers.CharField(required=True, help_text="申请原因")
@@ -658,26 +752,23 @@ class MCPServerListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
 
     def validate_mcp_server_ids(self, value):
-        if not value:
-            return []
-        try:
-            ids = [int(x.strip()) for x in value.split(",")]
-        except ValueError:
-            raise serializers.ValidationError(_("MCPServer ID 必须为整数，多个以逗号分割"))
-        if len(ids) > 50:
-            raise serializers.ValidationError(_("MCPServer ID 列表最多支持 50 个"))
-        return ids
+        return validate_comma_separated_ints(
+            value,
+            invalid_error=_("MCPServer ID 必须为整数，多个以逗号分割"),
+            max_count_error=_("MCPServer ID 列表最多支持 {max_count} 个"),
+        )
 
     def validate_mcp_server_names(self, value):
-        if not value:
-            return []
-        names = [x.strip() for x in value.split(",")]
-        if len(names) > 50:
-            raise serializers.ValidationError(_("MCPServer 名称列表最多支持 50 个"))
-        return names
+        return validate_comma_separated_names(
+            value,
+            max_count_error=_("MCPServer 名称列表最多支持 {max_count} 个"),
+        )
+
+    def validate_fields(self, value) -> set[str] | None:
+        return validate_output_fields(value, MCP_SERVER_LIST_FIELDS)
 
 
-class MCPServerListOutputSLZ(serializers.Serializer):
+class MCPServerListOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
     title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
@@ -718,16 +809,6 @@ class MCPServerListOutputSLZ(serializers.Serializer):
     created_by = serializers.CharField(read_only=True, help_text="创建人")
     updated_time = serializers.DateTimeField(read_only=True, help_text="更新时间")
     created_time = serializers.DateTimeField(read_only=True, help_text="创建时间")
-
-    def __init__(self, *args, fields=None, **kwargs):
-        self._output_fields = fields
-        super().__init__(*args, **kwargs)
-
-    def get_fields(self):
-        fields = self._declared_fields
-        if self._output_fields is not None:
-            fields = {name: field for name, field in fields.items() if name in self._output_fields}
-        return copy.deepcopy(fields)
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name

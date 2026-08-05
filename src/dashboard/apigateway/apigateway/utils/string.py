@@ -21,6 +21,23 @@ import string
 import uuid
 
 
+def split_comma_separated_values(
+    value: str,
+    *,
+    strip: bool = True,
+    deduplicate: bool = False,
+    keep_empty: bool = False,
+) -> list[str]:
+    values = value.split(",")
+    if strip:
+        values = [item.strip() for item in values]
+    if not keep_empty:
+        values = [item for item in values if item]
+    if deduplicate:
+        values = list(dict.fromkeys(values))
+    return values
+
+
 def truncate_string(s, length, suffix=""):
     """
     truncate string to specific length

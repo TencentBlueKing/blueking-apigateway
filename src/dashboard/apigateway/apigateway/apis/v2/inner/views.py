@@ -25,6 +25,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -32,6 +33,7 @@ from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
+from apigateway.apis.v2.tenant import get_request_tenant_id
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerPermissionActionEnum,
@@ -57,7 +59,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
-from apigateway.common.pagination import StandardLimitOffsetPagination
+from apigateway.common.pagination import BoundedLimitOffsetPagination
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
@@ -65,6 +67,7 @@ from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.service.gateway_released_resource import get_gateway_released_resources
 from apigateway.service.oauth2_client_scope import (
     get_oauth2_mcp_server_scope_gateways,
     get_oauth2_mcp_server_scope_map,
@@ -83,39 +86,14 @@ logger = logging.getLogger(__name__)
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
 
 
-class OAuth2ClientScopePagination(StandardLimitOffsetPagination):
-    default_limit = 10
-    max_limit: int = 20
-
-    def get_limit(self, request):
-        raw_limit = request.query_params.get(self.limit_query_param)
-        if raw_limit is not None:
-            try:
-                limit = int(raw_limit)
-            except TypeError, ValueError:
-                raise ValidationError({"limit": [_("limit 必须为整数。")]})
-            if not 1 <= limit <= self.max_limit:
-                raise ValidationError({"limit": [_("limit 必须在 1 到 20 之间。")]})
-        return super().get_limit(request)
-
-    def get_offset(self, request):
-        raw_offset = request.query_params.get(self.offset_query_param)
-        if raw_offset is not None:
-            try:
-                offset = int(raw_offset)
-            except TypeError, ValueError:
-                raise ValidationError({"offset": [_("offset 必须为整数。")]})
-            if offset < 0:
-                raise ValidationError({"offset": [_("offset 必须大于或等于 0。")]})
-        return super().get_offset(request)
+# Inner list endpoints share the same bounded pagination contract documented in OpenAPI.
+INNER_BOUNDED_LIST_DEFAULT_LIMIT = 10
+INNER_BOUNDED_LIST_MAX_LIMIT = 20
 
 
-def _get_oauth2_scope_tenant_id(request) -> str | None:
-    if not settings.ENABLE_MULTI_TENANT_MODE:
-        return None
-    if not request.tenant_id:
-        raise ValidationError("tenant_id is required in multi-tenant mode")
-    return request.tenant_id
+class OAuth2ClientScopePagination(BoundedLimitOffsetPagination):
+    default_limit = INNER_BOUNDED_LIST_DEFAULT_LIMIT
+    max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
 
 
 @method_decorator(
@@ -139,7 +117,7 @@ class OAuth2MCPServerScopeListApi(generics.ListAPIView):
 
         queryset = get_oauth2_mcp_server_scope_gateways(
             oauth_client_type=data["oauth_client_type"],
-            tenant_id=_get_oauth2_scope_tenant_id(request),
+            tenant_id=get_request_tenant_id(request),
             gateway_name=data.get("gateway_name", ""),
             mcp_server_name=data.get("mcp_server_name", ""),
         )
@@ -175,7 +153,7 @@ class OAuth2ResourceScopeListApi(generics.ListAPIView):
 
         queryset = get_oauth2_resource_scope_gateways(
             oauth_client_type=data["oauth_client_type"],
-            tenant_id=_get_oauth2_scope_tenant_id(request),
+            tenant_id=get_request_tenant_id(request),
             gateway_name=data.get("gateway_name", ""),
             resource_name=data.get("resource_name", ""),
         )
@@ -197,6 +175,94 @@ def _validate_resource_ids_in_released_resources(resource_ids: list[int], releas
     released_resource_ids = {resource["id"] for resource in released_resources}
     if set(resource_ids) - released_resource_ids:
         raise ValidationError({"resource_ids": [_("指定的部分资源 ID 不属于当前网关已发布资源。")]})
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="按名称查询网关",
+        query_serializer=serializers.GatewayLookupInputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayLookupOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayLookupApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        input_slz = serializers.GatewayLookupInputSLZ(data=request.query_params)
+        input_slz.is_valid(raise_exception=True)
+        data = input_slz.validated_data
+
+        queryset = Gateway.objects.filter(name__in=data["gateway_names"])
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
+        queryset = queryset.order_by("name", "id")
+
+        output_slz = serializers.GatewayLookupOutputSLZ(
+            queryset,
+            many=True,
+            context=self.get_serializer_context(),
+            fields=data.get("fields") or serializers.GATEWAY_LOOKUP_DEFAULT_FIELDS,
+        )
+        return OKJsonResponse(data=output_slz.data)
+
+
+class GatewayReleasedResourcePagination(BoundedLimitOffsetPagination):
+    default_limit = INNER_BOUNDED_LIST_DEFAULT_LIMIT
+    max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取指定网关当前已发布资源",
+        query_serializer=serializers.GatewayReleasedResourceListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayReleasedResourceListApi(generics.ListAPIView):
+    serializer_class = serializers.GatewayReleasedResourceOutputSLZ
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    pagination_class = GatewayReleasedResourcePagination
+
+    def list(self, request, gateway_name, *args, **kwargs):
+        input_slz = serializers.GatewayReleasedResourceListInputSLZ(data=request.query_params)
+        input_slz.is_valid(raise_exception=True)
+        data = input_slz.validated_data
+
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            visible = gateway_filter_by_app_tenant_id(
+                Gateway.objects.filter(pk=request.gateway.pk),
+                tenant_id,
+            ).exists()
+            if not visible:
+                raise Http404
+        gateway = request.gateway
+
+        queryset = get_gateway_released_resources(
+            gateway_id=gateway.id,
+            resource_names=data.get("resource_names"),
+        )
+        page = self.paginate_queryset(queryset)
+        items = [
+            {
+                "id": resource.resource_id,
+                "name": resource.resource_name,
+                "description": (resource.data or {}).get("description", ""),
+                "description_en": (resource.data or {}).get("description_en"),
+            }
+            for resource in page
+        ]
+        output_slz = self.get_serializer(
+            items,
+            many=True,
+            fields=data.get("fields"),
+        )
+        return self.get_paginated_response(output_slz.data)
 
 
 @method_decorator(
@@ -232,11 +298,7 @@ class GatewayListApi(generics.ListAPIView):
         queryset = GatewayHandler.list_public_released_gateways()
 
         # 可以看到 全租户网关 + 本租户网关
-        tenant_id = None
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            if not request.tenant_id:
-                raise ValidationError("tenant_id is required in multi-tenant mode")
-            tenant_id = request.tenant_id
+        tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
 
@@ -1160,8 +1222,7 @@ class MCPServerListApi(generics.ListAPIView):
         )
 
         page = self.paginate_queryset(queryset)
-        fields_str = slz.validated_data.get("fields")
-        fields = {field.strip() for field in fields_str.split(",") if field.strip()} if fields_str else None
+        fields = slz.validated_data.get("fields")
         include_all_fields = fields is None
 
         context = {}
