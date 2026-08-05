@@ -110,7 +110,7 @@ class GatewayListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListInputSLZ"
 
 
-class _GatewayOutputSLZ(serializers.Serializer):
+class GatewayBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
@@ -131,8 +131,11 @@ class _GatewayOutputSLZ(serializers.Serializer):
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayBaseOutputSLZ"
 
-class GatewayListOutputSLZ(_GatewayOutputSLZ):
+
+class GatewayListOutputSLZ(GatewayBaseOutputSLZ):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
 
@@ -185,7 +188,7 @@ class _SelectableFieldsOutputSLZMixin:
         return {name: field for name, field in fields.items() if name in self._output_fields}
 
 
-class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, _GatewayOutputSLZ):
+class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, GatewayBaseOutputSLZ):
     is_official = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -209,27 +212,7 @@ class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializ
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceOutputSLZ"
 
 
-class GatewayRetrieveOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
-    maintainers = serializers.SerializerMethodField()
-    doc_maintainers = serializers.SerializerMethodField()
-    kind = serializers.SerializerMethodField()
-
-    def get_maintainers(self, obj):
-        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
-            obj.tenant_mode,
-            obj.tenant_id,
-            obj.maintainers,
-        )
-
-    def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
-
-    def get_kind(self, obj):
-        return convert_gateway_kind_to_name(obj.kind)
-
+class GatewayRetrieveOutputSLZ(GatewayBaseOutputSLZ):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayRetrieveOutputSLZ"
 

@@ -5873,7 +5873,6 @@ paths:
             enum: [normal, programmable, ai]
           description: 网关类型；不传返回所有类型
           example: normal
-      x-bk-apigateway-noneSchema: true
       responses:
         '200':
           description: 成功返回网关列表
@@ -5970,7 +5969,6 @@ paths:
             type: string
           description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
           example: id,name
-      x-bk-apigateway-noneSchema: true
       responses:
         '200':
           description: 成功返回匹配的网关列表
@@ -6234,7 +6232,6 @@ paths:
             minimum: 0
             default: 0
           description: 分页偏移量
-      x-bk-apigateway-noneSchema: true
       responses:
         '200':
           description: 成功返回当前各环境 Release 引用资源版本的资源并集
