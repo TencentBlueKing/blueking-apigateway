@@ -438,17 +438,13 @@ paths:
           path: /{mcp_server_name}/sse
           matchSubpath: false
           timeout: 0
-        pluginConfigs:
-        - type: bk-oauth2-protected-resource
-          yaml: '{}'
-        - type: bk-oauth2-verify
-          yaml: '{}'
-        - type: bk-oauth2-audience-validate
-          yaml: '{}'
+        pluginConfigs: [ ]
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: false
+          oauth2PublicClientEnabled: true
+          oauth2PersonalClientEnabled: true
         descriptionEn: None
     post:
       operationId: mcp_proxy_sse_post
@@ -472,17 +468,13 @@ paths:
           path: /{mcp_server_name}/sse
           matchSubpath: false
           timeout: 0
-        pluginConfigs:
-        - type: bk-oauth2-protected-resource
-          yaml: '{}'
-        - type: bk-oauth2-verify
-          yaml: '{}'
-        - type: bk-oauth2-audience-validate
-          yaml: '{}'
+        pluginConfigs: [ ]
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: false
+          oauth2PublicClientEnabled: true
+          oauth2PersonalClientEnabled: true
         descriptionEn: None
   /api/v2/mcp-servers/{mcp_server_name}/sse/message:
     post:
@@ -507,17 +499,13 @@ paths:
           path: /{mcp_server_name}/sse/message
           matchSubpath: false
           timeout: 0
-        pluginConfigs:
-        - type: bk-oauth2-protected-resource
-          yaml: '{}'
-        - type: bk-oauth2-verify
-          yaml: '{}'
-        - type: bk-oauth2-audience-validate
-          yaml: '{}'
+        pluginConfigs: [ ]
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: false
+          oauth2PublicClientEnabled: true
+          oauth2PersonalClientEnabled: true
   /api/v2/mcp-servers/{mcp_server_name}/application/sse:
     get:
       operationId: mcp_proxy_application_sse
@@ -626,17 +614,13 @@ paths:
           path: /{mcp_server_name}/mcp
           matchSubpath: false
           timeout: 0
-        pluginConfigs:
-        - type: bk-oauth2-protected-resource
-          yaml: '{}'
-        - type: bk-oauth2-verify
-          yaml: '{}'
-        - type: bk-oauth2-audience-validate
-          yaml: '{}'
+        pluginConfigs: [ ]
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: false
+          oauth2PublicClientEnabled: true
+          oauth2PersonalClientEnabled: true
         descriptionEn: None
     post:
       operationId: mcp_proxy_user_streamable_http_post
@@ -660,17 +644,13 @@ paths:
           path: /{mcp_server_name}/mcp
           matchSubpath: false
           timeout: 0
-        pluginConfigs:
-        - type: bk-oauth2-protected-resource
-          yaml: '{}'
-        - type: bk-oauth2-verify
-          yaml: '{}'
-        - type: bk-oauth2-audience-validate
-          yaml: '{}'
+        pluginConfigs: [ ]
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: false
+          oauth2PublicClientEnabled: true
+          oauth2PersonalClientEnabled: true
         descriptionEn: None
   /api/v2/mcp-servers/{mcp_server_name}/application/mcp:
     post:
