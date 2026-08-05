@@ -331,6 +331,7 @@ class TestMCPServerPermissionHandlerItsm:
         apply.refresh_from_db()
         assert apply.itsm_ticket_id == "itsm-001"
         helper.create_permission_apply_ticket.assert_called_once()
+        assert helper.create_permission_apply_ticket.call_args.kwargs["apply_reason"] == apply.reason
 
     def test_create_itsm_tickets_for_applies_when_not_ready(self, mocker, fake_gateway, fake_stage):
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)

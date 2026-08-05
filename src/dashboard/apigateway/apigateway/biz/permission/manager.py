@@ -237,6 +237,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
                 apply_resource_names=resource_names,
                 applied_by=ticket_applicant,
                 apply_record_id=record.id,
+                apply_reason=record.reason,
                 approvers=gateway.maintainers,
                 callback_token=callback_token,
             )

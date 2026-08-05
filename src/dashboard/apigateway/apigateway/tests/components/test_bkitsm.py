@@ -17,7 +17,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from apigateway.components.bkitsm import _call_bkitsm_api, create_system_workflow, create_ticket
+import pytest
+
+from apigateway.components.bkitsm import (
+    ItsmFormModelUpdateResult,
+    ItsmWorkflowList,
+    _call_bkitsm_api,
+    create_ticket,
+    update_form_model,
+)
 
 
 def test_call_bkitsm_api_with_operation_tenant_headers(settings, mocker):
@@ -35,23 +43,24 @@ def test_call_bkitsm_api_with_operation_tenant_headers(settings, mocker):
     mock_request.assert_called_once()
 
 
-def test_create_system_workflow_with_system_token(settings, mocker):
-    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
-    settings.BK_ITSM4_API_TIMEOUT = 30
+def test_itsm_workflow_list_requires_results_shape():
+    workflow_list = ItsmWorkflowList.from_response({"count": 1, "results": [{"form_schema": {"properties": {}}}]})
 
-    mock_call = mocker.patch("apigateway.components.bkitsm._call_bkitsm_api", return_value={"key": "wf-001"})
+    assert len(workflow_list.workflows) == 1
 
-    create_system_workflow(
-        system_id="bk_apigateway",
-        name="网关权限申请",
-        form_schema={"type": "object", "properties": {}},
-        portal_id="DEFAULT",
-        predefined_approver={"type": "Variable", "id": ["approvers"]},
-        system_token="token-001",
+    with pytest.raises(TypeError, match="results must be a list"):
+        ItsmWorkflowList.from_response({"count": 1, "data": []})
+
+    with pytest.raises(TypeError, match="results items must be objects"):
+        ItsmWorkflowList.from_response({"count": 1, "results": ["invalid"]})
+
+
+def test_itsm_form_model_update_result_extract_updated_fields():
+    result = ItsmFormModelUpdateResult.from_response(
+        {"data": {"meta": {"fields": {"apply_reason": {}, "gateway_name": {}}}}}
     )
 
-    _, kwargs = mock_call.call_args
-    assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "token-001"}
+    assert result.updated_field_keys == frozenset({"apply_reason", "gateway_name"})
 
 
 def test_create_ticket_prefers_system_token(settings, mocker):
@@ -87,3 +96,25 @@ def test_create_ticket_fallback_to_global_token(settings, mocker):
 
     _, kwargs = mock_call.call_args
     assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "fallback-token"}
+
+
+def test_update_form_model_fallback_to_global_token(settings, mocker):
+    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
+    settings.BK_ITSM4_API_TIMEOUT = 30
+    settings.BK_ITSM4_SYSTEM_TOKEN = "fallback-token"
+
+    mock_call = mocker.patch(
+        "apigateway.components.bkitsm._call_bkitsm_api",
+        return_value={"meta": {"fields": {"apply_reason": {}}}},
+    )
+
+    result = update_form_model(
+        key="fm-001",
+        name="bk-apigateway",
+        meta={"fields": {}},
+        system_id="bk-apigateway",
+    )
+
+    _, kwargs = mock_call.call_args
+    assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "fallback-token"}
+    assert result.updated_field_keys == frozenset({"apply_reason"})

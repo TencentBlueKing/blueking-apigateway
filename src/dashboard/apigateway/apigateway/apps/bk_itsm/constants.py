@@ -18,4 +18,4 @@
 #
 
 # ITSM 系统默认配置
-DEFAULT_ITSM_SYSTEM_CODE = "bk-apigateway"
+DEFAULT_ITSM_SYSTEM_CODE = "bk-apigateway-20260804"

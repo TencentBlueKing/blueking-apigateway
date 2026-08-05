@@ -130,6 +130,7 @@ class MCPServerPermissionHandler:
                         apply_resource_names=[apply.mcp_server.name],
                         applied_by=apply.applied_by,
                         apply_record_id=apply.id,
+                        apply_reason=apply.reason,
                         approvers=gateway.maintainers,
                         callback_token=callback_token,
                     )
