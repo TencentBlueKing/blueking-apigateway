@@ -33,6 +33,7 @@ from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerLeastPrivilegeEnum,
     MCPServerPermissionStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -1774,6 +1775,28 @@ class TestAppRequestLogListApi:
 class TestMCPServerListApi:
     """测试 MCPServerListApi - 获取全量的 MCPServer 列表"""
 
+    @pytest.mark.parametrize("order_by", ["unknown", "-unknown", "id,name"])
+    def test_list_rejects_invalid_order_by(self, request_view, order_by):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"order_by": order_by},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("limit", [0, 21, "invalid"])
+    def test_list_rejects_invalid_limit(self, request_view, limit):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"limit": limit},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
     def test_list_rejects_unsupported_fields(self, request_view):
         resp = request_view(
             method="GET",
@@ -1810,9 +1833,9 @@ class TestMCPServerListApi:
             "build_categories_map",
             side_effect=AssertionError("unexpected context build"),
         )
-        get_least_privileges = mocker.patch.object(
+        get_least_privileges_by_server = mocker.patch.object(
             inner_views.MCPServerHandler,
-            "get_least_privileges",
+            "get_least_privileges_by_server",
             side_effect=AssertionError("unexpected context build"),
         )
 
@@ -1848,7 +1871,7 @@ class TestMCPServerListApi:
         build_list_context.assert_not_called()
         get_prompts_count_map.assert_not_called()
         build_categories_map.assert_not_called()
-        get_least_privileges.assert_not_called()
+        get_least_privileges_by_server.assert_not_called()
 
     @pytest.mark.parametrize(
         ("fields", "expected_helper"),
@@ -1856,7 +1879,7 @@ class TestMCPServerListApi:
             ("stage,gateway", "build_list_context"),
             ("prompts_count", "get_prompts_count_map"),
             ("categories", "build_categories_map"),
-            ("url", "get_least_privileges"),
+            ("url", "get_least_privileges_by_server"),
         ],
     )
     def test_list_with_dynamic_fields_builds_only_required_context(
@@ -1887,8 +1910,8 @@ class TestMCPServerListApi:
             "build_categories_map": mocker.patch.object(
                 inner_views.MCPServerHandler, "build_categories_map", return_value={mcp_server.id: []}
             ),
-            "get_least_privileges": mocker.patch.object(
-                inner_views.MCPServerHandler, "get_least_privileges", return_value={}
+            "get_least_privileges_by_server": mocker.patch.object(
+                inner_views.MCPServerHandler, "get_least_privileges_by_server", return_value={}
             ),
         }
 
@@ -1906,6 +1929,51 @@ class TestMCPServerListApi:
                 helper.assert_called_once()
             else:
                 helper.assert_not_called()
+
+    def test_list_uses_server_scoped_least_privileges_for_urls(self, request_view, fake_gateway, mocker):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save(update_fields=["status"])
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        application_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="application-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            oauth2_public_client_enabled=False,
+        )
+        user_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="user-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            oauth2_public_client_enabled=False,
+        )
+        get_least_privileges_by_server = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "get_least_privileges_by_server",
+            return_value={
+                application_server.id: MCPServerLeastPrivilegeEnum.APPLICATION.value,
+                user_server.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+            },
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "id,url", "order_by": "id"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        results = {item["id"]: item["url"] for item in resp.json()["data"]["results"]}
+        assert results[application_server.id].endswith("/application/sse/")
+        assert results[user_server.id].endswith("/sse/")
+        assert "/application/" not in results[user_server.id]
+        get_least_privileges_by_server.assert_called_once()
 
     def test_list_public_active_mcp_servers(self, request_view, fake_gateway):
         """测试获取活跃的 MCPServer 列表"""
