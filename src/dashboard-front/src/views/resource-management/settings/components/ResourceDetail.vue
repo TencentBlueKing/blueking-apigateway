@@ -1158,10 +1158,14 @@ watch(
 );
 
 const handleEditClick = () => {
+  const { id, kind } = formData.value;
   router.push({
     name: 'ResourceEdit',
-    params: { resourceId: `${formData.value.id}` },
-    query: { ...route.query },
+    params: { resourceId: `${id}` },
+    query: {
+      ...route.query,
+      kind,
+    },
   });
 };
 
