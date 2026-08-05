@@ -353,50 +353,65 @@ class TestGatewayReleasedResourceListApi:
             {"id": snapshot.resource_id, "name": "translated", "description": "translated description en"}
         ]
 
-    def test_empty_page_missing_gateway_and_tenant_visibility(self, request_view, settings):
+    def test_returns_empty_page_without_current_release(self, request_view):
         gateway = G(Gateway, name="no-current-release")
         version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
         _make_snapshot(gateway, version, resource_id=1, name="orphan")
 
-        empty = request_view(
+        response = request_view(
             method="GET",
             view_name="openapi.v2.inner.gateway.released_resource.list",
             path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
         )
-        missing = request_view(
+
+        assert response.status_code == 200
+        assert response.json() == {"data": {"count": 0, "results": []}}
+
+    def test_returns_404_for_missing_gateway(self, request_view):
+        response = request_view(
             method="GET",
             view_name="openapi.v2.inner.gateway.released_resource.list",
             path_params={"gateway_name": "missing"},
             app=mock.MagicMock(app_code="bk_auth"),
         )
 
-        assert empty.status_code == 200
-        assert empty.json() == {"data": {"count": 0, "results": []}}
-        assert missing.status_code == 404
+        assert response.status_code == 404
 
+    def test_returns_404_for_cross_tenant_gateway(self, request_view, settings):
         settings.ENABLE_MULTI_TENANT_MODE = True
-        cross_tenant = G(
+        gateway = G(
             Gateway,
             name="tenant-b-resource-gateway",
             tenant_mode=TenantModeEnum.SINGLE.value,
             tenant_id="tenant-b",
         )
-        hidden = request_view(
+        response = request_view(
             method="GET",
             view_name="openapi.v2.inner.gateway.released_resource.list",
-            path_params={"gateway_name": cross_tenant.name},
+            path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
             HTTP_X_BK_TENANT_ID="tenant-a",
         )
-        missing_tenant = request_view(
+
+        assert response.status_code == 404
+
+    def test_requires_tenant_header_in_multi_tenant_mode(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        gateway = G(
+            Gateway,
+            name="tenant-header-resource-gateway",
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="tenant-b",
+        )
+        response = request_view(
             method="GET",
             view_name="openapi.v2.inner.gateway.released_resource.list",
-            path_params={"gateway_name": cross_tenant.name},
+            path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
         )
-        assert hidden.status_code == 404
-        assert missing_tenant.status_code == 400
+
+        assert response.status_code == 400
 
     @pytest.mark.parametrize(
         "query",

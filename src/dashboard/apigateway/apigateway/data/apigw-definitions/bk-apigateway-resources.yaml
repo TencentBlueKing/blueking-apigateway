@@ -5961,7 +5961,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 网关名称列表，多个以逗号分隔，最多 50 个
+          description: 网关名称列表，多个以逗号分隔，去重后最多 50 个
           example: bk-apigateway,bk-esb
         - name: fields
           in: query

@@ -61,10 +61,6 @@ from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
-GATEWAY_LOOKUP_FIELDS = frozenset(
-    {"id", "name", "description", "maintainers", "doc_maintainers", "kind", "is_official"}
-)
-GATEWAY_LOOKUP_DEFAULT_FIELDS = GATEWAY_LOOKUP_FIELDS - {"maintainers"}
 RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
 MCP_SERVER_LIST_FIELDS = frozenset(
     {
@@ -114,7 +110,7 @@ class GatewayListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListInputSLZ"
 
 
-class GatewayListOutputSLZ(serializers.Serializer):
+class _GatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
@@ -135,6 +131,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)
 
+
+class GatewayListOutputSLZ(_GatewayOutputSLZ):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
 
@@ -187,11 +185,15 @@ class _SelectableFieldsOutputSLZMixin:
         return {name: field for name, field in fields.items() if name in self._output_fields}
 
 
-class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, GatewayListOutputSLZ):
+class GatewayLookupOutputSLZ(_SelectableFieldsOutputSLZMixin, _GatewayOutputSLZ):
     is_official = serializers.BooleanField(read_only=True)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayLookupOutputSLZ"
+
+
+GATEWAY_LOOKUP_FIELDS = frozenset(GatewayLookupOutputSLZ._declared_fields)
+GATEWAY_LOOKUP_DEFAULT_FIELDS = GATEWAY_LOOKUP_FIELDS - {"maintainers"}
 
 
 class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):

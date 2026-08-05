@@ -265,7 +265,6 @@ class GatewayReleasedResourceListApi(generics.ListAPIView):
         output_slz = self.get_serializer(
             items,
             many=True,
-            context=self.get_serializer_context(),
             fields=data.get("fields"),
         )
         return self.get_paginated_response(output_slz.data)

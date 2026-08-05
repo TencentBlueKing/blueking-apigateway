@@ -15,6 +15,8 @@
 
 ### 响应示例
 
+以下示例对应 `fields=id,name,is_official`。
+
 ```json
 {
   "data": [
