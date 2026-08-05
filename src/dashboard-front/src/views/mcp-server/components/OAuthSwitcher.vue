@@ -18,26 +18,26 @@
 
 <template>
   <div
-    v-show="featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT"
+    v-show="isShow"
     class="flex items-center justify-between oauth-switch-wrapper"
   >
     <div class="flex items-center">
       <AgIcon
-        name="oauth2"
+        :name="icon"
         size="42"
         color="#3a84ff"
       />
       <div class="ml-20px">
         <div class="text-14px color-#313238 lh-22px font-700">
-          {{ t('OAuth2 公开客户端模式') }}
+          {{ title }}
         </div>
         <div class="text-12px color-#4d4f56 lh-20px">
-          {{ t('开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。') }}
+          {{ description }}
         </div>
       </div>
     </div>
     <BkSwitcher
-      v-model="formData.oauth2_public_client_enabled"
+      v-model="formData[field]"
       theme="primary"
       @change="handleOAuthChange"
     />
@@ -45,18 +45,28 @@
 </template>
 
 <script lang="ts" setup>
-import { t } from '@/locales';
-import { useFeatureFlag } from '@/stores';
 import type { IMCPFormData } from '@/services/source/mcp-server';
+
+interface IProps {
+  isShow: boolean
+  title: string
+  description: string
+  icon: string
+  field: keyof IMCPFormData
+}
+
+interface IEmits {
+  oauthChange: [value: boolean]
+}
 
 const formData = defineModel<IMCPFormData>('formData', {
   type: Object,
   required: true,
 });
 
-const emit = defineEmits<{ oauthChange: [value: boolean] }>();
+defineProps<IProps>();
 
-const featureFlagStore = useFeatureFlag();
+const emit = defineEmits<IEmits>();
 
 const handleOAuthChange = (value: boolean) => {
   emit('oauthChange', value);
