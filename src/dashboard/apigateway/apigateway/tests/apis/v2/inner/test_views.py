@@ -1901,6 +1901,16 @@ class TestAppRequestLogListApi:
 class TestMCPServerListApi:
     """测试 MCPServerListApi - 获取全量的 MCPServer 列表"""
 
+    def test_list_rejects_unsupported_fields(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "unknown,z"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
     def test_list_with_dynamic_fields_skips_unneeded_context_building(self, request_view, fake_gateway, mocker):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save(update_fields=["status"])
@@ -1936,7 +1946,7 @@ class TestMCPServerListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.mcp_server.list",
-            data={"fields": "name,title"},
+            data={"fields": " name, title,name "},
             app=mock.MagicMock(app_code="test"),
         )
 

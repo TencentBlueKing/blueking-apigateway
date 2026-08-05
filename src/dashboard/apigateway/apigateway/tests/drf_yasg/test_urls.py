@@ -57,6 +57,14 @@ class TestUrls:
                 }
                 assert len(alarm_record_parameter_names) == len(set(alarm_record_parameter_names))
 
+                released_resource_parameters = schema["paths"][
+                    "/api/v2/inner/gateways/{gateway_name}/released-resources/"
+                ]["get"]["parameters"]
+                released_resource_parameter_names = [parameter["name"] for parameter in released_resource_parameters]
+                assert released_resource_parameter_names.count("limit") == 1
+                assert released_resource_parameter_names.count("offset") == 1
+                assert len(released_resource_parameter_names) == len(set(released_resource_parameter_names))
+
                 workbench_parameters = schema["paths"]["/me/workbench/permissions/gateway/applied/"]["get"][
                     "parameters"
                 ]
