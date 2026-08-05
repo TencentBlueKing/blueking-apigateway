@@ -5632,7 +5632,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
           example: id,name
       responses:
         '200':
