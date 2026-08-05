@@ -101,6 +101,11 @@ class OAuth2ClientScopePagination(BoundedLimitOffsetPagination):
     max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
 
 
+class MCPServerListPagination(BoundedLimitOffsetPagination):
+    default_limit = INNER_BOUNDED_LIST_DEFAULT_LIMIT
+    max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -1224,6 +1229,7 @@ class MCPServerListApi(generics.ListAPIView):
     """
 
     permission_classes = [OpenAPIV2Permission]
+    pagination_class = MCPServerListPagination
 
     def list(self, request, *args, **kwargs):
         slz = serializers.MCPServerListInputSLZ(data=request.query_params)
@@ -1256,7 +1262,7 @@ class MCPServerListApi(generics.ListAPIView):
             context["categories"] = MCPServerHandler.build_categories_map(mcp_server_ids)
 
         if include_all_fields or "url" in fields:
-            context["least_privileges"] = MCPServerHandler.get_least_privileges(page)
+            context["least_privileges_by_server"] = MCPServerHandler.get_least_privileges_by_server(page)
 
         output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context, fields=fields)
         return self.get_paginated_response(output_slz.data)

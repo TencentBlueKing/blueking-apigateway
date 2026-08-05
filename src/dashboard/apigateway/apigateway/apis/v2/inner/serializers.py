@@ -706,8 +706,17 @@ class MCPServerListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
     )
-    order_by = serializers.CharField(
-        allow_blank=True,
+    order_by = serializers.ChoiceField(
+        choices=[
+            "id",
+            "-id",
+            "name",
+            "-name",
+            "updated_time",
+            "-updated_time",
+            "created_time",
+            "-created_time",
+        ],
         required=False,
         default="-updated_time",
         help_text="排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time",
@@ -799,7 +808,8 @@ class MCPServerListOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serial
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return _get_mcp_server_url_from_context(self.context, obj)
+        least_privileges = self.context.get("least_privileges_by_server", {})
+        return MCPServerHandler.get_mcp_server_url(obj, least_privileges.get(obj.id, ""))
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)
