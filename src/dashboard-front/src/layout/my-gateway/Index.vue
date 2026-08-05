@@ -479,6 +479,9 @@ watch(
     // 仅当网关数据存在，并且和当前页面网关id一致，才刷新标题
     if (newGateway && newGateway?.id === gatewayId.value) {
       setBreadcrumbTitle(route);
+      nextTick(() => {
+        getGatewayIconDistance(newGateway?.name ?? '');
+      });
     }
   },
   { flush: 'post' },
@@ -528,17 +531,26 @@ const getOptionTextWidth = (gateway: GatewayItemType) => {
   return '200px';
 };
 
-const getGatewayTextWidth = (text: string, font: string = '14px Microsoft Yahei,Helvetica,Aria') => {
+const getGatewayTextWidth = (text: string) => {
   const ctx = document.createElement('canvas').getContext('2d');
   if (!ctx) return 0;
-  ctx.font = font;
+  const platform = window.navigator.platform.toLowerCase();
+  const realFontFamily = platform.indexOf('win') === 0
+    ? 'Microsoft Yahei,Helvetica,Aria'
+    : getComputedStyle(document.body).fontFamily;
+  // 14px 和页面select输入框字号保持一致
+  ctx.font = `14px ${realFontFamily}`;
   return ctx.measureText(text).width;
 };
 
 // 动态获取网关icon的边距
 const getGatewayIconDistance = (name: string) => {
   if (name) {
-    iconLeft.value = getGatewayTextWidth(name) > 168 ? 176 : getGatewayTextWidth(name) + 20;
+    const calcValue = getGatewayTextWidth(name) + 20;
+    // 最小不能小于 24px，防止canvas测不准得到很小的值，图标盖住文字
+    iconLeft.value = Math.max(calcValue, 24);
+    // 防止图标跑到输入框外面
+    iconLeft.value = Math.min(iconLeft.value, 176);
   }
 };
 
@@ -828,11 +840,12 @@ onMounted(() => {
       background-color: transparent;
       max-width: fit-content;
       margin-left: 6px;
+      padding-right: 24px;
       order: 1;
     }
 
     .gateway-selector-prefix {
-      width: 20px;
+      width: 16px;
       flex-shrink: 0;
       color: #3a84ff;
       position: absolute;
