@@ -97,13 +97,28 @@ def test_orders_by_name_then_resource_id():
     ]
 
 
-def test_page_uses_two_queries(django_assert_num_queries):
+def test_single_version_page_uses_three_queries(django_assert_num_queries):
     gateway = G(Gateway, name="query-budget-gateway")
     version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
     _release(gateway, version, "prod")
     _make_released_resource(gateway, version, resource_id=1, name="resource")
-    queryset = get_gateway_released_resources(gateway_id=gateway.id)
 
-    with django_assert_num_queries(2):
+    with django_assert_num_queries(3):
+        queryset = get_gateway_released_resources(gateway_id=gateway.id)
         assert queryset.count() == 1
         assert len(list(queryset[:10])) == 1
+
+
+def test_multiple_version_page_uses_four_queries(django_assert_num_queries):
+    gateway = G(Gateway, name="multi-version-query-budget-gateway")
+    first_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+    second_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
+    _release(gateway, first_version, "prod")
+    _release(gateway, second_version, "test")
+    _make_released_resource(gateway, first_version, resource_id=1, name="old_name")
+    _make_released_resource(gateway, second_version, resource_id=1, name="new_name")
+
+    with django_assert_num_queries(4):
+        queryset = get_gateway_released_resources(gateway_id=gateway.id)
+        assert queryset.count() == 1
+        assert [(item.resource_id, item.resource_name) for item in queryset[:10]] == [(1, "new_name")]

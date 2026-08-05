@@ -54,6 +54,7 @@ from apigateway.service.mcp import (
 )
 from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
+from apigateway.utils.string import split_comma_separated_values
 
 logger = logging.getLogger(__name__)
 
@@ -64,12 +65,8 @@ GATEWAY_LOOKUP_FIELDS = frozenset(
 RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
 
 
-def _split_comma_separated_values(value: str) -> list[str]:
-    return list(dict.fromkeys(item.strip() for item in value.split(",") if item.strip()))
-
-
 def _validate_output_fields(value: str, allowed_fields: frozenset[str]) -> set[str] | None:
-    fields = set(_split_comma_separated_values(value))
+    fields = set(split_comma_separated_values(value, deduplicate=True))
     if not fields:
         return None
 
@@ -128,7 +125,7 @@ class GatewayLookupInputSLZ(serializers.Serializer):
     fields = serializers.CharField(required=False, allow_blank=True)
 
     def validate_gateway_names(self, value) -> list[str]:
-        names = _split_comma_separated_values(value)
+        names = split_comma_separated_values(value, deduplicate=True)
         if not names:
             raise serializers.ValidationError(_("gateway_names 不能为空"))
         if len(names) > MAX_LOOKUP_NAMES:
@@ -147,7 +144,7 @@ class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
     fields = serializers.CharField(required=False, allow_blank=True)
 
     def validate_resource_names(self, value) -> list[str]:
-        names = _split_comma_separated_values(value)
+        names = split_comma_separated_values(value, deduplicate=True)
         if len(names) > MAX_LOOKUP_NAMES:
             raise serializers.ValidationError(_("resource_names 最多支持 50 个"))
         return names
