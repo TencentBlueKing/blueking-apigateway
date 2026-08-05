@@ -80,7 +80,7 @@ paths:
                     maintainers: ["admin"]
                     kind: normal
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -180,7 +180,7 @@ paths:
                 data:
                   record_id: 12345
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -259,7 +259,7 @@ paths:
                 message: OK
                 data: {}
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -336,7 +336,7 @@ paths:
                 message: OK
                 data: null
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -398,7 +398,7 @@ paths:
                   issuer: ""
                   public_key: "xxx"
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -779,7 +779,7 @@ paths:
                 message: OK
                 data: {}
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -886,7 +886,7 @@ paths:
                               type: boolean
                               example: false
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -972,7 +972,7 @@ paths:
                         type: object
                         description: 资源协议数据（OpenAPI 3.0 格式）
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1037,7 +1037,7 @@ paths:
                 message: OK
                 data: null
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1113,7 +1113,7 @@ paths:
                 message: OK
                 data: null
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1219,7 +1219,7 @@ paths:
                   updated: [{"id": 2}]
                   deleted: [{"id": 3}]
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1310,7 +1310,7 @@ paths:
                               type: string
                               example: ""
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1401,7 +1401,7 @@ paths:
                   version: "1.0.0"
                   title: 发布新版本
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1458,7 +1458,7 @@ paths:
                 data:
                   version: "1.0.1"
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1549,7 +1549,7 @@ paths:
                   version: "1.0.0"
                   stage_names: ["prod", "test", "dev"]
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1645,7 +1645,7 @@ paths:
                     version: "1.0.1"
                     url: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1714,7 +1714,7 @@ paths:
                     name: prod
                     description: 正式环境
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -1996,7 +1996,7 @@ paths:
                   name: demo
                   kind: ai
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -2074,7 +2074,7 @@ paths:
                     resource_version: null
                     released: false
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -2144,7 +2144,7 @@ paths:
                 message: OK
                 data: null
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
@@ -2245,7 +2245,7 @@ paths:
                   name: demo
                   kind: ai
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
