@@ -22,7 +22,7 @@
       class="app"
       :class="[
         systemCls,
-        { 'show-notice-wrapper': enableShowNotice && showNoticeAlert}
+        { 'show-notice-wrapper': enableShowNotice && showNoticeAlert }
       ]"
     >
       <NoticeComponent
