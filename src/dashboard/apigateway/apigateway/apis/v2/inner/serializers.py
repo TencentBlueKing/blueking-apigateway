@@ -145,8 +145,6 @@ class GatewayLookupInputSLZ(serializers.Serializer):
 class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
     resource_names = serializers.CharField(required=False, allow_blank=True)
     fields = serializers.CharField(required=False, allow_blank=True)
-    limit = serializers.IntegerField(required=False, min_value=1, max_value=20)
-    offset = serializers.IntegerField(required=False, min_value=0)
 
     def validate_resource_names(self, value) -> list[str]:
         names = _split_comma_separated_values(value)

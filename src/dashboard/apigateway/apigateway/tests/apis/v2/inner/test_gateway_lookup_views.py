@@ -94,9 +94,6 @@ def test_lookup_inputs_normalize_names_and_fields():
     [
         (inner_serializers.GatewayLookupInputSLZ, {"gateway_names": "g1", "fields": "unknown"}),
         (inner_serializers.GatewayReleasedResourceListInputSLZ, {"fields": "unknown"}),
-        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"limit": 0}),
-        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"limit": 21}),
-        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"offset": -1}),
     ],
 )
 def test_lookup_inputs_reject_invalid_values(serializer_class, data):
