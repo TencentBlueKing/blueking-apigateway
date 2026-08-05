@@ -14,6 +14,8 @@
 | mcp_server_ids | string | 否  | MCPServer ID 列表，多个以逗号分割，最多 50 个。例如：1,2,3 |
 | mcp_server_names | string | 否  | MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个。例如：server-1,server-2 |
 | fields | string | 否  | 指定返回的字段列表，多个以逗号分割，例如 `fields=name,title`；支持的字段见 `data.results`；不传时返回全部字段，包含不支持的字段时返回参数校验错误 |
+| limit | int | 否 | 每页数量，取值范围 1～20，默认 10 |
+| offset | int | 否 | 分页偏移量，必须大于或等于 0，默认 0 |
 
 
 ### 响应示例
@@ -22,8 +24,6 @@
 {
   "data": {
     "count": 2,
-    "has_next": false,
-    "has_previous": false,
     "results": [
       {
         "id": 1,
@@ -77,8 +77,6 @@
 | 参数名称       | 参数类型  | 描述         |
 |------------|-------|------------|
 | count      | int   | 总数         |
-| has_next   | bool  | 是否有下一页     |
-| has_previous | bool  | 是否有上一页     |
 | results    | array | MCPServer 列表 |
 
 #### data.results

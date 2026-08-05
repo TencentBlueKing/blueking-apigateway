@@ -7149,6 +7149,8 @@ paths:
           in: query
           schema:
             type: string
+            enum: [id, -id, name, -name, updated_time, -updated_time, created_time, -created_time]
+            default: -updated_time
           description: 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time
           example: -updated_time
         - name: mcp_server_ids
@@ -7169,6 +7171,23 @@ paths:
             type: string
           description: 指定返回的字段列表，多个以逗号分割；不传时返回全部字段
           example: name,title
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+          description: 每页 MCPServer 数量
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: MCPServer 分页偏移量
       responses:
         default:
           description: ''
@@ -7242,7 +7261,50 @@ paths:
           description: ''
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [count, results]
+                    properties:
+                      count:
+                        type: integer
+                        description: 网关总数
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, name, is_official, mcp_server_count, mcp_servers]
+                          properties:
+                            id:
+                              type: integer
+                              description: 网关 ID
+                            name:
+                              type: string
+                              description: 网关名称
+                            is_official:
+                              type: boolean
+                              description: 是否为官方网关
+                            mcp_server_count:
+                              type: integer
+                              description: 可选 MCPServer 数量
+                            mcp_servers:
+                              type: array
+                              items:
+                                type: object
+                                required: [id, name, title]
+                                properties:
+                                  id:
+                                    type: integer
+                                    description: MCPServer ID
+                                  name:
+                                    type: string
+                                    description: MCPServer 名称
+                                  title:
+                                    type: string
+                                    description: MCPServer 标题
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -7310,7 +7372,50 @@ paths:
           description: ''
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [count, results]
+                    properties:
+                      count:
+                        type: integer
+                        description: 网关总数
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, name, is_official, resource_count, resources]
+                          properties:
+                            id:
+                              type: integer
+                              description: 网关 ID
+                            name:
+                              type: string
+                              description: 网关名称
+                            is_official:
+                              type: boolean
+                              description: 是否为官方网关
+                            resource_count:
+                              type: integer
+                              description: 可选资源数量
+                            resources:
+                              type: array
+                              items:
+                                type: object
+                                required: [id, name, description]
+                                properties:
+                                  id:
+                                    type: integer
+                                    description: 资源 ID
+                                  name:
+                                    type: string
+                                    description: 资源名称
+                                  description:
+                                    type: string
+                                    description: 资源描述
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
