@@ -104,6 +104,106 @@ class ItsmFormModelUpdateResult:
         return cls(updated_field_keys=frozenset(updated_fields.keys()), raw=resp)
 
 
+@dataclass(frozen=True)
+class ItsmTicketProcessor:
+    user_id: str
+    processor_type: str
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_response_item(cls, item: Any) -> Optional["ItsmTicketProcessor"]:
+        if not isinstance(item, dict):
+            return None
+
+        processor_type = item.get("type")
+        if processor_type != "user":
+            return None
+
+        user_id = item.get("id")
+        if not isinstance(user_id, str) or not user_id.strip():
+            return None
+
+        return cls(user_id=user_id.strip(), processor_type=processor_type, raw=item)
+
+
+@dataclass(frozen=True)
+class ItsmTicketDetail:
+    history_processors: tuple[ItsmTicketProcessor, ...]
+    current_processors: tuple[ItsmTicketProcessor, ...]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_response(cls, resp: Any):
+        if not isinstance(resp, dict):
+            raise TypeError("invalid ticket item response: response must be an object")
+
+        data = resp.get("data")
+        response_data = data if isinstance(data, dict) else resp
+        return cls(
+            history_processors=cls._extract_processors(response_data.get("history_processors"), "history_processors"),
+            current_processors=cls._extract_processors(response_data.get("current_processors"), "current_processors"),
+            raw=resp,
+        )
+
+    @staticmethod
+    def _extract_processors(processors: Any, field_name: str) -> tuple[ItsmTicketProcessor, ...]:
+        if processors is None:
+            return ()
+        if not isinstance(processors, list):
+            raise TypeError(f"invalid ticket item response: {field_name} must be a list")
+
+        return tuple(
+            processor
+            for processor in (ItsmTicketProcessor.from_response_item(item) for item in processors)
+            if processor is not None
+        )
+
+    @property
+    def actual_approver(self) -> str:
+        for processor in self.history_processors:
+            return processor.user_id
+
+        return ""
+
+
+@dataclass(frozen=True)
+class ItsmTicketSearchResult:
+    count: int
+    tickets: tuple[ItsmTicketDetail, ...]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_response(cls, resp: Any):
+        if not isinstance(resp, dict):
+            raise TypeError("invalid ticket_search_full_text_search response: response must be an object")
+
+        response_data = resp.get("data")
+        if not isinstance(response_data, dict):
+            raise TypeError("invalid ticket_search_full_text_search response: data must be an object")
+
+        results = response_data.get("results")
+        if not isinstance(results, list):
+            raise TypeError("invalid ticket_search_full_text_search response: results must be a list")
+
+        count = response_data.get("count", len(results))
+        if not isinstance(count, int):
+            raise TypeError("invalid ticket_search_full_text_search response: count must be an integer")
+
+        return cls(
+            count=count,
+            tickets=tuple(ItsmTicketDetail.from_response(item) for item in results),
+            raw=resp,
+        )
+
+    @property
+    def actual_approver(self) -> str:
+        for ticket in self.tickets:
+            if ticket.actual_approver:
+                return ticket.actual_approver
+
+        return ""
+
+
 def _call_bkitsm_api(
     http_func,
     path: str,
@@ -264,3 +364,26 @@ def create_ticket(
         more_headers=more_headers,
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
+
+
+def ticket_search_full_text_search(ticket_id: str, operator: Optional[str] = None) -> ItsmTicketSearchResult:
+    """
+    批量查询 ITSM 工单列表
+
+    调用接口: ticket_search_full_text_search (POST)
+    路径: /api/v1/ticket_search/full_text_search/
+    """
+    data = {
+        "page": 1,
+        "page_size": 10,
+        "id__in": ticket_id,
+        "operator": operator or settings.BK_ITSM4_QUERY_OPERATOR,
+        "group_key": "all",
+    }
+    resp = _call_bkitsm_api(
+        http_post,
+        "/api/v1/ticket_search/full_text_search/",
+        data,
+        timeout=settings.BK_ITSM4_API_TIMEOUT,
+    )
+    return ItsmTicketSearchResult.from_response(resp)

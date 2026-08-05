@@ -16,13 +16,22 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 
 from ddf import G
 from django.utils import timezone
 
+from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
-from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
-from apigateway.apps.permission.tasks import AppPermissionExpiringSoonAlerter, renew_app_resource_permission
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
+from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionRecord, AppResourcePermission
+from apigateway.apps.permission.tasks import (
+    AppPermissionExpiringSoonAlerter,
+    _get_actual_approver_from_itsm,
+    async_fill_itsm_approver,
+    renew_app_resource_permission,
+)
 from apigateway.utils.time import NeverExpiresTime, now_datetime, to_datetime_from_now
 
 
@@ -99,6 +108,99 @@ class TestRenewAppResourcePermission:
         assert AppResourcePermission.objects.get(
             gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5
         ).expires > to_datetime_from_now(days=179)
+
+
+class TestAsyncFillItsmApprover:
+    def test_get_actual_approver_returns_structured_result(self, mocker):
+        mocker.patch(
+            "apigateway.apps.permission.tasks.ticket_search_full_text_search",
+            return_value=mocker.Mock(actual_approver="admin"),
+        )
+
+        assert _get_actual_approver_from_itsm("ticket-001") == "admin"
+
+    def test_get_actual_approver_returns_empty_when_ticket_has_no_approver(self, mocker):
+        mocker.patch(
+            "apigateway.apps.permission.tasks.ticket_search_full_text_search",
+            return_value=mocker.Mock(actual_approver=""),
+        )
+
+        assert _get_actual_approver_from_itsm("ticket-001") == ""
+
+    def test_get_actual_approver_returns_empty_when_query_failed(self, mocker):
+        mocker.patch(
+            "apigateway.apps.permission.tasks.ticket_search_full_text_search", side_effect=Exception("remote error")
+        )
+
+        assert _get_actual_approver_from_itsm("ticket-001") == ""
+
+    def test_fill_gateway_permission_approver(self, mocker, fake_gateway, unique_id):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.APPROVED.value,
+            handled_by="itsm",
+        )
+        permission = G(
+            AppGatewayPermission,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            grant_type=GrantTypeEnum.APPLY.value,
+            handled_by="itsm",
+        )
+        mocker.patch("apigateway.apps.permission.tasks._get_actual_approver_from_itsm", return_value="admin")
+
+        async_fill_itsm_approver(GrantDimensionEnum.API.value, record.id, "ticket-001")
+
+        record.refresh_from_db()
+        permission.refresh_from_db()
+        assert record.handled_by == "admin"
+        assert permission.handled_by == "admin"
+
+    def test_fill_resource_permission_approver(self, mocker, fake_gateway, unique_id):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.APPROVED.value,
+            handled_by="itsm",
+            _handled_resource_ids=json.dumps({ApplyStatusEnum.APPROVED.value: [1]}),
+        )
+        permission = G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            resource_id=1,
+            grant_type=GrantTypeEnum.APPLY.value,
+            handled_by="itsm",
+        )
+        mocker.patch("apigateway.apps.permission.tasks._get_actual_approver_from_itsm", return_value="admin")
+
+        async_fill_itsm_approver(GrantDimensionEnum.RESOURCE.value, record.id, "ticket-001")
+
+        record.refresh_from_db()
+        permission.refresh_from_db()
+        assert record.handled_by == "admin"
+        assert permission.handled_by == "admin"
+
+    def test_fill_mcp_permission_apply_approver(self, mocker, fake_gateway, fake_stage):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        apply = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="itsm",
+        )
+        mocker.patch("apigateway.apps.permission.tasks._get_actual_approver_from_itsm", return_value="admin")
+
+        async_fill_itsm_approver("mcp_server", apply.id, "ticket-001")
+
+        apply.refresh_from_db()
+        assert apply.handled_by == "admin"
 
 
 class TestAppPermissionExpiringSoonAlerter:
