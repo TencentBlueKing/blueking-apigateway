@@ -142,7 +142,7 @@
                   </BkPopover>
                 </div>
                 <Divider
-                  v-show="isCollapsed"
+                  v-show="!showBatch && isCollapsed"
                   direction="vertical"
                   class="h-12px"
                 />
