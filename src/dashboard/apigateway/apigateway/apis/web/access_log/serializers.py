@@ -107,6 +107,7 @@ class RequestLogOutputSLZ(serializers.Serializer):
 
     request_duration = serializers.IntegerField(required=False, allow_null=True, help_text="请求耗时")
     backend_duration = serializers.IntegerField(required=False, allow_null=True, help_text="后端请求耗时")
+    llm_summary = serializers.DictField(required=False, allow_null=True, help_text="LLM 调用摘要")
 
     code_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="状态码名称")
     error = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="错误")

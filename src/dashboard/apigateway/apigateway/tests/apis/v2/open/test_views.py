@@ -487,6 +487,14 @@ class TestLogSearchByRequestIdApi:
                 "status": 200,
                 "request_duration": 100,
                 "backend_duration": 50,
+                "llm_summary": {
+                    "request_model": "",
+                    "prompt_tokens": 107,
+                    "completion_tokens": 1718,
+                    "upstream_response_time": 11662,
+                    "model": "deepseek-v4-flash",
+                    "duration": 11662,
+                },
                 "code_name": "",
                 "error": "",
                 "response_desc": "",
@@ -513,6 +521,7 @@ class TestLogSearchByRequestIdApi:
         assert logs[0]["status"] == 200
         assert logs[0]["method"] == "GET"
         assert logs[0]["client_ip"] == "127.0.0.1"
+        assert logs[0]["llm_summary"] == fake_logs[0]["llm_summary"]
 
     def test_search_logs_empty_result(self, request_view):
         """测试没有日志时返回空列表"""

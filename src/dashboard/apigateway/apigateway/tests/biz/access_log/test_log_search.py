@@ -176,6 +176,7 @@ class TestLogSearchClient:
         )
         s = client._build_logs_search(params["offset"], params["limit"], order=params["order"])
         assert s.to_dict() == expected
+        assert "llm_summary" in s.to_dict()["_source"]
 
     @pytest.mark.parametrize(
         "params, expected",

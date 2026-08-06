@@ -980,6 +980,7 @@ class AppRequestLogListOutputSLZ(serializers.Serializer):
     http_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求路径")
     status = serializers.IntegerField(required=False, allow_null=True, help_text="响应状态码")
     request_duration = serializers.IntegerField(required=False, allow_null=True, help_text="请求耗时")
+    llm_summary = serializers.DictField(required=False, allow_null=True, help_text="LLM 调用摘要")
     code_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="状态码名称")
     error = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="错误")
     response_desc = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应描述")
