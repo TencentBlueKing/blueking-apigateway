@@ -57,6 +57,20 @@ class TestMCPServerHandler:
         yield
         get_standard_resource_names_set.cache_clear()
 
+    @staticmethod
+    def _release_resources(gateway, stage, resources):
+        resource_version = G(ResourceVersion, gateway=gateway)
+        resource_version.data = [
+            {
+                "id": resource.id,
+                "name": resource.name,
+                "kind": getattr(resource, "kind", None) or ResourceKindEnum.STANDARD.value,
+            }
+            for resource in resources
+        ]
+        resource_version.save()
+        return G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
+
     def test_virtual_app_code_prefix(self):
         assert MCPServerHandler._virtual_app_code_prefix(1) == "v_mcp_1_"
 
@@ -148,6 +162,7 @@ class TestMCPServerHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -203,6 +218,7 @@ class TestMCPServerHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -232,6 +248,7 @@ class TestMCPServerHandler:
 
     def test_sync_permissions_grants_and_revokes_oauth2_personal_client(self, fake_gateway, fake_stage):
         resource = G(Resource, gateway=fake_gateway, name="resource1")
+        self._release_resources(fake_gateway, fake_stage, [resource])
         mcp_server = G(
             MCPServer,
             gateway=fake_gateway,
@@ -268,6 +285,40 @@ class TestMCPServerHandler:
             resource_id=resource.id,
         ).exists()
 
+    def test_sync_permissions_uses_resource_ids_from_released_version(self, fake_gateway, fake_stage):
+        """Sync must use resource_id from the stage release snapshot, not live Resource.id."""
+        live_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="tool_a",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        released_resource_id = live_resource.id + 10000
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [
+            {
+                "id": released_resource_id,
+                "name": live_resource.name,
+                "kind": ResourceKindEnum.STANDARD.value,
+            },
+        ]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=live_resource.name,
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
+        assert set(permissions.values_list("resource_id", flat=True)) == {released_resource_id}
+        assert live_resource.id not in permissions.values_list("resource_id", flat=True)
+
     def test_sync_permissions_excludes_ai_resources_from_release_snapshot(self, fake_gateway, fake_stage):
         standard_resource = G(
             Resource,
@@ -301,18 +352,18 @@ class TestMCPServerHandler:
         permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
         assert set(permissions.values_list("resource_id", flat=True)) == {standard_resource.id}
 
-    def test_sync_permissions_excludes_ai_resource_without_release(self, fake_gateway, fake_stage):
-        ai_resource = G(
+    def test_sync_permissions_skips_without_release(self, fake_gateway, fake_stage):
+        resource = G(
             Resource,
             gateway=fake_gateway,
-            name="ai-resource",
-            kind=ResourceKindEnum.AI.value,
+            name="resource1",
+            kind=ResourceKindEnum.STANDARD.value,
         )
         mcp_server = G(
             MCPServer,
             gateway=fake_gateway,
             stage=fake_stage,
-            _resource_names=ai_resource.name,
+            _resource_names=resource.name,
         )
         G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
 
@@ -320,7 +371,9 @@ class TestMCPServerHandler:
 
         assert not AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_").exists()
 
-    def test_sync_permissions_excludes_live_ai_resource_with_standard_snapshot(self, fake_gateway, fake_stage):
+    def test_sync_permissions_uses_standard_snapshot_even_if_live_resource_kind_changed(
+        self, fake_gateway, fake_stage
+    ):
         resource = G(
             Resource,
             gateway=fake_gateway,
@@ -346,13 +399,15 @@ class TestMCPServerHandler:
 
         MCPServerHandler.sync_permissions(mcp_server.id)
 
-        assert not AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_").exists()
+        permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
+        assert set(permissions.values_list("resource_id", flat=True)) == {resource.id}
 
     def test_sync_permissions_delete_permissions(self, fake_gateway, fake_stage):
         """Test sync_permissions when existing permissions need to be deleted"""
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with only one resource name
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -400,6 +455,7 @@ class TestMCPServerHandler:
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
         resource3 = G(Resource, gateway=fake_gateway, name="resource3")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2, resource3])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
