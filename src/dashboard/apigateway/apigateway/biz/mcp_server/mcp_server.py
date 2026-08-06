@@ -63,7 +63,7 @@ from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, Resource, Stage
+from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
@@ -376,14 +376,25 @@ class MCPServerHandler:
             )
             return
 
-        # 2. check the resource names, and get the resource_ids
+        # 2. resolve resource_ids from the stage's published resource_version snapshot
+        # core-api permission checks also use resource_id from the released version, not live Resource
         resource_names = mcp_server.resource_names
         if not resource_names:
             logger.debug("no resource_names, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
-        resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
-            "id", flat=True
+        release = (
+            Release.objects.filter(gateway_id=mcp_server.gateway_id, stage_id=mcp_server.stage_id)
+            .select_related("resource_version")
+            .first()
         )
+        if not release:
+            logger.debug("no release, skip sync the permissions of the mcp_server %d", mcp_server_id)
+            return
+
+        resource_name_set = set(resource_names)
+        resource_ids = [
+            resource["id"] for resource in release.resource_version.data if resource["name"] in resource_name_set
+        ]
 
         # 3. sync the permission
         newest_virtual_app_code_resource_id_set = {
