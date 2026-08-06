@@ -33,7 +33,6 @@ from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.constants import (
     ApplyStatusEnum,
-    FormattedGrantDimensionEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
@@ -208,17 +207,6 @@ def renew_app_resource_permission():
             )
 
 
-def _get_actual_approver_from_itsm(ticket_id: str) -> str:
-    try:
-        # /ticket/detail/ 暂无法返回 history_processors，先用工单搜索接口，修复后可切回详情接口。
-        ticket_search_result = get_ticket_by_id(ticket_id)
-    except Exception:
-        logger.warning("query or parse itsm ticket failed, ticket_id=%s", ticket_id, exc_info=True)
-        return ""
-
-    return ticket_search_result.actual_approver
-
-
 def _update_gateway_or_resource_permission_record_handled_by(
     grant_dimension: str, record_id: int, approver: str
 ) -> None:
@@ -252,15 +240,15 @@ def _update_gateway_or_resource_permission_record_handled_by(
     )
 
 
-def _get_itsm_approver_for_backfill(ticket_id: str, log_context: Dict[str, Any]) -> str:
-    if not ticket_id:
-        logger.warning(
-            "skip filling itsm approver because ticket_id is empty, context=%s",
-            log_context,
-        )
+def _get_itsm_approver_for_backfill(ticket_id: str) -> str:
+    try:
+        # /ticket/detail/ 暂无法返回 history_processors，先用工单搜索接口，修复后可切回详情接口。
+        ticket_search_result = get_ticket_by_id(ticket_id)
+    except Exception:
+        logger.warning("query or parse itsm ticket failed, ticket_id=%s", ticket_id, exc_info=True)
         return ""
 
-    approver = _get_actual_approver_from_itsm(ticket_id)
+    approver = ticket_search_result.actual_approver
     if not approver:
         logger.info("skip filling itsm approver because approver is empty, ticket_id=%s", ticket_id)
         return ""
@@ -270,10 +258,7 @@ def _get_itsm_approver_for_backfill(ticket_id: str, log_context: Dict[str, Any])
 
 @shared_task(name="apigateway.apps.permission.tasks.async_fill_gateway_or_resource_itsm_approver", ignore_result=True)
 def async_fill_gateway_or_resource_itsm_approver(grant_dimension: str, record_id: int, ticket_id: str) -> None:
-    approver = _get_itsm_approver_for_backfill(
-        ticket_id,
-        log_context={"grant_dimension": grant_dimension, "record_id": record_id},
-    )
+    approver = _get_itsm_approver_for_backfill(ticket_id)
     if not approver:
         return
 
@@ -286,10 +271,7 @@ def async_fill_gateway_or_resource_itsm_approver(grant_dimension: str, record_id
 
 @shared_task(name="apigateway.apps.permission.tasks.async_fill_mcp_server_itsm_approver", ignore_result=True)
 def async_fill_mcp_server_itsm_approver(apply_id: int, ticket_id: str) -> None:
-    approver = _get_itsm_approver_for_backfill(
-        ticket_id,
-        log_context={"grant_dimension": FormattedGrantDimensionEnum.MCP_SERVER.value, "apply_id": apply_id},
-    )
+    approver = _get_itsm_approver_for_backfill(ticket_id)
     if not approver:
         return
 

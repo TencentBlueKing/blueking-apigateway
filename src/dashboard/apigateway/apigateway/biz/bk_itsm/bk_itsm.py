@@ -110,14 +110,22 @@ class ItsmCallbackResultHandler:
             raise error_codes.INVALID_ARGUMENT.format("ticket id mismatch")
 
     @staticmethod
-    def _enqueue_approver_backfill_task(celery_task, task_kwargs: Dict[str, Any], log_context: Dict[str, Any]):
+    def _enqueue_approver_backfill_task(celery_task, task_kwargs: Dict[str, Any]):
+        # ticket_id 为空时跳过入队
+        if not task_kwargs.get("ticket_id"):
+            logger.warning(
+                "skip enqueue itsm approver backfill task because ticket_id is empty, task_kwargs=%s",
+                task_kwargs,
+            )
+            return
+
         def _safe_apply_async():
             try:
                 celery_task.apply_async(kwargs=task_kwargs, ignore_result=True)
             except Exception:
                 logger.warning(
-                    "enqueue itsm approver backfill task failed, context=%s",
-                    log_context,
+                    "enqueue itsm approver backfill task failed, task_kwargs=%s",
+                    task_kwargs,
                     exc_info=True,
                 )
 
@@ -173,11 +181,6 @@ class ItsmCallbackResultHandler:
             self._enqueue_approver_backfill_task(
                 async_fill_gateway_or_resource_itsm_approver,
                 task_kwargs={
-                    "grant_dimension": apply.grant_dimension,
-                    "record_id": apply.apply_record_id,
-                    "ticket_id": ticket_id,
-                },
-                log_context={
                     "grant_dimension": apply.grant_dimension,
                     "record_id": apply.apply_record_id,
                     "ticket_id": ticket_id,
@@ -246,11 +249,6 @@ class ItsmCallbackResultHandler:
             self._enqueue_approver_backfill_task(
                 async_fill_mcp_server_itsm_approver,
                 task_kwargs={
-                    "apply_id": apply.id,
-                    "ticket_id": ticket_id,
-                },
-                log_context={
-                    "grant_dimension": FormattedGrantDimensionEnum.MCP_SERVER.value,
                     "apply_id": apply.id,
                     "ticket_id": ticket_id,
                 },

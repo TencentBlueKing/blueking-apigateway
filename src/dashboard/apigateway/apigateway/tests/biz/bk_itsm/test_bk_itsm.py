@@ -223,3 +223,15 @@ class TestItsmCallbackResultHandler:
             },
             ignore_result=True,
         )
+
+    def test_enqueue_approver_backfill_task_skips_when_ticket_id_empty(self, mocker):
+        mock_on_commit = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit")
+        celery_task = mocker.Mock()
+
+        ItsmCallbackResultHandler._enqueue_approver_backfill_task(
+            celery_task,
+            task_kwargs={"record_id": 1, "ticket_id": ""},
+        )
+
+        mock_on_commit.assert_not_called()
+        celery_task.apply_async.assert_not_called()
