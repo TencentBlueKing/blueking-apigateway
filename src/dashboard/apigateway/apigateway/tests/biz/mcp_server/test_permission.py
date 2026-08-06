@@ -27,13 +27,28 @@ from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Resource
+from apigateway.core.constants import ResourceKindEnum
+from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 pytestmark = pytest.mark.django_db
 
 
 class TestMCPServerPermissionHandler:
+    @staticmethod
+    def _release_resources(gateway, stage, resources):
+        resource_version = G(ResourceVersion, gateway=gateway)
+        resource_version.data = [
+            {
+                "id": resource.id,
+                "name": resource.name,
+                "kind": getattr(resource, "kind", None) or ResourceKindEnum.STANDARD.value,
+            }
+            for resource in resources
+        ]
+        resource_version.save()
+        return G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
+
     def test_sync_permissions_no_app_codes(self, fake_gateway, fake_stage):
         """Test sync_permissions when no app codes exist - should cleanup and return early"""
         # Create MCP server with no app permissions
@@ -70,6 +85,7 @@ class TestMCPServerPermissionHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -125,6 +141,7 @@ class TestMCPServerPermissionHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -157,6 +174,7 @@ class TestMCPServerPermissionHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with only one resource name
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -204,6 +222,7 @@ class TestMCPServerPermissionHandler:
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
         resource3 = G(Resource, gateway=fake_gateway, name="resource3")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2, resource3])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
