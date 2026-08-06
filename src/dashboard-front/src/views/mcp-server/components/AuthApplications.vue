@@ -87,6 +87,7 @@
             <BkInput
               v-model="formData.bk_app_code"
               :placeholder="t('请输入应用 ID')"
+              :maxlength="20"
               clearable
             />
           </BkFormItem>
@@ -255,6 +256,11 @@ const rules = {
       required: true,
       message: t('请输入应用 ID'),
       trigger: 'blur',
+    },
+    {
+      validator: (value: string) => !value?.startsWith('v_mcp_'),
+      message: t('应用 ID 不能以 v_mcp_ 开头'),
+      trigger: 'change',
     },
   ],
 };

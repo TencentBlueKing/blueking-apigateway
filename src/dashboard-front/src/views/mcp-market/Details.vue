@@ -351,7 +351,7 @@
             <BkOption
               v-for="app in applicableApps"
               :key="app.bk_app_code"
-              :label="app.name"
+              :label="`${app.name} (${app.bk_app_code})`"
               :value="app.bk_app_code"
             />
           </BkSelect>
