@@ -143,7 +143,9 @@ class TestItsmCallbackResultHandler:
             itsm_callback_token="cb-token-004",
         )
         mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit", side_effect=lambda fn: fn())
-        mock_apply_async = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.async_fill_itsm_approver.apply_async")
+        mock_apply_async = mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.async_fill_gateway_or_resource_itsm_approver.apply_async"
+        )
 
         ItsmCallbackResultHandler().handle(
             ticket={
@@ -163,7 +165,7 @@ class TestItsmCallbackResultHandler:
         mock_apply_async.assert_called_once_with(
             kwargs={
                 "grant_dimension": GrantDimensionEnum.API.value,
-                "apply_id": record.id,
+                "record_id": record.id,
                 "ticket_id": "itsm-ticket-004",
             },
             ignore_result=True,
@@ -187,7 +189,9 @@ class TestItsmCallbackResultHandler:
         )
         mock_sync_permissions = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.MCPServerHandler.sync_permissions")
         mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit", side_effect=lambda fn: fn())
-        mock_apply_async = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.async_fill_itsm_approver.apply_async")
+        mock_apply_async = mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.async_fill_mcp_server_itsm_approver.apply_async"
+        )
 
         ItsmCallbackResultHandler().handle(
             ticket={
@@ -214,7 +218,6 @@ class TestItsmCallbackResultHandler:
         mock_sync_permissions.assert_called_once_with(apply.mcp_server_id)
         mock_apply_async.assert_called_once_with(
             kwargs={
-                "grant_dimension": "mcp_server",
                 "apply_id": apply.id,
                 "ticket_id": "itsm-mcp-001",
             },

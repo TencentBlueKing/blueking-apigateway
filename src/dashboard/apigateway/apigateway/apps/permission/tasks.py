@@ -46,7 +46,7 @@ from apigateway.apps.permission.models import (
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkcmsi import cmsi_component
-from apigateway.components.bkitsm import ticket_search_full_text_search
+from apigateway.components.bkitsm import get_ticket_by_id
 from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_app_developers
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
@@ -211,39 +211,33 @@ def renew_app_resource_permission():
 def _get_actual_approver_from_itsm(ticket_id: str) -> str:
     try:
         # /ticket/detail/ 暂无法返回 history_processors，先用工单搜索接口，修复后可切回详情接口。
-        ticket_search_result = ticket_search_full_text_search(ticket_id)
+        ticket_search_result = get_ticket_by_id(ticket_id)
     except Exception:
-        logger.warning("query or parse itsm ticket search result failed, ticket_id=%s", ticket_id, exc_info=True)
+        logger.warning("query or parse itsm ticket failed, ticket_id=%s", ticket_id, exc_info=True)
         return ""
 
     return ticket_search_result.actual_approver
 
 
-def _update_permission_handled_by(grant_dimension: str, apply_id: int, approver: str) -> None:
-    # MCP Server 权限申请人回填
-    if grant_dimension == FormattedGrantDimensionEnum.MCP_SERVER.value:
-        updated = MCPServerAppPermissionApply.objects.filter(id=apply_id).update(handled_by=approver)
-        if not updated:
-            logger.info("skip filling itsm approver because mcp apply not found, apply_id=%s", apply_id)
-        return
-
-    # 网关、资源维度权限申请人回填
-    record = AppPermissionRecord.objects.filter(id=apply_id).first()
+def _update_gateway_or_resource_permission_record_handled_by(
+    grant_dimension: str, record_id: int, approver: str
+) -> None:
+    record = AppPermissionRecord.objects.filter(id=record_id).first()
     if not record:
-        logger.info("skip filling itsm approver because permission record not found, record_id=%s", apply_id)
+        logger.info("skip filling itsm approver because permission record not found, record_id=%s", record_id)
         return
 
     record.handled_by = approver
     record.save(update_fields=["handled_by"])
 
-    if grant_dimension in [GrantDimensionEnum.API.value, FormattedGrantDimensionEnum.GATEWAY.value]:
+    if grant_dimension == GrantDimensionEnum.API.value:
         if record.status == ApplyStatusEnum.APPROVED.value:
             AppGatewayPermission.objects.filter(gateway=record.gateway, bk_app_code=record.bk_app_code).update(
                 handled_by=approver
             )
         return
 
-    if grant_dimension in [GrantDimensionEnum.RESOURCE.value, FormattedGrantDimensionEnum.RESOURCE.value]:
+    if grant_dimension == GrantDimensionEnum.RESOURCE.value:
         approved_resource_ids = record.handled_resource_ids.get(ApplyStatusEnum.APPROVED.value) or []
         if approved_resource_ids:
             AppResourcePermission.objects.filter(
@@ -258,22 +252,50 @@ def _update_permission_handled_by(grant_dimension: str, apply_id: int, approver:
     )
 
 
-@shared_task(name="apigateway.apps.permission.tasks.async_fill_itsm_approver", ignore_result=True)
-def async_fill_itsm_approver(grant_dimension: str, apply_id: int, ticket_id: str) -> None:
+def _get_itsm_approver_for_backfill(ticket_id: str, log_context: Dict[str, Any]) -> str:
     if not ticket_id:
         logger.warning(
-            "skip filling itsm approver because ticket_id is empty, grant_dimension=%s, apply_id=%s",
-            grant_dimension,
-            apply_id,
+            "skip filling itsm approver because ticket_id is empty, context=%s",
+            log_context,
         )
-        return
+        return ""
 
     approver = _get_actual_approver_from_itsm(ticket_id)
     if not approver:
         logger.info("skip filling itsm approver because approver is empty, ticket_id=%s", ticket_id)
+        return ""
+
+    return approver
+
+
+@shared_task(name="apigateway.apps.permission.tasks.async_fill_gateway_or_resource_itsm_approver", ignore_result=True)
+def async_fill_gateway_or_resource_itsm_approver(grant_dimension: str, record_id: int, ticket_id: str) -> None:
+    approver = _get_itsm_approver_for_backfill(
+        ticket_id,
+        log_context={"grant_dimension": grant_dimension, "record_id": record_id},
+    )
+    if not approver:
         return
 
-    _update_permission_handled_by(grant_dimension=grant_dimension, apply_id=apply_id, approver=approver)
+    _update_gateway_or_resource_permission_record_handled_by(
+        grant_dimension=grant_dimension,
+        record_id=record_id,
+        approver=approver,
+    )
+
+
+@shared_task(name="apigateway.apps.permission.tasks.async_fill_mcp_server_itsm_approver", ignore_result=True)
+def async_fill_mcp_server_itsm_approver(apply_id: int, ticket_id: str) -> None:
+    approver = _get_itsm_approver_for_backfill(
+        ticket_id,
+        log_context={"grant_dimension": FormattedGrantDimensionEnum.MCP_SERVER.value, "apply_id": apply_id},
+    )
+    if not approver:
+        return
+
+    updated = MCPServerAppPermissionApply.objects.filter(id=apply_id).update(handled_by=approver)
+    if not updated:
+        logger.info("skip filling itsm approver because mcp apply not found, apply_id=%s", apply_id)
 
 
 class AppPermissionExpiringSoonAlerter:

@@ -28,7 +28,10 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum, FormattedGrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply
-from apigateway.apps.permission.tasks import async_fill_itsm_approver
+from apigateway.apps.permission.tasks import (
+    async_fill_gateway_or_resource_itsm_approver,
+    async_fill_mcp_server_itsm_approver,
+)
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.error_codes import error_codes
@@ -107,35 +110,18 @@ class ItsmCallbackResultHandler:
             raise error_codes.INVALID_ARGUMENT.format("ticket id mismatch")
 
     @staticmethod
-    def _enqueue_approver_backfill_task(grant_dimension: str, apply_id: int, ticket_id: str):
-        task_kwargs = {
-            "grant_dimension": grant_dimension,
-            "apply_id": apply_id,
-            "ticket_id": ticket_id,
-        }
-
+    def _enqueue_approver_backfill_task(celery_task, task_kwargs: Dict[str, Any], log_context: Dict[str, Any]):
         def _safe_apply_async():
             try:
-                async_fill_itsm_approver.apply_async(kwargs=task_kwargs, ignore_result=True)
+                celery_task.apply_async(kwargs=task_kwargs, ignore_result=True)
             except Exception:
                 logger.warning(
-                    "enqueue itsm approver backfill task failed, grant_dimension=%s, apply_id=%s, ticket_id=%s",
-                    grant_dimension,
-                    apply_id,
-                    ticket_id,
+                    "enqueue itsm approver backfill task failed, context=%s",
+                    log_context,
                     exc_info=True,
                 )
 
-        try:
-            transaction.on_commit(_safe_apply_async)
-        except Exception:
-            logger.warning(
-                "enqueue itsm approver backfill task failed, grant_dimension=%s, apply_id=%s, ticket_id=%s",
-                grant_dimension,
-                apply_id,
-                ticket_id,
-                exc_info=True,
-            )
+        transaction.on_commit(_safe_apply_async)
 
     def _handle_gateway_approval(
         self, apply_record_id: int, approve_result: bool, ticket_id: str, callback_token: str
@@ -185,9 +171,17 @@ class ItsmCallbackResultHandler:
             )
 
             self._enqueue_approver_backfill_task(
-                grant_dimension=apply.grant_dimension,
-                apply_id=apply.apply_record_id,
-                ticket_id=ticket_id,
+                async_fill_gateway_or_resource_itsm_approver,
+                task_kwargs={
+                    "grant_dimension": apply.grant_dimension,
+                    "record_id": apply.apply_record_id,
+                    "ticket_id": ticket_id,
+                },
+                log_context={
+                    "grant_dimension": apply.grant_dimension,
+                    "record_id": apply.apply_record_id,
+                    "ticket_id": ticket_id,
+                },
             )
             apply.delete()
 
@@ -250,9 +244,16 @@ class ItsmCallbackResultHandler:
                 MCPServerHandler.sync_permissions(apply.mcp_server_id)
 
             self._enqueue_approver_backfill_task(
-                grant_dimension=FormattedGrantDimensionEnum.MCP_SERVER.value,
-                apply_id=apply.id,
-                ticket_id=ticket_id,
+                async_fill_mcp_server_itsm_approver,
+                task_kwargs={
+                    "apply_id": apply.id,
+                    "ticket_id": ticket_id,
+                },
+                log_context={
+                    "grant_dimension": FormattedGrantDimensionEnum.MCP_SERVER.value,
+                    "apply_id": apply.id,
+                    "ticket_id": ticket_id,
+                },
             )
 
         logger.info(

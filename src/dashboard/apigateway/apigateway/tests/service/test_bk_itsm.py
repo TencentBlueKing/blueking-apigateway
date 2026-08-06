@@ -344,7 +344,7 @@ class TestItsmPermissionApplyHelper:
         mocker.patch.object(command, "_ensure_config_from_template")
         mock_update_form_model = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
-            return_value=ItsmFormModelUpdateResult(updated_field_keys=frozenset(field_keys), raw={}),
+            return_value=ItsmFormModelUpdateResult(meta={"fields": {key: {} for key in field_keys}}),
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
@@ -381,7 +381,7 @@ class TestItsmPermissionApplyHelper:
         mock_ensure_config = mocker.patch.object(command, "_ensure_config_from_template")
         mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.update_form_model",
-            return_value=ItsmFormModelUpdateResult(updated_field_keys=frozenset(field_keys), raw={}),
+            return_value=ItsmFormModelUpdateResult(meta={"fields": {key: {} for key in field_keys}}),
         )
         mock_system_migrate = mocker.patch(
             "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
