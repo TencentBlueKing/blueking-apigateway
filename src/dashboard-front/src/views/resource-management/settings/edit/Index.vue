@@ -64,8 +64,8 @@ import {
   getResourceDetail,
   updateResources,
 } from '@/services/source/resource';
-import Standard from './Standard.vue';
-import ModelProxy from './ModelProxy.vue';
+import Standard from './components/Standard.vue';
+import ModelProxy from './components/ModelProxy.vue';
 
 type ChildCompInstance = InstanceType<typeof Standard> | InstanceType<typeof ModelProxy>;
 

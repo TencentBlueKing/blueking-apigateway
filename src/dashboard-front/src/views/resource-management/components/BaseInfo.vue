@@ -21,7 +21,8 @@
     ref="formRef"
     :model="formData"
     :rules="rules"
-    class="resource-baseinfo"
+    label-width="180"
+    class="resource-basic-info"
     @validate="setInvalidPropId"
   >
     <BkFormItem
@@ -95,6 +96,7 @@
       <BkCheckbox
         v-model="formData.auth_config.app_verified_required"
         :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
+        @change="handleAppVerifiedRequiredChange"
       >
         <span
           v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
@@ -104,6 +106,7 @@
       <BkCheckbox
         v-model="formData.auth_config.auth_verified_required"
         class="ml-40px!"
+        @change="handleAuthVerifiedRequiredChange"
       >
         <span
           v-bk-tooltips="{ content: t('请求方需提供蓝鲸用户身份信息') }"
@@ -111,6 +114,29 @@
         >{{ t('用户认证') }}</span>
       </BkCheckbox>
     </BkFormItem>
+    <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
+    <template v-if="!formData.auth_config.app_verified_required && formData.auth_config.auth_verified_required">
+      <BkFormItem
+        :label="t('OAuth2 公开客户端模式')"
+        required
+      >
+        <BkSwitcher
+          v-model="formData.auth_config.oauth2_public_client_enabled"
+          theme="primary"
+          size="small"
+        />
+      </BkFormItem>
+      <BkFormItem
+        :label="t('个人令牌')"
+        required
+      >
+        <BkSwitcher
+          v-model="formData.auth_config.oauth2_personal_client_enabled"
+          theme="primary"
+          size="small"
+        />
+      </BkFormItem>
+    </template>
     <BkFormItem
       v-if="formData.auth_config.app_verified_required"
       :label="t('检验应用权限')"
@@ -187,6 +213,8 @@ const formData = ref({
     auth_verified_required: true,
     app_verified_required: true,
     resource_perm_required: true,
+    oauth2_public_client_enabled: false,
+    oauth2_personal_client_enabled: false,
   },
   is_public: true,
   allow_apply_permission: true,
@@ -304,6 +332,24 @@ const handleLabelAddSuccess = async (labelId: number) => {
   }
 };
 
+// 重置 OAuth2 开关（默认false）
+const resetOauth2Switch = () => {
+  formData.value.auth_config.oauth2_public_client_enabled = false;
+  formData.value.auth_config.oauth2_personal_client_enabled = false;
+};
+
+const handleAppVerifiedRequiredChange = (value: boolean) => {
+  if (value) {
+    resetOauth2Switch();
+  }
+};
+
+const handleAuthVerifiedRequiredChange = (value: boolean) => {
+  if (!value) {
+    resetOauth2Switch();
+  }
+};
+
 // 监听表单校验时间，收集 #id
 const setInvalidPropId = (property: string, result: boolean) => {
   if (!result) {
@@ -326,7 +372,7 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-.resource-baseinfo {
+.resource-basic-info {
 
   .desc,
   .name {
