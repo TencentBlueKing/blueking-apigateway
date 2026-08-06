@@ -87,6 +87,9 @@ export interface IChartDataType {
   response_time_50th?: IChartsSires // 响应时间50百分位图表系列，可选
   response_time_95th?: IChartsSires // 响应时间95百分位图表系列，可选
   response_time_99th?: IChartsSires // 响应时间99百分位图表系列，可选
+  llm_latency_avg?: IChartsSires // LLM 平均耗时图表系列，可选
+  llm_token_usage?: IChartsSires // LLM Token 消耗图表系列，可选
+  llm_active_connections?: IChartsSires // LLM 活跃连接数图表系列，可选
 }
 
 // 定义图表数据加载状态类型
@@ -103,6 +106,9 @@ export interface IChartDataLoading {
   response_time_50th?: boolean // 响应时间50百分位加载状态，可选
   response_time_95th?: boolean // 响应时间95百分位加载状态，可选
   response_time_99th?: boolean // 响应时间99百分位加载状态，可选
+  llm_latency_avg?: boolean // LLM 平均耗时加载状态，可选
+  llm_token_usage?: boolean // LLM Token 消耗加载状态，可选
+  llm_active_connections?: boolean // LLM 活跃连接数加载状态，可选
 }
 
 /**
