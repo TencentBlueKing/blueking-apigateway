@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+import re
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
@@ -327,6 +328,100 @@ class ResponseTime95thMetrics(ResponseTimeBaseMetrics):
 class ResponseTime99thMetrics(ResponseTimeBaseMetrics):
     metrics = MetricsRangeEnum.RESPONSE_TIME_99TH
     quantile = 0.99
+
+
+class BaseLLMMetrics(BaseMetrics):
+    def _get_llm_labels(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+    ) -> Optional[str]:
+        label_list = [*self.default_labels]
+        if resource_id:
+            label_list.append(("route_id", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
+        else:
+            route_pattern = rf"^{re.escape(gateway_name)}\.{re.escape(stage_name)}\.[0-9]+$"
+            label_list.append(("route_id", "=~", route_pattern))
+
+        if backend_name:
+            backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
+            if not backend:
+                logger.warning(
+                    "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
+                )
+                return None
+            label_list.append(("service_id", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"))
+
+        return self._get_labels_expression(label_list)
+
+
+class LLMLatencyAvgMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_LATENCY_AVG
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, stage_id, resource_id)
+        if labels is None:
+            return ""
+        return (
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_sum{{{labels}}}[{step}])) / "
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_count{{{labels}}}[{step}]))"
+        )
+
+
+class LLMTokenUsageMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_TOKEN_USAGE
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, stage_id, resource_id)
+        if labels is None:
+            return ""
+        return (
+            "sum by (token_type) ("
+            f"label_replace(increase({self.metric_name_prefix}llm_prompt_tokens{{{labels}}}[{step}]), "
+            '"token_type", "prompt", "request_type", ".*") or '
+            f"label_replace(increase({self.metric_name_prefix}llm_completion_tokens{{{labels}}}[{step}]), "
+            '"token_type", "completion", "request_type", ".*"))'
+        )
+
+
+class LLMActiveConnectionsMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_ACTIVE_CONNECTIONS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, stage_id, resource_id)
+        if labels is None:
+            return ""
+        return f"sum by (request_type) ({self.metric_name_prefix}llm_active_connections{{{labels}}})"
 
 
 class IngressMetrics(BaseMetrics):
@@ -654,6 +749,9 @@ MetricsRangeFactory.register(ResponseTime95thMetrics)
 MetricsRangeFactory.register(ResponseTime99thMetrics)
 MetricsRangeFactory.register(IngressMetrics)
 MetricsRangeFactory.register(EgressMetrics)
+MetricsRangeFactory.register(LLMLatencyAvgMetrics)
+MetricsRangeFactory.register(LLMTokenUsageMetrics)
+MetricsRangeFactory.register(LLMActiveConnectionsMetrics)
 
 MetricsInstantFactory.register(RequestsTotalMetrics)
 MetricsInstantFactory.register(HealthRateMetrics)

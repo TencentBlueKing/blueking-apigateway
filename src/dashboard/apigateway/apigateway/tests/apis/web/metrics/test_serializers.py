@@ -44,6 +44,24 @@ class TestMetricsQueryRangeSLZ(TestCase):
                     "time_range": 1,
                 },
             },
+            {
+                "data": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "llm_latency_avg",
+                    "time_start": 1,
+                    "time_end": 2,
+                    "time_range": 1,
+                },
+                "expected": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "llm_latency_avg",
+                    "time_start": 1,
+                    "time_end": 2,
+                    "time_range": 1,
+                },
+            },
         ]
         for test in data:
             slz = serializers.MetricsQueryRangeInputSLZ(data=test["data"])
