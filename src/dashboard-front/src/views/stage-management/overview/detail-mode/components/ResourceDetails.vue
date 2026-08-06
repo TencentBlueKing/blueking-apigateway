@@ -10,7 +10,7 @@
       <template #default>
         <div class="sideslider-content">
           <p class="title mt-15px">
-            {{ t("基本信息") }}
+            {{ t('基本信息') }}
           </p>
           <BkContainer
             class="ag-kv-box"
@@ -19,7 +19,7 @@
           >
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("资源名称") }}:</label>
+                <label class="ag-key">{{ t('资源名称') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -30,7 +30,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("资源地址") }}:</label>
+                <label class="ag-key">{{ t('资源地址') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -41,7 +41,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("描述") }}:</label>
+                <label class="ag-key">{{ t('描述') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -52,7 +52,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("标签") }}:</label>
+                <label class="ag-key">{{ t('标签') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value tags">
@@ -76,45 +76,61 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("认证方式") }}:</label>
+                <label class="ag-key">{{ t('认证方式') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
-                  {{
-                    getResourceAuth(
-                      currentSource?.contexts?.resource_auth?.config
-                    )
-                  }}
+                  {{ resourceAuthText }}
+                </div>
+              </BkCol>
+            </BkRow>
+
+            <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
+            <template v-if="!authConfig.app_verified_required && authConfig.auth_verified_required">
+              <BkRow>
+                <BkCol :span="4">
+                  <label class="ag-key">{{ t('OAuth2 公开客户端模式') }}:</label>
+                </BkCol>
+                <BkCol :span="10">
+                  <div class="ag-value">
+                    {{ authConfig.oauth2_public_client_enabled ? t('是') : t('否') }}
+                  </div>
+                </BkCol>
+              </BkRow>
+              <BkRow>
+                <BkCol :span="4">
+                  <label class="ag-key">{{ t('个人令牌') }}:</label>
+                </BkCol>
+                <BkCol :span="10">
+                  <div class="ag-value">
+                    {{ authConfig.oauth2_personal_client_enabled ? t('是') : t('否') }}
+                  </div>
+                </BkCol>
+              </BkRow>
+            </template>
+
+            <BkRow>
+              <BkCol :span="4">
+                <label class="ag-key">{{ t('校验应用权限') }}:</label>
+              </BkCol>
+              <BkCol :span="10">
+                <div class="ag-value">
+                  {{ permRequiredText }}
                 </div>
               </BkCol>
             </BkRow>
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("校验应用权限") }}:</label>
+                <label class="ag-key">{{ t('是否公开') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
-                  {{
-                    getPermRequired(
-                      currentSource?.contexts?.resource_auth?.config
-                    )
-                  }}
-                </div>
-              </BkCol>
-            </BkRow>
-
-            <BkRow>
-              <BkCol :span="4">
-                <label class="ag-key">{{ t("是否公开") }}:</label>
-              </BkCol>
-              <BkCol :span="10">
-                <div class="ag-value">
-                  {{ currentSource?.is_public ? t("是") : t("否") }}
+                  {{ currentSource?.is_public ? t('是') : t('否') }}
                   {{
                     currentSource?.allow_apply_permission
-                      ? `(${t("允许申请权限")})`
-                      : `(${t("不允许申请权限")})`
+                      ? `(${t('允许申请权限')})`
+                      : `(${t('不允许申请权限')})`
                   }}
                 </div>
               </BkCol>
@@ -124,7 +140,7 @@
           <p
             class="title mt-15px"
           >
-            {{ t("请求配置") }}
+            {{ t('请求配置') }}
           </p>
           <BkContainer
             class="ag-kv-box"
@@ -133,7 +149,7 @@
           >
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("请求方法") }}:</label>
+                <label class="ag-key">{{ t('请求方法') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -146,7 +162,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("请求路径") }}:</label>
+                <label class="ag-key">{{ t('请求路径') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -157,7 +173,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("启用 Websocket") }}:</label>
+                <label class="ag-key">{{ t('启用 Websocket') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -180,7 +196,7 @@
               <BkRow class="mb-0!">
                 <BkCol :span="4">
                   <label class="ag-key invisible">
-                    {{ t("请求方法") }}
+                    {{ t('请求方法') }}
                   </label>
                 </BkCol>
                 <BkCol :span="10">
@@ -198,7 +214,7 @@
           </div>
 
           <p class="title mt-15px">
-            {{ t("后端配置") }}
+            {{ t('后端配置') }}
           </p>
           <BkContainer
             class="ag-kv-box"
@@ -207,7 +223,7 @@
           >
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("后端服务") }}:</label>
+                <label class="ag-key">{{ t('后端服务') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -220,7 +236,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("请求方法") }}:</label>
+                <label class="ag-key">{{ t('请求方法') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -233,7 +249,7 @@
 
             <BkRow v-if="currentSource?.proxy?.config?.timeout !== 0">
               <BkCol :span="4">
-                <label class="ag-key">{{ t("自定义超时时间") }}:</label>
+                <label class="ag-key">{{ t('自定义超时时间') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -244,7 +260,7 @@
 
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("请求路径") }}:</label>
+                <label class="ag-key">{{ t('请求路径') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -257,7 +273,7 @@
           </BkContainer>
 
           <p class="title">
-            {{ t("响应参数") }}
+            {{ t('响应参数') }}
           </p>
           <div>
             <ResponseParams
@@ -274,7 +290,7 @@
               <BkRow class="mb-0!">
                 <BkCol :span="4">
                   <label class="ag-key invisible">
-                    {{ t("响应参数") }}
+                    {{ t('响应参数') }}
                   </label>
                 </BkCol>
                 <BkCol :span="10">
@@ -287,7 +303,7 @@
           </div>
 
           <p class="title mt-15px">
-            {{ t("文档") }}
+            {{ t('文档') }}
           </p>
           <BkContainer
             class="ag-kv-box"
@@ -321,7 +337,7 @@
             :key="plugin.id"
           >
             <p class="title plugin-display">
-              {{ t("插件") }}: {{ plugin.name }}
+              {{ t('插件') }}: {{ plugin.name }}
             </p>
             <ConfigDisplayTable :plugin="plugin" />
           </template>
@@ -341,7 +357,17 @@ import RequestParams from '@/views/resource-management/components/request-params
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
-interface IProps { info: any }
+interface IAuthConfig {
+  app_verified_required: boolean
+  auth_verified_required: boolean
+  resource_perm_required: boolean
+  oauth2_public_client_enabled: boolean
+  oauth2_personal_client_enabled: boolean
+}
+
+interface IProps {
+  info: any
+}
 
 const { info } = defineProps<IProps>();
 
@@ -358,6 +384,35 @@ const labels = ref<IGatewayLabelItem[]>([]);
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
+
+const authConfig = computed<IAuthConfig>(() => {
+  try {
+    return JSON.parse(info.contexts?.resource_auth?.config);
+  }
+  catch {
+    return {
+      app_verified_required: false,
+      auth_verified_required: false,
+      resource_perm_required: false,
+      oauth2_public_client_enabled: false,
+      oauth2_personal_client_enabled: false,
+    };
+  }
+});
+
+const resourceAuthText = computed(() => {
+  const tmpArr: string[] = [];
+
+  if (authConfig.value.auth_verified_required) {
+    tmpArr.push(`${t('用户认证')}`);
+  }
+  if (authConfig.value.app_verified_required) {
+    tmpArr.push(`${t('蓝鲸应用认证')}`);
+  }
+  return tmpArr.join(', ');
+});
+
+const permRequiredText = computed(() => authConfig.value.resource_perm_required ? t('校验') : t('不校验'));
 
 watch(
   () => info,
@@ -380,31 +435,6 @@ const getInfo = () => {
   }
 };
 getInfo();
-
-const getResourceAuth = (authStr: string) => {
-  if (!authStr) return '';
-
-  const auth = JSON.parse(authStr);
-  const tmpArr: string[] = [];
-
-  if (auth?.auth_verified_required) {
-    tmpArr.push(`${t('用户认证')}`);
-  }
-  if (auth?.app_verified_required) {
-    tmpArr.push(`${t('蓝鲸应用认证')}`);
-  }
-  return tmpArr.join(', ');
-};
-
-const getPermRequired = (authStr: string) => {
-  if (!authStr) return '';
-
-  const auth = JSON.parse(authStr);
-  if (auth?.resource_perm_required) {
-    return `${t('校验')}`;
-  }
-  return `${t('不校验')}`;
-};
 
 // 显示侧边栏
 const showSideslider = () => {

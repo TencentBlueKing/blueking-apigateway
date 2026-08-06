@@ -22,6 +22,7 @@
     :model="frontConfigData"
     :rules="rules"
     class="front-config-container"
+    label-width="180"
     @validate="setInvalidPropId"
   >
     <BkFormItem
