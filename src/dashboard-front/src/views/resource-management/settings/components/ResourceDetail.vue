@@ -1,20 +1,20 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+*     http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 
 <template>
   <div class="detail-container">
@@ -159,6 +159,7 @@
               </div>
             </div>
           </div>
+          <!--  认证方式 -->
           <div class="label-content-group">
             <div class="label">
               <span
@@ -177,7 +178,7 @@
                 <span class="operate-btn">
                   <AgIcon
                     name="edit-line"
-                    @click="verifiedEdit = true"
+                    @click="handleVerifiedEdit"
                   />
                   <AgIcon
                     name="copy-info"
@@ -206,12 +207,12 @@
                   <template #content>
                     <div class="p-4px">
                       <BkForm
-                        :model="formData"
+                        :model="authConfigDraft"
                         form-type="vertical"
                       >
                         <BkFormItem :label="t('认证方式')">
                           <BkCheckbox
-                            v-model="formData.auth_config.app_verified_required_copy"
+                            v-model="authConfigDraft.app_verified_required"
                             :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
                           >
                             <span
@@ -222,7 +223,7 @@
                             </span>
                           </BkCheckbox>
                           <BkCheckbox
-                            v-model="formData.auth_config.auth_verified_required_copy"
+                            v-model="authConfigDraft.auth_verified_required"
                             class="ml-40px"
                           >
                             <span
@@ -233,12 +234,31 @@
                             </span>
                           </BkCheckbox>
                         </BkFormItem>
+                        <template
+                          v-if="!authConfigDraft.app_verified_required
+                            && authConfigDraft.auth_verified_required"
+                        >
+                          <BkFormItem :label="t('OAuth2 公开客户端模式')">
+                            <BkSwitcher
+                              v-model="authConfigDraft.oauth2_public_client_enabled"
+                              theme="primary"
+                              size="small"
+                            />
+                          </BkFormItem>
+                          <BkFormItem :label="t('个人令牌')">
+                            <BkSwitcher
+                              v-model="authConfigDraft.oauth2_personal_client_enabled"
+                              theme="primary"
+                              size="small"
+                            />
+                          </BkFormItem>
+                        </template>
                         <BkFormItem
-                          v-if="formData.auth_config.app_verified_required_copy"
+                          v-if="authConfigDraft.app_verified_required"
                           :label="t('检验应用权限')"
                         >
                           <BkSwitcher
-                            v-model="formData.auth_config.resource_perm_required_copy"
+                            v-model="authConfigDraft.resource_perm_required"
                             :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
                             theme="primary"
                             size="small"
@@ -254,7 +274,7 @@
                           </BkButton>
                           <BkButton
                             class="ml-8px"
-                            @click="verifiedEdit = false"
+                            @click="handleVerifiedCancel"
                           >
                             {{ t('取消') }}
                           </BkButton>
@@ -266,6 +286,7 @@
               </div>
             </div>
           </div>
+          <!-- 校验应用权限 -->
           <div class="label-content-group">
             <div class="label">
               {{ t('校验应用权限') }}
@@ -281,7 +302,7 @@
                 <span class="operate-btn">
                   <AgIcon
                     name="edit-line"
-                    @click="permEdit = true"
+                    @click="handlePermEdit"
                   />
                   <AgIcon
                     name="copy-info"
@@ -295,7 +316,7 @@
                 class="edit-name"
               >
                 <BkSwitcher
-                  v-model="formData.auth_config.resource_perm_required_copy"
+                  v-model="authConfigDraft.resource_perm_required"
                   :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
                   theme="primary"
                   size="small"
@@ -305,6 +326,38 @@
               </div>
             </div>
           </div>
+          <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
+          <template
+            v-if="formData.auth_config?.oauth2_public_client_enabled
+              || formData.auth_config?.oauth2_personal_client_enabled"
+          >
+            <!-- OAuth2 公开客户端模式 -->
+            <div class="label-content-group">
+              <div class="label">
+                <span>{{ t('OAuth2 公开客户端模式') }}</span>
+              </div>
+              <div class="content">
+                <div class="value-container">
+                  <span class="value-cls">
+                    {{ formData.auth_config.oauth2_public_client_enabled ? t('是') : t('否') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- 个人令牌 -->
+            <div class="label-content-group">
+              <div class="label">
+                <span>{{ t('个人令牌') }}</span>
+              </div>
+              <div class="content">
+                <div class="value-container">
+                  <span class="value-cls">
+                    {{ formData.auth_config.oauth2_personal_client_enabled ? t('是') : t('否') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </template>
           <div class="label-content-group">
             <div class="label">
               <span
@@ -895,6 +948,14 @@ import SelectCheckBox from './SelectCheckBox.vue';
 type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 type IBackendPathCheckItem = IExtractApiReturn<typeof backendsPathCheck>[number];
 
+interface IAuthConfigDraft {
+  app_verified_required: boolean
+  auth_verified_required: boolean
+  resource_perm_required: boolean
+  oauth2_public_client_enabled: boolean
+  oauth2_personal_client_enabled: boolean
+}
+
 interface IProps {
   resourceId?: number
   gatewayId?: number
@@ -948,6 +1009,13 @@ const timeOutValue = ref('');
 // 校验列表
 const servicesCheckData = ref<IBackendPathCheckItem[]>([]);
 
+const authConfigDraft = ref<IAuthConfigDraft>({
+  app_verified_required: false,
+  auth_verified_required: false,
+  resource_perm_required: false,
+  oauth2_public_client_enabled: false,
+  oauth2_personal_client_enabled: false,
+});
 const formData = ref<any>({});
 
 // 服务table
@@ -970,10 +1038,6 @@ const getResourceDetails = async () => {
 
   nextTick(() => {
     formData.value.label_ids = (res as any)?.labels?.map((item: any) => item.id);
-
-    formData.value.auth_config.app_verified_required_copy = (res as any)?.auth_config?.app_verified_required;
-    formData.value.auth_config.auth_verified_required_copy = (res as any)?.auth_config?.auth_verified_required;
-    formData.value.auth_config.resource_perm_required_copy = (res as any)?.auth_config?.resource_perm_required;
 
     formData.value.path_copy = res?.path;
     formData.value.match_subpath_copy = res?.match_subpath;
@@ -1181,7 +1245,7 @@ const renderTimeOutLabel = () => {
               ),
             }}
             onClick={() => handleShowPopover()}
-            v-clickOutSide={(e: any) => handleClickOutSide(e)}
+            v-clickOutSide={(e: MouseEvent) => handleClickOutSide(e)}
           />
         </BkPopConfirm>
         <i
@@ -1278,10 +1342,56 @@ const toggleEdit = () => {
 };
 
 // 认证方式修改
+const resetAuthConfigDraft = () => {
+  const {
+    app_verified_required = false,
+    auth_verified_required = false,
+    resource_perm_required = false,
+    oauth2_public_client_enabled = false,
+    oauth2_personal_client_enabled = false,
+  } = formData.value.auth_config ?? {};
+
+  authConfigDraft.value = {
+    app_verified_required,
+    auth_verified_required,
+    resource_perm_required,
+    oauth2_public_client_enabled,
+    oauth2_personal_client_enabled,
+  };
+};
+
+const handleVerifiedEdit = () => {
+  resetAuthConfigDraft();
+  verifiedEdit.value = true;
+};
+
+const handleVerifiedCancel = () => {
+  resetAuthConfigDraft();
+  verifiedEdit.value = false;
+};
+
+const handlePermEdit = () => {
+  resetAuthConfigDraft();
+  permEdit.value = true;
+};
+
 const verifiedSubmit = () => {
-  formData.value.auth_config.app_verified_required = formData.value.auth_config.app_verified_required_copy;
-  formData.value.auth_config.auth_verified_required = formData.value.auth_config.auth_verified_required_copy;
-  formData.value.auth_config.resource_perm_required = formData.value.auth_config.resource_perm_required_copy;
+  const {
+    app_verified_required,
+    auth_verified_required,
+    resource_perm_required,
+    oauth2_public_client_enabled,
+    oauth2_personal_client_enabled,
+  } = authConfigDraft.value;
+  const oauth2ClientEnabled = !app_verified_required && auth_verified_required;
+
+  formData.value.auth_config = {
+    app_verified_required,
+    auth_verified_required,
+    resource_perm_required,
+    oauth2_public_client_enabled: oauth2ClientEnabled && oauth2_public_client_enabled,
+    oauth2_personal_client_enabled: oauth2ClientEnabled && oauth2_personal_client_enabled,
+  };
 
   handleEditSave();
 };
@@ -1383,10 +1493,10 @@ onUnmounted(() => {
 
         .label {
           display: flex;
-          width: 140px;
+          width: 170px;
           height: 100%;
           padding-left: 16px;
-          color:#4D4F56;
+          color: #4D4F56;
           background-color: #fafbfd;
           border-right: 1px solid #DCDEE5;
           border-left: 1px solid #DCDEE5;

@@ -22,6 +22,7 @@
     :model="backConfigData"
     :rules="rules"
     class="back-config-container"
+    label-width="180"
     @validate="setInvalidPropId"
   >
     <BkFormItem
@@ -725,14 +726,12 @@ defineExpose({
   .table-layout {
     width: auto !important;
     max-width: 700px !important;
-    margin: 0 0 20px 150px;
-
-    // width: 700px !important;
+    margin: 0 0 20px 180px;
   }
 
   .table-warning {
     max-width: 700px !important;
-    margin: 0 0 8px 150px;
+    margin: 0 0 8px 180px;
   }
 
   .public-switch {
