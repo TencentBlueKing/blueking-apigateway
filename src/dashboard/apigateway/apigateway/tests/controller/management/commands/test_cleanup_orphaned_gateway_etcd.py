@@ -28,12 +28,14 @@ from django.core.management.base import CommandError
 from etcd3.utils import prefix_range_end
 
 from apigateway.controller.constants import DELETE_PUBLISH_ID
+from apigateway.controller.convertor import BkReleaseConvertor
 from apigateway.controller.convertor.constants import (
     LABEL_KEY_APISIX_VERSION,
     LABEL_KEY_GATEWAY,
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
+from apigateway.controller.convertor.utils import get_release_id
 from apigateway.controller.distributor.key_prefix import GatewayKeyPrefixHandler
 from apigateway.controller.management.commands import cleanup_orphaned_gateway_etcd as cleanup_command
 from apigateway.controller.management.commands.cleanup_orphaned_gateway_etcd import (
@@ -99,6 +101,10 @@ def make_stage_keys(gateway_name, stage_name, keys=None):
         keys=tuple(keys),
         kinds=tuple(key.split("/")[-2] for key in keys),
     )
+
+
+def last_audit_record(audit_file: Path) -> dict:
+    return json.loads(audit_file.read_text(encoding="utf-8").splitlines()[-1])
 
 
 def make_delete_release_payload(
@@ -544,6 +550,67 @@ def test_build_delete_release_uses_operator_delete_contract(data_plane):
     assert release.labels.get_label(LABEL_KEY_APISIX_VERSION) == data_plane.apisix_version
 
 
+def test_build_delete_release_matches_bk_release_convertor_delete_contract(data_plane, mocker):
+    gateway = mocker.Mock()
+    gateway.name = "orphan"
+    stage = mocker.Mock()
+    stage.name = "prod"
+    resource_version = mocker.Mock()
+    resource_version.version = "1.2.3"
+    release_data = mocker.Mock()
+    release_data.gateway = gateway
+    release_data.stage = stage
+    release_data.resource_version = resource_version
+
+    convertor_release = BkReleaseConvertor(
+        release_data=release_data,
+        publish_id=DELETE_PUBLISH_ID,
+        apisix_version=data_plane.apisix_version,
+    ).convert()[0]
+    command_release = cleanup_command.build_delete_release(
+        make_stage_keys("orphan", "prod"),
+        data_plane.apisix_version,
+    )
+
+    assert get_release_id("orphan", "prod") == "bk.release.orphan.prod"
+    assert command_release.id == convertor_release.id == get_release_id("orphan", "prod")
+    assert {
+        LABEL_KEY_GATEWAY: command_release.labels.get_label(LABEL_KEY_GATEWAY),
+        LABEL_KEY_STAGE: command_release.labels.get_label(LABEL_KEY_STAGE),
+        LABEL_KEY_PUBLISH_ID: command_release.labels.get_label(LABEL_KEY_PUBLISH_ID),
+        LABEL_KEY_APISIX_VERSION: command_release.labels.get_label(LABEL_KEY_APISIX_VERSION),
+    } == {
+        LABEL_KEY_GATEWAY: convertor_release.labels.get_label(LABEL_KEY_GATEWAY),
+        LABEL_KEY_STAGE: convertor_release.labels.get_label(LABEL_KEY_STAGE),
+        LABEL_KEY_PUBLISH_ID: convertor_release.labels.get_label(LABEL_KEY_PUBLISH_ID),
+        LABEL_KEY_APISIX_VERSION: convertor_release.labels.get_label(LABEL_KEY_APISIX_VERSION),
+    }
+
+
+def _assert_success_audit_records(audit_file: Path, data_plane, stage: StageKeys) -> None:
+    audit_lines = audit_file.read_text().splitlines()
+    assert [json.loads(line)["result"] for line in audit_lines] == ["started", "success"]
+    started = json.loads(audit_lines[0])
+    assert started["mutation_state"] == "not_started"
+    assert started["gateway_name"] == stage.gateway_name
+    audit = json.loads(audit_lines[-1])
+    assert audit["action"] == "cleanup_orphaned_gateway_etcd"
+    assert audit["result"] == "success"
+    assert audit["mutation_state"] == "committed"
+    assert audit["data_plane_id"] == data_plane.id
+    assert audit["data_plane_name"] == data_plane.name
+    assert audit["gateway_name"] == stage.gateway_name
+    assert audit["stage_name"] == stage.stage_name
+    assert audit["key_prefix"] == stage.key_prefix
+    assert audit["previous_key_count"] == stage.key_count
+    audit_text = "\n".join(audit_lines)
+    assert "password" not in audit_text
+    assert "etcd_configs" not in audit_text
+    assert "plugins" not in audit_text
+    assert "cert" not in audit_text
+    assert "payload" not in audit_text
+
+
 def test_apply_successful_cleanup_replaces_stage_with_delete_release_and_writes_audit(data_plane, mocker, tmp_path):
     stage = make_stage_keys("orphan", "prod")
     tombstone_key = f"{stage.key_prefix}_bk_release/bk.release.orphan.prod"
@@ -606,21 +673,7 @@ def test_apply_successful_cleanup_replaces_stage_with_delete_release_and_writes_
         "control_plane_delete_event=written "
         "note=operator/APISIX data plane cleanup is asynchronous and not confirmed by this command" in printed
     )
-    audit_line = audit_file.read_text().splitlines()[0]
-    audit = json.loads(audit_line)
-    assert audit["action"] == "cleanup_orphaned_gateway_etcd"
-    assert audit["result"] == "success"
-    assert audit["data_plane_id"] == data_plane.id
-    assert audit["data_plane_name"] == data_plane.name
-    assert audit["gateway_name"] == "orphan"
-    assert audit["stage_name"] == "prod"
-    assert audit["key_prefix"] == stage.key_prefix
-    assert audit["previous_key_count"] == 1
-    assert "password" not in audit_line
-    assert "etcd_configs" not in audit_line
-    assert "plugins" not in audit_line
-    assert "cert" not in audit_line
-    assert "payload" not in audit_line
+    _assert_success_audit_records(audit_file, data_plane, stage)
 
 
 def test_apply_confirmation_mismatch_fails_without_writes(data_plane, mocker, tmp_path):
@@ -755,11 +808,11 @@ def test_apply_failure_does_not_expose_exception_payload(data_plane, mocker, tmp
             stdout=output,
         )
 
-    audit_line = audit_file.read_text()
+    audit_text = audit_file.read_text()
     assert sentinel not in str(exc_info.value)
-    assert sentinel not in audit_line
+    assert sentinel not in audit_text
     assert sentinel not in output.getvalue()
-    audit = json.loads(audit_line)
+    audit = last_audit_record(audit_file)
     assert audit["result"] == "failed"
     assert audit["error_type"] == "RuntimeError"
     assert audit["reason"] == "atomic_replace_failed"
@@ -796,7 +849,7 @@ def test_apply_fails_audit_when_post_write_read_finds_extra_key(data_plane, mock
             stdout=output,
         )
 
-    audit = json.loads(audit_file.read_text())
+    audit = last_audit_record(audit_file)
     assert audit["result"] == "failed"
     assert audit["reason"] == "post_write_key_verification_failed"
     assert audit["mutation_state"] == "committed"
@@ -829,7 +882,7 @@ def test_apply_fails_audit_when_post_write_payload_is_not_tombstone(data_plane, 
             stdout=output,
         )
 
-    audit = json.loads(audit_file.read_text())
+    audit = last_audit_record(audit_file)
     assert audit["result"] == "failed"
     assert audit["reason"] == "post_write_tombstone_verification_failed"
     assert audit["mutation_state"] == "committed"
@@ -859,7 +912,7 @@ def test_apply_aborts_if_gateway_reappears_before_transaction(data_plane, mocker
             log_file=str(tmp_path / "audit.jsonl"),
         )
     replace.assert_not_called()
-    audit = json.loads((tmp_path / "audit.jsonl").read_text())
+    audit = last_audit_record(tmp_path / "audit.jsonl")
     assert audit["reason"] == "gateway_reappeared"
     assert audit["mutation_state"] == "not_started"
 
@@ -888,7 +941,7 @@ def test_apply_aborts_if_stage_snapshot_changes(data_plane, mocker, tmp_path):
             log_file=str(tmp_path / "audit.jsonl"),
         )
     replace.assert_not_called()
-    audit = json.loads((tmp_path / "audit.jsonl").read_text())
+    audit = last_audit_record(tmp_path / "audit.jsonl")
     assert audit["reason"] == "stage_snapshot_changed"
     assert audit["mutation_state"] == "not_started"
 
@@ -951,7 +1004,7 @@ def test_apply_aborts_when_malformed_key_appears_under_target_stage(data_plane, 
         )
 
     replace.assert_not_called()
-    audit = json.loads(audit_file.read_text())
+    audit = last_audit_record(audit_file)
     assert audit["reason"] == "stage_malformed_keys"
     assert audit["mutation_state"] == "not_started"
 
@@ -980,7 +1033,7 @@ def test_apply_aborts_when_stage_recheck_read_fails(data_plane, mocker, tmp_path
 
     replace.assert_not_called()
     assert "etcd timeout" not in str(exc_info.value)
-    audit = json.loads(audit_file.read_text())
+    audit = last_audit_record(audit_file)
     assert audit["reason"] == "stage_recheck_failed"
     assert audit["mutation_state"] == "not_started"
     assert audit["error_type"] == "TimeoutError"
@@ -1011,7 +1064,9 @@ def test_apply_stops_after_first_transaction_failure(data_plane, mocker, tmp_pat
             log_file=str(tmp_path / "audit.jsonl"),
         )
     assert replace.call_count == 1
-    audit = json.loads((tmp_path / "audit.jsonl").read_text().splitlines()[0])
+    audit_file = tmp_path / "audit.jsonl"
+    assert [json.loads(line)["result"] for line in audit_file.read_text().splitlines()] == ["started", "failed"]
+    audit = last_audit_record(audit_file)
     assert audit["result"] == "failed"
     assert audit["reason"] == "atomic_replace_failed"
     assert audit["mutation_state"] == "outcome_unknown"
@@ -1062,8 +1117,8 @@ def test_apply_stops_before_second_gateway_after_first_gateway_failure(data_plan
 
     assert replace.call_count == 1
     audit_lines = (tmp_path / "audit.jsonl").read_text().splitlines()
-    assert len(audit_lines) == 1
-    audit = json.loads(audit_lines[0])
+    assert [json.loads(line)["result"] for line in audit_lines] == ["started", "failed"]
+    audit = json.loads(audit_lines[-1])
     assert audit["gateway_name"] == "alpha"
     assert audit["result"] == "failed"
     assert audit["reason"] == "atomic_replace_failed"
@@ -1081,7 +1136,14 @@ def test_apply_failure_audit_write_error_reports_safe_identity_on_stderr(data_pl
         "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically",
         side_effect=TimeoutError(f"etcd timeout {sentinel}"),
     )
-    mocker.patch(f"{COMMAND_MODULE}.AuditWriter.write", side_effect=OSError(f"payload password {sentinel}"))
+    real_write = cleanup_command.AuditWriter.write
+
+    def write_side_effect(self, stage, result, operator, error=None):
+        if result == "failed":
+            raise OSError(f"payload password {sentinel}")
+        return real_write(self, stage, result, operator, error)
+
+    mocker.patch(f"{COMMAND_MODULE}.AuditWriter.write", side_effect=write_side_effect, autospec=True)
     output = StringIO()
     errors = StringIO()
 
@@ -1108,6 +1170,7 @@ def test_apply_failure_audit_write_error_reports_safe_identity_on_stderr(data_pl
     assert sentinel not in output.getvalue()
     assert exc_info.value.__cause__ is None
     assert sentinel not in "".join(traceback.format_exception(exc_info.type, exc_info.value, exc_info.tb))
+    assert last_audit_record(tmp_path / "audit.jsonl")["result"] == "started"
 
 
 @pytest.fixture
@@ -1212,8 +1275,9 @@ def test_apply_with_fake_etcd_leaves_one_tombstone_and_keeps_sibling_keys(
         if ranges_overlap(first, second)
     ]
 
-    audit_line = audit_file.read_text().strip()
-    audit = json.loads(audit_line)
+    audit_lines = audit_file.read_text().splitlines()
+    assert [json.loads(line)["result"] for line in audit_lines] == ["started", "success"]
+    audit = json.loads(audit_lines[-1])
     assert audit["result"] == "success"
     assert audit["data_plane_id"] == data_plane.id
     assert audit["data_plane_name"] == data_plane.name
@@ -1221,7 +1285,7 @@ def test_apply_with_fake_etcd_leaves_one_tombstone_and_keeps_sibling_keys(
     assert audit["stage_name"] == "prod"
     assert audit["key_prefix"] == stage_prefix
     assert audit["previous_key_count"] == 4
-    assert "secret-value" not in audit_line
+    assert "secret-value" not in "\n".join(audit_lines)
 
     printed = output.getvalue()
     assert f"cleanup_applied gateway=orphan stage=prod key_prefix={stage_prefix}" in printed
@@ -1278,3 +1342,107 @@ def test_apply_rejects_batch_when_any_requested_gateway_is_not_actionable(data_p
         )
 
     replace.assert_not_called()
+
+
+def test_apply_aborts_when_key_is_created_between_recheck_and_transaction(
+    data_plane,
+    mocker,
+    tmp_path,
+    fake_etcd_keyspace,
+):
+    root = f"{gateway_root(data_plane)}/"
+    stage_prefix = f"{root}orphan/prod/"
+    race_key = f"{stage_prefix}route/route-race"
+    fake_client = FakeEtcdClient(fake_etcd_keyspace)
+    original_transaction = fake_client.transaction
+
+    def racing_transaction(compare, success=None, failure=None):
+        fake_client.put(race_key, "concurrent-publish")
+        return original_transaction(compare, success=success, failure=failure)
+
+    fake_client.transaction = racing_transaction
+    mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=fake_client)
+    mocker.patch("builtins.input", return_value=data_plane.name)
+    audit_file = tmp_path / "audit.jsonl"
+    keys_before = list(fake_client.keys)
+
+    with pytest.raises(CommandError, match="cleanup failed"):
+        call_command(
+            COMMAND_NAME,
+            data_plane_name=data_plane.name,
+            gateway_names="orphan",
+            apply=True,
+            log_file=str(audit_file),
+        )
+
+    assert race_key in fake_client.keys
+    assert fake_client.transaction_ops == []
+    assert set(fake_client.keys) == set(keys_before) | {race_key}
+    audit = last_audit_record(audit_file)
+    assert audit["result"] == "failed"
+    assert audit["reason"] == "atomic_replace_failed"
+    assert audit["mutation_state"] == "not_started"
+    assert fake_client.transaction_compares
+    assert fake_client.transaction_compares[0]
+
+
+def test_apply_reports_committed_when_success_audit_write_fails(data_plane, mocker, tmp_path):
+    stage = make_stage_keys("orphan", "prod")
+    tombstone_key = f"{stage.key_prefix}_bk_release/bk.release.orphan.prod"
+    sentinel = "SUCCESS-AUDIT-SENTINEL"
+    etcd_client = mocker.Mock()
+    etcd_client.get_prefix.side_effect = [
+        [make_etcd_item(stage.keys[0])],
+        [make_etcd_item(stage.keys[0])],
+        [make_etcd_item(tombstone_key)],
+    ]
+    etcd_client.get.return_value = (
+        cleanup_command.build_delete_release(stage, data_plane.apisix_version).model_dump_json().encode(),
+        object(),
+    )
+    mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=etcd_client)
+    mocker.patch("builtins.input", return_value=data_plane.name)
+    mocker.patch("apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically")
+    real_write = cleanup_command.AuditWriter.write
+
+    def write_side_effect(self, stage, result, operator, error=None):
+        if result == "success":
+            raise OSError(f"disk full {sentinel}")
+        return real_write(self, stage, result, operator, error)
+
+    mocker.patch(f"{COMMAND_MODULE}.AuditWriter.write", side_effect=write_side_effect, autospec=True)
+    errors = StringIO()
+
+    with pytest.raises(CommandError) as exc_info:
+        call_command(
+            COMMAND_NAME,
+            data_plane_name=data_plane.name,
+            gateway_names="orphan",
+            apply=True,
+            log_file=str(tmp_path / "audit.jsonl"),
+            stderr=errors,
+        )
+
+    reported = errors.getvalue()
+    assert (
+        "audit_write_failed action=cleanup_orphaned_gateway_etcd "
+        f"data_plane_name={data_plane.name} gateway=orphan stage=prod "
+        "reason=success_audit_write_failed mutation_state=committed" in reported
+    )
+    assert sentinel not in reported
+    assert "audit log write failed" in str(exc_info.value)
+    assert last_audit_record(tmp_path / "audit.jsonl")["result"] == "started"
+
+
+def test_command_arguments_document_apply_safety_gates():
+    parser = cleanup_command.Command().create_parser("manage.py", COMMAND_NAME)
+    help_text = parser.format_help().lower()
+    command_help = cleanup_command.Command.help.lower()
+
+    assert "--apply" in help_text
+    assert "writes delete tombstones to etcd" in help_text
+    assert "--gateway-names" in help_text
+    assert "required with --apply" in help_text
+    assert "--log-file" in help_text
+    assert "audit" in help_text
+    assert "interactive confirmation" in command_help or "confirm" in help_text

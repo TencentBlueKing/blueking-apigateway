@@ -17,7 +17,7 @@
 #
 import json
 import logging
-from typing import TYPE_CHECKING, ClassVar, Dict, Iterable, List, Tuple, Type
+from typing import TYPE_CHECKING, ClassVar, Dict, Iterable, List, Optional, Tuple, Type
 
 from django.utils.encoding import force_str
 from etcd3.utils import prefix_range_end
@@ -31,6 +31,10 @@ if TYPE_CHECKING:
     from apigateway.controller.models import ApisixModel
 
 logger = logging.getLogger(__name__)
+
+
+class AtomicReplaceConflictError(RuntimeError):
+    """etcd 事务 compare 失败：前缀在快照后发生并发变更，成功分支未执行"""
 
 
 class EtcdRegistry(Registry):
@@ -72,7 +76,12 @@ class EtcdRegistry(Registry):
 
         return sync_fail_resources
 
-    def replace_resources_by_key_prefix_atomically(self, resources: List[ApisixModel]) -> None:
+    def replace_resources_by_key_prefix_atomically(
+        self,
+        resources: List[ApisixModel],
+        *,
+        expected_max_mod_revision: Optional[int] = None,
+    ) -> None:
         """在单个 etcd 事务内，将 key_prefix 下的数据整体替换为 resources
 
         DANGEROUS: key_prefix 下所有不属于 resources 的 key 都会被删除；resources 为空时，
@@ -81,6 +90,10 @@ class EtcdRegistry(Registry):
         etcd 拒绝同一事务内 PUT key 落在 DELETE range 内（duplicate key given in txn request），
         因此这里按排序后的 PUT key 把 key_prefix 切分为互不重叠、且不包含任何 PUT key 的
         DELETE range，保证删除与写入仍在同一事务内完成。
+
+        传入 expected_max_mod_revision 时，事务会要求前缀内所有 key 的 mod_revision
+        都小于 revision+1，用于关闭“复查通过到提交”之间的并发写入窗口；compare 失败时
+        不会执行任何 DELETE/PUT，并抛出 AtomicReplaceConflictError。
         """
         put_items = self._get_sorted_put_items(resources)
         delete_ops = [
@@ -88,12 +101,23 @@ class EtcdRegistry(Registry):
             for range_start, range_end in self._get_gap_delete_ranges([key.encode() for key, _ in put_items])
         ]
         put_ops = [self._etcd_client.transactions.put(key, payload) for key, payload in put_items]
+        compare = []
+        if expected_max_mod_revision is not None:
+            compare = [
+                self._etcd_client.transactions.mod(
+                    self.key_prefix,
+                    range_end=prefix_range_end(self.key_prefix.encode()),
+                )
+                < (expected_max_mod_revision + 1)
+            ]
         succeeded, _ = self._etcd_client.transaction(
-            compare=[],
+            compare=compare,
             success=[*delete_ops, *put_ops],
             failure=[],
         )
         if not succeeded:
+            if expected_max_mod_revision is not None:
+                raise AtomicReplaceConflictError(f"concurrent modification under etcd prefix: {self.key_prefix}")
             raise RuntimeError(f"failed to atomically replace etcd resources under prefix: {self.key_prefix}")
 
     def _get_sorted_put_items(self, resources: List[ApisixModel]) -> List[Tuple[str, str]]:

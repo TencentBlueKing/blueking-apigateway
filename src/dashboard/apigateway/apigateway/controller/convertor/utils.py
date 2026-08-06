@@ -20,6 +20,11 @@ from typing import ClassVar, Dict, Optional
 from urllib.parse import urlparse
 
 
+def get_release_id(gateway_name: str, stage_name: str) -> str:
+    """构造 `_bk_release` 资源 id；publish 与 orphan cleanup 共用同一格式"""
+    return f"bk.release.{gateway_name}.{stage_name}"
+
+
 def truncate_string(value: str, max_length: int) -> str:
     if len(value) <= max_length:
         return value

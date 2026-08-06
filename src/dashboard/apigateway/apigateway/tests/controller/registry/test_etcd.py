@@ -22,7 +22,7 @@ import pytest
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.models import BaseUpstream, BkRelease, Labels, Service
 from apigateway.controller.registry.base import Registry
-from apigateway.controller.registry.etcd import EtcdRegistry
+from apigateway.controller.registry.etcd import AtomicReplaceConflictError, EtcdRegistry
 from apigateway.tests.controller.fake_etcd import (
     FakeEtcdClient,
     get_delete_ranges,
@@ -373,3 +373,37 @@ class TestEtcdRegistryAtomicReplace:
             )
 
         mock_etcd_client.transaction.assert_not_called()
+
+    def test_uses_prefix_mod_revision_compare_when_expected_max_provided(self, mock_etcd_client, mocker):
+        mock_etcd_client.transactions.delete.side_effect = ["delete-0"]
+        compare_token = object()
+        mod_builder = mocker.MagicMock()
+        mod_builder.__lt__.return_value = compare_token
+        mock_etcd_client.transactions.mod.return_value = mod_builder
+
+        EtcdRegistry("/prefix/", etcd_client=mock_etcd_client).replace_resources_by_key_prefix_atomically(
+            [],
+            expected_max_mod_revision=12,
+        )
+
+        mock_etcd_client.transactions.mod.assert_called_once_with("/prefix/", range_end=b"/prefix0")
+        mod_builder.__lt__.assert_called_once_with(13)
+        mock_etcd_client.transaction.assert_called_once_with(
+            compare=[compare_token],
+            success=["delete-0"],
+            failure=[],
+        )
+
+    def test_aborts_without_mutation_when_prefix_mod_revision_compare_fails(self):
+        fake_client = FakeEtcdClient({"/prefix/route/route-1": "route-1-value"})
+        snapshot_revision = fake_client.get_prefix("/prefix/")[0][1].response_header.revision
+        fake_client.put("/prefix/route/route-2", "concurrent-value")
+
+        with pytest.raises(AtomicReplaceConflictError, match="concurrent modification"):
+            EtcdRegistry("/prefix/", etcd_client=fake_client).replace_resources_by_key_prefix_atomically(
+                [make_delete_release()],
+                expected_max_mod_revision=snapshot_revision,
+            )
+
+        assert fake_client.keys == ["/prefix/route/route-1", "/prefix/route/route-2"]
+        assert fake_client.transaction_ops == []

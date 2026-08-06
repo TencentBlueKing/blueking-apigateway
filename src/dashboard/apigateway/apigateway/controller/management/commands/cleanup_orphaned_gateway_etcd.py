@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,9 +34,10 @@ from apigateway.controller.convertor.constants import (
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
+from apigateway.controller.convertor.utils import get_release_id
 from apigateway.controller.distributor.key_prefix import GatewayKeyPrefixHandler
 from apigateway.controller.models import BkRelease, Labels
-from apigateway.controller.registry.etcd import EtcdRegistry
+from apigateway.controller.registry.etcd import AtomicReplaceConflictError, EtcdRegistry
 from apigateway.core.models import Gateway
 from apigateway.utils.etcd import new_etcd_client
 from apigateway.utils.time import now_str
@@ -56,6 +58,8 @@ REASON_ATOMIC_REPLACE_FAILED = "atomic_replace_failed"
 REASON_POST_WRITE_KEY_VERIFICATION_FAILED = "post_write_key_verification_failed"
 REASON_POST_WRITE_TOMBSTONE_VERIFICATION_FAILED = "post_write_tombstone_verification_failed"
 REASON_UNEXPECTED_CLEANUP_FAILED = "unexpected_cleanup_failed"
+REASON_SUCCESS_AUDIT_WRITE_FAILED = "success_audit_write_failed"
+REASON_STARTED_AUDIT_WRITE_FAILED = "started_audit_write_failed"
 
 
 @dataclass(frozen=True)
@@ -76,6 +80,7 @@ class ScanResult:
     actionable: Tuple[StageKeys, ...]
     tombstoned: Tuple[StageKeys, ...]
     malformed_keys: Tuple[str, ...]
+    snapshot_revision: Optional[int] = None
 
 
 class TombstoneReadError(Exception):
@@ -121,8 +126,14 @@ class OrphanGatewayEtcdScanner:
         root = get_gateway_root(self.data_plane)
         grouped: Dict[Tuple[str, str], List[Tuple[str, str]]] = defaultdict(list)
         malformed = []
+        snapshot_revision = None
 
         for _, metadata in self.etcd_client.get_prefix(list_key_prefix, keys_only=True):
+            header = getattr(metadata, "response_header", None)
+            revision = getattr(header, "revision", None)
+            if revision is not None:
+                snapshot_revision = revision
+
             key = force_str(metadata.key)
             relative = key.removeprefix(root)
             parts = relative.split("/")
@@ -155,6 +166,7 @@ class OrphanGatewayEtcdScanner:
             actionable=tuple(sorted(actionable, key=self._sort_key)),
             tombstoned=tuple(sorted(tombstoned, key=self._sort_key)),
             malformed_keys=tuple(sorted(malformed)),
+            snapshot_revision=snapshot_revision,
         )
 
     def _build_stage_keys(self, gateway_name: str, stage_name: str, entries: List[Tuple[str, str]]) -> StageKeys:
@@ -178,7 +190,7 @@ class OrphanGatewayEtcdScanner:
         if stage.key_count != 1 or stage.kinds != (BkRelease.kind,):
             return False
 
-        release_id = get_delete_release_id(stage.gateway_name, stage.stage_name)
+        release_id = get_release_id(stage.gateway_name, stage.stage_name)
         if stage.keys[0] != f"{stage.key_prefix}{BkRelease.kind}/{release_id}":
             return False
 
@@ -211,12 +223,12 @@ class OrphanGatewayEtcdScanner:
 
 
 def get_delete_release_id(gateway_name: str, stage_name: str) -> str:
-    return f"bk.release.{gateway_name}.{stage_name}"
+    return get_release_id(gateway_name, stage_name)
 
 
 def build_delete_release(stage: StageKeys, apisix_version: str) -> BkRelease:
     return BkRelease(
-        id=get_delete_release_id(stage.gateway_name, stage.stage_name),
+        id=get_release_id(stage.gateway_name, stage.stage_name),
         publish_id=DELETE_PUBLISH_ID,
         publish_time=now_str(),
         apisix_version=apisix_version,
@@ -275,7 +287,16 @@ def cleanup_stage(stage: StageKeys, data_plane: DataPlane, etcd_client) -> None:
 
     delete_release = build_delete_release(stage, data_plane.apisix_version)
     try:
-        EtcdRegistry(stage.key_prefix, etcd_client).replace_resources_by_key_prefix_atomically([delete_release])
+        EtcdRegistry(stage.key_prefix, etcd_client).replace_resources_by_key_prefix_atomically(
+            [delete_release],
+            expected_max_mod_revision=latest.snapshot_revision,
+        )
+    except AtomicReplaceConflictError as err:
+        raise CleanupStageError.from_exception(
+            REASON_ATOMIC_REPLACE_FAILED,
+            MUTATION_NOT_STARTED,
+            err,
+        ) from None
     except Exception as err:
         raise CleanupStageError.from_exception(
             REASON_ATOMIC_REPLACE_FAILED,
@@ -329,14 +350,29 @@ class AuditWriter:
         except OSError:
             raise CommandError("audit log file is not writable") from None
 
-    def write(self, stage: StageKeys, result: str, operator: str, error: Optional[CleanupStageError] = None) -> None:
+    def write(
+        self,
+        stage: StageKeys,
+        result: str,
+        operator: str,
+        error: Optional[CleanupStageError] = None,
+        mutation_state: Optional[str] = None,
+    ) -> None:
+        if mutation_state is None:
+            if error is not None:
+                mutation_state = error.mutation_state
+            elif result == "started":
+                mutation_state = MUTATION_NOT_STARTED
+            else:
+                mutation_state = MUTATION_COMMITTED
+
         record = {
             "action": AUDIT_ACTION,
             "result": result,
             "data_plane_id": self.data_plane.id,
             "data_plane_name": self.data_plane.name,
             "gateway_name": stage.gateway_name,
-            "mutation_state": error.mutation_state if error is not None else MUTATION_COMMITTED,
+            "mutation_state": mutation_state,
             "stage_name": stage.stage_name,
             "key_prefix": stage.key_prefix,
             "previous_key_count": stage.key_count,
@@ -351,17 +387,46 @@ class AuditWriter:
         with self.log_file.open("a", encoding="utf-8") as fp:
             fp.write(json.dumps(record, ensure_ascii=False, sort_keys=True))
             fp.write("\n")
+            fp.flush()
+            os.fsync(fp.fileno())
 
 
 class Command(BaseCommand):
-    help = "Scan orphaned gateway etcd keys for one data plane. Defaults to dry-run."
+    help = (
+        "Scan orphaned gateway etcd keys for one data plane. Defaults to dry-run. "
+        "--apply writes operator-compatible delete tombstones to etcd and requires "
+        "--gateway-names, --log-file, and interactive confirmation of the data plane name."
+    )
 
     def add_arguments(self, parser):
-        parser.add_argument("--data-plane-name", required=True)
-        parser.add_argument("--gateway-names", default="")
-        parser.add_argument("--apply", action="store_true")
-        parser.add_argument("--log-file", default="")
-        parser.add_argument("--operator", default="system")
+        parser.add_argument(
+            "--data-plane-name",
+            required=True,
+            help="Exact DataPlane.name whose control-plane etcd will be scanned or cleaned.",
+        )
+        parser.add_argument(
+            "--gateway-names",
+            default="",
+            help="Comma-separated gateway names to include. Required with --apply; optional for dry-run filters.",
+        )
+        parser.add_argument(
+            "--apply",
+            action="store_true",
+            help=(
+                "Execute cleanup: writes delete tombstones to etcd for allowlisted orphan stages. "
+                "Requires --gateway-names, --log-file, and typing the data plane name to confirm."
+            ),
+        )
+        parser.add_argument(
+            "--log-file",
+            default="",
+            help="Writable JSONL audit log path. Required with --apply.",
+        )
+        parser.add_argument(
+            "--operator",
+            default="system",
+            help="Operator identity recorded in the audit log. Default: system.",
+        )
 
     def handle(self, *args, **options):
         data_plane_name = options["data_plane_name"].strip()
@@ -469,6 +534,16 @@ class Command(BaseCommand):
     ) -> None:
         for stage in selected_stages:
             try:
+                audit_writer.write(stage, "started", operator)
+            except Exception:
+                self._raise_audit_write_failed(
+                    audit_writer,
+                    stage,
+                    reason=REASON_STARTED_AUDIT_WRITE_FAILED,
+                    mutation_state=MUTATION_NOT_STARTED,
+                )
+
+            try:
                 cleanup_stage(stage, data_plane, etcd_client)
             except CleanupStageError as err:
                 self._raise_cleanup_failed(audit_writer, stage, operator, err)
@@ -480,7 +555,16 @@ class Command(BaseCommand):
                 )
                 self._raise_cleanup_failed(audit_writer, stage, operator, unexpected)
 
-            audit_writer.write(stage, "success", operator)
+            try:
+                audit_writer.write(stage, "success", operator)
+            except Exception:
+                self._raise_audit_write_failed(
+                    audit_writer,
+                    stage,
+                    reason=REASON_SUCCESS_AUDIT_WRITE_FAILED,
+                    mutation_state=MUTATION_COMMITTED,
+                )
+
             self.stdout.write(
                 f"cleanup_applied gateway={stage.gateway_name} stage={stage.stage_name} "
                 f"key_prefix={stage.key_prefix} tombstone_verified=true control_plane_delete_event=written"
@@ -503,17 +587,32 @@ class Command(BaseCommand):
         try:
             audit_writer.write(stage, "failed", operator, error)
         except Exception:
-            # 审计写入失败时，审计日志无法说明本次失败，改为向 stderr 输出固定的白名单字段；
-            # 不输出第三方异常文本，避免泄露 etcd 配置或资源内容
-            self.stderr.write(
-                f"audit_write_failed action={AUDIT_ACTION} "
-                f"data_plane_name={audit_writer.data_plane.name} "
-                f"gateway={stage.gateway_name} stage={stage.stage_name} "
-                f"reason={error.reason} mutation_state={error.mutation_state}"
+            self._raise_audit_write_failed(
+                audit_writer,
+                stage,
+                reason=error.reason,
+                mutation_state=error.mutation_state,
             )
-            raise CommandError(f"{ERROR_MESSAGE}; audit log write failed") from None
 
         raise CommandError(APPLY_FAILURE_MESSAGE) from None
+
+    def _raise_audit_write_failed(
+        self,
+        audit_writer: AuditWriter,
+        stage: StageKeys,
+        *,
+        reason: str,
+        mutation_state: str,
+    ) -> NoReturn:
+        # 审计写入失败时，审计日志无法说明本次结果，改为向 stderr 输出固定的白名单字段；
+        # 不输出第三方异常文本，避免泄露 etcd 配置或资源内容
+        self.stderr.write(
+            f"audit_write_failed action={AUDIT_ACTION} "
+            f"data_plane_name={audit_writer.data_plane.name} "
+            f"gateway={stage.gateway_name} stage={stage.stage_name} "
+            f"reason={reason} mutation_state={mutation_state}"
+        )
+        raise CommandError(f"{ERROR_MESSAGE}; audit log write failed") from None
 
     @staticmethod
     def _get_selected_malformed_gateway_names(

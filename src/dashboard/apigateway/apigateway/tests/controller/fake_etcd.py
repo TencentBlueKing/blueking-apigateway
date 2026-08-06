@@ -18,7 +18,8 @@
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from etcd3.client import Transactions
-from etcd3.transactions import Delete, Put
+from etcd3.etcdrpc import Compare
+from etcd3.transactions import Delete, Mod, Put
 from etcd3.utils import prefix_range_end, to_bytes
 
 DUPLICATE_KEY_MESSAGE = "etcdserver: duplicate key given in txn request"
@@ -28,24 +29,33 @@ class FakeEtcdTransactionError(Exception):
     """模拟真实 etcd 对单个 txn 请求返回的 INVALID_ARGUMENT 错误"""
 
 
+class FakeResponseHeader:
+    def __init__(self, revision: int):
+        self.revision = revision
+
+
 class FakeKVMetadata:
-    def __init__(self, key: bytes):
+    def __init__(self, key: bytes, mod_revision: int, response_header: FakeResponseHeader):
         self.key = key
+        self.mod_revision = mod_revision
+        self.response_header = response_header
 
 
 class FakeEtcdClient:
     """维护真实 keyspace 的内存 etcd 客户端，复用 etcd3 的事务操作对象
 
     与真实 etcd 一致地校验单个事务：PUT key 不能落在同一事务的 DELETE range 内，同一个 key
-    也不能被 PUT 两次，否则返回 duplicate key 错误。
+    也不能被 PUT 两次，否则返回 duplicate key 错误。也按 etcd 规则评估 compare 条件。
     """
 
     def __init__(self, keyspace: Optional[Dict[str, str]] = None):
         self.transactions = Transactions()
         self.transaction_ops: List[List[object]] = []
-        self._keyspace: Dict[bytes, bytes] = {
-            to_bytes(key): to_bytes(value) for key, value in (keyspace or {}).items()
-        }
+        self.transaction_compares: List[List[object]] = []
+        self._revision = 0
+        self._keyspace: Dict[bytes, Tuple[bytes, int]] = {}
+        for key, value in (keyspace or {}).items():
+            self.put(key, value)
 
     @property
     def keys(self) -> List[str]:
@@ -53,32 +63,45 @@ class FakeEtcdClient:
 
     def get(self, key) -> Tuple[Optional[bytes], Optional[FakeKVMetadata]]:
         key_bytes = to_bytes(key)
-        value = self._keyspace.get(key_bytes)
-        if value is None:
+        item = self._keyspace.get(key_bytes)
+        if item is None:
             return None, None
 
-        return value, FakeKVMetadata(key_bytes)
+        value, mod_revision = item
+        return value, FakeKVMetadata(key_bytes, mod_revision, FakeResponseHeader(self._revision))
 
     def get_prefix(self, key_prefix, keys_only: bool = False):
         prefix = to_bytes(key_prefix)
         prefix_end = prefix_range_end(prefix)
+        header = FakeResponseHeader(self._revision)
         return [
-            (b"" if keys_only else value, FakeKVMetadata(key))
-            for key, value in sorted(self._keyspace.items())
+            (b"" if keys_only else value, FakeKVMetadata(key, mod_revision, header))
+            for key, (value, mod_revision) in sorted(self._keyspace.items())
             if in_range(key, prefix, prefix_end)
         ]
 
     def put(self, key, value) -> None:
-        self._keyspace[to_bytes(key)] = to_bytes(value)
+        self._revision += 1
+        self._keyspace[to_bytes(key)] = (to_bytes(value), self._revision)
 
     def delete(self, key) -> bool:
-        return self._keyspace.pop(to_bytes(key), None) is not None
+        key_bytes = to_bytes(key)
+        if key_bytes not in self._keyspace:
+            return False
+        self._revision += 1
+        del self._keyspace[key_bytes]
+        return True
 
     def delete_prefix(self, key_prefix) -> None:
         prefix = to_bytes(key_prefix)
         self._delete_range(prefix, prefix_range_end(prefix))
 
     def transaction(self, compare, success=None, failure=None) -> Tuple[bool, List[object]]:
+        compares = list(compare or [])
+        self.transaction_compares.append(compares)
+        if not self._evaluate_compares(compares):
+            return False, []
+
         ops = list(success or [])
         self.transaction_ops.append(ops)
         self.check_intervals(ops)
@@ -107,16 +130,45 @@ class FakeEtcdClient:
 
             put_keys.add(key)
 
+    def _evaluate_compares(self, compares: Sequence[object]) -> bool:
+        for compare in compares:
+            if not isinstance(compare, Mod):
+                raise FakeEtcdTransactionError(f"unsupported compare: {type(compare).__name__}")
+            if not self._evaluate_mod_compare(compare):
+                return False
+        return True
+
+    def _evaluate_mod_compare(self, compare: Mod) -> bool:
+        start = to_bytes(compare.key)
+        end = to_bytes(compare.range_end) if compare.range_end is not None else None
+        expected = int(compare.value)
+        for key, (_, mod_revision) in self._keyspace.items():
+            if not in_range(key, start, end):
+                continue
+            if compare.op == Compare.EQUAL and mod_revision != expected:
+                return False
+            if compare.op == Compare.NOT_EQUAL and mod_revision == expected:
+                return False
+            if compare.op == Compare.LESS and not mod_revision < expected:
+                return False
+            if compare.op == Compare.GREATER and not mod_revision > expected:
+                return False
+        return True
+
     def _apply_delete(self, op: Delete) -> None:
         key = to_bytes(op.key)
         if op.range_end is None:
-            self._keyspace.pop(key, None)
+            self.delete(key)
             return
 
         self._delete_range(key, to_bytes(op.range_end))
 
     def _delete_range(self, start: bytes, end: bytes) -> None:
-        for key in [key for key in self._keyspace if in_range(key, start, end)]:
+        keys = [key for key in self._keyspace if in_range(key, start, end)]
+        if not keys:
+            return
+        self._revision += 1
+        for key in keys:
             del self._keyspace[key]
 
 
