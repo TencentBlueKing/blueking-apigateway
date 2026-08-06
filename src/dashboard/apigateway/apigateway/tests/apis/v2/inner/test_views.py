@@ -1818,6 +1818,14 @@ class TestAppRequestLogListApi:
                         "http_path": "/prod/users",
                         "status": 200,
                         "request_duration": 32,
+                        "llm_summary": {
+                            "request_model": "",
+                            "prompt_tokens": 107,
+                            "completion_tokens": 1718,
+                            "upstream_response_time": 11662,
+                            "model": "deepseek-v4-flash",
+                            "duration": 11662,
+                        },
                         "code_name": "",
                         "error": "",
                         "response_desc": "OK",
@@ -1841,8 +1849,27 @@ class TestAppRequestLogListApi:
         record = result["data"]["results"][0]
         assert record["request_id"] == "req-001"
         assert record["gateway_name"] == "bk-user-api"
+        assert record["llm_summary"] == mock_search_logs.return_value[1][0]["llm_summary"]
         assert "backend_host" not in record
+        assert "llm_summary" in inner_views.AppRequestLogListApi._output_fields
         mock_search_logs.assert_called_once()
+
+    def test_list_returns_null_llm_summary_for_standard_log(self, request_view, mocker):
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
+            return_value=(1, [{"request_id": "req-001"}]),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "bk-test-app"},
+            data=self._get_time_range_params(),
+            app=mock.MagicMock(app_code="bk-test-app"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"][0]["llm_summary"] is None
 
     def test_allow_path_app_code_different_from_request_app(self, request_view, mocker):
         mock_search_logs = mocker.patch(

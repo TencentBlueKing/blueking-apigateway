@@ -2200,15 +2200,19 @@ msgstr "Request Duration"
 msgid "请求后端耗时"
 msgstr "Backend Duration"
 
-#: apigateway/biz/access_log/constants.py:150
+#: apigateway/biz/access_log/constants.py:145
+msgid "LLM 调用摘要"
+msgstr "LLM Summary"
+
+#: apigateway/biz/access_log/constants.py:155
 msgid "错误编码名称"
 msgstr "Code Name"
 
-#: apigateway/biz/access_log/constants.py:160
+#: apigateway/biz/access_log/constants.py:165
 msgid "响应说明"
 msgstr "Response Desc"
 
-#: apigateway/biz/access_log/constants.py:172
+#: apigateway/biz/access_log/constants.py:177
 msgid "请求租户"
 msgstr "Request Tenant"
 
