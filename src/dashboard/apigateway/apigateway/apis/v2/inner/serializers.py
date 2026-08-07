@@ -406,9 +406,13 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
         return ApplyStatusEnum.get_choice_label(obj.status)
 
     def get_handled_by(self, obj):
-        if obj.handled_by:
-            return [obj.handled_by]
-        return obj.gateway.maintainers
+        """按网关租户将处理人转换为 display_name"""
+        handled_by = [obj.handled_by] if obj.handled_by else obj.gateway.maintainers
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.gateway.tenant_mode,
+            obj.gateway.tenant_id,
+            handled_by,
+        )
 
     def get_comment(self, obj):
         return obj.comment or ""

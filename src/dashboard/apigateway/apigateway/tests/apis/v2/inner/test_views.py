@@ -1524,6 +1524,83 @@ class TestAppPermissionRecordListApi:
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
 
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_pending_handled_by_maintainers_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+    ):
+        """pending 记录无 handled_by 时，按网关租户将 maintainers 转为 display_name"""
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+        fake_gateway.tenant_mode = "single"
+        fake_gateway.tenant_id = "tenant-1"
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_by="",
+            status="pending",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["handled_by"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with(
+            "tenant-1",
+            ["7idwx3b7nzk6xigs", "bbb"],
+        )
+
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+    ):
+        """已处理记录按网关租户将 handled_by 转为 display_name"""
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_by="7idwx3b7nzk6xigs",
+            handled_time=timezone.now(),
+            status="approved",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
+
 
 class TestAppAlarmRecordListApi:
     def _get_time_range_params(self):
