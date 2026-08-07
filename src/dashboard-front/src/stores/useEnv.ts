@@ -123,6 +123,7 @@ export const useEnv = defineStore('useEnv', {
         PLUGIN_BK_OAUTH2_PROTECTED_RESOURCE: '',
         PLUGIN_BK_OAUTH2_VERIFY: '',
         PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE: '',
+        PLUGIN_BK_QUERY_STRING_REWRITE: '',
       },
     },
   }),
