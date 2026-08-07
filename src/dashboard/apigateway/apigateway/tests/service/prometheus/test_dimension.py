@@ -576,15 +576,14 @@ class TestHealthRateMetrics:
 
 
 class TestLLMMetrics:
-    def test_get_query_promql_with_resource_and_backend(self, mocker, fake_default_backend):
+    def test_get_query_promql_with_resource_and_backend(self, mocker):
         mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
+        backend_filter = mocker.patch("apigateway.service.prometheus.dimension.Backend.objects.filter")
 
-        gateway_name = fake_default_backend.gateway.name
-        backend_id = fake_default_backend.id
         params = {
-            "gateway_name": gateway_name,
+            "gateway_name": "foo",
             "stage_name": "prod",
-            "backend_name": fake_default_backend.name,
+            "backend_name": "default",
             "stage_id": 1,
             "resource_id": 2,
             "resource_name": "chat_completions",
@@ -595,8 +594,12 @@ class TestLLMMetrics:
         assert "llm_latency_sum" in latency
         assert "llm_latency_count" in latency
         assert "by (request_type)" in latency
-        assert f'route_id="{gateway_name}.prod.2"' in latency
-        assert f'service_id="{gateway_name}.prod.1-{backend_id}"' in latency
+        assert 'gateway_name="foo"' in latency
+        assert 'stage_name="prod"' in latency
+        assert 'backend_name="default"' in latency
+        assert 'resource_name="chat_completions"' in latency
+        assert "route_id" not in latency
+        assert "service_id" not in latency
 
         tokens = dimension.LLMTokenUsageMetrics()._get_query_promql(**params)
         assert "llm_prompt_tokens" in tokens
@@ -607,6 +610,8 @@ class TestLLMMetrics:
         connections = dimension.LLMActiveConnectionsMetrics()._get_query_promql(**params)
         assert "llm_active_connections" in connections
         assert "sum by (request_type)" in connections
+
+        backend_filter.assert_not_called()
 
     def test_get_query_promql_without_resource_or_backend(self, mocker):
         mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
@@ -621,26 +626,12 @@ class TestLLMMetrics:
             step="1m",
         )
 
-        assert r'route_id=~"^foo\.prod\.[0-9]+$"' in result
+        assert 'gateway_name="foo"' in result
+        assert 'stage_name="prod"' in result
+        assert "backend_name" not in result
+        assert "resource_name" not in result
+        assert "route_id" not in result
         assert "service_id" not in result
-
-    def test_get_query_promql_backend_not_found(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-        mocker.patch(
-            "apigateway.service.prometheus.dimension.Backend.objects.filter"
-        ).return_value.first.return_value = None
-
-        result = dimension.LLMActiveConnectionsMetrics()._get_query_promql(
-            gateway_name="foo",
-            stage_name="prod",
-            backend_name="not-exist",
-            stage_id=1,
-            resource_id=0,
-            resource_name=None,
-            step="1m",
-        )
-
-        assert result == ""
 
 
 class TestMetricsRangeFactory:

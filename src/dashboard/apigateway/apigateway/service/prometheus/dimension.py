@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-import re
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
@@ -336,26 +335,17 @@ class BaseLLMMetrics(BaseMetrics):
         gateway_name: str,
         stage_name: str,
         backend_name: Optional[str],
-        stage_id: Optional[int],
-        resource_id: Optional[int],
-    ) -> Optional[str]:
-        label_list = [*self.default_labels]
-        if resource_id:
-            label_list.append(("route_id", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
-        else:
-            route_pattern = rf"^{re.escape(gateway_name)}\.{re.escape(stage_name)}\.[0-9]+$"
-            label_list.append(("route_id", "=~", route_pattern))
-
-        if backend_name:
-            backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
-            if not backend:
-                logger.warning(
-                    "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
-                )
-                return None
-            label_list.append(("service_id", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"))
-
-        return self._get_labels_expression(label_list)
+        resource_name: Optional[str],
+    ) -> str:
+        return self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("gateway_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
 
 
 class LLMLatencyAvgMetrics(BaseLLMMetrics):
@@ -371,9 +361,7 @@ class LLMLatencyAvgMetrics(BaseLLMMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, stage_id, resource_id)
-        if labels is None:
-            return ""
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
         return (
             f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_sum{{{labels}}}[{step}])) / "
             f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_count{{{labels}}}[{step}]))"
@@ -393,9 +381,7 @@ class LLMTokenUsageMetrics(BaseLLMMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, stage_id, resource_id)
-        if labels is None:
-            return ""
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
         return (
             "sum by (token_type) ("
             f"label_replace(increase({self.metric_name_prefix}llm_prompt_tokens{{{labels}}}[{step}]), "
@@ -418,9 +404,7 @@ class LLMActiveConnectionsMetrics(BaseLLMMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, stage_id, resource_id)
-        if labels is None:
-            return ""
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
         return f"sum by (request_type) ({self.metric_name_prefix}llm_active_connections{{{labels}}})"
 
 
