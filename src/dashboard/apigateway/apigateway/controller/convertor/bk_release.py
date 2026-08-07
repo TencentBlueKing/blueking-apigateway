@@ -22,7 +22,6 @@ from apigateway.controller.models import BkRelease, GatewayApisixModel
 from apigateway.utils.time import now_str
 
 from .base import GatewayResourceConvertor
-from .utils import get_release_id
 
 if TYPE_CHECKING:
     from apigateway.controller.release_data import ReleaseData
@@ -35,7 +34,7 @@ class BkReleaseConvertor(GatewayResourceConvertor):
     def convert(self) -> List[GatewayApisixModel]:
         return [
             BkRelease(
-                id=get_release_id(self.gateway_name, self.stage_name),
+                id=f"bk.release.{self.gateway_name}.{self.stage_name}",
                 publish_id=self._publish_id,
                 publish_time=now_str(),
                 apisix_version=self._apisix_version,

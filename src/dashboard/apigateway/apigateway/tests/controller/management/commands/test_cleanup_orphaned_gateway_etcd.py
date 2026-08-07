@@ -35,7 +35,6 @@ from apigateway.controller.convertor.constants import (
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
-from apigateway.controller.convertor.utils import get_release_id
 from apigateway.controller.distributor.key_prefix import GatewayKeyPrefixHandler
 from apigateway.controller.management.commands import cleanup_orphaned_gateway_etcd as cleanup_command
 from apigateway.controller.management.commands.cleanup_orphaned_gateway_etcd import (
@@ -423,9 +422,7 @@ def test_command_defaults_to_read_only_scan(data_plane, mocker):
         tombstoned=(make_stage_keys("cleaned", "prod"),),
         malformed_keys=("/bad/key",),
     )
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=mocker.Mock())
     output = StringIO()
 
@@ -522,9 +519,7 @@ def test_apply_rejects_unwritable_log_file_before_transaction(data_plane, mocker
     )
     mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=etcd_client)
     mocker.patch("builtins.input", return_value=data_plane.name)
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
 
     with pytest.raises(CommandError, match="audit log file is not writable"):
         call_command(
@@ -572,8 +567,8 @@ def test_build_delete_release_matches_bk_release_convertor_delete_contract(data_
         data_plane.apisix_version,
     )
 
-    assert get_release_id("orphan", "prod") == "bk.release.orphan.prod"
-    assert command_release.id == convertor_release.id == get_release_id("orphan", "prod")
+    assert cleanup_command.get_release_id("orphan", "prod") == "bk.release.orphan.prod"
+    assert command_release.id == convertor_release.id == cleanup_command.get_release_id("orphan", "prod")
     assert {
         LABEL_KEY_GATEWAY: command_release.labels.get_label(LABEL_KEY_GATEWAY),
         LABEL_KEY_STAGE: command_release.labels.get_label(LABEL_KEY_STAGE),
@@ -642,7 +637,7 @@ def test_apply_successful_cleanup_replaces_stage_with_delete_release_and_writes_
 
     mocker.patch(f"{COMMAND_MODULE}.Gateway.objects.filter", side_effect=filter_side_effect)
     replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically",
+        f"{COMMAND_MODULE}.replace_stage_prefix_atomically",
         side_effect=lambda *_args, **_kwargs: order.append("replace"),
     )
 
@@ -657,7 +652,8 @@ def test_apply_successful_cleanup_replaces_stage_with_delete_release_and_writes_
 
     assert order == ["per-stage-db-recheck", "replace"]
     replace.assert_called_once()
-    resources = replace.call_args.args[0]
+    assert replace.call_args.args[1] == stage.key_prefix
+    resources = replace.call_args.args[2]
     assert len(resources) == 1
     assert resources[0].publish_id == DELETE_PUBLISH_ID
     assert resources[0].resource_version == "orphan-cleanup"
@@ -681,9 +677,7 @@ def test_apply_confirmation_mismatch_fails_without_writes(data_plane, mocker, tm
     scanner = mocker.patch(f"{COMMAND_MODULE}.OrphanGatewayEtcdScanner").return_value
     scanner.scan.return_value = ScanResult(actionable=(stage,), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", return_value=f"{data_plane.name}-typo")
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     audit_file = tmp_path / "audit.jsonl"
 
     with pytest.raises(CommandError, match="data plane confirmation mismatch"):
@@ -704,9 +698,7 @@ def test_apply_confirmation_eof_fails_without_writes(data_plane, mocker, tmp_pat
     scanner = mocker.patch(f"{COMMAND_MODULE}.OrphanGatewayEtcdScanner").return_value
     scanner.scan.return_value = ScanResult(actionable=(stage,), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", side_effect=EOFError())
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     audit_file = tmp_path / "audit.jsonl"
 
     with pytest.raises(CommandError, match="confirmation input"):
@@ -792,7 +784,7 @@ def test_apply_failure_does_not_expose_exception_payload(data_plane, mocker, tmp
     scanner.scan_stage.return_value = ScanResult(actionable=(stage,), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", return_value=data_plane.name)
     mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically",
+        f"{COMMAND_MODULE}.replace_stage_prefix_atomically",
         side_effect=RuntimeError(f"payload password={sentinel}"),
     )
     audit_file = tmp_path / "audit.jsonl"
@@ -835,7 +827,7 @@ def test_apply_fails_audit_when_post_write_read_finds_extra_key(data_plane, mock
     etcd_client.get_prefix.return_value = [make_etcd_item(tombstone_key), make_etcd_item(extra_key)]
     mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=etcd_client)
     mocker.patch("builtins.input", return_value=data_plane.name)
-    mocker.patch("apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically")
+    mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     audit_file = tmp_path / "audit.jsonl"
     output = StringIO()
 
@@ -868,7 +860,7 @@ def test_apply_fails_audit_when_post_write_payload_is_not_tombstone(data_plane, 
     etcd_client.get.return_value = (b'{"publish_id": -2}', object())
     mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=etcd_client)
     mocker.patch("builtins.input", return_value=data_plane.name)
-    mocker.patch("apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically")
+    mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     audit_file = tmp_path / "audit.jsonl"
     output = StringIO()
 
@@ -898,9 +890,7 @@ def test_apply_aborts_if_gateway_reappears_before_transaction(data_plane, mocker
     gateway_filter = mocker.patch(f"{COMMAND_MODULE}.Gateway.objects.filter")
     gateway_filter.return_value.values_list.return_value = []
     gateway_filter.return_value.exists.return_value = True
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     mocker.patch("builtins.input", return_value=data_plane.name)
 
     with pytest.raises(CommandError, match="cleanup failed"):
@@ -928,9 +918,7 @@ def test_apply_aborts_if_stage_snapshot_changes(data_plane, mocker, tmp_path):
     scanner.scan.return_value = ScanResult(actionable=(initial,), tombstoned=(), malformed_keys=())
     scanner.scan_stage.return_value = ScanResult(actionable=(changed,), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", return_value=data_plane.name)
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
 
     with pytest.raises(CommandError, match="cleanup failed"):
         call_command(
@@ -961,7 +949,7 @@ def test_apply_rechecks_only_the_target_stage_prefix(data_plane, mocker, tmp_pat
     )
     mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=etcd_client)
     mocker.patch("builtins.input", return_value=data_plane.name)
-    mocker.patch("apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically")
+    mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
 
     call_command(
         COMMAND_NAME,
@@ -989,9 +977,7 @@ def test_apply_aborts_when_malformed_key_appears_under_target_stage(data_plane, 
         malformed_keys=(f"{stage.key_prefix}route/route-1/extra",),
     )
     mocker.patch("builtins.input", return_value=data_plane.name)
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     audit_file = tmp_path / "audit.jsonl"
 
     with pytest.raises(CommandError, match="cleanup failed"):
@@ -1015,9 +1001,7 @@ def test_apply_aborts_when_stage_recheck_read_fails(data_plane, mocker, tmp_path
     scanner.scan.return_value = ScanResult(actionable=(stage,), tombstoned=(), malformed_keys=())
     scanner.scan_stage.side_effect = TimeoutError("etcd timeout")
     mocker.patch("builtins.input", return_value=data_plane.name)
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     audit_file = tmp_path / "audit.jsonl"
     output = StringIO()
 
@@ -1051,7 +1035,7 @@ def test_apply_stops_after_first_transaction_failure(data_plane, mocker, tmp_pat
     scanner.scan_stage.return_value = ScanResult(actionable=(first, second), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", return_value=data_plane.name)
     replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically",
+        f"{COMMAND_MODULE}.replace_stage_prefix_atomically",
         side_effect=TimeoutError("etcd timeout"),
     )
 
@@ -1102,7 +1086,7 @@ def test_apply_stops_before_second_gateway_after_first_gateway_failure(data_plan
     scanner.scan_stage.return_value = ScanResult(actionable=(first, second), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", return_value=data_plane.name)
     replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically",
+        f"{COMMAND_MODULE}.replace_stage_prefix_atomically",
         side_effect=TimeoutError("etcd timeout"),
     )
 
@@ -1133,7 +1117,7 @@ def test_apply_failure_audit_write_error_reports_safe_identity_on_stderr(data_pl
     scanner.scan_stage.return_value = ScanResult(actionable=(stage,), tombstoned=(), malformed_keys=())
     mocker.patch("builtins.input", return_value=data_plane.name)
     mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically",
+        f"{COMMAND_MODULE}.replace_stage_prefix_atomically",
         side_effect=TimeoutError(f"etcd timeout {sentinel}"),
     )
     real_write = cleanup_command.AuditWriter.write
@@ -1328,9 +1312,7 @@ def test_apply_rejects_batch_when_any_requested_gateway_is_not_actionable(data_p
         tombstoned=(),
         malformed_keys=(),
     )
-    replace = mocker.patch(
-        "apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically"
-    )
+    replace = mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
 
     with pytest.raises(CommandError, match="requested gateways are not actionable: missing"):
         call_command(
@@ -1402,7 +1384,7 @@ def test_apply_reports_committed_when_success_audit_write_fails(data_plane, mock
     )
     mocker.patch(f"{COMMAND_MODULE}.new_etcd_client", return_value=etcd_client)
     mocker.patch("builtins.input", return_value=data_plane.name)
-    mocker.patch("apigateway.controller.registry.etcd.EtcdRegistry.replace_resources_by_key_prefix_atomically")
+    mocker.patch(f"{COMMAND_MODULE}.replace_stage_prefix_atomically")
     real_write = cleanup_command.AuditWriter.write
 
     def write_side_effect(self, stage, result, operator, error=None):

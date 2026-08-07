@@ -24,8 +24,8 @@ from typing import Dict, List, NoReturn, Optional, Set, Tuple
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.encoding import force_str
+from etcd3.utils import prefix_range_end
 
-from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import parse_comma_separated_names
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.convertor.constants import (
@@ -34,10 +34,8 @@ from apigateway.controller.convertor.constants import (
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
-from apigateway.controller.convertor.utils import get_release_id
 from apigateway.controller.distributor.key_prefix import GatewayKeyPrefixHandler
 from apigateway.controller.models import BkRelease, Labels
-from apigateway.controller.registry.etcd import AtomicReplaceConflictError, EtcdRegistry
 from apigateway.core.models import Gateway
 from apigateway.utils.etcd import new_etcd_client
 from apigateway.utils.time import now_str
@@ -60,6 +58,100 @@ REASON_POST_WRITE_TOMBSTONE_VERIFICATION_FAILED = "post_write_tombstone_verifica
 REASON_UNEXPECTED_CLEANUP_FAILED = "unexpected_cleanup_failed"
 REASON_SUCCESS_AUDIT_WRITE_FAILED = "success_audit_write_failed"
 REASON_STARTED_AUDIT_WRITE_FAILED = "started_audit_write_failed"
+
+
+class AtomicReplaceConflictError(RuntimeError):
+    """etcd 事务 compare 失败：前缀在快照后发生并发变更，成功分支未执行"""
+
+
+def parse_comma_separated_names(raw_names: str) -> List[str]:
+    if not raw_names:
+        return []
+
+    seen = set()
+    names: List[str] = []
+    for item in raw_names.split(","):
+        name = item.strip()
+        if not name or name in seen:
+            continue
+        names.append(name)
+        seen.add(name)
+
+    return names
+
+
+def get_release_id(gateway_name: str, stage_name: str) -> str:
+    return f"bk.release.{gateway_name}.{stage_name}"
+
+
+def replace_stage_prefix_atomically(
+    etcd_client,
+    key_prefix: str,
+    resources: List[BkRelease],
+    *,
+    expected_max_mod_revision: Optional[int] = None,
+) -> None:
+    """在单个 etcd 事务内，将 stage key_prefix 下数据整体替换为 resources。
+
+    本 helper 仅服务本临时 command，不改动公共 EtcdRegistry。
+    """
+    if not key_prefix.endswith("/"):
+        key_prefix = f"{key_prefix}/"
+
+    put_items = _get_sorted_put_items(key_prefix, resources)
+    delete_ops = [
+        etcd_client.transactions.delete(range_start, range_end=range_end)
+        for range_start, range_end in _get_gap_delete_ranges(key_prefix, [key.encode() for key, _ in put_items])
+    ]
+    put_ops = [etcd_client.transactions.put(key, payload) for key, payload in put_items]
+    compare = []
+    if expected_max_mod_revision is not None:
+        compare = [
+            etcd_client.transactions.mod(
+                key_prefix,
+                range_end=prefix_range_end(key_prefix.encode()),
+            )
+            < (expected_max_mod_revision + 1)
+        ]
+
+    succeeded, _ = etcd_client.transaction(
+        compare=compare,
+        success=[*delete_ops, *put_ops],
+        failure=[],
+    )
+    if not succeeded:
+        if expected_max_mod_revision is not None:
+            raise AtomicReplaceConflictError(f"concurrent modification under etcd prefix: {key_prefix}")
+        raise RuntimeError(f"failed to atomically replace etcd resources under prefix: {key_prefix}")
+
+
+def _get_sorted_put_items(key_prefix: str, resources: List[BkRelease]) -> List[Tuple[str, str]]:
+    items = []
+    for resource in resources:
+        key = f"{key_prefix}{resource.kind}/{resource.id}"
+        if not key.startswith(key_prefix) or key == key_prefix:
+            raise ValueError(f"resource key is outside of the registry key prefix: {key_prefix}")
+        items.append((key, resource.model_dump_json(exclude_none=True)))
+
+    items.sort(key=lambda item: item[0].encode())
+    keys = [key for key, _ in items]
+    if len(set(keys)) != len(keys):
+        raise ValueError(f"duplicated resource key under the registry key prefix: {key_prefix}")
+    return items
+
+
+def _get_gap_delete_ranges(key_prefix: str, put_keys: List[bytes]) -> List[Tuple[bytes, bytes]]:
+    prefix = key_prefix.encode()
+    prefix_end = prefix_range_end(prefix)
+    ranges = []
+    range_start = prefix
+    for key in put_keys:
+        if range_start < key:
+            ranges.append((range_start, key))
+        range_start = key + b"\x00"
+    if range_start < prefix_end:
+        ranges.append((range_start, prefix_end))
+    return ranges
 
 
 @dataclass(frozen=True)
@@ -222,10 +314,6 @@ class OrphanGatewayEtcdScanner:
         return stage.gateway_name, stage.stage_name
 
 
-def get_delete_release_id(gateway_name: str, stage_name: str) -> str:
-    return get_release_id(gateway_name, stage_name)
-
-
 def build_delete_release(stage: StageKeys, apisix_version: str) -> BkRelease:
     return BkRelease(
         id=get_release_id(stage.gateway_name, stage.stage_name),
@@ -287,7 +375,9 @@ def cleanup_stage(stage: StageKeys, data_plane: DataPlane, etcd_client) -> None:
 
     delete_release = build_delete_release(stage, data_plane.apisix_version)
     try:
-        EtcdRegistry(stage.key_prefix, etcd_client).replace_resources_by_key_prefix_atomically(
+        replace_stage_prefix_atomically(
+            etcd_client,
+            stage.key_prefix,
             [delete_release],
             expected_max_mod_revision=latest.snapshot_revision,
         )
