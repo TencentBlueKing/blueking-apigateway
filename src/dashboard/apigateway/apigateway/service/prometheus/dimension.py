@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
@@ -34,11 +33,9 @@ from apigateway.apps.metrics.constants import (
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkmonitor import query_range
-from apigateway.core.models import Backend, Resource
+from apigateway.core.models import Resource
 
 from .base import BasePrometheusMetrics
-
-logger = logging.getLogger(__name__)
 
 
 class BaseMetrics(BasePrometheusMetrics):
@@ -421,29 +418,19 @@ class IngressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
-        # 查询 backend_id
-        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
-        if not backend:
-            logger.warning(
-                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
-            )
-            # backend 不存在，无需查询
-            return ""
-
-        label_list = [
-            *self.default_labels,
-            ("type", "=", "ingress"),
-            # service 的参数规则：{gateway_name}.{stage_name[:10]}.{stage_id}-{backend_id}
-            ("service", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"),
-        ]
-        if resource_id:
-            # route 的参数规则：网关名称。环境名称.资源 ID
-            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
-        labels = self._get_labels_expression(label_list)
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("type", "=", "ingress"),
+                ("gateway_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
+            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (resource_name))"
         )
 
 
@@ -460,30 +447,20 @@ class EgressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
-        # 查询 backend_id
-        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
-        if not backend:
-            logger.warning(
-                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
-            )
-            # backend 不存在，无需查询
-            return ""
-
-        label_list = [
-            *self.default_labels,
-            ("type", "=", "egress"),
-            # service 的参数规则：{gateway_name}.{stage_name[:10]}.{stage_id}-{backend_id}
-            ("service", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"),
-        ]
-        if resource_id:
-            # route 的参数规则：网关名称。环境名称.资源 ID
-            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
-        labels = self._get_labels_expression(label_list)
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("type", "=", "egress"),
+                ("gateway_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
 
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
+            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (resource_name))"
         )
 
 
