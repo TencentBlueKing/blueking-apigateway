@@ -51,19 +51,6 @@ from .serializers import (
 
 
 class QueryRangeApi(generics.ListAPIView):
-    @staticmethod
-    def get_series_resource_id_index_map(series):
-        ids_data = {}
-
-        for index in range(len(series)):
-            try:
-                id_ = int(series[index]["target"].split('"')[1].split(".")[2])
-                ids_data[id_] = index
-            except Exception:  # pylint: disable=broad-except
-                pass
-
-        return ids_data
-
     @swagger_auto_schema(
         query_serializer=MetricsQueryRangeInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -98,8 +85,7 @@ class QueryRangeApi(generics.ListAPIView):
         else:
             step = data.get("step")
 
-        metrics_name = data["metrics"]
-        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(metrics_name))
+        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(data["metrics"]))
 
         data = metrics.query_range(
             gateway_name=request.gateway.name,
@@ -116,14 +102,6 @@ class QueryRangeApi(generics.ListAPIView):
         series = [s for s in data.get("series", []) if s["target"].strip()]
         if series:
             data["series"] = series
-
-            if metrics_name in ["ingress", "egress"]:
-                ids_data = self.get_series_resource_id_index_map(series)
-
-                if ids_data:
-                    resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
-                    for obj in resources:
-                        series[ids_data[obj["id"]]]["target"] = 'name="{}"'.format(obj["name"])
 
         return OKJsonResponse(data=data)
 

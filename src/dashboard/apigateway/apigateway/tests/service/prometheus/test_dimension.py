@@ -367,61 +367,41 @@ class TestResponseTime99thMetrics:
 
 
 class TestIngressMetrics:
-    def test_get_query_promql_backend_not_found(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-        mocker.patch(
-            "apigateway.service.prometheus.dimension.Backend.objects.filter"
-        ).return_value.first.return_value = None
-
-        metrics = dimension.IngressMetrics()
-        result = metrics._get_query_promql(
-            gateway_name="not_exist",
-            stage_name="prod",
-            backend_name="not_exist",
-            step="1m",
-            stage_id=1,
-            resource_id=1,
-            resource_name="get_foo",
-        )
-        assert result == ""
-
-    def test_get_query_promql(self, mocker, fake_default_backend):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-
-        gateway_name = fake_default_backend.gateway.name
-        backend_name = fake_default_backend.name
-        backend_id = fake_default_backend.id
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+        backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
 
         data = [
             {
                 "params": {
-                    "gateway_name": gateway_name,
+                    "gateway_name": "foo",
                     "stage_name": "prod",
-                    "backend_name": backend_name,
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="ingress", service="{}.prod.1-{}", '
-                    'route="{}.prod.2"}}[1m])) by (route))'
-                ).format(gateway_name, backend_id, gateway_name),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="ingress", gateway_name="foo", '
+                    'stage_name="prod", backend_name="default", resource_name="get_foo"}[1m])) '
+                    "by (resource_name))"
+                ),
             },
             {
                 "params": {
-                    "gateway_name": gateway_name,
+                    "gateway_name": "foo",
                     "stage_name": "prod-123456789",
-                    "backend_name": backend_name,
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="ingress", service="{}.{}.1-{}"'
-                    "}}[1m])) by (route))"
-                ).format(gateway_name, "prod-12345", backend_id),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="ingress", gateway_name="foo", '
+                    'stage_name="prod-123456789"}[1m])) by (resource_name))'
+                ),
             },
         ]
         for test in data:
@@ -429,69 +409,53 @@ class TestIngressMetrics:
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
+        backend_filter.assert_not_called()
+
 
 class TestEgressMetrics:
-    def test_get_query_promql_backend_not_found(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-        mocker.patch(
-            "apigateway.service.prometheus.dimension.Backend.objects.filter"
-        ).return_value.first.return_value = None
-
-        metrics = dimension.EgressMetrics()
-        result = metrics._get_query_promql(
-            gateway_name="not_exist",
-            stage_name="prod",
-            backend_name="not_exist",
-            step="1m",
-            stage_id=1,
-            resource_id=1,
-            resource_name="get_foo",
-        )
-        assert result == ""
-
-    def test_get_query_promql(self, mocker, fake_default_backend):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-
-        gateway_name = fake_default_backend.gateway.name
-        backend_name = fake_default_backend.name
-        backend_id = fake_default_backend.id
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+        backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
 
         data = [
             {
                 "params": {
-                    "gateway_name": gateway_name,
+                    "gateway_name": "foo",
                     "stage_name": "prod",
-                    "backend_name": backend_name,
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="egress", service="{}.prod.1-{}", '
-                    'route="{}.prod.2"}}[1m])) by (route))'
-                ).format(gateway_name, backend_id, gateway_name),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="egress", gateway_name="foo", '
+                    'stage_name="prod", backend_name="default", resource_name="get_foo"}[1m])) '
+                    "by (resource_name))"
+                ),
             },
             {
                 "params": {
-                    "gateway_name": gateway_name,
+                    "gateway_name": "foo",
                     "stage_name": "prod-123456789",
-                    "backend_name": backend_name,
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="egress", service="{}.{}.1-{}"'
-                    "}}[1m])) by (route))"
-                ).format(gateway_name, "prod-12345", backend_id),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="egress", gateway_name="foo", '
+                    'stage_name="prod-123456789"}[1m])) by (resource_name))'
+                ),
             },
         ]
         for test in data:
             metrics = dimension.EgressMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
+
+        backend_filter.assert_not_called()
 
 
 class TestRequestTotalMetrics:
@@ -575,6 +539,65 @@ class TestHealthRateMetrics:
             assert result == test["expected"], result
 
 
+class TestLLMMetrics:
+    def test_get_query_promql_with_resource_and_backend(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+        backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
+
+        params = {
+            "gateway_name": "foo",
+            "stage_name": "prod",
+            "backend_name": "default",
+            "stage_id": 1,
+            "resource_id": 2,
+            "resource_name": "chat_completions",
+            "step": "1m",
+        }
+
+        latency = dimension.LLMLatencyAvgMetrics()._get_query_promql(**params)
+        assert "llm_latency_sum" in latency
+        assert "llm_latency_count" in latency
+        assert "by (request_type)" in latency
+        assert 'gateway_name="foo"' in latency
+        assert 'stage_name="prod"' in latency
+        assert 'backend_name="default"' in latency
+        assert 'resource_name="chat_completions"' in latency
+        assert "route_id" not in latency
+        assert "service_id" not in latency
+
+        tokens = dimension.LLMTokenUsageMetrics()._get_query_promql(**params)
+        assert "llm_prompt_tokens" in tokens
+        assert "llm_completion_tokens" in tokens
+        assert '"token_type", "prompt"' in tokens
+        assert '"token_type", "completion"' in tokens
+
+        connections = dimension.LLMActiveConnectionsMetrics()._get_query_promql(**params)
+        assert "llm_active_connections" in connections
+        assert "sum by (request_type)" in connections
+
+        backend_filter.assert_not_called()
+
+    def test_get_query_promql_without_resource_or_backend(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+
+        result = dimension.LLMLatencyAvgMetrics()._get_query_promql(
+            gateway_name="foo",
+            stage_name="prod",
+            backend_name=None,
+            stage_id=1,
+            resource_id=0,
+            resource_name=None,
+            step="1m",
+        )
+
+        assert 'gateway_name="foo"' in result
+        assert 'stage_name="prod"' in result
+        assert "backend_name" not in result
+        assert "resource_name" not in result
+        assert "route_id" not in result
+        assert "service_id" not in result
+
+
 class TestMetricsRangeFactory:
     def test_create_metrics(self):
         data = [
@@ -605,6 +628,18 @@ class TestMetricsRangeFactory:
             {
                 "metrics": "egress",
                 "expected": dimension.EgressMetrics,
+            },
+            {
+                "metrics": "llm_latency_avg",
+                "expected": dimension.LLMLatencyAvgMetrics,
+            },
+            {
+                "metrics": "llm_token_usage",
+                "expected": dimension.LLMTokenUsageMetrics,
+            },
+            {
+                "metrics": "llm_active_connections",
+                "expected": dimension.LLMActiveConnectionsMetrics,
             },
         ]
         for test in data:

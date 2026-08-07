@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
@@ -34,11 +33,9 @@ from apigateway.apps.metrics.constants import (
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkmonitor import query_range
-from apigateway.core.models import Backend, Resource
+from apigateway.core.models import Resource
 
 from .base import BasePrometheusMetrics
-
-logger = logging.getLogger(__name__)
 
 
 class BaseMetrics(BasePrometheusMetrics):
@@ -329,6 +326,85 @@ class ResponseTime99thMetrics(ResponseTimeBaseMetrics):
     quantile = 0.99
 
 
+class BaseLLMMetrics(BaseMetrics):
+    def _get_llm_labels(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        resource_name: Optional[str],
+    ) -> str:
+        return self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("gateway_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
+
+
+class LLMLatencyAvgMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_LATENCY_AVG
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
+        return (
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_sum{{{labels}}}[{step}])) / "
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_count{{{labels}}}[{step}]))"
+        )
+
+
+class LLMTokenUsageMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_TOKEN_USAGE
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
+        return (
+            "sum by (token_type) ("
+            f"label_replace(increase({self.metric_name_prefix}llm_prompt_tokens{{{labels}}}[{step}]), "
+            '"token_type", "prompt", "request_type", ".*") or '
+            f"label_replace(increase({self.metric_name_prefix}llm_completion_tokens{{{labels}}}[{step}]), "
+            '"token_type", "completion", "request_type", ".*"))'
+        )
+
+
+class LLMActiveConnectionsMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_ACTIVE_CONNECTIONS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
+        return f"sum by (request_type) ({self.metric_name_prefix}llm_active_connections{{{labels}}})"
+
+
 class IngressMetrics(BaseMetrics):
     metrics = MetricsRangeEnum.INGRESS
 
@@ -342,29 +418,19 @@ class IngressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
-        # 查询 backend_id
-        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
-        if not backend:
-            logger.warning(
-                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
-            )
-            # backend 不存在，无需查询
-            return ""
-
-        label_list = [
-            *self.default_labels,
-            ("type", "=", "ingress"),
-            # service 的参数规则：{gateway_name}.{stage_name[:10]}.{stage_id}-{backend_id}
-            ("service", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"),
-        ]
-        if resource_id:
-            # route 的参数规则：网关名称。环境名称.资源 ID
-            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
-        labels = self._get_labels_expression(label_list)
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("type", "=", "ingress"),
+                ("gateway_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
+            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (resource_name))"
         )
 
 
@@ -381,30 +447,20 @@ class EgressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
-        # 查询 backend_id
-        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
-        if not backend:
-            logger.warning(
-                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
-            )
-            # backend 不存在，无需查询
-            return ""
-
-        label_list = [
-            *self.default_labels,
-            ("type", "=", "egress"),
-            # service 的参数规则：{gateway_name}.{stage_name[:10]}.{stage_id}-{backend_id}
-            ("service", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"),
-        ]
-        if resource_id:
-            # route 的参数规则：网关名称。环境名称.资源 ID
-            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
-        labels = self._get_labels_expression(label_list)
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("type", "=", "egress"),
+                ("gateway_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
 
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
+            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (resource_name))"
         )
 
 
@@ -654,6 +710,9 @@ MetricsRangeFactory.register(ResponseTime95thMetrics)
 MetricsRangeFactory.register(ResponseTime99thMetrics)
 MetricsRangeFactory.register(IngressMetrics)
 MetricsRangeFactory.register(EgressMetrics)
+MetricsRangeFactory.register(LLMLatencyAvgMetrics)
+MetricsRangeFactory.register(LLMTokenUsageMetrics)
+MetricsRangeFactory.register(LLMActiveConnectionsMetrics)
 
 MetricsInstantFactory.register(RequestsTotalMetrics)
 MetricsInstantFactory.register(HealthRateMetrics)
