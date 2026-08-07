@@ -18,10 +18,10 @@
 #
 import json
 import logging
-from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from django.conf import settings
+from pydantic import BaseModel
 
 from apigateway.utils.url import url_join
 
@@ -31,77 +31,77 @@ from .utils import do_blueking_http_request, gen_gateway_headers
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class ItsmWorkflow:
+class ItsmWorkflow(BaseModel):
     form_schema: Dict[str, Any]
-    raw: Dict[str, Any]
-
-    @classmethod
-    def from_response_item(cls, item: Any):
-        if not isinstance(item, dict):
-            raise TypeError("invalid system_workflow_list response: results items must be objects")
-
-        form_schema = item.get("form_schema") or {}
-        if not isinstance(form_schema, dict):
-            raise TypeError("invalid system_workflow_list response: form_schema must be an object")
-
-        return cls(form_schema=form_schema, raw=item)
 
 
-@dataclass(frozen=True)
-class ItsmWorkflowList:
+class ItsmWorkflowList(BaseModel):
     count: int
-    workflows: tuple[ItsmWorkflow, ...]
-    raw: Dict[str, Any]
+    results: list[ItsmWorkflow]
 
     @classmethod
-    def empty(cls):
-        return cls(count=0, workflows=(), raw={})
+    def empty(cls) -> "ItsmWorkflowList":
+        return cls(count=0, results=[])
 
     @classmethod
-    def from_response(cls, resp: Any):
-        if not isinstance(resp, dict):
-            raise TypeError("invalid system_workflow_list response: response must be an object")
+    def from_response(cls, resp: Any) -> "ItsmWorkflowList":
+        return cls.model_validate(resp)
 
-        count = resp.get("count", 0)
-        if not isinstance(count, int):
-            raise TypeError("invalid system_workflow_list response: count must be an integer")
-
-        results = resp.get("results")
-        if not isinstance(results, list):
-            raise TypeError("invalid system_workflow_list response: results must be a list")
-
-        return cls(
-            count=count,
-            workflows=tuple(ItsmWorkflow.from_response_item(item) for item in results),
-            raw=resp,
-        )
+    @property
+    def workflows(self) -> list[ItsmWorkflow]:
+        return self.results
 
     @property
     def is_registered(self) -> bool:
         return self.count > 0
 
 
-@dataclass(frozen=True)
-class ItsmFormModelUpdateResult:
-    updated_field_keys: frozenset[str]
-    raw: Any
+class ItsmFormModelMeta(BaseModel):
+    fields: Dict[str, Any]
+
+
+class ItsmFormModelUpdateResult(BaseModel):
+    meta: ItsmFormModelMeta
 
     @classmethod
-    def from_response(cls, resp: Any):
-        if isinstance(resp, dict) and resp.get("result") is False:
-            raise RuntimeError(f"update_form_model failed: {resp}")
+    def from_response(cls, resp: Any) -> "ItsmFormModelUpdateResult":
+        return cls.model_validate(resp)
 
-        response_data = resp.get("data") if isinstance(resp, dict) and isinstance(resp.get("data"), dict) else resp
-        updated_fields = (
-            ((response_data or {}).get("meta") or {}).get("fields", {}) if isinstance(response_data, dict) else {}
-        )
-        if not updated_fields:
-            raise RuntimeError(f"update_form_model response missing meta.fields: {resp}")
-        if not isinstance(updated_fields, dict):
-            raise TypeError("invalid update_form_model response: meta.fields must be an object")
+    @property
+    def updated_field_keys(self) -> frozenset[str]:
+        return frozenset(self.meta.fields.keys())
 
-        return cls(updated_field_keys=frozenset(updated_fields.keys()), raw=resp)
+
+class ItsmTicketProcessor(BaseModel):
+    id: str
+    type: str
+    display: str = ""
+
+
+class ItsmTicketItem(BaseModel):
+    id: str
+    history_processors: Optional[list[ItsmTicketProcessor]] = None
+
+    @property
+    def actual_approver(self) -> str:
+        history_processors = [processor for processor in (self.history_processors or []) if processor.type == "user"]
+        return history_processors[0].id if history_processors else ""
+
+
+class ItsmTicketSearchResult(BaseModel):
+    results: list[ItsmTicketItem]
+    page: int = 1
+    page_size: int = 10
+    count: int
+
+    @classmethod
+    def from_response(cls, resp: Any) -> "ItsmTicketSearchResult":
+        return cls.model_validate(resp)
+
+    @property
+    def actual_approver(self) -> str:
+        approvers = [ticket.actual_approver for ticket in self.results if ticket.actual_approver]
+        return approvers[0] if approvers else ""
 
 
 def _call_bkitsm_api(
@@ -264,3 +264,28 @@ def create_ticket(
         more_headers=more_headers,
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
+
+
+def get_ticket_by_id(ticket_id: str, operator: Optional[str] = None) -> ItsmTicketSearchResult:
+    """
+    按工单 ID 查询单条 ITSM 工单。
+
+    因 /ticket/detail/ 暂无法返回 history_processors，先走搜索接口按 id__in 精确查询。
+    调用接口: ticket_search_full_text_search (POST)
+    路径: /api/v1/ticket_search/full_text_search/
+    """
+    data = {
+        "page": 1,
+        # 按单个 ticket_id 查询，只需返回一条
+        "page_size": 1,
+        "id__in": ticket_id,
+        "operator": operator or settings.BK_ITSM4_QUERY_OPERATOR,
+        "group_key": "all",
+    }
+    resp = _call_bkitsm_api(
+        http_post,
+        "/api/v1/ticket_search/full_text_search/",
+        data,
+        timeout=settings.BK_ITSM4_API_TIMEOUT,
+    )
+    return ItsmTicketSearchResult.from_response(resp)

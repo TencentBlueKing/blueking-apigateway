@@ -119,7 +119,7 @@ class TestItsmCallbackResultHandler:
         assert apply.status == ApplyStatusEnum.APPROVED.value
         mock_get_manager.assert_not_called()
 
-    def test_handle_gateway_callback_approved_grant_type_apply(self, fake_gateway):
+    def test_handle_gateway_callback_approved_grant_type_apply(self, mocker, fake_gateway):
         record = G(
             AppPermissionRecord,
             gateway=fake_gateway,
@@ -142,6 +142,10 @@ class TestItsmCallbackResultHandler:
             itsm_ticket_id="itsm-ticket-004",
             itsm_callback_token="cb-token-004",
         )
+        mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit", side_effect=lambda fn: fn())
+        mock_apply_async = mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.async_fill_gateway_or_resource_itsm_approver.apply_async"
+        )
 
         ItsmCallbackResultHandler().handle(
             ticket={
@@ -158,6 +162,14 @@ class TestItsmCallbackResultHandler:
         permission = AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
         assert permission.grant_type == GrantTypeEnum.APPLY.value
         assert not AppPermissionApply.objects.filter(id=apply.id).exists()
+        mock_apply_async.assert_called_once_with(
+            kwargs={
+                "grant_dimension": GrantDimensionEnum.API.value,
+                "record_id": record.id,
+                "ticket_id": "itsm-ticket-004",
+            },
+            ignore_result=True,
+        )
 
     def test_handle_mcp_callback_approved_updates_apply_and_sync_permissions(self, mocker, fake_gateway, fake_stage):
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -176,6 +188,10 @@ class TestItsmCallbackResultHandler:
             "apigateway.biz.bk_itsm.bk_itsm.MCPServerAppPermission.objects.save_permission"
         )
         mock_sync_permissions = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.MCPServerHandler.sync_permissions")
+        mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit", side_effect=lambda fn: fn())
+        mock_apply_async = mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.async_fill_mcp_server_itsm_approver.apply_async"
+        )
 
         ItsmCallbackResultHandler().handle(
             ticket={
@@ -200,3 +216,22 @@ class TestItsmCallbackResultHandler:
             expire_days=None,
         )
         mock_sync_permissions.assert_called_once_with(apply.mcp_server_id)
+        mock_apply_async.assert_called_once_with(
+            kwargs={
+                "apply_id": apply.id,
+                "ticket_id": "itsm-mcp-001",
+            },
+            ignore_result=True,
+        )
+
+    def test_enqueue_approver_backfill_task_skips_when_ticket_id_empty(self, mocker):
+        mock_on_commit = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit")
+        celery_task = mocker.Mock()
+
+        ItsmCallbackResultHandler._enqueue_approver_backfill_task(
+            celery_task,
+            task_kwargs={"record_id": 1, "ticket_id": ""},
+        )
+
+        mock_on_commit.assert_not_called()
+        celery_task.apply_async.assert_not_called()

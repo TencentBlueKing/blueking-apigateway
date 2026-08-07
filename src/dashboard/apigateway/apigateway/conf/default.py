@@ -579,6 +579,7 @@ BK_ITSM4_URL_PREFIX = (
 )
 BK_ITSM4_API_TIMEOUT = env.int("BK_ITSM4_API_TIMEOUT", 30)
 BK_ITSM4_SYSTEM_TOKEN = env.str("BK_ITSM4_SYSTEM_TOKEN", default="")
+BK_ITSM4_QUERY_OPERATOR = env.str("BK_ITSM4_QUERY_OPERATOR", default="admin")
 BK_ITSM4_CALLBACK_APP_CODE = env.str(
     "BK_ITSM4_CALLBACK_APP_CODE",
     default="bk-itsm4" if EDITION == "te" else "cw_aitsm",
