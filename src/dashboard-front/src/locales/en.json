@@ -1807,6 +1807,7 @@
   "流式首 Token": "Streaming TTFT",
   "输入 Token": "Prompt Tokens",
   "输出 Token": "Completion Tokens",
+  "个连接": "connections",
   "资源 90th 响应耗时分布": "Resource 90th Response Time  Distribution",
   "资源 50th 响应耗时分布": "Resource 50th Response Time Distribution",
   "资源 95th 响应耗时分布": "Resource 95th Response Time Distribution",

@@ -595,11 +595,28 @@ const syncParamsToCharts = () => {
   responseTime95Ref.value!.syncParams(params);
   responseTime99Ref.value!.syncParams(params);
   if (gatewayStore.isAIGateway) {
-    llmLatencyAvgRef.value?.syncParams(params);
-    llmTokenUsageRef.value?.syncParams(params);
-    llmActiveConnectionsRef.value?.syncParams(params);
+    syncAIParamsToCharts();
   }
 };
+
+const syncAIParamsToCharts = () => {
+  const params = { ...searchParams.value };
+  llmLatencyAvgRef.value?.syncParams(params);
+  llmTokenUsageRef.value?.syncParams(params);
+  llmActiveConnectionsRef.value?.syncParams(params);
+};
+
+watch(() => gatewayStore.isAIGateway, async (isAIGateway) => {
+  if (!isAIGateway || !searchParams.value.stage_id) {
+    return;
+  }
+
+  await nextTick();
+  syncAIParamsToCharts();
+  aiMetricsList.forEach((type) => {
+    getData({ ...searchParams.value }, type);
+  });
+});
 
 const handleRefreshChange = (interval: string) => {
   clearInterval(timeId!);

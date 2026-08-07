@@ -368,7 +368,7 @@ class TestResponseTime99thMetrics:
 
 class TestIngressMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
         backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
 
         data = [
@@ -414,7 +414,7 @@ class TestIngressMetrics:
 
 class TestEgressMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
         backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
 
         data = [
@@ -541,7 +541,7 @@ class TestHealthRateMetrics:
 
 class TestLLMMetrics:
     def test_get_query_promql_with_resource_and_backend(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
         backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
 
         params = {
@@ -578,7 +578,7 @@ class TestLLMMetrics:
         backend_filter.assert_not_called()
 
     def test_get_query_promql_without_resource_or_backend(self, mocker):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
 
         result = dimension.LLMLatencyAvgMetrics()._get_query_promql(
             gateway_name="foo",

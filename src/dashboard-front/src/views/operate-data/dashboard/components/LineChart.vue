@@ -384,7 +384,7 @@ const getChartOption = () => {
     chartOption.tooltip.formatter = (params: any) => {
       return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
-      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('个')}</span></p>
+      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('个连接')}</span></p>
       </div>`;
     };
   }
