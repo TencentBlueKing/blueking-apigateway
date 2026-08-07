@@ -152,6 +152,14 @@ class TestResourceHandler:
         resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test")
         resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test")
         resource_3 = G(Resource, gateway=fake_gateway, name="color", method="PUT", path="/green")
+        resource_4 = G(
+            Resource,
+            gateway=fake_gateway,
+            name="other",
+            method="GET",
+            path="/other",
+            description="unique desc keyword",
+        )
         label = G(APILabel, gateway=fake_gateway)
         G(ResourceLabel, api_label=label, resource=resource_1)
 
@@ -170,8 +178,11 @@ class TestResourceHandler:
         result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"keyword": "Test"})
         assert result.count() == 2
 
+        result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {"keyword": "unique desc"})
+        assert list(result) == [resource_4]
+
         result = ResourceHandler.filter_by_resource_filter_condition(fake_gateway.id, {})
-        assert result.count() == 3
+        assert result.count() == 4
 
     def test_group_by_gateway_id(self):
         gateway_1 = G(Gateway)
