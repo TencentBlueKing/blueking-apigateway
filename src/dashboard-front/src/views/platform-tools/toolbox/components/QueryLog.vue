@@ -70,48 +70,50 @@
           class="body-content"
         >
           <dl class="details">
-            <div
-              v-for="({ label, field }, index) in details.fields"
-              :key="index"
-              class="item"
-            >
-              <dt class="label">
-                {{ label }}
-                <span class="fields">
-                  ( <span
-                    v-bk-tooltips="t('复制')"
-                    class="fields-main"
-                    @click.stop="copyToClipboard(field)"
+            <template v-for="({ label, field }, index) in details.fields">
+              <div
+                v-if="field !== 'llm_summary' || (field === 'llm_summary' && isAIGateway)"
+                :key="index"
+                class="item"
+              >
+                <dt class="label">
+                  {{ label }}
+                  <span class="fields">
+                    ( <span
+                      v-bk-tooltips="t('复制')"
+                      class="fields-main"
+                      @click.stop="copyToClipboard(field)"
+                    >
+                      {{ field }}
+                    </span> ) :
+                  </span>
+                </dt>
+                <dd class="value">
+                  <span
+                    v-if="field === 'response_body' && details.result?.status === '200'"
+                    class="respond"
                   >
-                    {{ field }}
-                  </span> ) :
-                </span>
-              </dt>
-              <dd class="value">
-                <span
-                  v-if="field === 'response_body' && details.result?.status === '200'"
-                  class="respond"
-                >
-                  <!-- <info-line class="respond-icon" /> -->
-                  <span>{{ t('状态码为 200 时不记录响应正文') }}</span>
-                </span>
-                <span v-else>
-                  {{ formatValue(details.result[field], field) }}
-                </span>
+                    <!-- <info-line class="respond-icon" /> -->
+                    <span>{{ t('状态码为 200 时不记录响应正文') }}</span>
+                  </span>
+                  <span v-else>
+                    {{ formatValue(details.result[field], field) }}
+                  </span>
 
-                <span
-                  v-if="details.result[field]"
-                  class="opt-btns"
-                >
-                  <AgIcon
-                    v-bk-tooltips="t('复制')"
-                    class="opt-copy"
-                    name="copy-shape"
-                    @click="() => handleRowCopy(field, details.result)"
-                  />
-                </span>
-              </dd>
-            </div>
+                  <span
+                    v-if="details.result[field]"
+                    class="opt-btns"
+                  >
+                    <AgIcon
+                      v-bk-tooltips="t('复制')"
+                      class="opt-copy"
+                      name="copy-shape"
+                      @click="() => handleRowCopy(field, details.result)"
+                    />
+                  </span>
+                </dd>
+              </div>
+            </template>
           </dl>
         </div>
 
@@ -137,9 +139,11 @@ import { copy as copyToClipboard } from '@/utils';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { getLogsInfo } from '@/services/source/access-log';
 import dayjs from 'dayjs';
+import { useGateway } from '@/stores';
 
 const route = useRoute();
 const { t } = useI18n();
+const gatewayStore = useGateway();
 
 const isDataLoading = ref<boolean>(false);
 const requestId = ref<string>('');
@@ -154,6 +158,8 @@ const tableEmptyConf = ref<{
   emptyType: undefined,
   isAbnormal: false,
 });
+
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
 const isEmpty = computed(() => {
   return !Object.keys(details.value.result)?.length;
@@ -223,11 +229,17 @@ const formatValue = (value: any, field: string) => {
   if (value && ['timestamp'].includes(field)) {
     return dayjs.unix(value).format('YYYY-MM-DD HH:mm:ss ZZ');
   }
+  if (field === 'llm_summary') {
+    return JSON.stringify(value, null, 2);
+  }
   return value || '--';
 };
 
 const handleRowCopy = (field: string, row: any) => {
-  const copyStr = `${field}: ${row[field]}`;
+  let copyStr = `${field}: ${row[field]}`;
+  if (field === 'llm_summary') {
+    copyStr = `${field}: ${JSON.stringify(row[field], null, 2)}`;
+  }
   copyToClipboard(copyStr);
 };
 
