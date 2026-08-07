@@ -1015,6 +1015,49 @@ class TestMCPServerAppPermissionListApi:
 
 
 class TestMCPServerAppPermissionRecordListApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test-user",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"][0]["record"]["handled_by"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs", "bbb"])
+
     def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
         """测试申请记录列表包含审批 URL"""
         # 设置审批 URL 模板
@@ -1141,6 +1184,50 @@ class TestMCPServerAppPermissionRecordListApi:
 
 
 class TestMCPServerAppPermissionRecordRetrieveApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_retrieve_converts_handled_by_to_display_name(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["张三"]
+        fake_gateway.tenant_mode = "single"
+        fake_gateway.tenant_id = "tenant-1"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            applied_by="test-user",
+            handled_by="7idwx3b7nzk6xigs",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
+            path_params={"record_id": apply_record.id},
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["record"]["handled_by"] == ["张三"]
+        mock_query_display_names_for_readonly.assert_called_once_with("tenant-1", ["7idwx3b7nzk6xigs"])
+
     def test_retrieve_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
         """测试申请记录详情包含审批 URL"""
         # 设置审批 URL 模板
@@ -1436,6 +1523,83 @@ class TestAppPermissionRecordListApi:
         # 验证分页参数存在
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
+
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_pending_handled_by_maintainers_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+    ):
+        """pending 记录无 handled_by 时，按网关租户将 maintainers 转为 display_name"""
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+        fake_gateway.tenant_mode = "single"
+        fake_gateway.tenant_id = "tenant-1"
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_by="",
+            status="pending",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["handled_by"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with(
+            "tenant-1",
+            ["7idwx3b7nzk6xigs", "bbb"],
+        )
+
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+    ):
+        """已处理记录按网关租户将 handled_by 转为 display_name"""
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_by="7idwx3b7nzk6xigs",
+            handled_time=timezone.now(),
+            status="approved",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
 
 
 class TestAppAlarmRecordListApi:
