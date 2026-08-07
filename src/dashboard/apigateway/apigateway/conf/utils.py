@@ -422,6 +422,8 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_BK_OAUTH2_VERIFY": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-verify.md",
         # bk-oauth2-audience-validate
         "PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-audience-validate.md",
+        # bk-query-string-rewrite
+        "PLUGIN_BK_QUERY_STRING_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-query-string-rewrite.md",
     }
 
 
