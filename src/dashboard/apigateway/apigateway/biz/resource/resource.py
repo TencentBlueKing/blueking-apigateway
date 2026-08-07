@@ -97,7 +97,9 @@ class ResourceHandler:
 
         if condition.get("keyword"):
             keyword = condition.get("keyword")
-            queryset = queryset.filter(Q(path__icontains=keyword) | Q(name__icontains=keyword))
+            queryset = queryset.filter(
+                Q(path__icontains=keyword) | Q(name__icontains=keyword) | Q(description__icontains=keyword)
+            )
 
         if condition.get("order_by"):
             queryset = queryset.order_by(condition["order_by"])

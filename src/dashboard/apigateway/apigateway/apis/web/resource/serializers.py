@@ -62,7 +62,7 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称，完整匹配")
     kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), required=False, help_text="资源类型")
     keyword = serializers.CharField(
-        allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径"
+        allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称、前端请求路径、资源描述"
     )
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
