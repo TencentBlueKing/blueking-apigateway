@@ -197,16 +197,17 @@
                           v-if="!getAuthConfig(resource).app_verified_required
                             && getAuthConfig(resource).auth_verified_required"
                         >
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t('OAuth2 公开客户端模式') }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ getAuthConfig(resource).oauth2_public_client_enabled ? t('是') : t('否') }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
+                          <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
+                          <!--                          <BkRow> -->
+                          <!--                            <BkCol :span="4"> -->
+                          <!--                              <label class="ag-key">{{ t('OAuth2 公开客户端模式') }}:</label> -->
+                          <!--                            </BkCol> -->
+                          <!--                            <BkCol :span="10"> -->
+                          <!--                              <div class="ag-value"> -->
+                          <!--   {{ getAuthConfig(resource).oauth2_public_client_enabled ? t('是') : t('否') }} -->
+                          <!--                              </div> -->
+                          <!--                            </BkCol> -->
+                          <!--                          </BkRow> -->
                           <BkRow>
                             <BkCol :span="4">
                               <label class="ag-key">{{ t('个人令牌') }}:</label>
@@ -487,7 +488,7 @@ interface IAuthConfig {
   app_verified_required: boolean
   auth_verified_required: boolean
   resource_perm_required: boolean
-  oauth2_public_client_enabled: boolean
+  // oauth2_public_client_enabled: boolean
   oauth2_personal_client_enabled: boolean
 }
 
@@ -661,7 +662,7 @@ const getAuthConfig = (resource: any): IAuthConfig => {
       app_verified_required: false,
       auth_verified_required: false,
       resource_perm_required: false,
-      oauth2_public_client_enabled: false,
+      // oauth2_public_client_enabled: false,
       oauth2_personal_client_enabled: false,
     };
   }
