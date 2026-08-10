@@ -315,7 +315,7 @@
                 <div class="request-setting-main">
                   <span>
                     ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
-                    bk_token：{{ formData.useUserFromCookies ? '******' : formData.authorization.bk_token }}
+                    {{ authField }}：{{ formData.useUserFromCookies ? '******' : formData.authorization[authField] }}
                   </span>
                   <BkPopConfirm
                     width="470"
@@ -347,18 +347,17 @@
                         <template v-if="userCookies.useUserFromCookies">
                           <BkInput
                             class="auth-value"
-                            prefix="bk_token"
-                            :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
+                            :prefix="authField"
                             :value="'******'"
                             disabled
                           />
                         </template>
                         <template v-else>
                           <BkInput
-                            v-model="userCookies.bk_token"
+                            v-model="userCookies[authField]"
                             class="auth-value"
-                            prefix="bk_token"
-                            :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
+                            :prefix="authField"
+                            :placeholder="t('请输入 Cookies 中，字段 {name} 的值', { name: authField })"
                           />
                         </template>
 
@@ -622,6 +621,7 @@ const userCookies = reactive<any>({
   isEdit: false,
   useUserFromCookies: true,
   bk_token: '',
+  bk_ticket: '',
 });
 const response = ref<any>({});
 
@@ -645,6 +645,8 @@ const selectedResourceId = ref('');
 const tabContainerRef = ref<HTMLElement | null>(null);
 const containerWidth = ref(0);
 const toolsWidth = ref(0);
+
+const authField = computed(() => envStore.env.EDITION === 'te' ? 'bk_ticket' : 'bk_token');
 
 const availableTabWidth = computed(() => {
   const width = containerWidth.value - toolsWidth.value;
@@ -1322,16 +1324,16 @@ const cancelAppAuthEdit = () => {
 
 const handleEditUserAuth = () => {
   userCookies.useUserFromCookies = formData.value.useUserFromCookies;
-  userCookies.bk_token = formData.value.authorization.bk_token;
+  userCookies[authField.value] = formData.value.authorization[authField.value];
   userCookies.isEdit = true;
 };
 
 const saveUserAuthEdit = () => {
   if (userCookies.useUserFromCookies) {
-    formData.value.authorization.bk_token = '';
+    formData.value.authorization[authField.value] = '';
   }
   else {
-    formData.value.authorization.bk_token = userCookies.bk_token;
+    formData.value.authorization[authField.value] = userCookies[authField.value];
   }
 
   formData.value.useUserFromCookies = userCookies.useUserFromCookies;
@@ -1417,7 +1419,7 @@ const formatPayload = () => {
 
   // 默认用户认证数据过滤
   if (formData.value?.useUserFromCookies) {
-    data.authorization.bk_token = '';
+    data.authorization[authField.value] = '';
   }
 
   if (checkFormData(data)) {
