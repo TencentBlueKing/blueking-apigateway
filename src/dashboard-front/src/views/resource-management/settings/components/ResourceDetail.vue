@@ -262,13 +262,14 @@
                           v-if="!authConfigDraft.app_verified_required
                             && authConfigDraft.auth_verified_required"
                         >
-                          <BkFormItem :label="t('OAuth2 公开客户端模式')">
-                            <BkSwitcher
-                              v-model="authConfigDraft.oauth2_public_client_enabled"
-                              theme="primary"
-                              size="small"
-                            />
-                          </BkFormItem>
+                          <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
+                          <!--                          <BkFormItem :label="t('OAuth2 公开客户端模式')"> -->
+                          <!--                            <BkSwitcher -->
+                          <!--                              v-model="authConfigDraft.oauth2_public_client_enabled" -->
+                          <!--                              theme="primary" -->
+                          <!--                              size="small" -->
+                          <!--                            /> -->
+                          <!--                          </BkFormItem> -->
                           <BkFormItem :label="t('个人令牌')">
                             <BkSwitcher
                               v-model="authConfigDraft.oauth2_personal_client_enabled"
@@ -350,43 +351,9 @@
               </div>
             </div>
           </div>
-          <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
-          <template
-            v-if="formData.auth_config?.oauth2_public_client_enabled
-              || formData.auth_config?.oauth2_personal_client_enabled"
-          >
-            <!-- OAuth2 公开客户端模式 -->
-            <div class="label-content-group">
-              <div class="label">
-                <span>{{ t('OAuth2 公开客户端模式') }}</span>
-              </div>
-              <div class="content">
-                <div class="value-container">
-                  <span class="value-cls">
-                    {{ formData.auth_config.oauth2_public_client_enabled ? t('是') : t('否') }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <!-- 个人令牌 -->
-            <div class="label-content-group">
-              <div class="label">
-                <span>{{ t('个人令牌') }}</span>
-              </div>
-              <div class="content">
-                <div class="value-container">
-                  <span class="value-cls">
-                    {{ formData.auth_config.oauth2_personal_client_enabled ? t('是') : t('否') }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </template>
           <div
             class="label-content-group"
-            :class="[{
-              'stages': isAIGateway
-            }]"
+            :class="{ 'wide': isAIGateway }"
           >
             <div class="label">
               <span
@@ -428,7 +395,41 @@
               </div>
             </div>
           </div>
-          <div class="label-content-group stages">
+          <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
+          <template v-if="formData.auth_config?.oauth2_personal_client_enabled">
+            <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
+            <!--          <template -->
+            <!--            v-if="formData.auth_config?.oauth2_public_client_enabled -->
+            <!--              || formData.auth_config?.oauth2_personal_client_enabled" -->
+            <!--          > -->
+            <!-- OAuth2 公开客户端模式 -->
+            <!--            <div class="label-content-group"> -->
+            <!--              <div class="label"> -->
+            <!--                <span>{{ t('OAuth2 公开客户端模式') }}</span> -->
+            <!--              </div> -->
+            <!--              <div class="content"> -->
+            <!--                <div class="value-container"> -->
+            <!--                  <span class="value-cls"> -->
+            <!--                    {{ formData.auth_config.oauth2_public_client_enabled ? t('是') : t('否') }} -->
+            <!--                  </span> -->
+            <!--                </div> -->
+            <!--              </div> -->
+            <!--            </div> -->
+            <!-- 个人令牌 -->
+            <div class="label-content-group wide">
+              <div class="label">
+                <span>{{ t('个人令牌') }}</span>
+              </div>
+              <div class="content">
+                <div class="value-container">
+                  <span class="value-cls">
+                    {{ formData.auth_config.oauth2_personal_client_enabled ? t('是') : t('否') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div class="label-content-group wide">
             <div class="label">
               {{ t('已使用的环境') }}
             </div>
@@ -525,9 +526,7 @@
           </div>
           <div
             class="label-content-group"
-            :class="[{
-              'path': formData.kind !== 'ai'
-            }]"
+            :class="{ 'wide': formData.kind !== 'ai' }"
           >
             <div class="label">
               {{ t('请求路径') }}
@@ -1108,7 +1107,7 @@ interface IAuthConfigDraft {
   app_verified_required: boolean
   auth_verified_required: boolean
   resource_perm_required: boolean
-  oauth2_public_client_enabled: boolean
+  // oauth2_public_client_enabled: boolean
   oauth2_personal_client_enabled: boolean
 }
 
@@ -1171,7 +1170,7 @@ const authConfigDraft = ref<IAuthConfigDraft>({
   app_verified_required: false,
   auth_verified_required: false,
   resource_perm_required: false,
-  oauth2_public_client_enabled: false,
+  // oauth2_public_client_enabled: false,
   oauth2_personal_client_enabled: false,
 });
 const formData = ref<any>({});
@@ -1526,7 +1525,7 @@ const resetAuthConfigDraft = () => {
     app_verified_required = false,
     auth_verified_required = false,
     resource_perm_required = false,
-    oauth2_public_client_enabled = false,
+    // oauth2_public_client_enabled = false,
     oauth2_personal_client_enabled = false,
   } = formData.value.auth_config ?? {};
 
@@ -1534,7 +1533,7 @@ const resetAuthConfigDraft = () => {
     app_verified_required,
     auth_verified_required,
     resource_perm_required,
-    oauth2_public_client_enabled,
+    // oauth2_public_client_enabled,
     oauth2_personal_client_enabled,
   };
 };
@@ -1559,7 +1558,7 @@ const verifiedSubmit = () => {
     app_verified_required,
     auth_verified_required,
     resource_perm_required,
-    oauth2_public_client_enabled,
+    // oauth2_public_client_enabled,
     oauth2_personal_client_enabled,
   } = authConfigDraft.value;
   const oauth2ClientEnabled = !app_verified_required && auth_verified_required;
@@ -1568,7 +1567,7 @@ const verifiedSubmit = () => {
     app_verified_required,
     auth_verified_required,
     resource_perm_required,
-    oauth2_public_client_enabled: oauth2ClientEnabled && oauth2_public_client_enabled,
+    // oauth2_public_client_enabled: oauth2ClientEnabled && oauth2_public_client_enabled,
     oauth2_personal_client_enabled: oauth2ClientEnabled && oauth2_personal_client_enabled,
   };
 
@@ -1654,8 +1653,7 @@ onUnmounted(() => {
         align-items: center;
         border-bottom: 1px solid #DCDEE5;
 
-        &.stages,
-        &.path {
+        &.wide {
           grid-column: 1 / 3;
         }
 
