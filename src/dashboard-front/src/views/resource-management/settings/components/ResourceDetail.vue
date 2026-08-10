@@ -258,10 +258,7 @@
                             </span>
                           </BkCheckbox>
                         </BkFormItem>
-                        <template
-                          v-if="!authConfigDraft.app_verified_required
-                            && authConfigDraft.auth_verified_required"
-                        >
+                        <template v-if="authConfigDraft.auth_verified_required">
                           <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
                           <!--                          <BkFormItem :label="t('OAuth2 公开客户端模式')"> -->
                           <!--                            <BkSwitcher -->
@@ -395,8 +392,8 @@
               </div>
             </div>
           </div>
-          <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
-          <template v-if="formData.auth_config?.oauth2_personal_client_enabled">
+          <!-- 只有打开“用户认证”才展示 oauth2 相关配置 -->
+          <template v-if="formData.auth_config?.auth_verified_required">
             <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
             <!--          <template -->
             <!--            v-if="formData.auth_config?.oauth2_public_client_enabled -->
@@ -423,7 +420,7 @@
               <div class="content">
                 <div class="value-container">
                   <span class="value-cls">
-                    {{ formData.auth_config.oauth2_personal_client_enabled ? t('是') : t('否') }}
+                    {{ formData.auth_config?.oauth2_personal_client_enabled ? t('是') : t('否') }}
                   </span>
                 </div>
               </div>
@@ -1561,14 +1558,14 @@ const verifiedSubmit = () => {
     // oauth2_public_client_enabled,
     oauth2_personal_client_enabled,
   } = authConfigDraft.value;
-  const oauth2ClientEnabled = !app_verified_required && auth_verified_required;
+  // const oauth2ClientEnabled = !app_verified_required && auth_verified_required;
 
   formData.value.auth_config = {
     app_verified_required,
     auth_verified_required,
     resource_perm_required,
     // oauth2_public_client_enabled: oauth2ClientEnabled && oauth2_public_client_enabled,
-    oauth2_personal_client_enabled: oauth2ClientEnabled && oauth2_personal_client_enabled,
+    oauth2_personal_client_enabled: auth_verified_required && oauth2_personal_client_enabled,
   };
 
   handleEditSave();
