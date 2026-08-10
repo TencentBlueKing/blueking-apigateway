@@ -81,7 +81,6 @@
       <BkCheckbox
         v-model="formData.auth_config.app_verified_required"
         :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
-        @change="handleAppVerifiedRequiredChange"
       >
         <span
           v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
@@ -99,8 +98,8 @@
         >{{ t('用户认证') }}</span>
       </BkCheckbox>
     </BkFormItem>
-    <!-- 只有打开“用户认证”且关闭“蓝鲸应用认证”才展示 oauth2 相关配置 -->
-    <template v-if="!formData.auth_config.app_verified_required && formData.auth_config.auth_verified_required">
+    <!-- 只有打开“用户认证”才展示 oauth2 相关配置 -->
+    <template v-if="formData.auth_config.auth_verified_required">
       <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
       <!--      <BkFormItem -->
       <!--        :label="t('OAuth2 公开客户端模式')" -->
@@ -300,12 +299,6 @@ const handleLabelAddSuccess = async (labelId: number) => {
 const resetOauth2Switch = () => {
   // formData.value.auth_config.oauth2_public_client_enabled = false;
   formData.value.auth_config.oauth2_personal_client_enabled = false;
-};
-
-const handleAppVerifiedRequiredChange = (value: boolean) => {
-  if (value) {
-    resetOauth2Switch();
-  }
 };
 
 const handleAuthVerifiedRequiredChange = (value: boolean) => {
