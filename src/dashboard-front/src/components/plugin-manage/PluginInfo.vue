@@ -310,7 +310,7 @@ import RequestValidate from '@/components/plugin-form/request-validation/Index.v
 import ApiBreaker from '@/components/plugin-form/api-breaker/Index.vue';
 import UriBlocker from '@/components/plugin-form/uri-blocker/Index.vue';
 import BkQueryStringRewrite from '@/components/plugin-form/bk-query-string-rewrite/Index.vue';
-import { PLUGIN_FORM_EXAMPLE_MAP } from '@/constants/plugin-form-examples.ts';
+import { PLUGIN_FORM_EXAMPLE_CN, PLUGIN_FORM_EXAMPLE_EN } from '@/constants/plugin-form-examples.ts';
 
 interface IProps {
   curPlugin: any
@@ -417,10 +417,9 @@ const infoNotes = computed(() => {
 });
 
 // 右侧插件使用示例内容
-// 把带 \n 的文本块转换成换行标签，当做 html 渲染
 const exampleHtml = computed(() => {
-  const example = PLUGIN_FORM_EXAMPLE_MAP[choosePlugin.value] || '';
-  return example.replace(/\\n/gm, '<br/>');
+  const exampleMap = locale.value === 'en' ? PLUGIN_FORM_EXAMPLE_EN : PLUGIN_FORM_EXAMPLE_CN;
+  return exampleMap[choosePlugin.value] || '';
 });
 
 watch(
