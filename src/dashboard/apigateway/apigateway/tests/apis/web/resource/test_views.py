@@ -1198,7 +1198,19 @@ class TestResourceImportCheckApi:
         assert response.status_code == 200, response.json()
         item = response.json()["data"][0]
         assert item["kind"] == ResourceKindEnum.AI.value
-        assert item["backend"] == {"name": "openai-primary", "config": {}}
+        assert item["backend"] == {"name": "openai-primary", "config": None}
+
+        backend = item.pop("backend")
+        item["backend_name"] = backend["name"]
+        item["backend_config"] = {}
+        import_response = request_view(
+            method="POST",
+            view_name="resource.import",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"import_resources": [item]},
+        )
+        assert import_response.status_code == 204, import_response.json()
 
 
 class TestResourceImportApi:
@@ -1217,15 +1229,17 @@ class TestResourceImportApi:
                     {
                         "kind": "ai",
                         "name": "chat",
+                        "description": "",
                         "method": "POST",
                         "path": "/chat",
                         "match_subpath": False,
                         "enable_websocket": False,
                         "auth_config": {},
                         "backend_name": backend.name,
-                        "backend_config": None,
+                        "backend_config": {},
                     }
-                ]
+                ],
+                "doc_language": "zh",
             },
         )
 

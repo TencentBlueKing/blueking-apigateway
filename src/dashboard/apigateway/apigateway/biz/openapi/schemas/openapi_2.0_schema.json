@@ -454,33 +454,41 @@
               }
             }
           },
-          "allOf": [
+          "oneOf": [
             {
-              "anyOf": [
-                {
-                  "required": ["kind"],
-                  "properties": {
-                    "kind": {
-                      "enum": ["ai"]
-                    }
-                  }
+              "required": ["kind", "backend"],
+              "properties": {
+                "kind": {
+                  "enum": ["ai"]
                 },
-                {
+                "backend": {
+                  "additionalProperties": false,
                   "properties": {
-                    "backend": {
-                      "not": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "name": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["name"]
-                      }
+                    "name": {
+                      "type": "string"
                     }
+                  },
+                  "required": ["name"]
+                }
+              }
+            },
+            {
+              "properties": {
+                "kind": {
+                  "enum": ["standard"]
+                },
+                "backend": {
+                  "not": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["name"]
                   }
                 }
-              ]
+              }
             }
           ]
         }

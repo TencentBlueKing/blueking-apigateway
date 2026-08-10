@@ -88,6 +88,29 @@ class OpenAPIImportManager:
         """
         进行校验
         """
+        schema_validate_result = self.validate_schema()
+        if len(schema_validate_result) > 0:
+            return schema_validate_result
+
+        # 进行逻辑校验
+
+        try:
+            self.parse()
+        except (ResolutionError, ValueError) as err:
+            return [SchemaValidateErr(str(err), "$", [])]
+
+        validator = ResourceImportValidator(
+            gateway=self.gateway,
+            resource_data_list=self._resource_list,
+            need_delete_unspecified_resources=self.need_delete_unspecified_resources,
+        )
+
+        return validator.validate()
+
+    def validate_schema(self) -> List[SchemaValidateErr]:
+        """
+        仅校验 OpenAPI schema，不执行资源导入业务校验。
+        """
         # 在所有解析操作之前校验 $ref，防止外部引用导致 SSRF / 文件读取
         try:
             self._validate_refs(self.data)
@@ -118,20 +141,7 @@ class OpenAPIImportManager:
         if len(schema_validate_result) > 0:
             return schema_validate_result
 
-        # 进行逻辑校验
-
-        try:
-            self.parse()
-        except (ResolutionError, ValueError) as err:
-            return [SchemaValidateErr(str(err), "$", [])]
-
-        validator = ResourceImportValidator(
-            gateway=self.gateway,
-            resource_data_list=self._resource_list,
-            need_delete_unspecified_resources=self.need_delete_unspecified_resources,
-        )
-
-        return validator.validate()
+        return []
 
     def _get_version_err(self) -> SchemaValidateErr:
         """
@@ -151,18 +161,22 @@ class OpenAPIImportManager:
         """
         解析 openapi
         """
+        self.parse_schema()
+        assert self.parser
+        self._raw_resource_list = self.parser.get_resources()
+        self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
+
+    def parse_schema(self):
+        """
+        解析 OpenAPI schema，仅初始化 parser，不转换为导入资源数据。
+        """
         self._validate_refs(self.data)
 
         parse_result = ResolvingParser(
             spec_string=json.dumps(self.data), backend="openapi-spec-validator", strict=False
         )
 
-        # 获取对应的parser
-        parser = self._get_parser(parse_result)
-
-        self.parser = parser
-        self._raw_resource_list = parser.get_resources()
-        self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
+        self.parser = self._get_parser(parse_result)
 
     @staticmethod
     def _validate_refs(data: Dict[str, Any]) -> None:

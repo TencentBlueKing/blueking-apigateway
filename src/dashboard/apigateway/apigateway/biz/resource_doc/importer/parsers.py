@@ -21,6 +21,7 @@ from typing import IO, AnyStr, Dict, List, Optional, Union
 
 from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV2
+from prance.util.url import ResolutionError
 
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.apps.support.models import ResourceDoc
@@ -168,8 +169,16 @@ class OpenAPIParser(BaseParser):
         gateway = Gateway.objects.get(id=self.gateway_id)
         openapi_manager = OpenAPIImportManager.load_from_content(gateway, openapi)
 
-        validate_err_list = openapi_manager.validate()
-        if len(validate_err_list) > 0 or not openapi_manager.parser:
+        validate_err_list = openapi_manager.validate_schema()
+        if len(validate_err_list) > 0:
+            raise SchemaValidationError("; ".join(f"{err.json_path}: {err.message}" for err in validate_err_list))
+
+        try:
+            openapi_manager.parse_schema()
+        except ResolutionError, ValueError:
+            raise SchemaValidationError("") from None
+
+        if not openapi_manager.parser:
             raise SchemaValidationError("")
 
         docs = []

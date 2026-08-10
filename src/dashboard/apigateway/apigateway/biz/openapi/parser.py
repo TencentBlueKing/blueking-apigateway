@@ -55,12 +55,13 @@ class BaseParser:
 
                 extension_resource = operation.get(OpenAPIExtensionEnum.RESOURCE.value, {})
                 kind = extension_resource.get("kind", ResourceKindEnum.STANDARD.value)
-
-                backend = extension_resource.get("backend") or {
-                    "type": ProxyTypeEnum.HTTP.value,
-                    "method": method,
-                    "path": path,
-                }
+                backend = extension_resource.get("backend")
+                if kind != ResourceKindEnum.AI.value:
+                    backend = backend or {
+                        "type": ProxyTypeEnum.HTTP.value,
+                        "method": method,
+                        "path": path,
+                    }
 
                 resource = {
                     "kind": kind,

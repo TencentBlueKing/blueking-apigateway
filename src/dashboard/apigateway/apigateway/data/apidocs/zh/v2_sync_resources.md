@@ -18,6 +18,34 @@
 | delete   | boolean | 否   | 是否删除未指定的资源，如果为 true，则删除网关中未在 content 中指定的资源，以确保网关中资源和 content 中描述的资源一致 |
 | doc_language   | string  | 否   | 生成接口文档的语言：en: 英文，zh: 中文，不传不生成                                          |
 
+#### AI 网关资源 YAML 说明
+
+AI 网关可以同时导入普通 API 和模型代理 API。资源类型由 `x-bk-apigateway-resource.kind` 区分：
+
+- 普通 API 使用 `kind: standard` 或省略 `kind`，`backend` 必须包含普通后端请求配置，如 `method`、`path`、`timeout`。
+- 模型代理 API 必须显式声明 `kind: ai`，且 `backend` 只能包含模型服务名称 `name`。模型服务配置通过环境同步接口的 `ai_backends` 导入，不会随资源 YAML 导出。
+
+普通 API 示例：
+
+```yaml
+x-bk-apigateway-resource:
+  kind: standard
+  backend:
+    name: default
+    method: get
+    path: /backend/users
+    timeout: 30
+```
+
+模型代理 API 示例：
+
+```yaml
+x-bk-apigateway-resource:
+  kind: ai
+  backend:
+    name: openai-primary
+```
+
 
 ### 请求参数示例
 
