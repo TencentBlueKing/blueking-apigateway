@@ -772,7 +772,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           {(
             row.auth_config?.auth_verified_required === false
             && row.auth_config?.app_verified_required === false
-            && row.auth_config?.oauth2_public_client_enabled === false
             && row.auth_config?.oauth2_personal_client_enabled === false
           )
             ? (
