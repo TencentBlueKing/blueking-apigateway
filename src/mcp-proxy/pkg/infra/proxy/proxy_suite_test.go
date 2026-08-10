@@ -19,6 +19,7 @@
 package proxy
 
 import (
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -28,9 +29,25 @@ import (
 	"mcp_proxy/pkg/infra/logging"
 )
 
+var auditLogPath string
+
 var _ = BeforeSuite(func() {
+	auditLogDir := GinkgoT().TempDir()
+	auditLogPath = filepath.Join(auditLogDir, "audit.log")
+
 	// Initialize config.G to avoid nil pointer dereference when genToolHandler accesses config fields.
-	config.G = &config.Config{}
+	config.G = &config.Config{
+		Logger: config.Logger{
+			Audit: config.LogConfig{
+				Level:  "info",
+				Writer: "file",
+				Settings: map[string]string{
+					"name": "audit.log",
+					"path": auditLogDir,
+				},
+			},
+		},
+	}
 	// Initialize logger for tests
 	logging.InitLogger(config.G)
 })

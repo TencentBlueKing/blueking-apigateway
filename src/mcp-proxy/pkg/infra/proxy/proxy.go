@@ -968,6 +968,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		}
 		logTruncate := config.G.McpServer.LogTruncate
 		requestBody := util.TruncateJSON(req.Params.Arguments, logTruncate.GetAuditLogMaxBodySize())
+		requestBodySize := int64(len(requestBody))
 
 		// 用于在 defer 中记录完整的调用信息（包含 response, latency 等）
 		var (
@@ -991,10 +992,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			// 记录完整的调用信息（合并了之前的 "call tool" 和 "call tool request params" 日志）
 			auditLog.Info(
 				"call tool complete",
-				zap.String("request", requestBody),
 				zap.String("params", requestBody),
 				zap.String("response", auditResponse),
-				zap.Int64("request_body_size", int64(len(requestBody))),
+				zap.Int64("request_body_size", requestBodySize),
 				zap.Int64("response_body_size", auditResponseSize),
 				zap.String("latency", auditLatency.String()),
 				zap.String("status", auditStatus),
@@ -1022,6 +1022,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
+		requestBodySize = int64(len(argsBytes))
 		decoder := json.NewDecoder(bytes.NewReader(argsBytes))
 		decoder.UseNumber()
 		err = decoder.Decode(&handlerRequest)
