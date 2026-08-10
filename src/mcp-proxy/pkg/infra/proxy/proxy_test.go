@@ -27,9 +27,11 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -451,6 +453,43 @@ var _ = Describe("MCPProxy", func() {
 	})
 
 	Describe("genToolHandler response payload behavior", func() {
+		It("logs tool arguments only in params with the full request size", func() {
+			var startOffset int64
+			if logInfo, err := os.Stat(auditLogPath); err == nil {
+				startOffset = logInfo.Size()
+			} else {
+				Expect(os.IsNotExist(err)).To(BeTrue())
+			}
+
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"ok":true}`))
+			}))
+			defer upstream.Close()
+
+			arguments := json.RawMessage(
+				fmt.Sprintf(`{"body_param":{"value":"%s"}}`, strings.Repeat("x", 5000)),
+			)
+			callTestToolHandler(upstream.URL, false, arguments)
+
+			logBytes, err := os.ReadFile(auditLogPath)
+			Expect(err).NotTo(HaveOccurred())
+			logBytes = logBytes[startOffset:]
+
+			var completeLog map[string]any
+			for _, line := range bytes.Split(logBytes, []byte("\n")) {
+				var entry map[string]any
+				if json.Unmarshal(line, &entry) == nil && entry["msg"] == "call tool complete" {
+					completeLog = entry
+				}
+			}
+
+			Expect(completeLog).NotTo(BeNil())
+			Expect(completeLog["params"]).To(HaveSuffix("...(truncated)"))
+			Expect(completeLog).To(HaveKeyWithValue("request_body_size", float64(len(arguments))))
+			Expect(completeLog).NotTo(HaveKey("request"))
+		})
+
 		It("returns envelope response with upstream JSON body", func() {
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
@@ -1533,7 +1572,11 @@ var _ = Describe("MCPProxy", func() {
 	})
 })
 
-func callTestToolHandler(upstream string, rawResponseEnabled bool) *mcp.CallToolResult {
+func callTestToolHandler(
+	upstream string,
+	rawResponseEnabled bool,
+	arguments ...json.RawMessage,
+) *mcp.CallToolResult {
 	upstreamURL, err := url.Parse(upstream)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -1555,10 +1598,14 @@ func callTestToolHandler(upstream string, rawResponseEnabled bool) *mcp.CallTool
 	handler := genToolHandler(toolConfig, "test-server", func() bool {
 		return rawResponseEnabled
 	})
+	toolArguments := json.RawMessage(`{}`)
+	if len(arguments) > 0 {
+		toolArguments = arguments[0]
+	}
 	result, err := handler(testToolCallContext(), &mcp.CallToolRequest{
 		Params: &mcp.CallToolParamsRaw{
 			Name:      "list_items",
-			Arguments: json.RawMessage(`{}`),
+			Arguments: toolArguments,
 		},
 	})
 	Expect(err).NotTo(HaveOccurred())
