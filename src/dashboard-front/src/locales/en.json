@@ -967,7 +967,7 @@
   "申请成功后，{name} 应用将拥有 {mcp} MCP 所有工具的权限。权限审批通过后即可正常使用。": "After the permission is applied, the {name} application will have permission to use all tools of {mcp} MCP. The permission will be available after approval.",
   "查看默认使用指引": "View default usage guidelines",
   "租户id": "Tenant id",
-  "请输入 Cookies 中，字段 bk_token 的值": "Please enter the value of the field bk_token in the cookie",
+  "请输入 Cookies 中，字段 {name} 的值": "Please enter the value of the {name} field in Cookies",
   "不能多于50个字符": "No more than 50 characters",
   "由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符": "Consists of letters, numbers, underscore(_), first character must be a letter, length less than 50",
   "请输入合法Host，如：http://example.com": "Please input valid Host，such as: http://example.com",
