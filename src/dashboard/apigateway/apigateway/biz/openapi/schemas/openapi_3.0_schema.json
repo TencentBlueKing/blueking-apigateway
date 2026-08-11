@@ -369,88 +369,56 @@
             },
             "backend": {
               "type": "object",
-              "oneOf": [
-                {
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "HTTP"
-                      ]
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "method": {
-                      "type": "string",
-                      "enum": [
-                        "get",
-                        "put",
-                        "post",
-                        "delete",
-                        "options",
-                        "head",
-                        "patch",
-                        "any"
-                      ]
-                    },
-                    "path": {
-                      "type": "string",
-                      "pattern": "^/[\\w{}/.-]*$"
-                    },
-                    "matchSubpath": {
-                      "type": "boolean"
-                    },
-                    "timeout": {
-                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
-                    },
-                    "upstreams": {
-                      "$ref": "#/definitions/x-bk-apigateway-upstreams"
-                    },
-                    "transformHeaders": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "method",
-                    "path"
+              "additionalProperties": true,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "HTTP",
+                    "MOCK"
                   ]
                 },
-                {
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "MOCK"
-                      ]
-                    },
-                    "statusCode": {
-                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveInteger"
-                    },
-                    "responseBody": {
-                      "type": "string"
-                    },
-                    "headers": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "type",
-                    "statusCode"
+                "name": {
+                  "type": "string"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "get",
+                    "put",
+                    "post",
+                    "delete",
+                    "options",
+                    "head",
+                    "patch",
+                    "any"
                   ]
                 },
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "name"
-                  ]
+                "path": {
+                  "type": "string"
+                },
+                "matchSubpath": {
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
+                },
+                "upstreams": {
+                  "$ref": "#/definitions/x-bk-apigateway-upstreams"
+                },
+                "transformHeaders": {
+                  "type": "object"
+                },
+                "statusCode": {
+                  "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveInteger"
+                },
+                "responseBody": {
+                  "type": "string"
+                },
+                "headers": {
+                  "type": "object"
                 }
-              ]
+              }
             },
             "pluginConfigs": {
               "type": "array",
@@ -495,7 +463,7 @@
               }
             }
           },
-          "oneOf": [
+          "anyOf": [
             {
               "required": ["kind", "backend"],
               "properties": {
@@ -503,6 +471,7 @@
                   "enum": ["ai"]
                 },
                 "backend": {
+                  "type": "object",
                   "additionalProperties": false,
                   "properties": {
                     "name": {
@@ -519,37 +488,43 @@
                   "enum": ["standard"]
                 },
                 "backend": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": ["HTTP"]
+                  "type": "object",
+                  "anyOf": [
+                    {
+                      "required": ["method", "path"]
                     },
-                    "name": {
-                      "type": "string"
-                    },
-                    "method": {
-                      "type": "string",
-                      "enum": ["get", "put", "post", "delete", "options", "head", "patch", "any"]
-                    },
-                    "path": {
-                      "type": "string",
-                      "pattern": "^/[\\w{}/.-]*$"
-                    },
-                    "matchSubpath": {
-                      "type": "boolean"
-                    },
-                    "timeout": {
-                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
-                    },
-                    "upstreams": {
-                      "$ref": "#/definitions/x-bk-apigateway-upstreams"
-                    },
-                    "transformHeaders": {
-                      "type": "object"
+                    {
+                      "required": ["type", "statusCode"],
+                      "properties": {
+                        "type": {
+                          "enum": ["MOCK"]
+                        }
+                      }
                     }
-                  },
-                  "required": ["method", "path"]
+                  ]
+                }
+              }
+            },
+            {
+              "not": {
+                "required": ["kind"]
+              },
+              "properties": {
+                "backend": {
+                  "type": "object",
+                  "anyOf": [
+                    {
+                      "required": ["method", "path"]
+                    },
+                    {
+                      "required": ["type", "statusCode"],
+                      "properties": {
+                        "type": {
+                          "enum": ["MOCK"]
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
