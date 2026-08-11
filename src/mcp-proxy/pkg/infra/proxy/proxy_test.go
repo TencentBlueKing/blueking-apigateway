@@ -42,6 +42,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -52,7 +54,9 @@ import (
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/infra/bkaidevtrace"
+	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/trace"
+	"mcp_proxy/pkg/metric"
 	"mcp_proxy/pkg/util"
 )
 
@@ -454,6 +458,61 @@ var _ = Describe("MCPProxy", func() {
 	})
 
 	Describe("genToolHandler response payload behavior", func() {
+		It("preserves protocol request logs and size metrics when inner JWT signing fails", func() {
+			metric.MCPRequestBodySize.Reset()
+
+			var startOffset int64
+			if logInfo, err := os.Stat(apiLogPath); err == nil {
+				startOffset = logInfo.Size()
+			} else {
+				Expect(os.IsNotExist(err)).To(BeTrue())
+			}
+
+			arguments := json.RawMessage("{\n  \"body_param\": {\"value\": \"fallback\"}\n}")
+			expectedParams := `{"body_param":{"value":"fallback"}}`
+			handler := genToolHandler(&ToolConfig{Name: "list_items"}, "test-server", func() bool {
+				return false
+			})
+			ctx := context.WithValue(testToolCallContext(), constant.BkGatewayPrivateKey, []byte(nil))
+			result, err := handler(ctx, &mcp.CallToolRequest{
+				Params: &mcp.CallToolParamsRaw{
+					Name:      "list_items",
+					Arguments: arguments,
+				},
+			})
+
+			Expect(result).To(BeNil())
+			Expect(err).To(MatchError(ContainSubstring("private key not found in context")))
+			Expect(logging.GetAPILogger().Sync()).To(Succeed())
+
+			logBytes, err := os.ReadFile(apiLogPath)
+			Expect(err).NotTo(HaveOccurred())
+			logBytes = logBytes[startOffset:]
+			var protocolLog map[string]any
+			for _, line := range bytes.Split(logBytes, []byte("\n")) {
+				var entry map[string]any
+				if json.Unmarshal(line, &entry) == nil && entry["mcp_method"] == "tools/call" {
+					protocolLog = entry
+				}
+			}
+			Expect(protocolLog).NotTo(BeNil())
+			Expect(protocolLog).To(HaveKeyWithValue("params", expectedParams))
+			Expect(protocolLog).To(HaveKeyWithValue("request_body_size", float64(len(expectedParams))))
+
+			observer, err := metric.MCPRequestBodySize.GetMetricWithLabelValues(
+				"test-gateway",
+				"test-server",
+				"tools/call",
+			)
+			Expect(err).NotTo(HaveOccurred())
+			prometheusMetric, ok := observer.(prometheus.Metric)
+			Expect(ok).To(BeTrue())
+			metricData := &dto.Metric{}
+			Expect(prometheusMetric.Write(metricData)).To(Succeed())
+			Expect(metricData.GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(metricData.GetHistogram().GetSampleSum()).To(Equal(float64(len(expectedParams))))
+		})
+
 		It("logs tool arguments only in params with the full request size", func() {
 			var startOffset int64
 			if logInfo, err := os.Stat(auditLogPath); err == nil {
