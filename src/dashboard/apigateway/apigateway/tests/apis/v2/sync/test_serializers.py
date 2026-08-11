@@ -87,7 +87,7 @@ def test_ai_backend_ignores_unknown_outer_field():
 
 
 def test_gateway_sync_input_maps_ai_kind():
-    slz = GatewaySyncInputSLZ(data={"name": "ai-gateway", "kind": "ai"})
+    slz = GatewaySyncInputSLZ(data={"name": "bkai-gateway", "kind": "ai"})
 
     slz.is_valid(raise_exception=True)
 
@@ -95,6 +95,37 @@ def test_gateway_sync_input_maps_ai_kind():
 
 
 class TestGatewaySyncInputSLZ:
+    @pytest.mark.parametrize(
+        ("data", "is_valid"),
+        [
+            ({"name": "bkai-gateway", "kind": "ai"}, True),
+            ({"name": "bkaidev", "kind": "ai"}, True),
+            ({"name": "bkaidev-demo", "kind": "ai"}, True),
+            ({"name": "bkaidevx", "kind": "ai"}, False),
+            ({"name": "bkaidevfoo", "kind": "ai"}, False),
+            ({"name": "gateway", "kind": "ai"}, False),
+            ({"name": "bkai-gateway", "kind": "normal"}, False),
+            ({"name": "bkaidev", "kind": "normal"}, True),
+            ({"name": "bkai-official", "kind": "ai", "api_type": 1}, True),
+            ({"name": "bkaidev", "kind": "ai", "api_type": 1}, True),
+        ],
+    )
+    def test_validate_gateway_name_kind_when_creating(self, data, is_valid):
+        slz = GatewaySyncInputSLZ(data=data)
+
+        assert slz.is_valid() is is_valid
+
+    def test_update_legacy_ai_gateway_skips_create_name_validation(self, fake_gateway):
+        fake_gateway.name = "legacy-ai-gateway"
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        slz = GatewaySyncInputSLZ(
+            fake_gateway,
+            data={"name": fake_gateway.name, "kind": "ai", "api_type": 1},
+        )
+
+        slz.is_valid(raise_exception=True)
+
     def test_validate_name_allows_whitelisted_official_gateway(self, settings):
         settings.IGNORE_GATEWAY_NAME_CHECK_WHITELIST = ["paasv3"]
         settings.OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]

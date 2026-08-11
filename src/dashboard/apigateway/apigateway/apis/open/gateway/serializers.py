@@ -27,6 +27,7 @@ from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaint
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
+    GatewayKindEnum,
     GatewayKindNameEnum,
     GatewayStatusEnum,
     GatewaySyncKindEnum,
@@ -35,6 +36,7 @@ from apigateway.core.constants import (
     convert_gateway_kind_to_name,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.gateway_name import validate_gateway_name_kind
 
 
 class GatewayListV1InputSLZ(serializers.Serializer):
@@ -168,15 +170,23 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         ref_name = "apigateway.apis.open.gateway.serializers.GatewaySyncInputSLZ"
 
     def validate(self, data):
-        self._validate_name(data["name"], data.get("api_type"))
+        kind = convert_gateway_kind_name_to_value(data["kind"])
+        effective_kind = self.instance.kind if self.instance else kind
+        self._validate_name(data["name"], data.get("api_type"), effective_kind)
+
+        if self.instance is None:
+            validate_gateway_name_kind(data["name"], kind)
 
         data["gateway_type"] = data.pop("api_type", None)
-        data["kind"] = convert_gateway_kind_name_to_value(data["kind"])
+        data["kind"] = kind
 
         return data
 
-    def _validate_name(self, name: str, api_type: Optional[int]):
+    def _validate_name(self, name: str, api_type: Optional[int], kind: int = GatewayKindEnum.NORMAL.value):
         if api_type is None or api_type == GatewayTypeEnum.CLOUDS_API.value:
+            return
+
+        if kind == GatewayKindEnum.AI.value:
             return
 
         # 场景：某些官方网关名不是 bk-开头，但是需要标记为官方网关

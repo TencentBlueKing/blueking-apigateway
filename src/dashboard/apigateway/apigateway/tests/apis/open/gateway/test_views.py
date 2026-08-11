@@ -163,17 +163,30 @@ class TestGatewaySyncApi:
     def test_post_creates_ai_gateway(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
     ):
+        gateway_name = f"bkai-{unique_gateway_name}"
         response = request_view(
             method="POST",
             view_name="openapi.gateway.sync",
-            path_params={"gateway_name": unique_gateway_name},
+            path_params={"gateway_name": gateway_name},
             data={"kind": "ai"},
             app=mocker.MagicMock(app_code="foo"),
         )
 
         assert response.status_code == 200
         assert response.json()["data"]["kind"] == "ai"
-        assert Gateway.objects.get(name=unique_gateway_name).kind == GatewayKindEnum.AI.value
+        assert Gateway.objects.get(name=gateway_name).kind == GatewayKindEnum.AI.value
+
+    def test_post_creates_bkaidev_ai_gateway(self, mocker, request_view, disable_app_permission, default_data_plane):
+        response = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": "bkaidev"},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200
+        assert Gateway.objects.get(name="bkaidev").kind == GatewayKindEnum.AI.value
 
     def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane):
         resp = request_view(

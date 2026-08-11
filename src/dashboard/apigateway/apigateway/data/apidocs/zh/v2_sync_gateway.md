@@ -9,7 +9,7 @@
 
 | 参数名称         | 参数类型 | 必选 | 描述   |
 |--------------| -------- | ---- | ------ |
-| gateway_name | string   | 是   | 网关名 |
+| gateway_name | string   | 是   | 网关名。创建 AI 网关时须以 `bkai-` 开头；非 AI 网关不能使用 `bkai-` 前缀 |
 
 #### 请求参数
 
@@ -27,7 +27,7 @@
     "description": "just for test",
     "maintainers": ["admin"],
     "is_public": true,
-    "kind": "ai"
+    "kind": "normal"
 }
 ```
 
@@ -39,7 +39,7 @@
     "data": {
         "id": 1,
         "name": "demo",
-        "kind": "ai"
+        "kind": "normal"
     }
 }
 ```

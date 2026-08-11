@@ -33,6 +33,7 @@ from apigateway.core.constants import (
     ProgrammableGatewayLanguageEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.gateway_name import validate_gateway_name_kind
 from apigateway.service.paas import gen_programmable_gateway_links
 from apigateway.utils.crypto import calculate_fingerprint
 
@@ -212,6 +213,10 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
         return self._add_creator_to_maintainers(data)
+
+    def validate(self, data):
+        validate_gateway_name_kind(data["name"], data.get("kind", GatewayKindEnum.NORMAL.value))
+        return data
 
     def create(self, validated_data):
         validated_data.pop("programmable_gateway_git_info", None)

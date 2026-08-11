@@ -2152,7 +2152,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 网关名
+          description: 创建 AI 网关时须以 bkai- 开头；非 AI 网关不能使用 bkai- 前缀
           example: demo
       requestBody:
         required: false
@@ -2186,7 +2186,7 @@ paths:
               description: just for test
               maintainers: ["admin"]
               is_public: true
-              kind: ai
+              kind: normal
       responses:
         '200':
           description: 成功同步网关
@@ -2216,14 +2216,14 @@ paths:
                         type: string
                         enum: [normal, programmable, ai]
                         description: 网关类型
-                        example: ai
+                        example: normal
               example:
                 code: 0
                 message: OK
                 data:
                   id: 1
                   name: demo
-                  kind: ai
+                  kind: normal
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: true
@@ -5068,7 +5068,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 网关名
+          description: 创建 AI 网关时须以 bkai- 开头；非 AI 网关不能使用 bkai- 前缀
           example: demo
       requestBody:
         required: false
@@ -5102,7 +5102,7 @@ paths:
               description: just for test
               maintainers: ["admin"]
               is_public: true
-              kind: ai
+              kind: normal
       responses:
         '200':
           description: 成功同步网关
@@ -5126,7 +5126,7 @@ paths:
                         type: string
                         enum: [normal, programmable, ai]
                         description: 网关类型
-                        example: ai
+                        example: normal
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
