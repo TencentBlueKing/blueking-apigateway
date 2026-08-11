@@ -24,68 +24,51 @@ from apigateway.service.gateway_name import validate_gateway_name_kind
 
 
 @pytest.mark.parametrize(
-    ("name", "kind", "allow_bkaidev_ai_name"),
+    ("name", "kind"),
     [
-        ("bkai-demo", GatewayKindEnum.AI.value, False),
-        ("bkaidev", GatewayKindEnum.AI.value, True),
-        ("bkaidev-demo", GatewayKindEnum.AI.value, True),
-        ("demo", GatewayKindEnum.NORMAL.value, False),
-        ("bkaidev", GatewayKindEnum.NORMAL.value, False),
+        ("bkai-demo", GatewayKindEnum.AI.value),
+        ("bkaidev", GatewayKindEnum.AI.value),
+        ("bkaidev-demo", GatewayKindEnum.AI.value),
+        ("demo", GatewayKindEnum.NORMAL.value),
+        ("bkaidev", GatewayKindEnum.NORMAL.value),
     ],
 )
-def test_validate_gateway_name_kind_accepts_valid_names(name, kind, allow_bkaidev_ai_name):
-    validate_gateway_name_kind(name, kind, allow_bkaidev_ai_name=allow_bkaidev_ai_name)
+def test_validate_gateway_name_kind_accepts_valid_names(name, kind):
+    validate_gateway_name_kind(name, kind)
 
 
 @pytest.mark.parametrize(
-    ("name", "kind", "allow_bkaidev_ai_name", "expected_error"),
+    ("name", "kind", "expected_error"),
     [
         (
             "demo",
             GatewayKindEnum.AI.value,
-            False,
             "AI 网关名称必须以【bkai-】开头。",
-        ),
-        (
-            "bkaidev",
-            GatewayKindEnum.AI.value,
-            False,
-            "AI 网关名称必须以【bkai-】开头。",
-        ),
-        (
-            "demo",
-            GatewayKindEnum.AI.value,
-            True,
-            "AI 网关名称必须以【bkai-】开头；自动化同步创建还允许【bkaidev】或【bkaidev-*】。",
         ),
         (
             "bkaidevx",
             GatewayKindEnum.AI.value,
-            True,
-            "AI 网关名称必须以【bkai-】开头；自动化同步创建还允许【bkaidev】或【bkaidev-*】。",
+            "AI 网关名称必须以【bkai-】开头。",
         ),
         (
             "bkaidevfoo",
             GatewayKindEnum.AI.value,
-            True,
-            "AI 网关名称必须以【bkai-】开头；自动化同步创建还允许【bkaidev】或【bkaidev-*】。",
+            "AI 网关名称必须以【bkai-】开头。",
         ),
         (
             "bkai-demo",
             GatewayKindEnum.NORMAL.value,
-            False,
             "前缀【bkai-】仅供 AI 网关使用。",
         ),
         (
             "bkai-demo",
             GatewayKindEnum.PROGRAMMABLE.value,
-            False,
             "前缀【bkai-】仅供 AI 网关使用。",
         ),
     ],
 )
-def test_validate_gateway_name_kind_rejects_invalid_names(name, kind, allow_bkaidev_ai_name, expected_error):
+def test_validate_gateway_name_kind_rejects_invalid_names(name, kind, expected_error):
     with pytest.raises(ValidationError) as exc_info:
-        validate_gateway_name_kind(name, kind, allow_bkaidev_ai_name=allow_bkaidev_ai_name)
+        validate_gateway_name_kind(name, kind)
 
     assert str(exc_info.value.detail["name"]) == expected_error

@@ -130,14 +130,8 @@ class TestGatewayListCreateApi:
         assert "APISIX 3.16 or later" in response.json()["error"]["message"]
         assert not Gateway.objects.filter(name=gateway_name).exists()
 
-    @pytest.mark.parametrize(
-        ("name", "kind", "expected_error"),
-        [
-            ("bkaidev", GatewayKindEnum.AI.value, "AI 网关名称必须以【bkai-】开头"),
-            ("bkai-demo", GatewayKindEnum.NORMAL.value, "前缀【bkai-】仅供 AI 网关使用"),
-        ],
-    )
-    def test_create_rejects_invalid_gateway_name_kind(self, request_view, name, kind, expected_error):
+    @pytest.mark.parametrize("name", ["bkaidev", "bkaidev-demo"])
+    def test_create_ai_gateway_allows_implicit_bkaidev_name(self, request_view, name, default_data_plane):
         response = request_view(
             method="POST",
             view_name="gateways.list_create",
@@ -146,15 +140,33 @@ class TestGatewayListCreateApi:
                 "description": "gateway",
                 "maintainers": ["admin"],
                 "is_public": False,
-                "kind": kind,
+                "kind": GatewayKindEnum.AI.value,
+                "tenant_mode": "single",
+                "tenant_id": "default",
+            },
+        )
+
+        assert response.status_code == 201
+        assert Gateway.objects.get(name=name).kind == GatewayKindEnum.AI.value
+
+    def test_create_non_ai_gateway_rejects_bkai_prefix(self, request_view):
+        response = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data={
+                "name": "bkai-demo",
+                "description": "gateway",
+                "maintainers": ["admin"],
+                "is_public": False,
+                "kind": GatewayKindEnum.NORMAL.value,
                 "tenant_mode": "single",
                 "tenant_id": "default",
             },
         )
 
         assert response.status_code == 400
-        assert expected_error in response.json()["error"]["message"]
-        assert not Gateway.objects.filter(name=name).exists()
+        assert "前缀【bkai-】仅供 AI 网关使用" in response.json()["error"]["message"]
+        assert not Gateway.objects.filter(name="bkai-demo").exists()
 
     def test_create_programmable_gateway_without_repo_authorization__non_te(
         self,

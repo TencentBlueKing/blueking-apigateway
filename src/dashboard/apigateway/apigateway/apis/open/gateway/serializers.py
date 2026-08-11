@@ -175,7 +175,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         self._validate_name(data["name"], data.get("api_type"), effective_kind)
 
         if self.instance is None:
-            validate_gateway_name_kind(data["name"], kind, allow_bkaidev_ai_name=True)
+            validate_gateway_name_kind(data["name"], kind)
 
         data["gateway_type"] = data.pop("api_type", None)
         data["kind"] = kind

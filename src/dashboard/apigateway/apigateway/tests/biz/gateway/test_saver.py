@@ -251,35 +251,23 @@ class TestGatewaySaver:
         assert mocked_saver.call_args.kwargs["bk_app_code"] == "app"
         assert mocked_saver.call_args.kwargs["source"] == CallSourceTypeEnum.OpenAPI
         assert mocked_saver.call_args.kwargs["data_plane_ids"] == [1]
-        assert mocked_saver.call_args.kwargs["allow_bkaidev_ai_name"] is True
 
-    def test_create_ai_gateway_rejects_bkaidev_by_default(self):
-        saver = GatewaySaver(
-            None,
-            GatewayData(name="bkaidev", status=0, kind=GatewayKindEnum.AI.value),
-        )
-
-        with pytest.raises(ValidationError, match="AI 网关名称必须以【bkai-】开头"):
-            saver.save()
-
-        assert not Gateway.objects.filter(name="bkaidev").exists()
-
-    def test_create_ai_gateway_allows_bkaidev_for_automated_sync(self, default_data_plane):
+    @pytest.mark.parametrize("name", ["bkaidev", "bkaidev-demo"])
+    def test_create_ai_gateway_allows_implicit_bkaidev_name(self, name, default_data_plane):
         saver = GatewaySaver(
             None,
             GatewayData(
-                name="bkaidev",
+                name=name,
                 status=0,
                 kind=GatewayKindEnum.AI.value,
                 tenant_mode="single",
                 tenant_id="default",
             ),
-            allow_bkaidev_ai_name=True,
         )
 
         gateway = saver.save()
 
-        assert gateway.name == "bkaidev"
+        assert gateway.name == name
         assert gateway.kind == GatewayKindEnum.AI.value
 
     def test_update_legacy_ai_gateway_skips_create_name_validation(self, fake_gateway):

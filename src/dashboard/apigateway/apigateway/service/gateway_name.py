@@ -21,22 +21,14 @@ from rest_framework.exceptions import ValidationError
 from apigateway.core.constants import GatewayKindEnum
 
 
-def validate_gateway_name_kind(name: str, kind: int, allow_bkaidev_ai_name: bool = False) -> None:
+def validate_gateway_name_kind(name: str, kind: int) -> None:
     is_ai_gateway = kind == GatewayKindEnum.AI.value
     if not is_ai_gateway:
         if name.startswith("bkai-"):
             raise ValidationError({"name": "前缀【bkai-】仅供 AI 网关使用。"})
         return
 
-    if name.startswith("bkai-"):
+    if name == "bkaidev" or name.startswith(("bkai-", "bkaidev-")):
         return
-
-    if allow_bkaidev_ai_name and (name == "bkaidev" or name.startswith("bkaidev-")):
-        return
-
-    if allow_bkaidev_ai_name:
-        raise ValidationError(
-            {"name": "AI 网关名称必须以【bkai-】开头；自动化同步创建还允许【bkaidev】或【bkaidev-*】。"}
-        )
 
     raise ValidationError({"name": "AI 网关名称必须以【bkai-】开头。"})
