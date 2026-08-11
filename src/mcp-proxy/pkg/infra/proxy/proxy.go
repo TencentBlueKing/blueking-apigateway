@@ -20,7 +20,6 @@
 package proxy
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -931,6 +930,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		}
 
 		// MCP protocol-level logging and metrics
+		var requestPayload *toolRequestPayload
 		var responsePayload *toolResponsePayload
 		defer func() {
 			if r := recover(); r != nil {
@@ -949,12 +949,23 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				serverName,
 				toolApiConfig.Name,
 				req,
+				requestPayload,
 				result,
 				responsePayload,
 				err,
 				start,
 			)
-			logToolCall(ctx, serverName, toolApiConfig.Name, req, result, responsePayload, err, start)
+			logToolCall(
+				ctx,
+				serverName,
+				toolApiConfig.Name,
+				req,
+				requestPayload,
+				result,
+				responsePayload,
+				err,
+				start,
+			)
 		}()
 
 		// Prepare audit log with request context
@@ -967,8 +978,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			return nil, trace.WrapErrorWithTraceID(ctx, fmt.Errorf("sign inner jwt failed: %w", err))
 		}
 		logTruncate := config.G.McpServer.LogTruncate
-		requestBody := util.TruncateJSON(req.Params.Arguments, logTruncate.GetAuditLogMaxBodySize())
-		requestBodySize := int64(len(requestBody))
+		arguments := req.Params.Arguments
+		var requestBody string
+		var requestBodySize int64
 
 		// 用于在 defer 中记录完整的调用信息（包含 response, latency 等）
 		var (
@@ -980,7 +992,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditHeaderInfo    map[string]string
 			auditQueryParam    QueryParam
 			auditPathParam     StringParamMap
-			auditBodyParam     json.RawMessage
+			auditBodyParam     = "null"
 		)
 
 		// 在函数返回时记录完整的 audit log，包含 response, latency 等字段
@@ -1002,18 +1014,16 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				zap.Any("header", util.MaskSensitiveHeaders(auditHeaderInfo)),
 				zap.Any("query", auditQueryParam),
 				zap.Any("path", auditPathParam),
-				zap.String(
-					"body",
-					util.TruncateJSON(auditBodyParam, logTruncate.GetAuditLogMaxBodySize()),
-				),
+				zap.String("body", auditBodyParam),
 			)
 			if recoveredPanic != nil {
 				panic(recoveredPanic)
 			}
 		}()
-		var handlerRequest HandlerRequest
-		argsBytes, err := json.Marshal(req.Params.Arguments)
+		requestPayload, err = newToolRequestPayload(arguments)
 		if err != nil {
+			requestBody = util.TruncateJSON(arguments, logTruncate.GetAuditLogMaxBodySize())
+			requestBodySize = int64(len(requestBody))
 			auditLog.Error(
 				"marshal arguments err",
 				zap.Any("arguments", req.Params.Arguments),
@@ -1022,13 +1032,12 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
-		requestBodySize = int64(len(argsBytes))
-		decoder := json.NewDecoder(bytes.NewReader(argsBytes))
-		decoder.UseNumber()
-		err = decoder.Decode(&handlerRequest)
+		requestBody = requestPayload.auditPreview(logTruncate.GetAuditLogMaxBodySize())
+		requestBodySize = requestPayload.auditSize()
+		handlerRequest, err := requestPayload.decodeHandlerRequest()
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
-				string(argsBytes)), zap.Error(err))
+				string(requestPayload.rawArguments)), zap.Error(err))
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
@@ -1089,7 +1098,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 
 				if err = setHandlerRequestParams(
 					req,
-					&handlerRequest,
+					handlerRequest,
 					headerInfo,
 					auditLog,
 				); err != nil {
@@ -1158,7 +1167,10 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		auditHeaderInfo = headerInfo
 		auditQueryParam = handlerRequest.QueryParam
 		auditPathParam = handlerRequest.PathParam
-		auditBodyParam = handlerRequest.BodyParam
+		auditBodyParam = requestPayload.bodyAuditPreview(
+			handlerRequest.BodyParam,
+			logTruncate.GetAuditLogMaxBodySize(),
+		)
 
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
@@ -1240,8 +1252,9 @@ func recordToolCallMetrics(
 	ctx context.Context,
 	serverName, toolName string,
 	req *mcp.CallToolRequest,
+	requestPayload *toolRequestPayload,
 	result *mcp.CallToolResult,
-	payload *toolResponsePayload,
+	responsePayload *toolResponsePayload,
 	err error,
 	start time.Time,
 ) {
@@ -1288,16 +1301,19 @@ func recordToolCallMetrics(
 	if metric.MCPRequestBodySize != nil && metric.MCPResponseBodySize != nil {
 		var requestBodySize, responseBodySize int64
 
-		// Calculate request body size from CallToolRequest
-		if req != nil && req.Params != nil && req.Params.Arguments != nil {
+		// Reuse canonical request bytes on the normal path. The fallback preserves
+		// request-size metrics for errors returned before the payload is built.
+		if requestPayload != nil {
+			requestBodySize = requestPayload.metricSize()
+		} else if req != nil && req.Params != nil && req.Params.Arguments != nil {
 			if paramsBytes, marshalErr := json.Marshal(req.Params.Arguments); marshalErr == nil {
 				requestBodySize = int64(len(paramsBytes))
 			}
 		}
 
 		// Calculate response body size from raw payload when available.
-		if payload != nil {
-			responseBodySize = int64(len(payload.rawBody))
+		if responsePayload != nil {
+			responseBodySize = int64(len(responsePayload.rawBody))
 		} else if result != nil {
 			if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 				responseBodySize = int64(len(resultBytes))
@@ -1319,8 +1335,9 @@ func logToolCall(
 	serverName string,
 	toolName string,
 	req *mcp.CallToolRequest,
+	requestPayload *toolRequestPayload,
 	result *mcp.CallToolResult,
-	payload *toolResponsePayload,
+	responsePayload *toolResponsePayload,
 	err error,
 	start time.Time,
 ) {
@@ -1343,12 +1360,12 @@ func logToolCall(
 	traceID := trace.GetTraceIDFromContext(ctx)
 
 	// Serialize request params and response
-	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
+	params, requestBodySize := serializeToolCallRequest(req, requestPayload, logTruncate)
 	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(
 		traceID,
 		ctxInfo.xRequestID,
 		result,
-		payload,
+		responsePayload,
 		hasError,
 		logTruncate,
 	)
@@ -1412,7 +1429,16 @@ func logToolCall(
 }
 
 // serializeToolCallRequest serializes the tool call request params.
-func serializeToolCallRequest(req *mcp.CallToolRequest, logTruncate config.LogTruncate) (string, int64) {
+func serializeToolCallRequest(
+	req *mcp.CallToolRequest,
+	payload *toolRequestPayload,
+	logTruncate config.LogTruncate,
+) (string, int64) {
+	if payload != nil {
+		return payload.apiLogPreview(logTruncate.GetAPILogRequestSize())
+	}
+	// Payload-nil fallback handles errors returned before request arguments are
+	// canonicalized, such as inner-JWT signing failures.
 	if req == nil || req.Params == nil || req.Params.Arguments == nil {
 		return "", 0
 	}

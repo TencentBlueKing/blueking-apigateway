@@ -28,6 +28,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -461,16 +462,22 @@ var _ = Describe("MCPProxy", func() {
 				Expect(os.IsNotExist(err)).To(BeTrue())
 			}
 
-			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			var upstreamBody []byte
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
+				upstreamBody, err = io.ReadAll(r.Body)
+				Expect(err).NotTo(HaveOccurred())
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write([]byte(`{"ok":true}`))
 			}))
 			defer upstream.Close()
 
 			arguments := json.RawMessage(
-				fmt.Sprintf(`{"body_param":{"value":"%s"}}`, strings.Repeat("x", 5000)),
+				fmt.Sprintf("{\n  \"body_param\": {\"value\":\"%s\"}\n}", strings.Repeat("x", 5000)),
 			)
 			callTestToolHandler(upstream.URL, false, arguments)
+			canonicalArguments, err := json.Marshal(arguments)
+			Expect(err).NotTo(HaveOccurred())
 
 			logBytes, err := os.ReadFile(auditLogPath)
 			Expect(err).NotTo(HaveOccurred())
@@ -485,9 +492,13 @@ var _ = Describe("MCPProxy", func() {
 			}
 
 			Expect(completeLog).NotTo(BeNil())
-			Expect(completeLog["params"]).To(HaveSuffix("...(truncated)"))
-			Expect(completeLog).To(HaveKeyWithValue("request_body_size", float64(len(arguments))))
+			Expect(completeLog["params"]).To(Equal(util.TruncateJSON(
+				arguments,
+				config.G.McpServer.LogTruncate.GetAuditLogMaxBodySize(),
+			)))
+			Expect(completeLog).To(HaveKeyWithValue("request_body_size", float64(len(canonicalArguments))))
 			Expect(completeLog).NotTo(HaveKey("request"))
+			Expect(upstreamBody).To(MatchJSON(`{"value":"` + strings.Repeat("x", 5000) + `"}`))
 		})
 
 		It("returns envelope response with upstream JSON body", func() {
