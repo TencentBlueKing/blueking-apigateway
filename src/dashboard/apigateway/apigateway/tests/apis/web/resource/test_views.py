@@ -1202,7 +1202,7 @@ class TestResourceImportCheckApi:
 
         backend = item.pop("backend")
         item["backend_name"] = backend["name"]
-        item["backend_config"] = {}
+        item["backend_config"] = None
         import_response = request_view(
             method="POST",
             view_name="resource.import",
@@ -1236,7 +1236,7 @@ class TestResourceImportApi:
                         "enable_websocket": False,
                         "auth_config": {},
                         "backend_name": backend.name,
-                        "backend_config": {},
+                        "backend_config": None,
                     }
                 ],
                 "doc_language": "zh",

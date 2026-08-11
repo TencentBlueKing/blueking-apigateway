@@ -478,15 +478,37 @@
                   "enum": ["standard"]
                 },
                 "backend": {
-                  "not": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "name": {
-                        "type": "string"
-                      }
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["HTTP"]
                     },
-                    "required": ["name"]
-                  }
+                    "name": {
+                      "type": "string"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": ["get", "put", "post", "delete", "options", "head", "patch", "any"]
+                    },
+                    "path": {
+                      "type": "string",
+                      "pattern": "^/[\\w{}/.-]*$"
+                    },
+                    "matchSubpath": {
+                      "type": "boolean"
+                    },
+                    "timeout": {
+                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
+                    },
+                    "upstreams": {
+                      "$ref": "#/definitions/x-bk-apigateway-upstreams"
+                    },
+                    "transformHeaders": {
+                      "type": "object"
+                    }
+                  },
+                  "required": ["method", "path"]
                 }
               }
             }

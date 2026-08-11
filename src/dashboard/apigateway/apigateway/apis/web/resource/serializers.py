@@ -718,12 +718,6 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             BackendPathVarsValidator(),
         ]
 
-    def to_internal_value(self, data):
-        # 兼容资源导入页面将模型代理 API 的空后端配置提交为 {} 的场景。
-        if data.get("kind") == ResourceKindEnum.AI.value and data.get("backend_config") == {}:
-            data = {**data, "backend_config": None}
-        return super().to_internal_value(data)
-
     def validate_description_en(self, value) -> Optional[str]:
         # description_en 为 None 时，文档中描述会展示 description 内容，
         # 因此，前端未传入有效 description_en 时，将其设置为 None

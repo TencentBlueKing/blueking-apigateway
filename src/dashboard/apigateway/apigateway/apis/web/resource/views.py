@@ -43,7 +43,7 @@ from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_doc.importer import DocImporter, OpenAPIParser
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.core.constants import STAGE_VAR_PATTERN
+from apigateway.core.constants import STAGE_VAR_PATTERN, ResourceKindEnum
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.contexts import ResourceAuthContext
@@ -80,6 +80,12 @@ class ResourceQuerySetMixin:
 
 class BackendHostIsEmpty(Exception):
     """后端服务地址为空，如新创建的 prod 环境默认后端的地址"""
+
+
+def _export_openapi_for_doc_generation(resources: List[Dict[str, Any]]) -> str:
+    include_bk_apigateway_resource = any(resource.get("kind") == ResourceKindEnum.AI.value for resource in resources)
+    exporter = OpenAPIExportManager(include_bk_apigateway_resource=include_bk_apigateway_resource)
+    return exporter.export_openapi(resources, file_type="yaml")
 
 
 @method_decorator(
@@ -527,9 +533,8 @@ class ResourceImportApi(generics.CreateAPIView):
         importer.import_resources()
         # 如果生成文档还要再生成文档
         if slz.validated_data.get("doc_language"):
-            exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
             # 生成openapi yaml
-            content = exporter.export_openapi(slz.data.get("import_resources", []), file_type="yaml")
+            content = _export_openapi_for_doc_generation(slz.data.get("import_resources", []))
             parser = OpenAPIParser(gateway_id=request.gateway.id)
             docs = parser.parse(
                 swagger=content,
@@ -560,9 +565,8 @@ class ResourceImportDocPreviewApi(generics.CreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
         # 生成openapi yaml
-        content = exporter.export_openapi([slz.data.get("review_resource")], file_type="yaml")
+        content = _export_openapi_for_doc_generation([slz.data.get("review_resource")])
         parser = OpenAPIParser(gateway_id=request.gateway.id)
         docs = parser.parse(
             swagger=content,

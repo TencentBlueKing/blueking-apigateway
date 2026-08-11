@@ -194,6 +194,15 @@ class BaseExporter:
         backend = resource.get("backend", {})
         kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
 
+        # 资源导入生成文档时传入 DTO，AI 网关资源需要保留 kind / backend
+        if "backend" not in resource and "backend_name" in resource:
+            if kind == ResourceKindEnum.AI.value:
+                operation[OPENAPI_RESOURCE_EXTENSION] = {
+                    "kind": ResourceKindEnum.AI.value,
+                    "backend": {"name": resource["backend_name"]},
+                }
+            return
+
         operation[OPENAPI_RESOURCE_EXTENSION] = {
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
