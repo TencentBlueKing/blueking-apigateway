@@ -2211,7 +2211,7 @@ paths:
                       name:
                         type: string
                         description: 网关名称
-                        example: demo
+                        example: bkai-demo
                       kind:
                         type: string
                         enum: [normal, programmable, ai]
@@ -2222,7 +2222,7 @@ paths:
                 message: OK
                 data:
                   id: 1
-                  name: demo
+                  name: bkai-demo
                   kind: ai
       x-bk-apigateway-resource:
         isPublic: false
@@ -5121,7 +5121,7 @@ paths:
                       name:
                         type: string
                         description: 网关名称
-                        example: demo
+                        example: bkai-demo
                       kind:
                         type: string
                         enum: [normal, programmable, ai]
