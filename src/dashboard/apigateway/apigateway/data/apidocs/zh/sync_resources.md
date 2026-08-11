@@ -46,8 +46,6 @@
 | `path` | string | 普通 API 必填 | 后端请求路径 |
 | `matchSubpath` | boolean | 否 | 是否追加匹配的子路径，默认 `false`；需与资源的 `matchSubpath` 保持一致 |
 | `timeout` | integer | 否 | 后端请求超时时间，默认 `0` |
-| `upstreams` | object | 否 | 兼容旧版资源 YAML 的后端地址配置 |
-| `transformHeaders` | object | 否 | 兼容旧版资源 YAML 的请求头转换配置 |
 
 `authConfig` 字段说明：
 
