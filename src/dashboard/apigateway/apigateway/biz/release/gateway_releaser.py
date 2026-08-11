@@ -31,7 +31,7 @@ from apigateway.apps.data_plane.constants import (
     resource_version_uses_oauth2,
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.apps.mcp_server.constants import SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME
+from apigateway.apps.mcp_server.constants import ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.controller.distributor.connection import (
@@ -261,11 +261,10 @@ class GatewayReleaser:
             data_plane_id=data_plane.id,
         )
         add_mcp_server_permissions = signature(
-            SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME,
+            ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME,
             kwargs={
                 "stage_id": release.stage.id,
                 "resource_version_id": release_history.resource_version.id,
-                "delete_stale": False,
             },
             immutable=True,
         )

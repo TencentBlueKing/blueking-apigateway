@@ -206,11 +206,13 @@ class TestGatewayReleaser:
         publish_chain = delay_on_commit.call_args.args[0]
         assert len(publish_chain.tasks) == 3
         permission_sync = publish_chain.tasks[1]
-        assert permission_sync.task == "apigateway.apps.mcp_server.tasks.sync_stage_mcp_server_permissions"
+        assert (
+            permission_sync.task
+            == "apigateway.apps.mcp_server.tasks.add_stage_mcp_server_permissions_before_release_update"
+        )
         assert permission_sync.kwargs == {
             "stage_id": fake_stage.id,
             "resource_version_id": fake_resource_version.id,
-            "delete_stale": False,
         }
         assert permission_sync.immutable is True
 

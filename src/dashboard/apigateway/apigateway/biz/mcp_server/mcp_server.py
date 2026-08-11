@@ -486,7 +486,7 @@ class MCPServerHandler:
         # 3.4 add and delete
         logger.debug("add %d permissions, delete %d permissions", len(to_add), len(to_delete))
         if to_add:
-            AppResourcePermission.objects.bulk_create(to_add)
+            AppResourcePermission.objects.bulk_create(to_add, ignore_conflicts=True)
         if to_delete:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
 

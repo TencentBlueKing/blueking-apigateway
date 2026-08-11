@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from celery import current_app, shared_task
 
 from apigateway.apps.data_plane.models import DataPlane
-from apigateway.apps.mcp_server.constants import SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME
+from apigateway.apps.mcp_server.constants import RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor
@@ -68,14 +68,6 @@ def _release_gateway(
             release_task_id=procedure_logger.release_task_id,
             publish_id=release_history.id,
         )
-        if is_success:
-            PublishEventReporter.report_distribute_config_success(
-                release_history,
-            )
-
-        else:
-            PublishEventReporter.report_distribute_config_failure(release_history, fail_msg)
-            return False
     except Exception as err:  # pylint: disable=broad-except
         # 记录失败原因
         procedure_logger.exception("release failed")
@@ -84,6 +76,13 @@ def _release_gateway(
         # 异常抛出，让 celery 停止编排
         raise
 
+    if not is_success:
+        PublishEventReporter.report_distribute_config_failure(release_history, fail_msg)
+        raise RuntimeError(fail_msg)
+
+    PublishEventReporter.report_distribute_config_success(
+        release_history,
+    )
     return True
 
 
@@ -232,10 +231,11 @@ def update_release_data_after_success(
         resource_version.id,
     )
     current_app.send_task(
-        SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME,
+        RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME,
         kwargs={
             "stage_id": release.stage.id,
             "expected_resource_version_id": resource_version.id,
+            "expected_publish_id": publish_id,
         },
         countdown=MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS,
     )

@@ -22,7 +22,12 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
-SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME = "apigateway.apps.mcp_server.tasks.sync_stage_mcp_server_permissions"
+ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME = (
+    "apigateway.apps.mcp_server.tasks.add_stage_mcp_server_permissions_before_release_update"
+)
+RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME = (
+    "apigateway.apps.mcp_server.tasks.reconcile_stage_mcp_server_permissions_after_release"
+)
 
 
 class MCPServerStatusEnum(StructuredEnum):

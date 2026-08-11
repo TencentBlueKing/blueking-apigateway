@@ -360,6 +360,80 @@ class TestMCPServerHandler:
 
         assert set(permissions.values_list("resource_id", flat=True)) == {new_resource_id}
 
+    def test_sync_permissions_add_only_keeps_existing_permissions_without_app_codes(self, fake_gateway, fake_stage):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [{"id": 10002, "name": "tool_a"}]
+        resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        existing_permission = G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=f"v_mcp_{mcp_server.id}_app1",
+            resource_id=10001,
+        )
+
+        MCPServerHandler.sync_permissions(
+            mcp_server.id,
+            resource_version=resource_version,
+            delete_stale=False,
+        )
+
+        assert AppResourcePermission.objects.filter(id=existing_permission.id).exists()
+
+    def test_sync_permissions_add_only_is_idempotent_when_another_worker_inserts_first(
+        self, fake_gateway, fake_stage, mocker
+    ):
+        resource_id = 10003
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [{"id": resource_id, "name": "tool_a"}]
+        resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+        virtual_app_code = f"v_mcp_{mcp_server.id}_app1"
+        original_bulk_create = AppResourcePermission.objects.bulk_create
+
+        def insert_competing_permission(objects, **kwargs):
+            permission = objects[0]
+            AppResourcePermission.objects.create(
+                gateway_id=permission.gateway_id,
+                bk_app_code=permission.bk_app_code,
+                resource_id=permission.resource_id,
+                expires=permission.expires,
+                grant_type=permission.grant_type,
+            )
+            return original_bulk_create(objects, **kwargs)
+
+        mocker.patch.object(
+            AppResourcePermission.objects,
+            "bulk_create",
+            side_effect=insert_competing_permission,
+        )
+
+        MCPServerHandler.sync_permissions(
+            mcp_server.id,
+            resource_version=resource_version,
+            delete_stale=False,
+        )
+
+        assert (
+            AppResourcePermission.objects.filter(
+                gateway=fake_gateway,
+                bk_app_code=virtual_app_code,
+                resource_id=resource_id,
+            ).count()
+            == 1
+        )
+
     def test_sync_permissions_excludes_ai_resources_from_release_snapshot(self, fake_gateway, fake_stage):
         standard_resource = G(
             Resource,
