@@ -161,15 +161,6 @@ class OpenAPIImportManager:
         """
         解析 openapi
         """
-        self.parse_schema()
-        assert self.parser
-        self._raw_resource_list = self.parser.get_resources()
-        self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
-
-    def parse_schema(self):
-        """
-        解析 OpenAPI schema，仅初始化 parser，不转换为导入资源数据。
-        """
         self._validate_refs(self.data)
 
         parse_result = ResolvingParser(
@@ -177,6 +168,8 @@ class OpenAPIImportManager:
         )
 
         self.parser = self._get_parser(parse_result)
+        self._raw_resource_list = self.parser.get_resources()
+        self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
 
     @staticmethod
     def _validate_refs(data: Dict[str, Any]) -> None:
