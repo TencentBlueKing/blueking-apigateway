@@ -27,7 +27,7 @@
     "description": "just for test",
     "maintainers": ["admin"],
     "is_public": true,
-    "kind": "ai"
+    "kind": "normal"
 }
 ```
 
@@ -38,8 +38,8 @@
 {
     "data": {
         "id": 1,
-        "name": "bkai-demo",
-        "kind": "ai"
+        "name": "demo",
+        "kind": "normal"
     }
 }
 ```

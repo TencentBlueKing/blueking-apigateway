@@ -27,7 +27,7 @@
     "description": "just for test",
     "maintainers": ["admin"],
     "is_public": true,
-    "kind": "ai"
+    "kind": "normal"
 }
 ```
 
@@ -42,10 +42,10 @@ result = client.api.sync_api(
         "description": "just for test",
         "maintainers": ["admin"],
         "is_public": True,
-        "kind": "ai"
+        "kind": "normal"
     },
     path_params={
-        "api_name": "bkai-demo",
+        "api_name": "demo",
     },
     headers={"Content-Type": "application/json"},
 )
@@ -60,8 +60,8 @@ result = client.api.sync_api(
     "message": "OK",
     "data": {
         "id": 1,
-        "name": "bkai-demo",
-        "kind": "ai"
+        "name": "demo",
+        "kind": "normal"
     }
 }
 ```
