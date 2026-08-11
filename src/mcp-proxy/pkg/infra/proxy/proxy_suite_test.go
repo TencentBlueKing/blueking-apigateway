@@ -27,17 +27,30 @@ import (
 
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
+	"mcp_proxy/pkg/metric"
 )
 
-var auditLogPath string
+var (
+	apiLogPath   string
+	auditLogPath string
+)
 
 var _ = BeforeSuite(func() {
 	auditLogDir := GinkgoT().TempDir()
+	apiLogPath = filepath.Join(auditLogDir, "api.log")
 	auditLogPath = filepath.Join(auditLogDir, "audit.log")
 
 	// Initialize config.G to avoid nil pointer dereference when genToolHandler accesses config fields.
 	config.G = &config.Config{
 		Logger: config.Logger{
+			API: config.LogConfig{
+				Level:  "info",
+				Writer: "file",
+				Settings: map[string]string{
+					"name": "api.log",
+					"path": auditLogDir,
+				},
+			},
 			Audit: config.LogConfig{
 				Level:  "info",
 				Writer: "file",
@@ -50,6 +63,7 @@ var _ = BeforeSuite(func() {
 	}
 	// Initialize logger for tests
 	logging.InitLogger(config.G)
+	metric.InitMetrics("test_")
 })
 
 func TestProxy(t *testing.T) {

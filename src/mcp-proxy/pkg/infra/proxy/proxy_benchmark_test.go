@@ -26,6 +26,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -124,6 +125,81 @@ func BenchmarkGenToolHandlerLargeJSONResponse(b *testing.B) {
 						benchmarkToolResult = result
 					}
 				})
+			}
+		})
+	}
+}
+
+func BenchmarkGenToolHandlerLargeJSONRequest(b *testing.B) {
+	initBenchmarkRuntime(b)
+
+	for _, size := range []int{64 << 10, 1 << 20} {
+		size := size
+		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
+			arguments := buildBenchmarkRequestArguments(size)
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = io.Copy(io.Discard, r.Body)
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"ok":true}`))
+			}))
+			defer upstream.Close()
+
+			upstreamURL, err := url.Parse(upstream.URL)
+			if err != nil {
+				b.Fatalf("parse upstream URL: %v", err)
+			}
+
+			toolConfig := &ToolConfig{
+				Name:   "large_json_request",
+				Method: http.MethodPost,
+				Host:   upstreamURL.Host,
+				Schema: upstreamURL.Scheme,
+				Url:    "/",
+			}
+			handler := genToolHandler(toolConfig, "bench-server", func() bool {
+				return false
+			})
+			req := &mcp.CallToolRequest{
+				Params: &mcp.CallToolParamsRaw{
+					Name:      toolConfig.Name,
+					Arguments: arguments,
+				},
+				Extra: &mcp.RequestExtra{
+					Header: http.Header{
+						constant.RequestIDHeaderKey: []string{
+							"bench-x-request-id",
+						},
+						constant.BkGatewayRequestIDKey: []string{
+							"bench-request-id",
+						},
+						constant.BkGatewayJWTHeaderKey: []string{
+							"bench-jwt",
+						},
+						constant.BkApiMCPServerIDKey: []string{"100"},
+						constant.BkApiMCPServerNameKey: []string{
+							"bench-server",
+						},
+						constant.BkApiAllowedHeadersKey: []string{""},
+						constant.BkApiAuthorizationHeaderKey: []string{
+							"bench-authorization",
+						},
+					},
+				},
+			}
+			ctx := benchmarkToolCallContext(b)
+
+			b.ReportAllocs()
+			b.SetBytes(int64(len(arguments)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				result, err := handler(ctx, req)
+				if err != nil {
+					b.Fatalf("tool handler returned error: %v", err)
+				}
+				if result == nil || len(result.Content) == 0 {
+					b.Fatal("tool handler returned empty result")
+				}
+				benchmarkToolResult = result
 			}
 		})
 	}
@@ -258,4 +334,13 @@ func buildBenchmarkJSONBody(targetSize int) []byte {
 	}
 	buf.WriteString(`]}`)
 	return buf.Bytes()
+}
+
+func buildBenchmarkRequestArguments(targetSize int) json.RawMessage {
+	body := buildBenchmarkJSONBody(targetSize)
+	arguments := make([]byte, 0, len(body)+len(`{"body_param":}`))
+	arguments = append(arguments, `{"body_param":`...)
+	arguments = append(arguments, body...)
+	arguments = append(arguments, '}')
+	return json.RawMessage(arguments)
 }
