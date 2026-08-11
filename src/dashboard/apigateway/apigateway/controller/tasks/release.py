@@ -20,9 +20,10 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from celery import shared_task
+from celery import current_app, shared_task
 
 from apigateway.apps.data_plane.models import DataPlane
+from apigateway.apps.mcp_server.constants import SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor
@@ -46,6 +47,8 @@ if TYPE_CHECKING:
     from apigateway.controller.distributor.base import BaseDistributor
 
 logger = logging.getLogger(__name__)
+
+MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS = 120
 
 
 def _release_gateway(
@@ -227,6 +230,14 @@ def update_release_data_after_success(
     update_stage_mcp_server_related_resource_names(
         release.stage.id,
         resource_version.id,
+    )
+    current_app.send_task(
+        SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME,
+        kwargs={
+            "stage_id": release.stage.id,
+            "expected_resource_version_id": resource_version.id,
+        },
+        countdown=MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS,
     )
 
     try:

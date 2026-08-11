@@ -23,14 +23,56 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from celery import shared_task
 from django.conf import settings
 
+from apigateway.apps.mcp_server.constants import SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.biz.mcp_server import (
     MCPServerHandler,
     MCPServerPromptHandler,
 )
 from apigateway.core.constants import ReleaseHistoryStatusEnum
+from apigateway.core.models import Release, ResourceVersion
 from apigateway.service.release import wait_release_done
 
 logger = logging.getLogger(__name__)
+
+
+@shared_task(name=SYNC_STAGE_MCP_SERVER_PERMISSIONS_TASK_NAME, ignore_result=True)
+def sync_stage_mcp_server_permissions(
+    stage_id: int,
+    resource_version_id: Optional[int] = None,
+    delete_stale: bool = True,
+    expected_resource_version_id: Optional[int] = None,
+) -> None:
+    """同步环境下所有 MCP Server 的资源权限。"""
+    if expected_resource_version_id is not None:
+        current_resource_version_id = (
+            Release.objects.filter(stage_id=stage_id).values_list("resource_version_id", flat=True).first()
+        )
+        if current_resource_version_id != expected_resource_version_id:
+            logger.info(
+                "skip stale mcp server permission sync, stage_id=%d, expected_resource_version_id=%d, "
+                "current_resource_version_id=%s",
+                stage_id,
+                expected_resource_version_id,
+                current_resource_version_id,
+            )
+            return
+
+    resource_version = None
+    if resource_version_id is not None:
+        resource_version = ResourceVersion.objects.get(id=resource_version_id)
+
+    mcp_server_ids = MCPServer.objects.filter(stage_id=stage_id).values_list("id", flat=True)
+    for mcp_server_id in mcp_server_ids:
+        if resource_version is not None:
+            MCPServerHandler.sync_permissions(
+                mcp_server_id,
+                resource_version=resource_version,
+                delete_stale=delete_stale,
+            )
+            continue
+
+        MCPServerHandler.sync_permissions(mcp_server_id)
 
 
 def _collect_prompt_ids(

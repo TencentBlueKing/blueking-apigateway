@@ -319,6 +319,47 @@ class TestMCPServerHandler:
         assert set(permissions.values_list("resource_id", flat=True)) == {released_resource_id}
         assert live_resource.id not in permissions.values_list("resource_id", flat=True)
 
+    def test_sync_permissions_adds_candidate_version_before_strong_sync(self, fake_gateway, fake_stage):
+        old_resource_id = 10001
+        new_resource_id = 10002
+        old_resource_version = G(ResourceVersion, gateway=fake_gateway)
+        old_resource_version.data = [{"id": old_resource_id, "name": "tool_a"}]
+        old_resource_version.save()
+        release = G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=old_resource_version)
+
+        new_resource_version = G(ResourceVersion, gateway=fake_gateway)
+        new_resource_version.data = [{"id": new_resource_id, "name": "tool_a"}]
+        new_resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+        virtual_app_code = f"v_mcp_{mcp_server.id}_app1"
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=virtual_app_code,
+            resource_id=old_resource_id,
+        )
+
+        MCPServerHandler.sync_permissions(
+            mcp_server.id,
+            resource_version=new_resource_version,
+            delete_stale=False,
+        )
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code=virtual_app_code)
+        assert set(permissions.values_list("resource_id", flat=True)) == {old_resource_id, new_resource_id}
+
+        release.resource_version = new_resource_version
+        release.save(update_fields=["resource_version"])
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert set(permissions.values_list("resource_id", flat=True)) == {new_resource_id}
+
     def test_sync_permissions_excludes_ai_resources_from_release_snapshot(self, fake_gateway, fake_stage):
         standard_resource = G(
             Resource,

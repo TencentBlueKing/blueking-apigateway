@@ -15,15 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.apps.mcp_server.tasks import _fetch_updated_prompts, sync_mcp_server_after_release
+from apigateway.apps.mcp_server.tasks import (
+    _fetch_updated_prompts,
+    sync_mcp_server_after_release,
+    sync_stage_mcp_server_permissions,
+)
 from apigateway.core.constants import ReleaseHistoryStatusEnum
-from apigateway.core.models import ReleaseHistory
+from apigateway.core.models import Release, ReleaseHistory, ResourceVersion
 
 
 class TestFetchUpdatedPrompts:
@@ -40,6 +44,56 @@ class TestFetchUpdatedPrompts:
         assert result == {1: {"id": 1, "name": "ok"}}
         assert "without id" in caplog.text
         assert "expected dict" in caplog.text
+
+
+class TestSyncStageMcpServerPermissions:
+    def test_adds_permissions_from_explicit_resource_version(self, fake_gateway, fake_stage):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        mcp_servers = [
+            G(MCPServer, gateway=fake_gateway, stage=fake_stage),
+            G(MCPServer, gateway=fake_gateway, stage=fake_stage),
+        ]
+
+        with patch("apigateway.apps.mcp_server.tasks.MCPServerHandler.sync_permissions") as mock_sync:
+            sync_stage_mcp_server_permissions(
+                stage_id=fake_stage.id,
+                resource_version_id=resource_version.id,
+                delete_stale=False,
+            )
+
+        mock_sync.assert_has_calls(
+            [
+                call(mcp_servers[0].id, resource_version=resource_version, delete_stale=False),
+                call(mcp_servers[1].id, resource_version=resource_version, delete_stale=False),
+            ],
+            any_order=True,
+        )
+
+    def test_strong_sync_uses_current_release_without_handler_arguments(
+        self, fake_gateway, fake_stage, fake_resource_version
+    ):
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        with patch("apigateway.apps.mcp_server.tasks.MCPServerHandler.sync_permissions") as mock_sync:
+            sync_stage_mcp_server_permissions(
+                stage_id=fake_stage.id,
+                expected_resource_version_id=fake_resource_version.id,
+            )
+
+        mock_sync.assert_called_once_with(mcp_server.id)
+
+    def test_strong_sync_skips_when_release_has_changed(self, fake_gateway, fake_stage, fake_resource_version):
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        with patch("apigateway.apps.mcp_server.tasks.MCPServerHandler.sync_permissions") as mock_sync:
+            sync_stage_mcp_server_permissions(
+                stage_id=fake_stage.id,
+                expected_resource_version_id=fake_resource_version.id + 1,
+            )
+
+        mock_sync.assert_not_called()
 
 
 class TestSyncMcpServerAfterRelease:

@@ -47,11 +47,18 @@ def test_update_release_success_reconciles_without_reversing_publish_on_failure(
     )
     mocker.patch("apigateway.controller.tasks.release.ReleasedResourceDoc.objects")
     mocker.patch("apigateway.controller.tasks.release.clear_unreleased_resource_doc")
-    mocker.patch("apigateway.controller.tasks.release.update_stage_mcp_server_related_resource_names")
+    update_resource_names = mocker.patch(
+        "apigateway.controller.tasks.release.update_stage_mcp_server_related_resource_names"
+    )
+    send_task = mocker.patch("apigateway.controller.tasks.release.current_app.send_task")
     reconcile = mocker.patch(
         "apigateway.controller.tasks.release.OAuth2BuiltinPermissionReconciler"
     ).return_value.reconcile_gateway
     reconcile.side_effect = RuntimeError("redis unavailable")
+    events = []
+    release.save.side_effect = lambda: events.append("save_release")
+    update_resource_names.side_effect = lambda *args: events.append("update_resource_names")
+    send_task.side_effect = lambda *args, **kwargs: events.append("schedule_cleanup")
 
     update_release_data_after_success(
         publish_id=1,
@@ -62,3 +69,9 @@ def test_update_release_success_reconciles_without_reversing_publish_on_failure(
     )
 
     reconcile.assert_called_once_with(gateway)
+    assert events == ["save_release", "update_resource_names", "schedule_cleanup"]
+    send_task.assert_called_once_with(
+        "apigateway.apps.mcp_server.tasks.sync_stage_mcp_server_permissions",
+        kwargs={"stage_id": stage.id, "expected_resource_version_id": resource_version.id},
+        countdown=120,
+    )
