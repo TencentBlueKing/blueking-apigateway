@@ -77,7 +77,7 @@ def test_update_release_success_reconciles_without_reversing_publish_on_failure(
         kwargs={
             "stage_id": stage.id,
             "expected_resource_version_id": resource_version.id,
-            "expected_publish_id": 1,
+            "expected_release_history_id": 1,
         },
         countdown=120,
     )

@@ -53,11 +53,31 @@ class TestStageMcpServerPermissionSync:
         lock = Mock()
         lock.acquire.return_value = True
         with patch(
-            "apigateway.apps.mcp_server.tasks._get_mcp_server_permission_sync_lock",
+            "apigateway.apps.mcp_server.tasks.redis_lock.Lock",
             return_value=lock,
-            create=True,
-        ):
-            yield
+        ) as lock_constructor:
+            yield lock_constructor
+
+    def test_add_skips_stage_without_mcp_servers(self, fake_stage, mock_permission_sync_lock):
+        with patch("apigateway.apps.mcp_server.tasks.ResourceVersion.objects.filter") as mock_filter:
+            add_stage_mcp_server_permissions_before_release_update(
+                stage_id=fake_stage.id,
+                resource_version_id=1,
+            )
+
+        mock_permission_sync_lock.assert_not_called()
+        mock_filter.assert_not_called()
+
+    def test_reconcile_skips_stage_without_mcp_servers(self, fake_stage, mock_permission_sync_lock):
+        with patch("apigateway.apps.mcp_server.tasks.Release.objects.filter") as mock_filter:
+            reconcile_stage_mcp_server_permissions_after_release(
+                stage_id=fake_stage.id,
+                expected_resource_version_id=1,
+                expected_release_history_id=1,
+            )
+
+        mock_permission_sync_lock.assert_not_called()
+        mock_filter.assert_not_called()
 
     def test_adds_permissions_from_explicit_resource_version(self, fake_gateway, fake_stage):
         resource_version = G(ResourceVersion, gateway=fake_gateway)
@@ -88,7 +108,7 @@ class TestStageMcpServerPermissionSync:
             reconcile_stage_mcp_server_permissions_after_release(
                 stage_id=fake_stage.id,
                 expected_resource_version_id=fake_resource_version.id,
-                expected_publish_id=1,
+                expected_release_history_id=1,
             )
 
         mock_sync.assert_called_once_with(
@@ -97,7 +117,8 @@ class TestStageMcpServerPermissionSync:
             delete_stale=True,
         )
 
-    def test_missing_explicit_resource_version_is_logged_and_skipped(self, fake_stage, caplog):
+    def test_missing_explicit_resource_version_is_logged_and_skipped(self, fake_gateway, fake_stage, caplog):
+        G(MCPServer, gateway=fake_gateway, stage=fake_stage)
         missing_resource_version_id = 999999
 
         with (
@@ -158,7 +179,7 @@ class TestStageMcpServerPermissionSync:
             reconcile_stage_mcp_server_permissions_after_release(
                 stage_id=fake_stage.id,
                 expected_resource_version_id=fake_resource_version.id,
-                expected_publish_id=current_history.id,
+                expected_release_history_id=current_history.id,
             )
 
         mock_sync.assert_not_called()
@@ -171,7 +192,7 @@ class TestStageMcpServerPermissionSync:
             reconcile_stage_mcp_server_permissions_after_release(
                 stage_id=fake_stage.id,
                 expected_resource_version_id=fake_resource_version.id + 1,
-                expected_publish_id=1,
+                expected_release_history_id=1,
             )
 
         mock_sync.assert_not_called()

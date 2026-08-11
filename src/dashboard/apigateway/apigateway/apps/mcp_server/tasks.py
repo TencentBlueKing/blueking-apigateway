@@ -43,19 +43,15 @@ from apigateway.utils.redis_utils import get_default_redis_client
 logger = logging.getLogger(__name__)
 
 
-def _get_mcp_server_permission_sync_lock(stage_id: int):
-    return redis_lock.Lock(
+@contextmanager
+def _stage_mcp_server_permission_sync_lock(stage_id: int) -> Iterator[None]:
+    lock = redis_lock.Lock(
         get_default_redis_client(),
         f"mcp_server_permission_sync:{stage_id}",
         expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
         auto_renewal=True,
         strict=False,
     )
-
-
-@contextmanager
-def _stage_mcp_server_permission_sync_lock(stage_id: int) -> Iterator[None]:
-    lock = _get_mcp_server_permission_sync_lock(stage_id)
     lock_acquired = lock.acquire(
         blocking=True,
         timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
@@ -101,6 +97,9 @@ def add_stage_mcp_server_permissions_before_release_update(
 ) -> None:
     """发布数据面成功后、更新 Release 前，补充候选资源版本对应的权限。"""
     try:
+        if not MCPServer.objects.filter(stage_id=stage_id).exists():
+            return
+
         with _stage_mcp_server_permission_sync_lock(stage_id):
             resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
             if resource_version is None:
@@ -121,10 +120,13 @@ def add_stage_mcp_server_permissions_before_release_update(
 def reconcile_stage_mcp_server_permissions_after_release(
     stage_id: int,
     expected_resource_version_id: int,
-    expected_publish_id: int,
+    expected_release_history_id: int,
 ) -> None:
     """发布成功后，将环境下所有 MCP Server 权限收敛到当前发布版本。"""
     try:
+        if not MCPServer.objects.filter(stage_id=stage_id).exists():
+            return
+
         with _stage_mcp_server_permission_sync_lock(stage_id):
             release = Release.objects.filter(stage_id=stage_id).select_related("resource_version").first()
             current_resource_version_id = release.resource_version_id if release else None
@@ -139,16 +141,16 @@ def reconcile_stage_mcp_server_permissions_after_release(
                 return
 
             newer_release_exists = (
-                ReleaseHistory.objects.filter(stage_id=stage_id, id__gt=expected_publish_id)
+                ReleaseHistory.objects.filter(stage_id=stage_id, id__gt=expected_release_history_id)
                 .exclude(resource_version_id=expected_resource_version_id)
                 .exists()
             )
             if newer_release_exists:
                 logger.info(
                     "skip stale mcp server permission reconciliation because a newer publish has started, "
-                    "stage_id=%d, expected_publish_id=%d",
+                    "stage_id=%d, expected_release_history_id=%d",
                     stage_id,
-                    expected_publish_id,
+                    expected_release_history_id,
                 )
                 return
 

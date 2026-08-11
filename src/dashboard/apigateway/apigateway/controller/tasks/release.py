@@ -235,7 +235,7 @@ def update_release_data_after_success(
         kwargs={
             "stage_id": release.stage.id,
             "expected_resource_version_id": resource_version.id,
-            "expected_publish_id": publish_id,
+            "expected_release_history_id": publish_id,
         },
         countdown=MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS,
     )
