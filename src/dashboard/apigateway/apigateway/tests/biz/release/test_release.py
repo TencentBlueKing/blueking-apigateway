@@ -186,6 +186,36 @@ class TestGatewayReleaser:
 
         assert check_connection.call_count == 2
 
+    def test_release_adds_mcp_permissions_before_updating_release(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        release = G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        release_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            resource_version=fake_resource_version,
+        )
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch("apigateway.biz.release.gateway_releaser.PublishEventReporter.report_create_publish_task_doing")
+        delay_on_commit = mocker.patch("apigateway.biz.release.gateway_releaser.delay_on_commit")
+
+        releaser._do_release(release, release_history, data_plane)
+
+        publish_chain = delay_on_commit.call_args.args[0]
+        assert len(publish_chain.tasks) == 3
+        permission_sync = publish_chain.tasks[1]
+        assert (
+            permission_sync.task
+            == "apigateway.apps.mcp_server.tasks.add_stage_mcp_server_permissions_before_release_update"
+        )
+        assert permission_sync.kwargs == {
+            "stage_id": fake_stage.id,
+            "resource_version_id": fake_resource_version.id,
+        }
+        assert permission_sync.immutable is True
+
 
 class TestReleaseHandler:
     def test_package_release_gateway_export_is_callable(self):

@@ -64,7 +64,7 @@ from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, Stage
+from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
@@ -358,11 +358,35 @@ class MCPServerHandler:
             )
 
     @staticmethod
+    def _get_permission_resource_version(
+        mcp_server: MCPServer,
+        resource_version: Optional[ResourceVersion],
+    ) -> Optional[ResourceVersion]:
+        if resource_version is not None:
+            return resource_version
+
+        release = (
+            Release.objects.filter(gateway_id=mcp_server.gateway_id, stage_id=mcp_server.stage_id)
+            .select_related("resource_version")
+            .first()
+        )
+        if not release:
+            return None
+
+        return release.resource_version
+
+    @staticmethod
     @transaction.atomic
-    def sync_permissions(mcp_server_id: int) -> None:
+    def sync_permissions(
+        mcp_server_id: int,
+        resource_version: Optional[ResourceVersion] = None,
+        delete_stale: bool = True,
+    ) -> None:
         """同步 MCPServer 的权限，包括 OAuth2 内置客户端权限
         Args:
             mcp_server_id (int): mcp_server 的 id
+            resource_version (Optional[ResourceVersion]): 用于解析资源 ID 的资源版本，默认使用当前发布版本
+            delete_stale (bool): 是否删除不在目标资源版本中的旧权限
         """
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
 
@@ -380,12 +404,13 @@ class MCPServerHandler:
         # 1. fetch the app codes in mcp_server_app_permission
         app_codes = MCPServerAppPermission.objects.filter(mcp_server=mcp_server).values_list("bk_app_code", flat=True)
         if not app_codes:
-            logger.debug("no app_codes, cleanup the permissions of the mcp_server %d", mcp_server_id)
+            logger.debug("no app_codes, sync the permissions of the mcp_server %d", mcp_server_id)
             # if no app_codes, cleanup the permissions of the mcp_server
-            MCPServerHandler.cleanup_all_resource_permissions(
-                gateway_id=mcp_server.gateway_id,
-                mcp_server_id=mcp_server_id,
-            )
+            if delete_stale:
+                MCPServerHandler.cleanup_all_resource_permissions(
+                    gateway_id=mcp_server.gateway_id,
+                    mcp_server_id=mcp_server_id,
+                )
             return
 
         # 2. resolve resource_ids from the stage's published resource_version snapshot
@@ -394,19 +419,15 @@ class MCPServerHandler:
         if not resource_names:
             logger.debug("no resource_names, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
-        release = (
-            Release.objects.filter(gateway_id=mcp_server.gateway_id, stage_id=mcp_server.stage_id)
-            .select_related("resource_version")
-            .first()
-        )
-        if not release:
+        resource_version = MCPServerHandler._get_permission_resource_version(mcp_server, resource_version)
+        if resource_version is None:
             logger.debug("no release, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
 
         resource_name_set = set(resource_names)
         resource_ids = [
             resource["id"]
-            for resource in release.resource_version.data
+            for resource in resource_version.data
             if resource["name"] in resource_name_set
             and (resource.get("kind") or ResourceKindEnum.STANDARD.value) == ResourceKindEnum.STANDARD.value
         ]
@@ -451,9 +472,11 @@ class MCPServerHandler:
             )
 
         # 3.3 check to delete
-        to_delete_virtual_app_code_resource_id_set = (
-            current_virtual_app_code_resource_id_set - newest_virtual_app_code_resource_id_set
-        )
+        to_delete_virtual_app_code_resource_id_set = set()
+        if delete_stale:
+            to_delete_virtual_app_code_resource_id_set = (
+                current_virtual_app_code_resource_id_set - newest_virtual_app_code_resource_id_set
+            )
         to_delete: List[int] = []
         for permission in current_permissions:
             if (permission.bk_app_code, permission.resource_id) in to_delete_virtual_app_code_resource_id_set:
@@ -463,7 +486,7 @@ class MCPServerHandler:
         # 3.4 add and delete
         logger.debug("add %d permissions, delete %d permissions", len(to_add), len(to_delete))
         if to_add:
-            AppResourcePermission.objects.bulk_create(to_add)
+            AppResourcePermission.objects.bulk_create(to_add, ignore_conflicts=True)
         if to_delete:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
 

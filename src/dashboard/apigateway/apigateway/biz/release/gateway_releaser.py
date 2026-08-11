@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import List
 
 from blue_krill.async_utils.django_utils import delay_on_commit
+from celery import signature
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
@@ -30,6 +31,7 @@ from apigateway.apps.data_plane.constants import (
     resource_version_uses_oauth2,
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.apps.mcp_server.constants import ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.controller.distributor.connection import (
@@ -258,9 +260,17 @@ class GatewayReleaser:
             publish_id=release_history.pk,
             data_plane_id=data_plane.id,
         )
+        add_mcp_server_permissions = signature(
+            ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME,
+            kwargs={
+                "stage_id": release.stage.id,
+                "resource_version_id": release_history.resource_version.id,
+            },
+            immutable=True,
+        )
 
         # 使用 celery 的编排能力，task 执行成功才会执行 release_success_callback
-        delay_on_commit(task | release_success_callback)
+        delay_on_commit(task | add_mcp_server_permissions | release_success_callback)
 
 
 def release_gateway(

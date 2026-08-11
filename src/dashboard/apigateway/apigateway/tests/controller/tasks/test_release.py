@@ -18,7 +18,9 @@
 
 from unittest.mock import Mock
 
-from apigateway.controller.tasks.release import update_release_data_after_success
+import pytest
+
+from apigateway.controller.tasks.release import _release_gateway, update_release_data_after_success
 from apigateway.core.constants import ReleaseHistoryStatusEnum
 
 
@@ -47,11 +49,18 @@ def test_update_release_success_reconciles_without_reversing_publish_on_failure(
     )
     mocker.patch("apigateway.controller.tasks.release.ReleasedResourceDoc.objects")
     mocker.patch("apigateway.controller.tasks.release.clear_unreleased_resource_doc")
-    mocker.patch("apigateway.controller.tasks.release.update_stage_mcp_server_related_resource_names")
+    update_resource_names = mocker.patch(
+        "apigateway.controller.tasks.release.update_stage_mcp_server_related_resource_names"
+    )
+    send_task = mocker.patch("apigateway.controller.tasks.release.current_app.send_task")
     reconcile = mocker.patch(
         "apigateway.controller.tasks.release.OAuth2BuiltinPermissionReconciler"
     ).return_value.reconcile_gateway
     reconcile.side_effect = RuntimeError("redis unavailable")
+    events = []
+    release.save.side_effect = lambda: events.append("save_release")
+    update_resource_names.side_effect = lambda *args: events.append("update_resource_names")
+    send_task.side_effect = lambda *args, **kwargs: events.append("schedule_cleanup")
 
     update_release_data_after_success(
         publish_id=1,
@@ -62,3 +71,30 @@ def test_update_release_success_reconciles_without_reversing_publish_on_failure(
     )
 
     reconcile.assert_called_once_with(gateway)
+    assert events == ["save_release", "update_resource_names", "schedule_cleanup"]
+    send_task.assert_called_once_with(
+        "apigateway.apps.mcp_server.tasks.reconcile_stage_mcp_server_permissions_after_release",
+        kwargs={
+            "stage_id": stage.id,
+            "expected_resource_version_id": resource_version.id,
+            "expected_release_history_id": 1,
+        },
+        countdown=120,
+    )
+
+
+def test_release_gateway_raises_when_distribution_returns_failure(mocker):
+    distributor = Mock()
+    distributor.distribute.return_value = False, "etcd sync failed"
+    release_history = Mock(id=1)
+    procedure_logger = Mock(release_task_id="task-1")
+    mocker.patch("apigateway.controller.tasks.release.PublishEventReporter.report_create_publish_task_success")
+    mocker.patch("apigateway.controller.tasks.release.PublishEventReporter.report_distribute_config_doing")
+    report_failure = mocker.patch(
+        "apigateway.controller.tasks.release.PublishEventReporter.report_distribute_config_failure"
+    )
+
+    with pytest.raises(RuntimeError, match="etcd sync failed"):
+        _release_gateway(distributor, release_history, procedure_logger)
+
+    report_failure.assert_called_once_with(release_history, "etcd sync failed")
