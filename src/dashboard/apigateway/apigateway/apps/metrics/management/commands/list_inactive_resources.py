@@ -19,7 +19,7 @@
 import csv
 import datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db.models import Max
@@ -29,11 +29,11 @@ from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
 from apigateway.core.models import Gateway, Resource
 
 
-def parse_gateway_names(gateway_names: Iterable[str], names_file: Optional[str]) -> List[str]:
+def parse_gateway_names(gateway_names: str, names_file: Optional[str]) -> List[str]:
     names: List[str] = []
     seen: Set[str] = set()
 
-    for raw_name in gateway_names:
+    for raw_name in gateway_names.split(","):
         name = raw_name.strip()
         if not name or name in seen:
             continue
@@ -77,9 +77,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--gateway-names",
-            nargs="*",
-            default=[],
-            help="网关名称列表，可传多个",
+            type=str,
+            default="",
+            help="网关名称列表，逗号分隔",
         )
         parser.add_argument(
             "--gateway-names-file",

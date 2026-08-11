@@ -69,7 +69,7 @@ def test_list_inactive_resources_by_gateway_names(fake_gateway, fake_resource, f
     output = StringIO()
     call_command(
         COMMAND_NAME,
-        gateway_names=[fake_gateway.name],
+        gateway_names=fake_gateway.name,
         days=30,
         output_dir=str(tmp_path),
         stdout=output,
