@@ -251,6 +251,48 @@ class TestGatewaySaver:
         assert mocked_saver.call_args.kwargs["bk_app_code"] == "app"
         assert mocked_saver.call_args.kwargs["source"] == CallSourceTypeEnum.OpenAPI
         assert mocked_saver.call_args.kwargs["data_plane_ids"] == [1]
+        assert mocked_saver.call_args.kwargs["allow_bkaidev_ai_name"] is True
+
+    def test_create_ai_gateway_rejects_bkaidev_by_default(self):
+        saver = GatewaySaver(
+            None,
+            GatewayData(name="bkaidev", status=0, kind=GatewayKindEnum.AI.value),
+        )
+
+        with pytest.raises(ValidationError, match="AI 网关名称必须以【bkai-】开头"):
+            saver.save()
+
+        assert not Gateway.objects.filter(name="bkaidev").exists()
+
+    def test_create_ai_gateway_allows_bkaidev_for_automated_sync(self, default_data_plane):
+        saver = GatewaySaver(
+            None,
+            GatewayData(
+                name="bkaidev",
+                status=0,
+                kind=GatewayKindEnum.AI.value,
+                tenant_mode="single",
+                tenant_id="default",
+            ),
+            allow_bkaidev_ai_name=True,
+        )
+
+        gateway = saver.save()
+
+        assert gateway.name == "bkaidev"
+        assert gateway.kind == GatewayKindEnum.AI.value
+
+    def test_update_legacy_ai_gateway_skips_create_name_validation(self, fake_gateway):
+        fake_gateway.name = "legacy-ai-gateway"
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+
+        gateway = GatewaySaver(
+            fake_gateway.id,
+            GatewayData(name=fake_gateway.name, status=0, kind=GatewayKindEnum.AI.value),
+        ).save()
+
+        assert gateway.name == "legacy-ai-gateway"
 
     def test_save_with_data_plane_ids_creates_bindings(self, unique_gateway_name):
         """Test save with data_plane_ids creates gateway-dataplane bindings on new gateway"""
@@ -279,7 +321,7 @@ class TestGatewaySaver:
         saver = GatewaySaver(
             None,
             GatewayData(
-                name=unique_gateway_name,
+                name=f"bkai-{unique_gateway_name}",
                 status=0,
                 tenant_mode="single",
                 tenant_id="default",
@@ -291,7 +333,7 @@ class TestGatewaySaver:
         with pytest.raises(ValidationError, match="APISIX 3.16 or later"):
             saver.save()
 
-        assert not Gateway.objects.filter(name=unique_gateway_name).exists()
+        assert not Gateway.objects.filter(name=f"bkai-{unique_gateway_name}").exists()
 
     def test_save_without_data_plane_ids_binds_to_default(self, unique_gateway_name, default_data_plane):
         """Test save without data_plane_ids binds to default data plane on new gateway"""

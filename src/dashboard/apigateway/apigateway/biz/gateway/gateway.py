@@ -48,6 +48,7 @@ from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.data_plane import validate_gateway_data_plane_compatibility
 from apigateway.service.gateway_jwt import GatewayJWTHandler
+from apigateway.service.gateway_name import validate_gateway_name_kind
 from apigateway.service.resource import delete_gateway_resource_versions, delete_gateway_resources
 from apigateway.utils.dict import deep_update
 
@@ -281,6 +282,7 @@ class GatewayHandler:
             username=username,
             source=source,
             data_plane_ids=data_plane_ids,
+            allow_bkaidev_ai_name=True,
         )
         return saver.save()
 
@@ -523,6 +525,7 @@ class GatewaySaver:
         username: str = "",
         source: Optional[CallSourceTypeEnum] = None,
         data_plane_ids: Optional[List[int]] = None,
+        allow_bkaidev_ai_name: bool = False,
     ):
         self.bk_app_code = bk_app_code
         self.username = username
@@ -531,6 +534,7 @@ class GatewaySaver:
         self._gateway_data = data
         self._source = source
         self._data_plane_ids = data_plane_ids
+        self._allow_bkaidev_ai_name = allow_bkaidev_ai_name
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -551,6 +555,11 @@ class GatewaySaver:
 
     def _create_gateway(self):
         # 1. resolve and validate data planes before saving the gateway
+        validate_gateway_name_kind(
+            self._gateway_data.name,
+            self._gateway_data.kind,
+            allow_bkaidev_ai_name=self._allow_bkaidev_ai_name,
+        )
         self._gateway = gateway = Gateway(
             name=self._gateway_data.name,
             description=self._gateway_data.description,

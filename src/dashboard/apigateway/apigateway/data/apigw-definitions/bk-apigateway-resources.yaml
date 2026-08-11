@@ -2152,8 +2152,8 @@ paths:
           required: true
           schema:
             type: string
-          description: 网关名
-          example: demo
+          description: 创建 AI 网关时须以 bkai- 开头，或使用自动化同步专用名称 bkaidev、bkaidev-*；非 AI 网关不能使用 bkai- 前缀
+          example: bkai-demo
       requestBody:
         required: false
         content:
@@ -5068,8 +5068,8 @@ paths:
           required: true
           schema:
             type: string
-          description: 网关名
-          example: demo
+          description: 创建 AI 网关时须以 bkai- 开头，或使用自动化同步专用名称 bkaidev、bkaidev-*；非 AI 网关不能使用 bkai- 前缀
+          example: bkai-demo
       requestBody:
         required: false
         content:

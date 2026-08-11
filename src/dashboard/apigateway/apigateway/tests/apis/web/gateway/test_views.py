@@ -78,11 +78,12 @@ class TestGatewayListCreateApi:
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
     def test_create_and_filter_ai_gateway(self, request_view, unique_gateway_name, default_data_plane):
+        gateway_name = f"bkai-{unique_gateway_name}"
         response = request_view(
             method="POST",
             view_name="gateways.list_create",
             data={
-                "name": unique_gateway_name,
+                "name": gateway_name,
                 "description": "AI gateway",
                 "maintainers": ["admin"],
                 "is_public": False,
@@ -93,7 +94,7 @@ class TestGatewayListCreateApi:
         )
 
         assert response.status_code == 201
-        gateway = Gateway.objects.get(name=unique_gateway_name)
+        gateway = Gateway.objects.get(name=gateway_name)
         assert gateway.kind == GatewayKindEnum.AI.value
 
         response = request_view(
@@ -108,13 +109,14 @@ class TestGatewayListCreateApi:
     def test_create_ai_gateway_rejects_older_default_data_plane(
         self, request_view, unique_gateway_name, default_data_plane
     ):
+        gateway_name = f"bkai-{unique_gateway_name}"
         DataPlane.objects.filter(id=default_data_plane.id).update(apisix_version="3.13")
 
         response = request_view(
             method="POST",
             view_name="gateways.list_create",
             data={
-                "name": unique_gateway_name,
+                "name": gateway_name,
                 "description": "AI gateway",
                 "maintainers": ["admin"],
                 "is_public": False,
@@ -126,7 +128,33 @@ class TestGatewayListCreateApi:
 
         assert response.status_code == 400
         assert "APISIX 3.16 or later" in response.json()["error"]["message"]
-        assert not Gateway.objects.filter(name=unique_gateway_name).exists()
+        assert not Gateway.objects.filter(name=gateway_name).exists()
+
+    @pytest.mark.parametrize(
+        ("name", "kind", "expected_error"),
+        [
+            ("bkaidev", GatewayKindEnum.AI.value, "AI 网关名称必须以【bkai-】开头"),
+            ("bkai-demo", GatewayKindEnum.NORMAL.value, "前缀【bkai-】仅供 AI 网关使用"),
+        ],
+    )
+    def test_create_rejects_invalid_gateway_name_kind(self, request_view, name, kind, expected_error):
+        response = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data={
+                "name": name,
+                "description": "gateway",
+                "maintainers": ["admin"],
+                "is_public": False,
+                "kind": kind,
+                "tenant_mode": "single",
+                "tenant_id": "default",
+            },
+        )
+
+        assert response.status_code == 400
+        assert expected_error in response.json()["error"]["message"]
+        assert not Gateway.objects.filter(name=name).exists()
 
     def test_create_programmable_gateway_without_repo_authorization__non_te(
         self,
