@@ -24,6 +24,7 @@ from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 from prance.util.url import ResolutionError
+from pydantic import ValidationError
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.utils.yaml import yaml_loads
@@ -88,29 +89,6 @@ class OpenAPIImportManager:
         """
         进行校验
         """
-        schema_validate_result = self.validate_schema()
-        if len(schema_validate_result) > 0:
-            return schema_validate_result
-
-        # 进行逻辑校验
-
-        try:
-            self.parse()
-        except (ResolutionError, ValueError) as err:
-            return [SchemaValidateErr(str(err), "$", [])]
-
-        validator = ResourceImportValidator(
-            gateway=self.gateway,
-            resource_data_list=self._resource_list,
-            need_delete_unspecified_resources=self.need_delete_unspecified_resources,
-        )
-
-        return validator.validate()
-
-    def validate_schema(self) -> List[SchemaValidateErr]:
-        """
-        仅校验 OpenAPI schema，不执行资源导入业务校验。
-        """
         # 在所有解析操作之前校验 $ref，防止外部引用导致 SSRF / 文件读取
         try:
             self._validate_refs(self.data)
@@ -141,7 +119,20 @@ class OpenAPIImportManager:
         if len(schema_validate_result) > 0:
             return schema_validate_result
 
-        return []
+        # 进行逻辑校验
+
+        try:
+            self.parse()
+        except (ResolutionError, ValueError, ValidationError) as err:
+            return [SchemaValidateErr(str(err), "$", [])]
+
+        validator = ResourceImportValidator(
+            gateway=self.gateway,
+            resource_data_list=self._resource_list,
+            need_delete_unspecified_resources=self.need_delete_unspecified_resources,
+        )
+
+        return validator.validate()
 
     def _get_version_err(self) -> SchemaValidateErr:
         """

@@ -328,56 +328,87 @@
             },
             "backend": {
               "type": "object",
-              "additionalProperties": true,
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "HTTP",
-                    "MOCK"
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "HTTP"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "get",
+                        "put",
+                        "post",
+                        "delete",
+                        "options",
+                        "head",
+                        "patch",
+                        "any"
+                      ]
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "matchSubpath": {
+                      "type": "boolean"
+                    },
+                    "timeout": {
+                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
+                    },
+                    "upstreams": {
+                      "$ref": "#/definitions/x-bk-apigateway-upstreams"
+                    },
+                    "transformHeaders": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "method",
+                    "path"
                   ]
                 },
-                "name": {
-                  "type": "string"
-                },
-                "method": {
-                  "type": "string",
-                  "enum": [
-                    "get",
-                    "put",
-                    "post",
-                    "delete",
-                    "options",
-                    "head",
-                    "patch",
-                    "any"
+                {
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "MOCK"
+                      ]
+                    },
+                    "statusCode": {
+                      "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveInteger"
+                    },
+                    "responseBody": {
+                      "type": "string"
+                    },
+                    "headers": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "statusCode"
                   ]
                 },
-                "path": {
-                  "type": "string"
-                },
-                "matchSubpath": {
-                  "type": "boolean"
-                },
-                "timeout": {
-                  "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveIntegerDefault0"
-                },
-                "upstreams": {
-                  "$ref": "#/definitions/x-bk-apigateway-upstreams"
-                },
-                "transformHeaders": {
-                  "type": "object"
-                },
-                "statusCode": {
-                  "$ref": "http://json-schema.org/draft-04/schema#/definitions/positiveInteger"
-                },
-                "responseBody": {
-                  "type": "string"
-                },
-                "headers": {
-                  "type": "object"
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
                 }
-              }
+              ]
             },
             "pluginConfigs": {
               "type": "array",
