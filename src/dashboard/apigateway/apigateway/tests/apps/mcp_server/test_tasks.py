@@ -27,8 +27,12 @@ from apigateway.apps.mcp_server.tasks import (
     reconcile_stage_mcp_server_permissions_after_release,
     sync_mcp_server_after_release,
 )
-from apigateway.core.constants import ReleaseHistoryStatusEnum
-from apigateway.core.models import Release, ReleaseHistory, ResourceVersion
+from apigateway.core.constants import (
+    PublishEventNameTypeEnum,
+    PublishEventStatusEnum,
+    ReleaseHistoryStatusEnum,
+)
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
 
 
 class TestFetchUpdatedPrompts:
@@ -52,10 +56,13 @@ class TestStageMcpServerPermissionSync:
     def mock_permission_sync_lock(self):
         lock = Mock()
         lock.acquire.return_value = True
-        with patch(
-            "apigateway.apps.mcp_server.tasks.redis_lock.Lock",
-            return_value=lock,
-        ) as lock_constructor:
+        with (
+            patch("apigateway.apps.mcp_server.tasks.get_default_redis_client"),
+            patch(
+                "apigateway.apps.mcp_server.tasks.redis_lock.Lock",
+                return_value=lock,
+            ) as lock_constructor,
+        ):
             yield lock_constructor
 
     def test_add_skips_stage_without_mcp_servers(self, fake_stage, mock_permission_sync_lock):
@@ -99,6 +106,30 @@ class TestStageMcpServerPermissionSync:
             ],
             any_order=True,
         )
+
+    def test_add_lock_timeout_is_logged_without_blocking_release(
+        self,
+        fake_gateway,
+        fake_stage,
+        fake_resource_version,
+        mock_permission_sync_lock,
+        caplog,
+    ):
+        G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mock_permission_sync_lock.return_value.acquire.return_value = False
+
+        with (
+            patch("apigateway.apps.mcp_server.tasks.MCPServerHandler.sync_permissions") as mock_sync,
+            caplog.at_level("ERROR"),
+        ):
+            add_stage_mcp_server_permissions_before_release_update(
+                stage_id=fake_stage.id,
+                resource_version_id=fake_resource_version.id,
+            )
+
+        mock_sync.assert_not_called()
+        assert f"stage_id={fake_stage.id}" in caplog.text
+        assert "add stage mcp server permissions failed" in caplog.text
 
     def test_strong_sync_uses_current_release(self, fake_gateway, fake_stage, fake_resource_version):
         G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
@@ -183,6 +214,47 @@ class TestStageMcpServerPermissionSync:
             )
 
         mock_sync.assert_not_called()
+
+    def test_cleanup_ignores_a_failed_newer_resource_version_publish(
+        self, fake_gateway, fake_stage, fake_resource_version
+    ):
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        current_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            resource_version=fake_resource_version,
+        )
+        newer_resource_version = G(ResourceVersion, gateway=fake_gateway)
+        failed_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            resource_version=newer_resource_version,
+        )
+        G(
+            PublishEvent,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            publish=failed_history,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+            step=0,
+            status=PublishEventStatusEnum.FAILURE.value,
+        )
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        with patch("apigateway.apps.mcp_server.tasks.MCPServerHandler.sync_permissions") as mock_sync:
+            reconcile_stage_mcp_server_permissions_after_release(
+                stage_id=fake_stage.id,
+                expected_resource_version_id=fake_resource_version.id,
+                expected_release_history_id=current_history.id,
+            )
+
+        mock_sync.assert_called_once_with(
+            mcp_server.id,
+            resource_version=fake_resource_version,
+            delete_stale=True,
+        )
 
     def test_strong_sync_skips_when_release_has_changed(self, fake_gateway, fake_stage, fake_resource_version):
         G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)

@@ -35,7 +35,7 @@ from apigateway.biz.mcp_server import (
     MCPServerPromptHandler,
 )
 from apigateway.core.constants import ReleaseHistoryStatusEnum
-from apigateway.core.models import Release, ReleaseHistory, ResourceVersion
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
 from apigateway.service.release import wait_release_done
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import get_default_redis_client
@@ -140,12 +140,23 @@ def reconcile_stage_mcp_server_permissions_after_release(
                 )
                 return
 
-            newer_release_exists = (
+            newer_release_history_ids = list(
                 ReleaseHistory.objects.filter(stage_id=stage_id, id__gt=expected_release_history_id)
                 .exclude(resource_version_id=expected_resource_version_id)
-                .exists()
+                .values_list("id", flat=True)
             )
-            if newer_release_exists:
+            latest_publish_event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
+                newer_release_history_ids
+            )
+            newer_non_failed_release_exists = any(
+                publish_event is None
+                or publish_event.get_release_history_status() != ReleaseHistoryStatusEnum.FAILURE.value
+                for publish_event in (
+                    latest_publish_event_map.get(release_history_id)
+                    for release_history_id in newer_release_history_ids
+                )
+            )
+            if newer_non_failed_release_exists:
                 logger.info(
                     "skip stale mcp server permission reconciliation because a newer publish has started, "
                     "stage_id=%d, expected_release_history_id=%d",
