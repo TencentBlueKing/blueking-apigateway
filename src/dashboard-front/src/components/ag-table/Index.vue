@@ -151,6 +151,8 @@ import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import i18n from '@/locales';
 import TableEmpty from '@/components/table-empty/Index.vue';
+// tdesign 表格样式
+import '@blueking/tdesign-ui/vue3/index.css';
 
 interface IProps {
   apiMethod?: (params?: any) => Promise<unknown>
