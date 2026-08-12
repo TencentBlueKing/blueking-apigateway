@@ -535,29 +535,6 @@
                   ]
                 }
               }
-            },
-            {
-              "not": {
-                "required": ["kind"]
-              },
-              "properties": {
-                "backend": {
-                  "type": "object",
-                  "anyOf": [
-                    {
-                      "required": ["method", "path"]
-                    },
-                    {
-                      "required": ["type", "statusCode"],
-                      "properties": {
-                        "type": {
-                          "enum": ["MOCK"]
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
             }
           ]
         },
