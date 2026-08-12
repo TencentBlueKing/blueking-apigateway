@@ -243,7 +243,10 @@
                           <!--                              size="small" -->
                           <!--                            /> -->
                           <!--                          </BkFormItem> -->
-                          <BkFormItem :label="t('个人令牌')">
+                          <BkFormItem
+                            :label="t('个人令牌')"
+                            :description="t('用户可以生成并使用个人令牌调用该 API')"
+                          >
                             <BkSwitcher
                               v-model="authConfigDraft.oauth2_personal_client_enabled"
                               theme="primary"
@@ -388,7 +391,10 @@
             <!-- 个人令牌 -->
             <div class="label-content-group wide">
               <div class="label">
-                <span>{{ t('个人令牌') }}</span>
+                <span
+                  v-bk-tooltips="t('用户可以生成并使用个人令牌调用该 API')"
+                  class="cursor-pointer underline underline-dashed underline-offset-4"
+                >{{ t('个人令牌') }}</span>
               </div>
               <div class="content">
                 <div class="value-container">
