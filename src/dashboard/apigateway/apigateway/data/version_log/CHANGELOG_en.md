@@ -1,3 +1,32 @@
+<!-- 2026-08-12 -->
+# V1.23.2 Release Log
+
+### Features
+
+- API Resource: support OAuth2 public client / personal client
+- MCP Server: support personal token (OAuth2 personal client)
+- MCP Server: permission management disallows deleting built-in application permissions
+
+### Enhancements
+
+- Resource management: adapt OAuth2 related configuration display and editing
+- Plugin management: organize documentation links and examples
+- API public client: hide unsupported configuration items
+- MCP Server: personal token display logic and hover tips
+- Permission apply records: show handler as display name
+
+### Bug Fixes
+
+- Fix: resource configuration table data obscured under large page size
+- Fix: resource list authentication tip display logic
+- Fix: resource comparison display abnormal
+- Fix: MCP permission sync not aligned with released resource IDs
+- Fix: alarm record creation fails when app_code is null
+- Fix: MCP release lookup query too large causing performance issues
+- Fix: OAuth2 related plugins visible in public plugin catalog
+
+---
+
 <!-- 2026-07-06 -->
 # V1.23.0 Release Log
 
