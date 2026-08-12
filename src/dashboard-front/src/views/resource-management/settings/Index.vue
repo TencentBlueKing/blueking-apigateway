@@ -233,12 +233,13 @@
                 />
               </div>
             </div>
-            <div class="flex-1 table-wrapper">
+            <div class="flex-1">
               <AgTable
                 ref="tableRef"
                 v-model:table-data="tableData"
                 :api-method="getTableData"
                 :columns="columns"
+                :max-height="tableMaxHeight"
                 :show-selection="isShowSelection"
                 :show-first-full-row="selectedRows.length > 0"
                 table-row-key="id"
@@ -287,7 +288,7 @@
                       @done="isComponentLoading = false"
                       @deleted-success="handleDeleteSuccess"
                       @updated="handleUpdated"
-                      @on-jump="(id: number | any) => handleShowInfo(id)"
+                      @on-jump="(id: number) => handleShowInfo(id)"
                       @on-update-plugin="handleUpdatePlugin"
                     />
                   </div>
@@ -459,6 +460,7 @@ import VersionDiff from '@/components/version-diff/Index.vue';
 import ResourceDocSlider from '../components/ResourceDocSlider.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 import { useRouteQuery } from '@vueuse/router';
+import { useWindowSize } from '@vueuse/core';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -948,6 +950,35 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     },
   ];
   return cols;
+});
+
+// 表格最大高度
+const tableMaxHeight = computed(() => {
+  const viewportHeight = useWindowSize().height.value;
+  // 通知栏高度
+  const globalNoticeCompHeight = featureFlagStore.isEnabledNotice ? 40 : 0;
+  // 导航栏高度
+  const navBarHeight = 52;
+  // 路由标题高度
+  const routeTitleHeight = 52;
+  // 页面上下padding
+  const pageVerticalPadding = 40;
+  // 版本提示高度
+  const versionAlertHeight = (versionConfigs.needNewVersion && isCollapsed.value) ? 52 : 0;
+  // 操作栏高度
+  const operationBarHeight = 48;
+  // 分页器高度
+  const paginationHeight = 64;
+  // 获取表格的最大可视化区域
+  const usableHeight = viewportHeight
+    - globalNoticeCompHeight
+    - navBarHeight
+    - routeTitleHeight
+    - pageVerticalPadding
+    - versionAlertHeight
+    - operationBarHeight
+    - paginationHeight;
+  return usableHeight;
 });
 
 watch(
@@ -1807,10 +1838,6 @@ onMounted(() => {
 
 .h-100px {
   height: 100%;
-}
-
-.table-wrapper {
-  overflow-y: auto;
 }
 
 .resource-setting-layout {
