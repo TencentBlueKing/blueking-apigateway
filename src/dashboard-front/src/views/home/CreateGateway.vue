@@ -170,6 +170,7 @@
             autofocus
             clearable
             show-word-limit
+            :prefix="formData.kind === 2 ? 'bkai-' : undefined"
           />
         </BkFormItem>
         <span class="common-form-tips form-item-name-tips">
@@ -572,7 +573,8 @@ const rules = {
           if (isEdit.value) return true;
           if (!value) return true;
 
-          const response = await checkNameAvailable({ name: value });
+          const name = formData.value.kind === 2 ? `bkai-${value}` : value;
+          const response = await checkNameAvailable({ name });
           isNameAvailable.value = response?.is_available;
           return isNameAvailable.value;
         }
@@ -914,6 +916,9 @@ const handleConfirmCreate = async () => {
     }
     if (payload.kind === 1 && envStore.env.EDITION === 'ee' && !isEdit.value) {
       payload.extra_info!.repository = payload.programmable_gateway_git_info!.repository;
+    }
+    if (payload.kind === 2 && !isEdit.value) {
+      payload.name = `bkai-${payload.name}`;
     }
 
     if (isEdit.value) {
