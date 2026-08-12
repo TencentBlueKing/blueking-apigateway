@@ -129,6 +129,7 @@
       <BkFormItem
         :label="t('个人令牌')"
         required
+        :description="t('用户可以生成并使用个人令牌调用该 API')"
       >
         <BkSwitcher
           v-model="formData.auth_config.oauth2_personal_client_enabled"
