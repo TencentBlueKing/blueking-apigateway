@@ -417,3 +417,29 @@ class TestAppPermissionExpiringSoonAlerter:
         )
         get_tenant_id.assert_called_once_with("valid-app")
         send_mail.assert_called_once()
+
+    def test_send_alert_skips_app_without_maintainers_and_continues(self, mocker):
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+        permissions = {
+            "missing-app": [{"gateway_name": "gateway", "grant_dimension": 1, "resource_name": "resource"}],
+            "valid-app": [{"gateway_name": "gateway", "grant_dimension": 1, "resource_name": "resource"}],
+        }
+
+        mocker.patch(
+            "apigateway.apps.permission.tasks.get_app_maintainers",
+            side_effect=[[], ["maintainer"]],
+        )
+        get_tenant_id = mocker.patch(
+            "apigateway.apps.permission.tasks.get_tenant_id_for_app_developers",
+            return_value="tenant-1",
+        )
+        mocker.patch("apigateway.apps.permission.tasks.render_to_string", return_value="mail-content")
+        mocker.patch("apigateway.apps.permission.tasks.read_file", return_value=b"logo")
+        send_mail = mocker.patch("apigateway.apps.permission.tasks.cmsi_component.send_mail")
+        log_exception = mocker.patch("apigateway.apps.permission.tasks.logger.exception")
+
+        alerter._send_alert(permissions)
+
+        log_exception.assert_not_called()
+        get_tenant_id.assert_called_once_with("valid-app")
+        send_mail.assert_called_once()
