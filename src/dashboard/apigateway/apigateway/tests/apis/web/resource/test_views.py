@@ -29,6 +29,7 @@ from apigateway.apis.web.resource.views import (
     ResourceRetrieveUpdateDestroyApi,
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource import ResourceHandler, ResourcesSaver
 from apigateway.core import constants
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum, StageStatusEnum
@@ -1198,14 +1199,30 @@ class TestResourceImportCheckApi:
         assert response.status_code == 200, response.json()
         item = response.json()["data"][0]
         assert item["kind"] == ResourceKindEnum.AI.value
-        assert item["backend"] == {"name": "openai-primary", "config": {}}
+        assert item["backend"] == {"name": "openai-primary", "config": None}
+
+        backend = item.pop("backend")
+        item["backend_name"] = backend["name"]
+        item["backend_config"] = None
+        import_response = request_view(
+            method="POST",
+            view_name="resource.import",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"import_resources": [item]},
+        )
+        assert import_response.status_code == 204, import_response.json()
 
 
 class TestResourceImportApi:
-    def test_post_ai_resource(self, request_view, fake_gateway):
+    def test_post_ai_resource(self, request_view, fake_gateway, mocker):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
         backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        parse_openapi_doc = mocker.patch(
+            "apigateway.apis.web.resource.views.OpenAPIParser.parse",
+            side_effect=AssertionError("resource import docs should be generated from resource data"),
+        )
 
         response = request_view(
             method="POST",
@@ -1217,6 +1234,7 @@ class TestResourceImportApi:
                     {
                         "kind": "ai",
                         "name": "chat",
+                        "description": "",
                         "method": "POST",
                         "path": "/chat",
                         "match_subpath": False,
@@ -1225,14 +1243,17 @@ class TestResourceImportApi:
                         "backend_name": backend.name,
                         "backend_config": None,
                     }
-                ]
+                ],
+                "doc_language": "zh",
             },
         )
 
         assert response.status_code == 204, response.json()
+        parse_openapi_doc.assert_not_called()
         resource = Resource.objects.get(gateway=fake_gateway, name="chat")
         assert resource.kind == ResourceKindEnum.AI.value
         assert Proxy.objects.get(resource=resource).config == {}
+        assert ResourceDoc.objects.filter(gateway=fake_gateway, resource_id=resource.id, language="zh").exists()
 
     @pytest.mark.parametrize(
         "data, expected",

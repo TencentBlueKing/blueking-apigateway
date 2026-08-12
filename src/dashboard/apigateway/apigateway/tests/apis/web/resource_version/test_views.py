@@ -74,7 +74,9 @@ class TestResourceVersionListCreateApi:
         assert json.loads(resource["proxy"]["config"]) == {}
         artifact = OpenAPIFileResourceSchemaVersion.objects.get(resource_version=resource_version)
         operation = yaml_loads(artifact.schema)["paths"][fake_resource.path]["post"]
-        assert operation["x-bk-apigateway-resource"]["kind"] == ResourceKindEnum.AI.value
+        extension_resource = operation["x-bk-apigateway-resource"]
+        assert extension_resource["kind"] == ResourceKindEnum.AI.value
+        assert extension_resource["backend"] == {"name": fake_backend.name}
 
     def test_list(self, request_view, fake_gateway):
         resource_version = G(

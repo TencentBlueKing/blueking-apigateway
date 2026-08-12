@@ -189,6 +189,114 @@ class TestSyncApi:
         assert resource.kind == ResourceKindEnum.AI.value
         assert Proxy.objects.get(resource=resource).config == {}
 
+    def test_resource_sync_standard_and_ai_resources(self, request_view, fake_gateway, disable_app_permission):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        standard_backend = G(Backend, gateway=fake_gateway, name="default", kind=BackendKindEnum.STANDARD.value)
+        ai_backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/users": {
+                        "get": {
+                            "operationId": "get_users",
+                            "x-bk-apigateway-resource": {
+                                "kind": "standard",
+                                "backend": {
+                                    "name": standard_backend.name,
+                                    "method": "get",
+                                    "path": "/backend/users",
+                                    "timeout": 30,
+                                },
+                            },
+                        }
+                    },
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": {
+                                "kind": "ai",
+                                "backend": {"name": ai_backend.name},
+                            },
+                        }
+                    },
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": content, "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        standard_resource = Resource.objects.get(gateway=fake_gateway, name="get_users")
+        ai_resource = Resource.objects.get(gateway=fake_gateway, name="chat")
+        assert standard_resource.kind == ResourceKindEnum.STANDARD.value
+        assert Proxy.objects.get(resource=standard_resource).backend == standard_backend
+        assert ai_resource.kind == ResourceKindEnum.AI.value
+        assert Proxy.objects.get(resource=ai_resource).backend == ai_backend
+        assert Proxy.objects.get(resource=ai_resource).config == {}
+
+    @pytest.mark.parametrize(
+        "resource_extension",
+        [
+            {
+                "kind": "ai",
+                "backend": {"name": "default"},
+            },
+            {
+                "kind": "standard",
+                "backend": {"name": "openai-primary", "method": "get", "path": "/backend/users"},
+            },
+        ],
+    )
+    def test_resource_sync_rejects_invalid_ai_resource_backend_contract(
+        self,
+        request_view,
+        fake_gateway,
+        disable_app_permission,
+        resource_extension,
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        G(Backend, gateway=fake_gateway, name="default", kind=BackendKindEnum.STANDARD.value)
+        G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": resource_extension,
+                        }
+                    }
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": content, "delete": False},
+        )
+
+        assert response.status_code == 400
+        assert not Resource.objects.filter(gateway=fake_gateway, name="chat").exists()
+
     def test_stage_sync_ai_gateway_with_ai_backends_only(self, request_view, fake_gateway, disable_app_permission):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()

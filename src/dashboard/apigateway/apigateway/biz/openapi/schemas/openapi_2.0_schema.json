@@ -328,7 +328,7 @@
             },
             "backend": {
               "type": "object",
-              "oneOf": [
+              "anyOf": [
                 {
                   "properties": {
                     "type": {
@@ -354,8 +354,7 @@
                       ]
                     },
                     "path": {
-                      "type": "string",
-                      "pattern": "^/[\\w{}/.-]*$"
+                      "type": "string"
                     },
                     "matchSubpath": {
                       "type": "boolean"
@@ -399,7 +398,7 @@
                   ]
                 },
                 {
-                  "additionalProperties": false,
+                  "additionalProperties": true,
                   "properties": {
                     "name": {
                       "type": "string"
@@ -454,33 +453,35 @@
               }
             }
           },
-          "allOf": [
+          "anyOf": [
             {
-              "anyOf": [
-                {
-                  "required": ["kind"],
-                  "properties": {
-                    "kind": {
-                      "enum": ["ai"]
-                    }
-                  }
+              "required": ["kind", "backend"],
+              "properties": {
+                "kind": {
+                  "enum": ["ai"]
                 },
-                {
+                "backend": {
+                  "type": "object",
+                  "additionalProperties": true,
                   "properties": {
-                    "backend": {
-                      "not": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "name": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["name"]
-                      }
+                    "name": {
+                      "type": "string"
                     }
-                  }
+                  },
+                  "required": ["name"]
                 }
-              ]
+              }
+            },
+            {
+              "properties": {
+                "kind": {
+                  "enum": ["standard"]
+                },
+                "backend": {
+                  "type": "object",
+                  "required": ["method", "path"]
+                }
+              }
             }
           ]
         }

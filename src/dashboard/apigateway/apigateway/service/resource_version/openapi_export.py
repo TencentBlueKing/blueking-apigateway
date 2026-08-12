@@ -140,6 +140,8 @@ class BaseExporter:
                 resource["none_schema"] = False
 
             operation.update(schema)
+            if "responses" not in operation:
+                operation["responses"] = {"default": {"description": ""}}
 
             if self.include_bk_apigateway_resource:
                 self._generate_bk_apigateway_resource(operation, resource)

@@ -840,7 +840,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
 
     def get_backend(self, obj):
         if obj.kind == ResourceKindEnum.AI.value:
-            return {"name": obj.backend.name, "config": {}}
+            return {"name": obj.backend.name, "config": None}
         assert obj.backend_config
         return {
             "name": obj.backend.name,

@@ -527,12 +527,9 @@ class ResourceImportApi(generics.CreateAPIView):
         importer.import_resources()
         # 如果生成文档还要再生成文档
         if slz.validated_data.get("doc_language"):
-            exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
-            # 生成openapi yaml
-            content = exporter.export_openapi(slz.data.get("import_resources", []), file_type="yaml")
             parser = OpenAPIParser(gateway_id=request.gateway.id)
-            docs = parser.parse(
-                swagger=content,
+            docs = parser.parse_resource_data(
+                resources=slz.data.get("import_resources", []),
                 language=DocLanguageEnum(slz.validated_data["doc_language"]),
             )
             importer = DocImporter(
@@ -560,12 +557,9 @@ class ResourceImportDocPreviewApi(generics.CreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
-        # 生成openapi yaml
-        content = exporter.export_openapi([slz.data.get("review_resource")], file_type="yaml")
         parser = OpenAPIParser(gateway_id=request.gateway.id)
-        docs = parser.parse(
-            swagger=content,
+        docs = parser.parse_resource_data(
+            resources=[slz.data.get("review_resource")],
             language=DocLanguageEnum(slz.validated_data["doc_language"]),
         )
         return OKJsonResponse(data={"doc": "" if len(docs) == 0 else docs[0].content})

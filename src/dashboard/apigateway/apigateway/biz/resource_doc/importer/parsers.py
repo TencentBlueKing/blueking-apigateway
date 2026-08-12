@@ -17,7 +17,7 @@
 #
 import hashlib
 from tempfile import TemporaryDirectory
-from typing import IO, AnyStr, Dict, List, Optional, Union
+from typing import IO, Any, AnyStr, Dict, List, Optional, Union
 
 from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV2
@@ -164,22 +164,41 @@ class OpenAPIParser(BaseParser):
         self._enrich_docs(docs)
         return docs
 
-    def _parse(self, openapi: str, language: DocLanguageEnum) -> List[OpenAPIDoc]:
-        gateway = Gateway.objects.get(id=self.gateway_id)
-        openapi_manager = OpenAPIImportManager.load_from_content(gateway, openapi)
-
-        validate_err_list = openapi_manager.validate()
-        if len(validate_err_list) > 0 or not openapi_manager.parser:
-            raise SchemaValidationError("")
-
+    def parse_resource_data(self, resources: List[Dict[str, Any]], language: DocLanguageEnum) -> List[OpenAPIDoc]:
+        """根据已校验的资源导入 DTO 生成文档，避免再次走 OpenAPI 资源导入校验。"""
         docs = []
-        for path, path_item in openapi_manager.parser.get_paths().items():
+        gateway = Gateway.objects.get(id=self.gateway_id)
+        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
+        for resource in resources:
+            content = exporter.export_openapi([resource], file_type=OpenAPIFormatEnum.YAML.value)
+            openapi_manager = OpenAPIImportManager.load_from_content(gateway, content)
+            docs.extend(
+                self._parse_paths(
+                    paths=openapi_manager.data["paths"],
+                    language=language,
+                    is_openapi_v2="swagger" in openapi_manager.data,
+                )
+            )
+
+        self._enrich_docs(docs)
+        return docs
+
+    def _parse_paths(
+        self,
+        paths: Dict[str, Any],
+        language: DocLanguageEnum,
+        is_openapi_v2: bool,
+    ) -> List[OpenAPIDoc]:
+        docs = []
+        for path, path_item in paths.items():
             for method, original_operation in path_item.items():
                 if method == OpenAPIExtensionEnum.METHOD_ANY.value:
                     continue
+
                 converted_operation = original_operation
-                if openapi_manager.version != OPENAPIV2:
+                if not is_openapi_v2:
                     converted_operation = convert_operation_v3_to_v2(original_operation)
+
                 openapi = OpenAPIExportManager(title=converted_operation["operationId"]).get_swagger_by_paths(
                     paths={
                         path: {method: converted_operation},
@@ -196,3 +215,17 @@ class OpenAPIParser(BaseParser):
                 )
 
         return docs
+
+    def _parse(self, openapi: str, language: DocLanguageEnum) -> List[OpenAPIDoc]:
+        gateway = Gateway.objects.get(id=self.gateway_id)
+        openapi_manager = OpenAPIImportManager.load_from_content(gateway, openapi)
+
+        validate_err_list = openapi_manager.validate()
+        if len(validate_err_list) > 0 or not openapi_manager.parser:
+            raise SchemaValidationError("")
+
+        return self._parse_paths(
+            paths=openapi_manager.parser.get_paths(),
+            language=language,
+            is_openapi_v2=openapi_manager.version == OPENAPIV2,
+        )
