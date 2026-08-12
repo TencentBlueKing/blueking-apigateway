@@ -328,7 +328,7 @@
             },
             "backend": {
               "type": "object",
-              "oneOf": [
+              "anyOf": [
                 {
                   "properties": {
                     "type": {
@@ -398,7 +398,7 @@
                   ]
                 },
                 {
-                  "additionalProperties": false,
+                  "additionalProperties": true,
                   "properties": {
                     "name": {
                       "type": "string"
@@ -462,7 +462,7 @@
                 },
                 "backend": {
                   "type": "object",
-                  "additionalProperties": false,
+                  "additionalProperties": true,
                   "properties": {
                     "name": {
                       "type": "string"
@@ -479,19 +479,7 @@
                 },
                 "backend": {
                   "type": "object",
-                  "anyOf": [
-                    {
-                      "required": ["method", "path"]
-                    },
-                    {
-                      "required": ["type", "statusCode"],
-                      "properties": {
-                        "type": {
-                          "enum": ["MOCK"]
-                        }
-                      }
-                    }
-                  ]
+                  "required": ["method", "path"]
                 }
               }
             }

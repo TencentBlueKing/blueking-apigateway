@@ -782,6 +782,7 @@ class TestOpenAPIImportManagerParse:
     @pytest.mark.parametrize("openapi_version", ["2.0", "3.0.1", "3.1.0"])
     def test_schema_accepts_name_only_backend_for_ai_resource(self, openapi_version):
         data = self._name_only_backend_document(openapi_version, "ai")
+        data["paths"]["/chat"]["post"]["x-bk-apigateway-resource"]["backend"]["extra"] = "ignored"
 
         errors = list(openapi_validator_mapping[get_spec_version(data)].cls(data).iter_errors())
 

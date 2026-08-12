@@ -250,10 +250,6 @@ class TestSyncApi:
         [
             {
                 "kind": "ai",
-                "backend": {"name": "openai-primary", "method": "post", "path": "/backend/chat"},
-            },
-            {
-                "kind": "ai",
                 "backend": {"name": "default"},
             },
             {
