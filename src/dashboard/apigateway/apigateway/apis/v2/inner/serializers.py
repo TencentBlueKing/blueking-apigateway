@@ -1022,6 +1022,14 @@ class AppRequestLogListOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListOutputSLZ"
 
 
+class AppRequestLogPaginatedOutputSLZ(serializers.Serializer):
+    count = serializers.IntegerField(read_only=True, help_text="数据总数")
+    results = AppRequestLogListOutputSLZ(many=True, read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogPaginatedOutputSLZ"
+
+
 class OAuth2MCPServerScopeListInputSLZ(serializers.Serializer):
     oauth_client_type = serializers.ChoiceField(choices=OAUTH2_CLIENT_TYPES)
     gateway_name = serializers.CharField(required=False, allow_blank=True, max_length=64)

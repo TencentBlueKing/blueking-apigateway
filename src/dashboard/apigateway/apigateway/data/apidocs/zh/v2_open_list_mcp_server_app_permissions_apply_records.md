@@ -19,32 +19,35 @@
 
 ```json
 {
-  "data": [
-    {
-      "mcp_server": {
+  "data": {
+    "count": 1,
+    "results": [
+      {
+        "mcp_server": {
+          "id": 1,
+          "name": "test",
+          "title": "测试服务",
+          "description": null,
+          "categories": [
+            {"name": "official", "display_name": "官方"},
+            {"name": "ai", "display_name": "AI"}
+          ]
+        },
         "id": 1,
-        "name": "test",
-        "title": "测试服务",
-        "description": null,
-        "categories": [
-          {"name": "official", "display_name": "官方"},
-          {"name": "ai", "display_name": "AI"}
-        ]
-      },
-      "id": 1,
-      "bk_app_code": "bk-001",
-      "applied_by": "admin",
-      "applied_time": "2025-06-09 11:13:26 +0800",
-      "handled_by": "admin",
-      "handled_time": "2025-07-02 14:29:04 +0800",
-      "status": "approved",
-      "status_display": "通过",
-      "comment": "",
-      "reason": "",
-      "expire_days": 0,
-      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=1"
-    }
-  ]
+        "bk_app_code": "bk-001",
+        "applied_by": "admin",
+        "applied_time": "2025-06-09 11:13:26 +0800",
+        "handled_by": "admin",
+        "handled_time": "2025-07-02 14:29:04 +0800",
+        "status": "approved",
+        "status_display": "通过",
+        "comment": "",
+        "reason": "",
+        "expire_days": 0,
+        "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=1"
+      }
+    ]
+  }
 }
 ```
 
@@ -52,10 +55,18 @@
 
 | 字段    | 类型   | 描述                               |
 | ------- | ------ | ---------------------------------- |
-| data    | array  | 结果数据，详细信息请见下面说明     |
+| data    | object | 分页结果，详细信息请见下面说明     |
 
 
 #### data
+
+| 参数名称 | 参数类型 | 描述 |
+|---|---|---|
+| count | int | 按 MCPServer 去重后的申请记录数量 |
+| results | array | 本次查询结果数据 |
+
+
+#### data.results
 
 | 参数名称           | 参数类型   | 描述            |
 |----------------|--------|---------------|
@@ -74,7 +85,7 @@
 | mcp_server     | object | mcp_server 信息 |
 
 
-#### data.mcp_server
+#### data.results.mcp_server
 
 | 参数名称          | 参数类型    | 描述                   |
 |---------------|---------|----------------------|

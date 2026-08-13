@@ -283,10 +283,10 @@ class TestMCPServerAppPermissionRecordListApi:
 
         assert resp.status_code == 200
         result = resp.json()
-        assert "data" in result
-        assert len(result["data"]) > 0
+        assert result["data"]["count"] == 1
+        assert len(result["data"]["results"]) > 0
         # 验证返回的数据包含 approval_url
-        for item in result["data"]:
+        for item in result["data"]["results"]:
             assert "approval_url" in item
             assert f"/{fake_gateway.id}/mcp/permission?serverId={mcp_server.id}" in item["approval_url"]
 
@@ -326,7 +326,50 @@ class TestMCPServerAppPermissionRecordListApi:
 
         assert resp.status_code == 200
         result = resp.json()
-        assert result["data"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
+        assert (
+            result["data"]["results"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
+        )
+
+    def test_list_paginates_after_selecting_latest_record_per_mcp_server(self, request_view, fake_gateway, settings):
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
+        )
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        first_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
+        second_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=first_mcp_server,
+            applied_time=datetime(2025, 1, 1, tzinfo=ZoneInfo("UTC")),
+        )
+        latest_first_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=first_mcp_server,
+            applied_time=datetime(2025, 1, 3, tzinfo=ZoneInfo("UTC")),
+        )
+        second_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=second_mcp_server,
+            applied_time=datetime(2025, 1, 2, tzinfo=ZoneInfo("UTC")),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app", "limit": 1, "offset": 1},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert set(result["data"]) == {"count", "results"}
+        assert result["data"]["count"] == 2
+        assert len(result["data"]["results"]) == 1
+        assert result["data"]["results"][0]["id"] == second_record.id
+        assert latest_first_record.id != second_record.id
 
 
 class TestMCPServerAppPermissionRecordLookupApi:
@@ -1367,12 +1410,54 @@ class TestGatewayReleasedResourceListApi:
         result = get_response_json(response)
 
         assert response.status_code == 200
+        assert set(result["data"]) == {"count", "results"}
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["name"] == "test"
         assert result["data"]["results"][0]["kind"] == ResourceKindEnum.AI.value
         assert result["data"]["results"][0]["oauth2_public_client_enabled"] is True
         assert result["data"]["results"][0]["oauth2_personal_client_enabled"] is False
         get_released_public_resources_mock.assert_called_once_with(fake_gateway.id, stage_name="prod")
+
+    def test_list_supports_limit_offset_pagination(
+        self, settings, mocker, request_to_view, request_factory, fake_gateway
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{resource_path}"
+        resources = [
+            {
+                "id": resource_id,
+                "name": f"resource-{resource_id}",
+                "description": "test",
+                "method": "GET",
+                "path": f"/resource-{resource_id}/",
+                "kind": ResourceKindEnum.STANDARD.value,
+                "match_subpath": False,
+                "enable_websocket": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+                "user_verified_required": True,
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": False,
+            }
+            for resource_id in (1, 2)
+        ]
+        mocker.patch(
+            "apigateway.apis.v2.open.views.ResourceVersionHandler.get_released_public_resources",
+            return_value=resources,
+        )
+
+        request = request_factory.get("", data={"limit": 1, "offset": 1})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.released_resources.list",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": "prod"},
+        )
+
+        result = get_response_json(response)
+        assert response.status_code == 200
+        assert result["data"]["count"] == 2
+        assert [item["id"] for item in result["data"]["results"]] == [2]
 
 
 class TestGatewayReleasedResourceRetrieveApi:

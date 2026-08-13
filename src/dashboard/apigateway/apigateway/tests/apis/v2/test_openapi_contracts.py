@@ -18,8 +18,8 @@ from pathlib import Path
 
 from rest_framework import serializers, status
 
-from apigateway.apis.v2.inner.views import MCPServerAppPermissionRecordRetrieveApi
-from apigateway.apis.v2.open.views import MCPServerAppPermissionRecordListApi
+from apigateway.apis.v2.inner.views import AppRequestLogListApi, MCPServerAppPermissionRecordRetrieveApi
+from apigateway.apis.v2.open.views import GatewayReleasedResourceListApi, MCPServerAppPermissionRecordListApi
 from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ
 from apigateway.apis.v2.sync.views import (
     DocImportByArchiveApi,
@@ -56,6 +56,15 @@ def test_open_permission_apply_record_list_response_is_array():
     assert isinstance(response, serializers.ListSerializer)
 
 
+def test_released_resource_list_schema_is_paginated_count_results_object():
+    response = GatewayReleasedResourceListApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
+
+    assert GatewayReleasedResourceListApi.pagination_class is not None
+    assert isinstance(response, serializers.Serializer)
+    assert not isinstance(response, serializers.ListSerializer)
+    assert set(response.fields) == {"count", "results"}
+
+
 def test_inner_permission_apply_record_retrieve_response_is_object():
     response = MCPServerAppPermissionRecordRetrieveApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
 
@@ -64,6 +73,14 @@ def test_inner_permission_apply_record_retrieve_response_is_object():
     assert isinstance(response.fields["record"].fields["handled_by"], serializers.SerializerMethodField)
     handled_by_schema = response.fields["record"].get_handled_by._swagger_serializer
     assert isinstance(handled_by_schema, serializers.ListField)
+
+
+def test_request_log_response_schema_uses_standard_paginated_object():
+    response = AppRequestLogListApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
+
+    assert isinstance(response, serializers.Serializer)
+    assert not isinstance(response, serializers.ListSerializer)
+    assert set(response.fields) == {"count", "results"}
 
 
 def test_registered_resource_schemas_match_runtime_contracts():
@@ -86,3 +103,27 @@ def test_registered_resource_schemas_match_runtime_contracts():
     assert retrieve_data_schema["type"] == "object"
     assert set(retrieve_data_schema["properties"]) == {"mcp_server", "record"}
     assert retrieve_data_schema["properties"]["record"]["properties"]["handled_by"]["type"] == "array"
+
+
+def test_registered_v2_list_responses_use_standard_pagination_contract():
+    paths = yaml_loads(RESOURCE_DEFINITION_PATH.read_text())["paths"]
+    released_resources_operation = paths[
+        "/api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/"
+    ]["get"]
+    operations = [
+        paths["/api/v2/sync/gateways/{gateway_name}/resource_versions/"]["get"],
+        paths["/api/v2/open/mcp-servers/permissions/apply-records/"]["get"],
+        released_resources_operation,
+        paths["/api/v2/inner/apps/{app_code}/monitor/request-logs/"]["get"],
+    ]
+
+    for operation in operations:
+        data_schema = operation["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["data"]
+        assert data_schema["type"] == "object"
+        assert set(data_schema["properties"]) == {"count", "results"}
+        assert data_schema["properties"]["results"]["type"] == "array"
+
+    query_parameter_names = {
+        parameter["name"] for parameter in released_resources_operation["parameters"] if parameter["in"] == "query"
+    }
+    assert query_parameter_names == {"limit", "offset"}

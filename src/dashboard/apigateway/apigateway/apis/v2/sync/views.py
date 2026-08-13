@@ -483,10 +483,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         versions = ResourceVersion.objects.filter_objects_fields(
             gateway_id=self.request.gateway.id,
             version=slz.validated_data.get("version"),
-        )
+        ).order_by("id")
         page = self.paginate_queryset(versions)
         slz = ResourceVersionListOutputSLZ(page, many=True)
-        return OKJsonResponse(data=slz.data)
+        return self.get_paginated_response(slz.data)
 
     @transaction.atomic
     def create(self, request, gateway_name: str, *args, **kwargs):
