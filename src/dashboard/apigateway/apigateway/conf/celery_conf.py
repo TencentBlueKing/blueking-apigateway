@@ -83,6 +83,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts",
         "schedule": crontab(minute="*/10"),
     },
+    "apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category": {
+        "task": "apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category",
+        "schedule": crontab(minute=0),
+    },
 }
 
 CELERY_CHORD_UNLOCK_MAX_RETRIES = 60
