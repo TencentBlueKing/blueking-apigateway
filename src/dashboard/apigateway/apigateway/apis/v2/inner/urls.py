@@ -87,6 +87,12 @@ urlpatterns = [
                                 views.GatewayReleasedResourceListApi.as_view(),
                                 name="openapi.v2.inner.gateway.released_resource.list",
                             ),
+                            # GET /api/v2/inner/gateways/{gateway_name}/released-resources/-/lookup/
+                            path(
+                                "released-resources/-/lookup/",
+                                views.GatewayReleasedResourceLookupApi.as_view(),
+                                name="openapi.v2.inner.gateway.released_resource.lookup",
+                            ),
                             path(
                                 "permissions/",
                                 include(

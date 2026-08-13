@@ -11,6 +11,7 @@ EXPECTED_BK_AUTH_INNER_RESOURCES = {
     "v2_inner_lookup_mcp_servers",
     "v2_inner_lookup_gateways",
     "v2_inner_list_gateway_released_resources",
+    "v2_inner_lookup_gateway_released_resources",
     "v2_inner_list_oauth2_resource_scopes",
     "v2_inner_list_oauth2_mcp_server_scopes",
 }

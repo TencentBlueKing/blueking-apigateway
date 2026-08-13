@@ -5839,12 +5839,6 @@ paths:
           schema:
             type: string
           description: 网关名称
-        - name: resource_names
-          in: query
-          required: false
-          schema:
-            type: string
-          description: 资源名称列表，精确匹配，多个以逗号分隔，最多 50 个
         - name: fields
           in: query
           required: false
@@ -5913,6 +5907,70 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: List resources referenced by the gateway current releases
+  /api/v2/inner/gateways/{gateway_name}/released-resources/-/lookup/:
+    get:
+      operationId: v2_inner_lookup_gateway_released_resources
+      description: 按名称查询网关当前已发布资源，仅统计启用环境（stage.status = ACTIVE）的 Release
+      tags:
+      - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+        - name: names
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 资源名称列表，精确匹配，多个以逗号分隔，最多 50 个
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description
+      responses:
+        '200':
+          description: 成功返回匹配的当前已发布资源列表，无分页包装
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 资源 ID
+                        name:
+                          type: string
+                          description: 资源名称
+                        description:
+                          type: string
+                          description: 资源描述
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/gateways/{gateway_name}/released-resources/-/lookup/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Look up resources referenced by the gateway current releases
   /api/v2/inner/gateways/{gateway_name}/permissions/resources/:
     get:
       operationId: v2_inner_list_gateway_permission_resources
