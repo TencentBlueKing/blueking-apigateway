@@ -20,7 +20,13 @@ import pytest
 
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import UserCredentials
-from apigateway.components.bkpaas import REQ_PAAS_API_TIMEOUT, get_paas_apps_by_username, get_paas_repo_authorization
+from apigateway.components.bkauth import BkAuthAppNotFoundError
+from apigateway.components.bkpaas import (
+    REQ_PAAS_API_TIMEOUT,
+    get_app_maintainers,
+    get_paas_apps_by_username,
+    get_paas_repo_authorization,
+)
 
 
 def test_get_paas_repo_authorization__authorized(mocker):
@@ -92,6 +98,34 @@ def test_get_paas_repo_authorization__failed(mocker):
 
     with pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__):
         get_paas_repo_authorization()
+
+
+def test_get_app_maintainers_returns_empty_when_bkauth_app_not_found(mocker):
+    mocker.patch(
+        "apigateway.components.bkpaas.get_tenant_id_for_app_developers",
+        side_effect=BkAuthAppNotFoundError("app does not exist in bkauth, app_code=missing-app"),
+    )
+    mock_get_app = mocker.patch("apigateway.components.bkpaas._get_app_with_cache")
+
+    assert get_app_maintainers("missing-app") == []
+    mock_get_app.assert_not_called()
+
+
+def test_get_app_maintainers_raises_when_bkauth_remote_error_not_app_not_found(mocker):
+    mocker.patch(
+        "apigateway.components.bkpaas.get_tenant_id_for_app_developers",
+        side_effect=error_codes.REMOTE_REQUEST_ERROR.format(
+            "request bkauth fail! "
+            "Request=[http_get /api/v1/apps/demo request_id=request-id]"
+            "error=status_code is 500, not 2xx! GET /api/v1/apps/demo, request_id=request-id"
+        ),
+    )
+    mock_get_app = mocker.patch("apigateway.components.bkpaas._get_app_with_cache")
+
+    with pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__):
+        get_app_maintainers("demo")
+
+    mock_get_app.assert_not_called()
 
 
 class TestGetPaaSAppsByUsername:

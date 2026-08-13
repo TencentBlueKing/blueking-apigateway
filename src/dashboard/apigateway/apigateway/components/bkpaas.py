@@ -33,6 +33,7 @@ from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_fo
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
+from .bkauth import BkAuthAppNotFoundError
 from .bkauth import get_app_tenant_info as bkauth_get_app_tenant_info
 from .http import http_get, http_post
 from .utils import gen_gateway_headers
@@ -175,7 +176,11 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     # NOTE: here we need to get maintainers from paasv3
     #       but the X-Bk-Tenant-Id required
     #       so, we query it from bkauth first
-    tenant_id = get_tenant_id_for_app_developers(bk_app_code)
+    try:
+        tenant_id = get_tenant_id_for_app_developers(bk_app_code)
+    except BkAuthAppNotFoundError:
+        logger.warning("skip app maintainers query because app does not exist in bkauth, bk_app_code=%s", bk_app_code)
+        return []
 
     app = _get_app_with_cache(tenant_id, bk_app_code)
     if not app:
