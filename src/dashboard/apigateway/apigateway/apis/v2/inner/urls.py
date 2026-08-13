@@ -213,6 +213,12 @@ urlpatterns = [
                     views.MCPServerListApi.as_view(),
                     name="openapi.v2.inner.mcp_server.list",
                 ),
+                # GET /api/v2/inner/mcp-servers/-/lookup/
+                path(
+                    "-/lookup/",
+                    views.MCPServerLookupApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.lookup",
+                ),
             ]
         ),
     ),
