@@ -595,7 +595,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="生成网关sdk",
         request_body=SDKGenerateInputSLZ(),
-        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ()},
+        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -620,7 +620,7 @@ class SDKGenerateApi(generics.CreateAPIView):
             version=data["version"],
         )
 
-        return OKJsonResponse(status=status.HTTP_201_CREATED, data={"results": results})
+        return OKJsonResponse(status=status.HTTP_201_CREATED, data=results)
 
 
 @method_decorator(

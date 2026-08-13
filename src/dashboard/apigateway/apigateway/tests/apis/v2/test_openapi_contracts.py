@@ -45,9 +45,7 @@ def test_sdk_generate_schema_matches_runtime_payload():
 
     assert isinstance(schema["request_body"], SDKGenerateInputSLZ)
     response = schema["responses"][status.HTTP_201_CREATED]
-    assert isinstance(response, serializers.Serializer)
-    assert not isinstance(response, serializers.ListSerializer)
-    assert isinstance(response.fields["results"], serializers.ListSerializer)
+    assert isinstance(response, serializers.ListSerializer)
 
 
 def test_open_permission_apply_record_list_response_is_array():
@@ -70,6 +68,7 @@ def test_inner_permission_apply_record_retrieve_response_is_object():
 
     assert isinstance(response, serializers.Serializer)
     assert not isinstance(response, serializers.ListSerializer)
+    assert isinstance(response.fields["mcp_server"].fields["tools_count"], serializers.IntegerField)
     assert isinstance(response.fields["record"].fields["handled_by"], serializers.SerializerMethodField)
     handled_by_schema = response.fields["record"].get_handled_by._swagger_serializer
     assert isinstance(handled_by_schema, serializers.ListField)
@@ -89,8 +88,7 @@ def test_registered_resource_schemas_match_runtime_contracts():
     sdk_operation = paths["/api/v2/sync/gateways/{gateway_name}/sdks/"]["post"]
     assert set(sdk_operation["responses"]) == {"201"}
     sdk_data_schema = sdk_operation["responses"]["201"]["content"]["application/json"]["schema"]["properties"]["data"]
-    assert sdk_data_schema["type"] == "object"
-    assert sdk_data_schema["properties"]["results"]["type"] == "array"
+    assert sdk_data_schema["type"] == "array"
 
     retrieve_operation = paths["/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/"]["get"]
     assert {parameter["name"] for parameter in retrieve_operation["parameters"]} == {
@@ -102,6 +100,7 @@ def test_registered_resource_schemas_match_runtime_contracts():
     ]["data"]
     assert retrieve_data_schema["type"] == "object"
     assert set(retrieve_data_schema["properties"]) == {"mcp_server", "record"}
+    assert retrieve_data_schema["properties"]["mcp_server"]["properties"]["tools_count"]["type"] == "integer"
     assert retrieve_data_schema["properties"]["record"]["properties"]["handled_by"]["type"] == "array"
 
 

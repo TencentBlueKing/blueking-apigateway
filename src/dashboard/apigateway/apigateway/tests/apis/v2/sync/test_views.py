@@ -816,6 +816,28 @@ class TestSyncApi:
         assert resp.json()["data"] == {"id": 123, "version": "1.1.0"}
         create_resource_version_with_artifacts.assert_called_once()
 
+    def test_sdk_generate_returns_result_array(
+        self, mocker, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data="[]")
+        results = [{"name": "python-sdk", "version": "1.0.0", "url": "https://example.com/python-sdk.tgz"}]
+        mocker.patch(
+            "apigateway.apis.v2.sync.views.generate_sdks_for_resource_version",
+            return_value=results,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generate",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"resource_version": resource_version.version, "languages": ["python"], "version": "1.0.0"},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 201
+        assert resp.json()["data"] == results
+
     def test_resource_version_lookup_by_ids_and_versions(
         self, request_view, fake_gateway, fake_admin_user, disable_app_permission
     ):

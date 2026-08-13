@@ -5488,25 +5488,22 @@ paths:
                 type: object
                 properties:
                   data:
-                    type: object
-                    properties:
-                      results:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                              description: SDK 名称
-                              example: bkapi-test
-                            version:
-                              type: string
-                              description: SDK 版本号
-                              example: "1.0.1"
-                            url:
-                              type: string
-                              description: SDK 下载地址
-                              example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: SDK 名称
+                          example: bkapi-test
+                        version:
+                          type: string
+                          description: SDK 版本号
+                          example: "1.0.1"
+                        url:
+                          type: string
+                          description: SDK 下载地址
+                          example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -7753,9 +7750,9 @@ paths:
                             description: MCPServer 描述
                             example: test
                           tools_count:
-                            type: string
+                            type: integer
                             description: MCPServer 工具数量
-                            example: "1"
+                            example: 1
                           doc_link:
                             type: string
                             description: MCPServer 文档访问地址
