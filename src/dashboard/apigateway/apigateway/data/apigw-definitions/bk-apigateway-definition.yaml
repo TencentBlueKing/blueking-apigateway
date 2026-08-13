@@ -140,7 +140,6 @@ grant_permissions:
       - v2_inner_list_oauth2_mcp_server_scopes
       - v2_open_batch_query_mcp_servers
       - v2_open_list_gateways
-      - v2_open_lookup_gateways
       - v2_open_list_gateway_resources
   # ITSM v4 工单回调（单租户默认 bk-itsm4，多租户默认 cw_aitsm）
   - bk_app_code: {{ settings.BK_ITSM4_CALLBACK_APP_CODE }}
@@ -155,7 +154,6 @@ grant_permissions:
       - v2_open_get_released_resource
       - v2_open_get_gateway
       - v2_open_list_gateways
-      - v2_open_lookup_gateways
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"
