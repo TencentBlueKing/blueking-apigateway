@@ -54,12 +54,15 @@ Open or Sync input, where submitted stored-protocol values are literal.
   Do not add an identifier-list mode to a list API that changes its normal
   visibility, filtering, or pagination semantics.
 - List APIs use the standard `limit`/`offset` pagination contract and return
-  `data: {"count": <int>, "results": [...]}`. When the view owns an
-  unpaginated queryset or list, use `self.paginate_queryset(...)` and
-  `self.get_paginated_response(...)`; do not hand-build the envelope or use the
-  legacy `apigateway.utils.paginator.LimitOffsetPaginator`. When a downstream
-  source already applies `limit`/`offset` and supplies the total count, preserve
-  the same standard response envelope without paginating the page again.
+  `data: {"count": <int>, "results": [...]}`.
+- `apigateway.utils.paginator.LimitOffsetPaginator` is deprecated for
+  `apis.v2`; do not use it in new or modified v2 endpoints. Use the configured
+  `apigateway.common.pagination.StandardLimitOffsetPagination` (or a
+  surface-specific subclass) through `self.paginate_queryset(...)` and
+  `self.get_paginated_response(...)` instead. Do not hand-build the envelope
+  when the view owns an unpaginated queryset or list. When a downstream source
+  already applies `limit`/`offset` and supplies the total count, preserve the
+  same standard response envelope without paginating the page again.
 
 ## OpenAPI Contract
 
