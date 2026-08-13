@@ -2341,6 +2341,78 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
+  /api/v2/open/gateways/-/lookup/:
+    get:
+      operationId: v2_open_lookup_gateways
+      description: 按 ID 或名称批量查询公开且已发布的网关
+      tags:
+      - v2_open
+      parameters:
+        - name: ids
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 网关 ID 列表，多个以逗号分隔，最多 50 个；与 names 不能同时为空，同时传入时取交集
+          example: "1,2,3"
+        - name: names
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 网关名称列表，多个以逗号分隔，最多 50 个；与 ids 不能同时为空，同时传入时取交集
+          example: bk-apigateway,bk-esb
+      responses:
+        '200':
+          description: 成功返回匹配的网关列表，无分页包装
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 网关 ID
+                        name:
+                          type: string
+                          description: 网关名称
+                        description:
+                          type: string
+                          description: 网关描述
+                        maintainers:
+                          type: array
+                          items:
+                            type: string
+                          description: 网关管理员
+                        doc_maintainers:
+                          type: object
+                          description: 网关文档维护人员
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/-/lookup/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
   /api/v2/open/gateways/{gateway_name}/:
     get:
       operationId: v2_open_get_gateway
@@ -3826,6 +3898,75 @@ paths:
           name: default
           method: get
           path: /backend/api/v2/open/mcp-servers/permissions/apply-records/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/mcp-servers/permissions/apply-records/-/lookup/:
+    get:
+      operationId: v2_open_lookup_mcp_server_app_permission_apply_records
+      description: 按 ID 批量查询指定应用的 mcp_server 权限申请记录
+      tags:
+        - v2_open
+      parameters:
+        - name: bk_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 蓝鲸应用编码
+          example: bk-001
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请记录 ID 列表，多个以逗号分隔，最多 50 个
+          example: "1,2,3"
+      responses:
+        '200':
+          description: 成功返回匹配的申请记录列表，无分页包装
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 申请记录 ID
+                        bk_app_code:
+                          type: string
+                          description: 蓝鲸应用编码
+                        applied_by:
+                          type: string
+                          description: 申请人
+                        applied_time:
+                          type: string
+                          description: 申请时间
+                        status:
+                          type: string
+                          description: 审批状态
+                        mcp_server:
+                          type: object
+                          description: MCPServer 信息
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/permissions/apply-records/-/lookup/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
@@ -5693,6 +5834,74 @@ paths:
           name: default
           method: get
           path: /backend/api/v2/sync/gateways/{gateway_name}/resource_versions/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/sync/gateways/{gateway_name}/resource_versions/-/lookup/:
+    get:
+      operationId: v2_sync_lookup_resource_versions
+      description: 按 ID 或版本号批量查询网关资源版本
+      tags:
+        - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: ids
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 资源版本 ID 列表，多个以逗号分隔，最多 50 个；与 versions 不能同时为空，同时传入时取交集
+          example: "1,2,3"
+        - name: versions
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 版本号列表，多个以逗号分隔，最多 50 个；与 ids 不能同时为空，同时传入时取交集
+          example: "1.0.0,2.0.0"
+      responses:
+        '200':
+          description: 成功返回匹配的资源版本列表，无分页包装
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 资源版本 ID
+                        version:
+                          type: string
+                          description: 版本号
+                        comment:
+                          type: string
+                          nullable: true
+                          description: 版本说明
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/sync/gateways/{gateway_name}/resource_versions/-/lookup/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]

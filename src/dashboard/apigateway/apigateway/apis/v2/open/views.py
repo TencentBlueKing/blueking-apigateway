@@ -165,6 +165,37 @@ class GatewayListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        operation_description="按 ID 或名称查询公开且已发布的网关",
+        query_serializer=serializers.GatewayLookupInputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayLookupApi(generics.ListAPIView):
+    serializer_class = serializers.GatewayListOutputSLZ
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = serializers.GatewayLookupInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        queryset = GatewayHandler.list_public_released_gateways()
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
+        if data.get("ids"):
+            queryset = queryset.filter(id__in=data["ids"])
+        if data.get("names"):
+            queryset = queryset.filter(name__in=data["names"])
+
+        output_slz = self.get_serializer(queryset.order_by("name", "id"), many=True)
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.GatewayRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Open"],
     ),
@@ -435,6 +466,36 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
 
         output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(
             output_data.values(), many=True, context={"categories": categories_map}
+        )
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="按 ID 查询指定应用的 MCPServer 权限申请记录",
+        query_serializer=serializers.MCPServerAppPermissionRecordLookupInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyRecordListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class MCPServerAppPermissionRecordLookupApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = serializers.MCPServerAppPermissionRecordLookupInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        queryset = MCPServerAppPermissionApply.objects.filter(
+            bk_app_code=data["bk_app_code"],
+            id__in=data["ids"],
+        ).order_by("id")
+        categories_map = MCPServerHandler.build_categories_map(list(queryset.values_list("mcp_server_id", flat=True)))
+        output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(
+            queryset,
+            many=True,
+            context={"categories": categories_map},
         )
         return OKJsonResponse(data=output_slz.data)
 

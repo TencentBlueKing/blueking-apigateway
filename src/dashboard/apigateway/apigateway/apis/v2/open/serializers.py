@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -69,6 +70,32 @@ class GatewayListInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayListInputSLZ"
+
+
+class GatewayLookupInputSLZ(serializers.Serializer):
+    ids = serializers.CharField(allow_blank=True, required=False)
+    names = serializers.CharField(allow_blank=True, required=False)
+
+    def validate_ids(self, value):
+        return validate_comma_separated_ints(
+            value,
+            invalid_error=_("网关 ID 必须为整数，多个以逗号分隔"),
+            max_count_error=_("网关 ID 列表最多支持 {max_count} 个"),
+        )
+
+    def validate_names(self, value):
+        return validate_comma_separated_names(
+            value,
+            max_count_error=_("网关名称列表最多支持 {max_count} 个"),
+        )
+
+    def validate(self, attrs):
+        if not attrs.get("ids") and not attrs.get("names"):
+            raise serializers.ValidationError(_("ids 和 names 不能同时为空"))
+        return attrs
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayLookupInputSLZ"
 
 
 class GatewayListOutputSLZ(serializers.Serializer):
@@ -395,6 +422,21 @@ class MCPServerAppPermissionRecordListInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionRecordListInputSLZ"
+
+
+class MCPServerAppPermissionRecordLookupInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    ids = serializers.CharField(help_text="申请记录 ID 列表，多个以逗号分隔")
+
+    def validate_ids(self, value):
+        return validate_comma_separated_ints(
+            value,
+            invalid_error=_("申请记录 ID 必须为整数，多个以逗号分隔"),
+            max_count_error=_("申请记录 ID 列表最多支持 {max_count} 个"),
+        )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionRecordLookupInputSLZ"
 
 
 class MCPServerAppPermissionApplyRecordListOutputSLZ(serializers.Serializer):

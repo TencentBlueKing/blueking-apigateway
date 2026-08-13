@@ -68,6 +68,8 @@ from .serializers import (
     ResourceVersionCreateOutputSLZ,
     ResourceVersionListInputSLZ,
     ResourceVersionListOutputSLZ,
+    ResourceVersionLookupInputSLZ,
+    ResourceVersionLookupOutputSLZ,
     SDKGenerateInputSLZ,
     SDKGenerateOutputSLZ,
     StageMcpServersSyncInputSLZ,
@@ -497,6 +499,33 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             username=request.user.username,
         )
         output_slz = ResourceVersionCreateOutputSLZ(resource_version)
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="按 ID 或版本号查询网关资源版本",
+        query_serializer=ResourceVersionLookupInputSLZ(),
+        responses={status.HTTP_200_OK: ResourceVersionLookupOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class ResourceVersionLookupApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+
+    def list(self, request, *args, **kwargs):
+        slz = ResourceVersionLookupInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        queryset = ResourceVersion.objects.filter(gateway=request.gateway)
+        if data.get("ids"):
+            queryset = queryset.filter(id__in=data["ids"])
+        if data.get("versions"):
+            queryset = queryset.filter(version__in=data["versions"])
+
+        output_slz = ResourceVersionLookupOutputSLZ(queryset.order_by("id"), many=True)
         return OKJsonResponse(data=output_slz.data)
 
 

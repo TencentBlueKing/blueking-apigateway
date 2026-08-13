@@ -100,6 +100,41 @@ class TestGatewayListApi:
         assert [(item["name"], item["kind"]) for item in resp.json()["data"]] == [(fake_gateway.name, "normal")]
 
 
+class TestGatewayLookupApi:
+    def test_lookup_by_ids_and_names(self, request_view, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.is_public = True
+        fake_gateway.save(update_fields=["status", "is_public"])
+        G(Release, gateway=fake_gateway)
+
+        another_gateway = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        G(Release, gateway=another_gateway)
+        inactive_gateway = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
+        G(Release, gateway=inactive_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.lookup",
+            app=mock.MagicMock(app_code="test"),
+            data={
+                "ids": f"{fake_gateway.id},{inactive_gateway.id}",
+                "names": f"{fake_gateway.name},{another_gateway.name}",
+            },
+        )
+
+        assert resp.status_code == 200
+        assert [(item["id"], item["name"]) for item in resp.json()["data"]] == [(fake_gateway.id, fake_gateway.name)]
+
+    def test_lookup_rejects_missing_ids_and_names(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.lookup",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):
         fake_gateway.kind = GatewayKindEnum.AI.value
@@ -292,6 +327,41 @@ class TestMCPServerAppPermissionRecordListApi:
         assert resp.status_code == 200
         result = resp.json()
         assert result["data"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
+
+
+class TestMCPServerAppPermissionRecordLookupApi:
+    def test_lookup_by_ids_and_app_code(self, request_view, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        first = G(MCPServerAppPermissionApply, bk_app_code="test_app", mcp_server=mcp_server)
+        second = G(MCPServerAppPermissionApply, bk_app_code="test_app", mcp_server=mcp_server)
+        other_app = G(MCPServerAppPermissionApply, bk_app_code="other_app", mcp_server=mcp_server)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.lookup",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app", "ids": f"{first.id},{second.id},{other_app.id}"},
+        )
+
+        assert resp.status_code == 200
+        assert {item["id"] for item in resp.json()["data"]} == {first.id, second.id}
+
+    def test_lookup_rejects_missing_ids(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.lookup",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app"},
+        )
+
+        assert resp.status_code == 400
 
 
 class TestGetDatetimeApi:
