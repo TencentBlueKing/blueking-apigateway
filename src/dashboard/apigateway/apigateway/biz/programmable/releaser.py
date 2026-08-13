@@ -195,6 +195,7 @@ class ProgrammableGatewayReleaser:
                     gateway=gateway, stage_id=stage_id, version=stage_release["resource_version_display"]
                 ).first()
                 or deploy_history  # 回退到最新记录
+                or last_deploy_history  # 从开发者中心发布时可能没有 deploy history
             )
             # 查询当前生效环境的 release history
             last_release_history = ReleaseHistory.objects.filter(
@@ -204,7 +205,8 @@ class ProgrammableGatewayReleaser:
                 last_publish_status = ReleaseHandler.get_release_status(last_release_history.id)
 
             # 如果 stage_release 的版本和 deploy_history 的第一个不一致，说明正在发布
-            if stage_release["resource_version_display"] != deploy_history.version:
+            # 从开发者中心直接发布时可能没有 deploy_history
+            if deploy_history and stage_release["resource_version_display"] != deploy_history.version:
                 latest_deploy_history = deploy_history
                 latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
 
