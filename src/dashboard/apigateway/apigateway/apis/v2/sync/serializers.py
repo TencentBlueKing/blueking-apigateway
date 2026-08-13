@@ -25,6 +25,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
+from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -747,6 +748,41 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.ResourceVersionListOutputSLZ"
+
+
+class ResourceVersionLookupInputSLZ(serializers.Serializer):
+    ids = serializers.CharField(allow_blank=True, required=False)
+    versions = serializers.CharField(allow_blank=True, required=False)
+
+    def validate_ids(self, value):
+        return validate_comma_separated_ints(
+            value,
+            invalid_error=_("资源版本 ID 必须为整数，多个以逗号分隔"),
+            max_count_error=_("资源版本 ID 列表最多支持 {max_count} 个"),
+        )
+
+    def validate_versions(self, value):
+        return validate_comma_separated_names(
+            value,
+            max_count_error=_("版本号列表最多支持 {max_count} 个"),
+        )
+
+    def validate(self, attrs):
+        if not attrs.get("ids") and not attrs.get("versions"):
+            raise serializers.ValidationError(_("ids 和 versions 不能同时为空"))
+        return attrs
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ResourceVersionLookupInputSLZ"
+
+
+class ResourceVersionLookupOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    version = serializers.CharField(read_only=True)
+    comment = serializers.CharField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ResourceVersionLookupOutputSLZ"
 
 
 class GatewayResourceVersionLatestRetrieveOutputSLZ(serializers.Serializer):
