@@ -2353,8 +2353,9 @@ class TestMCPServerListApi:
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == mcp_server1.id
 
-    def test_list_with_mcp_server_ids_filter(self, request_view, fake_gateway):
-        """测试使用 mcp_server_ids 筛选 MCPServer"""
+
+class TestMCPServerLookupApi:
+    def test_lookup_with_ids_returns_unpaginated_results(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
         fake_gateway.is_official = True
@@ -2390,23 +2391,35 @@ class TestMCPServerListApi:
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
         )
 
-        # 只筛选 server1 和 server3
         resp = request_view(
             method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_ids": f"{mcp_server1.id},{mcp_server3.id}"},
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"ids": f"{mcp_server1.id},{mcp_server3.id}", "fields": "id,name"},
             app=mock.MagicMock(app_code="test"),
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        result_ids = [item["id"] for item in result["data"]["results"]]
-        assert mcp_server1.id in result_ids
-        assert mcp_server3.id in result_ids
-        assert mcp_server2.id not in result_ids
+        assert isinstance(result["data"], list)
+        assert {item["id"] for item in result["data"]} == {mcp_server1.id, mcp_server3.id}
+        assert mcp_server2.id not in {item["id"] for item in result["data"]}
+        assert all(set(item) == {"id", "name"} for item in result["data"])
 
-    def test_list_with_mcp_server_names_filter(self, request_view, fake_gateway):
-        """测试使用 mcp_server_names 精确筛选 MCPServer，未命中的名称被忽略"""
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={
+                "ids": f"{mcp_server1.id},{mcp_server2.id}",
+                "names": f"{mcp_server2.name},{mcp_server3.name}",
+                "fields": "id",
+            },
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == [{"id": mcp_server2.id}]
+
+    def test_lookup_with_names_uses_exact_match_and_ignores_missing_names(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
 
@@ -2431,61 +2444,39 @@ class TestMCPServerListApi:
 
         resp = request_view(
             method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_names": "private-server,missing-server"},
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"names": "private-server,missing-server", "fields": "id,title"},
             app=mock.MagicMock(app_code="test"),
         )
 
         assert resp.status_code == 200
-        results = resp.json()["data"]["results"]
+        results = resp.json()["data"]
         assert [item["id"] for item in results] == [private_mcp_server.id]
         assert results[0]["title"] == "Private Server"
 
-    def test_list_with_mcp_server_ids_empty(self, request_view, fake_gateway):
-        """测试 mcp_server_ids 为空时返回所有"""
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
-        fake_gateway.save()
-
-        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-
-        mcp_server = G(
-            MCPServer,
-            gateway=fake_gateway,
-            stage=stage,
-            name="server-empty-ids-test",
-            is_public=True,
-            status=MCPServerStatusEnum.ACTIVE.value,
-            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-        )
-
-        # mcp_server_ids 为空字符串，应返回所有
+    @pytest.mark.parametrize("data", [{}, {"ids": ""}, {"names": ", ,"}])
+    def test_lookup_rejects_missing_or_empty_lookup_keys(self, request_view, data):
         resp = request_view(
             method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_ids": ""},
-            app=mock.MagicMock(app_code="test"),
-        )
-        result = resp.json()
-
-        assert resp.status_code == 200
-        result_ids = [item["id"] for item in result["data"]["results"]]
-        assert mcp_server.id in result_ids
-
-    def test_list_with_mcp_server_ids_invalid(self, request_view, fake_gateway, mocker):
-        """测试 mcp_server_ids 包含非法值时返回 400"""
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.save()
-
-        resp = request_view(
-            method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_ids": "abc,def"},
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data=data,
             app=mock.MagicMock(app_code="test"),
         )
 
         assert resp.status_code == 400
 
+    def test_lookup_rejects_invalid_ids(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"ids": "abc,def"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+
+class TestMCPServerListOutputApi:
     def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value

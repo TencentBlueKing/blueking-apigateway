@@ -7133,18 +7133,6 @@ paths:
             default: -updated_time
           description: 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time
           example: -updated_time
-        - name: mcp_server_ids
-          in: query
-          schema:
-            type: string
-          description: MCPServer ID 列表，多个以逗号分割，最多 50 个
-          example: "1,2,3"
-        - name: mcp_server_names
-          in: query
-          schema:
-            type: string
-          description: MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个
-          example: "server-1,server-2"
         - name: fields
           in: query
           schema:
@@ -7183,6 +7171,64 @@ paths:
           name: default
           method: get
           path: /backend/api/v2/inner/mcp-servers/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/mcp-servers/-/lookup/:
+    get:
+      operationId: v2_inner_lookup_mcp_servers
+      description: 按 ID 或名称批量查询 MCPServer
+      tags:
+      - v2_inner
+      parameters:
+        - name: ids
+          in: query
+          required: false
+          schema:
+            type: string
+          description: MCPServer ID 列表，多个以逗号分割，最多 50 个；与 names 不能同时为空，同时传入时取交集
+          example: "1,2,3"
+        - name: names
+          in: query
+          required: false
+          schema:
+            type: string
+          description: MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个；与 ids 不能同时为空，同时传入时取交集
+          example: "server-1,server-2"
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 指定返回的字段列表，多个以逗号分割；不传时返回全部字段
+          example: id,name
+      responses:
+        '200':
+          description: 成功返回匹配的 MCPServer 列表，无分页包装
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/mcp-servers/-/lookup/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []

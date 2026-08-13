@@ -101,6 +101,30 @@ class MCPServerListPagination(BoundedLimitOffsetPagination):
     max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
 
 
+def _serialize_mcp_servers(mcp_servers, fields):
+    include_all_fields = fields is None
+
+    context = {}
+    if include_all_fields or fields & {"stage", "gateway"}:
+        context.update(MCPServerHandler.build_list_context(mcp_servers))
+
+    mcp_server_ids = (
+        [mcp_server.id for mcp_server in mcp_servers]
+        if include_all_fields or fields & {"prompts_count", "categories"}
+        else []
+    )
+    if include_all_fields or "prompts_count" in fields:
+        context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
+    if include_all_fields or "categories" in fields:
+        context["categories"] = MCPServerHandler.build_categories_map(mcp_server_ids)
+
+    if include_all_fields or "url" in fields:
+        context["least_privileges_by_server"] = MCPServerHandler.get_least_privileges_by_server(mcp_servers)
+
+    return serializers.MCPServerListOutputSLZ(mcp_servers, many=True, context=context, fields=fields).data
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -1225,34 +1249,37 @@ class MCPServerListApi(generics.ListAPIView):
         queryset = MCPServerHandler.build_list_queryset(
             keyword=slz.validated_data.get("keyword"),
             order_by=slz.validated_data.get("order_by", "-updated_time"),
-            ids=slz.validated_data.get("mcp_server_ids") or None,
-            names=slz.validated_data.get("mcp_server_names") or None,
         )
 
         page = self.paginate_queryset(queryset)
         fields = slz.validated_data.get("fields")
-        include_all_fields = fields is None
+        return self.get_paginated_response(_serialize_mcp_servers(page, fields))
 
-        context = {}
-        if include_all_fields or fields & {"stage", "gateway"}:
-            context.update(MCPServerHandler.build_list_context(page))
 
-        mcp_server_ids = (
-            [mcp_server.id for mcp_server in page]
-            if include_all_fields or fields & {"prompts_count", "categories"}
-            else []
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="按 ID 或名称查询 MCPServer",
+        query_serializer=serializers.MCPServerLookupInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerLookupApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = serializers.MCPServerLookupInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        mcp_servers = list(
+            MCPServerHandler.build_list_queryset(
+                ids=slz.validated_data.get("ids") or None,
+                names=slz.validated_data.get("names") or None,
+            )
         )
-        if include_all_fields or "prompts_count" in fields:
-            context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
-
-        if include_all_fields or "categories" in fields:
-            context["categories"] = MCPServerHandler.build_categories_map(mcp_server_ids)
-
-        if include_all_fields or "url" in fields:
-            context["least_privileges_by_server"] = MCPServerHandler.get_least_privileges_by_server(page)
-
-        output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context, fields=fields)
-        return self.get_paginated_response(output_slz.data)
+        fields = slz.validated_data.get("fields")
+        return OKJsonResponse(data=_serialize_mcp_servers(mcp_servers, fields))
 
 
 # ===================== 网关状态变更/删除 API =====================

@@ -2,6 +2,8 @@
 
 获取全量的 MCPServer 列表（应用态接口）
 
+按 MCPServer ID 或名称精确查询时，请使用 MCPServer lookup 接口。
+
 
 ### 输入参数
 
@@ -11,8 +13,6 @@
 |---------|--------|----|-----------------------------------------|
 | keyword | string | 否  | MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述 |
 | order_by | string | 否  | 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time |
-| mcp_server_ids | string | 否  | MCPServer ID 列表，多个以逗号分割，最多 50 个。例如：1,2,3 |
-| mcp_server_names | string | 否  | MCPServer 名称列表，精确匹配，多个以逗号分割，最多 50 个。例如：server-1,server-2 |
 | fields | string | 否  | 指定返回的字段列表，多个以逗号分割，例如 `fields=name,title`；支持的字段见 `data.results`；不传时返回全部字段，包含不支持的字段时返回参数校验错误 |
 | limit | int | 否 | 每页数量，取值范围 1～20，默认 10 |
 | offset | int | 否 | 分页偏移量，必须大于或等于 0，默认 0 |
