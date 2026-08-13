@@ -45,6 +45,22 @@ Open and v2 automation surfaces use the normalized stored protocol instead.
 Masked-secret restoration is a Web update-boundary behavior; do not apply it to
 Open or Sync input, where submitted stored-protocol values are literal.
 
+## V2 List And Lookup Contracts
+
+- Keep collection listing and exact batch lookup as separate APIs under
+  `apis.v2`. A list API serves discovery and filtering on the collection route;
+  when callers need exact batch retrieval by identifiers such as `ids` or
+  `names`, add a non-paginated `-/lookup/` route that returns `data: [...]`.
+  Do not add an identifier-list mode to a list API that changes its normal
+  visibility, filtering, or pagination semantics.
+- List APIs use the standard `limit`/`offset` pagination contract and return
+  `data: {"count": <int>, "results": [...]}`. When the view owns an
+  unpaginated queryset or list, use `self.paginate_queryset(...)` and
+  `self.get_paginated_response(...)`; do not hand-build the envelope or use the
+  legacy `apigateway.utils.paginator.LimitOffsetPaginator`. When a downstream
+  source already applies `limit`/`offset` and supplies the total count, preserve
+  the same standard response envelope without paginating the page again.
+
 ## OpenAPI Contract
 
 When changing an open API, keep these representations aligned:
