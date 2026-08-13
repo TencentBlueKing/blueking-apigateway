@@ -816,6 +816,28 @@ class TestSyncApi:
         assert resp.json()["data"] == {"id": 123, "version": "1.1.0"}
         create_resource_version_with_artifacts.assert_called_once()
 
+    def test_sdk_generate_returns_result_array(
+        self, mocker, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data="[]")
+        results = [{"name": "python-sdk", "version": "1.0.0", "url": "https://example.com/python-sdk.tgz"}]
+        mocker.patch(
+            "apigateway.apis.v2.sync.views.generate_sdks_for_resource_version",
+            return_value=results,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generate",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"resource_version": resource_version.version, "languages": ["python"], "version": "1.0.0"},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 201
+        assert resp.json()["data"] == results
+
     def test_resource_version_lookup_by_ids_and_versions(
         self, request_view, fake_gateway, fake_admin_user, disable_app_permission
     ):
@@ -868,7 +890,32 @@ class TestSyncApi:
         )
 
         assert resp.status_code == 200
-        assert resp.json()["data"] == [{"version": matched.version, "comment": matched.comment}]
+        assert resp.json()["data"] == {
+            "count": 1,
+            "results": [{"version": matched.version, "comment": matched.comment}],
+        }
+
+    def test_resource_version_list_returns_stable_paginated_response(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        first = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", comment="first", _data="[]")
+        second = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", comment="second", _data="[]")
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"limit": 1, "offset": 1},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "count": 2,
+            "results": [{"version": second.version, "comment": second.comment}],
+        }
+        assert first.id < second.id
 
     def test_resource_version_create_with_ai_resource(
         self, request_view, fake_gateway, fake_backend, fake_resource, fake_admin_user, disable_app_permission

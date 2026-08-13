@@ -80,7 +80,6 @@ from apigateway.service.oauth2_client_scope import (
     get_oauth2_resource_scope_map,
 )
 from apigateway.utils import time as time_utils
-from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -825,7 +824,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="查询应用维度调用流水日志列表（开发者视角）",
         query_serializer=serializers.AppRequestLogListInputSLZ,
-        responses={status.HTTP_200_OK: serializers.AppRequestLogListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.AppRequestLogPaginatedOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -880,8 +879,7 @@ class AppRequestLogListApi(generics.ListAPIView):
         output_data = self._build_output_data(logs)
 
         output_slz = serializers.AppRequestLogListOutputSLZ(output_data, many=True)
-        paginator = LimitOffsetPaginator(total_count, data["offset"], data["limit"])
-        return OKJsonResponse(data=paginator.get_paginated_data(output_slz.data))
+        return OKJsonResponse(data={"count": total_count, "results": output_slz.data})
 
     def _build_output_data(self, logs):
         return [
@@ -1194,7 +1192,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="MCPServer 申请记录详情",
         query_serializer=serializers.MCPServerAppPermissionRecordRetrieveInputSLZ,
-        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )

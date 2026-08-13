@@ -869,6 +869,14 @@ class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
         )
 
 
+class GatewayReleasedResourceListOutputSLZ(serializers.Serializer):
+    count = serializers.IntegerField(read_only=True, help_text="资源数量")
+    results = GatewayReleasedResourceListItemOutputSLZ(many=True, read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayReleasedResourceListOutputSLZ"
+
+
 class MCPServerBatchQueryInputSLZ(serializers.Serializer):
     ids = serializers.ListField(
         child=serializers.IntegerField(),

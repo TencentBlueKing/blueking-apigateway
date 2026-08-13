@@ -22,6 +22,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.utils.translation import gettext as _
+from drf_yasg.utils import swagger_serializer_method
 from rest_framework import serializers
 
 from apigateway.apis.v2.validators import (
@@ -509,7 +510,7 @@ class MCPServerBaseSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
     title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
-    tools_count = serializers.CharField(read_only=True, help_text="MCPServer 工具数量")
+    tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
     doc_link = serializers.SerializerMethodField(help_text="MCPServer 文档访问地址")
     tool_names = serializers.ListField(
         child=serializers.CharField(),
@@ -674,6 +675,7 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
 
         return ""
 
+    @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
     def get_handled_by(self, obj):
         """获取处理人 display_name"""
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
@@ -1018,6 +1020,14 @@ class AppRequestLogListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListOutputSLZ"
+
+
+class AppRequestLogPaginatedOutputSLZ(serializers.Serializer):
+    count = serializers.IntegerField(read_only=True, help_text="数据总数")
+    results = AppRequestLogListOutputSLZ(many=True, read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogPaginatedOutputSLZ"
 
 
 class OAuth2MCPServerScopeListInputSLZ(serializers.Serializer):

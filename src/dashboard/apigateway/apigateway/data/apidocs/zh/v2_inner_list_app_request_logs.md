@@ -29,8 +29,6 @@
 {
   "data": {
     "count": 1,
-    "has_next": false,
-    "has_previous": false,
     "results": [
       {
         "request_id": "f1a0f0f4aef149d88b36e5",
@@ -65,7 +63,14 @@
 
 | 字段 | 类型 | 描述 |
 |---|---|---|
-| data | object | 结果数据，包含 count、has_next、has_previous 与 results |
+| data | object | 分页结果，包含 count 与 results |
+
+#### data
+
+| 字段 | 类型 | 描述 |
+|---|---|---|
+| count | int | 数据总数 |
+| results | array | 本次查询结果数据 |
 
 #### data.results
 

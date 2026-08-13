@@ -25,7 +25,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 from django.http import Http404, JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -66,7 +66,6 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import ResourceAuthContext
 from apigateway.service.resource import get_resource_id_to_labels, get_resource_url_tmpl
 from apigateway.service.resource_version import get_resource_schema
-from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -433,7 +432,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="获取指定应用的 MCPServer 权限申请记录列表",
         query_serializer=MCPServerAppPermissionRecordListInputSLZ,
-        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyRecordListOutputSLZ()},
+        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Open"],
     ),
 )
@@ -456,18 +455,19 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         if data.get("record_id"):
             queryset = queryset.filter(id=data["record_id"])
 
-        output_data = {}
-        for obj in queryset.order_by("-applied_time"):
-            if obj.mcp_server.id not in output_data:
-                output_data[obj.mcp_server.id] = obj
+        latest_record_id = (
+            queryset.filter(mcp_server_id=OuterRef("mcp_server_id")).order_by("-applied_time", "-id").values("id")[:1]
+        )
+        queryset = queryset.filter(id=Subquery(latest_record_id)).order_by("-applied_time", "-id")
+        page = self.paginate_queryset(queryset)
 
         # Build categories map
-        categories_map = MCPServerHandler.build_categories_map(list(output_data.keys()))
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in page])
 
         output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(
-            output_data.values(), many=True, context={"categories": categories_map}
+            page, many=True, context={"categories": categories_map}
         )
-        return OKJsonResponse(data=output_slz.data)
+        return self.get_paginated_response(output_slz.data)
 
 
 @method_decorator(
@@ -779,7 +779,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="查询指定环境下已发布资源列表",
-        responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceListItemOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceListOutputSLZ()},
         tags=["OpenAPI.V2.Open"],
     ),
 )
@@ -791,9 +791,9 @@ class GatewayReleasedResourceListApi(generics.ListAPIView):
             raise Http404
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id, stage_name=stage_name)
-        paginator = LimitOffsetPaginator(count=len(resources), offset=0, limit=len(resources))
+        page = self.paginate_queryset(resources)
         output_slz = serializers.GatewayReleasedResourceListItemOutputSLZ(
-            resources,
+            page,
             many=True,
             context={
                 "resource_url_tmpl": get_resource_url_tmpl(),
@@ -801,7 +801,7 @@ class GatewayReleasedResourceListApi(generics.ListAPIView):
                 "stage_name": stage_name,
             },
         )
-        return OKJsonResponse(data=paginator.get_paginated_data(output_slz.data))
+        return self.get_paginated_response(output_slz.data)
 
 
 @method_decorator(

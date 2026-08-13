@@ -92,7 +92,7 @@ mcp_server 申请记录详情
 | applied_by | string | 申请人 |
 | applied_time | string | 申请时间 |
 | handled_by | array | 审批人 |
-| handled_time | int | 审批时间 |
+| handled_time | string | 审批时间 |
 | apply_status | string | 审批状态 |
 | apply_status_display | string | 审批状态描述 |
 | comment | string | 审批内容 |

@@ -1922,6 +1922,7 @@ class TestAppRequestLogListApi:
         result = resp.json()
 
         assert resp.status_code == 200
+        assert set(result["data"]) == {"count", "results"}
         assert result["data"]["count"] == 1
         record = result["data"]["results"][0]
         assert record["request_id"] == "req-001"
