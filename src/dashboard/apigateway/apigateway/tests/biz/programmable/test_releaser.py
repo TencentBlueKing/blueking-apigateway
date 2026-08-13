@@ -22,7 +22,8 @@ from ddf import G
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
-from apigateway.core.models import Gateway, Stage
+from apigateway.common.tenant.user_credentials import UserCredentials
+from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
@@ -118,3 +119,21 @@ class TestProgrammableGatewayReleaser:
                 gateway, fuzzy=test.get("fuzzy", True), **test["params"]
             )
             assert result.count() == test["expected"]["count"]
+
+    def test_get_stage_deploy_status_without_deploy_history_when_stage_released(self):
+        """从开发者中心发布后，网关侧可能只有 Release 而没有 DeployHistory。"""
+        gateway = G(Gateway)
+        stage = G(Stage, gateway=gateway, status=1)
+        resource_version = G(ResourceVersion, gateway=gateway, version="1.0.0")
+        G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
+        user_credentials = UserCredentials(credentials="token", tenant_id="default")
+
+        result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
+
+        assert result["latest_publish_status"] == ""
+        assert result["last_publish_status"] == ""
+        assert result["latest_history_id"] == 0
+        assert result["last_deploy_history"] is not None
+        assert result["last_deploy_history"].pk is None
+        assert result["latest_deploy_history"] is not None
+        assert result["latest_deploy_history"].pk is None
