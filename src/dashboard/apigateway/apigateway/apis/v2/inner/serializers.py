@@ -160,20 +160,32 @@ class GatewayLookupInputSLZ(serializers.Serializer):
 
 
 class GatewayReleasedResourceListInputSLZ(serializers.Serializer):
-    resource_names = serializers.CharField(required=False, allow_blank=True)
     fields = serializers.CharField(required=False, allow_blank=True)
-
-    def validate_resource_names(self, value) -> list[str]:
-        return validate_comma_separated_names(
-            value,
-            max_count_error=_("resource_names 最多支持 {max_count} 个"),
-        )
 
     def validate_fields(self, value) -> set[str] | None:
         return validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceListInputSLZ"
+
+
+class GatewayReleasedResourceLookupInputSLZ(serializers.Serializer):
+    names = serializers.CharField()
+    fields = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_names(self, value) -> list[str]:
+        return validate_comma_separated_names(
+            value,
+            required=True,
+            required_error=_("names 不能为空"),
+            max_count_error=_("names 最多支持 {max_count} 个"),
+        )
+
+    def validate_fields(self, value) -> set[str] | None:
+        return validate_output_fields(value, RELEASED_RESOURCE_FIELDS)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceLookupInputSLZ"
 
 
 class _SelectableFieldsOutputSLZMixin:

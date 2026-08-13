@@ -248,6 +248,38 @@ class GatewayReleasedResourcePagination(BoundedLimitOffsetPagination):
     max_limit = INNER_BOUNDED_LIST_MAX_LIMIT
 
 
+class _GatewayReleasedResourceApiMixin:
+    serializer_class = serializers.GatewayReleasedResourceOutputSLZ
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+
+    def get_released_resources(self, request, resource_names=None):
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            visible = gateway_filter_by_app_tenant_id(
+                Gateway.objects.filter(pk=request.gateway.pk),
+                tenant_id,
+            ).exists()
+            if not visible:
+                raise Http404
+
+        return get_gateway_released_resources(
+            gateway_id=request.gateway.id,
+            resource_names=resource_names,
+        )
+
+    def serialize_released_resources(self, resources, fields):
+        items = [
+            {
+                "id": resource.resource_id,
+                "name": resource.resource_name,
+                "description": (resource.data or {}).get("description", ""),
+                "description_en": (resource.data or {}).get("description_en"),
+            }
+            for resource in resources
+        ]
+        return self.get_serializer(items, many=True, fields=fields).data
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -257,9 +289,7 @@ class GatewayReleasedResourcePagination(BoundedLimitOffsetPagination):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class GatewayReleasedResourceListApi(generics.ListAPIView):
-    serializer_class = serializers.GatewayReleasedResourceOutputSLZ
-    permission_classes = [OpenAPIV2GatewayNamePermission]
+class GatewayReleasedResourceListApi(_GatewayReleasedResourceApiMixin, generics.ListAPIView):
     pagination_class = GatewayReleasedResourcePagination
 
     def list(self, request, gateway_name, *args, **kwargs):
@@ -267,36 +297,28 @@ class GatewayReleasedResourceListApi(generics.ListAPIView):
         input_slz.is_valid(raise_exception=True)
         data = input_slz.validated_data
 
-        tenant_id = get_request_tenant_id(request)
-        if tenant_id:
-            visible = gateway_filter_by_app_tenant_id(
-                Gateway.objects.filter(pk=request.gateway.pk),
-                tenant_id,
-            ).exists()
-            if not visible:
-                raise Http404
-        gateway = request.gateway
-
-        queryset = get_gateway_released_resources(
-            gateway_id=gateway.id,
-            resource_names=data.get("resource_names"),
-        )
+        queryset = self.get_released_resources(request)
         page = self.paginate_queryset(queryset)
-        items = [
-            {
-                "id": resource.resource_id,
-                "name": resource.resource_name,
-                "description": (resource.data or {}).get("description", ""),
-                "description_en": (resource.data or {}).get("description_en"),
-            }
-            for resource in page
-        ]
-        output_slz = self.get_serializer(
-            items,
-            many=True,
-            fields=data.get("fields"),
-        )
-        return self.get_paginated_response(output_slz.data)
+        return self.get_paginated_response(self.serialize_released_resources(page, data.get("fields")))
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="按名称查询指定网关当前已发布资源",
+        query_serializer=serializers.GatewayReleasedResourceLookupInputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayReleasedResourceLookupApi(_GatewayReleasedResourceApiMixin, generics.ListAPIView):
+    def list(self, request, gateway_name, *args, **kwargs):
+        input_slz = serializers.GatewayReleasedResourceLookupInputSLZ(data=request.query_params)
+        input_slz.is_valid(raise_exception=True)
+        data = input_slz.validated_data
+
+        resources = self.get_released_resources(request, resource_names=data["names"])
+        return OKJsonResponse(data=self.serialize_released_resources(resources, data.get("fields")))
 
 
 @method_decorator(

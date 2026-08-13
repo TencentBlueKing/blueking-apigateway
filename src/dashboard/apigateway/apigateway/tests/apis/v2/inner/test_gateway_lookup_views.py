@@ -60,6 +60,13 @@ def test_gateway_released_resource_url():
         )
         == "/backend/api/v2/inner/gateways/gateway-a/released-resources/"
     )
+    assert (
+        reverse(
+            "openapi.v2.inner.gateway.released_resource.lookup",
+            kwargs={"gateway_name": "gateway-a"},
+        )
+        == "/backend/api/v2/inner/gateways/gateway-a/released-resources/-/lookup/"
+    )
 
 
 @pytest.mark.parametrize("data", [{}, {"gateway_names": ""}, {"gateway_names": ", ,"}])
@@ -68,12 +75,18 @@ def test_gateway_lookup_input_rejects_missing_or_empty_names(data):
     assert slz.is_valid() is False
 
 
+@pytest.mark.parametrize("data", [{}, {"names": ""}, {"names": ", ,"}])
+def test_released_resource_lookup_input_rejects_missing_or_empty_names(data):
+    slz = inner_serializers.GatewayReleasedResourceLookupInputSLZ(data=data)
+    assert slz.is_valid() is False
+
+
 def test_lookup_inputs_normalize_names_and_fields():
     gateway_slz = inner_serializers.GatewayLookupInputSLZ(
         data={"gateway_names": " gateway-b,gateway-a,gateway-b ", "fields": "id,name,id"}
     )
-    resource_slz = inner_serializers.GatewayReleasedResourceListInputSLZ(
-        data={"resource_names": " resource-b,resource-a,resource-b ", "fields": ""}
+    resource_slz = inner_serializers.GatewayReleasedResourceLookupInputSLZ(
+        data={"names": " resource-b,resource-a,resource-b ", "fields": ""}
     )
 
     gateway_slz.is_valid(raise_exception=True)
@@ -84,7 +97,7 @@ def test_lookup_inputs_normalize_names_and_fields():
         "fields": {"id", "name"},
     }
     assert resource_slz.validated_data == {
-        "resource_names": ["resource-b", "resource-a"],
+        "names": ["resource-b", "resource-a"],
         "fields": None,
     }
 
@@ -93,7 +106,7 @@ def test_lookup_inputs_normalize_names_and_fields():
     ("serializer_class", "data"),
     [
         (inner_serializers.GatewayLookupInputSLZ, {"gateway_names": "g1", "fields": "unknown"}),
-        (inner_serializers.GatewayReleasedResourceListInputSLZ, {"fields": "unknown"}),
+        (inner_serializers.GatewayReleasedResourceLookupInputSLZ, {"names": "r1", "fields": "unknown"}),
     ],
 )
 def test_lookup_inputs_reject_invalid_values(serializer_class, data):
@@ -104,7 +117,7 @@ def test_lookup_inputs_reject_invalid_values(serializer_class, data):
     ("serializer_class", "field_name", "required_data"),
     [
         (inner_serializers.GatewayLookupInputSLZ, "gateway_names", {}),
-        (inner_serializers.GatewayReleasedResourceListInputSLZ, "resource_names", {}),
+        (inner_serializers.GatewayReleasedResourceLookupInputSLZ, "names", {}),
     ],
 )
 def test_lookup_inputs_limit_names_to_50(serializer_class, field_name, required_data):
@@ -249,7 +262,7 @@ class TestGatewayLookupApi:
         assert missing_tenant.status_code == 400
 
 
-class TestGatewayReleasedResourceListApi:
+class TestGatewayReleasedResourceApi:
     def test_returns_active_stage_release_union_without_gateway_visibility_filters(self, request_view):
         gateway = G(
             Gateway,
@@ -283,7 +296,7 @@ class TestGatewayReleasedResourceListApi:
             }
         }
 
-    def test_resource_names_is_exact_and_fields_are_selective(self, request_view):
+    def test_names_are_exact_and_results_are_unpaginated(self, request_view):
         gateway = G(Gateway, name="released-resource-filter")
         old_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
         new_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
@@ -295,14 +308,14 @@ class TestGatewayReleasedResourceListApi:
 
         response = request_view(
             method="GET",
-            view_name="openapi.v2.inner.gateway.released_resource.list",
+            view_name="openapi.v2.inner.gateway.released_resource.lookup",
             path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
-            data={"resource_names": " exact_name,missing,exact_name ", "fields": "id,name"},
+            data={"names": " exact_name,missing,exact_name ", "fields": "id,name"},
         )
 
         assert response.status_code == 200
-        assert response.json() == {"data": {"count": 1, "results": [{"id": old.resource_id, "name": "exact_name"}]}}
+        assert response.json() == {"data": [{"id": old.resource_id, "name": "exact_name"}]}
 
     def test_excludes_inactive_stage_releases(self, request_view):
         gateway = G(Gateway, name="inactive-stage-released-resource")
