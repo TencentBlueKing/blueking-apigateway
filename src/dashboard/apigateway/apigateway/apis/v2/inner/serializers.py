@@ -725,12 +725,6 @@ class MCPServerListInputSLZ(serializers.Serializer):
         default="-updated_time",
         help_text="排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time",
     )
-    mcp_server_ids = serializers.CharField(
-        allow_blank=True, required=False, help_text="MCPServer ID 列表，多个以逗号 , 分割"
-    )
-    mcp_server_names = serializers.CharField(
-        allow_blank=True, required=False, help_text="MCPServer 名称列表，多个以逗号 , 分割"
-    )
     fields = serializers.CharField(
         allow_blank=True,
         required=False,
@@ -740,14 +734,30 @@ class MCPServerListInputSLZ(serializers.Serializer):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
 
-    def validate_mcp_server_ids(self, value):
+    def validate_fields(self, value) -> set[str] | None:
+        return validate_output_fields(value, MCP_SERVER_LIST_FIELDS)
+
+
+class MCPServerLookupInputSLZ(serializers.Serializer):
+    ids = serializers.CharField(allow_blank=True, required=False, help_text="MCPServer ID 列表，多个以逗号 , 分割")
+    names = serializers.CharField(allow_blank=True, required=False, help_text="MCPServer 名称列表，多个以逗号 , 分割")
+    fields = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        help_text="指定返回的字段列表，多个以逗号分割；不传时返回全部字段",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerLookupInputSLZ"
+
+    def validate_ids(self, value):
         return validate_comma_separated_ints(
             value,
             invalid_error=_("MCPServer ID 必须为整数，多个以逗号分割"),
             max_count_error=_("MCPServer ID 列表最多支持 {max_count} 个"),
         )
 
-    def validate_mcp_server_names(self, value):
+    def validate_names(self, value):
         return validate_comma_separated_names(
             value,
             max_count_error=_("MCPServer 名称列表最多支持 {max_count} 个"),
@@ -755,6 +765,11 @@ class MCPServerListInputSLZ(serializers.Serializer):
 
     def validate_fields(self, value) -> set[str] | None:
         return validate_output_fields(value, MCP_SERVER_LIST_FIELDS)
+
+    def validate(self, attrs):
+        if not attrs.get("ids") and not attrs.get("names"):
+            raise serializers.ValidationError(_("ids 和 names 不能同时为空"))
+        return attrs
 
 
 class MCPServerListOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):

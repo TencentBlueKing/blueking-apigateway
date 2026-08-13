@@ -109,6 +109,7 @@ grant_permissions:
       - v2_inner_get_app_esb_component_permission_apply_record
       # mcp server related
       - v2_inner_list_mcp_server
+      - v2_inner_lookup_mcp_servers
       - v2_inner_list_mcp_server_permissions
       - v2_inner_apply_mcp_server_permission
       - v2_inner_list_mcp_server_app_permissions
@@ -131,6 +132,7 @@ grant_permissions:
     grant_dimension: "resource"
     resource_names:
       - v2_inner_list_mcp_server
+      - v2_inner_lookup_mcp_servers
       - v2_inner_lookup_gateways
       - v2_inner_list_gateway_released_resources
       - v2_inner_list_oauth2_resource_scopes

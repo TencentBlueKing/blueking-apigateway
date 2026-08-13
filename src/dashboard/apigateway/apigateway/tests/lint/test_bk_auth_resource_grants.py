@@ -8,6 +8,7 @@ GATEWAY_DEFINITION = Path(settings.BASE_DIR) / "data/apigw-definitions/bk-apigat
 
 EXPECTED_BK_AUTH_INNER_RESOURCES = {
     "v2_inner_list_mcp_server",
+    "v2_inner_lookup_mcp_servers",
     "v2_inner_lookup_gateways",
     "v2_inner_list_gateway_released_resources",
     "v2_inner_list_oauth2_resource_scopes",
