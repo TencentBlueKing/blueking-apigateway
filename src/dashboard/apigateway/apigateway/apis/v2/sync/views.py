@@ -259,7 +259,7 @@ class DocImportByArchiveApi(generics.CreateAPIView):
     @swagger_auto_schema(
         operation_description="根据 tgz/zip 归档文件，导入资源文档",
         request_body=DocImportByArchiveInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_201_CREATED: ""},
         tags=["OpenAPI.V2.Sync"],
     )
     @transaction.atomic
@@ -459,7 +459,7 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="获取网关资源版本列表",
         query_serializer=ResourceVersionListInputSLZ(),
-        responses={status.HTTP_201_CREATED: ResourceVersionListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -555,7 +555,7 @@ class ResourceVersionLatestRetrieveApi(generics.RetrieveAPIView):
     decorator=swagger_auto_schema(
         operation_description="发布网关资源版本",
         request_body=ReleaseInputSLZ(),
-        responses={status.HTTP_201_CREATED: ReleaseOutputSLZ()},
+        responses={status.HTTP_200_OK: ReleaseOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -594,8 +594,8 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="生成网关sdk",
-        request_body=ReleaseInputSLZ(),
-        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ(many=True)},
+        request_body=SDKGenerateInputSLZ(),
+        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
 )

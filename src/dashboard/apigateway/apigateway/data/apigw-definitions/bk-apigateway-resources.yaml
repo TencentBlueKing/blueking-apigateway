@@ -5471,7 +5471,7 @@ paths:
               languages: ["python"]
               version: "1.0.1"
       responses:
-        '200':
+        '201':
           description: 成功生成 SDK
           content:
             application/json:
@@ -5479,22 +5479,25 @@ paths:
                 type: object
                 properties:
                   data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          description: SDK 名称
-                          example: bkapi-test
-                        version:
-                          type: string
-                          description: SDK 版本号
-                          example: "1.0.1"
-                        url:
-                          type: string
-                          description: SDK 下载地址
-                          example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              description: SDK 名称
+                              example: bkapi-test
+                            version:
+                              type: string
+                              description: SDK 版本号
+                              example: "1.0.1"
+                            url:
+                              type: string
+                              description: SDK 下载地址
+                              example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -7701,12 +7704,139 @@ paths:
       description: 'mcp_server 申请记录详情'
       tags:
       - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 申请记录 ID
+          example: 1
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应与当前请求应用一致
+          example: bk-001
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回 MCPServer 申请记录详情
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      mcp_server:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            description: MCPServer ID
+                            example: 1
+                          name:
+                            type: string
+                            description: MCPServer 名称
+                            example: bk-apigateway-prod-s1
+                          title:
+                            type: string
+                            description: MCPServer 中文名/显示名称
+                            example: 测试服务
+                          description:
+                            type: string
+                            description: MCPServer 描述
+                            example: test
+                          tools_count:
+                            type: string
+                            description: MCPServer 工具数量
+                            example: "1"
+                          doc_link:
+                            type: string
+                            description: MCPServer 文档访问地址
+                          tool_names:
+                            type: array
+                            items:
+                              type: string
+                            description: MCPServer 工具名称列表
+                          protocol_type:
+                            type: string
+                            enum: [sse, streamable_http]
+                            description: MCPServer 协议类型
+                          url:
+                            type: string
+                            description: MCPServer 访问 URL
+                          categories:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                display_name:
+                                  type: string
+                            description: MCPServer 分类列表
+                          is_official:
+                            type: boolean
+                            description: 是否为官方 MCPServer
+                          oauth2_public_client_enabled:
+                            type: boolean
+                            description: 是否开启 OAuth2 公开客户端模式
+                          oauth2_personal_client_enabled:
+                            type: boolean
+                            description: 是否开启 OAuth2 个人客户端模式
+                      record:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            description: 申请记录 ID
+                            example: 1
+                          applied_by:
+                            type: string
+                            description: 申请人
+                            example: admin
+                          applied_time:
+                            type: string
+                            format: date-time
+                            description: 申请时间
+                          handled_by:
+                            type: array
+                            items:
+                              type: string
+                            description: 审批人
+                            example: ["admin"]
+                          handled_time:
+                            type: string
+                            format: date-time
+                            nullable: true
+                            description: 审批时间
+                          apply_status:
+                            type: string
+                            description: 审批状态
+                            example: pending
+                          apply_status_display:
+                            type: string
+                            description: 审批状态描述
+                            example: 待审批
+                          comment:
+                            type: string
+                            description: 审批内容
+                          reason:
+                            type: string
+                            description: 申请理由
+                          expire_days:
+                            type: integer
+                            description: 过期时间
+                            example: 0
+                          itsm_ticket_id:
+                            type: string
+                            description: 关联的 ITSM 工单 ID
+                          approval_url:
+                            type: string
+                            description: 权限审批 URL
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false

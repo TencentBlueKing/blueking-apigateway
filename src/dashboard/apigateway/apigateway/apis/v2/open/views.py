@@ -433,7 +433,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="获取指定应用的 MCPServer 权限申请记录列表",
         query_serializer=MCPServerAppPermissionRecordListInputSLZ,
-        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyRecordListOutputSLZ()},
+        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Open"],
     ),
 )

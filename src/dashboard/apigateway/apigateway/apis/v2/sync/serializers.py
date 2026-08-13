@@ -624,10 +624,17 @@ class SDKGenerateInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateInputSLZ"
 
 
-class SDKGenerateOutputSLZ(serializers.Serializer):
+class SDKGenerateResultOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="SDK名称")
     version = serializers.CharField(help_text="版本号")
     url = serializers.CharField(help_text="下载链接")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateResultOutputSLZ"
+
+
+class SDKGenerateOutputSLZ(serializers.Serializer):
+    results = SDKGenerateResultOutputSLZ(many=True)
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateOutputSLZ"

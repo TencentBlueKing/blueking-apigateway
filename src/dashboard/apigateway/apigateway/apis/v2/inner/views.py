@@ -1194,7 +1194,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="MCPServer 申请记录详情",
         query_serializer=serializers.MCPServerAppPermissionRecordRetrieveInputSLZ,
-        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )

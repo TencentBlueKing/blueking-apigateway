@@ -22,6 +22,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.utils.translation import gettext as _
+from drf_yasg.utils import swagger_serializer_method
 from rest_framework import serializers
 
 from apigateway.apis.v2.validators import (
@@ -674,6 +675,7 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
 
         return ""
 
+    @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
     def get_handled_by(self, obj):
         """获取处理人 display_name"""
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(

@@ -34,23 +34,33 @@
 
 ```json
 {
-    "data": [
-        {
-            "name": "bkapi-test",
-            "version": "1.0.1",
-            "url": "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
-        }
-    ]
+    "data": {
+        "results": [
+            {
+                "name": "bkapi-test",
+                "version": "1.0.1",
+                "url": "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+            }
+        ]
+    }
 }
 ```
 
+status 201
+
 ### 响应参数说明
 
-| 字段    | 类型   | 描述                               |
-| ------- | ------ | ---------------------------------- |
-| data    | array  | 结果数据，详细信息请见下面说明     |
+| 字段 | 类型   | 描述                           |
+| ------ | ------ | ------------------------------ |
+| data   | object | 结果数据，详细信息请见下面说明 |
 
 #### data
+
+| 名称    | 类型  | 说明         |
+| ------- | ----- | ------------ |
+| results | array | SDK 生成结果列表 |
+
+#### data.results
 
 | 名称    | 类型   | 说明         |
 | ------- | ------ | ------------ |
