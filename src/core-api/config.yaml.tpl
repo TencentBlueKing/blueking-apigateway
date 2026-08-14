@@ -40,7 +40,7 @@ logger:
     level: info
     writer: file
     buffered: true
-    settings: {name: core_api.log, size: 100, backups: 10, age: 7, path: ./}
+    settings: {name: core_api.log, size: 50, backups: 3, age: 7, path: ./}
 
 ## config for trace
 tracing:
