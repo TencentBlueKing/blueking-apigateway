@@ -27,9 +27,10 @@ from django.conf import settings
 
 from apigateway.apps.mcp_server.constants import (
     ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME,
 )
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.mcp_server import (
     MCPServerHandler,
     MCPServerPromptHandler,
@@ -444,3 +445,25 @@ def sync_mcp_server_after_release(
             stage_id,
             release_history_id,
         )
+
+
+@shared_task(name="apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category", ignore_result=True)
+def refresh_official_mcp_server_category() -> None:
+    """定时给官方网关下的 MCP Server 补齐「官方」分类，只补不删。"""
+    official_category = MCPServerCategory.objects.filter(name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True).first()
+    if official_category is None:
+        return
+
+    missing_ids = list(
+        MCPServer.objects.filter(gateway__is_official=True)
+        .exclude(categories=official_category)
+        .values_list("id", flat=True)
+    )
+    if not missing_ids:
+        return
+
+    batch_size = 500
+    for start in range(0, len(missing_ids), batch_size):
+        official_category.mcp_servers.add(*missing_ids[start : start + batch_size])
+
+    logger.info("refresh_official_mcp_server_category completed, added=%d", len(missing_ids))
