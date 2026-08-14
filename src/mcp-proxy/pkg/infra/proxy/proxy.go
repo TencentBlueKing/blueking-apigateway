@@ -20,6 +20,7 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -55,6 +56,9 @@ import (
 	"mcp_proxy/pkg/metric"
 	"mcp_proxy/pkg/util"
 )
+
+// maxResponseBodyPreallocateSize limits only the initial allocation; response bodies are always read to EOF.
+const maxResponseBodyPreallocateSize = 1 << 20
 
 // sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
 // 通过 InitSharedTransport 从配置初始化，参数可在 config.yaml 的 mcpServer.transport 段调整。
@@ -1123,7 +1127,10 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 					var bodyBytes []byte
 					if response.Body() != nil {
 						var e error
-						bodyBytes, e = io.ReadAll(response.Body())
+						bodyBytes, e = readResponseBody(
+							response.Body(),
+							response.GetHeader("Content-Length"),
+						)
 						if e != nil {
 							return nil, e
 						}
@@ -1325,6 +1332,17 @@ func recordToolCallMetrics(
 		metric.MCPResponseBodySize.WithLabelValues(gatewayName, serverName, "tools/call").
 			Observe(float64(responseBodySize))
 	}
+}
+
+func readResponseBody(body io.Reader, contentLength string) ([]byte, error) {
+	size, err := strconv.ParseInt(contentLength, 10, 64)
+	if err != nil || size <= 0 || size > maxResponseBodyPreallocateSize {
+		return io.ReadAll(body)
+	}
+
+	buffer := bytes.NewBuffer(make([]byte, 0, int(size)+bytes.MinRead))
+	_, err = buffer.ReadFrom(body)
+	return buffer.Bytes(), err
 }
 
 // logToolCall logs MCP protocol-level request/response for tools/call.
