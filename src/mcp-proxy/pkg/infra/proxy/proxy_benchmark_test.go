@@ -58,7 +58,7 @@ var (
 func BenchmarkGenToolHandlerLargeJSONResponse(b *testing.B) {
 	initBenchmarkRuntime(b)
 
-	for _, size := range []int{64 << 10, 1 << 20} {
+	for _, size := range []int{64 << 10, 1 << 20, 10 << 20} {
 		size := size
 		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
 			responseBody := buildBenchmarkJSONBody(size)
@@ -286,10 +286,10 @@ func BenchmarkMCPToolResultWireEncode(b *testing.B) {
 	}
 }
 
-// BenchmarkReadLargeResponseBody compares the current unhinted io.ReadAll path with
-// the allocation headroom available when an upstream Content-Length can be trusted.
+// BenchmarkReadLargeResponseBody compares the previous unhinted io.ReadAll path with
+// the production response reader when an upstream Content-Length is available.
 func BenchmarkReadLargeResponseBody(b *testing.B) {
-	for _, size := range []int{64 << 10, 1 << 20} {
+	for _, size := range []int{64 << 10, 1 << 20, 10 << 20} {
 		size := size
 		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
 			body := buildBenchmarkJSONBody(size)
@@ -307,16 +307,16 @@ func BenchmarkReadLargeResponseBody(b *testing.B) {
 				}
 			})
 
-			b.Run("content-length-preallocated", func(b *testing.B) {
+			b.Run("production-content-length", func(b *testing.B) {
 				b.ReportAllocs()
 				b.SetBytes(int64(len(body)))
 				for i := 0; i < b.N; i++ {
 					reader := benchmarkChunkReader{body: body}
-					buffer := bytes.NewBuffer(make([]byte, 0, len(body)+bytes.MinRead))
-					if _, err := buffer.ReadFrom(&reader); err != nil {
-						b.Fatalf("read preallocated response body: %v", err)
+					readBody, err := readResponseBody(&reader, strconv.Itoa(len(body)))
+					if err != nil {
+						b.Fatalf("read response body: %v", err)
 					}
-					benchmarkResponseBody = buffer.Bytes()
+					benchmarkResponseBody = readBody
 				}
 			})
 		})
