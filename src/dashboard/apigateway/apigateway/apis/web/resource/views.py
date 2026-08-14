@@ -51,6 +51,7 @@ from apigateway.service.resource import delete_resources, get_gateway_resource_i
 from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
+from apigateway.utils.time import now_datetime
 
 from .serializers import (
     BackendPathCheckInputSLZ,
@@ -346,6 +347,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             is_public=slz.validated_data["is_public"],
             allow_apply_permission=slz.validated_data["allow_apply_permission"],
             updated_by=request.user.username,
+            updated_time=now_datetime(),
         )
         label_ids = slz.validated_data.get("label_ids")
         if slz.validated_data["is_update_labels"]:

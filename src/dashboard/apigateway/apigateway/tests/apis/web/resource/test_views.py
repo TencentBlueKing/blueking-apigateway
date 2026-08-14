@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from datetime import timedelta
 
 import pytest
 from ddf import G
@@ -720,6 +721,26 @@ class TestResourceBatchUpdateDestroyApi:
         resource = Resource.objects.get(id=fake_resource.id)
         assert resource.is_public == data["is_public"]
         assert resource.allow_apply_permission == data["allow_apply_permission"]
+
+    def test_update_bumps_updated_time(self, request_view, fake_resource):
+        stale_updated_time = timezone.now() - timedelta(minutes=5)
+        Resource.objects.filter(id=fake_resource.id).update(updated_time=stale_updated_time)
+        fake_resource.refresh_from_db()
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway.id},
+            data={
+                "ids": [fake_resource.id],
+                "is_public": True,
+                "allow_apply_permission": True,
+            },
+        )
+
+        assert resp.status_code == 204
+        fake_resource.refresh_from_db()
+        assert fake_resource.updated_time > stale_updated_time
 
     def test_update_label_add(self, request_view, fake_resource, fake_resource1, fake_gateway):
         label_1 = G(APILabel, gateway=fake_gateway, name="test")
