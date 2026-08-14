@@ -27,6 +27,7 @@ from django.conf import settings
 
 from apigateway.apps.mcp_server.constants import (
     ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
@@ -449,7 +450,7 @@ def sync_mcp_server_after_release(
 @shared_task(name="apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category", ignore_result=True)
 def refresh_official_mcp_server_category() -> None:
     """定时给官方网关下的 MCP Server 补齐「官方」分类，只补不删。"""
-    official_category = MCPServerCategory.objects.filter(name="Official", is_active=True).first()
+    official_category = MCPServerCategory.objects.filter(name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True).first()
     if official_category is None:
         return
 
