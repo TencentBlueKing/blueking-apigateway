@@ -58,7 +58,7 @@ var (
 func BenchmarkGenToolHandlerLargeJSONResponse(b *testing.B) {
 	initBenchmarkRuntime(b)
 
-	for _, size := range []int{64 << 10, 1 << 20} {
+	for _, size := range []int{64 << 10, 1 << 20, 10 << 20} {
 		size := size
 		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
 			responseBody := buildBenchmarkJSONBody(size)
@@ -289,7 +289,7 @@ func BenchmarkMCPToolResultWireEncode(b *testing.B) {
 // BenchmarkReadLargeResponseBody compares the previous unhinted io.ReadAll path with
 // the production response reader when an upstream Content-Length is available.
 func BenchmarkReadLargeResponseBody(b *testing.B) {
-	for _, size := range []int{64 << 10, 1 << 20} {
+	for _, size := range []int{64 << 10, 1 << 20, 10 << 20} {
 		size := size
 		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
 			body := buildBenchmarkJSONBody(size)

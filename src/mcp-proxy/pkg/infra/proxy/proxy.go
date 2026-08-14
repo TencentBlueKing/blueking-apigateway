@@ -58,7 +58,7 @@ import (
 )
 
 // maxResponseBodyPreallocateSize limits only the initial allocation; response bodies are always read to EOF.
-const maxResponseBodyPreallocateSize = 1 << 20
+const maxResponseBodyPreallocateSize = 10 << 20
 
 // sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
 // 通过 InitSharedTransport 从配置初始化，参数可在 config.yaml 的 mcpServer.transport 段调整。
