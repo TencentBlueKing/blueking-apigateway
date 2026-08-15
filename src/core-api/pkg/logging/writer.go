@@ -68,7 +68,7 @@ func getFileWriter(settings map[string]string) (io.Writer, error) {
 
 	filename := settings["name"]
 
-	backups := 10
+	backups := 5
 	backupsStr, ok := settings["backups"]
 	if ok {
 		backupsInt, err := strconv.Atoi(backupsStr)
