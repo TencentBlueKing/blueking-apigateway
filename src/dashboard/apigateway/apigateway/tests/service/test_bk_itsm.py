@@ -303,6 +303,35 @@ class TestItsmPermissionApplyHelper:
 
         mock_system_migrate.assert_not_called()
 
+    def test_register_to_itsm_migrates_when_system_not_registered(self, mocker):
+        parser = argparse.ArgumentParser()
+        RegisterToItsmCommand().add_arguments(parser)
+        options = parser.parse_args([])
+
+        command = RegisterToItsmCommand()
+        mocker.patch.object(command, "_get_system_workflow_list", return_value=ItsmWorkflowList.empty())
+        mock_system_migrate = mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_migrate"
+        )
+        mock_ensure_config = mocker.patch.object(command, "_ensure_config_from_template")
+
+        command.handle(**vars(options))
+
+        mock_system_migrate.assert_called_once()
+        mock_ensure_config.assert_called_once()
+
+    def test_get_system_workflow_list_does_not_warn_when_system_not_found(self, mocker):
+        mocker.patch(
+            "apigateway.apps.bk_itsm.management.commands.register_to_itsm.system_workflow_list",
+            return_value=ItsmWorkflowList.empty(),
+        )
+        mock_logger = mocker.patch("apigateway.apps.bk_itsm.management.commands.register_to_itsm.logger")
+
+        result = RegisterToItsmCommand._get_system_workflow_list("bk-apigateway")
+
+        assert result.is_registered is False
+        mock_logger.warning.assert_not_called()
+
     def test_register_to_itsm_build_form_model_update_payload(self):
         parser = argparse.ArgumentParser()
         RegisterToItsmCommand().add_arguments(parser)

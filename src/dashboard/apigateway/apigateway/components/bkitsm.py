@@ -31,6 +31,10 @@ from .utils import do_blueking_http_request, gen_gateway_headers
 logger = logging.getLogger(__name__)
 
 
+class ItsmSystemNotFoundError(Exception):
+    """ITSM system has not been registered yet."""
+
+
 class ItsmWorkflow(BaseModel):
     form_schema: Dict[str, Any]
 
@@ -146,6 +150,25 @@ def system_migrate(workflow_template: Dict[str, Any]) -> Dict[str, Any]:
     )
 
 
+def _system_workflow_list_http_get(system_id: str):
+    def request(*args, **kwargs):
+        ok, resp_data = http_get(*args, **kwargs)
+        if not ok:
+            response_data = resp_data.get("response_data") or {}
+            try:
+                code = int(response_data.get("code"))
+            except TypeError, ValueError:
+                code = None
+
+            if resp_data.get("status_code") == 400 and code == 40000:
+                raise ItsmSystemNotFoundError(f"ITSM system does not exist, system_id={system_id}")
+
+        return ok, resp_data
+
+    request.__name__ = http_get.__name__
+    return request
+
+
 def system_workflow_list(
     system_id: str,
     system_token: str = "",
@@ -157,6 +180,8 @@ def system_workflow_list(
 
     调用接口: system_workflow_list (GET)
     路径: /api/v1/system_workflow/list/
+
+    系统尚未注册时 ITSM 会返回 HTTP 400 且 code=40000，按未注册（空列表）处理。
     """
     data = {
         "system_id": system_id,
@@ -170,13 +195,18 @@ def system_workflow_list(
     elif settings.BK_ITSM4_SYSTEM_TOKEN:
         more_headers["SYSTEM-TOKEN"] = settings.BK_ITSM4_SYSTEM_TOKEN
 
-    resp = _call_bkitsm_api(
-        http_get,
-        "/api/v1/system_workflow/list/",
-        data,
-        more_headers=more_headers,
-        timeout=settings.BK_ITSM4_API_TIMEOUT,
-    )
+    try:
+        resp = _call_bkitsm_api(
+            _system_workflow_list_http_get(system_id),
+            "/api/v1/system_workflow/list/",
+            data,
+            more_headers=more_headers,
+            timeout=settings.BK_ITSM4_API_TIMEOUT,
+        )
+    except ItsmSystemNotFoundError:
+        logger.info("ITSM system not found, treat as not registered, system_id=%s", system_id)
+        return ItsmWorkflowList.empty()
+
     return ItsmWorkflowList.from_response(resp)
 
 
