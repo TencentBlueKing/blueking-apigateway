@@ -77,87 +77,121 @@
         <span v-else>--</span>
       </div>
     </BkFormItem>
-    <BkFormItem :label="t('认证方式')">
-      <BkCheckbox
-        v-model="formData.auth_config.app_verified_required"
-        :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
-      >
-        <span
-          v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
-          class="bottom-line"
-        >{{ t('蓝鲸应用认证') }}</span>
-      </BkCheckbox>
-      <BkCheckbox
-        v-model="formData.auth_config.auth_verified_required"
-        class="ml-40px!"
-        @change="handleAuthVerifiedRequiredChange"
-      >
-        <span
-          v-bk-tooltips="{ content: t('请求方需提供蓝鲸用户身份信息') }"
-          class="bottom-line"
-        >{{ t('用户认证') }}</span>
-      </BkCheckbox>
-    </BkFormItem>
-    <!-- 只有打开“用户认证”才展示 oauth2 相关配置 -->
-    <template v-if="formData.auth_config.auth_verified_required">
-      <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
-      <!--      <BkFormItem -->
-      <!--        :label="t('OAuth2 公开客户端模式')" -->
-      <!--        required -->
-      <!--      > -->
-      <!--        <BkSwitcher -->
-      <!--          v-model="formData.auth_config.oauth2_public_client_enabled" -->
-      <!--          theme="primary" -->
-      <!--          size="small" -->
-      <!--        /> -->
-      <!--      </BkFormItem> -->
-      <BkFormItem
-        :label="t('个人令牌')"
-        required
-        :description="t('用户可以生成并使用个人令牌调用该 API')"
-      >
-        <BkSwitcher
-          v-model="formData.auth_config.oauth2_personal_client_enabled"
-          theme="primary"
-          size="small"
-        />
-      </BkFormItem>
-    </template>
     <BkFormItem
-      v-if="formData.auth_config.app_verified_required"
-      :label="t('检验应用权限')"
-      :description="t('蓝鲸应用需申请资源访问权限')"
+      :label="t('认证方式')"
+      required
     >
-      <BkSwitcher
-        v-model="formData.auth_config.resource_perm_required"
-        :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
-        theme="primary"
-        size="small"
-      />
+      <div class="auth-config">
+        <BkAlert
+          v-if="!formData.auth_config.app_verified_required && !formData.auth_config.auth_verified_required"
+          theme="warning"
+          class="mb-12px"
+          :title="t('当前不校验应用身份和用户身份，调用可能无需认证即可通过，请确认这是预期配置。')"
+        />
+        <div class="auth-block">
+          <BkCheckbox
+            v-model="formData.auth_config.app_verified_required"
+            :disabled="!canEditAppAuth"
+          >
+            {{ t('蓝鲸应用认证') }}
+          </BkCheckbox>
+          <p class="auth-hint">
+            {{ t('校验调用方是哪个蓝鲸应用。只开这一项、不开用户认证时，调用不必带上用户身份。') }}
+          </p>
+          <div
+            class="auth-child"
+            :class="{ 'is-disabled': !formData.auth_config.app_verified_required }"
+          >
+            <div class="auth-child-row">
+              <span class="auth-child-label">{{ t('检验应用权限') }}</span>
+              <BkSwitcher
+                v-model="formData.auth_config.resource_perm_required"
+                :disabled="!canEditAppAuth || !formData.auth_config.app_verified_required"
+                theme="primary"
+                size="small"
+              />
+            </div>
+            <p class="auth-hint">
+              {{ formData.auth_config.app_verified_required
+                ? t('开启后，蓝鲸应用必须已获得本资源访问权限才能调用。')
+                : t('依赖「蓝鲸应用认证」。先勾选应用认证后才能开启。') }}
+            </p>
+          </div>
+        </div>
+        <div class="auth-block">
+          <BkCheckbox
+            v-model="formData.auth_config.auth_verified_required"
+            @change="handleAuthVerifiedRequiredChange"
+          >
+            {{ t('用户认证') }}
+          </BkCheckbox>
+          <p class="auth-hint">
+            {{ t('校验调用代表哪个用户。开启后，调用必须携带用户身份（登录态或 AccessToken）。') }}
+          </p>
+          <div
+            class="auth-child"
+            :class="{ 'is-disabled': !formData.auth_config.auth_verified_required }"
+          >
+            <div class="auth-child-row">
+              <span class="auth-child-label">{{ t('个人令牌') }}</span>
+              <BkSwitcher
+                v-model="formData.auth_config.oauth2_personal_client_enabled"
+                :disabled="!formData.auth_config.auth_verified_required"
+                theme="primary"
+                size="small"
+              />
+            </div>
+            <p class="auth-hint">
+              {{ formData.auth_config.auth_verified_required
+                ? t('开启后，用户可以用个人令牌调用本接口，请求会带上该用户的身份。')
+                : t('依赖「用户认证」。先勾选用户认证后才能开启。') }}
+            </p>
+          </div>
+        </div>
+        <div
+          class="auth-summary"
+          :class="{
+            'is-warning': !formData.auth_config.app_verified_required && !formData.auth_config.auth_verified_required
+          }"
+        >
+          {{ authSceneText }}
+        </div>
+      </div>
     </BkFormItem>
     <BkFormItem
       :label="t('是否公开')"
       :description="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
       property="is_public"
     >
-      <div class="flex items-center public-switch">
-        <BkSwitcher
-          v-model="formData.is_public"
-          theme="primary"
-          size="small"
-        />
-        <BkCheckbox
-          v-if="formData.is_public && formData.auth_config.resource_perm_required"
-          v-model="formData.allow_apply_permission"
-          class="ml-40px!"
-        >
-          <span
-            v-bk-tooltips="{ content: t('允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限') }"
-            class="bottom-line"
+      <div class="auth-config">
+        <div class="auth-block">
+          <div class="public-switch">
+            <BkSwitcher
+              v-model="formData.is_public"
+              theme="primary"
+              size="small"
+            />
+          </div>
+          <div
+            class="auth-child"
+            :class="{ 'is-disabled': !canAllowApplyPermission }"
           >
-            {{ t('允许申请权限') }}
-          </span>
-        </BkCheckbox>
+            <div class="auth-child-row">
+              <span class="auth-child-label">
+                {{ t('允许申请权限') }}
+              </span>
+              <BkSwitcher
+                v-model="formData.allow_apply_permission"
+                :disabled="!canAllowApplyPermission"
+                theme="primary"
+                size="small"
+              />
+            </div>
+            <p class="auth-hint">
+              {{ allowApplyPermissionHint }}
+            </p>
+          </div>
+        </div>
       </div>
     </BkFormItem>
   </BkForm>
@@ -207,6 +241,56 @@ const labelsData = ref<{
   name: string
 }[]>([]);
 
+const resourcePermRequiredBackup = ref(false);
+
+// 错误表单项的 #id
+const invalidFormElementIds = ref<string[]>([]);
+
+const canEditAppAuth = computed(() => !!gatewayStore.currentGateway?.allow_update_gateway_auth);
+
+const canAllowApplyPermission = computed(() => (
+  formData.value.is_public && formData.value.auth_config.resource_perm_required
+));
+
+const allowApplyPermissionHint = computed(() => {
+  if (!formData.value.is_public) {
+    return t('依赖「是否公开」。资源不公开时，用户无法查看和申请。');
+  }
+  if (!formData.value.auth_config.resource_perm_required) {
+    return t('依赖「检验应用权限」。未校验应用权限时，申请权限没有对应的授权对象。');
+  }
+  return t('开启后，其他蓝鲸应用可在开发者中心申请本资源访问权限；关闭则只能由网关管理员主动授权。');
+});
+
+const authSceneText = computed(() => {
+  const appAuth = formData.value.auth_config.app_verified_required;
+  const userAuth = formData.value.auth_config.auth_verified_required;
+  const permRequired = formData.value.auth_config.resource_perm_required;
+  const personalEnabled = formData.value.auth_config.oauth2_personal_client_enabled;
+
+  if (!appAuth && !userAuth) {
+    return t('当前效果：不校验应用、也不校验用户。');
+  }
+  if (appAuth && !userAuth) {
+    return permRequired
+      ? t('当前效果：仅应用认证（M2M），且调用应用必须已获授权。不接受用户 Token / 个人令牌。')
+      : t('当前效果：仅应用认证（M2M），只接受应用密钥调用，不接受用户 Token / 个人令牌。');
+  }
+  if (!appAuth && userAuth) {
+    return personalEnabled
+      ? t('当前效果：只校验用户身份，并允许使用个人令牌。不校验调用方是哪个应用。')
+      : t('当前效果：只校验用户身份。不校验调用方是哪个应用。');
+  }
+  if (permRequired) {
+    return personalEnabled
+      ? t('当前效果：须同时具备应用身份和用户身份，应用须已获授权；允许使用个人令牌。')
+      : t('当前效果：须同时具备应用身份和用户身份，且应用须已获授权。');
+  }
+  return personalEnabled
+    ? t('当前效果：须同时具备应用身份和用户身份；允许使用个人令牌。')
+    : t('当前效果：须同时具备应用身份和用户身份。');
+});
+
 const rules = {
   name: [
     {
@@ -224,11 +308,6 @@ const rules = {
     },
   ],
 };
-
-const resourcePermRequiredBackup = ref(false);
-
-// 错误表单项的 #id
-const invalidFormElementIds = ref<string[]>([]);
 
 watch(
   () => detail,
@@ -285,6 +364,15 @@ watch(
   },
 );
 
+watch(
+  () => formData.value.auth_config.resource_perm_required,
+  () => {
+    if (formData.value.auth_config.app_verified_required) {
+      resourcePermRequiredBackup.value = formData.value.auth_config.resource_perm_required;
+    }
+  },
+);
+
 const init = async () => {
   labelsData.value = await getGatewayLabels(gatewayId.value);
 };
@@ -338,7 +426,64 @@ defineExpose({
   }
 
   .public-switch {
+    display: flex;
+    align-items: center;
     height: 32px;
+  }
+
+  .auth-config {
+    max-width: 700px;
+  }
+
+  .auth-block {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: #f5f7fa;
+    border: 1px solid #dcdee5;
+    border-radius: 2px;
+  }
+
+  .auth-hint {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 18px;
+    color: #979ba5;
+  }
+
+  .auth-child {
+    padding: 8px 0 0 16px;
+    margin-top: 8px;
+    border-left: 2px solid #dfe1e5;
+
+    &.is-disabled .auth-child-row {
+      opacity: 50%;
+    }
+  }
+
+  .auth-child-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .auth-child-label {
+    font-size: 14px;
+    line-height: 22px;
+    color: #313238;
+  }
+
+  .auth-summary {
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 18px;
+    color: #3a84ff;
+    background: #f0f5ff;
+    border-radius: 2px;
+
+    &.is-warning {
+      color: #e38b02;
+      background: #fff3e5;
+    }
   }
 
   .label-label {
@@ -347,10 +492,5 @@ defineExpose({
       margin-top: 4px;
     }
   }
-}
-
-.bottom-line {
-  cursor: pointer;
-  border-bottom: 1px dashed #979ba5;
 }
 </style>
