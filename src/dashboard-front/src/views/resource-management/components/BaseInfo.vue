@@ -98,7 +98,7 @@
           v-if="!formData.auth_config.app_verified_required && !formData.auth_config.auth_verified_required"
           theme="warning"
           class="mb-12px"
-          :title="t('当前不校验应用身份和用户身份，调用可能无需认证即可通过，请确认这是预期配置。')"
+          :title="t('当前不校验应用身份和用户身份，调用无需认证即可通过，请确认这是预期配置。')"
         />
         <div class="auth-block">
           <BkCheckbox
@@ -273,10 +273,10 @@ const canAllowApplyPermission = computed(() => (
 
 const allowApplyPermissionHint = computed(() => {
   if (!formData.value.is_public) {
-    return t('依赖「是否公开」。资源不公开时，用户无法查看和申请。');
+    return t('依赖「是否公开」。资源不公开时，用户无法查看接口文档和申请权限。');
   }
   if (!formData.value.auth_config.resource_perm_required) {
-    return t('依赖「检验应用权限」。未校验应用权限时，申请权限没有对应的授权对象。');
+    return t('需要开启「检验应用权限」，才可以配置「允许申请权限」。');
   }
   return t('开启后，其他蓝鲸应用可在开发者中心申请本资源访问权限；关闭则只能由网关管理员主动授权。');
 });
@@ -288,12 +288,12 @@ const authSceneText = computed(() => {
   const personalEnabled = formData.value.auth_config.oauth2_personal_client_enabled;
 
   if (!appAuth && !userAuth) {
-    return t('当前效果：不校验应用、也不校验用户。');
+    return t('当前效果：不校验应用身份、也不校验用户身份。');
   }
   if (appAuth && !userAuth) {
     return permRequired
-      ? t('当前效果：仅应用认证（M2M），且调用应用必须已获授权。不接受用户 Token / 个人令牌。')
-      : t('当前效果：仅应用认证（M2M），只接受应用密钥调用，不接受用户 Token / 个人令牌。');
+      ? t('当前效果：仅应用认证，且调用应用必须已获授权。不接受用户 Token / 个人令牌。')
+      : t('当前效果：仅应用认证，只接受应用密钥调用，不接受用户 Token / 个人令牌。');
   }
   if (!appAuth && userAuth) {
     return personalEnabled
