@@ -20,6 +20,7 @@
 import pytest
 from pydantic import ValidationError
 
+from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import (
     ItsmFormModelUpdateResult,
     ItsmTicketItem,
@@ -28,6 +29,7 @@ from apigateway.components.bkitsm import (
     _call_bkitsm_api,
     create_ticket,
     get_ticket_by_id,
+    system_workflow_list,
     update_form_model,
 )
 
@@ -57,6 +59,66 @@ def test_itsm_workflow_list_requires_results_shape():
 
     with pytest.raises(ValidationError):
         ItsmWorkflowList.from_response({"count": 1, "results": ["invalid"]})
+
+
+def test_system_workflow_list_returns_empty_when_system_not_found(settings, mocker):
+    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
+    settings.BK_ITSM4_API_TIMEOUT = 30
+    settings.BK_ITSM4_SYSTEM_TOKEN = ""
+
+    mock_http_get = mocker.patch(
+        "apigateway.components.bkitsm.http_get",
+        return_value=(
+            False,
+            {
+                "error": "status_code is 400, not 2xx!",
+                "status_code": 400,
+                "response_data": {
+                    "result": False,
+                    "code": "40000",
+                    "message": "message text should not be parsed",
+                    "data": {"detail": "message text should not be parsed"},
+                },
+            },
+        ),
+    )
+    mock_http_get.__name__ = "http_get"
+
+    result = system_workflow_list(system_id="bk-apigateway")
+
+    assert result.is_registered is False
+    assert result.count == 0
+    assert result.workflows == []
+    assert "ignored_error_status_codes" not in mock_http_get.call_args.kwargs
+
+
+@pytest.mark.parametrize(
+    "status_code, code",
+    [
+        (400, "40001"),
+        (500, "40000"),
+    ],
+)
+def test_system_workflow_list_keeps_unexpected_remote_error(settings, mocker, status_code, code):
+    settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
+    settings.BK_ITSM4_API_TIMEOUT = 30
+    settings.BK_ITSM4_SYSTEM_TOKEN = ""
+
+    mock_http_get = mocker.patch(
+        "apigateway.components.bkitsm.http_get",
+        return_value=(
+            False,
+            {
+                "error": f"status_code is {status_code}, not 2xx!",
+                "status_code": status_code,
+                "response_data": {"result": False, "code": code, "message": "remote error"},
+            },
+        ),
+    )
+    mock_http_get.__name__ = "http_get"
+
+    with pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__):
+        system_workflow_list(system_id="bk-apigateway")
 
 
 def test_itsm_form_model_update_result_extract_updated_fields():
