@@ -41,7 +41,9 @@ const handleBkUserClick = () => {
 };
 
 const handleLogout = () => {
-  location.href = getLoginURL(envStore.env.BK_LOGIN_URL, location.origin, 'small');
+  // 处理配置配置了子路径时的情况
+  const currentPath = (!window.BK_SITE_PATH || window.BK_SITE_PATH === '/') ? location.origin : window.BK_SITE_PATH;
+  location.href = getLoginURL(envStore.env.BK_LOGIN_URL, currentPath, 'small');
 };
 </script>
 
