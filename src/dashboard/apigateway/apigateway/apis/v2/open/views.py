@@ -53,7 +53,11 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
+from apigateway.common.tenant.query import (
+    gateway_filter_by_app_tenant_id,
+    gateway_mcp_server_filter_by_user_tenant_id,
+    mcp_server_related_filter_by_user_tenant_id,
+)
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import (
     GatewayKindNameEnum,
@@ -306,6 +310,9 @@ class MCPServerListApi(generics.ListAPIView):
             is_public=True,
             order_by="-updated_time",
         )
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         page = self.paginate_queryset(queryset)
         context = MCPServerHandler.build_list_context(page)
@@ -354,6 +361,9 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         queryset = MCPServerAppPermission.objects.filter(bk_app_code=slz.validated_data["bk_app_code"])
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
         page = self.paginate_queryset(queryset)
 
         # Build categories map
@@ -374,8 +384,14 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
 )
 class MCPServerPermissionListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
-    queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
+
+    def get_queryset(self):
+        queryset = MCPServer.objects.all()
+        tenant_id = get_request_tenant_id(self.request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
+        return queryset
 
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -415,6 +431,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["mcp_server_ids"],
             data["reason"],
             data["applied_by"],
+            tenant_id=get_request_tenant_id(request),
         )
 
         if queryset.count() == 0:
@@ -448,6 +465,9 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         queryset = MCPServerAppPermissionApply.objects.filter(
             bk_app_code=data["bk_app_code"],
         )
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
 
         if data.get("mcp_server_id"):
             queryset = queryset.filter(mcp_server_id=data["mcp_server_id"])
@@ -491,6 +511,9 @@ class MCPServerAppPermissionRecordLookupApi(generics.ListAPIView):
             bk_app_code=data["bk_app_code"],
             id__in=data["ids"],
         ).order_by("id")
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
         categories_map = MCPServerHandler.build_categories_map(list(queryset.values_list("mcp_server_id", flat=True)))
         output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(
             queryset,
@@ -521,6 +544,9 @@ class UserMCPServerListApi(generics.ListAPIView):
             gateway__status=GatewayStatusEnum.ACTIVE.value,
             stage__status=StageStatusEnum.ACTIVE.value,
         )
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         is_public = slz.validated_data.get("is_public", None)
         if is_public is None:
@@ -859,9 +885,15 @@ class MCPServerRetrieveApi(generics.RetrieveAPIView):
     """
 
     permission_classes = [OpenAPIV2Permission]
-    queryset = MCPServer.objects.all()
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
+
+    def get_queryset(self):
+        queryset = MCPServer.objects.all()
+        tenant_id = get_request_tenant_id(self.request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
+        return queryset
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

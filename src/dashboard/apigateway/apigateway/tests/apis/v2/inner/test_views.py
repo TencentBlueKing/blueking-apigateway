@@ -1092,6 +1092,7 @@ class TestMCPServerAppPermissionRecordListApi:
             view_name="openapi.v2.inner.mcp_server.permission.apply-records",
             data={"target_app_code": "test-app"},
             app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
         )
         result = resp.json()
 
@@ -1262,6 +1263,7 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
             path_params={"record_id": apply_record.id},
             data={"target_app_code": "test-app"},
             app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
         )
         result = resp.json()
 

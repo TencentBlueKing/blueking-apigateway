@@ -64,6 +64,7 @@ from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import (
     gateway_filter_by_app_tenant_id,
     gateway_mcp_server_filter_by_user_tenant_id,
+    mcp_server_related_filter_by_user_tenant_id,
 )
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
@@ -928,6 +929,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
         queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value).select_related(
             "gateway", "stage"
         )
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         keyword = data.get("keyword")
         if keyword:
@@ -1040,6 +1044,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["mcp_server_ids"],
             data["reason"],
             data["applied_by"],
+            tenant_id=get_request_tenant_id(request),
         )
 
         if queryset.count() == 0:
@@ -1076,12 +1081,17 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         granted_permissions = MCPServerAppPermission.objects.filter(
             bk_app_code=target_app_code,
         ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            granted_permissions = mcp_server_related_filter_by_user_tenant_id(granted_permissions, tenant_id)
 
         # 2. 查询申请通过的记录，用于获取 handled_by 信息
         approved_applies = MCPServerAppPermissionApply.objects.filter(
             bk_app_code=target_app_code,
             status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
         ).order_by("-applied_time")
+        if tenant_id:
+            approved_applies = mcp_server_related_filter_by_user_tenant_id(approved_applies, tenant_id)
         handled_by_map = {obj.mcp_server_id: obj.handled_by for obj in approved_applies}
 
         mcp_servers = [perm.mcp_server for perm in granted_permissions]
@@ -1145,6 +1155,9 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             data.get("applied_time_start"),
             data.get("applied_time_end"),
         ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
 
         mcp_server_permission_records = [
             {
@@ -1213,9 +1226,13 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         data = slz.validated_data
 
         try:
-            return MCPServerAppPermissionApply.objects.select_related(
+            queryset = MCPServerAppPermissionApply.objects.select_related(
                 "mcp_server", "mcp_server__gateway", "mcp_server__stage"
-            ).get(bk_app_code=data["target_app_code"], id=record_id)
+            ).filter(bk_app_code=data["target_app_code"], id=record_id)
+            tenant_id = get_request_tenant_id(self.request)
+            if tenant_id:
+                queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
+            return queryset.get()
         except MCPServerAppPermissionApply.DoesNotExist:
             raise error_codes.NOT_FOUND
 
