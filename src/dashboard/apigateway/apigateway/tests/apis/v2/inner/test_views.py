@@ -47,6 +47,7 @@ from apigateway.apps.mcp_server.models import (
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
@@ -1971,6 +1972,66 @@ class TestMCPServerListApi:
 
         assert resp.status_code == 400
 
+    def test_list_filters_by_gateway_tenant(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        gateways = [
+            G(
+                Gateway,
+                name="global-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.GLOBAL.value,
+                tenant_id="",
+            ),
+            G(
+                Gateway,
+                name="tenant-a-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-a",
+            ),
+            G(
+                Gateway,
+                name="tenant-b-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-b",
+            ),
+        ]
+        for gateway in gateways:
+            stage = G(Stage, gateway=gateway, status=StageStatusEnum.ACTIVE.value)
+            G(
+                MCPServer,
+                gateway=gateway,
+                stage=stage,
+                name=f"{gateway.name}-mcp",
+                status=MCPServerStatusEnum.ACTIVE.value,
+            )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "name", "order_by": "name"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-a",
+        )
+
+        assert resp.status_code == 200
+        assert [item["name"] for item in resp.json()["data"]["results"]] == [
+            "global-gateway-mcp",
+            "tenant-a-gateway-mcp",
+        ]
+
+    def test_list_requires_tenant_header_in_multi_tenant_mode(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
     def test_list_with_dynamic_fields_skips_unneeded_context_building(self, request_view, fake_gateway, mocker):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save(update_fields=["status"])
@@ -2355,6 +2416,69 @@ class TestMCPServerListApi:
 
 
 class TestMCPServerLookupApi:
+    def test_lookup_filters_by_gateway_tenant(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        gateways = [
+            G(
+                Gateway,
+                name="global-lookup-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.GLOBAL.value,
+                tenant_id="",
+            ),
+            G(
+                Gateway,
+                name="tenant-a-lookup-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-a",
+            ),
+            G(
+                Gateway,
+                name="tenant-b-lookup-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-b",
+            ),
+        ]
+        mcp_server_names = []
+        for gateway in gateways:
+            stage = G(Stage, gateway=gateway, status=StageStatusEnum.ACTIVE.value)
+            mcp_server = G(
+                MCPServer,
+                gateway=gateway,
+                stage=stage,
+                name=f"{gateway.name}-mcp",
+                status=MCPServerStatusEnum.ACTIVE.value,
+            )
+            mcp_server_names.append(mcp_server.name)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"names": ",".join(mcp_server_names), "fields": "name"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-a",
+        )
+
+        assert resp.status_code == 200
+        assert {item["name"] for item in resp.json()["data"]} == {
+            "global-lookup-gateway-mcp",
+            "tenant-a-lookup-gateway-mcp",
+        }
+
+    def test_lookup_requires_tenant_header_in_multi_tenant_mode(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"names": "missing"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
     def test_lookup_with_ids_returns_unpaginated_results(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
