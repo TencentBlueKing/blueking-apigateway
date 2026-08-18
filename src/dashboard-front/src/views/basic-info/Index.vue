@@ -80,7 +80,7 @@
           <div class="header-info-description">
             <EditDesc
               field="description"
-              width="600px"
+              width="1008px"
               :placeholder="t('请输入描述')"
               :content="basicInfoData.description ?? ''"
               @on-change="(e:Record<string, string>) => handleInfoChange(e)"
@@ -155,324 +155,359 @@
           </div>
         </div>
       </section>
-      <section class="basic-info-detail">
-        <div class="basic-info-detail-item">
-          <div class="detail-item-title">
-            {{ t('基础信息') }}
-            <div
-              class="area-edit"
-              @click.stop="() => handleOperate('edit')"
-            >
-              <AgIcon name="edit-line" />
-              <BkButton
-                theme="primary"
-                text
-                class="operate-btn"
-              >
-                {{ t('编辑') }}
-              </BkButton>
+
+      <BkCollapse
+        v-model="activeIndex"
+        class="collapse-cls"
+        use-card-theme
+      >
+        <!-- 基础信息 -->
+        <BkCollapsePanel
+          name="baseInfo"
+          class="pannel"
+        >
+          <template #header>
+            <div class="panel-header flex">
+              <AngleUpFill :class="getIconClass('baseInfo')" />
+              <div class="pannel-title">
+                {{ t('基础信息') }}
+                <div
+                  class="area-edit"
+                  @click.stop="() => handleOperate('edit')"
+                >
+                  <AgIcon name="edit-line" />
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="detail-item-content">
-            <template v-if="featureFlagStore.isTenantMode">
-              <div class="detail-item-content-item">
+          </template>
+          <template #content>
+            <div class="pannel-content">
+              <template v-if="featureFlagStore.isTenantMode">
+                <div class="pannel-content-item">
+                  <div class="label">
+                    {{ `${t('租户模式')}：` }}
+                  </div>
+                  <div class="value">
+                    <span>{{ TENANT_MODE_TEXT_MAP[basicInfoData.tenant_mode] || '--' }}</span>
+                  </div>
+                </div>
+                <div class="pannel-content-item">
+                  <div class="label">
+                    {{ `${t('租户 ID')}：` }}
+                  </div>
+                  <div class="value url">
+                    <span>{{ basicInfoData.tenant_id || '--' }}</span>
+                    <CopyButton :source="basicInfoData.tenant_id" />
+                  </div>
+                </div>
+              </template>
+              <div
+                v-if="basicInfoData.kind === 1"
+                class="pannel-content-item"
+              >
                 <div class="label">
-                  {{ `${t('租户模式')}：` }}
+                  {{ `${t('开发语言')}：` }}
                 </div>
                 <div class="value">
-                  <span>{{ TENANT_MODE_TEXT_MAP[basicInfoData.tenant_mode] || '--' }}</span>
+                  <span>{{ basicInfoData.extra_info?.language || '--' }}</span>
                 </div>
               </div>
-              <div class="detail-item-content-item">
+              <div
+                v-if="basicInfoData.kind === 1"
+                class="pannel-content-item"
+              >
                 <div class="label">
-                  {{ `${t('租户 ID')}：` }}
+                  {{ `${t('代码仓库')}：` }}
+                </div>
+                <div class="value">
+                  <span>{{ basicInfoData.extra_info?.repository || '--' }}</span>
+                  <AgIcon
+                    name="jump"
+                    @click.stop="() => handleOpenNav(basicInfoData.extra_info.repository)"
+                  />
+                </div>
+              </div>
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('是否公开')}：` }}
+                </div>
+                <div class="value">
+                  <BkSwitcher
+                    v-model="basicInfoData.is_public"
+                    theme="primary"
+                    size="small"
+                    class="min-w-28px"
+                    @change="handleChangePublic"
+                  />
+                </div>
+              </div>
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('访问域名')}：` }}
                 </div>
                 <div class="value url">
-                  <span>{{ basicInfoData.tenant_id || '--' }}</span>
-                  <CopyButton :source="basicInfoData.tenant_id" />
+                  <span>{{ basicInfoData.api_domain || '--' }}</span>
+                  <CopyButton :source="basicInfoData.api_domain" />
                 </div>
               </div>
-            </template>
-            <div
-              v-if="basicInfoData.kind === 1"
-              class="detail-item-content-item"
-            >
-              <div class="label">
-                {{ `${t('开发语言')}：` }}
-              </div>
-              <div class="value">
-                <span>{{ basicInfoData.extra_info?.language || '--' }}</span>
-              </div>
-            </div>
-            <div
-              v-if="basicInfoData.kind === 1"
-              class="detail-item-content-item"
-            >
-              <div class="label">
-                {{ `${t('代码仓库')}：` }}
-              </div>
-              <div class="value">
-                <span>{{ basicInfoData.extra_info?.repository || '--' }}</span>
-                <AgIcon
-                  name="jump"
-                  @click.stop="() => handleOpenNav(basicInfoData.extra_info.repository)"
-                />
-              </div>
-            </div>
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('是否公开')}：` }}
-              </div>
-              <div class="value">
-                <BkSwitcher
-                  v-model="basicInfoData.is_public"
-                  theme="primary"
-                  size="small"
-                  class="min-w-28px"
-                  @change="handleChangePublic"
-                />
-              </div>
-            </div>
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('访问域名')}：` }}
-              </div>
-              <div class="value url">
-                <span>{{ basicInfoData.api_domain || '--' }}</span>
-                <CopyButton :source="basicInfoData.api_domain" />
-              </div>
-            </div>
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('维护人员')}：` }}
-              </div>
-              <div class="value">
-                <EditMember
-                  v-if="!featureFlagStore.isTenantMode"
-                  mode="edit"
-                  width="600px"
-                  field="maintainers"
-                  is-required
-                  :placeholder="t('请选择维护人员')"
-                  :content="basicInfoData.maintainers"
-                  :is-error-class="'maintainers-error-tip'"
-                  :error-value="t('维护人员不能为空')"
-                  @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
-                />
-                <TenantUserSelector
-                  v-else
-                  :content="basicInfoData.maintainers"
-                  :error-value="t('维护人员不能为空')"
-                  :is-error-class="'maintainers-error-tip'"
-                  is-required
-                  :placeholder="t('请选择维护人员')"
-                  field="maintainers"
-                  mode="edit"
-                  width="600px"
-                  @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
-                />
-              </div>
-            </div>
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('创建人')}：` }}
-              </div>
-              <div class="value">
-                <span v-if="!featureFlagStore.isEnableDisplayName">{{ basicInfoData.created_by }}</span>
-                <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" />
-                </span>
-              </div>
-            </div>
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('创建时间')}：` }}
-              </div>
-              <div class="value">
-                <span class="link">{{ basicInfoData.created_time || '--' }}</span>
-              </div>
-            </div>
-            <div
-              v-if="featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED"
-              class="detail-item-content-item"
-            >
-              <div class="label">
-                {{ `${t('关联蓝鲸应用')}：` }}
-              </div>
-              <div class="value">
-                <span class="link">{{ basicInfoData.bk_app_codes?.join(',') || '--' }}</span>
-              </div>
-            </div>
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('管理网关的应用列表')}：` }}
-              </div>
-              <div class="value">
-                <span class="link">{{ basicInfoData.related_app_codes?.join(',') || '--' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="basic-info-detail-item">
-          <div class="detail-item-title">
-            {{ t('API文档') }}
-            <div
-              class="area-edit"
-              @click.stop="showApiDocEdit"
-            >
-              <AgIcon name="edit-line" />
-              <BkButton
-                theme="primary"
-                text
-                class="operate-btn"
-              >
-                {{ t('编辑') }}
-              </BkButton>
-            </div>
-          </div>
-          <div class="detail-item-content">
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('联系人类型')}：` }}
-              </div>
-              <div class="value">
-                <span class="link">{{ basicInfoData.doc_maintainers?.type === 'user' ? t('用户') : t('服务号') }}</span>
-              </div>
-            </div>
-
-            <div
-              v-show="basicInfoData.doc_maintainers?.type === 'user'"
-              class="detail-item-content-item contact"
-            >
-              <div class="label">
-                {{ `${t('联系人')}：` }}
-              </div>
-              <div class="value contact">
-                <span>
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('维护人员')}：` }}
+                </div>
+                <div class="value">
                   <EditMember
-                    v-if="!featureFlagStore.isEnableDisplayName"
-                    mode="detail"
+                    v-if="!featureFlagStore.isTenantMode"
+                    mode="edit"
                     width="600px"
-                    field="contacts"
-                    :content="basicInfoData.doc_maintainers?.contacts"
+                    field="maintainers"
+                    is-required
+                    :placeholder="t('请选择维护人员')"
+                    :content="basicInfoData.maintainers"
+                    :is-error-class="'maintainers-error-tip'"
+                    :error-value="t('维护人员不能为空')"
+                    @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
                   />
                   <TenantUserSelector
                     v-else
-                    :content="basicInfoData.doc_maintainers?.contacts"
-                    field="contacts"
-                    mode="detail"
+                    :content="basicInfoData.maintainers"
+                    :error-value="t('维护人员不能为空')"
+                    :is-error-class="'maintainers-error-tip'"
+                    is-required
+                    :placeholder="t('请选择维护人员')"
+                    field="maintainers"
+                    mode="edit"
                     width="600px"
+                    @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
                   />
-                </span>
-                <div class="sub-explain">
-                  {{ t('文档页面上展示出来的文档咨询接口人') }}
                 </div>
               </div>
-            </div>
-
-            <div
-              v-show="basicInfoData.doc_maintainers?.type === 'service_account'"
-              class="detail-item-content-item"
-            >
-              <div class="label">
-                {{ `${t('服务号名称')}：` }}
-              </div>
-              <div class="value">
-                <span class="link">{{ basicInfoData.doc_maintainers?.service_account?.name || '--' }}</span>
-              </div>
-            </div>
-
-            <div
-              v-show="basicInfoData.doc_maintainers?.type === 'service_account'"
-              class="detail-item-content-item"
-            >
-              <div class="label">
-                {{ `${t('服务号链接')}：` }}
-              </div>
-              <div class="value">
-                <span class="link">{{ basicInfoData.doc_maintainers?.service_account?.link || '--' }}</span>
-              </div>
-            </div>
-
-            <div class="detail-item-content-item">
-              <div class="label">
-                {{ `${t('文档地址')}：` }}
-              </div>
-              <div class="value url">
-                <span
-                  v-bk-tooltips="{
-                    content: t('网关未开启或公开，暂无文档地址'),
-                    placement: 'right',
-                    disabled: !!basicInfoData.docs_url,
-                  }"
-                  class="link"
-                >
-                  {{ basicInfoData.docs_url || '--' }}
-                </span>
-                <template v-if="basicInfoData.docs_url">
-                  <AgIcon
-                    name="jump"
-                    @click.stop="handleOpenNav(basicInfoData.docs_url)"
-                  />
-                  <CopyButton :source="basicInfoData.docs_url" />
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="basic-info-detail-item">
-          <div class="detail-item-title">
-            {{ t('API公钥（指纹）') }}
-          </div>
-          <div class="detail-item-content">
-            <BkAlert
-              theme="warning"
-              class="mb-24px"
-            >
-              <template #title>
-                <div class="warning-header">
-                  {{ t('为确保后端服务接入网关的安全性，必须使用 API 公钥解析 X-Bkapi-JWT 头：') }}
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('创建人')}：` }}
                 </div>
-                <div class="warning-main">
-                  <div>- {{ t('验证请求来源：必须确保请求来自合法网关，非网关请求应直接拒绝，以防止非法访问。') }}</div>
-                  <div>- {{ t('获取认证信息：提取应用（如 app_code）和用户（如 username）的认证状态，用于业务鉴权逻辑') }}</div>
-                </div>
-                <div class="warning-more">
-                  {{ t('注意事项：请勿直接暴露后端服务接口，所有请求必须通过网关进行转发和认证。') }}
-                  <a
-                    :href="envStore.env.DOC_LINKS.JWT"
-                    target="_blank"
-                    class="more-detail"
-                  >
-                    <AgIcon name="link" />
-                    {{ t(' 更多详情') }}
-                  </a>
-                </div>
-              </template>
-            </BkAlert>
-            <div class="detail-item-content-item">
-              <div class="label w-0px" />
-              <div class="value public-key-content">
-                <div class="value-icon-lock">
-                  <AgIcon name="lock-fill1" />
-                </div>
-                <div class="value-public-key">
-                  <span class="link">
-                    {{ basicInfoData.public_key_fingerprint }}
+                <div class="value">
+                  <span v-if="!featureFlagStore.isEnableDisplayName">{{ basicInfoData.created_by }}</span>
+                  <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" />
                   </span>
-                  <div>
-                    <CopyButton :source="basicInfoData.public_key" />
-                    <AgIcon
-                      name="download"
-                      size="16"
-                      @click.stop="handleDownload"
+                </div>
+              </div>
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('创建时间')}：` }}
+                </div>
+                <div class="value">
+                  <span class="link">{{ basicInfoData.created_time || '--' }}</span>
+                </div>
+              </div>
+              <div
+                v-if="featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED"
+                class="pannel-content-item"
+              >
+                <div class="label">
+                  {{ `${t('关联蓝鲸应用')}：` }}
+                </div>
+                <div class="value">
+                  <span class="link">{{ basicInfoData.bk_app_codes?.join(',') || '--' }}</span>
+                </div>
+              </div>
+              <div
+                class="pannel-content-item app-codes"
+                style="max-width: 960px"
+              >
+                <div class="label">
+                  {{ `${t('管理网关的应用列表')}：` }}
+                </div>
+                <div
+                  class="value"
+                  style="width: calc(100% - 128px)"
+                >
+                  <EditRelatedAppCodes
+                    field="related_app_codes"
+                    width="100%"
+                    :placeholder="t('请输入应用ID，以回车键确认')"
+                    :content="basicInfoData.related_app_codes ?? []"
+                    @on-submit="(e: Record<string, string[]>) => handleRelatedAppCodesChange(e)"
+                  />
+                </div>
+              </div>
+            </div>
+          </template>
+        </BkCollapsePanel>
+
+        <!-- API文档 -->
+        <BkCollapsePanel
+          name="apiDoc"
+          class="pannel"
+        >
+          <template #header>
+            <div class="panel-header flex">
+              <AngleUpFill :class="getIconClass('apiDoc')" />
+              <div class="pannel-title">
+                {{ t('API文档') }}
+                <div
+                  class="area-edit"
+                  @click.stop="showApiDocEdit"
+                >
+                  <AgIcon name="edit-line" />
+                </div>
+              </div>
+            </div>
+          </template>
+          <template #content>
+            <div class="pannel-content">
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('联系人类型')}：` }}
+                </div>
+                <div class="value">
+                  <span class="link">{{ basicInfoData.doc_maintainers?.type === 'user' ? t('用户') : t('服务号') }}</span>
+                </div>
+              </div>
+
+              <div
+                v-show="basicInfoData.doc_maintainers?.type === 'user'"
+                class="pannel-content-item contact"
+              >
+                <div class="label">
+                  {{ `${t('联系人')}：` }}
+                </div>
+                <div class="value contact">
+                  <span>
+                    <EditMember
+                      v-if="!featureFlagStore.isEnableDisplayName"
+                      mode="detail"
+                      width="600px"
+                      field="contacts"
+                      :content="basicInfoData.doc_maintainers?.contacts"
                     />
+                    <TenantUserSelector
+                      v-else
+                      :content="basicInfoData.doc_maintainers?.contacts"
+                      field="contacts"
+                      mode="detail"
+                      width="600px"
+                    />
+                  </span>
+                  <div class="sub-explain">
+                    {{ t('文档页面上展示出来的文档咨询接口人') }}
                   </div>
                 </div>
               </div>
+
+              <div
+                v-show="basicInfoData.doc_maintainers?.type === 'service_account'"
+                class="pannel-content-item"
+              >
+                <div class="label">
+                  {{ `${t('服务号名称')}：` }}
+                </div>
+                <div class="value">
+                  <span class="link">{{ basicInfoData.doc_maintainers?.service_account?.name || '--' }}</span>
+                </div>
+              </div>
+
+              <div
+                v-show="basicInfoData.doc_maintainers?.type === 'service_account'"
+                class="pannel-content-item"
+              >
+                <div class="label">
+                  {{ `${t('服务号链接')}：` }}
+                </div>
+                <div class="value">
+                  <span class="link">{{ basicInfoData.doc_maintainers?.service_account?.link || '--' }}</span>
+                </div>
+              </div>
+
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('文档地址')}：` }}
+                </div>
+                <div class="value url">
+                  <span
+                    v-bk-tooltips="{
+                      content: t('网关未开启或公开，暂无文档地址'),
+                      placement: 'right',
+                      disabled: !!basicInfoData.docs_url,
+                    }"
+                    class="link"
+                  >
+                    {{ basicInfoData.docs_url || '--' }}
+                  </span>
+                  <template v-if="basicInfoData.docs_url">
+                    <AgIcon
+                      name="jump"
+                      @click.stop="handleOpenNav(basicInfoData.docs_url)"
+                    />
+                    <CopyButton :source="basicInfoData.docs_url" />
+                  </template>
+                </div>
+              </div>
             </div>
-            <!-- <div class="detail-item-content-item">
+          </template>
+        </BkCollapsePanel>
+
+        <!-- API公钥（指纹） -->
+        <BkCollapsePanel
+          name="publicKey"
+          class="pannel"
+        >
+          <template #header>
+            <div class="panel-header flex">
+              <AngleUpFill :class="getIconClass('publicKey')" />
+              <div class="pannel-title">
+                {{ t('API公钥（指纹）') }}
+              </div>
+            </div>
+          </template>
+          <template #content>
+            <div class="pannel-content">
+              <BkAlert
+                theme="warning"
+                class="mb-24px"
+              >
+                <template #title>
+                  <div class="warning-header">
+                    {{ t('为确保后端服务接入网关的安全性，必须使用 API 公钥解析 X-Bkapi-JWT 头：') }}
+                  </div>
+                  <div class="warning-main">
+                    <div>- {{ t('验证请求来源：必须确保请求来自合法网关，非网关请求应直接拒绝，以防止非法访问。') }}</div>
+                    <div>- {{ t('获取认证信息：提取应用（如 app_code）和用户（如 username）的认证状态，用于业务鉴权逻辑') }}</div>
+                  </div>
+                  <div class="warning-more">
+                    {{ t('注意事项：请勿直接暴露后端服务接口，所有请求必须通过网关进行转发和认证。') }}
+                    <a
+                      :href="envStore.env.DOC_LINKS.JWT"
+                      target="_blank"
+                      class="more-detail"
+                    >
+                      <AgIcon name="link" />
+                      {{ t(' 更多详情') }}
+                    </a>
+                  </div>
+                </template>
+              </BkAlert>
+              <div class="pannel-content-item">
+                <div class="label w-0px" />
+                <div class="value public-key-content">
+                  <div class="value-icon-lock">
+                    <AgIcon name="lock-fill1" />
+                  </div>
+                  <div class="value-public-key">
+                    <span class="link">
+                      {{ basicInfoData.public_key_fingerprint }}
+                    </span>
+                    <div>
+                      <CopyButton :source="basicInfoData.public_key" />
+                      <AgIcon
+                        name="download"
+                        size="16"
+                        @click.stop="handleDownload"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <!-- <div class="pannel-content-item">
               <div class="label w-0px" />
               <div class="value more-tip">
               <AgIcon name="info" />
@@ -484,107 +519,128 @@
               >{{ t(' 更多详情') }}</a>
               </div>
               </div> -->
-          </div>
-        </div>
-        <div
-          v-if="basicInfoData.kind === 1"
-          class="basic-info-detail-item"
-        >
-          <div class="detail-item-title">
-            {{ t('可编程网关工作流') }}
-          </div>
-          <div class="detail-item-content">
-            <img
-              class="process-img"
-              :src="ProgramProcess"
-              :alt="t('可编程网关的流程图')"
-            >
-          </div>
-        </div>
-        <div
-          v-if="basicInfoData.kind === 1"
-          class="basic-info-detail-item"
-        >
-          <div class="detail-item-title">
-            {{ t('关联操作指引') }}
-          </div>
-          <div class="detail-item-content">
-            <div class="explain">
-              {{ t('可编程网关发布后，系统将在蓝鲸开发者中心部署一个 SaaS 来提供 API 的后端服务，与蓝鲸 SaaS 开发相关的操作均可在蓝鲸开发者中心完成') }}
             </div>
-            <div class="guide-wrapper">
-              <div class="guide-item">
-                <div class="item-name">
-                  {{ t('开发 API') }}
-                </div>
-                <div class="item-values">
-                  <div
-                    v-for="(item, index) in linksData?.develop"
-                    :key="item.name"
-                    class="item"
-                  >
-                    <a
-                      class="value"
-                      :href="item.link"
-                      target="_blank"
-                    >{{ item.name }}</a>
-                    <span
-                      v-if="index !== (linksData.develop?.length ?? 0) - 1"
-                      class="line"
-                    />
-                  </div>
-                </div>
-              </div>
+          </template>
+        </BkCollapsePanel>
 
-              <div class="guide-item">
-                <div class="item-name">
-                  {{ t('查询日志') }}
-                </div>
-                <div class="item-values">
-                  <div
-                    v-for="(item, index) in linksData?.logging"
-                    :key="item.name"
-                    class="item"
-                  >
-                    <a
-                      class="value"
-                      :href="item.link"
-                      target="_blank"
-                    >{{ item.name }}</a>
-                    <span
-                      v-if="index !== (linksData.logging?.length ?? 0) - 1"
-                      class="line"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div class="guide-item">
-                <div class="item-name">
-                  {{ t('更多操作') }}
-                </div>
-                <div class="item-values">
-                  <div
-                    v-for="(item, index) in linksData?.more"
-                    :key="item.name"
-                    class="item"
-                  >
-                    <a
-                      class="value"
-                      :href="item.link"
-                      target="_blank"
-                    >{{ item.name }}</a>
-                    <span
-                      v-if="index !== (linksData.more?.length ?? 0) - 1"
-                      class="line"
-                    />
-                  </div>
-                </div>
+        <!-- 可编程网关工作流 -->
+        <BkCollapsePanel
+          v-if="basicInfoData.kind === 1"
+          name="programProcess"
+          class="pannel"
+        >
+          <template #header>
+            <div class="panel-header flex">
+              <AngleUpFill :class="getIconClass('programProcess')" />
+              <div class="pannel-title">
+                {{ t('可编程网关工作流') }}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </template>
+          <template #content>
+            <div class="pannel-content">
+              <img
+                class="process-img"
+                :src="ProgramProcess"
+                :alt="t('可编程网关的流程图')"
+              >
+            </div>
+          </template>
+        </BkCollapsePanel>
+
+        <!-- 关联操作指引 -->
+        <BkCollapsePanel
+          v-if="basicInfoData.kind === 1"
+          name="relatedOperation"
+          class="pannel"
+        >
+          <template #header>
+            <div class="panel-header flex">
+              <AngleUpFill :class="getIconClass('relatedOperation')" />
+              <div class="pannel-title">
+                {{ t('关联操作指引') }}
+              </div>
+            </div>
+          </template>
+          <template #content>
+            <div class="pannel-content">
+              <div class="explain">
+                {{ t('可编程网关发布后，系统将在蓝鲸开发者中心部署一个 SaaS 来提供 API 的后端服务，与蓝鲸 SaaS 开发相关的操作均可在蓝鲸开发者中心完成') }}
+              </div>
+              <div class="guide-wrapper">
+                <div class="guide-item">
+                  <div class="item-name">
+                    {{ t('开发 API') }}
+                  </div>
+                  <div class="item-values">
+                    <div
+                      v-for="(item, index) in linksData?.develop"
+                      :key="item.name"
+                      class="item"
+                    >
+                      <a
+                        class="value"
+                        :href="item.link"
+                        target="_blank"
+                      >{{ item.name }}</a>
+                      <span
+                        v-if="index !== (linksData.develop?.length ?? 0) - 1"
+                        class="line"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="item-name">
+                    {{ t('查询日志') }}
+                  </div>
+                  <div class="item-values">
+                    <div
+                      v-for="(item, index) in linksData?.logging"
+                      :key="item.name"
+                      class="item"
+                    >
+                      <a
+                        class="value"
+                        :href="item.link"
+                        target="_blank"
+                      >{{ item.name }}</a>
+                      <span
+                        v-if="index !== (linksData.logging?.length ?? 0) - 1"
+                        class="line"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="item-name">
+                    {{ t('更多操作') }}
+                  </div>
+                  <div class="item-values">
+                    <div
+                      v-for="(item, index) in linksData?.more"
+                      :key="item.name"
+                      class="item"
+                    >
+                      <a
+                        class="value"
+                        :href="item.link"
+                        target="_blank"
+                      >{{ item.name }}</a>
+                      <span
+                        v-if="index !== (linksData.more?.length ?? 0) - 1"
+                        class="line"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </BkCollapsePanel>
+      </BkCollapse>
     </BkLoading>
 
     <BkDialog
@@ -715,6 +771,7 @@ import {
   putGatewayBasics,
   toggleStatus,
 } from '@/services/source/gateway.ts';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
 import EditDesc from './components/EditDesc.vue';
@@ -723,6 +780,7 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
+import EditRelatedAppCodes from './components/EditRelatedAppCodes.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import Guide from '@/components/guide/Index.vue';
 import CreateGateway, { type ParamType } from '@/components/create-gateway/Index.vue';
@@ -866,6 +924,12 @@ const linksData = computed(() => (basicInfoData.value.links as unknown) as {
     link: string
   }[]
 });
+
+const activeIndex = ref<string[]>(['baseInfo', 'apiDoc', 'publicKey']);
+
+const getIconClass = (activeCollapse: string) => {
+  return activeIndex.value?.includes(activeCollapse) ? 'panel-header-show' : 'panel-header-hide';
+};
 
 // 获取网关基本信息
 const getBasicInfo = async () => {
@@ -1149,6 +1213,20 @@ const handleMaintainerChange = async (payload: Record<string, string[]>) => {
   });
 };
 
+const handleRelatedAppCodesChange = async (payload: Record<string, string[]>) => {
+  const params = {
+    ...basicInfoData.value,
+    ...payload,
+  };
+  await putGatewayBasics(apigwId.value, params as IGatewayUpdateInputSLZ);
+  basicInfoData.value = Object.assign(basicInfoData.value, params);
+  Message({
+    message: t('编辑成功'),
+    theme: 'success',
+    width: 'auto',
+  });
+};
+
 onUnmounted(() => {
   if (interval) {
     clearInterval(interval as number);
@@ -1170,6 +1248,7 @@ onUnmounted(() => {
   .header-info {
     display: flex;
     padding: 24px;
+    margin-bottom: 24px;
     background: #fff;
     box-shadow: 0 2px 4px 0 #1919290d;
 
@@ -1182,29 +1261,6 @@ onUnmounted(() => {
       border-radius: 8px;
       align-items: center;
       justify-content: center;
-
-      // .kind {
-      //   content: ' ';
-      //   position: absolute;
-      //   width: 20px;
-      //   height: 20px;
-      //   border-radius: 2px;
-      //   top: 0;
-      //   left: 0;
-      //   font-size: 12px;
-      //   line-height: 18px;
-      //   text-align: center;
-      //   &.normal {
-      //     color: #1768EF;
-      //     background: #E1ECFF;
-      //     border: 1px solid #699DF4;
-      //   }
-      //   &.program {
-      //     color: #299E56;
-      //     background: #EBFAF0;
-      //     border: 1px solid #A1E3BA;
-      //   }
-      // }
 
       .name {
         font-size: 40px;
@@ -1316,202 +1372,216 @@ onUnmounted(() => {
     }
   }
 
-  .basic-info-detail {
-    padding: 24px;
-    margin-top: 16px;
-    background: #fff;
+  .pannel {
+    padding: 12px 24px;
+    margin-bottom: 24px;
+    background-color: #fff;
     box-shadow: 0 2px 4px 0 #1919290d;
 
-    &-item {
+    .panel-header {
+      cursor: pointer;
+    }
 
-      &:not(&:first-child) {
-        padding-top: 40px;
-      }
+    .panel-header-show {
+      transform: rotate(0deg);
+      transition: 0.2s;
+    }
 
-      .detail-item-title {
-        display: flex;
-        font-size: 14px;
-        font-weight: 700;
-        color: #313238;
-        align-items: center;
+    .panel-header-hide {
+      transform: rotate(-90deg);
+      transition: 0.2s;
+    }
 
-        .area-edit {
-          margin-left: 14px;
-          color: #3A84FF;
-          cursor: pointer;
+    .pannel-title {
+      display: flex;
+      margin-left: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #313238;
+      align-items: center;
 
-          .operate-btn {
-            font-size: 12px;
-          }
+      .area-edit {
+        margin-left: 14px;
+        color: #979BA5;
+        cursor: pointer;
+
+        &:hover {
+          color: #1768ef;
         }
       }
+    }
 
-      .detail-item-content {
-        padding-top: 24px;
-        padding-left: 100px;
+    .pannel-content {
+      width: 1060px;
+      padding-top: 24px;
+      padding-left: 100px;
 
-        .detail-item-content-item {
+      .pannel-content-item {
+        display: flex;
+        align-items: center;
+        line-height: 32px;
+
+        &.contact {
+          align-items: flex-start;
+        }
+
+        &.app-codes {
+          max-width: 960px;
+          overflow: hidden;
+        }
+
+        .label {
+          min-width: 120px;
+          color: #63656E;
+          text-align: right;
+
+          &.w-0px {
+            min-width: 0;
+          }
+        }
+
+        .value {
           display: flex;
+          margin-left: 8px;
+          color: #313238;
+          vertical-align: middle;
           align-items: center;
-          line-height: 32px;
+          flex: 1;
 
           &.contact {
-            align-items: flex-start;
-          }
+            display: block;
 
-          .label {
-            min-width: 120px;
-            color: #63656E;
-            text-align: right;
-
-            &.w-0px {
-              min-width: 0;
-            }
-          }
-
-          .value {
-            display: flex;
-            margin-left: 8px;
-            color: #313238;
-            vertical-align: middle;
-            align-items: center;
-            flex: 1;
-
-            &.contact {
-              display: block;
-
-              .sub-explain {
-                margin-bottom: 6px;
-                font-size: 12px;
-                line-height: 12px;
-                color: #979BA5;
-              }
-            }
-
-            .icon-ag-copy-info,
-            .icon-ag-jump {
-              padding: 3px;
-              margin-left: 3px;
-              color: #3A84FF;
-              cursor: pointer;
-            }
-
-            .link {
-              margin-right: 14px;
-            }
-
-            .more-detail {
-              color: #3A84FF;
-              cursor: pointer;
-            }
-
-            .apigateway-icon {
-              font-size: 16px;
+            .sub-explain {
+              margin-bottom: 6px;
+              font-size: 12px;
+              line-height: 12px;
               color: #979BA5;
+            }
+          }
+
+          .icon-ag-copy-info,
+          .icon-ag-jump {
+            padding: 3px;
+            margin-left: 3px;
+            color: #3A84FF;
+            cursor: pointer;
+          }
+
+          .link {
+            margin-right: 14px;
+          }
+
+          .more-detail {
+            color: #3A84FF;
+            cursor: pointer;
+          }
+
+          .apigateway-icon {
+            font-size: 16px;
+            color: #979BA5;
+
+            &:hover {
+              color: #3A84FF;
+              cursor: pointer;
+            }
+
+            &.icon-ag-lock-fill1 {
 
               &:hover {
-                color: #3A84FF;
-                cursor: pointer;
-              }
-
-              &.icon-ag-lock-fill1 {
-
-                &:hover {
-                  color: #979BA5;
-                  cursor: default;
-                }
-              }
-            }
-
-            &.more-tip {
-              display: flex;
-              align-items: center;
-
-              .icon-ag-info {
-                margin-right: 5px;
-                color: #63656E;
-              }
-            }
-
-            &.public-key-content {
-              width: 912px;
-              height: 40px;
-              margin-left: 0;
-              line-height: 40px;
-              color: #63656E;
-              background-color: #F5F7FA;
-              flex: none;
-
-              .value-icon-lock {
-                width: 40px;
-                text-align: center;
-                background-color: #F0F1F5;
-                border-radius: 2px 0 0 2px;
-              }
-
-              .value-public-key {
-                display: flex;
-                width: calc(100% - 40px);
-                padding-right: 12px;
-                padding-left: 32px;
-                justify-content: space-between;
+                color: #979BA5;
+                cursor: default;
               }
             }
           }
-        }
 
-        .explain {
-          margin-bottom: 14px;
-          font-size: 12px;
-          color: #4D4F56;
-        }
-
-        .guide-wrapper {
-          width: 912px;
-          border-top: 1px solid #DCDEE5;
-
-          .guide-item {
+          &.more-tip {
             display: flex;
-            height: 42px;
-            padding-left: 16px;
-            line-height: 42px;
-            border-bottom: 1px solid #DCDEE5;
+            align-items: center;
 
-            .item-name {
-              font-size: 12px;
-              font-weight: bold;
-              color: #4D4F56;
+            .icon-ag-info {
+              margin-right: 5px;
+              color: #63656E;
+            }
+          }
+
+          &.public-key-content {
+            width: 100%;
+            height: 40px;
+            margin-left: 0;
+            line-height: 40px;
+            color: #63656E;
+            background-color: #F5F7FA;
+            flex: none;
+
+            .value-icon-lock {
+              width: 40px;
+              text-align: center;
+              background-color: #F0F1F5;
+              border-radius: 2px 0 0 2px;
             }
 
-            .item-values {
+            .value-public-key {
               display: flex;
-              margin-left: 164px;
-
-              .item {
-                display: flex;
-              }
-
-              .line {
-                width: 1px;
-                height: 13px;
-                margin: 15px 8px 0;
-                background-color: #C4C6CC;
-              }
-
-              .value {
-                font-size: 12px;
-                color: #3A84FF;
-                cursor: pointer;
-              }
+              width: calc(100% - 40px);
+              padding-right: 12px;
+              padding-left: 32px;
+              justify-content: space-between;
             }
           }
         }
+      }
 
-        .process-img {
-          width: 912px;
-          height: 223px;
-          background: #F5F7FA;
+      .explain {
+        margin-bottom: 14px;
+        font-size: 12px;
+        color: #4D4F56;
+      }
+
+      .guide-wrapper {
+        width: 912px;
+        border-top: 1px solid #DCDEE5;
+
+        .guide-item {
+          display: flex;
+          height: 42px;
+          padding-left: 16px;
+          line-height: 42px;
+          border-bottom: 1px solid #DCDEE5;
+
+          .item-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #4D4F56;
+          }
+
+          .item-values {
+            display: flex;
+            margin-left: 164px;
+
+            .item {
+              display: flex;
+            }
+
+            .line {
+              width: 1px;
+              height: 13px;
+              margin: 15px 8px 0;
+              background-color: #C4C6CC;
+            }
+
+            .value {
+              font-size: 12px;
+              color: #3A84FF;
+              cursor: pointer;
+            }
+          }
         }
+      }
+
+      .process-img {
+        width: 912px;
+        height: 223px;
+        background: #F5F7FA;
       }
     }
   }
