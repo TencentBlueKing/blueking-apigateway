@@ -61,7 +61,10 @@ from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.common.pagination import BoundedLimitOffsetPagination
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
+from apigateway.common.tenant.query import (
+    gateway_filter_by_app_tenant_id,
+    gateway_mcp_server_filter_by_user_tenant_id,
+)
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
@@ -1285,6 +1288,9 @@ class MCPServerListApi(generics.ListAPIView):
             keyword=slz.validated_data.get("keyword"),
             order_by=slz.validated_data.get("order_by", "-updated_time"),
         )
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         page = self.paginate_queryset(queryset)
         fields = slz.validated_data.get("fields")
@@ -1307,12 +1313,14 @@ class MCPServerLookupApi(generics.ListAPIView):
         slz = serializers.MCPServerLookupInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        mcp_servers = list(
-            MCPServerHandler.build_list_queryset(
-                ids=slz.validated_data.get("ids") or None,
-                names=slz.validated_data.get("names") or None,
-            )
+        queryset = MCPServerHandler.build_list_queryset(
+            ids=slz.validated_data.get("ids") or None,
+            names=slz.validated_data.get("names") or None,
         )
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
+        mcp_servers = list(queryset)
         fields = slz.validated_data.get("fields")
         return OKJsonResponse(data=_serialize_mcp_servers(mcp_servers, fields))
 
