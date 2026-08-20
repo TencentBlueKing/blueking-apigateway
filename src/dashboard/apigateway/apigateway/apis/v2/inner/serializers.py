@@ -62,7 +62,7 @@ from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
-RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description"})
+RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description", "is_public"})
 MCP_SERVER_LIST_FIELDS = frozenset(
     {
         "id",
@@ -215,6 +215,7 @@ GATEWAY_LOOKUP_DEFAULT_FIELDS = GATEWAY_LOOKUP_FIELDS - {"maintainers"}
 class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    is_public = serializers.BooleanField(read_only=True)
     description = SerializerTranslatedField(
         translated_fields={"en": "description_en"},
         allow_blank=True,

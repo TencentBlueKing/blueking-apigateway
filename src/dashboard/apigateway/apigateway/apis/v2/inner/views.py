@@ -275,6 +275,7 @@ class _GatewayReleasedResourceApiMixin:
             {
                 "id": resource.resource_id,
                 "name": resource.resource_name,
+                "is_public": resource.is_public,
                 "description": (resource.data or {}).get("description", ""),
                 "description_en": (resource.data or {}).get("description_en"),
             }
