@@ -101,15 +101,17 @@
           :title="t('当前不校验应用身份和用户身份，调用无需认证即可通过，请确认这是预期配置。')"
         />
         <div class="auth-block">
-          <BkCheckbox
-            v-model="formData.auth_config.app_verified_required"
-            :disabled="!canEditAppAuth"
-          >
-            {{ t('蓝鲸应用认证') }}
-          </BkCheckbox>
-          <p class="auth-hint">
-            {{ t('校验调用方是哪个蓝鲸应用。只开这一项、不开用户认证时，调用不必带上用户身份。') }}
-          </p>
+          <div class="auth-field">
+            <BkCheckbox
+              v-model="formData.auth_config.app_verified_required"
+              :disabled="!canEditAppAuth"
+            >
+              {{ t('蓝鲸应用认证') }}
+            </BkCheckbox>
+            <p class="auth-hint">
+              {{ t('校验调用方是哪个蓝鲸应用。只开这一项、不开用户认证时，调用不必带上用户身份。') }}
+            </p>
+          </div>
           <div
             class="auth-child"
             :class="{ 'is-disabled': !formData.auth_config.app_verified_required }"
@@ -131,15 +133,17 @@
           </div>
         </div>
         <div class="auth-block">
-          <BkCheckbox
-            v-model="formData.auth_config.auth_verified_required"
-            @change="handleAuthVerifiedRequiredChange"
-          >
-            {{ t('用户认证') }}
-          </BkCheckbox>
-          <p class="auth-hint">
-            {{ t('校验调用代表哪个用户。开启后，调用必须携带用户身份（登录态或 AccessToken）。') }}
-          </p>
+          <div class="auth-field">
+            <BkCheckbox
+              v-model="formData.auth_config.auth_verified_required"
+              @change="handleAuthVerifiedRequiredChange"
+            >
+              {{ t('用户认证') }}
+            </BkCheckbox>
+            <p class="auth-hint">
+              {{ t('校验调用代表哪个用户。开启后，调用必须携带用户身份（登录态或 AccessToken）。') }}
+            </p>
+          </div>
           <div
             class="auth-child"
             :class="{ 'is-disabled': !formData.auth_config.auth_verified_required }"
@@ -160,14 +164,10 @@
             </p>
           </div>
         </div>
-        <div
-          class="auth-summary"
-          :class="{
-            'is-warning': !formData.auth_config.app_verified_required && !formData.auth_config.auth_verified_required
-          }"
-        >
-          {{ authSceneText }}
-        </div>
+        <BkAlert
+          :theme="authSceneAlertTheme"
+          :title="authSceneText"
+        />
       </div>
     </BkFormItem>
     <BkFormItem
@@ -309,6 +309,12 @@ const authSceneText = computed(() => {
     ? t('当前效果：须同时具备应用身份和用户身份；允许使用个人令牌。')
     : t('当前效果：须同时具备应用身份和用户身份。');
 });
+
+const authSceneAlertTheme = computed(() => (
+  !formData.value.auth_config.app_verified_required && !formData.value.auth_config.auth_verified_required
+    ? 'warning'
+    : 'info'
+));
 
 const standardNamePlaceholder = t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符');
 
@@ -461,32 +467,60 @@ defineExpose({
   .public-switch {
     display: flex;
     align-items: center;
-    height: 32px;
   }
 
   .auth-config {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     max-width: 700px;
   }
 
   .auth-block {
-    padding: 12px 16px;
-    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
     background: #f5f7fa;
-    border: 1px solid #dcdee5;
     border-radius: 2px;
+
+    :deep(.bk-checkbox) {
+      display: flex;
+      align-items: center;
+      height: auto;
+      min-height: 0;
+      line-height: 22px;
+    }
+
+    :deep(.bk-checkbox-label) {
+      line-height: 22px;
+    }
+  }
+
+  .auth-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .auth-hint {
+      padding-left: 22px;
+    }
   }
 
   .auth-hint {
-    margin: 4px 0 0;
+    margin: 0;
     font-size: 12px;
     line-height: 18px;
     color: #979ba5;
   }
 
   .auth-child {
-    padding: 8px 0 0 16px;
-    margin-top: 8px;
-    border-left: 2px solid #dfe1e5;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 0 0 8px;
+    margin-top: 16px;
+    margin-left: 22px;
+    border-left: 4px solid #dcdee5;
 
     &.is-disabled .auth-child-row {
       opacity: 50%;
@@ -502,21 +536,7 @@ defineExpose({
   .auth-child-label {
     font-size: 14px;
     line-height: 22px;
-    color: #313238;
-  }
-
-  .auth-summary {
-    padding: 8px 12px;
-    font-size: 12px;
-    line-height: 18px;
-    color: #3a84ff;
-    background: #f0f5ff;
-    border-radius: 2px;
-
-    &.is-warning {
-      color: #e38b02;
-      background: #fff3e5;
-    }
+    color: #63656e;
   }
 
   .label-label {
