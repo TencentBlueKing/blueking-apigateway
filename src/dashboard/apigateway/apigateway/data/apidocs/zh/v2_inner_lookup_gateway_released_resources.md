@@ -19,7 +19,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
 | names | string | 是 | 资源名称列表，精确匹配，多个以逗号分隔，去重后最多 50 个 |
-| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`is_public`，不传返回全部字段 |
+| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`is_public`、`oauth2_public_client_enabled`、`oauth2_personal_client_enabled`，不传返回全部字段 |
 
 ### 响应示例
 
@@ -30,7 +30,9 @@
       "id": 101,
       "name": "get_user",
       "description": "查询用户",
-      "is_public": true
+      "is_public": true,
+      "oauth2_public_client_enabled": true,
+      "oauth2_personal_client_enabled": false
     }
   ]
 }
@@ -45,5 +47,7 @@
 | data[].name | string | 资源名称 |
 | data[].description | string | 当前快照中的资源描述，随请求语言返回中文或英文 |
 | data[].is_public | bool | 资源是否公开 |
+| data[].oauth2_public_client_enabled | bool | 资源是否允许 OAuth2 公共客户端访问 |
+| data[].oauth2_personal_client_enabled | bool | 资源是否允许 OAuth2 个人客户端访问 |
 
 网关不存在或对当前租户不可见时返回 `404`；网关不存在当前发布版本或名称均未匹配时返回空数组。

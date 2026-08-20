@@ -6400,7 +6400,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled
         - name: limit
           in: query
           required: false
@@ -6449,6 +6449,12 @@ paths:
                             is_public:
                               type: boolean
                               description: 资源是否公开
+                            oauth2_public_client_enabled:
+                              type: boolean
+                              description: 资源是否允许 OAuth2 公共客户端访问
+                            oauth2_personal_client_enabled:
+                              type: boolean
+                              description: 资源是否允许 OAuth2 个人客户端访问
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -6490,7 +6496,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled
       responses:
         '200':
           description: 成功返回匹配的当前已发布资源列表，无分页包装
@@ -6516,6 +6522,12 @@ paths:
                         is_public:
                           type: boolean
                           description: 资源是否公开
+                        oauth2_public_client_enabled:
+                          type: boolean
+                          description: 资源是否允许 OAuth2 公共客户端访问
+                        oauth2_personal_client_enabled:
+                          type: boolean
+                          description: 资源是否允许 OAuth2 个人客户端访问
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
