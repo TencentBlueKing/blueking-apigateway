@@ -387,6 +387,7 @@
                   :table-data="tableDataToAdd"
                   :keyword="filterInputAdd"
                   :doc-config="docConfig"
+                  :is-ai-gateway="isAIGateway"
                   @show-row-doc="handleShowResourceDoc"
                   @show-row-plugin="handleShowPluginsSlider"
                   @show-row-edit="handleEdit"
@@ -446,6 +447,7 @@
                   action="update"
                   :table-data="tableDataToUpdate"
                   :keyword="filterInputUpdate"
+                  :is-ai-gateway="isAIGateway"
                   @show-row-doc="handleShowResourceDoc"
                   @show-row-plugin="handleShowPluginsSlider"
                   @show-row-edit="handleEdit"
@@ -480,6 +482,7 @@
               <div>
                 <TableResToUncheck
                   :table-data="tableDataUnchecked"
+                  :is-ai-gateway="isAIGateway"
                   @show-row-doc="handleShowResourceDoc"
                   @show-row-plugin="handleShowPluginsSlider"
                   @toggle-row-unchecked="toggleRowUnchecked"
@@ -864,6 +867,8 @@ const filterInputAdd = ref('');
 const filterInputAddClone = ref('');
 const filterInputUpdate = ref('');
 const filterInputUpdateClone = ref('');
+
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
 // 展示在“新增的资源”一栏的资源
 const tableDataToAdd = computed(() => {

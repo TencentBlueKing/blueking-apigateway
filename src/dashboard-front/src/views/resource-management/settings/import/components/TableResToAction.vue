@@ -31,6 +31,17 @@
       prop="name"
       width="160"
     />
+    <BkTableColumn
+      v-if="isAiGateway"
+      :label="t('资源类型')"
+      :min-width="100"
+    >
+      <template #default="{ row }: { row: ILocalImportedResource }">
+        <BkTag :theme="getResourceTypeData(row.kind)?.theme ?? 'default'">
+          {{ getResourceTypeData(row.kind)?.label ?? t('普通 API') }}
+        </BkTag>
+      </template>
+    </BkTableColumn>
     <!--  认证方式列  -->
     <BkTableColumn
       :label="() => renderAuthConfigColLabel()"
@@ -48,7 +59,7 @@
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
         <span
-          :class="{ 'color-#ffb400': getPermRequiredText(row?.auth_config) === '是' }"
+          :class="{ 'color-#ffb400': getPermRequiredText(row?.auth_config) === t('是') }"
         >{{ getPermRequiredText(row?.auth_config) }}</span>
       </template>
     </BkTableColumn>
@@ -58,7 +69,7 @@
       width="100"
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
-        <span :class="{ 'color-#ffb400': getPublicSettingText(row.is_public) === '是' }">
+        <span :class="{ 'color-#ffb400': getPublicSettingText(row.is_public) === t('是') }">
           {{ getPublicSettingText(row.is_public) }}
         </span>
       </template>
@@ -67,7 +78,7 @@
       :label="t('允许申请权限')"
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
-        <span :class="{ 'color-#ffb400': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
+        <span :class="{ 'color-#ffb400': getAllowApplyPermissionText(row.allow_apply_permission) === t('是') }">
           {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
         </span>
       </template>
@@ -93,7 +104,7 @@
       </template>
     </BkTableColumn>
     <BkTableColumn
-      :label="t('后端服务')"
+      :label="isAiGateway ? t('后端/模型服务') : t('后端服务')"
       prop="method"
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
@@ -101,6 +112,7 @@
       </template>
     </BkTableColumn>
     <BkTableColumn
+      v-if="!isAiGateway"
       :label="t('后端请求方法')"
       :show-overflow-tooltip="false"
       prop="method"
@@ -114,6 +126,7 @@
       </template>
     </BkTableColumn>
     <BkTableColumn
+      v-if="!isAiGateway"
       :label="t('后端请求路径')"
       :min-width="160"
       :width="160"
@@ -202,6 +215,7 @@ import {
   type ILocalImportedResource,
   type IPublicConfig,
 } from '@/types/resource';
+import { RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { useTextGetter } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
@@ -212,6 +226,7 @@ interface IProps {
   action?: ActionType
   keyword?: string
   docConfig?: IDocConfig
+  isAiGateway?: boolean
 }
 
 const tempAuthConfig = defineModel<IAuthConfig>('tempAuthConfig', { required: true });
@@ -226,6 +241,7 @@ const {
     showDoc: true,
     language: 'zh',
   },
+  isAiGateway = false,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -255,6 +271,10 @@ const pagination = ref({
 
 const localDocConfig = ref({ ...docConfig });
 
+const getResourceTypeData = (kind?: ILocalImportedResource['kind']) => {
+  return RESOURCE_TYPE_LIST.find(item => item.value === kind);
+};
+
 const handleShowResourceDoc = (row: ILocalImportedResource) => {
   emit('show-row-doc', row);
 };
@@ -282,6 +302,7 @@ const handleCancelAuthConfig = () => {
     app_verified_required: false,
     auth_verified_required: false,
     resource_perm_required: false,
+    oauth2_personal_client_enabled: false,
   };
 };
 
@@ -333,6 +354,21 @@ const renderAuthConfigColLabel = () => {
                     </span>
                   </bk-checkbox>
                 </bk-form-item>
+                {tempAuthConfig.value.auth_verified_required
+                  ? (
+                    <bk-form-item
+                      label={t('个人令牌')}
+                      description={t('开启后，用户可以用个人令牌调用本接口，请求会带上该用户的身份。')}
+                      style="margin-bottom: 12px;"
+                    >
+                      <bk-switcher
+                        v-model={tempAuthConfig.value.oauth2_personal_client_enabled}
+                        theme="primary"
+                        size="small"
+                      />
+                    </bk-form-item>
+                  )
+                  : ''}
                 {tempAuthConfig.value.app_verified_required
                   ? (
                     <bk-form-item

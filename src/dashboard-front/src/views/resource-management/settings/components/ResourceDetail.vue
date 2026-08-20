@@ -91,7 +91,10 @@
               </div>
             </div>
           </div>
-          <div class="label-content-group">
+          <div
+            class="label-content-group"
+            :class="{ wide: isAIGateway }"
+          >
             <div class="label">
               {{ t('描述') }}
             </div>
