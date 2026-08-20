@@ -195,26 +195,26 @@
               <div class="auth-config">
                 <div class="auth-block">
                   <div class="auth-view-row">
-                    <span class="auth-view-label">{{ t('蓝鲸应用认证') }}</span>
-                    <span
-                      class="auth-view-status"
-                      :class="{ 'is-off': !formData.auth_config?.app_verified_required }"
+                    <span class="auth-view-label">{{ t('蓝鲸应用认证') }}：</span>
+                    <BkTag
+                      size="small"
+                      :theme="formData.auth_config?.app_verified_required ? 'success' : 'default'"
                     >
                       {{ formData.auth_config?.app_verified_required ? t('开启') : t('关闭') }}
-                    </span>
+                    </BkTag>
                   </div>
                   <div
                     class="auth-child"
                     :class="{ 'is-disabled': !formData.auth_config?.app_verified_required }"
                   >
                     <div class="auth-view-row">
-                      <span class="auth-view-label">{{ t('检验应用权限') }}</span>
-                      <span
-                        class="auth-view-status"
-                        :class="{ 'is-off': !formData.auth_config?.resource_perm_required }"
+                      <span class="auth-view-label">{{ t('检验应用权限') }}：</span>
+                      <BkTag
+                        size="small"
+                        :theme="formData.auth_config?.resource_perm_required ? 'success' : 'default'"
                       >
                         {{ formData.auth_config?.resource_perm_required ? t('开启') : t('关闭') }}
-                      </span>
+                      </BkTag>
                     </div>
                     <p
                       v-if="!formData.auth_config?.app_verified_required"
@@ -226,26 +226,26 @@
                 </div>
                 <div class="auth-block">
                   <div class="auth-view-row">
-                    <span class="auth-view-label">{{ t('用户认证') }}</span>
-                    <span
-                      class="auth-view-status"
-                      :class="{ 'is-off': !formData.auth_config?.auth_verified_required }"
+                    <span class="auth-view-label">{{ t('用户认证') }}：</span>
+                    <BkTag
+                      size="small"
+                      :theme="formData.auth_config?.auth_verified_required ? 'success' : 'default'"
                     >
                       {{ formData.auth_config?.auth_verified_required ? t('开启') : t('关闭') }}
-                    </span>
+                    </BkTag>
                   </div>
                   <div
                     class="auth-child"
                     :class="{ 'is-disabled': !formData.auth_config?.auth_verified_required }"
                   >
                     <div class="auth-view-row">
-                      <span class="auth-view-label">{{ t('个人令牌') }}</span>
-                      <span
-                        class="auth-view-status"
-                        :class="{ 'is-off': !formData.auth_config?.oauth2_personal_client_enabled }"
+                      <span class="auth-view-label">{{ t('个人令牌') }}：</span>
+                      <BkTag
+                        size="small"
+                        :theme="formData.auth_config?.oauth2_personal_client_enabled ? 'success' : 'default'"
                       >
                         {{ formData.auth_config?.oauth2_personal_client_enabled ? t('开启') : t('关闭') }}
-                      </span>
+                      </BkTag>
                     </div>
                     <p
                       v-if="!formData.auth_config?.auth_verified_required"
@@ -255,15 +255,10 @@
                     </p>
                   </div>
                 </div>
-                <div
-                  class="auth-summary"
-                  :class="{
-                    'is-warning': !formData.auth_config?.app_verified_required
-                      && !formData.auth_config?.auth_verified_required
-                  }"
-                >
-                  {{ authSceneText }}
-                </div>
+                <BkAlert
+                  :theme="authSceneAlertTheme"
+                  :title="authSceneText"
+                />
               </div>
             </div>
           </div>
@@ -275,20 +270,25 @@
               <div class="auth-config">
                 <div class="auth-block">
                   <div class="auth-view-row">
-                    <span class="auth-view-label">{{ formData.is_public ? t('公开') : t('不公开') }}</span>
+                    <BkTag
+                      size="small"
+                      :theme="formData.is_public ? 'success' : 'default'"
+                    >
+                      {{ formData.is_public ? t('公开') : t('不公开') }}
+                    </BkTag>
                   </div>
                   <div
                     class="auth-child"
                     :class="{ 'is-disabled': !canAllowApplyPermission }"
                   >
                     <div class="auth-view-row">
-                      <span class="auth-view-label">{{ t('允许申请权限') }}</span>
-                      <span
-                        class="auth-view-status"
-                        :class="{ 'is-off': !formData.allow_apply_permission }"
+                      <span class="auth-view-label">{{ t('允许申请权限') }}：</span>
+                      <BkTag
+                        size="small"
+                        :theme="formData.allow_apply_permission ? 'success' : 'default'"
                       >
                         {{ formData.allow_apply_permission ? t('开启') : t('关闭') }}
-                      </span>
+                      </BkTag>
                     </div>
                     <p
                       v-if="!canAllowApplyPermission"
@@ -1087,6 +1087,12 @@ const authSceneText = computed(() => {
     : t('当前效果：须同时具备应用身份和用户身份。');
 });
 
+const authSceneAlertTheme = computed(() => (
+  !formData.value.auth_config?.app_verified_required && !formData.value.auth_config?.auth_verified_required
+    ? 'warning'
+    : 'info'
+));
+
 // 资源详情
 const getResourceDetails = async () => {
   const res = await getResourceDetail(gatewayId, resourceId);
@@ -1607,41 +1613,39 @@ onUnmounted(() => {
 }
 
 .auth-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
 .auth-block {
-  padding: 10px 12px;
-  margin-bottom: 8px;
+  padding: 16px;
   background: #f5f7fa;
-  border: 1px solid #dcdee5;
   border-radius: 2px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 }
 
 .auth-view-row {
   display: flex;
-  gap: 12px;
+  gap: 4px;
   align-items: center;
+
+  :deep(.bk-tag) {
+    margin: 0;
+  }
 }
 
-.auth-view-label,
-.auth-child-label {
+.auth-view-label {
   font-size: 12px;
   line-height: 20px;
   color: #313238;
 }
 
-.auth-view-status {
-  color: #313238;
-
-  &.is-off {
-    color: #979ba5;
-  }
+.auth-child-label {
+  font-size: 12px;
+  line-height: 20px;
+  color: #63656e;
 }
 
 .auth-hint {
@@ -1652,9 +1656,9 @@ onUnmounted(() => {
 }
 
 .auth-child {
-  padding: 8px 0 0 12px;
-  margin-top: 8px;
-  border-left: 2px solid #dfe1e5;
+  padding: 0 0 0 8px;
+  margin-top: 16px;
+  border-left: 4px solid #dcdee5;
 
   &.is-disabled .auth-view-row,
   &.is-disabled .auth-child-row {
@@ -1666,20 +1670,6 @@ onUnmounted(() => {
   display: flex;
   gap: 16px;
   align-items: center;
-}
-
-.auth-summary {
-  padding: 8px 12px;
-  font-size: 12px;
-  line-height: 18px;
-  color: #3a84ff;
-  background: #f0f5ff;
-  border-radius: 2px;
-
-  &.is-warning {
-    color: #e38b02;
-    background: #fff3e5;
-  }
 }
 
 .auth-edit-popover {
