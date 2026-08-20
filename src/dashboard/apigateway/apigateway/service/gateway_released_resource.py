@@ -32,7 +32,7 @@ def get_gateway_released_resources(
         eligible = eligible.filter(resource_name__in=resource_names)
 
     # A gateway normally has only one released resource version, so no deduplication is needed.
-    # SELECT id, resource_id, resource_name, data
+    # SELECT id, resource_id, resource_name, is_public, data
     # FROM core_released_resource
     # WHERE api_id = %(gateway_id)s
     #   AND resource_version_id IN (%(resource_version_ids)s)
@@ -52,7 +52,7 @@ def get_gateway_released_resources(
         for resource_id, snapshot_id in candidates:
             latest_snapshot_ids.setdefault(resource_id, snapshot_id)
 
-        # SELECT id, resource_id, resource_name, data
+        # SELECT id, resource_id, resource_name, is_public, data
         # FROM core_released_resource
         # WHERE api_id = %(gateway_id)s
         #   AND resource_version_id IN (%(resource_version_ids)s)
@@ -61,4 +61,4 @@ def get_gateway_released_resources(
         # ORDER BY resource_name, resource_id;
         eligible = eligible.filter(id__in=list(latest_snapshot_ids.values()))
 
-    return eligible.only("resource_id", "resource_name", "data").order_by("resource_name", "resource_id")
+    return eligible.only("resource_id", "resource_name", "is_public", "data").order_by("resource_name", "resource_id")
