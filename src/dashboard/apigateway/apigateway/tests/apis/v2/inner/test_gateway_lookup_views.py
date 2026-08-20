@@ -20,7 +20,7 @@ def _release_version(gateway, resource_version, stage_name, *, stage_status=Stag
     )
 
 
-def _make_snapshot(gateway, resource_version, *, resource_id, name):
+def _make_snapshot(gateway, resource_version, *, resource_id, name, is_public=False):
     return G(
         ReleasedResource,
         gateway=gateway,
@@ -29,7 +29,7 @@ def _make_snapshot(gateway, resource_version, *, resource_id, name):
         resource_name=name,
         resource_method="GET",
         resource_path=f"/{name}",
-        is_public=False,
+        is_public=is_public,
         oauth2_public_client_enabled=False,
         oauth2_personal_client_enabled=False,
         data={
@@ -273,7 +273,7 @@ class TestGatewayReleasedResourceApi:
         new_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
         _release_version(gateway, old_version, "prod")
         _release_version(gateway, new_version, "test")
-        first = _make_snapshot(gateway, old_version, resource_id=1, name="first_resource")
+        first = _make_snapshot(gateway, old_version, resource_id=1, name="first_resource", is_public=True)
         _make_snapshot(gateway, old_version, resource_id=2, name="shared_old")
         latest = _make_snapshot(gateway, new_version, resource_id=2, name="shared_new")
 
@@ -289,8 +289,18 @@ class TestGatewayReleasedResourceApi:
             "data": {
                 "count": 2,
                 "results": [
-                    {"id": first.resource_id, "name": "first_resource", "description": "first_resource description"},
-                    {"id": latest.resource_id, "name": "shared_new", "description": "shared_new description"},
+                    {
+                        "id": first.resource_id,
+                        "name": "first_resource",
+                        "description": "first_resource description",
+                        "is_public": True,
+                    },
+                    {
+                        "id": latest.resource_id,
+                        "name": "shared_new",
+                        "description": "shared_new description",
+                        "is_public": False,
+                    },
                 ],
             }
         }
@@ -310,11 +320,11 @@ class TestGatewayReleasedResourceApi:
             view_name="openapi.v2.inner.gateway.released_resource.lookup",
             path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
-            data={"names": " exact_name,missing,exact_name ", "fields": "id,name"},
+            data={"names": " exact_name,missing,exact_name ", "fields": "id,name,is_public"},
         )
 
         assert response.status_code == 200
-        assert response.json() == {"data": [{"id": old.resource_id, "name": "exact_name"}]}
+        assert response.json() == {"data": [{"id": old.resource_id, "name": "exact_name", "is_public": False}]}
 
     def test_excludes_inactive_stage_releases(self, request_view):
         gateway = G(Gateway, name="inactive-stage-released-resource")
@@ -341,6 +351,7 @@ class TestGatewayReleasedResourceApi:
                         "id": active.resource_id,
                         "name": "active_resource",
                         "description": "active_resource description",
+                        "is_public": False,
                     },
                 ],
             }
@@ -362,7 +373,12 @@ class TestGatewayReleasedResourceApi:
 
         assert response.status_code == 200
         assert response.json()["data"]["results"] == [
-            {"id": snapshot.resource_id, "name": "translated", "description": "translated description en"}
+            {
+                "id": snapshot.resource_id,
+                "name": "translated",
+                "description": "translated description en",
+                "is_public": False,
+            }
         ]
 
     def test_returns_empty_page_without_current_release(self, request_view):
