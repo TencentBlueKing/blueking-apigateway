@@ -271,6 +271,8 @@ class _GatewayReleasedResourceApiMixin:
                 "id": resource.resource_id,
                 "name": resource.resource_name,
                 "is_public": resource.is_public,
+                "oauth2_public_client_enabled": resource.oauth2_public_client_enabled,
+                "oauth2_personal_client_enabled": resource.oauth2_personal_client_enabled,
                 "description": (resource.data or {}).get("description", ""),
                 "description_en": (resource.data or {}).get("description_en"),
             }

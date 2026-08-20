@@ -61,7 +61,16 @@ from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
-RELEASED_RESOURCE_FIELDS = frozenset({"id", "name", "description", "is_public"})
+RELEASED_RESOURCE_FIELDS = frozenset(
+    {
+        "id",
+        "name",
+        "description",
+        "is_public",
+        "oauth2_public_client_enabled",
+        "oauth2_personal_client_enabled",
+    }
+)
 MCP_SERVER_LIST_FIELDS = frozenset(
     {
         "id",
@@ -210,6 +219,8 @@ class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializ
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     is_public = serializers.BooleanField(read_only=True)
+    oauth2_public_client_enabled = serializers.BooleanField(read_only=True)
+    oauth2_personal_client_enabled = serializers.BooleanField(read_only=True)
     description = SerializerTranslatedField(
         translated_fields={"en": "description_en"},
         allow_blank=True,
