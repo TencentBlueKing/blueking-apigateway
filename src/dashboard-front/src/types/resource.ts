@@ -23,6 +23,8 @@ interface IAuthConfig {
   auth_verified_required: boolean
   app_verified_required: boolean
   resource_perm_required: boolean
+  // oauth2_public_client_enabled: boolean
+  oauth2_personal_client_enabled?: boolean
 }
 
 interface IBackendConfig {
@@ -63,6 +65,7 @@ interface IImportedResource {
   doc: IDoc[] | null
   id: number | null
   is_public: boolean
+  kind?: 'standard' | 'ai'
   label_ids?: number[]
   labels: any[] | null
   match_subpath: boolean

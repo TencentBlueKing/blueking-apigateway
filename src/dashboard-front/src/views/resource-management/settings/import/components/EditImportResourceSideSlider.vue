@@ -21,7 +21,7 @@
     <BkSideslider
       v-model:is-show="renderShow"
       width="960"
-      title="修改配置"
+      :title="t('修改配置')"
       quick-close
       @hidden="handleHidden"
     >

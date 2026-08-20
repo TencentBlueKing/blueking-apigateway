@@ -80,7 +80,7 @@ export const EXPIRE_DAYS_CONSTANTS = [
   },
 ];
 
-// 插件图表列表
+// 插件图标列表
 export const PLUGIN_ICONS = [
   'bk-cors', // 跨域资源共享插件
   'bk-header-rewrite', // 请求头重写插件
@@ -101,7 +101,7 @@ export const PLUGIN_ICONS = [
   'bk-traffic-label', // 流量染色插件
 ];
 
-// 插件图表列表 - 小号图表
+// 插件图标列表 - 小号图表
 export const PLUGIN_ICONS_MIN = [
   'bk-access-token-source',
   'bk-login-required',
@@ -145,6 +145,7 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: true
+          oauth2PersonalClientEnabled: false
         descriptionEn: None
       `,
 };

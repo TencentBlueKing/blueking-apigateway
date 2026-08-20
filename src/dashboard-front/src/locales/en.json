@@ -2638,5 +2638,6 @@
   "当前效果：须同时具备应用身份和用户身份，应用须已获授权；允许使用个人令牌。": "Current effect: both app and user identity are required, the app must be authorized, and personal tokens are allowed.",
   "当前效果：须同时具备应用身份和用户身份，且应用须已获授权。": "Current effect: both app and user identity are required, and the app must be authorized.",
   "当前效果：须同时具备应用身份和用户身份；允许使用个人令牌。": "Current effect: both app and user identity are required, and personal tokens are allowed.",
-  "当前效果：须同时具备应用身份和用户身份。": "Current effect: both app and user identity are required."
+  "当前效果：须同时具备应用身份和用户身份。": "Current effect: both app and user identity are required.",
+  "无插件": "No plugin"
 }
