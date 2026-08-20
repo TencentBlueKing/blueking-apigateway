@@ -20,7 +20,16 @@ def _release_version(gateway, resource_version, stage_name, *, stage_status=Stag
     )
 
 
-def _make_snapshot(gateway, resource_version, *, resource_id, name, is_public=False):
+def _make_snapshot(
+    gateway,
+    resource_version,
+    *,
+    resource_id,
+    name,
+    is_public=False,
+    oauth2_public_client_enabled=False,
+    oauth2_personal_client_enabled=False,
+):
     return G(
         ReleasedResource,
         gateway=gateway,
@@ -30,8 +39,8 @@ def _make_snapshot(gateway, resource_version, *, resource_id, name, is_public=Fa
         resource_method="GET",
         resource_path=f"/{name}",
         is_public=is_public,
-        oauth2_public_client_enabled=False,
-        oauth2_personal_client_enabled=False,
+        oauth2_public_client_enabled=oauth2_public_client_enabled,
+        oauth2_personal_client_enabled=oauth2_personal_client_enabled,
         data={
             "id": resource_id,
             "name": name,
@@ -274,7 +283,15 @@ class TestGatewayReleasedResourceApi:
         new_version = G(ResourceVersion, gateway=gateway, version="2.0.0", _data="[]")
         _release_version(gateway, old_version, "prod")
         _release_version(gateway, new_version, "test")
-        first = _make_snapshot(gateway, old_version, resource_id=1, name="first_resource", is_public=True)
+        first = _make_snapshot(
+            gateway,
+            old_version,
+            resource_id=1,
+            name="first_resource",
+            is_public=True,
+            oauth2_public_client_enabled=True,
+            oauth2_personal_client_enabled=True,
+        )
         _make_snapshot(gateway, old_version, resource_id=2, name="shared_old")
         latest = _make_snapshot(gateway, new_version, resource_id=2, name="shared_new")
 
@@ -295,12 +312,16 @@ class TestGatewayReleasedResourceApi:
                         "name": "first_resource",
                         "description": "first_resource description",
                         "is_public": True,
+                        "oauth2_public_client_enabled": True,
+                        "oauth2_personal_client_enabled": True,
                     },
                     {
                         "id": latest.resource_id,
                         "name": "shared_new",
                         "description": "shared_new description",
                         "is_public": False,
+                        "oauth2_public_client_enabled": False,
+                        "oauth2_personal_client_enabled": False,
                     },
                 ],
             }
@@ -321,11 +342,24 @@ class TestGatewayReleasedResourceApi:
             view_name="openapi.v2.inner.gateway.released_resource.lookup",
             path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
-            data={"names": " exact_name,missing,exact_name ", "fields": "id,name,is_public"},
+            data={
+                "names": " exact_name,missing,exact_name ",
+                "fields": "id,name,is_public,oauth2_public_client_enabled,oauth2_personal_client_enabled",
+            },
         )
 
         assert response.status_code == 200
-        assert response.json() == {"data": [{"id": old.resource_id, "name": "exact_name", "is_public": False}]}
+        assert response.json() == {
+            "data": [
+                {
+                    "id": old.resource_id,
+                    "name": "exact_name",
+                    "is_public": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
+                }
+            ]
+        }
 
     def test_excludes_inactive_stage_releases(self, request_view):
         gateway = G(Gateway, name="inactive-stage-released-resource")
@@ -353,6 +387,8 @@ class TestGatewayReleasedResourceApi:
                         "name": "active_resource",
                         "description": "active_resource description",
                         "is_public": False,
+                        "oauth2_public_client_enabled": False,
+                        "oauth2_personal_client_enabled": False,
                     },
                 ],
             }
@@ -379,6 +415,8 @@ class TestGatewayReleasedResourceApi:
                 "name": "translated",
                 "description": "translated description en",
                 "is_public": False,
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": False,
             }
         ]
 
