@@ -310,7 +310,6 @@ const tableColumns = computed(() => {
     {
       title: t('工具数量'),
       colKey: 'tools_count',
-      align: 'right',
       width: 80,
       ellipsis: true,
     },

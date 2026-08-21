@@ -603,7 +603,7 @@ const handleStageDelete = async () => {
     confirmText: t('确认删除'),
     confirmButtonTheme: 'primary',
     contentAlign: 'left',
-    showContentBgColor: true,
+    showContentBgColor: false,
     onConfirm: async () => {
       await deleteStage(gatewayId.value, currentStage.value!.id);
       Message({
