@@ -38,9 +38,7 @@
               {{ t('资源类型') }}
             </div>
             <div class="content">
-              <div
-                class="value-container"
-              >
+              <div class="value-container">
                 <BkTag
                   class="value-cls "
                   :class="[{
@@ -137,11 +135,11 @@
               </div>
             </div>
           </div>
-          <div class="label-content-group wide">
+          <div class="label-content-group wide auth-info">
             <div class="label">
               {{ t('标签') }}
             </div>
-            <div class="content">
+            <div class="content pt-8px!">
               <div
                 v-if="!labelsEdit"
                 class="value-container"
@@ -151,8 +149,10 @@
                     <BkTag
                       v-for="item in formData.labels"
                       :key="item.id"
-                      class="mr-4px"
-                    >{{ item.name }}</BkTag>
+                      class="mt-4px mr-4px"
+                    >
+                      {{ item.name }}
+                    </BkTag>
                   </template>
                   <span v-else>--</span>
                 </span>
