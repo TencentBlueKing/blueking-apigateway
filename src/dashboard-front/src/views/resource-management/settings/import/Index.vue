@@ -1207,7 +1207,7 @@ const handleImportResource = async () => {
         const { _unchecked, _localId, backend, ...restOfResource } = e; // 去掉_unchecked 和 _localId 属性，不要发到后端
         return {
           ...restOfResource,
-          backend_config: { ...backend.config },
+          backend_config: backend.config ? { ...backend.config } : null,
           backend_name: backend.name,
         };
       });
