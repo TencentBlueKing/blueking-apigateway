@@ -403,7 +403,7 @@ export interface IResourceImportInputSLZ {
         set?: Record<string, string>
         delete?: string[]
       }
-    }
+    } | null
     labels?: string[]
     plugin_configs?: {
       type: string
