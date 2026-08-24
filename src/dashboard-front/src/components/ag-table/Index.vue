@@ -67,7 +67,7 @@
           >
             <span class="normal-text">
               <span>{{ t('已选') }}</span>
-              <span class="count">{{ selections.length }}</span>
+              <span class="mx-4px count">{{ selections.length }}</span>
               <span>{{ t('条') }}</span>
               <span class="m-r4px">,</span>
             </span>
