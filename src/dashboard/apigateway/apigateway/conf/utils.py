@@ -108,6 +108,7 @@ def get_plugin_metadata_config(env: Env) -> dict:
             "default_conn_delay": env.int("GATEWAY_CONCURRENCY_LIMIT_DEFAULT_CONN_DELAY", 1),  # second
             "key_type": "var",
             "key": "bk_concurrency_limit_key",
+            "policy": "local",
             "allow_degradation": True,
         },
         "bk-real-ip": {

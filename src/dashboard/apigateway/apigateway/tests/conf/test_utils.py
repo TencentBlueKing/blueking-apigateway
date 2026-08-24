@@ -19,7 +19,13 @@
 
 from environ import Env
 
-from apigateway.conf.utils import get_default_feature_flags, get_frontend_env_vars
+from apigateway.conf.utils import get_default_feature_flags, get_frontend_env_vars, get_plugin_metadata_config
+
+
+def test_get_plugin_metadata_config_uses_local_concurrency_policy():
+    config = get_plugin_metadata_config(Env())
+
+    assert config["bk-concurrency-limit"]["policy"] == "local"
 
 
 def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch):
