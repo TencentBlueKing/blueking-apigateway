@@ -32,7 +32,7 @@
 
 ### Other
 
-- Upgrade to support APISIX 3.17
+- Upgrade to support APISIX 3.18
 
 ---
 

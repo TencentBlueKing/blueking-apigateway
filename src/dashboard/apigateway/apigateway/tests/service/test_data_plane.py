@@ -32,7 +32,7 @@ from apigateway.service.data_plane import validate_gateway_data_plane_compatibil
     [
         ("3.13", False),
         ("3.16", True),
-        ("3.17", True),
+        ("3.18", True),
         ("invalid", False),
     ],
 )

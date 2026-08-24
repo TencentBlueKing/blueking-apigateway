@@ -40,9 +40,10 @@ class DataPlaneApisixVersionEnum(StructuredEnum):
 
     V3_13 = EnumField("3.13", "3.13")
     V3_16 = EnumField("3.16", "3.16")
+    V3_18 = EnumField("3.18", "3.18")
 
 
-CURRENT_DATA_PLANE_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
+CURRENT_DATA_PLANE_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_18.value
 AI_GATEWAY_MIN_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
 AI_GATEWAY_APISIX_VERSION_ERROR = f"AI Gateway requires APISIX {AI_GATEWAY_MIN_APISIX_VERSION} or later"
 OAUTH2_RESOURCE_MIN_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value

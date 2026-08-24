@@ -359,10 +359,18 @@ class LLMLatencyAvgMetrics(BaseLLMMetrics):
         resource_name: Optional[str],
     ) -> str:
         labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
-        return (
-            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_sum{{{labels}}}[{step}])) / "
-            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_count{{{labels}}}[{step}]))"
+        chat_labels = f'{labels},request_type="ai_chat",type="total"'
+        stream_labels = f'{labels},request_type="ai_stream",type="ttft"'
+
+        chat_latency = (
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_sum{{{chat_labels}}}[{step}])) / "
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_count{{{chat_labels}}}[{step}]))"
         )
+        stream_latency = (
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_sum{{{stream_labels}}}[{step}])) / "
+            f"sum by (request_type) (rate({self.metric_name_prefix}llm_latency_count{{{stream_labels}}}[{step}]))"
+        )
+        return f"{chat_latency} or {stream_latency}"
 
 
 class LLMTokenUsageMetrics(BaseLLMMetrics):

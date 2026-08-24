@@ -44,6 +44,11 @@ func TestGetResourceSchema(t *testing.T) {
 			shouldFail: false,
 		},
 		{
+			name:       "APISIX 3.18 - Existing Resource",
+			version:    constant.APISIXVersion318,
+			shouldFail: false,
+		},
+		{
 			name:       "Invalid Version",
 			version:    "invalid_version",
 			shouldFail: true,
@@ -141,5 +146,20 @@ func TestGetDashboardBKPluginSchemas(t *testing.T) {
 				assert.NotNil(t, GetPluginSchema(version, pluginName, ""))
 			})
 		}
+	}
+}
+
+func TestGetAPISIX318PluginSchemas(t *testing.T) {
+	pluginNames := []string{
+		"ai-proxy",
+		"ai-cache",
+		"ai-lakera-guard",
+		"ldap-auth-advanced",
+	}
+
+	for _, pluginName := range pluginNames {
+		t.Run(pluginName, func(t *testing.T) {
+			assert.NotNil(t, GetPluginSchema(constant.APISIXVersion318, pluginName, ""))
+		})
 	}
 }

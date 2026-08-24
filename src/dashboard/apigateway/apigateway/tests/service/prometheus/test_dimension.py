@@ -555,8 +555,11 @@ class TestLLMMetrics:
         }
 
         latency = dimension.LLMLatencyAvgMetrics()._get_query_promql(**params)
-        assert "llm_latency_sum" in latency
-        assert "llm_latency_count" in latency
+        assert 'request_type="ai_chat",type="total"' in latency
+        assert 'request_type="ai_stream",type="ttft"' in latency
+        assert latency.count("llm_latency_sum") == 2
+        assert latency.count("llm_latency_count") == 2
+        assert " or " in latency
         assert "by (request_type)" in latency
         assert 'gateway_name="foo"' in latency
         assert 'stage_name="prod"' in latency

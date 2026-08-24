@@ -26,7 +26,7 @@ import (
 	"operator/pkg/constant"
 )
 
-func TestValidateAIServiceAndRouteForAPISIX316(t *testing.T) {
+func TestValidateAIServiceAndRoute(t *testing.T) {
 	service := []byte(`{
 		"id":"gateway.prod.1-10",
 		"name":"gateway.prod.model-service",
@@ -51,6 +51,10 @@ func TestValidateAIServiceAndRouteForAPISIX316(t *testing.T) {
 		"service_id":"gateway.prod.1-10"
 	}`)
 
-	require.NoError(t, ValidateApisixJsonSchema("3.16", constant.Service, service))
-	require.NoError(t, ValidateApisixJsonSchema("3.16", constant.Route, route))
+	for _, version := range []string{"3.16", "3.18"} {
+		t.Run(version, func(t *testing.T) {
+			require.NoError(t, ValidateApisixJsonSchema(version, constant.Service, service))
+			require.NoError(t, ValidateApisixJsonSchema(version, constant.Route, route))
+		})
+	}
 }

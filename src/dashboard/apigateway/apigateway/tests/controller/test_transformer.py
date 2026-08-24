@@ -32,7 +32,7 @@ from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, ProxyTyp
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
-APISIX_VERSION_3_17 = "3.17"
+APISIX_VERSION_3_18 = DataPlaneApisixVersionEnum.V3_18.value
 
 
 class TestBaseTransformer:
@@ -165,7 +165,7 @@ class TestGatewayApisixResourceConvertor:
         mock_release.gateway.is_ai_gateway = True
 
         GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_16)
-        GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_17)
+        GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_18)
 
         with pytest.raises(ValueError) as exc_info:
             GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
