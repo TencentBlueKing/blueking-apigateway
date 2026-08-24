@@ -2067,6 +2067,7 @@ defineExpose({
 .resource-table-form-item {
   border: 1px solid #dcdee5;
   border-radius: 2px 2px 0 0;
+  box-sizing: border-box;
 
   .resource-form-item-label {
     display: flex;
@@ -2080,9 +2081,10 @@ defineExpose({
       position: relative;
       min-width: 92px;
       text-align: center;
-      cursor: pointer;
+      border-top: 1px solid #dcdee5;
       border-right: 1px solid #dcdee5;
       transition: all 0.2s;
+      cursor: pointer;
 
       .required-mark {
         position: absolute;
@@ -2095,10 +2097,9 @@ defineExpose({
       &:hover,
       &.is-active {
         color: #3a84ff;
-        background-color: #fff;
+        background-color: #ffffff;
       }
     }
-
   }
 
   .resource-tips {
