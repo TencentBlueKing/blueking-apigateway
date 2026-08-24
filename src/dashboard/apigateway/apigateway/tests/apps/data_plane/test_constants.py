@@ -24,13 +24,24 @@ from apigateway.apps.data_plane import constants
 from apigateway.core.models import ResourceVersion
 
 
+def test_data_plane_apisix_version_catalog_and_default():
+    assert constants.DataPlaneApisixVersionEnum.get_choices() == [
+        ("3.13", "3.13"),
+        ("3.16", "3.16"),
+        ("3.18", "3.18"),
+    ]
+    assert constants.CURRENT_DATA_PLANE_APISIX_VERSION == "3.18"
+    assert constants.AI_GATEWAY_MIN_APISIX_VERSION == "3.16"
+    assert constants.OAUTH2_RESOURCE_MIN_APISIX_VERSION == "3.16"
+
+
 @pytest.mark.parametrize(
     "apisix_version, expected",
     [
         ("3.13", False),
         ("3.15.9", False),
         ("3.16", True),
-        ("3.17", True),
+        ("3.18", True),
         ("invalid", False),
         (None, False),
     ],
@@ -55,7 +66,7 @@ def test_get_oauth2_resource_data_planes_compatibility_error():
         constants.get_oauth2_resource_data_planes_compatibility_error(
             [
                 ("apisix-3-16", "3.16"),
-                ("apisix-3-17", "3.17"),
+                ("apisix-3-18", "3.18"),
             ]
         )
         is None
