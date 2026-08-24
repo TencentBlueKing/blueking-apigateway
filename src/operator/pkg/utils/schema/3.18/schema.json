@@ -7237,7 +7237,10 @@
                   "redis-cluster"
                 ]
               }
-            }
+            },
+            "required": [
+              "policy"
+            ]
           },
           "then": {
             "properties": {
@@ -7301,7 +7304,10 @@
                 "redis"
               ]
             }
-          }
+          },
+          "required": [
+            "policy"
+          ]
         },
         "oneOf": [
           {

@@ -59,7 +59,17 @@ func TestValidateAIServiceAndRoute(t *testing.T) {
 	}
 }
 
-func TestValidatePluginMetadataAppliesSchemaDefaults(t *testing.T) {
+func TestValidateRequiredPluginFieldsAreNotDefaulted(t *testing.T) {
+	route := []byte(`{
+		"id":"route-1",
+		"uris":["/"],
+		"plugins":{"jwe-decrypt":{}}
+	}`)
+
+	require.Error(t, ValidateApisixJsonSchema("3.16", constant.Route, route))
+}
+
+func TestValidatePluginMetadataConditionalPolicy(t *testing.T) {
 	tests := []struct {
 		name      string
 		config    string

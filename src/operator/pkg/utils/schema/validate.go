@@ -166,31 +166,6 @@ func getPlugins(conf any) (map[string]any, string) {
 	return nil, ""
 }
 
-func applyPropertyDefaults(schema, conf map[string]any) {
-	properties, ok := schema["properties"].(map[string]any)
-	if !ok {
-		return
-	}
-
-	for name, value := range properties {
-		if _, exists := conf[name]; exists {
-			continue
-		}
-
-		propertySchema, ok := value.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		defaultValue, exists := propertySchema["default"]
-		if !exists || defaultValue == nil {
-			continue
-		}
-
-		conf[name] = defaultValue
-	}
-}
-
 // cHashKeySchemaCheck validates the hash key configuration for an upstream based on the hash type
 // It checks if the hash type is valid and verifies the key against the appropriate schema
 // Parameters:
@@ -526,9 +501,6 @@ func (v *APISIXJsonSchemaValidator) Validate(rawConfig json.RawMessage) error { 
 			return fmt.Errorf("资源:%s schema 验证失败: 插件配置格式错误, 插件: %s",
 				resourceIdentification, pluginName)
 		}
-		// APISIX's Lua JSON Schema validator applies property defaults before evaluating
-		// conditional schemas. Materialize the same defaults on this validation-only copy.
-		applyPropertyDefaults(schemaMap, conf)
 		var exchange bool
 		disable, ok := conf["disable"]
 		if ok {
@@ -553,7 +525,7 @@ func (v *APISIXJsonSchemaValidator) Validate(rawConfig json.RawMessage) error { 
 
 		if !ret.Valid() {
 			errString := GetSchemaValidateFailed(ret)
-			log.Errorf("schema validate failed:s: %v, obj: %#v", v.schemaDef, rawConfig)
+			log.Errorf("schema validate failed:s: %v, obj: %s", v.schemaDef, rawConfig)
 			return fmt.Errorf("资源:%s 插件:%s schema 验证失败: %s", resourceIdentification, pluginName,
 				errString)
 		}
