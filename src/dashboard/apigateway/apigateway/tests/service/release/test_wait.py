@@ -23,9 +23,10 @@ from apigateway.core.constants import (
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
     ReleaseHistoryStatusEnum,
+    StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent
-from apigateway.service.release import wait_release_done
+from apigateway.core.models import PublishEvent, Release
+from apigateway.service.release import wait_release_done, wait_release_ready
 
 
 class TestWaitReleaseDone:
@@ -61,5 +62,62 @@ class TestWaitReleaseDone:
         """超时返回 FAILURE"""
         with patch("apigateway.service.release.wait.time.sleep"):
             result = wait_release_done(fake_release_history.id, timeout=0)
+
+        assert result == ReleaseHistoryStatusEnum.FAILURE.value
+
+
+class TestWaitReleaseReady:
+    def test_success_waits_for_matching_active_release(self, fake_release_history):
+        fake_stage = fake_release_history.stage
+        fake_stage.status = StageStatusEnum.INACTIVE.value
+        fake_stage.save(update_fields=["status"])
+        G(
+            Release,
+            gateway=fake_release_history.gateway,
+            stage=fake_stage,
+            resource_version=fake_release_history.resource_version,
+        )
+
+        def activate_stage(_seconds):
+            type(fake_stage).objects.filter(id=fake_stage.id).update(status=StageStatusEnum.ACTIVE.value)
+
+        with (
+            patch(
+                "apigateway.service.release.wait.wait_release_done",
+                return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
+            ),
+            patch("apigateway.service.release.wait.time.sleep", side_effect=activate_stage),
+        ):
+            result = wait_release_ready(fake_release_history.id)
+
+        assert result == ReleaseHistoryStatusEnum.SUCCESS.value
+
+    def test_failure_does_not_require_release_history(self):
+        missing_release_history_id = 2_147_483_647
+
+        with patch(
+            "apigateway.service.release.wait.wait_release_done",
+            return_value=ReleaseHistoryStatusEnum.FAILURE.value,
+        ):
+            result = wait_release_ready(missing_release_history_id)
+
+        assert result == ReleaseHistoryStatusEnum.FAILURE.value
+
+    def test_success_event_without_ready_release_times_out(self, fake_release_history):
+        fake_stage = fake_release_history.stage
+        fake_stage.status = StageStatusEnum.INACTIVE.value
+        fake_stage.save(update_fields=["status"])
+        G(
+            Release,
+            gateway=fake_release_history.gateway,
+            stage=fake_stage,
+            resource_version=fake_release_history.resource_version,
+        )
+
+        with patch(
+            "apigateway.service.release.wait.wait_release_done",
+            return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
+        ):
+            result = wait_release_ready(fake_release_history.id, timeout=0)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value

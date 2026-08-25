@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .validation import PublishValidator, ReleaseValidationError, StageVarsValuesValidator
-from .wait import DEFAULT_WAIT_RELEASE_TIMEOUT, wait_release_done
+from .wait import DEFAULT_WAIT_RELEASE_TIMEOUT, wait_release_done, wait_release_ready
 
 __all__ = [
     # constant
@@ -28,5 +28,6 @@ __all__ = [
     "StageVarsValuesValidator",
     # functions
     "wait_release_done",
+    "wait_release_ready",
     # others
 ]
