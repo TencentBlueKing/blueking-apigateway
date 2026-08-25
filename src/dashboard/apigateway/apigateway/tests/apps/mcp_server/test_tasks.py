@@ -302,9 +302,9 @@ class TestSyncMcpServerAfterRelease:
 
         with (
             patch(
-                "apigateway.apps.mcp_server.tasks.wait_release_done",
+                "apigateway.apps.mcp_server.tasks.wait_release_ready",
                 return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
-            ),
+            ) as wait_ready,
             patch(
                 "apigateway.apps.mcp_server.tasks.MCPServerHandler.save_mcp_servers",
                 return_value=[{"name": "s1", "action": "updated", "id": mcp_server.id}],
@@ -320,6 +320,7 @@ class TestSyncMcpServerAfterRelease:
                 username="open-api-user",
             )
 
+        wait_ready.assert_called_once_with(release_history.id)
         mock_save.assert_called_once_with(
             gateway_id=fake_gateway.id,
             gateway_name=fake_gateway.name,
@@ -330,13 +331,13 @@ class TestSyncMcpServerAfterRelease:
             comment=None,
         )
 
-    def test_release_failed_skips_save(self, fake_gateway, fake_stage, release_history):
-        """发布失败时跳过写入"""
+    def test_release_not_ready_skips_save(self, fake_gateway, fake_stage, release_history):
+        """发布失败或发布数据未就绪时跳过写入"""
         mcp_data = [{"name": "s1"}]
 
         with (
             patch(
-                "apigateway.apps.mcp_server.tasks.wait_release_done",
+                "apigateway.apps.mcp_server.tasks.wait_release_ready",
                 return_value=ReleaseHistoryStatusEnum.FAILURE.value,
             ),
             patch(
@@ -360,7 +361,7 @@ class TestSyncMcpServerAfterRelease:
 
         with (
             patch(
-                "apigateway.apps.mcp_server.tasks.wait_release_done",
+                "apigateway.apps.mcp_server.tasks.wait_release_ready",
                 return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
             ),
             patch(

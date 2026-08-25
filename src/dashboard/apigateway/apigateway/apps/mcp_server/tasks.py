@@ -37,7 +37,7 @@ from apigateway.biz.mcp_server import (
 )
 from apigateway.core.constants import ReleaseHistoryStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
-from apigateway.service.release import wait_release_done
+from apigateway.service.release import wait_release_ready
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import get_default_redis_client
 
@@ -380,7 +380,7 @@ def sync_mcp_server_after_release(
     """等待发布完成后同步 MCP Server 数据到 DB
 
     当同步 MCP Server 时检测到环境正在发布，将写入操作投递到此异步任务：
-    1. 等待 release_history_id 对应的发布完成
+    1. 等待 release_history_id 对应的发布完成且控制面数据就绪
     2. 发布成功：使用发布后的资源版本写入 MCP Server
     3. 发布失败/超时：跳过写入，记录日志
     """
@@ -393,11 +393,11 @@ def sync_mcp_server_after_release(
         release_history_id,
     )
 
-    final_status = wait_release_done(release_history_id)
+    final_status = wait_release_ready(release_history_id)
 
     if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
         logger.warning(
-            "sync_mcp_server_after_release: release failed (status=%s), "
+            "sync_mcp_server_after_release: release failed or release data not ready (status=%s), "
             "skip mcp server sync, gateway=%s(%d), stage=%s(%d), release_history_id=%d",
             final_status,
             gateway_name,
