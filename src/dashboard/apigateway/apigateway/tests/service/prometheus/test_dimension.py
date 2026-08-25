@@ -540,6 +540,78 @@ class TestHealthRateMetrics:
 
 
 class TestLLMMetrics:
+    def test_get_latency_95th_query_promql(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+
+        result = dimension.LLMLatency95thMetrics()._get_query_promql(
+            gateway_name="foo",
+            stage_name="prod",
+            backend_name="default",
+            stage_id=1,
+            resource_id=2,
+            resource_name="chat_completions",
+            step="1m",
+        )
+
+        assert result.count("histogram_quantile(0.95") == 2
+        assert result.count("llm_latency_bucket") == 2
+        assert 'request_type="ai_chat",type="total"' in result
+        assert 'request_type="ai_stream",type="ttft"' in result
+        assert "by (le, request_type)" in result
+        assert " or " in result
+        assert 'gateway_name="foo"' in result
+        assert 'stage_name="prod"' in result
+        assert 'backend_name="default"' in result
+        assert 'resource_name="chat_completions"' in result
+
+    def test_get_token_95th_query_promql_with_resource_and_backend(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+        backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
+
+        result = dimension.LLMToken95thMetrics()._get_query_promql(
+            gateway_name="foo",
+            stage_name="prod",
+            backend_name="default",
+            stage_id=1,
+            resource_id=2,
+            resource_name="chat_completions",
+            step="1m",
+        )
+
+        assert "histogram_quantile(0.95" in result
+        assert "sum by (le, token_type)" in result
+        assert "llm_prompt_tokens_dist_bucket" in result
+        assert "llm_completion_tokens_dist_bucket" in result
+        assert '"token_type", "prompt"' in result
+        assert '"token_type", "completion"' in result
+        assert 'gateway_name="foo"' in result
+        assert 'stage_name="prod"' in result
+        assert 'backend_name="default"' in result
+        assert 'resource_name="chat_completions"' in result
+        assert "route_id" not in result
+        assert "service_id" not in result
+        backend_filter.assert_not_called()
+
+    def test_get_token_95th_query_promql_without_resource_or_backend(self, mocker):
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
+
+        result = dimension.LLMToken95thMetrics()._get_query_promql(
+            gateway_name="foo",
+            stage_name="prod",
+            backend_name=None,
+            stage_id=1,
+            resource_id=0,
+            resource_name=None,
+            step="1m",
+        )
+
+        assert 'gateway_name="foo"' in result
+        assert 'stage_name="prod"' in result
+        assert "backend_name" not in result
+        assert "resource_name" not in result
+        assert "route_id" not in result
+        assert "service_id" not in result
+
     def test_get_query_promql_with_resource_and_backend(self, mocker):
         mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", new=[])
         backend_filter = mocker.patch("apigateway.core.models.Backend.objects.filter")
@@ -637,8 +709,16 @@ class TestMetricsRangeFactory:
                 "expected": dimension.LLMLatencyAvgMetrics,
             },
             {
+                "metrics": "llm_latency_95th",
+                "expected": dimension.LLMLatency95thMetrics,
+            },
+            {
                 "metrics": "llm_token_usage",
                 "expected": dimension.LLMTokenUsageMetrics,
+            },
+            {
+                "metrics": "llm_token_95th",
+                "expected": dimension.LLMToken95thMetrics,
             },
             {
                 "metrics": "llm_active_connections",

@@ -51,7 +51,13 @@ class TestMetricsQueryRangeSLZ(TestCase):
             self.assertEqual(slz.validated_data, test["expected"])
 
     def test_validate_llm_metrics(self):
-        for metrics in ("llm_latency_avg", "llm_token_usage", "llm_active_connections"):
+        for metrics in (
+            "llm_latency_avg",
+            "llm_latency_95th",
+            "llm_token_usage",
+            "llm_token_95th",
+            "llm_active_connections",
+        ):
             with self.subTest(metrics=metrics):
                 data = {
                     "stage_id": 1,

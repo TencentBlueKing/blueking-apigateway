@@ -181,7 +181,7 @@ const getSeriesLabel = (item: ISeriesItemType, label: string) => {
 };
 
 const getSeriesName = (item: ISeriesItemType) => {
-  if (['llm_latency_avg', 'llm_active_connections'].includes(instanceId)) {
+  if (['llm_latency_avg', 'llm_latency_95th', 'llm_active_connections'].includes(instanceId)) {
     const requestType = getSeriesLabel(item, 'request_type');
     const requestTypeNames: Record<string, string> = {
       ai_chat: t('非流式完整响应'),
@@ -189,7 +189,7 @@ const getSeriesName = (item: ISeriesItemType) => {
     };
     return requestTypeNames[requestType] || requestType;
   }
-  if (instanceId === 'llm_token_usage') {
+  if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
     const tokenType = getSeriesLabel(item, 'token_type');
     const tokenTypeNames: Record<string, string> = {
       prompt: t('输入 Token'),
@@ -279,6 +279,7 @@ const getChartOption = () => {
     'response_time_90th',
     'response_time_50th',
     'llm_latency_avg',
+    'llm_latency_95th',
   ];
 
   // if (instanceId !== 'response_time') {
@@ -372,7 +373,7 @@ const getChartOption = () => {
       </div>`;
     };
   }
-  else if (instanceId === 'llm_token_usage') {
+  else if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
     chartOption.tooltip.formatter = (params: any) => {
       return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
@@ -412,7 +413,7 @@ const getChartOption = () => {
   if (maxList.includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} ms' };
   }
-  if (instanceId === 'llm_token_usage') {
+  if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} Token' };
   }
   // }
