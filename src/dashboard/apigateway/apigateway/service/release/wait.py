@@ -21,8 +21,8 @@ import logging
 import time
 from datetime import datetime
 
-from apigateway.core.constants import ReleaseHistoryStatusEnum
-from apigateway.core.models import PublishEvent
+from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
@@ -64,3 +64,39 @@ def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEA
         status = latest_event.get_release_history_status()
         if status != ReleaseHistoryStatusEnum.DOING.value:
             return status
+
+
+def wait_release_ready(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
+    """等待发布成功，并确认当前 Release 已切换到本次发布的资源版本。"""
+    start_time = datetime.now().timestamp()
+    final_status = wait_release_done(release_history_id, timeout=timeout)
+    if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
+        return final_status
+
+    release_history = ReleaseHistory.objects.only(
+        "gateway_id",
+        "stage_id",
+        "resource_version_id",
+    ).get(id=release_history_id)
+    wait_times = 0
+
+    while True:
+        if Release.objects.filter(
+            gateway_id=release_history.gateway_id,
+            stage_id=release_history.stage_id,
+            resource_version_id=release_history.resource_version_id,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).exists():
+            return ReleaseHistoryStatusEnum.SUCCESS.value
+
+        now = datetime.now().timestamp()
+        if now - start_time > timeout:
+            logger.warning(
+                "wait_release_ready timeout after %ds, release_history_id=%d",
+                timeout,
+                release_history_id,
+            )
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        time.sleep(1 * wait_times)
+        wait_times += 1
