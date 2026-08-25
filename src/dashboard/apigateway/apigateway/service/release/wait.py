@@ -68,35 +68,52 @@ def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEA
 
 def wait_release_ready(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
     """等待发布成功，并确认当前 Release 已切换到本次发布的资源版本。"""
-    start_time = datetime.now().timestamp()
+    deadline = time.monotonic() + timeout
     final_status = wait_release_done(release_history_id, timeout=timeout)
     if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
         return final_status
 
-    release_history = ReleaseHistory.objects.only(
-        "gateway_id",
-        "stage_id",
-        "resource_version_id",
-    ).get(id=release_history_id)
+    release_history = (
+        ReleaseHistory.objects.only(
+            "gateway_id",
+            "stage_id",
+            "resource_version_id",
+        )
+        .filter(id=release_history_id)
+        .first()
+    )
+    if not release_history:
+        logger.warning(
+            "wait_release_ready release history no longer exists, release_history_id=%d",
+            release_history_id,
+        )
+        return ReleaseHistoryStatusEnum.FAILURE.value
+
     wait_times = 0
 
     while True:
-        if Release.objects.filter(
+        if time.monotonic() >= deadline:
+            break
+
+        is_ready = Release.objects.filter(
             gateway_id=release_history.gateway_id,
             stage_id=release_history.stage_id,
             resource_version_id=release_history.resource_version_id,
             stage__status=StageStatusEnum.ACTIVE.value,
-        ).exists():
+        ).exists()
+        if is_ready and time.monotonic() < deadline:
             return ReleaseHistoryStatusEnum.SUCCESS.value
 
-        now = datetime.now().timestamp()
-        if now - start_time > timeout:
-            logger.warning(
-                "wait_release_ready timeout after %ds, release_history_id=%d",
-                timeout,
-                release_history_id,
-            )
-            return ReleaseHistoryStatusEnum.FAILURE.value
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
 
-        time.sleep(1 * wait_times)
+        time.sleep(min(1 * wait_times, remaining))
         wait_times += 1
+
+    logger.warning(
+        "wait_release_ready timeout after %ds, release_history_id=%d",
+        timeout,
+        release_history_id,
+    )
+    return ReleaseHistoryStatusEnum.FAILURE.value

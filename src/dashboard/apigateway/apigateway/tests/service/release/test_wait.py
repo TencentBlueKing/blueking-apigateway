@@ -25,7 +25,7 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
 from apigateway.service.release import wait_release_done, wait_release_ready
 
 
@@ -92,6 +92,39 @@ class TestWaitReleaseReady:
 
         assert result == ReleaseHistoryStatusEnum.SUCCESS.value
 
+    def test_success_waits_for_current_release_resource_version(self, fake_release_history):
+        fake_stage = fake_release_history.stage
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save(update_fields=["status"])
+        old_resource_version = G(
+            ResourceVersion,
+            gateway=fake_release_history.gateway,
+            version="old-version",
+            _data="[]",
+        )
+        release = G(
+            Release,
+            gateway=fake_release_history.gateway,
+            stage=fake_stage,
+            resource_version=old_resource_version,
+        )
+
+        def switch_release_version(_seconds):
+            Release.objects.filter(id=release.id).update(resource_version_id=fake_release_history.resource_version_id)
+
+        with (
+            patch(
+                "apigateway.service.release.wait.wait_release_done",
+                return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
+            ),
+            patch("apigateway.service.release.wait.time.sleep", side_effect=switch_release_version),
+        ):
+            result = wait_release_ready(fake_release_history.id)
+
+        release.refresh_from_db()
+        assert result == ReleaseHistoryStatusEnum.SUCCESS.value
+        assert release.resource_version_id == fake_release_history.resource_version_id
+
     def test_failure_does_not_require_release_history(self):
         missing_release_history_id = 2_147_483_647
 
@@ -119,5 +152,47 @@ class TestWaitReleaseReady:
             return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
         ):
             result = wait_release_ready(fake_release_history.id, timeout=0)
+
+        assert result == ReleaseHistoryStatusEnum.FAILURE.value
+
+    def test_event_wait_consumes_total_timeout_budget(self, fake_release_history):
+        fake_stage = fake_release_history.stage
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save(update_fields=["status"])
+        G(
+            Release,
+            gateway=fake_release_history.gateway,
+            stage=fake_stage,
+            resource_version=fake_release_history.resource_version,
+        )
+        current_time = 0.0
+
+        def finish_event_wait(_release_history_id, *, timeout):
+            nonlocal current_time
+            assert timeout == 150
+            current_time = 150.0
+            return ReleaseHistoryStatusEnum.SUCCESS.value
+
+        with (
+            patch("apigateway.service.release.wait.time.monotonic", side_effect=lambda: current_time),
+            patch("apigateway.service.release.wait.wait_release_done", side_effect=finish_event_wait),
+        ):
+            result = wait_release_ready(fake_release_history.id)
+
+        assert result == ReleaseHistoryStatusEnum.FAILURE.value
+
+    def test_success_event_with_deleted_release_history_returns_failure(self, fake_release_history):
+        release_history_id = fake_release_history.id
+
+        def delete_release_history(_release_history_id, *, timeout):
+            assert timeout == 150
+            ReleaseHistory.objects.filter(id=release_history_id).delete()
+            return ReleaseHistoryStatusEnum.SUCCESS.value
+
+        with patch(
+            "apigateway.service.release.wait.wait_release_done",
+            side_effect=delete_release_history,
+        ):
+            result = wait_release_ready(release_history_id)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value
