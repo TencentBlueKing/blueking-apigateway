@@ -288,6 +288,36 @@
         </div>
         <div class="full-line">
           <BkLoading
+            :loading="chartLoading.llm_latency_95th"
+            class="full-box"
+          >
+            <LineChart
+              ref="llmLatency95thRef"
+              :chart-data="chartData.llm_latency_95th"
+              :title="t('LLM P95 延迟（非流式完整响应 / 流式首 Token）')"
+              instance-id="llm_latency_95th"
+              @clear-params="handleClearParams"
+              @report-init="handleReportInit"
+            />
+          </BkLoading>
+        </div>
+        <div class="full-line">
+          <BkLoading
+            :loading="chartLoading.llm_token_95th"
+            class="full-box"
+          >
+            <LineChart
+              ref="llmToken95thRef"
+              :chart-data="chartData.llm_token_95th"
+              :title="t('单请求 Token P95')"
+              instance-id="llm_token_95th"
+              @clear-params="handleClearParams"
+              @report-init="handleReportInit"
+            />
+          </BkLoading>
+        </div>
+        <div class="full-line">
+          <BkLoading
             :loading="chartLoading.llm_latency_avg"
             class="full-box"
           >
@@ -370,6 +400,7 @@ type InfoTypeItem = {
 type IStageItem = IExtractApiReturn<typeof getApigwStages>[number];
 type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
 type IResourceItem = IExtractListApiResults<typeof getApigwResources>;
+type MetricsType = Parameters<typeof getApigwMetrics>[1]['metrics'];
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -404,6 +435,8 @@ const commonMetricsList = [
   'response_time_99th',
 ] as const;
 const aiMetricsList = [
+  'llm_latency_95th',
+  'llm_token_95th',
   'llm_latency_avg',
   'llm_token_usage',
   'llm_active_connections',
@@ -428,6 +461,8 @@ const egressRef = ref<InstanceType<typeof LineChart>>();
 const responseTime50Ref = ref<InstanceType<typeof LineChart>>();
 const responseTime95Ref = ref<InstanceType<typeof LineChart>>();
 const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
+const llmLatency95thRef = ref<InstanceType<typeof LineChart>>();
+const llmToken95thRef = ref<InstanceType<typeof LineChart>>();
 const llmLatencyAvgRef = ref<InstanceType<typeof LineChart>>();
 const llmTokenUsageRef = ref<InstanceType<typeof LineChart>>();
 const llmActiveConnectionsRef = ref<InstanceType<typeof LineChart>>();
@@ -511,7 +546,7 @@ const handleBackendChange = async () => {
 };
 
 // 请求数据
-const getData = async (params: ISearchParamsType & { step?: string }, type: string) => {
+const getData = async (params: ISearchParamsType & { step?: string }, type: MetricsType) => {
   chartLoading.value[type as keyof IChartDataLoading] = true;
   try {
     chartData.value[type as keyof IChartDataType] = await getApigwMetrics(
@@ -528,7 +563,7 @@ const getData = async (params: ISearchParamsType & { step?: string }, type: stri
 };
 
 const getPageData = (step?: string) => {
-  metricsList.value.forEach((type: string) => {
+  metricsList.value.forEach((type) => {
     getData({
       ...searchParams.value,
       step,
@@ -601,6 +636,8 @@ const syncParamsToCharts = () => {
 
 const syncAIParamsToCharts = () => {
   const params = { ...searchParams.value };
+  llmLatency95thRef.value?.syncParams(params);
+  llmToken95thRef.value?.syncParams(params);
   llmLatencyAvgRef.value?.syncParams(params);
   llmTokenUsageRef.value?.syncParams(params);
   llmActiveConnectionsRef.value?.syncParams(params);

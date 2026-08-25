@@ -373,6 +373,34 @@ class LLMLatencyAvgMetrics(BaseLLMMetrics):
         return f"{chat_latency} or {stream_latency}"
 
 
+class LLMLatency95thMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_LATENCY_95TH
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
+        chat_labels = f'{labels},request_type="ai_chat",type="total"'
+        stream_labels = f'{labels},request_type="ai_stream",type="ttft"'
+
+        chat_latency = (
+            f"histogram_quantile(0.95, sum by (le, request_type) "
+            f"(rate({self.metric_name_prefix}llm_latency_bucket{{{chat_labels}}}[{step}])))"
+        )
+        stream_latency = (
+            f"histogram_quantile(0.95, sum by (le, request_type) "
+            f"(rate({self.metric_name_prefix}llm_latency_bucket{{{stream_labels}}}[{step}])))"
+        )
+        return f"{chat_latency} or {stream_latency}"
+
+
 class LLMTokenUsageMetrics(BaseLLMMetrics):
     metrics = MetricsRangeEnum.LLM_TOKEN_USAGE
 
@@ -393,6 +421,29 @@ class LLMTokenUsageMetrics(BaseLLMMetrics):
             '"token_type", "prompt", "request_type", ".*") or '
             f"label_replace(increase({self.metric_name_prefix}llm_completion_tokens{{{labels}}}[{step}]), "
             '"token_type", "completion", "request_type", ".*"))'
+        )
+
+
+class LLMToken95thMetrics(BaseLLMMetrics):
+    metrics = MetricsRangeEnum.LLM_TOKEN_95TH
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        backend_name: Optional[str],
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_llm_labels(gateway_name, stage_name, backend_name, resource_name)
+        return (
+            "histogram_quantile(0.95, sum by (le, token_type) ("
+            f"label_replace(rate({self.metric_name_prefix}llm_prompt_tokens_dist_bucket{{{labels}}}[{step}]), "
+            '"token_type", "prompt", "request_type", ".*") or '
+            f"label_replace(rate({self.metric_name_prefix}llm_completion_tokens_dist_bucket{{{labels}}}[{step}]), "
+            '"token_type", "completion", "request_type", ".*")))'
         )
 
 
@@ -719,7 +770,9 @@ MetricsRangeFactory.register(ResponseTime99thMetrics)
 MetricsRangeFactory.register(IngressMetrics)
 MetricsRangeFactory.register(EgressMetrics)
 MetricsRangeFactory.register(LLMLatencyAvgMetrics)
+MetricsRangeFactory.register(LLMLatency95thMetrics)
 MetricsRangeFactory.register(LLMTokenUsageMetrics)
+MetricsRangeFactory.register(LLMToken95thMetrics)
 MetricsRangeFactory.register(LLMActiveConnectionsMetrics)
 
 MetricsInstantFactory.register(RequestsTotalMetrics)
