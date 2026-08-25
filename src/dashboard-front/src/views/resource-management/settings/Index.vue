@@ -1361,6 +1361,7 @@ const handleShowBatch = () => {
 const handleOutBatch = () => {
   showBatch.value = false;
   handleClearSelection();
+  handleShowVersion();
   exportDropData.value = [
     {
       value: 'all',
