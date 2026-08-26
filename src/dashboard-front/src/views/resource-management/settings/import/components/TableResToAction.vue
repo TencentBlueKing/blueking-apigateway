@@ -345,7 +345,7 @@ const renderAuthConfigColLabel = () => {
                     v-model={tempAuthConfig.value.app_verified_required}
                   >
                     <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
-                      {t('蓝鲸应用认证')}
+                      {t('应用认证')}
                     </span>
                   </bk-checkbox>
                   <bk-checkbox class="ml-40px" v-model={tempAuthConfig.value.auth_verified_required}>

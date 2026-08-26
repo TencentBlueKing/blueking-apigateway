@@ -687,11 +687,11 @@ const getResourceAuthText = (resource: any) => {
   const authConfig = getAuthConfig(resource);
   const tmpArr: string[] = [];
 
+  if (authConfig.app_verified_required) {
+    tmpArr.push(`${t('应用认证')}`);
+  }
   if (authConfig.auth_verified_required) {
     tmpArr.push(`${t('用户认证')}`);
-  }
-  if (authConfig.app_verified_required) {
-    tmpArr.push(`${t('蓝鲸应用认证')}`);
   }
   return tmpArr.join(', ');
 };
