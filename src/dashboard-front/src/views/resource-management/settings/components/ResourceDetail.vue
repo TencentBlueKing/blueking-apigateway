@@ -966,7 +966,7 @@ import { copy } from '@/utils';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
-import RequestParams from '../../components/request-params/Index.vue';
+import RequestParams from '../../components/request-params-v2/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
 import { useGateway, useStage } from '@/stores';
 import { useStickyBottom } from '@/hooks';

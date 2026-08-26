@@ -124,7 +124,7 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import BaseInfo from '@/views/resource-management/components/BaseInfo.vue';
 import FrontConfig from '@/views/resource-management/components/FrontConfig.vue';
-import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
+import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
 import BackConfig from '@/views/resource-management/components/BackConfig.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 
