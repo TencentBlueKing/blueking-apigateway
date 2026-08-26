@@ -247,6 +247,9 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       filter: {
         type: 'multiple',
         showConfirmAndReset: true,
+        popupProps: {
+          overlayInnerClassName: 'resource-info-filter-wrapper',
+        },
         resetValue: [],
         list: customMethodsList.value,
       },
@@ -262,6 +265,9 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       filter: {
         type: 'multiple',
         showConfirmAndReset: true,
+        popupProps: {
+          overlayInnerClassName: 'resource-info-filter-wrapper',
+        },
         resetValue: [],
         list: labelsList.value,
       },
@@ -537,6 +543,13 @@ defineExpose({ reload: init });
 
   .btn-filter-save.disabled {
     display: none !important;
+  }
+}
+
+.resource-info-filter-wrapper {
+
+  .t-table__filter-pop-wrapper {
+    max-height: 300px !important;
   }
 }
 </style>
