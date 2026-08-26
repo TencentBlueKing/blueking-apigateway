@@ -99,8 +99,8 @@ type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][
 interface IProps {
   stageAddress: string
   stageId: number
-  versionId: number
-  stage: Record<string, any>
+  versionId: number | undefined
+  stage: Record<string, any> | undefined
 }
 const {
   stageAddress,

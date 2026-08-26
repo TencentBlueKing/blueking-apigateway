@@ -9,7 +9,7 @@
     >
       <template #default>
         <div class="sideslider-content">
-          <p class="title mt-15px">
+          <p class="title mt-16px">
             {{ t('基本信息') }}
           </p>
           <BkContainer
@@ -17,6 +17,19 @@
             :col="14"
             :margin="6"
           >
+            <BkRow v-if="isAIGateway">
+              <BkCol :span="4">
+                <label class="ag-key">{{ t('资源类型') }}:</label>
+              </BkCol>
+              <BkCol :span="10">
+                <div class="ag-value">
+                  <BkTag :theme="isModelProxy ? 'info' : 'default'">
+                    {{ isModelProxy ? t('模型代理 API') : t('普通 API') }}
+                  </BkTag>
+                </div>
+              </BkCol>
+            </BkRow>
+
             <BkRow>
               <BkCol :span="4">
                 <label class="ag-key">{{ t('资源名称') }}:</label>
@@ -139,7 +152,7 @@
           </BkContainer>
 
           <p
-            class="title mt-15px"
+            class="title mt-16px"
           >
             {{ t('请求配置') }}
           </p>
@@ -172,7 +185,7 @@
               </BkCol>
             </BkRow>
 
-            <BkRow>
+            <BkRow v-if="!isModelProxy">
               <BkCol :span="4">
                 <label class="ag-key">{{ t('启用 Websocket') }}:</label>
               </BkCol>
@@ -184,38 +197,40 @@
             </BkRow>
           </BkContainer>
 
-          <p class="title">
-            {{ t('请求参数') }}
-          </p>
-          <div>
-            <BkContainer
-              v-if="!Object.keys(currentSource.openapi_schema || {}).length || currentSource.openapi_schema.none_schema"
-              class="ag-kv-box pb-24px"
-              :col="14"
-              :margin="6"
-            >
-              <BkRow class="mb-0!">
-                <BkCol :span="4">
-                  <label class="ag-key invisible">
-                    {{ t('请求方法') }}
-                  </label>
-                </BkCol>
-                <BkCol :span="10">
-                  <div class="ag-value">
-                    {{ t('该资源无请求参数') }}
-                  </div>
-                </BkCol>
-              </BkRow>
-            </BkContainer>
-            <RequestParams
-              v-else
-              :detail="currentSource"
-              readonly
-            />
-          </div>
+          <template v-if="!isModelProxy">
+            <p class="title">
+              {{ t('请求参数') }}
+            </p>
+            <div>
+              <BkContainer
+                v-if="isNoneSchema"
+                class="ag-kv-box pb-24px"
+                :col="14"
+                :margin="6"
+              >
+                <BkRow class="mb-0!">
+                  <BkCol :span="4">
+                    <label class="ag-key invisible">
+                      {{ t('请求方法') }}
+                    </label>
+                  </BkCol>
+                  <BkCol :span="10">
+                    <div class="ag-value">
+                      {{ t('该资源无请求参数') }}
+                    </div>
+                  </BkCol>
+                </BkRow>
+              </BkContainer>
+              <RequestParams
+                v-else
+                :detail="currentSource"
+                readonly
+              />
+            </div>
+          </template>
 
-          <p class="title mt-15px">
-            {{ t('后端配置') }}
+          <p class="title mt-16px">
+            {{ isModelProxy ? t('模型服务配置') : t('后端配置') }}
           </p>
           <BkContainer
             class="ag-kv-box"
@@ -224,7 +239,7 @@
           >
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t('后端服务') }}:</label>
+                <label class="ag-key">{{ isModelProxy ? t('模型服务') : t('后端配置') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
@@ -235,75 +250,79 @@
               </BkCol>
             </BkRow>
 
-            <BkRow>
-              <BkCol :span="4">
-                <label class="ag-key">{{ t('请求方法') }}:</label>
-              </BkCol>
-              <BkCol :span="10">
-                <div class="ag-value">
-                  <BkTag :theme="getMethodsTheme(currentSource?.proxy?.config?.method)">
-                    {{ currentSource?.proxy?.config?.method }}
-                  </BkTag>
-                </div>
-              </BkCol>
-            </BkRow>
-
-            <BkRow v-if="currentSource?.proxy?.config?.timeout !== 0">
-              <BkCol :span="4">
-                <label class="ag-key">{{ t('自定义超时时间') }}:</label>
-              </BkCol>
-              <BkCol :span="10">
-                <div class="ag-value">
-                  {{ currentSource?.proxy?.config?.timeout }}
-                </div>
-              </BkCol>
-            </BkRow>
-
-            <BkRow>
-              <BkCol :span="4">
-                <label class="ag-key">{{ t('请求路径') }}:</label>
-              </BkCol>
-              <BkCol :span="10">
-                <div class="ag-value">
-                  {{
-                    currentSource?.proxy?.config?.path
-                  }}
-                </div>
-              </BkCol>
-            </BkRow>
-          </BkContainer>
-
-          <p class="title">
-            {{ t('响应参数') }}
-          </p>
-          <div>
-            <ResponseParams
-              v-if="Object.keys(currentSource.openapi_schema?.responses || {}).length"
-              :detail="currentSource"
-              readonly
-            />
-            <BkContainer
-              v-else
-              class="ag-kv-box pb-24px"
-              :col="14"
-              :margin="6"
-            >
-              <BkRow class="mb-0!">
+            <template v-if="!isModelProxy">
+              <BkRow>
                 <BkCol :span="4">
-                  <label class="ag-key invisible">
-                    {{ t('响应参数') }}
-                  </label>
+                  <label class="ag-key">{{ t('请求方法') }}:</label>
                 </BkCol>
                 <BkCol :span="10">
                   <div class="ag-value">
-                    {{ t('该资源无响应参数') }}
+                    <BkTag :theme="getMethodsTheme(currentSource?.proxy?.config?.method)">
+                      {{ currentSource?.proxy?.config?.method }}
+                    </BkTag>
                   </div>
                 </BkCol>
               </BkRow>
-            </BkContainer>
-          </div>
 
-          <p class="title mt-15px">
+              <BkRow v-if="currentSource?.proxy?.config?.timeout !== 0">
+                <BkCol :span="4">
+                  <label class="ag-key">{{ t('自定义超时时间') }}:</label>
+                </BkCol>
+                <BkCol :span="10">
+                  <div class="ag-value">
+                    {{ currentSource?.proxy?.config?.timeout }}
+                  </div>
+                </BkCol>
+              </BkRow>
+
+              <BkRow>
+                <BkCol :span="4">
+                  <label class="ag-key">{{ t('请求路径') }}:</label>
+                </BkCol>
+                <BkCol :span="10">
+                  <div class="ag-value">
+                    {{
+                      currentSource?.proxy?.config?.path
+                    }}
+                  </div>
+                </BkCol>
+              </BkRow>
+            </template>
+          </BkContainer>
+
+          <template v-if="!isModelProxy">
+            <p class="title">
+              {{ t('响应参数') }}
+            </p>
+            <div>
+              <ResponseParams
+                v-if="Object.keys(currentSource.openapi_schema?.responses || {}).length"
+                :detail="currentSource"
+                readonly
+              />
+              <BkContainer
+                v-else
+                class="ag-kv-box pb-24px"
+                :col="14"
+                :margin="6"
+              >
+                <BkRow class="mb-0!">
+                  <BkCol :span="4">
+                    <label class="ag-key invisible">
+                      {{ t('响应参数') }}
+                    </label>
+                  </BkCol>
+                  <BkCol :span="10">
+                    <div class="ag-value">
+                      {{ t('该资源无响应参数') }}
+                    </div>
+                  </BkCol>
+                </BkRow>
+              </BkContainer>
+            </div>
+          </template>
+
+          <p class="title mt-16px">
             {{ t('文档') }}
           </p>
           <BkContainer
@@ -351,6 +370,7 @@
 <script lang="ts" setup>
 import { getGatewayLabels } from '@/services/source/gateway';
 import { getMethodsTheme } from '@/utils';
+import { useGateway } from '@/stores';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
@@ -376,6 +396,7 @@ const emit = defineEmits<{ hidden: [void] }>();
 
 const { t } = useI18n();
 const route = useRoute();
+const gatewayStore = useGateway();
 
 const isShow = ref(false);
 const currentSource = ref<any>({});
@@ -414,6 +435,14 @@ const resourceAuthText = computed(() => {
 });
 
 const permRequiredText = computed(() => authConfig.value.resource_perm_required ? t('校验') : t('不校验'));
+
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
+
+const isModelProxy = computed(() => currentSource.value.kind === 'ai');
+
+const isNoneSchema = computed(() =>
+  !Object.keys(currentSource.value.openapi_schema ?? {})?.length || currentSource.value?.openapi_schema?.none_schema,
+);
 
 watch(
   () => info,
