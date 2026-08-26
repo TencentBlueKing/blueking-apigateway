@@ -106,7 +106,7 @@
               v-model="formData.auth_config.app_verified_required"
               :disabled="!canEditAppAuth"
             >
-              {{ t('蓝鲸应用认证') }}
+              {{ t('应用认证') }}
             </BkCheckbox>
             <p class="auth-hint">
               {{ t('校验调用方是哪个蓝鲸应用。只开这一项、不开用户认证时，调用不必带上用户身份。') }}
@@ -128,7 +128,7 @@
             <p class="auth-hint">
               {{ formData.auth_config.app_verified_required
                 ? t('开启后，蓝鲸应用必须已获得本资源访问权限才能调用。')
-                : t('依赖「蓝鲸应用认证」。先勾选应用认证后才能开启。') }}
+                : t('依赖「应用认证」。先勾选应用认证后才能开启。') }}
             </p>
           </div>
         </div>

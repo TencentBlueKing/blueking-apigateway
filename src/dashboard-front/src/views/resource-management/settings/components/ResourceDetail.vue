@@ -195,7 +195,7 @@
               <div class="auth-config">
                 <div class="auth-block">
                   <div class="auth-view-row">
-                    <span class="auth-view-label">{{ t('蓝鲸应用认证') }}：</span>
+                    <span class="auth-view-label">{{ t('应用认证') }}：</span>
                     <BkTag
                       size="small"
                       :theme="formData.auth_config?.app_verified_required ? 'success' : 'default'"
@@ -220,7 +220,7 @@
                       v-if="!formData.auth_config?.app_verified_required"
                       class="auth-hint"
                     >
-                      {{ t('依赖「蓝鲸应用认证」。先勾选应用认证后才能开启。') }}
+                      {{ t('依赖「应用认证」。先勾选应用认证后才能开启。') }}
                     </p>
                   </div>
                 </div>
