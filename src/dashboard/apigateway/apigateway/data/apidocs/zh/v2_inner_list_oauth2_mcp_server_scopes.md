@@ -13,7 +13,7 @@
 | oauth_client_type | string | 是 | OAuth2 客户端类型：`personal` 或 `public` |
 | gateway_name | string | 否 | 网关名称，包含匹配，最长 64 个字符 |
 | mcp_server_name | string | 否 | MCP Server 名称，包含匹配，最长 64 个字符 |
-| limit | int | 否 | 每页网关数量，范围 1～20，默认 10 |
+| limit | int | 否 | 每页网关数量，范围 1～1000，默认 10 |
 | offset | int | 否 | 网关分页偏移量，必须大于或等于 0，默认 0 |
 
 同时传入 `gateway_name` 和 `mcp_server_name` 时，两个过滤条件均须满足。

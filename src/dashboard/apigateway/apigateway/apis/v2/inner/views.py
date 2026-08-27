@@ -91,7 +91,7 @@ logger = logging.getLogger(__name__)
 
 # Inner list endpoints share the same bounded pagination contract documented in OpenAPI.
 INNER_BOUNDED_LIST_DEFAULT_LIMIT = 10
-INNER_BOUNDED_LIST_MAX_LIMIT = 20
+INNER_BOUNDED_LIST_MAX_LIMIT = 1000
 
 
 class OAuth2ClientScopePagination(BoundedLimitOffsetPagination):
