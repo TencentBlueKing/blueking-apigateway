@@ -59,7 +59,28 @@
             />
           </BkSelect>
         </BkFormItem>
-        <BkFormItem :label="t('后端/模型服务')">
+        <BkFormItem
+          v-show="!isAIGateway"
+          :label="t('后端服务')"
+        >
+          <BkSelect
+            v-model="backend_id"
+            clearable
+            style="width: 250px;"
+            @change="handleBackendChange"
+          >
+            <BkOption
+              v-for="option in backendList"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
+        </BkFormItem>
+        <BkFormItem
+          v-show="isAIGateway"
+          :label="t('后端/模型服务')"
+        >
           <BkSelect
             v-model="backend_id"
             clearable

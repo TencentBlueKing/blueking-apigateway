@@ -53,7 +53,28 @@
             />
           </BkSelect>
         </BkFormItem>
-        <BkFormItem :label="t('后端/模型服务')">
+        <BkFormItem
+          v-show="!isAIGateway"
+          :label="t('后端服务')"
+        >
+          <BkSelect
+            v-model="backend_id"
+            clearable
+            style="width: 300px;"
+            @change="handleBackendChange"
+          >
+            <BkOption
+              v-for="option in backendList"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
+        </BkFormItem>
+        <BkFormItem
+          v-show="isAIGateway"
+          :label="t('后端/模型服务')"
+        >
           <BkSelect
             v-model="backend_id"
             clearable
@@ -410,6 +431,7 @@ const stageList = ref<IStageItem[]>([]);
 const resourceList = ref<IResourceItem[]>([]);
 const backend_id = ref('');
 const backendList = ref<IBackendItem[]>([]);
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const standardBackendList = computed(() => backendList.value.filter(item => item?.kind === 'standard'));
 const aiBackendList = computed(() => backendList.value.filter(item => item?.kind === 'ai'));
 const dateTime = ref<[string, string]>([
