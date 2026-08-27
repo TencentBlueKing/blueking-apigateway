@@ -37,6 +37,7 @@
         :placeholder="t('请输入后端服务、资源名称、前端请求路径搜索')"
       />
       <AgTable
+        ref="resourceTableRef"
         v-model:table-data="tableData"
         :columns="columns"
         table-row-key="id"
@@ -114,6 +115,7 @@ const gatewayStore = useGateway();
 const stageStore = useStage();
 
 const filterValue = ref<Record<string, any>>({ keyword: '' });
+const resourceTableRef = ref();
 const currentStage = ref<any>(null);
 const currentResource = ref<any>({});
 const resourceDetailsRef = ref();
@@ -447,6 +449,19 @@ const getTableData = async () => {
   });
   tableData.value = response.resources || [];
   initTableData.value = cloneDeep(response.resources) || [];
+  resetFilterAndPage();
+};
+
+// 数据源改变时，重置筛选与分页参数
+const resetFilterAndPage = () => {
+  filterValue.value = { keyword: '' };
+  nextTick(() => {
+    resourceTableRef.value?.TDesignTableRef?.clearFilter?.();
+    resourceTableRef.value?.setPagination({
+      current: 1,
+      pageSize: 10,
+    });
+  });
 };
 
 async function init() {
