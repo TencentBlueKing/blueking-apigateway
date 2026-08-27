@@ -40,6 +40,7 @@ from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
     GatewayKindEnum,
+    GatewayRoleEnum,
     GatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
     ProxyTypeEnum,
@@ -856,6 +857,30 @@ class GatewayRelatedApp(TimestampedModelMixin):
 
     class Meta:
         db_table = "core_api_related_app"
+
+
+class GatewayMember(TimestampedModelMixin, OperatorModelMixin):
+    id = models.BigAutoField(primary_key=True)
+    # Gateway members have no meaning after their gateway is deleted.
+    gateway = models.ForeignKey(
+        Gateway,
+        db_column="api_id",
+        on_delete=models.CASCADE,
+        related_name="members",
+    )
+    username = models.CharField(max_length=64)
+    role = models.CharField(max_length=32, choices=GatewayRoleEnum.get_choices())
+    expires = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"<GatewayMember: {self.gateway_id}/{self.username}/{self.role}>"
+
+    class Meta:
+        db_table = "core_gateway_member"
+        indexes = [
+            models.Index(fields=["username"], name="core_gw_member_user_idx"),
+        ]
+        unique_together = ("gateway", "username")
 
 
 # ============================================ extra resources ============================================

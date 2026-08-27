@@ -35,6 +35,11 @@ class GatewayKindNameEnum(StructuredEnum):
     AI = EnumField("ai", "AI 网关")
 
 
+class GatewayRoleEnum(StructuredEnum):
+    ADMINISTRATOR = EnumField("administrator", _("管理员"))
+    OPERATOR = EnumField("operator", _("运营者"))
+
+
 class GatewaySyncKindEnum(StructuredEnum):
     NORMAL = EnumField("normal", "普通网关")
     AI = EnumField("ai", "AI 网关")
