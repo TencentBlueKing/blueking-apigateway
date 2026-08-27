@@ -208,6 +208,7 @@
                 <TableEmpty
                   v-else
                   empty-type="empty"
+                  class="empty-wrapper"
                 />
               </div>
             </template>
@@ -991,10 +992,15 @@ onBeforeMount(() => {
 
   .main-content-wrap {
     padding-top: 16px;
+    padding-right: 8px;
+  }
+
+  .empty-wrapper {
+    height: calc(100vh - 144px);
   }
 
   .aside-right {
-
+    padding-top: 16px;
     .apigw-desc-wrap {
       height: calc(100vh - 144px);
       overflow-y: scroll;
