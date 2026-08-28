@@ -93,7 +93,7 @@ def test_scope_list_rejects_missing_or_unknown_client_type(request_view, view_na
     "query",
     [
         {"limit": 0},
-        {"limit": 21},
+        {"limit": 1001},
         {"limit": "invalid"},
         {"offset": -1},
         {"offset": "invalid"},
@@ -108,6 +108,18 @@ def test_resource_scope_list_rejects_invalid_pagination(request_view, query):
     )
 
     assert response.status_code == 400
+
+
+@pytest.mark.parametrize("view_name", [MCP_SCOPE_VIEW, RESOURCE_SCOPE_VIEW])
+def test_scope_list_accepts_limit_1000(request_view, view_name):
+    response = request_view(
+        method="GET",
+        view_name=view_name,
+        app=mock.MagicMock(app_code="test"),
+        data={"oauth_client_type": "public", "limit": 1000},
+    )
+
+    assert response.status_code == 200
 
 
 @pytest.mark.parametrize(
