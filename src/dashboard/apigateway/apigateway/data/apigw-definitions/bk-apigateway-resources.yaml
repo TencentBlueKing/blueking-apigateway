@@ -6407,9 +6407,9 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 20
+            maximum: 1000
             default: 10
-          description: 每页数量，最大 20
+          description: 每页数量，最大 1000
         - name: offset
           in: query
           required: false
@@ -7904,7 +7904,7 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 20
+            maximum: 1000
             default: 10
           description: 每页 MCPServer 数量
         - name: offset
@@ -8030,7 +8030,7 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 20
+            maximum: 1000
             default: 10
           description: 每页网关数量
         - name: offset
@@ -8141,7 +8141,7 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 20
+            maximum: 1000
             default: 10
           description: 每页网关数量
         - name: offset

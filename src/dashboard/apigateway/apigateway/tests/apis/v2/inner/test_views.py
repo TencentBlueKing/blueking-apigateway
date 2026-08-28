@@ -2021,7 +2021,7 @@ class TestMCPServerListApi:
 
         assert resp.status_code == 400
 
-    @pytest.mark.parametrize("limit", [0, 21, "invalid"])
+    @pytest.mark.parametrize("limit", [0, 1001, "invalid"])
     def test_list_rejects_invalid_limit(self, request_view, limit):
         resp = request_view(
             method="GET",
@@ -2031,6 +2031,16 @@ class TestMCPServerListApi:
         )
 
         assert resp.status_code == 400
+
+    def test_list_accepts_limit_1000(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"limit": 1000},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
 
     def test_list_rejects_unsupported_fields(self, request_view):
         resp = request_view(

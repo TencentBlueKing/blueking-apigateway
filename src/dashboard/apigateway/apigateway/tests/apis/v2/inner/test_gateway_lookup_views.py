@@ -484,7 +484,7 @@ class TestGatewayReleasedResourceApi:
         "query",
         [
             {"limit": 0},
-            {"limit": 21},
+            {"limit": 1001},
             {"limit": "invalid"},
             {"offset": -1},
             {"offset": "invalid"},
@@ -515,7 +515,7 @@ class TestGatewayReleasedResourceApi:
             view_name="openapi.v2.inner.gateway.released_resource.list",
             path_params={"gateway_name": gateway.name},
             app=mock.MagicMock(app_code="bk_auth"),
-            data={"fields": "id,name", "limit": 20, "offset": 10},
+            data={"fields": "id,name", "limit": 1000, "offset": 10},
         )
 
         assert response.status_code == 200
