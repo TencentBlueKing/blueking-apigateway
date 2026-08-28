@@ -1008,6 +1008,8 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "mcp_server_id": obj.id,
                         "gateway_id": obj.gateway_id,
                         "itsm_ticket_id": itsm_ticket_id,
+                        "tenant_mode": obj.gateway.tenant_mode,
+                        "tenant_id": obj.gateway.tenant_id,
                     },
                 }
             )
@@ -1115,6 +1117,8 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "handled_by": [handled_by_map.get(perm.mcp_server_id, "")],
                     "mcp_server_id": perm.mcp_server_id,
                     "gateway_id": perm.mcp_server.gateway_id,
+                    "tenant_mode": perm.mcp_server.gateway.tenant_mode,
+                    "tenant_id": perm.mcp_server.gateway.tenant_id,
                 },
             }
             for perm in granted_permissions

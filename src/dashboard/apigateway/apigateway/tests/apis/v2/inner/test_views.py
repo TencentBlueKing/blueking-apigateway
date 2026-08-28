@@ -230,6 +230,47 @@ class TestGatewayAppPermissionApplyCreateApi:
 
 
 class TestMCPServerPermissionListApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = TenantModeEnum.GLOBAL.value
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="7idwx3b7nzk6xigs",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"][0]["permission"]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
+
     def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 权限列表包含协议类型数据"""
         # 创建 MCP Server
@@ -770,6 +811,53 @@ class TestMCPServerAppPermissionApplyCreateApi:
 
 
 class TestMCPServerAppPermissionListApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = TenantModeEnum.GLOBAL.value
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="7idwx3b7nzk6xigs",
+        )
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"][0]["permission"]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
+
     def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
         """测试已申请权限列表包含协议类型数据"""
         mcp_server = G(

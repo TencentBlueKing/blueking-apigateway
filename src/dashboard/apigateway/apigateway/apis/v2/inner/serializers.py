@@ -568,8 +568,16 @@ class MCPServerPermissionBaseSLZ(serializers.Serializer):
     status = serializers.CharField(help_text="MCPServer 权限状态")
     action = serializers.CharField(help_text="MCPServer 权限操作")
     expires_in = serializers.IntegerField(help_text="MCPServer 权限过期时间")
-    handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
+    handled_by = serializers.SerializerMethodField(help_text="处理人")
     approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
+    def get_handled_by(self, obj):
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.get("tenant_mode", ""),
+            obj.get("tenant_id", ""),
+            obj.get("handled_by") or [],
+        )
 
     def get_approval_url(self, obj) -> str:
         """获取审批 URL"""
