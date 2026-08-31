@@ -124,13 +124,17 @@
                         :class="activeStageIds.includes(stage.id) ? 'panel-header-show' : 'panel-header-hide'"
                       />
                       <span class="stage-name">{{ stage.name }}</span>
-                      <BkTag :theme="AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].theme">
-                        <status-tag
-                          type="filled"
-                          :theme="AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].tagTheme"
-                          status=""
-                          class="mr--4px"
-                        />{{ t(AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].text) }}
+                      <BkTag
+                        :theme="AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].theme"
+                      >
+                        <div class="flex items-center">
+                          <status-tag
+                            type="filled"
+                            :theme="AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].tagTheme"
+                            status=""
+                            class="mr--4px"
+                          /><span>{{ t(AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].text) }}</span>
+                        </div>
                       </BkTag>
                     </div>
                   </template>
