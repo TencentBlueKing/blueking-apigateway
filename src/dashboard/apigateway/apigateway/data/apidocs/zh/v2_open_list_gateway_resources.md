@@ -19,7 +19,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
 | keyword  | string   | 否   | 搜索关键字，模糊匹配资源 name、description 或标签名称 |
-| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,method`；不传默认返回 `id` 和 `name` |
+| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,method,kind`；不传默认返回 `id` 和 `name` |
 
 
 ### 响应示例
@@ -37,7 +37,7 @@
 }
 ```
 
-#### 指定全部字段（fields=id,name,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config）
+#### 指定全部字段（fields=id,name,kind,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config）
 
 ```json
 {
@@ -45,6 +45,7 @@
         {
             "id": 1,
             "name": "get_user_info",
+            "kind": "standard",
             "description": "获取用户信息",
             "method": "GET",
             "path": "/api/v1/users/{user_id}/",
@@ -82,6 +83,7 @@
 |-----------------------|---------|-------------------------|
 | id                    | int     | 资源 ID                   |
 | name                  | string  | 资源名称                    |
+| kind                  | string  | 资源类型：`standard` 或 `ai`   |
 | description           | string  | 资源描述                    |
 | method                | string  | 请求方法（GET、POST 等）        |
 | path                  | string  | 资源路径                    |

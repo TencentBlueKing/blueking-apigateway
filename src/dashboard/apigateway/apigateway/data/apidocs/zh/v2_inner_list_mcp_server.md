@@ -2,6 +2,8 @@
 
 获取全量的 MCPServer 列表（应用态接口）
 
+按 MCPServer ID 或名称精确查询时，请使用 MCPServer lookup 接口。
+
 
 ### 输入参数
 
@@ -11,7 +13,9 @@
 |---------|--------|----|-----------------------------------------|
 | keyword | string | 否  | MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述 |
 | order_by | string | 否  | 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time |
-| mcp_server_ids | string | 否  | MCPServer ID 列表，多个以逗号分割，最多 50 个。例如：1,2,3 |
+| fields | string | 否  | 指定返回的字段列表，多个以逗号分割，例如 `fields=name,title`；支持的字段见 `data.results`；不传时返回全部字段，包含不支持的字段时返回参数校验错误 |
+| limit | int | 否 | 每页数量，取值范围 1～1000，默认 10 |
+| offset | int | 否 | 分页偏移量，必须大于或等于 0，默认 0 |
 
 
 ### 响应示例
@@ -20,8 +24,6 @@
 {
   "data": {
     "count": 2,
-    "has_next": false,
-    "has_previous": false,
     "results": [
       {
         "id": 1,
@@ -35,6 +37,7 @@
         "status": "active",
         "protocol_type": "sse",
         "oauth2_public_client_enabled": false,
+        "oauth2_personal_client_enabled": false,
         "categories": [
           {"name": "official", "display_name": "官方"},
           {"name": "ai", "display_name": "AI"}
@@ -74,8 +77,6 @@
 | 参数名称       | 参数类型  | 描述         |
 |------------|-------|------------|
 | count      | int   | 总数         |
-| has_next   | bool  | 是否有下一页     |
-| has_previous | bool  | 是否有上一页     |
 | results    | array | MCPServer 列表 |
 
 #### data.results
@@ -93,6 +94,7 @@
 | status       | string | MCPServer 状态          |
 | protocol_type | string | MCPServer 协议类型        |
 | oauth2_public_client_enabled | bool   | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权       |
+| oauth2_personal_client_enabled | bool   | 是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权       |
 | categories   | array  | MCPServer 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 | stage        | object | MCPServer 环境信息        |
 | gateway      | object | MCPServer 网关信息        |

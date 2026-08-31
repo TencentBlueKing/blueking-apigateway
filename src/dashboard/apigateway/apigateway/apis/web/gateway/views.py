@@ -112,7 +112,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             slz.validated_data["order_by"],
         )
         kind = slz.validated_data.get("kind")
-        if kind in [GatewayKindEnum.PROGRAMMABLE.value, GatewayKindEnum.NORMAL.value]:
+        if kind is not None:
             queryset = queryset.filter(kind=kind)
 
         page = self.paginate_queryset(queryset)

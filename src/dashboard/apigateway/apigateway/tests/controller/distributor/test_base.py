@@ -55,6 +55,9 @@ class TestBaseDistributor:
         """Test a complete implementation of BaseDistributor"""
 
         class CompleteDistributor(BaseDistributor):
+            def test_connection(self):
+                return True, "ok"
+
             def distribute(self, release_task_id: str, publish_id: int):
                 return True, "distributed"
 

@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 from datetime import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -33,13 +34,17 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply, MCPServerCategory
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         g1 = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=False)
         G(Release, gateway=g1)
         g2 = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
@@ -60,10 +65,81 @@ class TestGatewayListApi:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) == 2
+        assert next(item for item in result["data"] if item["name"] == fake_gateway.name)["kind"] == "ai"
+
+    def test_list_filters_by_kind(self, request_view, fake_gateway):
+        fake_gateway.kind = None
+        fake_gateway.save(update_fields=["kind"])
+        G(Release, gateway=fake_gateway)
+        ai_gateway = G(
+            Gateway,
+            kind=GatewayKindEnum.AI.value,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        G(Release, gateway=ai_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"kind": "ai"},
+        )
+
+        assert resp.status_code == 200
+        assert [item["name"] for item in resp.json()["data"]] == [ai_gateway.name]
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"kind": "normal"},
+        )
+
+        assert resp.status_code == 200
+        assert [(item["name"], item["kind"]) for item in resp.json()["data"]] == [(fake_gateway.name, "normal")]
+
+
+class TestGatewayLookupApi:
+    def test_lookup_by_ids_and_names(self, request_view, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.is_public = True
+        fake_gateway.save(update_fields=["status", "is_public"])
+        G(Release, gateway=fake_gateway)
+
+        another_gateway = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        G(Release, gateway=another_gateway)
+        inactive_gateway = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
+        G(Release, gateway=inactive_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.lookup",
+            app=mock.MagicMock(app_code="test"),
+            data={
+                "ids": f"{fake_gateway.id},{inactive_gateway.id}",
+                "names": f"{fake_gateway.name},{another_gateway.name}",
+            },
+        )
+
+        assert resp.status_code == 200
+        assert [(item["id"], item["name"]) for item in resp.json()["data"]] == [(fake_gateway.id, fake_gateway.name)]
+
+    def test_lookup_rejects_missing_ids_and_names(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.lookup",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
 
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         request = request_factory.get("")
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
@@ -76,6 +152,7 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+        assert result["data"]["kind"] == "ai"
 
 
 class TestMCPServerAppPermissionApplyCreateApi:
@@ -206,10 +283,10 @@ class TestMCPServerAppPermissionRecordListApi:
 
         assert resp.status_code == 200
         result = resp.json()
-        assert "data" in result
-        assert len(result["data"]) > 0
+        assert result["data"]["count"] == 1
+        assert len(result["data"]["results"]) > 0
         # 验证返回的数据包含 approval_url
-        for item in result["data"]:
+        for item in result["data"]["results"]:
             assert "approval_url" in item
             assert f"/{fake_gateway.id}/mcp/permission?serverId={mcp_server.id}" in item["approval_url"]
 
@@ -249,7 +326,85 @@ class TestMCPServerAppPermissionRecordListApi:
 
         assert resp.status_code == 200
         result = resp.json()
-        assert result["data"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
+        assert (
+            result["data"]["results"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
+        )
+
+    def test_list_paginates_after_selecting_latest_record_per_mcp_server(self, request_view, fake_gateway, settings):
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
+        )
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        first_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
+        second_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=first_mcp_server,
+            applied_time=datetime(2025, 1, 1, tzinfo=ZoneInfo("UTC")),
+        )
+        latest_first_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=first_mcp_server,
+            applied_time=datetime(2025, 1, 3, tzinfo=ZoneInfo("UTC")),
+        )
+        second_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=second_mcp_server,
+            applied_time=datetime(2025, 1, 2, tzinfo=ZoneInfo("UTC")),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app", "limit": 1, "offset": 1},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert set(result["data"]) == {"count", "results"}
+        assert result["data"]["count"] == 2
+        assert len(result["data"]["results"]) == 1
+        assert result["data"]["results"][0]["id"] == second_record.id
+        assert latest_first_record.id != second_record.id
+
+
+class TestMCPServerAppPermissionRecordLookupApi:
+    def test_lookup_by_ids_and_app_code(self, request_view, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        first = G(MCPServerAppPermissionApply, bk_app_code="test_app", mcp_server=mcp_server)
+        second = G(MCPServerAppPermissionApply, bk_app_code="test_app", mcp_server=mcp_server)
+        other_app = G(MCPServerAppPermissionApply, bk_app_code="other_app", mcp_server=mcp_server)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.lookup",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app", "ids": f"{first.id},{second.id},{other_app.id}"},
+        )
+
+        assert resp.status_code == 200
+        assert {item["id"] for item in resp.json()["data"]} == {first.id, second.id}
+
+    def test_lookup_rejects_missing_ids(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.lookup",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app"},
+        )
+
+        assert resp.status_code == 400
 
 
 class TestGetDatetimeApi:
@@ -445,6 +600,14 @@ class TestLogSearchByRequestIdApi:
                 "status": 200,
                 "request_duration": 100,
                 "backend_duration": 50,
+                "llm_summary": {
+                    "request_model": "",
+                    "prompt_tokens": 107,
+                    "completion_tokens": 1718,
+                    "upstream_response_time": 11662,
+                    "model": "deepseek-v4-flash",
+                    "duration": 11662,
+                },
                 "code_name": "",
                 "error": "",
                 "response_desc": "",
@@ -471,6 +634,7 @@ class TestLogSearchByRequestIdApi:
         assert logs[0]["status"] == 200
         assert logs[0]["method"] == "GET"
         assert logs[0]["client_ip"] == "127.0.0.1"
+        assert logs[0]["llm_summary"] == fake_logs[0]["llm_summary"]
 
     def test_search_logs_empty_result(self, request_view):
         """测试没有日志时返回空列表"""
@@ -503,6 +667,7 @@ class TestMCPServerListApiOAuth2:
             status=MCPServerStatusEnum.ACTIVE.value,
             is_public=True,
             oauth2_public_client_enabled=True,
+            oauth2_personal_client_enabled=True,
         )
 
         resp = request_view(
@@ -519,6 +684,7 @@ class TestMCPServerListApiOAuth2:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is True
+        assert mcp_data["oauth2_personal_client_enabled"] is True
 
     def test_list_returns_oauth2_disabled(self, request_view, fake_gateway, settings):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
@@ -530,6 +696,7 @@ class TestMCPServerListApiOAuth2:
             status=MCPServerStatusEnum.ACTIVE.value,
             is_public=True,
             oauth2_public_client_enabled=False,
+            oauth2_personal_client_enabled=False,
         )
 
         resp = request_view(
@@ -546,6 +713,7 @@ class TestMCPServerListApiOAuth2:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is False
+        assert mcp_data["oauth2_personal_client_enabled"] is False
 
 
 class TestOAuthProtectedResourceApi:
@@ -749,6 +917,7 @@ class TestMCPServerRetrieveApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=True,
+            oauth2_personal_client_enabled=True,
         )
 
         mocker.patch(
@@ -779,6 +948,7 @@ class TestMCPServerRetrieveApi:
         assert resp.status_code == 200
         result = resp.json()
         assert result["data"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["oauth2_personal_client_enabled"] is True
 
     def test_retrieve_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回 oauth2_public_client_enabled=False"""
@@ -796,6 +966,7 @@ class TestMCPServerRetrieveApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=False,
+            oauth2_personal_client_enabled=False,
         )
 
         mocker.patch(
@@ -826,6 +997,7 @@ class TestMCPServerRetrieveApi:
         assert resp.status_code == 200
         result = resp.json()
         assert result["data"]["oauth2_public_client_enabled"] is False
+        assert result["data"]["oauth2_personal_client_enabled"] is False
 
     def test_retrieve_private_mcp_server_by_maintainer(self, request_view, fake_gateway, mocker):
         """测试网关维护者获取私有的 MCPServer 详情"""
@@ -1155,147 +1327,50 @@ class TestGatewayListApiKeyword:
         assert len(result["data"]) >= 1
 
 
-class TestGatewayBatchQueryApi:
-    def test_batch_query(self, request_view, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.is_public = True
-        fake_gateway.description = "test desc"
-        fake_gateway.save()
-
-        g2 = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=True, description="other desc")
-
-        resp = request_view(
+class TestGatewayResourceDetailApi:
+    def test_retrieve_returns_resource_kind(self, mocker, request_to_view, request_factory, fake_gateway):
+        resource_data = ReleasedResourceData(
+            id=1,
+            name="chat_completions",
             method="POST",
-            view_name="openapi.v2.open.gateway.batch_query",
-            app=mock.MagicMock(app_code="test"),
-            data={"names": [fake_gateway.name, g2.name]},
-            content_type="application/json",
-        )
-        result = resp.json()
-        assert resp.status_code == 200
-        assert len(result["data"]) == 2
-
-        names = {item["name"] for item in result["data"]}
-        assert fake_gateway.name in names
-        assert g2.name in names
-
-    def test_batch_query_filters_inactive(self, request_view, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
-        fake_gateway.is_public = True
-        fake_gateway.save()
-
-        resp = request_view(
-            method="POST",
-            view_name="openapi.v2.open.gateway.batch_query",
-            app=mock.MagicMock(app_code="test"),
-            data={"names": [fake_gateway.name]},
-            content_type="application/json",
-        )
-        result = resp.json()
-        assert resp.status_code == 200
-        assert len(result["data"]) == 0
-
-    def test_batch_query_filters_non_public(self, request_view, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.is_public = False
-        fake_gateway.save()
-
-        resp = request_view(
-            method="POST",
-            view_name="openapi.v2.open.gateway.batch_query",
-            app=mock.MagicMock(app_code="test"),
-            data={"names": [fake_gateway.name]},
-            content_type="application/json",
-        )
-        result = resp.json()
-        assert resp.status_code == 200
-        assert len(result["data"]) == 0
-
-    def test_batch_query_by_ids(self, request_view, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.is_public = True
-        fake_gateway.save()
-
-        resp = request_view(
-            method="POST",
-            view_name="openapi.v2.open.gateway.batch_query",
-            app=mock.MagicMock(app_code="test"),
-            data={"ids": [fake_gateway.id]},
-            content_type="application/json",
-        )
-        result = resp.json()
-        assert resp.status_code == 200
-        assert len(result["data"]) == 1
-        assert set(result["data"][0].keys()) == {"id", "name"}
-        assert result["data"][0]["name"] == fake_gateway.name
-
-    def test_batch_query_with_fields(self, request_view, fake_gateway):
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.is_public = True
-        fake_gateway.save()
-
-        resp = request_view(
-            method="POST",
-            view_name="openapi.v2.open.gateway.batch_query",
-            app=mock.MagicMock(app_code="test"),
-            data={"names": [fake_gateway.name], "fields": "name"},
-            content_type="application/json",
-        )
-        result = resp.json()
-        assert resp.status_code == 200
-        assert len(result["data"]) == 1
-        assert set(result["data"][0].keys()) == {"name"}
-
-    def test_batch_query_no_ids_or_names(self, request_view):
-        resp = request_view(
-            method="POST",
-            view_name="openapi.v2.open.gateway.batch_query",
-            app=mock.MagicMock(app_code="test"),
-            data={},
-            content_type="application/json",
-        )
-        assert resp.status_code == 400
-
-
-class TestGatewayResourceRetrieveByNameApi:
-    def test_retrieve_existing_resource(self, request_to_view, request_factory, fake_gateway):
-        resource = G(
-            Resource,
-            gateway=fake_gateway,
-            name="get_user_info",
-            description="获取用户信息",
-            method="GET",
-            path="/api/v1/users/",
+            path="/chat/completions",
             is_public=True,
+            kind=ResourceKindEnum.AI.value,
+            contexts={
+                "resource_auth": {
+                    "config": json.dumps(
+                        {
+                            "oauth2_public_client_enabled": True,
+                            "oauth2_personal_client_enabled": False,
+                        }
+                    )
+                }
+            },
         )
+        mocker.patch(
+            "apigateway.apis.v2.open.views.Release.objects.get_released_resource_version_id",
+            return_value=1,
+        )
+        mocker.patch(
+            "apigateway.apis.v2.open.views.ReleasedResourceDocHandler.get_released_resource_doc_data",
+            return_value=(resource_data, None),
+        )
+        mocker.patch("apigateway.apis.v2.open.views.get_resource_schema", return_value={})
 
-        request = request_factory.get("")
+        request = request_factory.get("", data={"stage_name": "prod"})
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
-
         response = request_to_view(
             request,
-            view_name="openapi.v2.open.gateway.resources.info",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": "get_user_info"},
+            view_name="openapi.v2.open.gateway.resources.detail",
+            path_params={"gateway_name": fake_gateway.name, "resource_name": resource_data.name},
         )
         result = get_response_json(response)
 
         assert response.status_code == 200
-        assert result["data"]["name"] == "get_user_info"
-        assert result["data"]["id"] == resource.id
-
-    def test_retrieve_nonexistent_resource(self, request_to_view, request_factory, fake_gateway):
-        request = request_factory.get("")
-        request.gateway = fake_gateway
-        request.app = mock.MagicMock(app_code="test")
-
-        response = request_to_view(
-            request,
-            view_name="openapi.v2.open.gateway.resources.info",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": "nonexistent"},
-        )
-
-        assert response.status_code == 404
+        assert result["data"]["kind"] == ResourceKindEnum.AI.value
+        assert result["data"]["auth_config"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["auth_config"]["oauth2_personal_client_enabled"] is False
 
 
 class TestGatewayReleasedResourceListApi:
@@ -1309,11 +1384,14 @@ class TestGatewayReleasedResourceListApi:
                 "description": "test",
                 "method": "GET",
                 "path": "/test/",
+                "kind": ResourceKindEnum.AI.value,
                 "match_subpath": False,
                 "enable_websocket": False,
                 "app_verified_required": True,
                 "resource_perm_required": True,
                 "user_verified_required": True,
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": False,
             }
         ]
         get_released_public_resources_mock = mocker.patch(
@@ -1332,9 +1410,54 @@ class TestGatewayReleasedResourceListApi:
         result = get_response_json(response)
 
         assert response.status_code == 200
+        assert set(result["data"]) == {"count", "results"}
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["name"] == "test"
+        assert result["data"]["results"][0]["kind"] == ResourceKindEnum.AI.value
+        assert result["data"]["results"][0]["oauth2_public_client_enabled"] is True
+        assert result["data"]["results"][0]["oauth2_personal_client_enabled"] is False
         get_released_public_resources_mock.assert_called_once_with(fake_gateway.id, stage_name="prod")
+
+    def test_list_supports_limit_offset_pagination(
+        self, settings, mocker, request_to_view, request_factory, fake_gateway
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{resource_path}"
+        resources = [
+            {
+                "id": resource_id,
+                "name": f"resource-{resource_id}",
+                "description": "test",
+                "method": "GET",
+                "path": f"/resource-{resource_id}/",
+                "kind": ResourceKindEnum.STANDARD.value,
+                "match_subpath": False,
+                "enable_websocket": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+                "user_verified_required": True,
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": False,
+            }
+            for resource_id in (1, 2)
+        ]
+        mocker.patch(
+            "apigateway.apis.v2.open.views.ResourceVersionHandler.get_released_public_resources",
+            return_value=resources,
+        )
+
+        request = request_factory.get("", data={"limit": 1, "offset": 1})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.released_resources.list",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": "prod"},
+        )
+
+        result = get_response_json(response)
+        assert response.status_code == 200
+        assert result["data"]["count"] == 2
+        assert [item["id"] for item in result["data"]["results"]] == [2]
 
 
 class TestGatewayReleasedResourceRetrieveApi:
@@ -1351,6 +1474,7 @@ class TestGatewayReleasedResourceRetrieveApi:
                 "name": "test",
                 "method": "GET",
                 "path": "/test/",
+                "kind": ResourceKindEnum.AI.value,
             },
         )
         get_resource_schema_mock = mocker.patch(
@@ -1374,6 +1498,7 @@ class TestGatewayReleasedResourceRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == "test"
+        assert result["data"]["kind"] == ResourceKindEnum.AI.value
         assert result["data"]["schema"] == {"parameters": []}
         get_released_resource_version_id_mock.assert_called_once_with(fake_gateway.id, "prod")
         get_released_resource_mock.assert_called_once_with(fake_gateway.id, 1, "test")
@@ -1541,9 +1666,10 @@ class TestGatewayResourceListApiFields:
             method="GET",
             path="/api/v1/users/",
             is_public=True,
+            kind=ResourceKindEnum.AI.value,
         )
 
-        request = request_factory.get("", data={"fields": "id,name,method"})
+        request = request_factory.get("", data={"fields": "id,name,method,kind"})
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
 
@@ -1556,7 +1682,8 @@ class TestGatewayResourceListApiFields:
 
         assert response.status_code == 200
         assert len(result["data"]) == 1
-        assert set(result["data"][0].keys()) == {"id", "name", "method"}
+        assert set(result["data"][0].keys()) == {"id", "name", "method", "kind"}
+        assert result["data"][0]["kind"] == ResourceKindEnum.AI.value
 
     def test_list_without_fields_returns_default_id_name(self, request_to_view, request_factory, fake_gateway):
         G(

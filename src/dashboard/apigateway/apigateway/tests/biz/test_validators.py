@@ -35,6 +35,8 @@ from apigateway.biz.validators import (
     SchemeHostInputValidator,
     StageVarsValidator,
     UpstreamValidator,
+    UserManagedBKAppCodeListValidator,
+    UserManagedBKAppCodeValidator,
 )
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
@@ -155,6 +157,26 @@ class TestBKAppCodeValidator:
             slz.is_valid(raise_exception=True)
 
 
+class TestUserManagedBKAppCodeValidator:
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_reject_oauth2_builtin_app_code(self, app_code):
+        with pytest.raises(ValidationError):
+            UserManagedBKAppCodeValidator()(app_code)
+
+    def test_allow_normal_app_code(self):
+        assert UserManagedBKAppCodeValidator()("exist-app") is None
+
+
+class TestUserManagedBKAppCodeListValidator:
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_reject_oauth2_builtin_app_code(self, app_code):
+        with pytest.raises(ValidationError):
+            UserManagedBKAppCodeListValidator()(["exist-app", app_code])
+
+    def test_allow_normal_app_codes(self):
+        assert UserManagedBKAppCodeListValidator()(["app-1", "app-2"]) is None
+
+
 class TestResourceVersionValidator:
     def test_validate(self, faker, fake_stage, fake_gateway, fake_resource):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
@@ -187,7 +209,7 @@ class TestResourceVersionValidator:
             gateway=fake_gateway,
             stage=fake_stage,
             backend=backend2,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",
@@ -318,6 +340,7 @@ class TestPublishValidator:
         echo_plugin_type,
         echo_plugin_stage_binding,
         faker,
+        django_assert_num_queries,
     ):
         echo_plugin2 = G(
             PluginConfig,
@@ -338,7 +361,31 @@ class TestPublishValidator:
             scope_id=fake_stage.pk,
         )
         publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
-        with pytest.raises(ReleaseValidationError):
+        with django_assert_num_queries(1), pytest.raises(ReleaseValidationError):
+            publish_validator._validate_stage_plugins()
+
+    @pytest.mark.parametrize("missing_relation", ["config", "type"])
+    def test_validate_stage_plugins_rejects_missing_config_relation(
+        self,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version,
+        missing_relation,
+    ):
+        plugin_config = None
+        if missing_relation == "type":
+            plugin_config = G(PluginConfig, gateway=fake_gateway, type=None)
+
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=plugin_config,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
+
+        with pytest.raises(ReleaseValidationError, match="插件配置或插件类型为空"):
             publish_validator._validate_stage_plugins()
 
     def test_validate_stage_backends(self, fake_stage, fake_gateway):
@@ -362,23 +409,29 @@ class TestPublishValidator:
             gateway=fake_gateway,
             backend=backend,
             stage=fake_stage,
-            config={
+            _config={
+                "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "ee.com", "weight": 100}],
             },
         )
 
-        G(
-            BackendConfig,
-            gateway=fake_gateway,
-            backend=backend,
-            stage=stage2,
-            config={
-                "timeout": 30,
-                "loadbalance": "roundrobin",
-                "hosts": [{"scheme": "", "host": "", "weight": 100}],
-            },
+        # 模拟存量非法配置，确认发布校验不会读取其他环境的数据。
+        BackendConfig._base_manager.bulk_create(
+            [
+                BackendConfig(
+                    gateway=fake_gateway,
+                    backend=backend,
+                    stage=stage2,
+                    config={
+                        "type": "node",
+                        "timeout": 30,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "", "host": "", "weight": 100}],
+                    },
+                )
+            ]
         )
 
         resource_version = G(

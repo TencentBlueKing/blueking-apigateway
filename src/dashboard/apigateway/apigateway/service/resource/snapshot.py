@@ -26,9 +26,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from django.conf import settings
 
 from apigateway.apps.label.models import ResourceLabel
-from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.schema.models import Schema
+from apigateway.service.contexts import build_resource_auth_config
 from apigateway.utils import time
 
 if TYPE_CHECKING:
@@ -139,6 +140,7 @@ def snapshot_resource(
     """
     data = {
         "id": resource.pk,
+        "kind": resource.kind,
         "name": resource.name,
         "description": resource.description,
         "description_en": resource.description_en,
@@ -158,7 +160,7 @@ def snapshot_resource(
         data["proxy"] = proxy_map[resource.id]
 
     # 资源使用的 stage vars
-    if data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
+    if resource.kind == ResourceKindEnum.STANDARD.value and data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
         data["stage_vars"] = get_resource_use_stage_vars(data)
 
     if context_map is None:
@@ -169,6 +171,15 @@ def snapshot_resource(
         data["contexts"] = {c.type: c.snapshot(as_dict=True) for c in contexts}
     else:
         data["contexts"] = context_map[resource.pk]
+
+    # resource_auth 快照继续沿用 Context 的完整认证配置；OAuth2 开关的编辑区数据存储在 Resource 列中，
+    # 因此创建版本时在这里合并回 config，保持发布侧既有的资源快照协议不变。
+    resource_auth = data["contexts"].get("resource_auth")
+    if resource_auth:
+        resource_auth["config"] = json.dumps(
+            build_resource_auth_config(resource, json.loads(resource_auth["config"])),
+            separators=(",", ":"),
+        )
 
     if disabled_stage_map is None:
         data["disabled_stages"] = list(

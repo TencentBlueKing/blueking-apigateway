@@ -21,7 +21,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
@@ -74,8 +74,7 @@ class ReleaseHandler:
         if order_by:
             queryset = queryset.order_by(order_by)
 
-        # Select related data_plane for ReleaseHistory to avoid N+1 queries.
-        return queryset.select_related("data_plane").distinct()
+        return queryset.select_related("data_plane", "resource_version", "stage").distinct()
 
     @staticmethod
     def get_released_stage_ids(gateway_ids: List[int]) -> List[int]:
@@ -180,14 +179,16 @@ class ReleaseHandler:
 
         # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录
         # FIXME: 每个对应的 release 如果直接关联了对应的 release_history 就不需要通过这种方式去查了
-        latest_release_histories = []
-        latest_release_history_ids = []
-        for stage_id in stage_ids:
-            latest_release_history = ReleaseHistory.objects.filter(stage_id=stage_id).order_by("-id").first()
-            if not latest_release_history:
-                continue
-            latest_release_histories.append(latest_release_history)
-            latest_release_history_ids.append(latest_release_history.id)
+        latest_release_history_id = (
+            ReleaseHistory.objects.filter(stage_id=OuterRef("stage_id")).order_by("-id").values("id")[:1]
+        )
+        latest_release_histories = list(
+            ReleaseHistory.objects.filter(
+                stage_id__in=stage_ids,
+                id=Subquery(latest_release_history_id),
+            ).select_related("resource_version")
+        )
+        latest_release_history_ids = [release_history.id for release_history in latest_release_histories]
 
         # 查询发布历史对应的最新发布事件
         publish_id_to_latest_event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(

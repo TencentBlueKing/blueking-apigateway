@@ -34,3 +34,5 @@ core
 bk-apigateway-core-api
 .coverage.cov
 config.yaml
+bin
+Makefile.bk

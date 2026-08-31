@@ -20,7 +20,11 @@ import pytest
 
 from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.constants import DELETE_PUBLISH_ID
-from apigateway.controller.distributor.base import BaseDistributor
+from apigateway.controller.distributor.base import DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE, BaseDistributor
+from apigateway.controller.distributor.connection import (
+    DistributorConnectionError,
+    check_gateway_distributor_connection,
+)
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor, SyncFail
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
@@ -60,6 +64,55 @@ class TestGatewayResourceDistributor:
         mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
         distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         assert isinstance(distributor, BaseDistributor)
+
+    def test_test_connection_success(self, mocker):
+        mock_release = mocker.Mock()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.name = "default"
+        mock_etcd_client = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client", return_value=mock_etcd_client)
+
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+        success, message = distributor.test_connection()
+
+        assert success is True
+        assert message == "ok"
+        mock_etcd_client.status.assert_called_once()
+
+    def test_test_connection_failure(self, mocker):
+        mock_release = mocker.Mock()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.name = "default"
+        mock_etcd_client = mocker.Mock()
+        mock_etcd_client.status.side_effect = RuntimeError("connect failed")
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client", return_value=mock_etcd_client)
+
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+        success, message = distributor.test_connection()
+
+        assert success is False
+        assert message == DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE.format(id=1, name="default")
+        assert "connect failed" not in message
+
+    def test_check_gateway_distributor_connection_client_init_failure(self, mocker):
+        mock_release = mocker.Mock()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.name = "default"
+        mock_data_plane.etcd_configs = {}
+        mocker.patch(
+            "apigateway.controller.distributor.etcd.new_etcd_client",
+            side_effect=RuntimeError("connect failed"),
+        )
+
+        with pytest.raises(DistributorConnectionError) as err:
+            check_gateway_distributor_connection(mock_release, mock_data_plane)
+
+        message = str(err.value)
+        assert message == DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE.format(id=1, name="default")
+        assert "connect failed" not in message
 
     def test_gateway_property(self, mocker):
         """Test gateway property"""
@@ -181,6 +234,7 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.gateway = mocker.Mock()
         mock_release.gateway.name = "test-gateway"
+        mock_release.gateway.is_ai_gateway = False
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
         mock_release.resource_version = mocker.Mock()
@@ -236,6 +290,7 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.gateway = mocker.Mock()
         mock_release.gateway.name = "test-gateway"
+        mock_release.gateway.is_ai_gateway = False
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
 

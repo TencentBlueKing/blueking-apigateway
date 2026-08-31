@@ -67,7 +67,7 @@
           >
             <span class="normal-text">
               <span>{{ t('已选') }}</span>
-              <span class="count">{{ selections.length }}</span>
+              <span class="mx-4px count">{{ selections.length }}</span>
               <span>{{ t('条') }}</span>
               <span class="m-r4px">,</span>
             </span>
@@ -126,7 +126,15 @@
 
 <script setup lang="tsx">
 // @ts-nocheck
-import { cloneDeep, memoize, sortBy, sortedUniq, throttle, uniq } from 'lodash-es';
+import {
+  cloneDeep,
+  isEqual,
+  memoize,
+  sortBy,
+  sortedUniq,
+  throttle,
+  uniq,
+} from 'lodash-es';
 import {
   type BkUiSettings,
   PrimaryTable,
@@ -136,13 +144,15 @@ import {
 import { ConfigProvider } from 'tdesign-vue-next';
 import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
 import enConfig from 'tdesign-vue-next/es/locale/en_US';
-import { Checkbox, Loading } from 'bkui-vue';
+import { Checkbox, Loading, Popover } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import type { ITableMethod, ITableSettings } from '@/types/common';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import i18n from '@/locales';
 import TableEmpty from '@/components/table-empty/Index.vue';
+// tdesign 表格样式
+import '@blueking/tdesign-ui/vue3/index.css';
 
 interface IProps {
   apiMethod?: (params?: any) => Promise<unknown>
@@ -362,37 +372,49 @@ const selectionColumns = computed(() => [{
     const isChecked = selections.value.map(item => item[tableRowKey]).includes(row[tableRowKey]);
 
     return (
-      <Checkbox
-        modelValue={isChecked}
-        v-bk-tooltips={{
-          content: row.selectionTip ?? '',
-          disabled: typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row),
-        }}
-        class="custom-ag-table-checkbox"
-        disabled={isDisabled}
-        onChange={(isCheck: boolean, e: MouseEvent) => {
-          e?.stopPropagation();
-          if (isDisabled) {
-            return;
-          }
-          // 这里可以增加disabled逻辑
-          handleCustomSelectChange({
-            isCheck,
-            tableRowKey,
-            row,
-          });
-          const selectionTable = filteredTableData.value;
-          const checkedIds = selectionsRowKeys.value.filter((id: number | string) =>
-            selectionTable.some(item => item[tableRowKey] === id),
-          );
-          isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+      <Popover
+        trigger="hover"
+        placement="top"
+        popoverDelay={100}
+        disabled={typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row)}
+      >
+        {{
+          default: () => (
+            <Checkbox
+              modelValue={isChecked}
+              class="custom-ag-table-checkbox"
+              disabled={isDisabled}
+              onChange={(isCheck: boolean, e: MouseEvent) => {
+                e?.stopPropagation();
 
-          emit('selection-change', {
-            selectionsRowKeys: checkedIds,
-            selections: selections.value,
-          });
+                if (isDisabled) return;
+
+                // 这里可以增加disabled逻辑
+                handleCustomSelectChange({
+                  isCheck,
+                  tableRowKey,
+                  row,
+                });
+                const selectionTable = filteredTableData.value;
+                const checkedIds = selectionsRowKeys.value.filter((id: number | string) =>
+                  selectionTable.some(item => item[tableRowKey] === id),
+                );
+                isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+
+                emit('selection-change', {
+                  selectionsRowKeys: checkedIds,
+                  selections: selections.value,
+                });
+              }}
+            />
+          ),
+          content: () => (
+            <div>
+              {slots?.selectionPopoverContent?.(row) ?? row.selectionTip}
+            </div>
+          ),
         }}
-      />
+      </Popover>
     );
   },
 }]);
@@ -572,6 +594,19 @@ watch([selections, selectedRowKeys], () => {
     }
   }
 }, { deep: true });
+
+watch(
+  () => hiddenColumn,
+  (newVal: string[], oldVal: string[]) => {
+    if ((!showSettings || !newVal) && isEqual(newVal, oldVal)) return;
+    // 清空旧配置，触发重新初始化
+    tableSettings.value = null;
+    nextTick(() => {
+      tableKey.value = Date.now();
+    });
+  },
+  { deep: true },
+);
 
 const fetchData = (
   params: Record<string, any> = {},

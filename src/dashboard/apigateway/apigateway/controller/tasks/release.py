@@ -20,13 +20,15 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from celery import shared_task
+from celery import current_app, shared_task
 
 from apigateway.apps.data_plane.models import DataPlane
+from apigateway.apps.mcp_server.constants import RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     PublishEvent,
@@ -46,6 +48,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS = 120
+
 
 def _release_gateway(
     distributor: BaseDistributor,
@@ -64,14 +68,6 @@ def _release_gateway(
             release_task_id=procedure_logger.release_task_id,
             publish_id=release_history.id,
         )
-        if is_success:
-            PublishEventReporter.report_distribute_config_success(
-                release_history,
-            )
-
-        else:
-            PublishEventReporter.report_distribute_config_failure(release_history, fail_msg)
-            return False
     except Exception as err:  # pylint: disable=broad-except
         # 记录失败原因
         procedure_logger.exception("release failed")
@@ -80,6 +76,13 @@ def _release_gateway(
         # 异常抛出，让 celery 停止编排
         raise
 
+    if not is_success:
+        PublishEventReporter.report_distribute_config_failure(release_history, fail_msg)
+        raise RuntimeError(fail_msg)
+
+    PublishEventReporter.report_distribute_config_success(
+        release_history,
+    )
     return True
 
 
@@ -227,6 +230,24 @@ def update_release_data_after_success(
         release.stage.id,
         resource_version.id,
     )
+    current_app.send_task(
+        RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME,
+        kwargs={
+            "stage_id": release.stage.id,
+            "expected_resource_version_id": resource_version.id,
+            "expected_release_history_id": publish_id,
+        },
+        countdown=MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS,
+    )
+
+    try:
+        OAuth2BuiltinPermissionReconciler().reconcile_gateway(release.gateway)
+    except Exception:
+        logger.exception(
+            "reconcile OAuth2 built-in permissions failed after release success: gateway_id=%s, publish_id=%s",
+            release.gateway_id,
+            publish_id,
+        )
 
 
 def clear_unreleased_resource(gateway_id: int) -> None:

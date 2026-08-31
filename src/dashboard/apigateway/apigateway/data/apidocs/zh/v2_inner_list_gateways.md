@@ -4,7 +4,14 @@
 
 
 ### 输入参数
-无
+
+#### query 参数
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+|----------|----------|------|------|
+| name | string | 否 | 网关名称，用于过滤网关 |
+| fuzzy | boolean | 否 | 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配 |
+| kind | string | 否 | 网关类型：`normal`、`programmable` 或 `ai`；不传返回所有类型 |
 
 ### 响应示例
 
@@ -14,6 +21,7 @@
         {
             "id": 1,
             "name": "bk-apigateway",
+            "kind": "normal",
             "description": "",
             "maintainers": [
                 "张三"
@@ -45,6 +53,7 @@
 |-----------------|----------|----------|
 | id              | int      | 网关ID     |
 | name            | string   | 网关名称     |
+| kind            | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | description     | string   | 网关描述     |
 | maintainers     | array    | 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表 |
 | doc_maintainers | object   | 网关文档维护人员 |

@@ -20,7 +20,11 @@ import logging
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
+from apigateway.apps.data_plane.constants import (
+    CURRENT_DATA_PLANE_APISIX_VERSION,
+    DEFAULT_DATA_PLANE_NAME,
+    DataPlaneStatusEnum,
+)
 from apigateway.apps.data_plane.models import DataPlane
 
 logger = logging.getLogger(__name__)
@@ -67,6 +71,7 @@ class Command(BaseCommand):
             data_plane.bk_api_url_tmpl = bk_api_url_tmpl
             data_plane.etcd_namespace_prefix = etcd_namespace_prefix
             data_plane.status = DataPlaneStatusEnum.ACTIVE.value
+            data_plane.apisix_version = CURRENT_DATA_PLANE_APISIX_VERSION
             data_plane.updated_by = "system"
             data_plane.save()
             self.stdout.write(self.style.SUCCESS(f"Default data plane updated successfully (id={data_plane.id})"))

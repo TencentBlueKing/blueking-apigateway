@@ -16,14 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, List
+from typing import List
 
 from django.conf import settings
 
 from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.core.models import ResourceVersion
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.service.resource_version import get_standard_resource_names_set
 
 
 def update_stage_mcp_server_related_resource_names(
@@ -42,12 +42,7 @@ def update_stage_mcp_server_related_resource_names(
     if not mcp_servers:
         return
 
-    # get the resource names of the resource version
-    resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
-    if not resource_version:
-        resource_version_resource_names = set()
-    else:
-        resource_version_resource_names = {resource["name"] for resource in resource_version.data}
+    resource_version_resource_names = get_standard_resource_names_set(resource_version_id)
 
     to_update: List[MCPServer] = []
     for mcp_server in mcp_servers:
@@ -61,16 +56,6 @@ def update_stage_mcp_server_related_resource_names(
 
     if to_update:
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
-
-
-def validate_mcp_prompts_payload(prompts: Any) -> None:
-    """Validate MCP prompts payload shape."""
-    if not isinstance(prompts, list):
-        raise TypeError("prompts must be a list")
-
-    for prompt in prompts:
-        if not isinstance(prompt, dict):
-            raise TypeError("prompt item must be a dict")
 
 
 def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerProtocolTypeEnum.SSE.value) -> str:
@@ -87,11 +72,6 @@ def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerPro
     if protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
         return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/mcp/"
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"
-
-
-def build_mcp_streamable_http_url(mcp_server_name: str) -> str:
-    """构建 MCP Server Streamable HTTP 协议的 URL（便捷方法）"""
-    return build_mcp_server_url(mcp_server_name, MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value)
 
 
 def build_mcp_server_application_url(

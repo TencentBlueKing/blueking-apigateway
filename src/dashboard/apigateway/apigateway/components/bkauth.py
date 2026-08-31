@@ -30,6 +30,10 @@ from .http import http_get
 from .utils import do_legacy_blueking_http_request
 
 
+class BkAuthAppNotFoundError(Exception):
+    """The app does not exist in bkauth."""
+
+
 def _call_bkauth_api(http_func, path, data, timeout=10):
     # 默认请求头
     headers = {
@@ -42,6 +46,27 @@ def _call_bkauth_api(http_func, path, data, timeout=10):
     url = url_join(settings.BK_AUTH_API_URL, path)
 
     return do_legacy_blueking_http_request("bkauth", http_func, url, data, headers, timeout)
+
+
+def _get_app_info_http_get(app_code: str):
+    def request(*args, **kwargs):
+        ok, resp_data = http_get(*args, **kwargs)
+        if not ok:
+            response_data = resp_data.get("response_data") or {}
+            try:
+                code = int(response_data.get("code"))
+            except TypeError, ValueError:
+                code = None
+
+            # 1903404 is the common NotFound code in bkauth. For get_app_info(), the request path is fixed to
+            # /api/v1/apps/{app_code}, so 404 + 1903404 means the app detail does not exist in this context.
+            if resp_data.get("status_code") == 404 and code == 1903404:
+                raise BkAuthAppNotFoundError(f"app does not exist in bkauth, app_code={app_code}")
+
+        return ok, resp_data
+
+    request.__name__ = http_get.__name__
+    return request
 
 
 def get_app_info(app_code: str) -> Dict:
@@ -57,14 +82,14 @@ def get_app_info(app_code: str) -> Dict:
     """
     url_path = f"/api/v1/apps/{app_code}"
 
-    return _call_bkauth_api(http_get, url_path, {})
+    return _call_bkauth_api(_get_app_info_http_get(app_code), url_path, {})
 
 
 def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
     """get app tenant info
 
     Args:
-        app_code (str): _description_
+        app_code (str): application code
 
     Returns:
         Tuple[str, str]: tenant mode and tenant id
@@ -80,6 +105,7 @@ def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
     return tenant_mode, tenant_id
 
 
+@cached(cache=TTLCache(maxsize=100, ttl=60))
 def get_app_tenant_info_cached(app_code: str) -> Tuple[str, str]:
     return get_app_tenant_info(app_code)
 

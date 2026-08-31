@@ -29,7 +29,10 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
+from apigateway.common.tenant.query import (
+    gateway_filter_by_maintainer_tenant_id,
+    gateway_mcp_server_filter_by_user_tenant_id,
+)
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
@@ -57,13 +60,21 @@ class MCPServerPermissionHandler:
         )
 
     @staticmethod
-    def create_apply(bk_app_code: str, mcp_server_ids: List[int], reason: str, applied_by: str):
+    def create_apply(
+        bk_app_code: str,
+        mcp_server_ids: List[int],
+        reason: str,
+        applied_by: str,
+        tenant_id: Optional[str] = None,
+    ):
         queryset = MCPServer.objects.filter(
             id__in=mcp_server_ids,
             status=MCPServerStatusEnum.ACTIVE.value,
             gateway__status=GatewayStatusEnum.ACTIVE.value,
             stage__status=StageStatusEnum.ACTIVE.value,
         )
+        if tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         selected_mcp_server_ids = list(queryset.values_list("id", flat=True))
         if set(selected_mcp_server_ids) != set(mcp_server_ids):
@@ -81,9 +92,7 @@ class MCPServerPermissionHandler:
 
         if existing_permissions:
             existing_names = ", ".join([obj.mcp_server.name for obj in existing_permissions])
-            raise error_codes.INVALID_ARGUMENT.format(
-                _(f"mcp server name：{existing_names} 已经存在待审批或已审批的记录")
-            )
+            raise error_codes.CONFLICT.format(_(f"mcp server name：{existing_names} 已经存在待审批或已审批的记录"))
 
         current_time = now_datetime()
         created_apply_ids = []
@@ -132,6 +141,7 @@ class MCPServerPermissionHandler:
                         apply_resource_names=[apply.mcp_server.name],
                         applied_by=apply.applied_by,
                         apply_record_id=apply.id,
+                        apply_reason=apply.reason,
                         approvers=gateway.maintainers,
                         callback_token=callback_token,
                     )

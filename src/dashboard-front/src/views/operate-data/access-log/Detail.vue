@@ -39,18 +39,20 @@
         </div>
         <div class="panel-bd">
           <dl class="details">
-            <div
-              v-for="({ label, field }, index) in details.fields"
-              :key="index"
-              class="item"
-            >
-              <dt class="label">
-                {{ label }}
-              </dt>
-              <dd class="value">
-                {{ getFieldText(field) }}
-              </dd>
-            </div>
+            <template v-for="({ label, field }, index) in details.fields">
+              <div
+                v-if="field !== 'llm_summary' || (field === 'llm_summary' && isAIGateway)"
+                :key="index"
+                class="item"
+              >
+                <dt class="label">
+                  {{ label }}
+                </dt>
+                <dd class="value">
+                  {{ getFieldText(field) }}
+                </dd>
+              </div>
+            </template>
           </dl>
         </div>
       </div>
@@ -67,11 +69,13 @@ import {
 import { useGatewaysList } from '@/hooks';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
 import { getGatewayList } from '@/services/source/gateway';
+import { useGateway } from '@/stores';
 
 type IGatewayListItem = IExtractListApiResults<typeof getGatewayList>;
 
 const { t } = useI18n();
 const route = useRoute();
+const gatewayStore = useGateway();
 // const common = useCommon();
 
 // 组件默认不展示任何请求的错误 Message
@@ -96,6 +100,8 @@ const { getGatewaysListData } = useGatewaysList({});
 const routeQuery = computed(() => route.query);
 
 const routeParams = computed(() => route.params);
+
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
 const currentApigwName = computed(() => {
   const current = apigwDataList.value.find((item: IGatewayListItem) =>
@@ -147,6 +153,10 @@ const getFieldText = (field: string) => {
   if (field === 'timestamp') return transformTime(details.value.result[field]);
 
   if (details.value.result[field] === false) return false;
+
+  if (field === 'llm_summary') {
+    return JSON.stringify(details.value.result[field], null, 2);
+  }
 
   return details.value.result[field] || '--';
 };

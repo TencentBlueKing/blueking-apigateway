@@ -26,12 +26,18 @@ from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
 from openapi_schema_to_json_schema import to_json_schema
 
+from apigateway.apis.web.release.views import ProgrammableDeployRetrieveApi
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
+
+
+def test_programmable_deploy_retrieve_api_description():
+    schema = ProgrammableDeployRetrieveApi.get._swagger_auto_schema
+    assert schema["operation_description"] == "可编程网关 PaaS 部署详情查询"
 
 
 class TestReleaseCreateApi:
@@ -117,6 +123,8 @@ class TestReleaseAvailableResourceListApi:
                                         "skip_auth_verification": True,
                                         "auth_verified_required": True,
                                         "resource_perm_required": True,
+                                        "oauth2_public_client_enabled": True,
+                                        "oauth2_personal_client_enabled": False,
                                     }
                                 )
                             }
@@ -146,9 +154,12 @@ class TestReleaseAvailableResourceListApi:
                     "description": "test...",
                     "method": "get",
                     "path": "/test/",
+                    "kind": "standard",
                     "verified_user_required": False,
                     "verified_app_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                     "is_public": True,
                     "labels": [],
                 }
@@ -241,6 +252,23 @@ class TestReleaseHistoryListApi:
 
             result = resp.json()
             assert result["data"]["count"] == test["expected"]["count"]
+
+    def test_list_selects_stage_and_resource_version(self, request_view, django_assert_num_queries, fake_gateway):
+        for index in range(3):
+            stage = G(Stage, gateway=fake_gateway, name=f"stage-{index}")
+            resource_version = G(ResourceVersion, gateway=fake_gateway, version=f"1.0.{index}")
+            G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+
+        with django_assert_num_queries(4):
+            resp = request_view(
+                method="GET",
+                view_name="gateway.release_histories.list",
+                path_params={"gateway_id": fake_gateway.id},
+            )
+            result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 3
 
 
 class TestReleaseHistoryEventsRetrieveAPI:

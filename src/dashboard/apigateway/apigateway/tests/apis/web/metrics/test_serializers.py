@@ -50,6 +50,27 @@ class TestMetricsQueryRangeSLZ(TestCase):
             slz.is_valid()
             self.assertEqual(slz.validated_data, test["expected"])
 
+    def test_validate_llm_metrics(self):
+        for metrics in (
+            "llm_latency_avg",
+            "llm_latency_95th",
+            "llm_token_usage",
+            "llm_token_95th",
+            "llm_active_connections",
+        ):
+            with self.subTest(metrics=metrics):
+                data = {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": metrics,
+                    "time_start": 1,
+                    "time_end": 2,
+                    "time_range": 1,
+                }
+                slz = serializers.MetricsQueryRangeInputSLZ(data=data)
+                self.assertTrue(slz.is_valid(), slz.errors)
+                self.assertEqual(slz.validated_data, data)
+
 
 class TestMetricsQueryInstantSLZ(TestCase):
     def test_validate(self):

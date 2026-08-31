@@ -41,7 +41,7 @@ export function useTextGetter() {
       const tmpArr: string[] = [];
 
       if (auth?.app_verified_required) {
-        tmpArr.push(`${t('蓝鲸应用认证')}`);
+        tmpArr.push(`${t('应用认证')}`);
       }
       if (auth?.auth_verified_required) {
         tmpArr.push(`${t('用户认证')}`);

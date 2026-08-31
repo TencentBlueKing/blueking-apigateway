@@ -540,11 +540,7 @@ COMPONENT_DOC_URL_TMPL = env.str("COMPONENT_DOC_URL_TMPL", "")
 
 BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
 BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COMPONENT_API_URL
-# TODO: remove in the future, and remove in the helm-chart and te repo
-# BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_PAAS3_API_TIMEOUT = env.int("BK_PAAS3_API_TIMEOUT", 30)
-# TODO: remove in the future, and remove in the helm-chart and te repo
-# BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
 BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
 # BKAuth 站点地址 用于 OAuth2 跳转
@@ -580,9 +576,6 @@ BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
 # AIDEV 平台配置（配置了 AIDEV_AGENT_CREATE_URL 则启用 AIDev）
 AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 
-# MCP Server OAuth2 公开客户端模式开启后自动授权的 bk_app_code
-MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public")
-
 # ==============================================================================
 # ITSM v4 配置
 # ==============================================================================
@@ -592,6 +585,7 @@ BK_ITSM4_URL_PREFIX = (
 )
 BK_ITSM4_API_TIMEOUT = env.int("BK_ITSM4_API_TIMEOUT", 30)
 BK_ITSM4_SYSTEM_TOKEN = env.str("BK_ITSM4_SYSTEM_TOKEN", default="")
+BK_ITSM4_QUERY_OPERATOR = env.str("BK_ITSM4_QUERY_OPERATOR", default="admin")
 BK_ITSM4_CALLBACK_APP_CODE = env.str(
     "BK_ITSM4_CALLBACK_APP_CODE",
     default="bk-itsm4" if EDITION == "te" else "cw_aitsm",
@@ -844,7 +838,7 @@ GATEWAY_CONCURRENCY_LIMIT_ENABLED = env.bool("GATEWAY_CONCURRENCY_LIMIT_ENABLED"
 BK_GATEWAY_ETCD_NAMESPACE_PREFIX = env.str("BK_GATEWAY_ETCD_NAMESPACE_PREFIX", default="/bk-gateway-apigw")
 
 # BK plugins gateway data plane routing
-BK_PLUGINS_DATA_PLANE_NAME = env.str("BK_PLUGINS_DATA_PLANE_NAME", default="bk-plugins")
+BK_PLUGINS_DATA_PLANE_NAME = "bk-plugins"
 BK_PLUGINS_DATA_PLANE_GRAY_STAGE = env.str("BK_PLUGINS_DATA_PLANE_GRAY_STAGE", default="not_start")
 
 # ==============================================================================

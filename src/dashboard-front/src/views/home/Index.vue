@@ -34,7 +34,7 @@
         <BkButton
           theme="primary"
           class="mr8"
-          @click="showAddDialog"
+          @click="toCreate"
         >
           {{ t('新建网关') }}
         </BkButton>
@@ -88,7 +88,7 @@
         <BkButton
           theme="primary"
           class="mr-4px"
-          @click="showAddDialog"
+          @click="toCreate"
         >
           {{ t('新建网关') }}
         </BkButton>
@@ -196,12 +196,13 @@
                   @click.stop="() => handleGoPage('StageManagement', item)"
                 >
                   <span
-                    v-if="item.kind === 1"
-                    v-bk-tooltips="{ content: t('可编程网关') }"
+                    v-bk-tooltips="{
+                      content: item.kind === 0 ? t('API 网关') : item.kind === 1 ? t('可编程网关') : t('AI 网关'),
+                    }"
                     class="kind-program"
                   >
                     <AgIcon
-                      name="program"
+                      :name="item.kind === 0 ? 'apiwangguan': item.kind === 1 ? 'program' : 'AIwangguan'"
                       size="12"
                     />
                   </span>
@@ -327,7 +328,7 @@
                   { 'color-#3A84FF': item.hasOwnProperty('resource_count') }
                 ]"
               >
-                <template v-if="item.kind === 0">
+                <template v-if="item.kind !== 1">
                   {{ item.resource_count }}
                 <!--                <RouterLink -->
                 <!--                  :to="{ name: 'ResourceSetting', params: { id: item.id } }" -->
@@ -425,11 +426,6 @@
       {{ copyright }}
     </p>
   </div>
-
-  <CreateGateway
-    v-model="createGatewayShow"
-    @done="resetAndReload"
-  />
 </template>
 
 <script setup lang="ts">
@@ -441,7 +437,6 @@ import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway';
 import { vIntersectionObserver } from '@vueuse/components';
 import AgIcon from '@/components/ag-icon/Index.vue';
-import CreateGateway from '@/components/create-gateway/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
@@ -467,7 +462,6 @@ const filterData = ref({
   keyword: '',
   kind: 'all',
 });
-const createGatewayShow = ref(false);
 
 // 网关列表数据
 const gatewaysList = ref<ConvertedGatewayType[]>([]);
@@ -762,8 +756,8 @@ const calcPageLimit = (): number => {
   return Math.ceil(wrapperHeight / listItemHeight);
 };
 
-const showAddDialog = () => {
-  createGatewayShow.value = true;
+const toCreate = () => {
+  router.push({ name: 'CreateGateway' });
 };
 
 const handleViewDoc = () => {

@@ -403,7 +403,7 @@ class ProgrammableDeployCreateApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Release"],
-        operation_description="编程网关 pass 部署详情查询",
+        operation_description="可编程网关 PaaS 部署详情查询",
     ),
 )
 class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
@@ -412,7 +412,7 @@ class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
-        # 查询 pass 部署详情
+        # 查询 PaaS 部署详情
         data = get_paas_deployment_result(
             app_code=request.gateway.name,
             module="default",

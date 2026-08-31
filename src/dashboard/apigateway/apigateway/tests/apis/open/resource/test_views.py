@@ -18,10 +18,51 @@
 #
 import json
 
+from ddf import G
+
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.core.models import Backend, Proxy, Resource
 
 
 class TestResourceSyncApi:
+    def test_sync_ai_resource(self, request_view, fake_gateway, ignore_related_app_permission):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": {
+                                "kind": "ai",
+                                "backend": {"name": backend.name},
+                            },
+                        }
+                    }
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.resource.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": content, "delete": False},
+            gateway=fake_gateway,
+        )
+
+        assert response.status_code == 200, response.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="chat")
+        assert resource.kind == ResourceKindEnum.AI.value
+        assert Proxy.objects.get(resource=resource).config == {}
+
     def test_sync(
         self,
         request_view,

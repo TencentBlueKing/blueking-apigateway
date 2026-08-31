@@ -42,7 +42,3 @@ class ApiDebugHistoryResponse(BaseModel):
     data: Optional[dict] = Field(default=None, json_schema_extra={"help": "调用成功的时候跟返回结果一致"})
     spec_version: Optional[int] = Field(default=1, json_schema_extra={"help": "返回的结果版本"})
     error: Optional[str] = Field(default=None, json_schema_extra={"help": "错误信息"})
-
-    # 格式化时间
-    def format_proxy_time(self) -> str:
-        return f"{self.proxy_time:.2f}"

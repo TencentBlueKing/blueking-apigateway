@@ -44,7 +44,7 @@
           checkDiff('localData.allow_apply_permission'),
       }"
     >
-      {{ t("基本信息") }}
+      {{ t('基本信息') }}
     </p>
     <BkContainer
       class="ag-kv-box"
@@ -53,40 +53,40 @@
     >
       <BkRow :class="{ 'ag-diff': checkDiff('localData.name') }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t("资源名称") }}:</label>
+          <label class="ag-key">{{ t('资源名称') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ localData.name || "--" }}
+            {{ localData.name || '--' }}
           </div>
         </BkCol>
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.path') }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t("资源地址") }}:</label>
+          <label class="ag-key">{{ t('资源地址') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ localData.path || "--" }}
+            {{ localData.path || '--' }}
           </div>
         </BkCol>
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.description') }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t("描述") }}:</label>
+          <label class="ag-key">{{ t('描述') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ localData.description || "--" }}
+            {{ localData.description || '--' }}
           </div>
         </BkCol>
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.api_labels') }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t("标签") }}:</label>
+          <label class="ag-key">{{ t('标签') }}:</label>
         </BkCol>
         <BkCol
           style="margin-bottom: -4px;"
@@ -123,11 +123,28 @@
         }"
       >
         <BkCol :span="5">
-          <label class="ag-key">{{ t("认证方式") }}:</label>
+          <label class="ag-key">{{ t('认证方式') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
             {{ getResourceAuth(localData.contexts.resource_auth.config) }}
+          </div>
+        </BkCol>
+      </BkRow>
+
+      <BkRow
+        :class="{
+          'ag-diff': checkDiff(
+            'localData.contexts.resource_auth.config.oauth2_personal_client_enabled'
+          ),
+        }"
+      >
+        <BkCol :span="5">
+          <label class="ag-key">{{ t('个人令牌') }}:</label>
+        </BkCol>
+        <BkCol :span="10">
+          <div class="ag-value">
+            {{ localData.contexts.resource_auth.config.oauth2_personal_client_enabled ? t('开启') : t('关闭') }}
           </div>
         </BkCol>
       </BkRow>
@@ -140,14 +157,14 @@
         }"
       >
         <BkCol :span="5">
-          <label class="ag-key">{{ t("校验应用权限") }}:</label>
+          <label class="ag-key">{{ t('校验应用权限') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
             {{
               localData.contexts.resource_auth.config.resource_perm_required
-                ? t("校验")
-                : t("不校验")
+                ? t('校验')
+                : t('不校验')
             }}
           </div>
         </BkCol>
@@ -161,15 +178,15 @@
         }"
       >
         <BkCol :span="5">
-          <label class="ag-key">{{ t("是否公开") }}:</label>
+          <label class="ag-key">{{ t('是否公开') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ localData.is_public ? t("是") : t("否") }}
+            {{ localData.is_public ? t('是') : t('否') }}
             {{
               localData.allow_apply_permission
-                ? `(${t("允许申请权限")})`
-                : `(${t("不允许申请权限")})`
+                ? `(${t('允许申请权限')})`
+                : `(${t('不允许申请权限')})`
             }}
           </div>
         </BkCol>
@@ -182,7 +199,7 @@
         'ag-diff': checkDiff('localData.method') || checkDiff('localData.path'),
       }"
     >
-      {{ t("请求配置") }}
+      {{ t('请求配置') }}
     </p>
     <BkContainer
       class="ag-kv-box"
@@ -191,7 +208,7 @@
     >
       <BkRow :class="{ 'ag-diff': checkDiff('localData.method') }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t("请求方法") }}:</label>
+          <label class="ag-key">{{ t('请求方法') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
@@ -202,7 +219,7 @@
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.path') }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t("请求路径") }}:</label>
+          <label class="ag-key">{{ t('请求路径') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
@@ -210,58 +227,61 @@
           </div>
         </BkCol>
       </BkRow>
+      <template v-if="localData.kind !== 'ai'">
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
+          <BkCol :span="5">
+            <label class="ag-key">{{ t('匹配所有子路径') }}:</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ localData.match_subpath ? t('是') : t('否') }}
+            </div>
+          </BkCol>
+        </BkRow>
 
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
-        <BkCol :span="5">
-          <label class="ag-key">{{ t("匹配所有子路径") }}:</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{ localData.match_subpath ? t("是") : t("否") }}
-          </div>
-        </BkCol>
-      </BkRow>
-
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
-        <BkCol :span="5">
-          <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{ localData.enable_websocket ? t("是") : t("否") }}
-          </div>
-        </BkCol>
-      </BkRow>
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
+          <BkCol :span="5">
+            <label class="ag-key">{{ t('启用 WebSocket') }}:</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ localData.enable_websocket ? t('是') : t('否') }}
+            </div>
+          </BkCol>
+        </BkRow>
+      </template>
     </BkContainer>
 
-    <p
-      :class="{
-        'ag-diff': checkDiff('localData.openapi_schema'),
-      }"
-      class="title mt-15px"
-    >
-      {{ t("请求/响应参数") }}
-    </p>
-    <BkContainer
-      :col="15"
-      :margin="6"
-      class="ag-kv-box"
-    >
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
-        <BkCol :span="5">
-          <label class="ag-key">&nbsp;</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{ isSource ? '--' : (checkDiff('localData.openapi_schema') ? t('有更新') : '--') }}
-          </div>
-        </BkCol>
-      </BkRow>
-    </BkContainer>
-
-    <template v-if="localData.proxy?.backend_id">
+    <template v-if="localData.kind !== 'ai'">
       <p
+        :class="{
+          'ag-diff': checkDiff('localData.openapi_schema'),
+        }"
         class="title mt-15px"
+      >
+        {{ t('请求/响应参数') }}
+      </p>
+      <BkContainer
+        :col="15"
+        :margin="6"
+        class="ag-kv-box"
+      >
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
+          <BkCol :span="5">
+            <label class="ag-key">&nbsp;</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ isSource ? '--' : (checkDiff('localData.openapi_schema') ? t('有更新') : '--') }}
+            </div>
+          </BkCol>
+        </BkRow>
+      </BkContainer>
+    </template>
+
+    <template v-if="localData.proxy?.backend_id && localData.kind !== 'ai'">
+      <p
+        class="title mt-16px"
         :class="{
           'ag-diff':
             checkDiff('localData.proxy.backend_name') ||
@@ -270,7 +290,7 @@
             checkDiff('localData.proxy.config.path'),
         }"
       >
-        {{ t("后端配置") }}
+        {{ t('后端配置') }}
       </p>
       <BkContainer
         class="ag-kv-box"
@@ -282,11 +302,11 @@
           :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }"
         >
           <BkCol :span="5">
-            <label class="ag-key">{{ t("后端服务:") }}</label>
+            <label class="ag-key">{{ t('后端服务:') }}</label>
           </BkCol>
           <BkCol :span="10">
             <div class="ag-value">
-              {{ localData.proxy.backend_name || "--" }}
+              {{ localData.proxy.backend_name || '--' }}
             </div>
           </BkCol>
         </BkRow>
@@ -296,11 +316,11 @@
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.method') }"
           >
             <BkCol :span="5">
-              <label class="ag-key">{{ t("请求方法") }}:</label>
+              <label class="ag-key">{{ t('请求方法') }}:</label>
             </BkCol>
             <BkCol :span="10">
               <div class="ag-value">
-                {{ localData.proxy.config.method || "--" }}
+                {{ localData.proxy.config.method || '--' }}
               </div>
             </BkCol>
           </BkRow>
@@ -311,7 +331,7 @@
             }"
           >
             <BkCol :span="5">
-              <label class="ag-key">{{ t("自定义超时时间:") }}</label>
+              <label class="ag-key">{{ t('自定义超时时间:') }}</label>
             </BkCol>
             <BkCol :span="10">
               <div class="ag-value">
@@ -324,11 +344,11 @@
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.path') }"
           >
             <BkCol :span="5">
-              <label class="ag-key">{{ t("请求路径:") }}</label>
+              <label class="ag-key">{{ t('请求路径:') }}</label>
             </BkCol>
             <BkCol :span="10">
               <div class="ag-value">
-                {{ localData.proxy.config.path || "--" }}
+                {{ localData.proxy.config.path || '--' }}
               </div>
             </BkCol>
           </BkRow>
@@ -343,7 +363,7 @@
             </BkCol>
             <BkCol :span="10">
               <div class="ag-value">
-                {{ localData.proxy.config.code || "--" }}
+                {{ localData.proxy.config.code || '--' }}
               </div>
             </BkCol>
           </BkRow>
@@ -360,7 +380,7 @@
                   v-if="localData.proxy.config.body"
                   class="ag-pre mt0"
                 >{{
-                    localData.proxy.config.body || "--"
+                    localData.proxy.config.body || '--'
                   }}</pre>
                 <span v-else>--</span>
               </div>
@@ -391,11 +411,34 @@
         </template>
       </BkContainer>
     </template>
+
+    <template v-if="localData.kind === 'ai'">
+      <p class="title mt-16px">
+        {{ t('模型服务配置') }}
+      </p>
+      <BkContainer
+        class="ag-kv-box"
+        :col="15"
+        :margin="6"
+      >
+        <BkRow :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }">
+          <BkCol :span="5">
+            <label class="ag-key">{{ t('模型服务') }}:</label>
+          </BkCol>
+          <BkCol :span="10">
+            <div class="ag-value">
+              {{ localData.proxy.backend_name || '--' }}
+            </div>
+          </BkCol>
+        </BkRow>
+      </BkContainer>
+    </template>
+
     <p
       class="title mt-15px"
       :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }"
     >
-      {{ t("文档") }}
+      {{ t('文档') }}
     </p>
     <BkContainer
       class="ag-kv-box"
@@ -431,10 +474,10 @@
         :key="plugin.id"
       >
         <div
-          class="container-diff"
+          class="plugin-diff"
           :class="getPluginDiffClass(plugin)"
         >
-          <p class="title mt-15px">
+          <p class="plugin-title mt-15px">
             {{ t('插件:{name}', { name: plugin.name }) }}
           </p>
           <ConfigDisplayTable
@@ -505,11 +548,11 @@ const getResourceAuth = (auth: any) => {
   if (!auth) return '--';
   const tmpArr: string[] = [];
 
-  if (auth?.auth_verified_required) {
-    tmpArr.push(`${t('用户认证')}`);
+  if (auth.app_verified_required) {
+    tmpArr.push(`${t('应用认证')}`);
   }
-  if (auth?.app_verified_required) {
-    tmpArr.push(`${t('蓝鲸应用认证')}`);
+  if (auth.auth_verified_required) {
+    tmpArr.push(`${t('用户认证')}`);
   }
   return tmpArr.join(', ');
 };
@@ -553,9 +596,11 @@ const initLocalData = async () => {
 
 const initDiff = () => {
   diffMap.value = {};
+
   if (!diffData) {
     return false;
   }
+
   findAllDiff(diffData);
 
   // 处理后端配置使用默认配置情况
@@ -575,6 +620,14 @@ const initDiff = () => {
   const keys = Object.keys(diffMap.value);
   if (keys.some(item => item.startsWith('localData.disabled_stages'))) {
     diffMap.value['localData.disabled_stages'] = true;
+  }
+
+  // 处理文档更新时间
+  if (curResource?.diff?.doc_updated_time?.zh && !diffMap.value['localData.doc_updated_time.zh']) {
+    diffMap.value['localData.doc_updated_time.zh'] = '';
+  }
+  if (curResource?.diff?.doc_updated_time?.en && !diffMap.value['localData.doc_updated_time.en']) {
+    diffMap.value['localData.doc_updated_time.en'] = '';
   }
 };
 
@@ -638,8 +691,8 @@ const getPluginDiffClass = (plugin: any) => {
     return 'item-added';
   }
 
-  // 插件没有变更，返回空 class，不改变样式
-  return '';
+  // 插件没有变更，设置一个标记用的 class，不改变样式
+  return 'no-diff';
 };
 
 // 网关标签
@@ -805,9 +858,18 @@ initLocalData();
   }
 }
 
-.container-diff {
+.plugin-diff {
   padding: 2px 8px;
   margin: 18px 0;
+
+  .plugin-title {
+    padding-bottom: 10px;
+    margin-bottom: 17px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #63656e;
+    border-bottom: 1px solid #dcdee5;
+  }
 
   &.item-added {
     background-color: rgb(45 203 86 / 10%);
@@ -878,6 +940,10 @@ initLocalData();
       .bk-grid-row {
         display: block;
       }
+    }
+
+    .plugin-diff.no-diff {
+      display: none;
     }
   }
 }

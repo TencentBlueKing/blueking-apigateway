@@ -403,6 +403,10 @@
             "descriptionEn": {
               "type": ["string", "null"]
             },
+            "kind": {
+              "type": "string",
+              "enum": ["standard", "ai"]
+            },
             "isPublic": {
               "type": "boolean"
             },
@@ -420,7 +424,7 @@
             },
             "backend": {
               "type": "object",
-              "oneOf": [
+              "anyOf": [
                 {
                   "properties": {
                     "type": {
@@ -446,8 +450,7 @@
                       ]
                     },
                     "path": {
-                      "type": "string",
-                      "pattern": "^/[\\w{}/.-]*$"
+                      "type": "string"
                     },
                     "matchSubpath": {
                       "type": "boolean"
@@ -489,6 +492,17 @@
                     "type",
                     "statusCode"
                   ]
+                },
+                {
+                  "additionalProperties": true,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
                 }
               ]
             },
@@ -519,6 +533,12 @@
                 },
                 "resourcePermissionRequired": {
                   "type": "boolean"
+                },
+                "oauth2PublicClientEnabled": {
+                  "type": "boolean"
+                },
+                "oauth2PersonalClientEnabled": {
+                  "type": "boolean"
                 }
               }
             },
@@ -528,7 +548,38 @@
                 "type": "string"
               }
             }
-          }
+          },
+          "anyOf": [
+            {
+              "required": ["kind", "backend"],
+              "properties": {
+                "kind": {
+                  "enum": ["ai"]
+                },
+                "backend": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["name"]
+                }
+              }
+            },
+            {
+              "properties": {
+                "kind": {
+                  "enum": ["standard"]
+                },
+                "backend": {
+                  "type": "object",
+                  "required": ["method", "path"]
+                }
+              }
+            }
+          ]
         },
         "callbacks": {
           "type": "object",

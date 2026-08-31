@@ -25,7 +25,11 @@ from django.db.models import Q
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.core.models import Context, Gateway, Proxy, Resource
-from apigateway.service.contexts import ResourceAuthContext
+from apigateway.service.contexts import (
+    RESOURCE_OAUTH2_CLIENT_FIELDS,
+    ResourceAuthContext,
+    strip_resource_oauth2_client_config,
+)
 
 
 class ResourceHandler:
@@ -33,6 +37,16 @@ class ResourceHandler:
     @classmethod
     def save_auth_config(cls, resource_id: int, config: Dict[str, Any]):
         """存储资源认证配置"""
+        resource = Resource.objects.get(id=resource_id)
+        resource_update_fields = []
+        for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS:
+            if field_name not in config:
+                continue
+            setattr(resource, field_name, config[field_name])
+            resource_update_fields.append(field_name)
+        if resource_update_fields:
+            resource.save(update_fields=resource_update_fields)
+
         # 获取当前的配置
         try:
             auth_config = ResourceAuthContext().get_config(resource_id)
@@ -41,6 +55,7 @@ class ResourceHandler:
 
         # 用传入的配置，覆盖当前的配置
         auth_config.update(config)
+        auth_config = strip_resource_oauth2_client_config(auth_config)
 
         ResourceAuthContext().save(resource_id, auth_config)
 
@@ -57,6 +72,9 @@ class ResourceHandler:
 
         if condition.get("method"):
             queryset = queryset.filter(method__in=condition["method"].split(","))
+
+        if condition.get("kind"):
+            queryset = queryset.filter(kind=condition["kind"])
 
         if condition.get("backend_id"):
             resource_ids = Proxy.objects.filter(
@@ -79,7 +97,9 @@ class ResourceHandler:
 
         if condition.get("keyword"):
             keyword = condition.get("keyword")
-            queryset = queryset.filter(Q(path__icontains=keyword) | Q(name__icontains=keyword))
+            queryset = queryset.filter(
+                Q(path__icontains=keyword) | Q(name__icontains=keyword) | Q(description__icontains=keyword)
+            )
 
         if condition.get("order_by"):
             queryset = queryset.order_by(condition["order_by"])

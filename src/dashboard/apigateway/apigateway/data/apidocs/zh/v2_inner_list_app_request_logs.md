@@ -29,8 +29,6 @@
 {
   "data": {
     "count": 1,
-    "has_next": false,
-    "has_previous": false,
     "results": [
       {
         "request_id": "f1a0f0f4aef149d88b36e5",
@@ -44,6 +42,14 @@
         "http_path": "/prod/users",
         "status": 200,
         "request_duration": 32,
+        "llm_summary": {
+          "request_model": "",
+          "prompt_tokens": 107,
+          "completion_tokens": 1718,
+          "upstream_response_time": 11662,
+          "model": "deepseek-v4-flash",
+          "duration": 11662
+        },
         "code_name": "",
         "error": "",
         "response_desc": "OK"
@@ -57,7 +63,14 @@
 
 | 字段 | 类型 | 描述 |
 |---|---|---|
-| data | object | 结果数据，包含 count、has_next、has_previous 与 results |
+| data | object | 分页结果，包含 count 与 results |
+
+#### data
+
+| 字段 | 类型 | 描述 |
+|---|---|---|
+| count | int | 数据总数 |
+| results | array | 本次查询结果数据 |
 
 #### data.results
 
@@ -74,6 +87,7 @@
 | http_path | string | 请求路径 |
 | status | int | 响应状态码 |
 | request_duration | int | 请求耗时 |
+| llm_summary | object/null | LLM 调用摘要，模型代理请求返回摘要，其他请求为 null |
 | code_name | string | 状态码名称 |
 | error | string | 错误信息 |
 | response_desc | string | 响应说明 |

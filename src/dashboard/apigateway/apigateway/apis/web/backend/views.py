@@ -24,7 +24,13 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.backend import BackendHandler
+from apigateway.biz.backend import (
+    AIBackendConnectivityError,
+    AIBackendEndpointError,
+    AIBackendModelEndpointRequiredError,
+    BackendHandler,
+    get_ai_backend_model_ids,
+)
 from apigateway.biz.resource import ProxyHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig, Stage
@@ -32,7 +38,14 @@ from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .filters import BackendFilter
-from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ, BackendUpdateOutputSLZ
+from .serializers import (
+    AIBackendConnectivityInputSLZ,
+    AIBackendConnectivityOutputSLZ,
+    BackendInputSLZ,
+    BackendListOutputSLZ,
+    BackendRetrieveOutputSLZ,
+    BackendUpdateOutputSLZ,
+)
 
 
 class BackendQuerySetMixin:
@@ -102,6 +115,34 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+class BackendConnectivityTestApi(generics.CreateAPIView):
+    serializer_class = AIBackendConnectivityInputSLZ
+
+    @swagger_auto_schema(
+        operation_description="测试模型服务连通性并获取模型列表",
+        request_body=AIBackendConnectivityInputSLZ,
+        responses={status.HTTP_200_OK: AIBackendConnectivityOutputSLZ},
+        tags=["WebAPI.Backend"],
+    )
+    def post(self, request, *args, **kwargs):
+        if not request.gateway.is_ai_gateway:
+            raise error_codes.FAILED_PRECONDITION.format(_("普通网关不支持模型服务。"))
+
+        slz = self.get_serializer(data=request.data, context={"gateway": request.gateway})
+        slz.is_valid(raise_exception=True)
+        try:
+            models = get_ai_backend_model_ids(slz.validated_data["config"])
+        except AIBackendEndpointError:
+            raise error_codes.FAILED_PRECONDITION.format(_("模型服务地址不安全或无法解析，请检查配置。")) from None
+        except AIBackendModelEndpointRequiredError:
+            raise error_codes.REMOTE_REQUEST_ERROR.format(
+                _("模型列表地址自动推导失败，请配置 model_endpoint 后重试。")
+            ) from None
+        except AIBackendConnectivityError:
+            raise error_codes.REMOTE_REQUEST_ERROR.format(_("模型服务连通性测试失败，请检查配置。")) from None
+        return OKJsonResponse(data={"models": models})
 
 
 @method_decorator(

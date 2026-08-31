@@ -53,6 +53,15 @@ class PluginData:
         return self._type_code_to_name.get(f"{self.type_code}:{self.binding_scope_type}", self.type_code)
 
 
+@dataclass(frozen=True)
+class StageBackendConfig:
+    backend_id: int
+    backend_name: str
+    backend_kind: str
+    backend_type: str
+    config: Dict[str, Any]
+
+
 @dataclass
 class ReleaseData:
     _release: Release
@@ -81,17 +90,23 @@ class ReleaseData:
     def gateway_auth_config(self) -> Dict[str, Any]:
         return GatewayAuthContext().get_config(self.gateway.pk)
 
-    def get_stage_backend_configs(self) -> Dict[int, Dict[str, Any]]:
-        backend_configs = (
-            BackendConfig.objects.filter(
-                gateway_id=self.gateway.pk,
-                stage_id=self.stage.pk,
-            )
-            .prefetch_related("backend")
-            .all()
-        )
+    @cached_property
+    def stage_backend_configs(self) -> Dict[int, StageBackendConfig]:
+        backend_configs = BackendConfig.objects.filter(
+            gateway_id=self.gateway.pk,
+            stage_id=self.stage.pk,
+        ).select_related("backend")
 
-        return {b.backend.id: b.config for b in backend_configs}
+        return {
+            backend_config.backend_id: StageBackendConfig(
+                backend_id=backend_config.backend_id,
+                backend_name=backend_config.backend.name,
+                backend_kind=backend_config.backend.kind,
+                backend_type=backend_config.backend.type,
+                config=backend_config.config,
+            )
+            for backend_config in backend_configs
+        }
 
     def get_stage_plugins(self) -> List[PluginData]:
         plugins: List[PluginData] = []

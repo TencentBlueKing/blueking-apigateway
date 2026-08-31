@@ -18,6 +18,7 @@
 #
 from rest_framework import serializers
 
+from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, OpenAPIFormatEnum
@@ -25,7 +26,7 @@ from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import ResourceVersionSchemaEnum, ResourceVersionTypeEnum
+from apigateway.core.constants import ResourceKindEnum, ResourceVersionSchemaEnum, ResourceVersionTypeEnum
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -40,6 +41,11 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
 
 class ResourceInfoSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="资源id")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型：standard/ai",
+    )
     name = serializers.CharField(help_text="资源名称")
     method = serializers.CharField(help_text="前端请求方法")
     path = serializers.CharField(help_text="前端请求路径")
@@ -80,13 +86,20 @@ class ResourceInfoSLZ(serializers.Serializer):
         if backend_id:
             # 后端服务
             backend = self.context["resource_backends"].get(backend_id, None)
-            backend_info = {"id": backend_id, "name": backend.name if backend else ""}
+            backend_info = {
+                "id": backend_id,
+                "name": backend.name if backend else "",
+                "kind": backend.kind if backend else "",
+            }
 
             # 后端服务配置
             if backend and "resource_backend_configs" in self.context:
                 backend_config = self.context["resource_backend_configs"].get(backend_id)
                 if backend_config:
-                    backend_info["config"] = backend_config.config
+                    if backend.is_ai:
+                        backend_info["config"] = serialize_ai_backend_config_for_web(backend_config)
+                    else:
+                        backend_info["config"] = backend_config.get_config_for_display()
 
             proxy["backend"] = backend_info
 
@@ -129,7 +142,7 @@ class ResourceInfoSLZ(serializers.Serializer):
 
     def _has_openapi_schema(self, obj) -> bool:
         schema = self.context["resource_id_with_schema_dict"].get(obj["id"])
-        return ResourceOpenAPISchemaHandler.has_openapi_schem(schema)
+        return ResourceOpenAPISchemaHandler.has_openapi_schema(schema)
 
     def get_openapi_schema(self, obj):
         if self._has_openapi_schema(obj):
@@ -164,7 +177,7 @@ class ResourceVersionListInputSLZ(serializers.Serializer):
 class ResourceVersionListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
     released_stages = serializers.SerializerMethodField(help_text="已发布的环境列表")
-    sdk_count = serializers.SerializerMethodField(help_text="生成skd数量")
+    sdk_count = serializers.SerializerMethodField(help_text="生成 SDK 数量")
     version = serializers.SerializerMethodField(help_text="版本号")
     schema_version = serializers.CharField(help_text="资源版本协议版本：1.0/2.0")
     comment = serializers.CharField(help_text="版本日志")
@@ -213,6 +226,11 @@ class ResourceVersionDiffQueryInputSLZ(serializers.Serializer):
 
 class ResourceVersionResourceSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型：standard/ai",
+    )
     name = serializers.CharField(help_text="资源名称")
     method = serializers.CharField(help_text="请求方法")
     path = serializers.CharField(help_text="请求路径")

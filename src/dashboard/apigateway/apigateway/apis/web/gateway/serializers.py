@@ -33,6 +33,7 @@ from apigateway.core.constants import (
     ProgrammableGatewayLanguageEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.gateway_name import validate_gateway_name_kind
 from apigateway.service.paas import gen_programmable_gateway_links
 from apigateway.utils.crypto import calculate_fingerprint
 
@@ -75,7 +76,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
     kind = serializers.ChoiceField(
         choices=GatewayKindEnum.get_choices(),
         read_only=True,
-        help_text="网关类型，0: 普通网关，1：可编程网关",
+        help_text="网关类型，0: 普通网关，1：可编程网关，2：AI 网关",
     )
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开，true：公开，false：不公开")
     is_official = serializers.BooleanField(
@@ -213,6 +214,10 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         data = super().to_internal_value(data)
         return self._add_creator_to_maintainers(data)
 
+    def validate(self, data):
+        validate_gateway_name_kind(data["name"], data.get("kind", GatewayKindEnum.NORMAL.value))
+        return data
+
     def create(self, validated_data):
         validated_data.pop("programmable_gateway_git_info", None)
         return super().create(validated_data)
@@ -290,7 +295,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：已停用，1：启用中",
             },
             "kind": {
-                "help_text": "网关类型，0: 普通网关，1：可编程网关",
+                "help_text": "网关类型，0: 普通网关，1：可编程网关，2：AI 网关",
             },
             "is_public": {
                 "help_text": "是否公开，true: 公开，false: 不公开",
@@ -412,13 +417,6 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：停用，1：启用",
             },
         }
-
-
-class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
-    feature_flags = serializers.DictField(help_text="网关特性集")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.gateway.serializers.GatewayFeatureFlagsOutputSLZ"
 
 
 class GatewayTenantAppInfoTenant(serializers.Serializer):

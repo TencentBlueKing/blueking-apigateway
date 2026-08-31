@@ -59,11 +59,14 @@
             />
           </BkSelect>
         </BkFormItem>
-        <BkFormItem :label="t('后端服务')">
+        <BkFormItem
+          v-show="!isAIGateway"
+          :label="t('后端服务')"
+        >
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 150px;"
+            style="width: 250px;"
             @change="handleBackendChange"
           >
             <BkOption
@@ -72,6 +75,40 @@
               :key="option.id"
               :name="option.name"
             />
+          </BkSelect>
+        </BkFormItem>
+        <BkFormItem
+          v-show="isAIGateway"
+          :label="t('后端/模型服务')"
+        >
+          <BkSelect
+            v-model="backend_id"
+            clearable
+            style="width: 250px;"
+            @change="handleBackendChange"
+          >
+            <BkOptionGroup
+              :label="t('后端服务')"
+              collapsible
+            >
+              <BkOption
+                v-for="option in standardBackendList"
+                :id="option.id"
+                :key="option.id"
+                :name="option.name"
+              />
+            </BkOptionGroup>
+            <BkOptionGroup
+              :label="t('模型服务')"
+              collapsible
+            >
+              <BkOption
+                v-for="option in aiBackendList"
+                :id="option.id"
+                :key="option.id"
+                :name="option.name"
+              />
+            </BkOptionGroup>
           </BkSelect>
         </BkFormItem>
         <BkFormItem :label="t('资源')">
@@ -232,7 +269,7 @@
                 ref="tableRef"
                 v-model:table-data="tableData"
                 v-model:settings="settings"
-                row-key="request_id"
+                table-row-key="request_id"
                 show-settings
                 expand-on-row-click
                 resizable
@@ -248,58 +285,61 @@
               >
                 <template #expandedRow="{ row }">
                   <dl class="details">
-                    <div
-                      v-for="({ label, field }, index) in expandedFields"
-                      :key="index"
-                      class="item"
-                    >
-                      <dt class="label">
-                        {{ label }}
-                        <span class="fields">
-                          ( <span
-                            v-bk-tooltips="t('复制')"
-                            class="fields-main"
-                            @click.stop="() => copy(field)"
+                    <template v-for="({ label, field }, index) in expandedFields">
+                      <div
+                        v-if="field !== 'llm_summary' || (field === 'llm_summary' && isAIGateway)"
+                        :key="index"
+                        class="item"
+                      >
+                        <dt class="label">
+                          {{ label }}
+                          <span class="fields">
+                            ( <span
+                              v-bk-tooltips="t('复制')"
+                              class="fields-main"
+                              @click.stop="() => copy(field)"
+                            >
+                              {{ field }}
+                            </span> ) :
+                          </span>
+                        </dt>
+                        <dd class="value">
+                          <span
+                            v-if="field === 'response_body' && row.status === '200'"
+                            class="respond"
                           >
-                            {{ field }}
-                          </span> ) :
-                        </span>
-                      </dt>
-                      <dd class="value">
-                        <span
-                          v-if="field === 'response_body' && row.status === '200'"
-                          class="respond"
-                        >
-                          <InfoLine class="respond-icon" /><span>{{ t('状态码为 200 时不记录响应正文') }}</span>
-                        </span>
-                        <span v-else>
-                          {{ formatValue(row[field], field) }}
-                        </span>
+                            <InfoLine class="respond-icon" /><span>{{ t('状态码为 200 时不记录响应正文') }}</span>
+                          </span>
+                          <span v-else>
+                            {{ formatValue(row[field], field) }}
+                          </span>
 
-                        <span
-                          v-if="row[field]"
-                          class="opt-btns"
-                        >
-                          <CopyShape
-                            v-bk-tooltips="t('复制')"
-                            class="opt-copy opt-icon"
-                            @click="() => handleRowCopy(field, row)"
-                          />
-                          <template v-if="showOpts(field)">
-                            <EnlargeLine
-                              v-bk-tooltips="t('添加到本次检索')"
-                              class="opt-icon"
-                              @click="() => handleInclude(field, row)"
+                          <span
+                            v-if="row[field]"
+                            class="opt-btns"
+                          >
+                            <CopyShape
+                              v-bk-tooltips="t('复制')"
+                              class="opt-copy opt-icon"
+                              @click="() => handleRowCopy(field, row)"
                             />
-                            <NarrowLine
-                              v-bk-tooltips="t('从本次检索中排除')"
-                              class="opt-icon"
-                              @click="() => handleExclude(field, row)"
-                            />
-                          </template>
-                        </span>
-                      </dd>
-                    </div>
+                            <template v-if="showOpts(field)">
+                              <EnlargeLine
+                                v-bk-tooltips="t('添加到本次检索')"
+                                class="opt-icon"
+                                @click="() => handleInclude(field, row)"
+                              />
+                              <NarrowLine
+                                v-bk-tooltips="t('从本次检索中排除')"
+                                class="opt-icon"
+                                @click="() => handleExclude(field, row)"
+                              />
+                            </template>
+                          </span>
+                        </dd>
+                      </div>
+                    </template>
+
                     <div class="share-btn">
                       <AiBluekingButton
                         v-if="featureFlagStore.isAIEnabled"
@@ -539,6 +579,8 @@ const excludeObj = ref<string[]>([]);
 const chartData: Record<string, any> = ref({});
 const stageList = ref<IStageItem[]>([]);
 const backendList = ref<IBackendItem[]>([]);
+const standardBackendList = computed(() => backendList.value.filter(item => item?.kind === 'standard'));
+const aiBackendList = computed(() => backendList.value.filter(item => item?.kind === 'ai'));
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
@@ -553,6 +595,7 @@ const {
 } = useDatePicker(searchParams);
 
 const apigwId = computed(() => gatewayStore.apigwId);
+const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
 const searchConditions = computed(() => {
   const res: string[] = [];
@@ -578,6 +621,9 @@ const formatterValue = (params: Record<string, any>) => {
 const formatValue = (value: any, field: string) => {
   if (value && ['timestamp'].includes(field)) {
     return dayjs.unix(value).format('YYYY-MM-DD HH:mm:ss ZZ');
+  }
+  if (field === 'llm_summary') {
+    return JSON.stringify(value, null, 2);
   }
   return value || '--';
 };
@@ -944,7 +990,10 @@ const getSearchData = async () => {
 };
 
 const handleRowCopy = (field: string, row: any) => {
-  const copyStr = `${field}: ${row[field]}`;
+  let copyStr = `${field}: ${row[field]}`;
+  if (field === 'llm_summary') {
+    copyStr = `${field}: ${JSON.stringify(row[field], null, 2)}`;
+  }
   copy(copyStr);
 };
 

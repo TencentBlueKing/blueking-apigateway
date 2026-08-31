@@ -27,6 +27,7 @@ from apigateway.core.constants import (
     GatewayKindEnum,
     StageStatusEnum,
 )
+from apigateway.core.managers import get_released_resource_oauth2_flags
 from apigateway.core.models import (
     Gateway,
     Release,
@@ -37,6 +38,48 @@ from apigateway.core.models import (
 )
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.mark.parametrize(
+    ("config", "expected"),
+    [
+        (
+            json.dumps(
+                {
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
+                }
+            ),
+            (True, False),
+        ),
+        (
+            {
+                "oauth2_public_client_enabled": False,
+                "oauth2_personal_client_enabled": True,
+            },
+            (False, True),
+        ),
+        ("not-json", (False, False)),
+        (json.dumps([]), (False, False)),
+        (
+            json.dumps(
+                {
+                    "oauth2_public_client_enabled": "true",
+                    "oauth2_personal_client_enabled": 1,
+                }
+            ),
+            (False, False),
+        ),
+    ],
+)
+def test_get_released_resource_oauth2_flags(config, expected):
+    resource = {"contexts": {"resource_auth": {"config": config}}}
+
+    assert get_released_resource_oauth2_flags(resource) == expected
+
+
+def test_get_released_resource_oauth2_flags_with_missing_config():
+    assert get_released_resource_oauth2_flags({}) == (False, False)
 
 
 class TestStageManager:
@@ -91,16 +134,6 @@ class TestStageManager:
         assert Stage.objects.filter(gateway=gateway, name="prod").exists()
         assert Stage.objects.filter(gateway=gateway, name="stag").exists()
 
-    def test_get_gateway_name_to_active_stage_names(self):
-        gateway = G(Gateway)
-
-        s1 = G(Stage, gateway=gateway, name="s1", status=StageStatusEnum.ACTIVE.value)
-        s2 = G(Stage, gateway=gateway, name="s2", status=StageStatusEnum.INACTIVE.value)
-        s3 = G(Stage, gateway=gateway, name="s3", status=StageStatusEnum.ACTIVE.value)
-
-        result = Stage.objects.get_gateway_name_to_active_stage_names([gateway])
-        assert result == {gateway.name: ["s1", "s3"]}
-
     def test_get_name(self, fake_gateway):
         s = G(Stage, gateway=fake_gateway)
 
@@ -112,6 +145,44 @@ class TestStageManager:
 
 
 class TestResourceVersionManager:
+    def test_get_resources_defaults_missing_kind_to_standard(self, fake_resource_version_v2):
+        data = fake_resource_version_v2.data
+        resource_id = data[0]["id"]
+        data[0].pop("kind", None)
+        fake_resource_version_v2.data = data
+        fake_resource_version_v2.save(update_fields=["_data"])
+        ResourceVersion.objects.get_resources.cache_clear()
+
+        resources = ResourceVersion.objects.get_resources(
+            fake_resource_version_v2.gateway_id,
+            fake_resource_version_v2.id,
+        )
+
+        assert resources[resource_id]["kind"] == constants.ResourceKindEnum.STANDARD.value
+        assert resources[resource_id]["oauth2_public_client_enabled"] is False
+        assert resources[resource_id]["oauth2_personal_client_enabled"] is False
+        ResourceVersion.objects.get_resources.cache_clear()
+
+    def test_get_resources_includes_oauth2_client_switches(self, fake_resource_version_v2):
+        data = fake_resource_version_v2.data
+        resource_id = data[0]["id"]
+        auth_config = json.loads(data[0]["contexts"]["resource_auth"]["config"])
+        auth_config["oauth2_public_client_enabled"] = True
+        auth_config["oauth2_personal_client_enabled"] = True
+        data[0]["contexts"]["resource_auth"]["config"] = json.dumps(auth_config)
+        fake_resource_version_v2.data = data
+        fake_resource_version_v2.save(update_fields=["_data"])
+        ResourceVersion.objects.get_resources.cache_clear()
+
+        resources = ResourceVersion.objects.get_resources(
+            fake_resource_version_v2.gateway_id,
+            fake_resource_version_v2.id,
+        )
+
+        assert resources[resource_id]["oauth2_public_client_enabled"] is True
+        assert resources[resource_id]["oauth2_personal_client_enabled"] is True
+        ResourceVersion.objects.get_resources.cache_clear()
+
     def test_get_id_to_fields_map(self):
         gateway = G(Gateway)
         rv1 = G(ResourceVersion, gateway=gateway, version="1.0.1")
@@ -327,6 +398,68 @@ class TestReleaseManager:
 
 
 class TestReleasedResourceManager:
+    @staticmethod
+    def _make_resource_snapshot(auth_config=None):
+        if auth_config is None:
+            auth_config = json.dumps(
+                {
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
+                }
+            )
+
+        return {
+            "id": 101,
+            "name": "get_user",
+            "method": "GET",
+            "path": "/users/{id}",
+            "is_public": True,
+            "contexts": {"resource_auth": {"config": auth_config}},
+        }
+
+    def test_save_released_resource_projects_oauth2_scope_fields(self, fake_resource_version):
+        fake_resource_version.data = [self._make_resource_snapshot()]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert released.is_public is True
+        assert released.oauth2_public_client_enabled is True
+        assert released.oauth2_personal_client_enabled is False
+
+    def test_save_released_resource_projects_malformed_auth_config_as_disabled(self, fake_resource_version):
+        fake_resource_version.data = [self._make_resource_snapshot(auth_config="not-json")]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert released.is_public is True
+        assert released.oauth2_public_client_enabled is False
+        assert released.oauth2_personal_client_enabled is False
+
+    @pytest.mark.parametrize("invalid_value", ["false", 1])
+    def test_save_released_resource_projects_non_boolean_flags_as_disabled(self, fake_resource_version, invalid_value):
+        resource = self._make_resource_snapshot(
+            auth_config=json.dumps(
+                {
+                    "oauth2_public_client_enabled": invalid_value,
+                    "oauth2_personal_client_enabled": invalid_value,
+                }
+            )
+        )
+        resource["is_public"] = invalid_value
+        fake_resource_version.data = [resource]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert released.is_public is False
+        assert released.oauth2_public_client_enabled is False
+        assert released.oauth2_personal_client_enabled is False
+
     def test_filter_latest_released_resources(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway)
         r2 = G(Resource, gateway=fake_gateway)
@@ -409,6 +542,8 @@ class TestReleasedResourceManager:
         assert len(result) == 2
         assert result[0]["name"] == "test1-2"
         assert result[1]["name"] == "test2-1"
+        assert result[0]["oauth2_public_client_enabled"] is False
+        assert result[0]["oauth2_personal_client_enabled"] is False
 
     def test_filter_resource_version_ids(self):
         fake_gateway = G(Gateway)

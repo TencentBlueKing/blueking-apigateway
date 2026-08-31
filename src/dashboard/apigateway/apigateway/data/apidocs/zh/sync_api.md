@@ -9,7 +9,7 @@
 
 | 参数名称 | 参数类型 | 必选 | 描述   |
 | -------- | -------- | ---- | ------ |
-| api_name | string   | 是   | 网关名 |
+| api_name | string   | 是   | 网关名。创建 AI 网关时须以 `bkai-` 开头；非 AI 网关不能使用 `bkai-` 前缀 |
 
 #### 请求参数
 
@@ -18,6 +18,7 @@
 | description | string   | 否  | 网关描述               |
 | maintainers | array    | 否  | 网关管理员             |
 | is_public   | boolean  | 否  | 网关是否公开，默认公开 |
+| kind        | string   | 否  | 网关类型：`normal`（默认）或 `ai`；仅创建时生效 |
 
 ### 请求参数示例
 
@@ -25,7 +26,8 @@
 {
     "description": "just for test",
     "maintainers": ["admin"],
-    "is_public": true
+    "is_public": true,
+    "kind": "normal"
 }
 ```
 
@@ -39,7 +41,8 @@ result = client.api.sync_api(
     {
         "description": "just for test",
         "maintainers": ["admin"],
-        "is_public": True
+        "is_public": True,
+        "kind": "normal"
     },
     path_params={
         "api_name": "demo",
@@ -57,7 +60,8 @@ result = client.api.sync_api(
     "message": "OK",
     "data": {
         "id": 1,
-        "name": "demo"
+        "name": "demo",
+        "kind": "normal"
     }
 }
 ```
@@ -76,3 +80,4 @@ result = client.api.sync_api(
 | -------- | -------- | -------- |
 | id       | int      | 网关ID   |
 | name     | string   | 网关名称 |
+| kind     | string   | 网关类型：`normal`、`programmable` 或 `ai` |

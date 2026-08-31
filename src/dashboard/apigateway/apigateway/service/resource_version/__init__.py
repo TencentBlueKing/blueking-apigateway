@@ -20,6 +20,7 @@ from .schema import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,
+    get_standard_resource_names_set,
     get_used_stage_vars,
     make_resource_schema_version,
 )
@@ -34,6 +35,7 @@ __all__ = [
     "get_resource_id_to_schema_by_resource_version",
     "get_resource_names_set",
     "get_resource_schema",
+    "get_standard_resource_names_set",
     "get_used_stage_vars",
     "has_openapi_schema",
     "make_resource_schema_version",

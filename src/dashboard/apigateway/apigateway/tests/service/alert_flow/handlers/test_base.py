@@ -38,6 +38,15 @@ class TestAlarmRecordCreator:
         assert record.stage == mock_event.event_dimensions["stage"]
         assert record.alarm_type == mock_event.alarm_type.value
 
+    def test_do_with_null_app_code(self, mock_event):
+        mock_event.event_dimensions["app_code"] = None
+
+        record_creator = base_handlers.AlarmRecordCreator()
+        result = record_creator._do(mock_event)
+
+        record = AlarmRecord.objects.get(id=result.alarm_record_id)
+        assert record.app_code == ""
+
 
 class TestAPIExistFilter:
     @pytest.fixture(autouse=True)

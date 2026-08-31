@@ -25,7 +25,7 @@ def fake_release_data(mocker, fake_gateway, fake_stage):
     release_data = mocker.Mock()
     release_data.gateway = fake_gateway
     release_data.stage = fake_stage
-    release_data.get_stage_backend_configs = mocker.Mock(return_value={})
+    release_data.stage_backend_configs = {}
     release_data.get_stage_plugins = mocker.Mock(return_value=[])
     release_data.jwt_private_key = "test-jwt-key"
     release_data.gateway_auth_config = {}

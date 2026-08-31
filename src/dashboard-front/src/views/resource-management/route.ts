@@ -37,6 +37,8 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('编辑资源'),
+          standardTitle: t('编辑普通 API'),
+          aiTitle: t('编辑模型代理 API'),
           matchRoute: 'ResourceSetting',
           showBackIcon: true,
           showPageName: true,
@@ -48,6 +50,8 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('新建资源'),
+          standardTitle: t('新建普通 API'),
+          aiTitle: t('新建模型代理 API'),
           matchRoute: 'ResourceSetting',
           showBackIcon: true,
         },
@@ -58,6 +62,8 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('克隆资源'),
+          standardTitle: t('克隆普通 API'),
+          aiTitle: t('克隆模型代理 API'),
           matchRoute: 'ResourceSetting',
           showBackIcon: true,
         },

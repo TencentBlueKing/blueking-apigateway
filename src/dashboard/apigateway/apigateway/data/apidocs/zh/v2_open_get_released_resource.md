@@ -19,6 +19,7 @@
   "data": {
     "id": 2448,
     "name": "updatePet",
+    "kind": "standard",
     "method": "PUT",
     "path": "/api/v3/pet",
     "schema": {
@@ -54,6 +55,7 @@
 |----------|----------|--------------|
 | id       | int      | 资源 ID      |
 | name     | string   | 资源名称     |
+| kind     | string   | 资源类型，`standard`：普通 API，`ai`：模型代理 API |
 | method   | string   | 资源请求方法 |
 | path     | string   | 资源请求地址 |
 | schema   | object   | 资源协议数据 |

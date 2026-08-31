@@ -15,6 +15,11 @@
           {{ t('导入 JSON') }}
         </IconButton>
       </div>
+      <bk-alert
+        theme="info"
+        class="mb-12px"
+        :title="alertText"
+      />
       <div class="editor-layout">
         <!--  顶部编辑器工具栏 -->
         <header class="editor-toolbar">
@@ -71,7 +76,13 @@ const visible = defineModel<boolean>({ default: false });
 
 const source = defineModel<string>('source', { default: '{}' });
 
+const { type } = defineProps<IProps>();
+
 const emit = defineEmits<{ confirm: [jsonObj: Record<string, any>] }>();
+
+interface IProps {
+  type: string
+}
 
 const { t } = useI18n();
 
@@ -84,6 +95,10 @@ const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
 });
 
 const editorRef = ref<InstanceType<typeof EditorMonaco>>();
+
+const alertText = computed(() => (type === 'request'
+  ? t('请粘贴接口真实的请求体 JSON，或通过「导入 JSON」上传文件。内容可从接口文档、调试工具或实际调用中获取，系统将据此自动生成参数结构。')
+  : t('请粘贴接口真实的响应体 JSON，或通过「导入 JSON」上传文件。内容可从接口文档、调试工具或实际调用结果中获取，系统将据此自动生成参数结构。')));
 
 const handleImportJSON = async () => {
   await open();

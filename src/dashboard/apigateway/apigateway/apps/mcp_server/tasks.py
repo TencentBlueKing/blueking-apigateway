@@ -18,19 +18,157 @@
 #
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
+import redis_lock
 from celery import shared_task
 from django.conf import settings
 
+from apigateway.apps.mcp_server.constants import (
+    ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
+    RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME,
+)
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.mcp_server import (
     MCPServerHandler,
     MCPServerPromptHandler,
 )
 from apigateway.core.constants import ReleaseHistoryStatusEnum
-from apigateway.service.release import wait_release_done
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
+from apigateway.service.release import wait_release_ready
+from apigateway.utils.exception import LockTimeout
+from apigateway.utils.redis_utils import get_default_redis_client
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _stage_mcp_server_permission_sync_lock(stage_id: int) -> Iterator[None]:
+    lock = redis_lock.Lock(
+        get_default_redis_client(),
+        f"mcp_server_permission_sync:{stage_id}",
+        expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+        auto_renewal=True,
+        strict=False,
+    )
+    lock_acquired = lock.acquire(
+        blocking=True,
+        timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+    )
+    if not lock_acquired:
+        raise LockTimeout("Timeout while waiting for MCP Server permission sync lock")
+
+    try:
+        yield
+    finally:
+        try:
+            lock.release()
+        except Exception:
+            logger.exception("release mcp server permission sync lock failed, stage_id=%d", stage_id)
+
+
+def _sync_stage_mcp_server_permissions(
+    stage_id: int,
+    resource_version: ResourceVersion,
+    *,
+    delete_stale: bool,
+) -> None:
+    mcp_server_ids = MCPServer.objects.filter(stage_id=stage_id).values_list("id", flat=True)
+    for mcp_server_id in mcp_server_ids:
+        try:
+            MCPServerHandler.sync_permissions(
+                mcp_server_id,
+                resource_version=resource_version,
+                delete_stale=delete_stale,
+            )
+        except Exception:
+            logger.exception(
+                "sync mcp server permissions failed, stage_id=%d, mcp_server_id=%d",
+                stage_id,
+                mcp_server_id,
+            )
+
+
+@shared_task(name=ADD_STAGE_MCP_SERVER_PERMISSIONS_BEFORE_RELEASE_UPDATE_TASK_NAME, ignore_result=True)
+def add_stage_mcp_server_permissions_before_release_update(
+    stage_id: int,
+    resource_version_id: int,
+) -> None:
+    """发布数据面成功后、更新 Release 前，补充候选资源版本对应的权限。"""
+    try:
+        if not MCPServer.objects.filter(stage_id=stage_id).exists():
+            return
+
+        with _stage_mcp_server_permission_sync_lock(stage_id):
+            resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
+            if resource_version is None:
+                logger.warning(
+                    "skip adding mcp server permissions because resource version does not exist, "
+                    "stage_id=%d, resource_version_id=%d",
+                    stage_id,
+                    resource_version_id,
+                )
+                return
+
+            _sync_stage_mcp_server_permissions(stage_id, resource_version, delete_stale=False)
+    except Exception:
+        logger.exception("add stage mcp server permissions failed, stage_id=%d", stage_id)
+
+
+@shared_task(name=RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME, ignore_result=True)
+def reconcile_stage_mcp_server_permissions_after_release(
+    stage_id: int,
+    expected_resource_version_id: int,
+    expected_release_history_id: int,
+) -> None:
+    """发布成功后，将环境下所有 MCP Server 权限收敛到当前发布版本。"""
+    try:
+        if not MCPServer.objects.filter(stage_id=stage_id).exists():
+            return
+
+        with _stage_mcp_server_permission_sync_lock(stage_id):
+            release = Release.objects.filter(stage_id=stage_id).select_related("resource_version").first()
+            current_resource_version_id = release.resource_version_id if release else None
+            if current_resource_version_id != expected_resource_version_id:
+                logger.info(
+                    "skip stale mcp server permission reconciliation, stage_id=%d, "
+                    "expected_resource_version_id=%d, current_resource_version_id=%s",
+                    stage_id,
+                    expected_resource_version_id,
+                    current_resource_version_id,
+                )
+                return
+
+            newer_release_history_ids = list(
+                ReleaseHistory.objects.filter(stage_id=stage_id, id__gt=expected_release_history_id)
+                .exclude(resource_version_id=expected_resource_version_id)
+                .values_list("id", flat=True)
+            )
+            latest_publish_event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
+                newer_release_history_ids
+            )
+            newer_non_failed_release_exists = any(
+                publish_event is None
+                or publish_event.get_release_history_status() != ReleaseHistoryStatusEnum.FAILURE.value
+                for publish_event in (
+                    latest_publish_event_map.get(release_history_id)
+                    for release_history_id in newer_release_history_ids
+                )
+            )
+            if newer_non_failed_release_exists:
+                logger.info(
+                    "skip stale mcp server permission reconciliation because a newer publish has started, "
+                    "stage_id=%d, expected_release_history_id=%d",
+                    stage_id,
+                    expected_release_history_id,
+                )
+                return
+
+            _sync_stage_mcp_server_permissions(stage_id, release.resource_version, delete_stale=True)
+    except Exception:
+        logger.exception("reconcile stage mcp server permissions failed, stage_id=%d", stage_id)
 
 
 def _collect_prompt_ids(
@@ -242,7 +380,7 @@ def sync_mcp_server_after_release(
     """等待发布完成后同步 MCP Server 数据到 DB
 
     当同步 MCP Server 时检测到环境正在发布，将写入操作投递到此异步任务：
-    1. 等待 release_history_id 对应的发布完成
+    1. 等待 release_history_id 对应的发布完成且控制面数据就绪
     2. 发布成功：使用发布后的资源版本写入 MCP Server
     3. 发布失败/超时：跳过写入，记录日志
     """
@@ -255,11 +393,11 @@ def sync_mcp_server_after_release(
         release_history_id,
     )
 
-    final_status = wait_release_done(release_history_id)
+    final_status = wait_release_ready(release_history_id)
 
     if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
         logger.warning(
-            "sync_mcp_server_after_release: release failed (status=%s), "
+            "sync_mcp_server_after_release: release failed or release data not ready (status=%s), "
             "skip mcp server sync, gateway=%s(%d), stage=%s(%d), release_history_id=%d",
             final_status,
             gateway_name,
@@ -307,3 +445,25 @@ def sync_mcp_server_after_release(
             stage_id,
             release_history_id,
         )
+
+
+@shared_task(name="apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category", ignore_result=True)
+def refresh_official_mcp_server_category() -> None:
+    """定时给官方网关下的 MCP Server 补齐「官方」分类，只补不删。"""
+    official_category = MCPServerCategory.objects.filter(name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True).first()
+    if official_category is None:
+        return
+
+    missing_ids = list(
+        MCPServer.objects.filter(gateway__is_official=True)
+        .exclude(categories=official_category)
+        .values_list("id", flat=True)
+    )
+    if not missing_ids:
+        return
+
+    batch_size = 500
+    for start in range(0, len(missing_ids), batch_size):
+        official_category.mcp_servers.add(*missing_ids[start : start + batch_size])
+
+    logger.info("refresh_official_mcp_server_category completed, added=%d", len(missing_ids))

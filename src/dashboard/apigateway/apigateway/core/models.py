@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from copy import deepcopy
 from datetime import datetime
 from typing import ClassVar, Dict, List
 
@@ -29,10 +30,12 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core import managers
+from apigateway.core.backend_config import mask_header_value
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
     RESOURCE_METHOD_CHOICES,
+    BackendKindEnum,
     BackendTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -45,11 +48,13 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
+    ResourceKindEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
+from apigateway.utils.crypto import get_crypto
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +192,10 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         return self.kind == GatewayKindEnum.PROGRAMMABLE.value
 
     @property
+    def is_ai_gateway(self):
+        return self.kind == GatewayKindEnum.AI.value
+
+    @property
     def is_active(self):
         return self.status == GatewayStatusEnum.ACTIVE.value
 
@@ -260,6 +269,13 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     description_en = description_i18n.field("en")
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
+    kind = models.CharField(
+        max_length=20,
+        choices=ResourceKindEnum.get_choices(),
+        default=ResourceKindEnum.STANDARD.value,
+        blank=False,
+        null=False,
+    )
     method = models.CharField(max_length=10, choices=RESOURCE_METHOD_CHOICES, blank=False, null=False)
     path = models.CharField(max_length=2048, blank=False, null=False)
     match_subpath = models.BooleanField(default=False)
@@ -270,6 +286,10 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
 
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
+    oauth2_public_client_enabled = models.BooleanField(default=False)
+    oauth2_personal_client_enabled = models.BooleanField(default=False)
+
+    objects: ClassVar[managers.ResourceManager] = managers.ResourceManager()
 
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"
@@ -289,6 +309,10 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     @property
     def path_display(self):
         return get_path_display(self.path, self.match_subpath)
+
+    @property
+    def is_ai(self):
+        return self.kind == ResourceKindEnum.AI.value
 
 
 class Proxy(ConfigModelMixin):
@@ -385,6 +409,13 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
 
 class Backend(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    kind = models.CharField(
+        max_length=20,
+        choices=BackendKindEnum.get_choices(),
+        default=BackendKindEnum.STANDARD.value,
+        blank=False,
+        null=False,
+    )
     type = models.CharField(
         max_length=20,
         choices=BackendTypeEnum.get_choices(),
@@ -395,6 +426,8 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=512, default="")
 
+    objects: ClassVar[managers.BackendManager] = managers.BackendManager()
+
     class Meta:
         unique_together = ("gateway", "name")
         db_table = "core_backend"
@@ -402,12 +435,52 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
     def __str__(self):
         return f"<Backend: {self.id}/{self.name}>"
 
+    @property
+    def is_ai(self):
+        return self.kind == BackendKindEnum.AI.value
+
 
 class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    _AI_CONFIG_ENCRYPTED_KEY: ClassVar[str] = "encrypted"
+
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
     backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
     stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
-    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+    _config = JSONField(db_column="config", default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    @property
+    def config(self) -> dict:
+        config = deepcopy(self._config)
+        if self.backend.kind != BackendKindEnum.AI.value:
+            return config
+
+        if not config:
+            return {}
+
+        try:
+            return json.loads(get_crypto().decrypt(config[self._AI_CONFIG_ENCRYPTED_KEY]))
+        except Exception as err:
+            raise ValueError("failed to decrypt AI backend config") from err
+
+    @config.setter
+    def config(self, value: dict) -> None:
+        if self.backend.kind == BackendKindEnum.AI.value:
+            plaintext = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+            self._config = {self._AI_CONFIG_ENCRYPTED_KEY: get_crypto().encrypt(plaintext)}
+            return
+
+        self._config = deepcopy(value)
+
+    def get_config_for_display(self) -> dict:
+        config = self.config
+        if self.backend.kind != BackendKindEnum.AI.value:
+            return config
+
+        for instance in config.get("instances", []):
+            headers = instance.get("auth", {}).get("header", {})
+            for key, secret in headers.items():
+                headers[key] = mask_header_value(secret)
+        return config
 
     class Meta:
         unique_together = ("gateway", "backend", "stage")
@@ -572,6 +645,9 @@ class ReleasedResource(TimestampedModelMixin):
     resource_name = models.CharField(max_length=256, default="", blank=True, null=False)
     resource_method = models.CharField(max_length=10, blank=False, null=False)
     resource_path = models.CharField(max_length=2048, blank=False, null=False)
+    is_public = models.BooleanField(default=False)
+    oauth2_public_client_enabled = models.BooleanField(default=False)
+    oauth2_personal_client_enabled = models.BooleanField(default=False)
     data = JSONField(help_text="resource data in resource version")
 
     objects: ClassVar[managers.ReleasedResourceManager] = managers.ReleasedResourceManager()
@@ -583,11 +659,29 @@ class ReleasedResource(TimestampedModelMixin):
         verbose_name = "ReleasedResource"
         verbose_name_plural = "ReleasedResource"
         unique_together = ("gateway", "resource_version_id", "resource_id")
+        indexes = [
+            models.Index(
+                fields=[
+                    "oauth2_public_client_enabled",
+                    "is_public",
+                    "gateway",
+                    "resource_version_id",
+                    "resource_id",
+                ],
+                name="rr_oauth_pub_scope_idx",
+            ),
+            models.Index(
+                fields=[
+                    "oauth2_personal_client_enabled",
+                    "is_public",
+                    "gateway",
+                    "resource_version_id",
+                    "resource_id",
+                ],
+                name="rr_oauth_personal_scope_idx",
+            ),
+        ]
         db_table = "core_released_resource"
-
-    @property
-    def is_public(self) -> bool:
-        return self.data.get("is_public", False)
 
 
 class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):

@@ -24,7 +24,7 @@ class NameValidator:
     - gateway_name can be endswith '-'
     - stage name can be endswith '-' and '_'
     - resource name can be endswith '-'
-    while build the key/name of etcd/helm/sdk, the '-'/'_' will be striped,
+    while build the key/name of etcd/helm/sdk, the '-'/'_' will be stripped,
     it would cause some problem if a-/a convert to the same key/name,
     so, we check the name while creating gateway/stage/resource
     since: 2024-01-16, make standardization

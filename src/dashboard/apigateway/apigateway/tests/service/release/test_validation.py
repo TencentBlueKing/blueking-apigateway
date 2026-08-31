@@ -17,10 +17,65 @@
 #
 
 import pytest
+from django_dynamic_fixture import G
 from rest_framework import serializers
 
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import BackendKindEnum, GatewayStatusEnum, ResourceKindEnum
+from apigateway.core.models import Backend, BackendConfig, ResourceVersion
 from apigateway.service.release import PublishValidator, ReleaseValidationError, StageVarsValuesValidator
+
+pytestmark = pytest.mark.django_db
+
+
+def _standard_backend_config():
+    return {
+        "type": "node",
+        "timeout": 30,
+        "loadbalance": "roundrobin",
+        "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}],
+    }
+
+
+def _ai_backend_config():
+    return {
+        "timeout": 300,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 1,
+                "auth": {"header": {"Authorization": "Bearer must-not-leak"}},
+                "options": {"model": "gpt-4.1-mini"},
+            }
+        ],
+    }
+
+
+def _create_backend_config(gateway, stage, *, name, kind, config):
+    backend = G(Backend, gateway=gateway, name=name, kind=kind)
+    backend_config = BackendConfig.objects.create(
+        gateway=gateway,
+        stage=stage,
+        backend=backend,
+        config=config,
+    )
+    return backend, backend_config
+
+
+def _create_resource_version(gateway, backend, *, kind=ResourceKindEnum.STANDARD.value):
+    resource = {
+        "id": 1,
+        "name": "chat-completions",
+        "proxy": {"type": "http", "backend_id": backend.id, "config": "{}"},
+        "plugins": [],
+    }
+    if kind is not None:
+        resource["kind"] = kind
+
+    resource_version = G(ResourceVersion, gateway=gateway)
+    resource_version.data = [resource]
+    resource_version.save(update_fields=["_data"])
+    return resource_version
 
 
 def test_stage_vars_values_validator_uses_resource_version_stage_vars(mocker, fake_gateway):
@@ -77,3 +132,84 @@ def test_publish_validator_rejects_inactive_gateway(fake_gateway, fake_stage, fa
 
     with pytest.raises(ReleaseValidationError):
         validator._validate_gateway_status()
+
+
+class TestPublishBackendKindValidation:
+    @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, None])
+    def test_standard_backend_config_passes(self, fake_gateway, fake_stage, resource_kind):
+        backend, _ = _create_backend_config(
+            fake_gateway,
+            fake_stage,
+            name="standard-service",
+            kind=BackendKindEnum.STANDARD.value,
+            config=_standard_backend_config(),
+        )
+        resource_version = _create_resource_version(fake_gateway, backend, kind=resource_kind)
+
+        assert PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends() is None
+
+    def test_ai_backend_config_passes_without_hosts(self, fake_gateway, fake_stage):
+        backend, _ = _create_backend_config(
+            fake_gateway,
+            fake_stage,
+            name="model-service",
+            kind=BackendKindEnum.AI.value,
+            config=_ai_backend_config(),
+        )
+        resource_version = _create_resource_version(fake_gateway, backend, kind=ResourceKindEnum.AI.value)
+
+        assert PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends() is None
+
+    def test_invalid_ai_backend_config_does_not_expose_credentials(self, fake_gateway, fake_stage):
+        invalid_config = _ai_backend_config()
+        invalid_config["instances"][0]["options"] = {"model": ""}
+        backend, _ = _create_backend_config(
+            fake_gateway,
+            fake_stage,
+            name="model-service",
+            kind=BackendKindEnum.AI.value,
+            config=invalid_config,
+        )
+        resource_version = _create_resource_version(fake_gateway, backend, kind=ResourceKindEnum.AI.value)
+
+        with pytest.raises(ReleaseValidationError) as exc_info:
+            PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends()
+
+        message = str(exc_info.value)
+        assert "model-service" in message
+        assert "配置结构不合法" in message
+        assert "Bearer must-not-leak" not in message
+
+    def test_ai_backend_decryption_failure_is_sanitized(self, mocker, fake_gateway, fake_stage):
+        backend, backend_config = _create_backend_config(
+            fake_gateway,
+            fake_stage,
+            name="model-service",
+            kind=BackendKindEnum.AI.value,
+            config=_ai_backend_config(),
+        )
+        BackendConfig.objects.filter(pk=backend_config.pk).update(_config={"encrypted": "ciphertext-must-not-leak"})
+        mocker.patch("apigateway.core.models.get_crypto").return_value.decrypt.side_effect = RuntimeError(
+            "original-must-not-leak"
+        )
+        resource_version = _create_resource_version(fake_gateway, backend, kind=ResourceKindEnum.AI.value)
+
+        with pytest.raises(ReleaseValidationError) as exc_info:
+            PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends()
+
+        message = str(exc_info.value)
+        assert "model-service" in message
+        assert "ciphertext-must-not-leak" not in message
+        assert "original-must-not-leak" not in message
+
+    def test_resource_backend_kind_relationship_is_trusted(self, fake_gateway, fake_stage):
+        backend, _ = _create_backend_config(
+            fake_gateway,
+            fake_stage,
+            name="standard-service",
+            kind=BackendKindEnum.STANDARD.value,
+            config=_standard_backend_config(),
+        )
+        resource_version = _create_resource_version(fake_gateway, backend, kind=ResourceKindEnum.AI.value)
+
+        assert PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends() is None

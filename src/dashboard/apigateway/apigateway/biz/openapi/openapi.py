@@ -24,6 +24,7 @@ from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 from prance.util.url import ResolutionError
+from pydantic import ValidationError
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.utils.yaml import yaml_loads
@@ -122,7 +123,7 @@ class OpenAPIImportManager:
 
         try:
             self.parse()
-        except ResolutionError as err:
+        except (ResolutionError, ValueError, ValidationError) as err:
             return [SchemaValidateErr(str(err), "$", [])]
 
         validator = ResourceImportValidator(
@@ -157,11 +158,8 @@ class OpenAPIImportManager:
             spec_string=json.dumps(self.data), backend="openapi-spec-validator", strict=False
         )
 
-        # 获取对应的parser
-        parser = self._get_parser(parse_result)
-
-        self.parser = parser
-        self._raw_resource_list = parser.get_resources()
+        self.parser = self._get_parser(parse_result)
+        self._raw_resource_list = self.parser.get_resources()
         self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
 
     @staticmethod

@@ -111,6 +111,7 @@ def get_plugin_metadata_config(env: Env) -> dict:
             "default_conn_delay": env.int("GATEWAY_CONCURRENCY_LIMIT_DEFAULT_CONN_DELAY", 1),  # second
             "key_type": "var",
             "key": "bk_concurrency_limit_key",
+            "policy": "local",
             "allow_degradation": True,
         },
         "bk-real-ip": {
@@ -220,6 +221,10 @@ def get_default_feature_flags(
         # 是否开启 MCP Server OAuth2 公开客户端模式
         "ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT": env.bool(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT", True
+        ),
+        # 是否开启 MCP Server OAuth2 个人客户端模式
+        "ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT": env.bool(
+            "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", True
         ),
         # 是否开启 BK CLI 展示
         "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
@@ -447,6 +452,8 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_BK_OAUTH2_VERIFY": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-verify.md",
         # bk-oauth2-audience-validate
         "PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-audience-validate.md",
+        # bk-query-string-rewrite
+        "PLUGIN_BK_QUERY_STRING_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-query-string-rewrite.md",
     }
 
 

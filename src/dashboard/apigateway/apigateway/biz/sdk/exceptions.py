@@ -46,7 +46,7 @@ class LegacySDKVersionConflict(SDKGenerateError):
 
 
 class SDKRepoConfigError(SDKException):
-    """SKD配置错误"""
+    """SDK 配置错误"""
 
 
 class DistributeError(SDKException):

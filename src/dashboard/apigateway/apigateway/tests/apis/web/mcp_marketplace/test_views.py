@@ -132,6 +132,7 @@ class TestMCPMarketplaceServerListApi:
     def test_list_with_oauth2_public_client_enabled(self, request_view, fake_public_mcp_server):
         """测试列表接口返回 oauth2_public_client_enabled 字段"""
         fake_public_mcp_server.oauth2_public_client_enabled = True
+        fake_public_mcp_server.oauth2_personal_client_enabled = True
         fake_public_mcp_server.save()
 
         resp = request_view(
@@ -147,6 +148,7 @@ class TestMCPMarketplaceServerListApi:
         )
         assert mcp_server_data is not None
         assert mcp_server_data["oauth2_public_client_enabled"] is True
+        assert mcp_server_data["oauth2_personal_client_enabled"] is True
 
     def test_list_with_categories(self, request_view, fake_public_mcp_server, fake_categories):
         """测试列表接口返回分类信息"""
@@ -491,6 +493,7 @@ class TestMCPMarketplaceServerRetrieveApi:
         )
 
         fake_public_mcp_server.oauth2_public_client_enabled = True
+        fake_public_mcp_server.oauth2_personal_client_enabled = True
         fake_public_mcp_server.save()
 
         resp = request_view(
@@ -502,6 +505,7 @@ class TestMCPMarketplaceServerRetrieveApi:
 
         assert resp.status_code == 200
         assert result["data"]["oauth2_public_client_enabled"] is True
+        assert result["data"]["oauth2_personal_client_enabled"] is True
 
     def test_retrieve_with_prompts(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口返回 prompts 列表（私有 prompt 的 content 为空）"""
@@ -1369,7 +1373,9 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
             },
         )
 
-        assert resp.status_code == 400
+        result = resp.json()
+        assert resp.status_code == 409
+        assert result["error"]["code"] == "CONFLICT"
         assert (
             MCPServerAppPermissionApply.objects.filter(
                 bk_app_code="test-app",

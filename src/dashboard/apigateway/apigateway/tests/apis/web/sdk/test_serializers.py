@@ -60,6 +60,10 @@ class TestGatewaySDKGenerateInputSLZ:
 
 
 class TestSDKListOutputSLZ:
+    def test_created_by_help_text(self):
+        slz = GatewaySDKListOutputSLZ()
+        assert slz.fields["created_by"].help_text == "SDK 创建者"
+
     def test_to_representation(self, fake_gateway):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         sdk_1 = G(

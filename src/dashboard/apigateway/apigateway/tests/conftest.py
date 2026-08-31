@@ -163,7 +163,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -183,7 +183,7 @@ def fake_grpc_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -207,7 +207,7 @@ def fake_default_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -231,7 +231,7 @@ def fake_default_empty_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -570,6 +570,8 @@ def fake_publish_success_event(fake_release_history):
 @pytest.fixture
 def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, fake_release):
     resource_id_to_data = {item["id"]: item for item in fake_resource_version.data}
+    resource_data = resource_id_to_data[fake_resource1.id]
+    auth_config = json.loads(resource_data["contexts"]["resource_auth"]["config"])
     return G(
         ReleasedResource,
         gateway=fake_gateway,
@@ -578,7 +580,10 @@ def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, 
         resource_name=fake_resource1.name,
         resource_method=fake_resource1.method,
         resource_path=fake_resource1.path,
-        data=resource_id_to_data[fake_resource1.id],
+        data=resource_data,
+        is_public=resource_data.get("is_public", False),
+        oauth2_public_client_enabled=auth_config.get("oauth2_public_client_enabled", False),
+        oauth2_personal_client_enabled=auth_config.get("oauth2_personal_client_enabled", False),
     )
 
 

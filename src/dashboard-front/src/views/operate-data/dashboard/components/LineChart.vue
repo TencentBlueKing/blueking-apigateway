@@ -171,6 +171,35 @@ const chartResize = () => {
   });
 };
 
+const getSeriesLabel = (item: ISeriesItemType, label: string) => {
+  const dimensions = item.dimensions as Record<string, unknown>;
+  const dimensionValue = dimensions?.[label];
+  if (dimensionValue) {
+    return String(dimensionValue);
+  }
+  return new RegExp(`${label}="([^"]*)"`).exec(item.target)?.[1] || '';
+};
+
+const getSeriesName = (item: ISeriesItemType) => {
+  if (['llm_latency_avg', 'llm_latency_95th', 'llm_active_connections'].includes(instanceId)) {
+    const requestType = getSeriesLabel(item, 'request_type');
+    const requestTypeNames: Record<string, string> = {
+      ai_chat: t('非流式完整响应'),
+      ai_stream: t('流式首 Token'),
+    };
+    return requestTypeNames[requestType] || requestType;
+  }
+  if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
+    const tokenType = getSeriesLabel(item, 'token_type');
+    const tokenTypeNames: Record<string, string> = {
+      prompt: t('输入 Token'),
+      completion: t('输出 Token'),
+    };
+    return tokenTypeNames[tokenType] || tokenType;
+  }
+  return (item.target?.split('=')[1])?.replace(/"/g, '');
+};
+
 const getChartOption = () => {
   const baseOption: Record<string, any> = {
     grid: { right: '8%' },
@@ -244,14 +273,21 @@ const getChartOption = () => {
 
   const miniList = ['requests', 'non_20x_status'];
   const middleList = ['ingress', 'egress'];
-  const maxList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
+  const maxList = [
+    'response_time_99th',
+    'response_time_95th',
+    'response_time_90th',
+    'response_time_50th',
+    'llm_latency_avg',
+    'llm_latency_95th',
+  ];
 
   // if (instanceId !== 'response_time') {
   (chartData as any)?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
     chartOption.series.push(merge({}, (baseOption.series as any[])[0], {
-      name: (item.target?.split('=')[1])?.replace(/"/g, ''),
+      name: getSeriesName(item),
       data: datapoints.map((item) => {
         if (middleList.includes(instanceId)) {
           return [
@@ -337,6 +373,22 @@ const getChartOption = () => {
       </div>`;
     };
   }
+  else if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
+    chartOption.tooltip.formatter = (params: any) => {
+      return `<div>
+      <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
+      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} Token</span></p>
+      </div>`;
+    };
+  }
+  else if (instanceId === 'llm_active_connections') {
+    chartOption.tooltip.formatter = (params: any) => {
+      return `<div>
+      <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
+      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('个连接')}</span></p>
+      </div>`;
+    };
+  }
   else {
     // 默认 tooltip 内容
     chartOption.tooltip.formatter = (params: any) => {
@@ -360,6 +412,9 @@ const getChartOption = () => {
 
   if (maxList.includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} ms' };
+  }
+  if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
+    chartOption.yAxis.axisLabel = { formatter: '{value} Token' };
   }
   // }
   // else {

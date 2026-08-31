@@ -50,14 +50,10 @@ from .filters import (
 from .serializers import (
     WorkbenchFilterOptionQueryInputSLZ,
     WorkbenchGatewayFilterOptionSLZ,
-    WorkbenchGatewayPendingPermissionQueryInputSLZ,
     WorkbenchGatewayPermissionApplyOutputSLZ,
-    WorkbenchGatewayPermissionQueryInputSLZ,
     WorkbenchGatewayPermissionRecordOutputSLZ,
-    WorkbenchMCPPendingPermissionQueryInputSLZ,
     WorkbenchMCPPermissionApplyOutputSLZ,
     WorkbenchMCPPermissionHandledOutputSLZ,
-    WorkbenchMCPPermissionQueryInputSLZ,
     WorkbenchMCPServerFilterOptionSLZ,
 )
 
@@ -300,7 +296,6 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
     name="get",
     decorator=swagger_auto_schema(
         operation_description="个人工作台 - 我的待办 - API 网关权限申请列表",
-        query_serializer=WorkbenchGatewayPendingPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -322,7 +317,6 @@ class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
     name="get",
     decorator=swagger_auto_schema(
         operation_description="个人工作台 - 我的待办 - MCP Server 权限申请列表",
-        query_serializer=WorkbenchMCPPendingPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -351,7 +345,6 @@ class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
     name="get",
     decorator=swagger_auto_schema(
         operation_description="个人工作台 - 我的申请 - API 网关权限申请列表",
-        query_serializer=WorkbenchGatewayPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -376,7 +369,6 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
     name="get",
     decorator=swagger_auto_schema(
         operation_description="个人工作台 - 我的申请 - MCP Server 权限申请列表",
-        query_serializer=WorkbenchMCPPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -408,7 +400,6 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
     name="get",
     decorator=swagger_auto_schema(
         operation_description="个人工作台 - 我的已办 - API 网关权限申请列表",
-        query_serializer=WorkbenchGatewayPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionRecordOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -437,7 +428,6 @@ class WorkbenchHandledGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
     name="get",
     decorator=swagger_auto_schema(
         operation_description="个人工作台 - 我的已办 - MCP Server 权限申请列表",
-        query_serializer=WorkbenchMCPPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionHandledOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),

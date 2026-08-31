@@ -20,7 +20,7 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.gateway import serializers
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
 from apigateway.service.contexts import GatewayAuthContext
 
 
@@ -71,6 +71,14 @@ class TestGatewayListV1InputSLZ:
         slz.is_valid(raise_exception=True)
         assert slz.validated_data == expected
 
+    @pytest.mark.parametrize("kind", ["normal", "programmable", "ai"])
+    def test_validate_kind(self, kind):
+        slz = serializers.GatewayListV1InputSLZ(data={"kind": kind})
+
+        slz.is_valid(raise_exception=True)
+
+        assert slz.validated_data["kind"] == kind
+
 
 class TestGatewayListV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
@@ -83,6 +91,31 @@ class TestGatewayListV1OutputSLZ:
         assert slz.data
         assert isinstance(slz.data["api_type"], int)
         assert isinstance(slz.data["user_auth_type"], str)
+        assert slz.data["kind"] == "normal"
+
+    def test_ai_kind_output(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+
+        slz = serializers.GatewayListV1OutputSLZ(
+            fake_gateway,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+            },
+        )
+
+        assert slz.data["kind"] == "ai"
+
+    def test_programmable_kind_output(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+
+        slz = serializers.GatewayListV1OutputSLZ(
+            fake_gateway,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+            },
+        )
+
+        assert slz.data["kind"] == "programmable"
 
 
 class TestGatewayRetrieveV1OutputSLZ:
@@ -94,6 +127,44 @@ class TestGatewayRetrieveV1OutputSLZ:
 
 
 class TestGatewaySyncInputSLZ:
+    def test_maps_ai_kind(self):
+        slz = serializers.GatewaySyncInputSLZ(data={"name": "bkai-gateway", "kind": "ai"})
+
+        slz.is_valid(raise_exception=True)
+
+        assert slz.validated_data["kind"] == GatewayKindEnum.AI.value
+
+    @pytest.mark.parametrize(
+        ("data", "is_valid"),
+        [
+            ({"name": "bkai-gateway", "kind": "ai"}, True),
+            ({"name": "bkaidev", "kind": "ai"}, True),
+            ({"name": "bkaidev-demo", "kind": "ai"}, True),
+            ({"name": "bkaidevx", "kind": "ai"}, False),
+            ({"name": "bkaidevfoo", "kind": "ai"}, False),
+            ({"name": "gateway", "kind": "ai"}, False),
+            ({"name": "bkai-gateway", "kind": "normal"}, False),
+            ({"name": "bkaidev", "kind": "normal"}, True),
+            ({"name": "bkai-official", "kind": "ai", "api_type": 1}, True),
+            ({"name": "bkaidev", "kind": "ai", "api_type": 1}, True),
+        ],
+    )
+    def test_validate_gateway_name_kind_when_creating(self, data, is_valid):
+        slz = serializers.GatewaySyncInputSLZ(data=data)
+
+        assert slz.is_valid() is is_valid
+
+    def test_update_legacy_ai_gateway_skips_create_name_validation(self, fake_gateway):
+        fake_gateway.name = "legacy-ai-gateway"
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        slz = serializers.GatewaySyncInputSLZ(
+            fake_gateway,
+            data={"name": fake_gateway.name, "kind": "ai", "api_type": 1},
+        )
+
+        slz.is_valid(raise_exception=True)
+
     @pytest.mark.parametrize(
         "data, expected, will_error",
         [
@@ -294,7 +365,7 @@ class TestGatewaySyncInputSLZ:
 
         if not will_error:
             slz.is_valid(raise_exception=True)
-            assert slz.validated_data == expected
+            assert slz.validated_data == {**expected, "kind": GatewayKindEnum.NORMAL.value}
             return
 
         with pytest.raises(ValidationError):

@@ -90,7 +90,7 @@ class GatewaySDKListOutputSLZ(serializers.Serializer):
     version_number = serializers.CharField(source="instance.version_number", help_text="sdk版本号")
     created_time = serializers.DateTimeField(source="instance.created_time", help_text="sdk创建时间")
     updated_time = serializers.DateTimeField(source="instance.updated_time", help_text="sdk更新时间")
-    created_by = serializers.CharField(source="instance.created_by", help_text="skd创建者")
+    created_by = serializers.CharField(source="instance.created_by", help_text="SDK 创建者")
     name = serializers.CharField(source="instance.name", help_text="sdk名称")
     resource_version = ResourceVersionInfoSlz(source="instance.resource_version", help_text="sdk资源版本信息")
 

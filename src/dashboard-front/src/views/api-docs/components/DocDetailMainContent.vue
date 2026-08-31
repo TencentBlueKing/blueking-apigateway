@@ -25,12 +25,21 @@
       class="target-detail custom-scroll-bar"
     >
       <header class="detail-header">
-        <header class="res-name">
-          {{ api.name ?? '--' }}
+        <header class="flex items-center flex-wrap res-name">
+          <div class="mr-12px font-700">
+            {{ api.name ?? '--' }}
+          </div>
+          <BkTag
+            v-if="basics?.kind === 2"
+            theme="info"
+            class="mr-12px"
+          >
+            {{ t('模型代理 API') }}
+          </BkTag>
           <BkTag
             v-if="basics?.is_deprecated"
             theme="danger"
-            class="ml-12px font-400"
+            class="font-400"
           >
             deprecated
           </BkTag>
@@ -305,7 +314,6 @@ $code-color: #63656e;
       .res-name {
         margin-bottom: 4px;
         font-size: 20px;
-        font-weight: 700;
         line-height: 28px;
         color: #313238;
       }

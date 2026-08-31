@@ -47,6 +47,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
 from apigateway.common.constants import CallSourceTypeEnum
@@ -54,13 +55,14 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Stage
-from apigateway.service.resource_version import get_resource_names_set
+from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import now_datetime
 
 from .serializers import (
     GatewayMCPServerAppPermissionExportInputSLZ,
+    GatewayMCPServerAppPermissionExportOutputSLZ,
     GatewayMCPServerAppPermissionListInputSLZ,
     GatewayMCPServerAppPermissionListOutputSLZ,
     MCPServerAppPermissionAppCodeListInputSLZ,
@@ -214,7 +216,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
 
         slz.save()
 
-        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
+        # sync permissions (including OAuth2 built-in client permissions)
         MCPServerHandler.sync_permissions(slz.instance.id)
 
         # record audit log
@@ -321,7 +323,7 @@ class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.Retriev
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
+        # sync permissions (including OAuth2 built-in client permissions)
         MCPServerHandler.sync_permissions(instance.id)
 
         Auditor.record_mcp_server_op_success(
@@ -686,7 +688,7 @@ class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
             return OKJsonResponse(data=data)
 
         changed_mcp_servers = []
-        valid_resource_names = get_resource_names_set(resource_version_id, raise_exception=True)
+        valid_resource_names = get_standard_resource_names_set(resource_version_id, raise_exception=True)
         for mcp_server in mcp_servers:
             mcp_server_resource_names = set(mcp_server.resource_names)
             changed_resource_names = mcp_server_resource_names - valid_resource_names
@@ -828,6 +830,11 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        if instance.bk_app_code in OAUTH2_BUILTIN_APP_CODES:
+            raise error_codes.FAILED_PRECONDITION.format(
+                _("OAuth2 内置客户端的 MCPServer 应用权限不允许删除。"), replace=True
+            )
+
         data_before = get_model_dict(instance)
         instance_id = instance.id
         bk_app_code = instance.bk_app_code
@@ -1287,7 +1294,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             queryset = queryset.filter(id__in=data["selected_ids"])
 
         permissions = list(queryset.order_by("mcp_server__name", "bk_app_code"))
-        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+        slz = GatewayMCPServerAppPermissionExportOutputSLZ(
             permissions,
             many=True,
             context={
@@ -1303,6 +1310,13 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         response = DownloadableResponse(content, filename=filename)
         response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
         return response
+
+    def _get_export_grant_type_display(self, grant_type: str) -> str:
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.GRANT.value:
+            return _("主动授权")
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.APPLY.value:
+            return _("申请审批")
+        return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(grant_type))
 
     def _get_csv_content(self, data):
         headers = [
@@ -1329,7 +1343,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
                 "applied_by": item["applied_by"],
                 "effective_time": item["effective_time"],
                 "handled_by": item["handled_by"],
-                "grant_type_display": item["grant_type_display"],
+                "grant_type_display": self._get_export_grant_type_display(item["grant_type"]),
             }
             for item in data
         ]

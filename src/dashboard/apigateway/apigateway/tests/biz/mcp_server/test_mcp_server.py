@@ -20,6 +20,8 @@ from unittest.mock import patch
 
 import pytest
 from ddf import G
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -36,11 +38,13 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
-from apigateway.apps.permission.constants import GrantTypeEnum
+from apigateway.apps.permission.constants import OAUTH2_PERSONAL_CLIENT_APP_CODE, GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.common.error_codes import APIError
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -48,7 +52,24 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime
 class TestMCPServerHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
+        get_standard_resource_names_set.cache_clear()
         self.gateway = create_gateway()
+        yield
+        get_standard_resource_names_set.cache_clear()
+
+    @staticmethod
+    def _release_resources(gateway, stage, resources):
+        resource_version = G(ResourceVersion, gateway=gateway)
+        resource_version.data = [
+            {
+                "id": resource.id,
+                "name": resource.name,
+                "kind": getattr(resource, "kind", None) or ResourceKindEnum.STANDARD.value,
+            }
+            for resource in resources
+        ]
+        resource_version.save()
+        return G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
 
     def test_virtual_app_code_prefix(self):
         assert MCPServerHandler._virtual_app_code_prefix(1) == "v_mcp_1_"
@@ -141,6 +162,7 @@ class TestMCPServerHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -196,6 +218,7 @@ class TestMCPServerHandler:
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -223,11 +246,283 @@ class TestMCPServerHandler:
             assert permission.expires == NeverExpiresTime.time
             assert permission.grant_type == GrantTypeEnum.SYNC.value
 
+    def test_sync_permissions_grants_and_revokes_oauth2_personal_client(self, fake_gateway, fake_stage):
+        resource = G(Resource, gateway=fake_gateway, name="resource1")
+        self._release_resources(fake_gateway, fake_stage, [resource])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=resource.name,
+            oauth2_personal_client_enabled=True,
+        )
+        personal_app_code = OAUTH2_PERSONAL_CLIENT_APP_CODE
+        virtual_app_code = f"v_mcp_{mcp_server.id}_{personal_app_code}"
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert MCPServerAppPermission.objects.filter(
+            mcp_server=mcp_server,
+            bk_app_code=personal_app_code,
+        ).exists()
+        assert AppResourcePermission.objects.filter(
+            gateway=fake_gateway,
+            bk_app_code=virtual_app_code,
+            resource_id=resource.id,
+        ).exists()
+
+        mcp_server.oauth2_personal_client_enabled = False
+        mcp_server.save(update_fields=["oauth2_personal_client_enabled"])
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert not MCPServerAppPermission.objects.filter(
+            mcp_server=mcp_server,
+            bk_app_code=personal_app_code,
+        ).exists()
+        assert not AppResourcePermission.objects.filter(
+            gateway=fake_gateway,
+            bk_app_code=virtual_app_code,
+            resource_id=resource.id,
+        ).exists()
+
+    def test_sync_permissions_uses_resource_ids_from_released_version(self, fake_gateway, fake_stage):
+        """Sync must use resource_id from the stage release snapshot, not live Resource.id."""
+        live_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="tool_a",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        released_resource_id = live_resource.id + 10000
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [
+            {
+                "id": released_resource_id,
+                "name": live_resource.name,
+                "kind": ResourceKindEnum.STANDARD.value,
+            },
+        ]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=live_resource.name,
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
+        assert set(permissions.values_list("resource_id", flat=True)) == {released_resource_id}
+        assert live_resource.id not in permissions.values_list("resource_id", flat=True)
+
+    def test_sync_permissions_adds_candidate_version_before_strong_sync(self, fake_gateway, fake_stage):
+        old_resource_id = 10001
+        new_resource_id = 10002
+        old_resource_version = G(ResourceVersion, gateway=fake_gateway)
+        old_resource_version.data = [{"id": old_resource_id, "name": "tool_a"}]
+        old_resource_version.save()
+        release = G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=old_resource_version)
+
+        new_resource_version = G(ResourceVersion, gateway=fake_gateway)
+        new_resource_version.data = [{"id": new_resource_id, "name": "tool_a"}]
+        new_resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+        virtual_app_code = f"v_mcp_{mcp_server.id}_app1"
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=virtual_app_code,
+            resource_id=old_resource_id,
+        )
+
+        MCPServerHandler.sync_permissions(
+            mcp_server.id,
+            resource_version=new_resource_version,
+            delete_stale=False,
+        )
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code=virtual_app_code)
+        assert set(permissions.values_list("resource_id", flat=True)) == {old_resource_id, new_resource_id}
+
+        release.resource_version = new_resource_version
+        release.save(update_fields=["resource_version"])
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert set(permissions.values_list("resource_id", flat=True)) == {new_resource_id}
+
+    def test_sync_permissions_add_only_keeps_existing_permissions_without_app_codes(self, fake_gateway, fake_stage):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [{"id": 10002, "name": "tool_a"}]
+        resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        existing_permission = G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=f"v_mcp_{mcp_server.id}_app1",
+            resource_id=10001,
+        )
+
+        MCPServerHandler.sync_permissions(
+            mcp_server.id,
+            resource_version=resource_version,
+            delete_stale=False,
+        )
+
+        assert AppResourcePermission.objects.filter(id=existing_permission.id).exists()
+
+    def test_sync_permissions_add_only_is_idempotent_when_another_worker_inserts_first(
+        self, fake_gateway, fake_stage, mocker
+    ):
+        resource_id = 10003
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [{"id": resource_id, "name": "tool_a"}]
+        resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+        virtual_app_code = f"v_mcp_{mcp_server.id}_app1"
+        original_bulk_create = AppResourcePermission.objects.bulk_create
+
+        def insert_competing_permission(objects, **kwargs):
+            permission = objects[0]
+            AppResourcePermission.objects.create(
+                gateway_id=permission.gateway_id,
+                bk_app_code=permission.bk_app_code,
+                resource_id=permission.resource_id,
+                expires=permission.expires,
+                grant_type=permission.grant_type,
+            )
+            return original_bulk_create(objects, **kwargs)
+
+        mocker.patch.object(
+            AppResourcePermission.objects,
+            "bulk_create",
+            side_effect=insert_competing_permission,
+        )
+
+        MCPServerHandler.sync_permissions(
+            mcp_server.id,
+            resource_version=resource_version,
+            delete_stale=False,
+        )
+
+        assert (
+            AppResourcePermission.objects.filter(
+                gateway=fake_gateway,
+                bk_app_code=virtual_app_code,
+                resource_id=resource_id,
+            ).count()
+            == 1
+        )
+
+    def test_sync_permissions_excludes_ai_resources_from_release_snapshot(self, fake_gateway, fake_stage):
+        standard_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="standard-resource",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        ai_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="ai-resource",
+            kind=ResourceKindEnum.AI.value,
+        )
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [
+            {"id": standard_resource.id, "name": standard_resource.name, "kind": ResourceKindEnum.STANDARD.value},
+            {"id": ai_resource.id, "name": ai_resource.name, "kind": ResourceKindEnum.AI.value},
+        ]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="standard-resource;ai-resource",
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
+        assert set(permissions.values_list("resource_id", flat=True)) == {standard_resource.id}
+
+    def test_sync_permissions_skips_without_release(self, fake_gateway, fake_stage):
+        resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="resource1",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=resource.name,
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert not AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_").exists()
+
+    def test_sync_permissions_uses_standard_snapshot_even_if_live_resource_kind_changed(
+        self, fake_gateway, fake_stage
+    ):
+        resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="changed-resource",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [
+            {"id": resource.id, "name": resource.name, "kind": ResourceKindEnum.STANDARD.value},
+        ]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+
+        resource.kind = ResourceKindEnum.AI.value
+        resource.save(update_fields=["kind"])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=resource.name,
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
+        assert set(permissions.values_list("resource_id", flat=True)) == {resource.id}
+
     def test_sync_permissions_delete_permissions(self, fake_gateway, fake_stage):
         """Test sync_permissions when existing permissions need to be deleted"""
         # Create resources
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2])
 
         # Create MCP server with only one resource name
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -275,6 +570,7 @@ class TestMCPServerHandler:
         resource1 = G(Resource, gateway=fake_gateway, name="resource1")
         resource2 = G(Resource, gateway=fake_gateway, name="resource2")
         resource3 = G(Resource, gateway=fake_gateway, name="resource3")
+        self._release_resources(fake_gateway, fake_stage, [resource1, resource2, resource3])
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -313,12 +609,30 @@ class TestMCPServerHandler:
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app2").count() == 2
 
     def test_get_valid_resource_names(self, fake_gateway, fake_stage, fake_resource_version):
+        fake_resource_version.data = [
+            {"name": "legacy-resource"},
+            {"name": "standard-resource", "kind": ResourceKindEnum.STANDARD.value},
+            {"name": "ai-resource", "kind": ResourceKindEnum.AI.value},
+        ]
+        fake_resource_version.save()
         G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
-        expected_resource_names = {resource["name"] for resource in fake_resource_version.data}
-
         resource_names = MCPServerHandler().get_valid_resource_names(fake_gateway.id, fake_stage.id)
-        assert resource_names == expected_resource_names
+        assert resource_names == {"legacy-resource", "standard-resource"}
+
+    def test_get_tools_resources_and_labels_requests_only_standard_resources(self, mocker):
+        get_released_resources = mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.ReleasedResourceHandler.get_public_standard_released_resource_data_list",
+            return_value=[],
+        )
+
+        MCPServerHandler.get_tools_resources_and_labels(1, "prod", ["resource1"])
+
+        get_released_resources.assert_called_once_with(
+            1,
+            "prod",
+            False,
+        )
 
     def test_get_valid_resource_names_no_release(
         self,
@@ -823,6 +1137,26 @@ class TestMCPServerHandler:
 
         assert (fake_gateway.id, fake_stage.id) in result
         assert result[(fake_gateway.id, fake_stage.id)].id == release.id
+
+    def test_get_releases_for_mcp_servers_uses_stage_id_in_query(self, fake_gateway, fake_stage):
+        """批量查询 Release 时应使用 stage_id IN，避免按网关环境组合生成大量 OR 条件"""
+        another_stage = G(Stage, gateway=fake_gateway)
+        rv = self._make_resource_version_with_data(fake_gateway, [{"name": "tool_a"}])
+        releases = [
+            G(Release, gateway=fake_gateway, stage=stage, resource_version=rv) for stage in [fake_stage, another_stage]
+        ]
+        mcp_servers = [
+            G(MCPServer, gateway=fake_gateway, stage=stage, _resource_names="tool_a")
+            for stage in [fake_stage, another_stage]
+        ]
+
+        with CaptureQueriesContext(connection) as queries:
+            result = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
+
+        assert set(result) == {(release.gateway_id, release.stage_id) for release in releases}
+        assert len(queries) == 1
+        assert '"core_release"."stage_id" IN (' in queries[0]["sql"]
+        assert " OR " not in queries[0]["sql"]
 
     def test_get_releases_for_mcp_servers_empty(self):
         """空列表应返回空字典"""
@@ -1485,6 +1819,32 @@ class TestMCPServerHandler:
         assert server.id in result_ids
         assert 999999 not in result_ids
 
+    def test_build_list_queryset_with_names(self, fake_gateway, fake_stage):
+        """按名称列表精确筛选，忽略不存在的名称"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="requested-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="unrequested-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        result = MCPServerHandler.build_list_queryset(names=[server.name, "missing-server"])
+
+        assert list(result.values_list("id", flat=True)) == [server.id]
+
     # ========== build_list_context 测试 ==========
 
     def test_build_list_context_basic(self, fake_gateway, fake_stage):
@@ -1615,7 +1975,10 @@ class TestMCPServerHandler:
 
     def test_save_mcp_servers_create(self, fake_gateway, fake_stage):
         """创建新的 MCP Server"""
-        with patch.object(MCPServerHandler, "sync_permissions"):
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions"),
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1655,7 +2018,10 @@ class TestMCPServerHandler:
             status=MCPServerStatusEnum.INACTIVE.value,
         )
 
-        with patch.object(MCPServerHandler, "sync_permissions"):
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions"),
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1683,7 +2049,10 @@ class TestMCPServerHandler:
 
     def test_save_mcp_servers_with_permissions(self, fake_gateway, fake_stage):
         """创建时同步权限"""
-        with patch.object(MCPServerHandler, "sync_permissions") as mock_sync:
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions") as mock_sync,
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1710,7 +2079,10 @@ class TestMCPServerHandler:
         """创建时同步分类"""
         MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
 
-        with patch.object(MCPServerHandler, "sync_permissions"):
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions"),
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1731,6 +2103,33 @@ class TestMCPServerHandler:
 
         instance = MCPServer.objects.get(id=results[0]["id"])
         assert list(instance.categories.values_list("name", flat=True)) == ["Official"]
+
+    def test_save_mcp_servers_rejects_ai_resource(self, fake_gateway, fake_stage):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [{"name": "ai-resource", "kind": ResourceKindEnum.AI.value}]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+
+        with pytest.raises(APIError) as exc_info:
+            MCPServerHandler.save_mcp_servers(
+                gateway_id=fake_gateway.id,
+                gateway_name=fake_gateway.name,
+                stage_id=fake_stage.id,
+                stage_name=fake_stage.name,
+                mcp_servers_data=[
+                    {
+                        "name": "server1",
+                        "description": "test",
+                        "resource_names": ["ai-resource"],
+                        "tool_names": ["ai-resource"],
+                        "is_public": True,
+                        "status": MCPServerStatusEnum.ACTIVE.value,
+                    }
+                ],
+            )
+
+        assert "ai-resource" in exc_info.value.code.message
+        assert not MCPServer.objects.filter(gateway=fake_gateway, stage=fake_stage).exists()
 
     # ========== _sync_mcp_server_permissions 测试 ==========
 

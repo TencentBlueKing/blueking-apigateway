@@ -525,7 +525,7 @@ func (v *APISIXJsonSchemaValidator) Validate(rawConfig json.RawMessage) error { 
 
 		if !ret.Valid() {
 			errString := GetSchemaValidateFailed(ret)
-			log.Errorf("schema validate failed:s: %v, obj: %#v", v.schemaDef, rawConfig)
+			log.Errorf("schema validate failed:s: %v, obj: %s", v.schemaDef, rawConfig)
 			return fmt.Errorf("资源:%s 插件:%s schema 验证失败: %s", resourceIdentification, pluginName,
 				errString)
 		}

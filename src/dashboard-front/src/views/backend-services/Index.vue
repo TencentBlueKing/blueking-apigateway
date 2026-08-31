@@ -256,7 +256,10 @@ watch(filterData, () => {
   tableRef.value!.fetchData(filterData.value);
 }, { deep: true });
 
-const getTableData = async (params: Record<string, any> = {}) => getBackendServiceList(apigwId.value, params);
+const getTableData = async (params: Record<string, any> = {}) => getBackendServiceList(apigwId.value, {
+  ...params,
+  kind: 'standard',
+});
 
 const handleAdd = () => {
   if (hasPublishingStage.value) {

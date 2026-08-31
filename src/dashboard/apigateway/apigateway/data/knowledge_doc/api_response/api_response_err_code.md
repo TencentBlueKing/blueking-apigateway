@@ -343,7 +343,7 @@
 其他现象及原因：
 - 用户的应用请求网关或 ESB 的接口，请求失败，查询网关日志，发现记录的状态码是 499
   - 如果是 SaaS，并且失败的请求基本都是 30s 左右，请排查是否是使用 gunicorn 启动的，没有配置超时时间的话默认是 `30s`  [gunicorn settings timeout](https://docs.gunicorn.org/en/stable/settings.html#timeout) ;
-  - 如果是非 SaaS，那么需要检查请求发起的上下文，是否在某个 woker 或者处理程序中，这样由于所属的 woker 或处理程序中止，会导致请求中止;
+  - 如果是非 SaaS，那么需要检查请求发起的上下文，是否在某个 worker 或者处理程序中，这样由于所属的 worker 或处理程序中止，会导致请求中止;
 
 ## status: 500
 

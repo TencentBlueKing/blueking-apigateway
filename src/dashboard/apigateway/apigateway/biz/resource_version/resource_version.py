@@ -31,7 +31,7 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
-from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ResourceKindEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.service.resource import (
     filter_disabled_stages_by_gateway,
@@ -233,9 +233,9 @@ class ResourceVersionHandler:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
 
     @staticmethod
-    def get_resource_name_to_schema_by_resource_version(resource_version_id: int) -> dict:
+    def get_standard_resource_name_to_schema_by_resource_version(resource_version_id: int) -> dict:
         """
-        获取资源版本下的资源name 与 api schema 的映射关系
+        获取资源版本下的普通资源 name 与 api schema 的映射关系
         """
         resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
             resource_version_id=resource_version_id
@@ -243,12 +243,15 @@ class ResourceVersionHandler:
         if resources_version_schema is None:
             return {}
         resource_id_to_name = {
-            resource["id"]: resource["name"] for resource in resources_version_schema.resource_version.data
+            resource["id"]: resource["name"]
+            for resource in resources_version_schema.resource_version.data
+            if (resource.get("kind") or ResourceKindEnum.STANDARD.value) == ResourceKindEnum.STANDARD.value
         }
 
         return {
             resource_id_to_name[schema_info["resource_id"]]: schema_info["schema"]
             for schema_info in resources_version_schema.schema
+            if schema_info["resource_id"] in resource_id_to_name
         }
 
     @staticmethod

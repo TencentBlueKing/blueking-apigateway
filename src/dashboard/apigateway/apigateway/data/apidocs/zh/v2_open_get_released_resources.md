@@ -11,18 +11,24 @@
 | gateway_name   | string   | 是   | 网关名称 |
 | stage_name     | string   | 是   | 环境名称 |
 
+#### 查询参数
+
+| 参数名称 | 参数类型 | 必选 | 默认值 | 描述                       |
+|----------|----------|------|--------|----------------------------|
+| limit    | int      | 否   | 10     | 最大返回条目数量           |
+| offset   | int      | 否   | 0      | 相对于完整数据的起始位置   |
+
 ### 响应示例
 
 ```json
 {
   "data": {
     "count": 1,
-    "has_next": false,
-    "has_previous": false,
     "results": [
       {
         "id": 3,
         "name": "echo",
+        "kind": "standard",
         "description": "",
         "method": "GET",
         "url": "https://bkapi.example.com/api/bk-apigateway/prod/echo/",
@@ -45,12 +51,10 @@
 
 #### data
 
-| 参数名称     | 参数类型 | 描述                                     |
-|--------------|----------|------------------------------------------|
-| count        | int      | 资源数量                                 |
-| has_next     | boolean  | 分页，后续是否有数据                     |
-| has_previous | boolean  | 分页，前面是否有数据                     |
-| results      | array    | 本次查询结果数据                         |
+| 参数名称 | 参数类型 | 描述             |
+|----------|----------|------------------|
+| count    | int      | 资源数量         |
+| results  | array    | 本次查询结果数据 |
 
 #### data.results[]
 
@@ -58,6 +62,7 @@
 |------------------------|----------|----------------------------------|
 | id                     | int      | 资源 ID                          |
 | name                   | string   | 资源名称                         |
+| kind                   | string   | 资源类型，`standard`：普通 API，`ai`：模型代理 API |
 | description            | string   | 资源描述                         |
 | method                 | string   | 资源请求方法                     |
 | url                    | string   | 资源请求地址                     |

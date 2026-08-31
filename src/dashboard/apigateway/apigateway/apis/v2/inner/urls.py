@@ -60,6 +60,12 @@ urlpatterns = [
             [
                 # GET /api/v2/inner/gateways/
                 path("", views.GatewayListApi.as_view(), name="openapi.v2.inner.gateway.list"),
+                # GET /api/v2/inner/gateways/-/lookup/
+                path(
+                    "-/lookup/",
+                    views.GatewayLookupApi.as_view(),
+                    name="openapi.v2.inner.gateway.lookup",
+                ),
                 path(
                     "<slug:gateway_name>/",
                     include(
@@ -74,6 +80,18 @@ urlpatterns = [
                                 "status/",
                                 views.GatewayUpdateStatusApi.as_view(),
                                 name="openapi.v2.inner.gateway.update_status",
+                            ),
+                            # GET /api/v2/inner/gateways/{gateway_name}/released-resources/
+                            path(
+                                "released-resources/",
+                                views.GatewayReleasedResourceListApi.as_view(),
+                                name="openapi.v2.inner.gateway.released_resource.list",
+                            ),
+                            # GET /api/v2/inner/gateways/{gateway_name}/released-resources/-/lookup/
+                            path(
+                                "released-resources/-/lookup/",
+                                views.GatewayReleasedResourceLookupApi.as_view(),
+                                name="openapi.v2.inner.gateway.released_resource.lookup",
                             ),
                             path(
                                 "permissions/",
@@ -138,6 +156,23 @@ urlpatterns = [
         ),
     ),
     path(
+        "oauth2/client-scopes/",
+        include(
+            [
+                path(
+                    "mcp-servers/",
+                    views.OAuth2MCPServerScopeListApi.as_view(),
+                    name="openapi.v2.inner.oauth2.mcp_server_scopes.list",
+                ),
+                path(
+                    "resources/",
+                    views.OAuth2ResourceScopeListApi.as_view(),
+                    name="openapi.v2.inner.oauth2.resource_scopes.list",
+                ),
+            ]
+        ),
+    ),
+    path(
         "mcp-server/permissions/",
         include(
             [
@@ -183,6 +218,12 @@ urlpatterns = [
                     "",
                     views.MCPServerListApi.as_view(),
                     name="openapi.v2.inner.mcp_server.list",
+                ),
+                # GET /api/v2/inner/mcp-servers/-/lookup/
+                path(
+                    "-/lookup/",
+                    views.MCPServerLookupApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.lookup",
                 ),
             ]
         ),

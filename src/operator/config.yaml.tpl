@@ -6,6 +6,8 @@ operator:
   #write apisix etcd interval
   etcdPutInterval: "100ms"
   etcdDelInterval: "15s"
+  # maximum number of gateways syncing to apisix etcd concurrently
+  gatewaySyncConcurrency: 5
 
 dashboard:
   etcd:

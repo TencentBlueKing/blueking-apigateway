@@ -25,6 +25,7 @@ from apigateway.biz.released_resource import (
     ReleasedResourceHandler,
     get_released_resource_data,
 )
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
@@ -40,6 +41,8 @@ class TestReleasedResource:
                 {
                     "verified_user_required": False,
                     "resource_perm_required": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -51,6 +54,8 @@ class TestReleasedResource:
                 {
                     "verified_user_required": False,
                     "resource_perm_required": False,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -58,10 +63,14 @@ class TestReleasedResource:
                     "skip_auth_verification": False,
                     "auth_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
                 {
                     "verified_user_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": False,
                 },
             ),
             (
@@ -69,10 +78,14 @@ class TestReleasedResource:
                     "skip_auth_verification": True,
                     "auth_verified_required": True,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": True,
                 },
                 {
                     "verified_user_required": False,
                     "resource_perm_required": True,
+                    "oauth2_public_client_enabled": False,
+                    "oauth2_personal_client_enabled": True,
                 },
             ),
         ],
@@ -88,6 +101,8 @@ class TestReleasedResource:
         )
         assert data.verified_user_required == expected["verified_user_required"]
         assert data.resource_perm_required == expected["resource_perm_required"]
+        assert data.oauth2_public_client_enabled == expected["oauth2_public_client_enabled"]
+        assert data.oauth2_personal_client_enabled == expected["oauth2_personal_client_enabled"]
 
     def test_get_released_resource_data(self, fake_gateway, fake_stage, fake_resource1, fake_released_resource):
         result = get_released_resource_data(fake_gateway, fake_stage, fake_resource1.id)
@@ -139,12 +154,55 @@ class TestReleasedResourceHandler:
             result = ReleasedResourceHandler.get_stage_release(fake_gateway, test["stage_ids"])
             assert result == test["expected"]
 
+    def test_get_latest_doc_link_selects_gateway(self, django_assert_num_queries, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway, name="prod", status=1)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(Release, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+        resource_ids = []
+        for index in range(3):
+            resource_id = index + 1
+            G(
+                ReleasedResource,
+                gateway=fake_gateway,
+                resource_version_id=resource_version.id,
+                resource_id=resource_id,
+                resource_name=f"resource-{index}",
+                resource_method="GET",
+                resource_path=f"/resource-{index}/",
+                data={},
+            )
+            resource_ids.append(resource_id)
+
+        with django_assert_num_queries(3):
+            result = ReleasedResourceHandler.get_latest_doc_link(resource_ids)
+
+        assert set(result) == set(resource_ids)
+
     def test_get_public_released_resource_data_list(self, fake_gateway, fake_stage, fake_release):
         result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, fake_stage.name)
         assert len(result) >= 1
 
         result = ReleasedResourceHandler.get_public_released_resource_data_list(fake_gateway.id, "")
         assert len(result) == 0
+
+    def test_get_public_standard_released_resource_data_list_filters_ai_resources(
+        self, fake_gateway, fake_stage, fake_release
+    ):
+        resources = fake_release.resource_version.data
+        resources[0]["kind"] = ResourceKindEnum.AI.value
+        resources[1]["kind"] = None
+        fake_release.resource_version.data = resources
+        fake_release.resource_version.save()
+
+        result = ReleasedResourceHandler.get_public_standard_released_resource_data_list(
+            fake_gateway.id,
+            fake_stage.name,
+        )
+
+        assert {resource.name for resource in result} == {resource["name"] for resource in resources[1:]}
+        assert next(resource for resource in result if resource.name == resources[1]["name"]).kind == (
+            ResourceKindEnum.STANDARD.value
+        )
 
     def test_get_released_resource(self, fake_gateway, fake_stage, fake_released_resource):
         result = ReleasedResourceHandler.get_released_resource(

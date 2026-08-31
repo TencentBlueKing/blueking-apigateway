@@ -22,12 +22,21 @@ from ddf import G
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Gateway, ResourceVersion, Stage
 from apigateway.service.mcp import (
     build_mcp_server_permission_approval_url,
     build_mcp_server_url,
     update_stage_mcp_server_related_resource_names,
 )
+from apigateway.service.resource_version import get_standard_resource_names_set
+
+
+@pytest.fixture(autouse=True)
+def clear_resource_names_cache():
+    get_standard_resource_names_set.cache_clear()
+    yield
+    get_standard_resource_names_set.cache_clear()
 
 
 class TestUpdateStageMcpServerRelatedResourceNames:
@@ -133,6 +142,25 @@ class TestUpdateStageMcpServerRelatedResourceNames:
         # Only existing resources should remain
         mcp_server.refresh_from_db()
         assert set(mcp_server.resource_names) == {"resource1", "resource2"}
+
+    def test_ai_resources_are_removed(self, stage, resource_version):
+        resource_version.data = [
+            {"name": "resource1", "kind": ResourceKindEnum.STANDARD.value},
+            {"name": "resource2", "kind": ResourceKindEnum.AI.value},
+        ]
+        resource_version.save()
+        mcp_server = G(
+            MCPServer,
+            stage=stage,
+            gateway=stage.gateway,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1;resource2",
+        )
+
+        update_stage_mcp_server_related_resource_names(stage.id, resource_version.id)
+
+        mcp_server.refresh_from_db()
+        assert mcp_server.resource_names == ["resource1"]
 
     def test_all_resources_deleted(self, stage, resource_version):
         """Test when all MCP server resources are deleted from resource version"""

@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { bkTooltips } from 'bkui-vue';
+import { bkEllipsis, bkTooltips } from 'bkui-vue';
 import { stopClickOutside } from '@/utils/stopClickOutside';
 
 const clickOutSide = {
@@ -66,8 +66,9 @@ const clickOutSide = {
 const directives: Record<string, any> = {
   // 指令对象
   bkTooltips,
-  // overflowTitle,
   clickOutSide,
+  // 文本溢出
+  bkEllipsis,
 };
 
 export default {

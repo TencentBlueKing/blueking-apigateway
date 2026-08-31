@@ -5,10 +5,18 @@
 
 ### 输入参数
 
+#### query 参数
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+|----------|----------|------|------|
+| kind | string | 否 | 网关类型：`normal`、`programmable` 或 `ai`；不传返回所有类型 |
+
 ### 请求参数示例
 
 ```json
-{}
+{
+    "kind": "ai"
+}
 ```
 
 ### SDK 调用示例
@@ -17,7 +25,7 @@
 from bkapi.bk_apigateway.shortcuts import get_client_by_request
 
 client = get_client_by_request(request)
-result = client.api.get_apis({})
+result = client.api.get_apis({"kind": "ai"})
 ```
 
 
@@ -31,6 +39,7 @@ result = client.api.get_apis({})
         {
             "id": 1,
             "name": "bk-apigateway",
+            "kind": "normal",
             "description": "",
             "maintainers": [
                 "admin"
@@ -54,5 +63,6 @@ result = client.api.get_apis({})
 | ----------- | -------- | ---------- |
 | id          | int      | 网关ID     |
 | name        | string   | 网关名称   |
+| kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | description | string   | 网关描述   |
 | maintainers | array    | 网关管理员 |

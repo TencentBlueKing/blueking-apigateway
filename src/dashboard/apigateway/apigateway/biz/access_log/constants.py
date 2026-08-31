@@ -142,6 +142,11 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
+        "label": _("LLM 调用摘要"),
+        "field": "llm_summary",
+        "is_filter": False,
+    },
+    {
         "label": "Traceparent",
         "field": "traceparent",
         "is_filter": False,

@@ -128,7 +128,10 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="发起 MCPServer 权限申请",
         request_body=MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
+        responses={
+            status.HTTP_201_CREATED: MCPServerAppPermissionApplyCreateOutputSLZ(many=True),
+            status.HTTP_409_CONFLICT: "已存在待审批或已审批的 MCPServer 权限申请记录",
+        },
         tags=["WebAPI.MCPServer"],
     ),
 )

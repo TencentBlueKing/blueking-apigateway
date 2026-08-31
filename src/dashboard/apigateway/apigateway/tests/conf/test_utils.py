@@ -21,7 +21,12 @@ import pytest
 from django.core.exceptions import ImproperlyConfigured
 from environ import Env
 
-from apigateway.conf.utils import get_frontend_env_vars, get_sdk_generation_settings
+from apigateway.conf.utils import (
+    get_default_feature_flags,
+    get_frontend_env_vars,
+    get_plugin_metadata_config,
+    get_sdk_generation_settings,
+)
 
 
 def test_get_sdk_generation_settings_uses_common_defaults():
@@ -46,6 +51,31 @@ def test_get_sdk_generation_settings_rejects_invalid_languages_at_settings_const
 
     with pytest.raises(ImproperlyConfigured, match="BK_SDK_LANGUAGES"):
         get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
+
+
+def test_get_plugin_metadata_config_uses_local_concurrency_policy():
+    config = get_plugin_metadata_config(Env())
+
+    assert config["bk-concurrency-limit"]["policy"] == "local"
+
+
+def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch):
+    env = Env()
+    kwargs = {
+        "enable_bk_notice": False,
+        "enable_multi_tenant_mode": False,
+        "ai_open_api_base_url": "",
+        "enable_gateway_operation_status": False,
+        "enable_run_data_metrics": False,
+        "enable_itsm4_permission_apply": False,
+    }
+
+    flags = get_default_feature_flags(env, **kwargs)
+    assert flags["ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT"] is True
+
+    monkeypatch.setenv("FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", "false")
+    flags = get_default_feature_flags(env, **kwargs)
+    assert flags["ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT"] is False
 
 
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):

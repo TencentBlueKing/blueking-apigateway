@@ -21,8 +21,8 @@ from typing import Any, Dict, List, Tuple
 
 from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum
 from apigateway.apps.mcp_server.models import MCPServerExtend
+from apigateway.apps.mcp_server.validators import validate_mcp_prompts_payload
 from apigateway.components import bkaidev
-from apigateway.service.mcp import validate_mcp_prompts_payload
 
 logger = logging.getLogger(__name__)
 

@@ -48,3 +48,6 @@ class TestResourceListApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) > 0
+        assert result["data"][0]["kind"] == "standard"
+        assert result["data"][0]["oauth2_public_client_enabled"] is False
+        assert result["data"][0]["oauth2_personal_client_enabled"] is False

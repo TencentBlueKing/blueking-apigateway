@@ -23,7 +23,6 @@ from abc import ABCMeta, abstractmethod
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
-from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
@@ -60,7 +59,6 @@ from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
 from . import serializers
-from .serializers import PaaSAppPermissionApplyV2InputSLZ
 
 logger = logging.getLogger(__name__)
 
@@ -299,68 +297,6 @@ class AppPermissionRenewAPIView(APIView):
             )
 
         return V1OKJsonResponse("OK")
-
-
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
-        request_body=PaaSAppPermissionApplyV2InputSLZ,
-        tags=["OpenAPI.V1"],
-    ),
-)
-class AppPermissionApplyAPIView(APIView):
-    """
-    权限批量申请(网关+resource)
-    """
-
-    permission_classes = [OpenAPIPermission]
-
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
-        slz = serializers.PaaSAppPermissionApplyV2InputSLZ(
-            data=request.data,
-            context={
-                "request": request,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        record_ids = []
-        for gateway_resources in data.get("gateway_resource_ids"):
-            gateway = Gateway.objects.get(id=gateway_resources["gateway_id"])
-            resource_ids = gateway_resources.get("resource_ids") or []
-            if resource_ids:
-                # 如果传了resource_ids就是按照资源维度申请
-                manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.RESOURCE.value)
-                grant_dimension = str(GrantDimensionEnum.RESOURCE.value)
-            else:
-                manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value)
-                grant_dimension = str(GrantDimensionEnum.API.value)
-
-            record = manager.create_apply_record(
-                data["target_app_code"],
-                gateway,
-                resource_ids,
-                grant_dimension,
-                data["reason"],
-                data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-                request.user.username,
-            )
-            record_ids.append(record.id)
-        try:
-            for record_id in record_ids:
-                apply_async_on_commit(send_mail_for_perm_apply, args=[record_id])
-        except Exception:  # pylint: disable=broad-except
-            logger.exception("send mail to gateway manager fail. apply_record_ids=%s", record_ids)
-
-        return V1OKJsonResponse(
-            "OK",
-            data={
-                "record_ids": record_ids,
-            },
-        )
 
 
 class AppPermissionViewSet(viewsets.ViewSet):

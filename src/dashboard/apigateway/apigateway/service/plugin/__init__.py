@@ -33,6 +33,13 @@ from .checker import (
     UriBlockerChecker,
     check_vars,
 )
+from .compatibility import (
+    AI_COMPATIBLE_PLUGIN_CODES,
+    AI_ONLY_PLUGIN_CODES,
+    CONTROLLER_MANAGED_PLUGIN_CODES,
+    OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES,
+    is_plugin_compatible_with_resource_kind,
+)
 from .convertor import (
     AIProxyConvertor,
     BkAccessTokenSourceConvertor,
@@ -56,6 +63,10 @@ from .validator import PluginConfigYamlValidator
 
 __all__ = [
     # constant
+    "AI_COMPATIBLE_PLUGIN_CODES",
+    "AI_ONLY_PLUGIN_CODES",
+    "CONTROLLER_MANAGED_PLUGIN_CODES",
+    "OAUTH2_SYSTEM_MANAGED_PLUGIN_CODES",
     # Enum
     # class
     "AIProxyConvertor",
@@ -94,5 +105,6 @@ __all__ = [
     "check_vars",
     "format_fault_injection_config",
     "format_response_rewrite_config",
+    "is_plugin_compatible_with_resource_kind",
     # others
 ]

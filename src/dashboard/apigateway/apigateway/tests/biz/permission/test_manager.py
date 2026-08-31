@@ -20,6 +20,7 @@ from unittest import mock
 
 import pytest
 from ddf import G
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
@@ -108,6 +109,35 @@ class TestGatewayPermissionDimensionManager:
         assert record.id
         assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
+
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_handle_permission_apply_rejects_oauth2_builtin(self, app_code, fake_gateway):
+        apply = self._make_fake_apply(fake_gateway)
+        apply.bk_app_code = app_code
+        apply.save(update_fields=["bk_app_code"])
+        self._make_fake_apply_status(apply)
+
+        with pytest.raises(ValidationError):
+            GatewayPermissionDimensionManager().handle_permission_apply(
+                gateway=fake_gateway,
+                apply=apply,
+                status=ApplyStatusEnum.APPROVED.value,
+                comment="",
+                handled_by="admin",
+                part_resource_ids=None,
+            )
+
+        assert not AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=app_code).exists()
+
+        record = GatewayPermissionDimensionManager().handle_permission_apply(
+            gateway=fake_gateway,
+            apply=apply,
+            status=ApplyStatusEnum.REJECTED.value,
+            comment="",
+            handled_by="admin",
+            part_resource_ids=None,
+        )
+        assert record.status == ApplyStatusEnum.REJECTED.value
 
     def test_save_permission_apply_status(self, fake_gateway):
         apply = self._make_fake_apply(fake_gateway)
@@ -272,6 +302,35 @@ class TestResourcePermissionDimensionManager:
             ).count()
             == 2
         )
+
+    @pytest.mark.parametrize("app_code", ["public", "personal"])
+    def test_handle_permission_apply_rejects_oauth2_builtin(self, app_code, fake_gateway):
+        apply = self._make_fake_apply(fake_gateway)
+        apply.bk_app_code = app_code
+        apply.save(update_fields=["bk_app_code"])
+        self._make_fake_apply_status(apply)
+
+        with pytest.raises(ValidationError):
+            ResourcePermissionDimensionManager().handle_permission_apply(
+                gateway=fake_gateway,
+                apply=apply,
+                status=ApplyStatusEnum.APPROVED.value,
+                comment="",
+                handled_by="admin",
+                part_resource_ids=None,
+            )
+
+        assert not AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=app_code).exists()
+
+        record = ResourcePermissionDimensionManager().handle_permission_apply(
+            gateway=fake_gateway,
+            apply=apply,
+            status=ApplyStatusEnum.REJECTED.value,
+            comment="",
+            handled_by="admin",
+            part_resource_ids=None,
+        )
+        assert record.status == ApplyStatusEnum.REJECTED.value
 
     def test_handle_permission_apply_partial_approved(self, fake_gateway):
         # 部分审批
@@ -443,6 +502,7 @@ class TestPermissionDimensionManagerItsmIntegration:
         assert apply.itsm_callback_token == "cb-token-001"
         helper.create_permission_apply_ticket.assert_called_once()
         assert helper.create_permission_apply_ticket.call_args.kwargs["callback_token"] == "cb-token-001"
+        assert helper.create_permission_apply_ticket.call_args.kwargs["apply_reason"] == "reason"
 
     def test_create_apply_record_with_itsm_ticket_fallback_applicant(
         self, settings, mocker, fake_gateway, fake_resource

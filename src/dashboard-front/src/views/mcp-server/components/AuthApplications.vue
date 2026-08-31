@@ -87,6 +87,7 @@
             <BkInput
               v-model="formData.bk_app_code"
               :placeholder="t('请输入应用 ID')"
+              :maxlength="20"
               clearable
             />
           </BkFormItem>
@@ -110,7 +111,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { Button, Form, Message, PopConfirm } from 'bkui-vue';
+import {
+  Button,
+  Form,
+  Message,
+  PopConfirm,
+  Popover,
+} from 'bkui-vue';
 import type {
   FilterValue,
   PrimaryTableProps,
@@ -210,12 +217,18 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             getList();
           }}
         >
-          <Button
-            text
-            theme="primary"
+          <Popover
+            content={t('OAuth2 内置客户端的 MCPServer 应用权限不允许删除。')}
+            disabled={!isDisabledDel(row)}
           >
-            { t('删除') }
-          </Button>
+            <Button
+              text
+              theme="primary"
+              disabled={isDisabledDel(row)}
+            >
+              { t('删除') }
+            </Button>
+          </Popover>
         </PopConfirm>
       );
     },
@@ -243,6 +256,11 @@ const rules = {
       required: true,
       message: t('请输入应用 ID'),
       trigger: 'blur',
+    },
+    {
+      validator: (value: string) => !value?.startsWith('v_mcp_'),
+      message: t('应用 ID 不能以 v_mcp_ 开头'),
+      trigger: 'change',
     },
   ],
 };
@@ -281,6 +299,10 @@ const renderDisplayNameColumn = (value: string) => {
 
 const handleExportApp = (payload: IDropList) => {
   handleExport(gatewayId.value, payload, filterData);
+};
+
+const isDisabledDel = (row: TableRowData) => {
+  return ['public', 'personal'].includes(row.bk_app_code);
 };
 
 const showAuthorizeDia = () => {

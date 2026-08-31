@@ -20,9 +20,13 @@ import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IBackendListOutput,
   IBackendRetrieveOutput,
+  IBackendTestConnectionOutput,
 } from '@/services/types/responses/gateways.ts';
 import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
-import type { IBackendInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IBackendInputSLZ,
+  IBackendTestConnectionInputSLZ,
+} from '@/services/types/body/post/gateways.ts';
 
 export interface IBackendServicesConfig {
   name: string
@@ -105,6 +109,15 @@ export function createBackendService(apigwId: number, params: IBackendInputSLZ) 
  */
 export function updateBackendService(apigwId: number, id: number, params: IBackendInputSLZ) {
   return http.put(`/gateways/${apigwId}/backends/${id}/`, params);
+}
+
+/**
+ * 测试 AI 后端服务连通性
+ * @param apigwId 网关id
+ * @param params 连通测试参数
+ */
+export function testBackendServiceConnection(apigwId: number, params: IBackendTestConnectionInputSLZ) {
+  return http.post<IBackendTestConnectionOutput>(`/gateways/${apigwId}/backends/test-connection/`, params);
 }
 
 /**

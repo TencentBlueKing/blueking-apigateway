@@ -60,7 +60,6 @@
     <!--  正文  -->
     <main class="page-content">
       <BkResizeLayout
-        ref="outerResizeLayoutRef"
         placement="right"
         :border="false"
         collapsible
@@ -160,6 +159,12 @@
                                   class="res-item-name mr-8px"
                                 />
                                 <BkTag
+                                  v-if="curTargetBasics?.kind === 2"
+                                  theme="info"
+                                >
+                                  {{ t('模型代理 API') }}
+                                </BkTag>
+                                <BkTag
                                   v-if="curTargetBasics?.is_deprecated"
                                   theme="danger"
                                 >
@@ -203,6 +208,7 @@
                 <TableEmpty
                   v-else
                   empty-type="empty"
+                  class="empty-wrapper"
                 />
               </div>
             </template>
@@ -228,6 +234,7 @@
 </template>
 
 <script lang="ts" setup>
+import { refDebounced } from '@vueuse/core';
 import {
   getApigwResourceDocDocs,
   getApigwResourcesDocs,
@@ -255,7 +262,6 @@ import type {
   TabType,
 } from '../types.d.ts';
 import MarkdownIt from 'markdown-it';
-import { ResizeLayout } from 'bkui-vue';
 import DocDetailMainContent from '../components/DocDetailMainContent.vue';
 import DocDetailSideContent from '../components/DocDetailSideContent.vue';
 import SDKInstructionSlider from '../components/SDKInstructionSlider.vue';
@@ -280,6 +286,7 @@ const curStageName = ref('');
 const curTargetName = ref(''); // 当前文档所属的网关或组件名称
 const curTargetBasics = ref<IApiGatewayBasics & ISystemBasics | null>(null); // 当前文档所属的target主要信息
 const apiList = ref<(IResource & IComponent)[]>([]); // 当前target下的所有api
+const boardList = ref<IBoard[]>([]);
 const curComponentApiName = ref(''); // 当前组件api名称，路由用
 const curApi = ref<IResource & IComponent | null>(null); // 当前选中的 api
 const curApiMarkdownHtml = ref('');
@@ -287,9 +294,9 @@ const updatedTime = ref<string | null>(null);
 const sdks = ref<IApiGatewaySdkDoc[] & IComponentSdk[]>([]);
 const isSdkInstructionSliderShow = ref(false);
 const navList = ref<INavItem[]>([]);
-const outerResizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
 const isLoading = ref(false);
 const keyword = ref(''); // 筛选器输入框的搜索关键字
+const debouncedKeyword = refDebounced(keyword, 500);
 const activeGroupPanelNames = ref<string[]>([]); // API分类 collapse 展开的 panel
 
 const searchPlaceholder = computed(() => {
@@ -303,8 +310,13 @@ const searchPlaceholder = computed(() => {
 });
 
 const filteredApiList = computed(() => {
-  const regex = new RegExp(keyword.value, 'i');
-  return apiList.value.filter((api: IResource & IComponent) => regex.test(api.name) || regex.test(api.description));
+  const keyword = debouncedKeyword.value.toLowerCase();
+  if (!keyword) {
+    return apiList.value;
+  }
+  return apiList.value.filter((api: IResource & IComponent) =>
+    api.name?.toLowerCase().includes(keyword) || api.description?.toLowerCase().includes(keyword),
+  );
 });
 
 // API 分类列表
@@ -349,7 +361,7 @@ watch(apiGroupList, () => {
   activeGroupPanelNames.value = apiGroupList.value.map((item: any) => item.name);
 });
 
-watch([filteredApiList, keyword], async () => {
+watch([filteredApiList, debouncedKeyword], async () => {
   await nextTick();
   checkOverflow();
 });
@@ -360,8 +372,9 @@ watch(() => route.query, async () => {
     await fetchApiList();
   }
 
-  if (route.query?.apiName) {
-    curComponentApiName.value = route.query.apiName as string;
+  const apiName = route.query?.apiName as string;
+  if (apiName) {
+    curComponentApiName.value = apiName;
     curApi.value = apiList.value.find((api: IResource & IComponent) => api.name === curComponentApiName.value) ?? null;
     navList.value = [];
 
@@ -563,11 +576,32 @@ const handleStageChange = () => {
   // await fetchApiList();
 };
 
-const getHighlightedHtml = (value: string) => {
-  if (keyword.value) {
-    return value.replace(new RegExp(`(${keyword.value})`, 'i'), '<b class="ag-keyword">$1</b>');
+const getHighlightedHtml = (value: string = '') => {
+  const keyword = debouncedKeyword.value;
+  // 提前返回，同时避免空关键字导致 indexOf 死循环
+  if (!keyword) {
+    return value;
   }
-  return value;
+
+  const lowerValue = value.toLowerCase();
+  const lowerKeyword = keyword.toLowerCase();
+  let result = '';
+  let startIndex = 0;
+  let matchIndex = lowerValue.indexOf(lowerKeyword, startIndex);
+
+  while (matchIndex !== -1) {
+    // 匹配位置之前的普通文本
+    result += value.slice(startIndex, matchIndex);
+    // 高亮片段，截取原文以保留大小写
+    result += `<b class="ag-keyword">${value.slice(matchIndex, matchIndex + keyword.length)}</b>`;
+    // 从本次匹配结束处继续往后找
+    startIndex = matchIndex + keyword.length;
+    matchIndex = lowerValue.indexOf(lowerKeyword, startIndex);
+  }
+
+  // 拼接最后一段剩余文本
+  result += value.slice(startIndex);
+  return result;
 };
 
 const nameRefs = new Map<number, HTMLElement>();
@@ -628,8 +662,6 @@ const checkOverflow = () => {
   });
 };
 
-const boardList = ref<IBoard[]>([]);
-
 const fetchBoardList = async () => {
   try {
     boardList.value = await getComponentSystemList(board.value) as IBoard[];
@@ -679,6 +711,7 @@ onBeforeMount(() => {
   curTab.value = params.curTab as TabType || 'gateway';
   curTargetName.value = params.targetName as string ?? '';
   curComponentApiName.value = params.componentName as string ?? '';
+  keyword.value = route.query?.apiName as string ?? '';
   board.value = params.board as string || 'default';
   init();
 });
@@ -959,10 +992,15 @@ onBeforeMount(() => {
 
   .main-content-wrap {
     padding-top: 16px;
+    padding-right: 8px;
+  }
+
+  .empty-wrapper {
+    height: calc(100vh - 144px);
   }
 
   .aside-right {
-
+    padding-top: 16px;
     .apigw-desc-wrap {
       height: calc(100vh - 144px);
       overflow-y: scroll;

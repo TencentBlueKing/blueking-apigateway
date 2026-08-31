@@ -15,15 +15,51 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.biz.resource import ResourcesSaver
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+from apigateway.biz.resource import ResourceAuthConfig, ResourceData, ResourcesSaver
+from apigateway.core.constants import BackendKindEnum, ContextScopeTypeEnum, ContextTypeEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Context, Proxy, Resource
 
 
 class TestResourceSavers:
+    def test_save_ai_resource_proxy_with_empty_config(self, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        resource_data = ResourceData(
+            name="chat",
+            kind=ResourceKindEnum.AI.value,
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+        )
+
+        resource = ResourcesSaver(fake_gateway, [resource_data], "admin").save()[0]
+
+        assert resource.kind == ResourceKindEnum.AI.value
+        proxy = Proxy.objects.get(resource=resource)
+        assert proxy.backend == backend
+        assert proxy.config == {}
+
+    def test_save_rejects_resource_kind_change(self, fake_resource, fake_resource_data):
+        resource_data = fake_resource_data.model_copy(
+            update={
+                "resource": fake_resource,
+                "kind": ResourceKindEnum.AI.value,
+                "method": "POST",
+                "match_subpath": False,
+                "enable_websocket": False,
+                "backend_config": None,
+            },
+            deep=True,
+        )
+
+        with pytest.raises(ValueError, match="kind"):
+            ResourcesSaver(fake_resource.gateway, [resource_data], "admin").save()
+
     def test_save(self, fake_resource, fake_resource_data):
         fake_gateway = fake_resource.gateway
 
@@ -43,6 +79,31 @@ class TestResourceSavers:
             ).count()
             == 2
         )
+
+    def test_save_oauth2_client_switches_on_resource_only(self, fake_resource, fake_resource_data):
+        resource_data = fake_resource_data.model_copy(
+            update={
+                "resource": fake_resource,
+                "auth_config": ResourceAuthConfig(
+                    oauth2_public_client_enabled=True,
+                    oauth2_personal_client_enabled=True,
+                ),
+            },
+            deep=True,
+        )
+
+        ResourcesSaver(fake_resource.gateway, [resource_data], "admin").save()
+
+        fake_resource.refresh_from_db()
+        assert fake_resource.oauth2_public_client_enabled is True
+        assert fake_resource.oauth2_personal_client_enabled is True
+        context = Context.objects.get(
+            scope_id=fake_resource.id,
+            scope_type=ContextScopeTypeEnum.RESOURCE.value,
+            type=ContextTypeEnum.RESOURCE_AUTH.value,
+        )
+        assert "oauth2_public_client_enabled" not in context.config
+        assert "oauth2_personal_client_enabled" not in context.config
 
     # FIXME: should check the error here
     # def test_save__error(self, fake_resource, fake_resource_data):

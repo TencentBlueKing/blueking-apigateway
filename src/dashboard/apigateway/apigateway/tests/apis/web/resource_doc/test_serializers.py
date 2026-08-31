@@ -56,6 +56,7 @@ class TestDocArchiveParseOutputSLZ:
                     "resource": {
                         "id": 1,
                         "name": "get_user",
+                        "kind": "ai",
                         "method": "GET",
                         "path": "/user",
                         "description": "",
@@ -72,6 +73,7 @@ class TestDocArchiveParseOutputSLZ:
                     "resource": {
                         "id": 1,
                         "name": "get_user",
+                        "kind": "ai",
                         "method": "GET",
                         "path": "/user",
                         "description": "",

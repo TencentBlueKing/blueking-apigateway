@@ -18,7 +18,8 @@
 | name        | string   | 是   | 环境名称                                           |
 | description | string   | 否   | 描述                                               |
 | vars        | object   | 否   | 环境变量，包含变量名、值，变量名、值均为字符串类型 |
-| proxy_http  | object   | 是   | 代理配置，具体内容参考下面描述                     |
+| proxy_http  | object   | 否   | 代理配置，具体内容参考下面描述；与 `ai_backends` 至少提供一种 |
+| ai_backends | array[object] | 否 | 模型服务配置列表，仅 AI 网关支持                  |
 
 proxy_http 说明
 
@@ -49,6 +50,32 @@ hosts 说明
 | host     | string   | 是   | 以 http:// 或 https:// 开头的合法域名、service 地址或 ip:port |
 | weight   | integer  | 否   | 权重，可选值 1 ~ 10000  |
 
+ai_backends 说明
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+| -------- | -------- | ---- | ---- |
+| name | string | 是 | 模型服务名称 |
+| config | object | 是 | 模型服务在当前环境的配置 |
+
+ai_backends.config 说明
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+| -------- | -------- | ---- | ---- |
+| timeout | integer | 否 | 超时时间，单位秒，默认 `300`，范围 `1..300` |
+| instances | array[object] | 是 | 第一期必须且只能配置 1 个实例 |
+
+instances 说明
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+| -------- | -------- | ---- | ---- |
+| name | string | 是 | 非空实例名 |
+| provider | string | 是 | `openai`、`deepseek` 或 `openai-compatible` |
+| weight | integer | 否 | 非负整数，默认 `0` |
+| auth.header | object | 否 | 认证 Header 映射，可包含多个 Header |
+| options | object | 否 | 模型参数；`model` 可选，其他 JSON 字段完整保存 |
+| override.endpoint | string | 否 | `openai-compatible` 必填的 Chat Completions 地址 |
+| model_endpoint | string | 否 | 自定义 Models API；连接测试使用，不发布到 APISIX |
+
 
 ### 请求参数示例
 
@@ -77,6 +104,55 @@ hosts 说明
             "delete": ["X-Test"]
         }
     }
+}
+```
+
+AI 网关模型服务示例：
+
+```json
+{
+    "name": "prod",
+    "description": "正式环境",
+    "ai_backends": [
+        {
+            "name": "openai-primary",
+            "config": {
+                "timeout": 300,
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "auth": {
+                            "header": {
+                                "Authorization": "Bearer <token>"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "custom-models",
+            "config": {
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai-compatible",
+                        "auth": {
+                            "header": {
+                                "X-Api-Key": "<token>",
+                                "X-Tenant": "tenant-a"
+                            }
+                        },
+                        "override": {
+                            "endpoint": "https://llm.example.com/v1/chat/completions"
+                        },
+                        "model_endpoint": "https://llm.example.com/v1/models"
+                    }
+                ]
+            }
+        }
+    ]
 }
 ```
 

@@ -18,7 +18,7 @@
 #
 import unittest
 
-from apigateway.utils.string import random_string, truncate_string
+from apigateway.utils.string import random_string, split_comma_separated_values, truncate_string
 
 
 class TestUtilsString(unittest.TestCase):
@@ -37,3 +37,32 @@ class TestUtilsString(unittest.TestCase):
         self.assertEqual(len(random_string(5)), 5)
 
         self.assertTrue(random_string().isalpha())
+
+    def test_split_comma_separated_values_defaults(self):
+        self.assertEqual(split_comma_separated_values(" a, b,a,, ,c,"), ["a", "b", "a", "c"])
+
+    def test_split_comma_separated_values_without_strip(self):
+        self.assertEqual(
+            split_comma_separated_values(" a, ,b", strip=False),
+            [" a", " ", "b"],
+        )
+
+    def test_split_comma_separated_values_with_empty_values(self):
+        self.assertEqual(
+            split_comma_separated_values("a,, ,b,", keep_empty=True),
+            ["a", "", "", "b", ""],
+        )
+
+    def test_split_comma_separated_values_with_deduplication(self):
+        self.assertEqual(
+            split_comma_separated_values("b, a,b,a,c", deduplicate=True),
+            ["b", "a", "c"],
+        )
+        self.assertEqual(
+            split_comma_separated_values("a, a", strip=False, deduplicate=True),
+            ["a", " a"],
+        )
+        self.assertEqual(
+            split_comma_separated_values(",,,", keep_empty=True, deduplicate=True),
+            [""],
+        )

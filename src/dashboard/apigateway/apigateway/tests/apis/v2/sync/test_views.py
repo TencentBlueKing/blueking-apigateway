@@ -27,10 +27,27 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
+from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
+from apigateway.apps.permission.constants import (
+    OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    OAUTH2_PUBLIC_CLIENT_APP_CODE,
+)
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
-from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
+from apigateway.biz.gateway import GatewayHandler
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.core.models import (
+    Backend,
+    BackendConfig,
+    Gateway,
+    GatewayRelatedApp,
+    Proxy,
+    Resource,
+    ResourceVersion,
+    Stage,
+)
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.service.resource_version import make_resource_schema_version
+from apigateway.utils.yaml import yaml_loads
 
 
 @pytest.fixture()
@@ -39,6 +56,22 @@ def disable_app_permission(mocker):
         "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
+
+
+def _model_backend(name="openai-primary"):
+    return {
+        "name": name,
+        "config": {
+            "timeout": 300,
+            "instances": [
+                {
+                    "name": "primary",
+                    "provider": "openai",
+                    "auth": {"header": {"Authorization": "Bearer secret"}},
+                }
+            ],
+        },
+    }
 
 
 class TestSyncApi:
@@ -65,6 +98,524 @@ class TestSyncApi:
         assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
         assert response.status_code == 202
         assert response.json() == {"data": {"message": "SDK generation started"}}
+
+    def test_resource_sync_updates_and_resets_oauth2_client_settings(
+        self, request_view, fake_gateway, disable_app_permission
+    ):
+        backend = G(Backend, gateway=fake_gateway, name="default")
+        resource_extension = {
+            "backend": {
+                "name": backend.name,
+                "type": "HTTP",
+                "method": "get",
+                "path": "/backend/users",
+                "timeout": 30,
+            },
+            "authConfig": {
+                "userVerifiedRequired": True,
+                "oauth2PublicClientEnabled": True,
+                "oauth2PersonalClientEnabled": False,
+            },
+        }
+        openapi = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "API Gateway Swagger"},
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "get_users",
+                        "x-bk-apigateway-resource": resource_extension,
+                    }
+                }
+            },
+        }
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="get_users")
+        assert resource.oauth2_public_client_enabled is True
+        assert resource.oauth2_personal_client_enabled is False
+
+        resource_extension["authConfig"] = {
+            "userVerifiedRequired": True,
+            "oauth2PublicClientEnabled": False,
+            "oauth2PersonalClientEnabled": True,
+        }
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource.refresh_from_db()
+        assert resource.oauth2_public_client_enabled is False
+        assert resource.oauth2_personal_client_enabled is True
+
+        resource_extension.pop("authConfig")
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource.refresh_from_db()
+        assert resource.oauth2_public_client_enabled is False
+        assert resource.oauth2_personal_client_enabled is False
+
+    def test_resource_sync_ai_resource(self, request_view, fake_gateway, disable_app_permission):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": {
+                                "kind": "ai",
+                                "backend": {"name": backend.name},
+                            },
+                        }
+                    }
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": content, "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="chat")
+        assert resource.kind == ResourceKindEnum.AI.value
+        assert Proxy.objects.get(resource=resource).config == {}
+
+    def test_resource_sync_standard_and_ai_resources(self, request_view, fake_gateway, disable_app_permission):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        standard_backend = G(Backend, gateway=fake_gateway, name="default", kind=BackendKindEnum.STANDARD.value)
+        ai_backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/users": {
+                        "get": {
+                            "operationId": "get_users",
+                            "x-bk-apigateway-resource": {
+                                "kind": "standard",
+                                "backend": {
+                                    "name": standard_backend.name,
+                                    "method": "get",
+                                    "path": "/backend/users",
+                                    "timeout": 30,
+                                },
+                            },
+                        }
+                    },
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": {
+                                "kind": "ai",
+                                "backend": {"name": ai_backend.name},
+                            },
+                        }
+                    },
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": content, "delete": False},
+        )
+
+        assert response.status_code == 200, response.json()
+        standard_resource = Resource.objects.get(gateway=fake_gateway, name="get_users")
+        ai_resource = Resource.objects.get(gateway=fake_gateway, name="chat")
+        assert standard_resource.kind == ResourceKindEnum.STANDARD.value
+        assert Proxy.objects.get(resource=standard_resource).backend == standard_backend
+        assert ai_resource.kind == ResourceKindEnum.AI.value
+        assert Proxy.objects.get(resource=ai_resource).backend == ai_backend
+        assert Proxy.objects.get(resource=ai_resource).config == {}
+
+    @pytest.mark.parametrize(
+        "resource_extension",
+        [
+            {
+                "kind": "ai",
+                "backend": {"name": "default"},
+            },
+            {
+                "kind": "standard",
+                "backend": {"name": "openai-primary", "method": "get", "path": "/backend/users"},
+            },
+        ],
+    )
+    def test_resource_sync_rejects_invalid_ai_resource_backend_contract(
+        self,
+        request_view,
+        fake_gateway,
+        disable_app_permission,
+        resource_extension,
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        G(Backend, gateway=fake_gateway, name="default", kind=BackendKindEnum.STANDARD.value)
+        G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "basePath": "/",
+                "info": {"version": "0.1", "title": "AI Gateway"},
+                "schemes": ["http"],
+                "paths": {
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": resource_extension,
+                        }
+                    }
+                },
+            }
+        )
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": content, "delete": False},
+        )
+
+        assert response.status_code == 400
+        assert not Resource.objects.filter(gateway=fake_gateway, name="chat").exists()
+
+    def test_stage_sync_ai_gateway_with_ai_backends_only(self, request_view, fake_gateway, disable_app_permission):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [_model_backend()]},
+        )
+
+        assert resp.status_code == 200, resp.json()
+        backend = Backend.objects.get(gateway=fake_gateway, name="openai-primary")
+        assert backend.kind == BackendKindEnum.AI.value
+        backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert backend_config.config["instances"][0]["weight"] == 0
+        assert "options" not in backend_config.config["instances"][0]
+
+    def test_stage_sync_normal_gateway_rejects_ai_backends(self, request_view, fake_gateway, disable_app_permission):
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "backends": [
+                    {
+                        "name": "default",
+                        "config": {
+                            "timeout": 30,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"host": "http://example.com"}],
+                        },
+                    }
+                ],
+                "ai_backends": [_model_backend()],
+            },
+        )
+
+        assert resp.status_code == 400
+        assert not Stage.objects.filter(gateway=fake_gateway, name="prod").exists()
+
+    def test_stage_sync_ai_gateway_omitted_ai_backends_remain_unchanged(
+        self, request_view, fake_gateway, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        initial = {
+            "name": "prod",
+            "description": "desc",
+            "vars": {},
+            "ai_backends": [_model_backend()],
+        }
+        first = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data=initial,
+        )
+        assert first.status_code == 200, first.json()
+        model_config = BackendConfig.objects.get(backend__name="openai-primary", stage__name="prod")
+        stored_config = model_config.config
+
+        second = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "updated",
+                "vars": {},
+                "backends": [
+                    {
+                        "name": "service1",
+                        "config": {
+                            "timeout": 30,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"host": "http://example.com"}],
+                        },
+                    }
+                ],
+            },
+        )
+
+        assert second.status_code == 200, second.json()
+        model_config.refresh_from_db()
+        assert model_config.config == stored_config
+
+    def test_stage_sync_ai_backend_treats_masked_value_as_plaintext_and_masks_audit(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        initial = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "ai_backends": [_model_backend()],
+            },
+            user=fake_admin_user,
+        )
+        assert initial.status_code == 200, initial.json()
+        model_backend = _model_backend()
+        model_backend["config"]["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
+        model_backend["config"]["instances"][0]["options"] = {"model": "gpt-4o-mini"}
+
+        updated = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "ai_backends": [model_backend],
+            },
+            user=fake_admin_user,
+        )
+
+        assert updated.status_code == 200, updated.json()
+        backend_config = BackendConfig.objects.get(backend__name="openai-primary", stage__name="prod")
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "xx****yy"
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            comment="OpenAPI 同步更新环境后端配置",
+        )
+        assert "Be****et" in audit_log.data_before
+        assert "xx****yy" in audit_log.data_after
+        assert "Bearer secret" not in audit_log.data_before
+        assert "Bearer secret" not in audit_log.data_after
+
+    def test_stage_sync_ai_backend_records_secret_change_with_same_mask(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        initial = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [_model_backend()]},
+            user=fake_admin_user,
+        )
+        assert initial.status_code == 200, initial.json()
+        model_backend = _model_backend()
+        model_backend["config"]["instances"][0]["auth"]["header"]["Authorization"] = "Bearer closet"
+
+        updated = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [model_backend]},
+            user=fake_admin_user,
+        )
+
+        assert updated.status_code == 200, updated.json()
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            comment="OpenAPI 同步更新环境后端配置",
+        )
+        assert "Be****et" in audit_log.data_before
+        assert "Be****et" in audit_log.data_after
+        assert "Bearer secret" not in audit_log.data_before
+        assert "Bearer closet" not in audit_log.data_after
+
+    def test_stage_sync_ai_gateway_rejects_empty_ai_backends(self, request_view, fake_gateway, disable_app_permission):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": []},
+        )
+
+        assert resp.status_code == 400
+        assert not Stage.objects.filter(gateway=fake_gateway, name="prod").exists()
+
+    def test_stage_sync_rolls_back_standard_backend_when_model_backend_name_conflicts(
+        self, request_view, fake_gateway, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        name = "shared-name"
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "backends": [
+                    {
+                        "name": name,
+                        "config": {
+                            "timeout": 30,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"host": "http://example.com"}],
+                        },
+                    }
+                ],
+                "ai_backends": [_model_backend(name)],
+            },
+        )
+
+        assert resp.status_code == 400
+        assert not Stage.objects.filter(gateway=fake_gateway, name="prod").exists()
+        assert not Backend.objects.filter(gateway=fake_gateway, name=name).exists()
+
+    def test_gateway_sync_creates_ai_gateway(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        gateway_name = f"bkai-{unique_gateway_name}"
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["data"]["kind"] == "ai"
+        assert Gateway.objects.get(name=gateway_name).kind == GatewayKindEnum.AI.value
+
+    def test_gateway_sync_ai_gateway_rejects_older_default_data_plane(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        gateway_name = f"bkai-{unique_gateway_name}"
+        DataPlane.objects.filter(id=default_data_plane.id).update(apisix_version="3.13")
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 400
+        assert "APISIX 3.16 or later" in response.json()["error"]["message"]
+        assert not Gateway.objects.filter(name=gateway_name).exists()
+
+    def test_gateway_sync_creates_bkaidev_prefixed_ai_gateway(
+        self, mocker, request_view, disable_app_permission, default_data_plane
+    ):
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": "bkaidev-demo"},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200
+        assert Gateway.objects.get(name="bkaidev-demo").kind == GatewayKindEnum.AI.value
+
+    def test_gateway_sync_ignores_kind_when_updating(
+        self, mocker, request_view, fake_gateway, disable_app_permission, default_data_plane
+    ):
+        fake_gateway.name = "update-ai-kind"
+        fake_gateway.save()
+        GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"kind": "ai"},
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.kind == GatewayKindEnum.NORMAL.value
 
     def test_gateway_public_key_retrieve_from_dashboard_backend(
         self, settings, request_view, fake_gateway, disable_app_permission
@@ -289,6 +840,119 @@ class TestSyncApi:
         assert resp.json()["data"] == {"id": 123, "version": "1.1.0"}
         create_resource_version_with_artifacts.assert_called_once()
 
+    def test_resource_version_lookup_by_ids_and_versions(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        matched = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data="[]")
+        unmatched_version = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", _data="[]")
+        another_gateway = G(Gateway)
+        another_gateway_version = G(ResourceVersion, gateway=another_gateway, version="1.0.0", _data="[]")
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.resource_versions.lookup",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "ids": f"{matched.id},{unmatched_version.id},{another_gateway_version.id}",
+                "versions": "1.0.0,3.0.0",
+            },
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == [{"id": matched.id, "version": matched.version, "comment": matched.comment}]
+
+    def test_resource_version_lookup_rejects_missing_ids_and_versions(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.resource_versions.lookup",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 400
+
+    def test_resource_version_list_keeps_version_filter(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        matched = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", comment="matched", _data="[]")
+        G(ResourceVersion, gateway=fake_gateway, version="2.0.0", comment="unmatched", _data="[]")
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"version": matched.version},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "count": 1,
+            "results": [{"version": matched.version, "comment": matched.comment}],
+        }
+
+    def test_resource_version_list_returns_stable_paginated_response(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        first = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", comment="first", _data="[]")
+        second = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", comment="second", _data="[]")
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"limit": 1, "offset": 1},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "count": 2,
+            "results": [{"version": second.version, "comment": second.comment}],
+        }
+        assert first.id < second.id
+
+    def test_resource_version_create_with_ai_resource(
+        self, request_view, fake_gateway, fake_backend, fake_resource, fake_admin_user, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save()
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.method = "POST"
+        fake_resource.match_subpath = False
+        fake_resource.enable_websocket = False
+        fake_resource.save()
+        proxy = Proxy.objects.get(resource=fake_resource)
+        Proxy.objects.filter(id=proxy.id).update(_config="{}")
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"version": "1.2.0", "comment": "AI resource version"},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        resource_version = ResourceVersion.objects.get(gateway=fake_gateway, version="1.2.0")
+        resource = resource_version.data[0]
+        assert resource["kind"] == ResourceKindEnum.AI.value
+        assert resource["proxy"]["backend_id"] == fake_backend.id
+        assert json.loads(resource["proxy"]["config"]) == {}
+        artifact = OpenAPIFileResourceSchemaVersion.objects.get(resource_version=resource_version)
+        operation = yaml_loads(artifact.schema)["paths"][fake_resource.path]["post"]
+        assert operation["x-bk-apigateway-resource"]["kind"] == ResourceKindEnum.AI.value
+
     def test_resource_version_release_preserves_stage_id_order(
         self, faker, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission
     ):
@@ -436,6 +1100,42 @@ class TestSyncApi:
         assert set(permission_audit_logs.values_list("op_object", flat=True)) == {"app1", "app2"}
         assert set(permission_audit_logs.values_list("op_type", flat=True)) == {OpTypeEnum.CREATE.value}
 
+    def test_mcp_server_sync_rejects_ai_resource_from_release_snapshot(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        resources = fake_release_v2.resource_version.data
+        resources[0]["kind"] = ResourceKindEnum.AI.value
+        fake_release_v2.resource_version.data = resources
+        fake_release_v2.resource_version.save()
+        make_resource_schema_version(fake_release_v2.resource_version)
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data={
+                "mcp_servers": [
+                    {
+                        "name": "ai-resource-server",
+                        "resource_names": [fake_resource.name],
+                        "is_public": True,
+                        "description": "AI resource must not become an MCP tool",
+                    }
+                ]
+            },
+        )
+
+        assert resp.status_code == 400
+        assert not MCPServer.objects.filter(gateway=fake_gateway, stage=fake_stage).exists()
+
     def test_mcp_server_sync_with_update(
         self,
         request_view,
@@ -548,6 +1248,52 @@ class TestSyncApi:
 class TestSyncApiOAuth2:
     """测试 MCPServer 同步接口的 OAuth2 功能"""
 
+    def test_mcp_server_sync_create_with_oauth2_personal_client_enabled(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        make_resource_schema_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "oauth2-personal-server",
+                    "resource_names": [fake_resource.name],
+                    "tool_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "oauth2 personal test server",
+                    "status": 1,
+                    "oauth2_personal_client_enabled": True,
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        mcp_server_id = resp.json()["data"][0]["id"]
+        mcp_server = MCPServer.objects.get(id=mcp_server_id)
+        assert mcp_server.oauth2_personal_client_enabled is True
+        assert MCPServerAppPermission.objects.filter(
+            mcp_server_id=mcp_server_id,
+            bk_app_code=OAUTH2_PERSONAL_CLIENT_APP_CODE,
+        ).exists()
+
     def test_mcp_server_sync_create_with_oauth2_public_client_enabled(
         self,
         request_view,
@@ -599,7 +1345,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 已被授权
         assert MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
         # 验证 target_app_codes 的权限也存在
@@ -654,7 +1400,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 没有被授权
         assert not MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
     def test_mcp_server_sync_update_enable_oauth2(
@@ -683,7 +1429,7 @@ class TestSyncApiOAuth2:
         # 确认 public 权限不存在
         assert not MCPServerAppPermission.objects.filter(
             mcp_server=mcp_server,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
         data = {
@@ -718,7 +1464,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 已被授权
         assert MCPServerAppPermission.objects.filter(
             mcp_server_id=mcp_server_id,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
     def test_mcp_server_sync_update_disable_oauth2(
@@ -743,12 +1489,12 @@ class TestSyncApiOAuth2:
         mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-disable-oauth2"
         mcp_server.status = 1
         mcp_server.save()
-        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE)
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE)
 
         # 确认 public 权限存在
         assert MCPServerAppPermission.objects.filter(
             mcp_server=mcp_server,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
         data = {
@@ -782,7 +1528,7 @@ class TestSyncApiOAuth2:
         # 验证 bk_app_code=public 的权限已被撤销
         assert not MCPServerAppPermission.objects.filter(
             mcp_server=mcp_server,
-            bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            bk_app_code=OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
 
 

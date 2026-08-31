@@ -56,14 +56,14 @@
             :list="resourceList"
             :need-prefix="false"
             :placeholder="t('请输入资源名称或资源URL链接')"
-            style="min-width: 296.5px;"
+            style="min-width: 300px;"
             @change="handleSearchChange()"
           />
         </BkFormItem>
         <BkFormItem :label="t('蓝鲸应用')">
           <BkSelect
             v-model="searchParams.bk_app_code"
-            style="min-width: 296.5px;"
+            style="min-width: 300px;"
             @change="handleSearchChange()"
           >
             <BkOption

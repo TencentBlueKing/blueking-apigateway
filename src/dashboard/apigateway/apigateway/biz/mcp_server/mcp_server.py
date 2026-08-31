@@ -49,7 +49,12 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
-from apigateway.apps.permission.constants import GrantTypeEnum
+from apigateway.apps.mcp_server.validators import validate_mcp_prompts_payload
+from apigateway.apps.permission.constants import (
+    OAUTH2_PERSONAL_CLIENT_APP_CODE,
+    OAUTH2_PUBLIC_CLIENT_APP_CODE,
+    GrantTypeEnum,
+)
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
@@ -58,14 +63,14 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, Resource, Stage
-from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
+from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
-    get_resource_names_set,
     get_resource_schema,
+    get_standard_resource_names_set,
 )
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.time import NeverExpiresTime
@@ -103,7 +108,7 @@ class MCPServerHandler:
         """
         tool_resource_names = set(resource_names)
 
-        stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+        stage_released_resources = ReleasedResourceHandler.get_public_standard_released_resource_data_list(
             gateway_id,
             stage_name,
             False,
@@ -130,7 +135,7 @@ class MCPServerHandler:
             raise error_codes.FAILED_PRECONDITION.format(
                 _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
             )
-        return get_resource_names_set(release.resource_version.id)
+        return get_standard_resource_names_set(release.resource_version.id)
 
     @staticmethod
     def get_tool_doc(gateway_id: int, stage_name: str, tool_name: str) -> Dict:
@@ -202,6 +207,17 @@ class MCPServerHandler:
         Returns:
             操作结果列表，每项包含 name, action, id
         """
+        valid_resource_names = MCPServerHandler.get_valid_resource_names(gateway_id, stage_id)
+        for mcp_data in mcp_servers_data:
+            invalid_resource_names = set(mcp_data.get("resource_names", [])) - valid_resource_names
+            if invalid_resource_names:
+                invalid_resource_name = sorted(invalid_resource_names)[0]
+                raise error_codes.INVALID_ARGUMENT.format(
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                    + f"resource_name={invalid_resource_name}",
+                    replace=True,
+                )
+
         mcp_servers_data_for_audit = copy.deepcopy(mcp_servers_data)
         permission_data_before_map: Dict[str, Dict[str, Dict[str, Any]]] = {}
         data_before_map = get_mcp_server_sync_data_before_map(
@@ -314,60 +330,107 @@ class MCPServerHandler:
         ).delete()
 
     @staticmethod
-    @transaction.atomic
-    def sync_permissions(mcp_server_id: int) -> None:
-        """同步 MCPServer 的权限，包括 OAuth2 权限（bk_app_code=public）
-        Args:
-            mcp_server_id (int): mcp_server 的 id
-        """
-        mcp_server = MCPServer.objects.get(id=mcp_server_id)
-
-        # 同步 OAuth2 权限：根据 oauth2_public_client_enabled 开启/关闭 public app 权限
-        public_app_code = settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE
-        if mcp_server.oauth2_public_client_enabled:
+    def _sync_oauth2_client_permission(mcp_server_id: int, app_code: str, enabled: bool) -> None:
+        if enabled:
             MCPServerAppPermission.objects.save_permission(
                 mcp_server_id=mcp_server_id,
-                bk_app_code=public_app_code,
+                bk_app_code=app_code,
                 grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
                 expire_days=None,
             )
             logger.info(
                 "sync oauth2 permissions for mcp_server %d, granted bk_app_code=%s",
                 mcp_server_id,
-                public_app_code,
+                app_code,
             )
-        else:
-            deleted_count, _ = MCPServerAppPermission.objects.filter(
-                mcp_server_id=mcp_server_id,
-                bk_app_code=public_app_code,
-            ).delete()
-            if deleted_count:
-                logger.info(
-                    "sync oauth2 permissions for mcp_server %d, revoked bk_app_code=%s, deleted %d",
-                    mcp_server_id,
-                    public_app_code,
-                    deleted_count,
-                )
+            return
+
+        deleted_count, _ = MCPServerAppPermission.objects.filter(
+            mcp_server_id=mcp_server_id,
+            bk_app_code=app_code,
+        ).delete()
+        if deleted_count:
+            logger.info(
+                "sync oauth2 permissions for mcp_server %d, revoked bk_app_code=%s, deleted %d",
+                mcp_server_id,
+                app_code,
+                deleted_count,
+            )
+
+    @staticmethod
+    def _get_permission_resource_version(
+        mcp_server: MCPServer,
+        resource_version: Optional[ResourceVersion],
+    ) -> Optional[ResourceVersion]:
+        if resource_version is not None:
+            return resource_version
+
+        release = (
+            Release.objects.filter(gateway_id=mcp_server.gateway_id, stage_id=mcp_server.stage_id)
+            .select_related("resource_version")
+            .first()
+        )
+        if not release:
+            return None
+
+        return release.resource_version
+
+    @staticmethod
+    @transaction.atomic
+    def sync_permissions(
+        mcp_server_id: int,
+        resource_version: Optional[ResourceVersion] = None,
+        delete_stale: bool = True,
+    ) -> None:
+        """同步 MCPServer 的权限，包括 OAuth2 内置客户端权限
+        Args:
+            mcp_server_id (int): mcp_server 的 id
+            resource_version (Optional[ResourceVersion]): 用于解析资源 ID 的资源版本，默认使用当前发布版本
+            delete_stale (bool): 是否删除不在目标资源版本中的旧权限
+        """
+        mcp_server = MCPServer.objects.get(id=mcp_server_id)
+
+        MCPServerHandler._sync_oauth2_client_permission(
+            mcp_server_id,
+            OAUTH2_PUBLIC_CLIENT_APP_CODE,
+            mcp_server.oauth2_public_client_enabled,
+        )
+        MCPServerHandler._sync_oauth2_client_permission(
+            mcp_server_id,
+            OAUTH2_PERSONAL_CLIENT_APP_CODE,
+            mcp_server.oauth2_personal_client_enabled,
+        )
 
         # 1. fetch the app codes in mcp_server_app_permission
         app_codes = MCPServerAppPermission.objects.filter(mcp_server=mcp_server).values_list("bk_app_code", flat=True)
         if not app_codes:
-            logger.debug("no app_codes, cleanup the permissions of the mcp_server %d", mcp_server_id)
+            logger.debug("no app_codes, sync the permissions of the mcp_server %d", mcp_server_id)
             # if no app_codes, cleanup the permissions of the mcp_server
-            MCPServerHandler.cleanup_all_resource_permissions(
-                gateway_id=mcp_server.gateway_id,
-                mcp_server_id=mcp_server_id,
-            )
+            if delete_stale:
+                MCPServerHandler.cleanup_all_resource_permissions(
+                    gateway_id=mcp_server.gateway_id,
+                    mcp_server_id=mcp_server_id,
+                )
             return
 
-        # 2. check the resource names, and get the resource_ids
+        # 2. resolve resource_ids from the stage's published resource_version snapshot
+        # core-api permission checks also use resource_id from the released version, not live Resource
         resource_names = mcp_server.resource_names
         if not resource_names:
             logger.debug("no resource_names, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
-        resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
-            "id", flat=True
-        )
+        resource_version = MCPServerHandler._get_permission_resource_version(mcp_server, resource_version)
+        if resource_version is None:
+            logger.debug("no release, skip sync the permissions of the mcp_server %d", mcp_server_id)
+            return
+
+        resource_name_set = set(resource_names)
+        resource_ids = [
+            resource["id"]
+            for resource in resource_version.data
+            if resource["name"] in resource_name_set
+            and (resource.get("kind") or ResourceKindEnum.STANDARD.value) == ResourceKindEnum.STANDARD.value
+        ]
 
         # 3. sync the permission
         newest_virtual_app_code_resource_id_set = {
@@ -409,9 +472,11 @@ class MCPServerHandler:
             )
 
         # 3.3 check to delete
-        to_delete_virtual_app_code_resource_id_set = (
-            current_virtual_app_code_resource_id_set - newest_virtual_app_code_resource_id_set
-        )
+        to_delete_virtual_app_code_resource_id_set = set()
+        if delete_stale:
+            to_delete_virtual_app_code_resource_id_set = (
+                current_virtual_app_code_resource_id_set - newest_virtual_app_code_resource_id_set
+            )
         to_delete: List[int] = []
         for permission in current_permissions:
             if (permission.bk_app_code, permission.resource_id) in to_delete_virtual_app_code_resource_id_set:
@@ -421,7 +486,7 @@ class MCPServerHandler:
         # 3.4 add and delete
         logger.debug("add %d permissions, delete %d permissions", len(to_add), len(to_delete))
         if to_add:
-            AppResourcePermission.objects.bulk_create(to_add)
+            AppResourcePermission.objects.bulk_create(to_add, ignore_conflicts=True)
         if to_delete:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
 
@@ -435,15 +500,11 @@ class MCPServerHandler:
         Returns:
             {(gateway_id, stage_id): Release} 映射
         """
-        gateway_stage_pairs = {(mcp_server.gateway_id, mcp_server.stage_id) for mcp_server in mcp_servers}
-        if not gateway_stage_pairs:
+        stage_ids = {mcp_server.stage_id for mcp_server in mcp_servers}
+        if not stage_ids:
             return {}
 
-        release_filters = Q()
-        for gateway_id, stage_id in gateway_stage_pairs:
-            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
-
-        releases = Release.objects.filter(release_filters).select_related("resource_version")
+        releases = Release.objects.filter(stage_id__in=stage_ids).select_related("resource_version")
         return {(r.gateway_id, r.stage_id): r for r in releases}
 
     @staticmethod
@@ -687,6 +748,7 @@ class MCPServerHandler:
         is_public: Optional[bool] = None,
         order_by: str = "-updated_time",
         ids: Optional[List[int]] = None,
+        names: Optional[List[str]] = None,
     ) -> QuerySet:
         """构建 MCPServer 列表的通用 queryset
 
@@ -699,6 +761,7 @@ class MCPServerHandler:
             is_public: 是否公开
             order_by: 排序字段
             ids: MCPServer ID 列表，用于批量筛选
+            names: MCPServer 名称列表，用于批量精确筛选
 
         Returns:
             构建好的 queryset
@@ -709,6 +772,9 @@ class MCPServerHandler:
 
         if ids:
             queryset = queryset.filter(id__in=ids)
+
+        if names:
+            queryset = queryset.filter(name__in=names)
 
         if is_public is not None:
             queryset = queryset.filter(is_public=is_public)

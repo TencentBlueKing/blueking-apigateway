@@ -21,8 +21,11 @@ import operator
 from typing import List
 
 from django.conf import settings
+from django.utils.translation import gettext as _
+from rest_framework import serializers
 
 from apigateway.apps.permission.constants import (
+    OAUTH2_BUILTIN_APP_CODES,
     ApplyStatusEnum,
     GrantTypeEnum,
 )
@@ -36,12 +39,30 @@ from apigateway.common.tenant.constants import (
     TenantModeEnum,
 )
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkauth import get_app_tenant_info_cached
-from apigateway.components.bkuser import query_display_names_cached
+from apigateway.components.bkuser import query_display_names_cached, query_display_names_for_readonly
 from apigateway.core.models import Gateway, Resource
 
 
 class ResourcePermissionHandler:
+    @staticmethod
+    def validate_user_managed_app_code(bk_app_code: str):
+        if bk_app_code in OAUTH2_BUILTIN_APP_CODES:
+            raise serializers.ValidationError(
+                _("应用【{app_code}】的 API 权限由系统管理。").format(app_code=bk_app_code)
+            )
+
+    @staticmethod
+    def validate_user_managed_permissions(queryset):
+        builtin_app_codes = sorted(
+            set(queryset.filter(bk_app_code__in=OAUTH2_BUILTIN_APP_CODES).values_list("bk_app_code", flat=True))
+        )
+        if builtin_app_codes:
+            raise serializers.ValidationError(
+                _("应用【{app_codes}】的 API 权限由系统管理。").format(app_codes=", ".join(builtin_app_codes))
+            )
+
     @staticmethod
     def get_pending_apply_queryset_for_maintainer(username: str, tenant_id: str):
         """获取指定用户作为网关管理员待审批的 API 网关权限申请列表"""
@@ -130,12 +151,12 @@ class ResourcePermissionHandler:
         if not ids:
             return [], [], []
 
-        data_before = list(
-            AppResourcePermission.objects.filter(
-                gateway=gateway,
-                id__in=ids,
-            )
+        queryset = AppResourcePermission.objects.filter(
+            gateway=gateway,
+            id__in=ids,
         )
+        ResourcePermissionHandler.validate_user_managed_permissions(queryset)
+        data_before = list(queryset)
         AppResourcePermission.objects.renew_by_ids(
             gateway=gateway,
             ids=ids,
@@ -157,12 +178,12 @@ class ResourcePermissionHandler:
         if not ids:
             return [], [], []
 
-        data_before = list(
-            AppGatewayPermission.objects.filter(
-                gateway=gateway,
-                id__in=ids,
-            )
+        queryset = AppGatewayPermission.objects.filter(
+            gateway=gateway,
+            id__in=ids,
         )
+        ResourcePermissionHandler.validate_user_managed_permissions(queryset)
+        data_before = list(queryset)
         AppGatewayPermission.objects.renew_by_ids(
             gateway=gateway,
             ids=ids,
@@ -181,7 +202,11 @@ class ResourcePermissionHandler:
 
     @staticmethod
     def convert_applied_by_to_display_name(
-        bk_app_code: str, applied_by: str, gateway_tenant_mode: str, gateway_tenant_id: str
+        bk_app_code: str,
+        applied_by: str,
+        gateway_tenant_mode: str,
+        gateway_tenant_id: str,
+        force_convert: bool = False,
     ) -> str:
         """
         将申请人转换为显示名称，用于非 global 租户申请 global 网关权限时前端用户的展示
@@ -191,7 +216,7 @@ class ResourcePermissionHandler:
 
         try:
             app_tenant_mode, app_tenant_id = get_app_tenant_info_cached(bk_app_code)
-            if app_tenant_mode == gateway_tenant_mode and app_tenant_id == gateway_tenant_id:
+            if not force_convert and app_tenant_mode == gateway_tenant_mode and app_tenant_id == gateway_tenant_id:
                 return applied_by
 
             if app_tenant_mode == TenantModeEnum.GLOBAL.value:
@@ -204,3 +229,24 @@ class ResourcePermissionHandler:
             return applied_by
 
         return applied_by
+
+    @staticmethod
+    def convert_gateway_maintainers_to_display_names(
+        gateway_tenant_mode: str,
+        gateway_tenant_id: str,
+        maintainers: List[str],
+    ) -> List[str]:
+        """
+        将网关维护人转换为查看态展示名称
+
+        已知问题：list 场景仍会在序列化阶段按网关同步查询 bk-user。
+        这次先保留现状，后续如需优化再改为视图层批量预取。
+        """
+        if not settings.ENABLE_MULTI_TENANT_MODE:
+            return maintainers
+
+        tenant_id = get_tenant_id_for_gateway_maintainers(gateway_tenant_mode, gateway_tenant_id)
+        try:
+            return query_display_names_for_readonly(tenant_id, maintainers)
+        except Exception:  # pylint: disable=broad-except
+            return maintainers

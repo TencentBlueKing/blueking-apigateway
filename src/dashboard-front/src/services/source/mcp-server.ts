@@ -301,6 +301,7 @@ export interface IMCPFormData {
   stage_id: number
   is_public: boolean
   oauth2_public_client_enabled: boolean
+  oauth2_personal_client_enabled: boolean
   raw_response_enabled: boolean
   labels: string[]
   categories: string[]

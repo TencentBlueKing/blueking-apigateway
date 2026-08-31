@@ -16,11 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 from unittest import mock
 
 import pytest
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from apigateway.utils import time
 from apigateway.utils.time import MetricsSmartTimeRange
@@ -31,14 +30,6 @@ class TestUtilsTime:
         nstr = time.now_str()
 
         assert len(nstr) == 24
-
-    @override_settings(USE_TZ=True)
-    def test_far_away_future_with_timezone(self):
-        assert time.far_away_future() == datetime.datetime(2050, 1, 1, tzinfo=datetime.timezone.utc)
-
-    @override_settings(USE_TZ=False)
-    def test_far_away_future_without_timezone(self):
-        assert time.far_away_future() == datetime.datetime(2050, 1, 1)
 
     @pytest.mark.parametrize(
         "params, expected",

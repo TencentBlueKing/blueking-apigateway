@@ -23,13 +23,11 @@ from rest_framework import serializers
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import (
-    ApplyStatusEnum,
     GrantDimensionEnum,
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.permission import ResourcePermissionHandler
-from apigateway.common.fields import TimestampField
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
@@ -86,67 +84,6 @@ class WorkbenchMCPServerFilterOptionSLZ(serializers.ModelSerializer):
 
     def get_gateway_name(self, obj) -> str:
         return obj.gateway.name
-
-
-# ========== 查询输入序列化器 ==========
-# NOTE: 以下 Input SLZ 仅用于 swagger 文档生成，实际查询过滤由 filters.py 中的 FilterSet 生效。
-# 修改查询参数时需同步修改对应的 FilterSet 以保持一致性。
-
-
-class WorkbenchGatewayPendingPermissionQueryInputSLZ(serializers.Serializer):
-    """个人工作台 - API 网关待办权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
-
-    bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
-    applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
-    gateway_id = serializers.IntegerField(required=False, help_text="网关 ID")
-    grant_dimension = serializers.ChoiceField(
-        choices=GrantDimensionEnum.get_choices(), required=False, help_text="授权维度"
-    )
-    time_start = TimestampField(allow_null=True, required=False, help_text="申请时间开始")
-    time_end = TimestampField(allow_null=True, required=False, help_text="申请时间结束")
-    keyword = serializers.CharField(
-        required=False, allow_blank=True, help_text="搜索关键字（模糊匹配网关名称或应用ID）"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPendingPermissionQueryInputSLZ"
-
-
-class WorkbenchGatewayPermissionQueryInputSLZ(WorkbenchGatewayPendingPermissionQueryInputSLZ):
-    """个人工作台 - API 网关权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
-
-    status = serializers.ChoiceField(choices=ApplyStatusEnum.get_choices(), required=False, help_text="审批状态")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionQueryInputSLZ"
-
-
-class WorkbenchMCPPendingPermissionQueryInputSLZ(serializers.Serializer):
-    """个人工作台 - MCP Server 待办权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
-
-    bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
-    applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
-    gateway_id = serializers.IntegerField(required=False, help_text="网关 ID")
-    mcp_server_id = serializers.IntegerField(required=False, help_text="MCP Server ID")
-    time_start = TimestampField(allow_null=True, required=False, help_text="申请时间开始")
-    time_end = TimestampField(allow_null=True, required=False, help_text="申请时间结束")
-    keyword = serializers.CharField(
-        required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称、展示名称或应用ID）"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPPendingPermissionQueryInputSLZ"
-
-
-class WorkbenchMCPPermissionQueryInputSLZ(WorkbenchMCPPendingPermissionQueryInputSLZ):
-    """个人工作台 - MCP Server 权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
-
-    status = serializers.ChoiceField(
-        choices=MCPServerAppPermissionApplyStatusEnum.get_choices(), required=False, help_text="审批状态"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPPermissionQueryInputSLZ"
 
 
 # ========== API 网关 输出序列化器 ==========

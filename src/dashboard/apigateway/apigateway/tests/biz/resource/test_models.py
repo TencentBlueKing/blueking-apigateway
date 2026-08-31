@@ -16,8 +16,36 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from pydantic import ValidationError
 
-from apigateway.biz.resource import ResourceBackendConfig
+from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.core.constants import ResourceKindEnum
+
+
+class TestResourceAuthConfig:
+    def test_defaults(self):
+        assert ResourceAuthConfig().model_dump() == {
+            "auth_verified_required": True,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+            "oauth2_public_client_enabled": False,
+            "oauth2_personal_client_enabled": False,
+        }
+
+    @pytest.mark.parametrize(
+        "oauth2_config",
+        [
+            {"oauth2_public_client_enabled": True},
+            {"oauth2_personal_client_enabled": True},
+            {
+                "oauth2_public_client_enabled": True,
+                "oauth2_personal_client_enabled": True,
+            },
+        ],
+    )
+    def test_oauth2_client_requires_user_authentication(self, oauth2_config):
+        with pytest.raises(ValidationError, match="require user authentication"):
+            ResourceAuthConfig(auth_verified_required=False, **oauth2_config)
 
 
 class TestResourceBackendConfig:
@@ -77,3 +105,50 @@ class TestResourceBackendConfig:
         assert config.legacy_upstreams == expected_legacy_upstreams
         assert config.legacy_transform_headers == expected_legacy_transform_headers
         assert config.model_dump() == expected
+
+
+class TestResourceData:
+    def test_ai_resource_accepts_backend_without_http_config(self):
+        data = ResourceData(
+            name="chat",
+            kind=ResourceKindEnum.AI.value,
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend_config=None,
+        )
+
+        assert data.backend_config is None
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"method": "GET"},
+            {"match_subpath": True},
+            {"enable_websocket": True},
+            {"backend_config": {"method": "POST", "path": "/chat"}},
+        ],
+    )
+    def test_ai_resource_rejects_standard_proxy_configuration(self, overrides):
+        data = {
+            "name": "chat",
+            "kind": ResourceKindEnum.AI.value,
+            "method": "POST",
+            "path": "/chat",
+            "auth_config": ResourceAuthConfig(),
+            "backend_config": None,
+        }
+        data.update(overrides)
+
+        with pytest.raises(ValidationError):
+            ResourceData(**data)
+
+    def test_standard_resource_requires_backend_config(self):
+        with pytest.raises(ValidationError):
+            ResourceData(
+                name="echo",
+                method="GET",
+                path="/echo",
+                auth_config=ResourceAuthConfig(),
+                backend_config=None,
+            )

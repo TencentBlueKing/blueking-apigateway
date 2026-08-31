@@ -21,7 +21,7 @@
     <BkSideslider
       v-model:is-show="isShow"
       class="release-sideslider"
-      :width="960"
+      :width="1100"
       :title="t('发布资源至环境【{stage}】', { stage: chooseAssets?.name || '--' })"
       quick-close
       @animation-end="handleAnimationEnd"
@@ -252,6 +252,7 @@
                 <BkButton
                   theme="primary"
                   class="w-100px"
+                  :loading="publishLoading"
                   @click="showPublishConfirmInfoBox"
                 >
                   <!-- {{ isRollback ? t('确认回滚') : t('确认发布') }} -->
@@ -314,11 +315,14 @@ type VersionType = {
 };
 
 interface IProps {
-  currentAssets: any
+  currentAssets?: IStageListItem
   version?: any
 }
 
-const { currentAssets, version = {} } = defineProps<IProps>();
+const {
+  currentAssets = {},
+  version = {},
+} = defineProps<IProps>();
 
 const emit = defineEmits<{
   'release-success': [void]
@@ -381,6 +385,7 @@ const rules = {
   ],
 };
 const publishId = ref();
+const publishLoading = ref(false);
 const chooseAssets = ref(currentAssets);
 const stageList = ref<IStageListItem[]>([]);
 const mcpCheckColumns = [
@@ -523,6 +528,7 @@ const showPublishConfirmInfoBox = () => {
 };
 
 const handlePublish = async () => {
+  publishLoading.value = true;
   try {
     const params = {
       stage_id: chooseAssets.value.id,
@@ -572,6 +578,9 @@ const handlePublish = async () => {
         message: msg,
       });
     }
+  }
+  finally {
+    publishLoading.value = false;
   }
 };
 

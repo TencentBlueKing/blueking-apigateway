@@ -88,7 +88,7 @@ class BackendPathVarsValidator:
 
     def __call__(self, attrs, serializer):
         path = attrs.get("path", "")
-        backend_path = attrs.get("backend_config", {}).get("path", "")
+        backend_path = (attrs.get("backend_config") or {}).get("path", "")
         if not backend_path:
             return
 

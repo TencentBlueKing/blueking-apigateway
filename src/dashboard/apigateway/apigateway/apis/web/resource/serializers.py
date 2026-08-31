@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from openapi_schema_validator import OAS30Validator, OAS31Validator
 from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
+from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -34,14 +35,15 @@ from apigateway.apis.web.resource.validators import (
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayLabelHandler
-from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource import ResourceAuthConfig, ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
+from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
+from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
@@ -58,8 +60,9 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
     backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称，完整匹配")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), required=False, help_text="资源类型")
     keyword = serializers.CharField(
-        allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径"
+        allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称、前端请求路径、资源描述"
     )
     order_by = serializers.ChoiceField(
         choices=["-id", "name", "-name", "path", "-path", "updated_time", "-updated_time"],
@@ -97,6 +100,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "id",
             "name",
             "description",
+            "kind",
             "method",
             "path",
             "created_time",
@@ -137,6 +141,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
         return {
             "id": backend.id,
             "name": backend.name,
+            "kind": backend.kind,
         }
 
     def get_labels(self, obj):
@@ -170,9 +175,26 @@ class ResourceAuthConfigSLZ(serializers.Serializer):
     resource_perm_required = serializers.BooleanField(
         required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
     )
+    oauth2_public_client_enabled = serializers.BooleanField(
+        required=False, help_text="是否允许 OAuth2 public client 调用"
+    )
+    oauth2_personal_client_enabled = serializers.BooleanField(
+        required=False, help_text="是否允许 OAuth2 personal client 调用"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceAuthConfigSLZ"
+
+    def validate(self, attrs):
+        self._validate_auth_config(attrs)
+        return attrs
+
+    @staticmethod
+    def _validate_auth_config(attrs):
+        try:
+            ResourceAuthConfig.model_validate(attrs)
+        except PydanticValidationError as err:
+            raise serializers.ValidationError(err.errors()[0]["msg"]) from err
 
 
 class HttpBackendConfigSLZ(serializers.Serializer):
@@ -196,7 +218,7 @@ class HttpBackendConfigSLZ(serializers.Serializer):
 
 class HttpBackendSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="后端服务 ID")
-    config = HttpBackendConfigSLZ(help_text="后端配置")
+    config = serializers.DictField(default=dict, required=False, help_text="后端配置")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.HttpBackendSLZ"
@@ -245,6 +267,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="前端请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
     backend = HttpBackendSLZ(help_text="后端服务")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), required=False, help_text="资源类型")
     label_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=True,
@@ -260,6 +283,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         fields = [
             "gateway",
             # 基本信息
+            "kind",
             "name",
             "description",
             "description_en",
@@ -331,18 +355,58 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         return value or None
 
     def validate(self, data):
+        if self.instance:
+            auth_config = data["auth_config"]
+            for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS:
+                auth_config.setdefault(field_name, getattr(self.instance, field_name))
+            ResourceAuthConfigSLZ._validate_auth_config(auth_config)
+
         self._validate_method(data["gateway"], data["path"], data["method"])
-        self._validate_match_subpath(data)
         self._validate_openapi_schema(data)
 
-        data["resource"] = self.instance
+        kind = data.get(
+            "kind",
+            self.instance.kind if self.instance else ResourceKindEnum.STANDARD.value,
+        )
+        if self.instance and kind != self.instance.kind:
+            raise serializers.ValidationError({"kind": _("资源类型创建后不能修改。")})
 
-        # 为方便使用 ResourcesSaver 统一处理数据，对 backend 数据进行转换
-        data["backend_config"] = data["backend"]["config"]
+        data["resource"] = self.instance
+        data["kind"] = kind
+
+        backend_input = data["backend"]
+        backend = self._validate_backend_id(data["gateway"], backend_input["id"])
+        if backend.kind != kind:
+            raise serializers.ValidationError({"backend": _("资源类型与后端服务类型不匹配。")})
+
+        if kind == ResourceKindEnum.AI.value:
+            data.setdefault("match_subpath", False)
+            data.setdefault("enable_websocket", False)
+            self._validate_ai_resource(data, backend_input["config"])
+            data["backend_config"] = None
+        else:
+            config_slz = HttpBackendConfigSLZ(data=backend_input["config"])
+            config_slz.is_valid(raise_exception=True)
+            backend_input["config"] = config_slz.validated_data
+            self._validate_match_subpath(data)
+            data["backend_config"] = config_slz.validated_data
+
         # NOTE: 使用 backend 对象覆盖了原有的 backend 输入数据
-        data["backend"] = self._validate_backend_id(data["gateway"], data["backend"]["id"])
+        data["backend"] = backend
 
         return data
+
+    def _validate_ai_resource(self, data, backend_config):
+        if not data["gateway"].is_ai_gateway:
+            raise serializers.ValidationError({"kind": _("普通网关不支持模型代理 API。")})
+        if data["method"] != "POST":
+            raise serializers.ValidationError({"method": _("模型代理 API 仅支持 POST 方法。")})
+        if data.get("match_subpath", False):
+            raise serializers.ValidationError({"match_subpath": _("模型代理 API 不支持匹配子路径。")})
+        if data.get("enable_websocket", False):
+            raise serializers.ValidationError({"enable_websocket": _("模型代理 API 不支持 WebSocket。")})
+        if backend_config:
+            raise serializers.ValidationError({"backend": _("模型代理 API 不支持普通后端配置。")})
 
     def _validate_method(self, gateway: Gateway, path: str, method: str):
         """
@@ -383,7 +447,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     def _validate_match_subpath(self, data):
         if data.get("match_subpath", False) != data["backend"]["config"].get("match_subpath", False):
             raise serializers.ValidationError(
-                _("资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必需相同。")
+                _("资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必须相同。")
             )
 
     def _exclude_current_instance(self, queryset):
@@ -421,6 +485,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "name",
             "description",
             "description_en",
+            "kind",
             "method",
             "path",
             "match_subpath",
@@ -572,8 +637,11 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
     )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(), default=ResourceKindEnum.STANDARD.value, help_text="资源类型"
+    )
     backend_name = serializers.CharField(help_text="后端服务名称")
-    backend_config = HttpBackendConfigSLZ(help_text="后端配置")
+    backend_config = HttpBackendConfigSLZ(required=False, allow_null=True, help_text="后端配置")
     labels = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=True,
@@ -595,6 +663,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         model = Resource
         fields = [
             # 基本信息
+            "kind",
             "name",
             "description",
             "description_en",
@@ -654,6 +723,27 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         # 因此，前端未传入有效 description_en 时，将其设置为 None
         return value or None
 
+    def validate(self, data):
+        if data["kind"] == ResourceKindEnum.AI.value:
+            if data["method"] != "POST" or data.get("match_subpath", False) or data.get("enable_websocket", False):
+                raise serializers.ValidationError({"kind": _("模型代理 API 配置不合法。")})
+            if data.get("backend_config"):
+                raise serializers.ValidationError({"backend_config": _("模型代理 API 不支持普通后端配置。")})
+        elif data.get("backend_config") is None:
+            raise serializers.ValidationError({"backend_config": _("普通 API 必须配置后端请求信息。")})
+
+        gateway = self.context.get("gateway")
+        if gateway:
+            if data["kind"] == ResourceKindEnum.AI.value and not gateway.is_ai_gateway:
+                raise serializers.ValidationError({"kind": _("普通网关不支持模型代理 API。")})
+            try:
+                backend = Backend.objects.get(gateway=gateway, name=data["backend_name"])
+            except Backend.DoesNotExist:
+                raise serializers.ValidationError({"backend_name": _("后端服务不存在。")}) from None
+            if backend.kind != data["kind"]:
+                raise serializers.ValidationError({"backend_name": _("资源类型与后端服务类型不匹配。")})
+        return data
+
 
 class ResourceImportInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
@@ -711,6 +801,7 @@ class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
 class ResourceImportInfoSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField(help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), help_text="资源类型")
     description = serializers.CharField(read_only=True, help_text="资源描述")
     description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(read_only=True, help_text="请求方法")
@@ -748,6 +839,9 @@ class ResourceImportInfoSLZ(serializers.Serializer):
         return self.context["docs"].get(resource_id, [])
 
     def get_backend(self, obj):
+        if obj.kind == ResourceKindEnum.AI.value:
+            return {"name": obj.backend.name, "config": None}
+        assert obj.backend_config
         return {
             "name": obj.backend.name,
             "config": {
@@ -791,6 +885,7 @@ class ResourceExportInputSLZ(serializers.Serializer):
 
 class ResourceExportOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="资源名称")
+    kind = serializers.CharField(help_text="资源类型")
     description = serializers.CharField(help_text="资源描述")
     description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(help_text="请求方法")
@@ -880,6 +975,7 @@ class BackendPathCheckOutputSLZ(serializers.Serializer):
 class ResourceWithVerifiedUserRequiredOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), read_only=True, help_text="资源类型")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceWithVerifiedUserRequiredOutputSLZ"

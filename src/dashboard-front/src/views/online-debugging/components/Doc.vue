@@ -19,31 +19,32 @@
 <template>
   <div class="component-doc">
     <div class="component-content">
-      <div class="component-mate mb-10px">
-        <strong
-          v-bk-tooltips.top="curComponent.name"
-          class="name mr-5px"
-        >{{ curComponent.name || '--' }}</strong>
-        <span
-          v-bk-tooltips.top="{
-            content: curComponent.description,
-            disabled: !curComponent.description,
-            allowHTML: false,
-          }"
-          class="label"
+      <div class="component-mate mb-12px">
+        <div class="min-w-0 truncate">
+          <strong
+            v-bk-tooltips.top="curComponent.name"
+            class="name mr-4px"
+          >
+            {{ curComponent.name || '--' }}
+          </strong>
+          <span
+            v-bk-tooltips.top="{
+              content: curComponent.description,
+              disabled: !curComponent.description,
+              allowHTML: false,
+            }"
+            class="label"
+          >
+            ({{ curComponent.description || t('暂无描述') }})
+          </span>
+        </div>
+        <BkTag
+          v-if="curComponent?.kind === 'ai'"
+          theme="info"
+          class="flex-shrink-0"
         >
-          ({{ curComponent.description || t('暂无描述') }})
-        </span>
-      </div>
-      <div class="h-24px position-relative">
-        <Chat
-          v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
-          :default-user-list="userList"
-          :owner="curUser.username"
-          :name="chatName"
-          :content="chatContent"
-          is-query
-        />
+          {{ t('模型代理 API') }}
+        </BkTag>
       </div>
 
       <BkTab
@@ -100,7 +101,6 @@
               </div>
             </div>
           </div>
-          <!-- eslint-disable-next-line vue/no-v-html -->
           <div
             id="markdown"
             :key="renderHtmlIndex"
@@ -114,22 +114,16 @@
 </template>
 
 <script setup lang="ts">
-import {
-  useFeatureFlag,
-  useGateway,
-  useUserInfo,
-} from '@/stores';
+import { useGateway } from '@/stores';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import {
   getApigwResourceDocDocs,
   getApigwResourceSDKDocs,
-  // getApigwSDKDocs,
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
 import { getResourcesOnline } from '@/services/source/online-debugging';
-import Chat from '@/components/chat/Index.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
 import type { IDocsGatewaysResourcesListResponse } from '@/services/types/responses/docs.ts';
@@ -147,18 +141,19 @@ const {
 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const userStore = useUserInfo();
 const gatewayStore = useGateway();
-const featureFlagStore = useFeatureFlag();
 
 type IGatewayDocsDetail = IExtractApiReturn<typeof getGatewaysDetailsDocs>;
 
-const active = ref('doc');
-const curComponent = ref<IDocsGatewaysResourcesListResponse & {
+type IDocCom = IDocsGatewaysResourcesListResponse & {
   content: string
   innerHtml: string
   markdownHtml: string
-}>({
+  kind?: string
+};
+
+const active = ref('doc');
+const curComponent = ref<IDocCom>({
   id: 0,
   name: '',
   description: '',
@@ -180,18 +175,6 @@ const curApigw = ref<Partial<IGatewayDocsDetail>>({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
-// const curSdk = ref({});
-// const sdks = ref([]);
-
-const curUser = computed(() => userStore.info);
-const userList = computed(() => {
-  // 去重
-  const set = new Set([curUser.value?.username, ...(curApigw.value?.maintainers ?? [])].filter(Boolean) as string[]);
-  return [...set];
-});
-const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
-const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
-// const SDKInfo = computed(() => t('网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK', { curStageText: stageName }));
 
 const md = new MarkdownIt({
   linkify: false,
@@ -506,22 +489,20 @@ defineExpose({ init });
   }
 
   .component-mate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
     .name {
       font-size: 22px;
       line-height: 30px;
       color: #313238;
-      text-align: left;
     }
 
     .label {
       font-size: 14px;
       line-height: 30px;
       color: #63656e;
-      text-align: left;
     }
   }
 }

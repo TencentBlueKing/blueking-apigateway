@@ -124,7 +124,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
 class ResourceVersionGetLatestApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(tags=["OpenAPI.V1"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["OpenAPI.V1"])
     def get(self, request, gateway_name: str, *args, **kwargs):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 

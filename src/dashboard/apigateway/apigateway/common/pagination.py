@@ -19,6 +19,8 @@
 
 from collections import OrderedDict
 
+from django.utils.translation import gettext as _
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
@@ -68,3 +70,34 @@ class StandardLimitOffsetPagination(LimitOffsetPagination):
 
         # NOTE: new api should not call this func, use return `self.get_paginated_response(serializer.data)`
         raise NotImplementedError
+
+
+class BoundedLimitOffsetPagination(StandardLimitOffsetPagination):
+    """Limit/offset pagination that rejects non-integer or out-of-range query params."""
+
+    default_limit = 10
+    max_limit = 20
+
+    def get_limit(self, request):
+        raw_limit = request.query_params.get(self.limit_query_param)
+        if raw_limit is not None:
+            try:
+                limit = int(raw_limit)
+            except TypeError, ValueError:
+                raise ValidationError({"limit": [_("limit 必须为整数。")]})
+            if not 1 <= limit <= self.max_limit:
+                raise ValidationError(
+                    {"limit": [_("limit 必须在 1 到 %(max_limit)s 之间。") % {"max_limit": self.max_limit}]}
+                )
+        return super().get_limit(request)
+
+    def get_offset(self, request):
+        raw_offset = request.query_params.get(self.offset_query_param)
+        if raw_offset is not None:
+            try:
+                offset = int(raw_offset)
+            except TypeError, ValueError:
+                raise ValidationError({"offset": [_("offset 必须为整数。")]})
+            if offset < 0:
+                raise ValidationError({"offset": [_("offset 必须大于或等于 0。")]})
+        return super().get_offset(request)

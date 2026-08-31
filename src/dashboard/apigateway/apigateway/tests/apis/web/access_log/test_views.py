@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
+import json
 from copy import deepcopy
 from datetime import datetime
 from io import StringIO
@@ -66,9 +67,17 @@ class TestLogTimeChartRetrieveApi:
 
 class TestSearchLogListApi:
     def test_list(self, mocker, request_view, fake_stage):
+        llm_summary = {
+            "request_model": "",
+            "prompt_tokens": 107,
+            "completion_tokens": 1718,
+            "upstream_response_time": 11662,
+            "model": "deepseek-v4-flash",
+            "duration": 11662,
+        }
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
-            return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
+            return_value=(3, [{"a": 1, "llm_summary": llm_summary}, {"a": 2}, {"a": 3}]),
         )
 
         fake_gateway = fake_stage.gateway
@@ -94,13 +103,23 @@ class TestSearchLogListApi:
         assert not result["data"]["has_next"]
         assert not result["data"]["has_previous"]
         assert result["data"]["fields"] == ES_LOG_FIELDS
+        assert result["data"]["results"][0]["llm_summary"] == llm_summary
+        assert any(field["field"] == "llm_summary" for field in result["data"]["fields"])
 
 
 class TestLogDetailListApi:
     def test_list(self, mocker, request_view, fake_gateway):
+        llm_summary = {
+            "request_model": "",
+            "prompt_tokens": 107,
+            "completion_tokens": 1718,
+            "upstream_response_time": 11662,
+            "model": "deepseek-v4-flash",
+            "duration": 11662,
+        }
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
-            return_value=(1, [{"a": 1}]),
+            return_value=(1, [{"a": 1, "llm_summary": llm_summary}]),
         )
 
         mocker.patch("apigateway.apis.web.access_log.views.SignatureValidator.is_valid")
@@ -121,6 +140,7 @@ class TestLogDetailListApi:
         assert response.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["fields"] == ES_LOG_FIELDS
+        assert result["data"]["results"][0]["llm_summary"] == llm_summary
 
 
 class TestLogLinkRetrieveApi:
@@ -142,9 +162,20 @@ class TestLogLinkRetrieveApi:
 
 class TestLogDetailInfoApi:
     def test_retrieve(self, mocker, request_view):
+        llm_summary = {
+            "request_model": "",
+            "prompt_tokens": 107,
+            "completion_tokens": 1718,
+            "upstream_response_time": 11662,
+            "model": "deepseek-v4-flash",
+            "duration": 11662,
+        }
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogHandler.search_logs_by_request_id_for_toolbox",
-            return_value=(1, [{"request_id": "rid", "gateway_name": "example-gateway"}]),
+            return_value=(
+                1,
+                [{"request_id": "rid", "gateway_name": "example-gateway", "llm_summary": llm_summary}],
+            ),
         )
 
         response = request_view(
@@ -157,6 +188,7 @@ class TestLogDetailInfoApi:
         assert response.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["gateway_name"] == "example-gateway"
+        assert result["data"]["results"][0]["llm_summary"] == llm_summary
 
         fields = result["data"]["fields"]
         expected_fields = deepcopy(ES_LOG_FIELDS)
@@ -176,9 +208,17 @@ class TestLogExportApi:
     def test_get(self, mocker, request_view, fake_stage):
         mock_time_start = 1720606081
         mock_time_end = 1721210881
+        llm_summary = {
+            "request_model": "",
+            "prompt_tokens": 107,
+            "completion_tokens": 1718,
+            "upstream_response_time": 11662,
+            "model": "deepseek-v4-flash",
+            "duration": 11662,
+        }
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
-            return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
+            return_value=(3, [{"a": 1, "llm_summary": llm_summary}, {"a": 2}, {"a": 3}]),
         )
 
         fake_gateway = fake_stage.gateway
@@ -211,5 +251,6 @@ class TestLogExportApi:
         )
         content = b"".join(response.streaming_content).decode("utf-8")
         reader = csv.DictReader(StringIO(content))
-        log_count = sum(1 for _ in reader)
-        assert log_count == 3
+        rows = list(reader)
+        assert len(rows) == 3
+        assert json.loads(rows[0]["llm_summary"]) == llm_summary

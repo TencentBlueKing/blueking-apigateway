@@ -79,6 +79,10 @@ const overviewList = [
   //   service: t('容器服务'),
   //   title: t('集群管理、命名空间、工作负载、服务发现、配置管理'),
   // },
+  {
+    service: t('开发者中心'),
+    title: t('创建应用、部署应用、查看访问地址'),
+  },
 ];
 
 </script>

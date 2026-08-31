@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
+import json
 import random
 import time
 from copy import deepcopy
@@ -192,7 +193,14 @@ class LogExportApi(generics.RetrieveAPIView):
         # 写入CSV头部
         writer.writerow(field_dict["field"] for field_dict in ES_LOG_FIELDS)
         for log in logs:
-            writer.writerow([log.get(field_dict["field"]) for field_dict in ES_LOG_FIELDS])
+            writer.writerow(
+                [
+                    json.dumps(log.get(field_dict["field"]), ensure_ascii=False)
+                    if isinstance(log.get(field_dict["field"]), dict)
+                    else log.get(field_dict["field"])
+                    for field_dict in ES_LOG_FIELDS
+                ]
+            )
 
         content = output.getvalue()
         output.close()

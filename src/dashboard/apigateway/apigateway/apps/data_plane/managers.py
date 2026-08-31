@@ -21,7 +21,11 @@ from django.db import models
 
 from apigateway.core.models import Gateway
 
-from .constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
+from .constants import (
+    DEFAULT_DATA_PLANE_NAME,
+    DataPlaneStatusEnum,
+    get_ai_gateway_apisix_version_error,
+)
 
 if TYPE_CHECKING:
     from .models import DataPlane, GatewayDataPlaneBinding
@@ -68,6 +72,11 @@ class GatewayDataPlaneBindingManager(models.Manager):
         self, gateway: Gateway, data_plane: "DataPlane", created_by: str = ""
     ) -> "GatewayDataPlaneBinding":
         """Bind a gateway to a data plane"""
+        if gateway.is_ai_gateway:
+            compatibility_error = get_ai_gateway_apisix_version_error(data_plane.apisix_version)
+            if compatibility_error:
+                raise ValueError(compatibility_error)
+
         binding, _ = self.get_or_create(
             gateway=gateway,
             data_plane=data_plane,

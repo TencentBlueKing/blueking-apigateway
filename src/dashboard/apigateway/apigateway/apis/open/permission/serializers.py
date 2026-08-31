@@ -31,7 +31,11 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
-from apigateway.biz.validators import BKAppCodeValidator
+from apigateway.biz.validators import (
+    BKAppCodeValidator,
+    UserManagedBKAppCodeListValidator,
+    UserManagedBKAppCodeValidator,
+)
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
@@ -101,7 +105,9 @@ class PaaSAppPermissionApplyInputSLZ(serializers.Serializer):
     - 应用页面申请授权，仅可申请限定有效期的权限，网关平台按规则主动续期权限
     """
 
-    target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
+    target_app_code = serializers.CharField(
+        label="", validators=[BKAppCodeValidator(), UserManagedBKAppCodeValidator()]
+    )
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
         # validators=[ResourceIDValidator()], PaaS中的列表资源本身获取的就是网关所有环境生效资源版本资源的并集，这里不需要再进行校验
@@ -140,28 +146,6 @@ class GatewayResourceIDs(serializers.Serializer):
     )
 
 
-class PaaSAppPermissionApplyV2InputSLZ(serializers.Serializer):
-    """
-    PaaS中应用申请访问网关API的权限
-    - 提供给 paas 开发者中心的接口
-    - 应用页面申请授权,支持网关+resource维度
-    """
-
-    target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
-    gateway_resource_ids = serializers.ListField(
-        help_text="申请资源id列表(资源+网关)",
-        child=GatewayResourceIDs(),
-        allow_empty=False,
-        required=True,
-        max_length=100,
-    )
-    reason = serializers.CharField(allow_blank=True, required=False, default="")
-    expire_days = serializers.ChoiceField(
-        choices=PermissionApplyExpireDaysEnum.get_choices(),
-        default=PermissionApplyExpireDaysEnum.SIX_MONTH.value,
-    )
-
-
 class AppPermissionApplyV1InputSLZ(serializers.Serializer):
     """
     普通应用直接申请访问网关API的权限
@@ -171,7 +155,7 @@ class AppPermissionApplyV1InputSLZ(serializers.Serializer):
     """
 
     # target_app_code 与发送请求的应用账号一致，此 app_code 必定已存在，不需要重复校验
-    target_app_code = serializers.CharField()
+    target_app_code = serializers.CharField(validators=[UserManagedBKAppCodeValidator()])
     reason = serializers.CharField(allow_blank=True, required=False, default="")
     expire_days = serializers.ChoiceField(
         choices=PermissionApplyExpireDaysEnum.get_choices(),
@@ -214,7 +198,9 @@ class GrantAppPermissionInputSLZ(serializers.Serializer):
     """
 
     # 主动授权时，应用可能尚未创建，因此不校验 app_code 是否存在
-    target_app_code = serializers.CharField(label="", max_length=32, required=True)
+    target_app_code = serializers.CharField(
+        label="", max_length=32, required=True, validators=[UserManagedBKAppCodeValidator()]
+    )
     expire_days = serializers.IntegerField(required=False)
     grant_dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
     resource_names = serializers.ListField(
@@ -226,13 +212,17 @@ class RevokeAppPermissionInputSLZ(serializers.Serializer):
     """回收应用访问网关的权限"""
 
     target_app_codes = serializers.ListField(
-        child=serializers.CharField(max_length=32, required=True), allow_empty=False
+        child=serializers.CharField(max_length=32, required=True),
+        allow_empty=False,
+        validators=[UserManagedBKAppCodeListValidator()],
     )
     grant_dimension = serializers.ChoiceField(choices=[GrantDimensionEnum.API.value])
 
 
 class AppPermissionRenewInputSLZ(serializers.Serializer):
-    target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
+    target_app_code = serializers.CharField(
+        label="", validators=[BKAppCodeValidator(), UserManagedBKAppCodeValidator()]
+    )
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,

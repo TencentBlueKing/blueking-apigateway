@@ -17,11 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apis.web.docs.gateway.gateway.serializers import GatewayOutputSLZ
+from apigateway.core.constants import GatewayKindEnum
 
 
 class TestGatewayOutputSLZ:
     def test_to_representation(self, settings, fake_gateway):
         settings.BK_API_URL_TMPL = "http://{api_name}.example.com"
+        fake_gateway.kind = GatewayKindEnum.AI.value
 
         slz = GatewayOutputSLZ(
             fake_gateway,
@@ -32,6 +34,7 @@ class TestGatewayOutputSLZ:
         )
 
         assert slz.data["is_official"] is False
+        assert slz.data["kind"] == GatewayKindEnum.AI.value
         assert slz.data["api_url"] == f"http://{fake_gateway.name}.example.com"
         assert slz.data["doc_maintainers"] == {
             "type": "user",

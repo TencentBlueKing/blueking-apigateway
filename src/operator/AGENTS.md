@@ -96,7 +96,7 @@ Important entry points:
 - `pkg/core/agent/agent.go`: consumes watch events and updates the release timer.
 - `pkg/core/agent/timer/timer.go`: batches release work per stage or global resource.
 - `pkg/core/committer/committer.go`: reads full target config, retries failures, and sends work to the synchronizer.
-- `pkg/core/synchronizer/synchronizer.go`: serializes APISIX sync operations.
+- `pkg/core/synchronizer/synchronizer.go`: limits concurrent gateway sync operations and serializes global syncs.
 - `pkg/core/store/store.go`: diffs cached APISIX resources and writes/deletes data-plane etcd keys.
 - `pkg/eventreporter/reporter.go`: reports publish lifecycle events to CoreAPI and probes APISIX load status.
 - `pkg/server/*` and `pkg/apis/open/*`: debug and list APIs.
@@ -179,7 +179,11 @@ Commit details:
 
 Sync details:
 
-- `ApisixConfigSynchronizer` has a process-wide `flushMux`, so APISIX writes are serialized.
+- `ApisixConfigSynchronizer` limits concurrent Stage syncs with `operator.gatewaySyncConcurrency`. The
+  Committer still serializes stages of the same gateway, so each active slot represents one gateway in the
+  production path. A slot is held for the complete Stage sync, including put/delete intervals.
+- Global resource syncs remain exclusive with Stage syncs. They do not consume gateway synchronization slots,
+  but wait for active Stage syncs to finish before updating global resources and the virtual Stage.
 - `ApisixEtcdStore.Alter()` diffs the target stage config against the cached APISIX state.
 - Put order is SSL, Service, sleep `operator.etcdPutInterval`, then Route.
 - Delete order is Route, SSL, sleep `operator.etcdDelInterval`, then Service.
@@ -299,6 +303,7 @@ Important defaults from `newDefaultConfig()`:
 - `operator.agentEventsWaitingTimeWindow`: `2s`
 - `operator.agentForceUpdateTimeWindow`: `10s`
 - `operator.agentCommitTimeWindow`: `5s`
+- `operator.gatewaySyncConcurrency`: `5`
 - `operator.etcdPutInterval`: `50ms`
 - `operator.etcdDelInterval`: `16s`
 - `operator.etcdSyncTimeout`: `60s`

@@ -51,6 +51,7 @@ from apigateway.service.resource import delete_resources, get_gateway_resource_i
 from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
+from apigateway.utils.time import now_datetime
 
 from .serializers import (
     BackendPathCheckInputSLZ,
@@ -191,6 +192,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
     def _check_if_changed(self, input_data: Dict[str, Any], instance: Resource) -> bool:
         resource_fields = [
+            "kind",
             "name",
             "description",
             "method",
@@ -206,14 +208,17 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             if input_data[field] != current_resource_data[field]:
                 return True
 
-        current_auth_config = ResourceAuthContext().get_config(instance.id)
+        current_auth_config = ResourceAuthContext().get_config_for_resource(instance)
         input_data["auth_config"]["skip_auth_verification"] = False
         if input_data["auth_config"] != current_auth_config:
             return True
 
         proxy = Proxy.objects.get(resource_id=instance.id)
         current_backend = {"id": proxy.backend.id, "config": proxy.config}
-        input_backend = {"id": input_data["backend"].id, "config": dict(input_data["backend_config"])}
+        input_backend = {
+            "id": input_data["backend"].id,
+            "config": dict(input_data["backend_config"]) if input_data["backend_config"] else {},
+        }
         if input_backend != current_backend:
             return True
 
@@ -234,7 +239,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         slz = ResourceOutputSLZ(
             instance,
             context={
-                "auth_config": ResourceAuthContext().get_config(instance.id),
+                "auth_config": ResourceAuthContext().get_config_for_resource(instance),
                 "labels": get_resource_id_to_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
                 "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
@@ -342,6 +347,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             is_public=slz.validated_data["is_public"],
             allow_apply_permission=slz.validated_data["allow_apply_permission"],
             updated_by=request.user.username,
+            updated_time=now_datetime(),
         )
         label_ids = slz.validated_data.get("label_ids")
         if slz.validated_data["is_update_labels"]:
@@ -523,12 +529,9 @@ class ResourceImportApi(generics.CreateAPIView):
         importer.import_resources()
         # 如果生成文档还要再生成文档
         if slz.validated_data.get("doc_language"):
-            exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
-            # 生成openapi yaml
-            content = exporter.export_openapi(slz.data.get("import_resources", []), file_type="yaml")
             parser = OpenAPIParser(gateway_id=request.gateway.id)
-            docs = parser.parse(
-                swagger=content,
+            docs = parser.parse_resource_data(
+                resources=slz.data.get("import_resources", []),
                 language=DocLanguageEnum(slz.validated_data["doc_language"]),
             )
             importer = DocImporter(
@@ -556,12 +559,9 @@ class ResourceImportDocPreviewApi(generics.CreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
-        # 生成openapi yaml
-        content = exporter.export_openapi([slz.data.get("review_resource")], file_type="yaml")
         parser = OpenAPIParser(gateway_id=request.gateway.id)
-        docs = parser.parse(
-            swagger=content,
+        docs = parser.parse_resource_data(
+            resources=[slz.data.get("review_resource")],
             language=DocLanguageEnum(slz.validated_data["doc_language"]),
         )
         return OKJsonResponse(data={"doc": "" if len(docs) == 0 else docs[0].content})
@@ -719,7 +719,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
 class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """过滤出需要认证用户的资源列表"""
-        resources = list(self.get_queryset().values("id", "name"))
+        resources = list(self.get_queryset().values("id", "name", "kind"))
         resource_ids = list(map(operator.itemgetter("id"), resources))
         auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
 

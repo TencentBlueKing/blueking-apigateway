@@ -20,7 +20,7 @@
 
 ### 请求参数示例
 
-`multipart/form-data` 类型，使用 python requests 示例：:
+`multipart/form-data` 类型，使用 python requests 示例：
 
 ```python
 import requests

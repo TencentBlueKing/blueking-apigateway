@@ -1,3 +1,41 @@
+<!-- 2026-08-21 -->
+# V1.24.0 Release Log
+
+### Features
+
+- Support AI Gateway
+- Support personal token
+
+### Enhancements
+
+- ITSM application form optimization
+- ITSM application form adds application reason
+- ITSM permission approval / MCP approval: backfill approver
+- MCP Market: add [Official] category tag
+- MCP Market: permission application page optimization
+- MCP Permission: sync MCP Server tool permissions on publish
+- MCP Server: performance improvement
+- MCP Server: remind users to configure tool aliases when name + tool name exceeds 64 characters
+- MCP Server: optimize OAuth2 public client and personal token risk warnings
+
+### Bug Fixes
+
+- Fix: permission application/approval APIs for PaaS Developer Center, cross-tenant applicant/approver display issue
+- Fix: incorrect URL after logout and re-login in sub-path environment
+- Fix: resources with authentication configured marked as not configured in resource list
+- Fix: resource comparison diff UI display issue
+- Fix: documentation center share URL does not auto-select filters
+- Fix: online debugging API documentation showing one-click group chat
+- Fix: dashboard ingress/egress cannot display properly
+- Fix: gateway basic information page alignment
+- Fix: resource list page size 50/100, pagination not visible when scrolled to bottom
+
+### Other
+
+- Upgrade to support APISIX 3.18
+
+---
+
 <!-- 2026-07-06 -->
 # V1.23.0 Release Log
 

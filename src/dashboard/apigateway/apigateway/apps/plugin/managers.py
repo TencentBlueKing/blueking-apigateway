@@ -24,10 +24,6 @@ if TYPE_CHECKING:
     from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 
 
-class PluginConfigManager(models.Manager):
-    pass
-
-
 class PluginBindingManager(models.Manager):
     def delete_by_gateway_id(self, gateway_id: int):
         self.filter(gateway_id=gateway_id).delete()

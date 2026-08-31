@@ -30,6 +30,11 @@ class MetricsRangeEnum(StructuredEnum):
     RESPONSE_TIME_99TH = EnumField("response_time_99th")
     INGRESS = EnumField("ingress")
     EGRESS = EnumField("egress")
+    LLM_LATENCY_AVG = EnumField("llm_latency_avg")
+    LLM_LATENCY_95TH = EnumField("llm_latency_95th")
+    LLM_TOKEN_USAGE = EnumField("llm_token_usage")
+    LLM_TOKEN_95TH = EnumField("llm_token_95th")
+    LLM_ACTIVE_CONNECTIONS = EnumField("llm_active_connections")
 
 
 class MetricsStepEnum(StructuredEnum):

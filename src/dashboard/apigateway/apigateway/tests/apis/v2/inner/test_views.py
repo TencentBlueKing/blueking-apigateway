@@ -30,23 +30,34 @@ import apigateway.apis.v2.inner.views as inner_views
 from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerLeastPrivilegeEnum,
     MCPServerPermissionStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+)
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.common.tenant.constants import TenantModeEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         g1 = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=False)
         G(Release, gateway=g1)
         g2 = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
@@ -67,10 +78,46 @@ class TestGatewayListApi:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) == 2
+        assert next(item for item in result["data"] if item["name"] == fake_gateway.name)["kind"] == "ai"
+
+    def test_list_filters_by_kind(self, request_view, fake_gateway):
+        fake_gateway.kind = None
+        fake_gateway.save(update_fields=["kind"])
+        G(Release, gateway=fake_gateway)
+        ai_gateway = G(
+            Gateway,
+            kind=GatewayKindEnum.AI.value,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        G(Release, gateway=ai_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"kind": "ai"},
+        )
+
+        assert resp.status_code == 200
+        assert [item["name"] for item in resp.json()["data"]] == [ai_gateway.name]
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"kind": "normal"},
+        )
+
+        assert resp.status_code == 200
+        assert [(item["name"], item["kind"]) for item in resp.json()["data"]] == [(fake_gateway.name, "normal")]
 
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         request = request_factory.get("")
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
@@ -83,6 +130,7 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+        assert result["data"]["kind"] == "ai"
 
 
 class TestGatewayOutputSLZ:
@@ -93,8 +141,8 @@ class TestGatewayOutputSLZ:
             inner_serializers.GatewayRetrieveOutputSLZ,
         ],
     )
-    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
-    @patch("apigateway.apis.v2.inner.serializers.query_display_names_for_readonly")
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
     def test_converts_maintainers_for_cross_tenant_gateway(
         self,
         mock_query_display_names_for_readonly,
@@ -118,9 +166,9 @@ class TestGatewayOutputSLZ:
             inner_serializers.GatewayRetrieveOutputSLZ,
         ],
     )
-    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
     @patch(
-        "apigateway.apis.v2.inner.serializers.query_display_names_for_readonly",
+        "apigateway.biz.permission.permission.query_display_names_for_readonly",
         side_effect=RuntimeError("bk-user unavailable"),
     )
     def test_falls_back_to_original_maintainers_when_display_name_lookup_fails(
@@ -182,6 +230,47 @@ class TestGatewayAppPermissionApplyCreateApi:
 
 
 class TestMCPServerPermissionListApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = TenantModeEnum.GLOBAL.value
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="7idwx3b7nzk6xigs",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"][0]["permission"]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
+
     def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 权限列表包含协议类型数据"""
         # 创建 MCP Server
@@ -214,6 +303,34 @@ class TestMCPServerPermissionListApi:
         assert mcp_server_data["name"] == "test-mcp-server"
         assert mcp_server_data["title"] == "Test MCP Server"
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
+
+    def test_list_with_is_official(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 权限列表包含是否官方字段"""
+        official_category, _ = MCPServerCategory.objects.update_or_create(
+            name=OFFICIAL_MCP_CATEGORY_NAME,
+            defaults={"display_name": "官方", "is_active": True},
+        )
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-official-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        mcp_server.categories.add(official_category)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+        assert result["data"][0]["mcp_server"]["is_official"] is True
 
     def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 权限列表包含 tool_names 字段（重命名后的工具名称）"""
@@ -283,6 +400,46 @@ class TestMCPServerPermissionListApi:
         assert (
             f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in permission_data["approval_url"]
         )
+
+    def test_list_with_itsm_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试 MCP Server 权限列表在存在 itsm_ticket_id 时返回 ITSM 审批链接"""
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-itsm",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            handled_by="admin",
+            itsm_ticket_id="itsm-001",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["approval_url"] == "http://itsm.example.com/ticket/itsm-001"
 
     def test_list_basic_functionality(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 基本功能"""
@@ -654,6 +811,53 @@ class TestMCPServerAppPermissionApplyCreateApi:
 
 
 class TestMCPServerAppPermissionListApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = TenantModeEnum.GLOBAL.value
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="7idwx3b7nzk6xigs",
+        )
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"][0]["permission"]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
+
     def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
         """测试已申请权限列表包含协议类型数据"""
         mcp_server = G(
@@ -940,6 +1144,50 @@ class TestMCPServerAppPermissionListApi:
 
 
 class TestMCPServerAppPermissionRecordListApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test-user",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"][0]["record"]["handled_by"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs", "bbb"])
+
     def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
         """测试申请记录列表包含审批 URL"""
         # 设置审批 URL 模板
@@ -1066,6 +1314,51 @@ class TestMCPServerAppPermissionRecordListApi:
 
 
 class TestMCPServerAppPermissionRecordRetrieveApi:
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_retrieve_converts_handled_by_to_display_name(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+        fake_stage,
+    ):
+        mock_query_display_names_for_readonly.return_value = ["张三"]
+        fake_gateway.tenant_mode = "single"
+        fake_gateway.tenant_id = "tenant-1"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            applied_by="test-user",
+            handled_by="7idwx3b7nzk6xigs",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
+            path_params={"record_id": apply_record.id},
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-1",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["record"]["handled_by"] == ["张三"]
+        mock_query_display_names_for_readonly.assert_called_once_with("tenant-1", ["7idwx3b7nzk6xigs"])
+
     def test_retrieve_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
         """测试申请记录详情包含审批 URL"""
         # 设置审批 URL 模板
@@ -1362,6 +1655,83 @@ class TestAppPermissionRecordListApi:
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
 
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_pending_handled_by_maintainers_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+    ):
+        """pending 记录无 handled_by 时，按网关租户将 maintainers 转为 display_name"""
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+        fake_gateway.tenant_mode = "single"
+        fake_gateway.tenant_id = "tenant-1"
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_by="",
+            status="pending",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["handled_by"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with(
+            "tenant-1",
+            ["7idwx3b7nzk6xigs", "bbb"],
+        )
+
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
+    def test_list_converts_handled_by_to_display_names(
+        self,
+        mock_query_display_names_for_readonly,
+        request_view,
+        fake_gateway,
+    ):
+        """已处理记录按网关租户将 handled_by 转为 display_name"""
+        mock_query_display_names_for_readonly.return_value = ["管理员"]
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_by="7idwx3b7nzk6xigs",
+            handled_time=timezone.now(),
+            status="approved",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["handled_by"] == ["管理员"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs"])
+
 
 class TestAppAlarmRecordListApi:
     def _get_time_range_params(self):
@@ -1616,6 +1986,14 @@ class TestAppRequestLogListApi:
                         "http_path": "/prod/users",
                         "status": 200,
                         "request_duration": 32,
+                        "llm_summary": {
+                            "request_model": "",
+                            "prompt_tokens": 107,
+                            "completion_tokens": 1718,
+                            "upstream_response_time": 11662,
+                            "model": "deepseek-v4-flash",
+                            "duration": 11662,
+                        },
                         "code_name": "",
                         "error": "",
                         "response_desc": "OK",
@@ -1635,12 +2013,32 @@ class TestAppRequestLogListApi:
         result = resp.json()
 
         assert resp.status_code == 200
+        assert set(result["data"]) == {"count", "results"}
         assert result["data"]["count"] == 1
         record = result["data"]["results"][0]
         assert record["request_id"] == "req-001"
         assert record["gateway_name"] == "bk-user-api"
+        assert record["llm_summary"] == mock_search_logs.return_value[1][0]["llm_summary"]
         assert "backend_host" not in record
+        assert "llm_summary" in inner_views.AppRequestLogListApi._output_fields
         mock_search_logs.assert_called_once()
+
+    def test_list_returns_null_llm_summary_for_standard_log(self, request_view, mocker):
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
+            return_value=(1, [{"request_id": "req-001"}]),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "bk-test-app"},
+            data=self._get_time_range_params(),
+            app=mock.MagicMock(app_code="bk-test-app"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"][0]["llm_summary"] is None
 
     def test_allow_path_app_code_different_from_request_app(self, request_view, mocker):
         mock_search_logs = mocker.patch(
@@ -1699,6 +2097,276 @@ class TestAppRequestLogListApi:
 
 class TestMCPServerListApi:
     """测试 MCPServerListApi - 获取全量的 MCPServer 列表"""
+
+    @pytest.mark.parametrize("order_by", ["unknown", "-unknown", "id,name"])
+    def test_list_rejects_invalid_order_by(self, request_view, order_by):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"order_by": order_by},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("limit", [0, 1001, "invalid"])
+    def test_list_rejects_invalid_limit(self, request_view, limit):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"limit": limit},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+    def test_list_accepts_limit_1000(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"limit": 1000},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+
+    def test_list_rejects_unsupported_fields(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "unknown,z"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+    def test_list_filters_by_gateway_tenant(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        gateways = [
+            G(
+                Gateway,
+                name="global-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.GLOBAL.value,
+                tenant_id="",
+            ),
+            G(
+                Gateway,
+                name="tenant-a-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-a",
+            ),
+            G(
+                Gateway,
+                name="tenant-b-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-b",
+            ),
+        ]
+        for gateway in gateways:
+            stage = G(Stage, gateway=gateway, status=StageStatusEnum.ACTIVE.value)
+            G(
+                MCPServer,
+                gateway=gateway,
+                stage=stage,
+                name=f"{gateway.name}-mcp",
+                status=MCPServerStatusEnum.ACTIVE.value,
+            )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "name", "order_by": "name"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-a",
+        )
+
+        assert resp.status_code == 200
+        assert [item["name"] for item in resp.json()["data"]["results"]] == [
+            "global-gateway-mcp",
+            "tenant-a-gateway-mcp",
+        ]
+
+    def test_list_requires_tenant_header_in_multi_tenant_mode(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+    def test_list_with_dynamic_fields_skips_unneeded_context_building(self, request_view, fake_gateway, mocker):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save(update_fields=["status"])
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="test-mcp-server",
+            title="Test MCP Server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        build_list_context = mocker.patch.object(
+            inner_views.MCPServerHandler, "build_list_context", side_effect=AssertionError("unexpected context build")
+        )
+        get_prompts_count_map = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "get_prompts_count_map",
+            side_effect=AssertionError("unexpected context build"),
+        )
+        build_categories_map = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "build_categories_map",
+            side_effect=AssertionError("unexpected context build"),
+        )
+        get_least_privileges_by_server = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "get_least_privileges_by_server",
+            side_effect=AssertionError("unexpected context build"),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": " name, title,name "},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"] == [
+            {
+                "name": "test-mcp-server",
+                "title": "Test MCP Server",
+            }
+        ]
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "id,protocol_type"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"] == [
+            {
+                "id": mcp_server.id,
+                "protocol_type": MCPServerProtocolTypeEnum.SSE.value,
+            }
+        ]
+        build_list_context.assert_not_called()
+        get_prompts_count_map.assert_not_called()
+        build_categories_map.assert_not_called()
+        get_least_privileges_by_server.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("fields", "expected_helper"),
+        [
+            ("stage,gateway", "build_list_context"),
+            ("prompts_count", "get_prompts_count_map"),
+            ("categories", "build_categories_map"),
+            ("url", "get_least_privileges_by_server"),
+        ],
+    )
+    def test_list_with_dynamic_fields_builds_only_required_context(
+        self, request_view, fake_gateway, mocker, fields, expected_helper
+    ):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save(update_fields=["status"])
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        helpers = {
+            "build_list_context": mocker.patch.object(
+                inner_views.MCPServerHandler,
+                "build_list_context",
+                return_value={
+                    "stages": {stage.id: {"id": stage.id, "name": stage.name}},
+                    "gateways": {fake_gateway.id: {"id": fake_gateway.id, "name": fake_gateway.name}},
+                },
+            ),
+            "get_prompts_count_map": mocker.patch.object(
+                inner_views.MCPServerHandler, "get_prompts_count_map", return_value={mcp_server.id: 1}
+            ),
+            "build_categories_map": mocker.patch.object(
+                inner_views.MCPServerHandler, "build_categories_map", return_value={mcp_server.id: []}
+            ),
+            "get_least_privileges_by_server": mocker.patch.object(
+                inner_views.MCPServerHandler, "get_least_privileges_by_server", return_value={}
+            ),
+        }
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": fields},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert set(resp.json()["data"]["results"][0]) == set(fields.split(","))
+        for helper_name, helper in helpers.items():
+            if helper_name == expected_helper:
+                helper.assert_called_once()
+            else:
+                helper.assert_not_called()
+
+    def test_list_uses_server_scoped_least_privileges_for_urls(self, request_view, fake_gateway, mocker):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save(update_fields=["status"])
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        application_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="application-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            oauth2_public_client_enabled=False,
+        )
+        user_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="user-server",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            oauth2_public_client_enabled=False,
+        )
+        get_least_privileges_by_server = mocker.patch.object(
+            inner_views.MCPServerHandler,
+            "get_least_privileges_by_server",
+            return_value={
+                application_server.id: MCPServerLeastPrivilegeEnum.APPLICATION.value,
+                user_server.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+            },
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"fields": "id,url", "order_by": "id"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        results = {item["id"]: item["url"] for item in resp.json()["data"]["results"]}
+        assert results[application_server.id].endswith("/application/sse/")
+        assert results[user_server.id].endswith("/sse/")
+        assert "/application/" not in results[user_server.id]
+        get_least_privileges_by_server.assert_called_once()
 
     def test_list_public_active_mcp_servers(self, request_view, fake_gateway):
         """测试获取活跃的 MCPServer 列表"""
@@ -1914,8 +2582,72 @@ class TestMCPServerListApi:
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == mcp_server1.id
 
-    def test_list_with_mcp_server_ids_filter(self, request_view, fake_gateway):
-        """测试使用 mcp_server_ids 筛选 MCPServer"""
+
+class TestMCPServerLookupApi:
+    def test_lookup_filters_by_gateway_tenant(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        gateways = [
+            G(
+                Gateway,
+                name="global-lookup-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.GLOBAL.value,
+                tenant_id="",
+            ),
+            G(
+                Gateway,
+                name="tenant-a-lookup-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-a",
+            ),
+            G(
+                Gateway,
+                name="tenant-b-lookup-gateway",
+                status=GatewayStatusEnum.ACTIVE.value,
+                tenant_mode=TenantModeEnum.SINGLE.value,
+                tenant_id="tenant-b",
+            ),
+        ]
+        mcp_server_names = []
+        for gateway in gateways:
+            stage = G(Stage, gateway=gateway, status=StageStatusEnum.ACTIVE.value)
+            mcp_server = G(
+                MCPServer,
+                gateway=gateway,
+                stage=stage,
+                name=f"{gateway.name}-mcp",
+                status=MCPServerStatusEnum.ACTIVE.value,
+            )
+            mcp_server_names.append(mcp_server.name)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"names": ",".join(mcp_server_names), "fields": "name"},
+            app=mock.MagicMock(app_code="test"),
+            HTTP_X_BK_TENANT_ID="tenant-a",
+        )
+
+        assert resp.status_code == 200
+        assert {item["name"] for item in resp.json()["data"]} == {
+            "global-lookup-gateway-mcp",
+            "tenant-a-lookup-gateway-mcp",
+        }
+
+    def test_lookup_requires_tenant_header_in_multi_tenant_mode(self, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"names": "missing"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+    def test_lookup_with_ids_returns_unpaginated_results(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
         fake_gateway.is_official = True
@@ -1951,66 +2683,92 @@ class TestMCPServerListApi:
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
         )
 
-        # 只筛选 server1 和 server3
         resp = request_view(
             method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_ids": f"{mcp_server1.id},{mcp_server3.id}"},
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"ids": f"{mcp_server1.id},{mcp_server3.id}", "fields": "id,name"},
             app=mock.MagicMock(app_code="test"),
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        result_ids = [item["id"] for item in result["data"]["results"]]
-        assert mcp_server1.id in result_ids
-        assert mcp_server3.id in result_ids
-        assert mcp_server2.id not in result_ids
+        assert isinstance(result["data"], list)
+        assert {item["id"] for item in result["data"]} == {mcp_server1.id, mcp_server3.id}
+        assert mcp_server2.id not in {item["id"] for item in result["data"]}
+        assert all(set(item) == {"id", "name"} for item in result["data"])
 
-    def test_list_with_mcp_server_ids_empty(self, request_view, fake_gateway):
-        """测试 mcp_server_ids 为空时返回所有"""
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={
+                "ids": f"{mcp_server1.id},{mcp_server2.id}",
+                "names": f"{mcp_server2.name},{mcp_server3.name}",
+                "fields": "id",
+            },
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == [{"id": mcp_server2.id}]
+
+    def test_lookup_with_names_uses_exact_match_and_ignores_missing_names(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-
-        mcp_server = G(
+        private_mcp_server = G(
             MCPServer,
             gateway=fake_gateway,
             stage=stage,
-            name="server-empty-ids-test",
+            name="private-server",
+            title="Private Server",
+            is_public=False,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="unrequested-server",
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
-            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
         )
 
-        # mcp_server_ids 为空字符串，应返回所有
         resp = request_view(
             method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_ids": ""},
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"names": "private-server,missing-server", "fields": "id,title"},
             app=mock.MagicMock(app_code="test"),
         )
-        result = resp.json()
 
         assert resp.status_code == 200
-        result_ids = [item["id"] for item in result["data"]["results"]]
-        assert mcp_server.id in result_ids
+        results = resp.json()["data"]
+        assert [item["id"] for item in results] == [private_mcp_server.id]
+        assert results[0]["title"] == "Private Server"
 
-    def test_list_with_mcp_server_ids_invalid(self, request_view, fake_gateway, mocker):
-        """测试 mcp_server_ids 包含非法值时返回 400"""
-        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.save()
-
+    @pytest.mark.parametrize("data", [{}, {"ids": ""}, {"names": ", ,"}])
+    def test_lookup_rejects_missing_or_empty_lookup_keys(self, request_view, data):
         resp = request_view(
             method="GET",
-            view_name="openapi.v2.inner.mcp_server.list",
-            data={"mcp_server_ids": "abc,def"},
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data=data,
             app=mock.MagicMock(app_code="test"),
         )
 
         assert resp.status_code == 400
 
+    def test_lookup_rejects_invalid_ids(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.lookup",
+            data={"ids": "abc,def"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
+
+class TestMCPServerListOutputApi:
     def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
@@ -2028,6 +2786,7 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=True,
+            oauth2_personal_client_enabled=True,
         )
 
         resp = request_view(
@@ -2044,6 +2803,7 @@ class TestMCPServerListApi:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is True
+        assert mcp_data["oauth2_personal_client_enabled"] is True
 
     def test_list_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
@@ -2062,6 +2822,7 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=False,
+            oauth2_personal_client_enabled=False,
         )
 
         resp = request_view(
@@ -2078,6 +2839,7 @@ class TestMCPServerListApi:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is False
+        assert mcp_data["oauth2_personal_client_enabled"] is False
 
     def test_list_returns_tool_names(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 tool_names（含重命名场景）"""

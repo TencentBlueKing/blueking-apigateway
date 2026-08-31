@@ -21,6 +21,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc import NoResourceDocError
 from apigateway.biz.resource_doc.importer import ArchiveDoc, ArchiveParser, BaseParser, OpenAPIParser
 from apigateway.core.models import Resource
+from apigateway.utils.yaml import yaml_loads
 
 
 class TestBaseParser:
@@ -163,3 +164,31 @@ class TestSwagger:
         assert docs[0].language == DocLanguageEnum.ZH
         assert docs[0].content != ""
         assert docs[0].openapi != ""
+
+    def test_parse_resource_data(self, fake_resource, mocker):
+        validate_openapi_import = mocker.patch("apigateway.biz.openapi.openapi.OpenAPIImportManager.validate")
+        mocker.patch(
+            "apigateway.biz.resource_doc.importer.parsers.OpenAPIToMarkdownGenerator.generate_doc_content",
+            return_value="doc content",
+        )
+
+        docs = OpenAPIParser(fake_resource.gateway_id).parse_resource_data(
+            [
+                {
+                    "kind": fake_resource.kind,
+                    "name": fake_resource.name,
+                    "description": fake_resource.description,
+                    "method": fake_resource.method,
+                    "path": fake_resource.path,
+                    "labels": [],
+                    "openapi_schema": {},
+                }
+            ],
+            DocLanguageEnum.ZH,
+        )
+
+        validate_openapi_import.assert_not_called()
+        assert len(docs) == 1
+        assert docs[0].resource == fake_resource
+        assert docs[0].content == "doc content"
+        assert yaml_loads(docs[0].openapi)["swagger"] == "2.0"

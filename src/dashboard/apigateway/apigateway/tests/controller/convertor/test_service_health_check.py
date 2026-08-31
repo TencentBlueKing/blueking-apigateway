@@ -20,12 +20,27 @@
 from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor.service import ServiceConvertor
 from apigateway.controller.models import ActiveCheck, Check, PassiveCheck
+from apigateway.controller.release_data import StageBackendConfig
+from apigateway.core.constants import BackendKindEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 
 
+def _set_standard_backend_configs(release_data, backend, backend_configs):
+    release_data.stage_backend_configs = {
+        backend_id: StageBackendConfig(
+            backend_id=backend_id,
+            backend_name=backend.name,
+            backend_kind=BackendKindEnum.STANDARD.value,
+            backend_type=backend.type,
+            config=config,
+        )
+        for backend_id, config in backend_configs.items()
+    }
+
+
 class TestHealthCheckConversion:
-    def test_convert_active_check(self, mocker, fake_release_data, fake_backend):
+    def test_convert_active_check(self, fake_release_data, fake_backend):
         """Test converting active health check from backend_config to BaseUpstream"""
         backend_configs = {
             fake_backend.id: {
@@ -45,7 +60,7 @@ class TestHealthCheckConversion:
             }
         }
 
-        mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
+        _set_standard_backend_configs(fake_release_data, fake_backend, backend_configs)
 
         convertor = ServiceConvertor(
             release_data=fake_release_data,
@@ -82,7 +97,7 @@ class TestHealthCheckConversion:
         # Verify passive check is None
         assert service.upstream.checks.passive is None
 
-    def test_convert_passive_check(self, mocker, fake_release_data, fake_backend):
+    def test_convert_passive_check(self, fake_release_data, fake_backend):
         """Test converting passive health check from backend_config to BaseUpstream"""
         backend_configs = {
             fake_backend.id: {
@@ -100,7 +115,7 @@ class TestHealthCheckConversion:
             }
         }
 
-        mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
+        _set_standard_backend_configs(fake_release_data, fake_backend, backend_configs)
 
         convertor = ServiceConvertor(
             release_data=fake_release_data,
@@ -134,7 +149,7 @@ class TestHealthCheckConversion:
         # Verify active check is None
         assert service.upstream.checks.active is None
 
-    def test_convert_without_checks(self, mocker, fake_release_data, fake_backend):
+    def test_convert_without_checks(self, fake_release_data, fake_backend):
         """Test that absence of checks results in None upstream.checks"""
         backend_configs = {
             fake_backend.id: {
@@ -145,7 +160,7 @@ class TestHealthCheckConversion:
             }
         }
 
-        mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
+        _set_standard_backend_configs(fake_release_data, fake_backend, backend_configs)
 
         convertor = ServiceConvertor(
             release_data=fake_release_data,
@@ -160,7 +175,7 @@ class TestHealthCheckConversion:
         # Verify checks field is None when not configured
         assert service.upstream.checks is None
 
-    def test_convert_active_check_with_minimal_config(self, mocker, fake_release_data, fake_backend):
+    def test_convert_active_check_with_minimal_config(self, fake_release_data, fake_backend):
         """Test converting active check with only required fields"""
         backend_configs = {
             fake_backend.id: {
@@ -172,7 +187,7 @@ class TestHealthCheckConversion:
             }
         }
 
-        mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
+        _set_standard_backend_configs(fake_release_data, fake_backend, backend_configs)
 
         convertor = ServiceConvertor(
             release_data=fake_release_data,
@@ -189,7 +204,7 @@ class TestHealthCheckConversion:
         assert service.upstream.checks.active.http_path == "/health"
         assert service.upstream.checks.active.type.value == "http"
 
-    def test_convert_tcp_active_check(self, mocker, fake_release_data, fake_backend):
+    def test_convert_tcp_active_check(self, fake_release_data, fake_backend):
         """Test converting TCP active health check"""
         backend_configs = {
             fake_backend.id: {
@@ -207,7 +222,7 @@ class TestHealthCheckConversion:
             }
         }
 
-        mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
+        _set_standard_backend_configs(fake_release_data, fake_backend, backend_configs)
 
         convertor = ServiceConvertor(
             release_data=fake_release_data,
@@ -222,7 +237,7 @@ class TestHealthCheckConversion:
         assert service.upstream.checks.active.type.value == "tcp"
         assert service.upstream.checks.active.unhealthy.tcp_failures == 2
 
-    def test_serialization_excludes_none(self, mocker, fake_release_data, fake_backend):
+    def test_serialization_excludes_none(self, fake_release_data, fake_backend):
         """Test that None values are excluded from serialization"""
         backend_configs = {
             fake_backend.id: {
@@ -234,7 +249,7 @@ class TestHealthCheckConversion:
             }
         }
 
-        mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
+        _set_standard_backend_configs(fake_release_data, fake_backend, backend_configs)
 
         convertor = ServiceConvertor(
             release_data=fake_release_data,

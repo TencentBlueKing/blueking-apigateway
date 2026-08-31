@@ -440,6 +440,12 @@ const handleSave = async () => {
   }
 };
 
+watch(() => stageId, (newVal, oldVal) => {
+  if (newVal && newVal !== oldVal) {
+    tableIsEdit.value = false;
+  }
+});
+
 onMounted(() => {
   getData();
 });

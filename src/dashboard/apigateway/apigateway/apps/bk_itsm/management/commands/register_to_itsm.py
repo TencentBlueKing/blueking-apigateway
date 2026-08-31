@@ -16,15 +16,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
 import json
 import logging
 import os
+from typing import Any, Dict, List
 
 from django.core.management.base import BaseCommand
 from django.db.utils import OperationalError, ProgrammingError
 
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
-from apigateway.components.bkitsm import system_migrate, system_workflow_list
+from apigateway.components.bkitsm import (
+    ItsmFormModelUpdateResult,
+    ItsmWorkflowList,
+    system_migrate,
+    system_workflow_list,
+    update_form_model,
+)
+from apigateway.utils.string import strip_template_ref_prefix
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +54,26 @@ class Command(BaseCommand):
             default=False,
             help="Strict mode: fail fast on migrate errors instead of idempotent fallback",
         )
+        parser.add_argument(
+            "--update-form-model",
+            action="store_true",
+            default=False,
+            help="Update existing ITSM form model fields from template instead of skipping registered systems",
+        )
+        parser.add_argument(
+            "--form-model-key",
+            type=str,
+            default="",
+            help="Existing ITSM form model key. Defaults to normalized form_models[0].key from template",
+        )
 
     def handle(self, *args, **options):
         template_file = options["template_file"]
         strict_mode = options["strict"]
+        update_form_model = options["update_form_model"]
+        form_model_key = options["form_model_key"]
+        if form_model_key and not update_form_model:
+            raise RuntimeError("--form-model-key requires --update-form-model.")
 
         template_data = self._load_template(template_file)
         template_data = self._normalize_template_for_migrate(template_data)
@@ -58,8 +83,19 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Start register_to_itsm, system_code={system_code}")
 
+        workflow_list = self._get_system_workflow_list(system_code, fail_on_error=update_form_model)
+
         # 先查询 ITSM 侧该系统是否已注册过流程，避免重复 migrate 导致 400 报错
-        if self._is_system_registered_in_itsm(system_code):
+        if workflow_list.is_registered:
+            if update_form_model:
+                self._update_form_model_from_template(
+                    system_code=system_code,
+                    template_data=template_data,
+                    form_model_key=form_model_key,
+                )
+                self._ensure_config_from_template(system_code, template_data)
+                return
+
             self.stdout.write(f"System {system_code} already registered in ITSM, skip migrate")
             self._ensure_config_from_template(system_code, template_data)
             return
@@ -78,15 +114,71 @@ class Command(BaseCommand):
         self._ensure_config_from_template(system_code, template_data)
 
     @staticmethod
-    def _is_system_registered_in_itsm(system_code: str) -> bool:
-        """通过 system_workflow_list 接口查询系统是否已在 ITSM 注册"""
+    def _get_system_workflow_list(system_code: str, fail_on_error: bool = False) -> ItsmWorkflowList:
         try:
-            resp = system_workflow_list(system_id=system_code)
-        except Exception:
-            logger.warning("failed to query system_workflow_list, assume not registered", exc_info=True)
-            return False
+            return system_workflow_list(system_id=system_code)
+        except Exception as err:
+            if fail_on_error:
+                raise RuntimeError(f"failed to query system_workflow_list, system_code={system_code}") from err
 
-        return resp.get("count", 0) > 0
+            logger.warning("failed to query system_workflow_list, assume not registered", exc_info=True)
+            return ItsmWorkflowList.empty()
+
+    def _update_form_model_from_template(
+        self,
+        system_code: str,
+        template_data: Dict[str, Any],
+        form_model_key: str,
+    ):
+        payload = self._build_form_model_update_payload(system_code, template_data, form_model_key)
+        template_field_keys = sorted(payload["meta"]["fields"].keys())
+
+        self.stdout.write(f"Start updating ITSM form model, key={payload['key']}, fields={template_field_keys}")
+        result = update_form_model(**payload)
+        self._validate_form_model_update_result(result, template_field_keys)
+        self.stdout.write(self.style.SUCCESS(f"ITSM form model updated: key={payload['key']}"))
+        self.stdout.write(
+            self.style.WARNING(
+                "update_form_model only updates form model fields; form_canvas_data/styleCode/layout are not updated. "
+                "system_workflow_list may expose workflow group schema instead of form model fields, "
+                "please verify in ITSM form model page or create a test ticket."
+            )
+        )
+
+    @staticmethod
+    def _build_form_model_update_payload(
+        system_code: str,
+        template_data: Dict[str, Any],
+        form_model_key: str = "",
+    ) -> Dict[str, Any]:
+        form_models = template_data.get("form_models", [])
+        if not form_models:
+            raise RuntimeError("invalid template: form_models is required")
+
+        form_model = form_models[0]
+        key = form_model_key or strip_template_ref_prefix(form_model.get("key", ""), "$FormModel")
+        if not key:
+            raise RuntimeError("invalid form model key, please provide --form-model-key")
+
+        meta = copy.deepcopy(form_model.get("meta") or {})
+        fields = meta.get("fields")
+        if not isinstance(fields, dict) or not fields:
+            raise RuntimeError("invalid template: form_models[0].meta.fields is required")
+
+        return {
+            "key": key,
+            "name": form_model.get("name", ""),
+            "desc": form_model.get("desc", ""),
+            "app_id": form_model.get("app_id", ""),
+            "system_id": system_code,
+            "meta": meta,
+        }
+
+    @staticmethod
+    def _validate_form_model_update_result(result: ItsmFormModelUpdateResult, missing_field_keys: List[str]):
+        still_missing = sorted(set(missing_field_keys) - set(result.updated_field_keys))
+        if still_missing:
+            raise RuntimeError(f"update_form_model response missing fields: {still_missing}")
 
     def _ensure_config_from_template(self, system_code: str, template_data):
         """确保配置表有完整数据，有则复用，无则从模板写入"""
@@ -125,7 +217,7 @@ class Command(BaseCommand):
             return json.load(fp)
 
     @staticmethod
-    def _normalize_template_for_migrate(template_data):
+    def _normalize_template_for_migrate(template_data: Dict[str, Any]) -> Dict[str, Any]:
         form_models = template_data.get("form_models", [])
         if not form_models:
             raise RuntimeError("invalid template: form_models is required")
@@ -147,7 +239,7 @@ class Command(BaseCommand):
         return template_data
 
     @staticmethod
-    def _extract_defaults_from_template(template_data):
+    def _extract_defaults_from_template(template_data: Dict[str, Any]) -> Dict[str, str]:
         system_data = template_data.get("system", {})
         form_models = template_data.get("form_models", [])
         workflows = template_data.get("workflows", [])
@@ -170,7 +262,7 @@ class Command(BaseCommand):
         }
 
     @staticmethod
-    def _extract_workflow_keys_from_template(template_data) -> list:
+    def _extract_workflow_keys_from_template(template_data: Dict[str, Any]) -> List[str]:
         """从模板配置中提取 workflow keys（与 _build_workflow_key_map 中的逻辑一致）"""
         workflows = template_data.get("workflows", [])
         workflow_keys = []
@@ -187,13 +279,10 @@ class Command(BaseCommand):
 
     @staticmethod
     def _normalize_workflow_key(workflow_key: str) -> str:
-        workflow_key = str(workflow_key or "").strip()
-        if workflow_key.startswith("$Workflow"):
-            return workflow_key[len("$Workflow") :]
-        return workflow_key
+        return strip_template_ref_prefix(workflow_key, "$Workflow")
 
     @staticmethod
-    def _build_workflow_key_map(template_data, workflow_keys):
+    def _build_workflow_key_map(template_data: Dict[str, Any], workflow_keys: List[str]) -> Dict[str, str]:
         normalized_workflow_keys = [
             Command._normalize_workflow_key(key) for key in workflow_keys if Command._normalize_workflow_key(key)
         ]
@@ -255,7 +344,10 @@ class Command(BaseCommand):
     def _load_existing_config(system_code: str):
         try:
             return ItsmSystemConfig.objects.filter(system_code=system_code).first()
-        except OperationalError, ProgrammingError:
+        except OperationalError:
+            logger.warning("skip loading ItsmSystemConfig, table is not ready", exc_info=True)
+            return None
+        except ProgrammingError:
             logger.warning("skip loading ItsmSystemConfig, table is not ready", exc_info=True)
             return None
 

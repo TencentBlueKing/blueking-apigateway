@@ -16,14 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 from unittest.mock import call
 
 import pytest
 from ddf import G
 
 import apigateway.biz.release as release_biz
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.release.gateway_releaser import ReleaseError, release_gateway
+from apigateway.biz.release.gateway_releaser import GatewayReleaser, ReleaseError, release_gateway
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -35,6 +37,184 @@ from apigateway.tests.utils.testing import dummy_time
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
+
+
+class TestGatewayReleaser:
+    @pytest.fixture(autouse=True)
+    def mock_oauth2_reconciler(self, mocker):
+        return mocker.patch("apigateway.biz.release.gateway_releaser.OAuth2BuiltinPermissionReconciler").return_value
+
+    def test_pre_release_prepares_oauth2_permissions_after_connection_checks(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=[data_plane])
+        mocker.patch.object(releaser, "_validate")
+        calls = mocker.Mock()
+        calls.attach_mock(
+            mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection"),
+            "check_connection",
+        )
+        calls.attach_mock(mock_oauth2_reconciler.prepare_publish, "prepare_publish")
+
+        releaser._pre_release()
+
+        assert calls.mock_calls == [
+            call.check_connection(mocker.ANY, data_plane),
+            call.prepare_publish(fake_gateway, fake_stage, fake_resource_version),
+        ]
+
+    def test_pre_release_records_failure_when_oauth2_permission_preparation_fails(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=[data_plane])
+        mocker.patch.object(releaser, "_validate")
+        mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+        report_failure = mocker.patch(
+            "apigateway.biz.release.gateway_releaser.PublishEventReporter.report_config_validate_failure"
+        )
+        do_release = mocker.patch.object(releaser, "_do_release")
+
+        with pytest.raises(ReleaseError, match="prepare OAuth2 built-in permissions failed"):
+            releaser.release()
+
+        history = ReleaseHistory.objects.get(gateway=fake_gateway)
+        report_failure.assert_called_once_with(
+            history,
+            "prepare OAuth2 built-in permissions failed: redis unavailable",
+        )
+        do_release.assert_not_called()
+
+    def test_release_preserves_permission_preparation_error_when_data_plane_binding_disappears(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker, mock_oauth2_reconciler
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", side_effect=[[data_plane], []])
+        mocker.patch.object(releaser, "_validate")
+        mock_oauth2_reconciler.prepare_publish.side_effect = RuntimeError("redis unavailable")
+
+        with pytest.raises(ReleaseError, match="prepare OAuth2 built-in permissions failed") as exc_info:
+            releaser.release()
+
+        assert isinstance(exc_info.value.__cause__, RuntimeError)
+        assert not ReleaseHistory.objects.filter(gateway=fake_gateway).exists()
+
+    @pytest.mark.parametrize(
+        "oauth2_config",
+        [
+            {"oauth2_public_client_enabled": True},
+            {"oauth2_personal_client_enabled": True},
+        ],
+    )
+    def test_pre_release_rejects_incompatible_oauth2_data_plane(
+        self,
+        fake_gateway,
+        fake_stage,
+        mocker,
+        oauth2_config,
+    ):
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            _data=json.dumps(
+                [
+                    {
+                        "contexts": {
+                            "resource_auth": {
+                                "config": json.dumps(oauth2_config),
+                            }
+                        }
+                    }
+                ]
+            ),
+        )
+        data_planes = [
+            G(DataPlane, name="apisix-3-13", apisix_version="3.13"),
+            G(DataPlane, name="apisix-3-16", apisix_version="3.16"),
+        ]
+        releaser = GatewayReleaser(fake_gateway, fake_stage, resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=data_planes)
+        mocker.patch.object(releaser, "_validate")
+        check_connection = mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+
+        with pytest.raises(ReleaseError, match=r"apisix-3-13 \(3\.13\)"):
+            releaser._pre_release()
+
+        check_connection.assert_not_called()
+
+    def test_pre_release_keeps_resources_without_oauth2_unchanged(
+        self,
+        fake_gateway,
+        fake_stage,
+        mocker,
+    ):
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            _data=json.dumps(
+                [
+                    {
+                        "contexts": {
+                            "resource_auth": {
+                                "config": json.dumps(
+                                    {
+                                        "oauth2_public_client_enabled": False,
+                                        "oauth2_personal_client_enabled": False,
+                                    }
+                                ),
+                            }
+                        }
+                    }
+                ]
+            ),
+        )
+        data_planes = [
+            G(DataPlane, name="apisix-3-13", apisix_version="3.13"),
+            G(DataPlane, name="apisix-3-16", apisix_version="3.16"),
+        ]
+        releaser = GatewayReleaser(fake_gateway, fake_stage, resource_version)
+        mocker.patch.object(releaser, "_get_active_data_planes", return_value=data_planes)
+        mocker.patch.object(releaser, "_validate")
+        check_connection = mocker.patch("apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection")
+
+        releaser._pre_release()
+
+        assert check_connection.call_count == 2
+
+    def test_release_adds_mcp_permissions_before_updating_release(
+        self, fake_gateway, fake_stage, fake_resource_version, mocker
+    ):
+        data_plane = G(DataPlane, name="plane-1")
+        release = G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        release_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            resource_version=fake_resource_version,
+        )
+        releaser = GatewayReleaser(fake_gateway, fake_stage, fake_resource_version)
+        mocker.patch("apigateway.biz.release.gateway_releaser.PublishEventReporter.report_create_publish_task_doing")
+        delay_on_commit = mocker.patch("apigateway.biz.release.gateway_releaser.delay_on_commit")
+
+        releaser._do_release(release, release_history, data_plane)
+
+        publish_chain = delay_on_commit.call_args.args[0]
+        assert len(publish_chain.tasks) == 3
+        permission_sync = publish_chain.tasks[1]
+        assert (
+            permission_sync.task
+            == "apigateway.apps.mcp_server.tasks.add_stage_mcp_server_permissions_before_release_update"
+        )
+        assert permission_sync.kwargs == {
+            "stage_id": fake_stage.id,
+            "resource_version_id": fake_resource_version.id,
+        }
+        assert permission_sync.immutable is True
 
 
 class TestReleaseHandler:
@@ -259,3 +439,34 @@ class TestReleaseHandler:
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.SUCCESS.value
         )
+
+    def test_batch_get_stage_release_status_uses_constant_queries(self, django_assert_num_queries, fake_gateway):
+        stage_ids = []
+        for index in range(3):
+            stage = G(Stage, gateway=fake_gateway, name=f"stage-{index}")
+            resource_version = G(ResourceVersion, gateway=fake_gateway, version=f"1.0.{index}")
+            G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+            stage_ids.append(stage.id)
+
+        with django_assert_num_queries(2):
+            result = ReleaseHandler.batch_get_stage_release_status(stage_ids)
+
+        assert set(result) == set(stage_ids)
+
+    def test_batch_get_stage_release_status_uses_latest_release_history(self, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway)
+        old_resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        latest_resource_version = G(ResourceVersion, gateway=fake_gateway, version="2.0.0")
+        G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=old_resource_version)
+        latest_release_history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=stage,
+            resource_version=latest_resource_version,
+        )
+
+        result = ReleaseHandler.batch_get_stage_release_status([stage.id])[stage.id]
+
+        assert result["publish_id"] == latest_release_history.id
+        assert result["resource_version_id"] == latest_resource_version.id
+        assert result["resource_version_display"] == latest_resource_version.object_display

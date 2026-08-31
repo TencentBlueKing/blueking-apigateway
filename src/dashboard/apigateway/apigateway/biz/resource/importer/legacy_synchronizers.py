@@ -184,7 +184,10 @@ class LegacyUpstreamToBackendSynchronizer:
         self._sync_backends_and_replace_resource_backend()
 
     def _has_legacy_upstreams(self) -> bool:
-        return any(resource_data.backend_config.legacy_upstreams for resource_data in self.resource_data_list)
+        return any(
+            resource_data.backend_config and resource_data.backend_config.legacy_upstreams
+            for resource_data in self.resource_data_list
+        )
 
     def _sync_backends_and_replace_resource_backend(self):
         backend_creator = LegacyBackendCreator(self.gateway, self.username)
@@ -192,10 +195,11 @@ class LegacyUpstreamToBackendSynchronizer:
         stage_id_to_timeout = self._get_stage_id_to_default_timeout()
 
         for resource_data in self.resource_data_list:
-            if not resource_data.backend_config.legacy_upstreams:
+            backend_config = resource_data.backend_config
+            if not backend_config or not backend_config.legacy_upstreams:
                 continue
 
-            legacy_upstream = LegacyUpstream(resource_data.backend_config.legacy_upstreams)
+            legacy_upstream = LegacyUpstream(backend_config.legacy_upstreams)
             stage_id_to_backend_config = legacy_upstream.get_stage_id_to_backend_config(stages, stage_id_to_timeout)
             backend = backend_creator.match_or_create_backend(stage_id_to_backend_config)
             resource_data.backend = backend
@@ -222,7 +226,8 @@ class LegacyTransformHeadersToPluginSynchronizer:
 
         scope_id_to_plugin_config = {}
         for resource_data in self.resource_data_list:
-            transform_headers = resource_data.backend_config.legacy_transform_headers
+            backend_config = resource_data.backend_config
+            transform_headers = backend_config.legacy_transform_headers if backend_config else None
             if transform_headers is None:
                 continue
 
@@ -240,6 +245,7 @@ class LegacyTransformHeadersToPluginSynchronizer:
 
     def _has_legacy_transform_headers(self) -> bool:
         return any(
-            resource_data.backend_config.legacy_transform_headers is not None
+            resource_data.backend_config is not None
+            and resource_data.backend_config.legacy_transform_headers is not None
             for resource_data in self.resource_data_list
         )

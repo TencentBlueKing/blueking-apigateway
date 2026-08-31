@@ -25,6 +25,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES
 from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, CallSourceTypeEnum, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core.constants import (
@@ -114,6 +115,21 @@ class BKAppCodeValidator:
 
         if not APP_CODE_PATTERN.match(value):
             raise serializers.ValidationError(_("蓝鲸应用【{value}】不匹配要求的模式。").format(value=value))
+
+
+class UserManagedBKAppCodeValidator:
+    def __call__(self, value):
+        if value in OAUTH2_BUILTIN_APP_CODES:
+            raise serializers.ValidationError(_("应用【{app_code}】的 API 权限由系统管理。").format(app_code=value))
+
+
+class UserManagedBKAppCodeListValidator:
+    def __call__(self, values):
+        builtin_app_codes = sorted(set(values) & OAUTH2_BUILTIN_APP_CODES)
+        if builtin_app_codes:
+            raise serializers.ValidationError(
+                _("应用【{app_codes}】的 API 权限由系统管理。").format(app_codes=", ".join(builtin_app_codes))
+            )
 
 
 class ResourceVersionValidator:
@@ -434,7 +450,7 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         schema_map = context.get("resource_name_to_schema", {})
         for name in resource_names:
             schema = schema_map.get(name)
-            if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
+            if not ResourceOpenAPISchemaHandler.has_openapi_schema(schema):
                 raise serializers.ValidationError(_(f"请检查当前资源:{name}对应的资源请求参数是否已经确认"))
 
 

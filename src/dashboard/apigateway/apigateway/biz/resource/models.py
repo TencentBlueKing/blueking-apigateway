@@ -17,9 +17,10 @@
 #
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apigateway.biz.plugin import PluginConfigData
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Backend, Resource
 
 
@@ -27,6 +28,16 @@ class ResourceAuthConfig(BaseModel):
     auth_verified_required: bool = Field(default=True)
     app_verified_required: bool = Field(default=True)
     resource_perm_required: bool = Field(default=True)
+    oauth2_public_client_enabled: bool = Field(default=False)
+    oauth2_personal_client_enabled: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def validate_oauth2_client_requires_user_authentication(self):
+        if (
+            self.oauth2_public_client_enabled or self.oauth2_personal_client_enabled
+        ) and not self.auth_verified_required:
+            raise ValueError("OAuth2 public/personal clients require user authentication")
+        return self
 
 
 class ResourceBackendConfig(BaseModel):
@@ -44,6 +55,7 @@ class ResourceData(BaseModel):
 
     resource: Optional[Resource] = Field(default=None)
     # basic
+    kind: str = Field(default=ResourceKindEnum.STANDARD.value)
     name: str = Field(...)
     description: Optional[str] = Field(default="")
     description_en: Optional[str] = Field(default=None)
@@ -57,7 +69,7 @@ class ResourceData(BaseModel):
     auth_config: ResourceAuthConfig = Field(...)
     # backend
     backend: Optional[Backend] = Field(default=None)
-    backend_config: ResourceBackendConfig = Field(...)
+    backend_config: Optional[ResourceBackendConfig] = Field(default=None)
     # label
     label_ids: List[int] = Field(default_factory=list)
     # plugin configs
@@ -67,6 +79,18 @@ class ResourceData(BaseModel):
     # schema 接口参数
     openapi_schema: Dict[str, Any] = Field(default_factory=dict)
 
+    @model_validator(mode="after")
+    def validate_kind_contract(self):
+        if self.kind == ResourceKindEnum.AI.value:
+            if self.method != "POST" or self.match_subpath or self.enable_websocket or self.backend_config is not None:
+                raise ValueError("invalid AI resource proxy configuration")
+        elif self.kind == ResourceKindEnum.STANDARD.value:
+            if self.backend_config is None:
+                raise ValueError("standard resource requires backend_config")
+        else:
+            raise ValueError(f"unsupported resource kind: {self.kind}")
+        return self
+
     @property
     def basic_data(self) -> Dict[str, Any]:
         return self.model_dump(include=set(self.basic_field_names()))
@@ -74,6 +98,7 @@ class ResourceData(BaseModel):
     @staticmethod
     def basic_field_names() -> List[str]:
         return [
+            "kind",
             "name",
             "description",
             "description_en",
@@ -101,12 +126,13 @@ class ResourceData(BaseModel):
             "allow_apply_permission": self.allow_apply_permission,
             "auth_config": self.auth_config.model_dump(),
             "backend_id": self.backend.id,
-            "backend_config": self.backend_config.model_dump(),
+            "backend_config": self.backend_config.model_dump() if self.backend_config else {},
             "metadata": self.metadata,
         }
 
     def snapshot_for_checking(self) -> Dict[str, Any]:
         base_info = {
+            "kind": self.kind,
             "name": self.name,
             "description": self.description,
             "method": self.method,

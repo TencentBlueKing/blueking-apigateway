@@ -297,7 +297,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         return '--';
       }
       return (
-        <div class="flex-row">
+        <div class="flex-row items-center">
           <div
             v-bk-tooltips={{
               content: row.name,
@@ -310,7 +310,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               e,
               row,
             })}
-            onMouseleave={(e: any) => tableRef.value?.handleCellLeave({
+            onMouseleave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
               e,
               row,
             })}
@@ -318,6 +318,17 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           >
             { row.name }
           </div>
+          {
+            row.kind === 2
+              ? (
+                <ag-icon
+                  name={row.kind === 1 ? 'square-program' : 'AIwangguan'}
+                  size="16"
+                  class="ml-4px color-#3a84ff"
+                />
+              )
+              : ''
+          }
           {
             row.is_official
               ? (

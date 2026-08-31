@@ -19,7 +19,7 @@
 import logging
 import os
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NoReturn, Optional
 from urllib.parse import urlparse
 
 from cachetools import TTLCache, cached
@@ -33,6 +33,7 @@ from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_fo
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
+from .bkauth import BkAuthAppNotFoundError
 from .bkauth import get_app_tenant_info as bkauth_get_app_tenant_info
 from .http import http_get, http_post
 from .utils import gen_gateway_headers
@@ -61,6 +62,15 @@ def get_paas3_url_prefix() -> str:
     return settings.BK_API_URL_TMPL.format(api_name=gateway_name) + "/prod"
 
 
+def _raise_paas_request_error(method: str, url: str, resp_data: Dict[str, Any]) -> NoReturn:
+    response_data = resp_data.get("response_data")
+    detail = response_data.get("detail") if isinstance(response_data, dict) else None
+    error = detail or resp_data.get("error", "unknown error")
+    raise error_codes.REMOTE_REQUEST_ERROR.format(
+        f"request paasv3 fail! Request=[{method} {urlparse(url).path} request_id={local.request_id}] error={error}"
+    )
+
+
 def _call_paasv3_uni_apps_query_by_id(
     tenant_id: str,
     app_codes: List[str],
@@ -85,11 +95,7 @@ def _call_paasv3_uni_apps_query_by_id(
             local.request_id,
             resp_data["error"],
         )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request paasv3 fail! "
-            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
-            f"error={resp_data['error']}"
-        )
+        _raise_paas_request_error("http_get", url, resp_data)
     # response:
     # - tenant_id is the owner(user tenant_id) of the app, global app is owned by system
     # - app_tenant_id is the tenant_id of the app, global app is empty
@@ -119,11 +125,7 @@ def get_paas_apps_by_username(username: str, tenant_id: str) -> List[Dict[str, A
             local.request_id,
             resp_data["error"],
         )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request paasv3 fail! "
-            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
-            f"error={resp_data['error']}"
-        )
+        _raise_paas_request_error("http_get", url, resp_data)
 
     return resp_data
 
@@ -175,7 +177,11 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     # NOTE: here we need to get maintainers from paasv3
     #       but the X-Bk-Tenant-Id required
     #       so, we query it from bkauth first
-    tenant_id = get_tenant_id_for_app_developers(bk_app_code)
+    try:
+        tenant_id = get_tenant_id_for_app_developers(bk_app_code)
+    except BkAuthAppNotFoundError:
+        logger.warning("skip app maintainers query because app does not exist in bkauth, bk_app_code=%s", bk_app_code)
+        return []
 
     app = _get_app_with_cache(tenant_id, bk_app_code)
     if not app:
@@ -222,11 +228,7 @@ def get_paas_repo_authorization(
             local.request_id,
             resp_data["error"],
         )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request paasv3 fail! "
-            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
-            f"error={resp_data['error']}"
-        )
+        _raise_paas_request_error("http_get", url, resp_data)
 
     return {
         "authorized": True,
@@ -284,11 +286,7 @@ def create_paas_app(
             local.request_id,
             resp_data["error"],
         )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request paasv3 fail! "
-            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
-            f"error={resp_data['error']}"
-        )
+        _raise_paas_request_error("http_post", url, resp_data)
     return True
 
 
@@ -329,11 +327,7 @@ def deploy_paas_app(
             local.request_id,
             resp_data["error"],
         )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request paasv3 fail! "
-            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
-            f"error={resp_data['error']}"
-        )
+        _raise_paas_request_error("http_post", url, resp_data)
     return resp_data["deployment_id"]
 
 
@@ -354,6 +348,7 @@ def paas_app_module_offline(app_code: str, module: str, env: str, user_credentia
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_post", url, resp_data)
     return resp_data.get("offline_operation_id", "")
 
 
@@ -382,6 +377,7 @@ def set_paas_stage_env(
                 local.request_id,
                 resp_data["error"],
             )
+            _raise_paas_request_error("http_post", url, resp_data)
 
     return True
 
@@ -407,6 +403,7 @@ def get_paas_deploy_phases_framework(
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     return resp_data
 
 
@@ -432,6 +429,7 @@ def get_paas_deploy_phases_instance(
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     return resp_data
 
 
@@ -452,6 +450,7 @@ def get_pass_deploy_streams_history_events(deploy_id: str, user_credentials: Opt
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     return resp_data
 
 
@@ -476,6 +475,7 @@ def get_paas_deployment_result(
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     return resp_data
 
 
@@ -500,6 +500,7 @@ def get_paas_offline_result(
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     return resp_data
 
 
@@ -520,6 +521,7 @@ def get_paas_runtime_info(app_code: str, module: str, user_credentials: Optional
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     return resp_data
 
 
@@ -540,6 +542,7 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
             local.request_id,
             resp_data["error"],
         )
+        _raise_paas_request_error("http_get", url, resp_data)
     branch_list = []
     branch_commit_info = {}
     for branch in resp_data.get("results", []):
@@ -592,9 +595,5 @@ def update_app_maintainers(app_code: str, maintainers: List[str], user_credentia
             local.request_id,
             resp_data["error"],
         )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request paasv3 fail! "
-            f"Request=[http_post {urlparse(url).path} request_id={local.request_id}]"
-            f"error={resp_data['error']}"
-        )
+        _raise_paas_request_error("http_post", url, resp_data)
     return True

@@ -19,7 +19,6 @@
 import itertools
 import json
 import operator
-from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
@@ -28,6 +27,8 @@ from django.db import models
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
+    BackendKindEnum,
+    ResourceKindEnum,
     StageStatusEnum,
 )
 from apigateway.utils.time import now_datetime
@@ -35,6 +36,22 @@ from apigateway.utils.time import now_datetime
 # - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
 
 RELEASED_RESOURCE_CREATE_BATCH_SIZE = 50
+
+
+class BackendManager(models.Manager):
+    def standard(self):
+        return self.filter(kind=BackendKindEnum.STANDARD.value)
+
+    def ai(self):
+        return self.filter(kind=BackendKindEnum.AI.value)
+
+
+class ResourceManager(models.Manager):
+    def standard(self):
+        return self.filter(kind=ResourceKindEnum.STANDARD.value)
+
+    def ai(self):
+        return self.filter(kind=ResourceKindEnum.AI.value)
 
 
 class StageManager(models.Manager):
@@ -46,20 +63,6 @@ class StageManager(models.Manager):
 
     def get_name_id_map(self, gateway_id: int):
         return dict(self.filter(gateway_id=gateway_id).values_list("name", "id"))
-
-    def get_gateway_name_to_active_stage_names(self, gateways) -> Dict[str, List[str]]:
-        gateway_id_to_name = {g.id: g.name for g in gateways}
-
-        gateway_name_to_stage_names = defaultdict(list)
-        stages = self.filter(gateway_id__in=gateway_id_to_name.keys(), status=StageStatusEnum.ACTIVE.value).values(
-            "gateway_id", "name"
-        )
-        for stage in stages:
-            gateway_id = stage["gateway_id"]
-            gateway_name = gateway_id_to_name[gateway_id]
-            gateway_name_to_stage_names[gateway_name].append(stage["name"])
-
-        return gateway_name_to_stage_names
 
     def get_name(self, gateway_id: int, id_: int) -> Optional[str]:
         return self.filter(gateway_id=gateway_id, id=id_).values_list("name", flat=True).first()
@@ -83,6 +86,7 @@ class ResourceVersionManager(models.Manager):
             resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
             resources[resource["id"]] = {
                 "id": resource["id"],
+                "kind": resource.get("kind", ResourceKindEnum.STANDARD.value),
                 "name": resource["name"],
                 "description": resource.get("description") or "",
                 "description_en": resource.get("description_en", ""),
@@ -96,6 +100,8 @@ class ResourceVersionManager(models.Manager):
                 "resource_perm_required": resource_auth_config["resource_perm_required"],
                 "app_verified_required": resource_auth_config["app_verified_required"],
                 "user_verified_required": resource_auth_config["auth_verified_required"],
+                "oauth2_public_client_enabled": resource_auth_config.get("oauth2_public_client_enabled", False),
+                "oauth2_personal_client_enabled": resource_auth_config.get("oauth2_personal_client_enabled", False),
             }
         return resources
 
@@ -243,6 +249,22 @@ class ReleaseManager(models.Manager):
         return ids[0]
 
 
+def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+    try:
+        raw_config = resource["contexts"]["resource_auth"]["config"]
+        config = json.loads(raw_config) if isinstance(raw_config, str) else raw_config
+    except KeyError, TypeError, ValueError:
+        return False, False
+
+    if not isinstance(config, dict):
+        return False, False
+
+    return (
+        config.get("oauth2_public_client_enabled") is True,
+        config.get("oauth2_personal_client_enabled") is True,
+    )
+
+
 class ReleasedResourceManager(models.Manager):
     def get_released_resource_version_ids_by_resource(self, gateway_id: int, resource_id: int) -> List[int]:
         return list(
@@ -265,18 +287,23 @@ class ReleasedResourceManager(models.Manager):
         if exists:
             queryset.delete()
 
-        resource_to_add = [
-            self.model(
-                gateway_id=resource_version.gateway_id,
-                resource_version_id=resource_version.id,
-                resource_id=resource["id"],
-                resource_name=resource["name"],
-                resource_method=resource["method"],
-                resource_path=resource["path"],
-                data=resource,
+        resource_to_add = []
+        for resource in resource_version.data:
+            oauth2_public_enabled, oauth2_personal_enabled = get_released_resource_oauth2_flags(resource)
+            resource_to_add.append(
+                self.model(
+                    gateway_id=resource_version.gateway_id,
+                    resource_version_id=resource_version.id,
+                    resource_id=resource["id"],
+                    resource_name=resource["name"],
+                    resource_method=resource["method"],
+                    resource_path=resource["path"],
+                    is_public=resource.get("is_public") is True,
+                    oauth2_public_client_enabled=oauth2_public_enabled,
+                    oauth2_personal_client_enabled=oauth2_personal_enabled,
+                    data=resource,
+                )
             )
-            for resource in resource_version.data
-        ]
         # 异步同时(多个stage同时发布同一版本)更新会存在一些冲突问题
         self.bulk_create(resource_to_add, batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE, ignore_conflicts=True)
 
@@ -340,6 +367,8 @@ class ReleasedResourceManager(models.Manager):
             "app_verified_required": resource_auth_config["app_verified_required"],
             "resource_perm_required": resource_auth_config["resource_perm_required"],
             "user_verified_required": resource_auth_config["auth_verified_required"],
+            "oauth2_public_client_enabled": resource_auth_config.get("oauth2_public_client_enabled", False),
+            "oauth2_personal_client_enabled": resource_auth_config.get("oauth2_personal_client_enabled", False),
         }
 
 

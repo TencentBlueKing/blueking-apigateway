@@ -27,10 +27,16 @@ from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaint
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
+    GatewayKindEnum,
+    GatewayKindNameEnum,
     GatewayStatusEnum,
+    GatewaySyncKindEnum,
     GatewayTypeEnum,
+    convert_gateway_kind_name_to_value,
+    convert_gateway_kind_to_name,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.gateway_name import validate_gateway_name_kind
 
 
 class GatewayListV1InputSLZ(serializers.Serializer):
@@ -38,6 +44,7 @@ class GatewayListV1InputSLZ(serializers.Serializer):
     query = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
 
 class GatewayListV1OutputSLZ(serializers.Serializer):
@@ -50,6 +57,10 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     user_auth_type = serializers.SerializerMethodField()
     tenant_mode = serializers.CharField(read_only=True)
     tenant_id = serializers.CharField(read_only=True)
+    kind = serializers.SerializerMethodField()
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     def get_api_type(self, obj):
         return self.context["gateway_auth_configs"][obj.id].gateway_type
@@ -121,6 +132,11 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     )
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    kind = serializers.ChoiceField(
+        choices=GatewaySyncKindEnum.get_choices(),
+        default=GatewaySyncKindEnum.NORMAL.value,
+        write_only=True,
+    )
     # Data plane names to bind to when creating a new gateway
     # If empty, will use 'default' data plane
     data_planes = serializers.ListField(
@@ -144,6 +160,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "user_config",
             "allow_delete_sensitive_params",
             "data_planes",
+            "kind",
         ]
         extra_kwargs = {
             "description_en": {
@@ -153,14 +170,23 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         ref_name = "apigateway.apis.open.gateway.serializers.GatewaySyncInputSLZ"
 
     def validate(self, data):
-        self._validate_name(data["name"], data.get("api_type"))
+        kind = convert_gateway_kind_name_to_value(data["kind"])
+        effective_kind = self.instance.kind if self.instance else kind
+        self._validate_name(data["name"], data.get("api_type"), effective_kind)
+
+        if self.instance is None:
+            validate_gateway_name_kind(data["name"], kind)
 
         data["gateway_type"] = data.pop("api_type", None)
+        data["kind"] = kind
 
         return data
 
-    def _validate_name(self, name: str, api_type: Optional[int]):
+    def _validate_name(self, name: str, api_type: Optional[int], kind: int = GatewayKindEnum.NORMAL.value):
         if api_type is None or api_type == GatewayTypeEnum.CLOUDS_API.value:
+            return
+
+        if kind == GatewayKindEnum.AI.value:
             return
 
         # 场景：某些官方网关名不是 bk-开头，但是需要标记为官方网关

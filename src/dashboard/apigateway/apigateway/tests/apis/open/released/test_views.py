@@ -43,7 +43,7 @@ class TestReleasedResourceRetrieveApi:
                 },
                 {},
                 False,
-                {"id": 1, "name": "test", "method": "GET", "path": "/test/", "schema": {}},
+                {"id": 1, "name": "test", "method": "GET", "path": "/test/", "kind": "standard", "schema": {}},
             ),
             (
                 1,
@@ -73,6 +73,7 @@ class TestReleasedResourceRetrieveApi:
                     "name": "test",
                     "method": "GET",
                     "path": "/test/",
+                    "kind": "standard",
                     "schema": {
                         "parameters": [
                             {
@@ -208,6 +209,8 @@ class TestReleasedResourceListByGatewayNameApi:
                         "app_verified_required": True,
                         "resource_perm_required": True,
                         "user_verified_required": True,
+                        "oauth2_public_client_enabled": True,
+                        "oauth2_personal_client_enabled": False,
                     },
                     {
                         "id": 2,
@@ -220,6 +223,8 @@ class TestReleasedResourceListByGatewayNameApi:
                         "app_verified_required": False,
                         "resource_perm_required": False,
                         "user_verified_required": False,
+                        "oauth2_public_client_enabled": False,
+                        "oauth2_personal_client_enabled": True,
                     },
                 ],
                 {
@@ -230,6 +235,7 @@ class TestReleasedResourceListByGatewayNameApi:
                         {
                             "id": 1,
                             "name": "test",
+                            "kind": "standard",
                             "description": "test",
                             "method": "GET",
                             "url": "http://bkapi.example.com/test/",
@@ -238,10 +244,13 @@ class TestReleasedResourceListByGatewayNameApi:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                             "user_verified_required": True,
+                            "oauth2_public_client_enabled": True,
+                            "oauth2_personal_client_enabled": False,
                         },
                         {
                             "id": 2,
                             "name": "test",
+                            "kind": "standard",
                             "description": "test",
                             "method": "POST",
                             "url": "http://bkapi.example.com/test/",
@@ -250,6 +259,8 @@ class TestReleasedResourceListByGatewayNameApi:
                             "app_verified_required": False,
                             "resource_perm_required": False,
                             "user_verified_required": False,
+                            "oauth2_public_client_enabled": False,
+                            "oauth2_personal_client_enabled": True,
                         },
                     ],
                 },

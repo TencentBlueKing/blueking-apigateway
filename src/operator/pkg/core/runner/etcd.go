@@ -102,7 +102,11 @@ func (r *EtcdAgentRunner) init() {
 		os.Exit(1)
 	}
 	r.apisixEtcdstore = apisixEtcdStore
-	r.synchronizer = synchronizer.NewSynchronizer(apisixEtcdStore, "/healthz")
+	r.synchronizer = synchronizer.NewSynchronizer(
+		apisixEtcdStore,
+		"/healthz",
+		r.cfg.Operator.GatewaySyncConcurrency,
+	)
 
 	stageTimer := timer.NewReleaseTimer()
 	// 5. init committer

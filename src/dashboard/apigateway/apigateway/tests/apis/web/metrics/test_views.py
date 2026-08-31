@@ -32,8 +32,6 @@ from apigateway.utils.time import utctime
 
 class TestQueryRangeApi:
     def test_get(self, mocker, fake_stage, request_view):
-        resource_obj = G(Resource, name="testname001", gateway=fake_stage.gateway)
-
         data = {
             "metrics": [],
             "series": [
@@ -41,16 +39,16 @@ class TestQueryRangeApi:
                     "alias": "_result_",
                     "metric_field": "_result_",
                     "unit": "",
-                    "target": 'route="bk-esb.prod.{}"'.format(resource_obj.id),
-                    "dimensions": {"route": "bk-esb.prod.2152"},
+                    "target": 'resource_name="testname001"',
+                    "dimensions": {"resource_name": "testname001"},
                     "datapoints": [],
                 },
                 {
                     "alias": "_result_",
                     "metric_field": "_result_",
                     "unit": "",
-                    "target": 'route="bk-esb.prod.1234"',
-                    "dimensions": {"route": "bk-esb.prod.1234"},
+                    "target": 'resource_name="testname002"',
+                    "dimensions": {"resource_name": "testname002"},
                     "datapoints": [],
                 },
                 {
@@ -84,8 +82,8 @@ class TestQueryRangeApi:
         result = response.json()
 
         assert response.status_code == 200
-        assert result["data"]["series"][0]["target"] == 'name="testname001"'
-        assert result["data"]["series"][1]["target"] == 'route="bk-esb.prod.1234"'
+        assert result["data"]["series"][0]["target"] == 'resource_name="testname001"'
+        assert result["data"]["series"][1]["target"] == 'resource_name="testname002"'
         assert len(result["data"]["series"]) == 2
 
         mocker.patch(

@@ -16,7 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .gateway_auth import GatewayAuthConfig, GatewayAuthContext
-from .resource_auth import ResourceAuthContext
+from .resource_auth import (
+    RESOURCE_OAUTH2_CLIENT_FIELDS,
+    ResourceAuthContext,
+    build_resource_auth_config,
+    strip_resource_oauth2_client_config,
+)
 
 __all__ = [
     # constant
@@ -24,7 +29,10 @@ __all__ = [
     # class
     "GatewayAuthConfig",
     "GatewayAuthContext",
+    "RESOURCE_OAUTH2_CLIENT_FIELDS",
     "ResourceAuthContext",
     # functions
+    "build_resource_auth_config",
+    "strip_resource_oauth2_client_config",
     # others
 ]

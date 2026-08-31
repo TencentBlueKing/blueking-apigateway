@@ -23,6 +23,11 @@ from . import views
 urlpatterns = [
     path("", views.BackendListCreateApi.as_view(), name="backend.list-create"),
     path(
+        "test-connection/",
+        views.BackendConnectivityTestApi.as_view(),
+        name="backend.test-connection",
+    ),
+    path(
         "<int:id>/",
         views.BackendRetrieveUpdateDestroyApi.as_view(),
         name="backend.retrieve-update-destroy",

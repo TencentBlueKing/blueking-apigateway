@@ -19,6 +19,7 @@
 package proxy
 
 import (
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,13 +27,43 @@ import (
 
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
+	"mcp_proxy/pkg/metric"
+)
+
+var (
+	apiLogPath   string
+	auditLogPath string
 )
 
 var _ = BeforeSuite(func() {
+	auditLogDir := GinkgoT().TempDir()
+	apiLogPath = filepath.Join(auditLogDir, "api.log")
+	auditLogPath = filepath.Join(auditLogDir, "audit.log")
+
 	// Initialize config.G to avoid nil pointer dereference when genToolHandler accesses config fields.
-	config.G = &config.Config{}
+	config.G = &config.Config{
+		Logger: config.Logger{
+			API: config.LogConfig{
+				Level:  "info",
+				Writer: "file",
+				Settings: map[string]string{
+					"name": "api.log",
+					"path": auditLogDir,
+				},
+			},
+			Audit: config.LogConfig{
+				Level:  "info",
+				Writer: "file",
+				Settings: map[string]string{
+					"name": "audit.log",
+					"path": auditLogDir,
+				},
+			},
+		},
+	}
 	// Initialize logger for tests
 	logging.InitLogger(config.G)
+	metric.InitMetrics("test_")
 })
 
 func TestProxy(t *testing.T) {

@@ -22,8 +22,15 @@ from django.http import Http404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
+from apigateway.apis.v2.tenant import get_request_tenant_id
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.core.models import Gateway, GatewayRelatedApp
 from apigateway.utils.django import get_object_or_None
+
+
+def _set_request_tenant_id(request) -> None:
+    if settings.ENABLE_MULTI_TENANT_MODE:
+        request.tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
 
 
 class OpenAPIV2Permission(permissions.BasePermission):
@@ -38,8 +45,7 @@ class OpenAPIV2Permission(permissions.BasePermission):
         if not hasattr(request, "app"):
             return False
 
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            request.tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
+        _set_request_tenant_id(request)
 
         return True
 
@@ -56,8 +62,10 @@ class OpenAPIV2GatewayNamePermission(permissions.BasePermission):
         if not hasattr(request, "app"):
             return False
 
+        _set_request_tenant_id(request)
+
         # 路径参数 gateway_id 必须存在
-        gateway_obj = self.get_gateway_object(view)
+        gateway_obj = self.get_gateway_object(request, view)
 
         if not gateway_obj:
             raise Http404
@@ -65,7 +73,7 @@ class OpenAPIV2GatewayNamePermission(permissions.BasePermission):
 
         return True
 
-    def get_gateway_object(self, view):
+    def get_gateway_object(self, request, view):
         """
         根据路径参数 gateway_name 获取网关对象
         若 gateway_name 不在路径参数中，或网关不存在，返回 None
@@ -75,8 +83,13 @@ class OpenAPIV2GatewayNamePermission(permissions.BasePermission):
         if lookup_url_kwarg not in view.kwargs:
             return None
 
+        queryset = Gateway.objects.all()
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
+
         filter_kwargs = {"name": view.kwargs[lookup_url_kwarg]}
-        return get_object_or_None(Gateway, **filter_kwargs)
+        return get_object_or_None(queryset, **filter_kwargs)
 
 
 class OpenAPIV2GatewayRelatedAppPermission(permissions.BasePermission):

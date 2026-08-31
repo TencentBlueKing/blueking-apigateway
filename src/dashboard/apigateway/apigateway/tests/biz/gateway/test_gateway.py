@@ -21,6 +21,7 @@ import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django_dynamic_fixture import G
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
@@ -32,6 +33,7 @@ from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayKindEnum,
     GatewayOperationStatusEnum,
     GatewayStatusEnum,
     GatewayTypeEnum,
@@ -508,3 +510,12 @@ class TestGatewayHandler:
         GatewayHandler.bind_to_data_planes(gateway=gateway, data_plane_ids=[dp.id], username="admin")
 
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=dp).count() == 1
+
+    def test_bind_ai_gateway_rejects_older_data_plane(self):
+        gateway = G(Gateway, kind=GatewayKindEnum.AI.value, tenant_mode="single", tenant_id="default")
+        data_plane = G(DataPlane, name="apisix-3-13", apisix_version="3.13")
+
+        with pytest.raises(ValidationError, match="APISIX 3.16 or later"):
+            GatewayHandler.bind_to_data_planes(gateway=gateway, data_plane_ids=[data_plane.id])
+
+        assert not GatewayDataPlaneBinding.objects.filter(gateway=gateway).exists()

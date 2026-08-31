@@ -27,6 +27,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID
+from apigateway.controller.tasks.oauth2_builtin import OAuth2BuiltinPermissionReconciler
 from apigateway.controller.tasks.syncing import revoke_release
 from apigateway.core.models import Gateway, Release
 
@@ -127,6 +128,13 @@ class Command(BaseCommand):
             gateway_id=gateway.id,
             data_plane_id=data_plane.id,
         )
+        try:
+            OAuth2BuiltinPermissionReconciler().reconcile_gateway(gateway)
+        except Exception:
+            logger.exception(
+                "failed to reconcile OAuth2 built-in permissions after data-plane unbind: gateway=%s",
+                gateway.name,
+            )
         audit_writer.write(
             result="success",
             **audit_log_common_args,

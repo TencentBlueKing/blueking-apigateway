@@ -25,8 +25,9 @@ from pydantic import TypeAdapter
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource
+from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS, strip_resource_oauth2_client_config
 from apigateway.utils.time import now_datetime
 
 from .models import ResourceData
@@ -75,11 +76,19 @@ class ResourcesSaver:
         update_resources = []
         now = now_datetime()
         for resource_data in self.resource_data_list:
+            oauth2_client_config = {
+                field_name: getattr(resource_data.auth_config, field_name)
+                for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS
+            }
             if resource_data.resource:
                 resource = resource_data.resource
+                if resource.kind != resource_data.kind:
+                    raise ValueError(_("Resource.kind 创建后不能修改。"))
                 resource.updated_by = self.username
                 resource.updated_time = now
                 for key, value in resource_data.basic_data.items():
+                    setattr(resource, key, value)
+                for key, value in oauth2_client_config.items():
                     setattr(resource, key, value)
 
                 update_resources.append(resource)
@@ -90,6 +99,7 @@ class ResourcesSaver:
                     updated_by=self.username,
                     proxy_id=0,
                     **resource_data.basic_data,
+                    **oauth2_client_config,
                 )
                 add_resources.append(resource)
 
@@ -97,7 +107,9 @@ class ResourcesSaver:
             Resource.objects.bulk_create(add_resources, batch_size=BULK_BATCH_SIZE)
 
         if update_resources:
-            field_names = ResourceData.basic_field_names() + ["updated_by", "updated_time"]
+            field_names = (
+                ResourceData.basic_field_names() + list(RESOURCE_OAUTH2_CLIENT_FIELDS) + ["updated_by", "updated_time"]
+            )
             Resource.objects.bulk_update(update_resources, fields=field_names, batch_size=BULK_BATCH_SIZE)
 
         return bool(add_resources)
@@ -146,13 +158,18 @@ class ResourcesSaver:
         now = now_datetime()
         for resource_data in self.resource_data_list:
             assert resource_data.resource
+            if resource_data.kind == ResourceKindEnum.AI.value:
+                proxy_config = "{}"
+            else:
+                assert resource_data.backend_config
+                proxy_config = resource_data.backend_config.model_dump_json()
 
             proxy = proxies.get(resource_data.resource.id)
             if proxy:
                 proxy.type = ProxyTypeEnum.HTTP.value
                 proxy.backend = resource_data.backend
                 proxy.schema = schema
-                proxy._config = resource_data.backend_config.json()
+                proxy._config = proxy_config
                 proxy.updated_time = now
 
                 update_proxies.append(proxy)
@@ -163,7 +180,7 @@ class ResourcesSaver:
                     backend=resource_data.backend,
                     # TODO: 1.13 后续 issue 统一去除 schema
                     schema=schema,
-                    _config=resource_data.backend_config.json(),
+                    _config=proxy_config,
                 )
                 add_proxies.append(proxy)
 
@@ -198,6 +215,7 @@ class ResourcesSaver:
 
             auth_config = (context and context.config) or ResourceHandler.get_default_auth_config()
             auth_config.update(resource_data.auth_config.model_dump())
+            auth_config = strip_resource_oauth2_client_config(auth_config)
 
             if context:
                 context._config = json.dumps(auth_config)

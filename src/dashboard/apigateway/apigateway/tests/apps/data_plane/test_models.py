@@ -22,6 +22,7 @@ from django.db.models import ProtectedError
 
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.core.constants import GatewayKindEnum
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -115,6 +116,23 @@ class TestGatewayDataPlaneBindingManager:
 
         assert binding1.id == binding2.id
         assert binding1.created_by == "user1"  # Should keep original created_by
+
+    def test_bind_ai_gateway_rejects_older_apisix_version(self):
+        self.gateway1.kind = GatewayKindEnum.AI.value
+        self.data_plane_active1.apisix_version = "3.13"
+
+        with pytest.raises(ValueError) as exc_info:
+            GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
+                gateway=self.gateway1,
+                data_plane=self.data_plane_active1,
+            )
+
+        assert str(exc_info.value) == "AI Gateway requires APISIX 3.16 or later"
+
+        assert not GatewayDataPlaneBinding.objects.filter(
+            gateway=self.gateway1,
+            data_plane=self.data_plane_active1,
+        ).exists()
 
     def test_unbind_gateway_from_data_plane_deletes_binding(self):
         """Test unbind_gateway_from_data_plane removes the binding"""

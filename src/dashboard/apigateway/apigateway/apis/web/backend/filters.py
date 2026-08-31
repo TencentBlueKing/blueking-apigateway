@@ -18,13 +18,14 @@
 #
 from django_filters import rest_framework as filters
 
-from apigateway.core.constants import BackendTypeEnum
+from apigateway.core.constants import BackendKindEnum, BackendTypeEnum
 from apigateway.core.models import Backend
 
 
 class BackendFilter(filters.FilterSet):
     name = filters.CharFilter(lookup_expr="icontains")
     type = filters.ChoiceFilter(choices=BackendTypeEnum.get_choices())
+    kind = filters.ChoiceFilter(choices=BackendKindEnum.get_choices())
     order_by = filters.OrderingFilter(choices=[(field, field) for field in ["updated_time", "-updated_time"]])
 
     class Meta:
@@ -32,5 +33,6 @@ class BackendFilter(filters.FilterSet):
         fields = [
             "name",
             "type",
+            "kind",
             "order_by",
         ]

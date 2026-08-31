@@ -304,3 +304,28 @@ class TestRevokeAppPermissionSLZ:
 
         slz.is_valid(raise_exception=True)
         assert slz.validated_data == expected
+
+
+@pytest.mark.parametrize("app_code", ["public", "personal"])
+@pytest.mark.parametrize(
+    "serializer_class, field_name",
+    [
+        (serializers.PaaSAppPermissionApplyInputSLZ, "target_app_code"),
+        (serializers.AppPermissionApplyV1InputSLZ, "target_app_code"),
+        (serializers.GrantAppPermissionInputSLZ, "target_app_code"),
+        (serializers.AppPermissionRenewInputSLZ, "target_app_code"),
+    ],
+)
+def test_mutation_serializer_rejects_oauth2_builtin_app_code(serializer_class, field_name, app_code):
+    field = serializer_class().fields[field_name]
+
+    with pytest.raises(ValidationError):
+        field.run_validation(app_code)
+
+
+@pytest.mark.parametrize("app_code", ["public", "personal"])
+def test_revoke_serializer_rejects_oauth2_builtin_app_code(app_code):
+    field = serializers.RevokeAppPermissionInputSLZ().fields["target_app_codes"]
+
+    with pytest.raises(ValidationError):
+        field.run_validation(["exist-app", app_code])
