@@ -842,7 +842,6 @@
   "配置变更后需重新测试": "Retest after changing the configuration",
   "配置已变更，请重新测试": "The configuration changed. Please test again.",
   "连通测试成功": "Connection test succeeded",
-  "连通测试失败": "Connection test failed",
   "请输入合法的 HTTP/HTTPS 地址": "Enter a valid HTTP/HTTPS URL.",
   "请选择导出的格式": "Select export format",
   "选择全部": "Select All",

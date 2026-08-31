@@ -507,10 +507,6 @@ const handleTest = async () => {
   }
   catch {
     config.value.testStatus = 'failed';
-    Message({
-      message: t('连通测试失败'),
-      theme: 'error',
-    });
   }
 };
 
