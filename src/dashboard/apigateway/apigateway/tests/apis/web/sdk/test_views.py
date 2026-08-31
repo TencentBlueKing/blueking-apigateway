@@ -21,7 +21,7 @@ import json
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.constants import SDKGenerationStatusEnum
-from apigateway.apps.support.models import GatewaySDK, SDKGenerationTask
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem, SDKGenerationTask
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
@@ -220,6 +220,31 @@ class TestGatewaySDKListCreateApi:
 
 
 class TestSDKGenerationTaskApi:
+    def test_list_is_paginated_and_prefetches_items(
+        self,
+        request_view,
+        django_assert_num_queries,
+        fake_gateway,
+        fake_admin_user,
+    ):
+        for index in range(3):
+            resource_version = G(ResourceVersion, gateway=fake_gateway, version=f"1.0.{index}")
+            task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=resource_version)
+            G(SDKGenerationItem, task=task, language="python")
+
+        with django_assert_num_queries(5):
+            listing = request_view(
+                method="GET",
+                view_name="gateway.sdk.generation_task_list",
+                gateway=fake_gateway,
+                user=fake_admin_user,
+                path_params={"gateway_id": fake_gateway.id},
+            )
+            data = listing.json()["data"]
+
+        assert data["count"] == 3
+        assert len(data["results"]) == 3
+
     def test_list_detail_and_retry(
         self,
         request_view,
@@ -272,7 +297,7 @@ class TestSDKGenerationTaskApi:
                 path_params={"gateway_id": fake_gateway.id, "task_id": task.id},
             )
 
-        assert listing.json()["data"][0]["id"] == task.id
+        assert listing.json()["data"]["results"][0]["id"] == task.id
         assert detail.json()["data"]["resource_version"] == {"id": resource_version.id, "version": "1.0.1"}
         assert retry.status_code == 202
         enqueue.assert_called_once_with([task.items.get(language="python").id])

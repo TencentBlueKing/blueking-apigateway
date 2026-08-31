@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import tempfile
 import uuid
@@ -26,7 +27,7 @@ from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGeneratio
 from apigateway.biz.sdk.artifacts import build_manifest
 from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import SDKLanguageConfig, get_sdk_generation_config
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerateError
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
     from apigateway.core.models import ResourceVersion
 
 LEASE_MINIMUM_SECONDS = 3600
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -200,6 +202,7 @@ def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim 
             "updated_time",
         ]
     )
+    refresh_task_status(item.task_id)
     return GenerationClaim(item.id, token)
 
 
@@ -258,6 +261,30 @@ def _finish_item(claim: GenerationClaim, status: str, *, error: Exception | None
     return bool(SDKGenerationItem.objects.filter(id=claim.item_id, lease_token=claim.lease_token).update(**updates))
 
 
+def _renew_claim(claim: GenerationClaim) -> bool:
+    timeout = get_sdk_generation_config().subprocess_timeout_seconds
+    return bool(
+        SDKGenerationItem.objects.filter(
+            id=claim.item_id,
+            lease_token=claim.lease_token,
+            status=SDKGenerationStatusEnum.RUNNING.value,
+        ).update(
+            lease_expires_at=timezone.now() + timedelta(seconds=max(LEASE_MINIMUM_SECONDS, timeout * 4)),
+            updated_time=timezone.now(),
+        )
+    )
+
+
+def _require_claim(claim: GenerationClaim) -> None:
+    if not _renew_claim(claim):
+        raise SDKGenerateError("lease_lost", "SDK generation lease was lost")
+
+
+def _record_lost_claim(item: SDKGenerationItem, claim: GenerationClaim) -> None:
+    logger.warning("SDK generation lease lost for item %s with claim %s", item.id, claim.lease_token)
+    sdk_generation_metrics.record_result(item.language, "lease_lost")
+
+
 def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
     language_config = get_sdk_generation_config().for_resource_version(
         item.task.gateway.name, item.task.resource_version, item.language
@@ -280,7 +307,7 @@ def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
     return language_config, document, tool_versions, fingerprint
 
 
-def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
+def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  # noqa: PLR0915
     claim = claim_generation_item(item_id, celery_task_id)
     if not claim:
         return None
@@ -289,8 +316,12 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
     try:
         prepared = _prepare_generation(item, claim)
         if not prepared:
-            return None
+            _record_lost_claim(item, claim)
+            refresh_task_status(item.task_id)
+            item.refresh_from_db()
+            return item.status
         language_config, document, tool_versions, fingerprint = prepared
+        _require_claim(claim)
 
         bkrepo = BKRepoComponent.default()
         if not bkrepo:
@@ -313,8 +344,10 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
                 source_dir = workspace / "source"
                 with sdk_generation_metrics.observe_phase(item.language, "generate"):
                     generate_client(spec_path, source_dir, language_config)
+                _require_claim(claim)
                 with sdk_generation_metrics.observe_phase(item.language, "build"):
                     artifacts = build_artifacts(item.language, source_dir, workspace / "dist", language_config)
+                _require_claim(claim)
                 manifest = build_manifest(
                     item.task.gateway.name,
                     item.task.resource_version.version,
@@ -331,9 +364,12 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
 
             if not _has_successful_artifact(item, SDKDistributorEnum.BKREPO_GENERIC.value, filename="manifest.json"):
                 raise ValueError("Generic manifest is not committed")
+            _require_claim(claim)
             GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+            _require_claim(claim)
             with sdk_generation_metrics.observe_phase(item.language, "native_publish"):
                 published = publish_native(item.language, artifacts, language_config)
+            _require_claim(claim)
             _persist_native_artifacts(item, published)
             for artifact in published:
                 sdk_generation_metrics.record_artifacts(item.language, artifact.distributor, "success")
@@ -341,10 +377,14 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
 
         if _finish_item(claim, SDKGenerationStatusEnum.SUCCESS.value):
             sdk_generation_metrics.record_result(item.language, SDKGenerationStatusEnum.SUCCESS.value)
+        else:
+            _record_lost_claim(item, claim)
     except Exception as error:
         status = SDKGenerationStatusEnum.PARTIAL.value if generic_committed else SDKGenerationStatusEnum.FAILED.value
         if _finish_item(claim, status, error=error):
             sdk_generation_metrics.record_result(item.language, status)
+        else:
+            _record_lost_claim(item, claim)
     refresh_task_status(item.task_id)
     item.refresh_from_db()
     return item.status
@@ -363,6 +403,18 @@ def retry_generation_task(
             & (Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True))
         ).values_list("id", flat=True)
     )
+    if item_ids:
+        task.items.filter(id__in=item_ids).update(
+            status=SDKGenerationStatusEnum.PENDING.value,
+            lease_token="",
+            lease_expires_at=None,
+            finished_at=None,
+            error_code="",
+            error_message="",
+            updated_time=now,
+        )
+        refresh_task_status(task.id)
+        task.refresh_from_db()
     if enqueue and item_ids:
         transaction.on_commit(partial(enqueue, item_ids.copy()))
     return task
@@ -372,10 +424,12 @@ def refresh_task_status(task_id: int) -> str:
     statuses = list(SDKGenerationItem.objects.filter(task_id=task_id).values_list("status", flat=True))
     if not statuses or all(status == SDKGenerationStatusEnum.PENDING.value for status in statuses):
         status = SDKGenerationStatusEnum.PENDING.value
-    elif all(status == SDKGenerationStatusEnum.SUCCESS.value for status in statuses):
-        status = SDKGenerationStatusEnum.SUCCESS.value
     elif any(status == SDKGenerationStatusEnum.RUNNING.value for status in statuses):
         status = SDKGenerationStatusEnum.RUNNING.value
+    elif any(status == SDKGenerationStatusEnum.PENDING.value for status in statuses):
+        status = SDKGenerationStatusEnum.PENDING.value
+    elif all(status == SDKGenerationStatusEnum.SUCCESS.value for status in statuses):
+        status = SDKGenerationStatusEnum.SUCCESS.value
     elif all(status == SDKGenerationStatusEnum.FAILED.value for status in statuses):
         status = SDKGenerationStatusEnum.FAILED.value
     else:
@@ -385,7 +439,7 @@ def refresh_task_status(task_id: int) -> str:
 
 
 def serialize_generation_task(task: SDKGenerationTask) -> dict[str, Any]:
-    items = task.items.prefetch_related("artifacts").order_by("id")
+    items = task.items.all()
     return {
         "id": task.id,
         "status": task.status,

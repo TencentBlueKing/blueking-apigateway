@@ -18,7 +18,7 @@
 #
 from typing import cast
 
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -27,7 +27,7 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 
 from apigateway.apis.web.sdk import serializers
-from apigateway.apps.support.models import GatewaySDK, SDKGenerationTask
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import SDKFactory
 from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
 from apigateway.biz.sdk.orchestrator import (
@@ -155,29 +155,28 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
         )
 
 
-class SDKGenerationTaskListApi(APIView):
+def _generation_task_queryset():
+    return SDKGenerationTask.objects.select_related("resource_version").prefetch_related(
+        Prefetch("items", queryset=SDKGenerationItem.objects.order_by("id").prefetch_related("artifacts"))
+    )
+
+
+class SDKGenerationTaskListApi(generics.GenericAPIView):
     def get(self, request, gateway_id):
-        tasks = (
-            SDKGenerationTask.objects.filter(gateway=request.gateway)
-            .select_related("resource_version")
-            .order_by("-id")
-        )
-        return OKJsonResponse(data=[serialize_generation_task(task) for task in tasks])
+        tasks = _generation_task_queryset().filter(gateway=request.gateway).order_by("-id")
+        page = self.paginate_queryset(tasks)
+        return self.get_paginated_response([serialize_generation_task(task) for task in page])
 
 
 class SDKGenerationTaskDetailApi(APIView):
     def get(self, request, gateway_id, task_id):
-        task = get_object_or_404(
-            SDKGenerationTask.objects.select_related("resource_version"), id=task_id, gateway=request.gateway
-        )
+        task = get_object_or_404(_generation_task_queryset(), id=task_id, gateway=request.gateway)
         return OKJsonResponse(data=serialize_generation_task(task))
 
 
 class SDKGenerationTaskRetryApi(APIView):
     def post(self, request, gateway_id, task_id):
-        task = get_object_or_404(
-            SDKGenerationTask.objects.select_related("resource_version"), id=task_id, gateway=request.gateway
-        )
+        task = get_object_or_404(_generation_task_queryset(), id=task_id, gateway=request.gateway)
         retry_generation_task(task, enqueue_generation_items)
         task.refresh_from_db()
         return OKJsonResponse(status=status.HTTP_202_ACCEPTED, data=serialize_generation_task(task))

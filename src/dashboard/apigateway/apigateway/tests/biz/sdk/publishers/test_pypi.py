@@ -29,7 +29,21 @@ def test_pypi_upload_uses_temporary_config_without_secret_in_command(mocker, bui
             "password": "secret",
         }
     }
-    mocker.patch("apigateway.biz.sdk.publishers.pypi.SimplePypiRegistry.search", return_value=None)
+    wheel = built_artifact("wheel", "demo.whl")
+    sdist = built_artifact("sdist", "demo.tar.gz")
+    search = mocker.patch(
+        "apigateway.biz.sdk.publishers.pypi.SimplePypiRegistry.search",
+        side_effect=[
+            None,
+            None,
+            SimpleNamespace(url="https://repo/packages/demo.whl"),
+            SimpleNamespace(url="https://repo/packages/demo.tar.gz"),
+        ],
+    )
+    mocker.patch(
+        "apigateway.biz.sdk.publishers.pypi.remote_sha256",
+        side_effect=[(wheel.sha256, wheel.size), (sdist.sha256, sdist.size)],
+    )
     run = mocker.patch(
         "apigateway.biz.sdk.publishers.common.subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, "", ""),
@@ -37,7 +51,7 @@ def test_pypi_upload_uses_temporary_config_without_secret_in_command(mocker, bui
 
     results = publish_native(
         "python",
-        [built_artifact("wheel", "demo.whl"), built_artifact("sdist", "demo.tar.gz")],
+        [wheel, sdist],
         python_config,
     )
 
@@ -45,6 +59,12 @@ def test_pypi_upload_uses_temporary_config_without_secret_in_command(mocker, bui
     assert command[:2] == ["twine", "upload"]
     assert "secret" not in " ".join(command)
     assert {result.artifact_type for result in results} == {"wheel", "sdist"}
+    assert {result.url for result in results} == {
+        "https://repo/packages/demo.whl",
+        "https://repo/packages/demo.tar.gz",
+    }
+    assert search.call_count == 4
+    assert run.call_args.kwargs["stderr"] is subprocess.PIPE
 
 
 def test_pypi_matching_remote_is_reused(mocker, built_artifact, python_config, settings):

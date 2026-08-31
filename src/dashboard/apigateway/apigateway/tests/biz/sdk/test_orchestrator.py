@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from pathlib import Path
 
@@ -96,6 +97,23 @@ def test_claim_excludes_active_lease_and_takes_expired_lease(fake_resource_versi
     assert second.lease_token != first.lease_token
 
 
+def test_claim_marks_parent_task_running(fake_resource_version):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+
+    assert claim_generation_item(item.id, "celery-1") is not None
+
+    task.refresh_from_db()
+    assert task.status == SDKGenerationStatusEnum.RUNNING.value
+
+
+def test_refresh_reports_pending_when_successful_task_adds_pending_language(fake_resource_version):
+    task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
+    task.items.filter(language="python").update(status=SDKGenerationStatusEnum.SUCCESS.value)
+
+    assert refresh_task_status(task.id) == SDKGenerationStatusEnum.PENDING.value
+
+
 def test_refresh_and_serialization_report_partial_task(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
     task.items.filter(language="python").update(status=SDKGenerationStatusEnum.SUCCESS.value)
@@ -185,6 +203,27 @@ def test_partial_native_retry_restores_generic_without_rebuild(fake_resource_ver
     assert build.call_count == 1
 
 
+def test_execute_stops_after_lease_is_stolen(fake_resource_version, mocker, caplog):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    build, publish = _patch_pipeline(mocker, bkrepo)
+
+    def steal_lease(*_args):
+        type(item).objects.filter(id=item.id).update(lease_token="stolen")
+
+    mocker.patch("apigateway.biz.sdk.orchestrator.generate_client", side_effect=steal_lease)
+    record_result = mocker.patch("apigateway.biz.sdk.metrics.SDKGenerationMetrics.record_result")
+
+    with caplog.at_level(logging.WARNING):
+        assert execute_generation_item(item.id, "celery-1") == SDKGenerationStatusEnum.RUNNING.value
+
+    build.assert_not_called()
+    publish.assert_not_called()
+    record_result.assert_called_once_with("python", "lease_lost")
+    assert "lease" in caplog.text.lower()
+
+
 def test_retry_enqueues_only_failed_partial_and_expired(
     fake_resource_version, mocker, django_capture_on_commit_callbacks
 ):
@@ -199,9 +238,15 @@ def test_retry_enqueues_only_failed_partial_and_expired(
     rust.status = SDKGenerationStatusEnum.RUNNING.value
     rust.lease_expires_at = timezone.now() - timedelta(seconds=1)
     rust.save(update_fields=["status", "lease_expires_at"])
+    refresh_task_status(task.id)
     enqueue = mocker.Mock()
 
     with django_capture_on_commit_callbacks(execute=True):
         retry_generation_task(task, enqueue)
 
     enqueue.assert_called_once_with([python.id, rust.id])
+    assert set(task.items.filter(id__in=[python.id, rust.id]).values_list("status", flat=True)) == {
+        SDKGenerationStatusEnum.PENDING.value
+    }
+    task.refresh_from_db()
+    assert task.status == SDKGenerationStatusEnum.PENDING.value

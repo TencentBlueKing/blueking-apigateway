@@ -47,7 +47,12 @@ result = client.api.generate_sdk(
 {
     "code": 0,
     "message": "SDK generation started",
-    "data": []
+    "result": true,
+    "data": {
+        "id": 1,
+        "status": "pending",
+        "status_url": "/api/v1/apis/demo/sdk/tasks/1/"
+    }
 }
 ```
 
@@ -55,6 +60,9 @@ result = client.api.generate_sdk(
 
 | 字段    | 类型   | 描述                               |
 | ------- | ------ | ---------------------------------- |
-| code    | int    | 返回码，0 表示成功，其它值表示失败 |
-| message | string | 受理结果                           |
-| data    | array  | 为兼容 V1 客户端固定返回空数组     |
+| code            | int     | 返回码，0 表示成功，其它值表示失败 |
+| message         | string  | 受理结果                           |
+| result          | boolean | 是否受理成功                       |
+| data.id         | int     | SDK 生成任务 ID                    |
+| data.status     | string  | SDK 生成任务状态                   |
+| data.status_url | string  | SDK 生成任务状态查询地址           |

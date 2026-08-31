@@ -62,6 +62,41 @@ class TestGatewaySDKHandler:
 
         assert sdk.config["artifacts"][0]["type"] == "wheel"
 
+    def test_go_generation_projection_uses_module_zip_url(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(SDKGenerationItem, task=task, language="go", input_fingerprint="fingerprint")
+        files = (
+            ManifestFile("go_info", "v1.2.3.info", 4, "0" * 64),
+            ManifestFile("go_mod", "v1.2.3.mod", 3, "1" * 64),
+            ManifestFile("go_zip", "v1.2.3.zip", 3, "2" * 64),
+        )
+        for file in files:
+            G(
+                SDKArtifact,
+                item=item,
+                distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+                artifact_type="package",
+                filename=file.filename,
+                url=f"https://repo/{file.filename}",
+                status=SDKGenerationStatusEnum.SUCCESS.value,
+            )
+        manifest = ArtifactManifest(
+            gateway_name=fake_gateway.name,
+            resource_version="1.2.3",
+            language="go",
+            package_version="v1.2.3",
+            input_fingerprint="fingerprint",
+            tool_versions={"openapi-generator": "7.23.0"},
+            files=files,
+        )
+        language_config = SimpleNamespace(project_name="demo", package_name="demo", package_version="v1.2.3")
+
+        sdk = GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+
+        assert sdk.url == "https://repo/v1.2.3.zip"
+
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
         result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
         assert len(result) == 1

@@ -89,8 +89,16 @@ urlpatterns = [
                 # POST /api/v2/sync/gateways/{gateway_name}/sdks/
                 path(
                     "sdks/",
-                    views.SDKGenerateApi.as_view(),
-                    name="openapi.v2.sync.sdk.generate",
+                    include(
+                        [
+                            path("", views.SDKGenerateApi.as_view(), name="openapi.v2.sync.sdk.generate"),
+                            path(
+                                "tasks/<int:task_id>/",
+                                views.SDKGenerationTaskDetailApi.as_view(),
+                                name="openapi.v2.sync.sdk.generation_task_detail",
+                            ),
+                        ]
+                    ),
                 ),
                 path(
                     "related-apps/",

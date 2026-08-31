@@ -20,6 +20,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -35,6 +36,7 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
@@ -45,7 +47,8 @@ from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter
 from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
-from apigateway.biz.sdk.orchestrator import create_or_resume_generation
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.orchestrator import create_or_resume_generation, serialize_generation_task
 from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
@@ -614,14 +617,45 @@ class SDKGenerateApi(generics.CreateAPIView):
         resource_version = get_object_or_404(
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        create_or_resume_generation(
-            resource_version,
-            data["languages"],
-            getattr(request.user, "username", None),
-            enqueue_generation_items,
+        try:
+            task = create_or_resume_generation(
+                resource_version,
+                data["languages"],
+                getattr(request.user, "username", None),
+                enqueue_generation_items,
+            )
+        except LegacySDKVersionConflict as error:
+            raise error_codes.FAILED_PRECONDITION.format(str(error), replace=True)
+        except ValueError as error:
+            raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
+
+        status_url = f"/api/v2/sync/gateways/{gateway_name}/sdks/tasks/{task.id}/"
+        return OKJsonResponse(
+            status=status.HTTP_202_ACCEPTED,
+            data={"id": task.id, "status": task.status, "status_url": status_url},
         )
 
-        return OKJsonResponse(status=status.HTTP_202_ACCEPTED, data={"message": "SDK generation started"})
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询 SDK 生成任务",
+        responses={status.HTTP_200_OK: serializers.SDKGenerationTaskOutputSLZ()},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class SDKGenerationTaskDetailApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+
+    def get(self, request, gateway_name: str, task_id: int, *args, **kwargs):
+        task = get_object_or_404(
+            SDKGenerationTask.objects.select_related("resource_version").prefetch_related(
+                Prefetch("items", queryset=SDKGenerationItem.objects.order_by("id").prefetch_related("artifacts"))
+            ),
+            id=task_id,
+            gateway=request.gateway,
+        )
+        return OKJsonResponse(data=serialize_generation_task(task))
 
 
 @method_decorator(

@@ -128,3 +128,53 @@ def test_native_repository_coordinates_are_preferred():
 
     assert python.install_command == 'pip install "bkapi-demo==1.2.3"'
     assert java.install_command == 'mvn dependency:get -Dartifact="com.example:bkapi-demo:1.2.3"'
+
+
+def test_python_legacy_repository_config_keeps_install_command(settings):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"index_url": "https://repo.example.com/simple"}}
+    sdk = SDKFactory.create(
+        SimpleNamespace(
+            language="python",
+            config={"python": {"repository": "default", "is_uploaded_to_pypi": True}},
+            name="bkapi-demo",
+            version_number="1.2.3",
+            url="",
+        )
+    )
+
+    assert sdk.install_command == "pip install --extra-index-url=https://repo.example.com/simple bkapi-demo==1.2.3"
+
+
+def test_go_install_command_selects_module_zip():
+    sdk = SDKFactory.create(
+        SimpleNamespace(
+            language="go",
+            config={
+                "artifacts": [
+                    {
+                        "distributor": "bkrepo_generic",
+                        "type": "go_info",
+                        "filename": "v1.2.3.info",
+                        "url": "https://repo/v1.2.3.info",
+                    },
+                    {
+                        "distributor": "bkrepo_generic",
+                        "type": "go_mod",
+                        "filename": "v1.2.3.mod",
+                        "url": "https://repo/v1.2.3.mod",
+                    },
+                    {
+                        "distributor": "bkrepo_generic",
+                        "type": "go_zip",
+                        "filename": "v1.2.3.zip",
+                        "url": "https://repo/v1.2.3.zip",
+                    },
+                ]
+            },
+            name="bkapi-demo",
+            version_number="1.2.3",
+            url="https://repo/v1.2.3.info",
+        )
+    )
+
+    assert sdk.install_command == 'curl -fLO "https://repo/v1.2.3.zip"'

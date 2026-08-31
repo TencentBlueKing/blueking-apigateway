@@ -7,7 +7,14 @@ from xml.sax.saxutils import escape
 
 from apigateway.utils.maven import RepositoryConfig
 
-from .common import PublishedArtifact, find_artifacts, remote_sha256, require_matching_remote, run_publisher
+from .common import (
+    PublishedArtifact,
+    find_artifacts,
+    remote_sha256,
+    require_matching_remote,
+    run_publisher,
+    upload_file,
+)
 
 if TYPE_CHECKING:
     from apigateway.biz.sdk.artifacts import BuiltArtifact
@@ -49,7 +56,24 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
             require_matching_remote(urls[artifact_type], remote, artifact.sha256, artifact.size)
             existing[artifact_type] = remote
     if existing and len(existing) != len(required):
-        raise ValueError("Maven coordinate is only partially populated")
+        for artifact_type in set(required).difference(existing):
+            artifact = required[artifact_type]
+            upload_file(
+                artifact.path,
+                urls[artifact_type],
+                username=repository.username,
+                password=repository.password,
+                verify=not repository.ssl_insecure,
+            )
+            remote = remote_sha256(
+                urls[artifact_type],
+                username=repository.username,
+                password=repository.password,
+                verify=not repository.ssl_insecure,
+            )
+            if remote is None:
+                raise ValueError(f"Maven artifact is unavailable after upload: {urls[artifact_type]}")
+            require_matching_remote(urls[artifact_type], remote, artifact.sha256, artifact.size)
 
     if not existing:
         with tempfile.TemporaryDirectory(prefix="sdk-maven-") as directory:

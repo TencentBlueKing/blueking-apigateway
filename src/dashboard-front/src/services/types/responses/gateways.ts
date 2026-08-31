@@ -1339,6 +1339,29 @@ export interface IGatewaySDKListOutput {
   }
 }
 
+export interface ISDKGenerationTaskAccepted {
+  id: number
+  status: string
+  status_url: string
+}
+
+export interface ISDKGenerationTaskItem {
+  id: number
+  language: string
+  status: string
+  attempt_count: number
+  error: {
+    code: string
+    message: string
+  } | null
+}
+
+export interface ISDKGenerationTask {
+  id: number
+  status: string
+  items: ISDKGenerationTaskItem[]
+}
+
 /**
  * GET /gateways/{gateway_id}/stages/
  */

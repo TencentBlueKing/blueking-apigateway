@@ -106,6 +106,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
         command[0] == {"python": "python", "java": "mvn", "go": "go", "javascript": "npm", "rust": "cargo"}[language]
     )
     assert run.call_args.kwargs["shell"] is False
+    assert all(call.kwargs["stderr"] is subprocess.PIPE for call in run.call_args_list)
     if language == "java":
         assert "-DincludeScope=runtime" in command
         distribution = next(artifact.path for artifact in artifacts if artifact.artifact_type == "distribution_zip")

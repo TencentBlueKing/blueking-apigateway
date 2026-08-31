@@ -59,12 +59,16 @@ class GatewaySDKHandler:
             }
             for artifact in artifact_rows
         ]
-        generic_urls = [
-            artifact["url"]
+        generic_artifacts = [
+            artifact
             for artifact in artifacts
             if artifact["distributor"] == SDKDistributorEnum.BKREPO_GENERIC.value
             and artifact["filename"] != "manifest.json"
         ]
+        preferred_artifact = next(
+            (artifact for artifact in generic_artifacts if item.language == "go" and artifact["type"] == "go_zip"),
+            generic_artifacts[0] if generic_artifacts else None,
+        )
         config = {
             "generation_item_id": item.id,
             "input_fingerprint": item.input_fingerprint,
@@ -81,7 +85,7 @@ class GatewaySDKHandler:
             defaults={
                 "resource_version": item.task.resource_version,
                 "name": language_config.project_name,
-                "url": generic_urls[0] if generic_urls else "",
+                "url": preferred_artifact["url"] if preferred_artifact else "",
                 "include_private_resources": True,
                 "is_public": True,
                 "config": config,

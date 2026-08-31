@@ -23,6 +23,8 @@ from django.conf import settings
 from django.utils.timezone import now as timezone_now
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
+from apigateway.common.pypi.pip import PipHelper
+from apigateway.utils.pypi import RepositoryConfig
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -164,7 +166,11 @@ class PythonSDK(SDK):
         if pypi and pypi.get("coordinate"):
             return f'pip install "{pypi["coordinate"]}"'
         wheel = self.find_artifact(distributor="bkrepo_generic", artifact_type="wheel")
-        return f'pip install "{wheel["url"]}"' if wheel and wheel.get("url") else ""
+        if wheel and wheel.get("url"):
+            return f'pip install "{wheel["url"]}"'
+        repository = self.config.get("repository", "")
+        index_url = RepositoryConfig.by_name(repository).index_url if repository else ""
+        return PipHelper(index_url).install_command(self.name, self.version) if index_url else ""
 
     @property
     def is_uploaded_to_pypi(self) -> bool:
@@ -174,6 +180,11 @@ class PythonSDK(SDK):
 @dataclass
 class GoSDK(SDK):
     language = ProgrammingLanguageEnum.GO
+
+    @property
+    def install_command(self) -> str:
+        artifact = self.find_artifact(distributor="bkrepo_generic", artifact_type="go_zip")
+        return f'curl -fLO "{artifact["url"]}"' if artifact and artifact.get("url") else ""
 
 
 @dataclass

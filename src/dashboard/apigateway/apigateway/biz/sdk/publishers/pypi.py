@@ -86,16 +86,29 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
                 cwd=Path(directory),
                 env=env,
             )
-        results.extend(
-            PublishedArtifact(
-                "pypi",
-                artifact.artifact_type,
-                artifact.filename,
-                f"{config.project_name}=={config.package_version}",
-                repository.repository_url,
-                artifact.size,
-                artifact.sha256,
+        for artifact in missing:
+            package = registry.search(
+                config.project_name, config.package_version, package_types[artifact.artifact_type]
             )
-            for artifact in missing
-        )
+            if package is None:
+                raise ValueError(f"PyPI artifact is unavailable after upload: {artifact.filename}")
+            remote = remote_sha256(
+                package.url,
+                username=repository.username,
+                password=repository.password,
+            )
+            if remote is None:
+                raise ValueError(f"PyPI artifact is unavailable after upload: {artifact.filename}")
+            require_matching_remote(package.url, remote, artifact.sha256, artifact.size)
+            results.append(
+                PublishedArtifact(
+                    "pypi",
+                    artifact.artifact_type,
+                    artifact.filename,
+                    f"{config.project_name}=={config.package_version}",
+                    package.url,
+                    artifact.size,
+                    artifact.sha256,
+                )
+            )
     return sorted(results, key=lambda artifact: artifact.filename)

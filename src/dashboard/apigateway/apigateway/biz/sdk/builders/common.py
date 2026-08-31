@@ -24,14 +24,16 @@ def run_build(command: list[str], *, cwd: Path, capture_output: bool = False) ->
             shell=False,
             check=False,
             stdout=subprocess.PIPE if capture_output else subprocess.DEVNULL,
-            stderr=subprocess.PIPE if capture_output else subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
             timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
         )
     except subprocess.TimeoutExpired as error:
         raise SDKGenerateError("build_failed", "SDK package build timed out") from error
     if result.returncode != 0:
-        raise SDKGenerateError("build_failed", f"SDK package build exited with status {result.returncode}")
+        stderr = " ".join((result.stderr or "").split())[:768]
+        detail = f": {stderr}" if stderr else ""
+        raise SDKGenerateError("build_failed", f"SDK package build exited with status {result.returncode}{detail}")
     return result
 
 

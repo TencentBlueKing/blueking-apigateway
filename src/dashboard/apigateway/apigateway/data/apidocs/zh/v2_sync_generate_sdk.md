@@ -33,7 +33,9 @@
 ```json
 {
     "data": {
-        "message": "SDK generation started"
+        "id": 1,
+        "status": "pending",
+        "status_url": "/api/v2/sync/gateways/demo/sdks/tasks/1/"
     }
 }
 ```
@@ -42,7 +44,9 @@ status 202
 
 ### 响应参数说明
 
-| 字段    | 类型   | 描述                               |
-| ------- | ------ | ---------------------------------- |
-| data    | object | 异步任务受理结果                   |
-| message | string | 固定为 `SDK generation started`    |
+| 字段            | 类型   | 描述                     |
+| --------------- | ------ | ------------------------ |
+| data             | object | 异步任务受理结果         |
+| data.id          | int    | SDK 生成任务 ID          |
+| data.status      | string | SDK 生成任务状态         |
+| data.status_url  | string | SDK 生成任务状态查询地址 |

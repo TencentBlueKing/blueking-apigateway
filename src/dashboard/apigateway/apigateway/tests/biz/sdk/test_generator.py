@@ -47,7 +47,7 @@ def test_generate_python_uses_official_generator(mocker, python_language_config,
     assert run.call_args.kwargs["shell"] is False
     assert run.call_args.kwargs["timeout"] == settings.SDK_GENERATION["subprocess_timeout_seconds"]
     assert run.call_args.kwargs["stdout"] is subprocess.DEVNULL
-    assert run.call_args.kwargs["stderr"] is subprocess.DEVNULL
+    assert run.call_args.kwargs["stderr"] is subprocess.PIPE
 
 
 def test_generate_client_rejects_oversized_output(mocker, python_language_config, tmp_path, settings):
@@ -82,6 +82,7 @@ def test_generate_client_sanitizes_failures(mocker, python_language_config, tmp_
 
     assert exc_info.value.code == "generator_failed"
     assert expected_fragment in str(exc_info.value)
+    assert "sensitive" in str(exc_info.value)
     assert len(str(exc_info.value)) < 1200
 
 

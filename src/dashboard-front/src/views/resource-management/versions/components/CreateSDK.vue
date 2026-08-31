@@ -55,17 +55,6 @@
           </BkSelect>
         </BkFormItem>
         <BkFormItem
-          :label="t('SDK 版本号')"
-          required
-          property="version"
-        >
-          <BkInput
-            v-model="formData.version"
-            :placeholder="t('请输入 SDK 版本号')"
-            clearable
-          />
-        </BkFormItem>
-        <BkFormItem
           :label="t('生成语言')"
           required
           property="language"
@@ -79,7 +68,7 @@
 
 <script setup lang="ts">
 import { type IDialog } from '@/types/common';
-import { createSDK } from '@/services/source/sdks';
+import { createSDK, getSDKGenerationTask } from '@/services/source/sdks';
 import {
   type IVersionItem,
   getVersionList,
@@ -89,7 +78,6 @@ import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 
 interface CreateDialog {
   resource_version_id: string
-  version: string
   language: string
 }
 
@@ -125,7 +113,6 @@ const dialogConfig: IDialog = reactive({
 // 提交表单
 const formData: CreateDialog = reactive({
   resource_version_id: '',
-  version: '',
   language: 'python',
 });
 
@@ -136,13 +123,6 @@ const rules = {
       required: true,
       message: t('必填项'),
       trigger: 'change',
-    },
-  ],
-  version: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
     },
   ],
   language: [
@@ -175,7 +155,6 @@ watch(
         id = Number(id);
         versionOpts.value = opts;
         formData.resource_version_id = id;
-        formData.version = opts?.filter((item: any) => item.id === id)[0]?.version;
       }
       else {
         getResourceVersions();
@@ -184,7 +163,6 @@ watch(
     else {
       setTimeout(() => {
         formData.resource_version_id = '';
-        formData.version = '';
         formData.language = 'python';
       }, 500);
     }
@@ -198,7 +176,24 @@ const handleCreate = async () => {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
 
-    await createSDK(apigwId.value, formData as any);
+    const acceptedTask = await createSDK(apigwId.value, {
+      resource_version_id: Number(formData.resource_version_id),
+      languages: [formData.language],
+    });
+    let task = await getSDKGenerationTask(apigwId.value, acceptedTask.id);
+    while (['pending', 'running'].includes(task.status)) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      task = await getSDKGenerationTask(apigwId.value, acceptedTask.id);
+    }
+
+    if (task.status !== 'success') {
+      const error = task.items.find(item => item.error)?.error;
+      Message({
+        message: error?.message || t('SDK 生成失败'),
+        theme: 'error',
+      });
+      return;
+    }
 
     Message({
       message: t('创建成功'),

@@ -46,7 +46,7 @@ def test_sdk_generate_schema_matches_runtime_payload():
     assert isinstance(schema["request_body"], SDKGenerateInputSLZ)
     response = schema["responses"][status.HTTP_202_ACCEPTED]
     assert isinstance(response, SDKGenerateOutputSLZ)
-    assert set(response.fields) == {"message"}
+    assert set(response.fields) == {"id", "status", "status_url"}
 
 
 def test_open_permission_apply_record_list_response_is_array():
@@ -90,7 +90,10 @@ def test_registered_resource_schemas_match_runtime_contracts():
     assert set(sdk_operation["responses"]) == {"202"}
     sdk_data_schema = sdk_operation["responses"]["202"]["content"]["application/json"]["schema"]["properties"]["data"]
     assert sdk_data_schema["type"] == "object"
-    assert sdk_data_schema["properties"]["message"]["type"] == "string"
+    assert set(sdk_data_schema["properties"]) == {"id", "status", "status_url"}
+    assert sdk_data_schema["properties"]["id"]["type"] == "integer"
+    assert sdk_data_schema["properties"]["status"]["type"] == "string"
+    assert sdk_data_schema["properties"]["status_url"]["type"] == "string"
 
     retrieve_operation = paths["/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/"]["get"]
     assert {parameter["name"] for parameter in retrieve_operation["parameters"]} == {

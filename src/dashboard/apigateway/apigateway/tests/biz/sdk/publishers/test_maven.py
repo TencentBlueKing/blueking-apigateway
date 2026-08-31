@@ -63,3 +63,30 @@ def test_maven_remote_conflict_is_rejected(mocker, built_artifact, java_config, 
 
     with pytest.raises(SDKArtifactConflict):
         publish_native("java", artifacts, java_config)
+
+
+def test_maven_partial_coordinate_uploads_only_missing_artifact(mocker, built_artifact, java_config, settings):
+    settings.MAVEN_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/maven", "repository_id": "internal"}}
+    artifacts = maven_artifacts(built_artifact)
+    remote = mocker.patch(
+        "apigateway.biz.sdk.publishers.maven.remote_sha256",
+        side_effect=[
+            (artifacts[0].sha256, artifacts[0].size),
+            None,
+            (artifacts[2].sha256, artifacts[2].size),
+            (artifacts[1].sha256, artifacts[1].size),
+        ],
+    )
+    upload = mocker.patch("apigateway.biz.sdk.publishers.maven.upload_file", create=True)
+
+    results = publish_native("java", artifacts, java_config)
+
+    upload.assert_called_once_with(
+        artifacts[1].path,
+        "https://repo/maven/com/tencent/bkapi/bkapi-demo/1.2.3/bkapi-demo-1.2.3.pom",
+        username="",
+        password="",
+        verify=True,
+    )
+    assert remote.call_count == 4
+    assert len(results) == 3

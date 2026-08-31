@@ -60,6 +60,18 @@ def require_matching_remote(url: str, remote: tuple[str, int], expected_sha256: 
         raise SDKArtifactConflict(f"native SDK artifact has different content: {url}")
 
 
+def upload_file(path: Path, url: str, *, username: str, password: str, verify: bool = True) -> None:
+    with path.open("rb") as file:
+        response = requests.put(
+            url,
+            data=file,
+            auth=(username, password) if username or password else None,
+            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+            verify=verify,
+        )
+    response.raise_for_status()
+
+
 def run_publisher(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> None:
     try:
         result = subprocess.run(
@@ -69,15 +81,17 @@ def run_publisher(command: list[str], *, cwd: Path, env: dict[str, str] | None =
             shell=False,
             check=False,
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
             timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
         )
     except subprocess.TimeoutExpired as error:
         raise SDKGenerateError("native_publish_failed", "native SDK publication timed out") from error
     if result.returncode != 0:
+        stderr = " ".join((result.stderr or "").split())[:768]
+        detail = f": {stderr}" if stderr else ""
         raise SDKGenerateError(
-            "native_publish_failed", f"native SDK publication exited with status {result.returncode}"
+            "native_publish_failed", f"native SDK publication exited with status {result.returncode}{detail}"
         )
 
 

@@ -625,10 +625,42 @@ class SDKGenerateInputSLZ(serializers.Serializer):
 
 
 class SDKGenerateOutputSLZ(serializers.Serializer):
-    message = serializers.CharField(help_text="异步任务已受理")
+    id = serializers.IntegerField(help_text="SDK 生成任务 ID")
+    status = serializers.CharField(help_text="SDK 生成任务状态")
+    status_url = serializers.CharField(help_text="SDK 生成任务状态查询地址")
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateOutputSLZ"
+
+
+class SDKGenerationArtifactOutputSLZ(serializers.Serializer):
+    distributor = serializers.CharField()
+    type = serializers.CharField()
+    filename = serializers.CharField()
+    url = serializers.CharField()
+    coordinate = serializers.CharField()
+    size = serializers.IntegerField()
+    sha256 = serializers.CharField()
+    status = serializers.CharField()
+
+
+class SDKGenerationItemOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    language = serializers.CharField()
+    status = serializers.CharField()
+    attempt_count = serializers.IntegerField()
+    error = serializers.DictField(allow_null=True)
+    artifacts = SDKGenerationArtifactOutputSLZ(many=True)
+
+
+class SDKGenerationTaskOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.CharField()
+    resource_version = serializers.DictField()
+    items = SDKGenerationItemOutputSLZ(many=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerationTaskOutputSLZ"
 
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):

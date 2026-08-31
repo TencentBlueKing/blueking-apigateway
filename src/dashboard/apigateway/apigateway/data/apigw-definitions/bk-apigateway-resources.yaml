@@ -1596,13 +1596,26 @@ paths:
                   message:
                     type: string
                     example: SDK generation started
+                  result:
+                    type: boolean
+                    example: true
                   data:
-                    type: array
-                    maxItems: 0
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                      status_url:
+                        type: string
               example:
                 code: 0
                 message: SDK generation started
-                data: []
+                result: true
+                data:
+                  id: 1
+                  status: pending
+                  status_url: /api/v1/apis/demo/sdk/tasks/1/
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: true
@@ -1612,6 +1625,70 @@ paths:
           name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/sdk/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v1/apis/{api_name}/sdk/tasks/{task_id}/:
+    get:
+      operationId: get_sdk_generation_task
+      description: 查询 SDK 生成任务
+      tags:
+      - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: SDK 生成任务 ID
+      responses:
+        '200':
+          description: SDK 生成任务详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  result:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                      resource_version:
+                        type: object
+                      items:
+                        type: array
+                        items:
+                          type: object
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v1/apis/{api_name}/sdk/tasks/{task_id}/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -5465,12 +5542,17 @@ paths:
                   data:
                     type: object
                     properties:
-                      message:
+                      id:
+                        type: integer
+                      status:
                         type: string
-                        example: SDK generation started
+                      status_url:
+                        type: string
               example:
                 data:
-                  message: SDK generation started
+                  id: 1
+                  status: pending
+                  status_url: /api/v2/sync/gateways/demo/sdks/tasks/1/
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -5480,6 +5562,64 @@ paths:
           name: default
           method: post
           path: /backend/api/v2/sync/gateways/{gateway_name}/sdks/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/sync/gateways/{gateway_name}/sdks/tasks/{task_id}/:
+    get:
+      operationId: v2_sync_get_sdk_generation_task
+      description: 查询 SDK 生成任务
+      tags:
+        - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: SDK 生成任务 ID
+      responses:
+        '200':
+          description: SDK 生成任务详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                      resource_version:
+                        type: object
+                      items:
+                        type: array
+                        items:
+                          type: object
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/sync/gateways/{gateway_name}/sdks/tasks/{task_id}/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]

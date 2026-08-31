@@ -37,7 +37,7 @@ def _run(command: list[str], *, capture_output: bool = False) -> subprocess.Comp
             shell=False,
             check=False,
             stdout=subprocess.PIPE if capture_output else subprocess.DEVNULL,
-            stderr=subprocess.PIPE if capture_output else subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
             timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
         )
@@ -66,9 +66,11 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
     ]
     result = _run(command)
     if result.returncode != 0:
+        stderr = " ".join((result.stderr or "").split())[:768]
+        detail = f": {stderr}" if stderr else ""
         raise SDKGenerateError(
             "generator_failed",
-            f"OpenAPI Generator exited with status {result.returncode}",
+            f"OpenAPI Generator exited with status {result.returncode}{detail}",
         )
     _validate_output(output_dir)
 
@@ -77,9 +79,11 @@ def get_openapi_generator_version() -> str:
     command = ["java", "-jar", settings.SDK_GENERATION["generator_jar"], "version"]
     result = _run(command, capture_output=True)
     if result.returncode != 0:
+        stderr = " ".join((result.stderr or "").split())[:768]
+        detail = f": {stderr}" if stderr else ""
         raise SDKGenerateError(
             "generator_failed",
-            f"OpenAPI Generator version probe exited with status {result.returncode}",
+            f"OpenAPI Generator version probe exited with status {result.returncode}{detail}",
         )
 
     actual = result.stdout.strip()

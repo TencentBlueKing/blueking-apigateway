@@ -33,7 +33,9 @@ from apigateway.apps.permission.constants import (
     OAUTH2_PUBLIC_CLIENT_APP_CODE,
 )
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import (
     Backend,
@@ -85,6 +87,8 @@ class TestSyncApi:
         disable_app_permission,
     ):
         create_task = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
+        create_task.return_value.id = 17
+        create_task.return_value.status = "pending"
 
         response = request_view(
             method="POST",
@@ -97,7 +101,65 @@ class TestSyncApi:
 
         assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
         assert response.status_code == 202
-        assert response.json() == {"data": {"message": "SDK generation started"}}
+        assert response.json() == {
+            "data": {
+                "id": 17,
+                "status": "pending",
+                "status_url": f"/api/v2/sync/gateways/{fake_gateway.name}/sdks/tasks/17/",
+            }
+        }
+
+    @pytest.mark.parametrize(
+        ("error", "expected_code"),
+        [
+            (ValueError("disabled"), "INVALID_ARGUMENT"),
+            (LegacySDKVersionConflict(), "FAILED_PRECONDITION"),
+        ],
+    )
+    def test_generate_sdk_maps_expected_domain_errors(
+        self,
+        error,
+        expected_code,
+        mocker,
+        request_view,
+        fake_admin_user,
+        fake_gateway,
+        fake_resource_version,
+        disable_app_permission,
+    ):
+        mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation", side_effect=error)
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            data={"resource_version": fake_resource_version.version},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == expected_code
+
+    def test_get_sdk_generation_task(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource_version,
+        disable_app_permission,
+    ):
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        G(SDKGenerationItem, task=task, language="python")
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.sdk.generation_task_detail",
+            path_params={"gateway_name": fake_gateway.name, "task_id": task.id},
+            gateway=fake_gateway,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["id"] == task.id
 
     def test_resource_sync_updates_and_resets_oauth2_client_settings(
         self, request_view, fake_gateway, disable_app_permission
