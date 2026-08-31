@@ -42,7 +42,7 @@
       <BkInput
         id="base-info-name"
         v-model="formData.name"
-        :placeholder="isModelProxy ? modelProxyNamePlaceholder : standardNamePlaceholder"
+        :placeholder="namePlaceholder"
         class="name"
         clearable
       />
@@ -316,9 +316,7 @@ const authSceneAlertTheme = computed(() => (
     : 'info'
 ));
 
-const standardNamePlaceholder = t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符');
-
-const modelProxyNamePlaceholder = t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符');
+const namePlaceholder = t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符');
 
 const rules = {
   name: [
@@ -327,23 +325,14 @@ const rules = {
       message: t('请填写名称'),
       trigger: 'blur',
     },
-    isModelProxy.value
-      ? {
-        trigger: 'blur',
-        message: modelProxyNamePlaceholder,
-        validator: (value: string) => {
-          const reg = /^[a-zA-Z][a-zA-Z0-9_]{3,28}$/;
-          return reg.test(value);
-        },
-      }
-      : {
-        trigger: 'blur',
-        message: standardNamePlaceholder,
-        validator: (value: string) => {
-          const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,255}$|^$/;
-          return reg.test(value);
-        },
+    {
+      trigger: 'blur',
+      message: namePlaceholder,
+      validator: (value: string) => {
+        const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,255}$|^$/;
+        return reg.test(value);
       },
+    },
   ],
 };
 
