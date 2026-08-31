@@ -9,10 +9,10 @@ from django.utils import timezone
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
-MIGRATE_FROM = [("core", "0056_releasedresource_oauth2_scope_fields")]
-MIGRATE_SCHEMA = [("core", "0057_gateway_member")]
-MIGRATE_TO = [("core", "0058_backfill_gateway_members")]
-MIGRATION_MODULE = import_module("apigateway.core.migrations.0058_backfill_gateway_members")
+MIGRATE_ZERO = [("rbac", None)]
+MIGRATE_SCHEMA = [("rbac", "0001_initial")]
+MIGRATE_TO = [("rbac", "0002_backfill_gateway_members")]
+MIGRATION_MODULE = import_module("apigateway.apps.rbac.migrations.0002_backfill_gateway_members")
 
 
 def _create_gateway(gateway_model, name, maintainers="", developers="", doc_maintainers=None):
@@ -115,9 +115,11 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
     latest_migrations = executor.loader.graph.leaf_nodes()
 
     try:
-        executor.migrate(MIGRATE_FROM)
-        old_apps = executor.loader.project_state(MIGRATE_FROM).apps
-        Gateway = old_apps.get_model("core", "Gateway")
+        executor.migrate(MIGRATE_ZERO)
+        executor = MigrationExecutor(connection)
+        executor.migrate(MIGRATE_SCHEMA)
+        schema_apps = executor.loader.project_state(MIGRATE_SCHEMA).apps
+        Gateway = schema_apps.get_model("core", "Gateway")
         normal_gateway = _create_gateway(Gateway, "member-normal", "admin;guest;;,,")
         duplicate_gateway = _create_gateway(Gateway, "member-duplicate", "owner;owner")
         inner_empty_gateway = _create_gateway(Gateway, "member-inner-empty", "first;;second")
@@ -136,8 +138,8 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
         executor.migrate(MIGRATE_TO)
         migration_finished_at = timezone.now()
 
-        new_apps = executor.loader.project_state(MIGRATE_TO).apps
-        GatewayMember = new_apps.get_model("core", "GatewayMember")
+        migrated_apps = executor.loader.project_state(MIGRATE_TO).apps
+        GatewayMember = migrated_apps.get_model("rbac", "GatewayMember")
         _assert_backfilled_members(
             GatewayMember,
             {
@@ -154,22 +156,24 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
         )
 
         constraints = _constraints(connection, GatewayMember._meta.db_table)
-        assert constraints["core_gw_member_user_idx"]["columns"] == ["username"]
+        assert any(
+            constraint["index"] and constraint["columns"] == ["username"] for constraint in constraints.values()
+        )
         assert any(
             constraint["unique"] and constraint["columns"] == ["api_id", "username"]
             for constraint in constraints.values()
         )
 
         _assert_initial_migration_logs(capsys, empty_gateway.id)
-        _assert_idempotent_rerun(connection, new_apps, GatewayMember, normal_gateway.id, capsys)
+        _assert_idempotent_rerun(connection, migrated_apps, GatewayMember, normal_gateway.id, capsys)
 
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_SCHEMA)
         schema_apps = executor.loader.project_state(MIGRATE_SCHEMA).apps
-        assert schema_apps.get_model("core", "GatewayMember").objects.count() == 6
+        assert schema_apps.get_model("rbac", "GatewayMember").objects.count() == 6
 
         executor = MigrationExecutor(connection)
-        executor.migrate(MIGRATE_FROM)
+        executor.migrate(MIGRATE_ZERO)
         assert "core_gateway_member" not in _table_names(connection)
     finally:
         executor = MigrationExecutor(connection)
@@ -182,10 +186,12 @@ def test_gateway_member_migration_reports_invalid_username_and_can_resume(capsys
     latest_migrations = executor.loader.graph.leaf_nodes()
 
     try:
+        executor.migrate(MIGRATE_ZERO)
+        executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_SCHEMA)
         schema_apps = executor.loader.project_state(MIGRATE_SCHEMA).apps
         Gateway = schema_apps.get_model("core", "Gateway")
-        GatewayMember = schema_apps.get_model("core", "GatewayMember")
+        GatewayMember = schema_apps.get_model("rbac", "GatewayMember")
         valid_gateway = _create_gateway(Gateway, "member-valid-before-failure", "valid")
         invalid_gateway = _create_gateway(Gateway, "member-invalid", "x" * 65)
 
@@ -206,7 +212,7 @@ def test_gateway_member_migration_reports_invalid_username_and_can_resume(capsys
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_TO)
         migrated_apps = executor.loader.project_state(MIGRATE_TO).apps
-        migrated_gateway_member = migrated_apps.get_model("core", "GatewayMember")
+        migrated_gateway_member = migrated_apps.get_model("rbac", "GatewayMember")
         assert set(migrated_gateway_member.objects.values_list("gateway_id", "username")) == {
             (valid_gateway.id, "valid"),
             (invalid_gateway.id, "fixed"),

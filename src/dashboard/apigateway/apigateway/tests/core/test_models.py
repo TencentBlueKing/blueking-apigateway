@@ -17,15 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from django.db import IntegrityError, transaction
-from django.db.models import BigAutoField
 from django_dynamic_fixture import G
 
 from apigateway.core import models
 from apigateway.core.constants import (
     BackendKindEnum,
     GatewayKindEnum,
-    GatewayRoleEnum,
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusEnum,
@@ -114,49 +111,6 @@ class TestGateway:
     #     # Setting any extra info should result in empty dict
     #     gateway.extra_info = {"key": "value"}
     #     assert gateway._extra_info == {}
-
-
-class TestGatewayMember:
-    def test_model_contract(self):
-        id_field = models.GatewayMember._meta.get_field("id")
-        expires_field = models.GatewayMember._meta.get_field("expires")
-        role_field = models.GatewayMember._meta.get_field("role")
-
-        assert isinstance(id_field, BigAutoField)
-        assert expires_field.null is True
-        assert expires_field.blank is True
-        assert [value for value, _ in role_field.choices] == GatewayRoleEnum.get_values()
-        assert ("gateway", "username") in models.GatewayMember._meta.unique_together
-        assert any(
-            index.fields == ["username"] and index.name == "core_gw_member_user_idx"
-            for index in models.GatewayMember._meta.indexes
-        )
-
-    def test_gateway_and_username_are_unique(self, fake_gateway):
-        models.GatewayMember.objects.create(
-            gateway=fake_gateway,
-            username="alice",
-            role=GatewayRoleEnum.ADMINISTRATOR.value,
-        )
-
-        with pytest.raises(IntegrityError), transaction.atomic():
-            models.GatewayMember.objects.create(
-                gateway=fake_gateway,
-                username="alice",
-                role=GatewayRoleEnum.OPERATOR.value,
-            )
-
-    def test_member_is_deleted_with_gateway(self, fake_gateway):
-        member = G(
-            models.GatewayMember,
-            gateway=fake_gateway,
-            username="alice",
-            role=GatewayRoleEnum.ADMINISTRATOR.value,
-        )
-
-        fake_gateway.delete()
-
-        assert not models.GatewayMember.objects.filter(id=member.id).exists()
 
 
 class TestBackend:

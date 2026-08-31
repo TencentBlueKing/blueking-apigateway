@@ -56,7 +56,7 @@ def _flush_members(member_model, members, db_alias):
 
 def backfill_gateway_members(apps, schema_editor):
     Gateway = apps.get_model("core", "Gateway")
-    GatewayMember = apps.get_model("core", "GatewayMember")
+    GatewayMember = apps.get_model("rbac", "GatewayMember")
     db_alias = schema_editor.connection.alias
     expires = timezone.now() + timedelta(days=MEMBER_EXPIRE_DAYS)
 
@@ -134,7 +134,7 @@ class Migration(migrations.Migration):
     atomic = False
 
     dependencies = [
-        ("core", "0057_gateway_member"),
+        ("rbac", "0001_initial"),
     ]
 
     operations = [

@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     "apigateway.apps.monitor",
     "apigateway.schema",
     "apigateway.core",
+    "apigateway.apps.rbac",
     "apigateway.apps.gateway",
     "apigateway.apps.plugin",
     "apigateway.apps.label",

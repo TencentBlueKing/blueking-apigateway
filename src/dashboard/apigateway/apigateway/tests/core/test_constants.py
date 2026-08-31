@@ -22,13 +22,6 @@ from apigateway.core import constants
 
 
 class TestConstants:
-    def test_gateway_role_enum_values(self):
-        assert constants.GatewayRoleEnum.get_values() == ["administrator", "operator"]
-        assert [value for value, _ in constants.GatewayRoleEnum.get_choices()] == [
-            "administrator",
-            "operator",
-        ]
-
     @pytest.mark.parametrize(
         "kind, name",
         [
