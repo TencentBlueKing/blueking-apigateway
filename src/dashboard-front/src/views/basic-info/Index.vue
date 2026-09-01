@@ -45,10 +45,16 @@
                 {{ t('普通网关') }}
               </BkTag>
               <BkTag
-                v-else
+                v-if="basicInfoData.kind === 1"
                 theme="success"
               >
                 {{ t('可编程网关') }}
+              </BkTag>
+              <BkTag
+                v-if="basicInfoData.kind === 2"
+                theme="warning"
+              >
+                {{ t('AI 网关') }}
               </BkTag>
               <BkTag
                 v-if="basicInfoData.is_official"
