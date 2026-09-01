@@ -17,7 +17,7 @@
  */
 
 <template>
-  <TopBar @tab-change="handleTabChange" />
+  <TopBar />
   <ApplyTable
     ref="tableCom"
     apply-status="applied"
@@ -31,7 +31,7 @@ import type { ICountAndResults } from '@/services/types/utils.ts';
 import type { IPersonalWorkbenchListQuery, ITabKey } from '@/services/types/query/personal-workbench.ts';
 import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
 import { getGatewayAppliedList, getMcpAppliedList } from '@/services/source/personal-workbench.ts';
-import { usePersonalWorkbench } from '@/hooks';
+import { usePersonalWorkbench, usePersonalWorkbenchListRefresh } from '@/hooks';
 import TopBar from '@/views/personal-workbench/components/TopBar.vue';
 import ApplyTable from '@/views/personal-workbench/components/Table.vue';
 
@@ -46,10 +46,5 @@ const tableCom = ref<InstanceType<typeof ApplyTable> | null>(null);
 
 const { personalWorkbenchTab } = usePersonalWorkbench();
 
-const handleTabChange = (value: ITabKey) => {
-  personalWorkbenchTab.value = value;
-  nextTick(() => {
-    tableCom.value?.handleClearFilter();
-  });
-};
+usePersonalWorkbenchListRefresh(tableCom);
 </script>

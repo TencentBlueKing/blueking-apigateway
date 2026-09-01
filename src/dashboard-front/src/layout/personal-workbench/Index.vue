@@ -165,8 +165,6 @@ const handleBack = () => {
   router.back();
 };
 
-getMyPendingData();
-
 watch(
   () => route.meta,
   (meta: typeof route.meta) => {
