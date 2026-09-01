@@ -23,6 +23,8 @@ import { getGatewayPendingList, getMcpPendingList } from '@/services/source/pers
 const personalWorkbenchTab = ref<ITabKey>('gateway');
 // 我的待办是否存在需要审批数据
 const isExistPending = ref(true);
+// 初始待办数据是否已确定（getMyPendingData 完成后置 true，表格首次请求应在其后发出，避免用未定的 tab 调错接口）
+const isWorkbenchDataReady = ref(false);
 
 // 并行请求处理
 const getParallelRequestResult = (payload: PromiseSettledResult<any>) => {
@@ -44,6 +46,8 @@ export function usePersonalWorkbench() {
     if (gatewayData.count < 1 && mcpData.count > 0) {
       personalWorkbenchTab.value = 'mcp';
     }
+    // 初始数据已确定，页面据此发起首次列表请求（此时 tab 为最终值）
+    isWorkbenchDataReady.value = true;
   };
 
   //  重置到网关选项
@@ -54,7 +58,29 @@ export function usePersonalWorkbench() {
   return {
     isExistPending,
     personalWorkbenchTab,
+    isWorkbenchDataReady,
     getMyPendingData,
     resetPersonalWorkbenchTab,
   };
+}
+
+// 表格刷新联动：初始数据就绪（getMyPendingData 完成）后才发首次列表请求，确保使用最终 tab 对应的接口；
+// 手动/自动切换 tab 时同样统一触发刷新。三个列表页共用，避免重复书写 watch
+export function usePersonalWorkbenchListRefresh(
+  tableCom: Ref<{ handleClearFilter: () => void } | null>,
+) {
+  const { personalWorkbenchTab, isWorkbenchDataReady } = usePersonalWorkbench();
+
+  watch(
+    () => isWorkbenchDataReady.value && personalWorkbenchTab.value,
+    (readyTab) => {
+      if (!readyTab) {
+        return;
+      }
+      nextTick(() => {
+        tableCom.value?.handleClearFilter();
+      });
+    },
+    { immediate: true },
+  );
 }
