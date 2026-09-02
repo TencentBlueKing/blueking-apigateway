@@ -49,10 +49,10 @@ export function useTableFilterChange() {
       }
       if (isExistData) {
         Object.assign(filterData.value, { [colKey]: checkValues });
-        const searchOption = searchOptions?.value?.find((option: any) => option.id === colKey);
-        const filterOption = searchParams?.value?.find((searchItem: any) => searchItem.id === colKey);
+        const searchOption = searchOptions?.value?.find((option: ISearchItem) => option.id === colKey);
+        const filterOption = searchParams?.value?.find((searchItem: ISearchValue) => searchItem.id === colKey);
         if (searchOption?.children) {
-          const filterChildren = searchOption.children.filter((item: any) =>
+          const filterChildren = searchOption.children.filter((item: ISearchItem) =>
             isMultiple ? checkValues.includes(item.id) : item.id === filterData.value[colKey],
           );
           if (filterOption) {
@@ -69,7 +69,7 @@ export function useTableFilterChange() {
       }
       else {
         if (searchParams?.value) {
-          searchParams.value = searchParams.value.filter((searchItem: any) => searchItem.id !== colKey);
+          searchParams.value = searchParams.value.filter((searchItem: ISearchValue) => searchItem.id !== colKey);
         }
         delete filterData.value[colKey];
       }

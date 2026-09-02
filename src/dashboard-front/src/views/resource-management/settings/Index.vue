@@ -458,6 +458,9 @@ import {
   useResourceVersion,
 } from '@/stores';
 import { usePopInfoBox, useTableFilterChange } from '@/hooks';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateways.ts';
+import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
 import {
   exportDocs,
   getGatewayLabels,
@@ -1027,8 +1030,10 @@ const getFilterValue = computed(() => {
 });
 
 // 表格最大高度
+const { height: windowHeight } = useWindowSize();
+
 const tableMaxHeight = computed(() => {
-  const viewportHeight = useWindowSize().height.value;
+  const viewportHeight = windowHeight.value;
   // 通知栏高度
   const globalNoticeCompHeight = featureFlagStore.isEnabledNotice ? 40 : 0;
   // 导航栏高度
@@ -1769,8 +1774,18 @@ onBeforeRouteLeave((to) => {
   }
 });
 
-const getTableData = async (params: Record<string, any> = {}) => {
-  return getResourceList(gatewayId, params);
+const getTableData = async (
+  params: IGatewaysResourcesListQuery,
+): Promise<ICountAndResults<IResourceListPageOutput>> => {
+  const requestParams = { ...params };
+  const fieldsToJoin = ['label_ids'] as const;
+  fieldsToJoin.forEach((field) => {
+    if (requestParams[field] && Array.isArray(requestParams[field])) {
+      requestParams[field] = requestParams[field].join(',');
+    }
+  });
+  const res = await getResourceList(gatewayId, requestParams as IGatewaysResourcesListQuery);
+  return res;
 };
 
 const handleClearSelection = () => {
