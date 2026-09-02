@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter
@@ -23,7 +24,13 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
+from apigateway.core.constants import (
+    BackendKindEnum,
+    GatewayKindEnum,
+    ReleaseHistoryStatusEnum,
+    ReleaseStatusEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 
@@ -38,6 +45,45 @@ def _ai_config():
 
 
 class TestStageApi:
+    @pytest.mark.parametrize(
+        "release_status",
+        [ReleaseHistoryStatusEnum.DOING.value, ReleaseStatusEnum.PENDING.value],
+    )
+    def test_list_keeps_running_status_for_inactive_stage(
+        self,
+        request_view,
+        fake_stage,
+        mocker,
+        release_status,
+    ):
+        fake_stage.status = StageStatusEnum.INACTIVE.value
+        fake_stage.save(update_fields=["status"])
+        mocker.patch(
+            "apigateway.apis.web.stage.views.ReleasedResourceHandler.get_stage_release",
+            return_value={},
+        )
+        mocker.patch(
+            "apigateway.apis.web.stage.views.ReleaseHandler.batch_get_stage_release_status",
+            return_value={fake_stage.id: {"status": release_status}},
+        )
+        mocker.patch(
+            "apigateway.apis.web.stage.views.ResourceVersionHandler.get_latest_version_by_gateway",
+            return_value="",
+        )
+
+        response = request_view(
+            "GET",
+            "stage.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+        )
+
+        assert response.status_code == 200
+        stage = response.json()["data"][0]
+        assert stage["status"] == StageStatusEnum.INACTIVE.value
+        assert stage["release"]["status"] == ReleaseHistoryStatusEnum.DOING.value
+        assert stage["publish_validate_msg"] == "当前环境正在发布或下架，请稍后再试。"
+
     def test_create_with_ai_backend(self, request_view, fake_gateway, fake_default_backend):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()

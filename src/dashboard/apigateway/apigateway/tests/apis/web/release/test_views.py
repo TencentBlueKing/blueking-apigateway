@@ -31,6 +31,7 @@ from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
+from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
 
@@ -41,6 +42,44 @@ def test_programmable_deploy_retrieve_api_description():
 
 
 class TestReleaseCreateApi:
+    def test_rejects_release_while_stage_operation_is_running(
+        self,
+        request_view,
+        fake_admin_user,
+        fake_gateway,
+        fake_stage,
+        fake_resource_version,
+        fake_release_history,
+        fake_publish_event,
+        mocker,
+    ):
+        fake_publish_event.created_time = now_datetime()
+        fake_publish_event.save(update_fields=["created_time"])
+        mocker.patch("apigateway.apis.web.release.views.Lock", return_value=MagicMock())
+        mocker.patch(
+            "apigateway.apis.web.release.views.release_biz.release_gateway",
+            return_value=fake_release_history,
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.release.create",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={
+                "stage_id": fake_stage.id,
+                "resource_version_id": fake_resource_version.id,
+            },
+            user=fake_admin_user,
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == {
+            "code": "FAILED_PRECONDITION",
+            "message": "当前环境正在发布或下架，请稍后再试。",
+            "data": None,
+        }
+
     def test_release_with_hosts(self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version):
         """Test release API with different hosts config of stage objects."""
         stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
@@ -69,6 +108,13 @@ class TestReleaseCreateApi:
                 stage=stage,
                 resource_version=fake_resource_version,
                 created_time=dummy_time.time,
+            )
+            G(
+                PublishEvent,
+                publish=release_history,
+                name=PublishEventNameTypeEnum.LOAD_CONFIGURATION.value,
+                status=PublishEventStatusTypeEnum.SUCCESS.value,
+                created_time=now_datetime(),
             )
             # TODO: mock the releaser
             mocker.patch("apigateway.apis.web.release.views.release_biz.release_gateway", return_value=release_history)

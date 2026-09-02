@@ -45,6 +45,7 @@ from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
 from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     PublishEventStatusEnum,
+    ReleaseHistoryStatusEnum,
     ReleaseStatusEnum,
     StageStatusEnum,
 )
@@ -93,13 +94,14 @@ class StageOutputSLZ(serializers.ModelSerializer):
     def get_release(self, obj):
         # 获取stage发布状态
         has_release = self.context["stage_release"].get(obj.id, {}).get("release_status", False)
+        publish_status = self.context["stage_publish_status"].get(obj.id, {}).get("status")
 
-        # 如果stage有发布，则获取其实时发布状态，否则则为未发布
-        status = (
-            self.context["stage_publish_status"].get(obj.id, {}).get("status", ReleaseStatusEnum.SUCCESS.value)
-            if has_release
-            else ReleaseStatusEnum.UNRELEASED.value
-        )
+        if publish_status in (ReleaseHistoryStatusEnum.DOING.value, ReleaseStatusEnum.PENDING.value):
+            status = ReleaseHistoryStatusEnum.DOING.value
+        elif has_release:
+            status = publish_status or ReleaseStatusEnum.SUCCESS.value
+        else:
+            status = ReleaseStatusEnum.UNRELEASED.value
 
         release_time = self.context["stage_release"].get(obj.id, {}).get("release_time", "")
 
@@ -147,6 +149,10 @@ class StageOutputSLZ(serializers.ModelSerializer):
         # 如果是编程网关，直接返回空字符串，编程网关部署的时候才会进行各种资源的注册
         if obj.gateway.is_programmable:
             return ""
+
+        publish_status = self.context["stage_publish_status"].get(obj.id, {}).get("status")
+        if publish_status in (ReleaseHistoryStatusEnum.DOING.value, ReleaseStatusEnum.PENDING.value):
+            return _("当前环境正在发布或下架，请稍后再试。")
 
         validate_err_message: str = ""
 
