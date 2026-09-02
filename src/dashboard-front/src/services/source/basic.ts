@@ -131,6 +131,7 @@ export function getEnv() {
       USER_API: string
       UPGRADE_TO_113_TIP: string
       MCP_SERVER_PERMISSION_APPLY: string
+      PERSONAL_TOKEN: string
       PLUGIN_AI_PROXY: string
       PLUGIN_AI_RATE_LIMITING: string
       PLUGIN_API_BREAKER: string

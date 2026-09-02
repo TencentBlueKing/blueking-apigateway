@@ -1,7 +1,29 @@
 ## Authentication
 
-> **Note**: If the MCP Server has **Public Client Mode** (OAuth2 Public Client) enabled, the `X-Bkapi-Authorization` header is not required in the client configuration — authentication will be handled automatically via the OAuth2 flow. However, the `X-Bkapi-Authorization` header is still supported; if provided, the system will process the authentication as usual.
+{% if oauth2_public_client_enabled %}
+### OAuth2 Public Client Mode
 
+This MCP Server has **OAuth2 Public Client Mode** enabled. The `X-Bkapi-Authorization` header is not required in the client configuration — after the user completes OAuth2 authorization in the browser, authentication will be handled automatically.
+
+{% endif %}
+{% if oauth2_personal_client_enabled %}
+### Personal Token
+
+This MCP Server has **Personal Token** (OAuth2 Personal Client) enabled. Users can call this MCP Server with a personal token without manually configuring app credentials. Add the following header in the MCP client:
+
+```shell
+Authorization: Bearer <your_personal_token>
+```
+
+> For acquisition methods, see [personal token documentation]({{bk_personal_token_doc_url}})
+
+{% endif %}
+### X-Bkapi-Authorization
+
+{% if oauth2_public_client_enabled or oauth2_personal_client_enabled %}
+> **Note**: The `X-Bkapi-Authorization` header is always valid. If provided, the system will process the authentication as usual.
+
+{% endif %}
 The MCP proxy currently integrates with BlueKing API Gateway, requiring both `user authentication` and `app authentication`. When configuring MCP Server, additional authentication headers must be configured as JSON-formatted strings.
 
 ```shell

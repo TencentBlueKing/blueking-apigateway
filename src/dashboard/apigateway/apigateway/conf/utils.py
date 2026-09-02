@@ -381,6 +381,11 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
             "DOC_LINK_MCP_SERVER_PERMISSION_APPLY",
             default=f"{doc_link_prefix}/UserGuide/HowTo/apply-mcp-server-permission.md",
         ),
+        # 个人令牌
+        "PERSONAL_TOKEN": env.str(
+            "DOC_LINK_PERSONAL_TOKEN",
+            default=f"{doc_link_prefix}/UserGuide/Explanation/personal-token.md",
+        ),
         # bk-cors
         "PLUGIN_BK_CORS": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-cors.md",
         # bk-ip-restriction

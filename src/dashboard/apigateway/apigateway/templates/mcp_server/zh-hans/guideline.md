@@ -1,7 +1,29 @@
 ## 认证
 
-> **注意**：如果该 MCP Server 开启了**公共客户端模式**（OAuth2 Public Client），客户端配置中无需填写 `X-Bkapi-Authorization` 请求头，系统将通过 OAuth2 流程自动完成认证。但 `X-Bkapi-Authorization` 请求头仍然有效，如果同时配置了该请求头，系统同样会正常处理认证。
+{% if oauth2_public_client_enabled %}
+### OAuth2 公开客户端模式
 
+该 MCP Server 已开启 **OAuth2 公开客户端模式**（OAuth2 Public Client）。客户端配置中无需填写 `X-Bkapi-Authorization` 请求头，用户通过浏览器完成 OAuth2 授权后即可使用，系统将自动完成认证。
+
+{% endif %}
+{% if oauth2_personal_client_enabled %}
+### 个人令牌
+
+该 MCP Server 已开启 **个人令牌**（OAuth2 Personal Client）。用户可以使用个人令牌调用该 MCP Server，无需手动配置应用凭证。请在 MCP 客户端的请求头中配置：
+
+```shell
+Authorization: Bearer <your_personal_token>
+```
+
+> 具体获取方法见 [个人令牌说明]({{bk_personal_token_doc_url}})
+
+{% endif %}
+### X-Bkapi-Authorization
+
+{% if oauth2_public_client_enabled or oauth2_personal_client_enabled %}
+> **注意**：`X-Bkapi-Authorization` 请求头始终有效。如果同时配置了该请求头，系统同样会正常处理认证。
+
+{% endif %}
 目前 MCP proxy 接入了蓝鲸 API 网关，目前需要进行 `用户认证` 和 `应用认证` 双重认证，在配置 MCP Server 的过程中，还需要额外配置认证请求头，值为 JSON 格式字符串。
 
 ```shell

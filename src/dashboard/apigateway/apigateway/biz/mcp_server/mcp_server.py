@@ -61,6 +61,7 @@ from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResou
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
+from apigateway.common.doc_link import get_doc_link
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
@@ -698,7 +699,8 @@ class MCPServerHandler:
             渲染后的 guideline 内容（Markdown 格式）
         """
         mcp_url = MCPServerHandler.get_mcp_server_url(instance, least_privilege)
-        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
+        language_code = get_current_language_code()
+        template_name = f"mcp_server/{language_code}/guideline.md"
         return render_to_string(
             template_name,
             context={
@@ -707,9 +709,12 @@ class MCPServerHandler:
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
+                "bk_personal_token_doc_url": get_doc_link("PERSONAL_TOKEN"),
                 "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
                 "user_tenant_id": user_tenant_id,
                 "protocol_type": instance.protocol_type,
+                "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
+                "oauth2_personal_client_enabled": instance.oauth2_personal_client_enabled,
             },
         )
 
