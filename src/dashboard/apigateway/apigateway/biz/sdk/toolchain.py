@@ -172,8 +172,10 @@ def validate_generated_dependency_inputs(language: str, output_dir: Path) -> Non
         integrity_hash = hashlib.sha256(
             json.dumps(integrity_records, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
-        if package.get("dependencies") != expected.get("runtime_ranges") or integrity_hash != expected.get(
-            "package_lock_integrities_sha256"
+        if (
+            package.get("dependencies", {}) != expected.get("runtime_ranges")
+            or package.get("devDependencies", {}) != expected.get("development_ranges")
+            or integrity_hash != expected.get("package_lock_integrities_sha256")
         ):
             raise SDKConfigurationError("generated JavaScript dependencies do not match the worker lock")
         return

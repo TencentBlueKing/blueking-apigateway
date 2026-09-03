@@ -25,14 +25,63 @@ def python_language_config():
     )
 
 
-def test_generate_python_uses_official_generator(mocker, python_language_config, tmp_path, settings):
+@pytest.mark.parametrize(
+    ("language", "generator_name", "additional_properties"),
+    [
+        (
+            "python",
+            "python",
+            {
+                "packageName": "bkapi_openapi_demo",
+                "packageVersion": "1.2.3",
+                "projectName": "bkapi-openapi-demo",
+                "buildSystem": "poetry",
+            },
+        ),
+        (
+            "java",
+            "java",
+            {
+                "groupId": "com.tencent.bkapi",
+                "artifactId": "bkapi-openapi-demo",
+                "artifactVersion": "1.2.3",
+                "invokerPackage": "com.tencent.bkapi.openapi.demo",
+                "apiPackage": "com.tencent.bkapi.openapi.demo.api",
+                "modelPackage": "com.tencent.bkapi.openapi.demo.model",
+                "library": "native",
+            },
+        ),
+        (
+            "go",
+            "go",
+            {"packageName": "bkapi_demo", "packageVersion": "v1.2.3", "withGoMod": "true"},
+        ),
+        (
+            "javascript",
+            "typescript-fetch",
+            {"npmName": "@bkapi/openapi-demo", "npmVersion": "1.2.3", "supportsES6": "true"},
+        ),
+    ],
+)
+def test_generate_client_uses_native_generator_and_fixed_coordinates(
+    mocker, tmp_path, settings, language, generator_name, additional_properties
+):
+    config = SDKLanguageConfig(
+        language=language,
+        generator_name=generator_name,
+        project_name=("git.example.com/bkapi/openapi/demo" if language == "go" else "bkapi-openapi-demo"),
+        package_name=("@bkapi/openapi-demo" if language == "javascript" else "bkapi_openapi_demo"),
+        package_version="v1.2.3" if language == "go" else "1.2.3",
+        additional_properties=additional_properties,
+        native_distributor=None,
+    )
     spec_path = tmp_path / "openapi.json"
     spec_path.write_text("{}")
     (tmp_path / "out").mkdir()
     run = mocker.patch("apigateway.biz.sdk.generator.subprocess.run")
     run.return_value = subprocess.CompletedProcess([], 0, "generated", "")
 
-    generate_client(spec_path, tmp_path / "out", python_language_config)
+    generate_client(spec_path, tmp_path / "out", config)
 
     command = run.call_args.args[0]
     assert command[:5] == [
@@ -42,8 +91,14 @@ def test_generate_python_uses_official_generator(mocker, python_language_config,
         "generate",
         "-i",
     ]
-    assert command[command.index("-g") + 1] == "python"
-    assert "buildSystem=poetry" in command[command.index("--additional-properties") + 1]
+    assert command[command.index("-g") + 1] == generator_name
+    encoded_properties = command[command.index("--additional-properties") + 1]
+    assert set(encoded_properties.split(",")) == {
+        *(f"{name}={value}" for name, value in additional_properties.items()),
+        "hideGenerationTimestamp=true",
+    }
+    assert "bkapi-client-core" not in " ".join(command)
+    assert "-t" not in command
     assert run.call_args.kwargs["shell"] is False
     assert run.call_args.kwargs["timeout"] == settings.SDK_GENERATION["subprocess_timeout_seconds"]
     assert run.call_args.kwargs["stdout"] is subprocess.DEVNULL

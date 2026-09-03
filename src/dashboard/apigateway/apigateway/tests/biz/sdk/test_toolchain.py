@@ -108,6 +108,7 @@ def test_validate_generated_javascript_dependencies_uses_package_lock_integritie
             "go": {},
             "javascript": {
                 "runtime_ranges": package["dependencies"],
+                "development_ranges": {},
                 "package_lock_integrities_sha256": integrity_hash,
             },
         },

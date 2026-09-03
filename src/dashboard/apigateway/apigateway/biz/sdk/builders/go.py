@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from apigateway.biz.sdk.artifacts import BuiltArtifact, create_built_artifact, validate_artifact_names
 from apigateway.biz.sdk.builders.common import run_build, write_deterministic_zip
+from apigateway.biz.sdk.toolchain import validate_generated_dependency_inputs
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -17,6 +18,7 @@ GO_PROXY_ZIP_LIMIT = 500 * 1024 * 1024
 def build(source_dir: Path, output_dir: Path, config: SDKLanguageConfig) -> list[BuiltArtifact]:
     output_dir.mkdir(parents=True, exist_ok=True)
     run_build(["go", "mod", "edit", "-module", config.project_name], cwd=source_dir)
+    validate_generated_dependency_inputs("go", source_dir)
     run_build(["go", "test", "./..."], cwd=source_dir)
     go_mod = source_dir / "go.mod"
     if not go_mod.is_file():

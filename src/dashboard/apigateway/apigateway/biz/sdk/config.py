@@ -39,7 +39,7 @@ GENERATOR_PROPERTIES = {
         "hideGenerationTimestamp",
     ),
     "go": ("packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"),
-    "javascript": ("projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"),
+    "javascript": ("npmName", "npmVersion", "supportsES6", "hideGenerationTimestamp"),
 }
 
 SUPPORTED_GENERATION_LANGUAGES = ("python", "java", "go", "javascript")
@@ -296,15 +296,14 @@ def build_language_config(
         package_name = f"{policy.javascript_package_scope}/openapi-{gateway_name}"
         return SDKLanguageConfig(
             language=language,
-            generator_name=language,
+            generator_name="typescript-fetch",
             project_name=package_name,
             package_name=package_name,
             package_version=package_version,
             additional_properties={
-                "projectName": package_name,
-                "projectVersion": package_version,
-                "moduleName": f"bkapi_{gateway_name_normalized}",
-                "usePromises": "true",
+                "npmName": package_name,
+                "npmVersion": package_version,
+                "supportsES6": "true",
             },
             native_distributor=None,
         )

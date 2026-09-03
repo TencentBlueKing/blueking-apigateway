@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from apigateway.biz.sdk.builders.common import collect_artifacts, run_build, write_deterministic_zip
 from apigateway.biz.sdk.maven_settings import write_maven_settings
+from apigateway.biz.sdk.toolchain import validate_generated_dependency_inputs
 from apigateway.utils.maven import RepositoryConfig
 
 if TYPE_CHECKING:
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 
 def build(source_dir: Path, output_dir: Path) -> list[BuiltArtifact]:
+    validate_generated_dependency_inputs("java", source_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     library_dir = output_dir / "lib"
     command = [

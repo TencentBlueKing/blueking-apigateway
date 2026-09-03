@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from . import go, java, javascript, python, rust
+from . import go, java, javascript, python
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,8 +27,6 @@ def build_artifacts(
         return go.build(source_dir, output_dir, config)
     if language == "javascript":
         return javascript.build(source_dir, output_dir)
-    if language == "rust":
-        return rust.build(source_dir, output_dir)
     raise ValueError(f"unsupported SDK builder language: {language}")
 
 

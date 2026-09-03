@@ -2,6 +2,7 @@ import json
 import subprocess
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -30,23 +31,16 @@ def language_config(language):
         },
         "go": {"packageName": "bkapi_demo", "packageVersion": "v1.2.3", "withGoMod": "true"},
         "javascript": {
-            "projectName": "bkapi-demo",
-            "projectVersion": "1.2.3",
-            "moduleName": "bkapi_demo",
-            "usePromises": "true",
-        },
-        "rust": {
-            "packageName": "bkapi_demo",
-            "packageVersion": "1.2.3",
-            "library": "reqwest",
-            "supportAsync": "true",
+            "npmName": "@bkapi/openapi-demo",
+            "npmVersion": "1.2.3",
+            "supportsES6": "true",
         },
     }[language]
     return SDKLanguageConfig(
         language=language,
-        generator_name=language,
-        project_name="git.example.com/bkapi/demo" if language == "go" else "bkapi-demo",
-        package_name="bkapi_demo",
+        generator_name="typescript-fetch" if language == "javascript" else language,
+        project_name="git.example.com/bkapi/openapi/demo" if language == "go" else "bkapi-openapi-demo",
+        package_name="@bkapi/openapi-demo" if language == "javascript" else "bkapi_openapi_demo",
         package_version="v1.2.3" if language == "go" else "1.2.3",
         additional_properties=properties,
         native_distributor=None,
@@ -77,7 +71,6 @@ def assert_cross_origin_maven_mirror_has_no_credentials(content):
         ("java", {"jar", "pom", "sources_jar", "distribution_zip"}),
         ("go", {"go_info", "go_mod", "go_zip"}),
         ("javascript", {"npm_tgz"}),
-        ("rust", {"crate"}),
     ],
 )
 def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, language, expected_types):
@@ -106,31 +99,29 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
         (target / "demo-1.2.3-javadoc.jar").write_bytes(b"javadoc")
         (source_dir / "pom.xml").write_text("<project />")
     elif language == "go":
-        (source_dir / "go.mod").write_text("module git.example.com/bkapi/demo\n")
+        (source_dir / "go.mod").write_text("module git.example.com/bkapi/openapi/demo\n")
         (source_dir / "client.go").write_text("package demo\n")
     elif language == "javascript":
-        (output_dir / "bkapi-demo-1.2.3.tgz").write_bytes(b"npm")
-    else:
-        package_dir = output_dir / "target" / "package"
-        package_dir.mkdir(parents=True)
-        (package_dir / "bkapi_demo-1.2.3.crate").write_bytes(b"crate")
-
+        (output_dir / "bkapi-openapi-demo-1.2.3.tgz").write_bytes(b"npm")
     stdout = (
-        "Successfully compiled 3 files with Babel\n" + json.dumps([{"filename": "bkapi-demo-1.2.3.tgz"}])
+        "Successfully compiled 3 files with TypeScript\n" + json.dumps([{"filename": "bkapi-openapi-demo-1.2.3.tgz"}])
         if language == "javascript"
         else ""
     )
     captured_settings = {}
     run = mock_build_commands(mocker, stdout, captured_settings)
+    validate_dependencies = mocker.patch(
+        f"apigateway.biz.sdk.builders.{language}.validate_generated_dependency_inputs",
+        create=True,
+    )
 
     artifacts = build_artifacts(language, source_dir, output_dir, language_config(language))
 
+    validate_dependencies.assert_called_once_with(language, source_dir)
     assert {artifact.artifact_type for artifact in artifacts} == expected_types
     assert all(artifact.sha256 and artifact.size > 0 for artifact in artifacts)
     command = run.call_args.args[0]
-    assert (
-        command[0] == {"python": "python", "java": "mvn", "go": "go", "javascript": "npm", "rust": "cargo"}[language]
-    )
+    assert command[0] == {"python": "python", "java": "mvn", "go": "go", "javascript": "npm"}[language]
     assert run.call_args.kwargs["shell"] is False
     assert all(call.kwargs["stderr"] is subprocess.PIPE for call in run.call_args_list)
     if language == "java":
@@ -146,7 +137,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
             "mod",
             "edit",
             "-module",
-            "git.example.com/bkapi/demo",
+            "git.example.com/bkapi/openapi/demo",
         ]
     if language == "javascript":
         assert run.call_args_list[0].args[0] == [
@@ -171,18 +162,24 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
 def test_go_module_zip_has_required_prefix(mocker, tmp_path):
     source_dir = tmp_path / "source"
     source_dir.mkdir()
-    (source_dir / "go.mod").write_text("module git.example.com/bkapi/demo\n")
+    (source_dir / "go.mod").write_text("module git.example.com/bkapi/openapi/demo\n")
     (source_dir / "client.go").write_text("package demo\n")
     mocker.patch(
         "apigateway.biz.sdk.builders.common.subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, "", ""),
     )
+    mocker.patch("apigateway.biz.sdk.builders.go.validate_generated_dependency_inputs", create=True)
 
     artifacts = build_artifacts("go", source_dir, tmp_path / "dist", language_config("go"))
     module_zip = next(item.path for item in artifacts if item.artifact_type == "go_zip")
 
     with zipfile.ZipFile(module_zip) as archive:
-        assert all(name.startswith("git.example.com/bkapi/demo@v1.2.3/") for name in archive.namelist())
+        assert all(name.startswith("git.example.com/bkapi/openapi/demo@v1.2.3/") for name in archive.namelist())
+
+
+def test_builder_rejects_rust(tmp_path):
+    with pytest.raises(ValueError, match="unsupported SDK builder language: rust"):
+        build_artifacts("rust", tmp_path, tmp_path / "dist", SimpleNamespace(language="rust"))
 
 
 def test_maven_settings_reuses_deploy_credentials_for_same_origin_mirror(tmp_path):

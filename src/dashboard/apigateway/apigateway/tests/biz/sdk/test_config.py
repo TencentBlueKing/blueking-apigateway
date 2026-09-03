@@ -47,7 +47,7 @@ EXPECTED_GENERATOR_PROPERTIES = {
         "hideGenerationTimestamp",
     },
     "go": {"packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"},
-    "javascript": {"projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"},
+    "javascript": {"npmName", "npmVersion", "supportsES6", "hideGenerationTimestamp"},
 }
 
 
@@ -140,7 +140,7 @@ def test_sdk_generation_config_uses_organization_namespaces():
     assert go_config.project_name == "git.example.com/sdk/openapi/my-gateway"
     assert javascript_config.package_name == "@example/openapi-my-gateway"
     assert javascript_config.project_name == "@example/openapi-my-gateway"
-    assert javascript_config.additional_properties["projectName"] == "@example/openapi-my-gateway"
+    assert javascript_config.additional_properties["npmName"] == "@example/openapi-my-gateway"
 
 
 def test_sdk_generation_coordinates_and_versions_are_fixed():

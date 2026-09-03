@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from apigateway.biz.sdk.builders.common import collect_artifacts, run_build
+from apigateway.biz.sdk.toolchain import validate_generated_dependency_inputs
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -11,6 +12,7 @@ if TYPE_CHECKING:
 
 
 def build(source_dir: Path, output_dir: Path) -> list[BuiltArtifact]:
+    validate_generated_dependency_inputs("python", source_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     run_build(
         ["python", "-m", "build", "--wheel", "--sdist", "--outdir", str(output_dir)],
