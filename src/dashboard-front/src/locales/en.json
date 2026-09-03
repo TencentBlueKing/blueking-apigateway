@@ -2693,5 +2693,6 @@
   "导入 JSON": "Import JSON",
   "新增字段": "Add Field",
   "支持 OpenAPI Operation，或按 header、query、path、body 分组的请求 JSON；普通 JSON 将作为 Body 生成。": "Supports an OpenAPI Operation or request JSON grouped by header, query, path, and body. Plain JSON is treated as the Body.",
-  "无插件": "No plugin"
+  "无插件": "No plugin",
+  "可编程网关请参考框架文档，配置资源请求参数声明": "For programmable gateways, please refer to the framework documentation to configure the resource request parameter declaration"
 }

@@ -178,7 +178,7 @@
                                 <div class="flex items-center">
                                   <div>{{ row?.selectionTip }}</div>
                                   <div
-                                    v-if="!row.has_openapi_schema "
+                                    v-if="!row.has_openapi_schema && !isProgrammableGateway"
                                     class="ml-16px color-#699df4 cursor-pointer"
                                     @click="handleToolNameClick(row)"
                                   >
@@ -1009,6 +1009,7 @@ let resizeLayoutConfig: IResizeLayoutConfig = {
 };
 
 const gatewayId = computed<number | undefined>(() => gatewayStore.currentGateway?.id);
+const isProgrammableGateway = computed<boolean>(() => gatewayStore.isProgrammableGateway);
 const isEditMode = computed<boolean>(() => !!serverId);
 const isEnablePrompt = computed<boolean>(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 const stage = computed<IStageListOutput | undefined>(() =>
@@ -1322,9 +1323,14 @@ const toolDisabledSelection = (row: TableRowData): boolean => {
   const selected = isSelectedTool(row);
   // 无openapi_schema 优先级最高
   if (!row.has_openapi_schema) {
-    row.selectionTip = selected
-      ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
-      : t('该资源未配置请求参数声明，不能添加到 MCP');
+    if (isProgrammableGateway.value) {
+      row.selectionTip = t('可编程网关请参考框架文档，配置资源请求参数声明');
+    }
+    else {
+      row.selectionTip = selected
+        ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
+        : t('该资源未配置请求参数声明，不能添加到 MCP');
+    }
     // 未选中才禁用；已选中只是改提示，不禁用
     return !selected;
   }
