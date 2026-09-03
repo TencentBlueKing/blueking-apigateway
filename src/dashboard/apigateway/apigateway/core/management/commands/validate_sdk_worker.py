@@ -8,6 +8,7 @@ from apigateway.biz.sdk.toolchain import validate_sdk_worker_environment
 
 class Command(BaseCommand):
     help = "Validate the SDK generation worker configuration and toolchain"
+    requires_system_checks: list[str] = []
 
     def handle(self, *args, **options):
         try:

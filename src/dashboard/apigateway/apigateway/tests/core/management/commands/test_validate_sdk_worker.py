@@ -5,6 +5,10 @@ from apigateway.biz.sdk.exceptions import SDKConfigurationError
 from apigateway.core.management.commands.validate_sdk_worker import Command
 
 
+def test_validate_sdk_worker_skips_unrelated_django_system_checks():
+    assert Command.requires_system_checks == []
+
+
 def test_validate_sdk_worker_reports_validated_identity(mocker):
     validate = mocker.patch(
         "apigateway.core.management.commands.validate_sdk_worker.validate_sdk_worker_environment",

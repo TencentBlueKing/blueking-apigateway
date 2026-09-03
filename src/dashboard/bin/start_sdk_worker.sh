@@ -8,6 +8,8 @@ if [ -f "${envfile}" ]; then
     set +a
 fi
 
+python manage.py validate_sdk_worker
+
 worker_concurrency="${BK_APIGW_SDK_WORKER_CONCURRENCY:-2}"
 queue="${BK_APIGW_SDK_CELERY_QUEUE:-sdk.generate}"
 command=(celery -A apigateway.apigateway worker -l INFO -c "${worker_concurrency}" -Q "${queue}")

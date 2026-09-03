@@ -184,12 +184,13 @@ image-sdk-worker-te:
 test-sdk-worker-tools:
 	$(eval name ?= apigateway-dashboard-sdk-worker)
 	docker run --rm "${name}" bash -lc '\
+		set -euo pipefail; \
 		test "$$(java -version 2>&1 | head -1 | grep -o "17\.[0-9.]*")"; \
 		mvn -version | grep "Apache Maven 3.9.9"; \
 		go version | grep "go1.24.4"; \
 		node --version | grep "v22.17.0"; \
-		rustc --version | grep "1.88.0"; \
-		cargo --version; \
+		! command -v rustc; \
+		! command -v cargo; \
 		cc --version; \
 		pkg-config --exists openssl; \
 		python --version | grep "3.14"; \

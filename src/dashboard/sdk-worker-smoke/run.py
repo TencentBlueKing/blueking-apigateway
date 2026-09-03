@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import subprocess
-import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
@@ -16,8 +14,40 @@ settings.configure(
     INSTALLED_APPS=[],
     USE_I18N=False,
     MAX_BACKEND_TIMEOUT_IN_SECOND=600,
+    SDK_GENERATION_ENABLED=True,
+    BK_SDK_LANGUAGES=["python", "java", "go", "javascript"],
+    SDK_GENERATION_RETRY_DELAYS=(30, 120),
+    SDK_PYTHON_DISTRIBUTION_PREFIX="bkapi-openapi",
+    SDK_JAVA_GROUP_ID="com.example.bkapi",
+    SDK_JAVA_PACKAGE_PREFIX="com.example.bkapi",
+    SDK_GO_MODULE_PREFIX="example.com/blueking",
+    SDK_JAVASCRIPT_PACKAGE_SCOPE="@bkapi",
+    BKREPO_ENDPOINT_URL="https://repo.example.com",
+    BKREPO_USERNAME="smoke",
+    BKREPO_PASSWORD="smoke",
+    BKREPO_PROJECT="smoke",
+    BKREPO_GENERIC_BUCKET="smoke",
+    PYPI_MIRRORS_CONFIG={"default": {}},
+    MAVEN_MIRRORS_CONFIG={
+        "default": {
+            "repository_url": "",
+            "repository_id": "central",
+            "username": "",
+            "password": "",
+            "ssl_insecure": False,
+            "mirror_url": "https://repo.maven.apache.org/maven2",
+        }
+    },
     SDK_GENERATION={
+        "queue": "sdk.generate",
+        "generator_jar": os.environ["SDK_OPENAPI_GENERATOR_JAR"],
+        "generator_version": "7.23.0",
+        "worker_lock_file": "/app/sdk-worker-lock.json",
+        "server_url_template": "https://{gateway_name}.example.com/{stage_name}",
+        "generic_retention_hours": 24,
         "subprocess_timeout_seconds": 1200,
+        "max_openapi_bytes": 10 * 1024 * 1024,
+        "max_output_bytes": 1024 * 1024 * 1024,
         "max_artifact_bytes": 500 * 1024 * 1024,
     },
 )
@@ -33,9 +63,9 @@ JAR = Path(os.environ["SDK_OPENAPI_GENERATOR_JAR"])
 
 PROPERTIES = {
     "python": {
-        "packageName": "bkapi_demo",
+        "packageName": "bkapi_openapi_demo",
         "packageVersion": "1.2.3",
-        "projectName": "bkapi-demo",
+        "projectName": "bkapi-openapi-demo",
         "buildSystem": "poetry",
         "hideGenerationTimestamp": "true",
     },
@@ -56,19 +86,18 @@ PROPERTIES = {
         "hideGenerationTimestamp": "true",
     },
     "javascript": {
-        "projectName": "bkapi-demo",
-        "projectVersion": "1.2.3",
-        "moduleName": "bkapi_demo",
-        "usePromises": "true",
+        "npmName": "@bkapi/openapi-demo",
+        "npmVersion": "1.2.3",
+        "supportsES6": "true",
         "hideGenerationTimestamp": "true",
     },
-    "rust": {
-        "packageName": "bkapi_demo",
-        "packageVersion": "1.2.3",
-        "library": "reqwest",
-        "supportAsync": "true",
-        "hideGenerationTimestamp": "true",
-    },
+}
+
+GENERATORS = {
+    "python": "python",
+    "java": "java",
+    "go": "go",
+    "javascript": "typescript-fetch",
 }
 
 
@@ -78,12 +107,19 @@ def run(command: list[str], cwd: Path) -> None:
 
 def generate(language: str, destination: Path) -> SDKLanguageConfig:
     package_versions = {"go": "v1.2.3"}
-    project_names = {"go": "example.com/blueking/bkapi-demo"}
-    package_names = {"java": "com.example.bkapi.demo", "javascript": "bkapi-demo"}
+    project_names = {
+        "go": "example.com/blueking/openapi/demo",
+        "javascript": "@bkapi/openapi-demo",
+    }
+    package_names = {
+        "java": "com.example.bkapi.demo",
+        "javascript": "@bkapi/openapi-demo",
+        "python": "bkapi_openapi_demo",
+    }
     config = SDKLanguageConfig(
         language=language,
-        generator_name=language,
-        project_name=project_names.get(language, "bkapi-demo"),
+        generator_name=GENERATORS[language],
+        project_name=project_names.get(language, "bkapi-openapi-demo"),
         package_name=package_names.get(language, "bkapi_demo"),
         package_version=package_versions.get(language, "1.2.3"),
         additional_properties=PROPERTIES[language],
@@ -98,7 +134,7 @@ def generate(language: str, destination: Path) -> SDKLanguageConfig:
             "-i",
             str(SPEC),
             "-g",
-            language,
+            config.generator_name,
             "-o",
             str(destination),
             "--additional-properties",
@@ -125,7 +161,19 @@ def verify_python(artifacts, root: Path) -> None:
     venv = root / "venv"
     run(["python", "-m", "venv", str(venv)], root)
     run([str(venv / "bin/pip"), "install", str(wheel)], root)
-    run([str(venv / "bin/python"), "-c", "import bkapi_demo"], root)
+    run(
+        [
+            str(venv / "bin/python"),
+            "-c",
+            (
+                "import bkapi_openapi_demo\n"
+                "configuration = bkapi_openapi_demo.Configuration(host='https://api.example.com/prod')\n"
+                "with bkapi_openapi_demo.ApiClient(configuration) as api_client:\n"
+                "    bkapi_openapi_demo.DefaultApi(api_client)\n"
+            ),
+        ],
+        root,
+    )
 
 
 def verify_java(artifacts, root: Path) -> None:
@@ -133,13 +181,20 @@ def verify_java(artifacts, root: Path) -> None:
     unpacked = root / "java-distribution"
     with zipfile.ZipFile(distribution) as archive:
         archive.extractall(unpacked)
-    classpath = ":".join(str(path) for path in unpacked.rglob("*.jar") if not path.name.endswith("-sources.jar"))
+    classpath = os.pathsep.join(
+        str(path) for path in unpacked.rglob("*.jar") if not path.name.endswith("-sources.jar")
+    )
     source = root / "Consumer.java"
     source.write_text(
-        "import com.example.bkapi.demo.ApiClient; "
-        "public class Consumer { public static void main(String[] args) { new ApiClient(); } }"
+        "import com.example.bkapi.demo.ApiClient;\n"
+        "import com.example.bkapi.demo.api.DefaultApi;\n"
+        "public class Consumer { public static void main(String[] args) {\n"
+        '  ApiClient client = new ApiClient(); client.updateBaseUri("https://api.example.com/prod");\n'
+        "  new DefaultApi(client);\n"
+        "} }\n"
     )
     run(["javac", "-cp", classpath, str(source)], root)
+    run(["java", "-cp", f"{classpath}{os.pathsep}{root}", "Consumer"], root)
 
 
 def verify_go(artifacts, root: Path) -> None:
@@ -148,7 +203,19 @@ def verify_go(artifacts, root: Path) -> None:
     with zipfile.ZipFile(module_zip) as archive:
         archive.extractall(unpacked)
     module = next(path.parent for path in unpacked.rglob("go.mod"))
-    run(["go", "test", "./..."], module)
+    consumer = root / "consumer"
+    consumer.mkdir()
+    (consumer / "go.mod").write_text(
+        "module sdk-smoke-consumer\n\n"
+        "go 1.23\n\n"
+        "require example.com/blueking/openapi/demo v1.2.3\n\n"
+        f"replace example.com/blueking/openapi/demo => {module}\n"
+    )
+    (consumer / "main.go").write_text(
+        'package main\n\nimport sdk "example.com/blueking/openapi/demo"\n\n'
+        "func main() { _ = sdk.NewAPIClient(sdk.NewConfiguration()) }\n"
+    )
+    run(["go", "test", "./..."], consumer)
 
 
 def verify_javascript(artifacts, root: Path) -> None:
@@ -157,26 +224,18 @@ def verify_javascript(artifacts, root: Path) -> None:
     project.mkdir()
     run(["npm", "init", "-y"], project)
     run(["npm", "install", "--ignore-scripts", str(package)], project)
-    run(["node", "-e", "require('bkapi-demo')"], project)
-
-
-def verify_rust(artifacts, root: Path) -> None:
-    crate = next(artifact.path for artifact in artifacts if artifact.artifact_type == "crate")
-    unpacked = root / "rust-crate"
-    unpacked.mkdir()
-    with tarfile.open(crate) as archive:
-        archive.extractall(unpacked, filter="data")
-    crate_root = next(path.parent for path in unpacked.rglob("Cargo.toml"))
-    project = root / "rust-consumer"
-    (project / "src").mkdir(parents=True)
-    (project / "Cargo.toml").write_text(
-        '[package]\nname = "consumer"\nversion = "0.1.0"\nedition = "2021"\n'
-        f"[dependencies]\nbkapi_demo = {{ path = {json.dumps(str(crate_root))} }}\n"
+    run(
+        [
+            "node",
+            "-e",
+            (
+                "const sdk = require('@bkapi/openapi-demo'); "
+                "const config = new sdk.Configuration({basePath: 'https://api.example.com/prod', apiKey: 'smoke'}); "
+                "new sdk.DefaultApi(config);"
+            ),
+        ],
+        project,
     )
-    (project / "src/main.rs").write_text(
-        "fn main() { let _ = bkapi_demo::apis::configuration::Configuration::new(); }\n"
-    )
-    run(["cargo", "check"], project)
 
 
 VERIFIERS = {
@@ -184,7 +243,6 @@ VERIFIERS = {
     "java": verify_java,
     "go": verify_go,
     "javascript": verify_javascript,
-    "rust": verify_rust,
 }
 
 
