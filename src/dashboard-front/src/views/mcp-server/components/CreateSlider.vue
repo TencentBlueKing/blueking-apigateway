@@ -675,17 +675,19 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                     <div>
                       { row.selectionTip }
                     </div>
-                    <div
-                      class="ml-16px color-#699df4 cursor-pointer"
-                      onClick={() => handleToolNameClick(row as IMCPServerTool)}
-                    >
-                      <ag-icon
-                        name="jump"
-                        color="#699df4"
-                        class="mr-6px"
-                      />
-                      {t('去配置')}
-                    </div>
+                    {!isProgrammableGateway.value && (
+                      <div
+                        class="ml-16px color-#699df4 cursor-pointer"
+                        onClick={() => handleToolNameClick(row as IMCPServerTool)}
+                      >
+                        <ag-icon
+                          name="jump"
+                          color="#699df4"
+                          class="mr-6px"
+                        />
+                        {t('去配置')}
+                      </div>
+                    )}
                   </div>
                 ),
               }}

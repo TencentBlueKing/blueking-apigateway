@@ -129,7 +129,9 @@
 import {
   cloneDeep,
   isEqual,
+  isPlainObject,
   memoize,
+  some,
   sortBy,
   sortedUniq,
   throttle,
@@ -630,9 +632,11 @@ const renderSelectionData = (selectList?: any[]) => {
   }
   const checkTableData = selectList || selectionsRowKeys.value;
   if (checkTableData?.length > 0 && tableData.value?.length > 0) {
+    const isArrayObject = some(checkTableData, isPlainObject);
+    const filterCheckTableData = isArrayObject ? checkTableData.map(check => check[tableRowKey]) : checkTableData;
     const selectionTable = filteredTableData.value;
     const checkedIds = selectionTable
-      .filter(item => checkTableData.includes(item[tableRowKey]))
+      .filter(item => filterCheckTableData.includes(item[tableRowKey]))
       .map(check => check[tableRowKey]);
     isAllSelection.value = checkedIds.length === selectionTable.length;
   }
