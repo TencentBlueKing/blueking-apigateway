@@ -74,7 +74,6 @@ export interface IAIBackendConfigFormMethod {
   validate: () => Promise<boolean>
 }
 
-export const AI_BACKEND_PROVIDER_OPTIONS: AIBackendProvider[] = ['openai', 'deepseek', 'openai-compatible'];
 export const AI_BACKEND_SCHEME_OPTIONS: AIBackendEndpointScheme[] = ['http', 'https'];
 export const AI_BACKEND_TEST_STATUS_META = {
   untested: {

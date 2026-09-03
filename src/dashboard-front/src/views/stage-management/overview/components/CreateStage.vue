@@ -345,8 +345,23 @@
                     <BkAlert
                       class="ai-backend-alert"
                       theme="info"
-                      :title="t('模型服务不支持负载均衡；创建时需配置所有环境，变更过的环境需重新连通测试')"
-                    />
+                    >
+                      <template #icon>
+                        <div class="flex items-center mr-8px">
+                          <AgIcon
+                            color="#3a84ff"
+                            name="info"
+                            size="16"
+                          />
+                        </div>
+                      </template>
+                      <template #title>
+                        <div>
+                          <div>• {{ t('每个环境（Stage）需单独配置一份模型服务，暂不支持同一环境下多渠道负载均衡') }}</div>
+                          <div>• {{ t('任一环境的配置变更后，需重新连通测试通过才可保存') }}</div>
+                        </div>
+                      </template>
+                    </BkAlert>
                     <BkCollapse
                       v-model="activeAIBackendIds"
                       class="ai-backend-list"
