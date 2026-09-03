@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from apigateway.biz.sdk.exceptions import SDKArtifactConflict
+from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerateError
 from apigateway.biz.sdk.publishers import publish_native
 
 
@@ -90,3 +90,26 @@ def test_maven_partial_coordinate_uploads_only_missing_artifact(mocker, built_ar
     )
     assert remote.call_count == 4
     assert len(results) == 3
+
+
+def test_maven_failure_redacts_repository_credentials(mocker, built_artifact, java_config, settings):
+    settings.MAVEN_MIRRORS_CONFIG = {
+        "default": {
+            "repository_url": "https://repo/maven",
+            "repository_id": "internal",
+            "username": "sdk-user",
+            "password": "sdk-password",
+        }
+    }
+    mocker.patch("apigateway.biz.sdk.publishers.maven.remote_sha256", return_value=None)
+    mocker.patch(
+        "apigateway.biz.sdk.publishers.common.subprocess.run",
+        return_value=subprocess.CompletedProcess([], 2, "", "token=maven-token password=sdk-password"),
+    )
+
+    with pytest.raises(SDKGenerateError) as exc_info:
+        publish_native("java", maven_artifacts(built_artifact), java_config)
+
+    message = str(exc_info.value)
+    assert "sdk-password" not in message
+    assert "maven-token" not in message

@@ -14,11 +14,15 @@ from apigateway.biz.sdk.artifacts import create_built_artifact
 from apigateway.biz.sdk.exceptions import SDKGenerationError
 from apigateway.biz.sdk.orchestrator import (
     GenerationClaim,
+    NativePublicationClaim,
     _classify_generation_error,
     claim_generation_item,
+    claim_native_publication,
     create_or_resume_generation,
     execute_generation_item,
+    execute_native_publication,
     finish_generation_item,
+    finish_native_publication,
     refresh_task_status,
     retry_generation_task,
     serialize_generation_task,
@@ -75,6 +79,21 @@ def test_create_deduplicates_languages_and_enqueues_on_commit(
 
     assert list(task.items.values_list("language", flat=True).order_by("id")) == ["python", "go"]
     enqueue.assert_called_once_with(list(task.items.values_list("id", flat=True).order_by("id")))
+
+
+def test_create_assigns_native_status_only_for_enabled_python_and_java_repositories(fake_resource_version, settings):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    settings.MAVEN_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/maven"}}
+
+    task = create_or_resume_generation(fake_resource_version, ["python", "java", "go", "javascript"], "admin")
+
+    statuses = dict(task.items.values_list("language", "native_status"))
+    assert statuses == {
+        "python": "pending",
+        "java": "pending",
+        "go": "not_required",
+        "javascript": "not_required",
+    }
 
 
 def test_create_reuses_task_and_keeps_active_item_when_adding_language(fake_resource_version):
@@ -287,7 +306,7 @@ def test_execute_commits_generic_before_success_and_projects_sdk(fake_gateway, f
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
     bkrepo = FakeBKRepo()
-    _patch_pipeline(mocker, bkrepo)
+    _, publish = _patch_pipeline(mocker, bkrepo)
 
     result = execute_generation_item(item.id, "celery-1")
     assert result is not None
@@ -303,6 +322,129 @@ def test_execute_commits_generic_before_success_and_projects_sdk(fake_gateway, f
     sdk = GatewaySDK.objects.get(gateway=fake_gateway, language="python", version_number=fake_resource_version.version)
     assert sdk.config == {}
     assert sdk.generation_item.id == item.id
+    publish.assert_not_called()
+
+
+def test_generic_success_is_committed_before_native_publication(fake_resource_version, settings, mocker):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    _, publish = _patch_pipeline(mocker, bkrepo)
+
+    result = execute_generation_item(item.id, "celery-generation")
+
+    assert result is not None and result.status == "success"
+    item.refresh_from_db()
+    task.refresh_from_db()
+    assert item.status == "success"
+    assert item.native_status == "pending"
+    assert task.status == "success"
+    publish.assert_not_called()
+
+
+def test_native_publication_restores_generic_artifacts_and_keeps_generation_success(
+    fake_resource_version, settings, mocker
+):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    build, publish = _patch_pipeline(mocker, bkrepo)
+    assert execute_generation_item(item.id, "celery-generation").status == "success"
+    publish.return_value = []
+
+    result = execute_native_publication(item.id, "celery-native")
+
+    assert result is not None and result.status == "success"
+    item.refresh_from_db()
+    task.refresh_from_db()
+    assert item.status == "success"
+    assert item.native_status == "success"
+    assert task.status == "success"
+    assert build.call_count == 1
+    assert publish.call_count == 1
+    assert publish.call_args.args[1][0].artifact_type == "wheel"
+
+
+def test_native_lease_owner_is_enforced(fake_resource_version, settings):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(status="success")
+
+    claim = claim_native_publication(item.id, "native-owner")
+
+    assert claim is not None
+    assert claim_native_publication(item.id, "other-owner") is None
+    assert finish_native_publication(NativePublicationClaim(item.id, "wrong"), "success") is False
+
+
+def test_disabled_worker_leaves_native_pending_and_claimed_work_can_finish(fake_resource_version, settings):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(status="success")
+    settings.SDK_GENERATION_ENABLED = False
+
+    assert claim_native_publication(item.id, "disabled") is None
+    item.refresh_from_db()
+    assert item.native_status == "pending"
+    assert item.native_attempt_count == 0
+
+    settings.SDK_GENERATION_ENABLED = True
+    claim = claim_native_publication(item.id, "active")
+    assert claim is not None
+    settings.SDK_GENERATION_ENABLED = False
+    assert finish_native_publication(claim, "success") is True
+
+
+def test_deterministic_native_failure_does_not_downgrade_generation(fake_resource_version, settings, mocker):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    _, publish = _patch_pipeline(mocker, bkrepo)
+    assert execute_generation_item(item.id, "celery-generation").status == "success"
+    publish.side_effect = SDKGenerationError("registry_authentication", "unauthorized")
+
+    result = execute_native_publication(item.id, "celery-native")
+
+    assert result is not None and result.status == "failed"
+    assert result.retry_delay_seconds is None
+    item.refresh_from_db()
+    task.refresh_from_db()
+    assert item.status == "success"
+    assert item.native_status == "failed"
+    assert task.status == "success"
+
+
+def test_native_transient_retries_then_fails_without_downgrading_generation(fake_resource_version, settings, mocker):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    _, publish = _patch_pipeline(mocker, bkrepo)
+    assert execute_generation_item(item.id, "celery-generation").status == "success"
+    publish.side_effect = SDKGenerationError("temporary_network", "temporary", retryable=True)
+
+    countdowns = []
+    for attempt in range(3):
+        if attempt:
+            task.items.filter(id=item.id).update(native_next_attempt_at=timezone.now() - timedelta(seconds=1))
+        result = execute_native_publication(item.id, f"celery-native-{attempt}")
+        assert result is not None
+        if result.retry_delay_seconds is not None:
+            countdowns.append(result.retry_delay_seconds)
+
+    item.refresh_from_db()
+    task.refresh_from_db()
+    assert countdowns == [30, 120]
+    assert item.status == "success"
+    assert item.native_status == "failed"
+    assert item.native_attempt_count == 3
+    assert item.native_attempt_cycle_count == 3
+    assert task.status == "success"
 
 
 def test_transient_failure_retries_at_30_then_120_and_third_failure_is_terminal(fake_resource_version, mocker):

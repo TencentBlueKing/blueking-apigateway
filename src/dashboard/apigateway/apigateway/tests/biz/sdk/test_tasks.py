@@ -16,6 +16,7 @@ from apigateway.biz.sdk.tasks import (
     cleanup_incomplete_sdk_artifacts,
     enqueue_generation_items,
     generate_sdk_item,
+    publish_sdk_item_native,
     recover_stale_sdk_generation_items,
 )
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE, CELERY_TASK_ROUTES
@@ -53,6 +54,9 @@ def test_generate_task_has_worker_loss_delivery_guarantees():
     assert generate_sdk_item.reject_on_worker_lost is True
     assert generate_sdk_item.ignore_result is True
     assert CELERY_TASK_ROUTES[generate_sdk_item.name]["queue"] == "sdk.generate"
+    assert publish_sdk_item_native.acks_late is True
+    assert publish_sdk_item_native.reject_on_worker_lost is True
+    assert CELERY_TASK_ROUTES[publish_sdk_item_native.name]["queue"] == "sdk.generate"
     assert CELERY_BEAT_SCHEDULE["recover_stale_sdk_generation_items"]["task"] == (
         "apigateway.biz.sdk.tasks.recover_stale_sdk_generation_items"
     )
@@ -80,6 +84,34 @@ def test_generate_sdk_item_schedules_explicit_retry(mocker):
 
     assert generate_sdk_item.run(42) == "pending"
     apply_async.assert_called_once_with(args=(42,), countdown=30, queue="sdk.custom")
+
+
+def test_generate_sdk_item_enqueues_pending_native_publication(fake_resource_version, settings, mocker):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(status="success")
+    mocker.patch(
+        "apigateway.biz.sdk.tasks.execute_generation_item",
+        return_value=ItemExecutionResult(status="success", retry_delay_seconds=None),
+    )
+    publish = mocker.patch.object(publish_sdk_item_native, "apply_async")
+    generate_sdk_item.request.id = "celery-task-id"
+
+    assert generate_sdk_item.run(item.id) == "success"
+    publish.assert_called_once_with(args=(item.id,), queue="sdk.custom")
+
+
+def test_native_task_schedules_explicit_retry(mocker):
+    mocker.patch(
+        "apigateway.biz.sdk.tasks.execute_native_publication",
+        return_value=ItemExecutionResult(status="pending", retry_delay_seconds=120),
+    )
+    apply_async = mocker.patch.object(publish_sdk_item_native, "apply_async")
+    publish_sdk_item_native.request.id = "celery-native"
+
+    assert publish_sdk_item_native.run(42) == "pending"
+    apply_async.assert_called_once_with(args=(42,), countdown=120, queue="sdk.custom")
 
 
 def test_disabled_worker_does_not_claim_pending_item(fake_resource_version, settings):
@@ -164,6 +196,32 @@ def test_recover_dispatches_due_retry_without_waiting_for_stale_cutoff(
         assert recover_stale_sdk_generation_items() == 1
 
     enqueue.assert_called_once_with([item.id])
+
+
+def test_recover_dispatches_due_native_publication(
+    fake_resource_version, settings, mocker, django_capture_on_commit_callbacks
+):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(
+        status="success",
+        native_status="pending",
+        native_next_attempt_at=timezone.now() - timedelta(seconds=1),
+    )
+    enqueue_generation = mocker.patch("apigateway.biz.sdk.tasks.enqueue_generation_items")
+    enqueue_native = mocker.patch("apigateway.biz.sdk.tasks.enqueue_native_publications")
+    settings.SDK_GENERATION_ENABLED = False
+
+    assert recover_stale_sdk_generation_items() == 0
+    enqueue_native.assert_not_called()
+
+    settings.SDK_GENERATION_ENABLED = True
+    with django_capture_on_commit_callbacks(execute=True):
+        assert recover_stale_sdk_generation_items() == 1
+
+    enqueue_generation.assert_not_called()
+    enqueue_native.assert_called_once_with([item.id])
 
 
 def test_recovery_resumes_stale_pending_item_after_reenable(

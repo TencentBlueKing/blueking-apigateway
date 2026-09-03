@@ -94,6 +94,7 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
                 ],
                 cwd=Path(directory),
                 env=env,
+                sensitive_values=(repository.username, repository.password),
             )
         for artifact in missing:
             package = registry.search(

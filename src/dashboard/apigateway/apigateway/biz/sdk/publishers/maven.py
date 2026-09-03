@@ -93,7 +93,11 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
             ]
             if repository.ssl_insecure:
                 command.extend(["-Dmaven.wagon.http.ssl.insecure=true", "-Dmaven.wagon.http.ssl.allowall=true"])
-            run_publisher(command, cwd=Path(directory))
+            run_publisher(
+                command,
+                cwd=Path(directory),
+                sensitive_values=(repository.username, repository.password),
+            )
 
     coordinate = f"{group_id}:{artifact_id}:{version}"
     return [

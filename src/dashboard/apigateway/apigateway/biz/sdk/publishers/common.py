@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -72,7 +73,22 @@ def upload_file(path: Path, url: str, *, username: str, password: str, verify: b
     response.raise_for_status()
 
 
-def run_publisher(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> None:
+def redact_sensitive_text(value: str, sensitive_values: tuple[str, ...] = ()) -> str:
+    for sensitive in sensitive_values:
+        if sensitive:
+            value = value.replace(sensitive, "***")
+    value = re.sub(r"(?i)(authorization\s*:\s*)[^\s]+(?:\s+[^\s]+)?", r"\1***", value)
+    value = re.sub(r"(?i)((?:token|password)\s*[=:]\s*)[^\s&]+", r"\1***", value)
+    return re.sub(r"(https?://)[^/@\s]+@", r"\1***@", value)
+
+
+def run_publisher(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str] | None = None,
+    sensitive_values: tuple[str, ...] = (),
+) -> None:
     try:
         result = subprocess.run(
             command,
@@ -88,7 +104,7 @@ def run_publisher(command: list[str], *, cwd: Path, env: dict[str, str] | None =
     except subprocess.TimeoutExpired as error:
         raise SDKGenerateError("native_publish_failed", "native SDK publication timed out", retryable=True) from error
     if result.returncode != 0:
-        stderr = " ".join((result.stderr or "").split())[:768]
+        stderr = redact_sensitive_text(" ".join((result.stderr or "").split()), sensitive_values)[:768]
         detail = f": {stderr}" if stderr else ""
         raise SDKGenerateError(
             "native_publish_failed", f"native SDK publication exited with status {result.returncode}{detail}"

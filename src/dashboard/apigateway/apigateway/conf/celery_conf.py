@@ -43,6 +43,7 @@ CELERY_IMPORTS = [
 SDK_GENERATION_QUEUE = os.getenv("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate")
 CELERY_TASK_ROUTES = {
     "apigateway.biz.sdk.tasks.generate_sdk_item": {"queue": SDK_GENERATION_QUEUE},
+    "apigateway.biz.sdk.tasks.publish_sdk_item_native": {"queue": SDK_GENERATION_QUEUE},
 }
 
 if os.getenv("ENABLE_MULTI_TENANT_MODE", "False").lower() not in ("true", "on", "ok", "y", "yes", "1"):

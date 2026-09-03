@@ -162,3 +162,36 @@ def test_publisher_timeout_is_sanitized(mocker, built_artifact, python_config, s
     assert exc_info.value.code == "native_publish_failed"
     assert exc_info.value.retryable is True
     assert "secret" not in str(exc_info.value)
+
+
+def test_pypi_failure_redacts_credentials_and_authorization(mocker, built_artifact, python_config, settings):
+    settings.PYPI_MIRRORS_CONFIG = {
+        "default": {
+            "index_url": "https://repo/simple",
+            "repository_url": "https://repo/upload",
+            "username": "sdk-user",
+            "password": "sdk-password",
+        }
+    }
+    mocker.patch("apigateway.biz.sdk.publishers.pypi.SimplePypiRegistry.search", return_value=None)
+    mocker.patch(
+        "apigateway.biz.sdk.publishers.common.subprocess.run",
+        return_value=subprocess.CompletedProcess(
+            [],
+            2,
+            "",
+            "Authorization: Bearer bearer-token password=sdk-password https://sdk-user:sdk-password@repo/upload",
+        ),
+    )
+
+    with pytest.raises(SDKGenerateError) as exc_info:
+        publish_native(
+            "python",
+            [built_artifact("wheel", "demo.whl"), built_artifact("sdist", "demo.tar.gz")],
+            python_config,
+        )
+
+    message = str(exc_info.value)
+    assert "sdk-password" not in message
+    assert "bearer-token" not in message
+    assert "sdk-user:" not in message

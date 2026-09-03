@@ -24,6 +24,7 @@ from apigateway.apps.support.constants import (
     SDKArtifactStatusEnum,
     SDKDistributorEnum,
     SDKGenerationStatusEnum,
+    SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import build_manifest
@@ -35,6 +36,7 @@ from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
 from apigateway.biz.sdk.publishers import publish_native
+from apigateway.biz.sdk.publishers.common import redact_sensitive_text
 from apigateway.biz.sdk.storage import (
     commit_generic_artifacts,
     delete_incomplete_artifacts,
@@ -64,6 +66,12 @@ class GenerationClaim:
 class ItemExecutionResult:
     status: str
     retry_delay_seconds: int | None
+
+
+@dataclass(frozen=True)
+class NativePublicationClaim:
+    item_id: int
+    lease_token: str
 
 
 def _deduplicate_languages(languages: list[str]) -> list[str]:
@@ -121,6 +129,11 @@ def create_or_resume_task(
                     **language_config.build_fingerprint_payload(),
                     "native_distributor": language_config.native_distributor,
                 },
+                "native_status": (
+                    SDKNativePublicationStatusEnum.PENDING.value
+                    if language_config.native_distributor
+                    else SDKNativePublicationStatusEnum.NOT_REQUIRED.value
+                ),
             },
         )
         if item.status == SDKGenerationStatusEnum.SUCCESS.value:
@@ -131,6 +144,8 @@ def create_or_resume_task(
             version_number=resource_version.version,
         ).exists()
         if legacy_sdk_exists and not item.gateway_sdk_id:
+            item.native_status = SDKNativePublicationStatusEnum.NOT_REQUIRED.value
+            item.save(update_fields=["native_status", "updated_time"])
             ensure_gateway_sdk_projection(item)
             continue
         if item.status == SDKGenerationStatusEnum.RUNNING.value:
@@ -223,7 +238,7 @@ def _sanitize_error(error: Exception) -> tuple[str, str]:
     for secret in secrets:
         if secret:
             message = message.replace(secret, "***")
-    return code, message[:1024]
+    return code, redact_sensitive_text(message, tuple(secrets))[:1024]
 
 
 def _persist_native_artifacts(item: SDKGenerationItem, published) -> None:
@@ -313,6 +328,91 @@ def _require_claim(claim: GenerationClaim) -> None:
 def _record_lost_claim(item: SDKGenerationItem, claim: GenerationClaim) -> None:
     logger.warning("SDK generation lease lost for item %s with claim %s", item.id, claim.lease_token)
     sdk_generation_metrics.record_result(item.language, "failed", "lease_lost")
+
+
+@transaction.atomic
+def claim_native_publication(item_id: int, celery_task_id: str) -> NativePublicationClaim | None:
+    item = SDKGenerationItem.objects.select_for_update().filter(id=item_id).first()
+    if not item or not get_sdk_generation_policy().enabled or item.status != SDKGenerationStatusEnum.SUCCESS.value:
+        return None
+    now = timezone.now()
+    eligible = (
+        item.native_status == SDKNativePublicationStatusEnum.PENDING.value
+        and (item.native_next_attempt_at is None or item.native_next_attempt_at <= now)
+    ) or (
+        item.native_status == SDKNativePublicationStatusEnum.RUNNING.value
+        and (item.native_lease_expires_at is None or item.native_lease_expires_at <= now)
+    )
+    if not eligible:
+        return None
+
+    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    token = f"{celery_task_id[:24]}:{uuid.uuid4().hex}"
+    item.native_status = SDKNativePublicationStatusEnum.RUNNING.value
+    item.native_lease_token = token
+    item.native_lease_expires_at = now + timedelta(seconds=max(LEASE_MINIMUM_SECONDS, timeout * 4))
+    item.native_attempt_count = F("native_attempt_count") + 1
+    item.native_attempt_cycle_count = F("native_attempt_cycle_count") + 1
+    item.native_next_attempt_at = None
+    item.native_error_code = ""
+    item.native_error_message = ""
+    item.save(
+        update_fields=[
+            "native_status",
+            "native_lease_token",
+            "native_lease_expires_at",
+            "native_attempt_count",
+            "native_attempt_cycle_count",
+            "native_next_attempt_at",
+            "native_error_code",
+            "native_error_message",
+            "updated_time",
+        ]
+    )
+    return NativePublicationClaim(item.id, token)
+
+
+def finish_native_publication(
+    claim: NativePublicationClaim,
+    status: str,
+    *,
+    error: Exception | None = None,
+    next_attempt_at: datetime | None = None,
+) -> bool:
+    updates: dict[str, Any] = {
+        "native_status": status,
+        "native_lease_token": "",
+        "native_lease_expires_at": None,
+        "native_next_attempt_at": next_attempt_at,
+        "updated_time": timezone.now(),
+    }
+    if error:
+        updates["native_error_code"], updates["native_error_message"] = _sanitize_error(error)
+    else:
+        updates["native_error_code"] = ""
+        updates["native_error_message"] = ""
+    return bool(
+        SDKGenerationItem.objects.filter(id=claim.item_id, native_lease_token=claim.lease_token).update(**updates)
+    )
+
+
+def _renew_native_claim(claim: NativePublicationClaim) -> bool:
+    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    return bool(
+        SDKGenerationItem.objects.filter(
+            id=claim.item_id,
+            native_lease_token=claim.lease_token,
+            native_status=SDKNativePublicationStatusEnum.RUNNING.value,
+        ).update(
+            native_lease_expires_at=timezone.now() + timedelta(seconds=max(LEASE_MINIMUM_SECONDS, timeout * 4)),
+            updated_time=timezone.now(),
+        )
+    )
+
+
+def _require_native_claim(claim: NativePublicationClaim) -> None:
+    if not _renew_native_claim(claim):
+        raise SDKGenerateError("native_lease_lost", "SDK native publication lease was lost")
 
 
 def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
@@ -424,14 +524,6 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> ItemExecutionR
                 raise ValueError("Generic manifest is not committed")
             _require_claim(claim)
             ensure_gateway_sdk_projection(item)
-            _require_claim(claim)
-            with sdk_generation_metrics.observe_phase(item.language, "native_publish"):
-                published = publish_native(item.language, artifacts, language_config)
-            _require_claim(claim)
-            _persist_native_artifacts(item, published)
-            for artifact in published:
-                sdk_generation_metrics.record_artifacts(item.language, artifact.distributor, "success")
-            ensure_gateway_sdk_projection(item)
 
         status = SDKGenerationStatusEnum.SUCCESS.value
         retry_delay = None
@@ -448,6 +540,71 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> ItemExecutionR
     refresh_task_status(item.task_id)
     item.refresh_from_db()
     return ItemExecutionResult(item.status, retry_delay)
+
+
+def _complete_failed_native_publication(
+    item: SDKGenerationItem, claim: NativePublicationClaim, error: Exception
+) -> int | None:
+    classified = _classify_generation_error(error)
+    item.refresh_from_db(fields=["native_attempt_cycle_count"])
+    retry_delay = None
+    next_attempt_at = None
+    policy = get_sdk_generation_policy()
+    if classified.retryable and item.native_attempt_cycle_count <= len(policy.retry_delays):
+        status = SDKNativePublicationStatusEnum.PENDING.value
+        retry_delay = policy.retry_delays[item.native_attempt_cycle_count - 1]
+        next_attempt_at = timezone.now() + timedelta(seconds=retry_delay)
+    else:
+        status = SDKNativePublicationStatusEnum.FAILED.value
+    if not finish_native_publication(claim, status, error=classified, next_attempt_at=next_attempt_at):
+        logger.warning("SDK native publication lease lost for item %s", item.id)
+        return None
+    logger.warning(
+        "SDK native publication failed",
+        extra={
+            "sdk_item_id": item.id,
+            "sdk_task_id": item.task_id,
+            "language": item.language,
+            "error_class": classified.code,
+            "retryable": classified.retryable,
+        },
+    )
+    return retry_delay
+
+
+def execute_native_publication(item_id: int, celery_task_id: str) -> ItemExecutionResult | None:
+    claim = claim_native_publication(item_id, celery_task_id)
+    if not claim:
+        return None
+    item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
+    try:
+        worker_config = get_sdk_generation_config()
+        language_config = worker_config.for_resource_version(
+            item.task.gateway.name, item.task.resource_version, item.language
+        )
+        expected_distributor = item.config_snapshot.get("native_distributor")
+        if not expected_distributor or language_config.native_distributor != expected_distributor:
+            raise SDKConfigurationError("configured native SDK repository is unavailable")
+        bkrepo = BKRepoComponent.default()
+        if not bkrepo:
+            raise SDKConfigurationError("BKRepo Generic configuration is required")
+        _require_native_claim(claim)
+        with tempfile.TemporaryDirectory(prefix="sdk-native-publication-") as directory:
+            _, artifacts = restore_generic_artifacts(item, bkrepo, Path(directory))
+            _require_native_claim(claim)
+            with sdk_generation_metrics.observe_phase(item.language, "native_publish"):
+                published = publish_native(item.language, artifacts, language_config)
+            _require_native_claim(claim)
+            _persist_native_artifacts(item, published)
+            for artifact in published:
+                sdk_generation_metrics.record_artifacts(item.language, artifact.distributor, "success")
+        retry_delay = None
+        if not finish_native_publication(claim, SDKNativePublicationStatusEnum.SUCCESS.value):
+            logger.warning("SDK native publication lease lost for item %s", item.id)
+    except Exception as error:
+        retry_delay = _complete_failed_native_publication(item, claim, error)
+    item.refresh_from_db()
+    return ItemExecutionResult(item.native_status, retry_delay)
 
 
 @transaction.atomic
