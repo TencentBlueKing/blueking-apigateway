@@ -90,7 +90,8 @@ def ensure_gateway_sdk_projection(item: SDKGenerationItem) -> GatewaySDK:
             item.finished_at = timezone.now()
             item.error_code = ""
             item.error_message = ""
-            update_fields.extend(["status", "finished_at", "error_code", "error_message"])
+            item.error_retryable = False
+            update_fields.extend(["status", "finished_at", "error_code", "error_message", "error_retryable"])
         item.save(update_fields=update_fields)
         return sdk
 

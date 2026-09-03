@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import subprocess
 import tempfile
 import uuid
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import requests
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F, Q
@@ -26,8 +28,8 @@ from apigateway.apps.support.constants import (
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import build_manifest
 from apigateway.biz.sdk.builders import build_artifacts
-from apigateway.biz.sdk.config import get_sdk_generation_config
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerateError
+from apigateway.biz.sdk.config import get_sdk_generation_config, get_sdk_generation_policy
+from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerateError, SDKGenerationError
 from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
 from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
@@ -44,6 +46,7 @@ from apigateway.components.bkrepo import BKRepoComponent
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import datetime
 
     from apigateway.core.models import ResourceVersion
 
@@ -55,6 +58,12 @@ logger = logging.getLogger(__name__)
 class GenerationClaim:
     item_id: int
     lease_token: str
+
+
+@dataclass(frozen=True)
+class ItemExecutionResult:
+    status: str
+    retry_delay_seconds: int | None
 
 
 def _deduplicate_languages(languages: list[str]) -> list[str]:
@@ -77,65 +86,69 @@ def _has_successful_artifact(item: SDKGenerationItem, distributor: str, *, filen
     return queryset.exists()
 
 
-def _reject_legacy_version_conflict(resource_version: ResourceVersion, language: str) -> None:
-    sdk = GatewaySDK.objects.filter(
-        gateway=resource_version.gateway,
-        language=language,
-        version_number=resource_version.version,
-    ).first()
-    if not sdk:
-        return
-    config = sdk.config if isinstance(sdk.config, dict) else {}
-    item_id = config.get("generation_item_id")
-    if (
-        item_id
-        and SDKGenerationItem.objects.filter(
-            id=item_id,
-            task__resource_version=resource_version,
-            artifacts__distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
-            artifacts__filename="manifest.json",
-            artifacts__status=SDKGenerationStatusEnum.SUCCESS.value,
-        ).exists()
-    ):
-        return
-    raise LegacySDKVersionConflict()
-
-
 @transaction.atomic
-def create_or_resume_generation(
+def create_or_resume_task(
     resource_version: ResourceVersion,
     languages: list[str],
     operator: str | None,
     enqueue: Callable[[list[int]], None] | None = None,
 ) -> SDKGenerationTask:
     requested = _deduplicate_languages(languages)
-    root_config = get_sdk_generation_config()
-    disabled = set(requested).difference(root_config.enabled_languages)
+    policy = get_sdk_generation_policy()
+    disabled = set(requested).difference(policy.languages)
     if disabled:
         raise ValueError(f"SDK generation languages are disabled: {sorted(disabled)}")
-    for language in requested:
-        _reject_legacy_version_conflict(resource_version, language)
 
-    task = SDKGenerationTask.objects.create(
+    task, _ = SDKGenerationTask.objects.select_for_update().get_or_create(
         resource_version=resource_version,
-        gateway=resource_version.gateway,
-        status=SDKGenerationStatusEnum.PENDING.value,
-        created_by=operator,
-        updated_by=operator,
+        defaults={
+            "gateway": resource_version.gateway,
+            "status": SDKGenerationStatusEnum.PENDING.value,
+            "created_by": operator,
+            "updated_by": operator,
+        },
     )
     item_ids = []
     for language in requested:
-        language_config = root_config.for_resource_version(resource_version.gateway.name, resource_version, language)
-        item = SDKGenerationItem.objects.create(
+        language_config = policy.for_resource_version(resource_version.gateway.name, resource_version, language)
+        item, created = SDKGenerationItem.objects.get_or_create(
             task=task,
             language=language,
-            created_by=operator,
-            updated_by=operator,
-            config_snapshot={
-                **language_config.build_fingerprint_payload(),
-                "native_distributor": language_config.native_distributor,
+            defaults={
+                "created_by": operator,
+                "updated_by": operator,
+                "config_snapshot": {
+                    **language_config.build_fingerprint_payload(),
+                    "native_distributor": language_config.native_distributor,
+                },
             },
         )
+        if item.status == SDKGenerationStatusEnum.SUCCESS.value:
+            continue
+        legacy_sdk_exists = GatewaySDK.objects.filter(
+            gateway=resource_version.gateway,
+            language=language,
+            version_number=resource_version.version,
+        ).exists()
+        if legacy_sdk_exists and not item.gateway_sdk_id:
+            ensure_gateway_sdk_projection(item)
+            continue
+        if item.status == SDKGenerationStatusEnum.RUNNING.value:
+            if item.lease_expires_at is None or item.lease_expires_at > timezone.now():
+                continue
+            item.status = SDKGenerationStatusEnum.PENDING.value
+            item.lease_token = ""
+            item.lease_expires_at = None
+            item.save(update_fields=["status", "lease_token", "lease_expires_at", "updated_time"])
+        elif item.status == SDKGenerationStatusEnum.FAILED.value:
+            if not item.error_retryable:
+                continue
+            item.status = SDKGenerationStatusEnum.PENDING.value
+            item.attempt_cycle_count = 0
+            item.next_attempt_at = None
+            item.save(update_fields=["status", "attempt_cycle_count", "next_attempt_at", "updated_time"])
+        elif not created and item.next_attempt_at and item.next_attempt_at > timezone.now():
+            continue
         item_ids.append(item.id)
 
     refresh_task_status(task.id)
@@ -145,43 +158,53 @@ def create_or_resume_generation(
     return task
 
 
+create_or_resume_generation = create_or_resume_task
+
+
 @transaction.atomic
 def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim | None:
     item = SDKGenerationItem.objects.select_for_update().filter(id=item_id).first()
     if not item:
         return None
+    if not get_sdk_generation_policy().enabled:
+        return None
     now = timezone.now()
-    eligible = item.status in {
-        SDKGenerationStatusEnum.PENDING.value,
-        SDKGenerationStatusEnum.FAILED.value,
-        SDKGenerationStatusEnum.PARTIAL.value,
-    } or (
+    eligible = (
+        item.status == SDKGenerationStatusEnum.PENDING.value
+        and (item.next_attempt_at is None or item.next_attempt_at <= now)
+    ) or (
         item.status == SDKGenerationStatusEnum.RUNNING.value
         and (item.lease_expires_at is None or item.lease_expires_at <= now)
     )
     if not eligible:
         return None
 
-    timeout = get_sdk_generation_config().subprocess_timeout_seconds
+    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
     token = f"{celery_task_id}:{uuid.uuid4().hex}"
     item.status = SDKGenerationStatusEnum.RUNNING.value
     item.lease_token = token
     item.lease_expires_at = now + timedelta(seconds=max(LEASE_MINIMUM_SECONDS, timeout * 4))
     item.attempt_count = F("attempt_count") + 1
+    item.attempt_cycle_count = F("attempt_cycle_count") + 1
+    item.next_attempt_at = None
     item.started_at = now
     item.finished_at = None
     item.error_code = ""
     item.error_message = ""
+    item.error_retryable = False
     item.save(
         update_fields=[
             "status",
             "lease_token",
             "lease_expires_at",
             "attempt_count",
+            "attempt_cycle_count",
+            "next_attempt_at",
             "started_at",
             "finished_at",
             "error_code",
             "error_message",
+            "error_retryable",
             "updated_time",
         ]
     )
@@ -228,24 +251,48 @@ def _record_generic_artifacts(item: SDKGenerationItem, count: int) -> None:
     )
 
 
-def _finish_item(claim: GenerationClaim, status: str, *, error: Exception | None = None) -> bool:
+def finish_generation_item(
+    claim: GenerationClaim,
+    status: str,
+    *,
+    error: Exception | None = None,
+    next_attempt_at: datetime | None = None,
+) -> bool:
     updates: dict[str, Any] = {
         "status": status,
         "lease_token": "",
         "lease_expires_at": None,
-        "finished_at": timezone.now(),
+        "next_attempt_at": next_attempt_at,
+        "finished_at": None if status == SDKGenerationStatusEnum.PENDING.value else timezone.now(),
         "updated_time": timezone.now(),
     }
     if error:
         updates["error_code"], updates["error_message"] = _sanitize_error(error)
+        updates["error_retryable"] = isinstance(error, SDKGenerationError) and error.retryable
     else:
         updates["error_code"] = ""
         updates["error_message"] = ""
+        updates["error_retryable"] = False
     return bool(SDKGenerationItem.objects.filter(id=claim.item_id, lease_token=claim.lease_token).update(**updates))
 
 
+def _classify_generation_error(error: Exception) -> SDKGenerationError:
+    if isinstance(error, SDKGenerationError):
+        return error
+    if isinstance(error, (subprocess.TimeoutExpired, requests.Timeout, requests.ConnectionError)):
+        return SDKGenerationError("temporary_network", str(error) or "temporary network failure", retryable=True)
+    if isinstance(error, requests.HTTPError):
+        status_code = error.response.status_code if error.response is not None else None
+        retryable = status_code == 429 or (status_code is not None and status_code >= 500)
+        code = "remote_service_unavailable" if retryable else "remote_request_failed"
+        return SDKGenerationError(code, str(error) or code, retryable=retryable)
+    if isinstance(error, SDKConfigurationError):
+        return SDKGenerationError("configuration_error", str(error))
+    return SDKGenerationError("generation_failed", str(error) or error.__class__.__name__)
+
+
 def _renew_claim(claim: GenerationClaim) -> bool:
-    timeout = get_sdk_generation_config().subprocess_timeout_seconds
+    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
     return bool(
         SDKGenerationItem.objects.filter(
             id=claim.item_id,
@@ -265,7 +312,7 @@ def _require_claim(claim: GenerationClaim) -> None:
 
 def _record_lost_claim(item: SDKGenerationItem, claim: GenerationClaim) -> None:
     logger.warning("SDK generation lease lost for item %s with claim %s", item.id, claim.lease_token)
-    sdk_generation_metrics.record_result(item.language, "lease_lost")
+    sdk_generation_metrics.record_result(item.language, "failed", "lease_lost")
 
 
 def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
@@ -290,19 +337,47 @@ def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
     return language_config, document, tool_versions, fingerprint
 
 
-def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  # noqa: PLR0915
+def _complete_failed_execution(item: SDKGenerationItem, claim: GenerationClaim, error: Exception) -> int | None:
+    classified = _classify_generation_error(error)
+    item.refresh_from_db(fields=["attempt_cycle_count"])
+    retry_delay = None
+    next_attempt_at = None
+    policy = get_sdk_generation_policy()
+    if classified.retryable and item.attempt_cycle_count <= len(policy.retry_delays):
+        status = SDKGenerationStatusEnum.PENDING.value
+        retry_delay = policy.retry_delays[item.attempt_cycle_count - 1]
+        next_attempt_at = timezone.now() + timedelta(seconds=retry_delay)
+    else:
+        status = SDKGenerationStatusEnum.FAILED.value
+    if not finish_generation_item(claim, status, error=classified, next_attempt_at=next_attempt_at):
+        _record_lost_claim(item, claim)
+        return None
+    sdk_generation_metrics.record_result(item.language, status, classified.code)
+    logger.warning(
+        "SDK generation item failed",
+        extra={
+            "sdk_item_id": item.id,
+            "sdk_task_id": item.task_id,
+            "language": item.language,
+            "error_class": classified.code,
+            "retryable": classified.retryable,
+        },
+    )
+    return retry_delay
+
+
+def execute_generation_item(item_id: int, celery_task_id: str) -> ItemExecutionResult | None:  # noqa: PLR0915
     claim = claim_generation_item(item_id, celery_task_id)
     if not claim:
         return None
     item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
-    generic_committed = False
     try:
         prepared = _prepare_generation(item, claim)
         if not prepared:
             _record_lost_claim(item, claim)
             refresh_task_status(item.task_id)
             item.refresh_from_db()
-            return item.status
+            return ItemExecutionResult(item.status, None)
         language_config, document, tool_versions, fingerprint = prepared
         _require_claim(claim)
 
@@ -321,7 +396,6 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
             if bkrepo.get_generic_file_metadata(manifest_key(prefix)) is not None:
                 with sdk_generation_metrics.observe_phase(item.language, "restore"):
                     manifest, artifacts = restore_generic_artifacts(item, bkrepo, workspace / "restored")
-                generic_committed = True
             else:
                 delete_incomplete_artifacts(item, bkrepo, expected_lease_token=claim.lease_token)
                 spec_path = workspace / "openapi.json"
@@ -345,7 +419,6 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
                 with sdk_generation_metrics.observe_phase(item.language, "generic_publish"):
                     committed = commit_generic_artifacts(item, bkrepo, manifest, artifacts)
                 _record_generic_artifacts(item, len(committed))
-                generic_committed = True
 
             if not _has_successful_artifact(item, SDKDistributorEnum.BKREPO_GENERIC.value, filename="manifest.json"):
                 raise ValueError("Generic manifest is not committed")
@@ -360,19 +433,21 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
                 sdk_generation_metrics.record_artifacts(item.language, artifact.distributor, "success")
             ensure_gateway_sdk_projection(item)
 
-        if _finish_item(claim, SDKGenerationStatusEnum.SUCCESS.value):
-            sdk_generation_metrics.record_result(item.language, SDKGenerationStatusEnum.SUCCESS.value)
+        status = SDKGenerationStatusEnum.SUCCESS.value
+        retry_delay = None
+        if finish_generation_item(claim, status):
+            sdk_generation_metrics.record_result(item.language, status, "none")
+            logger.info(
+                "SDK generation item completed",
+                extra={"sdk_item_id": item.id, "sdk_task_id": item.task_id, "language": item.language},
+            )
         else:
             _record_lost_claim(item, claim)
     except Exception as error:
-        status = SDKGenerationStatusEnum.PARTIAL.value if generic_committed else SDKGenerationStatusEnum.FAILED.value
-        if _finish_item(claim, status, error=error):
-            sdk_generation_metrics.record_result(item.language, status)
-        else:
-            _record_lost_claim(item, claim)
+        retry_delay = _complete_failed_execution(item, claim, error)
     refresh_task_status(item.task_id)
     item.refresh_from_db()
-    return item.status
+    return ItemExecutionResult(item.status, retry_delay)
 
 
 @transaction.atomic
@@ -387,7 +462,6 @@ def retry_generation_task(
                 status__in=[
                     SDKGenerationStatusEnum.PENDING.value,
                     SDKGenerationStatusEnum.FAILED.value,
-                    SDKGenerationStatusEnum.PARTIAL.value,
                 ]
             )
             | Q(status=SDKGenerationStatusEnum.RUNNING.value)
@@ -399,9 +473,12 @@ def retry_generation_task(
             status=SDKGenerationStatusEnum.PENDING.value,
             lease_token="",
             lease_expires_at=None,
+            next_attempt_at=None,
+            attempt_cycle_count=0,
             finished_at=None,
             error_code="",
             error_message="",
+            error_retryable=False,
             updated_time=now,
         )
         refresh_task_status(task.id)
@@ -415,15 +492,16 @@ def retry_generation_task(
 def refresh_task_status(task_id: int) -> str:
     SDKGenerationTask.objects.select_for_update().get(id=task_id)
     statuses = list(SDKGenerationItem.objects.filter(task_id=task_id).values_list("status", flat=True))
-    if not statuses or all(status == SDKGenerationStatusEnum.PENDING.value for status in statuses):
+    status_set = set(statuses)
+    if not statuses or status_set == {SDKGenerationStatusEnum.PENDING.value}:
         status = SDKGenerationStatusEnum.PENDING.value
-    elif any(status == SDKGenerationStatusEnum.RUNNING.value for status in statuses):
+    elif SDKGenerationStatusEnum.RUNNING.value in status_set or (
+        SDKGenerationStatusEnum.PENDING.value in status_set and len(status_set) > 1
+    ):
         status = SDKGenerationStatusEnum.RUNNING.value
-    elif any(status == SDKGenerationStatusEnum.PENDING.value for status in statuses):
-        status = SDKGenerationStatusEnum.PENDING.value
-    elif all(status == SDKGenerationStatusEnum.SUCCESS.value for status in statuses):
+    elif status_set == {SDKGenerationStatusEnum.SUCCESS.value}:
         status = SDKGenerationStatusEnum.SUCCESS.value
-    elif all(status == SDKGenerationStatusEnum.FAILED.value for status in statuses):
+    elif status_set == {SDKGenerationStatusEnum.FAILED.value}:
         status = SDKGenerationStatusEnum.FAILED.value
     else:
         status = SDKGenerationStatusEnum.PARTIAL.value

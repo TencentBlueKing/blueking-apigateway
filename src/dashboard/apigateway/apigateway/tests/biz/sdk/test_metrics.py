@@ -6,10 +6,10 @@ from apigateway.biz.sdk.metrics import create_sdk_generation_metrics
 def test_sdk_metrics_use_only_bounded_labels():
     metrics = create_sdk_generation_metrics(CollectorRegistry())
 
-    assert metrics.results._labelnames == ("language", "status")
-    assert metrics.phase_duration._labelnames == ("language", "phase", "status")
-    assert metrics.artifacts._labelnames == ("language", "distributor", "status")
-    assert metrics.items._labelnames == ("status",)
+    assert metrics.results._labelnames == ("language", "result", "error_class")
+    assert metrics.phase_duration._labelnames == ("language", "phase", "result", "error_class")
+    assert metrics.artifacts._labelnames == ("language", "distributor", "result")
+    assert metrics.items._labelnames == ("result",)
 
 
 def test_observe_phase_records_success_and_failure():
@@ -24,11 +24,11 @@ def test_observe_phase_records_success_and_failure():
     except ValueError:
         pass
 
-    assert metrics.phase_duration.labels("python", "generate", "success")._sum.get() >= 0
+    assert metrics.phase_duration.labels("python", "generate", "success", "none")._sum.get() >= 0
     samples = metrics.phase_duration.collect()[0].samples
     assert any(
         sample.name.endswith("_count")
-        and sample.labels == {"language": "java", "phase": "build", "status": "failed"}
+        and sample.labels == {"language": "java", "phase": "build", "result": "failed", "error_class": "ValueError"}
         and sample.value == 1
         for sample in samples
     )

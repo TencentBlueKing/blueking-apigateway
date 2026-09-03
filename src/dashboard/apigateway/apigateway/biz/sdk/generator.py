@@ -42,7 +42,7 @@ def _run(command: list[str], *, capture_output: bool = False) -> subprocess.Comp
             timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
         )
     except subprocess.TimeoutExpired as error:
-        raise SDKGenerateError("generator_failed", "OpenAPI Generator timed out") from error
+        raise SDKGenerateError("generator_failed", "OpenAPI Generator timed out", retryable=True) from error
 
 
 def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig) -> None:

@@ -225,6 +225,16 @@ def test_cleanup_deletes_only_recorded_incomplete_keys(tmp_path, generation_item
     assert not generation_item.artifacts.exists()
 
 
+def test_cleanup_never_deletes_committed_manifest(tmp_path, generation_item):
+    artifact, manifest = built_manifest(tmp_path, generation_item)
+    bkrepo = FakeBKRepo()
+    commit_generic_artifacts(generation_item, bkrepo, manifest, [artifact])
+    files = bkrepo.files.copy()
+
+    assert delete_incomplete_artifacts(generation_item, bkrepo) == 0
+    assert bkrepo.files == files
+
+
 def test_cleanup_with_lease_guard_does_not_delete_new_worker_artifacts(tmp_path, generation_item):
     generation_item.status = SDKGenerationStatusEnum.RUNNING.value
     generation_item.lease_token = "new-worker"

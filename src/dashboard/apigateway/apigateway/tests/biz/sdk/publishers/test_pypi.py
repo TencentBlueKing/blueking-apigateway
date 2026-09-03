@@ -160,4 +160,5 @@ def test_publisher_timeout_is_sanitized(mocker, built_artifact, python_config, s
         )
 
     assert exc_info.value.code == "native_publish_failed"
+    assert exc_info.value.retryable is True
     assert "secret" not in str(exc_info.value)

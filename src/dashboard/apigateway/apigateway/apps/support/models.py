@@ -236,6 +236,7 @@ class SDKGenerationItem(TimestampedModelMixin, OperatorModelMixin):
     config_snapshot = models.JSONField(default=dict, blank=True)
     error_code = models.CharField(max_length=64, blank=True, default="")
     error_message = models.CharField(max_length=1024, blank=True, default="")
+    error_retryable = models.BooleanField(default=False)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     native_status = models.CharField(

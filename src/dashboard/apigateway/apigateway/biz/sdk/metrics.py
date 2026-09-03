@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 
 from prometheus_client import REGISTRY, CollectorRegistry, Counter, Gauge, Histogram
 
+from apigateway.biz.sdk.exceptions import SDKGenerationError
+
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
@@ -23,17 +25,19 @@ class SDKGenerationMetrics:
     @contextmanager
     def observe_phase(self, language: str, phase: str) -> Iterator[None]:
         started = monotonic()
-        status = "success"
+        result = "success"
+        error_class = "none"
         try:
             yield
-        except Exception:
-            status = "failed"
+        except Exception as error:
+            result = "failed"
+            error_class = error.code if isinstance(error, SDKGenerationError) else error.__class__.__name__
             raise
         finally:
-            self.phase_duration.labels(language, phase, status).observe(monotonic() - started)
+            self.phase_duration.labels(language, phase, result, error_class).observe(monotonic() - started)
 
-    def record_result(self, language: str, status: str) -> None:
-        self.results.labels(language, status).inc()
+    def record_result(self, language: str, result: str, error_class: str = "none") -> None:
+        self.results.labels(language, result, error_class).inc()
 
     def record_artifacts(self, language: str, distributor: str, status: str, count: int = 1) -> None:
         self.artifacts.labels(language, distributor, status).inc(count)
@@ -48,25 +52,25 @@ def create_sdk_generation_metrics(registry: CollectorRegistry = REGISTRY) -> SDK
         results=Counter(
             "bk_apigateway_sdk_generation_results_total",
             "Completed SDK generation items.",
-            ("language", "status"),
+            ("language", "result", "error_class"),
             registry=registry,
         ),
         phase_duration=Histogram(
             "bk_apigateway_sdk_generation_phase_duration_seconds",
             "SDK generation phase duration.",
-            ("language", "phase", "status"),
+            ("language", "phase", "result", "error_class"),
             registry=registry,
         ),
         artifacts=Counter(
             "bk_apigateway_sdk_generation_artifacts_total",
             "SDK artifacts handled by distributor.",
-            ("language", "distributor", "status"),
+            ("language", "distributor", "result"),
             registry=registry,
         ),
         items=Gauge(
             "bk_apigateway_sdk_generation_items",
             "Current SDK generation item count by status.",
-            ("status",),
+            ("result",),
             registry=registry,
         ),
     )

@@ -63,6 +63,7 @@ class Migration(migrations.Migration):
                 ('config_snapshot', models.JSONField(blank=True, default=dict)),
                 ('error_code', models.CharField(blank=True, default='', max_length=64)),
                 ('error_message', models.CharField(blank=True, default='', max_length=1024)),
+                ('error_retryable', models.BooleanField(default=False)),
                 ('started_at', models.DateTimeField(blank=True, null=True)),
                 ('finished_at', models.DateTimeField(blank=True, null=True)),
                 ('native_status', models.CharField(choices=[('not_required', 'Not required'), ('pending', 'Pending'), ('running', 'Running'), ('success', 'Success'), ('failed', 'Failed')], db_index=True, default='not_required', max_length=32)),

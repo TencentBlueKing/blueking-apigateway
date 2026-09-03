@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+import requests
 from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists
 from ddf import G
 from django.utils import timezone
@@ -10,11 +11,14 @@ from django.utils import timezone
 from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.artifacts import create_built_artifact
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKGenerationError
 from apigateway.biz.sdk.orchestrator import (
+    GenerationClaim,
+    _classify_generation_error,
     claim_generation_item,
     create_or_resume_generation,
     execute_generation_item,
+    finish_generation_item,
     refresh_task_status,
     retry_generation_task,
     serialize_generation_task,
@@ -57,6 +61,8 @@ def sdk_settings(settings, fake_resource_version):
     settings.BKREPO_GENERIC_BUCKET = "generic"
     settings.PYPI_MIRRORS_CONFIG = {"default": {}}
     settings.MAVEN_MIRRORS_CONFIG = {"default": {}}
+    settings.SDK_GENERATION_ENABLED = True
+    settings.SDK_GENERATION_RETRY_DELAYS = (30, 120)
 
 
 def test_create_deduplicates_languages_and_enqueues_on_commit(
@@ -71,7 +77,7 @@ def test_create_deduplicates_languages_and_enqueues_on_commit(
     enqueue.assert_called_once_with(list(task.items.values_list("id", flat=True).order_by("id")))
 
 
-def test_create_keeps_each_request_and_active_item_independent(fake_resource_version):
+def test_create_reuses_task_and_keeps_active_item_when_adding_language(fake_resource_version):
     first_task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     first_item = first_task.items.get()
     first_item.status = SDKGenerationStatusEnum.RUNNING.value
@@ -83,11 +89,52 @@ def test_create_keeps_each_request_and_active_item_independent(fake_resource_ver
     second_task = create_or_resume_generation(fake_resource_version, ["go"], "admin")
 
     first_item.refresh_from_db()
-    assert second_task.id != first_task.id
-    assert list(second_task.items.values_list("language", flat=True)) == ["go"]
+    assert second_task.id == first_task.id
+    assert set(second_task.items.values_list("language", flat=True)) == {"python", "go"}
     assert first_item.status == SDKGenerationStatusEnum.RUNNING.value
     assert first_item.lease_token == "active"
     assert first_item.config_snapshot == {"request": "first"}
+
+
+def test_create_reuses_success_item_and_only_enqueues_missing_language(
+    fake_resource_version, mocker, django_capture_on_commit_callbacks
+):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    python = task.items.get()
+    task.items.filter(id=python.id).update(status="success")
+    enqueue = mocker.Mock()
+
+    with django_capture_on_commit_callbacks(execute=True):
+        repeated = create_or_resume_generation(fake_resource_version, ["python", "javascript"], "admin", enqueue)
+
+    assert repeated.id == task.id
+    assert repeated.items.get(language="python").id == python.id
+    enqueue.assert_called_once_with([repeated.items.get(language="javascript").id])
+
+
+def test_create_resumes_failed_transient_item_on_same_row(
+    fake_resource_version, mocker, django_capture_on_commit_callbacks
+):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(
+        status="failed",
+        error_code="temporary_network",
+        error_retryable=True,
+        attempt_count=3,
+        attempt_cycle_count=3,
+    )
+    enqueue = mocker.Mock()
+
+    with django_capture_on_commit_callbacks(execute=True):
+        repeated = create_or_resume_generation(fake_resource_version, ["python"], "admin", enqueue)
+
+    resumed = repeated.items.get()
+    assert resumed.id == item.id
+    assert resumed.status == "pending"
+    assert resumed.attempt_count == 3
+    assert resumed.attempt_cycle_count == 0
+    enqueue.assert_called_once_with([item.id])
 
 
 def test_claim_excludes_active_lease_and_takes_expired_lease(fake_resource_version):
@@ -106,6 +153,34 @@ def test_claim_excludes_active_lease_and_takes_expired_lease(fake_resource_versi
     assert second.lease_token != first.lease_token
 
 
+def test_claim_obeys_retry_due_time_and_counts_attempt_cycle(fake_resource_version):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    item.next_attempt_at = timezone.now() + timedelta(minutes=1)
+    item.save(update_fields=["next_attempt_at"])
+
+    assert claim_generation_item(item.id, "too-early") is None
+
+    item.next_attempt_at = timezone.now() - timedelta(seconds=1)
+    item.save(update_fields=["next_attempt_at"])
+    assert claim_generation_item(item.id, "due") is not None
+    item.refresh_from_db()
+    assert item.attempt_count == 1
+    assert item.attempt_cycle_count == 1
+
+
+def test_finish_rejects_wrong_lease_token(fake_resource_version):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    claim = claim_generation_item(item.id, "owner")
+    assert claim is not None
+
+    assert finish_generation_item(GenerationClaim(item.id, "wrong"), "success") is False
+
+    item.refresh_from_db()
+    assert item.status == "running"
+
+
 def test_claim_marks_parent_task_running(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
@@ -116,11 +191,11 @@ def test_claim_marks_parent_task_running(fake_resource_version):
     assert task.status == SDKGenerationStatusEnum.RUNNING.value
 
 
-def test_refresh_reports_pending_when_successful_task_adds_pending_language(fake_resource_version):
+def test_refresh_reports_running_when_successful_task_adds_pending_language(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
     task.items.filter(language="python").update(status=SDKGenerationStatusEnum.SUCCESS.value)
 
-    assert refresh_task_status(task.id) == SDKGenerationStatusEnum.PENDING.value
+    assert refresh_task_status(task.id) == SDKGenerationStatusEnum.RUNNING.value
 
 
 def test_refresh_and_serialization_report_partial_task(fake_resource_version):
@@ -137,7 +212,30 @@ def test_refresh_and_serialization_report_partial_task(fake_resource_version):
     assert payload["items"][1]["error"] == {"code": "build_failed", "message": "failed"}
 
 
-def test_legacy_sdk_coordinate_is_immutable(fake_gateway, fake_resource_version):
+@pytest.mark.parametrize(
+    ("statuses", "expected"),
+    [
+        (["pending"], "pending"),
+        (["running"], "running"),
+        (["pending", "success"], "running"),
+        (["success"], "success"),
+        (["failed"], "failed"),
+        (["success", "failed"], "partial"),
+    ],
+)
+def test_refresh_task_status_precedence(fake_resource_version, statuses, expected):
+    languages = ["python", "java"][: len(statuses)]
+    task = create_or_resume_generation(fake_resource_version, languages, "admin")
+    for item, status in zip(task.items.order_by("id"), statuses, strict=True):
+        item.status = status
+        item.save(update_fields=["status"])
+
+    assert refresh_task_status(task.id) == expected
+
+
+def test_legacy_sdk_is_linked_as_success_without_enqueue_or_update(
+    fake_gateway, fake_resource_version, mocker, django_capture_on_commit_callbacks
+):
     sdk = G(
         GatewaySDK,
         gateway=fake_gateway,
@@ -149,8 +247,19 @@ def test_legacy_sdk_coordinate_is_immutable(fake_gateway, fake_resource_version)
     sdk.config = {}
     sdk.save(update_fields=["_config"])
 
-    with pytest.raises(LegacySDKVersionConflict):
-        create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    original = (sdk.name, sdk.url, sdk._config, sdk.updated_time)
+    enqueue = mocker.Mock()
+
+    with django_capture_on_commit_callbacks(execute=True):
+        task = create_or_resume_generation(fake_resource_version, ["python"], "admin", enqueue)
+
+    item = task.items.get()
+    sdk.refresh_from_db()
+    assert item.gateway_sdk == sdk
+    assert item.status == "success"
+    assert not item.artifacts.exists()
+    assert (sdk.name, sdk.url, sdk._config, sdk.updated_time) == original
+    enqueue.assert_not_called()
 
 
 def _patch_pipeline(mocker, bkrepo, *, publisher_side_effect=None):
@@ -180,7 +289,10 @@ def test_execute_commits_generic_before_success_and_projects_sdk(fake_gateway, f
     bkrepo = FakeBKRepo()
     _patch_pipeline(mocker, bkrepo)
 
-    assert execute_generation_item(item.id, "celery-1") == SDKGenerationStatusEnum.SUCCESS.value
+    result = execute_generation_item(item.id, "celery-1")
+    assert result is not None
+    assert result.status == SDKGenerationStatusEnum.SUCCESS.value
+    assert result.retry_delay_seconds is None
 
     item.refresh_from_db()
     assert item.artifacts.filter(
@@ -189,27 +301,67 @@ def test_execute_commits_generic_before_success_and_projects_sdk(fake_gateway, f
         status=SDKGenerationStatusEnum.SUCCESS.value,
     ).exists()
     sdk = GatewaySDK.objects.get(gateway=fake_gateway, language="python", version_number=fake_resource_version.version)
-    assert sdk.config["generation_item_id"] == item.id
-    assert sdk.config["artifacts"]
+    assert sdk.config == {}
+    assert sdk.generation_item.id == item.id
 
 
-def test_partial_native_retry_restores_generic_without_rebuild(fake_resource_version, mocker):
+def test_transient_failure_retries_at_30_then_120_and_third_failure_is_terminal(fake_resource_version, mocker):
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
     bkrepo = FakeBKRepo()
-    build, publish = _patch_pipeline(
-        mocker,
-        bkrepo,
-        publisher_side_effect=SDKGenerateError("native_publish_failed", "upload failed"),
+    _patch_pipeline(mocker, bkrepo)
+    mocker.patch(
+        "apigateway.biz.sdk.orchestrator.generate_client",
+        side_effect=SDKGenerationError("temporary_network", "temporary failure", retryable=True),
     )
 
-    assert execute_generation_item(item.id, "celery-1") == SDKGenerationStatusEnum.PARTIAL.value
-    assert item.artifacts.filter(filename="manifest.json", status=SDKGenerationStatusEnum.SUCCESS.value).exists()
+    countdowns = []
+    for attempt in range(3):
+        if attempt:
+            item.refresh_from_db()
+            item.next_attempt_at = timezone.now() - timedelta(seconds=1)
+            item.save(update_fields=["next_attempt_at"])
+        result = execute_generation_item(item.id, f"celery-{attempt}")
+        assert result is not None
+        if result.retry_delay_seconds is not None:
+            countdowns.append(result.retry_delay_seconds)
 
-    publish.side_effect = None
-    publish.return_value = []
-    assert execute_generation_item(item.id, "celery-2") == SDKGenerationStatusEnum.SUCCESS.value
-    assert build.call_count == 1
+    item.refresh_from_db()
+    assert countdowns == [30, 120]
+    assert item.attempt_count == 3
+    assert item.attempt_cycle_count == 3
+    assert item.status == "failed"
+
+
+def test_deterministic_failure_is_terminal_immediately(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    _patch_pipeline(mocker, bkrepo)
+    mocker.patch(
+        "apigateway.biz.sdk.orchestrator.generate_client",
+        side_effect=SDKGenerationError("generator_validation", "invalid input"),
+    )
+
+    result = execute_generation_item(item.id, "celery-1")
+
+    assert result is not None
+    assert result.status == "failed"
+    assert result.retry_delay_seconds is None
+    item.refresh_from_db()
+    assert item.attempt_count == 1
+    assert item.attempt_cycle_count == 1
+
+
+@pytest.mark.parametrize(("status_code", "retryable"), [(429, True), (503, True), (401, False)])
+def test_remote_http_error_classification(status_code, retryable):
+    response = requests.Response()
+    response.status_code = status_code
+    error = requests.HTTPError(response=response)
+
+    classified = _classify_generation_error(error)
+
+    assert classified.retryable is retryable
 
 
 def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_version, mocker):
@@ -229,7 +381,9 @@ def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_ver
 
     bkrepo.upload_generic_file = fail_first_manifest
 
-    assert execute_generation_item(item.id, "celery-1") == SDKGenerationStatusEnum.FAILED.value
+    first = execute_generation_item(item.id, "celery-1")
+    assert first is not None
+    assert first.status == SDKGenerationStatusEnum.FAILED.value
 
     def build_changed(_language, _source, output, _config):
         output.mkdir(parents=True, exist_ok=True)
@@ -239,7 +393,10 @@ def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_ver
 
     build.side_effect = build_changed
 
-    assert execute_generation_item(item.id, "celery-2") == SDKGenerationStatusEnum.SUCCESS.value
+    task.items.filter(id=item.id).update(status="pending", attempt_cycle_count=0)
+    second = execute_generation_item(item.id, "celery-2")
+    assert second is not None
+    assert second.status == SDKGenerationStatusEnum.SUCCESS.value
     artifact = item.artifacts.get(filename="demo.whl")
     assert bkrepo.files[artifact.remote_key] == b"changed-wheel"
 
@@ -257,37 +414,39 @@ def test_execute_stops_after_lease_is_stolen(fake_resource_version, mocker, capl
     record_result = mocker.patch("apigateway.biz.sdk.metrics.SDKGenerationMetrics.record_result")
 
     with caplog.at_level(logging.WARNING):
-        assert execute_generation_item(item.id, "celery-1") == SDKGenerationStatusEnum.RUNNING.value
+        result = execute_generation_item(item.id, "celery-1")
+        assert result is not None
+        assert result.status == SDKGenerationStatusEnum.RUNNING.value
 
     build.assert_not_called()
     publish.assert_not_called()
-    record_result.assert_called_once_with("python", "lease_lost")
+    record_result.assert_called_once_with("python", "failed", "lease_lost")
     assert "lease" in caplog.text.lower()
 
 
 def test_retry_enqueues_only_failed_partial_and_expired(
     fake_resource_version, mocker, django_capture_on_commit_callbacks
 ):
-    task = create_or_resume_generation(fake_resource_version, ["python", "go", "rust"], "admin")
+    task = create_or_resume_generation(fake_resource_version, ["python", "go", "javascript"], "admin")
     python = task.items.get(language="python")
     go = task.items.get(language="go")
-    rust = task.items.get(language="rust")
+    javascript = task.items.get(language="javascript")
     python.status = SDKGenerationStatusEnum.FAILED.value
     python.save(update_fields=["status"])
     go.status = SDKGenerationStatusEnum.SUCCESS.value
     go.save(update_fields=["status"])
-    rust.status = SDKGenerationStatusEnum.RUNNING.value
-    rust.lease_expires_at = timezone.now() - timedelta(seconds=1)
-    rust.save(update_fields=["status", "lease_expires_at"])
+    javascript.status = SDKGenerationStatusEnum.RUNNING.value
+    javascript.lease_expires_at = timezone.now() - timedelta(seconds=1)
+    javascript.save(update_fields=["status", "lease_expires_at"])
     refresh_task_status(task.id)
     enqueue = mocker.Mock()
 
     with django_capture_on_commit_callbacks(execute=True):
         retry_generation_task(task, enqueue)
 
-    enqueue.assert_called_once_with([python.id, rust.id])
-    assert set(task.items.filter(id__in=[python.id, rust.id]).values_list("status", flat=True)) == {
+    enqueue.assert_called_once_with([python.id, javascript.id])
+    assert set(task.items.filter(id__in=[python.id, javascript.id]).values_list("status", flat=True)) == {
         SDKGenerationStatusEnum.PENDING.value
     }
     task.refresh_from_db()
-    assert task.status == SDKGenerationStatusEnum.PENDING.value
+    assert task.status == SDKGenerationStatusEnum.RUNNING.value

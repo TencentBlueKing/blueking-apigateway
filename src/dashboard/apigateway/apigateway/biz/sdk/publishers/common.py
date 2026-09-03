@@ -86,7 +86,7 @@ def run_publisher(command: list[str], *, cwd: Path, env: dict[str, str] | None =
             timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
         )
     except subprocess.TimeoutExpired as error:
-        raise SDKGenerateError("native_publish_failed", "native SDK publication timed out") from error
+        raise SDKGenerateError("native_publish_failed", "native SDK publication timed out", retryable=True) from error
     if result.returncode != 0:
         stderr = " ".join((result.stderr or "").split())[:768]
         detail = f": {stderr}" if stderr else ""

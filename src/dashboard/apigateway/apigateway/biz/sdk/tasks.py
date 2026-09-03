@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apigateway.apps.support.constants import SDKGenerationStatusEnum
 from apigateway.apps.support.models import SDKGenerationItem
-from apigateway.biz.sdk.config import get_sdk_generation_config
+from apigateway.biz.sdk.config import get_sdk_generation_config, get_sdk_generation_policy
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.orchestrator import execute_generation_item, refresh_task_status
 from apigateway.biz.sdk.storage import delete_incomplete_artifacts
@@ -22,7 +22,7 @@ PENDING_RECOVERY_SECONDS = 300
 
 
 def enqueue_generation_items(item_ids: list[int]) -> None:
-    queue = get_sdk_generation_config().queue
+    queue = get_sdk_generation_policy().queue
     for item_id in item_ids:
         generate_sdk_item.apply_async(args=[item_id], queue=queue)
 
@@ -43,13 +43,22 @@ def _update_item_metrics() -> None:
     ignore_result=True,
 )
 def generate_sdk_item(self, item_id: int) -> str | None:
-    status = execute_generation_item(item_id, self.request.id or "unknown")
+    result = execute_generation_item(item_id, self.request.id or "unknown")
+    if result and result.retry_delay_seconds is not None:
+        generate_sdk_item.apply_async(
+            args=(item_id,),
+            countdown=result.retry_delay_seconds,
+            queue=get_sdk_generation_policy().queue,
+        )
     _update_item_metrics()
-    return status
+    return result.status if result else None
 
 
 @shared_task(name="apigateway.biz.sdk.tasks.recover_stale_sdk_generation_items", ignore_result=True)
 def recover_stale_sdk_generation_items() -> int:
+    if not get_sdk_generation_policy().enabled:
+        _update_item_metrics()
+        return 0
     now = timezone.now()
     with transaction.atomic():
         items = list(
@@ -60,7 +69,13 @@ def recover_stale_sdk_generation_items() -> int:
                 )
                 | Q(
                     status=SDKGenerationStatusEnum.PENDING.value,
-                    updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
+                )
+                & (
+                    Q(next_attempt_at__lte=now)
+                    | Q(
+                        next_attempt_at__isnull=True,
+                        updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
+                    )
                 )
             )
         )
@@ -73,6 +88,7 @@ def recover_stale_sdk_generation_items() -> int:
             status=SDKGenerationStatusEnum.PENDING.value,
             lease_token="",
             lease_expires_at=None,
+            next_attempt_at=None,
             updated_time=now,
         )
         for task_id in task_ids:
@@ -99,6 +115,12 @@ def cleanup_incomplete_sdk_artifacts() -> int:
     deleted = 0
     for item_id in item_ids.iterator():
         item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
-        deleted += delete_incomplete_artifacts(item, bkrepo, stale_before=cutoff, expired_before=now)
+        deleted += delete_incomplete_artifacts(
+            item,
+            bkrepo,
+            expected_fingerprint=item.input_fingerprint,
+            stale_before=cutoff,
+            expired_before=now,
+        )
     _update_item_metrics()
     return deleted

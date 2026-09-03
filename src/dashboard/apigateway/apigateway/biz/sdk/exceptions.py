@@ -25,14 +25,18 @@ class GenerateError(SDKException):
     """生成错误"""
 
 
-class SDKGenerateError(GenerateError):
-    def __init__(self, code: str, message: str):
+class SDKGenerationError(GenerateError):
+    def __init__(self, code: str, message: str, *, retryable: bool = False):
         self.code = code
         self.message = message
+        self.retryable = retryable
         super().__init__(message)
 
 
-class SDKArtifactConflict(SDKGenerateError):
+SDKGenerateError = SDKGenerationError
+
+
+class SDKArtifactConflict(SDKGenerationError):
     def __init__(self, message: str):
         super().__init__("artifact_conflict", message)
 

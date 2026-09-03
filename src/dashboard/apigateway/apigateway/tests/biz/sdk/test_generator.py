@@ -136,6 +136,7 @@ def test_generate_client_sanitizes_failures(mocker, python_language_config, tmp_
         generate_client(spec_path, tmp_path / "out", python_language_config)
 
     assert exc_info.value.code == "generator_failed"
+    assert exc_info.value.retryable is False
     assert expected_fragment in str(exc_info.value)
     assert "sensitive" in str(exc_info.value)
     assert len(str(exc_info.value)) < 1200
@@ -153,6 +154,7 @@ def test_generate_client_maps_timeout(mocker, python_language_config, tmp_path):
         generate_client(spec_path, tmp_path / "out", python_language_config)
 
     assert exc_info.value.code == "generator_failed"
+    assert exc_info.value.retryable is True
     assert "timed out" in str(exc_info.value)
 
 
