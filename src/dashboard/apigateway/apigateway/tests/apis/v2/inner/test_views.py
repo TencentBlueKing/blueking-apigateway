@@ -47,6 +47,8 @@ from apigateway.apps.mcp_server.models import (
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
@@ -151,10 +153,24 @@ class TestGatewayOutputSLZ:
     ):
         fake_gateway.tenant_mode = "global"
         fake_gateway.tenant_id = ""
-        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        GatewayMember.objects.filter(gateway=fake_gateway).delete()
+        for username in ["7idwx3b7nzk6xigs", "bbb"]:
+            G(
+                GatewayMember,
+                gateway=fake_gateway,
+                username=username,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
         mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
 
-        slz = output_slz_cls(fake_gateway)
+        slz = output_slz_cls(
+            fake_gateway,
+            context={
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(
+                    [fake_gateway.id]
+                ),
+            },
+        )
 
         assert slz.data["maintainers"] == ["张三", "李四"]
         mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs", "bbb"])
@@ -179,9 +195,23 @@ class TestGatewayOutputSLZ:
     ):
         fake_gateway.tenant_mode = "global"
         fake_gateway.tenant_id = ""
-        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        GatewayMember.objects.filter(gateway=fake_gateway).delete()
+        for username in ["7idwx3b7nzk6xigs", "bbb"]:
+            G(
+                GatewayMember,
+                gateway=fake_gateway,
+                username=username,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
 
-        slz = output_slz_cls(fake_gateway)
+        slz = output_slz_cls(
+            fake_gateway,
+            context={
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(
+                    [fake_gateway.id]
+                ),
+            },
+        )
 
         assert slz.data["maintainers"] == ["7idwx3b7nzk6xigs", "bbb"]
 
@@ -682,6 +712,12 @@ class TestMCPServerAppPermissionApplyCreateApi:
         )
 
         another_gateway = G(Gateway, status=GatewayStatusEnum.ACTIVE.value)
+        G(
+            GatewayMember,
+            gateway=another_gateway,
+            username="another-admin",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
         another_stage = G(Stage, gateway=another_gateway, status=StageStatusEnum.ACTIVE.value)
         another_mcp_server = G(
             MCPServer,
@@ -1068,8 +1104,15 @@ class TestMCPServerAppPermissionRecordListApi:
         mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
         fake_gateway.tenant_mode = "global"
         fake_gateway.tenant_id = ""
-        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
-        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        GatewayMember.objects.filter(gateway=fake_gateway).delete()
+        for username in ["7idwx3b7nzk6xigs", "bbb"]:
+            G(
+                GatewayMember,
+                gateway=fake_gateway,
+                username=username,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
 
         mcp_server = G(
             MCPServer,
@@ -1579,8 +1622,15 @@ class TestAppPermissionRecordListApi:
         mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
         fake_gateway.tenant_mode = "single"
         fake_gateway.tenant_id = "tenant-1"
-        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
-        fake_gateway.save(update_fields=["tenant_mode", "tenant_id", "_maintainers"])
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+        GatewayMember.objects.filter(gateway=fake_gateway).delete()
+        for username in ["7idwx3b7nzk6xigs", "bbb"]:
+            G(
+                GatewayMember,
+                gateway=fake_gateway,
+                username=username,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
 
         G(
             AppPermissionRecord,
@@ -2273,7 +2323,11 @@ class TestMCPServerListApi:
     def test_list_public_active_mcp_servers(self, request_view, fake_gateway):
         """测试获取活跃的 MCPServer 列表"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.is_official = True
         fake_gateway.save()
 
@@ -2442,7 +2496,11 @@ class TestMCPServerListApi:
     def test_list_with_keyword_filter(self, request_view, fake_gateway):
         """测试使用关键字筛选 MCPServer"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -2551,7 +2609,11 @@ class TestMCPServerLookupApi:
 
     def test_lookup_with_ids_returns_unpaginated_results(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.is_official = True
         fake_gateway.save()
 
@@ -2674,7 +2736,11 @@ class TestMCPServerListOutputApi:
     def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.is_official = True
         fake_gateway.save()
 
@@ -2710,7 +2776,11 @@ class TestMCPServerListOutputApi:
     def test_list_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.is_official = True
         fake_gateway.save()
 
@@ -2746,7 +2816,11 @@ class TestMCPServerListOutputApi:
     def test_list_returns_tool_names(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 tool_names（含重命名场景）"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.is_official = True
         fake_gateway.save()
 

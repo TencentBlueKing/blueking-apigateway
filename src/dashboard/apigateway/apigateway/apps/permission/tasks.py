@@ -42,6 +42,7 @@ from apigateway.apps.permission.models import (
     AppPermissionRecord,
     AppResourcePermission,
 )
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkcmsi import cmsi_component
@@ -87,7 +88,7 @@ def send_mail_for_perm_apply(record_id):
 
     params = {
         "title": title,
-        "receiver__username": ";".join(record.gateway.maintainers),
+        "receiver__username": ";".join(GatewayMember.objects.list_gateway_approvers(record.gateway_id)),
         "content": mail_content,
         "attachments": [
             {

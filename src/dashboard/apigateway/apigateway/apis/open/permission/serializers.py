@@ -287,7 +287,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
     def get_handled_by(self, obj):
         if obj.handled_by:
             return [obj.handled_by]
-        return obj.gateway.maintainers
+        return self.context["gateway_approvers_map"].get(obj.gateway_id, [])
 
     def get_comment(self, obj):
         return obj.comment or ""

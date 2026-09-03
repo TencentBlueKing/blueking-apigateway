@@ -29,6 +29,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.permissions import GatewayApprovalPermission
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
@@ -943,6 +944,7 @@ class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQue
     ),
 )
 class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuerySetMixin, generics.UpdateAPIView):
+    permission_classes = [GatewayApprovalPermission]
     serializer_class = MCPServerAppPermissionApplyUpdateInputSLZ
     lookup_url_kwarg = "id"
 

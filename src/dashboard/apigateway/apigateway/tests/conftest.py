@@ -41,6 +41,7 @@ from apigateway.apps.openapi.models import (
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
+from apigateway.biz.gateway import replace_gateway_administrators
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
@@ -125,15 +126,16 @@ def fake_request(request_factory):
 
 @pytest.fixture
 def fake_gateway(faker):
+    maintainers = [FAKE_USERNAME]
     gateway = G(
         Gateway,
         name=faker.pystr(),
-        _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
         tenant_mode="single",
         tenant_id="default",
     )
+    replace_gateway_administrators(gateway, maintainers, FAKE_USERNAME)
 
     GatewayAuthContext().save(gateway.pk, {})
 

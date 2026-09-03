@@ -298,8 +298,6 @@ layers = [
 ]
 ignore_imports = [
     # 可信的依赖
-    "apigateway.common.permissions.permissions -> apigateway.core.models",
-    "apigateway.common.permissions.permissions -> apigateway.core.constants",
     "apigateway.common.factories.schema -> apigateway.core.constants",
     # 可忽略的依赖
     # -- accepted django command entrypoints

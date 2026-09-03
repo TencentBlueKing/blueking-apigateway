@@ -120,28 +120,8 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_api"
 
     @property
-    def maintainers(self) -> List[str]:
-        if not self._maintainers:
-            return []
-        # 去除额外字符，避免前端人员选择器失败
-        return self._maintainers.rstrip(";,").split(";")
-
-    @maintainers.setter
-    def maintainers(self, data: List[str]):
-        self._maintainers = ";".join(data)
-
-    @property
     def doc_maintainers(self) -> Dict:
-        if not self._doc_maintainers or self._doc_maintainers.get("type") == "":
-            return {
-                "type": "user",
-                "contacts": self.maintainers,
-                "service_account": {
-                    "name": "",
-                    "link": "",
-                },
-            }
-        return self._doc_maintainers
+        return self._doc_maintainers or {}
 
     @doc_maintainers.setter
     def doc_maintainers(self, data: Dict):
@@ -180,12 +160,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         else:
             # 非编程网关，额外信息为空
             self._extra_info = {}
-
-    def has_permission(self, username):
-        """
-        用户是否有网关操作权限，只有网关维护者有权限，创建者仅作为标记，不具有权限
-        """
-        return username in self.maintainers
 
     @property
     def is_programmable(self):

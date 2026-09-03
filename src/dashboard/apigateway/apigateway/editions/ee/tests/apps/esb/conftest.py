@@ -24,6 +24,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
+from apigateway.biz.gateway import replace_gateway_administrators
 from apigateway.core.models import Gateway
 from apigateway.service.contexts import GatewayAuthContext
 
@@ -57,10 +58,10 @@ def fake_gateway(faker):
     gateway = G(
         Gateway,
         name=faker.pystr(),
-        _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
     )
+    replace_gateway_administrators(gateway, [FAKE_USERNAME], FAKE_USERNAME)
 
     GatewayAuthContext().save(gateway.pk, {})
 

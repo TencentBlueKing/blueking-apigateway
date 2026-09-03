@@ -49,6 +49,7 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -324,7 +325,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
 
         data = slz.validated_data
 
-        queryset = AppPermissionRecord.objects.all()
+        queryset = AppPermissionRecord.objects.select_related("gateway")
         queryset = AppPermissionRecord.objects.filter_record(
             queryset,
             bk_app_code=data["target_app_code"],
@@ -337,7 +338,14 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         )
 
         page = self.paginate_queryset(queryset)
-        slz = serializers.AppPermissionRecordSLZ(page, many=True)
+        gateway_ids = {record.gateway_id for record in page}
+        slz = serializers.AppPermissionRecordSLZ(
+            page,
+            many=True,
+            context={
+                "gateway_approvers_map": GatewayMember.objects.build_gateway_approvers_map(gateway_ids),
+            },
+        )
         return V1OKJsonResponse("OK", data=self.paginator.get_paginated_data(slz.data))
 
     def retrieve(self, request, record_id: int, *args, **kwargs):
@@ -347,7 +355,10 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         data = slz.validated_data
 
         try:
-            record = AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+            record = AppPermissionRecord.objects.select_related("gateway").get(
+                bk_app_code=data["target_app_code"],
+                id=record_id,
+            )
         except AppPermissionRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
 
@@ -355,6 +366,7 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
             record,
             context={
                 "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=record.gateway.id),
+                "gateway_approvers_map": GatewayMember.objects.build_gateway_approvers_map([record.gateway_id]),
             },
         )
         return V1OKJsonResponse("OK", data=slz.data)

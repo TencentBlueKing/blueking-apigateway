@@ -110,7 +110,9 @@ class TestStageApi:
         )
         mocker.patch("apigateway.apis.web.stage.serializers.PublishValidator.__call__", return_value=None)
 
-        with django_assert_num_queries(2):
+        # Gateway membership is now checked through GatewayMember instead of
+        # the legacy maintainers string, adding one exact membership query.
+        with django_assert_num_queries(3):
             response = request_view(
                 "GET",
                 "stage.list-create",

@@ -56,6 +56,7 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
 )
 from apigateway.apps.permission.models import AppResourcePermission
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
@@ -676,7 +677,11 @@ class MCPServerHandler:
         if instance.stage.status != StageStatusEnum.ACTIVE.value:
             raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关对应的环境未启用，无法访问。"))
 
-        if check_public and not instance.is_public and (not username or username not in instance.gateway.maintainers):
+        if (
+            check_public
+            and not instance.is_public
+            and (not username or not GatewayMember.objects.is_gateway_administrator(instance.gateway_id, username))
+        ):
             raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未公开，无法访问。"))
 
     @staticmethod
@@ -842,11 +847,12 @@ class MCPServerHandler:
             序列化所需的 context 字典
         """
         gateway_ids = list({ms.gateway.id for ms in mcp_servers})
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(gateway_ids)
         gateways = {
             gw.id: {
                 "id": gw.id,
                 "name": gw.name,
-                "maintainers": gw.maintainers,
+                "maintainers": gateway_administrators.get(gw.id, []),
                 "is_official": gw.is_official,
             }
             for gw in Gateway.objects.filter(id__in=gateway_ids)
@@ -916,7 +922,8 @@ class MCPServerHandler:
             resource_names=instance.resource_names,
         )
         instance.tools = tool_resources
-        instance.maintainers = instance.gateway.maintainers
+        gateway_administrators = GatewayMember.objects.list_gateway_administrators(instance.gateway_id)
+        instance.maintainers = gateway_administrators
 
         prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
         prompts = MCPServerHandler.get_prompts(instance.id)
@@ -939,7 +946,7 @@ class MCPServerHandler:
             instance.gateway.id: {
                 "id": instance.gateway.id,
                 "name": instance.gateway.name,
-                "maintainers": instance.gateway.maintainers,
+                "maintainers": gateway_administrators,
                 "is_official": instance.gateway.is_official,
             }
         }

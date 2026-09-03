@@ -259,7 +259,8 @@ class TestReleaseHistoryListApi:
             resource_version = G(ResourceVersion, gateway=fake_gateway, version=f"1.0.{index}")
             G(ReleaseHistory, gateway=fake_gateway, stage=stage, resource_version=resource_version)
 
-        with django_assert_num_queries(4):
+        # Gateway permission now reads the exact administrator membership.
+        with django_assert_num_queries(5):
             resp = request_view(
                 method="GET",
                 view_name="gateway.release_histories.list",
@@ -322,7 +323,8 @@ class TestReleaseHistoryEventsRetrieveAPI:
             created_time=dummy_time.time + datetime.timedelta(seconds=10),
         )
 
-        with django_assert_num_queries(4):
+        # Gateway permission now reads the exact administrator membership.
+        with django_assert_num_queries(5):
             resp = request_view(
                 method="GET",
                 view_name="gateway.release_histories.events",

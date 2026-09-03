@@ -46,6 +46,7 @@ from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.access_log import LogSearchClient
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
@@ -236,11 +237,16 @@ class GatewayLookupApi(generics.ListAPIView):
         if tenant_id:
             queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
         queryset = queryset.order_by("name", "id")
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
 
         output_slz = serializers.GatewayLookupOutputSLZ(
-            queryset,
+            gateways,
             many=True,
-            context=self.get_serializer_context(),
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
+            },
             fields=data.get("fields") or serializers.GATEWAY_LOOKUP_DEFAULT_FIELDS,
         )
         return OKJsonResponse(data=output_slz.data)
@@ -375,7 +381,16 @@ class GatewayListApi(generics.ListAPIView):
                 kind_query |= Q(kind__isnull=True)
             queryset = queryset.filter(kind_query)
 
-        output_slz = self.get_serializer(queryset, many=True)
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
+        output_slz = self.get_serializer(
+            gateways,
+            many=True,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
+            },
+        )
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 
         return OKJsonResponse(data=output_data)
@@ -413,7 +428,13 @@ class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = self.get_serializer(instance)
+        slz = self.get_serializer(
+            instance,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map([instance.id]),
+            },
+        )
         return OKJsonResponse(data=slz.data)
 
     @transaction.atomic
@@ -664,7 +685,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = AppPermissionRecord.objects.all()
+        queryset = AppPermissionRecord.objects.select_related("gateway")
         queryset = AppPermissionRecord.objects.filter_record(
             queryset,
             bk_app_code=data["target_app_code"],
@@ -677,7 +698,14 @@ class AppPermissionRecordListApi(generics.ListAPIView):
         )
 
         page = self.paginate_queryset(queryset)
-        slz = serializers.AppPermissionRecordListOutputSLZ(page, many=True)
+        gateway_ids = {record.gateway_id for record in page}
+        slz = serializers.AppPermissionRecordListOutputSLZ(
+            page,
+            many=True,
+            context={
+                "gateway_approvers_map": GatewayMember.objects.build_gateway_approvers_map(gateway_ids),
+            },
+        )
         return self.get_paginated_response(slz.data)
 
 
@@ -705,7 +733,10 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         data = slz.validated_data
 
         try:
-            return AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+            return AppPermissionRecord.objects.select_related("gateway").get(
+                bk_app_code=data["target_app_code"],
+                id=record_id,
+            )
         except AppPermissionRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
 
@@ -716,6 +747,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             instance,
             context={
                 "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=instance.gateway.id),
+                "gateway_approvers_map": GatewayMember.objects.build_gateway_approvers_map([instance.gateway_id]),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -929,9 +961,10 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value).select_related(
-            "gateway", "stage"
-        )
+        queryset = MCPServer.objects.filter(
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        ).select_related("gateway", "stage")
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
@@ -940,7 +973,11 @@ class MCPServerPermissionListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
-        mcp_server_ids = list(queryset.values_list("id", flat=True))
+        mcp_servers = list(queryset)
+        mcp_server_ids = [mcp_server.id for mcp_server in mcp_servers]
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map(
+            {mcp_server.gateway_id for mcp_server in mcp_servers}
+        )
         target_app_code = data["target_app_code"]
 
         # 1. 查询 MCPServerAppPermission（实际权限表），覆盖主动授权（grant）和申请通过（apply）两种场景
@@ -977,12 +1014,12 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         mcp_server_permissions = []
         # Build categories map for queryset
-        categories_map = MCPServerHandler.build_categories_map([obj.id for obj in queryset])
+        categories_map = MCPServerHandler.build_categories_map(mcp_server_ids)
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        least_privileges = MCPServerHandler.get_least_privileges(list(queryset))
+        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
 
-        for obj in queryset:
+        for obj in mcp_servers:
             permission_status = mcp_server_permission_status.get(
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
             )
@@ -1004,7 +1041,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "status": permission_status,
                         "action": action,
                         "expires_in": None,
-                        "handled_by": [handled_by] if handled_by else obj.gateway.maintainers,
+                        "handled_by": [handled_by] if handled_by else gateway_approvers_map.get(obj.gateway_id, []),
                         "mcp_server_id": obj.id,
                         "gateway_id": obj.gateway_id,
                         "itsm_ticket_id": itsm_ticket_id,
@@ -1087,6 +1124,10 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
             granted_permissions = mcp_server_related_filter_by_user_tenant_id(granted_permissions, tenant_id)
+        granted_permissions = list(granted_permissions)
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map(
+            {permission.mcp_server.gateway_id for permission in granted_permissions}
+        )
 
         # 2. 查询申请通过的记录，用于获取 handled_by 信息
         approved_applies = MCPServerAppPermissionApply.objects.filter(
@@ -1112,7 +1153,9 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
                     "action": "",
                     "expires_in": None,
-                    "handled_by": [handled_by_map.get(perm.mcp_server_id, "")],
+                    "handled_by": [handled_by_map[perm.mcp_server_id]]
+                    if handled_by_map.get(perm.mcp_server_id)
+                    else gateway_approvers_map.get(perm.mcp_server.gateway_id, []),
                     "mcp_server_id": perm.mcp_server_id,
                     "gateway_id": perm.mcp_server.gateway_id,
                 },
@@ -1157,10 +1200,18 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             data.get("query"),
             data.get("applied_time_start"),
             data.get("applied_time_end"),
-        ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
+        ).select_related(
+            "mcp_server",
+            "mcp_server__gateway",
+            "mcp_server__stage",
+        )
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
+        records = list(queryset)
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map(
+            {record.mcp_server.gateway_id for record in records}
+        )
 
         mcp_server_permission_records = [
             {
@@ -1170,7 +1221,9 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "bk_app_code": obj.bk_app_code,
                     "applied_by": obj.applied_by,
                     "applied_time": obj.applied_time,
-                    "handled_by": [obj.handled_by] if obj.handled_by else obj.mcp_server.gateway.maintainers,
+                    "handled_by": [obj.handled_by]
+                    if obj.handled_by
+                    else gateway_approvers_map.get(obj.mcp_server.gateway_id, []),
                     "handled_time": obj.handled_time,
                     "apply_status": obj.status,
                     "apply_status_display": MCPServerAppPermissionApplyStatusEnum.get_choice_label(obj.status),
@@ -1184,14 +1237,14 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "tenant_id": obj.mcp_server.gateway.tenant_id,
                 },
             }
-            for obj in queryset
+            for obj in records
         ]
 
         # Build categories map
-        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in records])
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        mcp_servers = [obj.mcp_server for obj in queryset]
+        mcp_servers = [obj.mcp_server for obj in records]
         least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
 
         slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(
@@ -1230,8 +1283,13 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
         try:
             queryset = MCPServerAppPermissionApply.objects.select_related(
-                "mcp_server", "mcp_server__gateway", "mcp_server__stage"
-            ).filter(bk_app_code=data["target_app_code"], id=record_id)
+                "mcp_server",
+                "mcp_server__gateway",
+                "mcp_server__stage",
+            ).filter(
+                bk_app_code=data["target_app_code"],
+                id=record_id,
+            )
             tenant_id = get_request_tenant_id(self.request)
             if tenant_id:
                 queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
@@ -1241,6 +1299,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map([instance.mcp_server.gateway_id])
 
         mcp_server_permission_record = {
             "mcp_server": instance.mcp_server,
@@ -1250,7 +1309,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "applied_time": instance.applied_time,
                 "handled_by": [instance.handled_by]
                 if instance.handled_by
-                else instance.mcp_server.gateway.maintainers,
+                else gateway_approvers_map.get(instance.mcp_server.gateway_id, []),
                 "handled_time": instance.handled_time,
                 "apply_status": instance.status,
                 "apply_status_display": MCPServerAppPermissionApplyStatusEnum.get_choice_label(instance.status),
