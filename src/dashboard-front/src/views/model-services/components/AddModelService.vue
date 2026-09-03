@@ -385,6 +385,7 @@ const createDetailStageConfig = (
   const formConfig = createEditAIBackendConfigFormData(config, stage.id);
   if (isClone) {
     formConfig.apiKey = '';
+    formConfig.authHeaderValue = '';
     formConfig.testStatus = 'untested';
     formConfig.testConfigSnapshot = undefined;
     formConfig.initialTestConfigSnapshot = undefined;
