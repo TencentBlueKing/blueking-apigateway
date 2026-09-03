@@ -83,13 +83,19 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         if page is not None:
             backend_ids = [backend.id for backend in page]
             serializer = BackendListOutputSLZ(
-                page, many=True, context={"resource_count": ProxyHandler.get_resource_count_by_backend(backend_ids)}
+                page,
+                many=True,
+                context={
+                    "resource_count": ProxyHandler.get_resource_count_by_backend(request.gateway.id, backend_ids)
+                },
             )
             return self.get_paginated_response(serializer.data)
 
         backend_ids = [backend.id for backend in queryset]
         serializer = BackendListOutputSLZ(
-            page, many=True, context={"resource_count": ProxyHandler.get_resource_count_by_backend(backend_ids)}
+            page,
+            many=True,
+            context={"resource_count": ProxyHandler.get_resource_count_by_backend(request.gateway.id, backend_ids)},
         )
         return OKJsonResponse(data=serializer.data)
 

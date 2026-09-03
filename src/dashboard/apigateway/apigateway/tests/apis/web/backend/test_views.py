@@ -20,9 +20,10 @@ import logging
 
 import pytest
 from django.urls import get_resolver
+from django_dynamic_fixture import G
 
-from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
-from apigateway.core.models import Backend, BackendConfig
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
+from apigateway.core.models import Backend, BackendConfig, Release, ResourceVersion, Stage
 
 
 def _ai_config(stage_id):
@@ -289,6 +290,32 @@ class TestBackendApi:
         assert response.status_code == 200
         data = response.json()
         assert data["data"]["count"] == 1
+
+    def test_list_counts_backend_referenced_only_by_released_resource(self, request_view, fake_stage):
+        backend = G(Backend, gateway=fake_stage.gateway, name="released-backend")
+        resource_version = G(ResourceVersion, gateway=fake_stage.gateway)
+        resource_version.data = [{"id": 1, "proxy": {"backend_id": backend.id}}]
+        resource_version.save()
+        G(Release, gateway=fake_stage.gateway, stage=fake_stage, resource_version=resource_version)
+        another_stage = G(
+            Stage,
+            gateway=fake_stage.gateway,
+            status=StageStatusEnum.ACTIVE.value,
+            name="another-stage",
+        )
+        G(Release, gateway=fake_stage.gateway, stage=another_stage, resource_version=resource_version)
+
+        response = request_view(
+            "GET",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+        )
+
+        assert response.status_code == 200
+        result = response.json()["data"]["results"][0]
+        assert result["resource_count"] == 1
+        assert result["deletable"] is False
 
     def test_retrieve(self, request_view, fake_stage):
         fake_gateway = fake_stage.gateway
