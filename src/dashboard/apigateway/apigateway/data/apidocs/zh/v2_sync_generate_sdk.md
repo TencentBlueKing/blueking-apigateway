@@ -1,6 +1,6 @@
 ### 描述
 
-异步生成资源版本对应的 SDK。接口返回 HTTP 202 后，构建完成的包将发布到已配置的软件仓库。
+异步生成资源版本对应的 SDK。这是兼容旧调用的 V2 接口，成功时保持 HTTP 201 和 `data: []`，不返回任务 ID。构建完成的包将发布到已配置的软件仓库；如需查询任务状态，请使用可观测任务接口。
 
 ### 输入参数
 
@@ -15,16 +15,16 @@
 | 参数名称         | 参数类型      | 必选 | 描述                                                     |
 | ---------------- | ------------- | ---- | -------------------------------------------------------- |
 | resource_version | string        | 是   | 资源版本的版本号                                         |
-| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript、rust；兼容 golang（按 go 处理），默认为 python |
-| version          | string        | 否   | 兼容旧调用保留；包版本固定由资源版本派生，此参数不再改变包版本 |
+| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript；兼容 golang（按 go 处理），默认为 python |
+| version          | string        | 否   | 兼容旧调用保留；服务端忽略此值，包版本固定由资源版本派生 |
 
 ### 请求参数示例
 
 ```json
 {
     "resource_version": "1.0.1",
-    "languages": ["python", "golang"],
-    "version": "1.0.1"
+    "languages": ["python", "javascript"],
+    "version": "9.9.9"
 }
 ```
 
@@ -34,21 +34,14 @@
 
 ```json
 {
-    "data": {
-        "id": 1,
-        "status": "pending",
-        "status_url": "/api/v2/sync/gateways/demo/sdks/tasks/1/"
-    }
+    "data": []
 }
 ```
 
-status 202
+status 201
 
 ### 响应参数说明
 
-| 字段            | 类型   | 描述                     |
-| --------------- | ------ | ------------------------ |
-| data             | object | 异步任务受理结果         |
-| data.id          | int    | SDK 生成任务 ID          |
-| data.status      | string | SDK 生成任务状态         |
-| data.status_url  | string | SDK 生成任务状态查询地址 |
+| 字段 | 类型  | 描述                       |
+| ---- | ----- | -------------------------- |
+| data | array | 为兼容旧调用固定返回空数组 |

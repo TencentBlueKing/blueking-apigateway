@@ -17,13 +17,16 @@
 #
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from django.test import Client
 from django.urls import reverse
 from django.utils import translation
+from django_dynamic_fixture import G
 
 from apigateway.apis.web.docs.gateway.gateway_sdk.serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ
+from apigateway.core.models import GatewayRelatedApp
 
 
 @pytest.mark.parametrize("serializer_class", [SDKListInputSLZ, SDKUsageExampleInputSLZ])
@@ -69,6 +72,57 @@ class TestSDKListApi:
         assert result["data"][0]["sdk"]
         assert "package_name" in result["data"][0]["sdk"]
         assert result["data"][0]["sdk"]["artifacts"] == []
+
+    def test_non_public_gateway_is_not_visible_in_docs_center(
+        self, request_view, fake_gateway, fake_stage, fake_sdk, fake_release
+    ):
+        fake_gateway.is_public = False
+        fake_gateway.save(update_fields=["is_public"])
+
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.gateway_sdk.list",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"language": fake_sdk.language},
+        )
+
+        assert resp.status_code == 404
+
+    def test_manager_can_read_non_public_gateway_sdk_through_management(
+        self, request_view, fake_gateway, fake_admin_user, fake_sdk
+    ):
+        fake_gateway.is_public = False
+        fake_gateway.save(update_fields=["is_public"])
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.sdk.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["results"][0]["id"] == fake_sdk.id
+
+    def test_related_application_can_generate_for_non_public_gateway(
+        self, request_view, fake_gateway, fake_resource_version, settings
+    ):
+        fake_gateway.is_public = False
+        fake_gateway.save(update_fields=["is_public"])
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="related-app")
+        settings.SDK_GENERATION_ENABLED = False
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.support.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+            app=SimpleNamespace(app_code="related-app"),
+            data={"resource_version": fake_resource_version.version},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == []
 
 
 class TestSDKUsageExampleApi:
@@ -182,6 +236,9 @@ class TestSDKUsageExampleApi:
         content = resp.json()["data"]["content"]
         assert "import com.tencent.bkapi.demo.ApiClient;" in content
         assert "import com.tencent.bkapi.demo.Configuration;" in content
+        assert 'apiClient.updateBaseUri("' in content
+        assert "apiClient.setRequestInterceptor" in content
+        assert "addDefaultHeader" not in content
         assert "org.openapitools.client" not in content
 
     @pytest.mark.parametrize("language_code", ["en", "zh-hans"])
@@ -212,4 +269,39 @@ class TestSDKUsageExampleApi:
         content = resp.json()["data"]["content"]
         assert 'bkapi_demo "git.example.com/bkapi/demo"' in content
         assert "cfg := bkapi_demo.NewConfiguration()" in content
+        assert 'cfg.AddDefaultHeader("X-Bkapi-Authorization"' in content
         assert "client := bkapi_demo.NewAPIClient(cfg)" in content
+
+    @pytest.mark.parametrize("language_code", ["en", "zh-hans"])
+    def test_retrieve_javascript_uses_typescript_fetch_configuration(
+        self, request_view, fake_gateway, fake_sdk, language_code
+    ):
+        fake_sdk.language = "javascript"
+        fake_sdk._config = json.dumps(
+            {
+                "project_name": "@bkapi/openapi-demo",
+                "package_name": "@bkapi/openapi-demo",
+                "artifacts": [],
+            }
+        )
+        fake_sdk.save(update_fields=["language", "_config"])
+
+        with translation.override(language_code):
+            resp = request_view(
+                method="GET",
+                view_name="docs.gateway.gateway_sdk.retrieve_usage_example",
+                path_params={"gateway_name": fake_gateway.name},
+                data={
+                    "language": "javascript",
+                    "stage_name": "prod",
+                    "resource_name": "get_color",
+                },
+                gateway=fake_gateway,
+            )
+
+        content = resp.json()["data"]["content"]
+        assert "import { Configuration } from '@bkapi/openapi-demo';" in content
+        assert "const configuration = new Configuration({" in content
+        assert "basePath:" in content
+        assert "apiKey: JSON.stringify" in content
+        assert "ApiClient.instance" not in content

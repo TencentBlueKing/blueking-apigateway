@@ -1606,22 +1606,12 @@ paths:
                     type: boolean
                     example: true
                   data:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      status:
-                        type: string
-                      status_url:
-                        type: string
+                    type: array
               example:
                 code: 0
                 message: SDK generation started
                 result: true
-                data:
-                  id: 1
-                  status: pending
-                  status_url: /api/v1/apis/demo/sdk/tasks/1/
+                data: []
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: true
@@ -1631,70 +1621,6 @@ paths:
           name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/sdk/
-          matchSubpath: false
-          timeout: 0
-        pluginConfigs: []
-        authConfig:
-          userVerifiedRequired: false
-          appVerifiedRequired: true
-          resourcePermissionRequired: false
-        descriptionEn: None
-  /api/v1/apis/{api_name}/sdk/tasks/{task_id}/:
-    get:
-      operationId: get_sdk_generation_task
-      description: 查询 SDK 生成任务
-      tags:
-      - v1
-      parameters:
-        - name: api_name
-          in: path
-          required: true
-          schema:
-            type: string
-          description: 网关名
-          example: demo
-        - name: task_id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: SDK 生成任务 ID
-      responses:
-        '200':
-          description: SDK 生成任务详情
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                  message:
-                    type: string
-                  result:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      status:
-                        type: string
-                      resource_version:
-                        type: object
-                      items:
-                        type: array
-                        items:
-                          type: object
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: true
-        matchSubpath: false
-        enableWebsocket: false
-        backend:
-          name: default
-          method: get
-          path: /backend/api/v1/apis/{api_name}/sdk/tasks/{task_id}/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -5531,7 +5457,7 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, golang, javascript, rust]
+                    enum: [python, java, go, golang, javascript]
                   description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
                   example: ["python"]
                 version:
@@ -5594,14 +5520,23 @@ paths:
               properties:
                 resource_version:
                   type: string
+                  description: 资源版本的版本号
+                  example: "1.0.1"
                 languages:
                   type: array
                   items:
                     type: string
                     enum: [python, java, go, golang, javascript]
+                  description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
+                  example: ["python", "javascript"]
                 version:
                   type: string
                   deprecated: true
+                  description: 兼容旧调用保留；服务端忽略此值，包版本固定由资源版本派生
+            example:
+              resource_version: "1.0.1"
+              languages: ["python", "javascript"]
+              version: "9.9.9"
       responses:
         '202':
           description: SDK 生成任务已受理
@@ -5619,6 +5554,13 @@ paths:
                         type: string
                       status_url:
                         type: string
+              example:
+                data:
+                  id: 1
+                  status: pending
+                  status_url: /api/v2/sync/gateways/demo/sdk-generation-tasks/1/
+        '503':
+          description: SDK 生成功能已关闭
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -5673,10 +5615,38 @@ paths:
                         type: string
                       resource_version:
                         type: object
+                        properties:
+                          id:
+                            type: integer
+                          version:
+                            type: string
                       items:
                         type: array
                         items:
                           type: object
+                          properties:
+                            id:
+                              type: integer
+                            language:
+                              type: string
+                            status:
+                              type: string
+                            native_status:
+                              type: string
+                            attempt_count:
+                              type: integer
+                            error:
+                              type: object
+                              nullable: true
+                            native_error:
+                              type: object
+                              nullable: true
+                            download_url:
+                              type: string
+                            artifacts:
+                              type: array
+                              items:
+                                type: object
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false

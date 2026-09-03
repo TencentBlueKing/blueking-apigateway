@@ -6,6 +6,8 @@
 {% if install_command %}{{ install_command }}{% else %}curl -fLO "<BKRepo Generic distribution ZIP 地址>"{% endif %}
 ```
 
-## 配置
+## 使用生成的客户端
+
+该包直接提供 OpenAPI Generator 生成的 Java API。
 
 {% include "api_sdk/zh-hans/java_sdk_usage_example.md" %}

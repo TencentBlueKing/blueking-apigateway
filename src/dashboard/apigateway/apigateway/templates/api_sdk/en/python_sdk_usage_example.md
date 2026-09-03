@@ -13,6 +13,8 @@ configuration.api_key["BkApiAuthorization"] = json.dumps({
 })
 
 with {{ package_name|default:"bkapi_example" }}.ApiClient(configuration) as api_client:
-    # Import the generated API class that contains {{ resource_name }} and call it with api_client.
+    # Replace GeneratedApi with the generated API class that contains {{ resource_name }}.
+    # api = {{ package_name|default:"bkapi_example" }}.GeneratedApi(api_client)
+    # result = api.{{ resource_name }}(...)
     pass
 ```

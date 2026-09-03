@@ -5,9 +5,12 @@ import {{ package_name|default:"org.openapitools.client" }}.ApiClient;
 import {{ package_name|default:"org.openapitools.client" }}.Configuration;
 
 ApiClient apiClient = Configuration.getDefaultApiClient();
-apiClient.setBasePath("{{ server_url }}");
-apiClient.addDefaultHeader("X-Bkapi-Authorization",
-    "{\"bk_app_code\":\"<app-code>\",\"bk_app_secret\":\"<app-secret>\"}");
+apiClient.updateBaseUri("{{ server_url }}");
+apiClient.setRequestInterceptor(builder -> builder.header(
+    "X-Bkapi-Authorization",
+    "{\"bk_app_code\":\"<app-code>\",\"bk_app_secret\":\"<app-secret>\"}"
+));
 
-// Construct the generated API class for {{ resource_name }} with apiClient.
+// Replace GeneratedApi with the generated API class that contains {{ resource_name }}.
+// GeneratedApi api = new GeneratedApi(apiClient);
 ```

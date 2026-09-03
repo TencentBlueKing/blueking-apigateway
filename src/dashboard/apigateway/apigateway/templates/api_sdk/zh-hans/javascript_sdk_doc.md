@@ -6,6 +6,8 @@
 {% if install_command %}{{ install_command }}{% else %}npm install "<BKRepo Generic npm tgz 地址>"{% endif %}
 ```
 
-## 配置
+## 使用生成的客户端
+
+该包直接提供 OpenAPI Generator `typescript-fetch` 生成的 API。
 
 {% include "api_sdk/zh-hans/javascript_sdk_usage_example.md" %}

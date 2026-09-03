@@ -39,7 +39,7 @@ import pytest
 
 
 class TestSDKDocApi:
-    @pytest.mark.parametrize("language", ["python", "java", "go", "golang", "javascript", "rust"])
+    @pytest.mark.parametrize("language", ["python", "java", "go", "golang", "javascript"])
     def test_retrieve(self, request_view, language):
         resp = request_view(
             method="GET",

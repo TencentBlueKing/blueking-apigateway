@@ -89,16 +89,34 @@ def test_request_log_response_schema_uses_standard_paginated_object():
 def test_registered_resource_schemas_match_runtime_contracts():
     paths = yaml_loads(RESOURCE_DEFINITION_PATH.read_text())["paths"]
 
+    v1_operation = paths["/api/v1/apis/{api_name}/sdk/"]["post"]
+    assert set(v1_operation["responses"]) == {"200"}
+    v1_data_schema = v1_operation["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["data"]
+    assert v1_data_schema["type"] == "array"
+    assert "/api/v1/apis/{api_name}/sdk/tasks/{task_id}/" not in paths
+
     legacy_operation = paths["/api/v2/sync/gateways/{gateway_name}/sdks/"]["post"]
     assert set(legacy_operation["responses"]) == {"201"}
+    legacy_data_schema = legacy_operation["responses"]["201"]["content"]["application/json"]["schema"]["properties"][
+        "data"
+    ]
+    assert legacy_data_schema["type"] == "array"
+    assert (
+        "rust"
+        not in legacy_operation["requestBody"]["content"]["application/json"]["schema"]["properties"]["languages"][
+            "items"
+        ]["enum"]
+    )
+
     sdk_operation = paths["/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/"]["post"]
-    assert set(sdk_operation["responses"]) == {"202"}
+    assert set(sdk_operation["responses"]) == {"202", "503"}
     sdk_data_schema = sdk_operation["responses"]["202"]["content"]["application/json"]["schema"]["properties"]["data"]
     assert sdk_data_schema["type"] == "object"
     assert set(sdk_data_schema["properties"]) == {"id", "status", "status_url"}
     assert sdk_data_schema["properties"]["id"]["type"] == "integer"
     assert sdk_data_schema["properties"]["status"]["type"] == "string"
     assert sdk_data_schema["properties"]["status_url"]["type"] == "string"
+    assert "/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/{task_id}/" in paths
 
     retrieve_operation = paths["/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/"]["get"]
     assert {parameter["name"] for parameter in retrieve_operation["parameters"]} == {

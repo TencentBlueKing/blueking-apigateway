@@ -13,6 +13,8 @@ configuration.api_key["BkApiAuthorization"] = json.dumps({
 })
 
 with {{ package_name|default:"bkapi_example" }}.ApiClient(configuration) as api_client:
-    # 导入包含 {{ resource_name }} 的生成 API 类，并传入 api_client 调用。
+    # 将 GeneratedApi 替换为包含 {{ resource_name }} 的生成 API 类。
+    # api = {{ package_name|default:"bkapi_example" }}.GeneratedApi(api_client)
+    # result = api.{{ resource_name }}(...)
     pass
 ```

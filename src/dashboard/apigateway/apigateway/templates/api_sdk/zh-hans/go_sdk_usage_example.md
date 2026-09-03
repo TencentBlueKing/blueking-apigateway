@@ -11,9 +11,10 @@ import (
 func main() {
     cfg := {{ package_name|default:"bkapi_example" }}.NewConfiguration()
     cfg.Servers[0].URL = "{{ server_url }}"
-    cfg.DefaultHeader["X-Bkapi-Authorization"] = `{"bk_app_code":"<app-code>","bk_app_secret":"<app-secret>"}`
+    cfg.AddDefaultHeader("X-Bkapi-Authorization", `{"bk_app_code":"<app-code>","bk_app_secret":"<app-secret>"}`)
     client := {{ package_name|default:"bkapi_example" }}.NewAPIClient(cfg)
+    ctx := context.Background()
     _ = client
-    _ = context.Background() // 使用该 context 调用生成的 {{ resource_name }} 操作。
+    _ = ctx // 使用该 context 构造 {{ resource_name }} 请求，再调用 Execute。
 }
 ```

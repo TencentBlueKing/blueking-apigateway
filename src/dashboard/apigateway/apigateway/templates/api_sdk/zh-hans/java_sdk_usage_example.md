@@ -5,9 +5,12 @@ import {{ package_name|default:"org.openapitools.client" }}.ApiClient;
 import {{ package_name|default:"org.openapitools.client" }}.Configuration;
 
 ApiClient apiClient = Configuration.getDefaultApiClient();
-apiClient.setBasePath("{{ server_url }}");
-apiClient.addDefaultHeader("X-Bkapi-Authorization",
-    "{\"bk_app_code\":\"<app-code>\",\"bk_app_secret\":\"<app-secret>\"}");
+apiClient.updateBaseUri("{{ server_url }}");
+apiClient.setRequestInterceptor(builder -> builder.header(
+    "X-Bkapi-Authorization",
+    "{\"bk_app_code\":\"<app-code>\",\"bk_app_secret\":\"<app-secret>\"}"
+));
 
-// 使用 apiClient 构造包含 {{ resource_name }} 的生成 API 类。
+// 将 GeneratedApi 替换为包含 {{ resource_name }} 的生成 API 类。
+// GeneratedApi api = new GeneratedApi(apiClient);
 ```
