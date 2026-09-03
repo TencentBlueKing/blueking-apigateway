@@ -2137,6 +2137,7 @@
   "版本正在发布中，": "version is being published, ",
   "（于 {time} 发布成功）": "(successfully published at {time})",
   "于 {time} 发布成功": "successfully published at {time}",
+  "由 {user} 于 {time} 发布": "Published by {user} at {time}",
   "下架成功": "Pulled down successfully",
   "prod 环境不可删除": "prod stage cannot be deleted",
   "尚未发布，不可下架": "Cannot be pulled down before release",
