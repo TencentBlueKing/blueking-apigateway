@@ -154,7 +154,7 @@ class TestSDKGenerateInputSLZ:
         assert slz.is_valid()
         assert slz.validated_data["languages"] == ["go"]
 
-    @pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
+    @pytest.mark.parametrize("language", ["python", "java", "go", "javascript"])
     def test_accepts_supported_languages(self, language):
         slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0", "languages": [language]})
 

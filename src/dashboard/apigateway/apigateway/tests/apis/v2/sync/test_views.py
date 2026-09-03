@@ -33,9 +33,8 @@ from apigateway.apps.permission.constants import (
     OAUTH2_PUBLIC_CLIENT_APP_CODE,
 )
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
-from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
+from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import (
     Backend,
@@ -77,8 +76,9 @@ def _model_backend(name="openai-primary"):
 
 
 class TestSyncApi:
-    def test_generate_sdk_returns_accepted_response(
+    def test_legacy_generate_sdk_returns_created_empty_response(
         self,
+        settings,
         mocker,
         request_view,
         fake_admin_user,
@@ -86,10 +86,8 @@ class TestSyncApi:
         fake_resource_version,
         disable_app_permission,
     ):
+        settings.SDK_GENERATION_ENABLED = True
         create_task = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
-        create_task.return_value.id = 17
-        create_task.return_value.status = "pending"
-
         response = request_view(
             method="POST",
             view_name="openapi.v2.sync.sdk.generate",
@@ -100,26 +98,45 @@ class TestSyncApi:
         )
 
         assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
+        assert response.status_code == 201
+        assert response.json() == {"data": []}
+
+    def test_new_generation_task_returns_observable_identity(
+        self,
+        settings,
+        mocker,
+        request_view,
+        fake_admin_user,
+        fake_gateway,
+        fake_resource_version,
+        disable_app_permission,
+    ):
+        create_task = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
+        create_task.return_value.id = 17
+        create_task.return_value.status = "pending"
+        settings.SDK_GENERATION_ENABLED = True
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generation_task_create",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            data={"resource_version": fake_resource_version.version},
+        )
+
         assert response.status_code == 202
         assert response.json() == {
             "data": {
                 "id": 17,
                 "status": "pending",
-                "status_url": f"/api/v2/sync/gateways/{fake_gateway.name}/sdks/tasks/17/",
+                "status_url": f"/api/v2/sync/gateways/{fake_gateway.name}/sdk-generation-tasks/17/",
             }
         }
 
-    @pytest.mark.parametrize(
-        ("error", "expected_code"),
-        [
-            (ValueError("disabled"), "INVALID_ARGUMENT"),
-            (LegacySDKVersionConflict(), "FAILED_PRECONDITION"),
-        ],
-    )
-    def test_generate_sdk_maps_expected_domain_errors(
+    def test_disabled_legacy_generate_keeps_created_empty_response(
         self,
-        error,
-        expected_code,
+        settings,
         mocker,
         request_view,
         fake_admin_user,
@@ -127,7 +144,8 @@ class TestSyncApi:
         fake_resource_version,
         disable_app_permission,
     ):
-        mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation", side_effect=error)
+        settings.SDK_GENERATION_ENABLED = False
+        create = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
 
         response = request_view(
             method="POST",
@@ -138,11 +156,13 @@ class TestSyncApi:
             data={"resource_version": fake_resource_version.version},
         )
 
-        assert response.status_code == 400
-        assert response.json()["error"]["code"] == expected_code
+        assert response.status_code == 201
+        assert response.json() == {"data": []}
+        create.assert_not_called()
 
-    def test_generate_sdk_maps_deployment_configuration_error_to_internal(
+    def test_disabled_generation_surfaces(
         self,
+        settings,
         mocker,
         request_view,
         fake_admin_user,
@@ -150,22 +170,21 @@ class TestSyncApi:
         fake_resource_version,
         disable_app_permission,
     ):
-        mocker.patch(
-            "apigateway.apis.v2.sync.views.create_or_resume_generation",
-            side_effect=SDKRepoConfigError("BKRepo Generic configuration is required"),
-        )
+        settings.SDK_GENERATION_ENABLED = False
+        create = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
 
         response = request_view(
             method="POST",
-            view_name="openapi.v2.sync.sdk.generate",
+            view_name="openapi.v2.sync.sdk.generation_task_create",
             path_params={"gateway_name": fake_gateway.name},
             gateway=fake_gateway,
             user=fake_admin_user,
             data={"resource_version": fake_resource_version.version},
         )
 
-        assert response.status_code == 500
-        assert response.json()["error"]["code"] == "INTERNAL"
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+        create.assert_not_called()
 
     def test_get_sdk_generation_task(
         self,
@@ -175,7 +194,23 @@ class TestSyncApi:
         disable_app_permission,
     ):
         task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
-        G(SDKGenerationItem, task=task, language="python")
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="python",
+            status="success",
+            native_status="failed",
+            native_error_code="registry_unavailable",
+            native_error_message="publication failed",
+        )
+        G(
+            SDKArtifact,
+            item=item,
+            artifact_type="wheel",
+            filename="bkapi_openapi_demo-1.2.3-py3-none-any.whl",
+            url="https://repo.example/sdk.whl",
+            status="success",
+        )
 
         response = request_view(
             method="GET",
@@ -185,7 +220,71 @@ class TestSyncApi:
         )
 
         assert response.status_code == 200
-        assert response.json()["data"]["id"] == task.id
+        data = response.json()["data"]
+        assert data["id"] == task.id
+        assert data["items"][0] == {
+            "id": item.id,
+            "language": "python",
+            "status": "success",
+            "native_status": "failed",
+            "attempt_count": 0,
+            "error": None,
+            "native_error": {"code": "registry_unavailable", "message": "publication failed"},
+            "download_url": "https://repo.example/sdk.whl",
+            "artifacts": [
+                {
+                    "distributor": "bkrepo_generic",
+                    "type": "wheel",
+                    "filename": "bkapi_openapi_demo-1.2.3-py3-none-any.whl",
+                    "url": "https://repo.example/sdk.whl",
+                    "coordinate": "",
+                    "size": 0,
+                    "sha256": "",
+                    "status": "success",
+                }
+            ],
+        }
+
+    def test_get_sdk_generation_task_uses_linked_legacy_download_without_artifacts(
+        self, request_view, fake_gateway, fake_resource_version, disable_app_permission
+    ):
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        sdk = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=fake_resource_version,
+            language="python",
+            version_number=fake_resource_version.version,
+            url="https://legacy.example/sdk.whl",
+        )
+        item = G(SDKGenerationItem, task=task, language="python", status="success", gateway_sdk=sdk)
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.sdk.generation_task_detail",
+            path_params={"gateway_name": fake_gateway.name, "task_id": task.id},
+            gateway=fake_gateway,
+        )
+
+        payload = response.json()["data"]["items"][0]
+        assert payload["id"] == item.id
+        assert payload["artifacts"] == []
+        assert payload["download_url"] == "https://legacy.example/sdk.whl"
+
+    def test_get_sdk_generation_task_rejects_task_from_another_gateway(
+        self, request_view, fake_gateway, fake_resource_version, disable_app_permission
+    ):
+        other_gateway = G(Gateway, name="another-gateway")
+        task = G(SDKGenerationTask, gateway=other_gateway, resource_version=fake_resource_version)
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.sdk.generation_task_detail",
+            path_params={"gateway_name": fake_gateway.name, "task_id": task.id},
+            gateway=fake_gateway,
+        )
+
+        assert response.status_code == 404
 
     def test_resource_sync_updates_and_resets_oauth2_client_settings(
         self, request_view, fake_gateway, disable_app_permission

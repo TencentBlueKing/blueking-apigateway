@@ -16,9 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
-
-from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets
@@ -27,20 +24,11 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.support import serializers
-from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
-from apigateway.biz.sdk.orchestrator import create_or_resume_generation, serialize_generation_task
+from apigateway.biz.sdk.config import get_sdk_generation_policy
+from apigateway.biz.sdk.orchestrator import create_or_resume_generation
 from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
-
-logger = logging.getLogger(__name__)
-
-
-def _generation_task_queryset():
-    return SDKGenerationTask.objects.select_related("resource_version").prefetch_related(
-        Prefetch("items", queryset=SDKGenerationItem.objects.order_by("id").prefetch_related("artifacts"))
-    )
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):
@@ -61,28 +49,14 @@ class SDKGenerateViewSet(viewsets.ViewSet):
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
         try:
-            task = create_or_resume_generation(
-                resource_version,
-                data["languages"],
-                getattr(request.user, "username", None),
-                enqueue_generation_items,
-            )
-        except SDKRepoConfigError:
-            logger.exception("SDK generation configuration is invalid")
-            return V1FailJsonResponse("SDK generation is unavailable", status_code=500, code=50103)
-        except (LegacySDKVersionConflict, ValueError) as error:
+            if get_sdk_generation_policy().enabled:
+                create_or_resume_generation(
+                    resource_version,
+                    data["languages"],
+                    getattr(request.user, "username", None),
+                    enqueue_generation_items,
+                )
+        except ValueError as error:
             return V1FailJsonResponse(str(error))
 
-        status_url = f"/api/v1/apis/{gateway_name}/sdk/tasks/{task.id}/"
-        return V1OKJsonResponse(
-            "SDK generation started",
-            data={"id": task.id, "status": task.status, "status_url": status_url},
-        )
-
-
-class SDKGenerationTaskDetailViewSet(viewsets.ViewSet):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
-
-    def retrieve(self, request, gateway_name: str, task_id: int, *args, **kwargs):
-        task = get_object_or_404(_generation_task_queryset(), id=task_id, gateway=request.gateway)
-        return V1OKJsonResponse(data=serialize_generation_task(task))
+        return V1OKJsonResponse("SDK generation started", data=[])

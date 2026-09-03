@@ -1576,7 +1576,7 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, golang, javascript, rust]
+                    enum: [python, java, go, golang, javascript]
                   description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
                   example: ["python"]
                 version:
@@ -5544,27 +5544,17 @@ paths:
               languages: ["python"]
               version: "1.0.1"
       responses:
-        '202':
-          description: SDK 生成任务已受理
+        '201':
+          description: SDK 生成请求已受理
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      status:
-                        type: string
-                      status_url:
-                        type: string
+                    type: array
               example:
-                data:
-                  id: 1
-                  status: pending
-                  status_url: /api/v2/sync/gateways/demo/sdks/tasks/1/
+                data: []
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -5582,7 +5572,71 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /api/v2/sync/gateways/{gateway_name}/sdks/tasks/{task_id}/:
+  /api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/:
+    post:
+      operationId: v2_sync_create_sdk_generation_task
+      description: 创建可查询的 SDK 生成任务
+      tags:
+        - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource_version]
+              properties:
+                resource_version:
+                  type: string
+                languages:
+                  type: array
+                  items:
+                    type: string
+                    enum: [python, java, go, golang, javascript]
+                version:
+                  type: string
+                  deprecated: true
+      responses:
+        '202':
+          description: SDK 生成任务已受理
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                      status_url:
+                        type: string
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/{task_id}/:
     get:
       operationId: v2_sync_get_sdk_generation_task
       description: 查询 SDK 生成任务
@@ -5631,7 +5685,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/sync/gateways/{gateway_name}/sdks/tasks/{task_id}/
+          path: /backend/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/{task_id}/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]

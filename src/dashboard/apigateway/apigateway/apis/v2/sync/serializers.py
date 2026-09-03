@@ -652,8 +652,11 @@ class SDKGenerationItemOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     language = serializers.CharField()
     status = serializers.CharField()
+    native_status = serializers.CharField()
     attempt_count = serializers.IntegerField()
     error = serializers.DictField(allow_null=True)
+    native_error = serializers.DictField(allow_null=True)
+    download_url = serializers.CharField(allow_blank=True)
     artifacts = SDKGenerationArtifactOutputSLZ(many=True)
 
 

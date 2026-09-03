@@ -26,11 +26,6 @@ v1_open_api_patterns = [
         views.SDKGenerateViewSet.as_view({"post": "generate"}),
         name="openapi.support.sdk.generate",
     ),
-    path(
-        "apis/<slug:gateway_name>/sdk/tasks/<int:task_id>/",
-        views.SDKGenerationTaskDetailViewSet.as_view({"get": "retrieve"}),
-        name="openapi.support.sdk.generation_task_detail",
-    ),
 ]
 
 urlpatterns = v1_open_api_patterns

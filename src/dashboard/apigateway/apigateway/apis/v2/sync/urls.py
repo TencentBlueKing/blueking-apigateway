@@ -91,9 +91,21 @@ urlpatterns = [
                     "sdks/",
                     include(
                         [
-                            path("", views.SDKGenerateApi.as_view(), name="openapi.v2.sync.sdk.generate"),
+                            path("", views.LegacySDKGenerateApi.as_view(), name="openapi.v2.sync.sdk.generate"),
+                        ]
+                    ),
+                ),
+                path(
+                    "sdk-generation-tasks/",
+                    include(
+                        [
                             path(
-                                "tasks/<int:task_id>/",
+                                "",
+                                views.SDKGenerationTaskCreateApi.as_view(),
+                                name="openapi.v2.sync.sdk.generation_task_create",
+                            ),
+                            path(
+                                "<int:task_id>/",
                                 views.SDKGenerationTaskDetailApi.as_view(),
                                 name="openapi.v2.sync.sdk.generation_task_detail",
                             ),

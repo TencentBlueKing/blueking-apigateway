@@ -23,9 +23,10 @@ from apigateway.apis.v2.open.views import GatewayReleasedResourceListApi, MCPSer
 from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, SDKGenerateOutputSLZ
 from apigateway.apis.v2.sync.views import (
     DocImportByArchiveApi,
+    LegacySDKGenerateApi,
     ResourceVersionListCreateApi,
     ResourceVersionReleaseApi,
-    SDKGenerateApi,
+    SDKGenerationTaskCreateApi,
 )
 from apigateway.utils.yaml import yaml_loads
 
@@ -40,8 +41,10 @@ def test_sync_api_response_status_schema_matches_runtime():
     assert set(ResourceVersionReleaseApi.post._swagger_auto_schema["responses"]) == {status.HTTP_200_OK}
 
 
-def test_sdk_generate_schema_matches_runtime_payload():
-    schema = SDKGenerateApi.post._swagger_auto_schema
+def test_sdk_generate_schemas_match_legacy_and_observable_runtime_payloads():
+    legacy_schema = LegacySDKGenerateApi.post._swagger_auto_schema
+    assert set(legacy_schema["responses"]) == {status.HTTP_201_CREATED}
+    schema = SDKGenerationTaskCreateApi.post._swagger_auto_schema
 
     assert isinstance(schema["request_body"], SDKGenerateInputSLZ)
     response = schema["responses"][status.HTTP_202_ACCEPTED]
@@ -86,7 +89,9 @@ def test_request_log_response_schema_uses_standard_paginated_object():
 def test_registered_resource_schemas_match_runtime_contracts():
     paths = yaml_loads(RESOURCE_DEFINITION_PATH.read_text())["paths"]
 
-    sdk_operation = paths["/api/v2/sync/gateways/{gateway_name}/sdks/"]["post"]
+    legacy_operation = paths["/api/v2/sync/gateways/{gateway_name}/sdks/"]["post"]
+    assert set(legacy_operation["responses"]) == {"201"}
+    sdk_operation = paths["/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/"]["post"]
     assert set(sdk_operation["responses"]) == {"202"}
     sdk_data_schema = sdk_operation["responses"]["202"]["content"]["application/json"]["schema"]["properties"]["data"]
     assert sdk_data_schema["type"] == "object"

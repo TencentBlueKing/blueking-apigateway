@@ -22,6 +22,7 @@ from django.utils import timezone
 from apigateway.apps.support.constants import (
     SDK_GENERATION_LANGUAGE_VALUES,
     SDKArtifactStatusEnum,
+    SDKArtifactTypeEnum,
     SDKDistributorEnum,
     SDKGenerationStatusEnum,
     SDKNativePublicationStatusEnum,
@@ -668,22 +669,38 @@ def refresh_task_status(task_id: int) -> str:
 
 def serialize_generation_task(task: SDKGenerationTask) -> dict[str, Any]:
     items = task.items.all()
-    return {
-        "id": task.id,
-        "status": task.status,
-        "resource_version": {
-            "id": task.resource_version_id,
-            "version": task.resource_version.version,
-        },
-        "items": [
+    preferred_types = {
+        "python": SDKArtifactTypeEnum.WHEEL.value,
+        "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
+        "go": SDKArtifactTypeEnum.GO_ZIP.value,
+        "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
+    }
+    serialized_items = []
+    for item in items:
+        artifact_rows = [
+            artifact
+            for artifact in item.artifacts.all()
+            if artifact.status == SDKArtifactStatusEnum.SUCCESS.value
+            and artifact.artifact_type != SDKArtifactTypeEnum.MANIFEST.value
+        ]
+        preferred = next(
+            (artifact for artifact in artifact_rows if artifact.artifact_type == preferred_types.get(item.language)),
+            artifact_rows[0] if artifact_rows else None,
+        )
+        serialized_items.append(
             {
                 "id": item.id,
                 "language": item.language,
                 "status": item.status,
+                "native_status": item.native_status,
                 "attempt_count": item.attempt_count,
                 "error": {"code": item.error_code, "message": item.error_message}
                 if item.error_code or item.error_message
                 else None,
+                "native_error": {"code": item.native_error_code, "message": item.native_error_message}
+                if item.native_error_code or item.native_error_message
+                else None,
+                "download_url": preferred.url if preferred else (item.gateway_sdk.url if item.gateway_sdk_id else ""),
                 "artifacts": [
                     {
                         "distributor": artifact.distributor,
@@ -695,9 +712,16 @@ def serialize_generation_task(task: SDKGenerationTask) -> dict[str, Any]:
                         "sha256": artifact.sha256,
                         "status": artifact.status,
                     }
-                    for artifact in item.artifacts.all()
+                    for artifact in artifact_rows
                 ],
             }
-            for item in items
-        ],
+        )
+    return {
+        "id": task.id,
+        "status": task.status,
+        "resource_version": {
+            "id": task.resource_version_id,
+            "version": task.resource_version.version,
+        },
+        "items": serialized_items,
     }
