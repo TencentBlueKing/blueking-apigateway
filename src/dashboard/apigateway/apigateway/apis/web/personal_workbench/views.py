@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.personal_workbench import WorkbenchPermissionHandler
@@ -108,9 +109,8 @@ class ResourcePrefetchMixin:
         page = self.paginate_queryset(queryset)
         items = page if page is not None else queryset
 
-        prefetched_resources = self._prefetch_resources(items)
         context = self.get_serializer_context()
-        context["prefetched_resources"] = prefetched_resources
+        context["prefetched_resources"] = self._prefetch_resources(items)
         serializer = self.get_serializer(items, many=True, context=context)
 
         if page is not None:
@@ -303,7 +303,7 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
 class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchPermissionMixin, generics.ListAPIView):
     """我的待办 - API 网关
 
-    展示当前用户作为网关管理员（maintainer）待审批的权限申请单
+    展示当前用户作为网关审批责任人待审批的权限申请单
     """
 
     serializer_class = WorkbenchGatewayPermissionApplyOutputSLZ
@@ -311,6 +311,22 @@ class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
 
     def get_queryset(self):
         return self._get_pending_gateway_permission_apply_queryset().select_related("gateway").order_by("-id")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.gateway_id for item in items}
+        )
+        context["prefetched_resources"] = self._prefetch_resources(items)
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(
@@ -324,7 +340,7 @@ class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
 class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的待办 - MCP Server
 
-    展示当前用户作为 MCP Server 所属网关管理员待审批的申请单
+    展示当前用户作为 MCP Server 所属网关审批责任人待审批的申请单
     """
 
     serializer_class = WorkbenchMCPPermissionApplyOutputSLZ
@@ -336,6 +352,21 @@ class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-id")
         )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.mcp_server.gateway_id for item in items}
+        )
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
 
 
 # ========== 我的申请 ==========
@@ -363,6 +394,22 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         tenant_id = get_user_tenant_id(self.request)
         queryset = AppPermissionApply.objects.filter(applied_by=username).select_related("gateway").order_by("-id")
         return gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.gateway_id for item in items}
+        )
+        context["prefetched_resources"] = self._prefetch_resources(items)
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(
@@ -394,6 +441,21 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
             .order_by("-id")
         )
         return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.mcp_server.gateway_id for item in items}
+        )
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(

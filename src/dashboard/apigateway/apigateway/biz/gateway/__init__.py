@@ -18,6 +18,7 @@
 from .app_binding import GatewayAppBindingHandler
 from .gateway import OPERATION_STATUS_DELTA_DAYS, GatewayData, GatewayHandler, GatewaySaver
 from .label import GatewayLabelHandler
+from .members import add_gateway_administrators, build_gateway_doc_maintainers, replace_gateway_administrators
 from .related_app import GatewayRelatedAppHandler
 
 __all__ = [
@@ -32,5 +33,8 @@ __all__ = [
     "GatewayRelatedAppHandler",
     "GatewaySaver",
     # functions
+    "add_gateway_administrators",
+    "build_gateway_doc_maintainers",
+    "replace_gateway_administrators",
     # others
 ]

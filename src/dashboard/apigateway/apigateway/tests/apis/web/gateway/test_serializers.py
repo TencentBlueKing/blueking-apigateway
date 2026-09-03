@@ -29,6 +29,8 @@ from apigateway.apis.web.gateway.serializers import (
     GatewayUpdateStatusInputSLZ,
     ProgrammableGatewayGitInfoSLZ,
 )
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, Resource, Stage
@@ -189,6 +191,26 @@ class TestGatewayCreateInputSLZ:
                     "tenant_id": "default",
                 },
             ),
+            # maintainers defaults to the creator
+            (
+                False,
+                {
+                    "name": "test",
+                    "description": "test",
+                    "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
+                },
+                {
+                    "name": "test",
+                    "description": "test",
+                    "maintainers": ["admin"],
+                    "developers": [],
+                    "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
+                },
+            ),
             # name length < 3
             (
                 False,
@@ -287,6 +309,7 @@ class TestGatewayCreateInputSLZ:
 
 class TestGatewayRetrieveOutputSLZ:
     def test_to_representation(self, fake_gateway, fake_release, mocker):
+        gateway_administrators = GatewayMember.objects.list_gateway_administrators(fake_gateway.id)
         mocker.patch(
             "apigateway.apis.web.gateway.serializers.GatewayHandler.get_gateway_domain",
             return_value="http://bkapi.demo.com",
@@ -299,6 +322,7 @@ class TestGatewayRetrieveOutputSLZ:
         slz = GatewayRetrieveOutputSLZ(
             instance=fake_gateway,
             context={
+                "gateway_administrators": gateway_administrators,
                 "auth_config": GatewayAuthConfig(
                     gateway_type=GatewayTypeEnum.CLOUDS_API.value,
                     allow_update_gateway_auth=True,
@@ -313,8 +337,15 @@ class TestGatewayRetrieveOutputSLZ:
             "id": fake_gateway.id,
             "name": fake_gateway.name,
             "description": fake_gateway.description,
-            "maintainers": fake_gateway.maintainers,
-            "doc_maintainers": fake_gateway.doc_maintainers,
+            "maintainers": gateway_administrators,
+            "doc_maintainers": {
+                "type": "user",
+                "contacts": gateway_administrators,
+                "service_account": {
+                    "name": "",
+                    "link": "",
+                },
+            },
             "developers": fake_gateway.developers,
             "status": fake_gateway.status,
             "kind": fake_gateway.kind,
@@ -341,12 +372,17 @@ class TestGatewayRetrieveOutputSLZ:
         assert slz.data == expected
 
     def test_valid_maintainers(self, fake_gateway, fake_release):
-        fake_gateway._maintainers = "admin;guest;;,,"
-        fake_gateway.save()
+        G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="guest",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
 
         slz = GatewayRetrieveOutputSLZ(
             instance=fake_gateway,
             context={
+                "gateway_administrators": GatewayMember.objects.list_gateway_administrators(fake_gateway.id),
                 "auth_config": GatewayAuthConfig(
                     gateway_type=GatewayTypeEnum.CLOUDS_API.value,
                     allow_update_gateway_auth=True,
@@ -593,6 +629,32 @@ class TestGatewayUpdateInputSLZ:
         slz.is_valid(raise_exception=True)
 
         assert slz.validated_data == expected
+
+    def test_validate_rejects_empty_maintainers(self, fake_gateway):
+        slz = GatewayUpdateInputSLZ(
+            instance=fake_gateway,
+            data={
+                "maintainers": [],
+                "description": "test",
+                "is_public": True,
+            },
+        )
+
+        with pytest.raises(ValidationError):
+            slz.is_valid(raise_exception=True)
+
+    def test_validate_allows_omitted_maintainers(self, fake_gateway):
+        slz = GatewayUpdateInputSLZ(
+            instance=fake_gateway,
+            data={
+                "description": "test",
+                "is_public": True,
+            },
+        )
+
+        slz.is_valid(raise_exception=True)
+
+        assert "maintainers" not in slz.validated_data
 
 
 class TestGatewayUpdateStatusInputSLZ:

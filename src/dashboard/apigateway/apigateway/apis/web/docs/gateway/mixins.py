@@ -19,7 +19,7 @@
 
 from rest_framework.permissions import IsAuthenticated
 
-from apigateway.common.permissions import GatewayDisplayablePermission
+from apigateway.apis.web.docs.gateway.permissions import GatewayDisplayablePermission
 
 
 class GatewayDocsPermissionMixin:

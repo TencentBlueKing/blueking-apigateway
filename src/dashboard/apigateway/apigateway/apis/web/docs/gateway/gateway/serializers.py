@@ -18,6 +18,7 @@
 #
 from rest_framework import serializers
 
+from apigateway.biz.gateway import build_gateway_doc_maintainers
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX, GatewayKindEnum
 
@@ -43,8 +44,8 @@ class GatewayOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="网关描述")
     tenant_mode = serializers.CharField(read_only=True, help_text="租户模式")
     tenant_id = serializers.CharField(read_only=True, help_text="租户 ID")
-    maintainers = serializers.ListField(help_text="网关负责人")
-    doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
+    maintainers = serializers.SerializerMethodField(help_text="网关负责人")
+    doc_maintainers = serializers.SerializerMethodField(help_text="网关文档维护人员")
     is_official = serializers.BooleanField(read_only=True, help_text="是否为官方网关, true: 是, false: 否")
     is_plugin_gateway = serializers.SerializerMethodField(help_text="是否为插件网关, true: 是, false: 否")
     is_deprecated = serializers.BooleanField(help_text="是否已废弃")
@@ -58,6 +59,12 @@ class GatewayOutputSLZ(serializers.Serializer):
     def get_api_url(self, obj):
         gateway_id_to_bk_api_url_tmpl = self.context.get("gateway_id_to_bk_api_url_tmpl")
         return gateway_id_to_bk_api_url_tmpl[obj.id].format(api_name=obj.name)
+
+    def get_maintainers(self, obj):
+        return self.context["gateway_administrators"].get(obj.id, [])
+
+    def get_doc_maintainers(self, obj):
+        return build_gateway_doc_maintainers(obj, self.get_maintainers(obj))
 
     def get_is_plugin_gateway(self, obj):
         return obj.name.startswith(PLUGIN_GATEWAY_PREFIX)

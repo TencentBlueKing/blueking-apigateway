@@ -17,12 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.core.validators import RegexValidator, URLValidator
+from django.db import transaction
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.biz.constants import APP_CODE_PATTERN
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway import GatewayHandler, build_gateway_doc_maintainers, replace_gateway_administrators
 from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
@@ -152,7 +153,9 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         validators=[ReservedGatewayNameValidator(), NameValidator()],
         help_text="网关名称",
     )
-    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    maintainers = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, required=False, default=list, help_text="网关维护人员"
+    )
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
@@ -218,14 +221,18 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         validate_gateway_name_kind(data["name"], data.get("kind", GatewayKindEnum.NORMAL.value))
         return data
 
+    @transaction.atomic
     def create(self, validated_data):
         validated_data.pop("programmable_gateway_git_info", None)
-        return super().create(validated_data)
+        maintainers = validated_data.pop("maintainers")
+        instance = super().create(validated_data)
+        replace_gateway_administrators(instance, maintainers, validated_data.get("created_by") or "")
+        return instance
 
 
 class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
-    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
-    doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
+    maintainers = serializers.SerializerMethodField(help_text="网关维护人员")
+    doc_maintainers = serializers.SerializerMethodField(help_text="网关文档维护人员")
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
@@ -314,6 +321,12 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     def get_api_domain(self, obj):
         return GatewayHandler.get_gateway_domain(obj)
 
+    def get_maintainers(self, obj):
+        return self.context["gateway_administrators"]
+
+    def get_doc_maintainers(self, obj):
+        return build_gateway_doc_maintainers(obj, self.context["gateway_administrators"])
+
     def get_docs_url(self, obj):
         return GatewayHandler.get_docs_url(obj)
 
@@ -358,7 +371,9 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
-    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    maintainers = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, required=False, help_text="网关维护人员"
+    )
     doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False, help_text="网关文档维护人员")
     extra_info = GatewayExtraInfoSLZ(required=False, help_text="网关额外信息")
 
@@ -403,6 +418,19 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
                 "help_text": "是否公开，true：公开，false：不公开",
             },
         }
+
+    def validate_maintainers(self, value):
+        if not value:
+            raise serializers.ValidationError(gettext_lazy("网关至少需要保留一个管理员。"))
+        return value
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        maintainers = validated_data.pop("maintainers", None)
+        instance = super().update(instance, validated_data)
+        if maintainers is not None:
+            replace_gateway_administrators(instance, maintainers, validated_data.get("updated_by") or "")
+        return instance
 
 
 class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):

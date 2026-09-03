@@ -53,13 +53,16 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             itsm_ticket_id="12345",
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(apply_record)
+        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+            apply_record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        )
         data = slz.data
 
         assert data["id"] == apply_record.id
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "test_user"
-        assert data["approvers"] == fake_gateway.maintainers
+        assert data["approvers"] == ["admin"]
         assert data["gateway_id"] == fake_gateway.id
         assert data["gateway_name"] == fake_gateway.name
         assert data["status"] == ApplyStatusEnum.PENDING.value
@@ -68,6 +71,23 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
         assert "expire_days_display" in data
         assert data["reason"] == "need access to resources"
         assert data["itsm_ticket_id"] == "12345"
+
+    def test_serialization_prefers_operator_approvers(self, fake_gateway):
+        apply_record = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test_app",
+            applied_by="test_user",
+            status=ApplyStatusEnum.PENDING.value,
+            grant_dimension=GrantDimensionEnum.API.value,
+        )
+
+        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+            apply_record,
+            context={"gateway_approvers": {fake_gateway.id: ["operator"]}},
+        )
+
+        assert slz.data["approvers"] == ["operator"]
 
     @patch(
         "apigateway.service.bk_itsm.ItsmPermissionApplyHelper.build_ticket_url", return_value="https://itsm/ticket/123"
@@ -83,7 +103,10 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             itsm_ticket_id="123",
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(apply_record)
+        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+            apply_record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        )
         data = slz.data
 
         assert data["itsm_ticket_url"] == "https://itsm/ticket/123"
@@ -153,13 +176,16 @@ class TestWorkbenchMCPPermissionApplyOutputSLZ:
             is_deleted=False,
         )
 
-        slz = WorkbenchMCPPermissionApplyOutputSLZ(apply_record)
+        slz = WorkbenchMCPPermissionApplyOutputSLZ(
+            apply_record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        )
         data = slz.data
 
         assert data["id"] == apply_record.id
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "test_user"
-        assert data["approvers"] == fake_gateway.maintainers
+        assert data["approvers"] == ["admin"]
         assert data["mcp_server"]["id"] == mcp_server.id
         assert data["mcp_server"]["name"] == "test-mcp"
         assert data["mcp_server"]["title"] == "Test MCP Server"

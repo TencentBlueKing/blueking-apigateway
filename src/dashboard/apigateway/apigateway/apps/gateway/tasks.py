@@ -29,6 +29,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.common.tenant.constants import TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 from apigateway.components.bkcmsi import cmsi_component
@@ -137,8 +138,11 @@ class InactiveGatewayNotifier:
     @staticmethod
     def _group_by_user(gateways: List[Gateway]) -> Dict[str, Set[int]]:
         user_to_gateway_ids: Dict[str, Set[int]] = defaultdict(set)
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(
+            gateway.id for gateway in gateways
+        )
         for gw in gateways:
-            for user in gw.maintainers:
+            for user in gateway_administrators.get(gw.id, []):
                 user_to_gateway_ids[user].add(gw.id)
         return user_to_gateway_ids
 

@@ -1,6 +1,7 @@
 from django.db import models
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.managers import GatewayMemberManager
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
 
@@ -16,6 +17,8 @@ class GatewayMember(TimestampedModelMixin, OperatorModelMixin):
     username = models.CharField(max_length=64, db_index=True)
     role = models.CharField(max_length=32, choices=GatewayRoleEnum.get_choices())
     expires = models.DateTimeField(blank=True, null=True)
+
+    objects = GatewayMemberManager()
 
     def __str__(self):
         return f"<GatewayMember: {self.gateway_id}/{self.username}/{self.role}>"

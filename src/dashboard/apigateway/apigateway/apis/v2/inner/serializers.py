@@ -47,6 +47,7 @@ from apigateway.apps.permission.constants import (
     PermissionStatusEnum,
 )
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.biz.gateway import build_gateway_doc_maintainers
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, UserManagedBKAppCodeValidator
@@ -129,14 +130,16 @@ class GatewayBaseOutputSLZ(serializers.Serializer):
     kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
+        administrators = self.context["gateway_administrators_map"].get(obj.id, [])
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
             obj.tenant_mode,
             obj.tenant_id,
-            obj.maintainers,
+            administrators,
         )
 
     def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+        administrators = self.context["gateway_administrators_map"].get(obj.id, [])
+        return build_gateway_doc_maintainers(obj, administrators)
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)
@@ -437,7 +440,9 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
 
     def get_handled_by(self, obj):
         """按网关租户将处理人转换为 display_name"""
-        handled_by = [obj.handled_by] if obj.handled_by else obj.gateway.maintainers
+        handled_by = (
+            [obj.handled_by] if obj.handled_by else self.context["gateway_approvers_map"].get(obj.gateway_id, [])
+        )
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
             obj.gateway.tenant_mode,
             obj.gateway.tenant_id,

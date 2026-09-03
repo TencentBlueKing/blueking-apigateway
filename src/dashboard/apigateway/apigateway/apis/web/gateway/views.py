@@ -26,6 +26,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
@@ -304,6 +305,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz = GatewayRetrieveOutputSLZ(
             instance,
             context={
+                "gateway_administrators": GatewayMember.objects.list_gateway_administrators(instance.id),
                 "auth_config": GatewayAuthContext().get_auth_config(instance.pk),
                 "bk_app_codes": GatewayAppBindingHandler.get_bound_app_codes(instance),
                 "related_app_codes": GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id),
@@ -334,7 +336,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         if request.gateway.is_programmable:
             update_app_maintainers(
                 slz.instance.name,
-                slz.instance.maintainers,
+                GatewayMember.objects.list_gateway_administrators(slz.instance.id),
                 user_credentials=get_user_credentials_from_request(request),
             )
 

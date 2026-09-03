@@ -31,6 +31,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
+from apigateway.apis.permissions import GatewayApprovalPermission
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.permission.constants import (
@@ -820,6 +821,8 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
+    permission_classes = [GatewayApprovalPermission]
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """

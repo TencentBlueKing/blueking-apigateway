@@ -43,6 +43,7 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.access_log import LogHandler
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
@@ -159,7 +160,16 @@ class GatewayListApi(generics.ListAPIView):
                 kind_query |= Q(kind__isnull=True)
             queryset = queryset.filter(kind_query)
 
-        output_slz = self.get_serializer(queryset, many=True)
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
+        output_slz = self.get_serializer(
+            gateways,
+            many=True,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
+            },
+        )
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 
         return OKJsonResponse(data=output_data)
@@ -192,7 +202,17 @@ class GatewayLookupApi(generics.ListAPIView):
         if data.get("names"):
             queryset = queryset.filter(name__in=data["names"])
 
-        output_slz = self.get_serializer(queryset.order_by("name", "id"), many=True)
+        queryset = queryset.order_by("name", "id")
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
+        output_slz = self.get_serializer(
+            gateways,
+            many=True,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
+            },
+        )
         return OKJsonResponse(data=output_slz.data)
 
 
@@ -214,7 +234,13 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = self.get_serializer(instance)
+        slz = self.get_serializer(
+            instance,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map([instance.id]),
+            },
+        )
         return OKJsonResponse(data=slz.data)
 
 
@@ -585,11 +611,12 @@ class UserMCPServerListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
 
         gateway_ids = list({mcp_server.gateway.id for mcp_server in page})
+        gateway_administrators_map = GatewayMember.objects.build_gateway_administrators_map(gateway_ids)
         gateways = {
             gateway.id: {
                 "id": gateway.id,
                 "name": gateway.name,
-                "maintainers": gateway.maintainers,
+                "maintainers": gateway_administrators_map.get(gateway.id, []),
                 "is_official": gateway.is_official,
             }
             for gateway in Gateway.objects.filter(id__in=gateway_ids)

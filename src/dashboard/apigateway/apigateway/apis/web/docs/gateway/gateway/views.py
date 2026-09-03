@@ -23,6 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
@@ -87,6 +88,7 @@ class GatewayListApi(generics.ListAPIView):
             gateways,
             many=True,
             context={
+                "gateway_administrators": GatewayMember.objects.build_gateway_administrators_map(page_gateway_ids),
                 "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(page_gateway_ids),
                 "gateway_sdks": GatewaySDKHandler.get_sdks(page_gateway_ids),
             },
@@ -106,9 +108,11 @@ class GatewayListApi(generics.ListAPIView):
 class GatewayRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""
+        gateway_administrators = GatewayMember.objects.list_gateway_administrators(request.gateway.id)
         slz = GatewayOutputSLZ(
             request.gateway,
             context={
+                "gateway_administrators": {request.gateway.id: gateway_administrators},
                 "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(
                     [request.gateway.id]
                 ),

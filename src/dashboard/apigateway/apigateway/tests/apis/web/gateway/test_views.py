@@ -26,6 +26,8 @@ from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, ResourceVersion, Stage
@@ -70,6 +72,12 @@ class TestGatewayListCreateApi:
         assert JWT.objects.filter(gateway=gateway).count() == 1
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
         assert gateway.kind == GatewayKindEnum.NORMAL.value
+        assert list(
+            GatewayMember.objects.filter(
+                gateway=gateway,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            ).values_list("username", flat=True)
+        ) == ["admin"]
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_auth_from_params"] is False
@@ -392,6 +400,12 @@ class TestGatewayRetrieveUpdateDestroyApi:
         assert resp.status_code == 204
         assert gateway.description == data["description"]
         assert gateway.is_public is data["is_public"]
+        assert list(
+            GatewayMember.objects.filter(
+                gateway=gateway,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            ).values_list("username", flat=True)
+        ) == ["admin"]
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 1
 

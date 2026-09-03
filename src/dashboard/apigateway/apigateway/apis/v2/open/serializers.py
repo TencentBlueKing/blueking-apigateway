@@ -35,6 +35,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.biz.constants import BK_USERNAME_PATTERN
+from apigateway.biz.gateway import build_gateway_doc_maintainers
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, UserManagedBKAppCodeValidator
@@ -107,10 +108,10 @@ class GatewayListOutputSLZ(serializers.Serializer):
     kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return obj.maintainers
+        return self.context["gateway_administrators_map"].get(obj.id, [])
 
     def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+        return build_gateway_doc_maintainers(obj, self.get_maintainers(obj))
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)
@@ -128,10 +129,10 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return obj.maintainers
+        return self.context["gateway_administrators_map"].get(obj.id, [])
 
     def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+        return build_gateway_doc_maintainers(obj, self.get_maintainers(obj))
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)

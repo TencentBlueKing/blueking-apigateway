@@ -23,6 +23,8 @@ from django_dynamic_fixture import G
 
 from apigateway.apis.open.gateway import views
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayKindEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
@@ -331,6 +333,26 @@ class TestGatewayUpdateStatusApi:
         assert resp.status_code == 200
         assert result["code"] == 0
         assert Gateway.objects.get(id=fake_gateway.id).status == 0
+
+
+class TestGatewayMaintainerUpdateApi:
+    def test_put_updates_members(self, request_view, fake_gateway):
+        response = request_view(
+            method="PUT",
+            view_name="openapi.gateway.update_maintainers",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"maintainers": ["new-admin"]},
+            gateway=fake_gateway,
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert response.status_code == 200
+        assert list(
+            GatewayMember.objects.filter(
+                gateway=fake_gateway,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            ).values_list("username", flat=True)
+        ) == ["new-admin"]
 
 
 class TestGatewayRelatedAppAddApi:
