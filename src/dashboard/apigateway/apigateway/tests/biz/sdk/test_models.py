@@ -20,7 +20,7 @@ from types import SimpleNamespace
 import pytest
 
 from apigateway.biz.sdk import SDKDocContext, SDKFactory
-from apigateway.biz.sdk.models import SDK, GoSDK, JavaScriptSDK, JavaSDK, PythonSDK, RustSDK
+from apigateway.biz.sdk.models import SDK, GoSDK, JavaScriptSDK, JavaSDK, PythonSDK
 from apigateway.utils.time import now_datetime
 
 
@@ -47,7 +47,6 @@ class TestSDKDocContext:
         ("java", JavaSDK, "distribution_zip", "curl -fLO"),
         ("go", GoSDK, "go_zip", "curl -fLO"),
         ("javascript", JavaScriptSDK, "npm_tgz", "npm install"),
-        ("rust", RustSDK, "crate", "curl -fLO"),
     ],
 )
 def test_sdk_factory_uses_completed_generic_artifacts(language, sdk_type, artifact_type, command):

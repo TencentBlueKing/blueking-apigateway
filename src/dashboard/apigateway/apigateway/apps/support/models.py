@@ -30,9 +30,12 @@ from apigateway.apps.support.constants import (
     DocSourceEnum,
     DocTypeEnum,
     ProgrammingLanguageEnum,
+    SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
-    SDKGenerationStatusEnum,
+    SDKGenerationItemStatusEnum,
+    SDKGenerationTaskStatusEnum,
+    SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.managers import (
     GatewaySDKManager,
@@ -174,8 +177,8 @@ class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     status = models.CharField(
         max_length=32,
-        choices=SDKGenerationStatusEnum.get_choices(),
-        default=SDKGenerationStatusEnum.PENDING.value,
+        choices=SDKGenerationTaskStatusEnum.get_choices(),
+        default=SDKGenerationTaskStatusEnum.PENDING.value,
         db_index=True,
     )
 
@@ -193,8 +196,11 @@ class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         db_table = "support_sdk_generation_task"
         constraints = [
+            models.UniqueConstraint(
+                fields=["resource_version"], name="support_sdk_generation_task_resource_version_uniq"
+            ),
             models.CheckConstraint(
-                condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
+                condition=models.Q(status__in=SDKGenerationTaskStatusEnum.get_values()),
                 name="support_sdk_generation_task_status_valid",
             ),
         ]
@@ -210,19 +216,41 @@ class SDKGenerationItem(TimestampedModelMixin, OperatorModelMixin):
     )
     status = models.CharField(
         max_length=32,
-        choices=SDKGenerationStatusEnum.get_choices(),
-        default=SDKGenerationStatusEnum.PENDING.value,
+        choices=SDKGenerationItemStatusEnum.get_choices(),
+        default=SDKGenerationItemStatusEnum.PENDING.value,
         db_index=True,
+    )
+    gateway_sdk = models.OneToOneField(
+        GatewaySDK,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="generation_item",
     )
     lease_token = models.CharField(max_length=128, blank=True, default="", db_index=True)
     lease_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
     attempt_count = models.PositiveIntegerField(default=0)
+    attempt_cycle_count = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True, blank=True, db_index=True)
     input_fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
     config_snapshot = models.JSONField(default=dict, blank=True)
     error_code = models.CharField(max_length=64, blank=True, default="")
     error_message = models.CharField(max_length=1024, blank=True, default="")
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
+    native_status = models.CharField(
+        max_length=32,
+        choices=SDKNativePublicationStatusEnum.get_choices(),
+        default=SDKNativePublicationStatusEnum.NOT_REQUIRED.value,
+        db_index=True,
+    )
+    native_attempt_count = models.PositiveIntegerField(default=0)
+    native_attempt_cycle_count = models.PositiveSmallIntegerField(default=0)
+    native_lease_token = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    native_lease_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    native_next_attempt_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    native_error_code = models.CharField(max_length=64, blank=True, default="")
+    native_error_message = models.TextField(blank=True, default="")
 
     class Meta:
         db_table = "support_sdk_generation_item"
@@ -235,12 +263,28 @@ class SDKGenerationItem(TimestampedModelMixin, OperatorModelMixin):
                 name="support_sdk_generation_item_language_valid",
             ),
             models.CheckConstraint(
-                condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
+                condition=models.Q(status__in=SDKGenerationItemStatusEnum.get_values()),
                 name="support_sdk_generation_item_status_valid",
             ),
             models.CheckConstraint(
                 condition=models.Q(attempt_count__gte=0),
                 name="support_sdk_generation_item_attempt_count_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(attempt_cycle_count__gte=0),
+                name="support_sdk_generation_item_attempt_cycle_count_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(native_status__in=SDKNativePublicationStatusEnum.get_values()),
+                name="support_sdk_generation_item_native_status_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(native_attempt_count__gte=0),
+                name="support_sdk_generation_item_native_attempt_count_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(native_attempt_cycle_count__gte=0),
+                name="support_sdk_generation_item_native_attempt_cycle_count_valid",
             ),
         ]
 
@@ -267,8 +311,8 @@ class SDKArtifact(TimestampedModelMixin):
     package_version = models.CharField(max_length=64, blank=True, default="")
     status = models.CharField(
         max_length=32,
-        choices=SDKGenerationStatusEnum.get_choices(),
-        default=SDKGenerationStatusEnum.PENDING.value,
+        choices=SDKArtifactStatusEnum.get_choices(),
+        default=SDKArtifactStatusEnum.PENDING.value,
         db_index=True,
     )
 
@@ -287,7 +331,7 @@ class SDKArtifact(TimestampedModelMixin):
                 name="support_sdk_artifact_type_valid",
             ),
             models.CheckConstraint(
-                condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
+                condition=models.Q(status__in=SDKArtifactStatusEnum.get_values()),
                 name="support_sdk_artifact_status_valid",
             ),
             models.CheckConstraint(condition=models.Q(size__gte=0), name="support_sdk_artifact_size_valid"),

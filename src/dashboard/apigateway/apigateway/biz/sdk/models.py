@@ -220,18 +220,12 @@ class JavaScriptSDK(SDK):
         return f'npm install "{artifact["url"]}"' if artifact and artifact.get("url") else ""
 
 
-@dataclass
-class RustSDK(SDK):
-    language = ProgrammingLanguageEnum.RUST
-
-
 class SDKFactory:
     _mappings: ClassVar[dict[str, type[SDK]]] = {
         PythonSDK.language.value: PythonSDK,
         GoSDK.language.value: GoSDK,
         JavaSDK.language.value: JavaSDK,
         JavaScriptSDK.language.value: JavaScriptSDK,
-        RustSDK.language.value: RustSDK,
     }
 
     @classmethod

@@ -30,7 +30,6 @@ class ProgrammingLanguageEnum(StructuredEnum):
     JAVA = EnumField("java")
     GO = EnumField("go")
     JAVASCRIPT = EnumField("javascript")
-    RUST = EnumField("rust")
 
 
 SDK_GENERATION_LANGUAGE_VALUES = (
@@ -38,16 +37,41 @@ SDK_GENERATION_LANGUAGE_VALUES = (
     ProgrammingLanguageEnum.JAVA.value,
     ProgrammingLanguageEnum.GO.value,
     ProgrammingLanguageEnum.JAVASCRIPT.value,
-    ProgrammingLanguageEnum.RUST.value,
 )
 
 
-class SDKGenerationStatusEnum(StructuredEnum):
+class SDKGenerationTaskStatusEnum(StructuredEnum):
     PENDING = EnumField("pending")
     RUNNING = EnumField("running")
     SUCCESS = EnumField("success")
     PARTIAL = EnumField("partial")
     FAILED = EnumField("failed")
+
+
+class SDKGenerationItemStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    FAILED = EnumField("failed")
+
+
+class SDKArtifactStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    FAILED = EnumField("failed")
+
+
+class SDKNativePublicationStatusEnum(StructuredEnum):
+    NOT_REQUIRED = EnumField("not_required")
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    FAILED = EnumField("failed")
+
+
+# Compatibility alias while orchestration call sites migrate to owner-specific states.
+SDKGenerationStatusEnum = SDKGenerationTaskStatusEnum
 
 
 class SDKDistributorEnum(StructuredEnum):

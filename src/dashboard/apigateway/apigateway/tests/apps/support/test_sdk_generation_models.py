@@ -23,8 +23,10 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 
+from apigateway.apps.support import constants as support_constants
 from apigateway.apps.support.constants import (
     SDK_GENERATION_LANGUAGE_VALUES,
+    ProgrammingLanguageEnum,
     SDKDistributorEnum,
     SDKGenerationStatusEnum,
 )
@@ -34,12 +36,51 @@ from apigateway.core.models import Gateway
 pytestmark = pytest.mark.django_db
 
 
-def test_generation_task_allows_independent_requests_for_same_resource_version(fake_gateway, fake_resource_version):
-    first = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
-    second = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+def test_generation_task_is_unique_per_resource_version(fake_gateway, fake_resource_version):
+    G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
 
-    assert first.status == SDKGenerationStatusEnum.PENDING.value
-    assert second.id != first.id
+    with pytest.raises(IntegrityError), transaction.atomic():
+        SDKGenerationTask.objects.create(gateway=fake_gateway, resource_version=fake_resource_version)
+
+
+def test_sdk_generation_states_match_their_owners():
+    assert set(support_constants.SDKGenerationTaskStatusEnum.get_values()) == {
+        "pending",
+        "running",
+        "success",
+        "partial",
+        "failed",
+    }
+    assert set(support_constants.SDKGenerationItemStatusEnum.get_values()) == {
+        "pending",
+        "running",
+        "success",
+        "failed",
+    }
+    assert set(support_constants.SDKArtifactStatusEnum.get_values()) == {
+        "pending",
+        "running",
+        "success",
+        "failed",
+    }
+    assert set(support_constants.SDKNativePublicationStatusEnum.get_values()) == {
+        "not_required",
+        "pending",
+        "running",
+        "success",
+        "failed",
+    }
+
+
+def test_sdk_supported_languages_exclude_rust():
+    assert set(ProgrammingLanguageEnum.get_values()) == {
+        "unknown",
+        "python",
+        "java",
+        "go",
+        "javascript",
+    }
+    assert set(SDK_GENERATION_LANGUAGE_VALUES) == {"python", "java", "go", "javascript"}
 
 
 def test_generation_item_is_unique_per_task_and_language(fake_gateway, fake_resource_version):
@@ -135,10 +176,21 @@ def test_generation_item_defaults_include_pending_status_and_empty_lease(fake_ga
     assert item.lease_token == ""
     assert item.lease_expires_at is None
     assert item.attempt_count == 0
+    assert item.attempt_cycle_count == 0
+    assert item.next_attempt_at is None
     assert item.input_fingerprint == ""
     assert item.config_snapshot == {}
     assert item.started_at is None
     assert item.finished_at is None
+    assert item.gateway_sdk is None
+    assert item.native_status == support_constants.SDKNativePublicationStatusEnum.NOT_REQUIRED.value
+    assert item.native_attempt_count == 0
+    assert item.native_attempt_cycle_count == 0
+    assert item.native_lease_token == ""
+    assert item.native_lease_expires_at is None
+    assert item.native_next_attempt_at is None
+    assert item.native_error_code == ""
+    assert item.native_error_message == ""
 
 
 def test_generation_artifact_defaults_to_generic_pending_status(fake_gateway, fake_resource_version):
@@ -183,7 +235,7 @@ def test_sdk_generation_migration_converts_legacy_golang_both_directions():
         executor = MigrationExecutor(connection)
         executor.migrate([new_target])
         new_apps = executor.loader.project_state([new_target]).apps
-        gateway_sdk = new_apps.get_model("support", "APISDK").objects.get(gateway_id=gateway.id)
+        gateway_sdk = new_apps.get_model("support", "GatewaySDK").objects.get(gateway_id=gateway.id)
         assert gateway_sdk.language == "go"
 
         executor = MigrationExecutor(connection)

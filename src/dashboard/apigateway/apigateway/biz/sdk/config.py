@@ -41,7 +41,6 @@ GENERATOR_PROPERTIES = {
     ),
     "go": ("packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"),
     "javascript": ("projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"),
-    "rust": ("packageName", "packageVersion", "library", "supportAsync", "hideGenerationTimestamp"),
 }
 
 SUPPORTED_GENERATION_LANGUAGES = tuple(
@@ -51,7 +50,6 @@ SUPPORTED_GENERATION_LANGUAGES = tuple(
         ProgrammingLanguageEnum.JAVA,
         ProgrammingLanguageEnum.GO,
         ProgrammingLanguageEnum.JAVASCRIPT,
-        ProgrammingLanguageEnum.RUST,
     )
 )
 
@@ -268,23 +266,6 @@ def build_language_config(
                 "projectVersion": package_version,
                 "moduleName": f"bkapi_{gateway_name_normalized}",
                 "usePromises": "true",
-            },
-            native_distributor=None,
-        )
-
-    if language == ProgrammingLanguageEnum.RUST.value:
-        package_name = _format_template(settings.SDK_RUST_CRATE_NAME_TEMPLATE, template_values)
-        return SDKLanguageConfig(
-            language=language,
-            generator_name=language,
-            project_name=package_name,
-            package_name=package_name,
-            package_version=package_version,
-            additional_properties={
-                "packageName": package_name,
-                "packageVersion": package_version,
-                "library": "reqwest",
-                "supportAsync": "true",
             },
             native_distributor=None,
         )
