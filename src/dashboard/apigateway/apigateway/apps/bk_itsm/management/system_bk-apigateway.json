@@ -341,24 +341,24 @@
               "itsm_options": [
                 {
                   "translations": {
-                    "name": "gateway",
+                    "name": "按网关",
                     "name_en": "Option1",
-                    "name_zh_hans": "gateway",
+                    "name_zh_hans": "按网关",
                     "name_zh_hant": "選項1"
                   },
                   "key": "gateway",
-                  "name": "gateway",
+                  "name": "按网关",
                   "parent": null
                 },
                 {
                   "translations": {
-                    "name": "resource",
+                    "name": "按资源",
                     "name_en": "Option2",
-                    "name_zh_hans": "resource",
+                    "name_zh_hans": "按资源",
                     "name_zh_hant": "選項2"
                   },
                   "key": "resource",
-                  "name": "resource",
+                  "name": "按资源",
                   "parent": null
                 },
                 {
@@ -393,23 +393,23 @@
                 "value": [
                   {
                     "key": "gateway",
-                    "name": "gateway",
+                    "name": "按网关",
                     "selected": false,
                     "translations": {
-                      "name": "gateway",
+                      "name": "按网关",
                       "name_en": "Option1",
-                      "name_zh_hans": "gateway",
+                      "name_zh_hans": "按网关",
                       "name_zh_hant": "選項1"
                     }
                   },
                   {
                     "key": "resource",
-                    "name": "resource",
+                    "name": "按资源",
                     "selected": false,
                     "translations": {
-                      "name": "resource",
+                      "name": "按资源",
                       "name_en": "Option2",
-                      "name_zh_hans": "resource",
+                      "name_zh_hans": "按资源",
                       "name_zh_hant": "選項2"
                     }
                   },
@@ -1252,23 +1252,23 @@
                               "value": [
                                 {
                                   "key": "gateway",
-                                  "name": "gateway",
+                                  "name": "按网关",
                                   "selected": false,
                                   "translations": {
-                                    "name": "gateway",
+                                    "name": "按网关",
                                     "name_en": "Option1",
-                                    "name_zh_hans": "gateway",
+                                    "name_zh_hans": "按网关",
                                     "name_zh_hant": "選項1"
                                   }
                                 },
                                 {
                                   "key": "resource",
-                                  "name": "resource",
+                                  "name": "按资源",
                                   "selected": false,
                                   "translations": {
-                                    "name": "resource",
+                                    "name": "按资源",
                                     "name_en": "Option2",
-                                    "name_zh_hans": "resource",
+                                    "name_zh_hans": "按资源",
                                     "name_zh_hant": "選項2"
                                   }
                                 },
@@ -1885,24 +1885,24 @@
                 "itsm_options": [
                   {
                     "translations": {
-                      "name": "gateway",
+                      "name": "按网关",
                       "name_en": "Option1",
-                      "name_zh_hans": "gateway",
+                      "name_zh_hans": "按网关",
                       "name_zh_hant": "選項1"
                     },
                     "key": "gateway",
-                    "name": "gateway",
+                    "name": "按网关",
                     "parent": null
                   },
                   {
                     "translations": {
-                      "name": "resource",
+                      "name": "按资源",
                       "name_en": "Option2",
-                      "name_zh_hans": "resource",
+                      "name_zh_hans": "按资源",
                       "name_zh_hant": "選項2"
                     },
                     "key": "resource",
-                    "name": "resource",
+                    "name": "按资源",
                     "parent": null
                   },
                   {
@@ -3269,23 +3269,23 @@
                               "value": [
                                 {
                                   "key": "gateway",
-                                  "name": "gateway",
+                                  "name": "按网关",
                                   "selected": false,
                                   "translations": {
-                                    "name": "gateway",
+                                    "name": "按网关",
                                     "name_en": "Option1",
-                                    "name_zh_hans": "gateway",
+                                    "name_zh_hans": "按网关",
                                     "name_zh_hant": "選項1"
                                   }
                                 },
                                 {
                                   "key": "resource",
-                                  "name": "resource",
+                                  "name": "按资源",
                                   "selected": false,
                                   "translations": {
-                                    "name": "resource",
+                                    "name": "按资源",
                                     "name_en": "Option2",
-                                    "name_zh_hans": "resource",
+                                    "name_zh_hans": "按资源",
                                     "name_zh_hant": "選項2"
                                   }
                                 },
@@ -3902,24 +3902,24 @@
                 "itsm_options": [
                   {
                     "translations": {
-                      "name": "gateway",
+                      "name": "按网关",
                       "name_en": "Option1",
-                      "name_zh_hans": "gateway",
+                      "name_zh_hans": "按网关",
                       "name_zh_hant": "選項1"
                     },
                     "key": "gateway",
-                    "name": "gateway",
+                    "name": "按网关",
                     "parent": null
                   },
                   {
                     "translations": {
-                      "name": "resource",
+                      "name": "按资源",
                       "name_en": "Option2",
-                      "name_zh_hans": "resource",
+                      "name_zh_hans": "按资源",
                       "name_zh_hant": "選項2"
                     },
                     "key": "resource",
-                    "name": "resource",
+                    "name": "按资源",
                     "parent": null
                   },
                   {
