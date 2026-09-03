@@ -82,6 +82,8 @@ class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
             language=programming_language,
         ).last()
         display_sdk = SDKFactory.create(sdk) if sdk else None
+        if display_sdk and display_sdk.is_legacy:
+            return OKJsonResponse(data=SDKUsageExampleOutputSLZ({"content": ""}).data)
 
         stage_name = slz.validated_data["stage_name"]
         resource_name = slz.validated_data["resource_name"]
@@ -111,6 +113,7 @@ class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
                 bk_api_url_tmpl=GatewayHandler.get_bk_api_url_tmpl(request.gateway.id),
                 install_command=display_sdk.install_command if display_sdk else "",
                 artifact_url=display_sdk.url if display_sdk else "",
+                project_name=display_sdk.project_name if display_sdk else "",
                 package_name=display_sdk.package_name if display_sdk else "",
             ).as_dict(),
         )

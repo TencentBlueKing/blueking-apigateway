@@ -46,6 +46,7 @@ class SDKDocContext:
     headers: dict = field(default_factory=dict)
     install_command: str = ""
     artifact_url: str = ""
+    project_name: str = ""
     package_name: str = ""
 
     def as_dict(self):
@@ -62,6 +63,7 @@ class SDKDocContext:
             "headers": self.headers,
             "install_command": self.install_command,
             "artifact_url": self.artifact_url,
+            "project_name": self.project_name,
             "package_name": self.package_name,
             "server_url": f"{self.bk_api_url_tmpl.replace('{api_name}', self.gateway_name).rstrip('/')}/{self.stage_name}",
         }
@@ -103,6 +105,15 @@ class SDK:
     def artifacts(self) -> list[dict[str, Any]]:
         artifacts = self.config.get("artifacts", [])
         return artifacts if isinstance(artifacts, list) else []
+
+    @property
+    def is_legacy(self) -> bool:
+        config = self.instance.config
+        return not isinstance(config, dict) or "artifacts" not in config
+
+    @property
+    def project_name(self) -> str:
+        return self.config.get("project_name", "")
 
     @property
     def package_name(self) -> str:

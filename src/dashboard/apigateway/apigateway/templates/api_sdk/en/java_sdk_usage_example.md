@@ -1,8 +1,8 @@
 {% if install_command %}Install this version with `{{ install_command }}`.{% endif %}
 
 ```java
-import org.openapitools.client.ApiClient;
-import org.openapitools.client.Configuration;
+import {{ package_name|default:"org.openapitools.client" }}.ApiClient;
+import {{ package_name|default:"org.openapitools.client" }}.Configuration;
 
 ApiClient apiClient = Configuration.getDefaultApiClient();
 apiClient.setBasePath("{{ server_url }}");

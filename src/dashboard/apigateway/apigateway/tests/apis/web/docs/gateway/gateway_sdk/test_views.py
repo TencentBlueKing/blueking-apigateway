@@ -21,6 +21,7 @@ import json
 import pytest
 from django.test import Client
 from django.urls import reverse
+from django.utils import translation
 
 
 class TestSDKListApi:
@@ -84,6 +85,7 @@ class TestSDKUsageExampleApi:
         fake_sdk.url = "https://repo.example.com/sdk-package"
         fake_sdk._config = json.dumps(
             {
+                "project_name": "git.example.com/bkapi/demo",
                 "package_name": "bkapi_demo",
                 "artifacts": [
                     {
@@ -118,3 +120,82 @@ class TestSDKUsageExampleApi:
         assert "/prod" in content
         for removed in ("bkapi.bk_apigateway.shortcuts", "get_client_by_request", "bkapi-client-generator", "golang"):
             assert removed not in content
+
+    def test_retrieve_ignores_legacy_sdk(self, request_view, fake_gateway, fake_sdk):
+        fake_sdk._config = json.dumps({"python": {"repository": "default"}})
+        fake_sdk.save(update_fields=["_config"])
+
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.gateway_sdk.retrieve_usage_example",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "language": "python",
+                "stage_name": "prod",
+                "resource_name": "get_color",
+            },
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["content"] == ""
+
+    @pytest.mark.parametrize("language_code", ["en", "zh-hans"])
+    def test_retrieve_java_uses_generated_invoker_package(self, request_view, fake_gateway, fake_sdk, language_code):
+        fake_sdk.language = "java"
+        fake_sdk._config = json.dumps(
+            {
+                "project_name": "bkapi-demo",
+                "package_name": "com.tencent.bkapi.demo",
+                "artifacts": [],
+            }
+        )
+        fake_sdk.save(update_fields=["language", "_config"])
+
+        with translation.override(language_code):
+            resp = request_view(
+                method="GET",
+                view_name="docs.gateway.gateway_sdk.retrieve_usage_example",
+                path_params={"gateway_name": fake_gateway.name},
+                data={
+                    "language": "java",
+                    "stage_name": "prod",
+                    "resource_name": "get_color",
+                },
+                gateway=fake_gateway,
+            )
+
+        content = resp.json()["data"]["content"]
+        assert "import com.tencent.bkapi.demo.ApiClient;" in content
+        assert "import com.tencent.bkapi.demo.Configuration;" in content
+        assert "org.openapitools.client" not in content
+
+    @pytest.mark.parametrize("language_code", ["en", "zh-hans"])
+    def test_retrieve_go_uses_module_path_and_package_name(self, request_view, fake_gateway, fake_sdk, language_code):
+        fake_sdk.language = "go"
+        fake_sdk._config = json.dumps(
+            {
+                "project_name": "git.example.com/bkapi/demo",
+                "package_name": "bkapi_demo",
+                "artifacts": [],
+            }
+        )
+        fake_sdk.save(update_fields=["language", "_config"])
+
+        with translation.override(language_code):
+            resp = request_view(
+                method="GET",
+                view_name="docs.gateway.gateway_sdk.retrieve_usage_example",
+                path_params={"gateway_name": fake_gateway.name},
+                data={
+                    "language": "go",
+                    "stage_name": "prod",
+                    "resource_name": "get_color",
+                },
+                gateway=fake_gateway,
+            )
+
+        content = resp.json()["data"]["content"]
+        assert 'bkapi_demo "git.example.com/bkapi/demo"' in content
+        assert "cfg := bkapi_demo.NewConfiguration()" in content
+        assert "client := bkapi_demo.NewAPIClient(cfg)" in content
