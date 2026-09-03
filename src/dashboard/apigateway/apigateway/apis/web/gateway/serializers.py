@@ -419,10 +419,11 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             },
         }
 
-    def validate_maintainers(self, value):
-        if not value:
-            raise serializers.ValidationError(gettext_lazy("网关至少需要保留一个管理员。"))
-        return value
+    def validate(self, data):
+        # Backward compatibility: treat an empty maintainers payload as omitted.
+        if "maintainers" in data and not data["maintainers"]:
+            data.pop("maintainers")
+        return data
 
     @transaction.atomic
     def update(self, instance, validated_data):

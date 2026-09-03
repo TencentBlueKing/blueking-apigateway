@@ -630,7 +630,7 @@ class TestGatewayUpdateInputSLZ:
 
         assert slz.validated_data == expected
 
-    def test_validate_rejects_empty_maintainers(self, fake_gateway):
+    def test_validate_allows_empty_maintainers_for_backward_compatibility(self, fake_gateway):
         slz = GatewayUpdateInputSLZ(
             instance=fake_gateway,
             data={
@@ -640,8 +640,8 @@ class TestGatewayUpdateInputSLZ:
             },
         )
 
-        with pytest.raises(ValidationError):
-            slz.is_valid(raise_exception=True)
+        slz.is_valid(raise_exception=True)
+        assert "maintainers" not in slz.validated_data
 
     def test_validate_allows_omitted_maintainers(self, fake_gateway):
         slz = GatewayUpdateInputSLZ(

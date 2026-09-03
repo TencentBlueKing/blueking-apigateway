@@ -7,22 +7,25 @@ from apigateway.core.models import Gateway
 
 
 class GatewayPermission(permissions.BasePermission):
-    """Load a gateway from the URL and require an administrator member."""
+    """获取网关并验证网关权限。"""
 
     message = gettext_lazy("当前用户无访问网关权限")
 
     def has_permission(self, request, view):
         gateway = self.get_gateway_object(view)
+        # 路径参数 gateway_id 不存在时，忽略网关权限校验
         if not gateway:
             return True
 
         request.gateway = gateway
+        # 跳过网关权限校验
         if getattr(view, "gateway_permission_exempt", False):
             return True
 
         return GatewayMember.objects.is_gateway_administrator(gateway.id, request.user.username)
 
     def get_gateway_object(self, view):
+        """根据路径参数 gateway_id 获取网关对象。"""
         lookup_url_kwarg = "gateway_id"
         if lookup_url_kwarg not in view.kwargs:
             return None
@@ -31,7 +34,7 @@ class GatewayPermission(permissions.BasePermission):
 
 
 class GatewayApprovalPermission(GatewayPermission):
-    """Load a gateway from the URL and require an approval member."""
+    """获取网关并验证网关审批权限。"""
 
     def has_permission(self, request, view):
         gateway = self.get_gateway_object(view)
