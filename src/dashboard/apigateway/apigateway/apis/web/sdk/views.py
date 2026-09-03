@@ -72,11 +72,7 @@ def _serialize_generation_item(item: SDKGenerationItem) -> dict[str, Any]:
         "generation_task_id": item.task_id,
         "generation_item_id": item.id,
         "resource_version": {"id": resource_version.id, "version": resource_version.version},
-        "version_number": (
-            gateway_sdk.version_number
-            if gateway_sdk
-            else item.config_snapshot.get("package_version", resource_version.version)
-        ),
+        "version_number": resource_version.version,
         "language": item.language,
         "name": (
             gateway_sdk.name
@@ -278,6 +274,13 @@ class SDKGenerationTaskDetailApi(APIView):
 class SDKGenerationItemRetryApi(APIView):
     @transaction.atomic
     def post(self, request, gateway_id, task_id, item_id):
+        if not get_sdk_generation_policy().enabled:
+            return FailJsonResponse(
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                code="SERVICE_UNAVAILABLE",
+                message="SDK generation is unavailable",
+            )
+
         task = get_object_or_404(SDKGenerationTask.objects.select_for_update(), id=task_id, gateway=request.gateway)
         item = get_object_or_404(SDKGenerationItem.objects.select_for_update(), id=item_id, task=task)
         if item.status != SDKGenerationItemStatusEnum.FAILED.value:

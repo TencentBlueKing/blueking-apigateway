@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import requests
+from blue_krill.storages.blobstore.exceptions import RequestError
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
@@ -34,7 +35,7 @@ from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
 from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerateError, SDKGenerationError
 from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
-from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
+from apigateway.biz.sdk.generator import generate_client
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
 from apigateway.biz.sdk.publishers import publish_native
@@ -46,6 +47,7 @@ from apigateway.biz.sdk.storage import (
     manifest_key,
     restore_generic_artifacts,
 )
+from apigateway.biz.sdk.toolchain import probe_toolchain_identity
 from apigateway.components.bkrepo import BKRepoComponent
 
 if TYPE_CHECKING:
@@ -291,17 +293,28 @@ def finish_generation_item(
 
 
 def _classify_generation_error(error: Exception) -> SDKGenerationError:
-    if isinstance(error, SDKGenerationError):
-        return error
-    if isinstance(error, (subprocess.TimeoutExpired, requests.Timeout, requests.ConnectionError)):
-        return SDKGenerationError("temporary_network", str(error) or "temporary network failure", retryable=True)
-    if isinstance(error, requests.HTTPError):
-        status_code = error.response.status_code if error.response is not None else None
-        retryable = status_code == 429 or (status_code is not None and status_code >= 500)
-        code = "remote_service_unavailable" if retryable else "remote_request_failed"
-        return SDKGenerationError(code, str(error) or code, retryable=retryable)
-    if isinstance(error, SDKConfigurationError):
-        return SDKGenerationError("configuration_error", str(error))
+    current: BaseException | None = error
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, SDKGenerationError):
+            return current
+        if isinstance(current, (subprocess.TimeoutExpired, requests.Timeout, requests.ConnectionError)):
+            return SDKGenerationError("temporary_network", str(current) or "temporary network failure", retryable=True)
+        if isinstance(current, (requests.HTTPError, RequestError)):
+            response = current.response
+            status_code = response.status_code if response is not None else None
+            if status_code is None and isinstance(current, RequestError):
+                try:
+                    status_code = int(current.code)
+                except TypeError, ValueError:
+                    status_code = None
+            retryable = status_code == 429 or (status_code is not None and status_code >= 500)
+            code = "remote_service_unavailable" if retryable else "remote_request_failed"
+            return SDKGenerationError(code, str(current) or code, retryable=retryable)
+        if isinstance(current, SDKConfigurationError):
+            return SDKGenerationError("configuration_error", str(current))
+        current = current.__cause__ or current.__context__
     return SDKGenerationError("generation_failed", str(error) or error.__class__.__name__)
 
 
@@ -419,9 +432,9 @@ def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
         item.task.gateway.name, item.task.resource_version, item.language
     )
     with sdk_generation_metrics.observe_phase(item.language, "openapi"):
-        tool_versions = {"openapi-generator": get_openapi_generator_version()}
+        toolchain_identity = probe_toolchain_identity()
         document = build_sdk_openapi(item.task.resource_version)
-        fingerprint = calculate_input_fingerprint(document, language_config, tool_versions)
+        fingerprint = calculate_input_fingerprint(document, language_config, toolchain_identity)
     config_snapshot = {
         **language_config.build_fingerprint_payload(),
         "native_distributor": language_config.native_distributor,
@@ -433,7 +446,7 @@ def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
         return None
     item.input_fingerprint = fingerprint
     item.config_snapshot = config_snapshot
-    return language_config, document, tool_versions, fingerprint
+    return language_config, document, toolchain_identity.as_dict(), fingerprint
 
 
 def _complete_failed_execution(item: SDKGenerationItem, claim: GenerationClaim, error: Exception) -> int | None:

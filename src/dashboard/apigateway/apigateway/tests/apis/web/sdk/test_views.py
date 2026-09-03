@@ -54,7 +54,12 @@ class TestGatewaySDKListCreateApi:
         )
         pending_version = G(ResourceVersion, gateway=fake_gateway, version="1.1.0")
         pending_task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=pending_version)
-        pending_item = G(SDKGenerationItem, task=pending_task, language="javascript")
+        pending_item = G(
+            SDKGenerationItem,
+            task=pending_task,
+            language="go",
+            config_snapshot={"project_name": "example.com/openapi/demo", "package_version": "v1.1.0"},
+        )
         failed_version = G(ResourceVersion, gateway=fake_gateway, version="1.2.0")
         failed_task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=failed_version)
         failed_item = G(
@@ -133,8 +138,8 @@ class TestGatewaySDKListCreateApi:
             rows = resp.json()["data"]["results"]
 
         assert len(rows) == 5
-        rows_by_version = {row["version_number"]: row for row in rows}
-        assert rows_by_version["1.0.0"] == {
+        rows_by_resource_version = {row["resource_version"]["version"]: row for row in rows}
+        assert rows_by_resource_version["1.0.0"] == {
             "id": legacy_sdk.id,
             "generation_task_id": None,
             "generation_item_id": None,
@@ -151,24 +156,26 @@ class TestGatewaySDKListCreateApi:
             "created_time": dummy_time.str,
             "updated_time": dummy_time.str,
         }
-        assert rows_by_version["1.1.0"]["generation_item_id"] == pending_item.id
-        assert rows_by_version["1.1.0"]["status"] == "pending"
-        assert rows_by_version["1.1.0"]["id"] is None
-        assert rows_by_version["1.2.0"]["generation_item_id"] == failed_item.id
-        assert rows_by_version["1.2.0"]["name"] != "stale-projection"
-        assert rows_by_version["1.2.0"]["error"] == {
+        assert rows_by_resource_version["1.1.0"]["generation_item_id"] == pending_item.id
+        assert rows_by_resource_version["1.1.0"]["version_number"] == "1.1.0"
+        assert rows_by_resource_version["1.1.0"]["status"] == "pending"
+        assert rows_by_resource_version["1.1.0"]["id"] is None
+        assert rows_by_resource_version["1.2.0"]["generation_item_id"] == failed_item.id
+        assert rows_by_resource_version["1.2.0"]["name"] != "stale-projection"
+        assert rows_by_resource_version["1.2.0"]["error"] == {
             "code": "build_failed",
             "message": "wheel build failed",
         }
-        assert rows_by_version["v1.3.0"]["id"] == success_sdk.id
-        assert rows_by_version["v1.3.0"]["download_url"] == success_artifact.url
-        assert rows_by_version["1.4.0"]["generation_item_id"] == native_item.id
-        assert rows_by_version["1.4.0"]["status"] == "success"
-        assert rows_by_version["1.4.0"]["native_error"] == {
+        assert rows_by_resource_version["1.3.0"]["id"] == success_sdk.id
+        assert rows_by_resource_version["1.3.0"]["version_number"] == "1.3.0"
+        assert rows_by_resource_version["1.3.0"]["download_url"] == success_artifact.url
+        assert rows_by_resource_version["1.4.0"]["generation_item_id"] == native_item.id
+        assert rows_by_resource_version["1.4.0"]["status"] == "success"
+        assert rows_by_resource_version["1.4.0"]["native_error"] == {
             "code": "registry_unavailable",
             "message": "publication failed",
         }
-        assert rows_by_version["1.4.0"]["download_url"] == native_artifact.url
+        assert rows_by_resource_version["1.4.0"]["download_url"] == native_artifact.url
 
     def test_list_filters_legacy_and_generation_rows_together(self, request_view, fake_gateway, fake_admin_user):
         legacy_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
@@ -292,6 +299,10 @@ class TestGatewaySDKListCreateApi:
 
 
 class TestSDKGenerationTaskApi:
+    @pytest.fixture(autouse=True)
+    def _enable_generation(self, settings):
+        settings.SDK_GENERATION_ENABLED = True
+
     def test_list_is_paginated_and_prefetches_items(
         self,
         request_view,
@@ -416,6 +427,42 @@ class TestSDKGenerationTaskApi:
 
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+
+    def test_retry_rejects_disabled_generation_without_mutation_or_enqueue(
+        self, request_view, fake_gateway, fake_admin_user, settings, mocker
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=resource_version, status="failed")
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="python",
+            status=SDKGenerationItemStatusEnum.FAILED.value,
+            attempt_cycle_count=3,
+            error_code="build_failed",
+            error_message="wheel build failed",
+        )
+        settings.SDK_GENERATION_ENABLED = False
+        enqueue = mocker.patch("apigateway.apis.web.sdk.views.enqueue_generation_items")
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.sdk.generation_item_retry",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id, "task_id": task.id, "item_id": item.id},
+        )
+
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+        item.refresh_from_db()
+        task.refresh_from_db()
+        assert item.status == SDKGenerationItemStatusEnum.FAILED.value
+        assert item.attempt_cycle_count == 3
+        assert item.error_code == "build_failed"
+        assert item.error_message == "wheel build failed"
+        assert task.status == SDKGenerationTaskStatusEnum.FAILED.value
+        enqueue.assert_not_called()
 
     def test_retry_rejects_item_from_another_gateway(self, request_view, fake_gateway, fake_admin_user):
         other_gateway = G(type(fake_gateway), name="other-gateway")

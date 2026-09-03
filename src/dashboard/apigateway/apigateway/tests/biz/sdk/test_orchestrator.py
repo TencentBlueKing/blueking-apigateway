@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import requests
-from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists
+from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists, RequestError, UploadFailedError
 from ddf import G
 from django.utils import timezone
 
@@ -30,6 +30,7 @@ from apigateway.biz.sdk.orchestrator import (
     refresh_task_status,
     serialize_generation_task,
 )
+from apigateway.biz.sdk.toolchain import SDKToolchainIdentity
 
 pytestmark = pytest.mark.django_db
 
@@ -286,7 +287,19 @@ def test_legacy_sdk_is_linked_as_success_without_enqueue_or_update(
 
 def _patch_pipeline(mocker, bkrepo, *, publisher_side_effect=None):
     mocker.patch("apigateway.biz.sdk.orchestrator.BKRepoComponent.default", return_value=bkrepo)
-    mocker.patch("apigateway.biz.sdk.orchestrator.get_openapi_generator_version", return_value="7.23.0")
+    mocker.patch(
+        "apigateway.biz.sdk.orchestrator.probe_toolchain_identity",
+        return_value=SDKToolchainIdentity(
+            openapi_generator="7.23.0",
+            python="3.14.5",
+            java="17.0.15",
+            maven="3.9.9",
+            go="1.24.4",
+            node="22.17.0",
+            npm="10.9.2",
+            dependency_lock_sha256="a" * 64,
+        ),
+    )
     mocker.patch(
         "apigateway.biz.sdk.orchestrator.build_sdk_openapi",
         return_value={"openapi": "3.0.1", "info": {"title": "demo", "version": "1.2.3"}, "paths": {}},
@@ -326,6 +339,33 @@ def test_execute_commits_generic_before_success_and_projects_sdk(fake_gateway, f
     assert sdk.config == {}
     assert sdk.generation_item.id == item.id
     publish.assert_not_called()
+
+
+def test_execute_fingerprints_the_complete_worker_identity(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    _patch_pipeline(mocker, bkrepo)
+    identity = SDKToolchainIdentity(
+        openapi_generator="7.23.0",
+        python="3.14.5",
+        java="17.0.15",
+        maven="3.9.9",
+        go="1.24.4",
+        node="22.17.0",
+        npm="10.9.2",
+        dependency_lock_sha256="a" * 64,
+    )
+    mocker.patch("apigateway.biz.sdk.orchestrator.probe_toolchain_identity", return_value=identity)
+    calculate = mocker.patch(
+        "apigateway.biz.sdk.orchestrator.calculate_input_fingerprint",
+        return_value="b" * 64,
+    )
+
+    result = execute_generation_item(item.id, "celery-identity")
+
+    assert result is not None and result.status == SDKGenerationItemStatusEnum.SUCCESS.value
+    assert calculate.call_args.args[2] == identity
 
 
 def test_generic_success_is_committed_before_native_publication(fake_resource_version, settings, mocker):
@@ -507,6 +547,22 @@ def test_remote_http_error_classification(status_code, retryable):
     classified = _classify_generation_error(error)
 
     assert classified.retryable is retryable
+
+
+@pytest.mark.parametrize(("status_code", "retryable"), [("429", True), ("503", True), ("401", False)])
+@pytest.mark.parametrize("wrapped", [False, True])
+def test_bkrepo_error_classification_follows_wrapped_http_status(status_code, retryable, wrapped):
+    response = requests.Response()
+    response.status_code = int(status_code)
+    request_error = RequestError("BKRepo request failed", code=status_code, response=response)
+    error = UploadFailedError("artifact.whl", "/tmp/artifact.whl") if wrapped else request_error
+    if wrapped:
+        error.__cause__ = request_error
+
+    classified = _classify_generation_error(error)
+
+    assert classified.retryable is retryable
+    assert classified.code == ("remote_service_unavailable" if retryable else "remote_request_failed")
 
 
 def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_version, mocker):

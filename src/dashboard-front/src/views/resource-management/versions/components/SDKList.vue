@@ -278,7 +278,13 @@ const stopPolling = () => {
 
 const schedulePolling = (rows: IGatewaySDKListOutput[]) => {
   stopPolling();
-  if (!isUnmounted && rows.some(row => row.status === 'pending' || row.status === 'running')) {
+  const hasActiveLifecycle = rows.some(row => (
+    row.status === 'pending'
+    || row.status === 'running'
+    || row.native_status === 'pending'
+    || row.native_status === 'running'
+  ));
+  if (!isUnmounted && hasActiveLifecycle) {
     pollingTimer = setTimeout(() => {
       pollingTimer = undefined;
       tableRef.value?.refresh();
