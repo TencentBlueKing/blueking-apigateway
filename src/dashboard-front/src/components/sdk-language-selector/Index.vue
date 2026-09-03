@@ -60,7 +60,6 @@ const {
     'java',
     'go',
     'javascript',
-    'rust',
   ],
   langList = undefined,
   maintainers = [],

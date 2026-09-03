@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { type IDialog } from '@/types/common';
-import { createSDK, getSDKGenerationTask } from '@/services/source/sdks';
+import { createSDK } from '@/services/source/sdks';
 import {
   type IVersionItem,
   getVersionList,
@@ -76,7 +76,7 @@ import {
 import { Message } from 'bkui-vue';
 import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 
-interface CreateDialog {
+interface ICreateDialog {
   resource_version_id: string
   language: string
 }
@@ -86,18 +86,19 @@ interface IProps {
   resourceVersionId?: string
 }
 
+interface IEmits {
+  done: [void]
+}
+
 const {
   versionList = [],
   resourceVersionId = '',
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ done: [void] }>();
+const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 const route = useRoute();
-const pollInterval = 2000;
-const pollTimeout = 10 * 60 * 1000;
-let activePollId = 0;
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
@@ -114,7 +115,7 @@ const dialogConfig: IDialog = reactive({
 });
 
 // 提交表单
-const formData: CreateDialog = reactive({
+const formData: ICreateDialog = reactive({
   resource_version_id: '',
   language: 'python',
 });
@@ -175,92 +176,31 @@ watch(
 
 // 生成sdk
 const handleCreate = async () => {
-  const pollId = ++activePollId;
   try {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
 
-    const acceptedTask = await createSDK(apigwId.value, {
+    await createSDK(apigwId.value, {
       resource_version_id: Number(formData.resource_version_id),
       languages: [formData.language],
     });
-    if (pollId !== activePollId) {
-      return;
-    }
-    const deadline = Date.now() + pollTimeout;
-    let task = await getSDKGenerationTask(apigwId.value, acceptedTask.id);
-    if (pollId !== activePollId) {
-      return;
-    }
-    while (['pending', 'running'].includes(task.status)) {
-      if (pollId !== activePollId) {
-        return;
-      }
-      if (Date.now() >= deadline) {
-        Message({
-          message: t('SDK 生成超时，请稍后在 SDK 列表中查看结果'),
-          theme: 'warning',
-        });
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-      if (pollId !== activePollId) {
-        return;
-      }
-      task = await getSDKGenerationTask(apigwId.value, acceptedTask.id);
-      if (pollId !== activePollId) {
-        return;
-      }
-    }
-
-    const requestedItem = task.items.find(item => item.language === formData.language);
-    const hasGenericArtifact = requestedItem?.artifacts.some(artifact => (
-      artifact.distributor === 'bkrepo_generic'
-      && artifact.filename !== 'manifest.json'
-      && artifact.status === 'success'
-    ));
-    if (requestedItem?.status === 'partial' && hasGenericArtifact) {
-      Message({
-        message: t('SDK 已生成到 BKRepo，但部分仓库发布失败'),
-        theme: 'warning',
-      });
-    }
-    else if (requestedItem?.status === 'success') {
-      Message({
-        message: t('创建成功'),
-        theme: 'success',
-      });
-    }
-    else {
-      Message({
-        message: requestedItem?.error?.message || t('SDK 生成失败'),
-        theme: 'error',
-      });
-      return;
-    }
-
+    Message({
+      message: t('SDK 生成任务已提交'),
+      theme: 'success',
+    });
+    emit('done');
     handleClosed();
-    setTimeout(() => {
-      emit('done');
-    }, 300);
   }
   finally {
-    if (pollId === activePollId) {
-      dialogConfig.loading = false;
-    }
+    dialogConfig.loading = false;
   }
 };
 
 const handleClosed = () => {
-  activePollId += 1;
   dialogConfig.isShow = false;
   dialogConfig.loading = false;
   baseInfoRef.value?.clearValidate();
 };
-
-onBeforeUnmount(() => {
-  activePollId += 1;
-});
 
 // 显示弹窗
 const showCreateSdk = () => {
