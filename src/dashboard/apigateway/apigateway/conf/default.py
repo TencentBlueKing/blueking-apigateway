@@ -522,15 +522,14 @@ CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 # 模板变量
 # ==============================================================================
 BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
-SDK_PYTHON_PROJECT_NAME_TEMPLATE = env.str("SDK_PYTHON_PROJECT_NAME_TEMPLATE", "bkapi-{gateway_name}")
-SDK_PYTHON_PACKAGE_NAME_TEMPLATE = env.str("SDK_PYTHON_PACKAGE_NAME_TEMPLATE", "bkapi_{gateway_name_normalized}")
-SDK_JAVA_GROUP_ID = env.str("SDK_JAVA_GROUP_ID", "com.tencent.bkapi")
-SDK_JAVA_ARTIFACT_ID_TEMPLATE = env.str("SDK_JAVA_ARTIFACT_ID_TEMPLATE", "bkapi-{gateway_name}")
-SDK_JAVA_PACKAGE_TEMPLATE = env.str("SDK_JAVA_PACKAGE_TEMPLATE", "com.tencent.bkapi.{gateway_name_normalized}")
-SDK_GO_MODULE_PREFIX = env.str("SDK_GO_MODULE_PREFIX", "git.example.com/bkapi")
-SDK_JAVASCRIPT_PACKAGE_SCOPE = env.str("SDK_JAVASCRIPT_PACKAGE_SCOPE", "@bkapi")
-SDK_RUST_CRATE_NAME_TEMPLATE = env.str("SDK_RUST_CRATE_NAME_TEMPLATE", "bkapi_{gateway_name_normalized}")
 SDK_GENERATION = get_sdk_generation_settings(env, bk_api_url_tmpl=BK_API_URL_TMPL)
+SDK_GENERATION_ENABLED = SDK_GENERATION["enabled"]
+SDK_GENERATION_RETRY_DELAYS = SDK_GENERATION["retry_delays"]
+SDK_PYTHON_DISTRIBUTION_PREFIX = SDK_GENERATION["python_distribution_prefix"]
+SDK_JAVA_GROUP_ID = SDK_GENERATION["java_group_id"]
+SDK_JAVA_PACKAGE_PREFIX = SDK_GENERATION["java_package_prefix"]
+SDK_GO_MODULE_PREFIX = SDK_GENERATION["go_module_prefix"]
+SDK_JAVASCRIPT_PACKAGE_SCOPE = SDK_GENERATION["javascript_package_scope"]
 # TODO: remove in the future, and remove in the helm-chart and te repo
 # BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")

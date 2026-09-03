@@ -27,6 +27,8 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.sdk.config import (
     SDKLanguageConfig,
     get_sdk_generation_config,
+    get_sdk_generation_policy,
+    get_sdk_worker_config,
     normalize_gateway_name,
     normalize_package_version,
 )
@@ -46,7 +48,6 @@ EXPECTED_GENERATOR_PROPERTIES = {
     },
     "go": {"packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"},
     "javascript": {"projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"},
-    "rust": {"packageName", "packageVersion", "library", "supportAsync", "hideGenerationTimestamp"},
 }
 
 
@@ -70,19 +71,27 @@ def test_programming_languages_are_the_new_supported_set():
         "java",
         "go",
         "javascript",
-        "rust",
     ]
 
 
 def test_sdk_generation_config_uses_the_default_server_template():
     config = get_sdk_generation_config()
 
-    assert config.enabled_languages == ("python", "java", "go", "javascript", "rust")
+    assert config.enabled_languages == ("python", "java", "go", "javascript")
     assert config.server_url_template == settings.SDK_GENERATION["server_url_template"]
 
 
-def test_sdk_generation_config_requires_bkrepo_generic_for_deployment():
-    config = get_sdk_generation_config()
+def test_sdk_generation_policy_is_lightweight_and_disabled_by_default():
+    policy = get_sdk_generation_policy()
+
+    assert policy.enabled is False
+    assert policy.languages == ("python", "java", "go", "javascript")
+    assert policy.retry_delays == (30, 120)
+    assert policy.queue == "sdk.generate"
+
+
+def test_sdk_worker_config_requires_bkrepo_generic_for_deployment():
+    config = get_sdk_worker_config()
 
     assert config.generic_repository.endpoint_url == "https://bkrepo.example.com"
     assert config.generic_repository.username == "sdk-user"
@@ -101,24 +110,21 @@ def test_sdk_generation_config_requires_bkrepo_generic_for_deployment():
         "BKREPO_GENERIC_BUCKET",
     ],
 )
-def test_sdk_generation_config_rejects_incomplete_bkrepo_generic(settings, setting_name):
+def test_sdk_worker_config_rejects_incomplete_bkrepo_generic(settings, setting_name):
     setattr(settings, setting_name, "")
 
     with pytest.raises(SDKRepoConfigError, match="BKRepo Generic"):
-        get_sdk_generation_config()
+        get_sdk_worker_config()
 
 
 @override_settings(
-    SDK_PYTHON_PROJECT_NAME_TEMPLATE="custom-{gateway_name}",
-    SDK_PYTHON_PACKAGE_NAME_TEMPLATE="custom_{gateway_name_normalized}",
+    SDK_PYTHON_DISTRIBUTION_PREFIX="custom-openapi",
     SDK_JAVA_GROUP_ID="com.example.sdk",
-    SDK_JAVA_ARTIFACT_ID_TEMPLATE="client-{gateway_name}",
-    SDK_JAVA_PACKAGE_TEMPLATE="com.example.{gateway_name_normalized}",
+    SDK_JAVA_PACKAGE_PREFIX="com.example.openapi",
     SDK_GO_MODULE_PREFIX="git.example.com/sdk",
     SDK_JAVASCRIPT_PACKAGE_SCOPE="@example",
-    SDK_RUST_CRATE_NAME_TEMPLATE="client_{gateway_name_normalized}",
 )
-def test_sdk_generation_config_uses_configurable_language_names():
+def test_sdk_generation_config_uses_organization_namespaces():
     config = get_sdk_generation_config()
 
     resource_version = make_resource_version()
@@ -126,17 +132,47 @@ def test_sdk_generation_config_uses_configurable_language_names():
     java_config = config.for_resource_version("my-gateway", resource_version, "java")
     go_config = config.for_resource_version("my-gateway", resource_version, "go")
     javascript_config = config.for_resource_version("my-gateway", resource_version, "javascript")
-    rust_config = config.for_resource_version("my-gateway", resource_version, "rust")
 
-    assert python_config.project_name == "custom-my-gateway"
-    assert python_config.package_name == "custom_my_gateway"
-    assert java_config.package_name == "com.example.my_gateway"
-    assert java_config.additional_properties["artifactId"] == "client-my-gateway"
-    assert go_config.project_name == "git.example.com/sdk/my-gateway"
-    assert javascript_config.package_name == "@example/bkapi-my-gateway"
-    assert javascript_config.project_name == "@example/bkapi-my-gateway"
-    assert javascript_config.additional_properties["projectName"] == "@example/bkapi-my-gateway"
-    assert rust_config.package_name == "client_my_gateway"
+    assert python_config.project_name == "custom-openapi-my-gateway"
+    assert python_config.package_name == "custom_openapi_my_gateway"
+    assert java_config.package_name == "com.example.openapi.my_gateway"
+    assert java_config.additional_properties["artifactId"] == "bkapi-openapi-my-gateway"
+    assert go_config.project_name == "git.example.com/sdk/openapi/my-gateway"
+    assert javascript_config.package_name == "@example/openapi-my-gateway"
+    assert javascript_config.project_name == "@example/openapi-my-gateway"
+    assert javascript_config.additional_properties["projectName"] == "@example/openapi-my-gateway"
+
+
+def test_sdk_generation_coordinates_and_versions_are_fixed():
+    config = get_sdk_generation_config()
+    resource_version = make_resource_version("1.2.3-rc.1")
+
+    python = config.for_resource_version("demo", resource_version, "python")
+    java = config.for_resource_version("demo", resource_version, "java")
+    go = config.for_resource_version("demo", resource_version, "go")
+    javascript = config.for_resource_version("demo", resource_version, "javascript")
+
+    assert (python.project_name, python.package_name, python.package_version) == (
+        "bkapi-openapi-demo",
+        "bkapi_openapi_demo",
+        "1.2.3rc1",
+    )
+    assert java.additional_properties["artifactId"] == "bkapi-openapi-demo"
+    assert (java.package_name, java.package_version) == ("com.tencent.bkapi.openapi.demo", "1.2.3-rc.1")
+    assert (go.project_name, go.package_version) == ("git.example.com/bkapi/openapi/demo", "v1.2.3-rc.1")
+    assert (javascript.package_name, javascript.package_version) == ("@bkapi/openapi-demo", "1.2.3-rc.1")
+
+
+def test_sdk_generation_callers_cannot_override_package_identity():
+    config = get_sdk_generation_config()
+
+    with pytest.raises(TypeError):
+        config.for_resource_version(
+            "demo",
+            make_resource_version(),
+            "python",
+            package_name="caller-controlled",
+        )
 
 
 @override_settings(
@@ -162,7 +198,7 @@ def test_sdk_generation_config_keeps_native_distributors_optional():
     assert config.for_resource_version("my-gateway", resource_version, "java").native_distributor is None
 
 
-@pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
+@pytest.mark.parametrize("language", ["python", "java", "go", "javascript"])
 def test_sdk_generation_config_uses_only_supported_generator_properties(language):
     config = get_sdk_generation_config()
 

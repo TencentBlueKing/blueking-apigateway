@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
 import socket
 from typing import Optional
 
@@ -24,7 +25,12 @@ from django.utils.functional import cached_property
 
 from apigateway.common.env import Env
 
-SDK_GENERATION_LANGUAGES = ("python", "java", "go", "javascript", "rust")
+SDK_GENERATION_LANGUAGES = ("python", "java", "go", "javascript")
+
+PYTHON_DISTRIBUTION_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$")
+JAVA_PACKAGE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
+GO_MODULE_PREFIX_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:/[A-Za-z0-9._-]+)*$")
+JAVASCRIPT_SCOPE_PATTERN = re.compile(r"^@[a-z0-9][a-z0-9._-]*$")
 
 
 def get_default_keepalive_options() -> Optional[dict]:
@@ -337,11 +343,46 @@ def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
     if len(enabled_languages) != len(set(enabled_languages)):
         raise ImproperlyConfigured("BK_SDK_LANGUAGES must not contain duplicate values")
 
+    retry_delays = env.list("SDK_GENERATION_RETRY_DELAYS", default=[30, 120], cast=int)
+    if len(retry_delays) != 2 or any(delay <= 0 for delay in retry_delays):
+        raise ImproperlyConfigured("SDK_GENERATION_RETRY_DELAYS must contain two positive integers")
+
+    namespace_settings = {
+        "SDK_PYTHON_DISTRIBUTION_PREFIX": (
+            env.str("SDK_PYTHON_DISTRIBUTION_PREFIX", "bkapi-openapi"),
+            PYTHON_DISTRIBUTION_PATTERN,
+        ),
+        "SDK_JAVA_GROUP_ID": (env.str("SDK_JAVA_GROUP_ID", "com.tencent.bkapi"), JAVA_PACKAGE_PATTERN),
+        "SDK_JAVA_PACKAGE_PREFIX": (
+            env.str("SDK_JAVA_PACKAGE_PREFIX", "com.tencent.bkapi.openapi"),
+            JAVA_PACKAGE_PATTERN,
+        ),
+        "SDK_GO_MODULE_PREFIX": (
+            env.str("SDK_GO_MODULE_PREFIX", "git.example.com/bkapi").rstrip("/"),
+            GO_MODULE_PREFIX_PATTERN,
+        ),
+        "SDK_JAVASCRIPT_PACKAGE_SCOPE": (
+            env.str("SDK_JAVASCRIPT_PACKAGE_SCOPE", "@bkapi"),
+            JAVASCRIPT_SCOPE_PATTERN,
+        ),
+    }
+    for name, (value, pattern) in namespace_settings.items():
+        if not pattern.fullmatch(value):
+            raise ImproperlyConfigured(f"{name} is invalid")
+
     return {
+        "enabled": env.bool("SDK_GENERATION_ENABLED", False),
         "enabled_languages": enabled_languages,
         "queue": env.str("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate"),
+        "retry_delays": retry_delays,
+        "python_distribution_prefix": namespace_settings["SDK_PYTHON_DISTRIBUTION_PREFIX"][0],
+        "java_group_id": namespace_settings["SDK_JAVA_GROUP_ID"][0],
+        "java_package_prefix": namespace_settings["SDK_JAVA_PACKAGE_PREFIX"][0],
+        "go_module_prefix": namespace_settings["SDK_GO_MODULE_PREFIX"][0],
+        "javascript_package_scope": namespace_settings["SDK_JAVASCRIPT_PACKAGE_SCOPE"][0],
         "generator_jar": env.str("SDK_OPENAPI_GENERATOR_JAR", "/opt/openapi-generator/openapi-generator-cli.jar"),
         "generator_version": env.str("SDK_OPENAPI_GENERATOR_VERSION", "7.23.0"),
+        "worker_lock_file": env.str("SDK_WORKER_LOCK_FILE", "/app/sdk-worker-lock.json"),
         "server_url_template": env.str(
             "SDK_SERVER_URL_TEMPLATE",
             bk_api_url_tmpl.replace("{api_name}", "{gateway_name}") + "/{stage_name}",

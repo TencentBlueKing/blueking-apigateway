@@ -45,7 +45,11 @@ class LegacySDKVersionConflict(SDKGenerateError):
         )
 
 
-class SDKRepoConfigError(SDKException):
+class SDKConfigurationError(SDKException):
+    """SDK worker or policy configuration is invalid."""
+
+
+class SDKRepoConfigError(SDKConfigurationError):
     """SDK 配置错误"""
 
 

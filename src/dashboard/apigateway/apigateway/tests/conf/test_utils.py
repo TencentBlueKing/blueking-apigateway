@@ -33,7 +33,9 @@ from apigateway.conf.utils import (
 def test_get_sdk_generation_settings_uses_common_defaults():
     settings = get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
 
-    assert settings["enabled_languages"] == ["python", "java", "go", "javascript", "rust"]
+    assert settings["enabled"] is False
+    assert settings["enabled_languages"] == ["python", "java", "go", "javascript"]
+    assert settings["retry_delays"] == [30, 120]
     assert settings["server_url_template"] == "https://bkapi.example.com/{gateway_name}/{stage_name}"
     assert settings["generator_version"] == "7.23.0"
 
@@ -51,6 +53,23 @@ def test_get_sdk_generation_settings_rejects_invalid_languages_at_settings_const
     monkeypatch.setenv("BK_SDK_LANGUAGES", languages)
 
     with pytest.raises(ImproperlyConfigured, match="BK_SDK_LANGUAGES"):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("SDK_PYTHON_DISTRIBUTION_PREFIX", "not a package"),
+        ("SDK_JAVA_GROUP_ID", "com.example-bad"),
+        ("SDK_JAVA_PACKAGE_PREFIX", "9example.openapi"),
+        ("SDK_GO_MODULE_PREFIX", "https://git.example.com/bkapi"),
+        ("SDK_JAVASCRIPT_PACKAGE_SCOPE", "bkapi"),
+    ],
+)
+def test_get_sdk_generation_settings_rejects_invalid_namespaces(monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+
+    with pytest.raises(ImproperlyConfigured, match=name):
         get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
 
 

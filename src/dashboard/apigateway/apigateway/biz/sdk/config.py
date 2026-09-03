@@ -23,7 +23,6 @@ from typing import Mapping, Protocol
 from django.conf import settings
 from packaging.version import InvalidVersion, Version
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.sdk.exceptions import SDKRepoConfigError
 
@@ -43,15 +42,7 @@ GENERATOR_PROPERTIES = {
     "javascript": ("projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"),
 }
 
-SUPPORTED_GENERATION_LANGUAGES = tuple(
-    language.value
-    for language in (
-        ProgrammingLanguageEnum.PYTHON,
-        ProgrammingLanguageEnum.JAVA,
-        ProgrammingLanguageEnum.GO,
-        ProgrammingLanguageEnum.JAVASCRIPT,
-    )
-)
+SUPPORTED_GENERATION_LANGUAGES = ("python", "java", "go", "javascript")
 
 
 class ResourceVersionLike(Protocol):
@@ -97,11 +88,29 @@ class BKRepoGenericConfig:
 
 
 @dataclass(frozen=True)
-class SDKGenerationConfig:
-    enabled_languages: tuple[str, ...]
+class SDKGenerationPolicy:
+    enabled: bool
+    languages: tuple[str, ...]
     queue: str
+    retry_delays: tuple[int, int]
+    python_distribution_prefix: str
+    java_group_id: str
+    java_package_prefix: str
+    go_module_prefix: str
+    javascript_package_scope: str
+
+    def for_resource_version(
+        self, gateway_name: str, resource_version: ResourceVersionLike, language: str
+    ) -> SDKLanguageConfig:
+        return build_language_config(self, gateway_name, resource_version, language)
+
+
+@dataclass(frozen=True)
+class SDKWorkerConfig:
+    policy: SDKGenerationPolicy
     generator_jar: str
     generator_version: str
+    worker_lock_file: str
     server_url_template: str
     generic_repository: BKRepoGenericConfig
     generic_retention_hours: int
@@ -110,20 +119,49 @@ class SDKGenerationConfig:
     max_output_bytes: int
     max_artifact_bytes: int
 
+    @property
+    def enabled_languages(self) -> tuple[str, ...]:
+        return self.policy.languages
+
+    @property
+    def queue(self) -> str:
+        return self.policy.queue
+
     def for_resource_version(
         self, gateway_name: str, resource_version: ResourceVersionLike, language: str
     ) -> SDKLanguageConfig:
-        return build_language_config(self, gateway_name, resource_version, language)
+        return self.policy.for_resource_version(gateway_name, resource_version, language)
 
 
-def get_sdk_generation_config() -> SDKGenerationConfig:
+def get_sdk_generation_policy() -> SDKGenerationPolicy:
     config = settings.SDK_GENERATION
-    enabled_languages = tuple(config["enabled_languages"])
-    invalid_languages = set(enabled_languages).difference(SUPPORTED_GENERATION_LANGUAGES)
+    languages = tuple(settings.BK_SDK_LANGUAGES)
+    invalid_languages = set(languages).difference(SUPPORTED_GENERATION_LANGUAGES)
     if invalid_languages:
         raise SDKRepoConfigError(f"unsupported SDK generation languages: {sorted(invalid_languages)}")
-    if len(enabled_languages) != len(set(enabled_languages)):
+    if len(languages) != len(set(languages)):
         raise SDKRepoConfigError("SDK generation languages must be unique")
+
+    retry_delays = tuple(settings.SDK_GENERATION_RETRY_DELAYS)
+    if len(retry_delays) != 2 or any(delay <= 0 for delay in retry_delays):
+        raise SDKRepoConfigError("SDK generation retry delays must contain two positive values")
+
+    return SDKGenerationPolicy(
+        enabled=settings.SDK_GENERATION_ENABLED,
+        languages=languages,
+        queue=config["queue"],
+        retry_delays=retry_delays,
+        python_distribution_prefix=settings.SDK_PYTHON_DISTRIBUTION_PREFIX,
+        java_group_id=settings.SDK_JAVA_GROUP_ID,
+        java_package_prefix=settings.SDK_JAVA_PACKAGE_PREFIX,
+        go_module_prefix=settings.SDK_GO_MODULE_PREFIX,
+        javascript_package_scope=settings.SDK_JAVASCRIPT_PACKAGE_SCOPE,
+    )
+
+
+def get_sdk_worker_config() -> SDKWorkerConfig:
+    config = settings.SDK_GENERATION
+    policy = get_sdk_generation_policy()
 
     numeric_settings = (
         "generic_retention_hours",
@@ -153,15 +191,20 @@ def get_sdk_generation_config() -> SDKGenerationConfig:
     ):
         raise SDKRepoConfigError("BKRepo Generic configuration is required for SDK generation")
 
-    return SDKGenerationConfig(
-        enabled_languages=enabled_languages,
+    return SDKWorkerConfig(
+        policy=policy,
         generic_repository=generic_repository,
         **{
             name: config[name]
-            for name in SDKGenerationConfig.__dataclass_fields__
-            if name not in {"enabled_languages", "generic_repository"}
+            for name in SDKWorkerConfig.__dataclass_fields__
+            if name not in {"policy", "generic_repository"}
         },
     )
+
+
+def get_sdk_generation_config() -> SDKWorkerConfig:
+    """Compatibility entrypoint for worker call sites migrated in later tasks."""
+    return get_sdk_worker_config()
 
 
 def normalize_gateway_name(gateway_name: str) -> str:
@@ -174,32 +217,28 @@ def normalize_package_version(language: str, version: str) -> str:
     if not SEMVER_PATTERN.fullmatch(version):
         raise ValueError("SDK package versions must follow Semantic Versioning")
 
-    if language == ProgrammingLanguageEnum.PYTHON.value:
+    if language == "python":
         try:
             return str(Version(version))
         except InvalidVersion as error:
             raise ValueError("SDK package version cannot be normalized as PEP 440") from error
-    if language == ProgrammingLanguageEnum.GO.value:
+    if language == "go":
         return f"v{version}"
     return version
 
 
 def build_language_config(
-    config: SDKGenerationConfig, gateway_name: str, resource_version: ResourceVersionLike, language: str
+    policy: SDKGenerationPolicy, gateway_name: str, resource_version: ResourceVersionLike, language: str
 ) -> SDKLanguageConfig:
-    if language not in config.enabled_languages:
+    if language not in policy.languages:
         raise ValueError(f"SDK language is not enabled: {language}")
 
     gateway_name_normalized = normalize_gateway_name(gateway_name)
     package_version = normalize_package_version(language, resource_version.version)
-    template_values = {
-        "gateway_name": gateway_name,
-        "gateway_name_normalized": gateway_name_normalized,
-    }
 
-    if language == ProgrammingLanguageEnum.PYTHON.value:
-        project_name = _format_template(settings.SDK_PYTHON_PROJECT_NAME_TEMPLATE, template_values)
-        package_name = _format_template(settings.SDK_PYTHON_PACKAGE_NAME_TEMPLATE, template_values)
+    if language == "python":
+        project_name = f"{policy.python_distribution_prefix}-{gateway_name}"
+        package_name = normalize_gateway_name(project_name)
         return SDKLanguageConfig(
             language=language,
             generator_name=language,
@@ -215,9 +254,9 @@ def build_language_config(
             native_distributor=_get_native_distributor(language),
         )
 
-    if language == ProgrammingLanguageEnum.JAVA.value:
-        artifact_id = _format_template(settings.SDK_JAVA_ARTIFACT_ID_TEMPLATE, template_values)
-        package_name = _format_template(settings.SDK_JAVA_PACKAGE_TEMPLATE, template_values)
+    if language == "java":
+        artifact_id = f"bkapi-openapi-{gateway_name}"
+        package_name = f"{policy.java_package_prefix}.{gateway_name_normalized}"
         return SDKLanguageConfig(
             language=language,
             generator_name=language,
@@ -225,7 +264,7 @@ def build_language_config(
             package_name=package_name,
             package_version=package_version,
             additional_properties={
-                "groupId": settings.SDK_JAVA_GROUP_ID,
+                "groupId": policy.java_group_id,
                 "artifactId": artifact_id,
                 "artifactVersion": package_version,
                 "invokerPackage": package_name,
@@ -236,8 +275,8 @@ def build_language_config(
             native_distributor=_get_native_distributor(language),
         )
 
-    if language == ProgrammingLanguageEnum.GO.value:
-        project_name = f"{settings.SDK_GO_MODULE_PREFIX.rstrip('/')}/{gateway_name}"
+    if language == "go":
+        project_name = f"{policy.go_module_prefix}/openapi/{gateway_name}"
         package_name = f"bkapi_{gateway_name_normalized}"
         return SDKLanguageConfig(
             language=language,
@@ -253,8 +292,8 @@ def build_language_config(
             native_distributor=None,
         )
 
-    if language == ProgrammingLanguageEnum.JAVASCRIPT.value:
-        package_name = f"{settings.SDK_JAVASCRIPT_PACKAGE_SCOPE}/bkapi-{gateway_name}"
+    if language == "javascript":
+        package_name = f"{policy.javascript_package_scope}/openapi-{gateway_name}"
         return SDKLanguageConfig(
             language=language,
             generator_name=language,
@@ -273,18 +312,11 @@ def build_language_config(
     raise ValueError(f"unsupported SDK generation language: {language}")
 
 
-def _format_template(template: str, values: dict[str, str]) -> str:
-    try:
-        return template.format(**values)
-    except (KeyError, ValueError) as error:
-        raise ValueError(f"invalid SDK naming template: {template}") from error
-
-
 def _get_native_distributor(language: str) -> str | None:
-    if language == ProgrammingLanguageEnum.PYTHON.value:
+    if language == "python":
         repository_url = settings.PYPI_MIRRORS_CONFIG.get("default", {}).get("repository_url", "")
         return "pypi" if repository_url else None
-    if language == ProgrammingLanguageEnum.JAVA.value:
+    if language == "java":
         repository_url = settings.MAVEN_MIRRORS_CONFIG.get("default", {}).get("repository_url", "")
         return "maven" if repository_url else None
     return None
