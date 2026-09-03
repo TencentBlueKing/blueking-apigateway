@@ -71,7 +71,7 @@ class TestItsmPermissionApplyHelper:
         assert kwargs["form_data"]["apply_reason"] == "need access for daily ops"
         assert kwargs["form_data"]["instance_approvers"] == ["u1", "u2"]
         assert kwargs["options"] == {
-            "grant_dimension": [{"name": "resource", "key": "resource", "parent": None}],
+            "grant_dimension": [{"name": "资源", "key": "resource", "parent": None}],
         }
         assert "reason" not in kwargs["form_data"]
         assert "expire_days" not in kwargs["form_data"]
@@ -567,8 +567,12 @@ class TestItsmPermissionApplyHelper:
 
     def test_build_form_options_uses_enum(self):
         options = ItsmPermissionApplyHelper._build_form_options(FormattedGrantDimensionEnum.GATEWAY.value)
-        assert options["grant_dimension"][0]["name"] == "gateway"
+        assert options["grant_dimension"][0]["name"] == "网关"
         assert options["grant_dimension"][0]["key"] == FormattedGrantDimensionEnum.GATEWAY.value
+
+        options = ItsmPermissionApplyHelper._build_form_options(FormattedGrantDimensionEnum.RESOURCE.value)
+        assert options["grant_dimension"][0]["name"] == "资源"
+        assert options["grant_dimension"][0]["key"] == FormattedGrantDimensionEnum.RESOURCE.value
 
         options = ItsmPermissionApplyHelper._build_form_options(FormattedGrantDimensionEnum.MCP_SERVER.value)
         assert options["grant_dimension"][0]["name"] == "MCP Server"

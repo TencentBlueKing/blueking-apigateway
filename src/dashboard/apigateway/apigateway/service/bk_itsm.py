@@ -182,8 +182,8 @@ class ItsmPermissionApplyHelper:
     def _build_form_options(grant_dimension: str) -> Dict[str, List[Dict[str, Optional[str]]]]:
         """构建 ITSM ticket_create 所需 options（选项型字段明细）"""
         grant_dimension_option_name_map = {
-            FormattedGrantDimensionEnum.GATEWAY.value: "gateway",
-            FormattedGrantDimensionEnum.RESOURCE.value: "resource",
+            FormattedGrantDimensionEnum.GATEWAY.value: "网关",
+            FormattedGrantDimensionEnum.RESOURCE.value: "资源",
             FormattedGrantDimensionEnum.MCP_SERVER.value: "MCP Server",
         }
         return {
