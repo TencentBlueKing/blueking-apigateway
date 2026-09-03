@@ -1345,6 +1345,17 @@ export interface ISDKGenerationTaskAccepted {
   status_url: string
 }
 
+export interface ISDKGenerationArtifact {
+  distributor: string
+  type: string
+  filename: string
+  url: string
+  coordinate: string
+  size: number
+  sha256: string
+  status: string
+}
+
 export interface ISDKGenerationTaskItem {
   id: number
   language: string
@@ -1354,11 +1365,16 @@ export interface ISDKGenerationTaskItem {
     code: string
     message: string
   } | null
+  artifacts: ISDKGenerationArtifact[]
 }
 
 export interface ISDKGenerationTask {
   id: number
   status: string
+  resource_version: {
+    id: number
+    version: string
+  }
   items: ISDKGenerationTaskItem[]
 }
 

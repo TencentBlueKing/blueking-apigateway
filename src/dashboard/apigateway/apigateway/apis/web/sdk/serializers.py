@@ -26,7 +26,7 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True, help_text="资源版本号id")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES),
+        child=serializers.ChoiceField(choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang")),
         allow_empty=False,
         required=True,
         help_text="SDK 语言列表",
@@ -34,6 +34,9 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKGenerateInputSLZ"
+
+    def validate_languages(self, value: list[str]) -> list[str]:
+        return [ProgrammingLanguageEnum.GO.value if language == "golang" else language for language in value]
 
 
 class GatewaySDKQueryInputSLZ(serializers.Serializer):

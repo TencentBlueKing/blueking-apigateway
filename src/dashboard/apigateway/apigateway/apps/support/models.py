@@ -193,9 +193,6 @@ class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
     class Meta:
         db_table = "support_sdk_generation_task"
         constraints = [
-            models.UniqueConstraint(
-                fields=["resource_version"], name="support_sdk_generation_task_resource_version_uniq"
-            ),
             models.CheckConstraint(
                 condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
                 name="support_sdk_generation_task_status_valid",

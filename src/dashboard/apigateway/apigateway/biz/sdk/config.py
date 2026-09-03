@@ -25,6 +25,7 @@ from packaging.version import InvalidVersion, Version
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.constants import SEMVER_PATTERN
+from apigateway.biz.sdk.exceptions import SDKRepoConfigError
 
 GENERATOR_PROPERTIES = {
     "python": ("packageName", "packageVersion", "projectName", "buildSystem", "hideGenerationTimestamp"),
@@ -122,9 +123,9 @@ def get_sdk_generation_config() -> SDKGenerationConfig:
     enabled_languages = tuple(config["enabled_languages"])
     invalid_languages = set(enabled_languages).difference(SUPPORTED_GENERATION_LANGUAGES)
     if invalid_languages:
-        raise ValueError(f"unsupported SDK generation languages: {sorted(invalid_languages)}")
+        raise SDKRepoConfigError(f"unsupported SDK generation languages: {sorted(invalid_languages)}")
     if len(enabled_languages) != len(set(enabled_languages)):
-        raise ValueError("SDK generation languages must be unique")
+        raise SDKRepoConfigError("SDK generation languages must be unique")
 
     numeric_settings = (
         "generic_retention_hours",
@@ -134,7 +135,7 @@ def get_sdk_generation_config() -> SDKGenerationConfig:
         "max_artifact_bytes",
     )
     if any(config[name] <= 0 for name in numeric_settings):
-        raise ValueError("SDK generation limits must be positive")
+        raise SDKRepoConfigError("SDK generation limits must be positive")
 
     generic_repository = BKRepoGenericConfig(
         endpoint_url=settings.BKREPO_ENDPOINT_URL,
@@ -152,7 +153,7 @@ def get_sdk_generation_config() -> SDKGenerationConfig:
             generic_repository.bucket,
         )
     ):
-        raise ValueError("BKRepo Generic configuration is required for SDK generation")
+        raise SDKRepoConfigError("BKRepo Generic configuration is required for SDK generation")
 
     return SDKGenerationConfig(
         enabled_languages=enabled_languages,
@@ -255,16 +256,15 @@ def build_language_config(
         )
 
     if language == ProgrammingLanguageEnum.JAVASCRIPT.value:
-        project_name = f"bkapi-{gateway_name}"
         package_name = f"{settings.SDK_JAVASCRIPT_PACKAGE_SCOPE}/bkapi-{gateway_name}"
         return SDKLanguageConfig(
             language=language,
             generator_name=language,
-            project_name=project_name,
+            project_name=package_name,
             package_name=package_name,
             package_version=package_version,
             additional_properties={
-                "projectName": project_name,
+                "projectName": package_name,
                 "projectVersion": package_version,
                 "moduleName": f"bkapi_{gateway_name_normalized}",
                 "usePromises": "true",

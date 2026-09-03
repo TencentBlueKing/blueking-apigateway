@@ -16,7 +16,7 @@ from apigateway.apps.support.constants import (
     SDKDistributorEnum,
     SDKGenerationStatusEnum,
 )
-from apigateway.apps.support.models import SDKArtifact
+from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem
 from apigateway.biz.sdk.artifacts import (
     ArtifactManifest,
     BuiltArtifact,
@@ -26,15 +26,16 @@ from apigateway.biz.sdk.artifacts import (
 from apigateway.biz.sdk.exceptions import SDKArtifactConflict
 
 if TYPE_CHECKING:
-    from apigateway.apps.support.models import SDKGenerationItem
+    from datetime import datetime
+
     from apigateway.components.bkrepo import BKRepoComponent
 
 
-def generic_prefix(gateway_name: str, language: str, version: str, fingerprint: str) -> str:
-    segments = (gateway_name, language, version, fingerprint)
+def generic_prefix(gateway_name: str, language: str, version: str, fingerprint: str, item_id: int) -> str:
+    segments = (gateway_name, language, version, fingerprint, str(item_id))
     if any(not segment or "/" in segment or segment in {".", ".."} for segment in segments):
         raise ValueError("invalid SDK Generic key segment")
-    return f"sdks/{gateway_name}/{language}/{version}/{fingerprint}"
+    return f"sdks/{gateway_name}/{language}/{version}/{fingerprint}/{item_id}"
 
 
 def manifest_key(prefix: str) -> str:
@@ -47,6 +48,7 @@ def _prefix_for_item(item: SDKGenerationItem) -> str:
         item.language,
         item.task.resource_version.version,
         item.input_fingerprint,
+        item.id,
     )
 
 
@@ -249,7 +251,35 @@ def restore_generic_artifacts(
 
 
 @transaction.atomic
-def delete_incomplete_artifacts(item: SDKGenerationItem, bkrepo: BKRepoComponent) -> int:
+def delete_incomplete_artifacts(
+    item: SDKGenerationItem,
+    bkrepo: BKRepoComponent,
+    *,
+    expected_lease_token: str | None = None,
+    stale_before: datetime | None = None,
+    expired_before: datetime | None = None,
+) -> int:
+    item = (
+        SDKGenerationItem.objects.select_for_update()
+        .select_related("task__gateway", "task__resource_version")
+        .get(id=item.id)
+    )
+    if expected_lease_token is not None and (
+        item.status != SDKGenerationStatusEnum.RUNNING.value or item.lease_token != expected_lease_token
+    ):
+        return 0
+    if stale_before is not None:
+        cleanup_eligible = item.updated_time < stale_before and (
+            item.status == SDKGenerationStatusEnum.FAILED.value
+            or (
+                item.status == SDKGenerationStatusEnum.RUNNING.value
+                and item.lease_expires_at is not None
+                and expired_before is not None
+                and item.lease_expires_at <= expired_before
+            )
+        )
+        if not item.input_fingerprint or not cleanup_eligible:
+            return 0
     prefix = _prefix_for_item(item)
     if bkrepo.get_generic_file_metadata(manifest_key(prefix)) is not None:
         return 0

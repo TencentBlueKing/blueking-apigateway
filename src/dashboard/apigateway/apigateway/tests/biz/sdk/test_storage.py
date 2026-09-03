@@ -71,13 +71,33 @@ def built_manifest(tmp_path, generation_item, content=b"wheel"):
     return artifact, manifest
 
 
+def another_generation_item(generation_item):
+    task = G(
+        SDKGenerationTask,
+        gateway=generation_item.task.gateway,
+        resource_version=generation_item.task.resource_version,
+    )
+    return G(
+        SDKGenerationItem,
+        task=task,
+        language=generation_item.language,
+        input_fingerprint=generation_item.input_fingerprint,
+    )
+
+
 def test_commit_uploads_artifacts_before_manifest(tmp_path, generation_item):
     artifact, manifest = built_manifest(tmp_path, generation_item)
     bkrepo = FakeBKRepo()
 
     records = commit_generic_artifacts(generation_item, bkrepo, manifest, [artifact])
 
-    prefix = generic_prefix(generation_item.task.gateway.name, "python", "1.2.3", generation_item.input_fingerprint)
+    prefix = generic_prefix(
+        generation_item.task.gateway.name,
+        "python",
+        "1.2.3",
+        generation_item.input_fingerprint,
+        generation_item.id,
+    )
     uploaded = [operation[1] for operation in bkrepo.operations if operation[0] == "upload"]
     assert uploaded == [f"{prefix}/demo.whl", manifest_key(prefix)]
     assert all(operation[2] is False for operation in bkrepo.operations if operation[0] == "upload")
@@ -108,6 +128,57 @@ def test_commit_rejects_different_manifest_at_same_coordinate(tmp_path, generati
         commit_generic_artifacts(generation_item, bkrepo, different_manifest, [different_artifact])
 
 
+def test_incomplete_artifacts_do_not_poison_another_item(tmp_path, generation_item):
+    artifact, manifest = built_manifest(tmp_path, generation_item)
+    bkrepo = FakeBKRepo()
+    original_upload = bkrepo.upload_generic_file
+
+    def fail_manifest(filepath, key, allow_overwrite=True):
+        if key.endswith("/manifest.json"):
+            raise RuntimeError("manifest upload failed")
+        return original_upload(filepath, key, allow_overwrite)
+
+    bkrepo.upload_generic_file = fail_manifest
+    with pytest.raises(RuntimeError, match="manifest upload failed"):
+        commit_generic_artifacts(generation_item, bkrepo, manifest, [artifact])
+
+    other_item = another_generation_item(generation_item)
+    other_artifact, other_manifest = built_manifest(tmp_path, other_item, b"changed")
+    bkrepo.upload_generic_file = original_upload
+
+    records = commit_generic_artifacts(other_item, bkrepo, other_manifest, [other_artifact])
+
+    payload = next(record for record in records if record.filename == "demo.whl")
+    assert bkrepo.files[payload.remote_key] == b"changed"
+
+
+def test_cleanup_cannot_delete_another_items_in_flight_upload(tmp_path, generation_item):
+    artifact, manifest = built_manifest(tmp_path, generation_item)
+    bkrepo = FakeBKRepo()
+    commit_generic_artifacts(generation_item, bkrepo, manifest, [artifact])
+    bkrepo.files.clear()
+
+    other_item = another_generation_item(generation_item)
+    other_artifact, other_manifest = built_manifest(tmp_path, other_item)
+    original_upload = bkrepo.upload_generic_file
+    cleanup_called = False
+
+    def cleanup_during_payload_upload(filepath, key, allow_overwrite=True):
+        nonlocal cleanup_called
+        result = original_upload(filepath, key, allow_overwrite)
+        if not key.endswith("/manifest.json") and not cleanup_called:
+            cleanup_called = True
+            delete_incomplete_artifacts(generation_item, bkrepo)
+        return result
+
+    bkrepo.upload_generic_file = cleanup_during_payload_upload
+    records = commit_generic_artifacts(other_item, bkrepo, other_manifest, [other_artifact])
+
+    payload = next(record for record in records if record.filename == "demo.whl")
+    assert cleanup_called is True
+    assert bkrepo.files[payload.remote_key] == b"wheel"
+
+
 def test_restore_verifies_manifest_and_artifacts(tmp_path, generation_item):
     artifact, manifest = built_manifest(tmp_path, generation_item)
     bkrepo = FakeBKRepo()
@@ -122,7 +193,13 @@ def test_restore_verifies_manifest_and_artifacts(tmp_path, generation_item):
 
 def test_cleanup_deletes_only_recorded_incomplete_keys(tmp_path, generation_item):
     bkrepo = FakeBKRepo()
-    prefix = generic_prefix(generation_item.task.gateway.name, "python", "1.2.3", generation_item.input_fingerprint)
+    prefix = generic_prefix(
+        generation_item.task.gateway.name,
+        "python",
+        "1.2.3",
+        generation_item.input_fingerprint,
+        generation_item.id,
+    )
     key = f"{prefix}/partial.whl"
     bkrepo.files[key] = b"partial"
     G(
@@ -136,3 +213,30 @@ def test_cleanup_deletes_only_recorded_incomplete_keys(tmp_path, generation_item
     assert delete_incomplete_artifacts(generation_item, bkrepo) == 1
     assert key not in bkrepo.files
     assert not generation_item.artifacts.exists()
+
+
+def test_cleanup_with_lease_guard_does_not_delete_new_worker_artifacts(tmp_path, generation_item):
+    generation_item.status = SDKGenerationStatusEnum.RUNNING.value
+    generation_item.lease_token = "new-worker"
+    generation_item.save(update_fields=["status", "lease_token"])
+    bkrepo = FakeBKRepo()
+    prefix = generic_prefix(
+        generation_item.task.gateway.name,
+        "python",
+        "1.2.3",
+        generation_item.input_fingerprint,
+        generation_item.id,
+    )
+    key = f"{prefix}/partial.whl"
+    bkrepo.files[key] = b"partial"
+    G(
+        SDKArtifact,
+        item=generation_item,
+        distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+        filename="partial.whl",
+        remote_key=key,
+    )
+
+    assert delete_incomplete_artifacts(generation_item, bkrepo, expected_lease_token="old-worker") == 0
+    assert bkrepo.files[key] == b"partial"
+    assert generation_item.artifacts.filter(filename="partial.whl").exists()

@@ -1,31 +1,38 @@
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from apigateway.biz.sdk.builders.common import collect_artifacts, run_build, write_deterministic_zip
+from apigateway.biz.sdk.maven_settings import write_maven_settings
+from apigateway.utils.maven import RepositoryConfig
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from apigateway.biz.sdk.artifacts import BuiltArtifact
 
 
 def build(source_dir: Path, output_dir: Path) -> list[BuiltArtifact]:
     output_dir.mkdir(parents=True, exist_ok=True)
     library_dir = output_dir / "lib"
-    run_build(
-        [
-            "mvn",
-            "-B",
-            "clean",
-            "package",
-            "source:jar-no-fork",
-            "dependency:copy-dependencies",
-            f"-DoutputDirectory={library_dir}",
-            "-DincludeScope=runtime",
-        ],
-        cwd=source_dir,
-    )
+    command = [
+        "mvn",
+        "-B",
+        "clean",
+        "package",
+        "source:jar-no-fork",
+        "dependency:copy-dependencies",
+        f"-DoutputDirectory={library_dir}",
+        "-DincludeScope=runtime",
+    ]
+    repository = RepositoryConfig.by_name("default")
+    if repository.mirror_url:
+        with tempfile.TemporaryDirectory(prefix="sdk-maven-build-") as directory:
+            settings_path = Path(directory) / "settings.xml"
+            write_maven_settings(settings_path, repository)
+            run_build([*command[:2], "-s", str(settings_path), *command[2:]], cwd=source_dir)
+    else:
+        run_build(command, cwd=source_dir)
     target = source_dir / "target"
     sources = sorted(target.glob("*-sources.jar"))
     jars = sorted(

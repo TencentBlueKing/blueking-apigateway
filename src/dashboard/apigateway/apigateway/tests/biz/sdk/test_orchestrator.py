@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists
 from ddf import G
 from django.utils import timezone
 
@@ -27,6 +28,8 @@ class FakeBKRepo:
         self.files = {}
 
     def upload_generic_file(self, filepath, key, allow_overwrite=True):
+        if key in self.files and not allow_overwrite:
+            raise ObjectAlreadyExists("exists")
         self.files[key] = Path(filepath).read_bytes()
 
     def download_generic_file(self, key, filepath):
@@ -35,6 +38,9 @@ class FakeBKRepo:
 
     def get_generic_file_metadata(self, key):
         return {} if key in self.files else None
+
+    def delete_generic_file(self, key):
+        self.files.pop(key, None)
 
     def generate_generic_download_url(self, key):
         return f"https://repo/{key}"
@@ -65,20 +71,23 @@ def test_create_deduplicates_languages_and_enqueues_on_commit(
     enqueue.assert_called_once_with(list(task.items.values_list("id", flat=True).order_by("id")))
 
 
-def test_create_skips_success_and_unexpired_running_items(fake_resource_version, mocker):
-    task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
-    python = task.items.get(language="python")
-    python.status = SDKGenerationStatusEnum.SUCCESS.value
-    python.save(update_fields=["status"])
-    go = task.items.get(language="go")
-    go.status = SDKGenerationStatusEnum.RUNNING.value
-    go.lease_expires_at = timezone.now() + timedelta(minutes=5)
-    go.save(update_fields=["status", "lease_expires_at"])
-    enqueue = mocker.Mock()
+def test_create_keeps_each_request_and_active_item_independent(fake_resource_version):
+    first_task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    first_item = first_task.items.get()
+    first_item.status = SDKGenerationStatusEnum.RUNNING.value
+    first_item.lease_token = "active"
+    first_item.lease_expires_at = timezone.now() + timedelta(minutes=5)
+    first_item.config_snapshot = {"request": "first"}
+    first_item.save(update_fields=["status", "lease_token", "lease_expires_at", "config_snapshot"])
 
-    create_or_resume_generation(fake_resource_version, ["python", "go"], "admin", enqueue)
+    second_task = create_or_resume_generation(fake_resource_version, ["go"], "admin")
 
-    enqueue.assert_not_called()
+    first_item.refresh_from_db()
+    assert second_task.id != first_task.id
+    assert list(second_task.items.values_list("language", flat=True)) == ["go"]
+    assert first_item.status == SDKGenerationStatusEnum.RUNNING.value
+    assert first_item.lease_token == "active"
+    assert first_item.config_snapshot == {"request": "first"}
 
 
 def test_claim_excludes_active_lease_and_takes_expired_lease(fake_resource_version):
@@ -201,6 +210,38 @@ def test_partial_native_retry_restores_generic_without_rebuild(fake_resource_ver
     publish.return_value = []
     assert execute_generation_item(item.id, "celery-2") == SDKGenerationStatusEnum.SUCCESS.value
     assert build.call_count == 1
+
+
+def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    bkrepo = FakeBKRepo()
+    build, _ = _patch_pipeline(mocker, bkrepo)
+    original_upload = bkrepo.upload_generic_file
+    manifest_attempts = 0
+
+    def fail_first_manifest(filepath, key, allow_overwrite=True):
+        nonlocal manifest_attempts
+        if key.endswith("/manifest.json") and manifest_attempts == 0:
+            manifest_attempts += 1
+            raise RuntimeError("manifest upload failed")
+        return original_upload(filepath, key, allow_overwrite)
+
+    bkrepo.upload_generic_file = fail_first_manifest
+
+    assert execute_generation_item(item.id, "celery-1") == SDKGenerationStatusEnum.FAILED.value
+
+    def build_changed(_language, _source, output, _config):
+        output.mkdir(parents=True, exist_ok=True)
+        path = output / "demo.whl"
+        path.write_bytes(b"changed-wheel")
+        return [create_built_artifact("wheel", path, allowed_roots=(output,))]
+
+    build.side_effect = build_changed
+
+    assert execute_generation_item(item.id, "celery-2") == SDKGenerationStatusEnum.SUCCESS.value
+    artifact = item.artifacts.get(filename="demo.whl")
+    assert bkrepo.files[artifact.remote_key] == b"changed-wheel"
 
 
 def test_execute_stops_after_lease_is_stolen(fake_resource_version, mocker, caplog):

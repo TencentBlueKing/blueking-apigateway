@@ -30,6 +30,7 @@ from apigateway.biz.sdk.config import (
     normalize_gateway_name,
     normalize_package_version,
 )
+from apigateway.biz.sdk.exceptions import SDKRepoConfigError
 
 EXPECTED_GENERATOR_PROPERTIES = {
     "python": {"packageName", "packageVersion", "projectName", "buildSystem", "hideGenerationTimestamp"},
@@ -103,7 +104,7 @@ def test_sdk_generation_config_requires_bkrepo_generic_for_deployment():
 def test_sdk_generation_config_rejects_incomplete_bkrepo_generic(settings, setting_name):
     setattr(settings, setting_name, "")
 
-    with pytest.raises(ValueError, match="BKRepo Generic"):
+    with pytest.raises(SDKRepoConfigError, match="BKRepo Generic"):
         get_sdk_generation_config()
 
 
@@ -133,6 +134,8 @@ def test_sdk_generation_config_uses_configurable_language_names():
     assert java_config.additional_properties["artifactId"] == "client-my-gateway"
     assert go_config.project_name == "git.example.com/sdk/my-gateway"
     assert javascript_config.package_name == "@example/bkapi-my-gateway"
+    assert javascript_config.project_name == "@example/bkapi-my-gateway"
+    assert javascript_config.additional_properties["projectName"] == "@example/bkapi-my-gateway"
     assert rust_config.package_name == "client_my_gateway"
 
 

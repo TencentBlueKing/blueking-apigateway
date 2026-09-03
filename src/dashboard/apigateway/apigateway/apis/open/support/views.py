@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
@@ -26,11 +28,13 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apis.open.support import serializers
 from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
 from apigateway.biz.sdk.orchestrator import create_or_resume_generation, serialize_generation_task
 from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
+
+logger = logging.getLogger(__name__)
 
 
 def _generation_task_queryset():
@@ -63,6 +67,9 @@ class SDKGenerateViewSet(viewsets.ViewSet):
                 getattr(request.user, "username", None),
                 enqueue_generation_items,
             )
+        except SDKRepoConfigError:
+            logger.exception("SDK generation configuration is invalid")
+            return V1FailJsonResponse("SDK generation is unavailable", status_code=500, code=50103)
         except (LegacySDKVersionConflict, ValueError) as error:
             return V1FailJsonResponse(str(error))
 

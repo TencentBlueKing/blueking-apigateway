@@ -5,6 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from apigateway.common.pypi.registry import SimplePypiRegistry
 from apigateway.utils.pypi import RepositoryConfig
@@ -14,6 +15,17 @@ from .common import PublishedArtifact, remote_sha256, require_matching_remote, r
 if TYPE_CHECKING:
     from apigateway.biz.sdk.artifacts import BuiltArtifact
     from apigateway.biz.sdk.config import SDKLanguageConfig
+
+
+def _repository_credentials_for_url(repository: RepositoryConfig, url: str) -> tuple[str, str]:
+    index = urlsplit(repository.index_url)
+    target = urlsplit(url)
+    default_ports = {"http": 80, "https": 443}
+    index_origin = (index.scheme.lower(), index.hostname, index.port or default_ports.get(index.scheme.lower()))
+    target_origin = (target.scheme.lower(), target.hostname, target.port or default_ports.get(target.scheme.lower()))
+    if index_origin != target_origin:
+        return "", ""
+    return repository.username, repository.password
 
 
 def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[PublishedArtifact]:
@@ -37,11 +49,8 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
         if package is None:
             missing.append(artifact)
             continue
-        remote = remote_sha256(
-            package.url,
-            username=repository.username,
-            password=repository.password,
-        )
+        username, password = _repository_credentials_for_url(repository, package.url)
+        remote = remote_sha256(package.url, username=username, password=password)
         if remote is None:
             missing.append(artifact)
             continue
@@ -92,11 +101,8 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
             )
             if package is None:
                 raise ValueError(f"PyPI artifact is unavailable after upload: {artifact.filename}")
-            remote = remote_sha256(
-                package.url,
-                username=repository.username,
-                password=repository.password,
-            )
+            username, password = _repository_credentials_for_url(repository, package.url)
+            remote = remote_sha256(package.url, username=username, password=password)
             if remote is None:
                 raise ValueError(f"PyPI artifact is unavailable after upload: {artifact.filename}")
             require_matching_remote(package.url, remote, artifact.sha256, artifact.size)

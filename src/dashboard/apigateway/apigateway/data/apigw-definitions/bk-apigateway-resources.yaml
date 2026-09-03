@@ -1576,12 +1576,18 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, javascript, rust]
-                  description: 需要生成 SDK 的语言列表，默认为 python
+                    enum: [python, java, go, golang, javascript, rust]
+                  description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
                   example: ["python"]
+                version:
+                  type: string
+                  deprecated: true
+                  description: 兼容旧调用保留；包版本固定由资源版本派生
+                  example: "1.0.1"
             example:
               resource_version: "1.0.1"
               languages: ["python"]
+              version: "1.0.1"
       responses:
         '200':
           description: SDK 生成任务已受理
@@ -5525,12 +5531,18 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, javascript, rust]
-                  description: 需要生成 SDK 的语言列表，默认为 python
+                    enum: [python, java, go, golang, javascript, rust]
+                  description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
                   example: ["python"]
+                version:
+                  type: string
+                  deprecated: true
+                  description: 兼容旧调用保留；包版本固定由资源版本派生
+                  example: "1.0.1"
             example:
               resource_version: "1.0.1"
               languages: ["python"]
+              version: "1.0.1"
       responses:
         '202':
           description: SDK 生成任务已受理

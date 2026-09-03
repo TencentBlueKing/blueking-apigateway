@@ -23,7 +23,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
 
 pytestmark = pytest.mark.django_db
 
@@ -101,6 +101,31 @@ class TestSDKGenerateViewSet:
 
         assert response.status_code == 400
         assert json.loads(response.content)["result"] is False
+
+    def test_generate_maps_deployment_configuration_error_to_v1_internal_failure(
+        self,
+        has_related_app_permission,
+        mocker,
+        fake_gateway,
+        fake_resource_version,
+        rf,
+        request_to_view,
+    ):
+        mocker.patch(
+            "apigateway.apis.open.support.views.create_or_resume_generation",
+            side_effect=SDKRepoConfigError("BKRepo Generic configuration is required"),
+        )
+        request = rf.post("", data={"resource_version": fake_resource_version.version})
+        request.gateway = fake_gateway
+
+        response = request_to_view(
+            request=request,
+            view_name="openapi.support.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 500
+        assert json.loads(response.content)["message"] == "SDK generation is unavailable"
 
     def test_get_generation_task(
         self,

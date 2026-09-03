@@ -58,6 +58,15 @@ class TestGatewaySDKGenerateInputSLZ:
         assert not slz.is_valid()
         assert "languages" in slz.errors
 
+    def test_legacy_golang_is_normalized(self, fake_gateway):
+        slz = GatewaySDKGenerateInputSLZ(
+            data={"resource_version_id": 1, "languages": ["golang"]},
+            context={"gateway": fake_gateway},
+        )
+
+        assert slz.is_valid()
+        assert slz.validated_data["languages"] == ["go"]
+
 
 class TestSDKListOutputSLZ:
     def test_created_by_help_text(self):

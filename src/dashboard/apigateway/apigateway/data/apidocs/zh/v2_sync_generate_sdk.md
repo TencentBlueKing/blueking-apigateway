@@ -15,14 +15,16 @@
 | 参数名称         | 参数类型      | 必选 | 描述                                                     |
 | ---------------- | ------------- | ---- | -------------------------------------------------------- |
 | resource_version | string        | 是   | 资源版本的版本号                                         |
-| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript、rust，默认为 python |
+| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript、rust；兼容 golang（按 go 处理），默认为 python |
+| version          | string        | 否   | 兼容旧调用保留；包版本固定由资源版本派生，此参数不再改变包版本 |
 
 ### 请求参数示例
 
 ```json
 {
     "resource_version": "1.0.1",
-    "languages": ["python", "go"]
+    "languages": ["python", "golang"],
+    "version": "1.0.1"
 }
 ```
 

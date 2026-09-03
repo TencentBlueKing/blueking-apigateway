@@ -34,13 +34,12 @@ from apigateway.core.models import Gateway
 pytestmark = pytest.mark.django_db
 
 
-def test_generation_task_is_unique_per_resource_version(fake_gateway, fake_resource_version):
-    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+def test_generation_task_allows_independent_requests_for_same_resource_version(fake_gateway, fake_resource_version):
+    first = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    second = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
 
-    assert task.status == SDKGenerationStatusEnum.PENDING.value
-
-    with pytest.raises(IntegrityError), transaction.atomic():
-        SDKGenerationTask.objects.create(gateway=fake_gateway, resource_version=fake_resource_version)
+    assert first.status == SDKGenerationStatusEnum.PENDING.value
+    assert second.id != first.id
 
 
 def test_generation_item_is_unique_per_task_and_language(fake_gateway, fake_resource_version):

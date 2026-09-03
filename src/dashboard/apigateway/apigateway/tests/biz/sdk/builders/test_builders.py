@@ -1,11 +1,14 @@
 import json
 import subprocess
 import zipfile
+from pathlib import Path
 
 import pytest
 
 from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import SDKLanguageConfig
+from apigateway.biz.sdk.maven_settings import write_maven_settings
+from apigateway.utils.maven import RepositoryConfig
 
 
 def language_config(language):
@@ -50,6 +53,23 @@ def language_config(language):
     )
 
 
+def mock_build_commands(mocker, stdout, captured_settings):
+    def run_command(command, **_kwargs):
+        if command[0] == "mvn" and "-s" in command:
+            settings_path = command[command.index("-s") + 1]
+            captured_settings["content"] = Path(settings_path).read_text()
+        return subprocess.CompletedProcess([], 0, stdout, "")
+
+    return mocker.patch("apigateway.biz.sdk.builders.common.subprocess.run", side_effect=run_command)
+
+
+def assert_cross_origin_maven_mirror_has_no_credentials(content):
+    assert "https://maven.example.com/repository/public" in content
+    assert "<mirror><id>sdk-mirror</id>" in content
+    assert "<server><id>internal</id><username>user</username><password>secret</password>" in content
+    assert "<server><id>sdk-mirror</id>" not in content
+
+
 @pytest.mark.parametrize(
     ("language", "expected_types"),
     [
@@ -60,7 +80,7 @@ def language_config(language):
         ("rust", {"crate"}),
     ],
 )
-def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expected_types):
+def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, language, expected_types):
     source_dir = tmp_path / "source"
     output_dir = tmp_path / "dist"
     source_dir.mkdir()
@@ -70,6 +90,14 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
         (output_dir / "demo-1.2.3-py3-none-any.whl").write_bytes(b"wheel")
         (output_dir / "demo-1.2.3.tar.gz").write_bytes(b"sdist")
     elif language == "java":
+        settings.MAVEN_MIRRORS_CONFIG = {
+            "default": {
+                "repository_id": "internal",
+                "username": "user",
+                "password": "secret",
+                "mirror_url": "https://maven.example.com/repository/public",
+            }
+        }
         target = source_dir / "target"
         target.mkdir()
         (target / "demo-1.2.3.jar").write_bytes(b"jar")
@@ -92,10 +120,8 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
         if language == "javascript"
         else ""
     )
-    run = mocker.patch(
-        "apigateway.biz.sdk.builders.common.subprocess.run",
-        return_value=subprocess.CompletedProcess([], 0, stdout, ""),
-    )
+    captured_settings = {}
+    run = mock_build_commands(mocker, stdout, captured_settings)
 
     artifacts = build_artifacts(language, source_dir, output_dir, language_config(language))
 
@@ -109,6 +135,8 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
     assert all(call.kwargs["stderr"] is subprocess.PIPE for call in run.call_args_list)
     if language == "java":
         assert "-DincludeScope=runtime" in command
+        assert "-s" in command
+        assert_cross_origin_maven_mirror_has_no_credentials(captured_settings["content"])
         distribution = next(artifact.path for artifact in artifacts if artifact.artifact_type == "distribution_zip")
         with zipfile.ZipFile(distribution) as archive:
             assert "demo-1.2.3-tests.jar" not in archive.namelist()
@@ -155,3 +183,21 @@ def test_go_module_zip_has_required_prefix(mocker, tmp_path):
 
     with zipfile.ZipFile(module_zip) as archive:
         assert all(name.startswith("git.example.com/bkapi/demo@v1.2.3/") for name in archive.namelist())
+
+
+def test_maven_settings_reuses_deploy_credentials_for_same_origin_mirror(tmp_path):
+    settings_path = tmp_path / "settings.xml"
+    repository = RepositoryConfig(
+        repository_url="https://maven.example.com/repository/releases",
+        repository_id="internal",
+        username="user",
+        password="secret",
+        mirror_url="https://maven.example.com/repository/public",
+    )
+
+    write_maven_settings(settings_path, repository)
+
+    content = settings_path.read_text()
+    assert "<mirror><id>internal</id>" in content
+    assert content.count("<server><id>internal</id>") == 1
+    assert "<server><id>sdk-mirror</id>" not in content

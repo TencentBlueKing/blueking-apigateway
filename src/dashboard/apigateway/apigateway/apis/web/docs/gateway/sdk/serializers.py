@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES
+from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES, ProgrammingLanguageEnum
 from apigateway.common.i18n.field import SerializerTranslatedField
 
 
@@ -34,7 +34,12 @@ class GatewaySLZ(serializers.Serializer):
 
 
 class SDKDocInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES, help_text="SDK 编程语言，如 python")
+    language = serializers.ChoiceField(
+        choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang"), help_text="SDK 编程语言，如 python"
+    )
+
+    def validate_language(self, value: str) -> str:
+        return ProgrammingLanguageEnum.GO.value if value == "golang" else value
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.serializers.SDKDocInputSLZ"

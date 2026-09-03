@@ -35,7 +35,7 @@ from apigateway.apps.permission.constants import (
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import (
     Backend,
@@ -140,6 +140,32 @@ class TestSyncApi:
 
         assert response.status_code == 400
         assert response.json()["error"]["code"] == expected_code
+
+    def test_generate_sdk_maps_deployment_configuration_error_to_internal(
+        self,
+        mocker,
+        request_view,
+        fake_admin_user,
+        fake_gateway,
+        fake_resource_version,
+        disable_app_permission,
+    ):
+        mocker.patch(
+            "apigateway.apis.v2.sync.views.create_or_resume_generation",
+            side_effect=SDKRepoConfigError("BKRepo Generic configuration is required"),
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            data={"resource_version": fake_resource_version.version},
+        )
+
+        assert response.status_code == 500
+        assert response.json()["error"]["code"] == "INTERNAL"
 
     def test_get_sdk_generation_task(
         self,

@@ -614,11 +614,15 @@ class ResourceImportInputSLZ(serializers.Serializer):
 class SDKGenerateInputSLZ(serializers.Serializer):
     resource_version = serializers.CharField(max_length=128, help_text="资源版本")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES),
+        child=serializers.ChoiceField(choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang")),
         help_text="需要生成SDK的语言列表",
         default=[ProgrammingLanguageEnum.PYTHON.value],
         allow_empty=False,
     )
+    version = serializers.RegexField(SEMVER_PATTERN, default="", allow_blank=True, max_length=128, help_text="版本号")
+
+    def validate_languages(self, value: list[str]) -> list[str]:
+        return [ProgrammingLanguageEnum.GO.value if language == "golang" else language for language in value]
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateInputSLZ"

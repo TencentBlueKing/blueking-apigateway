@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import cast
 
 from django.db.models import Prefetch, Q
@@ -29,7 +30,7 @@ from rest_framework.views import APIView
 from apigateway.apis.web.sdk import serializers
 from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import SDKFactory
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
 from apigateway.biz.sdk.orchestrator import (
     create_or_resume_generation,
     retry_generation_task,
@@ -39,6 +40,8 @@ from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(
@@ -142,6 +145,9 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
             )
         except LegacySDKVersionConflict as error:
             raise error_codes.FAILED_PRECONDITION.format(str(error), replace=True)
+        except SDKRepoConfigError as error:
+            logger.exception("SDK generation configuration is invalid")
+            raise error_codes.INTERNAL.format("SDK generation is unavailable", replace=True) from error
         except ValueError as error:
             raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
 

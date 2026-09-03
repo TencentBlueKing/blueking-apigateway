@@ -23,6 +23,19 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import translation
 
+from apigateway.apis.web.docs.gateway.gateway_sdk.serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ
+
+
+@pytest.mark.parametrize("serializer_class", [SDKListInputSLZ, SDKUsageExampleInputSLZ])
+def test_legacy_golang_is_normalized(serializer_class):
+    data = {"language": "golang"}
+    if serializer_class is SDKUsageExampleInputSLZ:
+        data.update({"stage_name": "prod", "resource_name": "get_color"})
+    slz = serializer_class(data=data)
+
+    assert slz.is_valid()
+    assert slz.validated_data["language"] == "go"
+
 
 class TestSDKListApi:
     def test_list_without_login(self, fake_gateway, fake_sdk):

@@ -3,8 +3,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
-from xml.sax.saxutils import escape
 
+from apigateway.biz.sdk.maven_settings import write_maven_settings
 from apigateway.utils.maven import RepositoryConfig
 
 from .common import (
@@ -78,20 +78,7 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
     if not existing:
         with tempfile.TemporaryDirectory(prefix="sdk-maven-") as directory:
             settings_path = Path(directory) / "settings.xml"
-            mirror = ""
-            if repository.mirror_url:
-                mirror = (
-                    "<mirrors><mirror><id>sdk-mirror</id><mirrorOf>*</mirrorOf>"
-                    f"<url>{escape(repository.mirror_url)}</url></mirror></mirrors>"
-                )
-            settings_path.write_text(
-                "<settings>"
-                f"{mirror}<servers><server><id>{escape(repository.repository_id)}</id>"
-                f"<username>{escape(repository.username)}</username>"
-                f"<password>{escape(repository.password)}</password>"
-                "</server></servers></settings>"
-            )
-            settings_path.chmod(0o600)
+            write_maven_settings(settings_path, repository)
             command = [
                 "mvn",
                 "-B",

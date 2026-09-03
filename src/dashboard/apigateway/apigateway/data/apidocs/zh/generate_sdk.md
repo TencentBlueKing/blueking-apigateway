@@ -2,6 +2,8 @@
 
 异步生成资源版本对应的 SDK。请求受理后，构建完成的包将发布到已配置的软件仓库。
 
+兼容说明：此 V1 接口由同步生成调整为异步受理，响应中的 `data` 已由 SDK 下载信息数组调整为任务信息对象，调用方需通过 `data.status_url` 查询结果。旧参数 `golang` 仍可使用并会按 `go` 处理；`version` 参数仍可传入，但包版本固定由资源版本派生，该参数不再改变包版本。
+
 ### 输入参数
 
 #### 路径参数
@@ -15,14 +17,16 @@
 | 参数名称         | 参数类型      | 必选 | 描述                                                     |
 | ---------------- | ------------- | ---- | -------------------------------------------------------- |
 | resource_version | string        | 是   | 资源版本的版本号                                         |
-| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript、rust，默认为 python |
+| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript、rust；兼容 golang（按 go 处理），默认为 python |
+| version          | string        | 否   | 兼容旧调用保留；包版本固定由资源版本派生，此参数不再改变包版本 |
 
 ### 请求参数示例
 
 ```json
 {
     "resource_version": "1.0.1",
-    "languages": ["python", "go"]
+    "languages": ["python", "golang"],
+    "version": "1.0.1"
 }
 ```
 
@@ -35,7 +39,8 @@ client = get_client_by_request(request)
 result = client.api.generate_sdk(
     {
         "resource_version": "1.0.1",
-        "languages": ["python", "go"]
+        "languages": ["python", "golang"],
+        "version": "1.0.1"
     }
 )
 ```

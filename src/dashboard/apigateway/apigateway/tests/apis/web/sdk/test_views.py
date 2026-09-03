@@ -113,7 +113,7 @@ class TestGatewaySDKListCreateApi:
 
             assert result["data"] == test["expected"]
 
-    def test_create_returns_reusable_async_task(
+    def test_create_returns_independent_async_tasks(
         self,
         request_view,
         fake_gateway,
@@ -144,14 +144,10 @@ class TestGatewaySDKListCreateApi:
             ]
 
         assert [response.status_code for response in responses] == [202, 202]
-        assert responses[0].json()["data"] == responses[1].json()["data"]
-        task = SDKGenerationTask.objects.get(resource_version=resource_version)
-        assert responses[0].json()["data"] == {
-            "id": task.id,
-            "status": "pending",
-            "status_url": f"/backend/gateways/{fake_gateway.id}/sdks/tasks/{task.id}/",
-        }
-        assert set(task.items.values_list("language", flat=True)) == {"python", "go"}
+        tasks = list(SDKGenerationTask.objects.filter(resource_version=resource_version).order_by("id"))
+        assert [response.json()["data"]["id"] for response in responses] == [task.id for task in tasks]
+        assert len(tasks) == 2
+        assert all(set(task.items.values_list("language", flat=True)) == {"python", "go"} for task in tasks)
         assert enqueue.call_count == 2
 
     def test_create_rejects_resource_version_from_another_gateway(self, request_view, fake_gateway, fake_admin_user):
@@ -189,6 +185,24 @@ class TestGatewaySDKListCreateApi:
 
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+
+    def test_create_maps_missing_repository_configuration_to_internal(
+        self, request_view, fake_gateway, fake_admin_user, settings
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        settings.BKREPO_ENDPOINT_URL = ""
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.sdk.list_create",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"resource_version_id": resource_version.id, "languages": ["python"]},
+        )
+
+        assert response.status_code == 500
+        assert response.json()["error"]["code"] == "INTERNAL"
 
     def test_create_rejects_legacy_sdk_coordinate(self, request_view, fake_gateway, fake_admin_user, settings):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")

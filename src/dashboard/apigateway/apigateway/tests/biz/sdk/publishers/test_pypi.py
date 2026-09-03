@@ -92,6 +92,36 @@ def test_pypi_matching_remote_is_reused(mocker, built_artifact, python_config, s
     run.assert_not_called()
 
 
+def test_pypi_does_not_send_repository_credentials_to_cross_origin_package_urls(
+    mocker, built_artifact, python_config, settings
+):
+    settings.PYPI_MIRRORS_CONFIG = {
+        "default": {
+            "index_url": "https://repo.example.com/simple",
+            "repository_url": "https://repo.example.com/upload",
+            "username": "user",
+            "password": "secret",
+        }
+    }
+    wheel = built_artifact("wheel", "demo.whl")
+    sdist = built_artifact("sdist", "demo.tar.gz")
+    mocker.patch(
+        "apigateway.biz.sdk.publishers.pypi.SimplePypiRegistry.search",
+        side_effect=[
+            SimpleNamespace(url="https://cdn.example.net/demo.whl"),
+            SimpleNamespace(url="https://cdn.example.net/demo.tar.gz"),
+        ],
+    )
+    remote = mocker.patch(
+        "apigateway.biz.sdk.publishers.pypi.remote_sha256",
+        side_effect=[(wheel.sha256, wheel.size), (sdist.sha256, sdist.size)],
+    )
+
+    assert len(publish_native("python", [wheel, sdist], python_config)) == 2
+    assert all(call.kwargs["username"] == "" for call in remote.call_args_list)
+    assert all(call.kwargs["password"] == "" for call in remote.call_args_list)
+
+
 def test_pypi_remote_conflict_is_rejected(mocker, built_artifact, python_config, settings):
     settings.PYPI_MIRRORS_CONFIG = {
         "default": {"index_url": "https://repo/simple", "repository_url": "https://repo/upload"}

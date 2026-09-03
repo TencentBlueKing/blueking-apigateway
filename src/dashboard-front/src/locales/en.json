@@ -273,6 +273,8 @@
   "实例ID": "Instance ID",
   "应用": "App",
   "创建成功": "Created Successfully",
+  "SDK 生成超时，请稍后在 SDK 列表中查看结果": "SDK generation timed out. Check the SDK list later for the result.",
+  "SDK 已生成到 BKRepo，但部分仓库发布失败": "The SDK is available in BKRepo, but publishing to another repository failed.",
   "告警次数": "Alarm Count",
   "最近一次告警开始时间": "Last alarm start time",
   "最近一次告警内容": "Last alarm message",

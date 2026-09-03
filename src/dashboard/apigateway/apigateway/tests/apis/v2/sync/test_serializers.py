@@ -142,11 +142,17 @@ class TestSDKGenerateInputSLZ:
         assert slz.is_valid()
         assert slz.validated_data["languages"] == ["python"]
 
-    def test_legacy_version_is_ignored(self):
+    def test_legacy_version_is_accepted_for_compatibility(self):
         slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0", "version": "9.9.9"})
 
         assert slz.is_valid()
-        assert "version" not in slz.validated_data
+        assert slz.validated_data["version"] == "9.9.9"
+
+    def test_legacy_golang_is_normalized(self):
+        slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0", "languages": ["golang"]})
+
+        assert slz.is_valid()
+        assert slz.validated_data["languages"] == ["go"]
 
     @pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
     def test_accepts_supported_languages(self, language):

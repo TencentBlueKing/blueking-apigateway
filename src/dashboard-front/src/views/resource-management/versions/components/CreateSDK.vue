@@ -95,6 +95,9 @@ const emit = defineEmits<{ done: [void] }>();
 
 const { t } = useI18n();
 const route = useRoute();
+const pollInterval = 2000;
+const pollTimeout = 10 * 60 * 1000;
+let activePollId = 0;
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
@@ -172,6 +175,7 @@ watch(
 
 // 生成sdk
 const handleCreate = async () => {
+  const pollId = ++activePollId;
   try {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
@@ -180,39 +184,83 @@ const handleCreate = async () => {
       resource_version_id: Number(formData.resource_version_id),
       languages: [formData.language],
     });
+    if (pollId !== activePollId) {
+      return;
+    }
+    const deadline = Date.now() + pollTimeout;
     let task = await getSDKGenerationTask(apigwId.value, acceptedTask.id);
+    if (pollId !== activePollId) {
+      return;
+    }
     while (['pending', 'running'].includes(task.status)) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (pollId !== activePollId) {
+        return;
+      }
+      if (Date.now() >= deadline) {
+        Message({
+          message: t('SDK 生成超时，请稍后在 SDK 列表中查看结果'),
+          theme: 'warning',
+        });
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      if (pollId !== activePollId) {
+        return;
+      }
       task = await getSDKGenerationTask(apigwId.value, acceptedTask.id);
+      if (pollId !== activePollId) {
+        return;
+      }
     }
 
-    if (task.status !== 'success') {
-      const error = task.items.find(item => item.error)?.error;
+    const requestedItem = task.items.find(item => item.language === formData.language);
+    const hasGenericArtifact = requestedItem?.artifacts.some(artifact => (
+      artifact.distributor === 'bkrepo_generic'
+      && artifact.filename !== 'manifest.json'
+      && artifact.status === 'success'
+    ));
+    if (requestedItem?.status === 'partial' && hasGenericArtifact) {
       Message({
-        message: error?.message || t('SDK 生成失败'),
+        message: t('SDK 已生成到 BKRepo，但部分仓库发布失败'),
+        theme: 'warning',
+      });
+    }
+    else if (requestedItem?.status === 'success') {
+      Message({
+        message: t('创建成功'),
+        theme: 'success',
+      });
+    }
+    else {
+      Message({
+        message: requestedItem?.error?.message || t('SDK 生成失败'),
         theme: 'error',
       });
       return;
     }
 
-    Message({
-      message: t('创建成功'),
-      theme: 'success',
-    });
     handleClosed();
     setTimeout(() => {
       emit('done');
     }, 300);
   }
   finally {
-    dialogConfig.loading = false;
+    if (pollId === activePollId) {
+      dialogConfig.loading = false;
+    }
   }
 };
 
 const handleClosed = () => {
+  activePollId += 1;
   dialogConfig.isShow = false;
+  dialogConfig.loading = false;
   baseInfoRef.value?.clearValidate();
 };
+
+onBeforeUnmount(() => {
+  activePollId += 1;
+});
 
 // 显示弹窗
 const showCreateSdk = () => {

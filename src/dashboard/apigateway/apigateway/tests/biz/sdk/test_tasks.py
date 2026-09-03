@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from apigateway.apps.support.constants import SDKGenerationStatusEnum
 from apigateway.biz.sdk.orchestrator import create_or_resume_generation
+from apigateway.biz.sdk.storage import delete_incomplete_artifacts as guarded_delete_incomplete_artifacts
 from apigateway.biz.sdk.tasks import (
     cleanup_incomplete_sdk_artifacts,
     enqueue_generation_items,
@@ -82,6 +83,23 @@ def test_recover_stale_items_clears_lease_and_requeues(
     enqueue.assert_called_once_with([expired.id])
 
 
+def test_recover_stale_pending_item_when_initial_enqueue_was_lost(
+    fake_resource_version, mocker, django_capture_on_commit_callbacks
+):
+    task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
+    stale = task.items.get(language="python")
+    recent = task.items.get(language="go")
+    task.items.filter(id=stale.id).update(updated_time=timezone.now() - timedelta(minutes=10))
+    enqueue = mocker.patch("apigateway.biz.sdk.tasks.enqueue_generation_items")
+
+    with django_capture_on_commit_callbacks(execute=True):
+        assert recover_stale_sdk_generation_items() == 1
+
+    enqueue.assert_called_once_with([stale.id])
+    recent.refresh_from_db()
+    assert recent.status == SDKGenerationStatusEnum.PENDING.value
+
+
 def test_cleanup_only_processes_old_failed_or_expired_items(fake_resource_version, settings, mocker):
     task = create_or_resume_generation(fake_resource_version, ["python", "go", "rust"], "admin")
     failed = task.items.get(language="python")
@@ -104,3 +122,29 @@ def test_cleanup_only_processes_old_failed_or_expired_items(fake_resource_versio
 
     assert cleanup_incomplete_sdk_artifacts() == 5
     assert {call.args[0].id for call in delete.call_args_list} == {failed.id, expired.id}
+
+
+def test_cleanup_rechecks_item_state_before_deleting(fake_resource_version, settings, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
+    task.items.filter(id=item.id).update(
+        status=SDKGenerationStatusEnum.FAILED.value,
+        input_fingerprint="a" * 64,
+        updated_time=old,
+    )
+    mocker.patch("apigateway.biz.sdk.tasks.BKRepoComponent.default", return_value=mocker.Mock())
+
+    def activate_retry(candidate, bkrepo, **kwargs):
+        task.items.filter(id=candidate.id).update(
+            status=SDKGenerationStatusEnum.RUNNING.value,
+            lease_token="new-worker",
+            lease_expires_at=timezone.now() + timedelta(minutes=5),
+            updated_time=timezone.now(),
+        )
+        return guarded_delete_incomplete_artifacts(candidate, bkrepo, **kwargs)
+
+    delete = mocker.patch("apigateway.biz.sdk.tasks.delete_incomplete_artifacts", side_effect=activate_retry)
+
+    assert cleanup_incomplete_sdk_artifacts() == 0
+    delete.assert_called_once()

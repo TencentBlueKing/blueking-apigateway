@@ -26,7 +26,7 @@ from apigateway.apps.support.constants import (
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import build_manifest
 from apigateway.biz.sdk.builders import build_artifacts
-from apigateway.biz.sdk.config import SDKLanguageConfig, get_sdk_generation_config
+from apigateway.biz.sdk.config import get_sdk_generation_config
 from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerateError
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
@@ -35,6 +35,7 @@ from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_finger
 from apigateway.biz.sdk.publishers import publish_native
 from apigateway.biz.sdk.storage import (
     commit_generic_artifacts,
+    delete_incomplete_artifacts,
     generic_prefix,
     manifest_key,
     restore_generic_artifacts,
@@ -100,11 +101,6 @@ def _reject_legacy_version_conflict(resource_version: ResourceVersion, language:
     raise LegacySDKVersionConflict()
 
 
-def _needs_native_retry(item: SDKGenerationItem, language_config: SDKLanguageConfig) -> bool:
-    distributor = language_config.native_distributor
-    return bool(distributor and not _has_successful_artifact(item, distributor))
-
-
 @transaction.atomic
 def create_or_resume_generation(
     resource_version: ResourceVersion,
@@ -120,40 +116,27 @@ def create_or_resume_generation(
     for language in requested:
         _reject_legacy_version_conflict(resource_version, language)
 
-    task, _ = SDKGenerationTask.objects.select_for_update().get_or_create(
+    task = SDKGenerationTask.objects.create(
         resource_version=resource_version,
-        defaults={
-            "gateway": resource_version.gateway,
-            "status": SDKGenerationStatusEnum.PENDING.value,
-            "created_by": operator,
-            "updated_by": operator,
-        },
+        gateway=resource_version.gateway,
+        status=SDKGenerationStatusEnum.PENDING.value,
+        created_by=operator,
+        updated_by=operator,
     )
-    now = timezone.now()
     item_ids = []
     for language in requested:
         language_config = root_config.for_resource_version(resource_version.gateway.name, resource_version, language)
-        item, _ = SDKGenerationItem.objects.get_or_create(
+        item = SDKGenerationItem.objects.create(
             task=task,
             language=language,
-            defaults={"created_by": operator, "updated_by": operator},
+            created_by=operator,
+            updated_by=operator,
+            config_snapshot={
+                **language_config.build_fingerprint_payload(),
+                "native_distributor": language_config.native_distributor,
+            },
         )
-        item.config_snapshot = {
-            **language_config.build_fingerprint_payload(),
-            "native_distributor": language_config.native_distributor,
-        }
-        if item.status == SDKGenerationStatusEnum.SUCCESS.value and _needs_native_retry(item, language_config):
-            item.status = SDKGenerationStatusEnum.PARTIAL.value
-        item.save(update_fields=["config_snapshot", "status", "updated_time"])
-        if item.status in {
-            SDKGenerationStatusEnum.PENDING.value,
-            SDKGenerationStatusEnum.FAILED.value,
-            SDKGenerationStatusEnum.PARTIAL.value,
-        } or (
-            item.status == SDKGenerationStatusEnum.RUNNING.value
-            and (item.lease_expires_at is None or item.lease_expires_at <= now)
-        ):
-            item_ids.append(item.id)
+        item_ids.append(item.id)
 
     refresh_task_status(task.id)
     task.refresh_from_db()
@@ -331,6 +314,7 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
             item.language,
             item.task.resource_version.version,
             fingerprint,
+            item.id,
         )
         with tempfile.TemporaryDirectory(prefix="sdk-generation-") as directory:
             workspace = Path(directory)
@@ -339,6 +323,7 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
                     manifest, artifacts = restore_generic_artifacts(item, bkrepo, workspace / "restored")
                 generic_committed = True
             else:
+                delete_incomplete_artifacts(item, bkrepo, expected_lease_token=claim.lease_token)
                 spec_path = workspace / "openapi.json"
                 spec_path.write_text(dump_sdk_openapi(document))
                 source_dir = workspace / "source"
@@ -398,7 +383,13 @@ def retry_generation_task(
     now = timezone.now()
     item_ids = list(
         task.items.filter(
-            Q(status__in=[SDKGenerationStatusEnum.FAILED.value, SDKGenerationStatusEnum.PARTIAL.value])
+            Q(
+                status__in=[
+                    SDKGenerationStatusEnum.PENDING.value,
+                    SDKGenerationStatusEnum.FAILED.value,
+                    SDKGenerationStatusEnum.PARTIAL.value,
+                ]
+            )
             | Q(status=SDKGenerationStatusEnum.RUNNING.value)
             & (Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True))
         ).values_list("id", flat=True)
@@ -420,7 +411,9 @@ def retry_generation_task(
     return task
 
 
+@transaction.atomic
 def refresh_task_status(task_id: int) -> str:
+    SDKGenerationTask.objects.select_for_update().get(id=task_id)
     statuses = list(SDKGenerationItem.objects.filter(task_id=task_id).values_list("status", flat=True))
     if not statuses or all(status == SDKGenerationStatusEnum.PENDING.value for status in statuses):
         status = SDKGenerationStatusEnum.PENDING.value

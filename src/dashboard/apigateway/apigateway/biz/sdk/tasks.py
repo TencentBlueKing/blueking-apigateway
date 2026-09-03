@@ -18,6 +18,8 @@ from apigateway.biz.sdk.orchestrator import execute_generation_item, refresh_tas
 from apigateway.biz.sdk.storage import delete_incomplete_artifacts
 from apigateway.components.bkrepo import BKRepoComponent
 
+PENDING_RECOVERY_SECONDS = 300
+
 
 def enqueue_generation_items(item_ids: list[int]) -> None:
     queue = get_sdk_generation_config().queue
@@ -52,8 +54,14 @@ def recover_stale_sdk_generation_items() -> int:
     with transaction.atomic():
         items = list(
             SDKGenerationItem.objects.select_for_update().filter(
-                Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True),
-                status=SDKGenerationStatusEnum.RUNNING.value,
+                Q(
+                    Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True),
+                    status=SDKGenerationStatusEnum.RUNNING.value,
+                )
+                | Q(
+                    status=SDKGenerationStatusEnum.PENDING.value,
+                    updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
+                )
             )
         )
         if not items:
@@ -79,15 +87,18 @@ def cleanup_incomplete_sdk_artifacts() -> int:
     config = get_sdk_generation_config()
     cutoff = timezone.now() - timedelta(hours=config.generic_retention_hours)
     now = timezone.now()
-    items = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").filter(
+    item_ids = SDKGenerationItem.objects.filter(
         Q(status=SDKGenerationStatusEnum.FAILED.value)
         | Q(status=SDKGenerationStatusEnum.RUNNING.value, lease_expires_at__lte=now),
         input_fingerprint__gt="",
         updated_time__lt=cutoff,
-    )
+    ).values_list("id", flat=True)
     bkrepo = BKRepoComponent.default()
     if not bkrepo:
         return 0
-    deleted = sum(delete_incomplete_artifacts(item, bkrepo) for item in items.iterator())
+    deleted = 0
+    for item_id in item_ids.iterator():
+        item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
+        deleted += delete_incomplete_artifacts(item, bkrepo, stale_before=cutoff, expired_before=now)
     _update_item_metrics()
     return deleted

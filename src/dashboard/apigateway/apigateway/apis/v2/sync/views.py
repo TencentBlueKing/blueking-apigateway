@@ -47,7 +47,7 @@ from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter
 from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
 from apigateway.biz.sdk.orchestrator import create_or_resume_generation, serialize_generation_task
 from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.constants import CallSourceTypeEnum
@@ -626,6 +626,9 @@ class SDKGenerateApi(generics.CreateAPIView):
             )
         except LegacySDKVersionConflict as error:
             raise error_codes.FAILED_PRECONDITION.format(str(error), replace=True)
+        except SDKRepoConfigError as error:
+            logger.exception("SDK generation configuration is invalid")
+            raise error_codes.INTERNAL.format(_("SDK generation is unavailable"), replace=True) from error
         except ValueError as error:
             raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
 
