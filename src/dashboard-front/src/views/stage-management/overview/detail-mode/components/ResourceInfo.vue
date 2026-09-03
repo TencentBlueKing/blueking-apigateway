@@ -512,7 +512,6 @@ const handleClearQueries = () => {
 };
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
-  console.log(filters, 5555555555);
   Object.assign(
     filterValue.value,
     filters,

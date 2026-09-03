@@ -15,16 +15,42 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List
+from collections import defaultdict
+from typing import DefaultDict, Dict, List, Set
 
-from django.db.models import Count
-
-from apigateway.core.models import Proxy
+from apigateway.core.constants import StageStatusEnum
+from apigateway.core.models import Proxy, Release, ResourceVersion
 
 
 class ProxyHandler:
     @staticmethod
-    def get_resource_count_by_backend(backend_ids: List[int]) -> Dict[int, int]:
-        """获取每个 backend 对应的资源个数"""
-        qs = Proxy.objects.filter(backend_id__in=backend_ids).values("backend_id").annotate(count=Count("backend_id"))
-        return {i["backend_id"]: i["count"] for i in qs}
+    def get_resource_count_by_backend(gateway_id: int, backend_ids: List[int]) -> Dict[int, int]:
+        """获取每个 backend 关联的资源个数。
+
+        资源数是当前 Proxy 关联与 ACTIVE 环境已发布资源快照的资源 ID 并集，
+        因此包含已从编辑区删除、但仍存在于已发布版本中的资源。
+        """
+        if not backend_ids:
+            return {}
+
+        backend_id_set = set(backend_ids)
+        resource_ids_by_backend: DefaultDict[int, Set[int]] = defaultdict(set)
+
+        for backend_id, resource_id in Proxy.objects.filter(backend_id__in=backend_ids).values_list(
+            "backend_id", "resource_id"
+        ):
+            resource_ids_by_backend[backend_id].add(resource_id)
+
+        resource_version_ids = Release.objects.filter(
+            gateway_id=gateway_id,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).values_list("resource_version_id", flat=True)
+        resource_versions = ResourceVersion.objects.filter(id__in=resource_version_ids)
+        for resource_version in resource_versions:
+            for resource_data in resource_version.data:
+                backend_id = resource_data.get("proxy", {}).get("backend_id")
+                resource_id = resource_data.get("id")
+                if backend_id in backend_id_set and resource_id is not None:
+                    resource_ids_by_backend[backend_id].add(resource_id)
+
+        return {backend_id: len(resource_ids) for backend_id, resource_ids in resource_ids_by_backend.items()}

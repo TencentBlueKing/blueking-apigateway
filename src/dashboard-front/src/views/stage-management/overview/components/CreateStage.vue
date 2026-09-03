@@ -1,20 +1,20 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+*     http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 
 <template>
   <div class="sideslider-wrapper">
@@ -345,8 +345,23 @@
                     <BkAlert
                       class="ai-backend-alert"
                       theme="info"
-                      :title="t('模型服务不支持负载均衡；创建时需配置所有环境，变更过的环境需重新连通测试')"
-                    />
+                    >
+                      <template #icon>
+                        <div class="flex items-center mr-8px">
+                          <AgIcon
+                            color="#3a84ff"
+                            name="info"
+                            size="16"
+                          />
+                        </div>
+                      </template>
+                      <template #title>
+                        <div>
+                          <div>• {{ t('每个环境（Stage）需单独配置一份模型服务，暂不支持同一环境下多渠道负载均衡') }}</div>
+                          <div>• {{ t('任一环境的配置变更后，需重新连通测试通过才可保存') }}</div>
+                        </div>
+                      </template>
+                    </BkAlert>
                     <BkCollapse
                       v-model="activeAIBackendIds"
                       class="ai-backend-list"
@@ -367,12 +382,15 @@
                             />
                             <span class="ai-backend-name">{{ backend.name }}</span>
                             <BkTag :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].theme">
-                              <status-tag
-                                type="filled"
-                                :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].tagTheme"
-                                status=""
-                                class="mr--4px"
-                              />{{ t(AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].text) }}
+                              <div class="flex items-center">
+                                <status-tag
+                                  type="filled"
+                                  :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].tagTheme"
+                                  status=""
+                                  class="mr--4px"
+                                />
+                                <span>{{ t(AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].text) }}</span>
+                              </div>
                             </BkTag>
                           </div>
                         </template>
@@ -401,7 +419,7 @@
             class="sideslider-content check-mode"
           >
             <div class="title">
-              {{ t("基本信息") }}
+              {{ t('基本信息') }}
             </div>
             <BkContainer
               class="ag-kv-box"
@@ -409,7 +427,7 @@
             >
               <BkRow>
                 <BkCol :span="2">
-                  <label class="ag-key">{{ t("环境名称") }}: </label>
+                  <label class="ag-key">{{ t('环境名称') }}: </label>
                 </BkCol>
                 <BkCol :span="12">
                   <div class="ag-value">
@@ -423,7 +441,7 @@
                   :span="2"
                   class="mt-8px"
                 >
-                  <label class="ag-key">{{ t("访问地址") }}:</label>
+                  <label class="ag-key">{{ t('访问地址') }}:</label>
                 </BkCol>
                 <BkCol :span="12">
                   <div class="ag-value address">
@@ -453,7 +471,7 @@
                 <template v-if="backend.config.hosts?.length > 1">
                   <BkRow>
                     <BkCol :span="2">
-                      <label class="ag-key">{{ t("负载均衡类型") }}:</label>
+                      <label class="ag-key">{{ t('负载均衡类型') }}:</label>
                     </BkCol>
                     <BkCol :span="8">
                       <div class="ag-value">
@@ -488,7 +506,7 @@
                 >
                   <BkRow>
                     <BkCol :span="2">
-                      <label class="ag-key">{{ t("后端服务地址") }}:</label>
+                      <label class="ag-key">{{ t('后端服务地址') }}:</label>
                     </BkCol>
                     <BkCol :span="12">
                       <div class="ag-value">
@@ -498,7 +516,7 @@
                   </BkRow>
                   <BkRow v-if="backend.config.loadbalance === 'weighted-roundrobin'">
                     <BkCol :span="2">
-                      <label class="ag-key">{{ t("权重") }}:</label>
+                      <label class="ag-key">{{ t('权重') }}:</label>
                     </BkCol>
                     <BkCol :span="12">
                       <div class="ag-value">
@@ -509,7 +527,7 @@
                 </template>
                 <BkRow>
                   <BkCol :span="2">
-                    <label class="ag-key">{{ t("超时时间") }}:</label>
+                    <label class="ag-key">{{ t('超时时间') }}:</label>
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
@@ -848,7 +866,7 @@
                 </BkRow>
                 <BkRow>
                   <BkCol :span="2">
-                    <label class="ag-key">{{ t("超时时间") }}:</label>
+                    <label class="ag-key">{{ t('超时时间') }}:</label>
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
@@ -957,7 +975,9 @@ interface ICurStageData {
   aiBackends: IAIStageBackend[]
 }
 
-interface IProps { stageId?: number }
+interface IProps {
+  stageId?: number
+}
 
 const { stageId = 0 } = defineProps<IProps>();
 

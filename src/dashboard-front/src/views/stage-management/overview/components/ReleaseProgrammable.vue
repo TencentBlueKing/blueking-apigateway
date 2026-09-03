@@ -44,10 +44,22 @@
                     <span class="pr-12px">{{ t('代码分支') }}: <span> {{ stageDetail.branch || '--' }}</span></span>
                     <span class="pr-12px">CommitID: <span> {{ stageDetail.commit_id || '--' }}</span></span>
                     <span class="pr-12px">
-                      {{
-                        `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
-                          .format('YYYY-MM-DD HH:mm:ss') || '--'}  发布`
-                      }}
+                      <I18nT
+                        keypath="由 {user} 于 {time} 发布"
+                        tag="span"
+                        scope="global"
+                      >
+                        <template #user>
+                          <bk-user-display-name
+                            v-if="featureFlagStore.isEnableDisplayName"
+                            :user-id="stageDetail.created_by"
+                          />
+                          <span v-else>{{ stageDetail.created_by || '--' }}</span>
+                        </template>
+                        <template #time>
+                          {{ dayjs(stageDetail.created_time).format('YYYY-MM-DD HH:mm:ss') || '--' }}
+                        </template>
+                      </I18nT>
                     </span>
                   </div>
                 </BkAlert>
@@ -213,6 +225,7 @@ import ReleaseProgrammableEvent from '../../components/ReleaseProgrammableEvent.
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { usePopInfoBox } from '@/hooks';
+import { useFeatureFlag } from '@/stores';
 
 interface FormData {
   stage_id: number
@@ -251,6 +264,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const featureFlagStore = useFeatureFlag();
 
 const isShow = ref(false);
 const formRef = ref();

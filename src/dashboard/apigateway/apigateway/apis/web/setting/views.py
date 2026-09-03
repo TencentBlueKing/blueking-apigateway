@@ -19,13 +19,13 @@
 import copy
 
 from django.conf import settings
-from django.utils import translation
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.feature.models import UserFeatureFlag
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.conf.utils import get_doc_links
 from apigateway.utils.responses import OKJsonResponse
 
@@ -42,9 +42,8 @@ class EnvVarListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         env_vars = copy.copy(settings.ENV_VARS_FOR_FRONTEND)
 
-        lang = "EN" if translation.get_language() == "en" else "ZH"
-        doc_links = get_doc_links(settings.BK_APIGATEWAY_VERSION, settings.BK_DOCS_URL_PREFIX, lang)
-        env_vars["DOC_LINKS"] = doc_links
+        lang = "EN" if get_current_language_code() == "en" else "ZH"
+        env_vars["DOC_LINKS"] = get_doc_links(settings.BK_APIGATEWAY_VERSION, settings.BK_DOCS_URL_PREFIX, lang)
 
         env_vars["BK_DATA_PLANE_API_URL_TMPL_MAP"] = {
             dp.name: dp.bk_api_url_tmpl for dp in DataPlane.objects.get_active_data_planes() if dp.bk_api_url_tmpl

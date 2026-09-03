@@ -31,6 +31,7 @@
       v-model:table-data="tableData"
       v-model:selected-row-keys="selectedRowKeys"
       v-model:settings="settings"
+      :immediate="false"
       show-settings
       show-cell-empty-content
       :show-selection="isShowSelection"

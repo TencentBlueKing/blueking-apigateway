@@ -42,7 +42,7 @@ from apigateway.components.bkpaas import (
     get_paas_offline_result,
     get_pass_deploy_streams_history_events,
 )
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import PublishSourceEnum, ReleaseHistoryStatusEnum, ReleaseStatusEnum
 from apigateway.core.models import Backend, PublishEvent, Release, ReleaseHistory, ResourceVersion
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import get_resource_schema
@@ -210,6 +210,17 @@ class ReleaseCreateApi(generics.CreateAPIView):
                 timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
+                stage_publish_status = release_biz.ReleaseHandler.batch_get_stage_release_status([stage_id]).get(
+                    stage_id, {}
+                )
+                if stage_publish_status.get("status") in (
+                    ReleaseHistoryStatusEnum.DOING.value,
+                    ReleaseStatusEnum.PENDING.value,
+                ):
+                    raise error_codes.FAILED_PRECONDITION.format(
+                        _("当前环境正在发布或下架，请稍后再试。"), replace=True
+                    )
+
                 history = release_biz.release_gateway(
                     gateway=request.gateway,
                     stage_id=slz.validated_data["stage_id"],

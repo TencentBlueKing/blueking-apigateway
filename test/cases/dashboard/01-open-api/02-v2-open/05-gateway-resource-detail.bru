@@ -14,6 +14,33 @@ headers {
   X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
 }
 
+script:pre-request {
+  // 发布后 ReleasedResource 由 celery 异步写入，这里轮询等待其落库，避免首次执行时 404。
+  const axios = require('axios');
+
+  const url = `${bru.getEnvVar('scheme')}://${bru.getEnvVar('host')}`
+    + `/api/bk-apigateway/prod/api/v2/open/gateways/${bru.getEnvVar('gateway_name')}`
+    + `/resources/${bru.getVar('resource_name')}/?stage_name=prod`;
+
+  const headers = {
+    'X-Bkapi-Authorization': JSON.stringify({
+      bk_app_code: bru.getEnvVar('bk_app_code'),
+      bk_app_secret: bru.getEnvVar('bk_app_secret'),
+    }),
+  };
+
+  // 实测全新网关约需 22s 落库，这里预留约 60s 余量；成功即退出，不会额外等待。
+  for (let i = 0; i < 60; i++) {
+    try {
+      await axios.get(url, { headers });
+      break;
+    } catch (err) {
+      // 尚未落库（404）或瞬时错误，等待后重试
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
+
 assert {
   res.status: eq 200
   res.body.data.id: isDefined

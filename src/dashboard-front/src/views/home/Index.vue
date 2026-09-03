@@ -526,6 +526,10 @@ const gatewayTypes = [
     label: t('可编程网关'),
     value: '1',
   },
+  {
+    label: t('AI 网关'),
+    value: '2',
+  },
 ];
 
 const orderingOptions = [

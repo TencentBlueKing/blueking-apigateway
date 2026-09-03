@@ -63,7 +63,8 @@
             expand-on-row-click
             :expanded-row-keys="expandedRowKeys"
             :filter-value="filterData"
-            :api-method="getTableData"
+            local-page
+            :immediate="false"
             @expand-change="handleExpandChange"
             @clear-filter="handleClearFilterKey"
           >
@@ -121,7 +122,7 @@
                     <AgTable
                       class="request-header-table"
                       size="small"
-                      max-height="234px"
+                      max-height="400px"
                       table-row-key="value"
                       local-page
                       :show-pagination="false"
@@ -170,7 +171,7 @@
                     <AgTable
                       class="request-header-table"
                       size="small"
-                      max-height="234px"
+                      max-height="400px"
                       table-row-key="value"
                       local-page
                       :show-pagination="false"
@@ -195,7 +196,6 @@ import { useDatePicker } from '@/hooks';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
-import type { ITableMethod } from '@/types/common';
 import type { ExpandOptions, PrimaryTableProps } from '@blueking/tdesign-ui';
 import {
   getTestHistories,
@@ -228,9 +228,9 @@ const {
 
 const dateKey = ref<string>('dateKey');
 const topDatePicker = ref();
-const tableData = ref([]);
+const tableData = ref<any[]>([]);
 const expandedRowKeys = ref<Array<string | number>>([]);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
 const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
 const tabList = ref([
   {
@@ -421,17 +421,13 @@ const show = () => {
   getList();
 };
 
-const getList = () => {
+const getList = async () => {
   const data = {
     offset: 0,
     limit: 10000,
     ...filterData.value,
   };
-  tableRef.value?.fetchData(data, { resetPage: true });
-};
-
-const getTableData = async (params: Record<string, any> = {}) => {
-  const results = await getTestHistories(apigwId.value, params);
+  const results = await getTestHistories(apigwId.value, data);
 
   results?.forEach((item: any) => {
     item.editorText = '';
@@ -440,10 +436,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
     item.activeIndex = 'code';
   });
 
-  return {
-    count: results?.length || 0,
-    results,
-  };
+  tableData.value = results || [];
 };
 
 const handleClearFilterKey = () => {
@@ -548,7 +541,6 @@ defineExpose({ show });
 }
 
 .details-tab {
-  max-height: 600px;
   background: #f5f7fa;
 
   .tab-header {

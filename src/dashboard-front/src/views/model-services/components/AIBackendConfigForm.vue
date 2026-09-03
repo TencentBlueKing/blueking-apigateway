@@ -17,10 +17,10 @@
         @change="handleProviderChange"
       >
         <BkOption
-          v-for="provider in AI_BACKEND_PROVIDER_OPTIONS"
-          :id="provider"
-          :key="provider"
-          :name="provider"
+          v-for="provider in PROVIDER_OPTIONS"
+          :id="provider.value"
+          :key="provider.value"
+          :name="provider.label"
         />
       </BkSelect>
       <p class="help-text">
@@ -88,7 +88,7 @@
         :placeholder="t('请输入 API Key')"
       />
       <p class="help-text">
-        {{ t('内置 Provider 使用 API Key 进行认证') }}
+        {{ t('用于向上游 Provider 鉴权的 API Key') }}
       </p>
     </BkFormItem>
 
@@ -136,7 +136,7 @@
         />
       </BkSelect>
       <p class="help-text">
-        {{ t('留空时由调用方在请求体中指定 model') }}
+        {{ t('可留空，由调用方指定 model。') + t('填写后将强制覆盖调用方传入的 model。') }}
       </p>
     </BkFormItem>
 
@@ -207,8 +207,8 @@
         @input="handleOptionsTextInput"
       />
       <p class="help-text">
-        {{ t('附加到请求体的参数字典，JSON 格式，会合并到上游请求体') }}，
-        <span class="danger-text">{{ t('不包含 model 字段') }}</span>
+        {{ t('JSON 键值对，将合并到上游请求体，相同字段以此处为准覆盖调用方。') }}
+        <span class="danger-text">{{ t('请勿在此处配置 model（在上方 Model 字段配置）') }}</span>
       </p>
       <p
         v-if="config.optionsError"
@@ -284,7 +284,6 @@ import type { IBackendTestConnectionInputSLZ } from '@/services/types/body/post/
 import type { IFormMethod } from '@/types/common';
 import {
   type AIBackendOptionMode,
-  AI_BACKEND_PROVIDER_OPTIONS,
   AI_BACKEND_SCHEME_OPTIONS,
   type IAIBackendConfigFormData,
   buildAIBackendConfig,
@@ -312,6 +311,21 @@ const {
 const { t } = useI18n();
 
 const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
+
+const PROVIDER_OPTIONS = [
+  {
+    label: 'OpenAI',
+    value: 'openai',
+  },
+  {
+    label: 'DeepSeek',
+    value: 'deepseek',
+  },
+  {
+    label: 'openai-compatible',
+    value: 'openai-compatible',
+  },
+];
 
 const PROVIDER_ENDPOINT = {
   openai: {
@@ -351,6 +365,7 @@ const formRules = {
 };
 
 const isBuiltinProvider = computed(() => isBuiltinAIBackendProvider(config.value.provider));
+
 const endpointRules = computed(() => {
   if (isBuiltinProvider.value) {
     return [];
@@ -366,6 +381,7 @@ const endpointRules = computed(() => {
     },
   ];
 });
+
 const modelOptions = computed(() => [...new Set([
   config.value.model,
   ...config.value.models,
@@ -507,10 +523,6 @@ const handleTest = async () => {
   }
   catch {
     config.value.testStatus = 'failed';
-    Message({
-      message: t('连通测试失败'),
-      theme: 'error',
-    });
   }
 };
 

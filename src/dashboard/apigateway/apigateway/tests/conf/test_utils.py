@@ -23,6 +23,7 @@ from environ import Env
 
 from apigateway.conf.utils import (
     get_default_feature_flags,
+    get_doc_links,
     get_frontend_env_vars,
     get_plugin_metadata_config,
     get_sdk_generation_settings,
@@ -102,3 +103,18 @@ def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
     assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center"
     assert env_vars["PAAS_APP_CREATE_LINK"] == "https://paas.example.com/developer-center/app/create"
     assert env_vars["BK_USER_PERSONAL_CENTER_LINK"] == "https://user.example.com/personal-center"
+
+
+def test_get_doc_links_includes_personal_token():
+    links = get_doc_links("1.24.0", "https://docs.example.com", "ZH")
+
+    assert (
+        links["PERSONAL_TOKEN"]
+        == "https://docs.example.com/markdown/ZH/APIGateway/1.24/UserGuide/Explanation/personal-token.md"
+    )
+
+    en_links = get_doc_links("1.24.0", "https://docs.example.com", "EN")
+    assert (
+        en_links["PERSONAL_TOKEN"]
+        == "https://docs.example.com/markdown/EN/APIGateway/1.24/UserGuide/Explanation/personal-token.md"
+    )

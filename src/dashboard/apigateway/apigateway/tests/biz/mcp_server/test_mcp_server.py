@@ -16,12 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import re
 from unittest.mock import patch
 
 import pytest
 from ddf import G
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+from django.utils import translation
 
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -1482,9 +1484,11 @@ class TestMCPServerHandler:
             status=MCPServerStatusEnum.ACTIVE.value,
             name="test-mcp",
             description="A test MCP server",
+            oauth2_public_client_enabled=True,
+            oauth2_personal_client_enabled=False,
         )
 
-        mocker.patch(
+        mock_render = mocker.patch(
             "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline for test-mcp",
         )
@@ -1492,6 +1496,10 @@ class TestMCPServerHandler:
         result = MCPServerHandler.build_guideline(mcp_server, user_tenant_id="tenant_1")
 
         assert result == "# Guideline for test-mcp"
+        context = mock_render.call_args.kwargs["context"]
+        assert context["oauth2_public_client_enabled"] is True
+        assert context["oauth2_personal_client_enabled"] is False
+        assert "personal-token.md" in context["bk_personal_token_doc_url"]
 
     def test_build_guideline_with_least_privilege(self, fake_gateway, fake_stage, mocker):
         """测试 build_guideline 传入 least_privilege 参数"""
@@ -1515,6 +1523,87 @@ class TestMCPServerHandler:
 
         # 验证 render_to_string 被调用
         mock_render.assert_called_once()
+
+    @pytest.mark.parametrize(
+        ("public_enabled", "personal_enabled", "language", "others_heading", "expected_headings", "always_valid_text"),
+        [
+            (
+                False,
+                False,
+                "zh-hans",
+                "## 其他",
+                ["### X-Bkapi-Authorization"],
+                "始终有效",
+            ),
+            (
+                True,
+                False,
+                "zh-hans",
+                "## 其他",
+                ["### OAuth2 公开客户端模式", "### X-Bkapi-Authorization"],
+                "始终有效",
+            ),
+            (
+                False,
+                True,
+                "zh-hans",
+                "## 其他",
+                ["### 个人令牌", "### X-Bkapi-Authorization"],
+                "始终有效",
+            ),
+            (
+                True,
+                True,
+                "zh-hans",
+                "## 其他",
+                ["### OAuth2 公开客户端模式", "### 个人令牌", "### X-Bkapi-Authorization"],
+                "始终有效",
+            ),
+            (
+                True,
+                True,
+                "en",
+                "## Others",
+                ["### OAuth2 Public Client Mode", "### Personal Token", "### X-Bkapi-Authorization"],
+                "always valid",
+            ),
+        ],
+    )
+    def test_build_guideline_auth_sections(
+        self,
+        fake_gateway,
+        fake_stage,
+        public_enabled,
+        personal_enabled,
+        language,
+        others_heading,
+        expected_headings,
+        always_valid_text,
+    ):
+        """按开关渲染认证说明，顺序为公开客户端、个人令牌、X-Bkapi-Authorization"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            name="test-mcp",
+            oauth2_public_client_enabled=public_enabled,
+            oauth2_personal_client_enabled=personal_enabled,
+        )
+
+        with translation.override(language):
+            result = MCPServerHandler.build_guideline(mcp_server)
+
+        auth_section = result.split(others_heading)[0]
+        headings = re.findall(r"^### .+$", auth_section, re.M)
+        assert headings == expected_headings
+        assert (always_valid_text in auth_section) is (public_enabled or personal_enabled)
+        assert "### X-Bkapi-Authorization" in result
+        if personal_enabled:
+            assert "personal-token.md" in auth_section
+            assert "{{bk_personal_token_doc_url}}" not in result
+        else:
+            assert "personal-token.md" not in auth_section
 
     # ========== apply_category_filter 测试 ==========
 
