@@ -22,7 +22,7 @@ import pytest
 from django.urls import get_resolver
 from django_dynamic_fixture import G
 
-from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Release, ResourceVersion, Stage
 
 
@@ -297,7 +297,12 @@ class TestBackendApi:
         resource_version.data = [{"id": 1, "proxy": {"backend_id": backend.id}}]
         resource_version.save()
         G(Release, gateway=fake_stage.gateway, stage=fake_stage, resource_version=resource_version)
-        another_stage = G(Stage, gateway=fake_stage.gateway, status=1, name="another-stage")
+        another_stage = G(
+            Stage,
+            gateway=fake_stage.gateway,
+            status=StageStatusEnum.ACTIVE.value,
+            name="another-stage",
+        )
         G(Release, gateway=fake_stage.gateway, stage=another_stage, resource_version=resource_version)
 
         response = request_view(
