@@ -46,11 +46,23 @@ class ResourceVersionSLZ(serializers.Serializer):
     version = serializers.CharField(read_only=True, help_text="资源版本号")
 
 
+class SDKArtifactSLZ(serializers.Serializer):
+    distributor = serializers.CharField(read_only=True, help_text="制品分发渠道")
+    type = serializers.CharField(read_only=True, help_text="制品类型")
+    filename = serializers.CharField(read_only=True, help_text="制品文件名")
+    url = serializers.CharField(read_only=True, help_text="制品下载链接")
+    coordinate = serializers.CharField(read_only=True, help_text="原生仓库坐标")
+    size = serializers.IntegerField(read_only=True, help_text="制品大小")
+    sha256 = serializers.CharField(read_only=True, help_text="制品 SHA256")
+
+
 class SDKSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True, help_text="SDK 名称")
     version = serializers.CharField(read_only=True, help_text="SDK 版本号")
     url = serializers.CharField(read_only=True, help_text="SDK 下载链接")
     install_command = serializers.CharField(read_only=True, help_text="SDK 安装命令")
+    package_name = serializers.CharField(read_only=True, help_text="SDK 包名")
+    artifacts = SDKArtifactSLZ(many=True, read_only=True, help_text="SDK 制品")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKSLZ"

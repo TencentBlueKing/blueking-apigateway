@@ -16,6 +16,7 @@ from apigateway.biz.sdk.storage import (
     manifest_key,
     restore_generic_artifacts,
 )
+from apigateway.core.models import ResourceVersion
 
 pytestmark = pytest.mark.django_db
 
@@ -72,10 +73,16 @@ def built_manifest(tmp_path, generation_item, content=b"wheel"):
 
 
 def another_generation_item(generation_item):
+    resource_version = G(
+        ResourceVersion,
+        gateway=generation_item.task.gateway,
+        version="1.2.4",
+        _data="[]",
+    )
     task = G(
         SDKGenerationTask,
         gateway=generation_item.task.gateway,
-        resource_version=generation_item.task.resource_version,
+        resource_version=resource_version,
     )
     return G(
         SDKGenerationItem,
@@ -102,7 +109,10 @@ def test_commit_uploads_artifacts_before_manifest(tmp_path, generation_item):
     assert uploaded == [f"{prefix}/demo.whl", manifest_key(prefix)]
     assert all(operation[2] is False for operation in bkrepo.operations if operation[0] == "upload")
     assert {record.status for record in records} == {SDKGenerationStatusEnum.SUCCESS.value}
+    assert {record.artifact_type for record in records} == {"wheel", "manifest"}
     assert generation_item.artifacts.filter(filename="manifest.json").exists()
+    assert all(record.url.startswith("https://repo/sdks/") for record in records)
+    assert "sdk-password" not in " ".join(record.url for record in records)
 
 
 def test_commit_reuses_matching_manifest_and_recovers_database(tmp_path, generation_item):

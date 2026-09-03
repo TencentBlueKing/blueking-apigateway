@@ -18,10 +18,14 @@
 from types import SimpleNamespace
 
 import pytest
+from ddf import G
 
+from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import SDKDocContext, SDKFactory
 from apigateway.biz.sdk.models import SDK, GoSDK, JavaScriptSDK, JavaSDK, PythonSDK
 from apigateway.utils.time import now_datetime
+
+pytestmark = pytest.mark.django_db
 
 
 class TestSDKDocContext:
@@ -177,3 +181,55 @@ def test_go_install_command_selects_module_zip():
     )
 
     assert sdk.install_command == 'curl -fLO "https://repo/v1.2.3.zip"'
+
+
+def test_sdk_factory_reads_generated_state_from_explicit_item_relation(fake_gateway, fake_resource_version):
+    gateway_sdk = G(
+        GatewaySDK,
+        gateway=fake_gateway,
+        resource_version=fake_resource_version,
+        language="javascript",
+        version_number=fake_resource_version.version,
+        name="@bkapi/openapi-demo",
+        url="https://legacy/fallback.tgz",
+        _config="{}",
+    )
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    item = G(
+        SDKGenerationItem,
+        task=task,
+        language="javascript",
+        gateway_sdk=gateway_sdk,
+        config_snapshot={"package_name": "@bkapi/openapi-demo"},
+    )
+    G(
+        SDKArtifact,
+        item=item,
+        distributor="bkrepo_generic",
+        artifact_type="npm_tgz",
+        filename="bkapi-openapi-demo-1.2.3.tgz",
+        url="https://repo/sdk.tgz",
+        status="success",
+    )
+
+    sdk = SDKFactory.create(gateway_sdk)
+
+    assert sdk.artifacts[0]["type"] == "npm_tgz"
+    assert sdk.url == "https://repo/sdk.tgz"
+    assert sdk.install_command == 'npm install "https://repo/sdk.tgz"'
+    assert sdk.package_name == "@bkapi/openapi-demo"
+
+
+def test_sdk_factory_legacy_row_without_relation_keeps_config_fallback():
+    sdk = SDKFactory.create(
+        SimpleNamespace(
+            language="javascript",
+            config={"javascript": {"package_name": "legacy-js"}},
+            name="legacy",
+            version_number="1.0.0",
+            url="https://legacy/sdk.tgz",
+        )
+    )
+
+    assert sdk.package_name == "legacy-js"
+    assert sdk.url == "https://legacy/sdk.tgz"

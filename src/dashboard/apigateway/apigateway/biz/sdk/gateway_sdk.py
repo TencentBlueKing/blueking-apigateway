@@ -17,83 +17,110 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List
+from typing import Dict, List
 
 from django.db.models import Count
 from django.db.transaction import atomic
+from django.utils import timezone
 
-from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.constants import (
+    SDKArtifactStatusEnum,
+    SDKArtifactTypeEnum,
+    SDKDistributorEnum,
+    SDKGenerationItemStatusEnum,
+)
 from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem
 from apigateway.core.models import Release
 
 from .models import SDKFactory
 
-if TYPE_CHECKING:
-    from apigateway.biz.sdk.artifacts import ArtifactManifest
-    from apigateway.biz.sdk.config import SDKLanguageConfig
+_PREFERRED_GENERIC_ARTIFACT_TYPES = {
+    "python": SDKArtifactTypeEnum.WHEEL.value,
+    "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
+    "go": SDKArtifactTypeEnum.GO_ZIP.value,
+    "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
+}
 
 
-class GatewaySDKHandler:
-    @classmethod
-    def upsert_generation_projection(
-        cls,
-        item: SDKGenerationItem,
-        language_config: SDKLanguageConfig,
-        manifest: ArtifactManifest,
-    ) -> GatewaySDK:
-        artifact_rows = list(
-            item.artifacts.filter(status=SDKGenerationStatusEnum.SUCCESS.value).order_by("distributor", "filename")
+def _preferred_generic_artifact(item: SDKGenerationItem):
+    artifacts = list(
+        item.artifacts.filter(
+            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+            status=SDKArtifactStatusEnum.SUCCESS.value,
         )
-        manifest_artifact_types = {artifact.filename: artifact.artifact_type for artifact in manifest.files}
-        artifacts = [
-            {
-                "distributor": artifact.distributor,
-                "type": manifest_artifact_types.get(artifact.filename, artifact.artifact_type)
-                if artifact.distributor == SDKDistributorEnum.BKREPO_GENERIC.value
-                else artifact.artifact_type,
-                "filename": artifact.filename,
-                "url": artifact.url,
-                "coordinate": artifact.coordinate,
-                "size": artifact.size,
-                "sha256": artifact.sha256,
-            }
-            for artifact in artifact_rows
-        ]
-        generic_artifacts = [
-            artifact
-            for artifact in artifacts
-            if artifact["distributor"] == SDKDistributorEnum.BKREPO_GENERIC.value
-            and artifact["filename"] != "manifest.json"
-        ]
-        preferred_artifact = next(
-            (artifact for artifact in generic_artifacts if item.language == "go" and artifact["type"] == "go_zip"),
-            generic_artifacts[0] if generic_artifacts else None,
-        )
-        config = {
-            "generation_item_id": item.id,
-            "input_fingerprint": item.input_fingerprint,
-            "project_name": language_config.project_name,
-            "package_name": language_config.package_name,
-            "package_version": language_config.package_version,
-            "manifest": manifest.to_dict(),
-            "artifacts": artifacts,
-        }
-        sdk, _ = GatewaySDK.objects.update_or_create(
+        .exclude(artifact_type=SDKArtifactTypeEnum.MANIFEST.value)
+        .order_by("id")
+    )
+    preferred_type = _PREFERRED_GENERIC_ARTIFACT_TYPES.get(item.language)
+    return next((artifact for artifact in artifacts if artifact.artifact_type == preferred_type), None) or (
+        artifacts[0] if artifacts else None
+    )
+
+
+@atomic
+def ensure_gateway_sdk_projection(item: SDKGenerationItem) -> GatewaySDK:
+    """Create or link the compatibility row after Generic commit."""
+    item = (
+        SDKGenerationItem.objects.select_for_update()
+        .select_related("task__gateway", "task__resource_version", "gateway_sdk")
+        .get(id=item.id)
+    )
+    if item.gateway_sdk_id:
+        return item.gateway_sdk
+
+    sdk = (
+        GatewaySDK.objects.select_for_update()
+        .filter(
             gateway=item.task.gateway,
             language=item.language,
             version_number=item.task.resource_version.version,
-            defaults={
-                "resource_version": item.task.resource_version,
-                "name": language_config.project_name,
-                "url": preferred_artifact["url"] if preferred_artifact else "",
-                "include_private_resources": True,
-                "is_public": True,
-                "config": config,
-            },
         )
-        cls.mark_is_recommended(sdk)
+        .first()
+    )
+    if sdk:
+        item.gateway_sdk = sdk
+        update_fields = ["gateway_sdk", "updated_time"]
+        has_manifest = item.artifacts.filter(
+            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+            artifact_type=SDKArtifactTypeEnum.MANIFEST.value,
+            status=SDKArtifactStatusEnum.SUCCESS.value,
+        ).exists()
+        if not has_manifest:
+            item.status = SDKGenerationItemStatusEnum.SUCCESS.value
+            item.finished_at = timezone.now()
+            item.error_code = ""
+            item.error_message = ""
+            update_fields.extend(["status", "finished_at", "error_code", "error_message"])
+        item.save(update_fields=update_fields)
         return sdk
 
+    has_manifest = item.artifacts.filter(
+        distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+        artifact_type=SDKArtifactTypeEnum.MANIFEST.value,
+        status=SDKArtifactStatusEnum.SUCCESS.value,
+    ).exists()
+    artifact = _preferred_generic_artifact(item)
+    if not has_manifest or artifact is None:
+        raise ValueError("Generic SDK artifacts must be committed before creating a projection")
+
+    sdk = GatewaySDK.objects.create(
+        gateway=item.task.gateway,
+        resource_version=item.task.resource_version,
+        language=item.language,
+        version_number=item.task.resource_version.version,
+        name=item.config_snapshot.get("project_name", ""),
+        url=artifact.url,
+        include_private_resources=True,
+        is_public=True,
+        config={},
+    )
+    item.gateway_sdk = sdk
+    item.save(update_fields=["gateway_sdk", "updated_time"])
+    GatewaySDKHandler.mark_is_recommended(sdk)
+    return sdk
+
+
+class GatewaySDKHandler:
     @classmethod
     def get_stage_sdks(cls, gateway_id: int, language: str) -> List:
         releases = list(

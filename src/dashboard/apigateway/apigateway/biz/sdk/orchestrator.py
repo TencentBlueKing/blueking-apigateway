@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from apigateway.apps.support.constants import (
     SDK_GENERATION_LANGUAGE_VALUES,
-    SDKArtifactTypeEnum,
+    SDKArtifactStatusEnum,
     SDKDistributorEnum,
     SDKGenerationStatusEnum,
 )
@@ -28,7 +28,7 @@ from apigateway.biz.sdk.artifacts import build_manifest
 from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import get_sdk_generation_config
 from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerateError
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
 from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
@@ -70,7 +70,7 @@ def _deduplicate_languages(languages: list[str]) -> list[str]:
 def _has_successful_artifact(item: SDKGenerationItem, distributor: str, *, filename: str | None = None) -> bool:
     queryset = item.artifacts.filter(
         distributor=distributor,
-        status=SDKGenerationStatusEnum.SUCCESS.value,
+        status=SDKArtifactStatusEnum.SUCCESS.value,
     )
     if filename:
         queryset = queryset.filter(filename=filename)
@@ -210,14 +210,14 @@ def _persist_native_artifacts(item: SDKGenerationItem, published) -> None:
             distributor=artifact.distributor,
             filename=artifact.filename,
             defaults={
-                "artifact_type": SDKArtifactTypeEnum.PACKAGE.value,
+                "artifact_type": artifact.artifact_type,
                 "coordinate": artifact.coordinate,
                 "url": artifact.url,
                 "size": artifact.size,
                 "sha256": artifact.sha256,
                 "original_version": item.task.resource_version.version,
                 "package_version": item.config_snapshot["package_version"],
-                "status": SDKGenerationStatusEnum.SUCCESS.value,
+                "status": SDKArtifactStatusEnum.SUCCESS.value,
             },
         )
 
@@ -350,7 +350,7 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
             if not _has_successful_artifact(item, SDKDistributorEnum.BKREPO_GENERIC.value, filename="manifest.json"):
                 raise ValueError("Generic manifest is not committed")
             _require_claim(claim)
-            GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+            ensure_gateway_sdk_projection(item)
             _require_claim(claim)
             with sdk_generation_metrics.observe_phase(item.language, "native_publish"):
                 published = publish_native(item.language, artifacts, language_config)
@@ -358,7 +358,7 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:  #
             _persist_native_artifacts(item, published)
             for artifact in published:
                 sdk_generation_metrics.record_artifacts(item.language, artifact.distributor, "success")
-            GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+            ensure_gateway_sdk_projection(item)
 
         if _finish_item(claim, SDKGenerationStatusEnum.SUCCESS.value):
             sdk_generation_metrics.record_result(item.language, SDKGenerationStatusEnum.SUCCESS.value)

@@ -86,7 +86,7 @@ class Migration(migrations.Migration):
                 ('created_time', models.DateTimeField(auto_now_add=True, null=True)),
                 ('updated_time', models.DateTimeField(auto_now=True, null=True)),
                 ('distributor', models.CharField(choices=[('bkrepo_generic', 'Bkrepo generic'), ('pypi', 'Pypi'), ('maven', 'Maven')], default='bkrepo_generic', max_length=32)),
-                ('artifact_type', models.CharField(choices=[('archive', 'Archive'), ('package', 'Package')], default='archive', max_length=32)),
+                ('artifact_type', models.CharField(choices=[('archive', 'Archive'), ('package', 'Package'), ('manifest', 'Manifest'), ('wheel', 'Wheel'), ('sdist', 'Sdist'), ('jar', 'Jar'), ('pom', 'Pom'), ('sources_jar', 'Sources jar'), ('distribution_zip', 'Distribution zip'), ('go_info', 'Go info'), ('go_mod', 'Go mod'), ('go_zip', 'Go zip'), ('npm_tgz', 'Npm tgz')], default='archive', max_length=32)),
                 ('filename', models.CharField(max_length=512)),
                 ('remote_key', models.CharField(blank=True, default='', max_length=1024)),
                 ('coordinate', models.CharField(blank=True, default='', max_length=512)),
@@ -133,7 +133,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='sdkartifact',
-            constraint=models.CheckConstraint(condition=models.Q(('artifact_type__in', ['archive', 'package'])), name='support_sdk_artifact_type_valid'),
+            constraint=models.CheckConstraint(condition=models.Q(('artifact_type__in', ['archive', 'package', 'manifest', 'wheel', 'sdist', 'jar', 'pom', 'sources_jar', 'distribution_zip', 'go_info', 'go_mod', 'go_zip', 'npm_tgz'])), name='support_sdk_artifact_type_valid'),
         ),
         migrations.AddConstraint(
             model_name='sdkartifact',

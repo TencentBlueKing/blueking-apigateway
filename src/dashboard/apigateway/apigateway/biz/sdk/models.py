@@ -20,9 +20,15 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import now as timezone_now
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
+from apigateway.apps.support.constants import (
+    ProgrammingLanguageEnum,
+    SDKArtifactStatusEnum,
+    SDKArtifactTypeEnum,
+    SDKDistributorEnum,
+)
 from apigateway.common.pypi.pip import PipHelper
 from apigateway.utils.pypi import RepositoryConfig
 
@@ -82,6 +88,14 @@ class SDK:
     instance: GatewaySDK
 
     language = ProgrammingLanguageEnum.UNKNOWN
+    preferred_generic_artifact_type = ""
+
+    @property
+    def generation_item(self):
+        try:
+            return self.instance.generation_item
+        except AttributeError, ObjectDoesNotExist:
+            return None
 
     @property
     def name(self):
@@ -93,6 +107,9 @@ class SDK:
 
     @property
     def config(self):
+        item = self.generation_item
+        if item is not None:
+            return item.config_snapshot if isinstance(item.config_snapshot, dict) else {}
         config = self.instance.config
         if not isinstance(config, dict):
             return {}
@@ -103,11 +120,29 @@ class SDK:
 
     @property
     def artifacts(self) -> list[dict[str, Any]]:
+        item = self.generation_item
+        if item is not None:
+            return [
+                {
+                    "distributor": artifact.distributor,
+                    "type": artifact.artifact_type,
+                    "filename": artifact.filename,
+                    "url": artifact.url,
+                    "coordinate": artifact.coordinate,
+                    "size": artifact.size,
+                    "sha256": artifact.sha256,
+                }
+                for artifact in item.artifacts.filter(status=SDKArtifactStatusEnum.SUCCESS.value)
+                .exclude(artifact_type=SDKArtifactTypeEnum.MANIFEST.value)
+                .order_by("distributor", "filename")
+            ]
         artifacts = self.config.get("artifacts", [])
         return artifacts if isinstance(artifacts, list) else []
 
     @property
     def is_legacy(self) -> bool:
+        if self.generation_item is not None:
+            return False
         config = self.instance.config
         return not isinstance(config, dict) or "artifacts" not in config
 
@@ -137,6 +172,15 @@ class SDK:
 
     @property
     def url(self):
+        artifact = self.find_artifact(
+            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+            artifact_type=self.preferred_generic_artifact_type,
+        )
+        if artifact and artifact.get("url"):
+            return artifact["url"]
+        artifact = self.find_artifact(distributor=SDKDistributorEnum.BKREPO_GENERIC.value)
+        if artifact and artifact.get("url"):
+            return artifact["url"]
         return self.instance.url
 
     @property
@@ -162,6 +206,7 @@ class SDK:
 @dataclass
 class PythonSDK(SDK):
     language = ProgrammingLanguageEnum.PYTHON
+    preferred_generic_artifact_type = SDKArtifactTypeEnum.WHEEL.value
 
     @property
     def sdk_name(self) -> str:
@@ -169,7 +214,7 @@ class PythonSDK(SDK):
 
     @property
     def download_url(self) -> str:
-        return self.instance.url
+        return self.url
 
     @property
     def install_command(self) -> str:
@@ -191,6 +236,7 @@ class PythonSDK(SDK):
 @dataclass
 class GoSDK(SDK):
     language = ProgrammingLanguageEnum.GO
+    preferred_generic_artifact_type = SDKArtifactTypeEnum.GO_ZIP.value
 
     @property
     def install_command(self) -> str:
@@ -201,6 +247,7 @@ class GoSDK(SDK):
 @dataclass
 class JavaSDK(SDK):
     language = ProgrammingLanguageEnum.JAVA
+    preferred_generic_artifact_type = SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value
 
     @property
     def install_command(self) -> str:
@@ -213,6 +260,7 @@ class JavaSDK(SDK):
 @dataclass
 class JavaScriptSDK(SDK):
     language = ProgrammingLanguageEnum.JAVASCRIPT
+    preferred_generic_artifact_type = SDKArtifactTypeEnum.NPM_TGZ.value
 
     @property
     def install_command(self) -> str:

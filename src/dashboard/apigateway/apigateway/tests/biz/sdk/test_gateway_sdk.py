@@ -15,87 +15,97 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from types import SimpleNamespace
-
 import pytest
 from ddf import G
 
-from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.constants import SDKArtifactStatusEnum, SDKGenerationItemStatusEnum
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import GatewaySDKHandler
-from apigateway.biz.sdk.artifacts import ArtifactManifest, ManifestFile
+from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
 
 pytestmark = pytest.mark.django_db
 
 
 class TestGatewaySDKHandler:
-    def test_generation_projection_uses_manifest_artifact_types(self, fake_gateway, fake_resource_version):
+    def test_generation_projection_links_item_without_duplicating_artifact_state(
+        self, fake_gateway, fake_resource_version
+    ):
         fake_resource_version.version = "1.2.3"
         fake_resource_version.save(update_fields=["version"])
         task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
-        item = G(SDKGenerationItem, task=task, language="python", input_fingerprint="fingerprint")
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="python",
+            input_fingerprint="fingerprint",
+            config_snapshot={
+                "project_name": "bkapi-openapi-demo",
+                "package_name": "bkapi_openapi_demo",
+                "package_version": "1.2.3rc1",
+            },
+        )
         G(
             SDKArtifact,
             item=item,
-            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
-            artifact_type="package",
+            distributor="bkrepo_generic",
+            artifact_type="wheel",
             filename="demo.whl",
             url="https://repo/demo.whl",
-            status=SDKGenerationStatusEnum.SUCCESS.value,
+            package_version="1.2.3rc1",
+            status=SDKArtifactStatusEnum.SUCCESS.value,
         )
-        manifest = ArtifactManifest(
-            gateway_name=fake_gateway.name,
-            resource_version="1.2.3",
-            language="python",
-            package_version="1.2.3",
-            input_fingerprint="fingerprint",
-            tool_versions={"openapi-generator": "7.23.0"},
-            files=(ManifestFile("wheel", "demo.whl", 5, "0" * 64),),
-        )
-        language_config = SimpleNamespace(
-            project_name="demo",
-            package_name="demo",
-            package_version="1.2.3",
+        G(
+            SDKArtifact,
+            item=item,
+            distributor="bkrepo_generic",
+            artifact_type="manifest",
+            filename="manifest.json",
+            url="https://repo/manifest.json",
+            status=SDKArtifactStatusEnum.SUCCESS.value,
         )
 
-        sdk = GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+        sdk = ensure_gateway_sdk_projection(item)
+        item.refresh_from_db()
 
-        assert sdk.config["artifacts"][0]["type"] == "wheel"
+        assert item.gateway_sdk == sdk
+        assert sdk.config == {}
+        assert sdk.version_number == "1.2.3"
+        assert sdk.name == "bkapi-openapi-demo"
+        assert sdk.url == "https://repo/demo.whl"
 
-    def test_go_generation_projection_uses_module_zip_url(self, fake_gateway, fake_resource_version):
+    def test_projection_links_matching_legacy_sdk_without_updating_or_backfilling(
+        self, fake_gateway, fake_resource_version
+    ):
         fake_resource_version.version = "1.2.3"
         fake_resource_version.save(update_fields=["version"])
         task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
-        item = G(SDKGenerationItem, task=task, language="go", input_fingerprint="fingerprint")
-        files = (
-            ManifestFile("go_info", "v1.2.3.info", 4, "0" * 64),
-            ManifestFile("go_mod", "v1.2.3.mod", 3, "1" * 64),
-            ManifestFile("go_zip", "v1.2.3.zip", 3, "2" * 64),
-        )
-        for file in files:
-            G(
-                SDKArtifact,
-                item=item,
-                distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
-                artifact_type="package",
-                filename=file.filename,
-                url=f"https://repo/{file.filename}",
-                status=SDKGenerationStatusEnum.SUCCESS.value,
-            )
-        manifest = ArtifactManifest(
-            gateway_name=fake_gateway.name,
-            resource_version="1.2.3",
+        item = G(
+            SDKGenerationItem,
+            task=task,
             language="go",
-            package_version="v1.2.3",
-            input_fingerprint="fingerprint",
-            tool_versions={"openapi-generator": "7.23.0"},
-            files=files,
+            status=SDKGenerationItemStatusEnum.PENDING.value,
         )
-        language_config = SimpleNamespace(project_name="demo", package_name="demo", package_version="v1.2.3")
+        legacy = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=fake_resource_version,
+            language="go",
+            version_number="1.2.3",
+            name="legacy-name",
+            url="https://legacy/sdk.zip",
+            _config='{"go":{"legacy":true}}',
+        )
+        original = (legacy.name, legacy.url, legacy._config, legacy.updated_time)
 
-        sdk = GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+        sdk = ensure_gateway_sdk_projection(item)
+        item.refresh_from_db()
+        legacy.refresh_from_db()
 
-        assert sdk.url == "https://repo/v1.2.3.zip"
+        assert sdk == legacy
+        assert item.gateway_sdk == legacy
+        assert item.status == SDKGenerationItemStatusEnum.SUCCESS.value
+        assert not item.artifacts.exists()
+        assert (legacy.name, legacy.url, legacy._config, legacy.updated_time) == original
 
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
         result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)

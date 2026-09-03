@@ -83,6 +83,17 @@ class SDKDistributorEnum(StructuredEnum):
 class SDKArtifactTypeEnum(StructuredEnum):
     ARCHIVE = EnumField("archive")
     PACKAGE = EnumField("package")
+    MANIFEST = EnumField("manifest")
+    WHEEL = EnumField("wheel")
+    SDIST = EnumField("sdist")
+    JAR = EnumField("jar")
+    POM = EnumField("pom")
+    SOURCES_JAR = EnumField("sources_jar")
+    DISTRIBUTION_ZIP = EnumField("distribution_zip")
+    GO_INFO = EnumField("go_info")
+    GO_MOD = EnumField("go_mod")
+    GO_ZIP = EnumField("go_zip")
+    NPM_TGZ = EnumField("npm_tgz")
 
 
 class DocLanguageEnum(StructuredEnum):

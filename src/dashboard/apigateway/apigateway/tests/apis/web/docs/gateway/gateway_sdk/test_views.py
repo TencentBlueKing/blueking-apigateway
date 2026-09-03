@@ -67,6 +67,8 @@ class TestSDKListApi:
         assert result["data"][0]["stage"]
         assert result["data"][0]["resource_version"]
         assert result["data"][0]["sdk"]
+        assert "package_name" in result["data"][0]["sdk"]
+        assert result["data"][0]["sdk"]["artifacts"] == []
 
 
 class TestSDKUsageExampleApi:
@@ -89,7 +91,6 @@ class TestSDKUsageExampleApi:
             ("java", "distribution_zip"),
             ("go", "go_zip"),
             ("javascript", "npm_tgz"),
-            ("rust", "crate"),
         ],
     )
     def test_retrieve(self, request_view, fake_gateway, fake_sdk, language, artifact_type):

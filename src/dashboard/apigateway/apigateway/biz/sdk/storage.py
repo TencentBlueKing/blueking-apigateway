@@ -12,6 +12,7 @@ from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists
 from django.db import transaction
 
 from apigateway.apps.support.constants import (
+    SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
     SDKGenerationStatusEnum,
@@ -73,15 +74,10 @@ def _load_manifest(path: Path) -> ArtifactManifest:
     )
 
 
-def _artifact_type(filename: str) -> str:
-    if filename.endswith((".zip", ".tar.gz", ".tgz", ".crate")):
-        return SDKArtifactTypeEnum.ARCHIVE.value
-    return SDKArtifactTypeEnum.PACKAGE.value
-
-
 def _record_artifact(
     item: SDKGenerationItem,
     *,
+    artifact_type: str,
     filename: str,
     remote_key: str,
     size: int,
@@ -93,13 +89,13 @@ def _record_artifact(
         distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
         filename=filename,
         defaults={
-            "artifact_type": _artifact_type(filename),
+            "artifact_type": artifact_type,
             "remote_key": remote_key,
             "size": size,
             "sha256": sha256,
             "original_version": item.task.resource_version.version,
             "package_version": package_version,
-            "status": SDKGenerationStatusEnum.RUNNING.value,
+            "status": SDKArtifactStatusEnum.RUNNING.value,
         },
     )
     return artifact
@@ -153,6 +149,7 @@ def commit_generic_artifacts(
         key = f"{prefix}/{file.filename}"
         record = _record_artifact(
             item,
+            artifact_type=file.artifact_type,
             filename=file.filename,
             remote_key=key,
             size=file.size,
@@ -160,7 +157,7 @@ def commit_generic_artifacts(
             package_version=manifest.package_version,
         )
         _verify_or_upload(bkrepo, artifact.path, key, file.sha256)
-        record.status = SDKGenerationStatusEnum.SUCCESS.value
+        record.status = SDKArtifactStatusEnum.SUCCESS.value
         record.url = bkrepo.generate_generic_download_url(key)
         record.save(update_fields=["status", "url", "updated_time"])
         records.append(record)
@@ -172,6 +169,7 @@ def commit_generic_artifacts(
         path.write_bytes(manifest_bytes)
         record = _record_artifact(
             item,
+            artifact_type=SDKArtifactTypeEnum.MANIFEST.value,
             filename=path.name,
             remote_key=committed_key,
             size=len(manifest_bytes),
@@ -179,7 +177,7 @@ def commit_generic_artifacts(
             package_version=manifest.package_version,
         )
         _verify_or_upload(bkrepo, path, committed_key, manifest_sha256)
-        record.status = SDKGenerationStatusEnum.SUCCESS.value
+        record.status = SDKArtifactStatusEnum.SUCCESS.value
         record.url = bkrepo.generate_generic_download_url(committed_key)
         record.save(update_fields=["status", "url", "updated_time"])
         records.append(record)
@@ -210,13 +208,13 @@ def restore_generic_artifacts(
         distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
         filename="manifest.json",
         defaults={
-            "artifact_type": SDKArtifactTypeEnum.PACKAGE.value,
+            "artifact_type": SDKArtifactTypeEnum.MANIFEST.value,
             "remote_key": manifest_key(prefix),
             "size": len(manifest_bytes),
             "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
             "original_version": item.task.resource_version.version,
             "package_version": manifest.package_version,
-            "status": SDKGenerationStatusEnum.SUCCESS.value,
+            "status": SDKArtifactStatusEnum.SUCCESS.value,
             "url": bkrepo.generate_generic_download_url(manifest_key(prefix)),
         },
     )
@@ -237,13 +235,13 @@ def restore_generic_artifacts(
             distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
             filename=file.filename,
             defaults={
-                "artifact_type": _artifact_type(file.filename),
+                "artifact_type": file.artifact_type,
                 "remote_key": f"{prefix}/{file.filename}",
                 "size": file.size,
                 "sha256": file.sha256,
                 "original_version": item.task.resource_version.version,
                 "package_version": manifest.package_version,
-                "status": SDKGenerationStatusEnum.SUCCESS.value,
+                "status": SDKArtifactStatusEnum.SUCCESS.value,
                 "url": bkrepo.generate_generic_download_url(f"{prefix}/{file.filename}"),
             },
         )
