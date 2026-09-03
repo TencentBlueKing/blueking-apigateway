@@ -202,11 +202,6 @@ def get_sdk_worker_config() -> SDKWorkerConfig:
     )
 
 
-def get_sdk_generation_config() -> SDKWorkerConfig:
-    """Compatibility entrypoint for worker call sites migrated in later tasks."""
-    return get_sdk_worker_config()
-
-
 def normalize_gateway_name(gateway_name: str) -> str:
     return gateway_name.replace("-", "_")
 

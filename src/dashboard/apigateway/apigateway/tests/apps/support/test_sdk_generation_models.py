@@ -27,8 +27,9 @@ from apigateway.apps.support import constants as support_constants
 from apigateway.apps.support.constants import (
     SDK_GENERATION_LANGUAGE_VALUES,
     ProgrammingLanguageEnum,
+    SDKArtifactStatusEnum,
     SDKDistributorEnum,
-    SDKGenerationStatusEnum,
+    SDKGenerationItemStatusEnum,
 )
 from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.core.models import Gateway
@@ -172,7 +173,7 @@ def test_generation_item_defaults_include_pending_status_and_empty_lease(fake_ga
 
     item = G(SDKGenerationItem, task=task, language="python")
 
-    assert item.status == SDKGenerationStatusEnum.PENDING.value
+    assert item.status == SDKGenerationItemStatusEnum.PENDING.value
     assert item.lease_token == ""
     assert item.lease_expires_at is None
     assert item.attempt_count == 0
@@ -200,7 +201,7 @@ def test_generation_artifact_defaults_to_generic_pending_status(fake_gateway, fa
     artifact = G(SDKArtifact, item=item)
 
     assert artifact.distributor == SDKDistributorEnum.BKREPO_GENERIC.value
-    assert artifact.status == SDKGenerationStatusEnum.PENDING.value
+    assert artifact.status == SDKArtifactStatusEnum.PENDING.value
 
 
 @pytest.mark.django_db(transaction=True)

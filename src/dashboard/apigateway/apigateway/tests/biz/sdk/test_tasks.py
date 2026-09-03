@@ -3,7 +3,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apigateway.apps.support.constants import SDKGenerationStatusEnum
+from apigateway.apps.support.constants import SDKGenerationItemStatusEnum
 from apigateway.biz.sdk.orchestrator import (
     ItemExecutionResult,
     claim_generation_item,
@@ -145,11 +145,11 @@ def test_recover_stale_items_clears_lease_and_requeues(
     task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
     expired = task.items.get(language="python")
     active = task.items.get(language="go")
-    expired.status = SDKGenerationStatusEnum.RUNNING.value
+    expired.status = SDKGenerationItemStatusEnum.RUNNING.value
     expired.lease_token = "expired"
     expired.lease_expires_at = timezone.now() - timedelta(seconds=1)
     expired.save(update_fields=["status", "lease_token", "lease_expires_at"])
-    active.status = SDKGenerationStatusEnum.RUNNING.value
+    active.status = SDKGenerationItemStatusEnum.RUNNING.value
     active.lease_token = "active"
     active.lease_expires_at = timezone.now() + timedelta(minutes=5)
     active.save(update_fields=["status", "lease_token", "lease_expires_at"])
@@ -160,10 +160,10 @@ def test_recover_stale_items_clears_lease_and_requeues(
 
     expired.refresh_from_db()
     active.refresh_from_db()
-    assert expired.status == SDKGenerationStatusEnum.PENDING.value
+    assert expired.status == SDKGenerationItemStatusEnum.PENDING.value
     assert expired.lease_token == ""
     assert expired.lease_expires_at is None
-    assert active.status == SDKGenerationStatusEnum.RUNNING.value
+    assert active.status == SDKGenerationItemStatusEnum.RUNNING.value
     enqueue.assert_called_once_with([expired.id])
 
 
@@ -181,7 +181,7 @@ def test_recover_stale_pending_item_when_initial_enqueue_was_lost(
 
     enqueue.assert_called_once_with([stale.id])
     recent.refresh_from_db()
-    assert recent.status == SDKGenerationStatusEnum.PENDING.value
+    assert recent.status == SDKGenerationItemStatusEnum.PENDING.value
 
 
 def test_recover_dispatches_due_retry_without_waiting_for_stale_cutoff(
@@ -249,15 +249,15 @@ def test_cleanup_only_processes_old_failed_or_expired_items(fake_resource_versio
     recent = task.items.get(language="javascript")
     old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
     task.items.filter(id=failed.id).update(
-        status=SDKGenerationStatusEnum.FAILED.value, input_fingerprint="a" * 64, updated_time=old
+        status=SDKGenerationItemStatusEnum.FAILED.value, input_fingerprint="a" * 64, updated_time=old
     )
     task.items.filter(id=expired.id).update(
-        status=SDKGenerationStatusEnum.RUNNING.value,
+        status=SDKGenerationItemStatusEnum.RUNNING.value,
         input_fingerprint="b" * 64,
         lease_expires_at=timezone.now() - timedelta(seconds=1),
         updated_time=old,
     )
-    task.items.filter(id=recent.id).update(status=SDKGenerationStatusEnum.FAILED.value, input_fingerprint="c" * 64)
+    task.items.filter(id=recent.id).update(status=SDKGenerationItemStatusEnum.FAILED.value, input_fingerprint="c" * 64)
     bkrepo = mocker.Mock()
     mocker.patch("apigateway.biz.sdk.tasks.BKRepoComponent.default", return_value=bkrepo)
     delete = mocker.patch("apigateway.biz.sdk.tasks.delete_incomplete_artifacts", side_effect=[2, 3])
@@ -271,7 +271,7 @@ def test_cleanup_rechecks_item_state_before_deleting(fake_resource_version, sett
     item = task.items.get()
     old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
     task.items.filter(id=item.id).update(
-        status=SDKGenerationStatusEnum.FAILED.value,
+        status=SDKGenerationItemStatusEnum.FAILED.value,
         input_fingerprint="a" * 64,
         updated_time=old,
     )
@@ -279,7 +279,7 @@ def test_cleanup_rechecks_item_state_before_deleting(fake_resource_version, sett
 
     def activate_retry(candidate, bkrepo, **kwargs):
         task.items.filter(id=candidate.id).update(
-            status=SDKGenerationStatusEnum.RUNNING.value,
+            status=SDKGenerationItemStatusEnum.RUNNING.value,
             lease_token="new-worker",
             lease_expires_at=timezone.now() + timedelta(minutes=5),
             updated_time=timezone.now(),
@@ -297,7 +297,7 @@ def test_cleanup_rechecks_fingerprint_before_deleting(fake_resource_version, set
     item = task.items.get()
     old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
     task.items.filter(id=item.id).update(
-        status=SDKGenerationStatusEnum.FAILED.value,
+        status=SDKGenerationItemStatusEnum.FAILED.value,
         input_fingerprint="a" * 64,
         updated_time=old,
     )

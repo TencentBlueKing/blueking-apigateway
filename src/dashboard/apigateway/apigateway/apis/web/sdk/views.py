@@ -32,7 +32,7 @@ from apigateway.apis.web.sdk import serializers
 from apigateway.apps.support.constants import (
     SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
-    SDKGenerationStatusEnum,
+    SDKGenerationItemStatusEnum,
     SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
@@ -103,7 +103,7 @@ def _serialize_legacy_sdk(sdk: GatewaySDK) -> dict[str, Any]:
         "version_number": sdk.version_number,
         "language": sdk.language,
         "name": sdk.name,
-        "status": SDKGenerationStatusEnum.SUCCESS.value,
+        "status": SDKGenerationItemStatusEnum.SUCCESS.value,
         "native_status": SDKNativePublicationStatusEnum.NOT_REQUIRED.value,
         "error": None,
         "native_error": None,
@@ -280,10 +280,10 @@ class SDKGenerationItemRetryApi(APIView):
     def post(self, request, gateway_id, task_id, item_id):
         task = get_object_or_404(SDKGenerationTask.objects.select_for_update(), id=task_id, gateway=request.gateway)
         item = get_object_or_404(SDKGenerationItem.objects.select_for_update(), id=item_id, task=task)
-        if item.status != SDKGenerationStatusEnum.FAILED.value:
+        if item.status != SDKGenerationItemStatusEnum.FAILED.value:
             raise error_codes.INVALID_ARGUMENT.format("Only failed SDK generation items can be retried", replace=True)
 
-        item.status = SDKGenerationStatusEnum.PENDING.value
+        item.status = SDKGenerationItemStatusEnum.PENDING.value
         item.lease_token = ""
         item.lease_expires_at = None
         item.next_attempt_at = None
@@ -310,5 +310,5 @@ class SDKGenerationItemRetryApi(APIView):
         transaction.on_commit(partial(enqueue_generation_items, [item.id]))
         return OKJsonResponse(
             status=status.HTTP_202_ACCEPTED,
-            data={"id": item.id, "status": SDKGenerationStatusEnum.PENDING.value},
+            data={"id": item.id, "status": SDKGenerationItemStatusEnum.PENDING.value},
         )

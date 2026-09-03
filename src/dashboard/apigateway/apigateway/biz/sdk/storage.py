@@ -15,7 +15,7 @@ from apigateway.apps.support.constants import (
     SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
-    SDKGenerationStatusEnum,
+    SDKGenerationItemStatusEnum,
 )
 from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem
 from apigateway.biz.sdk.artifacts import (
@@ -264,16 +264,16 @@ def delete_incomplete_artifacts(
         .get(id=item.id)
     )
     if expected_lease_token is not None and (
-        item.status != SDKGenerationStatusEnum.RUNNING.value or item.lease_token != expected_lease_token
+        item.status != SDKGenerationItemStatusEnum.RUNNING.value or item.lease_token != expected_lease_token
     ):
         return 0
     if expected_fingerprint is not None and item.input_fingerprint != expected_fingerprint:
         return 0
     if stale_before is not None:
         cleanup_eligible = item.updated_time < stale_before and (
-            item.status == SDKGenerationStatusEnum.FAILED.value
+            item.status == SDKGenerationItemStatusEnum.FAILED.value
             or (
-                item.status == SDKGenerationStatusEnum.RUNNING.value
+                item.status == SDKGenerationItemStatusEnum.RUNNING.value
                 and item.lease_expires_at is not None
                 and expired_before is not None
                 and item.lease_expires_at <= expired_before

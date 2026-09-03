@@ -10,9 +10,9 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from apigateway.apps.support.constants import SDKGenerationStatusEnum, SDKNativePublicationStatusEnum
+from apigateway.apps.support.constants import SDKGenerationItemStatusEnum, SDKNativePublicationStatusEnum
 from apigateway.apps.support.models import SDKGenerationItem
-from apigateway.biz.sdk.config import get_sdk_generation_config, get_sdk_generation_policy
+from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.orchestrator import execute_generation_item, execute_native_publication, refresh_task_status
 from apigateway.biz.sdk.storage import delete_incomplete_artifacts
@@ -34,7 +34,7 @@ def enqueue_native_publications(item_ids: list[int]) -> None:
 
 
 def _update_item_metrics() -> None:
-    counts = dict.fromkeys(SDKGenerationStatusEnum.get_values(), 0)
+    counts = dict.fromkeys(SDKGenerationItemStatusEnum.get_values(), 0)
     counts.update(
         {row["status"]: row["count"] for row in SDKGenerationItem.objects.values("status").annotate(count=Count("id"))}
     )
@@ -58,7 +58,7 @@ def generate_sdk_item(self, item_id: int) -> str | None:
         )
     elif (
         result
-        and result.status == SDKGenerationStatusEnum.SUCCESS.value
+        and result.status == SDKGenerationItemStatusEnum.SUCCESS.value
         and SDKGenerationItem.objects.filter(
             id=item_id, native_status=SDKNativePublicationStatusEnum.PENDING.value
         ).exists()
@@ -98,10 +98,10 @@ def recover_stale_sdk_generation_items() -> int:
             SDKGenerationItem.objects.select_for_update().filter(
                 Q(
                     Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True),
-                    status=SDKGenerationStatusEnum.RUNNING.value,
+                    status=SDKGenerationItemStatusEnum.RUNNING.value,
                 )
                 | Q(
-                    status=SDKGenerationStatusEnum.PENDING.value,
+                    status=SDKGenerationItemStatusEnum.PENDING.value,
                 )
                 & (
                     Q(next_attempt_at__lte=now)
@@ -115,7 +115,7 @@ def recover_stale_sdk_generation_items() -> int:
         native_items = list(
             SDKGenerationItem.objects.select_for_update()
             .filter(
-                status=SDKGenerationStatusEnum.SUCCESS.value,
+                status=SDKGenerationItemStatusEnum.SUCCESS.value,
             )
             .filter(
                 Q(
@@ -140,7 +140,7 @@ def recover_stale_sdk_generation_items() -> int:
         if generation_item_ids:
             task_ids = {item.task_id for item in generation_items}
             SDKGenerationItem.objects.filter(id__in=generation_item_ids).update(
-                status=SDKGenerationStatusEnum.PENDING.value,
+                status=SDKGenerationItemStatusEnum.PENDING.value,
                 lease_token="",
                 lease_expires_at=None,
                 next_attempt_at=None,
@@ -164,12 +164,12 @@ def recover_stale_sdk_generation_items() -> int:
 
 @shared_task(name="apigateway.biz.sdk.tasks.cleanup_incomplete_sdk_artifacts", ignore_result=True)
 def cleanup_incomplete_sdk_artifacts() -> int:
-    config = get_sdk_generation_config()
+    config = get_sdk_worker_config()
     cutoff = timezone.now() - timedelta(hours=config.generic_retention_hours)
     now = timezone.now()
     item_ids = SDKGenerationItem.objects.filter(
-        Q(status=SDKGenerationStatusEnum.FAILED.value)
-        | Q(status=SDKGenerationStatusEnum.RUNNING.value, lease_expires_at__lte=now),
+        Q(status=SDKGenerationItemStatusEnum.FAILED.value)
+        | Q(status=SDKGenerationItemStatusEnum.RUNNING.value, lease_expires_at__lte=now),
         input_fingerprint__gt="",
         updated_time__lt=cutoff,
     ).values_list("id", flat=True)

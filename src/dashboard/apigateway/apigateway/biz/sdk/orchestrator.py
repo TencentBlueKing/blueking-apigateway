@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 from django.conf import settings
 from django.db import transaction
-from django.db.models import F, Q
+from django.db.models import F
 from django.utils import timezone
 
 from apigateway.apps.support.constants import (
@@ -24,13 +24,14 @@ from apigateway.apps.support.constants import (
     SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
-    SDKGenerationStatusEnum,
+    SDKGenerationItemStatusEnum,
+    SDKGenerationTaskStatusEnum,
     SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import build_manifest
 from apigateway.biz.sdk.builders import build_artifacts
-from apigateway.biz.sdk.config import get_sdk_generation_config, get_sdk_generation_policy
+from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
 from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerateError, SDKGenerationError
 from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
 from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
@@ -96,7 +97,7 @@ def _has_successful_artifact(item: SDKGenerationItem, distributor: str, *, filen
 
 
 @transaction.atomic
-def create_or_resume_task(
+def create_or_resume_generation(
     resource_version: ResourceVersion,
     languages: list[str],
     operator: str | None,
@@ -112,7 +113,7 @@ def create_or_resume_task(
         resource_version=resource_version,
         defaults={
             "gateway": resource_version.gateway,
-            "status": SDKGenerationStatusEnum.PENDING.value,
+            "status": SDKGenerationTaskStatusEnum.PENDING.value,
             "created_by": operator,
             "updated_by": operator,
         },
@@ -137,7 +138,7 @@ def create_or_resume_task(
                 ),
             },
         )
-        if item.status == SDKGenerationStatusEnum.SUCCESS.value:
+        if item.status == SDKGenerationItemStatusEnum.SUCCESS.value:
             continue
         legacy_sdk_exists = GatewaySDK.objects.filter(
             gateway=resource_version.gateway,
@@ -149,17 +150,17 @@ def create_or_resume_task(
             item.save(update_fields=["native_status", "updated_time"])
             ensure_gateway_sdk_projection(item)
             continue
-        if item.status == SDKGenerationStatusEnum.RUNNING.value:
+        if item.status == SDKGenerationItemStatusEnum.RUNNING.value:
             if item.lease_expires_at is None or item.lease_expires_at > timezone.now():
                 continue
-            item.status = SDKGenerationStatusEnum.PENDING.value
+            item.status = SDKGenerationItemStatusEnum.PENDING.value
             item.lease_token = ""
             item.lease_expires_at = None
             item.save(update_fields=["status", "lease_token", "lease_expires_at", "updated_time"])
-        elif item.status == SDKGenerationStatusEnum.FAILED.value:
+        elif item.status == SDKGenerationItemStatusEnum.FAILED.value:
             if not item.error_retryable:
                 continue
-            item.status = SDKGenerationStatusEnum.PENDING.value
+            item.status = SDKGenerationItemStatusEnum.PENDING.value
             item.attempt_cycle_count = 0
             item.next_attempt_at = None
             item.save(update_fields=["status", "attempt_cycle_count", "next_attempt_at", "updated_time"])
@@ -174,9 +175,6 @@ def create_or_resume_task(
     return task
 
 
-create_or_resume_generation = create_or_resume_task
-
-
 @transaction.atomic
 def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim | None:
     item = SDKGenerationItem.objects.select_for_update().filter(id=item_id).first()
@@ -186,10 +184,10 @@ def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim 
         return None
     now = timezone.now()
     eligible = (
-        item.status == SDKGenerationStatusEnum.PENDING.value
+        item.status == SDKGenerationItemStatusEnum.PENDING.value
         and (item.next_attempt_at is None or item.next_attempt_at <= now)
     ) or (
-        item.status == SDKGenerationStatusEnum.RUNNING.value
+        item.status == SDKGenerationItemStatusEnum.RUNNING.value
         and (item.lease_expires_at is None or item.lease_expires_at <= now)
     )
     if not eligible:
@@ -197,7 +195,7 @@ def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim 
 
     timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
     token = f"{celery_task_id}:{uuid.uuid4().hex}"
-    item.status = SDKGenerationStatusEnum.RUNNING.value
+    item.status = SDKGenerationItemStatusEnum.RUNNING.value
     item.lease_token = token
     item.lease_expires_at = now + timedelta(seconds=max(LEASE_MINIMUM_SECONDS, timeout * 4))
     item.attempt_count = F("attempt_count") + 1
@@ -263,7 +261,7 @@ def _persist_native_artifacts(item: SDKGenerationItem, published) -> None:
 
 def _record_generic_artifacts(item: SDKGenerationItem, count: int) -> None:
     sdk_generation_metrics.record_artifacts(
-        item.language, SDKDistributorEnum.BKREPO_GENERIC.value, SDKGenerationStatusEnum.SUCCESS.value, count
+        item.language, SDKDistributorEnum.BKREPO_GENERIC.value, SDKArtifactStatusEnum.SUCCESS.value, count
     )
 
 
@@ -279,7 +277,7 @@ def finish_generation_item(
         "lease_token": "",
         "lease_expires_at": None,
         "next_attempt_at": next_attempt_at,
-        "finished_at": None if status == SDKGenerationStatusEnum.PENDING.value else timezone.now(),
+        "finished_at": None if status == SDKGenerationItemStatusEnum.PENDING.value else timezone.now(),
         "updated_time": timezone.now(),
     }
     if error:
@@ -313,7 +311,7 @@ def _renew_claim(claim: GenerationClaim) -> bool:
         SDKGenerationItem.objects.filter(
             id=claim.item_id,
             lease_token=claim.lease_token,
-            status=SDKGenerationStatusEnum.RUNNING.value,
+            status=SDKGenerationItemStatusEnum.RUNNING.value,
         ).update(
             lease_expires_at=timezone.now() + timedelta(seconds=max(LEASE_MINIMUM_SECONDS, timeout * 4)),
             updated_time=timezone.now(),
@@ -334,7 +332,7 @@ def _record_lost_claim(item: SDKGenerationItem, claim: GenerationClaim) -> None:
 @transaction.atomic
 def claim_native_publication(item_id: int, celery_task_id: str) -> NativePublicationClaim | None:
     item = SDKGenerationItem.objects.select_for_update().filter(id=item_id).first()
-    if not item or not get_sdk_generation_policy().enabled or item.status != SDKGenerationStatusEnum.SUCCESS.value:
+    if not item or not get_sdk_generation_policy().enabled or item.status != SDKGenerationItemStatusEnum.SUCCESS.value:
         return None
     now = timezone.now()
     eligible = (
@@ -417,7 +415,7 @@ def _require_native_claim(claim: NativePublicationClaim) -> None:
 
 
 def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
-    language_config = get_sdk_generation_config().for_resource_version(
+    language_config = get_sdk_worker_config().for_resource_version(
         item.task.gateway.name, item.task.resource_version, item.language
     )
     with sdk_generation_metrics.observe_phase(item.language, "openapi"):
@@ -445,11 +443,11 @@ def _complete_failed_execution(item: SDKGenerationItem, claim: GenerationClaim, 
     next_attempt_at = None
     policy = get_sdk_generation_policy()
     if classified.retryable and item.attempt_cycle_count <= len(policy.retry_delays):
-        status = SDKGenerationStatusEnum.PENDING.value
+        status = SDKGenerationItemStatusEnum.PENDING.value
         retry_delay = policy.retry_delays[item.attempt_cycle_count - 1]
         next_attempt_at = timezone.now() + timedelta(seconds=retry_delay)
     else:
-        status = SDKGenerationStatusEnum.FAILED.value
+        status = SDKGenerationItemStatusEnum.FAILED.value
     if not finish_generation_item(claim, status, error=classified, next_attempt_at=next_attempt_at):
         _record_lost_claim(item, claim)
         return None
@@ -526,7 +524,7 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> ItemExecutionR
             _require_claim(claim)
             ensure_gateway_sdk_projection(item)
 
-        status = SDKGenerationStatusEnum.SUCCESS.value
+        status = SDKGenerationItemStatusEnum.SUCCESS.value
         retry_delay = None
         if finish_generation_item(claim, status):
             sdk_generation_metrics.record_result(item.language, status, "none")
@@ -579,7 +577,7 @@ def execute_native_publication(item_id: int, celery_task_id: str) -> ItemExecuti
         return None
     item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
     try:
-        worker_config = get_sdk_generation_config()
+        worker_config = get_sdk_worker_config()
         language_config = worker_config.for_resource_version(
             item.task.gateway.name, item.task.resource_version, item.language
         )
@@ -609,60 +607,22 @@ def execute_native_publication(item_id: int, celery_task_id: str) -> ItemExecuti
 
 
 @transaction.atomic
-def retry_generation_task(
-    task: SDKGenerationTask,
-    enqueue: Callable[[list[int]], None] | None = None,
-) -> SDKGenerationTask:
-    now = timezone.now()
-    item_ids = list(
-        task.items.filter(
-            Q(
-                status__in=[
-                    SDKGenerationStatusEnum.PENDING.value,
-                    SDKGenerationStatusEnum.FAILED.value,
-                ]
-            )
-            | Q(status=SDKGenerationStatusEnum.RUNNING.value)
-            & (Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True))
-        ).values_list("id", flat=True)
-    )
-    if item_ids:
-        task.items.filter(id__in=item_ids).update(
-            status=SDKGenerationStatusEnum.PENDING.value,
-            lease_token="",
-            lease_expires_at=None,
-            next_attempt_at=None,
-            attempt_cycle_count=0,
-            finished_at=None,
-            error_code="",
-            error_message="",
-            error_retryable=False,
-            updated_time=now,
-        )
-        refresh_task_status(task.id)
-        task.refresh_from_db()
-    if enqueue and item_ids:
-        transaction.on_commit(partial(enqueue, item_ids.copy()))
-    return task
-
-
-@transaction.atomic
 def refresh_task_status(task_id: int) -> str:
     SDKGenerationTask.objects.select_for_update().get(id=task_id)
     statuses = list(SDKGenerationItem.objects.filter(task_id=task_id).values_list("status", flat=True))
     status_set = set(statuses)
-    if not statuses or status_set == {SDKGenerationStatusEnum.PENDING.value}:
-        status = SDKGenerationStatusEnum.PENDING.value
-    elif SDKGenerationStatusEnum.RUNNING.value in status_set or (
-        SDKGenerationStatusEnum.PENDING.value in status_set and len(status_set) > 1
+    if not statuses or status_set == {SDKGenerationItemStatusEnum.PENDING.value}:
+        status = SDKGenerationTaskStatusEnum.PENDING.value
+    elif SDKGenerationItemStatusEnum.RUNNING.value in status_set or (
+        SDKGenerationItemStatusEnum.PENDING.value in status_set and len(status_set) > 1
     ):
-        status = SDKGenerationStatusEnum.RUNNING.value
-    elif status_set == {SDKGenerationStatusEnum.SUCCESS.value}:
-        status = SDKGenerationStatusEnum.SUCCESS.value
-    elif status_set == {SDKGenerationStatusEnum.FAILED.value}:
-        status = SDKGenerationStatusEnum.FAILED.value
+        status = SDKGenerationTaskStatusEnum.RUNNING.value
+    elif status_set == {SDKGenerationItemStatusEnum.SUCCESS.value}:
+        status = SDKGenerationTaskStatusEnum.SUCCESS.value
+    elif status_set == {SDKGenerationItemStatusEnum.FAILED.value}:
+        status = SDKGenerationTaskStatusEnum.FAILED.value
     else:
-        status = SDKGenerationStatusEnum.PARTIAL.value
+        status = SDKGenerationTaskStatusEnum.PARTIAL.value
     SDKGenerationTask.objects.filter(id=task_id).update(status=status, updated_time=timezone.now())
     return status
 

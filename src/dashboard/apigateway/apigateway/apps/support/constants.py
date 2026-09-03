@@ -70,10 +70,6 @@ class SDKNativePublicationStatusEnum(StructuredEnum):
     FAILED = EnumField("failed")
 
 
-# Compatibility alias while orchestration call sites migrate to owner-specific states.
-SDKGenerationStatusEnum = SDKGenerationTaskStatusEnum
-
-
 class SDKDistributorEnum(StructuredEnum):
     BKREPO_GENERIC = EnumField("bkrepo_generic")
     PYPI = EnumField("pypi")

@@ -33,10 +33,11 @@ class SDKGenerationError(GenerateError):
         super().__init__(message)
 
 
-SDKGenerateError = SDKGenerationError
+class SDKGenerateError(SDKGenerationError):
+    """Backward-compatible exception name used by existing SDK builders and publishers."""
 
 
-class SDKArtifactConflict(SDKGenerationError):
+class SDKArtifactConflict(SDKGenerateError):
     def __init__(self, message: str):
         super().__init__("artifact_conflict", message)
 

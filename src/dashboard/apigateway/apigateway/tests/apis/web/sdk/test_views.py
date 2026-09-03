@@ -24,7 +24,8 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.support.constants import (
     SDKArtifactStatusEnum,
-    SDKGenerationStatusEnum,
+    SDKGenerationItemStatusEnum,
+    SDKGenerationTaskStatusEnum,
     SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
@@ -60,7 +61,7 @@ class TestGatewaySDKListCreateApi:
             SDKGenerationItem,
             task=failed_task,
             language="python",
-            status=SDKGenerationStatusEnum.FAILED.value,
+            status=SDKGenerationItemStatusEnum.FAILED.value,
             error_code="build_failed",
             error_message="wheel build failed",
         )
@@ -81,7 +82,7 @@ class TestGatewaySDKListCreateApi:
             SDKGenerationItem,
             task=success_task,
             language="go",
-            status=SDKGenerationStatusEnum.SUCCESS.value,
+            status=SDKGenerationItemStatusEnum.SUCCESS.value,
             gateway_sdk=success_sdk,
         )
         success_artifact = G(
@@ -98,7 +99,7 @@ class TestGatewaySDKListCreateApi:
             SDKGenerationItem,
             task=native_task,
             language="java",
-            status=SDKGenerationStatusEnum.SUCCESS.value,
+            status=SDKGenerationItemStatusEnum.SUCCESS.value,
             native_status=SDKNativePublicationStatusEnum.FAILED.value,
             native_error_code="registry_unavailable",
             native_error_message="publication failed",
@@ -353,7 +354,7 @@ class TestSDKGenerationTaskApi:
             SDKGenerationItem,
             task=task,
             language="python",
-            status=SDKGenerationStatusEnum.FAILED.value,
+            status=SDKGenerationItemStatusEnum.FAILED.value,
             lease_token="expired-claim",
             lease_expires_at=dummy_time.time - timedelta(minutes=1),
             attempt_count=7,
@@ -381,7 +382,7 @@ class TestSDKGenerationTaskApi:
         assert retry.status_code == 202
         item.refresh_from_db()
         task.refresh_from_db()
-        assert item.status == SDKGenerationStatusEnum.PENDING.value
+        assert item.status == SDKGenerationItemStatusEnum.PENDING.value
         assert item.attempt_count == 7
         assert item.attempt_cycle_count == 0
         assert item.lease_token == ""
@@ -394,11 +395,11 @@ class TestSDKGenerationTaskApi:
         assert item.native_status == SDKNativePublicationStatusEnum.FAILED.value
         assert item.native_error_code == "native_failed"
         assert item.native_error_message == "keep this error"
-        assert task.status == SDKGenerationStatusEnum.PENDING.value
+        assert task.status == SDKGenerationTaskStatusEnum.PENDING.value
         enqueue.assert_called_once_with([item.id])
 
     @pytest.mark.parametrize(
-        "item_status", [SDKGenerationStatusEnum.RUNNING.value, SDKGenerationStatusEnum.SUCCESS.value]
+        "item_status", [SDKGenerationItemStatusEnum.RUNNING.value, SDKGenerationItemStatusEnum.SUCCESS.value]
     )
     def test_retry_rejects_non_failed_generation_item(self, item_status, request_view, fake_gateway, fake_admin_user):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
@@ -420,7 +421,7 @@ class TestSDKGenerationTaskApi:
         other_gateway = G(type(fake_gateway), name="other-gateway")
         resource_version = G(ResourceVersion, gateway=other_gateway, version="1.0.1")
         task = G(SDKGenerationTask, gateway=other_gateway, resource_version=resource_version)
-        item = G(SDKGenerationItem, task=task, language="python", status=SDKGenerationStatusEnum.FAILED.value)
+        item = G(SDKGenerationItem, task=task, language="python", status=SDKGenerationItemStatusEnum.FAILED.value)
 
         response = request_view(
             method="POST",

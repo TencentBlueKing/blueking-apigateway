@@ -8,7 +8,11 @@ from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists
 from ddf import G
 from django.utils import timezone
 
-from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.constants import (
+    SDKDistributorEnum,
+    SDKGenerationItemStatusEnum,
+    SDKGenerationTaskStatusEnum,
+)
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.artifacts import create_built_artifact
 from apigateway.biz.sdk.exceptions import SDKGenerationError
@@ -24,7 +28,6 @@ from apigateway.biz.sdk.orchestrator import (
     finish_generation_item,
     finish_native_publication,
     refresh_task_status,
-    retry_generation_task,
     serialize_generation_task,
 )
 
@@ -99,7 +102,7 @@ def test_create_assigns_native_status_only_for_enabled_python_and_java_repositor
 def test_create_reuses_task_and_keeps_active_item_when_adding_language(fake_resource_version):
     first_task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     first_item = first_task.items.get()
-    first_item.status = SDKGenerationStatusEnum.RUNNING.value
+    first_item.status = SDKGenerationItemStatusEnum.RUNNING.value
     first_item.lease_token = "active"
     first_item.lease_expires_at = timezone.now() + timedelta(minutes=5)
     first_item.config_snapshot = {"request": "first"}
@@ -110,7 +113,7 @@ def test_create_reuses_task_and_keeps_active_item_when_adding_language(fake_reso
     first_item.refresh_from_db()
     assert second_task.id == first_task.id
     assert set(second_task.items.values_list("language", flat=True)) == {"python", "go"}
-    assert first_item.status == SDKGenerationStatusEnum.RUNNING.value
+    assert first_item.status == SDKGenerationItemStatusEnum.RUNNING.value
     assert first_item.lease_token == "active"
     assert first_item.config_snapshot == {"request": "first"}
 
@@ -207,24 +210,24 @@ def test_claim_marks_parent_task_running(fake_resource_version):
     assert claim_generation_item(item.id, "celery-1") is not None
 
     task.refresh_from_db()
-    assert task.status == SDKGenerationStatusEnum.RUNNING.value
+    assert task.status == SDKGenerationTaskStatusEnum.RUNNING.value
 
 
 def test_refresh_reports_running_when_successful_task_adds_pending_language(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
-    task.items.filter(language="python").update(status=SDKGenerationStatusEnum.SUCCESS.value)
+    task.items.filter(language="python").update(status=SDKGenerationItemStatusEnum.SUCCESS.value)
 
-    assert refresh_task_status(task.id) == SDKGenerationStatusEnum.RUNNING.value
+    assert refresh_task_status(task.id) == SDKGenerationTaskStatusEnum.RUNNING.value
 
 
 def test_refresh_and_serialization_report_partial_task(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python", "go"], "admin")
-    task.items.filter(language="python").update(status=SDKGenerationStatusEnum.SUCCESS.value)
+    task.items.filter(language="python").update(status=SDKGenerationItemStatusEnum.SUCCESS.value)
     task.items.filter(language="go").update(
-        status=SDKGenerationStatusEnum.FAILED.value, error_code="build_failed", error_message="failed"
+        status=SDKGenerationItemStatusEnum.FAILED.value, error_code="build_failed", error_message="failed"
     )
 
-    assert refresh_task_status(task.id) == SDKGenerationStatusEnum.PARTIAL.value
+    assert refresh_task_status(task.id) == SDKGenerationTaskStatusEnum.PARTIAL.value
     task.refresh_from_db()
     payload = serialize_generation_task(task)
     assert payload["status"] == "partial"
@@ -310,14 +313,14 @@ def test_execute_commits_generic_before_success_and_projects_sdk(fake_gateway, f
 
     result = execute_generation_item(item.id, "celery-1")
     assert result is not None
-    assert result.status == SDKGenerationStatusEnum.SUCCESS.value
+    assert result.status == SDKGenerationItemStatusEnum.SUCCESS.value
     assert result.retry_delay_seconds is None
 
     item.refresh_from_db()
     assert item.artifacts.filter(
         distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
         filename="manifest.json",
-        status=SDKGenerationStatusEnum.SUCCESS.value,
+        status=SDKGenerationItemStatusEnum.SUCCESS.value,
     ).exists()
     sdk = GatewaySDK.objects.get(gateway=fake_gateway, language="python", version_number=fake_resource_version.version)
     assert sdk.config == {}
@@ -525,7 +528,7 @@ def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_ver
 
     first = execute_generation_item(item.id, "celery-1")
     assert first is not None
-    assert first.status == SDKGenerationStatusEnum.FAILED.value
+    assert first.status == SDKGenerationItemStatusEnum.FAILED.value
 
     def build_changed(_language, _source, output, _config):
         output.mkdir(parents=True, exist_ok=True)
@@ -538,7 +541,7 @@ def test_failed_pre_manifest_upload_can_retry_changed_artifact(fake_resource_ver
     task.items.filter(id=item.id).update(status="pending", attempt_cycle_count=0)
     second = execute_generation_item(item.id, "celery-2")
     assert second is not None
-    assert second.status == SDKGenerationStatusEnum.SUCCESS.value
+    assert second.status == SDKGenerationItemStatusEnum.SUCCESS.value
     artifact = item.artifacts.get(filename="demo.whl")
     assert bkrepo.files[artifact.remote_key] == b"changed-wheel"
 
@@ -558,37 +561,9 @@ def test_execute_stops_after_lease_is_stolen(fake_resource_version, mocker, capl
     with caplog.at_level(logging.WARNING):
         result = execute_generation_item(item.id, "celery-1")
         assert result is not None
-        assert result.status == SDKGenerationStatusEnum.RUNNING.value
+        assert result.status == SDKGenerationItemStatusEnum.RUNNING.value
 
     build.assert_not_called()
     publish.assert_not_called()
     record_result.assert_called_once_with("python", "failed", "lease_lost")
     assert "lease" in caplog.text.lower()
-
-
-def test_retry_enqueues_only_failed_partial_and_expired(
-    fake_resource_version, mocker, django_capture_on_commit_callbacks
-):
-    task = create_or_resume_generation(fake_resource_version, ["python", "go", "javascript"], "admin")
-    python = task.items.get(language="python")
-    go = task.items.get(language="go")
-    javascript = task.items.get(language="javascript")
-    python.status = SDKGenerationStatusEnum.FAILED.value
-    python.save(update_fields=["status"])
-    go.status = SDKGenerationStatusEnum.SUCCESS.value
-    go.save(update_fields=["status"])
-    javascript.status = SDKGenerationStatusEnum.RUNNING.value
-    javascript.lease_expires_at = timezone.now() - timedelta(seconds=1)
-    javascript.save(update_fields=["status", "lease_expires_at"])
-    refresh_task_status(task.id)
-    enqueue = mocker.Mock()
-
-    with django_capture_on_commit_callbacks(execute=True):
-        retry_generation_task(task, enqueue)
-
-    enqueue.assert_called_once_with([python.id, javascript.id])
-    assert set(task.items.filter(id__in=[python.id, javascript.id]).values_list("status", flat=True)) == {
-        SDKGenerationStatusEnum.PENDING.value
-    }
-    task.refresh_from_db()
-    assert task.status == SDKGenerationStatusEnum.RUNNING.value

@@ -5,7 +5,7 @@ import pytest
 from blue_krill.storages.blobstore.exceptions import ObjectAlreadyExists
 from ddf import G
 
-from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationItemStatusEnum
 from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import build_manifest, create_built_artifact
 from apigateway.biz.sdk.exceptions import SDKArtifactConflict
@@ -108,7 +108,7 @@ def test_commit_uploads_artifacts_before_manifest(tmp_path, generation_item):
     uploaded = [operation[1] for operation in bkrepo.operations if operation[0] == "upload"]
     assert uploaded == [f"{prefix}/demo.whl", manifest_key(prefix)]
     assert all(operation[2] is False for operation in bkrepo.operations if operation[0] == "upload")
-    assert {record.status for record in records} == {SDKGenerationStatusEnum.SUCCESS.value}
+    assert {record.status for record in records} == {SDKGenerationItemStatusEnum.SUCCESS.value}
     assert {record.artifact_type for record in records} == {"wheel", "manifest"}
     assert generation_item.artifacts.filter(filename="manifest.json").exists()
     assert all(record.url.startswith("https://repo/sdks/") for record in records)
@@ -236,7 +236,7 @@ def test_cleanup_never_deletes_committed_manifest(tmp_path, generation_item):
 
 
 def test_cleanup_with_lease_guard_does_not_delete_new_worker_artifacts(tmp_path, generation_item):
-    generation_item.status = SDKGenerationStatusEnum.RUNNING.value
+    generation_item.status = SDKGenerationItemStatusEnum.RUNNING.value
     generation_item.lease_token = "new-worker"
     generation_item.save(update_fields=["status", "lease_token"])
     bkrepo = FakeBKRepo()
