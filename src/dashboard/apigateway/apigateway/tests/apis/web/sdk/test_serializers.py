@@ -16,16 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-
 import pytest
-from django_dynamic_fixture import G
 
 from apigateway.apis.web.sdk.serializers import GatewaySDKGenerateInputSLZ, GatewaySDKListOutputSLZ
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import SDKFactory
-from apigateway.common.factories import SchemaFactory
-from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
 
 
@@ -34,7 +27,8 @@ class TestGatewaySDKGenerateInputSLZ:
         "languages, is_valid",
         [
             (["python"], True),
-            (["python", "java", "go", "javascript", "rust"], True),
+            (["python", "java", "go", "javascript"], True),
+            (["rust"], False),
             ([], False),
             (["unknown"], False),
         ],
@@ -73,41 +67,27 @@ class TestSDKListOutputSLZ:
         slz = GatewaySDKListOutputSLZ()
         assert slz.fields["created_by"].help_text == "SDK 创建者"
 
-    def test_to_representation(self, fake_gateway):
-        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
-        sdk_1 = G(
-            GatewaySDK,
-            gateway=fake_gateway,
-            resource_version=resource_version,
-            language="python",
-            name="bkapigw-test",
-            version_number="12345",
-            _config=json.dumps({"python": {"is_uploaded_to_pypi": True}}),
-            schema=SchemaFactory().get_api_sdk_schema(),
-            created_time=dummy_time.time,
-            updated_time=dummy_time.time,
-            created_by="test",
-            url="http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-        )
-        sdks = [SDKFactory.create(model=sdk_1)]
-        slz = GatewaySDKListOutputSLZ(
-            instance=sdks,
-            many=True,
-        )
-        print(slz.data)
-        assert slz.data == [
-            {
-                "id": sdk_1.id,
-                "language": "python",
-                "name": "bkapigw-test",
-                "version_number": "12345",
-                "created_time": dummy_time.str,
-                "created_by": "test",
-                "updated_time": dummy_time.str,
-                "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-                "resource_version": {
-                    "id": resource_version.id,
-                    "version": resource_version.version,
-                },
-            },
-        ]
+    def test_to_representation(self):
+        row = {
+            "id": None,
+            "generation_task_id": 17,
+            "generation_item_id": 38,
+            "resource_version": {"id": 12, "version": "1.2.3"},
+            "version_number": "1.2.3",
+            "language": "python",
+            "name": "bkapi-openapi-demo",
+            "status": "failed",
+            "native_status": "not_required",
+            "error": {"code": "build_failed", "message": "wheel build failed"},
+            "native_error": None,
+            "download_url": None,
+            "created_by": "test",
+            "created_time": dummy_time.time,
+            "updated_time": dummy_time.time,
+        }
+
+        assert GatewaySDKListOutputSLZ(instance=row).data == {
+            **row,
+            "created_time": dummy_time.str,
+            "updated_time": dummy_time.str,
+        }

@@ -20,9 +20,9 @@ from django.urls import path
 
 from apigateway.apis.web.sdk.views import (
     GatewaySDKListCreateApi,
+    SDKGenerationItemRetryApi,
     SDKGenerationTaskDetailApi,
     SDKGenerationTaskListApi,
-    SDKGenerationTaskRetryApi,
 )
 
 urlpatterns = [
@@ -31,8 +31,8 @@ urlpatterns = [
     path("tasks/", SDKGenerationTaskListApi.as_view(), name="gateway.sdk.generation_task_list"),
     path("tasks/<int:task_id>/", SDKGenerationTaskDetailApi.as_view(), name="gateway.sdk.generation_task_detail"),
     path(
-        "tasks/<int:task_id>/retry/",
-        SDKGenerationTaskRetryApi.as_view(),
-        name="gateway.sdk.generation_task_retry",
+        "tasks/<int:task_id>/items/<int:item_id>/retry/",
+        SDKGenerationItemRetryApi.as_view(),
+        name="gateway.sdk.generation_item_retry",
     ),
 ]

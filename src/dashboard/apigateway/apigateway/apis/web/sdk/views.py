@@ -16,10 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
-from typing import cast
+from functools import partial
+from typing import Any, cast
 
-from django.db.models import Prefetch, Q
+from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -28,20 +29,103 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 
 from apigateway.apis.web.sdk import serializers
-from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem, SDKGenerationTask
-from apigateway.biz.sdk import SDKFactory
-from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKRepoConfigError
+from apigateway.apps.support.constants import (
+    SDKArtifactStatusEnum,
+    SDKArtifactTypeEnum,
+    SDKGenerationStatusEnum,
+    SDKNativePublicationStatusEnum,
+)
+from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
+from apigateway.biz.sdk.config import get_sdk_generation_policy
 from apigateway.biz.sdk.orchestrator import (
     create_or_resume_generation,
-    retry_generation_task,
+    refresh_task_status,
     serialize_generation_task,
 )
 from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
-logger = logging.getLogger(__name__)
+PREFERRED_ARTIFACT_TYPES = {
+    "python": SDKArtifactTypeEnum.WHEEL.value,
+    "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
+    "go": SDKArtifactTypeEnum.GO_ZIP.value,
+    "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
+}
+
+
+def _serialize_error(code: str, message: str) -> dict[str, str] | None:
+    return {"code": code, "message": message} if code or message else None
+
+
+def _serialize_generation_item(item: SDKGenerationItem) -> dict[str, Any]:
+    resource_version = item.task.resource_version
+    gateway_sdk = item.gateway_sdk if item.gateway_sdk_id else None
+    artifacts = item.successful_artifacts
+    preferred = next(
+        (artifact for artifact in artifacts if artifact.artifact_type == PREFERRED_ARTIFACT_TYPES[item.language]),
+        artifacts[0] if artifacts else None,
+    )
+    return {
+        "id": gateway_sdk.id if gateway_sdk else None,
+        "generation_task_id": item.task_id,
+        "generation_item_id": item.id,
+        "resource_version": {"id": resource_version.id, "version": resource_version.version},
+        "version_number": (
+            gateway_sdk.version_number
+            if gateway_sdk
+            else item.config_snapshot.get("package_version", resource_version.version)
+        ),
+        "language": item.language,
+        "name": (
+            gateway_sdk.name
+            if gateway_sdk
+            else item.config_snapshot.get("project_name", f"bkapi-openapi-{item.task.gateway.name}")
+        ),
+        "status": item.status,
+        "native_status": item.native_status,
+        "error": _serialize_error(item.error_code, item.error_message),
+        "native_error": _serialize_error(item.native_error_code, item.native_error_message),
+        "download_url": preferred.url if preferred else (gateway_sdk.url if gateway_sdk else None),
+        "created_by": item.created_by,
+        "created_time": item.created_time,
+        "updated_time": item.updated_time,
+    }
+
+
+def _serialize_legacy_sdk(sdk: GatewaySDK) -> dict[str, Any]:
+    return {
+        "id": sdk.id,
+        "generation_task_id": None,
+        "generation_item_id": None,
+        "resource_version": {"id": sdk.resource_version_id, "version": sdk.resource_version.version},
+        "version_number": sdk.version_number,
+        "language": sdk.language,
+        "name": sdk.name,
+        "status": SDKGenerationStatusEnum.SUCCESS.value,
+        "native_status": SDKNativePublicationStatusEnum.NOT_REQUIRED.value,
+        "error": None,
+        "native_error": None,
+        "download_url": sdk.url,
+        "created_by": sdk.created_by,
+        "created_time": sdk.created_time,
+        "updated_time": sdk.updated_time,
+    }
+
+
+def _matches_text_filters(row: dict[str, Any], filters: dict[str, Any]) -> bool:
+    version_number = filters.get("version_number")
+    if version_number and version_number not in row["version_number"]:
+        return False
+    keyword = filters.get("keyword")
+    if not keyword:
+        return True
+    keyword = keyword.lower()
+    return any(
+        keyword in value.lower()
+        for value in (row["language"], row["name"], row["version_number"], row["resource_version"]["version"])
+    )
 
 
 @method_decorator(
@@ -70,56 +154,61 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
         slz = serializers.GatewaySDKQueryInputSLZ(data=request.query_params, context={"request": request})
         slz.is_valid(raise_exception=True)
 
-        queryset = self._filter_sdk(
-            gateway=self.request.gateway,
-            language=slz.validated_data.get("language"),
-            version_number=slz.validated_data.get("version_number"),
-            resource_version_id=slz.validated_data.get("resource_version_id"),
-            order_by="-id",
-            fuzzy=True,
-            keyword=slz.validated_data.get("keyword"),
+        filters = cast("dict[str, Any]", slz.validated_data)
+        items = list(
+            self._filter_generation_items(self.request.gateway, filters)
+            .select_related("task", "task__gateway", "task__resource_version", "gateway_sdk")
+            .prefetch_related(
+                Prefetch(
+                    "artifacts",
+                    queryset=SDKArtifact.objects.filter(status=SDKArtifactStatusEnum.SUCCESS.value).exclude(
+                        artifact_type=SDKArtifactTypeEnum.MANIFEST.value
+                    ),
+                    to_attr="successful_artifacts",
+                )
+            )
         )
+        authoritative_keys = {(item.task.resource_version_id, item.language) for item in items}
+        legacy_sdks = self._filter_legacy_sdks(self.request.gateway, filters).select_related("resource_version")
 
-        page = self.paginate_queryset(queryset)
+        rows = []
+        for item in items:
+            row = _serialize_generation_item(item)
+            if _matches_text_filters(row, filters):
+                rows.append(row)
+        seen_legacy_keys: set[tuple[int | None, str]] = set()
+        for sdk in legacy_sdks.order_by("-id"):
+            key = (sdk.resource_version_id, sdk.language)
+            if key in authoritative_keys or key in seen_legacy_keys:
+                continue
+            row = _serialize_legacy_sdk(sdk)
+            if _matches_text_filters(row, filters):
+                rows.append(row)
+            seen_legacy_keys.add(key)
+        rows.sort(key=lambda row: (row["created_time"], row["generation_item_id"] or row["id"] or 0), reverse=True)
 
-        sdks = [SDKFactory.create(model=i) for i in page]
-        slz = self.get_serializer(sdks, many=True)
+        page = self.paginate_queryset(rows)
+        slz = self.get_serializer(page, many=True)
         return self.get_paginated_response(slz.data)
 
-    def _filter_sdk(
-        self,
-        gateway,
-        language=None,
-        order_by=None,
-        version_number="",
-        resource_version_id=None,
-        fuzzy=False,
-        keyword=None,
-    ):
-        queryset = GatewaySDK.objects.filter(gateway=gateway)
-
-        if keyword:
-            queryset = queryset.filter(
-                Q(language__icontains=keyword)
-                | Q(version_number__contains=keyword)
-                | Q(resource_version__version__contains=keyword)
-            )
-
+    def _filter_generation_items(self, gateway, filters: dict[str, Any]):
+        queryset = SDKGenerationItem.objects.filter(task__gateway=gateway)
+        language = filters.get("language")
+        resource_version_id = filters.get("resource_version_id")
         if language:
             queryset = queryset.filter(language=language)
+        if resource_version_id is not None:
+            queryset = queryset.filter(task__resource_version_id=resource_version_id)
+        return queryset
 
-        if version_number:
-            if fuzzy:
-                queryset = queryset.filter(version_number__contains=version_number)
-            else:
-                queryset = queryset.filter(version_number=version_number)
-
+    def _filter_legacy_sdks(self, gateway, filters: dict[str, Any]):
+        queryset = GatewaySDK.objects.filter(gateway=gateway)
+        language = filters.get("language")
+        resource_version_id = filters.get("resource_version_id")
+        if language:
+            queryset = queryset.filter(language=language)
         if resource_version_id is not None:
             queryset = queryset.filter(resource_version_id=resource_version_id)
-
-        if order_by:
-            queryset = queryset.order_by(order_by)
-
         return queryset
 
     def create(self, request, gateway_id):
@@ -133,6 +222,12 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
             },
         )
         slz.is_valid(raise_exception=True)
+        if not get_sdk_generation_policy().enabled:
+            return FailJsonResponse(
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                code="SERVICE_UNAVAILABLE",
+                message="SDK generation is unavailable",
+            )
 
         data = cast("dict", slz.validated_data)
         resource_version = get_object_or_404(ResourceVersion, gateway=request.gateway, id=data["resource_version_id"])
@@ -143,11 +238,6 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
                 getattr(request.user, "username", None),
                 enqueue_generation_items,
             )
-        except LegacySDKVersionConflict as error:
-            raise error_codes.FAILED_PRECONDITION.format(str(error), replace=True)
-        except SDKRepoConfigError as error:
-            logger.exception("SDK generation configuration is invalid")
-            raise error_codes.INTERNAL.format("SDK generation is unavailable", replace=True) from error
         except ValueError as error:
             raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
 
@@ -163,7 +253,12 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
 
 def _generation_task_queryset():
     return SDKGenerationTask.objects.select_related("resource_version").prefetch_related(
-        Prefetch("items", queryset=SDKGenerationItem.objects.order_by("id").prefetch_related("artifacts"))
+        Prefetch(
+            "items",
+            queryset=SDKGenerationItem.objects.select_related("gateway_sdk")
+            .order_by("id")
+            .prefetch_related("artifacts"),
+        )
     )
 
 
@@ -180,9 +275,40 @@ class SDKGenerationTaskDetailApi(APIView):
         return OKJsonResponse(data=serialize_generation_task(task))
 
 
-class SDKGenerationTaskRetryApi(APIView):
-    def post(self, request, gateway_id, task_id):
-        task = get_object_or_404(_generation_task_queryset(), id=task_id, gateway=request.gateway)
-        retry_generation_task(task, enqueue_generation_items)
-        task.refresh_from_db()
-        return OKJsonResponse(status=status.HTTP_202_ACCEPTED, data=serialize_generation_task(task))
+class SDKGenerationItemRetryApi(APIView):
+    @transaction.atomic
+    def post(self, request, gateway_id, task_id, item_id):
+        task = get_object_or_404(SDKGenerationTask.objects.select_for_update(), id=task_id, gateway=request.gateway)
+        item = get_object_or_404(SDKGenerationItem.objects.select_for_update(), id=item_id, task=task)
+        if item.status != SDKGenerationStatusEnum.FAILED.value:
+            raise error_codes.INVALID_ARGUMENT.format("Only failed SDK generation items can be retried", replace=True)
+
+        item.status = SDKGenerationStatusEnum.PENDING.value
+        item.lease_token = ""
+        item.lease_expires_at = None
+        item.next_attempt_at = None
+        item.attempt_cycle_count = 0
+        item.finished_at = None
+        item.error_code = ""
+        item.error_message = ""
+        item.error_retryable = False
+        item.save(
+            update_fields=[
+                "status",
+                "lease_token",
+                "lease_expires_at",
+                "next_attempt_at",
+                "attempt_cycle_count",
+                "finished_at",
+                "error_code",
+                "error_message",
+                "error_retryable",
+                "updated_time",
+            ]
+        )
+        refresh_task_status(task.id)
+        transaction.on_commit(partial(enqueue_generation_items, [item.id]))
+        return OKJsonResponse(
+            status=status.HTTP_202_ACCEPTED,
+            data={"id": item.id, "status": SDKGenerationStatusEnum.PENDING.value},
+        )

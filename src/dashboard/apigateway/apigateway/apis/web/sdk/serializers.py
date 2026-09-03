@@ -74,8 +74,11 @@ class SDKGenerationItemOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     language = serializers.CharField()
     status = serializers.CharField()
+    native_status = serializers.CharField()
     attempt_count = serializers.IntegerField()
     error = serializers.DictField(allow_null=True)
+    native_error = serializers.DictField(allow_null=True)
+    download_url = serializers.CharField(allow_blank=True)
     artifacts = SDKArtifactOutputSLZ(many=True)
 
 
@@ -87,15 +90,21 @@ class SDKGenerationTaskOutputSLZ(serializers.Serializer):
 
 
 class GatewaySDKListOutputSLZ(serializers.Serializer):
-    download_url = serializers.CharField(source="instance.url", help_text="sdk下载url")
-    id = serializers.IntegerField(source="instance.id", help_text="sdk id")
-    language = serializers.CharField(source="language.value", help_text="sdk语言")
-    version_number = serializers.CharField(source="instance.version_number", help_text="sdk版本号")
-    created_time = serializers.DateTimeField(source="instance.created_time", help_text="sdk创建时间")
-    updated_time = serializers.DateTimeField(source="instance.updated_time", help_text="sdk更新时间")
-    created_by = serializers.CharField(source="instance.created_by", help_text="SDK 创建者")
-    name = serializers.CharField(source="instance.name", help_text="sdk名称")
-    resource_version = ResourceVersionInfoSlz(source="instance.resource_version", help_text="sdk资源版本信息")
+    id = serializers.IntegerField(allow_null=True, help_text="sdk id")
+    generation_task_id = serializers.IntegerField(allow_null=True)
+    generation_item_id = serializers.IntegerField(allow_null=True)
+    resource_version = ResourceVersionInfoSlz(help_text="sdk资源版本信息")
+    version_number = serializers.CharField(help_text="sdk版本号")
+    language = serializers.CharField(help_text="sdk语言")
+    name = serializers.CharField(help_text="sdk名称")
+    status = serializers.CharField()
+    native_status = serializers.CharField()
+    error = serializers.DictField(allow_null=True)
+    native_error = serializers.DictField(allow_null=True)
+    download_url = serializers.CharField(allow_blank=True, allow_null=True, help_text="sdk下载url")
+    created_by = serializers.CharField(allow_blank=True, allow_null=True, help_text="SDK 创建者")
+    created_time = serializers.DateTimeField(help_text="sdk创建时间")
+    updated_time = serializers.DateTimeField(help_text="sdk更新时间")
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKListOutputSLZ"
