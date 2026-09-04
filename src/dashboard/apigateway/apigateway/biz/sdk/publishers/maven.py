@@ -99,13 +99,13 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
                 sensitive_values=(repository.username, repository.password),
             )
 
-    coordinate = f"{group_id}:{artifact_id}:{version}"
+    package_reference = f"{group_id}:{artifact_id}:{version}"
     return [
         PublishedArtifact(
             "maven",
             artifact_type,
             artifact.filename,
-            coordinate,
+            package_reference,
             urls[artifact_type],
             artifact.size,
             artifact.sha256,

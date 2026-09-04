@@ -1,6 +1,6 @@
 ## Install
 
-Use the successful native PyPI coordinate or BKRepo Generic wheel URL shown for the SDK version:
+Use the successful native PyPI package reference or BKRepo Generic wheel URL shown for the SDK version:
 
 ```shell
 {% if install_command %}{{ install_command }}{% else %}pip install "<BKRepo Generic wheel URL>"{% endif %}

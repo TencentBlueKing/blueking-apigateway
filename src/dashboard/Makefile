@@ -196,7 +196,8 @@ test-sdk-worker-tools:
 		python --version | grep "3.14"; \
 		twine --version; \
 		python -m build --version; \
-		test "$$(java -jar "$${SDK_OPENAPI_GENERATOR_JAR}" version)" = "7.23.0"'
+		test "$$(java -jar /opt/openapi-generator/openapi-generator-cli.jar version)" = \
+		"$$(python -c '"'"'import json; print(json.load(open("/app/sdk-worker-lock.json"))["openapi_generator"]["version"])'"'"')"'
 
 .PHONY: test-sdk-worker-smoke
 test-sdk-worker-smoke:

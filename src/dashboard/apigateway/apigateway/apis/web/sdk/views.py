@@ -47,68 +47,6 @@ from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
-PREFERRED_ARTIFACT_TYPES = {
-    "python": SDKArtifactTypeEnum.WHEEL.value,
-    "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
-    "go": SDKArtifactTypeEnum.GO_ZIP.value,
-    "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
-}
-
-
-def _serialize_error(code: str, message: str) -> dict[str, str] | None:
-    return {"code": code, "message": message} if code or message else None
-
-
-def _serialize_generation_item(item: SDKGenerationItem) -> dict[str, Any]:
-    resource_version = item.task.resource_version
-    gateway_sdk = item.gateway_sdk if item.gateway_sdk_id else None
-    artifacts = item.successful_artifacts
-    preferred = next(
-        (artifact for artifact in artifacts if artifact.artifact_type == PREFERRED_ARTIFACT_TYPES[item.language]),
-        artifacts[0] if artifacts else None,
-    )
-    return {
-        "id": gateway_sdk.id if gateway_sdk else None,
-        "generation_task_id": item.task_id,
-        "generation_item_id": item.id,
-        "resource_version": {"id": resource_version.id, "version": resource_version.version},
-        "version_number": resource_version.version,
-        "language": item.language,
-        "name": (
-            gateway_sdk.name
-            if gateway_sdk
-            else item.config_snapshot.get("project_name", f"bkapi-openapi-{item.task.gateway.name}")
-        ),
-        "status": item.status,
-        "native_status": item.native_status,
-        "error": _serialize_error(item.error_code, item.error_message),
-        "native_error": _serialize_error(item.native_error_code, item.native_error_message),
-        "download_url": preferred.url if preferred else (gateway_sdk.url if gateway_sdk else None),
-        "created_by": item.created_by,
-        "created_time": item.created_time,
-        "updated_time": item.updated_time,
-    }
-
-
-def _serialize_legacy_sdk(sdk: GatewaySDK) -> dict[str, Any]:
-    return {
-        "id": sdk.id,
-        "generation_task_id": None,
-        "generation_item_id": None,
-        "resource_version": {"id": sdk.resource_version_id, "version": sdk.resource_version.version},
-        "version_number": sdk.version_number,
-        "language": sdk.language,
-        "name": sdk.name,
-        "status": SDKGenerationItemStatusEnum.SUCCESS.value,
-        "native_status": SDKNativePublicationStatusEnum.NOT_REQUIRED.value,
-        "error": None,
-        "native_error": None,
-        "download_url": sdk.url,
-        "created_by": sdk.created_by,
-        "created_time": sdk.created_time,
-        "updated_time": sdk.updated_time,
-    }
-
 
 def _matches_text_filters(row: dict[str, Any], filters: dict[str, Any]) -> bool:
     version_number = filters.get("version_number")
@@ -169,7 +107,7 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
 
         rows = []
         for item in items:
-            row = _serialize_generation_item(item)
+            row = serializers.GatewaySDKListOutputSLZ(item).data
             if _matches_text_filters(row, filters):
                 rows.append(row)
         seen_legacy_keys: set[tuple[int | None, str]] = set()
@@ -177,15 +115,14 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
             key = (sdk.resource_version_id, sdk.language)
             if key in authoritative_keys or key in seen_legacy_keys:
                 continue
-            row = _serialize_legacy_sdk(sdk)
+            row = serializers.GatewaySDKListOutputSLZ(sdk).data
             if _matches_text_filters(row, filters):
                 rows.append(row)
             seen_legacy_keys.add(key)
         rows.sort(key=lambda row: (row["created_time"], row["generation_item_id"] or row["id"] or 0), reverse=True)
 
         page = self.paginate_queryset(rows)
-        slz = self.get_serializer(page, many=True)
-        return self.get_paginated_response(slz.data)
+        return self.get_paginated_response(page)
 
     def _filter_generation_items(self, gateway, filters: dict[str, Any]):
         queryset = SDKGenerationItem.objects.filter(task__gateway=gateway)

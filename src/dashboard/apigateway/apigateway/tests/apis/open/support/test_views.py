@@ -65,6 +65,7 @@ class TestSDKGenerateViewSet:
             path_params={"gateway_name": fake_gateway.name},
         )
         assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
+        assert create_task.call_args.args[2] is None
 
         assert response.status_code == 200
         assert json.loads(response.content) == {

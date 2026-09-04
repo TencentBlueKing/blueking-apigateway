@@ -37,7 +37,9 @@ def test_get_sdk_generation_settings_uses_common_defaults():
     assert settings["enabled_languages"] == ["python", "java", "go", "javascript"]
     assert settings["retry_delays"] == [30, 120]
     assert settings["server_url_template"] == "https://bkapi.example.com/{gateway_name}/{stage_name}"
-    assert settings["generator_version"] == "7.23.0"
+    assert "generator_jar" not in settings
+    assert "generator_version" not in settings
+    assert "worker_lock_file" not in settings
 
 
 @pytest.mark.parametrize(

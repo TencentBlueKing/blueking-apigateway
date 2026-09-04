@@ -53,7 +53,7 @@ class SDKGenerateViewSet(viewsets.ViewSet):
                 create_or_resume_generation(
                     resource_version,
                     data["languages"],
-                    getattr(request.user, "username", None),
+                    None,
                     enqueue_generation_items,
                 )
         except ValueError as error:

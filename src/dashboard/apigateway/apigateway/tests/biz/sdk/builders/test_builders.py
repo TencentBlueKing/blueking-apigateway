@@ -8,6 +8,7 @@ import pytest
 
 from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import SDKLanguageConfig
+from apigateway.biz.sdk.exceptions import SDKGenerateError
 from apigateway.biz.sdk.maven_settings import write_maven_settings
 from apigateway.utils.maven import RepositoryConfig
 
@@ -124,6 +125,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
     assert command[0] == {"python": "python", "java": "mvn", "go": "go", "javascript": "npm"}[language]
     assert run.call_args.kwargs["shell"] is False
     assert all(call.kwargs["stderr"] is subprocess.PIPE for call in run.call_args_list)
+    assert all("BKREPO_PASSWORD" not in call.kwargs["env"] for call in run.call_args_list)
     if language == "java":
         assert "-DincludeScope=runtime" in command
         assert "-s" in command
@@ -180,6 +182,22 @@ def test_go_module_zip_has_required_prefix(mocker, tmp_path):
 def test_builder_rejects_rust(tmp_path):
     with pytest.raises(ValueError, match="unsupported SDK builder language: rust"):
         build_artifacts("rust", tmp_path, tmp_path / "dist", SimpleNamespace(language="rust"))
+
+
+def test_builder_redacts_failure_details(mocker, tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    mocker.patch(
+        "apigateway.biz.sdk.builders.common.subprocess.run",
+        return_value=subprocess.CompletedProcess([], 2, "", "token=build-token password=build-password"),
+    )
+    mocker.patch("apigateway.biz.sdk.builders.python.validate_generated_dependency_inputs", create=True)
+
+    with pytest.raises(SDKGenerateError) as exc_info:
+        build_artifacts("python", source_dir, tmp_path / "dist", language_config("python"))
+
+    assert "build-token" not in str(exc_info.value)
+    assert "build-password" not in str(exc_info.value)
 
 
 def test_maven_settings_reuses_deploy_credentials_for_same_origin_mirror(tmp_path):

@@ -90,7 +90,7 @@ class Migration(migrations.Migration):
                 ('artifact_type', models.CharField(choices=[('archive', 'Archive'), ('package', 'Package'), ('manifest', 'Manifest'), ('wheel', 'Wheel'), ('sdist', 'Sdist'), ('jar', 'Jar'), ('pom', 'Pom'), ('sources_jar', 'Sources jar'), ('distribution_zip', 'Distribution zip'), ('go_info', 'Go info'), ('go_mod', 'Go mod'), ('go_zip', 'Go zip'), ('npm_tgz', 'Npm tgz')], default='archive', max_length=32)),
                 ('filename', models.CharField(max_length=512)),
                 ('remote_key', models.CharField(blank=True, default='', max_length=1024)),
-                ('coordinate', models.CharField(blank=True, default='', max_length=512)),
+                ('package_reference', models.CharField(blank=True, default='', max_length=512)),
                 ('url', models.TextField(blank=True, default='')),
                 ('size', models.PositiveBigIntegerField(default=0)),
                 ('sha256', models.CharField(blank=True, default='', max_length=64)),
@@ -129,59 +129,11 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(fields=('item', 'distributor', 'filename'), name='support_sdk_artifact_item_distributor_filename_uniq'),
         ),
         migrations.AddConstraint(
-            model_name='sdkartifact',
-            constraint=models.CheckConstraint(condition=models.Q(('distributor__in', ['bkrepo_generic', 'pypi', 'maven'])), name='support_sdk_artifact_distributor_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkartifact',
-            constraint=models.CheckConstraint(condition=models.Q(('artifact_type__in', ['archive', 'package', 'manifest', 'wheel', 'sdist', 'jar', 'pom', 'sources_jar', 'distribution_zip', 'go_info', 'go_mod', 'go_zip', 'npm_tgz'])), name='support_sdk_artifact_type_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkartifact',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['pending', 'running', 'success', 'failed'])), name='support_sdk_artifact_status_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkartifact',
-            constraint=models.CheckConstraint(condition=models.Q(('size__gte', 0)), name='support_sdk_artifact_size_valid'),
-        ),
-        migrations.AddConstraint(
             model_name='sdkgenerationtask',
             constraint=models.UniqueConstraint(fields=('resource_version',), name='support_sdk_generation_task_resource_version_uniq'),
         ),
         migrations.AddConstraint(
-            model_name='sdkgenerationtask',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['pending', 'running', 'success', 'partial', 'failed'])), name='support_sdk_generation_task_status_valid'),
-        ),
-        migrations.AddConstraint(
             model_name='sdkgenerationitem',
             constraint=models.UniqueConstraint(fields=('task', 'language'), name='support_sdk_generation_item_task_language_uniq'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('language__in', ('python', 'java', 'go', 'javascript'))), name='support_sdk_generation_item_language_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['pending', 'running', 'success', 'failed'])), name='support_sdk_generation_item_status_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('attempt_count__gte', 0)), name='support_sdk_generation_item_attempt_count_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('attempt_cycle_count__gte', 0)), name='support_sdk_generation_item_attempt_cycle_count_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('native_status__in', ['not_required', 'pending', 'running', 'success', 'failed'])), name='support_sdk_generation_item_native_status_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('native_attempt_count__gte', 0)), name='support_sdk_generation_item_native_attempt_count_valid'),
-        ),
-        migrations.AddConstraint(
-            model_name='sdkgenerationitem',
-            constraint=models.CheckConstraint(condition=models.Q(('native_attempt_cycle_count__gte', 0)), name='support_sdk_generation_item_native_attempt_cycle_count_valid'),
         ),
     ]

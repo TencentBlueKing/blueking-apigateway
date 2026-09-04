@@ -32,14 +32,6 @@ class ProgrammingLanguageEnum(StructuredEnum):
     JAVASCRIPT = EnumField("javascript")
 
 
-SDK_GENERATION_LANGUAGE_VALUES = (
-    ProgrammingLanguageEnum.PYTHON.value,
-    ProgrammingLanguageEnum.JAVA.value,
-    ProgrammingLanguageEnum.GO.value,
-    ProgrammingLanguageEnum.JAVASCRIPT.value,
-)
-
-
 class SDKGenerationTaskStatusEnum(StructuredEnum):
     PENDING = EnumField("pending")
     RUNNING = EnumField("running")

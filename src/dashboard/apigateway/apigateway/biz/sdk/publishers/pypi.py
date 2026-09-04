@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import configparser
-import os
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -80,8 +79,6 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
             with config_path.open("w") as file:
                 parser.write(file)
             config_path.chmod(0o600)
-            env = os.environ.copy()
-            env["HOME"] = directory
             run_publisher(
                 [
                     "twine",
@@ -93,7 +90,7 @@ def publish(artifacts: list[BuiltArtifact], config: SDKLanguageConfig) -> list[P
                     *[str(artifact.path) for artifact in missing],
                 ],
                 cwd=Path(directory),
-                env=env,
+                env={"HOME": directory},
                 sensitive_values=(repository.username, repository.password),
             )
         for artifact in missing:

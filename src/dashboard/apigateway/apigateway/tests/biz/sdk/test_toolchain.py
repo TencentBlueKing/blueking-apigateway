@@ -22,11 +22,10 @@ def configure_bkrepo_generic(settings):
     settings.BKREPO_GENERIC_BUCKET = "sdk-generic"
 
 
-def test_probe_toolchain_identity_reads_every_tool_once(mocker, settings, tmp_path):
+def test_probe_toolchain_identity_reads_every_tool_once(mocker, tmp_path):
     lock_file = tmp_path / "sdk-worker-lock.json"
     lock_file.write_text('{"format_version":1}')
-    settings.SDK_GENERATION["generator_jar"] = "/opt/openapi-generator/openapi-generator-cli.jar"
-    settings.SDK_GENERATION["worker_lock_file"] = str(lock_file)
+    mocker.patch("apigateway.biz.sdk.toolchain.SDK_WORKER_LOCK_FILE", str(lock_file))
     outputs = iter(
         ["7.23.0", "Python 3.14.1", "openjdk 17.0.15", "Apache Maven 3.9.9", "go1.24.4", "v22.17.0", "11.4.2"]
     )
@@ -50,8 +49,8 @@ def test_probe_toolchain_identity_reads_every_tool_once(mocker, settings, tmp_pa
     assert run_version.call_count == 7
 
 
-def test_probe_toolchain_identity_rejects_missing_lock(settings, tmp_path):
-    settings.SDK_GENERATION["worker_lock_file"] = str(tmp_path / "missing.json")
+def test_probe_toolchain_identity_rejects_missing_lock(mocker, tmp_path):
+    mocker.patch("apigateway.biz.sdk.toolchain.SDK_WORKER_LOCK_FILE", str(tmp_path / "missing.json"))
     probe_toolchain_identity.cache_clear()
 
     with pytest.raises(SDKConfigurationError, match="lock file"):
@@ -79,7 +78,7 @@ def test_checked_in_worker_lock_covers_four_language_dependencies(settings):
     assert lock["generated_dependencies"]["javascript"]["package_lock_integrities_sha256"]
 
 
-def test_validate_generated_javascript_dependencies_uses_package_lock_integrities(settings, tmp_path):
+def test_validate_generated_javascript_dependencies_uses_package_lock_integrities(mocker, tmp_path):
     package = {"dependencies": {"superagent": "^5.3.0"}}
     package_lock = {
         "packages": {
@@ -117,7 +116,7 @@ def test_validate_generated_javascript_dependencies_uses_package_lock_integritie
     (tmp_path / "package-lock.json").write_text(json.dumps(package_lock))
     lock_path = tmp_path / "sdk-worker-lock.json"
     lock_path.write_text(json.dumps(lock))
-    settings.SDK_GENERATION["worker_lock_file"] = str(lock_path)
+    mocker.patch("apigateway.biz.sdk.toolchain.SDK_WORKER_LOCK_FILE", str(lock_path))
 
     validate_generated_dependency_inputs("javascript", tmp_path)
 

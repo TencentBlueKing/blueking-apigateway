@@ -40,9 +40,6 @@ settings.configure(
     },
     SDK_GENERATION={
         "queue": "sdk.generate",
-        "generator_jar": os.environ["SDK_OPENAPI_GENERATOR_JAR"],
-        "generator_version": "7.23.0",
-        "worker_lock_file": "/app/sdk-worker-lock.json",
         "server_url_template": "https://{gateway_name}.example.com/{stage_name}",
         "generic_retention_hours": 24,
         "subprocess_timeout_seconds": 1200,
@@ -55,11 +52,11 @@ django.setup()
 
 from apigateway.biz.sdk.artifacts import build_manifest  # noqa: E402
 from apigateway.biz.sdk.builders import build_artifacts  # noqa: E402
-from apigateway.biz.sdk.config import SDKLanguageConfig  # noqa: E402
+from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDKLanguageConfig  # noqa: E402
 
 ROOT = Path(__file__).parent
 SPEC = ROOT / "minimal-openapi.yaml"
-JAR = Path(os.environ["SDK_OPENAPI_GENERATOR_JAR"])
+JAR = Path(SDK_OPENAPI_GENERATOR_JAR)
 
 PROPERTIES = {
     "python": {

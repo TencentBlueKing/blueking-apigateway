@@ -18,16 +18,11 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES, ProgrammingLanguageEnum
+from apigateway.apis.sdk_fields import SDKGenerationLanguageField
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(
-        choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang"), help_text="SDK 编程语言，如 python"
-    )
-
-    def validate_language(self, value: str) -> str:
-        return ProgrammingLanguageEnum.GO.value if value == "golang" else value
+    language = SDKGenerationLanguageField(help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKListInputSLZ"
@@ -51,7 +46,7 @@ class SDKArtifactSLZ(serializers.Serializer):
     type = serializers.CharField(read_only=True, help_text="制品类型")
     filename = serializers.CharField(read_only=True, help_text="制品文件名")
     url = serializers.CharField(read_only=True, help_text="制品下载链接")
-    coordinate = serializers.CharField(read_only=True, help_text="原生仓库坐标")
+    package_reference = serializers.CharField(read_only=True, help_text="原生包引用")
     size = serializers.IntegerField(read_only=True, help_text="制品大小")
     sha256 = serializers.CharField(read_only=True, help_text="制品 SHA256")
 
@@ -78,9 +73,7 @@ class StageSDKOutputSLZ(serializers.Serializer):
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(
-        choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang"), help_text="SDK 编程语言，如 python"
-    )
+    language = SDKGenerationLanguageField(help_text="SDK 编程语言，如 python")
     stage_name = serializers.CharField(help_text="网关环境名称")
     resource_name = serializers.CharField(help_text="资源名称")
     # todo：暂时先不加
@@ -88,9 +81,6 @@ class SDKUsageExampleInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKUsageExampleInputSLZ"
-
-    def validate_language(self, value: str) -> str:
-        return ProgrammingLanguageEnum.GO.value if value == "golang" else value
 
 
 class SDKUsageExampleOutputSLZ(serializers.Serializer):

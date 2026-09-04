@@ -98,6 +98,7 @@ class TestSyncApi:
         )
 
         assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
+        assert create_task.call_args.args[2] is None
         assert response.status_code == 201
         assert response.json() == {"data": []}
 
@@ -150,6 +151,7 @@ class TestSyncApi:
         )
 
         assert response.status_code == 202
+        assert create_task.call_args.args[2] is None
         assert response.json() == {
             "data": {
                 "id": 17,
@@ -261,7 +263,7 @@ class TestSyncApi:
                     "type": "wheel",
                     "filename": "bkapi_openapi_demo-1.2.3-py3-none-any.whl",
                     "url": "https://repo.example/sdk.whl",
-                    "coordinate": "",
+                    "package_reference": "",
                     "size": 0,
                     "sha256": "",
                     "status": "success",

@@ -25,6 +25,11 @@ from packaging.version import InvalidVersion, Version
 
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.sdk.exceptions import SDKRepoConfigError
+from apigateway.common.constants import SDKGenerationLanguageEnum
+
+SDK_OPENAPI_GENERATOR_JAR = "/opt/openapi-generator/openapi-generator-cli.jar"
+SDK_WORKER_LOCK_FILE = "/app/sdk-worker-lock.json"
+
 
 GENERATOR_PROPERTIES = {
     "python": ("packageName", "packageVersion", "projectName", "buildSystem", "hideGenerationTimestamp"),
@@ -42,7 +47,7 @@ GENERATOR_PROPERTIES = {
     "javascript": ("npmName", "npmVersion", "supportsES6", "hideGenerationTimestamp"),
 }
 
-SUPPORTED_GENERATION_LANGUAGES = ("python", "java", "go", "javascript")
+SUPPORTED_GENERATION_LANGUAGES = tuple(SDKGenerationLanguageEnum.get_values())
 
 
 class ResourceVersionLike(Protocol):
@@ -108,9 +113,6 @@ class SDKGenerationPolicy:
 @dataclass(frozen=True)
 class SDKWorkerConfig:
     policy: SDKGenerationPolicy
-    generator_jar: str
-    generator_version: str
-    worker_lock_file: str
     server_url_template: str
     generic_repository: BKRepoGenericConfig
     generic_retention_hours: int

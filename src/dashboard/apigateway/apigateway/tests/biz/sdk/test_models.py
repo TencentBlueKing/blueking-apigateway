@@ -89,7 +89,7 @@ def test_sdk_factory_does_not_map_legacy_golang_value():
     assert sdk.as_dict()["language"] == "unknown"
 
 
-def test_native_repository_coordinates_are_preferred():
+def test_native_repository_package_references_are_preferred():
     python = SDKFactory.create(
         SimpleNamespace(
             language="python",
@@ -100,7 +100,7 @@ def test_native_repository_coordinates_are_preferred():
                         "type": "wheel",
                         "filename": "sdk.whl",
                         "url": "https://pypi.example.com/sdk.whl",
-                        "coordinate": "bkapi-demo==1.2.3",
+                        "package_reference": "bkapi-demo==1.2.3",
                     }
                 ]
             },
@@ -119,7 +119,7 @@ def test_native_repository_coordinates_are_preferred():
                         "type": "jar",
                         "filename": "sdk.jar",
                         "url": "https://maven.example.com/sdk.jar",
-                        "coordinate": "com.example:bkapi-demo:1.2.3",
+                        "package_reference": "com.example:bkapi-demo:1.2.3",
                     }
                 ]
             },

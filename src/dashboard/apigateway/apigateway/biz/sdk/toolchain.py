@@ -11,8 +11,9 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from apigateway.biz.sdk.config import get_sdk_worker_config
+from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDK_WORKER_LOCK_FILE, get_sdk_worker_config
 from apigateway.biz.sdk.exceptions import SDKConfigurationError
+from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 
 VERSION_PATTERN = re.compile(r"(?:go|v)?(\d+\.\d+(?:\.\d+)?)")
 
@@ -34,11 +35,13 @@ class SDKToolchainIdentity:
 
 def _run_version_command(command: list[str]) -> str:
     try:
-        result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            command, check=False, capture_output=True, text=True, env=build_subprocess_env(), timeout=30
+        )
     except (OSError, subprocess.TimeoutExpired) as error:
         raise SDKConfigurationError(f"SDK tool is unavailable: {command[0]}") from error
     if result.returncode != 0:
-        detail = " ".join((result.stderr or result.stdout).split())[:256]
+        detail = redact_sensitive_text(" ".join((result.stderr or result.stdout).split()))[:256]
         raise SDKConfigurationError(f"SDK tool version probe failed: {command[0]}: {detail}")
     return (result.stdout or result.stderr).strip()
 
@@ -51,15 +54,14 @@ def _normalize_version(output: str, tool: str) -> str:
 
 @lru_cache(maxsize=1)
 def probe_toolchain_identity() -> SDKToolchainIdentity:
-    config = get_sdk_worker_config()
-    lock_path = Path(config.worker_lock_file)
+    lock_path = Path(SDK_WORKER_LOCK_FILE)
     try:
         lock_bytes = lock_path.read_bytes()
     except OSError as error:
         raise SDKConfigurationError(f"SDK worker lock file is unavailable: {lock_path}") from error
 
     commands = {
-        "openapi_generator": ["java", "-jar", config.generator_jar, "version"],
+        "openapi_generator": ["java", "-jar", SDK_OPENAPI_GENERATOR_JAR, "version"],
         "python": ["python", "--version"],
         "java": ["java", "-version"],
         "maven": ["mvn", "--version"],
@@ -88,19 +90,17 @@ def _load_worker_lock(path: str) -> dict[str, object]:
 
 
 def validate_sdk_worker_environment() -> dict[str, str]:
-    config = get_sdk_worker_config()
-    lock = _load_worker_lock(config.worker_lock_file)
+    get_sdk_worker_config()
+    lock = _load_worker_lock(SDK_WORKER_LOCK_FILE)
     identity = probe_toolchain_identity()
     expected_generator = lock.get("openapi_generator")
     expected_toolchains = lock.get("toolchains")
     if not isinstance(expected_generator, dict) or not isinstance(expected_toolchains, dict):
         raise SDKConfigurationError("SDK worker lock is missing toolchain identities")
-    if identity.openapi_generator != config.generator_version or identity.openapi_generator != expected_generator.get(
-        "version"
-    ):
+    if identity.openapi_generator != expected_generator.get("version"):
         raise SDKConfigurationError("OpenAPI Generator version does not match the worker lock")
 
-    jar_path = Path(config.generator_jar)
+    jar_path = Path(SDK_OPENAPI_GENERATOR_JAR)
     try:
         jar_sha256 = hashlib.sha256(jar_path.read_bytes()).hexdigest()
     except OSError as error:
@@ -124,8 +124,8 @@ def _read_text(path: Path) -> str:
 
 
 def validate_generated_dependency_inputs(language: str, output_dir: Path) -> None:
-    config = get_sdk_worker_config()
-    lock = _load_worker_lock(config.worker_lock_file)
+    get_sdk_worker_config()
+    lock = _load_worker_lock(SDK_WORKER_LOCK_FILE)
     dependencies = lock["generated_dependencies"]
     if not isinstance(dependencies, dict) or not isinstance(expected := dependencies.get(language), dict):
         raise SDKConfigurationError(f"generated dependency lock is unavailable for {language}")

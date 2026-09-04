@@ -18,7 +18,14 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES, ProgrammingLanguageEnum
+from apigateway.apis.sdk_fields import SDKGenerationLanguageField
+from apigateway.apps.support.constants import (
+    ProgrammingLanguageEnum,
+    SDKArtifactTypeEnum,
+    SDKGenerationItemStatusEnum,
+    SDKNativePublicationStatusEnum,
+)
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem
 from apigateway.common.fields import CurrentGatewayDefault
 
 
@@ -26,7 +33,7 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True, help_text="资源版本号id")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang")),
+        child=SDKGenerationLanguageField(),
         allow_empty=False,
         required=True,
         help_text="SDK 语言列表",
@@ -34,9 +41,6 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKGenerateInputSLZ"
-
-    def validate_languages(self, value: list[str]) -> list[str]:
-        return [ProgrammingLanguageEnum.GO.value if language == "golang" else language for language in value]
 
 
 class GatewaySDKQueryInputSLZ(serializers.Serializer):
@@ -64,7 +68,7 @@ class SDKArtifactOutputSLZ(serializers.Serializer):
     type = serializers.CharField()
     filename = serializers.CharField()
     url = serializers.CharField()
-    coordinate = serializers.CharField()
+    package_reference = serializers.CharField()
     size = serializers.IntegerField()
     sha256 = serializers.CharField()
     status = serializers.CharField()
@@ -108,3 +112,69 @@ class GatewaySDKListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKListOutputSLZ"
+
+    def to_representation(self, instance):
+        if isinstance(instance, SDKGenerationItem):
+            instance = self._generation_item_data(instance)
+        elif isinstance(instance, GatewaySDK):
+            instance = self._legacy_sdk_data(instance)
+        return super().to_representation(instance)
+
+    @staticmethod
+    def _error(code: str, message: str) -> dict[str, str] | None:
+        return {"code": code, "message": message} if code or message else None
+
+    @classmethod
+    def _generation_item_data(cls, item: SDKGenerationItem) -> dict:
+        resource_version = item.task.resource_version
+        gateway_sdk = item.gateway_sdk if item.gateway_sdk_id else None
+        artifacts = item.successful_artifacts
+        preferred_types = {
+            "python": SDKArtifactTypeEnum.WHEEL.value,
+            "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
+            "go": SDKArtifactTypeEnum.GO_ZIP.value,
+            "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
+        }
+        preferred = next(
+            (artifact for artifact in artifacts if artifact.artifact_type == preferred_types[item.language]),
+            artifacts[0] if artifacts else None,
+        )
+        return {
+            "id": gateway_sdk.id if gateway_sdk else None,
+            "generation_task_id": item.task_id,
+            "generation_item_id": item.id,
+            "resource_version": {"id": resource_version.id, "version": resource_version.version},
+            "version_number": resource_version.version,
+            "language": item.language,
+            "name": gateway_sdk.name
+            if gateway_sdk
+            else item.config_snapshot.get("project_name", f"bkapi-openapi-{item.task.gateway.name}"),
+            "status": item.status,
+            "native_status": item.native_status,
+            "error": cls._error(item.error_code, item.error_message),
+            "native_error": cls._error(item.native_error_code, item.native_error_message),
+            "download_url": preferred.url if preferred else (gateway_sdk.url if gateway_sdk else None),
+            "created_by": item.created_by,
+            "created_time": item.created_time,
+            "updated_time": item.updated_time,
+        }
+
+    @staticmethod
+    def _legacy_sdk_data(sdk: GatewaySDK) -> dict:
+        return {
+            "id": sdk.id,
+            "generation_task_id": None,
+            "generation_item_id": None,
+            "resource_version": {"id": sdk.resource_version_id, "version": sdk.resource_version.version},
+            "version_number": sdk.version_number,
+            "language": sdk.language,
+            "name": sdk.name,
+            "status": SDKGenerationItemStatusEnum.SUCCESS.value,
+            "native_status": SDKNativePublicationStatusEnum.NOT_REQUIRED.value,
+            "error": None,
+            "native_error": None,
+            "download_url": sdk.url,
+            "created_by": sdk.created_by,
+            "created_time": sdk.created_time,
+            "updated_time": sdk.updated_time,
+        }

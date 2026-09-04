@@ -14,7 +14,10 @@ def maven_artifacts(factory):
     ]
 
 
-def test_maven_upload_uses_settings_file_and_expected_files(mocker, built_artifact, java_config, settings):
+def test_maven_upload_uses_settings_file_and_expected_files(
+    mocker, monkeypatch, built_artifact, java_config, settings
+):
+    monkeypatch.setenv("BKREPO_PASSWORD", "inherited-secret")
     settings.MAVEN_MIRRORS_CONFIG = {
         "default": {
             "repository_url": "https://repo/maven",
@@ -37,6 +40,7 @@ def test_maven_upload_uses_settings_file_and_expected_files(mocker, built_artifa
     assert any(argument.startswith("-DpomFile=") for argument in command)
     assert any(argument.startswith("-Dsources=") for argument in command)
     assert "secret" not in " ".join(command)
+    assert "BKREPO_PASSWORD" not in run.call_args.kwargs["env"]
     assert {result.artifact_type for result in results} == {"jar", "pom", "sources_jar"}
 
 

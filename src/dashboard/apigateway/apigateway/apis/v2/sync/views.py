@@ -622,7 +622,7 @@ class LegacySDKGenerateApi(generics.CreateAPIView):
                 create_or_resume_generation(
                     resource_version,
                     data["languages"],
-                    getattr(request.user, "username", None),
+                    None,
                     enqueue_generation_items,
                 )
             except ValueError as error:
@@ -660,7 +660,7 @@ class SDKGenerationTaskCreateApi(generics.CreateAPIView):
             task = create_or_resume_generation(
                 resource_version,
                 data["languages"],
-                getattr(request.user, "username", None),
+                None,
                 enqueue_generation_items,
             )
         except ValueError as error:

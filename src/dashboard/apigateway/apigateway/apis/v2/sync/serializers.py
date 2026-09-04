@@ -25,6 +25,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
+from apigateway.apis.sdk_fields import SDKGenerationLanguageField
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
@@ -32,7 +33,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
-from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES, DocLanguageEnum, ProgrammingLanguageEnum
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.biz.validators import (
@@ -51,6 +52,7 @@ from apigateway.common.constants import (
     GATEWAY_NAME_PATTERN,
     CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
+    SDKGenerationLanguageEnum,
 )
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -614,15 +616,12 @@ class ResourceImportInputSLZ(serializers.Serializer):
 class SDKGenerateInputSLZ(serializers.Serializer):
     resource_version = serializers.CharField(max_length=128, help_text="资源版本")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=(*SDK_GENERATION_LANGUAGE_VALUES, "golang")),
+        child=SDKGenerationLanguageField(),
         help_text="需要生成SDK的语言列表",
-        default=[ProgrammingLanguageEnum.PYTHON.value],
+        default=[SDKGenerationLanguageEnum.PYTHON.value],
         allow_empty=False,
     )
     version = serializers.RegexField(SEMVER_PATTERN, default="", allow_blank=True, max_length=128, help_text="版本号")
-
-    def validate_languages(self, value: list[str]) -> list[str]:
-        return [ProgrammingLanguageEnum.GO.value if language == "golang" else language for language in value]
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateInputSLZ"
@@ -642,7 +641,7 @@ class SDKGenerationArtifactOutputSLZ(serializers.Serializer):
     type = serializers.CharField()
     filename = serializers.CharField()
     url = serializers.CharField()
-    coordinate = serializers.CharField()
+    package_reference = serializers.CharField()
     size = serializers.IntegerField()
     sha256 = serializers.CharField()
     status = serializers.CharField()

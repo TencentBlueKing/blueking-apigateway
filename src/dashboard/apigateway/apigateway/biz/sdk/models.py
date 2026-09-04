@@ -128,7 +128,7 @@ class SDK:
                     "type": artifact.artifact_type,
                     "filename": artifact.filename,
                     "url": artifact.url,
-                    "coordinate": artifact.coordinate,
+                    "package_reference": artifact.package_reference,
                     "size": artifact.size,
                     "sha256": artifact.sha256,
                 }
@@ -219,8 +219,8 @@ class PythonSDK(SDK):
     @property
     def install_command(self) -> str:
         pypi = self.find_artifact(distributor="pypi")
-        if pypi and pypi.get("coordinate"):
-            return f'pip install "{pypi["coordinate"]}"'
+        if pypi and pypi.get("package_reference"):
+            return f'pip install "{pypi["package_reference"]}"'
         wheel = self.find_artifact(distributor="bkrepo_generic", artifact_type="wheel")
         if wheel and wheel.get("url"):
             return f'pip install "{wheel["url"]}"'
@@ -252,8 +252,8 @@ class JavaSDK(SDK):
     @property
     def install_command(self) -> str:
         maven = self.find_artifact(distributor="maven")
-        if maven and maven.get("coordinate"):
-            return f'mvn dependency:get -Dartifact="{maven["coordinate"]}"'
+        if maven and maven.get("package_reference"):
+            return f'mvn dependency:get -Dartifact="{maven["package_reference"]}"'
         return super().install_command
 
 

@@ -1576,8 +1576,8 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, golang, javascript]
-                  description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
+                    enum: [python, java, go, javascript]
+                  description: 需要生成 SDK 的语言列表，默认为 python
                   example: ["python"]
                 version:
                   type: string
@@ -5457,8 +5457,8 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, golang, javascript]
-                  description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
+                    enum: [python, java, go, javascript]
+                  description: 需要生成 SDK 的语言列表，默认为 python
                   example: ["python"]
                 version:
                   type: string
@@ -5526,8 +5526,8 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [python, java, go, golang, javascript]
-                  description: 需要生成 SDK 的语言列表；golang 会按 go 处理，默认为 python
+                    enum: [python, java, go, javascript]
+                  description: 需要生成 SDK 的语言列表，默认为 python
                   example: ["python", "javascript"]
                 version:
                   type: string

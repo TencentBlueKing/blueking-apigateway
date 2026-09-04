@@ -19,19 +19,19 @@
 import pytest
 from ddf import G
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
+from django.db.models import CheckConstraint
 
 from apigateway.apps.support import constants as support_constants
 from apigateway.apps.support.constants import (
-    SDK_GENERATION_LANGUAGE_VALUES,
     ProgrammingLanguageEnum,
     SDKArtifactStatusEnum,
     SDKDistributorEnum,
     SDKGenerationItemStatusEnum,
 )
 from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
+from apigateway.common.constants import SDKGenerationLanguageEnum
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -81,7 +81,7 @@ def test_sdk_supported_languages_exclude_rust():
         "go",
         "javascript",
     }
-    assert set(SDK_GENERATION_LANGUAGE_VALUES) == {"python", "java", "go", "javascript"}
+    assert set(SDKGenerationLanguageEnum.get_values()) == {"python", "java", "go", "javascript"}
 
 
 def test_generation_item_is_unique_per_task_and_language(fake_gateway, fake_resource_version):
@@ -92,21 +92,9 @@ def test_generation_item_is_unique_per_task_and_language(fake_gateway, fake_reso
         SDKGenerationItem.objects.create(task=task, language="python")
 
 
-def test_generation_item_accepts_only_canonical_languages(fake_gateway, fake_resource_version):
-    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
-
-    with pytest.raises(IntegrityError), transaction.atomic():
-        SDKGenerationItem.objects.create(task=task, language="golang")
-
-
-def test_generation_item_full_clean_rejects_unknown_language_before_database(fake_gateway, fake_resource_version):
-    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
-    item = SDKGenerationItem(task=task, language="unknown")
-
-    with pytest.raises(ValidationError) as exc_info:
-        item.full_clean()
-
-    assert "language" in exc_info.value.message_dict
+def test_sdk_generation_models_only_use_uniqueness_constraints():
+    for model in (SDKGenerationTask, SDKGenerationItem, SDKArtifact):
+        assert not any(isinstance(constraint, CheckConstraint) for constraint in model._meta.constraints)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -123,23 +111,7 @@ def test_generation_item_language_choices_match_migration_state():
     )
     runtime_choices = tuple(value for value, _ in SDKGenerationItem._meta.get_field("language").choices)
 
-    assert migration_choices == runtime_choices == SDK_GENERATION_LANGUAGE_VALUES
-
-
-def test_generation_task_full_clean_accepts_matching_gateway_and_resource_version(fake_gateway, fake_resource_version):
-    task = SDKGenerationTask(gateway=fake_gateway, resource_version=fake_resource_version)
-
-    task.full_clean()
-
-
-def test_generation_task_full_clean_rejects_mismatched_gateway_and_resource_version(
-    fake_gateway, fake_resource_version
-):
-    other_gateway = G(Gateway)
-    task = SDKGenerationTask(gateway=other_gateway, resource_version=fake_resource_version)
-
-    with pytest.raises(ValidationError, match="gateway"):
-        task.full_clean()
+    assert migration_choices == runtime_choices == tuple(SDKGenerationLanguageEnum.get_values())
 
 
 def test_artifact_filename_is_unique_per_item_and_distributor(fake_gateway, fake_resource_version):

@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 
+from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR
 from apigateway.biz.sdk.exceptions import SDKGenerateError
+from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -30,15 +32,16 @@ def _validate_output(output_dir: Path) -> None:
                 )
 
 
-def _run(command: list[str], *, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
+def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             command,
             shell=False,
             check=False,
-            stdout=subprocess.PIPE if capture_output else subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             text=True,
+            env=build_subprocess_env(),
             timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
         )
     except subprocess.TimeoutExpired as error:
@@ -53,7 +56,7 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
     command = [
         "java",
         "-jar",
-        settings.SDK_GENERATION["generator_jar"],
+        SDK_OPENAPI_GENERATOR_JAR,
         "generate",
         "-i",
         str(spec_path),
@@ -66,31 +69,10 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
     ]
     result = _run(command)
     if result.returncode != 0:
-        stderr = " ".join((result.stderr or "").split())[:768]
+        stderr = redact_sensitive_text(" ".join((result.stderr or "").split()))[:768]
         detail = f": {stderr}" if stderr else ""
         raise SDKGenerateError(
             "generator_failed",
             f"OpenAPI Generator exited with status {result.returncode}{detail}",
         )
     _validate_output(output_dir)
-
-
-def get_openapi_generator_version() -> str:
-    command = ["java", "-jar", settings.SDK_GENERATION["generator_jar"], "version"]
-    result = _run(command, capture_output=True)
-    if result.returncode != 0:
-        stderr = " ".join((result.stderr or "").split())[:768]
-        detail = f": {stderr}" if stderr else ""
-        raise SDKGenerateError(
-            "generator_failed",
-            f"OpenAPI Generator version probe exited with status {result.returncode}{detail}",
-        )
-
-    actual = result.stdout.strip()
-    expected = settings.SDK_GENERATION["generator_version"]
-    if actual != expected:
-        raise SDKGenerateError(
-            "generator_failed",
-            f"OpenAPI Generator version mismatch: expected {expected}, got {actual or 'empty output'}",
-        )
-    return actual

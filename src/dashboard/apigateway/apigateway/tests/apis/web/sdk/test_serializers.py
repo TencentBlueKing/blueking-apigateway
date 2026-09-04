@@ -17,8 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 
 from apigateway.apis.web.sdk.serializers import GatewaySDKGenerateInputSLZ, GatewaySDKListOutputSLZ
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.tests.utils.testing import dummy_time
 
 
@@ -60,6 +62,7 @@ class TestGatewaySDKGenerateInputSLZ:
 
         assert slz.is_valid()
         assert slz.validated_data["languages"] == ["go"]
+        assert "golang" not in slz.fields["languages"].child.choices
 
 
 class TestSDKListOutputSLZ:
@@ -91,3 +94,22 @@ class TestSDKListOutputSLZ:
             "created_time": dummy_time.str,
             "updated_time": dummy_time.str,
         }
+
+    @pytest.mark.django_db
+    def test_to_representation_accepts_generation_item(self, fake_gateway, fake_resource_version):
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="python",
+            config_snapshot={"project_name": "bkapi-openapi-demo"},
+            created_by="admin",
+        )
+        item.successful_artifacts = []
+
+        data = GatewaySDKListOutputSLZ(instance=item).data
+
+        assert data["generation_task_id"] == task.id
+        assert data["generation_item_id"] == item.id
+        assert data["resource_version"] == {"id": fake_resource_version.id, "version": fake_resource_version.version}
+        assert data["name"] == "bkapi-openapi-demo"

@@ -24,15 +24,15 @@ RUN ln -s /usr/share/maven/bin/mvn /usr/local/bin/mvn \
 ENV JAVA_HOME=/opt/java/openjdk \
     MAVEN_HOME=/usr/share/maven \
     GOPATH=/go \
-    PATH=/opt/java/openjdk/bin:/usr/share/maven/bin:/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin \
-    SDK_OPENAPI_GENERATOR_JAR=/opt/openapi-generator/openapi-generator-cli.jar \
-    SDK_OPENAPI_GENERATOR_VERSION=7.23.0
+    PATH=/opt/java/openjdk/bin:/usr/share/maven/bin:/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin
 
-ARG OPENAPI_GENERATOR_SHA256=cb087e40001e31eb08ef6140dd5de10938dbeb89016a1fe0481eaa25cd569026
+COPY sdk-worker-lock.json /app/sdk-worker-lock.json
 RUN mkdir -p /opt/openapi-generator \
-    && curl -fsSL -o "${SDK_OPENAPI_GENERATOR_JAR}" \
-        "https://repo.maven.apache.org/maven2/org/openapitools/openapi-generator-cli/${SDK_OPENAPI_GENERATOR_VERSION}/openapi-generator-cli-${SDK_OPENAPI_GENERATOR_VERSION}.jar" \
-    && echo "${OPENAPI_GENERATOR_SHA256}  ${SDK_OPENAPI_GENERATOR_JAR}" | sha256sum -c -
+    && generator_version="$(python -c 'import json; print(json.load(open("/app/sdk-worker-lock.json"))["openapi_generator"]["version"])')" \
+    && generator_sha256="$(python -c 'import json; print(json.load(open("/app/sdk-worker-lock.json"))["openapi_generator"]["jar_sha256"])')" \
+    && curl -fsSL -o /opt/openapi-generator/openapi-generator-cli.jar \
+        "https://repo.maven.apache.org/maven2/org/openapitools/openapi-generator-cli/${generator_version}/openapi-generator-cli-${generator_version}.jar" \
+    && echo "${generator_sha256}  /opt/openapi-generator/openapi-generator-cli.jar" | sha256sum -c -
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /uvx /bin/
 
@@ -43,7 +43,13 @@ RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ \
     && uv clean
 
 ADD build /app
-COPY sdk-worker-lock.json /app/sdk-worker-lock.json
 COPY sdk-worker-smoke /app/sdk-worker-smoke
+
+RUN /usr/sbin/useradd --create-home --uid 10001 sdk-worker \
+    && mkdir -p /go \
+    && chown -R sdk-worker:sdk-worker /app /go
+
+ENV HOME=/home/sdk-worker
+USER sdk-worker
 
 CMD ["bash", "/app/bin/start_sdk_worker.sh"]

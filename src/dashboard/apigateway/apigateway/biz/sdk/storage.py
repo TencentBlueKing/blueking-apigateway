@@ -132,7 +132,7 @@ def commit_generic_artifacts(
         with tempfile.TemporaryDirectory(prefix="sdk-restore-") as directory:
             restored_manifest, _ = restore_generic_artifacts(item, bkrepo, Path(directory))
             if restored_manifest.to_json() != manifest.to_json():
-                raise SDKArtifactConflict("SDK manifest coordinate already contains different content")
+                raise SDKArtifactConflict("SDK manifest location already contains different content")
         return list(item.artifacts.filter(distributor=SDKDistributorEnum.BKREPO_GENERIC.value))
 
     by_name = {artifact.filename: artifact for artifact in artifacts}

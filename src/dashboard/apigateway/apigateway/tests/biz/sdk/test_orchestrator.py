@@ -81,6 +81,7 @@ def test_create_deduplicates_languages_and_enqueues_on_commit(
     with django_capture_on_commit_callbacks(execute=True):
         task = create_or_resume_generation(fake_resource_version, ["python", "go", "python"], "admin", enqueue)
 
+    assert task.gateway_id == fake_resource_version.gateway_id
     assert list(task.items.values_list("language", flat=True).order_by("id")) == ["python", "go"]
     enqueue.assert_called_once_with(list(task.items.values_list("id", flat=True).order_by("id")))
 

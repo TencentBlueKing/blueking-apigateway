@@ -2,9 +2,9 @@ import subprocess
 
 import pytest
 
-from apigateway.biz.sdk.config import SDKLanguageConfig
+from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDKLanguageConfig
 from apigateway.biz.sdk.exceptions import SDKGenerateError
-from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
+from apigateway.biz.sdk.generator import generate_client
 
 
 @pytest.fixture
@@ -87,7 +87,7 @@ def test_generate_client_uses_native_generator_and_fixed_coordinates(
     assert command[:5] == [
         "java",
         "-jar",
-        settings.SDK_GENERATION["generator_jar"],
+        SDK_OPENAPI_GENERATOR_JAR,
         "generate",
         "-i",
     ]
@@ -103,6 +103,7 @@ def test_generate_client_uses_native_generator_and_fixed_coordinates(
     assert run.call_args.kwargs["timeout"] == settings.SDK_GENERATION["subprocess_timeout_seconds"]
     assert run.call_args.kwargs["stdout"] is subprocess.DEVNULL
     assert run.call_args.kwargs["stderr"] is subprocess.PIPE
+    assert "BKREPO_PASSWORD" not in run.call_args.kwargs["env"]
 
 
 def test_generate_client_rejects_oversized_output(mocker, python_language_config, tmp_path, settings):
@@ -124,7 +125,7 @@ def test_generate_client_rejects_oversized_output(mocker, python_language_config
 @pytest.mark.parametrize(
     "result, expected_fragment",
     [
-        (subprocess.CompletedProcess([], 2, "", "sensitive" * 1000), "exited with status 2"),
+        (subprocess.CompletedProcess([], 2, "", "password=sdk-password"), "exited with status 2"),
     ],
 )
 def test_generate_client_sanitizes_failures(mocker, python_language_config, tmp_path, result, expected_fragment):
@@ -138,7 +139,8 @@ def test_generate_client_sanitizes_failures(mocker, python_language_config, tmp_
     assert exc_info.value.code == "generator_failed"
     assert exc_info.value.retryable is False
     assert expected_fragment in str(exc_info.value)
-    assert "sensitive" in str(exc_info.value)
+    assert "sdk-password" not in str(exc_info.value)
+    assert "password=***" in str(exc_info.value)
     assert len(str(exc_info.value)) < 1200
 
 
@@ -156,14 +158,3 @@ def test_generate_client_maps_timeout(mocker, python_language_config, tmp_path):
     assert exc_info.value.code == "generator_failed"
     assert exc_info.value.retryable is True
     assert "timed out" in str(exc_info.value)
-
-
-def test_get_openapi_generator_version_requires_exact_pin(mocker, settings):
-    run = mocker.patch("apigateway.biz.sdk.generator.subprocess.run")
-    run.return_value = subprocess.CompletedProcess([], 0, "7.22.0\n", "")
-
-    with pytest.raises(SDKGenerateError, match="expected 7.23.0"):
-        get_openapi_generator_version()
-
-    command = run.call_args.args[0]
-    assert command == ["java", "-jar", settings.SDK_GENERATION["generator_jar"], "version"]

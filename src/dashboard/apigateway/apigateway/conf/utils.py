@@ -23,9 +23,10 @@ from typing import Optional
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
 
+from apigateway.common.constants import SDKGenerationLanguageEnum
 from apigateway.common.env import Env
 
-SDK_GENERATION_LANGUAGES = ("python", "java", "go", "javascript")
+SDK_GENERATION_LANGUAGES = tuple(SDKGenerationLanguageEnum.get_values())
 
 PYTHON_DISTRIBUTION_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$")
 JAVA_PACKAGE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
@@ -376,9 +377,6 @@ def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
         "java_package_prefix": namespace_settings["SDK_JAVA_PACKAGE_PREFIX"][0],
         "go_module_prefix": namespace_settings["SDK_GO_MODULE_PREFIX"][0],
         "javascript_package_scope": namespace_settings["SDK_JAVASCRIPT_PACKAGE_SCOPE"][0],
-        "generator_jar": env.str("SDK_OPENAPI_GENERATOR_JAR", "/opt/openapi-generator/openapi-generator-cli.jar"),
-        "generator_version": env.str("SDK_OPENAPI_GENERATOR_VERSION", "7.23.0"),
-        "worker_lock_file": env.str("SDK_WORKER_LOCK_FILE", "/app/sdk-worker-lock.json"),
         "server_url_template": env.str(
             "SDK_SERVER_URL_TEMPLATE",
             bk_api_url_tmpl.replace("{api_name}", "{gateway_name}") + "/{stage_name}",

@@ -21,7 +21,6 @@ from django.db.models import F
 from django.utils import timezone
 
 from apigateway.apps.support.constants import (
-    SDK_GENERATION_LANGUAGE_VALUES,
     SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
@@ -38,8 +37,8 @@ from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection, get_co
 from apigateway.biz.sdk.generator import generate_client
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
+from apigateway.biz.sdk.process import redact_sensitive_text
 from apigateway.biz.sdk.publishers import publish_native
-from apigateway.biz.sdk.publishers.common import redact_sensitive_text
 from apigateway.biz.sdk.storage import (
     commit_generic_artifacts,
     delete_incomplete_artifacts,
@@ -48,6 +47,7 @@ from apigateway.biz.sdk.storage import (
     restore_generic_artifacts,
 )
 from apigateway.biz.sdk.toolchain import probe_toolchain_identity
+from apigateway.common.constants import SDKGenerationLanguageEnum
 from apigateway.components.bkrepo import BKRepoComponent
 
 if TYPE_CHECKING:
@@ -82,7 +82,7 @@ def _deduplicate_languages(languages: list[str]) -> list[str]:
     result = list(dict.fromkeys(languages))
     if not result:
         raise ValueError("at least one SDK language is required")
-    invalid = set(result).difference(SDK_GENERATION_LANGUAGE_VALUES)
+    invalid = set(result).difference(SDKGenerationLanguageEnum.get_values())
     if invalid:
         raise ValueError(f"unsupported SDK generation languages: {sorted(invalid)}")
     return result
@@ -253,7 +253,7 @@ def _persist_native_artifacts(item: SDKGenerationItem, published) -> None:
             filename=artifact.filename,
             defaults={
                 "artifact_type": artifact.artifact_type,
-                "coordinate": artifact.coordinate,
+                "package_reference": artifact.package_reference,
                 "url": artifact.url,
                 "size": artifact.size,
                 "sha256": artifact.sha256,
@@ -683,7 +683,7 @@ def serialize_generation_task(task: SDKGenerationTask) -> dict[str, Any]:
                         "type": artifact.artifact_type,
                         "filename": artifact.filename,
                         "url": artifact.url,
-                        "coordinate": artifact.coordinate,
+                        "package_reference": artifact.package_reference,
                         "size": artifact.size,
                         "sha256": artifact.sha256,
                         "status": artifact.status,

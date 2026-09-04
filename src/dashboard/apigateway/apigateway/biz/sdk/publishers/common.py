@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import re
 import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -10,6 +9,7 @@ import requests
 from django.conf import settings
 
 from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerateError
+from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -21,7 +21,7 @@ class PublishedArtifact:
     distributor: str
     artifact_type: str
     filename: str
-    coordinate: str
+    package_reference: str
     url: str
     size: int
     sha256: str
@@ -73,15 +73,6 @@ def upload_file(path: Path, url: str, *, username: str, password: str, verify: b
     response.raise_for_status()
 
 
-def redact_sensitive_text(value: str, sensitive_values: tuple[str, ...] = ()) -> str:
-    for sensitive in sensitive_values:
-        if sensitive:
-            value = value.replace(sensitive, "***")
-    value = re.sub(r"(?i)(authorization\s*:\s*)[^\s]+(?:\s+[^\s]+)?", r"\1***", value)
-    value = re.sub(r"(?i)((?:token|password)\s*[=:]\s*)[^\s&]+", r"\1***", value)
-    return re.sub(r"(https?://)[^/@\s]+@", r"\1***@", value)
-
-
 def run_publisher(
     command: list[str],
     *,
@@ -93,7 +84,7 @@ def run_publisher(
         result = subprocess.run(
             command,
             cwd=cwd,
-            env=env,
+            env=build_subprocess_env(env),
             shell=False,
             check=False,
             stdout=subprocess.DEVNULL,

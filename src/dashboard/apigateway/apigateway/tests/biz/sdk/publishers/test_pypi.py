@@ -20,7 +20,10 @@ def test_disabled_native_repository_returns_no_artifacts(built_artifact, python_
     )
 
 
-def test_pypi_upload_uses_temporary_config_without_secret_in_command(mocker, built_artifact, python_config, settings):
+def test_pypi_upload_uses_temporary_config_without_secret_in_command(
+    mocker, monkeypatch, built_artifact, python_config, settings
+):
+    monkeypatch.setenv("BKREPO_PASSWORD", "inherited-secret")
     settings.PYPI_MIRRORS_CONFIG = {
         "default": {
             "index_url": "https://repo/simple",
@@ -65,6 +68,7 @@ def test_pypi_upload_uses_temporary_config_without_secret_in_command(mocker, bui
     }
     assert search.call_count == 4
     assert run.call_args.kwargs["stderr"] is subprocess.PIPE
+    assert "BKREPO_PASSWORD" not in run.call_args.kwargs["env"]
 
 
 def test_pypi_matching_remote_is_reused(mocker, built_artifact, python_config, settings):
