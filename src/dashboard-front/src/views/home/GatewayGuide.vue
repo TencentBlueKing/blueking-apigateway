@@ -47,7 +47,34 @@
           </BkButton>
         </div>
       </section>
-      <section class="markdown-box" />
+      <section
+        v-bkloading="{ loading: isLoading }"
+        class="markdown-box"
+      >
+        <Guide
+          v-if="markdownHtml"
+          :markdown-html="markdownHtml"
+        />
+        <div
+          v-else-if="!isLoading"
+          class="text-center"
+        >
+          <BkException
+            class="exception-wrap-item exception-part"
+            scene="part"
+            :type="isError ? '500' : 'empty'"
+            :description="isError ? t('开发指引获取失败') : t('暂无数据')"
+          />
+          <BkButton
+            v-if="isError"
+            class="mt-20px w-120px"
+            theme="primary"
+            @click="getGuide"
+          >
+            {{ t('重试') }}
+          </BkButton>
+        </div>
+      </section>
     </section>
   </section>
 </template>
@@ -56,6 +83,7 @@
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import AgIcon from '@/components/ag-icon/Index.vue';
+import Guide from '@/components/guide/Index.vue';
 import { getGuideDocs } from '@/services/source/gateway.ts';
 
 const { t } = useI18n();
@@ -68,6 +96,8 @@ const gateway = computed(() => ({
 }));
 
 const markdownHtml = ref('');
+const isLoading = ref(false);
+const isError = ref(false);
 
 const md = new MarkdownIt({
   linkify: false,
@@ -90,8 +120,19 @@ const md = new MarkdownIt({
 });
 
 const getGuide = async () => {
-  const data = await getGuideDocs(gateway.value.id);
-  markdownHtml.value = md.render(data.content);
+  isLoading.value = true;
+  isError.value = false;
+  try {
+    const data = await getGuideDocs(gateway.value.id);
+    markdownHtml.value = data.content ? md.render(data.content) : '';
+  }
+  catch {
+    markdownHtml.value = '';
+    isError.value = true;
+  }
+  finally {
+    isLoading.value = false;
+  }
 };
 
 watch(
@@ -101,6 +142,7 @@ watch(
       getGuide();
     }
   },
+  { immediate: true },
 );
 
 const handleGoToEnvOverview = () => {
@@ -154,6 +196,10 @@ const handleClose = () => {
       font-size: 14px;
       color: #4D4F56;
     }
+  }
+
+  .markdown-box {
+    min-height: 200px;
   }
 }
 
