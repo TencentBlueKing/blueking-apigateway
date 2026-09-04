@@ -67,6 +67,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/home/CreateGateway.vue'),
   },
   {
+    path: '/gateway-guide/:id/:name',
+    name: 'GatewayGuide',
+    component: () => import('@/views/home/GatewayGuide.vue'),
+  },
+  {
     path: '/:id',
     name: 'Resources',
     component: () => import('@/layout/my-gateway/Index.vue'),
