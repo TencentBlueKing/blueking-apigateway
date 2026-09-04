@@ -1,17 +1,30 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from datetime import timedelta
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
 from django.db import models, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.exceptions import (
+    GatewayMemberInvalidArgumentError,
+    GatewayMemberNotFoundError,
+    LastGatewayAdministratorError,
+)
+
+if TYPE_CHECKING:
+    from apigateway.apps.rbac.models import GatewayMember
 
 GATEWAY_MEMBER_EXPIRE_DAYS = 365
 
 
 class GatewayMemberManager(models.Manager):
+    def list_gateway_members(self, gateway_id: int) -> list[GatewayMember]:
+        return list(self.filter(gateway_id=gateway_id).order_by("role", "username"))
+
     def list_gateway_administrators(self, gateway_id: int) -> list[str]:
         return list(
             self.filter(
@@ -132,6 +145,103 @@ class GatewayMemberManager(models.Manager):
         return self._update_gateway_administrators(gateway_id, usernames, operated_by, replace=False)
 
     @transaction.atomic
+    def add_gateway_members(
+        self,
+        gateway_id: int,
+        members: Iterable[tuple[str, str]],
+        operated_by: str,
+    ) -> tuple[list[GatewayMember], list[GatewayMember]]:
+        requested_members = list(members)
+        usernames = [username for username, _ in requested_members]
+        if len(usernames) != len(set(usernames)):
+            raise GatewayMemberInvalidArgumentError("Duplicate usernames are not allowed.")
+
+        valid_roles = set(GatewayRoleEnum.get_values())
+        if any(role not in valid_roles for _, role in requested_members):
+            raise GatewayMemberInvalidArgumentError("Invalid gateway member role.")
+
+        existing_members = self._lock_gateway_members(gateway_id)
+        now = timezone.now()
+        expires = now + timedelta(days=GATEWAY_MEMBER_EXPIRE_DAYS)
+        members_to_create = [
+            self.model(
+                gateway_id=gateway_id,
+                username=username,
+                role=role,
+                expires=expires,
+                created_by=operated_by,
+                updated_by=operated_by,
+            )
+            for username, role in requested_members
+            if username not in existing_members
+        ]
+        if members_to_create:
+            self.bulk_create(members_to_create)
+
+        created_usernames = {member.username for member in members_to_create}
+        created_members_by_username = {
+            member.username: member for member in self.filter(gateway_id=gateway_id, username__in=created_usernames)
+        }
+        created_members = [
+            created_members_by_username[username] for username, _ in requested_members if username in created_usernames
+        ]
+        skipped_members = [
+            existing_members[username] for username, _ in requested_members if username in existing_members
+        ]
+        return created_members, skipped_members
+
+    @transaction.atomic
+    def update_gateway_member_role(
+        self,
+        gateway_id: int,
+        member_id: int,
+        role: str,
+        operated_by: str,
+    ) -> tuple[GatewayMember, str, bool]:
+        if role not in GatewayRoleEnum.get_values():
+            raise GatewayMemberInvalidArgumentError("Invalid gateway member role.")
+
+        members = self._lock_gateway_members(gateway_id)
+        member = next((member for member in members.values() if member.id == member_id), None)
+        if member is None:
+            raise GatewayMemberNotFoundError
+
+        previous_role = member.role
+        if previous_role == role:
+            return member, previous_role, False
+
+        if previous_role == GatewayRoleEnum.ADMINISTRATOR.value:
+            administrator_count = sum(item.role == GatewayRoleEnum.ADMINISTRATOR.value for item in members.values())
+            if administrator_count <= 1:
+                raise LastGatewayAdministratorError
+
+        now = timezone.now()
+        member.role = role
+        member.updated_by = operated_by
+        member.updated_time = now
+        member.save(update_fields=["role", "updated_by", "updated_time"])
+        return member, previous_role, True
+
+    @transaction.atomic
+    def delete_gateway_member(self, gateway_id: int, member_id: int) -> GatewayMember:
+        members = self._lock_gateway_members(gateway_id)
+        member = next((member for member in members.values() if member.id == member_id), None)
+        if member is None:
+            raise GatewayMemberNotFoundError
+
+        if member.role == GatewayRoleEnum.ADMINISTRATOR.value:
+            administrator_count = sum(item.role == GatewayRoleEnum.ADMINISTRATOR.value for item in members.values())
+            if administrator_count <= 1:
+                raise LastGatewayAdministratorError
+
+        self.filter(id=member.id).delete()
+        return member
+
+    def _lock_gateway_members(self, gateway_id: int) -> dict[str, GatewayMember]:
+        # Lock all member rows of the target gateway for write operations.
+        return {member.username: member for member in self.select_for_update().filter(gateway_id=gateway_id)}
+
+    @transaction.atomic
     def _update_gateway_administrators(
         self,
         gateway_id: int,
@@ -142,9 +252,9 @@ class GatewayMemberManager(models.Manager):
     ) -> list[str]:
         target_usernames = set(usernames)
         if replace and not target_usernames:
-            raise ValueError("A gateway must have at least one administrator.")
+            raise LastGatewayAdministratorError
 
-        members = {member.username: member for member in self.select_for_update().filter(gateway_id=gateway_id)}
+        members = self._lock_gateway_members(gateway_id)
         if replace:
             administrator_ids_to_delete = [
                 member.id
@@ -175,6 +285,7 @@ class GatewayMemberManager(models.Manager):
 
             if member.role != GatewayRoleEnum.ADMINISTRATOR.value:
                 member.role = GatewayRoleEnum.ADMINISTRATOR.value
+                member.expires = expires
                 member.updated_by = operated_by
                 member.updated_time = now
                 members_to_update.append(member)
@@ -182,6 +293,6 @@ class GatewayMemberManager(models.Manager):
         if members_to_create:
             self.bulk_create(members_to_create)
         if members_to_update:
-            self.bulk_update(members_to_update, ["role", "updated_by", "updated_time"])
+            self.bulk_update(members_to_update, ["role", "expires", "updated_by", "updated_time"])
 
         return self.list_gateway_administrators(gateway_id)
