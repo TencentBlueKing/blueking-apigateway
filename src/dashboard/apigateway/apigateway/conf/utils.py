@@ -168,7 +168,6 @@ def get_gateway_quota_config(env: Env) -> dict:
         "API_GATEWAY_RESOURCE_LIMITS": api_gateway_resource_limits,
         "MAX_LABEL_COUNT_PER_GATEWAY": env.int("MAX_LABEL_COUNT_PER_GATEWAY", 100),
         "MAX_BACKEND_TIMEOUT_IN_SECOND": env.int("MAX_BACKEND_TIMEOUT_IN_SECOND", 600),
-        "MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION": env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99),
     }
 
 
@@ -180,6 +179,7 @@ def get_default_feature_flags(
     enable_gateway_operation_status: bool,
     enable_run_data_metrics: bool,
     enable_itsm4_permission_apply: bool,
+    sdk_generation_enabled: bool,
 ) -> dict:
     return {
         # 是否展示"监控告警"子菜单
@@ -197,12 +197,9 @@ def get_default_feature_flags(
         "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
         # 网关编辑页，是否支持填写网关"绑定应用"
         "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
-        # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?
-        # 为 False，表示不启用 SDK 功能，网关 API 文档、组件 API 文档中，不展示 SDK 相关页面，
-        # 隐藏"网关 APISDK"、"组件 APISDK"菜单项，隐藏网关中 SDK 创建、SDK 列表等功能项
-        "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
-        # 隐藏 SDK 列表 相关功能
-        "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
+        # 保留前端 feature flag 名称，SDK 相关功能统一由 SDK_GENERATION_ENABLED 控制
+        "ENABLE_SDK": sdk_generation_enabled,
+        "ALLOW_UPLOAD_SDK_TO_REPOSITORY": sdk_generation_enabled,
         # 是否允许创建企业微信群，上云版一键拉群功能
         "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
         # ----------------------------------------------------------------------------
