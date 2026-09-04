@@ -2,7 +2,42 @@ import copy
 import json
 from types import SimpleNamespace
 
+from openapi_spec_validator.versions import OPENAPIV31
+
 from apigateway.service.resource_version.openapi_export import OpenAPIExportManager
+
+
+def test_get_openapi_content_returns_oas3_without_mutating_resources(fake_resource_dict):
+    resources = [
+        {
+            **fake_resource_dict,
+            "openapi_schema": {
+                "version": str(OPENAPIV31),
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": True,
+                        "schema": {"type": "integer", "format": "int64"},
+                    }
+                ],
+                "responses": {"200": {"description": "OK"}},
+            },
+        }
+    ]
+    original = copy.deepcopy(resources)
+
+    document = OpenAPIExportManager(
+        include_bk_apigateway_resource=False,
+        title=resources[0]["name"],
+    ).get_openapi_content(resources)
+
+    operation = document["paths"][resources[0]["path"]][resources[0]["method"].lower()]
+    assert document["openapi"] == "3.1.0"
+    assert operation["operationId"] == resources[0]["name"]
+    assert operation["parameters"][0]["schema"]["format"] == "int64"
+    assert "x-bk-apigateway-resource" not in operation
+    assert resources == original
 
 
 def test_get_resource_version_openapi_returns_structured_document_without_mutating_snapshot(mocker):

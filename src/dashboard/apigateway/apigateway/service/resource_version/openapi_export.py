@@ -350,6 +350,10 @@ class OpenAPIExportManager:
         """
         return self._exporter.to_openapi(resources, file_type)
 
+    def get_openapi_content(self, resources: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Return an OAS3 document without mutating caller-owned resource data."""
+        return self._exporter.get_openapi_content(copy.deepcopy(resources))
+
     def get_swagger_by_paths(
         self,
         paths: Dict[str, Any],
