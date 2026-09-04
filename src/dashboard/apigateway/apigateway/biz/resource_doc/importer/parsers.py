@@ -20,18 +20,20 @@ from tempfile import TemporaryDirectory
 from typing import IO, Any, AnyStr, Dict, List, Optional, Union
 
 from django.utils.translation import gettext as _
-from openapi_spec_validator.versions import OPENAPIV2
 
-from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.openapi import OpenAPIExtensionEnum, OpenAPIImportManager, convert_operation_v3_to_v2
+from apigateway.biz.openapi import OpenAPIImportManager
 from apigateway.biz.resource_doc import ArchiveFileFactory, NoResourceDocError
 from apigateway.common.exceptions import SchemaValidationError
+from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.resource_version import OpenAPIExportManager
+from apigateway.utils.yaml import yaml_export_dumps
 
 from .generators import Jinja2ToMarkdownGenerator, OpenAPIToMarkdownGenerator
 from .models import ArchiveDoc, OpenAPIDoc
+from .presenters import OperationDocBuilder
 
 
 class BaseParser:
@@ -166,53 +168,37 @@ class OpenAPIParser(BaseParser):
 
     def parse_resource_data(self, resources: List[Dict[str, Any]], language: DocLanguageEnum) -> List[OpenAPIDoc]:
         """根据已校验的资源导入 DTO 生成文档，避免再次走 OpenAPI 资源导入校验。"""
-        docs = []
-        gateway = Gateway.objects.get(id=self.gateway_id)
-        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
-        for resource in resources:
-            content = exporter.export_openapi([resource], file_type=OpenAPIFormatEnum.YAML.value)
-            openapi_manager = OpenAPIImportManager.load_from_content(gateway, content)
-            docs.extend(
-                self._parse_paths(
-                    paths=openapi_manager.data["paths"],
-                    language=language,
-                    is_openapi_v2="swagger" in openapi_manager.data,
-                )
-            )
-
+        docs = self._parse_resources(resources, language)
         self._enrich_docs(docs)
         return docs
 
-    def _parse_paths(
+    def _parse_resources(
         self,
-        paths: Dict[str, Any],
+        resources: List[Dict[str, Any]],
         language: DocLanguageEnum,
-        is_openapi_v2: bool,
     ) -> List[OpenAPIDoc]:
         docs = []
-        for path, path_item in paths.items():
-            for method, original_operation in path_item.items():
-                if method == OpenAPIExtensionEnum.METHOD_ANY.value:
-                    continue
+        for resource in resources:
+            method = resource["method"].upper()
+            if method == HTTP_METHOD_ANY:
+                continue
 
-                converted_operation = original_operation
-                if not is_openapi_v2:
-                    converted_operation = convert_operation_v3_to_v2(original_operation)
-
-                openapi = OpenAPIExportManager(title=converted_operation["operationId"]).get_swagger_by_paths(
-                    paths={
-                        path: {method: converted_operation},
-                    },
-                    openapi_format=OpenAPIFormatEnum.YAML,
+            openapi_data = OpenAPIExportManager(
+                title=resource["name"],
+                include_bk_apigateway_resource=False,
+            ).get_openapi_content([resource])
+            operation = openapi_data["paths"][resource["path"]][method.lower()]
+            operation["summary"] = resource.get("summary", "")
+            operation["deprecated"] = resource.get("deprecated", False)
+            context = OperationDocBuilder(openapi_data).build()
+            docs.append(
+                OpenAPIDoc(
+                    resource_name=resource["name"],
+                    language=language,
+                    content=OpenAPIToMarkdownGenerator(context, language).generate_doc_content(),
+                    openapi=yaml_export_dumps(openapi_data),
                 )
-                docs.append(
-                    OpenAPIDoc(
-                        resource_name=converted_operation["operationId"],
-                        language=language,
-                        content=OpenAPIToMarkdownGenerator(openapi, language).generate_doc_content(),
-                        openapi=openapi,
-                    )
-                )
+            )
 
         return docs
 
@@ -224,8 +210,4 @@ class OpenAPIParser(BaseParser):
         if len(validate_err_list) > 0 or not openapi_manager.parser:
             raise SchemaValidationError("")
 
-        return self._parse_paths(
-            paths=openapi_manager.parser.get_paths(),
-            language=language,
-            is_openapi_v2=openapi_manager.version == OPENAPIV2,
-        )
+        return self._parse_resources(openapi_manager.get_resource_list(raw=True), language)

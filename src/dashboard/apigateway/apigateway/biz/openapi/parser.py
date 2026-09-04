@@ -71,6 +71,8 @@ class BaseParser:
                     "enable_websocket": extension_resource.get("enableWebsocket", False),
                     "name": operation["operationId"].replace("-", "_"),  # 避免drf生成的带有-的导入不进去
                     "description": self._adapt_description(operation.get("summary"), operation.get("description")),
+                    "summary": operation.get("summary", ""),
+                    "deprecated": operation.get("deprecated", False),
                     "description_en": extension_resource.get("descriptionEn"),
                     "labels": operation.get("tags", []),
                     "is_public": extension_resource.get("isPublic", True),

@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 import pytest
 
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -160,10 +162,71 @@ class TestSwagger:
     def test_parse(self, fake_gateway, fake_resource_swagger, fake_default_backend):
         docs = OpenAPIParser(fake_gateway.id)._parse(fake_resource_swagger, DocLanguageEnum.ZH)
 
-        assert docs[0].resource_name == "http_get_mapping_user_id"
+        assert [doc.resource_name for doc in docs] == ["http_get_mapping_user_id", "echo"]
         assert docs[0].language == DocLanguageEnum.ZH
-        assert docs[0].content != ""
-        assert docs[0].openapi != ""
+        assert all(yaml_loads(doc.openapi)["openapi"] == "3.0.1" for doc in docs)
+        assert all("swagger" not in yaml_loads(doc.openapi) for doc in docs)
+        assert "### API 信息" in docs[0].content
+        assert "`GET`" in docs[0].content
+        assert "`/http/get/mapping/{userId}`" in docs[0].content
+
+    def test_parse_openapi_31_request_and_response_examples(self, fake_gateway, fake_default_backend):
+        openapi = json.dumps(
+            {
+                "openapi": "3.1.0",
+                "info": {"title": "Users", "version": "1.0.0"},
+                "paths": {
+                    "/users": {
+                        "post": {
+                            "operationId": "create_user",
+                            "summary": "Create user",
+                            "requestBody": {
+                                "required": True,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {"name": {"type": "string"}},
+                                        }
+                                    }
+                                },
+                            },
+                            "responses": {
+                                "201": {
+                                    "description": "Created",
+                                    "content": {
+                                        "application/json": {
+                                            "examples": {
+                                                "created": {
+                                                    "summary": "Created user",
+                                                    "value": {"id": 1},
+                                                }
+                                            }
+                                        }
+                                    },
+                                }
+                            },
+                            "x-bk-apigateway-resource": {
+                                "isPublic": True,
+                                "allowApplyPermission": True,
+                                "backend": {
+                                    "name": "default",
+                                    "method": "post",
+                                    "path": "/users",
+                                },
+                            },
+                        }
+                    }
+                },
+            }
+        )
+
+        docs = OpenAPIParser(fake_gateway.id)._parse(openapi, DocLanguageEnum.EN)
+
+        assert len(docs) == 1
+        assert yaml_loads(docs[0].openapi)["openapi"] == "3.1.0"
+        assert "##### Example: created - Created user" in docs[0].content
+        assert '"id": 1' in docs[0].content
 
     def test_parse_resource_data(self, fake_resource, mocker):
         validate_openapi_import = mocker.patch("apigateway.biz.openapi.openapi.OpenAPIImportManager.validate")
@@ -191,4 +254,21 @@ class TestSwagger:
         assert len(docs) == 1
         assert docs[0].resource == fake_resource
         assert docs[0].content == "doc content"
-        assert yaml_loads(docs[0].openapi)["swagger"] == "2.0"
+        assert yaml_loads(docs[0].openapi)["openapi"] == "3.0.1"
+
+    def test_parse_resource_data_skips_method_any(self, fake_gateway):
+        docs = OpenAPIParser(fake_gateway.id).parse_resource_data(
+            [
+                {
+                    "name": "any_users",
+                    "description": "",
+                    "method": "ANY",
+                    "path": "/users",
+                    "labels": [],
+                    "openapi_schema": {},
+                }
+            ],
+            DocLanguageEnum.EN,
+        )
+
+        assert docs == []
