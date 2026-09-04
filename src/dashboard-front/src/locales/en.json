@@ -228,6 +228,7 @@
   "审批状态：": "Approve Status: ",
   "审批内容：": "Comment: ",
   "名称": "Name",
+  "名称不能包含保留字 {word}": "Name cannot contain the reserved word {word}",
   "部分通过": "Partially Approved",
   "全部通过": "Fully Approved",
   "续期前的过期时间": "Pre-renewal Expiry",
