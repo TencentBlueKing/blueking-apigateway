@@ -1091,21 +1091,6 @@ class TestOpenAPIExporter:
         assert extension["kind"] == "ai"
         assert extension["backend"] == {"name": "openai-primary"}
 
-    def test_get_swagger_by_paths(self):
-        paths = {
-            "/user": {
-                "get": {
-                    "operationId": "get_user",
-                },
-            }
-        }
-
-        result = OpenAPIExportManager().get_swagger_by_paths(paths=paths, openapi_format=OpenAPIFormatEnum.YAML)
-        assert not result.startswith("{")
-
-        result = OpenAPIExportManager().get_swagger_by_paths(paths=paths, openapi_format=OpenAPIFormatEnum.JSON)
-        assert result.startswith("{")
-
     def test_get_swagger_by_resources(self, fake_resource_dict):
         exporter = OpenAPIExportManager()
 

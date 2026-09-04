@@ -47,7 +47,6 @@ dependencies = [
     { name = "bk-notice-sdk" },
     { name = "bkapi-bk-apigateway" },
     { name = "bkapi-client-core" },
-    { name = "bkapi-client-generator" },
     { name = "bkapi-component-open" },
     { name = "bkpaas-auth" },
     { name = "blue-krill" },
@@ -162,7 +161,6 @@ requires-dist = [
     { name = "bk-notice-sdk", specifier = "==1.4.2" },
     { name = "bkapi-bk-apigateway", specifier = ">=1.0.12,<2" },
     { name = "bkapi-client-core", specifier = "==1.2.0" },
-    { name = "bkapi-client-generator", specifier = "==0.1.30" },
     { name = "bkapi-component-open", specifier = ">=1.0.3,<2" },
     { name = "bkpaas-auth", specifier = "==4.1.1" },
     { name = "blue-krill", specifier = "==3.1.1" },
@@ -438,14 +436,6 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/9b/0e76b547a4718f5713a9210dd261d51f32b8c53e2b2ab38bb6286cad61d5/bkapi_client_core-1.2.0-py2.py3-none-any.whl", hash = "sha256:f18b29e0fc0ee8d5eca33ea1f823f26dc7d7adc2f39670cc45cc2f8452f39630", size = 31346, upload-time = "2023-11-28T02:49:37.229Z" },
-]
-
-[[package]]
-name = "bkapi-client-generator"
-version = "0.1.30"
-source = { registry = "https://pypi.org/simple/" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/11/76c0628e693105397bd0fdc806c7b3232c0fc9ab80043bb95a04e7784297/bkapi_client_generator-0.1.30-py3-none-any.whl", hash = "sha256:c09cda8dabdfa7b0106f20ad572f2ce9d3249feea4edf351c0d5666bb1421860", size = 11065551, upload-time = "2024-08-22T03:16:17.223Z" },
 ]
 
 [[package]]

@@ -95,30 +95,6 @@ class BaseExporter:
             "paths": self._generate_paths(resources),
         }
 
-    def get_swagger_by_paths(
-        self,
-        paths: Dict[str, Any],
-        openapi_format: OpenAPIFormatEnum,
-    ) -> str:
-        info = {
-            "version": self.api_version,
-            "title": self.title,
-            "description": self.description,
-        }
-
-        content = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {key: value for key, value in info.items() if value is not None},
-            "schemes": ["http"],
-            "paths": paths,
-        }
-
-        if openapi_format == OpenAPIFormatEnum.JSON:
-            return json.dumps(content, indent=4)
-
-        return yaml_export_dumps(content)
-
     def _generate_paths(self, resources: List[Dict]) -> Dict[str, Any]:
         paths: Dict[str, Any] = {}
         for resource in resources:
@@ -353,16 +329,6 @@ class OpenAPIExportManager:
     def get_openapi_content(self, resources: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Return an OAS3 document without mutating caller-owned resource data."""
         return self._exporter.get_openapi_content(copy.deepcopy(resources))
-
-    def get_swagger_by_paths(
-        self,
-        paths: Dict[str, Any],
-        openapi_format: OpenAPIFormatEnum,
-    ) -> str:
-        """
-        获取swagger2.0的格式导出(主要用于文档生成)
-        """
-        return self._exporter.get_swagger_by_paths(paths, openapi_format)
 
     def get_swagger_by_resources(self, resources: List[Dict], file_type: str = "") -> str:
         """
