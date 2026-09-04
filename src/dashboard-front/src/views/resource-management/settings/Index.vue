@@ -962,7 +962,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           </bk-button>
           <div
             class="ml-12px"
-            onClick={(e: MouseEvent) => e?.preventDefault()}
+            onClick={(e: MouseEvent) => e.preventDefault()}
           >
             <bk-dropdown
               trigger="click"
@@ -974,7 +974,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
               {{
                 default: () => (
                   <ag-icon
-                    class="flex items-center justify-center w-16px h-16px color-#3a84ff cursor-pointer"
+                    class="flex items-center justify-center w-20px h-20px cursor-pointer rounded-2px  hover:bg-#EAEBF0"
                     name="more-fill"
                     size="16"
                   />

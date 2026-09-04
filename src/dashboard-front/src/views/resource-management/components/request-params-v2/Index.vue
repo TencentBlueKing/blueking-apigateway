@@ -49,27 +49,34 @@
       v-else-if="readonly"
       class="request-params-v2__readonly"
     >
-      <section
+      <template
         v-for="location in PARAMETER_LOCATIONS"
         :key="location"
+      >
+        <section
+          v-if="state.parameters[location].length"
+          class="readonly-section"
+        >
+          <div class="readonly-section__header">
+            <span class="readonly-section__title">
+              {{ getLocationLabel(location) }}
+            </span>
+            <span class="readonly-section__count">
+              {{ state.parameters[location].length }}
+            </span>
+          </div>
+          <ScalarParameterTable
+            :location="location"
+            :model-value="state.parameters[location]"
+            readonly
+          />
+        </section>
+      </template>
+
+      <section
+        v-if="state.body"
         class="readonly-section"
       >
-        <div class="readonly-section__header">
-          <span class="readonly-section__title">
-            {{ getLocationLabel(location) }}
-          </span>
-          <span class="readonly-section__count">
-            {{ state.parameters[location].length }}
-          </span>
-        </div>
-        <ScalarParameterTable
-          :location="location"
-          :model-value="state.parameters[location]"
-          readonly
-        />
-      </section>
-
-      <section class="readonly-section">
         <div class="readonly-section__header">
           <span class="readonly-section__title">Body</span>
           <span class="readonly-section__count">
@@ -77,16 +84,9 @@
           </span>
         </div>
         <BodyParameterTable
-          v-if="state.body"
           :model-value="bodyState"
           readonly
         />
-        <div
-          v-else
-          class="readonly-section__empty"
-        >
-          {{ t('暂无数据') }}
-        </div>
       </section>
     </div>
 
@@ -518,17 +518,6 @@ defineExpose({
     border-radius: 10px;
     align-items: center;
     justify-content: center;
-  }
-
-  &__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 88px;
-    font-size: 12px;
-    color: #979BA5;
-    border: 1px solid #DCDEE5;
-    border-radius: 3px;
   }
 }
 

@@ -42,7 +42,7 @@
                   v-if="chooseAssets?.release?.status === 'unreleased'"
                   theme="info"
                   :title="t('尚未发布')"
-                  class="mt-15px mb-15px"
+                  class="mt-16px mb-24px"
                 />
                 <BkAlert
                   v-else
@@ -54,7 +54,7 @@
                         created_time: chooseAssets?.release.created_time
                       }) :
                       t('资源更新成功后, 需发布到指定的环境, 方可生效')"
-                  class="mt-15px mb-15px"
+                  class="mt-16px mb-24px"
                 />
 
                 <BkForm
@@ -863,7 +863,7 @@ defineExpose({ showReleaseSideslider });
 }
 
 .publish-version-tips {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 14px;
   font-weight: 400;
   color: #63656e;

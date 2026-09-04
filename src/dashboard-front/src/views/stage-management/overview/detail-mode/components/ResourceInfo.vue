@@ -45,6 +45,7 @@
         :filter-row="null"
         :frontend-search="isSearching"
         local-page
+        hover
         resizable
         :row-class-name="getRowClassName"
         @filter-change="handleFilterChange"
@@ -357,7 +358,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           <bk-button
             text
             theme="primary"
-            class="mr-8px"
+            class="mr-12px"
             onClick={() => showDetails(row)}
           >
             { t('查看资源详情') }

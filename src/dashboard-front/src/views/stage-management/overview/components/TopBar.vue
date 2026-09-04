@@ -58,8 +58,8 @@
           <span
             v-else
             v-bk-tooltips="{
-              content: getStageStatus(stage) === 'unreleased' ? t('未发布') : t('未上线'),
-              disabled: !['unreleased', 'delist'].includes(getStageStatus(stage))
+              content: getStatusText(getStageStatus(stage)),
+              disabled: !getStatusText(getStageStatus(stage)),
             }"
             class="dot"
             :class="[getStageStatus(stage)]"
@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { getStageList } from '@/services/source/stage';
 import { Spinner } from 'bkui-vue/lib/icon';
-import { getStageStatus } from '@/utils';
+import { getStageStatus, getStatusText } from '@/utils';
 import { useGateway, useStage } from '@/stores';
 import CreateStage from '@/views/stage-management/overview/components/CreateStage.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';

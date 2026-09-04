@@ -37,6 +37,7 @@
         class="search-input"
         :placeholder="t('请输入模型服务名称')"
         clearable
+        type="search"
         @enter="handleSearch"
       />
     </div>
@@ -47,6 +48,7 @@
         resizable
         :api-method="getTableData"
         :columns="columns"
+        hover
         @clear-filter="handleClearFilterKey"
       />
     </div>
@@ -139,63 +141,88 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     fixed: 'right',
     width: 210,
     cell: (h: any, { row }: { row: any }) => (
-      <div class="flex gap-12px">
+      <div class="flex">
         <bk-button
           text
           theme="primary"
           onClick={() => handleEdit(row)}
         >
-          { t('编辑') }
+          {t('编辑')}
         </bk-button>
-        <bk-button
-          text
-          theme="primary"
-          onClick={() => handleClone(row)}
+        <div
+          class="ml-12px"
+          onClick={(e: MouseEvent) => e.preventDefault()}
         >
-          { t('克隆') }
-        </bk-button>
-        {
-          row.resource_count
-            ? (
-              <span
-                v-bk-tooltips={{
-                  content: row.name === 'default'
-                    ? t('默认后端服务，且被{resourceCount}个资源引用了，不能删除', {
-                      resourceCount: row.resource_count,
-                    })
-                    : t('服务被{resourceCount}个资源引用了，不能删除', {
-                      resourceCount: row.resource_count,
-                    }),
-                }}
-              >
-                <bk-button
-                  text
-                  theme="primary"
-                  disabled={Boolean(row.resource_count) || row.name === 'default'}
-                  onClick={() => handleDelete(row)}
-                >
-                  { t('删除') }
-                </bk-button>
-              </span>
-            )
-            : (
-              <span
-                v-bk-tooltips={{
-                  content: t('默认后端服务，不能删除'),
-                  disabled: row.name !== 'default',
-                }}
-              >
-                <bk-button
-                  text
-                  theme="primary"
-                  disabled={row.name === 'default'}
-                  onClick={() => handleDelete(row)}
-                >
-                  { t('删除') }
-                </bk-button>
-              </span>
-            )
-        }
+          <bk-dropdown
+            trigger="click"
+            popoverOptions={{
+              clickContentAutoHide: true,
+              hideIgnoreReference: true,
+            }}
+          >
+            {{
+              default: () => (
+                <ag-icon
+                  class="flex items-center justify-center w-20px h-20px cursor-pointer rounded-2px  hover:bg-#EAEBF0"
+                  name="more-fill"
+                  size="16"
+                />
+              ),
+              content: () => (
+                <bk-dropdown-menu>
+                  <div>
+                    <bk-dropdown-item onClick={() => handleClone(row)}>
+                      <bk-button
+                        text
+                        theme="primary"
+                      >
+                        {t('克隆')}
+                      </bk-button>
+                    </bk-dropdown-item>
+                    {
+                      row.resource_count
+                        ? (
+                          <bk-dropdown-item onClick={() => handleDelete(row)}>
+                            <bk-button
+                              v-bk-tooltips={{
+                                content: row.name === 'default'
+                                  ? t('默认后端服务，且被{resourceCount}个资源引用了，不能删除', {
+                                    resourceCount: row.resource_count,
+                                  })
+                                  : t('服务被{resourceCount}个资源引用了，不能删除', {
+                                    resourceCount: row.resource_count,
+                                  }),
+                              }}
+                              text
+                              theme="primary"
+                              disabled
+                            >
+                              {t('删除')}
+                            </bk-button>
+                          </bk-dropdown-item>
+                        )
+                        : (
+                          <bk-dropdown-item onClick={() => handleDelete(row)}>
+                            <bk-button
+                              v-bk-tooltips={{
+                                content: t('默认后端服务，不能删除'),
+                                disabled: row.name !== 'default',
+                              }}
+                              text
+                              theme="primary"
+                              disabled={row.name === 'default'}
+                            >
+                              {t('删除')}
+                            </bk-button>
+                          </bk-dropdown-item>
+                        )
+                    }
+                  </div>
+                </bk-dropdown-menu>
+              ),
+            }}
+          </bk-dropdown>
+        </div>
       </div>
     ),
   },
@@ -248,6 +275,9 @@ const handleResource = (id: number) => {
 };
 
 const handleDelete = (row: TableRowData) => {
+  if (row.resource_count || row.name === 'default') {
+    return;
+  }
   usePopInfoBox({
     isShow: true,
     type: 'warning',
@@ -277,7 +307,7 @@ const handleModelServiceAdded = () => {
   overflow: hidden;
 
   .model-service-alert {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
   }
 
   .header {

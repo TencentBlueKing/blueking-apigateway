@@ -1647,7 +1647,6 @@
   "无权限": "No permission",
   "版本号须符合 Semver 规范": "Version number must comply with Semver specification",
   "确认下架环境？": "Confirm environment shutdown?",
-  "确认下架": "Shutdown",
   "可能会导致正在使用该接口的服务异常，请确认": "This may cause services using this interface to malfunction, please confirm",
   "请输入 Cookies 中字段 bk_token 的值": "Please enter the value of the bk_token field in Cookies",
   "网关的唯一标识，创建后不可更改": "The gateway's unique identifier, cannot be changed after creation",
@@ -1663,7 +1662,7 @@
   "环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作": "Changes in all configuration information of the environment (including backend service configuration, plugin configuration, variable configuration) will directly affect the online environment, please proceed with caution",
   "修改环境的配置信息（含后端服务配置、插件配置、变量配置）后，会": "After modifying the environment configuration information (including back-end service configuration, plug-in configuration, and variable configuration), the system will",
   "立即在线上环境生效，请谨慎操作": "The online environment takes effect immediately. Perform this operation with caution",
-  "已下架": "Taken down",
+  "已下架": "Unreleased",
   "删除环境": "Delete environment",
   "自定义超时时间": "Custom timeout",
   "不允许申请权限": "Permission application not allowed",
@@ -2696,5 +2695,6 @@
   "新增字段": "Add Field",
   "支持 OpenAPI Operation，或按 header、query、path、body 分组的请求 JSON；普通 JSON 将作为 Body 生成。": "Supports an OpenAPI Operation or request JSON grouped by header, query, path, and body. Plain JSON is treated as the Body.",
   "无插件": "No plugin",
-  "可编程网关请参考框架文档，配置资源请求参数声明": "For programmable gateways, please refer to the framework documentation to configure the resource request parameter declaration"
+  "可编程网关请参考框架文档，配置资源请求参数声明": "For programmable gateways, please refer to the framework documentation to configure the resource request parameter declaration",
+  "已上线": "Released"
 }
