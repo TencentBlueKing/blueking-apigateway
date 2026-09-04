@@ -41,7 +41,7 @@
         theme="primary"
         @click="handleRefresh"
       >
-        {{ t("刷新") }}
+        {{ t('刷新') }}
       </BkButton>
     </BkException>
   </div>
@@ -120,13 +120,18 @@ const handleRefresh = () => {
   margin: 0 auto;
 
   :deep(.bk-exception) {
+
     .bk-exception-title {
       font-size: 14px;
       color: #63656e;
     }
 
     .bk-exception-img {
-      width: 100%;
+       width: 100%;
+
+      .exception-image {
+        height: 150px;
+      }
     }
 
     .bk-exception-footer {

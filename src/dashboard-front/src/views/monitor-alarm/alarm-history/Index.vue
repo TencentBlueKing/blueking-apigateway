@@ -19,14 +19,11 @@
   <div class="page-wrapper-padding alarm-history-container">
     <div class="header flex justify-between">
       <BkForm
-        class="flex"
+        class="flex gap-16px"
         :model="filterData"
       >
-        <BkFormItem
-          :label="t('选择时间')"
-          class="ag-form-item-datepicker"
-          label-width="85"
-        >
+        <BkFormItem label-width="0">
+          <span class="pr-8px">{{ t('选择时间') }}</span>
           <BkDatePicker
             :key="dateKey"
             v-model="dateValue"
@@ -44,41 +41,43 @@
           />
         </BkFormItem>
         <BkFormItem
-          :label="t('告警策略')"
+          label-width="0"
           property="alarm_strategy_id"
-          class="m-b-10px"
-          label-width="108"
         >
-          <BkSelect
-            v-model="filterData.alarm_strategy_id"
-            filterable
-            :input-search="false"
-            :scroll-loading="scrollLoading"
-            @scroll-end="handleScrollEnd"
-            @toggle="handleToggle"
-          >
-            <BkOption
-              v-for="option in alarmStrategyOption"
-              :key="option.id"
-              :value="option.value"
-              :label="option.label"
-            />
-          </BkSelect>
+          <div class="flex">
+            <span class="pr-8px">{{ t('告警策略') }}</span>
+            <BkSelect
+              v-model="filterData.alarm_strategy_id"
+              filterable
+              :input-search="false"
+              :scroll-loading="scrollLoading"
+              @scroll-end="handleScrollEnd"
+              @toggle="handleToggle"
+            >
+              <BkOption
+                v-for="option in alarmStrategyOption"
+                :key="option.id"
+                :value="option.value"
+                :label="option.label"
+              />
+            </BkSelect>
+          </div>
         </BkFormItem>
         <BkFormItem
-          :label="t('告警状态')"
+          label-width="0"
           property="status"
-          class="m-b-10px"
-          label-width="119"
         >
-          <BkSelect v-model="filterData.status">
-            <BkOption
-              v-for="option in alarmStatus"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            />
-          </BkSelect>
+          <div class="flex">
+            <span class="pr-8px">{{ t('告警状态') }}</span>
+            <BkSelect v-model="filterData.status">
+              <BkOption
+                v-for="option in alarmStatus"
+                :key="option.value"
+                :value="option.value"
+                :label="option.label"
+              />
+            </BkSelect>
+          </div>
         </BkFormItem>
       </BkForm>
     </div>

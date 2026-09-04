@@ -23,7 +23,7 @@
         <div
           v-if="!loading"
           class="status-indicator"
-          :style="{ top: !['doing'].includes(status) ? '9px' : '4px' }"
+          :style="{ top: status === 'doing' ? '4px' : '9px' }"
         >
           <Spinner
             v-if="status === 'doing'"

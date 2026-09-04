@@ -101,10 +101,7 @@
 <script setup lang="ts">
 import StageCardItem from './components/StageCardItem.vue';
 import { useGateway } from '@/stores';
-import {
-  InfoBox,
-  Message,
-} from 'bkui-vue';
+import { Message } from 'bkui-vue';
 import {
   type IStageListItem,
   getStageList,
@@ -119,6 +116,7 @@ import CreateStage from '../components/CreateStage.vue';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../../components/ReleaseProgrammableEvent.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import { usePopInfoBox } from '@/hooks';
 
 type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
@@ -272,11 +270,13 @@ const showLogs = (stage: any) => {
 
 // 下架环境
 const handleStageUnlist = async (id: number) => {
-  InfoBox({
-    infoType: 'warning',
+  usePopInfoBox({
+    isShow: true,
+    type: 'warning',
     title: t('确认下架环境？'),
     subTitle: t('可能会导致正在使用该接口的服务异常，请确认'),
-    confirmText: t('确认下架'),
+    confirmText: t('确认'),
+    cancelText: t('取消'),
     onConfirm: async () => {
       const data = { status: 0 };
       await toggleStatus(gatewayId.value, id, data);
@@ -286,7 +286,6 @@ const handleStageUnlist = async (id: number) => {
       });
       emit('updated');
       // 获取网关列表
-      // await mitt.emit('get-environment-list-data', true);
       await fetchStageList();
       startPollingStages();
     },

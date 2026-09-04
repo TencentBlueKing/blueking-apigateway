@@ -555,10 +555,8 @@ const handleStageUnlist = async () => {
     type: 'warning',
     title: t('确认下架环境？'),
     subTitle: t('可能会导致正在使用该接口的服务异常，请确认'),
-    confirmText: t('确认下架'),
-    confirmButtonTheme: 'primary',
-    contentAlign: 'left',
-    showContentBgColor: true,
+    confirmText: t('确认'),
+    cancelText: t('取消'),
     onConfirm: async () => {
       if (isDeleteLoading.value) {
         return;
@@ -572,13 +570,11 @@ const handleStageUnlist = async () => {
           theme: 'success',
         });
         // 获取网关列表
-        // await mitt.emit('rerun-init');
         emit('updated');
         currentStage.value = await getStageDetail(gatewayId.value, stageId);
         tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
           component.reload?.();
         });
-        // 开启loading
       }
       finally {
         showDropdown.value = false;
@@ -678,10 +674,10 @@ const handleDevGuideClick = () => {
       position: relative;
       display: flex;
       width: 120px;
-      height: 80px;
+      height: 96px;
       margin-right: 35px;
       background-color: #f0f5ff;
-      border-radius: 8px;
+      border-radius: 2px;
       align-items: center;
       justify-content: center;
 
@@ -742,7 +738,6 @@ const handleDevGuideClick = () => {
     display: flex;
 
     .column {
-      transform: translateY(-8px);
 
       &:first-child {
         margin-right: 80px;

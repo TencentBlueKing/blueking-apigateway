@@ -1608,6 +1608,7 @@ onUnmounted(() => {
     width: 100%;
     padding-left: 24px;
     background-color: #fff;
+    box-shadow: 0 -1px 0 0 #dcdee5;
     transition: .3s;
   }
 }

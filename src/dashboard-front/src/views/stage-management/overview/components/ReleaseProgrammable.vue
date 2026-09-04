@@ -33,7 +33,7 @@
               <div class="main">
                 <BkAlert
                   v-if="currentStage?.status === 1"
-                  class="mt-15px"
+                  class="mt-16px"
                   theme="info"
                 >
                   <div class="alert-content">
@@ -63,7 +63,7 @@
                     </span>
                   </div>
                 </BkAlert>
-                <div class="mt-15px">
+                <div class="mt-16px">
                   <BkForm
                     ref="formRef"
                     :model="formData"
@@ -682,73 +682,5 @@ defineExpose({ showReleaseSideslider });
     display: none !important;
     opacity: 0% !important;
   }
-}
-
-.custom-version-list {
-
-  .bk-select-content {
-
-    .bk-select-dropdown {
-
-      .bk-select-options {
-
-        .bk-select-option {
-          padding-inline: 0;
-
-          .version-options {
-            padding-inline: 12px;
-            width: 100%;
-
-            .cur-version {
-              margin-left: 6px;
-            }
-
-            &-disabled {
-              color: #c4c6cc;
-              cursor: not-allowed;
-
-              .bk-tag {
-                cursor: not-allowed;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  .extension-add {
-    margin: 0 auto;
-    cursor: pointer;
-
-    .extension-add-content {
-      display: flex;
-      font-size: 12px;
-      color: #63656e;
-      align-items: center;
-
-      .add-resource-btn {
-        margin-right: 5px;
-        font-size: 16px;
-        color: #979ba5;
-      }
-    }
-  }
-}
-
-.publish-version-tips {
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #63656e;
-
-  span {
-    color: #ff9c01;
-  }
-}
-
-.version-tips {
-  margin-left: 4px;
-  color: #979ba5;
 }
 </style>
