@@ -540,6 +540,10 @@ const defaultFormData = ref({
 });
 
 const isNameAvailable = ref(true);
+// 可编程网关名称保留字
+const RESERVED_NAME_WORDS = ['-dot-', '0us0', '--', '-m-'];
+// 命中的保留字，用于错误提示
+const matchedReservedWord = ref('');
 const rules = {
   'name': [
     {
@@ -565,6 +569,16 @@ const rules = {
       message: () => formData.value.kind !== 1
         ? t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符')
         : t('只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        // 可编程网关名称不允许包含保留字
+        if (formData.value.kind !== 1 || !value) return true;
+        matchedReservedWord.value = RESERVED_NAME_WORDS.find(word => value.includes(word)) ?? '';
+        return !matchedReservedWord.value;
+      },
+      message: () => t('名称不能包含保留字 {word}', { word: matchedReservedWord.value }),
       trigger: 'blur',
     },
     {
