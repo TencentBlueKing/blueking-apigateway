@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
+from apigateway.apis.sdk_fields import SDKGenerationLanguageField
 from apigateway.common.i18n.field import SerializerTranslatedField
 
 
@@ -34,9 +34,7 @@ class GatewaySLZ(serializers.Serializer):
 
 
 class SDKDocInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(
-        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
-    )
+    language = SDKGenerationLanguageField(help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.sdk.serializers.SDKDocInputSLZ"

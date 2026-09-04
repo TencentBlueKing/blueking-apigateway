@@ -321,7 +321,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     cell: (h: any, { row }: any) => (
       <div class="flex gap-10px">
         {
-          featureFlagStore.flags.ALLOW_UPLOAD_SDK_TO_REPOSITORY
+          featureFlagStore.flags.ENABLE_SDK
             ? (
               <bk-button
                 text

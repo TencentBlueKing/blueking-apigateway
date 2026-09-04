@@ -1324,19 +1324,41 @@ export interface IDocRetrieveOutput {
 /**
  * GET /gateways/{gateway_id}/sdks/
  */
+export type SDKGenerationStatus = 'pending' | 'running' | 'success' | 'failed';
+
+export type SDKNativeStatus = 'not_required' | 'pending' | 'running' | 'success' | 'failed';
+
 export interface IGatewaySDKListOutput {
-  download_url: string
-  id: number
-  language: string
-  version_number: string
-  created_time: string
-  updated_time: string
-  created_by: string
-  name: string
+  id: number | null
+  generation_task_id: number | null
+  generation_item_id: number | null
   resource_version: {
     id: number
     version: string
   }
+  version_number: string
+  language: 'python' | 'java' | 'go' | 'javascript'
+  name: string
+  status: SDKGenerationStatus
+  native_status: SDKNativeStatus
+  error: {
+    code: string
+    message: string
+  } | null
+  native_error: {
+    code: string
+    message: string
+  } | null
+  download_url: string | null
+  created_by: string
+  created_time: string
+  updated_time: string
+}
+
+export interface ISDKGenerationTaskAccepted {
+  id: number
+  status: string
+  status_url: string
 }
 
 /**

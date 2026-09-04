@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+import hashlib
+import subprocess
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+import requests
+from django.conf import settings
+
+from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerateError
+from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
+
+
+@dataclass(frozen=True)
+class PublishedArtifact:
+    distributor: str
+    artifact_type: str
+    filename: str
+    package_reference: str
+    url: str
+    size: int
+    sha256: str
+
+
+def remote_sha256(
+    url: str,
+    *,
+    username: str,
+    password: str,
+    verify: bool = True,
+) -> tuple[str, int] | None:
+    response = requests.get(
+        url,
+        auth=(username, password) if username or password else None,
+        timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+        verify=verify,
+        stream=True,
+    )
+    try:
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        digest = hashlib.sha256()
+        size = 0
+        for chunk in response.iter_content(1024 * 1024):
+            if chunk:
+                size += len(chunk)
+                digest.update(chunk)
+        return digest.hexdigest(), size
+    finally:
+        response.close()
+
+
+def require_matching_remote(url: str, remote: tuple[str, int], expected_sha256: str, expected_size: int) -> None:
+    if remote != (expected_sha256, expected_size):
+        raise SDKArtifactConflict(f"native SDK artifact has different content: {url}")
+
+
+def upload_file(path: Path, url: str, *, username: str, password: str, verify: bool = True) -> None:
+    with path.open("rb") as file:
+        response = requests.put(
+            url,
+            data=file,
+            auth=(username, password) if username or password else None,
+            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+            verify=verify,
+        )
+    response.raise_for_status()
+
+
+def run_publisher(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str] | None = None,
+    sensitive_values: tuple[str, ...] = (),
+) -> None:
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            env=build_subprocess_env(env),
+            shell=False,
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+        )
+    except subprocess.TimeoutExpired as error:
+        raise SDKGenerateError("native_publish_failed", "native SDK publication timed out", retryable=True) from error
+    if result.returncode != 0:
+        stderr = redact_sensitive_text(" ".join((result.stderr or "").split()), sensitive_values)[:768]
+        detail = f": {stderr}" if stderr else ""
+        raise SDKGenerateError(
+            "native_publish_failed", f"native SDK publication exited with status {result.returncode}{detail}"
+        )
+
+
+def find_artifacts(artifacts: Iterable, artifact_types: set[str]):
+    return {artifact.artifact_type: artifact for artifact in artifacts if artifact.artifact_type in artifact_types}

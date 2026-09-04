@@ -1,0 +1,193 @@
+"""Celery entrypoints for the dedicated SDK generation worker."""
+
+from __future__ import annotations
+
+from datetime import timedelta
+from functools import partial
+
+from celery import shared_task
+from django.db import transaction
+from django.db.models import Count, Q
+from django.utils import timezone
+
+from apigateway.apps.support.constants import SDKGenerationItemStatusEnum, SDKNativePublicationStatusEnum
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
+from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
+from apigateway.biz.sdk.metrics import sdk_generation_metrics
+from apigateway.biz.sdk.orchestrator import execute_generation_item, execute_native_publication, refresh_task_status
+from apigateway.biz.sdk.storage import delete_incomplete_artifacts
+from apigateway.components.bkrepo import BKRepoComponent
+
+PENDING_RECOVERY_SECONDS = 300
+
+
+def enqueue_generation_items(item_ids: list[int]) -> None:
+    queue = get_sdk_generation_policy().queue
+    for item_id in item_ids:
+        generate_sdk_item.apply_async(args=[item_id], queue=queue)
+
+
+def enqueue_native_publications(item_ids: list[int]) -> None:
+    queue = get_sdk_generation_policy().queue
+    for item_id in item_ids:
+        publish_sdk_item_native.apply_async(args=(item_id,), queue=queue)
+
+
+def _update_item_metrics() -> None:
+    counts = dict.fromkeys(SDKGenerationItemStatusEnum.get_values(), 0)
+    counts.update(
+        {row["status"]: row["count"] for row in SDKGenerationItem.objects.values("status").annotate(count=Count("id"))}
+    )
+    sdk_generation_metrics.set_item_counts(counts)
+
+
+@shared_task(
+    bind=True,
+    name="apigateway.biz.sdk.tasks.generate_sdk_item",
+    acks_late=True,
+    reject_on_worker_lost=True,
+    ignore_result=True,
+)
+def generate_sdk_item(self, item_id: int) -> str | None:
+    result = execute_generation_item(item_id, self.request.id or "unknown")
+    if result and result.retry_delay_seconds is not None:
+        generate_sdk_item.apply_async(
+            args=(item_id,),
+            countdown=result.retry_delay_seconds,
+            queue=get_sdk_generation_policy().queue,
+        )
+    elif (
+        result
+        and result.status == SDKGenerationItemStatusEnum.SUCCESS.value
+        and SDKGenerationItem.objects.filter(
+            id=item_id, native_status=SDKNativePublicationStatusEnum.PENDING.value
+        ).exists()
+    ):
+        publish_sdk_item_native.apply_async(args=(item_id,), queue=get_sdk_generation_policy().queue)
+    _update_item_metrics()
+    return result.status if result else None
+
+
+@shared_task(
+    bind=True,
+    name="apigateway.biz.sdk.tasks.publish_sdk_item_native",
+    acks_late=True,
+    reject_on_worker_lost=True,
+    ignore_result=True,
+)
+def publish_sdk_item_native(self, item_id: int) -> str | None:
+    result = execute_native_publication(item_id, self.request.id or "unknown")
+    if result and result.retry_delay_seconds is not None:
+        publish_sdk_item_native.apply_async(
+            args=(item_id,),
+            countdown=result.retry_delay_seconds,
+            queue=get_sdk_generation_policy().queue,
+        )
+    _update_item_metrics()
+    return result.status if result else None
+
+
+@shared_task(name="apigateway.biz.sdk.tasks.recover_stale_sdk_generation_items", ignore_result=True)
+def recover_stale_sdk_generation_items() -> int:
+    if not get_sdk_generation_policy().enabled:
+        _update_item_metrics()
+        return 0
+    now = timezone.now()
+    with transaction.atomic():
+        generation_filter = Q(
+            Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True),
+            status=SDKGenerationItemStatusEnum.RUNNING.value,
+        ) | Q(
+            status=SDKGenerationItemStatusEnum.PENDING.value,
+        ) & (
+            Q(next_attempt_at__lte=now)
+            | Q(
+                next_attempt_at__isnull=True,
+                updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
+            )
+        )
+        candidate_task_ids = list(
+            SDKGenerationItem.objects.filter(generation_filter).values_list("task_id", flat=True).distinct()
+        )
+        list(SDKGenerationTask.objects.select_for_update().filter(id__in=candidate_task_ids).order_by("id"))
+        generation_items = list(
+            SDKGenerationItem.objects.select_for_update()
+            .filter(generation_filter, task_id__in=candidate_task_ids)
+            .order_by("task_id", "id")
+        )
+        native_items = list(
+            SDKGenerationItem.objects.select_for_update()
+            .filter(
+                status=SDKGenerationItemStatusEnum.SUCCESS.value,
+            )
+            .filter(
+                Q(
+                    native_status=SDKNativePublicationStatusEnum.RUNNING.value,
+                    native_lease_expires_at__lte=now,
+                )
+                | Q(native_status=SDKNativePublicationStatusEnum.PENDING.value)
+                & (
+                    Q(native_next_attempt_at__lte=now)
+                    | Q(
+                        native_next_attempt_at__isnull=True,
+                        updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
+                    )
+                )
+            )
+        )
+        if not generation_items and not native_items:
+            _update_item_metrics()
+            return 0
+        generation_item_ids = [item.id for item in generation_items]
+        native_item_ids = [item.id for item in native_items]
+        if generation_item_ids:
+            task_ids = sorted({item.task_id for item in generation_items})
+            SDKGenerationItem.objects.filter(id__in=generation_item_ids).update(
+                status=SDKGenerationItemStatusEnum.PENDING.value,
+                lease_token="",
+                lease_expires_at=None,
+                next_attempt_at=None,
+                updated_time=now,
+            )
+            for task_id in task_ids:
+                refresh_task_status(task_id)
+            transaction.on_commit(partial(enqueue_generation_items, generation_item_ids))
+        if native_item_ids:
+            SDKGenerationItem.objects.filter(id__in=native_item_ids).update(
+                native_status=SDKNativePublicationStatusEnum.PENDING.value,
+                native_lease_token="",
+                native_lease_expires_at=None,
+                native_next_attempt_at=None,
+                updated_time=now,
+            )
+            transaction.on_commit(partial(enqueue_native_publications, native_item_ids))
+    _update_item_metrics()
+    return len(generation_items) + len(native_items)
+
+
+@shared_task(name="apigateway.biz.sdk.tasks.cleanup_incomplete_sdk_artifacts", ignore_result=True)
+def cleanup_incomplete_sdk_artifacts() -> int:
+    config = get_sdk_worker_config()
+    cutoff = timezone.now() - timedelta(hours=config.generic_retention_hours)
+    now = timezone.now()
+    item_ids = SDKGenerationItem.objects.filter(
+        Q(status=SDKGenerationItemStatusEnum.FAILED.value)
+        | Q(status=SDKGenerationItemStatusEnum.RUNNING.value, lease_expires_at__lte=now),
+        input_fingerprint__gt="",
+        updated_time__lt=cutoff,
+    ).values_list("id", flat=True)
+    bkrepo = BKRepoComponent.default()
+    if not bkrepo:
+        return 0
+    deleted = 0
+    for item_id in item_ids.iterator():
+        item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
+        deleted += delete_incomplete_artifacts(
+            item,
+            bkrepo,
+            expected_fingerprint=item.input_fingerprint,
+            stale_before=cutoff,
+            expired_before=now,
+        )
+    _update_item_metrics()
+    return deleted

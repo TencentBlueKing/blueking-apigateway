@@ -1,0 +1,220 @@
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+import pytest
+from ddf import G
+from django.conf import settings
+from django.db import IntegrityError, connection, transaction
+from django.db.migrations.executor import MigrationExecutor
+from django.db.models import CheckConstraint
+
+from apigateway.apps.support import constants as support_constants
+from apigateway.apps.support.constants import (
+    ProgrammingLanguageEnum,
+    SDKArtifactStatusEnum,
+    SDKDistributorEnum,
+    SDKGenerationItemStatusEnum,
+)
+from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
+from apigateway.common.constants import SDKGenerationLanguageEnum
+from apigateway.core.models import Gateway
+
+pytestmark = pytest.mark.django_db
+
+
+def test_generation_task_is_unique_per_resource_version(fake_gateway, fake_resource_version):
+    G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        SDKGenerationTask.objects.create(gateway=fake_gateway, resource_version=fake_resource_version)
+
+
+def test_sdk_generation_states_match_their_owners():
+    assert set(support_constants.SDKGenerationTaskStatusEnum.get_values()) == {
+        "pending",
+        "running",
+        "success",
+        "partial",
+        "failed",
+    }
+    assert set(support_constants.SDKGenerationItemStatusEnum.get_values()) == {
+        "pending",
+        "running",
+        "success",
+        "failed",
+    }
+    assert set(support_constants.SDKArtifactStatusEnum.get_values()) == {
+        "pending",
+        "running",
+        "success",
+        "failed",
+    }
+    assert set(support_constants.SDKNativePublicationStatusEnum.get_values()) == {
+        "not_required",
+        "pending",
+        "running",
+        "success",
+        "failed",
+    }
+
+
+def test_sdk_supported_languages_exclude_rust():
+    assert set(ProgrammingLanguageEnum.get_values()) == {
+        "unknown",
+        "python",
+        "java",
+        "go",
+        "javascript",
+    }
+    assert set(SDKGenerationLanguageEnum.get_values()) == {"python", "java", "go", "javascript"}
+
+
+def test_generation_item_is_unique_per_task_and_language(fake_gateway, fake_resource_version):
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    G(SDKGenerationItem, task=task, language="python")
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        SDKGenerationItem.objects.create(task=task, language="python")
+
+
+def test_sdk_generation_models_only_use_uniqueness_constraints():
+    for model in (SDKGenerationTask, SDKGenerationItem, SDKArtifact):
+        assert not any(isinstance(constraint, CheckConstraint) for constraint in model._meta.constraints)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_generation_item_language_choices_match_migration_state():
+    if not hasattr(settings.MIGRATION_MODULES, "get"):
+        pytest.skip("migration-state comparison requires migration modules")
+
+    migration_state = MigrationExecutor(connection).loader.project_state([("support", "0019_sdk_generation_tasks")])
+    migration_choices = tuple(
+        value
+        for value, _ in migration_state.apps.get_model("support", "SDKGenerationItem")
+        ._meta.get_field("language")
+        .choices
+    )
+    runtime_choices = tuple(value for value, _ in SDKGenerationItem._meta.get_field("language").choices)
+
+    assert migration_choices == runtime_choices == tuple(SDKGenerationLanguageEnum.get_values())
+
+
+def test_artifact_filename_is_unique_per_item_and_distributor(fake_gateway, fake_resource_version):
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    item = G(SDKGenerationItem, task=task, language="python")
+    G(SDKArtifact, item=item, distributor=SDKDistributorEnum.BKREPO_GENERIC.value, filename="sdk.tar.gz")
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        SDKArtifact.objects.create(
+            item=item,
+            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+            filename="sdk.tar.gz",
+        )
+
+    G(SDKArtifact, item=item, distributor=SDKDistributorEnum.PYPI.value, filename="sdk.tar.gz")
+
+
+def test_generation_task_deletion_cascades_to_items_and_artifacts(fake_gateway, fake_resource_version):
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    item = G(SDKGenerationItem, task=task, language="python")
+    artifact = G(SDKArtifact, item=item)
+
+    task.delete()
+
+    assert not SDKGenerationItem.objects.filter(id=item.id).exists()
+    assert not SDKArtifact.objects.filter(id=artifact.id).exists()
+
+
+def test_generation_item_defaults_include_pending_status_and_empty_lease(fake_gateway, fake_resource_version):
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+
+    item = G(SDKGenerationItem, task=task, language="python")
+
+    assert item.status == SDKGenerationItemStatusEnum.PENDING.value
+    assert item.lease_token == ""
+    assert item.lease_expires_at is None
+    assert item.attempt_count == 0
+    assert item.attempt_cycle_count == 0
+    assert item.next_attempt_at is None
+    assert item.input_fingerprint == ""
+    assert item.config_snapshot == {}
+    assert item.started_at is None
+    assert item.finished_at is None
+    assert item.gateway_sdk is None
+    assert item.native_status == support_constants.SDKNativePublicationStatusEnum.NOT_REQUIRED.value
+    assert item.native_attempt_count == 0
+    assert item.native_attempt_cycle_count == 0
+    assert item.native_lease_token == ""
+    assert item.native_lease_expires_at is None
+    assert item.native_next_attempt_at is None
+    assert item.native_error_code == ""
+    assert item.native_error_message == ""
+
+
+def test_generation_artifact_defaults_to_generic_pending_status(fake_gateway, fake_resource_version):
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    item = G(SDKGenerationItem, task=task, language="python")
+
+    artifact = G(SDKArtifact, item=item)
+
+    assert artifact.distributor == SDKDistributorEnum.BKREPO_GENERIC.value
+    assert artifact.status == SDKArtifactStatusEnum.PENDING.value
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sdk_generation_migration_converts_legacy_golang_both_directions():
+    if not hasattr(settings.MIGRATION_MODULES, "get"):
+        pytest.skip("migration round-trip requires migration modules")
+
+    migration_name = "0019_sdk_generation_tasks"
+    old_target = ("support", "0018_remove_resourcedocswagger")
+    new_target = ("support", migration_name)
+    gateway = G(
+        Gateway,
+        name="sdk-migration-gateway",
+        _maintainers="admin",
+        tenant_mode="single",
+        tenant_id="default",
+        status=1,
+    )
+
+    executor = MigrationExecutor(connection)
+    leaf_nodes = executor.loader.graph.leaf_nodes()
+    try:
+        executor.migrate([old_target])
+        old_apps = executor.loader.project_state([old_target]).apps
+        old_apps.get_model("support", "APISDK").objects.create(
+            gateway_id=gateway.id,
+            language="golang",
+            version_number="1.0.0",
+            filename="sdk.tar.gz",
+        )
+
+        executor = MigrationExecutor(connection)
+        executor.migrate([new_target])
+        new_apps = executor.loader.project_state([new_target]).apps
+        gateway_sdk = new_apps.get_model("support", "GatewaySDK").objects.get(gateway_id=gateway.id)
+        assert gateway_sdk.language == "go"
+
+        executor = MigrationExecutor(connection)
+        executor.migrate([old_target])
+        reverted_apps = executor.loader.project_state([old_target]).apps
+        reverted_gateway_sdk = reverted_apps.get_model("support", "APISDK").objects.get(gateway_id=gateway.id)
+        assert reverted_gateway_sdk.language == "golang"
+    finally:
+        MigrationExecutor(connection).migrate(leaf_nodes)

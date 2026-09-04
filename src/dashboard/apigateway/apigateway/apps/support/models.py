@@ -23,12 +23,24 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
-from apigateway.apps.support.constants import DocLanguageEnum, DocSourceEnum, DocTypeEnum, ProgrammingLanguageEnum
+from apigateway.apps.support.constants import (
+    DocLanguageEnum,
+    DocSourceEnum,
+    DocTypeEnum,
+    ProgrammingLanguageEnum,
+    SDKArtifactStatusEnum,
+    SDKArtifactTypeEnum,
+    SDKDistributorEnum,
+    SDKGenerationItemStatusEnum,
+    SDKGenerationTaskStatusEnum,
+    SDKNativePublicationStatusEnum,
+)
 from apigateway.apps.support.managers import (
     GatewaySDKManager,
     ReleasedResourceDocManager,
     ResourceDocVersionManager,
 )
+from apigateway.common.constants import SDKGenerationLanguageEnum
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.schema.models import Schema
@@ -157,3 +169,112 @@ class GatewaySDK(ConfigModelMixin):
         verbose_name_plural = _("网关SDK")
         db_table = "support_api_sdk"
         unique_together = ("gateway", "language", "version_number")
+
+
+class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
+    resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
+    status = models.CharField(
+        max_length=32,
+        choices=SDKGenerationTaskStatusEnum.get_choices(),
+        default=SDKGenerationTaskStatusEnum.PENDING.value,
+        db_index=True,
+    )
+
+    class Meta:
+        db_table = "support_sdk_generation_task"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["resource_version"], name="support_sdk_generation_task_resource_version_uniq"
+            ),
+        ]
+
+
+class SDKGenerationItem(TimestampedModelMixin, OperatorModelMixin):
+    task = models.ForeignKey(SDKGenerationTask, on_delete=models.CASCADE, related_name="items")
+    language = models.CharField(
+        max_length=32,
+        choices=SDKGenerationLanguageEnum.get_choices(),
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=SDKGenerationItemStatusEnum.get_choices(),
+        default=SDKGenerationItemStatusEnum.PENDING.value,
+        db_index=True,
+    )
+    gateway_sdk = models.OneToOneField(
+        GatewaySDK,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="generation_item",
+    )
+    lease_token = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    lease_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    attempt_count = models.PositiveIntegerField(default=0)
+    attempt_cycle_count = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    input_fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    config_snapshot = models.JSONField(default=dict, blank=True)
+    error_code = models.CharField(max_length=64, blank=True, default="")
+    error_message = models.CharField(max_length=1024, blank=True, default="")
+    error_retryable = models.BooleanField(default=False)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    native_status = models.CharField(
+        max_length=32,
+        choices=SDKNativePublicationStatusEnum.get_choices(),
+        default=SDKNativePublicationStatusEnum.NOT_REQUIRED.value,
+        db_index=True,
+    )
+    native_attempt_count = models.PositiveIntegerField(default=0)
+    native_attempt_cycle_count = models.PositiveSmallIntegerField(default=0)
+    native_lease_token = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    native_lease_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    native_next_attempt_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    native_error_code = models.CharField(max_length=64, blank=True, default="")
+    native_error_message = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "support_sdk_generation_item"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["task", "language"], name="support_sdk_generation_item_task_language_uniq"
+            ),
+        ]
+
+
+class SDKArtifact(TimestampedModelMixin):
+    item = models.ForeignKey(SDKGenerationItem, on_delete=models.CASCADE, related_name="artifacts")
+    distributor = models.CharField(
+        max_length=32,
+        choices=SDKDistributorEnum.get_choices(),
+        default=SDKDistributorEnum.BKREPO_GENERIC.value,
+    )
+    artifact_type = models.CharField(
+        max_length=32,
+        choices=SDKArtifactTypeEnum.get_choices(),
+        default=SDKArtifactTypeEnum.ARCHIVE.value,
+    )
+    filename = models.CharField(max_length=512)
+    remote_key = models.CharField(max_length=1024, blank=True, default="")
+    package_reference = models.CharField(max_length=512, blank=True, default="")
+    url = models.TextField(blank=True, default="")
+    size = models.PositiveBigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True, default="")
+    original_version = models.CharField(max_length=64, blank=True, default="")
+    package_version = models.CharField(max_length=64, blank=True, default="")
+    status = models.CharField(
+        max_length=32,
+        choices=SDKArtifactStatusEnum.get_choices(),
+        default=SDKArtifactStatusEnum.PENDING.value,
+        db_index=True,
+    )
+
+    class Meta:
+        db_table = "support_sdk_artifact"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["item", "distributor", "filename"], name="support_sdk_artifact_item_distributor_filename_uniq"
+            ),
+        ]

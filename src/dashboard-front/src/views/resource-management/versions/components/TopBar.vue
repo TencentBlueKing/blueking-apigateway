@@ -28,7 +28,7 @@
         :label="t('版本列表')"
       />
       <BkTabPanel
-        v-if="featureFlagStore.flags.ALLOW_UPLOAD_SDK_TO_REPOSITORY"
+        v-if="featureFlagStore.flags.ENABLE_SDK"
         name="sdk"
         :label="t('SDK 列表')"
       />

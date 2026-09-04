@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.db import transaction
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets
@@ -25,15 +24,16 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.support import serializers
-from apigateway.biz.sdk import generate_sdks_for_resource_version
+from apigateway.biz.sdk.config import get_sdk_generation_policy
+from apigateway.biz.sdk.orchestrator import create_or_resume_generation
+from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.core.models import ResourceVersion
-from apigateway.utils.responses import V1OKJsonResponse
+from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @transaction.atomic
     @swagger_auto_schema(
         # todo: 是否需要将 support 改成 sdk？目前只有 sdk 相关的
         tags=["OpenAPI.V1"],
@@ -44,14 +44,19 @@ class SDKGenerateViewSet(viewsets.ViewSet):
         slz = serializers.SDKGenerateV1SLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        data = slz.data
+        data = slz.validated_data
         resource_version = get_object_or_404(
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        results = generate_sdks_for_resource_version(
-            resource_version=resource_version,
-            languages=data["languages"],
-            version=data["version"],
-        )
+        try:
+            if get_sdk_generation_policy().enabled:
+                create_or_resume_generation(
+                    resource_version,
+                    data["languages"],
+                    None,
+                    enqueue_generation_items,
+                )
+        except ValueError as error:
+            return V1FailJsonResponse(str(error))
 
-        return V1OKJsonResponse("OK", data=results)
+        return V1OKJsonResponse("SDK generation started", data=[])

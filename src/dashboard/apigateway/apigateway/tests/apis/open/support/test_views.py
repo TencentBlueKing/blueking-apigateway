@@ -17,7 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
+
 import pytest
+from django.urls import NoReverseMatch, reverse
 
 pytestmark = pytest.mark.django_db
 
@@ -30,6 +33,11 @@ def has_related_app_permission(mocker):
     )
 
 
+@pytest.fixture(autouse=True)
+def enable_sdk_generation(settings):
+    settings.SDK_GENERATION_ENABLED = True
+
+
 class TestSDKGenerateViewSet:
     def test_generate(
         self,
@@ -37,24 +45,16 @@ class TestSDKGenerateViewSet:
         mocker,
         fake_gateway,
         fake_resource_version,
-        fake_sdk,
         rf,
         request_to_view,
     ):
-        generate_sdks = mocker.patch("apigateway.apis.open.support.views.generate_sdks_for_resource_version")
-        generate_sdks.return_value = [
-            {
-                "name": fake_sdk.name,
-                "version": fake_sdk.version_number,
-                "url": fake_sdk.url,
-            }
-        ]
+        create_task = mocker.patch("apigateway.apis.open.support.views.create_or_resume_generation")
 
         request = rf.post(
             "",
             data={
-                "languages": ["python"],
                 "resource_version": fake_resource_version.version,
+                "version": "9.9.9",
             },
         )
         request.gateway = fake_gateway
@@ -64,10 +64,66 @@ class TestSDKGenerateViewSet:
             view_name="openapi.support.sdk.generate",
             path_params={"gateway_name": fake_gateway.name},
         )
-        generate_sdks.assert_called_with(
-            resource_version=fake_resource_version,
-            languages=["python"],
-            version="",
+        assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
+        assert create_task.call_args.args[2] is None
+
+        assert response.status_code == 200
+        assert json.loads(response.content) == {
+            "code": 0,
+            "message": "SDK generation started",
+            "result": True,
+            "data": [],
+        }
+
+    @pytest.mark.parametrize("error", [ValueError("disabled")])
+    def test_generate_maps_expected_domain_errors_to_v1_failure(
+        self,
+        error,
+        has_related_app_permission,
+        mocker,
+        fake_gateway,
+        fake_resource_version,
+        rf,
+        request_to_view,
+    ):
+        mocker.patch("apigateway.apis.open.support.views.create_or_resume_generation", side_effect=error)
+        request = rf.post("", data={"resource_version": fake_resource_version.version})
+        request.gateway = fake_gateway
+
+        response = request_to_view(
+            request=request,
+            view_name="openapi.support.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 400
+        assert json.loads(response.content)["result"] is False
+
+    def test_disabled_generation_keeps_legacy_success_without_enqueue(
+        self,
+        settings,
+        has_related_app_permission,
+        mocker,
+        fake_gateway,
+        fake_resource_version,
+        rf,
+        request_to_view,
+    ):
+        settings.SDK_GENERATION_ENABLED = False
+        create = mocker.patch("apigateway.apis.open.support.views.create_or_resume_generation")
+        request = rf.post("", data={"resource_version": fake_resource_version.version})
+        request.gateway = fake_gateway
+
+        response = request_to_view(
+            request=request,
+            view_name="openapi.support.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
         )
 
         assert response.status_code == 200
+        assert json.loads(response.content)["data"] == []
+        create.assert_not_called()
+
+    def test_v1_has_no_generation_task_detail_route(self):
+        with pytest.raises(NoReverseMatch):
+            reverse("openapi.support.sdk.generation_task_detail", kwargs={"gateway_name": "demo", "task_id": 1})

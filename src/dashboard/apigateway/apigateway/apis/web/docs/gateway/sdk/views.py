@@ -31,7 +31,7 @@ from .serializers import SDKDocInputSLZ, SDKDocOutputSLZ
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取指定语言（python）的网关 SDK 说明文档",
+        operation_description="获取指定语言的网关 SDK 说明文档",
         query_serializer=SDKDocInputSLZ,
         responses={status.HTTP_200_OK: SDKDocOutputSLZ},
         tags=["WebAPI.Docs.Gateway.SDK"],

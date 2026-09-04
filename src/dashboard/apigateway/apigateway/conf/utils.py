@@ -16,12 +16,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
 import socket
 from typing import Optional
 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
 
+from apigateway.common.constants import SDKGenerationLanguageEnum
 from apigateway.common.env import Env
+
+SDK_GENERATION_LANGUAGES = tuple(SDKGenerationLanguageEnum.get_values())
+
+PYTHON_DISTRIBUTION_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$")
+JAVA_PACKAGE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
+GO_MODULE_PREFIX_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:/[A-Za-z0-9._-]+)*$")
+JAVASCRIPT_SCOPE_PATTERN = re.compile(r"^@[a-z0-9][a-z0-9._-]*$")
 
 
 def get_default_keepalive_options() -> Optional[dict]:
@@ -159,7 +169,6 @@ def get_gateway_quota_config(env: Env) -> dict:
         "API_GATEWAY_RESOURCE_LIMITS": api_gateway_resource_limits,
         "MAX_LABEL_COUNT_PER_GATEWAY": env.int("MAX_LABEL_COUNT_PER_GATEWAY", 100),
         "MAX_BACKEND_TIMEOUT_IN_SECOND": env.int("MAX_BACKEND_TIMEOUT_IN_SECOND", 600),
-        "MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION": env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99),
     }
 
 
@@ -171,6 +180,7 @@ def get_default_feature_flags(
     enable_gateway_operation_status: bool,
     enable_run_data_metrics: bool,
     enable_itsm4_permission_apply: bool,
+    sdk_generation_enabled: bool,
 ) -> dict:
     return {
         # 是否展示"监控告警"子菜单
@@ -188,12 +198,8 @@ def get_default_feature_flags(
         "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
         # 网关编辑页，是否支持填写网关"绑定应用"
         "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
-        # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?
-        # 为 False，表示不启用 SDK 功能，网关 API 文档、组件 API 文档中，不展示 SDK 相关页面，
-        # 隐藏"网关 APISDK"、"组件 APISDK"菜单项，隐藏网关中 SDK 创建、SDK 列表等功能项
-        "ENABLE_SDK": env.bool("FEATURE_FLAG_ENABLE_SDK", False),
-        # 隐藏 SDK 列表 相关功能
-        "ALLOW_UPLOAD_SDK_TO_REPOSITORY": env.bool("FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY", False),
+        # 保留前端 feature flag 名称，SDK 相关功能统一由 SDK_GENERATION_ENABLED 控制
+        "ENABLE_SDK": sdk_generation_enabled,
         # 是否允许创建企业微信群，上云版一键拉群功能
         "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
         # ----------------------------------------------------------------------------
@@ -322,6 +328,64 @@ def get_bkrepo_config(env: Env) -> dict:
                 "mirror_url": env.str("DEFAULT_MAVEN_MIRROR_URL", "https://repo.maven.apache.org/maven2"),
             }
         },
+    }
+
+
+def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
+    enabled_languages = env.str("BK_SDK_LANGUAGES", default=",".join(SDK_GENERATION_LANGUAGES)).split(",")
+    if not enabled_languages or any(not language for language in enabled_languages):
+        raise ImproperlyConfigured("BK_SDK_LANGUAGES cannot contain empty entries")
+    if invalid_languages := set(enabled_languages).difference(SDK_GENERATION_LANGUAGES):
+        raise ImproperlyConfigured(f"BK_SDK_LANGUAGES contains unsupported values: {sorted(invalid_languages)}")
+    if len(enabled_languages) != len(set(enabled_languages)):
+        raise ImproperlyConfigured("BK_SDK_LANGUAGES must not contain duplicate values")
+
+    retry_delays = env.list("SDK_GENERATION_RETRY_DELAYS", default=[30, 120], cast=int)
+    if len(retry_delays) != 2 or any(delay <= 0 for delay in retry_delays):
+        raise ImproperlyConfigured("SDK_GENERATION_RETRY_DELAYS must contain two positive integers")
+
+    namespace_settings = {
+        "SDK_PYTHON_DISTRIBUTION_PREFIX": (
+            env.str("SDK_PYTHON_DISTRIBUTION_PREFIX", "bkapi-openapi"),
+            PYTHON_DISTRIBUTION_PATTERN,
+        ),
+        "SDK_JAVA_GROUP_ID": (env.str("SDK_JAVA_GROUP_ID", "com.tencent.bkapi"), JAVA_PACKAGE_PATTERN),
+        "SDK_JAVA_PACKAGE_PREFIX": (
+            env.str("SDK_JAVA_PACKAGE_PREFIX", "com.tencent.bkapi.openapi"),
+            JAVA_PACKAGE_PATTERN,
+        ),
+        "SDK_GO_MODULE_PREFIX": (
+            env.str("SDK_GO_MODULE_PREFIX", "git.example.com/bkapi").rstrip("/"),
+            GO_MODULE_PREFIX_PATTERN,
+        ),
+        "SDK_JAVASCRIPT_PACKAGE_SCOPE": (
+            env.str("SDK_JAVASCRIPT_PACKAGE_SCOPE", "@bkapi"),
+            JAVASCRIPT_SCOPE_PATTERN,
+        ),
+    }
+    for name, (value, pattern) in namespace_settings.items():
+        if not pattern.fullmatch(value):
+            raise ImproperlyConfigured(f"{name} is invalid")
+
+    return {
+        "enabled": env.bool("SDK_GENERATION_ENABLED", False),
+        "enabled_languages": enabled_languages,
+        "queue": env.str("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate"),
+        "retry_delays": retry_delays,
+        "python_distribution_prefix": namespace_settings["SDK_PYTHON_DISTRIBUTION_PREFIX"][0],
+        "java_group_id": namespace_settings["SDK_JAVA_GROUP_ID"][0],
+        "java_package_prefix": namespace_settings["SDK_JAVA_PACKAGE_PREFIX"][0],
+        "go_module_prefix": namespace_settings["SDK_GO_MODULE_PREFIX"][0],
+        "javascript_package_scope": namespace_settings["SDK_JAVASCRIPT_PACKAGE_SCOPE"][0],
+        "server_url_template": env.str(
+            "SDK_SERVER_URL_TEMPLATE",
+            bk_api_url_tmpl.replace("{api_name}", "{gateway_name}") + "/{stage_name}",
+        ),
+        "generic_retention_hours": env.int("SDK_GENERIC_RETENTION_HOURS", 24),
+        "subprocess_timeout_seconds": env.int("SDK_SUBPROCESS_TIMEOUT_SECONDS", 600),
+        "max_openapi_bytes": env.int("SDK_MAX_OPENAPI_BYTES", 10485760),
+        "max_output_bytes": env.int("SDK_MAX_OUTPUT_BYTES", 1073741824),
+        "max_artifact_bytes": env.int("SDK_MAX_ARTIFACT_BYTES", 524288000),
     }
 
 

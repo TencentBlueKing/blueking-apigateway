@@ -1,24 +1,13 @@
-## Installing
+## Install
 
-### maven
-```
-<dependency>
-    <groupId>com.tencent.bkapi</groupId>
-    <artifactId>{gateway_name}</artifactId>
-    <version>{sdk_version}</version>
-</dependency>
+Use the Maven coordinate when native Maven publication is enabled. Otherwise download the distribution ZIP:
+
+```shell
+{% if install_command %}{{ install_command }}{% else %}curl -fLO "<BKRepo Generic distribution ZIP URL>"{% endif %}
 ```
 
-### grade
+## Use the generated client
 
-```
-implementation 'com.tencent.bkapi:{gateway_name}:{sdk_version}'
-
-```
-
-## Using the SDK
-
-Assuming the gateway API {{resource_name}} exists under gateway {{gateway_name}}
-
+The package exposes the native OpenAPI Generator Java API.
 
 {% include "api_sdk/en/java_sdk_usage_example.md" %}

@@ -2,26 +2,9 @@ ARG IMAGE=hub.bktencent.com/blueking/python
 ARG TAG=3.14-tencentos4
 FROM ${IMAGE}:${TAG}
 
-RUN dnf install -y vim mysql curl zip unzip git java-17-konajdk-headless maven \
+RUN dnf install -y vim mysql curl zip unzip git \
     && dnf clean all \
     && rm -rf /var/cache/dnf /var/cache/yum
-
-# install mvn dep
-# replace the source
-RUN echo '<settings>\
-      <mirrors>\
-        <mirror>\
-          <id>nexus-tencentyun</id>\
-          <mirrorOf>*</mirrorOf>\
-          <name>Nexus tencentyun</name>\
-          <url>http://mirrors.cloud.tencent.com/nexus/repository/maven-public/</url>\
-        </mirror>\
-      </mirrors>\
-    </settings>' > /usr/share/maven/conf/settings.xml
-RUN mvn dependency:get -Dartifact=com.squareup.okhttp3:okhttp:4.12.0 && \
-    mvn dependency:get -Dartifact=com.fasterxml.jackson.core:jackson-databind:2.13.4.1 && \
-    mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-compiler-plugin:3.8.1 && \
-    mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-jar-plugin:3.1.0
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /uvx /bin/
 

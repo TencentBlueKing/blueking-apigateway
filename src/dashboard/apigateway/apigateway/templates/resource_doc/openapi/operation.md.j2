@@ -1,0 +1,135 @@
+{% macro parameter_table(parameters, title, heading='####') %}
+{{ heading }} {{ title }}
+
+| {{ labels.name }} | {{ labels.type }} | {{ labels.required }} | {{ labels.description }} | {{ labels.default }} | {{ labels.constraints }} | {{ labels.example }} |
+| --- | --- | :---: | --- | --- | --- | --- |
+{% for parameter in parameters %}
+| {{ parameter.name }} | `{{ parameter.type }}` | {{ labels.yes if parameter.required else labels.no }} | {{ parameter.description }} | {{ parameter.default }} | {{ parameter.constraints }} | {{ parameter.example }} |
+{% endfor %}
+{% endmacro %}
+{% macro schema_content(schema) %}
+{{ labels.type }}: `{{ schema.type }}`
+{% if schema.description %}
+
+{{ schema.description }}
+{% endif %}
+{% if schema.fields %}
+
+| {{ labels.field }} | {{ labels.type }} | {{ labels.required }} | {{ labels.description }} | {{ labels.constraints }} | {{ labels.example }} |
+| --- | --- | :---: | --- | --- | --- |
+{% for field in schema.fields %}
+| {{ field.path }} | `{{ field.type }}` | {{ labels.yes if field.required else labels.no }} | {{ field.description }} | {{ field.constraints }} | {{ field.example }} |
+{% endfor %}
+{% endif %}
+{% endmacro %}
+{% macro examples_content(examples, heading='#####') %}
+{% for example in examples %}
+{{ heading }} {{ labels.example }}{{ ': ' + example.name if example.name else '' }}{{ ' - ' + example.summary if example.summary else '' }}
+
+```json
+{{ example.value }}
+```
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+{% endmacro %}
+### {{ labels.api_information }}
+
+| {{ labels.method }} | {{ labels.path }} | {{ labels.operation_id }} | {{ labels.tags }} | {{ labels.deprecated }} |
+| --- | --- | --- | --- | :---: |
+| `{{ doc.method }}` | `{{ doc.path }}` | `{{ doc.operation_id }}` | {{ doc.tags | join(', ') }} | {{ labels.yes if doc.deprecated else labels.no }} |
+{% if doc.summary or doc.description %}
+
+### {{ labels.description }}
+{% if doc.summary %}
+
+{{ doc.summary }}
+{% endif %}
+{% if doc.description %}
+
+{{ doc.description }}
+{% endif %}
+{% endif %}
+{% if doc.parameters %}
+
+### {{ labels.request_parameters }}
+{% set path_parameters = doc.parameters | selectattr('location', 'equalto', 'path') | list %}
+{% set query_parameters = doc.parameters | selectattr('location', 'equalto', 'query') | list %}
+{% set header_parameters = doc.parameters | selectattr('location', 'equalto', 'header') | list %}
+{% set cookie_parameters = doc.parameters | selectattr('location', 'equalto', 'cookie') | list %}
+{% if path_parameters %}
+
+{{ parameter_table(path_parameters, labels.path_parameters) | trim }}
+{% endif %}
+{% if query_parameters %}
+
+{{ parameter_table(query_parameters, labels.query_parameters) | trim }}
+{% endif %}
+{% if header_parameters %}
+
+{{ parameter_table(header_parameters, labels.header_parameters) | trim }}
+{% endif %}
+{% if cookie_parameters %}
+
+{{ parameter_table(cookie_parameters, labels.cookie_parameters) | trim }}
+{% endif %}
+{% endif %}
+{% if doc.request_body %}
+
+### {{ labels.request_body }}
+
+{{ labels.required }}: {{ labels.yes if doc.request_body.required else labels.no }}
+{% if doc.request_body.description %}
+
+{{ doc.request_body.description }}
+{% endif %}
+{% for content in doc.request_body.contents %}
+
+#### {{ content.media_type }}
+{% if content.schema %}
+
+{{ schema_content(content.schema) | trim }}
+{% endif %}
+{% if content.examples %}
+
+{{ examples_content(content.examples) | trim }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if doc.responses %}
+
+### {{ labels.responses }}
+
+| {{ labels.status_code }} | {{ labels.status }} | {{ labels.description }} |
+| --- | --- | --- |
+{% for response in doc.responses %}
+| `{{ response.status_code }}` | {{ response.status_text }} | {{ response.description }} |
+{% endfor %}
+{% for response in doc.responses %}
+{% set response_schemas = response.contents | selectattr('schema') | list %}
+{% set response_examples = response.contents | selectattr('examples') | list %}
+{% if response.headers or response_schemas or response_examples %}
+
+#### {{ response.status_code }}{{ ' - ' + response.status_text if response.status_text else '' }}
+{% if response.headers %}
+
+{{ parameter_table(response.headers, labels.response_headers, '#####') | trim }}
+{% endif %}
+{% for content in response.contents %}
+{% if content.schema or content.examples %}
+
+##### {{ content.media_type }}
+{% if content.schema %}
+
+{{ schema_content(content.schema) | trim }}
+{% endif %}
+{% if content.examples %}
+
+{{ examples_content(content.examples, '######') | trim }}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}

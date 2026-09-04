@@ -43,7 +43,6 @@ export function getFeatureFlags(params: {
 }) {
   return http.get<{
     ALLOW_CREATE_APPCHAT: boolean
-    ALLOW_UPLOAD_SDK_TO_REPOSITORY: boolean
     ENABLE_AI_COMPLETION: boolean
     ENABLE_BK_CLI: boolean
     ENABLE_BK_NOTICE: boolean

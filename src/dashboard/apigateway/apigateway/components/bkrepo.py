@@ -22,6 +22,7 @@ from typing import Optional
 
 from blue_krill.storages.blobstore.base import SignatureType
 from blue_krill.storages.blobstore.bkrepo import BKGenericRepo
+from blue_krill.storages.blobstore.exceptions import RequestError
 from django.conf import settings
 
 
@@ -47,6 +48,25 @@ class BKRepoComponent:
     def upload_generic_file(self, filepath: str, key: str, allow_overwrite: bool = True):
         """上传通用制品文件"""
         self._generic_client.upload_file(filepath=Path(filepath), key=key, allow_overwrite=allow_overwrite)
+
+    def download_generic_file(self, key: str, filepath: str) -> Path:
+        return Path(self._generic_client.download_file(key=key, filepath=Path(filepath)))
+
+    def delete_generic_file(self, key: str):
+        try:
+            return self._generic_client.delete_file(key=key)
+        except RequestError as error:
+            if error.code == "404":
+                return None
+            raise
+
+    def get_generic_file_metadata(self, key: str):
+        try:
+            return self._generic_client.get_file_metadata(key=key)
+        except RequestError as error:
+            if error.code == "404":
+                return None
+            raise
 
     def generate_generic_download_url(self, key: str, expires_in: int = 0) -> str:
         """创建专用下载 url"""

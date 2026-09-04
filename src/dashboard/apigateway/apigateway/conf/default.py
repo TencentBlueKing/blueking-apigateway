@@ -41,6 +41,7 @@ from apigateway.conf.utils import (
     get_frontend_env_vars,
     get_gateway_quota_config,
     get_plugin_metadata_config,
+    get_sdk_generation_settings,
 )
 
 pymysql.install_as_MySQLdb()
@@ -521,6 +522,16 @@ CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 # 模板变量
 # ==============================================================================
 BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
+SDK_GENERATION = get_sdk_generation_settings(env, bk_api_url_tmpl=BK_API_URL_TMPL)
+SDK_GENERATION_ENABLED = SDK_GENERATION["enabled"]
+SDK_GENERATION_RETRY_DELAYS = SDK_GENERATION["retry_delays"]
+SDK_PYTHON_DISTRIBUTION_PREFIX = SDK_GENERATION["python_distribution_prefix"]
+SDK_JAVA_GROUP_ID = SDK_GENERATION["java_group_id"]
+SDK_JAVA_PACKAGE_PREFIX = SDK_GENERATION["java_package_prefix"]
+SDK_GO_MODULE_PREFIX = SDK_GENERATION["go_module_prefix"]
+SDK_JAVASCRIPT_PACKAGE_SCOPE = SDK_GENERATION["javascript_package_scope"]
+# TODO: remove in the future, and remove in the helm-chart and te repo
+# BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
 API_DOCS_URL_TMPL = env.str("API_DOCS_URL_TMPL", "")
 RESOURCE_DOC_URL_TMPL = env.str("RESOURCE_DOC_URL_TMPL", "")
@@ -849,6 +860,7 @@ DEFAULT_FEATURE_FLAG = get_default_feature_flags(
     enable_gateway_operation_status=ENABLE_GATEWAY_OPERATION_STATUS,
     enable_run_data_metrics=ENABLE_RUN_DATA_METRICS,
     enable_itsm4_permission_apply=ENABLE_ITSM4_PERMISSION_APPLY,
+    sdk_generation_enabled=SDK_GENERATION_ENABLED,
 )
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
@@ -890,7 +902,7 @@ BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.c
 BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
 
 # SDK 支持的语言列表
-BK_SDK_LANGUAGES = env.list("BK_SDK_LANGUAGES", default=["python", "golang", "java"])
+BK_SDK_LANGUAGES = SDK_GENERATION["enabled_languages"]
 
 ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     env,
@@ -919,7 +931,6 @@ MAX_STAGE_COUNT_PER_GATEWAY = _gateway_quota["MAX_STAGE_COUNT_PER_GATEWAY"]
 API_GATEWAY_RESOURCE_LIMITS = _gateway_quota["API_GATEWAY_RESOURCE_LIMITS"]
 MAX_LABEL_COUNT_PER_GATEWAY = _gateway_quota["MAX_LABEL_COUNT_PER_GATEWAY"]
 MAX_BACKEND_TIMEOUT_IN_SECOND = _gateway_quota["MAX_BACKEND_TIMEOUT_IN_SECOND"]
-MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = _gateway_quota["MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION"]
 
 # DB 操作大小配置
 # RELEASED_RESOURCE_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_CREATE_BATCH_SIZE", 50)

@@ -25,6 +25,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
+from apigateway.apis.sdk_fields import SDKGenerationLanguageField
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
@@ -32,7 +33,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
-from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.biz.validators import (
@@ -51,6 +52,7 @@ from apigateway.common.constants import (
     GATEWAY_NAME_PATTERN,
     CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
+    SDKGenerationLanguageEnum,
 )
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -614,9 +616,10 @@ class ResourceImportInputSLZ(serializers.Serializer):
 class SDKGenerateInputSLZ(serializers.Serializer):
     resource_version = serializers.CharField(max_length=128, help_text="资源版本")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices()),
+        child=SDKGenerationLanguageField(),
         help_text="需要生成SDK的语言列表",
-        default=[ProgrammingLanguageEnum.PYTHON.value],
+        default=[SDKGenerationLanguageEnum.PYTHON.value],
+        allow_empty=False,
     )
     version = serializers.RegexField(SEMVER_PATTERN, default="", allow_blank=True, max_length=128, help_text="版本号")
 
@@ -625,12 +628,45 @@ class SDKGenerateInputSLZ(serializers.Serializer):
 
 
 class SDKGenerateOutputSLZ(serializers.Serializer):
-    name = serializers.CharField(help_text="SDK名称")
-    version = serializers.CharField(help_text="版本号")
-    url = serializers.CharField(help_text="下载链接")
+    id = serializers.IntegerField(help_text="SDK 生成任务 ID")
+    status = serializers.CharField(help_text="SDK 生成任务状态")
+    status_url = serializers.CharField(help_text="SDK 生成任务状态查询地址")
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateOutputSLZ"
+
+
+class SDKGenerationArtifactOutputSLZ(serializers.Serializer):
+    distributor = serializers.CharField()
+    type = serializers.CharField()
+    filename = serializers.CharField()
+    url = serializers.CharField()
+    package_reference = serializers.CharField()
+    size = serializers.IntegerField()
+    sha256 = serializers.CharField()
+    status = serializers.CharField()
+
+
+class SDKGenerationItemOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    language = serializers.CharField()
+    status = serializers.CharField()
+    native_status = serializers.CharField()
+    attempt_count = serializers.IntegerField()
+    error = serializers.DictField(allow_null=True)
+    native_error = serializers.DictField(allow_null=True)
+    download_url = serializers.CharField(allow_blank=True)
+    artifacts = SDKGenerationArtifactOutputSLZ(many=True)
+
+
+class SDKGenerationTaskOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.CharField()
+    resource_version = serializers.DictField()
+    items = SDKGenerationItemOutputSLZ(many=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerationTaskOutputSLZ"
 
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):

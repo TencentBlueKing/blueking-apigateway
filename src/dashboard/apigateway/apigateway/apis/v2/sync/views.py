@@ -20,6 +20,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -35,6 +36,7 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
@@ -45,7 +47,9 @@ from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter
 from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
-from apigateway.biz.sdk import generate_sdks_for_resource_version
+from apigateway.biz.sdk.config import get_sdk_generation_policy
+from apigateway.biz.sdk.orchestrator import create_or_resume_generation, serialize_generation_task
+from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info
@@ -595,32 +599,105 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="生成网关sdk",
         request_body=SDKGenerateInputSLZ(),
-        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ(many=True)},
+        responses={status.HTTP_201_CREATED: ""},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
-class SDKGenerateApi(generics.CreateAPIView):
+class LegacySDKGenerateApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
     serializer_class = SDKGenerateInputSLZ
 
-    @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         """创建资源版本对应的 SDK"""
 
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        data = slz.data
+        data = slz.validated_data
         resource_version = get_object_or_404(
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        results = generate_sdks_for_resource_version(
-            resource_version=resource_version,
-            languages=data["languages"],
-            version=data["version"],
+        if get_sdk_generation_policy().enabled:
+            try:
+                create_or_resume_generation(
+                    resource_version,
+                    data["languages"],
+                    None,
+                    enqueue_generation_items,
+                )
+            except ValueError as error:
+                raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True) from error
+        return OKJsonResponse(status=status.HTTP_201_CREATED, data=[])
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="创建可查询的 SDK 生成任务",
+        request_body=SDKGenerateInputSLZ(),
+        responses={status.HTTP_202_ACCEPTED: SDKGenerateOutputSLZ()},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class SDKGenerationTaskCreateApi(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+    serializer_class = SDKGenerateInputSLZ
+
+    def post(self, request, gateway_name: str, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+        if not get_sdk_generation_policy().enabled:
+            return FailJsonResponse(
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                code="SERVICE_UNAVAILABLE",
+                message=_("SDK generation is unavailable"),
+            )
+        data = slz.validated_data
+        resource_version = get_object_or_404(
+            ResourceVersion, gateway=request.gateway, version=data["resource_version"]
+        )
+        try:
+            task = create_or_resume_generation(
+                resource_version,
+                data["languages"],
+                None,
+                enqueue_generation_items,
+            )
+        except ValueError as error:
+            raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
+
+        status_url = f"/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/{task.id}/"
+        return OKJsonResponse(
+            status=status.HTTP_202_ACCEPTED,
+            data={"id": task.id, "status": task.status, "status_url": status_url},
         )
 
-        return OKJsonResponse(status=status.HTTP_201_CREATED, data=results)
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询 SDK 生成任务",
+        responses={status.HTTP_200_OK: serializers.SDKGenerationTaskOutputSLZ()},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class SDKGenerationTaskDetailApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+
+    def get(self, request, gateway_name: str, task_id: int, *args, **kwargs):
+        task = get_object_or_404(
+            SDKGenerationTask.objects.select_related("resource_version").prefetch_related(
+                Prefetch(
+                    "items",
+                    queryset=SDKGenerationItem.objects.select_related("gateway_sdk")
+                    .order_by("id")
+                    .prefetch_related("artifacts"),
+                )
+            ),
+            id=task_id,
+            gateway=request.gateway,
+        )
+        return OKJsonResponse(data=serialize_generation_task(task))
 
 
 @method_decorator(

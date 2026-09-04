@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from apigateway.apps.support.constants import DocLanguageEnum
@@ -49,3 +49,77 @@ class OpenAPIDoc(BaseDoc):
     """从 Swagger 中解析出来的文档"""
 
     openapi: str = ""
+
+
+@dataclass(frozen=True)
+class ParameterDoc:
+    name: str
+    location: str
+    type: str
+    required: bool
+    description: str
+    default: str
+    example: str
+    constraints: str
+
+
+@dataclass(frozen=True)
+class ExampleDoc:
+    name: str
+    summary: str
+    value: str
+
+
+@dataclass(frozen=True)
+class SchemaFieldDoc:
+    path: str
+    type: str
+    required: bool
+    description: str
+    constraints: str
+    example: str
+
+
+@dataclass(frozen=True)
+class SchemaDoc:
+    type: str
+    description: str
+    fields: List[SchemaFieldDoc]
+    example: str
+
+
+@dataclass(frozen=True)
+class MediaTypeDoc:
+    media_type: str
+    schema: Optional[SchemaDoc]
+    examples: List[ExampleDoc]
+
+
+@dataclass(frozen=True)
+class RequestBodyDoc:
+    required: bool
+    description: str
+    contents: List[MediaTypeDoc]
+
+
+@dataclass(frozen=True)
+class ResponseDoc:
+    status_code: str
+    status_text: str
+    description: str
+    headers: List[ParameterDoc]
+    contents: List[MediaTypeDoc]
+
+
+@dataclass(frozen=True)
+class OperationDocContext:
+    operation_id: str
+    method: str
+    path: str
+    summary: str
+    description: str
+    deprecated: bool
+    tags: List[str]
+    parameters: List[ParameterDoc]
+    request_body: Optional[RequestBodyDoc]
+    responses: List[ResponseDoc]

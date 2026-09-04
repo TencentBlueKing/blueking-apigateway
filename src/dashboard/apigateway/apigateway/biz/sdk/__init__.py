@@ -15,49 +15,27 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from importlib import import_module
+from typing import TYPE_CHECKING, Any
+
 from . import exceptions
-from .constants import MANIFEST_IN_TMPL, PYPIRC_TMPL, RESOURCE_PY_TMPL, SETUP_PY_TMPL
-from .exceptions import DistributeError, ResourcesIsEmpty, SDKRepoConfigError, TooManySDKVersion
-from .gateway_sdk import GatewaySDKHandler
-from .helper import SDKHelper, SDKInfo, generate_sdks_for_resource_version
-from .models import (
-    DistributeResult,
-    Distributor,
-    DummySDKDocContext,
-    Generator,
-    Packager,
-    SDKContext,
-    SDKDocContext,
-    SDKFactory,
-    SDKManager,
-)
+
+if TYPE_CHECKING:
+    from .gateway_sdk import GatewaySDKHandler
+    from .models import DummySDKDocContext, SDKDocContext, SDKFactory
 
 __all__ = [
-    # constant
-    "MANIFEST_IN_TMPL",
-    "PYPIRC_TMPL",
-    "RESOURCE_PY_TMPL",
-    "SETUP_PY_TMPL",
-    # Enum
-    # class
-    "DistributeError",
-    "DistributeResult",
-    "Distributor",
     "DummySDKDocContext",
     "GatewaySDKHandler",
-    "Generator",
-    "Packager",
-    "ResourcesIsEmpty",
-    "SDKContext",
     "SDKDocContext",
     "SDKFactory",
-    "SDKHelper",
-    "SDKInfo",
-    "SDKManager",
-    "SDKRepoConfigError",
-    "TooManySDKVersion",
-    # functions
-    "generate_sdks_for_resource_version",
-    # others
     "exceptions",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    if name == "GatewaySDKHandler":
+        return getattr(import_module(".gateway_sdk", __name__), name)
+    if name in {"DummySDKDocContext", "SDKDocContext", "SDKFactory"}:
+        return getattr(import_module(".models", __name__), name)
+    raise AttributeError(name)
