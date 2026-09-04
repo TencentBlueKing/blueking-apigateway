@@ -100,12 +100,8 @@ def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch
 
 
 @pytest.mark.parametrize("sdk_generation_enabled", [False, True])
-def test_get_default_feature_flags_sdk_flags_follow_generation_enabled(monkeypatch, sdk_generation_enabled):
+def test_get_default_feature_flags_sdk_flag_follows_generation_enabled(monkeypatch, sdk_generation_enabled):
     monkeypatch.setenv("FEATURE_FLAG_ENABLE_SDK", str(not sdk_generation_enabled).lower())
-    monkeypatch.setenv(
-        "FEATURE_FLAG_ALLOW_UPLOAD_SDK_TO_REPOSITORY",
-        str(not sdk_generation_enabled).lower(),
-    )
 
     flags = get_default_feature_flags(
         Env(),
@@ -119,7 +115,6 @@ def test_get_default_feature_flags_sdk_flags_follow_generation_enabled(monkeypat
     )
 
     assert flags["ENABLE_SDK"] is sdk_generation_enabled
-    assert flags["ALLOW_UPLOAD_SDK_TO_REPOSITORY"] is sdk_generation_enabled
 
 
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):

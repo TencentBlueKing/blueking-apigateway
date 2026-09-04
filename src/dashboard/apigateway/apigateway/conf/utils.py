@@ -199,7 +199,6 @@ def get_default_feature_flags(
         "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
         # 保留前端 feature flag 名称，SDK 相关功能统一由 SDK_GENERATION_ENABLED 控制
         "ENABLE_SDK": sdk_generation_enabled,
-        "ALLOW_UPLOAD_SDK_TO_REPOSITORY": sdk_generation_enabled,
         # 是否允许创建企业微信群，上云版一键拉群功能
         "ALLOW_CREATE_APPCHAT": env.bool("FEATURE_FLAG_ALLOW_CREATE_APPCHAT", False),
         # ----------------------------------------------------------------------------
