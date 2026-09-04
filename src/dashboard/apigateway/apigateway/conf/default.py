@@ -700,6 +700,9 @@ BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
 # 用户登录态认证类型，默认为 bk_token，te 版本会被 te_default.py 中的值覆盖
 BKAUTH_BACKEND_TYPE = "bk_token"
 
+# 用户登录态信息缓存时间（秒）
+BKAUTH_SESSION_TIMEOUT = 60
+
 # 启用多租户模式
 BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
 
