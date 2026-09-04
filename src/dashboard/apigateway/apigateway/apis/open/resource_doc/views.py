@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from bkapi_client_generator import ExpandSwaggerError, GenerateMarkdownError
 from django.db import transaction
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -26,7 +25,7 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
+from apigateway.biz.resource_doc import NoResourceDocError, OpenAPIDocGenerationError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter, OpenAPIParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
@@ -88,9 +87,9 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
                 swagger=slz.validated_data["swagger"],
                 language=DocLanguageEnum(slz.validated_data["language"]),
             )
-        except ExpandSwaggerError, SchemaValidationError:
+        except SchemaValidationError:
             raise error_codes.INVALID_ARGUMENT.format(_("swagger 描述内容不符合规范。"))
-        except GenerateMarkdownError:
+        except OpenAPIDocGenerationError:
             raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))
 
         importer = DocImporter(gateway_id=request.gateway.id, selected_resource_docs=None)
