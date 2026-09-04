@@ -1005,7 +1005,8 @@ const handleCancel = () => {
     .repository-item {
       display: flex;
       width: 124px;
-      height: 88px;
+      min-height: 88px;
+      padding: 8px 4px;
       box-sizing: border-box;
       cursor: pointer;
       border: 1px solid #c4c6cc;
@@ -1022,6 +1023,7 @@ const handleCancel = () => {
       .text {
         font-size: 14px;
         color: #63656E;
+        text-align: center;
       }
 
       &.active {
@@ -1136,7 +1138,7 @@ const handleCancel = () => {
 
       .scene {
         width: 240px;
-        height: 118px;
+        min-height: 118px;
         padding: 6px 8px;
         box-sizing: border-box;
         border-radius: 4px;
