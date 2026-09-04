@@ -189,6 +189,7 @@ class OpenAPIParser(BaseParser):
             ).get_openapi_content([resource])
             operation = openapi_data["paths"][resource["path"]][method.lower()]
             operation["summary"] = resource.get("summary", "")
+            operation["description"] = resource.get("operation_description", resource.get("description", ""))
             operation["deprecated"] = resource.get("deprecated", False)
             context = OperationDocBuilder(openapi_data).build()
             docs.append(

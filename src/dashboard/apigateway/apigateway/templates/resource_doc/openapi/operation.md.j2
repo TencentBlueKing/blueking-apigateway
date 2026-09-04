@@ -4,7 +4,7 @@
 | {{ labels.name }} | {{ labels.type }} | {{ labels.required }} | {{ labels.description }} | {{ labels.default }} | {{ labels.constraints }} | {{ labels.example }} |
 | --- | --- | :---: | --- | --- | --- | --- |
 {% for parameter in parameters %}
-| {{ parameter.name }} | {{ parameter.type }} | {{ labels.yes if parameter.required else labels.no }} | {{ parameter.description }} | {{ parameter.default }} | {{ parameter.constraints }} | {{ parameter.example }} |
+| {{ parameter.name }} | `{{ parameter.type }}` | {{ labels.yes if parameter.required else labels.no }} | {{ parameter.description }} | {{ parameter.default }} | {{ parameter.constraints }} | {{ parameter.example }} |
 {% endfor %}
 {% endmacro %}
 {% macro schema_content(schema) %}
@@ -18,7 +18,7 @@
 | {{ labels.field }} | {{ labels.type }} | {{ labels.required }} | {{ labels.description }} | {{ labels.constraints }} | {{ labels.example }} |
 | --- | --- | :---: | --- | --- | --- |
 {% for field in schema.fields %}
-| {{ field.path }} | {{ field.type }} | {{ labels.yes if field.required else labels.no }} | {{ field.description }} | {{ field.constraints }} | {{ field.example }} |
+| {{ field.path }} | `{{ field.type }}` | {{ labels.yes if field.required else labels.no }} | {{ field.description }} | {{ field.constraints }} | {{ field.example }} |
 {% endfor %}
 {% endif %}
 {% endmacro %}
@@ -107,7 +107,9 @@
 | `{{ response.status_code }}` | {{ response.status_text }} | {{ response.description }} |
 {% endfor %}
 {% for response in doc.responses %}
-{% if response.headers or response.contents %}
+{% set response_schemas = response.contents | selectattr('schema') | list %}
+{% set response_examples = response.contents | selectattr('examples') | list %}
+{% if response.headers or response_schemas or response_examples %}
 
 #### {{ response.status_code }}{{ ' - ' + response.status_text if response.status_text else '' }}
 {% if response.headers %}

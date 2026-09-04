@@ -151,6 +151,7 @@ class TestBaseParser:
         resource = parser.get_resources()[0]
 
         assert resource["summary"] == "Get users"
+        assert resource["operation_description"] == ""
         assert resource["deprecated"] is True
 
     def test_get_ai_resource(self):

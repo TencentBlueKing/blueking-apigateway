@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import os
+from dataclasses import replace
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 from typing import cast
@@ -231,7 +232,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Name | Type | Required | Description | Default | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | verbose | boolean | No | Return details | false |  | true |
+        | verbose | `boolean` | No | Return details | false |  | true |
 
         ### Request body
 
@@ -247,7 +248,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Field | Type | Required | Description | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- |
-        | name | string | Yes | Display name | minLength: 1 | Alice |
+        | name | `string` | Yes | Display name | minLength: 1 | Alice |
 
         ##### Example: profile - Example profile
 
@@ -267,7 +268,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Name | Type | Required | Description | Default | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | X-Request-ID | string | No | Request ID |  |  | req-1 |
+        | X-Request-ID | `string` | No | Request ID |  |  | req-1 |
 
         ##### application/json
 
@@ -275,7 +276,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Field | Type | Required | Description | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- |
-        | id | integer<int64> | Yes | User ID |  | 1 |
+        | id | `integer<int64>` | Yes | User ID |  | 1 |
         """
         ).strip()
     )
@@ -306,7 +307,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 名称 | 类型 | 必填 | 描述 | 默认值 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | verbose | boolean | 否 | Return details | false |  | true |
+        | verbose | `boolean` | 否 | Return details | false |  | true |
 
         ### 请求体
 
@@ -322,7 +323,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 字段 | 类型 | 必填 | 描述 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- |
-        | name | string | 是 | Display name | minLength: 1 | Alice |
+        | name | `string` | 是 | Display name | minLength: 1 | Alice |
 
         ##### 示例: profile - Example profile
 
@@ -342,7 +343,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 名称 | 类型 | 必填 | 描述 | 默认值 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | X-Request-ID | string | 否 | Request ID |  |  | req-1 |
+        | X-Request-ID | `string` | 否 | Request ID |  |  | req-1 |
 
         ##### application/json
 
@@ -350,7 +351,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 字段 | 类型 | 必填 | 描述 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- |
-        | id | integer<int64> | 是 | User ID |  | 1 |
+        | id | `integer<int64>` | 是 | User ID |  | 1 |
         """
         ).strip()
     )
@@ -367,6 +368,26 @@ def test_generate_openapi_doc_omits_empty_sections(empty_operation_context):
     assert "### Request parameters" not in content
     assert "### Request body" not in content
     assert "### Responses" not in content
+
+
+def test_generate_openapi_doc_omits_empty_response_details(empty_operation_context):
+    context = replace(
+        empty_operation_context,
+        responses=[
+            ResponseDoc(
+                status_code="204",
+                status_text="No Content",
+                description="No content",
+                headers=[],
+                contents=[MediaTypeDoc(media_type="application/json", schema=None, examples=[])],
+            )
+        ],
+    )
+
+    content = OpenAPIToMarkdownGenerator(context, DocLanguageEnum.EN).generate_doc_content()
+
+    assert "| `204` | No Content | No content |" in content
+    assert "#### 204 - No Content" not in content
 
 
 def test_generate_openapi_doc_rejects_unsupported_language(empty_operation_context):

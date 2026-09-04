@@ -72,6 +72,7 @@ class BaseParser:
                     "name": operation["operationId"].replace("-", "_"),  # 避免drf生成的带有-的导入不进去
                     "description": self._adapt_description(operation.get("summary"), operation.get("description")),
                     "summary": operation.get("summary", ""),
+                    "operation_description": operation.get("description", ""),
                     "deprecated": operation.get("deprecated", False),
                     "description_en": extension_resource.get("descriptionEn"),
                     "labels": operation.get("tags", []),

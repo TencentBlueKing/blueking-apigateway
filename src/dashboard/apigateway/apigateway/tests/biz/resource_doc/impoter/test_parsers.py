@@ -225,6 +225,7 @@ class TestSwagger:
 
         assert len(docs) == 1
         assert yaml_loads(docs[0].openapi)["openapi"] == "3.1.0"
+        assert docs[0].content.count("Create user") == 1
         assert "##### Example: created - Created user" in docs[0].content
         assert '"id": 1' in docs[0].content
 
