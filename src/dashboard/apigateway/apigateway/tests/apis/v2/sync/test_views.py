@@ -101,6 +101,30 @@ class TestSyncApi:
         assert response.status_code == 201
         assert response.json() == {"data": []}
 
+    def test_legacy_generate_sdk_maps_disabled_language_to_invalid_argument(
+        self,
+        settings,
+        request_view,
+        fake_admin_user,
+        fake_gateway,
+        fake_resource_version,
+        disable_app_permission,
+    ):
+        settings.SDK_GENERATION_ENABLED = True
+        settings.BK_SDK_LANGUAGES = ("python",)
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            data={"resource_version": fake_resource_version.version, "languages": ["java"]},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+
     def test_new_generation_task_returns_observable_identity(
         self,
         settings,

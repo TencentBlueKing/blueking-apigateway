@@ -250,6 +250,20 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           >
             { t('下载') }
           </bk-button>
+          {
+            sdkRow.native_status === 'failed'
+              ? (
+                <bk-button
+                  loading={retryingItemId.value === sdkRow.generation_item_id}
+                  text
+                  theme="primary"
+                  onClick={() => handleRetry(sdkRow)}
+                >
+                  { t('重试') }
+                </bk-button>
+              )
+              : null
+          }
         </div>
       );
     },

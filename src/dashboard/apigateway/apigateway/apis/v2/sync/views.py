@@ -618,12 +618,15 @@ class LegacySDKGenerateApi(generics.CreateAPIView):
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
         if get_sdk_generation_policy().enabled:
-            create_or_resume_generation(
-                resource_version,
-                data["languages"],
-                getattr(request.user, "username", None),
-                enqueue_generation_items,
-            )
+            try:
+                create_or_resume_generation(
+                    resource_version,
+                    data["languages"],
+                    getattr(request.user, "username", None),
+                    enqueue_generation_items,
+                )
+            except ValueError as error:
+                raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True) from error
         return OKJsonResponse(status=status.HTTP_201_CREATED, data=[])
 
 

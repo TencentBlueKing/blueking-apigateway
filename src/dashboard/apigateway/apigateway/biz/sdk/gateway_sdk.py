@@ -30,6 +30,7 @@ from apigateway.apps.support.constants import (
     SDKGenerationItemStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
 from apigateway.core.models import Release
 
 from .models import SDKFactory
@@ -58,16 +59,7 @@ def _preferred_generic_artifact(item: SDKGenerationItem):
 
 
 @atomic
-def ensure_gateway_sdk_projection(item: SDKGenerationItem) -> GatewaySDK:
-    """Create or link the compatibility row after Generic commit."""
-    item = (
-        SDKGenerationItem.objects.select_for_update()
-        .select_related("task__gateway", "task__resource_version", "gateway_sdk")
-        .get(id=item.id)
-    )
-    if item.gateway_sdk_id:
-        return item.gateway_sdk
-
+def get_compatible_legacy_sdk(item: SDKGenerationItem) -> GatewaySDK | None:
     sdk = (
         GatewaySDK.objects.select_for_update()
         .filter(
@@ -77,6 +69,34 @@ def ensure_gateway_sdk_projection(item: SDKGenerationItem) -> GatewaySDK:
         )
         .first()
     )
+    if not sdk:
+        return None
+    if sdk.resource_version_id != item.task.resource_version_id:
+        raise LegacySDKVersionConflict()
+    if SDKGenerationItem.objects.exclude(id=item.id).filter(gateway_sdk=sdk).exists():
+        raise LegacySDKVersionConflict()
+    return sdk
+
+
+@atomic
+def ensure_gateway_sdk_projection(item: SDKGenerationItem) -> GatewaySDK:
+    """Create or link the compatibility row after Generic commit."""
+    item = (
+        SDKGenerationItem.objects.select_for_update()
+        .select_related("task__gateway", "task__resource_version", "gateway_sdk")
+        .get(id=item.id)
+    )
+    if item.gateway_sdk_id:
+        if (
+            item.gateway_sdk.gateway_id != item.task.gateway_id
+            or item.gateway_sdk.resource_version_id != item.task.resource_version_id
+            or item.gateway_sdk.language != item.language
+            or item.gateway_sdk.version_number != item.task.resource_version.version
+        ):
+            raise LegacySDKVersionConflict()
+        return item.gateway_sdk
+
+    sdk = get_compatible_legacy_sdk(item)
     if sdk:
         item.gateway_sdk = sdk
         update_fields = ["gateway_sdk", "updated_time"]

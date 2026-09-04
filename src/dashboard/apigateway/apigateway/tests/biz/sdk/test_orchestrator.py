@@ -13,9 +13,9 @@ from apigateway.apps.support.constants import (
     SDKGenerationItemStatusEnum,
     SDKGenerationTaskStatusEnum,
 )
-from apigateway.apps.support.models import GatewaySDK
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import create_built_artifact
-from apigateway.biz.sdk.exceptions import SDKGenerationError
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerationError
 from apigateway.biz.sdk.orchestrator import (
     GenerationClaim,
     NativePublicationClaim,
@@ -160,6 +160,28 @@ def test_create_resumes_failed_transient_item_on_same_row(
     enqueue.assert_called_once_with([item.id])
 
 
+def test_create_locks_task_before_existing_item(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    assert task.items.count() == 1
+    lock_order = []
+    lock_task = SDKGenerationTask.objects.select_for_update
+    lock_item = SDKGenerationItem.objects.select_for_update
+    mocker.patch.object(
+        SDKGenerationTask.objects,
+        "select_for_update",
+        side_effect=lambda *args, **kwargs: (lock_order.append("task"), lock_task(*args, **kwargs))[1],
+    )
+    mocker.patch.object(
+        SDKGenerationItem.objects,
+        "select_for_update",
+        side_effect=lambda *args, **kwargs: (lock_order.append("item"), lock_item(*args, **kwargs))[1],
+    )
+
+    create_or_resume_generation(fake_resource_version, ["python"], "admin")
+
+    assert lock_order[:2] == ["task", "item"]
+
+
 def test_claim_excludes_active_lease_and_takes_expired_lease(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
@@ -174,6 +196,28 @@ def test_claim_excludes_active_lease_and_takes_expired_lease(fake_resource_versi
     second = claim_generation_item(item.id, "celery-2")
     assert second is not None
     assert second.lease_token != first.lease_token
+
+
+def test_claim_locks_task_before_item(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    lock_order = []
+    lock_task = SDKGenerationTask.objects.select_for_update
+    lock_item = SDKGenerationItem.objects.select_for_update
+    mocker.patch.object(
+        SDKGenerationTask.objects,
+        "select_for_update",
+        side_effect=lambda *args, **kwargs: (lock_order.append("task"), lock_task(*args, **kwargs))[1],
+    )
+    mocker.patch.object(
+        SDKGenerationItem.objects,
+        "select_for_update",
+        side_effect=lambda *args, **kwargs: (lock_order.append("item"), lock_item(*args, **kwargs))[1],
+    )
+
+    assert claim_generation_item(item.id, "celery-1") is not None
+
+    assert lock_order[:2] == ["task", "item"]
 
 
 def test_claim_obeys_retry_due_time_and_counts_attempt_cycle(fake_resource_version):
@@ -283,6 +327,47 @@ def test_legacy_sdk_is_linked_as_success_without_enqueue_or_update(
     assert not item.artifacts.exists()
     assert (sdk.name, sdk.url, sdk._config, sdk.updated_time) == original
     enqueue.assert_not_called()
+
+
+def test_create_rejects_legacy_sdk_for_another_resource_version(fake_gateway, fake_resource_version):
+    other_version = G(type(fake_resource_version), gateway=fake_gateway, version="older-resource-version")
+    G(
+        GatewaySDK,
+        gateway=fake_gateway,
+        resource_version=other_version,
+        language="python",
+        version_number=fake_resource_version.version,
+    )
+
+    with pytest.raises(LegacySDKVersionConflict):
+        create_or_resume_generation(fake_resource_version, ["python"], "admin")
+
+    assert not SDKGenerationItem.objects.filter(
+        task__resource_version=fake_resource_version,
+        language="python",
+    ).exists()
+
+
+def test_create_rejects_existing_success_projection_for_another_resource_version(fake_gateway, fake_resource_version):
+    other_version = G(type(fake_resource_version), gateway=fake_gateway, version="older-resource-version")
+    sdk = G(
+        GatewaySDK,
+        gateway=fake_gateway,
+        resource_version=other_version,
+        language="python",
+        version_number=fake_resource_version.version,
+    )
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    G(
+        SDKGenerationItem,
+        task=task,
+        language="python",
+        status=SDKGenerationItemStatusEnum.SUCCESS.value,
+        gateway_sdk=sdk,
+    )
+
+    with pytest.raises(LegacySDKVersionConflict):
+        create_or_resume_generation(fake_resource_version, ["python"], "admin")
 
 
 def _patch_pipeline(mocker, bkrepo, *, publisher_side_effect=None):

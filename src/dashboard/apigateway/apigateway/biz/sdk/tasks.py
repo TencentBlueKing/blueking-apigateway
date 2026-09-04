@@ -11,7 +11,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 from apigateway.apps.support.constants import SDKGenerationItemStatusEnum, SDKNativePublicationStatusEnum
-from apigateway.apps.support.models import SDKGenerationItem
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.orchestrator import execute_generation_item, execute_native_publication, refresh_task_status
@@ -94,23 +94,26 @@ def recover_stale_sdk_generation_items() -> int:
         return 0
     now = timezone.now()
     with transaction.atomic():
-        generation_items = list(
-            SDKGenerationItem.objects.select_for_update().filter(
-                Q(
-                    Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True),
-                    status=SDKGenerationItemStatusEnum.RUNNING.value,
-                )
-                | Q(
-                    status=SDKGenerationItemStatusEnum.PENDING.value,
-                )
-                & (
-                    Q(next_attempt_at__lte=now)
-                    | Q(
-                        next_attempt_at__isnull=True,
-                        updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
-                    )
-                )
+        generation_filter = Q(
+            Q(lease_expires_at__lte=now) | Q(lease_expires_at__isnull=True),
+            status=SDKGenerationItemStatusEnum.RUNNING.value,
+        ) | Q(
+            status=SDKGenerationItemStatusEnum.PENDING.value,
+        ) & (
+            Q(next_attempt_at__lte=now)
+            | Q(
+                next_attempt_at__isnull=True,
+                updated_time__lte=now - timedelta(seconds=PENDING_RECOVERY_SECONDS),
             )
+        )
+        candidate_task_ids = list(
+            SDKGenerationItem.objects.filter(generation_filter).values_list("task_id", flat=True).distinct()
+        )
+        list(SDKGenerationTask.objects.select_for_update().filter(id__in=candidate_task_ids).order_by("id"))
+        generation_items = list(
+            SDKGenerationItem.objects.select_for_update()
+            .filter(generation_filter, task_id__in=candidate_task_ids)
+            .order_by("task_id", "id")
         )
         native_items = list(
             SDKGenerationItem.objects.select_for_update()
@@ -138,7 +141,7 @@ def recover_stale_sdk_generation_items() -> int:
         generation_item_ids = [item.id for item in generation_items]
         native_item_ids = [item.id for item in native_items]
         if generation_item_ids:
-            task_ids = {item.task_id for item in generation_items}
+            task_ids = sorted({item.task_id for item in generation_items})
             SDKGenerationItem.objects.filter(id__in=generation_item_ids).update(
                 status=SDKGenerationItemStatusEnum.PENDING.value,
                 lease_token="",

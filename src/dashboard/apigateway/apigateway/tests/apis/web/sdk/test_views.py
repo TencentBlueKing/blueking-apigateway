@@ -260,6 +260,33 @@ class TestGatewaySDKListCreateApi:
 
         assert response.status_code == 404
 
+    def test_create_rejects_legacy_sdk_bound_to_another_resource_version(
+        self, request_view, fake_gateway, fake_admin_user, settings
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        other_version = G(ResourceVersion, gateway=fake_gateway, version="older-resource-version")
+        G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=other_version,
+            language="python",
+            version_number=resource_version.version,
+        )
+        settings.SDK_GENERATION_ENABLED = True
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.sdk.list_create",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"resource_version_id": resource_version.id, "languages": ["python"]},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+        assert not SDKGenerationTask.objects.filter(resource_version=resource_version).exists()
+
     def test_create_rejects_disabled_language(self, request_view, fake_gateway, fake_admin_user, settings):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         settings.SDK_GENERATION_ENABLED = True
@@ -408,6 +435,58 @@ class TestSDKGenerationTaskApi:
         assert item.native_error_message == "keep this error"
         assert task.status == SDKGenerationTaskStatusEnum.PENDING.value
         enqueue.assert_called_once_with([item.id])
+
+    def test_retry_resets_and_enqueues_failed_native_publication(
+        self,
+        request_view,
+        fake_gateway,
+        fake_admin_user,
+        mocker,
+        django_capture_on_commit_callbacks,
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=resource_version, status="success")
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="python",
+            status=SDKGenerationItemStatusEnum.SUCCESS.value,
+            native_status=SDKNativePublicationStatusEnum.FAILED.value,
+            native_attempt_count=7,
+            native_attempt_cycle_count=3,
+            native_lease_token="expired-native-claim",
+            native_lease_expires_at=dummy_time.time - timedelta(minutes=1),
+            native_next_attempt_at=dummy_time.time + timedelta(minutes=1),
+            native_error_code="registry_unavailable",
+            native_error_message="publication failed",
+        )
+        enqueue_generation = mocker.patch("apigateway.apis.web.sdk.views.enqueue_generation_items")
+        enqueue_native = mocker.patch("apigateway.apis.web.sdk.views.enqueue_native_publications")
+
+        with django_capture_on_commit_callbacks(execute=True):
+            retry = request_view(
+                method="POST",
+                view_name="gateway.sdk.generation_item_retry",
+                gateway=fake_gateway,
+                user=fake_admin_user,
+                path_params={"gateway_id": fake_gateway.id, "task_id": task.id, "item_id": item.id},
+            )
+
+        assert retry.status_code == 202
+        item.refresh_from_db()
+        task.refresh_from_db()
+        assert item.status == SDKGenerationItemStatusEnum.SUCCESS.value
+        assert item.native_status == SDKNativePublicationStatusEnum.PENDING.value
+        assert item.native_attempt_count == 7
+        assert item.native_attempt_cycle_count == 0
+        assert item.native_lease_token == ""
+        assert item.native_lease_expires_at is None
+        assert item.native_next_attempt_at is None
+        assert item.native_error_code == ""
+        assert item.native_error_message == ""
+        assert task.status == SDKGenerationTaskStatusEnum.SUCCESS.value
+        enqueue_generation.assert_not_called()
+        enqueue_native.assert_called_once_with([item.id])
 
     @pytest.mark.parametrize(
         "item_status", [SDKGenerationItemStatusEnum.RUNNING.value, SDKGenerationItemStatusEnum.SUCCESS.value]

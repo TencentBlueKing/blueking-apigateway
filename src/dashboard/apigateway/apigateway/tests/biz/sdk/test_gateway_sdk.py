@@ -21,7 +21,9 @@ from ddf import G
 from apigateway.apps.support.constants import SDKArtifactStatusEnum, SDKGenerationItemStatusEnum
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import GatewaySDKHandler
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
 from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
+from apigateway.core.models import ResourceVersion
 
 pytestmark = pytest.mark.django_db
 
@@ -106,6 +108,50 @@ class TestGatewaySDKHandler:
         assert item.status == SDKGenerationItemStatusEnum.SUCCESS.value
         assert not item.artifacts.exists()
         assert (legacy.name, legacy.url, legacy._config, legacy.updated_time) == original
+
+    def test_projection_rejects_legacy_sdk_for_another_resource_version(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        other_version = G(ResourceVersion, gateway=fake_gateway, version="older-resource-version")
+        legacy = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=other_version,
+            language="python",
+            version_number="1.2.3",
+        )
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(SDKGenerationItem, task=task, language="python")
+
+        with pytest.raises(LegacySDKVersionConflict):
+            ensure_gateway_sdk_projection(item)
+
+        item.refresh_from_db()
+        assert item.gateway_sdk_id is None
+        assert not SDKGenerationItem.objects.filter(gateway_sdk=legacy).exists()
+
+    def test_projection_rejects_legacy_sdk_owned_by_another_item(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        legacy = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=fake_resource_version,
+            language="java",
+            version_number="1.2.3",
+        )
+        owner_version = G(ResourceVersion, gateway=fake_gateway, version="owner-resource-version")
+        owner_task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=owner_version)
+        owner = G(SDKGenerationItem, task=owner_task, language="java", gateway_sdk=legacy)
+        target_task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        target = G(SDKGenerationItem, task=target_task, language="java")
+
+        with pytest.raises(LegacySDKVersionConflict):
+            ensure_gateway_sdk_projection(target)
+
+        target.refresh_from_db()
+        assert target.gateway_sdk_id is None
+        assert SDKGenerationItem.objects.get(gateway_sdk=legacy) == owner
 
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
         result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)

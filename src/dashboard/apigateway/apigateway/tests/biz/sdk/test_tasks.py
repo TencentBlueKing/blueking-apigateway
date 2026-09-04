@@ -4,6 +4,7 @@ import pytest
 from django.utils import timezone
 
 from apigateway.apps.support.constants import SDKGenerationItemStatusEnum
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.orchestrator import (
     ItemExecutionResult,
     claim_generation_item,
@@ -165,6 +166,34 @@ def test_recover_stale_items_clears_lease_and_requeues(
     assert expired.lease_expires_at is None
     assert active.status == SDKGenerationItemStatusEnum.RUNNING.value
     enqueue.assert_called_once_with([expired.id])
+
+
+def test_recovery_locks_tasks_before_generation_items(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(
+        status=SDKGenerationItemStatusEnum.RUNNING.value,
+        lease_token="expired",
+        lease_expires_at=timezone.now() - timedelta(seconds=1),
+    )
+    lock_order = []
+    lock_task = SDKGenerationTask.objects.select_for_update
+    lock_item = SDKGenerationItem.objects.select_for_update
+    mocker.patch.object(
+        SDKGenerationTask.objects,
+        "select_for_update",
+        side_effect=lambda *args, **kwargs: (lock_order.append("task"), lock_task(*args, **kwargs))[1],
+    )
+    mocker.patch.object(
+        SDKGenerationItem.objects,
+        "select_for_update",
+        side_effect=lambda *args, **kwargs: (lock_order.append("item"), lock_item(*args, **kwargs))[1],
+    )
+    mocker.patch("apigateway.biz.sdk.tasks.enqueue_generation_items")
+
+    recover_stale_sdk_generation_items()
+
+    assert lock_order[:2] == ["task", "item"]
 
 
 def test_recover_stale_pending_item_when_initial_enqueue_was_lost(

@@ -29,12 +29,12 @@ from apigateway.apps.support.constants import (
     SDKGenerationTaskStatusEnum,
     SDKNativePublicationStatusEnum,
 )
-from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
+from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.artifacts import build_manifest
 from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
 from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerateError, SDKGenerationError
-from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
+from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection, get_compatible_legacy_sdk
 from apigateway.biz.sdk.generator import generate_client
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
@@ -123,7 +123,7 @@ def create_or_resume_generation(
     item_ids = []
     for language in requested:
         language_config = policy.for_resource_version(resource_version.gateway.name, resource_version, language)
-        item, created = SDKGenerationItem.objects.get_or_create(
+        item, created = SDKGenerationItem.objects.select_for_update().get_or_create(
             task=task,
             language=language,
             defaults={
@@ -141,13 +141,10 @@ def create_or_resume_generation(
             },
         )
         if item.status == SDKGenerationItemStatusEnum.SUCCESS.value:
+            if item.gateway_sdk_id:
+                ensure_gateway_sdk_projection(item)
             continue
-        legacy_sdk_exists = GatewaySDK.objects.filter(
-            gateway=resource_version.gateway,
-            language=language,
-            version_number=resource_version.version,
-        ).exists()
-        if legacy_sdk_exists and not item.gateway_sdk_id:
+        if get_compatible_legacy_sdk(item) and not item.gateway_sdk_id:
             item.native_status = SDKNativePublicationStatusEnum.NOT_REQUIRED.value
             item.save(update_fields=["native_status", "updated_time"])
             ensure_gateway_sdk_projection(item)
@@ -179,6 +176,12 @@ def create_or_resume_generation(
 
 @transaction.atomic
 def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim | None:
+    task_id = SDKGenerationItem.objects.filter(id=item_id).values_list("task_id", flat=True).first()
+    if not task_id:
+        return None
+    task = SDKGenerationTask.objects.select_for_update().filter(id=task_id).first()
+    if not task:
+        return None
     item = SDKGenerationItem.objects.select_for_update().filter(id=item_id).first()
     if not item:
         return None
@@ -224,7 +227,7 @@ def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim 
             "updated_time",
         ]
     )
-    refresh_task_status(item.task_id)
+    refresh_task_status(task.id)
     return GenerationClaim(item.id, token)
 
 
