@@ -26,7 +26,7 @@ from django.http import Http404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.api_debug.constants import SPEC_VERSION
@@ -47,9 +47,10 @@ TEST_PERMISSION_EXPIRE_DAYS = 1
 
 
 class APITestApi(generics.CreateAPIView):
-    @swagger_auto_schema(
+    @extend_schema(
+        request=APITestInputSLZ,
         responses={status.HTTP_200_OK: APITestOutputSLZ},
-        operation_description="在线调试发起请求",
+        description="在线调试发起请求",
         tags=["WebAPI.APITest"],
     )
     def post(self, request, *args, **kwargs):
@@ -198,8 +199,8 @@ class APIDebugHistoriesQuerySetMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取测试历史列表",
+    decorator=extend_schema(
+        description="获取测试历史列表",
         responses={status.HTTP_200_OK: APIDebugHistoriesListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceDebugHistory"],
     ),
@@ -238,17 +239,17 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取调用历史详情",
+    decorator=extend_schema(
+        description="获取调用历史详情",
         responses={status.HTTP_200_OK: APIDebugHistoriesListOutputSLZ()},
         tags=["WebAPI.ResourceDebugHistory"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除调用历史",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除调用历史",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.ResourceDebugHistory"],
     ),
 )

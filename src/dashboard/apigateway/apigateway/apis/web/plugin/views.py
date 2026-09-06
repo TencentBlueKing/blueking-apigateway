@@ -22,7 +22,7 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import get_language
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -70,11 +70,11 @@ class PluginPagination(StandardLimitOffsetPagination):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=PluginTypeQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[PluginTypeQueryInputSLZ],
         responses={status.HTTP_200_OK: PluginTypeOutputSLZ(many=True)},
         tags=["WebAPI.Plugin"],
-        operation_description="获取某个环境或资源下，可配置的插件列表; 需要指定 scope_type 和 scope_id; 可以传递 keyword 进行搜索",
+        description="获取某个环境或资源下，可配置的插件列表; 需要指定 scope_type 和 scope_id; 可以传递 keyword 进行搜索",
     ),
 )
 class PluginTypeListApi(generics.ListAPIView):
@@ -155,10 +155,10 @@ class PluginTypeListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: PluginTypeTagsOutputSLZ(many=True)},
         tags=["WebAPI.Plugin"],
-        operation_description="获取插件类型的标签列表",
+        description="获取插件类型的标签列表",
     ),
 )
 class PluginTypeTagsListApi(generics.ListAPIView):
@@ -250,11 +250,11 @@ class PluginConfigBindingPostModificationMixin:
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=PluginConfigCreateInputSLZ,
+    decorator=extend_schema(
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        request=PluginConfigCreateInputSLZ,
         tags=["WebAPI.Plugin"],
-        operation_description="创建一个插件，并且绑定到对应的 scope_type + scope_id",
+        description="创建一个插件，并且绑定到对应的 scope_type + scope_id",
     ),
 )
 class PluginConfigCreateApi(
@@ -313,25 +313,25 @@ class PluginConfigCreateApi(
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
-        operation_description="获取插件的配置",
+        description="获取插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_204_NO_CONTENT: PluginConfigRetrieveUpdateInputSLZ()},
-        operation_description="更新插件的配置",
+        description="更新插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        operation_description="删除插件的配置",
+    decorator=extend_schema(
+        responses={status.HTTP_204_NO_CONTENT: None},
+        description="删除插件的配置",
         tags=["WebAPI.Plugin"],
     ),
 )
@@ -426,9 +426,9 @@ class PluginConfigRetrieveUpdateDestroyApi(
 
 
 class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
-    @swagger_auto_schema(
+    @extend_schema(
         responses={status.HTTP_200_OK: PluginBindingListOutputSLZ()},
-        operation_description="获取某个插件绑定的环境列表和资源列表",
+        description="获取某个插件绑定的环境列表和资源列表",
         tags=["WebAPI.Plugin"],
     )
     def get(self, request, *args, **kwargs):
@@ -482,9 +482,9 @@ class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
             "type_related_scope_count": type_related_scope_count,
         }
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses={status.HTTP_200_OK: ScopePluginConfigListOutputSLZ(many=True)},
-        operation_description="获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)",
+        description="获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)",
         tags=["WebAPI.Plugin"],
     )
     def get(self, request, *args, **kwargs):

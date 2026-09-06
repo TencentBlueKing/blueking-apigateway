@@ -18,7 +18,7 @@
 #
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 
 from apigateway.apis.open.permissions import (
@@ -34,7 +34,9 @@ class SDKGenerateViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @transaction.atomic
-    @swagger_auto_schema(
+    @extend_schema(
+        request=serializers.SDKGenerateV1SLZ,
+        responses={200: {"type": "array", "items": {"type": "object"}}},
         # todo: 是否需要将 support 改成 sdk？目前只有 sdk 相关的
         tags=["OpenAPI.V1"],
     )

@@ -99,7 +99,8 @@ INSTALLED_APPS = [
     "djangoql",
     "django_celery_beat",
     "rest_framework",
-    "drf_yasg",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "corsheaders",
     "apigateway.apigateway",
     "apigateway.apps.monitor",
@@ -255,6 +256,7 @@ AUTHENTICATION_BACKENDS = [
 AUTH_USER_MODEL = "account.AuthUser"
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "apigateway.common.schema.BkAutoSchema",
     "EXCEPTION_HANDLER": "apigateway.common.exception_handler.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
@@ -268,10 +270,20 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
 }
 
-SWAGGER_SETTINGS = {
-    "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.common.swagger.BkStandardResponseSwaggerAutoSchema",
+SPECTACULAR_SETTINGS = {
+    "TITLE": "APIGateway-Dashboard API",
+    "DESCRIPTION": "APIGateway-Dashboard API Document",
+    "VERSION": "v1",
+    "OAS_VERSION": "3.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/backend",
+    "SCHEMA_PATH_PREFIX_TRIM": True,
+    "SERVERS": [{"url": "/backend"}],
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
 }
-SWAGGER_USE_COMPAT_RENDERERS = False
 
 # https://docs.djangoproject.com/en/3.2/ref/checks/
 # disable warnings: db_table '<table_name>' is used by multiple models

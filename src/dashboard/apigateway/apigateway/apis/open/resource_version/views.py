@@ -18,7 +18,7 @@
 #
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.open.permissions import (
@@ -39,15 +39,15 @@ from .serializers import (
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["OpenAPI.V1"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=ResourceVersionCreateV1InputSLZ,
+    decorator=extend_schema(
+        request=ResourceVersionCreateV1InputSLZ,
         tags=["OpenAPI.V1"],
     ),
 )
@@ -91,7 +91,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = ReleaseV1InputSLZ
 
-    @swagger_auto_schema(tags=["OpenAPI.V1"])
+    @extend_schema(tags=["OpenAPI.V1"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         slz = self.get_serializer(data=request.data, context={"request": request})
@@ -124,7 +124,9 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
 class ResourceVersionGetLatestApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["OpenAPI.V1"])
+    @extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}}, tags=["OpenAPI.V1"]
+    )
     def get(self, request, gateway_name: str, *args, **kwargs):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 

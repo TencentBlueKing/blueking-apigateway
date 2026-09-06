@@ -16,17 +16,9 @@
 #
 from pathlib import Path
 
-from rest_framework import serializers, status
+import pytest
+from drf_spectacular.generators import SchemaGenerator
 
-from apigateway.apis.v2.inner.views import AppRequestLogListApi, MCPServerAppPermissionRecordRetrieveApi
-from apigateway.apis.v2.open.views import GatewayReleasedResourceListApi, MCPServerAppPermissionRecordListApi
-from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ
-from apigateway.apis.v2.sync.views import (
-    DocImportByArchiveApi,
-    ResourceVersionListCreateApi,
-    ResourceVersionReleaseApi,
-    SDKGenerateApi,
-)
 from apigateway.utils.yaml import yaml_loads
 
 RESOURCE_DEFINITION_PATH = (
@@ -34,52 +26,64 @@ RESOURCE_DEFINITION_PATH = (
 )
 
 
-def test_sync_api_response_status_schema_matches_runtime():
-    assert set(DocImportByArchiveApi.post._swagger_auto_schema["responses"]) == {status.HTTP_201_CREATED}
-    assert set(ResourceVersionListCreateApi.get._swagger_auto_schema["responses"]) == {status.HTTP_200_OK}
-    assert set(ResourceVersionReleaseApi.post._swagger_auto_schema["responses"]) == {status.HTTP_200_OK}
+@pytest.fixture(scope="module")
+def document():
+    return SchemaGenerator().get_schema(request=None, public=True)
 
 
-def test_sdk_generate_schema_matches_runtime_payload():
-    schema = SDKGenerateApi.post._swagger_auto_schema
-
-    assert isinstance(schema["request_body"], SDKGenerateInputSLZ)
-    response = schema["responses"][status.HTTP_201_CREATED]
-    assert isinstance(response, serializers.ListSerializer)
+def resolve(document, schema):
+    if "$ref" in schema:
+        return document["components"]["schemas"][schema["$ref"].rsplit("/", 1)[1]]
+    return schema
 
 
-def test_open_permission_apply_record_list_response_is_array():
-    response = MCPServerAppPermissionRecordListApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
-
-    assert isinstance(response, serializers.ListSerializer)
-
-
-def test_released_resource_list_schema_is_paginated_count_results_object():
-    response = GatewayReleasedResourceListApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
-
-    assert GatewayReleasedResourceListApi.pagination_class is not None
-    assert isinstance(response, serializers.Serializer)
-    assert not isinstance(response, serializers.ListSerializer)
-    assert set(response.fields) == {"count", "results"}
+def response_data(document, path, method="get", code="200"):
+    schema = document["paths"][path][method]["responses"][code]["content"]["application/json"]["schema"]
+    return resolve(document, schema["properties"]["data"])
 
 
-def test_inner_permission_apply_record_retrieve_response_is_object():
-    response = MCPServerAppPermissionRecordRetrieveApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
-
-    assert isinstance(response, serializers.Serializer)
-    assert not isinstance(response, serializers.ListSerializer)
-    assert isinstance(response.fields["mcp_server"].fields["tools_count"], serializers.IntegerField)
-    assert isinstance(response.fields["record"].fields["handled_by"], serializers.SerializerMethodField)
-    handled_by_schema = response.fields["record"].get_handled_by._swagger_serializer
-    assert isinstance(handled_by_schema, serializers.ListField)
+def test_sync_api_response_status_schema_matches_runtime(document):
+    for path, method, code in [
+        ("/api/v2/sync/gateways/{gateway_name}/resource-docs/", "post", "201"),
+        ("/api/v2/sync/gateways/{gateway_name}/resource_versions/", "get", "200"),
+        ("/api/v2/sync/gateways/{gateway_name}/resource_versions/release/", "post", "200"),
+    ]:
+        assert set(document["paths"][path][method]["responses"]) == {code}
 
 
-def test_request_log_response_schema_uses_standard_paginated_object():
-    response = AppRequestLogListApi.get._swagger_auto_schema["responses"][status.HTTP_200_OK]
+def test_sdk_generate_schema_matches_runtime_payload(document):
+    path = "/api/v2/sync/gateways/{gateway_name}/sdks/"
+    request = document["paths"][path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert "languages" in resolve(document, request)["properties"]
+    assert response_data(document, path, "post", "201")["type"] == "array"
 
-    assert isinstance(response, serializers.Serializer)
-    assert not isinstance(response, serializers.ListSerializer)
-    assert set(response.fields) == {"count", "results"}
+
+def test_open_permission_apply_record_list_response_is_paginated(document):
+    schema = response_data(document, "/api/v2/open/mcp-servers/permissions/apply-records/")
+    assert set(schema["properties"]) == {"count", "results"}
+    assert schema["properties"]["results"]["type"] == "array"
+
+
+def test_released_resource_list_schema_is_paginated_count_results_object(document):
+    schema = response_data(document, "/api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/")
+    assert set(schema["properties"]) == {"count", "results"}
+    item = resolve(document, schema["properties"]["results"]["items"])
+    assert "count" not in item["properties"]
+
+
+def test_inner_permission_apply_record_retrieve_response_is_object(document):
+    schema = response_data(document, "/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/")
+    assert set(schema["properties"]) == {"mcp_server", "record"}
+    server = resolve(document, schema["properties"]["mcp_server"])
+    assert server["properties"]["tools_count"]["type"] == "integer"
+    record = resolve(document, schema["properties"]["record"])
+    assert record["properties"]["handled_by"]["type"] == "array"
+
+
+def test_request_log_response_schema_uses_standard_paginated_object(document):
+    schema = response_data(document, "/api/v2/inner/apps/{app_code}/monitor/request-logs/")
+    assert set(schema["properties"]) == {"count", "results"}
+    assert schema["properties"]["results"]["type"] == "array"
 
 
 def test_registered_resource_schemas_match_runtime_contracts():

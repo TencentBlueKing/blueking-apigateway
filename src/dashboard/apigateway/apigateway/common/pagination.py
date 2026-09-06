@@ -45,6 +45,16 @@ class StandardLimitOffsetPagination(LimitOffsetPagination):
 
         return Response(OrderedDict([("data", OrderedDict([("count", self.count), ("results", data)]))]))
 
+    def get_paginated_response_schema(self, schema):
+        response_schema = super().get_paginated_response_schema(schema)
+        response_schema["properties"].pop("next", None)
+        response_schema["properties"].pop("previous", None)
+        if self._is_legacy_api(getattr(self, "request", None)):
+            # V1 endpoints return get_paginated_data() inside V1OKJsonResponse.
+            response_schema["properties"].update(has_next={"type": "boolean"}, has_previous={"type": "boolean"})
+            response_schema["required"].extend(["has_next", "has_previous"])
+        return response_schema
+
     def get_limit(self, request):
         limit = super().get_limit(request)
         # for legacy api

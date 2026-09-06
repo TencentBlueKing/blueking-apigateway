@@ -19,7 +19,7 @@ import hashlib
 
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -35,18 +35,18 @@ from .serializers import DocInputSLZ, DocOutputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定资源的资源文档，包括中文、英文两份文档，如果文档未创建，返回文档模版",
+    decorator=extend_schema(
+        description="获取指定资源的资源文档，包括中文、英文两份文档，如果文档未创建，返回文档模版",
         responses={status.HTTP_200_OK: DocOutputSLZ(many=True)},
         tags=["WebAPI.Resource.Doc"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建资源文档",
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=DocInputSLZ,
+    decorator=extend_schema(
+        description="创建资源文档",
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        request=DocInputSLZ,
         tags=["WebAPI.Resource.Doc"],
     ),
 )
@@ -117,20 +117,21 @@ class DocListCreateApi(generics.ListCreateAPIView):
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新资源文档",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=DocInputSLZ,
+    decorator=extend_schema(
+        description="更新资源文档",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=DocInputSLZ,
         tags=["WebAPI.Resource.Doc"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除资源文档", responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource.Doc"]
+    decorator=extend_schema(
+        description="删除资源文档", responses={status.HTTP_204_NO_CONTENT: None}, tags=["WebAPI.Resource.Doc"]
     ),
 )
 class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
+    schema_request_partial = False
     serializer_class = DocInputSLZ
     lookup_field = "id"
 

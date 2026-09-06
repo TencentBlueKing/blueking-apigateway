@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.mcp_server.metrics_constants import (
@@ -50,10 +50,10 @@ class MCPServerQueryRangeApi(generics.ListAPIView):
     - method_requests: 按 MCP 方法分组的请求趋势
     """
 
-    @swagger_auto_schema(
-        query_serializer=MCPServerMetricsQueryRangeInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
-        operation_description="查询 MCP Server 时序图 metrics",
+    @extend_schema(
+        parameters=[MCPServerMetricsQueryRangeInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="查询 MCP Server 时序图 metrics",
         tags=["WebAPI.MCPServer.Metrics"],
     )
     def get(self, request, *args, **kwargs):
@@ -98,10 +98,10 @@ class MCPServerQueryInstantApi(generics.ListAPIView):
     - non_2xx_total: 非 2XX 请求数
     """
 
-    @swagger_auto_schema(
-        query_serializer=MCPServerMetricsQueryInstantInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
-        operation_description="查询 MCP Server 瞬时值 metrics",
+    @extend_schema(
+        parameters=[MCPServerMetricsQueryInstantInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="查询 MCP Server 瞬时值 metrics",
         tags=["WebAPI.MCPServer.Metrics"],
     )
     def get(self, request, *args, **kwargs):

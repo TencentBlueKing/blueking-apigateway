@@ -24,7 +24,7 @@ from django.http import StreamingHttpResponse
 from django.utils import translation
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.support.models import ResourceDoc
@@ -39,11 +39,11 @@ logger = logging.getLogger(__name__)
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=AICompletionInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        request=AICompletionInputSLZ(),
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.AI_Completion"],
-        operation_description="AI Completion",
+        description="AI Completion",
     ),
 )
 class AICompletionCreateApi(generics.CreateAPIView):
@@ -98,11 +98,11 @@ class AICompletionCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=BatchTranslateInputSLZ(),
+    decorator=extend_schema(
+        request=BatchTranslateInputSLZ(),
         responses={status.HTTP_200_OK: BatchTranslateOutputSLZ()},
         tags=["WebAPI.AI_Completion"],
-        operation_description="批量翻译文档",
+        description="批量翻译文档",
     ),
 )
 class BatchTranslateApi(generics.CreateAPIView):

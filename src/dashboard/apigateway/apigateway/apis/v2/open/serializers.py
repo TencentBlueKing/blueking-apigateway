@@ -19,6 +19,7 @@
 from typing import Any, Dict, List, Optional
 
 from django.utils.translation import gettext as _
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
@@ -869,6 +870,7 @@ class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
         )
 
 
+@extend_schema_serializer(many=False)
 class GatewayReleasedResourceListOutputSLZ(serializers.Serializer):
     count = serializers.IntegerField(read_only=True, help_text="资源数量")
     results = GatewayReleasedResourceListItemOutputSLZ(many=True, read_only=True)

@@ -17,7 +17,7 @@
 #
 
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.utils.responses import OKJsonResponse
@@ -28,8 +28,8 @@ from .utils import get_version_list
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="版本信息",
+    decorator=extend_schema(
+        description="版本信息",
         responses={status.HTTP_200_OK: VersionLogSLZ(label="版本信息", many=True)},
         tags=["version_log"],
     ),

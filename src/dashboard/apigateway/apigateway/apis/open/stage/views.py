@@ -19,7 +19,7 @@
 from django.conf import settings
 from django.db import transaction
 from django.http import Http404
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.permissions import (
@@ -46,7 +46,7 @@ class StageListViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Stage.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
         tags=["OpenAPI.V1"],
     )
@@ -67,7 +67,7 @@ class StageListViewSet(viewsets.ModelViewSet):
 class StageV1ViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses={status.HTTP_200_OK: serializers.StageWithResourceVersionV1SLZ(many=True)},
         tags=["OpenAPI.V1"],
     )
@@ -84,7 +84,9 @@ class StageV1ViewSet(viewsets.ViewSet):
 class StageSyncViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.V1"])
+    @extend_schema(
+        responses={200: {"type": "object", "additionalProperties": True}}, request=StageSLZ, tags=["OpenAPI.V1"]
+    )
     @transaction.atomic
     def sync(self, request, gateway_name: str, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))

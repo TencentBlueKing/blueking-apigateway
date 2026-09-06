@@ -19,7 +19,7 @@
 
 from django.db.models import Q
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
@@ -35,9 +35,9 @@ from .serializers import GatewayOutputSLZ, GatewayQueryInputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关列表，仅显示公开的、已发布的网关",
-        query_serializer=GatewayQueryInputSLZ,
+    decorator=extend_schema(
+        description="获取网关列表，仅显示公开的、已发布的网关",
+        parameters=[GatewayQueryInputSLZ],
         responses={status.HTTP_200_OK: GatewayOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway"],
     ),
@@ -97,8 +97,8 @@ class GatewayListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关详情，仅显示公开的、已发布的网关",
+    decorator=extend_schema(
+        description="获取网关详情，仅显示公开的、已发布的网关",
         responses={status.HTTP_200_OK: GatewayOutputSLZ},
         tags=["WebAPI.Docs.Gateway"],
     ),

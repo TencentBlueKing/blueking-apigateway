@@ -22,8 +22,7 @@ from tempfile import TemporaryDirectory
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg import openapi as parameters
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -67,20 +66,20 @@ from .serializers import (
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["WebAPI.ResourceVersion"],
-        operation_description="资源版本列表查询接口",
-        query_serializer=ResourceVersionListInputSLZ(),
+        description="资源版本列表查询接口",
+        parameters=[ResourceVersionListInputSLZ()],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=ResourceVersionCreateInputSLZ,
+    decorator=extend_schema(
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        request=ResourceVersionCreateInputSLZ,
         tags=["WebAPI.ResourceVersion"],
-        operation_description="资源版本创建接口",
+        description="资源版本创建接口",
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
@@ -138,16 +137,15 @@ class ResourceVersionRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
 
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(
+        decorator=extend_schema(
             tags=["WebAPI.ResourceVersion"],
-            operation_description="资源版本详情查询接口",
-            manual_parameters=[
-                parameters.Parameter(
+            description="资源版本详情查询接口",
+            parameters=[
+                OpenApiParameter(
                     name="stage_id",
-                    in_=parameters.IN_QUERY,
-                    type=parameters.TYPE_INTEGER,
+                    location=OpenApiParameter.QUERY,
+                    type=int,
                     description="stage_id",
-                    default="None",
                 )
             ],
         ),
@@ -203,9 +201,9 @@ class ResourceVersionRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
 
         return OKJsonResponse(data=data)
 
-    @swagger_auto_schema(
-        operation_description="删除资源版本",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    @extend_schema(
+        description="删除资源版本",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.ResourceVersion"],
     )
     @transaction.atomic
@@ -239,10 +237,10 @@ class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
 
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(
+        decorator=extend_schema(
             responses={status.HTTP_200_OK: NeedNewVersionOutputSLZ()},
             tags=["WebAPI.ResourceVersion"],
-            operation_description="是否需要创建新资源版本查询接口",
+            description="是否需要创建新资源版本查询接口",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -270,11 +268,11 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
 
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(
-            query_serializer=ResourceVersionDiffQueryInputSLZ(),
+        decorator=extend_schema(
+            parameters=[ResourceVersionDiffQueryInputSLZ()],
             responses={status.HTTP_200_OK: ResourceVersionDiffOutputSLZ()},
             tags=["WebAPI.ResourceVersion"],
-            operation_description="资源版本对比接口",
+            description="资源版本对比接口",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -321,10 +319,10 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
 class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(
-            responses={status.HTTP_200_OK: ""},
+        decorator=extend_schema(
+            responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
             tags=["WebAPI.ResourceVersion"],
-            operation_description="获取下一个资源版本号",
+            description="获取下一个资源版本号",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -343,11 +341,11 @@ class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
 class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
     @method_decorator(
         name="get",
-        decorator=swagger_auto_schema(
-            query_serializer=NextProgrammableDeployVersionGetInputSLZ(),
-            responses={status.HTTP_200_OK: ""},
+        decorator=extend_schema(
+            parameters=[NextProgrammableDeployVersionGetInputSLZ()],
+            responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
             tags=["WebAPI.ResourceVersion"],
-            operation_description="编程网关环境版本获取",
+            description="编程网关环境版本获取",
         ),
     )
     def get(self, request, *args, **kwargs):
@@ -377,10 +375,10 @@ class ResourceVersionExportApi(generics.CreateAPIView):
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(
-        operation_description="导出资源版本",
-        request_body=ResourceVersionExportInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+    @extend_schema(
+        description="导出资源版本",
+        request=ResourceVersionExportInputSLZ,
+        responses={(200, "application/octet-stream"): bytes},
         tags=["WebAPI.ResourceVersion"],
     )
     def post(self, request, *args, **kwargs):
@@ -404,10 +402,10 @@ class ResourceVersionDocExportApi(generics.CreateAPIView):
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(
-        operation_description="导出资源版本对应的文档",
-        request_body=ResourceVersionDocExportInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+    @extend_schema(
+        description="导出资源版本对应的文档",
+        request=ResourceVersionDocExportInputSLZ,
+        responses={(200, "application/octet-stream"): bytes},
         tags=["WebAPI.ResourceVersion"],
     )
     def post(self, request, *args, **kwargs):
@@ -432,13 +430,15 @@ class ResourceVersionDocExportApi(generics.CreateAPIView):
 
 
 class ResourceVersionBatchDeleteApi(generics.DestroyAPIView):
+    schema_delete_request_body = True
+
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(
-        operation_description="批量删除资源版本",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=ResourceVersionBatchDeleteInputSLZ,
+    @extend_schema(
+        description="批量删除资源版本",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=ResourceVersionBatchDeleteInputSLZ,
         tags=["WebAPI.ResourceVersion"],
     )
     @transaction.atomic
