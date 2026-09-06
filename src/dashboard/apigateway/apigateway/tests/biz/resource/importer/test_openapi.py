@@ -1085,24 +1085,26 @@ class TestOpenAPIExporter:
             }
         )
 
-        operation = BaseExporter()._gen_swagger_paths([resource])[resource["path"]]["post"]
+        operation = BaseExporter()._generate_paths([resource])[resource["path"]]["post"]
         extension = operation["x-bk-apigateway-resource"]
 
         assert extension["kind"] == "ai"
         assert extension["backend"] == {"name": "openai-primary"}
 
-    def test_get_swagger_by_resources(self, fake_resource_dict):
+    def test_export_openapi(self, fake_resource_dict):
         exporter = OpenAPIExportManager()
 
-        content = exporter.get_swagger_by_resources([fake_resource_dict], "json")
+        content = exporter.export_openapi([fake_resource_dict], "json")
         assert json.loads(content)["paths"]
+        assert json.loads(content)["openapi"] == "3.0.1"
 
-        content = exporter.get_swagger_by_resources([fake_resource_dict], "yaml")
+        content = exporter.export_openapi([fake_resource_dict], "yaml")
         assert yaml_loads(content)["paths"]
+        assert yaml_loads(content)["openapi"] == "3.0.1"
 
     def test_generate_paths(self, fake_resource_dict):
         exporter = BaseExporter()
-        paths = exporter._gen_swagger_paths([fake_resource_dict])
+        paths = exporter._generate_paths([fake_resource_dict])
         operation = paths[fake_resource_dict["path"]][fake_resource_dict["method"].lower()]
 
         assert operation == {
@@ -1136,7 +1138,7 @@ class TestOpenAPIExporter:
 
     def test_generate_paths__exclude_bk_apigateway_resource(self, fake_resource_dict):
         exporter = BaseExporter(include_bk_apigateway_resource=False)
-        paths = exporter._gen_swagger_paths([fake_resource_dict])
+        paths = exporter._generate_paths([fake_resource_dict])
         operation = paths[fake_resource_dict["path"]][fake_resource_dict["method"].lower()]
 
         assert "x-bk-apigateway-resource" not in operation
@@ -1276,7 +1278,7 @@ class TestOpenAPIExporter:
                 "oauth2_personal_client_enabled": False,
             },
         }
-        content = OpenAPIExportManager().get_swagger_by_resources([resource], OpenAPIFormatEnum.JSON.value)
+        content = OpenAPIExportManager().export_openapi([resource], OpenAPIFormatEnum.JSON.value)
         manager = OpenAPIImportManager.load_from_content(gateway=gateway, content=content)
         manager.parse()
 
@@ -1294,7 +1296,7 @@ class TestOpenAPIExporter:
             ],
         )
         exporter = BaseExporter()
-        paths = exporter._gen_swagger_paths([resource])
+        paths = exporter._generate_paths([resource])
         operation = paths[resource["path"]][resource["method"].lower()]
 
         plugin_configs = operation["x-bk-apigateway-resource"]["pluginConfigs"]
@@ -1325,7 +1327,7 @@ class TestOpenAPIExporter:
             "plugin_configs": [fake_plugin_config],
         }
         exporter = BaseExporter()
-        paths = exporter._gen_swagger_paths([resource])
+        paths = exporter._generate_paths([resource])
         operation = paths["/test"]["get"]
 
         plugin_configs = operation["x-bk-apigateway-resource"]["pluginConfigs"]

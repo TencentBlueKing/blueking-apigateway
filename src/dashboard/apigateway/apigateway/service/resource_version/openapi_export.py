@@ -132,46 +132,6 @@ class BaseExporter:
 
         return paths
 
-    def get_swagger_by_resource(self, resources: List[Dict], file_type: str = ""):
-        content = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {
-                "version": self.api_version,
-                "title": self.title,
-                "description": self.description,
-            },
-            "schemes": ["http"],
-            "paths": self._gen_swagger_paths(resources),
-        }
-
-        if file_type == OpenAPIFormatEnum.JSON.value:
-            return json.dumps(content, indent=4)
-
-        return yaml_export_dumps(content)
-
-    def _gen_swagger_paths(self, resources: List[Dict]) -> Dict[str, Any]:
-        paths: Dict[str, Any] = {}
-        for resource in resources:
-            path = resource["path"]
-            paths.setdefault(path, {})
-
-            method = self._adapt_method(resource["method"])
-            operation = {
-                "operationId": resource["name"],
-                "description": resource["description"],
-                "tags": resource.get("labels", []),
-                "responses": {
-                    "default": {"description": ""},
-                },
-            }
-
-            if self.include_bk_apigateway_resource:
-                self._generate_bk_apigateway_resource(operation, resource)
-
-            paths[path][method] = operation
-        return paths
-
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
         backend = resource.get("backend", {})
         kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
@@ -334,9 +294,3 @@ class OpenAPIExportManager:
     def get_openapi_content(self, resources: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Return an OAS3 document without mutating caller-owned resource data."""
         return self._exporter.get_openapi_content(copy.deepcopy(resources))
-
-    def get_swagger_by_resources(self, resources: List[Dict], file_type: str = "") -> str:
-        """
-        获取swagger2.0的格式导出(主要用于sdk生成)
-        """
-        return self._exporter.get_swagger_by_resource(resources, file_type)

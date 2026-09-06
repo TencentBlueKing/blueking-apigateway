@@ -56,7 +56,7 @@
               {{ t('上传文件') }}
             </div>
           </BkUpload>
-          <span class="desc">{{ t('支持 Swagger 2.0 和 OpenAPI 3.0 规范的文件，文件格式支持 JSON、YAML') }}</span>
+          <span class="desc">{{ t('支持 Swagger 2.0、OpenAPI 3.0 和 3.1 规范的文件，文件格式支持 JSON、YAML') }}</span>
           <span class="desc">
             <BkLink
               theme="primary"
