@@ -97,6 +97,8 @@ def test_generate_client_uses_native_generator_and_fixed_coordinates(
         *(f"{name}={value}" for name, value in additional_properties.items()),
         "hideGenerationTimestamp=true",
     }
+    global_properties = command[command.index("--global-property") + 1]
+    assert {"apiTests=false", "modelTests=false"}.issubset(global_properties.split(","))
     assert "bkapi-client-core" not in " ".join(command)
     assert "-t" not in command
     assert run.call_args.kwargs["shell"] is False

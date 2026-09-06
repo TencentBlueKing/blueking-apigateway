@@ -66,6 +66,8 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
         str(output_dir),
         "--additional-properties",
         additional_properties,
+        "--global-property",
+        "apiTests=false,modelTests=false",
     ]
     result = _run(command)
     if result.returncode != 0:

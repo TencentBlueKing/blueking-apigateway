@@ -310,3 +310,21 @@ def test_package_version_rejects_non_semver_versions():
 def test_package_version_rejects_the_legacy_golang_alias():
     with pytest.raises(ValueError, match="unsupported SDK generation language"):
         normalize_package_version("golang", "1.2.3")
+
+
+@pytest.mark.parametrize(
+    ("version", "module_path"),
+    [
+        ("0.9.0", "example.com/bkapi/openapi/demo"),
+        ("1.2.3", "example.com/bkapi/openapi/demo"),
+        ("2.0.0", "example.com/bkapi/openapi/demo/v2"),
+        ("12.1.0-beta.1", "example.com/bkapi/openapi/demo/v12"),
+    ],
+)
+def test_go_module_path_matches_resource_version_major(settings, version, module_path):
+    settings.SDK_GO_MODULE_PREFIX = "example.com/bkapi"
+
+    config = get_sdk_generation_policy().for_resource_version("demo", make_resource_version(version), "go")
+
+    assert config.project_name == module_path
+    assert config.package_version == f"v{version}"

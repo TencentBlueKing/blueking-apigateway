@@ -14,6 +14,7 @@ from apigateway.apps.support.constants import (
     SDKGenerationTaskStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem, SDKGenerationTask
+from apigateway.biz.sdk import SDKFactory
 from apigateway.biz.sdk.artifacts import create_built_artifact
 from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict, SDKGenerationError
 from apigateway.biz.sdk.orchestrator import (
@@ -302,8 +303,9 @@ def test_refresh_task_status_precedence(fake_resource_version, statuses, expecte
 
 
 def test_legacy_sdk_is_linked_as_success_without_enqueue_or_update(
-    fake_gateway, fake_resource_version, mocker, django_capture_on_commit_callbacks
+    fake_gateway, fake_resource_version, mocker, django_capture_on_commit_callbacks, settings
 ):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"index_url": "https://repo.example.com/simple"}}
     sdk = G(
         GatewaySDK,
         gateway=fake_gateway,
@@ -312,8 +314,9 @@ def test_legacy_sdk_is_linked_as_success_without_enqueue_or_update(
         version_number=fake_resource_version.version,
         schema=None,
     )
-    sdk.config = {}
+    sdk.config = {"python": {"repository": "default", "is_uploaded_to_pypi": True}}
     sdk.save(update_fields=["_config"])
+    original_display = SDKFactory.create(sdk).as_dict()
 
     original = (sdk.name, sdk.url, sdk._config, sdk.updated_time)
     enqueue = mocker.Mock()
@@ -327,6 +330,9 @@ def test_legacy_sdk_is_linked_as_success_without_enqueue_or_update(
     assert item.status == "success"
     assert not item.artifacts.exists()
     assert (sdk.name, sdk.url, sdk._config, sdk.updated_time) == original
+    display = SDKFactory.create(sdk)
+    assert display.is_legacy
+    assert display.as_dict() == original_display
     enqueue.assert_not_called()
 
 

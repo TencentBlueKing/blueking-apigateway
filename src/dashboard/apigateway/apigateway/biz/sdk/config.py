@@ -274,6 +274,9 @@ def build_language_config(
 
     if language == "go":
         project_name = f"{policy.go_module_prefix}/openapi/{gateway_name}"
+        major_version = int(resource_version.version.split(".", 1)[0])
+        if major_version >= 2:
+            project_name = f"{project_name}/v{major_version}"
         package_name = f"bkapi_{gateway_name_normalized}"
         return SDKLanguageConfig(
             language=language,

@@ -108,7 +108,7 @@ class SDK:
     @property
     def config(self):
         item = self.generation_item
-        if item is not None:
+        if item is not None and not self.is_legacy:
             return item.config_snapshot if isinstance(item.config_snapshot, dict) else {}
         config = self.instance.config
         if not isinstance(config, dict):
@@ -141,7 +141,8 @@ class SDK:
 
     @property
     def is_legacy(self) -> bool:
-        if self.generation_item is not None:
+        # A legacy package can be linked to an item without being regenerated.
+        if self.generation_item is not None and self.artifacts:
             return False
         config = self.instance.config
         return not isinstance(config, dict) or "artifacts" not in config
@@ -220,7 +221,8 @@ class PythonSDK(SDK):
     def install_command(self) -> str:
         pypi = self.find_artifact(distributor="pypi")
         if pypi and pypi.get("package_reference"):
-            return f'pip install "{pypi["package_reference"]}"'
+            index_url = RepositoryConfig.by_name("default").index_url
+            return PipHelper(index_url).install_command(pypi["package_reference"])
         wheel = self.find_artifact(distributor="bkrepo_generic", artifact_type="wheel")
         if wheel and wheel.get("url"):
             return f'pip install "{wheel["url"]}"'

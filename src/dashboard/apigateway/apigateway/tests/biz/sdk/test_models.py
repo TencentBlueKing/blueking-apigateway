@@ -89,7 +89,8 @@ def test_sdk_factory_does_not_map_legacy_golang_value():
     assert sdk.as_dict()["language"] == "unknown"
 
 
-def test_native_repository_package_references_are_preferred():
+def test_native_repository_package_references_are_preferred(settings):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"index_url": "https://repo.example.com/simple"}}
     python = SDKFactory.create(
         SimpleNamespace(
             language="python",
@@ -129,7 +130,7 @@ def test_native_repository_package_references_are_preferred():
         )
     )
 
-    assert python.install_command == 'pip install "bkapi-demo==1.2.3"'
+    assert python.install_command == "pip install --extra-index-url=https://repo.example.com/simple bkapi-demo==1.2.3"
     assert java.install_command == 'mvn dependency:get -Dartifact="com.example:bkapi-demo:1.2.3"'
 
 

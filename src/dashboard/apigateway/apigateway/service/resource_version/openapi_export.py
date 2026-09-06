@@ -294,7 +294,9 @@ class OpenAPIExportManager:
         return self._exporter.get_openapi_content(self._build_resource_version_resources(resource_version))
 
     def _build_resource_version_resources(self, resource_version: ResourceVersion) -> list[Dict[str, Any]]:
-        backend_id_to_config = get_backend_id_to_instance(resource_version.gateway.id)
+        backend_id_to_config = (
+            get_backend_id_to_instance(resource_version.gateway.id) if self.include_bk_apigateway_resource else {}
+        )
         resource_labels = get_gateway_resource_id_to_labels(resource_version.gateway.id)
         resource_id_to_schema = get_resource_id_to_schema_by_resource_version(resource_version.id)
 
@@ -304,6 +306,9 @@ class OpenAPIExportManager:
             labels = resource_labels.get(resource["id"], [])
             resource["labels"] = [label["name"] for label in labels]
             resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
+            if not self.include_bk_apigateway_resource:
+                resource_data_list.append(resource)
+                continue
             resource["auth_config"] = json.loads(resource["contexts"]["resource_auth"]["config"])
             resource["backend"] = {
                 "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,

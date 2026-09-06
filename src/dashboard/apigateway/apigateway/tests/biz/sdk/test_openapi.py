@@ -1,6 +1,9 @@
+import copy
 import json
 from dataclasses import asdict, replace
 from types import MappingProxyType, SimpleNamespace
+
+import pytest
 
 from apigateway.biz.sdk.config import SDKLanguageConfig
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
@@ -118,3 +121,67 @@ def test_build_sdk_openapi_keeps_public_and_private_resources_without_secrets(mo
     assert set(document["paths"]) == {"/public", "/private"}
     assert "must-not-leak" not in encoded
     assert "Cookie" not in encoded
+
+
+@pytest.mark.parametrize("parameter_level", ["path", "operation"])
+def test_sdk_openapi_adds_only_missing_path_parameters(mocker, parameter_level):
+    explicit = {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}
+    query = {"name": "child", "in": "query", "schema": {"type": "integer"}}
+    operation = {"operationId": "get_child", "parameters": [query], "responses": {"200": {"description": "OK"}}}
+    path_item = {"get": operation, "summary": "Children"}
+    if parameter_level == "path":
+        path_item["parameters"] = [explicit]
+    else:
+        operation["parameters"].append(explicit)
+    exported = {
+        "openapi": "3.0.1",
+        "info": {"title": "demo", "version": "1.2.3"},
+        "paths": {"/users/{id}/children/{child}": path_item},
+    }
+    original = copy.deepcopy(exported)
+    mocker.patch("apigateway.biz.sdk.openapi.OpenAPIExportManager.get_resource_version_openapi", return_value=exported)
+    resource_version = SimpleNamespace(version="1.2.3", gateway=SimpleNamespace(name="demo"))
+
+    document = build_sdk_openapi(resource_version)
+
+    result = document["paths"]["/users/{id}/children/{child}"]
+    parameters = result.get("parameters", []) + result["get"]["parameters"]
+    assert [p for p in parameters if p.get("in") == "path"] == [
+        explicit,
+        {"name": "child", "in": "path", "required": True, "description": "", "schema": {"type": "string"}},
+    ]
+    assert query in result["get"]["parameters"]
+    assert exported == original
+
+
+def test_sdk_openapi_without_schema_survives_deleted_backend(mocker):
+    resource = {
+        "id": 1,
+        "name": "get_user",
+        "description": "Get user",
+        "path": "/users/{id}",
+        "method": "GET",
+        "contexts": {"resource_auth": {"config": "{}"}},
+        "proxy": {"backend_id": 42, "config": "{}"},
+    }
+    original = copy.deepcopy(resource)
+    resource_version = SimpleNamespace(
+        id=2, version="1.2.3", gateway=SimpleNamespace(id=3, name="demo"), data=[resource]
+    )
+    mocker.patch("apigateway.service.resource_version.openapi_export.get_backend_id_to_instance", return_value={})
+    mocker.patch(
+        "apigateway.service.resource_version.openapi_export.get_gateway_resource_id_to_labels", return_value={}
+    )
+    mocker.patch(
+        "apigateway.service.resource_version.openapi_export.get_resource_id_to_schema_by_resource_version",
+        return_value={},
+    )
+
+    document = build_sdk_openapi(resource_version)
+
+    operation = document["paths"]["/users/{id}"]["get"]
+    assert operation["parameters"] == [
+        {"name": "id", "in": "path", "required": True, "description": "", "schema": {"type": "string"}},
+    ]
+    assert "x-bk-apigateway-resource" not in operation
+    assert resource == original

@@ -11,7 +11,9 @@ from django.conf import settings
 from openapi_spec_validator import validate
 
 from apigateway.biz.sdk.toolchain import SDKToolchainIdentity
+from apigateway.core.constants import HTTP_METHOD_CHOICES
 from apigateway.service.resource_version import OpenAPIExportManager
+from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -28,6 +30,21 @@ def build_sdk_openapi(resource_version: ResourceVersion) -> dict[str, Any]:
         description=f"SDK for {resource_version.gateway.name}",
     )
     document = copy.deepcopy(exporter.get_resource_version_openapi(resource_version))
+    for path, path_item in document["paths"].items():
+        inferred_parameters = extract_openapi_parameters_from_path(path)
+        for method, _ in HTTP_METHOD_CHOICES:
+            operation = path_item.get(method.lower())
+            if operation is None:
+                continue
+            parameters = operation.get("parameters", [])
+            declared_names = {
+                parameter.get("name")
+                for parameter in [*path_item.get("parameters", []), *parameters]
+                if parameter.get("in") == "path"
+            }
+            missing = [parameter for parameter in inferred_parameters if parameter["name"] not in declared_names]
+            if missing:
+                operation["parameters"] = [*parameters, *missing]
     server_url = settings.SDK_GENERATION["server_url_template"].replace(
         "{gateway_name}", resource_version.gateway.name
     )

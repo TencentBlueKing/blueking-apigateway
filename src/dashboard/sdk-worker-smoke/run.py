@@ -52,11 +52,11 @@ django.setup()
 
 from apigateway.biz.sdk.artifacts import build_manifest  # noqa: E402
 from apigateway.biz.sdk.builders import build_artifacts  # noqa: E402
-from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDKLanguageConfig  # noqa: E402
+from apigateway.biz.sdk.config import SDKLanguageConfig  # noqa: E402
+from apigateway.biz.sdk.generator import generate_client  # noqa: E402
 
 ROOT = Path(__file__).parent
 SPEC = ROOT / "minimal-openapi.yaml"
-JAR = Path(SDK_OPENAPI_GENERATOR_JAR)
 
 PROPERTIES = {
     "python": {
@@ -122,25 +122,7 @@ def generate(language: str, destination: Path) -> SDKLanguageConfig:
         additional_properties=PROPERTIES[language],
         native_distributor=None,
     )
-    run(
-        [
-            "java",
-            "-jar",
-            str(JAR),
-            "generate",
-            "-i",
-            str(SPEC),
-            "-g",
-            config.generator_name,
-            "-o",
-            str(destination),
-            "--additional-properties",
-            ",".join(f"{key}={value}" for key, value in PROPERTIES[language].items()),
-            "--global-property",
-            "apiTests=false,modelTests=false,apiDocs=false,modelDocs=false",
-        ],
-        ROOT,
-    )
+    generate_client(SPEC, destination, config)
     return config
 
 
