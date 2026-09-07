@@ -709,7 +709,7 @@ const handleClearSelection = () => {
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 24px;
+    gap: 16px;
     flex: 1;
     min-width: 0;
 
@@ -725,6 +725,7 @@ const handleClearSelection = () => {
         width: auto;
         text-align: right;
         white-space: nowrap;
+        padding-right: 8px !important;
       }
 
       .bk-form-content {

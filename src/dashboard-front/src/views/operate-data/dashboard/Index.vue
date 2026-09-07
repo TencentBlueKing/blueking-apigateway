@@ -27,7 +27,7 @@
     <div class="ag-top-header">
       <BkForm
         class="search-form"
-        form-type="vertical"
+        label-width="auto"
       >
         <BkFormItem :label="t('选择时间')">
           <DatePicker
@@ -739,20 +739,45 @@ onMounted(() => {
 <style lang="scss" scoped>
 
 .ag-top-header {
-  padding: 20px 24px 0;
+  padding: 24px 24px 0;
 }
 
 .search-form {
   display: flex;
-  width: 100%;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
 
   :deep(.bk-form-item) {
-    margin-right: 16px;
+    display: flex;
+    max-width: fit-content;
+    min-width: 0;
+    margin: 0;
+    align-items: center;
+    flex: 1;
+
+    .bk-form-label {
+      width: auto;
+      text-align: right;
+      white-space: nowrap;
+      padding-right: 8px !important;
+    }
+
+    .bk-form-content {
+      line-height: normal;
+      .bk-input,
+      .bk-user-selector,
+      .member-selector {
+        width: 100%;
+      }
+    }
   }
 }
 
 .statistics {
-  padding: 20px 24px 32px;
+  padding: 24px 24px 32px;
 
   .ai-metrics-title {
     margin: 24px 0 16px;
@@ -798,7 +823,8 @@ onMounted(() => {
     }
 
     .success-requests {
-      width: 673px;
+      flex: 1;
+      min-width: 0;
       margin-right: 16px;
       background: #FFF;
       border-radius: 2px;
@@ -806,7 +832,8 @@ onMounted(() => {
     }
 
     .error-requests {
-      width: 673px;
+      flex: 1;
+      min-width: 0;
       background: #FFF;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
@@ -816,7 +843,8 @@ onMounted(() => {
   .secondary-panel {
 
     .secondary-lf {
-      width: 808px;
+      flex: 1;
+      min-width: 0;
       padding-bottom: 6px;
       margin-right: 16px;
       background: #FFF;
@@ -825,7 +853,8 @@ onMounted(() => {
     }
 
     .secondary-rg {
-      width: 808px;
+      flex: 1;
+      min-width: 0;
       padding-bottom: 6px;
       background: #FFF;
       border-radius: 2px;
