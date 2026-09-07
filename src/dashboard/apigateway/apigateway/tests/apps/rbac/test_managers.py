@@ -1,8 +1,30 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 from django_dynamic_fixture import G
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.biz.gateway import GatewayMemberInput
+from apigateway.common.error_codes import APIError
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -152,5 +174,90 @@ def test_replace_gateway_administrators_converts_operator(fake_gateway):
 
 
 def test_replace_gateway_administrators_rejects_empty_administrators(fake_gateway):
-    with pytest.raises(ValueError):
+    with pytest.raises(APIError):
         GatewayMember.objects.replace_gateway_administrators(fake_gateway.id, [], "operator-user")
+
+
+def test_add_gateway_members_creates_and_skips_existing(fake_gateway):
+    before = timezone.now()
+
+    created, skipped = GatewayMember.objects.add_gateway_members(
+        fake_gateway.id,
+        [
+            GatewayMemberInput(username="operator", role=GatewayRoleEnum.OPERATOR),
+            GatewayMemberInput(username="admin", role=GatewayRoleEnum.OPERATOR),
+        ],
+        "operator-user",
+    )
+
+    assert [(member.username, member.role) for member in created] == [("operator", GatewayRoleEnum.OPERATOR.value)]
+    assert [member.username for member in skipped] == ["admin"]
+    assert created[0].expires is not None
+    assert before + timedelta(days=364) < created[0].expires
+    assert GatewayMember.objects.get(gateway=fake_gateway, username="admin").role == (
+        GatewayRoleEnum.ADMINISTRATOR.value
+    )
+
+
+def test_update_gateway_member_role_keeps_expiry(fake_gateway):
+    GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["another-admin"], "operator-user")
+    member = GatewayMember.objects.get(gateway=fake_gateway, username="admin")
+    old_expires = member.expires
+
+    updated_member, previous_role, changed = GatewayMember.objects.update_gateway_member_role(
+        fake_gateway.id,
+        member.id,
+        GatewayRoleEnum.OPERATOR,
+        "operator-user",
+    )
+
+    assert changed
+    assert previous_role == GatewayRoleEnum.ADMINISTRATOR.value
+    assert updated_member.role == GatewayRoleEnum.OPERATOR.value
+    assert updated_member.expires == old_expires
+
+
+def test_update_gateway_member_role_rejects_last_administrator(fake_gateway):
+    member = GatewayMember.objects.get(gateway=fake_gateway, username="admin")
+
+    with pytest.raises(APIError):
+        GatewayMember.objects.update_gateway_member_role(
+            fake_gateway.id,
+            member.id,
+            GatewayRoleEnum.OPERATOR,
+            "operator-user",
+        )
+
+
+def test_delete_gateway_member(fake_gateway):
+    operator = G(
+        GatewayMember,
+        gateway=fake_gateway,
+        username="operator",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+
+    deleted_member = GatewayMember.objects.delete_gateway_member(fake_gateway.id, operator.id)
+
+    assert deleted_member.id == operator.id
+    assert not GatewayMember.objects.filter(id=operator.id).exists()
+
+
+def test_delete_gateway_member_rejects_last_administrator(fake_gateway):
+    member = GatewayMember.objects.get(gateway=fake_gateway, username="admin")
+
+    with pytest.raises(APIError):
+        GatewayMember.objects.delete_gateway_member(fake_gateway.id, member.id)
+
+
+def test_delete_gateway_member_rejects_member_from_another_gateway(fake_gateway):
+    another_gateway = G(Gateway)
+    member = G(
+        GatewayMember,
+        gateway=another_gateway,
+        username="other",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+
+    with pytest.raises(APIError):
+        GatewayMember.objects.delete_gateway_member(fake_gateway.id, member.id)
