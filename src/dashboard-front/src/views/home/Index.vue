@@ -1286,7 +1286,7 @@ onBeforeUnmount(() => {
 }
 
 .inactive {
-  line-height: 80px;
+  height: 80px;
 
   .inactive-btn {
     display: none;
