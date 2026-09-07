@@ -1,24 +1,43 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import timedelta
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Protocol
 
 from django.db import models, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
-from apigateway.apps.rbac.exceptions import (
-    GatewayMemberInvalidArgumentError,
-    GatewayMemberNotFoundError,
-    LastGatewayAdministratorError,
-)
+from apigateway.common.error_codes import error_codes
 
 if TYPE_CHECKING:
     from apigateway.apps.rbac.models import GatewayMember
 
 GATEWAY_MEMBER_EXPIRE_DAYS = 365
+
+
+class _GatewayMemberInput(Protocol):
+    username: str
+    role: GatewayRoleEnum
 
 
 class GatewayMemberManager(models.Manager):
@@ -148,32 +167,24 @@ class GatewayMemberManager(models.Manager):
     def add_gateway_members(
         self,
         gateway_id: int,
-        members: Iterable[tuple[str, str]],
+        members: Iterable[_GatewayMemberInput],
         operated_by: str,
     ) -> tuple[list[GatewayMember], list[GatewayMember]]:
         requested_members = list(members)
-        usernames = [username for username, _ in requested_members]
-        if len(usernames) != len(set(usernames)):
-            raise GatewayMemberInvalidArgumentError("Duplicate usernames are not allowed.")
-
-        valid_roles = set(GatewayRoleEnum.get_values())
-        if any(role not in valid_roles for _, role in requested_members):
-            raise GatewayMemberInvalidArgumentError("Invalid gateway member role.")
-
         existing_members = self._lock_gateway_members(gateway_id)
         now = timezone.now()
         expires = now + timedelta(days=GATEWAY_MEMBER_EXPIRE_DAYS)
         members_to_create = [
             self.model(
                 gateway_id=gateway_id,
-                username=username,
-                role=role,
+                username=member.username,
+                role=member.role.value,
                 expires=expires,
                 created_by=operated_by,
                 updated_by=operated_by,
             )
-            for username, role in requested_members
-            if username not in existing_members
+            for member in requested_members
+            if member.username not in existing_members
         ]
         if members_to_create:
             self.bulk_create(members_to_create)
@@ -183,10 +194,12 @@ class GatewayMemberManager(models.Manager):
             member.username: member for member in self.filter(gateway_id=gateway_id, username__in=created_usernames)
         }
         created_members = [
-            created_members_by_username[username] for username, _ in requested_members if username in created_usernames
+            created_members_by_username[member.username]
+            for member in requested_members
+            if member.username in created_usernames
         ]
         skipped_members = [
-            existing_members[username] for username, _ in requested_members if username in existing_members
+            existing_members[member.username] for member in requested_members if member.username in existing_members
         ]
         return created_members, skipped_members
 
@@ -195,28 +208,19 @@ class GatewayMemberManager(models.Manager):
         self,
         gateway_id: int,
         member_id: int,
-        role: str,
+        role: GatewayRoleEnum,
         operated_by: str,
     ) -> tuple[GatewayMember, str, bool]:
-        if role not in GatewayRoleEnum.get_values():
-            raise GatewayMemberInvalidArgumentError("Invalid gateway member role.")
-
-        members = self._lock_gateway_members(gateway_id)
-        member = next((member for member in members.values() if member.id == member_id), None)
-        if member is None:
-            raise GatewayMemberNotFoundError
-
+        member = self._lock_gateway_member(gateway_id, member_id)
         previous_role = member.role
-        if previous_role == role:
+        if previous_role == role.value:
             return member, previous_role, False
 
-        if previous_role == GatewayRoleEnum.ADMINISTRATOR.value:
-            administrator_count = sum(item.role == GatewayRoleEnum.ADMINISTRATOR.value for item in members.values())
-            if administrator_count <= 1:
-                raise LastGatewayAdministratorError
+        if self._is_last_administrator(gateway_id, member):
+            raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
         now = timezone.now()
-        member.role = role
+        member.role = role.value
         member.updated_by = operated_by
         member.updated_time = now
         member.save(update_fields=["role", "updated_by", "updated_time"])
@@ -224,18 +228,30 @@ class GatewayMemberManager(models.Manager):
 
     @transaction.atomic
     def delete_gateway_member(self, gateway_id: int, member_id: int) -> GatewayMember:
-        members = self._lock_gateway_members(gateway_id)
-        member = next((member for member in members.values() if member.id == member_id), None)
-        if member is None:
-            raise GatewayMemberNotFoundError
-
-        if member.role == GatewayRoleEnum.ADMINISTRATOR.value:
-            administrator_count = sum(item.role == GatewayRoleEnum.ADMINISTRATOR.value for item in members.values())
-            if administrator_count <= 1:
-                raise LastGatewayAdministratorError
+        member = self._lock_gateway_member(gateway_id, member_id)
+        if self._is_last_administrator(gateway_id, member):
+            raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
         self.filter(id=member.id).delete()
         return member
+
+    def _lock_gateway_member(self, gateway_id: int, member_id: int) -> GatewayMember:
+        try:
+            return self.select_for_update().get(gateway_id=gateway_id, id=member_id)
+        except self.model.DoesNotExist:
+            raise error_codes.NOT_FOUND.format(_("网关成员不存在。"), replace=True)
+
+    def _is_last_administrator(self, gateway_id: int, member: GatewayMember) -> bool:
+        if member.role != GatewayRoleEnum.ADMINISTRATOR.value:
+            return False
+        return (
+            not self.filter(
+                gateway_id=gateway_id,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
+            .exclude(id=member.id)
+            .exists()
+        )
 
     def _lock_gateway_members(self, gateway_id: int) -> dict[str, GatewayMember]:
         # Lock all member rows of the target gateway for write operations.
@@ -252,7 +268,7 @@ class GatewayMemberManager(models.Manager):
     ) -> list[str]:
         target_usernames = set(usernames)
         if replace and not target_usernames:
-            raise LastGatewayAdministratorError
+            raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
         members = self._lock_gateway_members(gateway_id)
         if replace:

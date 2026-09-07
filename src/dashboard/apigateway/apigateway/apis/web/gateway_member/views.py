@@ -1,12 +1,35 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
-from apigateway.biz.gateway import add_gateway_members, delete_gateway_member, update_gateway_member_role
+from apigateway.biz.gateway import (
+    GatewayMemberInput,
+    add_gateway_members,
+    delete_gateway_member,
+    update_gateway_member_role,
+)
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -52,7 +75,7 @@ class GatewayMemberListCreateApi(generics.GenericAPIView):
 
         result = add_gateway_members(
             request.gateway,
-            [(item["username"], item["role"]) for item in slz.validated_data],
+            [GatewayMemberInput(username=item["username"], role=item["role"]) for item in slz.validated_data],
             request.user.username,
         )
         created = GatewayMemberOutputSLZ(result.created, many=True).data
@@ -107,7 +130,7 @@ class GatewayMemberUpdateDestroyApi(generics.GenericAPIView):
         result = update_gateway_member_role(
             request.gateway,
             member_id,
-            slz.validated_data["role"],
+            GatewayRoleEnum(slz.validated_data["role"]),
             request.user.username,
         )
         if result.changed:

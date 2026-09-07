@@ -1,3 +1,20 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 import pytest
 from ddf import G
 
@@ -34,7 +51,7 @@ class TestGatewayMemberListCreateApi:
 
         assert response.status_code == 200
         assert [member["username"] for member in result["data"]] == ["admin", "operator"]
-        assert all("expires" not in member for member in result["data"])
+        assert [set(member) for member in result["data"]] == [{"id", "username", "role"}] * 2
 
     def test_create_returns_created_and_skipped_members(self, request_view, fake_gateway):
         response = request_view(
@@ -52,7 +69,7 @@ class TestGatewayMemberListCreateApi:
         assert response.status_code == 201
         assert [member["username"] for member in result["data"]["created"]] == ["operator"]
         assert [member["username"] for member in result["data"]["skipped"]] == ["admin"]
-        assert "expires" not in result["data"]["created"][0]
+        assert set(result["data"]["created"][0]) == {"id", "username", "role"}
         assert GatewayMember.objects.get(gateway=fake_gateway, username="admin").role == (
             GatewayRoleEnum.ADMINISTRATOR.value
         )
@@ -119,7 +136,7 @@ class TestGatewayMemberUpdateDestroyApi:
 
         assert response.status_code == 200
         assert result["data"]["role"] == GatewayRoleEnum.OPERATOR.value
-        assert "expires" not in result["data"]
+        assert set(result["data"]) == {"id", "username", "role"}
         assert AuditEventLog.objects.filter(comment="变更网关成员角色").count() == 1
 
     def test_update_same_role_does_not_record_audit(self, request_view, fake_gateway):

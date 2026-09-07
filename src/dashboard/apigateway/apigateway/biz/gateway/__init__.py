@@ -20,6 +20,7 @@ from .gateway import OPERATION_STATUS_DELTA_DAYS, GatewayData, GatewayHandler, G
 from .label import GatewayLabelHandler
 from .members import (
     GatewayMemberBatchCreateResult,
+    GatewayMemberInput,
     GatewayMemberRoleUpdateResult,
     add_gateway_administrators,
     add_gateway_members,
@@ -40,6 +41,7 @@ __all__ = [
     "GatewayHandler",
     "GatewayLabelHandler",
     "GatewayMemberBatchCreateResult",
+    "GatewayMemberInput",
     "GatewayMemberRoleUpdateResult",
     "GatewayRelatedAppHandler",
     "GatewaySaver",
