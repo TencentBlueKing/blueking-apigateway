@@ -457,24 +457,35 @@ class TestBackendConnectivityApi:
             allow_redirects=False,
         )
 
-    def test_openai_compatible_uses_custom_models_endpoint(self, mocker, request_view, fake_stage):
+    @pytest.mark.parametrize(
+        "endpoint, model_endpoint",
+        [
+            (
+                "https://models.example.com/v1/chat/completions?api-version=2026-01-01",
+                "https://catalog.example.com/custom/models?api-version=2026-01-01",
+            ),
+            ("https://apidemo/component", "https://apidemo/custom/models"),
+        ],
+    )
+    def test_openai_compatible_uses_custom_models_endpoint(
+        self, mocker, request_view, fake_stage, endpoint, model_endpoint
+    ):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
         config.update(
             {
                 "provider": "openai-compatible",
-                "endpoint": "https://models.example.com/v1/chat/completions?api-version=2026-01-01",
+                "endpoint": endpoint,
                 "auth_header": {"name": "X-Api-Key", "value": "secret"},
             }
         )
         config.pop("api_key")
         resolver = mocker.patch(
             "socket.getaddrinfo",
-            return_value=[(2, 1, 6, "", ("8.8.8.8", 443))],
+            return_value=[(2, 1, 6, "", ("10.0.0.10", 443))],
         )
         http_get = _mock_model_response(mocker, {"data": [{"id": "custom-model"}]})
-        model_endpoint = "https://catalog.example.com/custom/models?api-version=2026-01-01"
         config["model_endpoint"] = model_endpoint
 
         response = request_view(
@@ -486,6 +497,7 @@ class TestBackendConnectivityApi:
         )
 
         assert response.status_code == 200, response.json()
+        assert response.json()["data"] == {"models": ["custom-model"]}
         http_get.assert_called_once_with(
             model_endpoint,
             {},
