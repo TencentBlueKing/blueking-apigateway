@@ -63,7 +63,7 @@ interface IProps {
 
 const {
   emptyType = 'empty',
-  background = '#ffffff',
+  background = 'transparent',
   description = '',
   error = null,
   queryListParams = [],
@@ -124,6 +124,7 @@ const handleRefresh = () => {
     .bk-exception-title {
       font-size: 14px;
       color: #63656e;
+      margin-top: -8px;
     }
 
     .bk-exception-img {

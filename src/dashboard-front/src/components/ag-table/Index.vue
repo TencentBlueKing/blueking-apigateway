@@ -26,7 +26,7 @@
         {
           'primary-table-no-data': !localTableData.length,
           'primary-table-no-border': !bordered,
-          'primary-table-show-pagination': showPagination
+          'primary-table-show-pagination': showPagination && localTableData.length > 0
         }
       ]"
       :size="tableSettings?.rowSize ?? 'medium'"
@@ -35,7 +35,7 @@
       :pagination="showPagination ? pagination : null"
       :loading="loading"
       :filter-row="null"
-      :hover="false"
+      :hover="hover"
       :bordered="bordered"
       :table-layout="tableLayout"
       :row-key="isExistUniqueKey ? tableRowKey : 'tempUniqueId'"
@@ -179,6 +179,7 @@ interface IProps {
   maxHeight?: string | number | undefined
   cacheSettingsInLocalStorage?: boolean
   cacheIdentifier?: string
+  hover?: boolean
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -229,6 +230,8 @@ const {
   cacheSettingsInLocalStorage = true,
   // 表格设置缓存唯一标识符，注意不是 LocalStorage 的 key，而是用于区分不同表格的标识符，不传的话会自动生成一个
   cacheIdentifier = undefined,
+  // 是否鼠标hover每行出现底色
+  hover = true,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -293,7 +296,6 @@ const pagination = ref<PrimaryTableProps['pagination']>({
   pageSize: 10,
   total: 0,
   theme: 'default',
-  showPageSize: true,
   pageSizeOptions: [10, 20, 50, 100],
 });
 const isAllSelection = ref(false);
@@ -893,6 +895,7 @@ defineExpose({
 
 <style lang="scss">
 .primary-table-wrapper {
+  border: 1px solid #dcdee5;
 
   .table-first-full-row {
     width: 100%;
@@ -973,17 +976,55 @@ defineExpose({
     background-color: transparent !important;
   }
 
+  &.t-size-m {
+
+    thead.t-table__header {
+
+      th {
+        padding-top: 10.5px;
+      }
+    }
+  }
+
+  &.t-table--column-resizable:not(.t-table--bordered) {
+
+    thead.t-table__header {
+
+      &:hover {
+
+        th {
+
+          border-top: none;
+
+          &:not(:last-child):not([data-colkey="__col_setting__"]) {
+            border-right: none;
+          }
+        }
+      }
+
+      th {
+
+        border-top: none;
+
+        &:not(:last-child):not([data-colkey="__col_setting__"]) {
+          border-right: none;
+        }
+
+        &[data-colkey="__col_setting__"] {
+          border-left: 1px solid #dcdee5;
+        }
+      }
+    }
+  }
+
   &.primary-table-no-data {
 
     .t-table__row--full.t-table__first-full-row {
       height: 0;
     }
-  }
 
-  &.primary-table-no-border {
-
-    .t-table__header--fixed {
-      top: -1px;
+    .t-table__pagination-wrap {
+      display: none;
     }
   }
 

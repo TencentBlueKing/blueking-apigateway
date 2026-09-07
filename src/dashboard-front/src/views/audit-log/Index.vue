@@ -140,7 +140,7 @@ const defaultSearchData = ref<IAuditLog>({
 });
 
 const showDetails = ref<boolean>(false);
-const details = ref<IAuditEventLogOutput>();
+const details = ref<IAuditEventLogOutput>({});
 const tableData = ref([]);
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const filterData = ref<IAuditLog>(cloneDeep(defaultSearchData));

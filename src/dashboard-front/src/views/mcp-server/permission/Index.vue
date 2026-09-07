@@ -56,7 +56,7 @@
           >
             <BkFormItem
               label="MCP Server"
-              label-width="110"
+              label-width="90"
             >
               <BkSelect
                 v-model="filterData.mcp_server_id"
@@ -78,7 +78,7 @@
             </BkFormItem>
             <BkFormItem
               :label="t('蓝鲸应用ID')"
-              label-width="140"
+              :label-width="locale.indexOf('zh-cn') > -1 ? 80 : 56"
             >
               <BkInput
                 v-model="filterData.bk_app_code"
@@ -90,6 +90,7 @@
             <BkFormItem
               v-if="!featureFlagStore.isTenantMode && !isAppPerm"
               :label="t('申请人')"
+              :label-width="locale.indexOf('zh-cn') > -1 ? 50 : 72"
             >
               <BkSelect
                 v-model="filterData.applied_by"
@@ -213,6 +214,7 @@ import { getServers } from '@/services/source/mcp-server';
 import type { IGatewaysMcpServersAppPermissionApplyListQuery } from '@/services/types/query/gateways.ts';
 import type { IMCPServerAppPermissionApplyListOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
+import { locale, t } from '@/locales';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
@@ -221,7 +223,6 @@ interface IProps { gatewayId?: number }
 
 const { gatewayId = 0 } = defineProps<IProps>();
 
-const { t } = useI18n();
 const route = useRoute();
 const featureFlagStore = useFeatureFlag();
 const {
@@ -880,7 +881,7 @@ watch(
   display: grid;
   align-items: flex-start;
   grid-template-columns: repeat(3, 1fr);
-  column-gap: 24px;
+  column-gap: 16px;
   flex-wrap: wrap;
 
   .permission-filter-form {
@@ -889,6 +890,11 @@ watch(
     .bk-form-item {
       min-width: 230px;
       margin-bottom: 24px;
+
+      .bk-form-label {
+        padding-right: 8px;
+        text-align: left;
+      }
     }
   }
 

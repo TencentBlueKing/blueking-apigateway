@@ -415,7 +415,7 @@
       >
         <OAuthAlert
           v-if="isExistOAuthData"
-          class="py-8px"
+          class="my-8px"
           :is-edit-mode="isEditMode"
           :is-enabled-personal-client="isEnabledPersonalClient"
           :is-enabled-public-client="isEnabledPublicClient"
@@ -1876,7 +1876,7 @@ const getSliderContentHeight = () => {
     if (modalContentEl) {
       (modalContentEl as HTMLElement).style.maxHeight = !isEnabledOAuth.value
         ? (modalContentEl as HTMLElement).style.height
-        : `calc(100% - ${(footerH ?? 0) + 54}px)`;
+        : `calc(100% - ${(footerH ?? 0) + 62}px)`;
     }
   });
 };
@@ -2169,7 +2169,6 @@ defineExpose({
 
   :deep(.bk-modal-content) {
     overflow-x: hidden !important;
-    overflow-y: auto;
     background-color: #f5f7fa;
   }
 
