@@ -273,7 +273,7 @@ defineExpose({ showSideslider });
   }
 
   .title-publish-info {
-    margin-left: 32px;
+    margin-left: 16px;
     font-size: 12px;
     color: #63656E;
 
@@ -286,18 +286,22 @@ defineExpose({ showSideslider });
 .log-details-main {
   display: flex;
   height: calc(100vh - 52px);
-  padding: 16px 16px 0;
+  padding: 24px 8px 24px 24px;
   box-sizing: border-box;
-  align-items: center;
+  align-items: stretch;
 
   .main-process {
     width: 270px;
     height: 100%;
     padding: 16px;
-    margin-right: 16px;
+    margin-right: 24px;
     overflow-y: auto;
     background-color: #f5f7fa;
     box-sizing: border-box;
+
+    :deep(.bk-timeline .bk-timeline-dot) {
+      padding-bottom: 16px !important;
+    }
 
     :deep(.bk-timeline .bk-timeline-dot .bk-timeline-icon .bk-timeline-icon-inner>:first-child) {
       font-size: 20px !important;
@@ -318,7 +322,7 @@ defineExpose({ showSideslider });
       border-left: 1px dashed #d8d8d8;
 
       &.bk-timeline-large {
-        margin-top: 11px;
+        margin-top: 0px;
 
         &::before {
           top: -10px;

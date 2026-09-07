@@ -908,6 +908,7 @@
   "生成 SDK": "Generate",
   "请输入SDK版本号，按Enter搜索": "Please input SDK version and press Enter to search",
   "资源版本": "Resource Version",
+  "去版本列表": "Go to version list",
   "包含非公开资源": "Contain Private",
   "未公开不可复制": "Not public and cannot be copied",
   "未公开不可下载": "Not public and cannot be downloaded",
