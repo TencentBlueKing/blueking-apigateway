@@ -778,7 +778,7 @@ defineExpose({ showSideslider });
   height: calc(100vh - 128px);
   padding: 0 16px;
   box-sizing: border-box;
-  align-items: center;
+  align-items: stretch;
 
   .main-process {
     width: 270px;
