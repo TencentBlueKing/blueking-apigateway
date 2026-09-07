@@ -51,7 +51,7 @@ const routes: RouteRecordRaw[] = [
         name: 'MCPServerPermission',
         component: () => import('@/views/mcp-server/permission/Index.vue'),
         meta: {
-          title: t('权限审批'),
+          title: t('MCP 权限管理'),
           matchRoute: 'MCPServerPermission',
           topMenu: 'MCP',
         },

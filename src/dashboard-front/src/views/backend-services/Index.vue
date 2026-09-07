@@ -327,6 +327,19 @@ const getStageListData = async () => {
   stageList.value = await getStageList(apigwId.value);
 };
 
+watch(() => route.query.mode, (value) => {
+  if (value === 'add') {
+    nextTick(() => {
+      handleAdd();
+      const restQuery = { ...route.query };
+      delete restQuery.mode;
+      router.replace({ query: restQuery });
+    });
+  }
+}, {
+  immediate: true,
+});
+
 onBeforeMount(() => {
   getStageListData();
 });

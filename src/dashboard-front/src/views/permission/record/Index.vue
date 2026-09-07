@@ -596,10 +596,6 @@ const handleClearFilter = () => {
 <style lang="scss" scoped>
 .permission-record-container {
 
-  .record-content {
-    border: 1px solid #DCDEE5;
-  }
-
   .record-expand-alert {
     padding: 20px;
     line-height: 60px;

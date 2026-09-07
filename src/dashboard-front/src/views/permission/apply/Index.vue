@@ -684,13 +684,6 @@ const handleClearSelection = () => {
 </script>
 
 <style lang="scss" scoped>
-.permission-apply-container {
-
-  .apply-content {
-    border: 1px solid #DCDEE5;
-  }
-}
-
 .apply-expand-alert {
   padding: 20px;
   line-height: 60px;

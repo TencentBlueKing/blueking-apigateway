@@ -73,6 +73,7 @@ import AddModelService from './components/AddModelService.vue';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
+const route = useRoute();
 const router = useRouter();
 
 const filterData = ref({
@@ -299,6 +300,19 @@ const handleDelete = (row: TableRowData) => {
 const handleModelServiceAdded = () => {
   tableRef.value?.fetchData(filterData.value);
 };
+
+watch(() => route.query.mode, (value) => {
+  if (value === 'add') {
+    nextTick(() => {
+      handleAdd();
+      const restQuery = { ...route.query };
+      delete restQuery.mode;
+      router.replace({ query: restQuery });
+    });
+  }
+}, {
+  immediate: true,
+});
 
 </script>
 

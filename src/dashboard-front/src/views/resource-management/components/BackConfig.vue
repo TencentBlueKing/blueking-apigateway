@@ -57,6 +57,20 @@
               </template>
             </div>
           </BkOption>
+          <template #extension>
+            <div class="model-service-extension">
+              <div
+                class="model-service-extension-add"
+                @click="handleOpenService"
+              >
+                <AgIcon
+                  class="mr-6px color-#979ba5 text-16px"
+                  name="plus-circle"
+                />
+                <span>{{ t('去新建') }}</span>
+              </div>
+            </div>
+          </template>
         </BkSelect>
         <BkButton
           v-if="isEditService"
@@ -317,6 +331,7 @@ const {
 const emit = defineEmits(['service-init']);
 
 const gatewayStore = useGateway();
+const router = useRouter();
 
 const backRef = ref();
 const frontPath = ref('');
@@ -694,6 +709,17 @@ const handleCheckPath = async () => {
 //   });
 // };
 
+const handleOpenService = () => {
+  const name = isModelProxy ? 'ModelService' : 'BackendService';
+  const routeData = router.resolve({
+    name,
+    query: {
+      mode: 'add',
+    },
+  });
+  window.open(routeData.href, '_blank');
+};
+
 const handleMouseEnter = (e: Event, row: Record<string, number | string | boolean>) => {
   setTimeout(() => {
     row.isTime = true;
@@ -919,5 +945,17 @@ defineExpose({
 
 .back-config-timeout-popover {
   padding: 16px !important;
+}
+
+.model-service-extension {
+  margin: 0 auto;
+  cursor: pointer;
+
+  .model-service-extension-add {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #63656e;
+  }
 }
 </style>
