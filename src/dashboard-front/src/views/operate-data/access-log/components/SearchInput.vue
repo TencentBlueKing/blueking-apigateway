@@ -233,7 +233,7 @@ defineExpose({ searchInputRef: searchInputRef.value });
 
   .statement-example {
     position: absolute;
-    top: -32px;
+    top: -26px;
     right: 0;
     display: flex;
     font-size: 16px;

@@ -18,10 +18,10 @@
 
 <template>
   <div class="page-wrapper-padding app-content">
-    <div class="flex align-items-center justify-between">
+    <div class="flex align-items-center justify-between mb-24px">
       <BkForm
         class="search-form"
-        form-type="vertical"
+        label-width="auto"
       >
         <BkFormItem :label="t('选择时间')">
           <DatePicker
@@ -489,10 +489,37 @@ init();
 }
 
 .search-form {
-  width: 100%;
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0 16px;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+
+  :deep(.bk-form-item) {
+    display: flex;
+    max-width: fit-content;
+    min-width: 0;
+    margin: 0;
+    align-items: center;
+    flex: 1;
+
+    .bk-form-label {
+      width: auto;
+      text-align: right;
+      white-space: nowrap;
+      padding-right: 8px !important;
+    }
+
+    .bk-form-content {
+      line-height: normal;
+      .bk-input,
+      .bk-user-selector,
+      .member-selector {
+        width: 100%;
+      }
+    }
+  }
 }
 
 .date-choose {

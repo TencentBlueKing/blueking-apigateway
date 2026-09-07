@@ -329,7 +329,6 @@ defineExpose({ syncParams });
     margin-left: 24px;
     color: #313238;
     font-size: 14px;
-    font-weight: bold;
     line-height: 22px;
   }
   .line-chart {
