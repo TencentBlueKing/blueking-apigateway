@@ -70,26 +70,32 @@
 
       <AgIcon
         v-if="scrollState.isShowIcon"
-        v-bk-tooltips="{ content: '已显示最前', disabled: prevDisabled }"
+        v-bk-tooltips="{ content: t('已显示最前'), disabled: prevDisabled }"
         name="pa-arrow-left"
         :class="[prevDisabled ? 'icon-arrow-enable' : '']"
         @click="handlePrev"
       />
       <AgIcon
         v-if="scrollState.isShowIcon"
-        v-bk-tooltips="{ content: '没有更多了', disabled: nextDisabled }"
+        v-bk-tooltips="{ content: t('没有更多了'), disabled: nextDisabled }"
         name="ps-arrow-right"
         :class="[nextDisabled ? 'icon-arrow-enable' : '']"
         @click="handleNext"
       />
       <!-- 添加环境 -->
-      <AgIcon
+      <BkButton
         v-if="!gatewayStore.isProgrammableGateway"
-        name="add-small"
-        size="28"
-        class="ml-28px color-#3785ff cursor-pointer content-center"
-        @click="handleAddStage"
-      />
+        text
+        class="ml-28px"
+      >
+        <AgIcon
+          v-bk-tooltips="t('新建环境')"
+          name="add-small"
+          size="28"
+          class="hover:color-#3785ff"
+          @click="handleAddStage"
+        />
+      </BkButton>
     </div>
 
     <!-- 新建/编辑环境 -->
