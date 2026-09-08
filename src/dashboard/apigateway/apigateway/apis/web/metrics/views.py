@@ -32,6 +32,7 @@ from apigateway.apps.metrics.constants import (
     MetricsStepEnum,
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.service.prometheus import (
     MetricsInstantFactory,
@@ -51,6 +52,8 @@ from .serializers import (
 
 
 class QueryRangeApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @swagger_auto_schema(
         query_serializer=MetricsQueryRangeInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -107,6 +110,8 @@ class QueryRangeApi(generics.ListAPIView):
 
 
 class QueryInstantApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @swagger_auto_schema(
         query_serializer=MetricsQueryInstantInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -178,6 +183,8 @@ class QueryInstantApi(generics.ListAPIView):
 
 
 class QuerySummaryApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @swagger_auto_schema(
         query_serializer=MetricsQuerySummaryInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -209,6 +216,8 @@ class QuerySummaryApi(generics.ListAPIView):
 
 
 class QuerySummaryCallerListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @swagger_auto_schema(
         query_serializer=MetricsQuerySummaryCallerListInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -239,6 +248,8 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
 
 
 class QuerySummaryExportApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @swagger_auto_schema(
         decorator=swagger_auto_schema(
             operation_description="资源-蓝鲸应用调用统计导出",

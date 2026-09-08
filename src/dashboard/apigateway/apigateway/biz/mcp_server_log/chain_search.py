@@ -44,10 +44,17 @@ class MCPServerLogChainSearchClient:
     _es_index: str = settings.MCP_SERVER_ACCESS_LOG_CONFIG["es_index"]
     _es_time_field_name: str = settings.MCP_SERVER_ACCESS_LOG_CONFIG["es_time_field_name"]
 
-    def __init__(self, request_id: str = "", x_request_id: str = "", upstream_request_id: str = ""):
+    def __init__(
+        self,
+        request_id: str = "",
+        x_request_id: str = "",
+        upstream_request_id: str = "",
+        gateway_id: int = 0,
+    ):
         self._request_id = request_id
         self._x_request_id = x_request_id
         self._upstream_request_id = upstream_request_id
+        self._gateway_id = gateway_id
         self._es_client = BKLogESClient(self._es_index)
 
     def search_chain(self) -> Dict[str, Any]:
@@ -89,6 +96,7 @@ class MCPServerLogChainSearchClient:
             self._es_client,
             self._es_time_field_name,
             request_id=self._request_id,
+            gateway_id=self._gateway_id,
         )
 
         if not logs:
@@ -130,7 +138,13 @@ class MCPServerLogChainSearchClient:
 
         # 7. 查询上游网关 (bk-apigateway) 的日志
         upstream_gateway_log = (
-            search_gateway_log(self._request_id, gateway_type="upstream") if self._request_id else None
+            search_gateway_log(
+                self._request_id,
+                gateway_type="upstream",
+                gateway_id=self._gateway_id or None,
+            )
+            if self._request_id
+            else None
         )
         logger.debug(
             "upstream_gateway_log search result: request_id=%s, found=%s",
@@ -172,6 +186,7 @@ class MCPServerLogChainSearchClient:
             self._es_client,
             self._es_time_field_name,
             x_request_id=self._x_request_id,
+            gateway_id=self._gateway_id,
         )
 
         if not logs:
@@ -212,7 +227,15 @@ class MCPServerLogChainSearchClient:
         )
 
         # 7. 查询上游网关 (bk-apigateway) 的日志
-        upstream_gateway_log = search_gateway_log(request_id, gateway_type="upstream") if request_id else None
+        upstream_gateway_log = (
+            search_gateway_log(
+                request_id,
+                gateway_type="upstream",
+                gateway_id=self._gateway_id or None,
+            )
+            if request_id
+            else None
+        )
         logger.debug(
             "[x_request_id] upstream_gateway_log search result: request_id=%s, found=%s",
             request_id,
@@ -260,14 +283,12 @@ class MCPServerLogChainSearchClient:
                 "downstream_gateway_log": None,
             }
 
-        # 1. 查询下游网关日志（upstream_request_id 对应下游网关的 request_id）
-        downstream_gateway_log = search_gateway_log(self._upstream_request_id, gateway_type="downstream")
-
-        # 2. 用 upstream_request_id 字段在 mcp-proxy ES 中搜索，获取 mcp-proxy 的 request_id
+        # 1. 先在当前网关范围内定位 MCP 日志，避免使用任意 request_id 跨网关查询日志。
         mcp_logs = search_by_upstream_request_id(
             self._es_client,
             self._es_time_field_name,
             self._upstream_request_id,
+            gateway_id=self._gateway_id,
         )
         if not mcp_logs:
             return {
@@ -276,8 +297,11 @@ class MCPServerLogChainSearchClient:
                 "total_latency_ms": 0,
                 "spans": [],
                 "upstream_gateway_log": None,
-                "downstream_gateway_log": downstream_gateway_log,
+                "downstream_gateway_log": None,
             }
+
+        # 2. 当前网关 MCP 日志已建立关联后，才查询其对应的下游网关日志。
+        downstream_gateway_log = search_gateway_log(self._upstream_request_id, gateway_type="downstream")
 
         # 3. 从查到的日志中提取 mcp-proxy 的 request_id
         mcp_request_id = _extract_field(mcp_logs, "request_id")

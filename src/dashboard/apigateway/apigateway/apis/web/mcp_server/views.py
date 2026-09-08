@@ -29,7 +29,6 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.permissions import GatewayApprovalPermission
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
@@ -49,6 +48,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerExtend,
 )
 from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
 from apigateway.common.constants import CallSourceTypeEnum
@@ -759,6 +759,8 @@ class MCPServerAppPermissionApplyQuerySetMixin:
     ),
 )
 class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, generics.ListCreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def list(self, request, *args, **kwargs):
         slz = MCPServerAppPermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -827,6 +829,7 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
     ),
 )
 class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, generics.DestroyAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
     lookup_url_kwarg = "id"
 
     def destroy(self, request, *args, **kwargs):
@@ -875,6 +878,8 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
     ),
 )
 class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def list(self, request, *args, **kwargs):
         slz = MCPServerAppPermissionApplyListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -918,6 +923,8 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
     ),
 )
 class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def list(self, request, *args, **kwargs):
         slz = MCPServerAppPermissionApplyApplicantListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -944,7 +951,7 @@ class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQue
     ),
 )
 class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuerySetMixin, generics.UpdateAPIView):
-    permission_classes = [GatewayApprovalPermission]
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
     serializer_class = MCPServerAppPermissionApplyUpdateInputSLZ
     lookup_url_kwarg = "id"
 
@@ -1116,6 +1123,8 @@ class MCPServerFilterOptionsApi(generics.ListAPIView):
 class MCPServerAppPermissionAppCodeListApi(generics.ListAPIView):
     """获取有 MCPServer 调用权限的 bk_app_code 列表（网关级别）"""
 
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def list(self, request, *args, **kwargs):
         slz = MCPServerAppPermissionAppCodeListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -1247,6 +1256,8 @@ def _order_gateway_app_permissions(queryset, order_by):
     ),
 )
 class GatewayMCPServerAppPermissionListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def list(self, request, *args, **kwargs):
         slz = GatewayMCPServerAppPermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -1281,6 +1292,8 @@ class GatewayMCPServerAppPermissionListApi(generics.ListAPIView):
     ),
 )
 class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def create(self, request, *args, **kwargs):
         slz = GatewayMCPServerAppPermissionExportInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)

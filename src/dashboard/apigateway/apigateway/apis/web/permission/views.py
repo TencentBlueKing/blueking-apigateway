@@ -31,7 +31,6 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
-from apigateway.apis.permissions import GatewayApprovalPermission
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.permission.constants import (
@@ -47,6 +46,7 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_handle
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.resource import ResourceHandler
@@ -144,6 +144,8 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
     ),
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def get_queryset(self):
         query_params = self.request.query_params
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
@@ -194,6 +196,8 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
     ),
 )
 class AppPermissionRenewApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -259,6 +263,8 @@ class AppPermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppPermissionAppCodeListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def list(self, request, *args, **kwargs):
         """获取有权限的应用列表"""
 
@@ -289,6 +295,8 @@ class AppPermissionAppCodeListApi(generics.ListAPIView):
     ),
 )
 class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def create(self, request, *args, **kwargs):
         """
         权限导出
@@ -386,6 +394,8 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
     ),
 )
 class AppPermissionDeleteApi(AppPermissionQuerySetMixin, generics.DestroyAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def delete(self, request, *args, **kwargs):
         slz = AppPermissionDeleteInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -457,6 +467,8 @@ class AppPermissionDeleteApi(AppPermissionQuerySetMixin, generics.DestroyAPIView
     ),
 )
 class AppResourcePermissionCreateApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -507,6 +519,8 @@ class AppResourcePermissionCreateApi(generics.CreateAPIView):
     ),
 )
 class AppResourcePermissionRenewApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -547,6 +561,8 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generics.DestroyAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.query_params)
@@ -588,6 +604,8 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
     ),
 )
 class AppGatewayPermissionCreateApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     def create(self, request, *args, **kwargs):
         """
         主动授权
@@ -630,6 +648,8 @@ class AppGatewayPermissionCreateApi(generics.CreateAPIView):
     ),
 )
 class AppGatewayPermissionRenewApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -670,6 +690,8 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.DestroyAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.query_params)
@@ -716,6 +738,8 @@ class AppPermissionApplyQuerySetMixin:
     ),
 )
 class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     filterset_class = AppPermissionApplyFilter
 
     def list(self, request, *args, **kwargs):
@@ -742,6 +766,8 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
     ),
 )
 class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     lookup_field = "id"
 
     def retrieve(self, request, *args, **kwargs):
@@ -763,6 +789,8 @@ class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.Re
     ),
 )
 class AppPermissionRecordListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     filterset_class = AppPermissionRecordFilter
 
     def get_queryset(self):
@@ -795,6 +823,8 @@ class AppPermissionRecordListApi(generics.ListAPIView):
     ),
 )
 class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+
     lookup_field = "id"
 
     def get_queryset(self):
@@ -821,7 +851,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
-    permission_classes = [GatewayApprovalPermission]
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

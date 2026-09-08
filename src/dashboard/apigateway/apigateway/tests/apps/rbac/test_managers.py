@@ -30,6 +30,15 @@ from apigateway.core.models import Gateway
 pytestmark = pytest.mark.django_db
 
 
+def test_get_gateway_member_uses_exact_gateway_and_username(fake_gateway):
+    member = GatewayMember.objects.get_gateway_member(fake_gateway.id, "admin")
+
+    assert member is not None
+    assert member.gateway_id == fake_gateway.id
+    assert member.username == "admin"
+    assert GatewayMember.objects.get_gateway_member(fake_gateway.id, "adm") is None
+
+
 def test_list_gateway_administrators(fake_gateway):
     G(
         GatewayMember,

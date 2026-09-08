@@ -24,6 +24,7 @@ from apigateway.apps.mcp_server.metrics_constants import (
     MCPServerMetricsRangeEnum,
 )
 from apigateway.apps.metrics.constants import MetricsStepEnum
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.service.prometheus import (
     MCPServerMetricsInstantFactory,
     MCPServerMetricsRangeFactory,
@@ -38,6 +39,8 @@ from .serializers import (
 
 
 class MCPServerQueryRangeApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     """MCP Server 时序图指标查询 API
 
     支持的 metrics 类型:
@@ -91,6 +94,8 @@ class MCPServerQueryRangeApi(generics.ListAPIView):
 
 
 class MCPServerQueryInstantApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     """MCP Server 瞬时值指标查询 API
 
     支持的 metrics 类型:

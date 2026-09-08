@@ -1,13 +1,15 @@
+from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
+from apigateway.apps.rbac.constants import GATEWAY_ROLE_ACTIONS, GatewayActionEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.models import Gateway
 
 
-class GatewayPermission(permissions.BasePermission):
-    """获取网关并验证网关权限。"""
+class GatewayActionPermission(permissions.BasePermission):
+    """获取网关并按 View 声明的 Action 验证网关权限。"""
 
     message = gettext_lazy("当前用户无访问网关权限")
 
@@ -22,7 +24,13 @@ class GatewayPermission(permissions.BasePermission):
         if getattr(view, "gateway_permission_exempt", False):
             return True
 
-        return GatewayMember.objects.is_gateway_administrator(gateway.id, request.user.username)
+        required_action = self.get_required_action(request, view)
+        member = GatewayMember.objects.get_gateway_member(gateway.id, request.user.username)
+        if member is None:
+            return False
+
+        request.gateway_member = member
+        return required_action in GATEWAY_ROLE_ACTIONS.get(member.role, ())
 
     def get_gateway_object(self, view):
         """根据路径参数 gateway_id 获取网关对象。"""
@@ -32,17 +40,20 @@ class GatewayPermission(permissions.BasePermission):
 
         return get_object_or_404(Gateway, id=view.kwargs[lookup_url_kwarg])
 
+    def get_required_action(self, request, view) -> str:
+        """解析当前请求需要的网关 Action。
 
-class GatewayApprovalPermission(GatewayPermission):
-    """获取网关并验证网关审批权限。"""
+        同一 View 若不同 HTTP 方法需要不同 Action，用 gateway_action_map（如 GET 可读、写操作需管理）。
+        map 未命中时再用 gateway_action；两者都没有则默认 manage_gateway。
+        """
+        action_map = getattr(view, "gateway_action_map", None) or {}
+        action = action_map.get(request.method) or getattr(
+            view, "gateway_action", GatewayActionEnum.MANAGE_GATEWAY.value
+        )
+        if action not in GatewayActionEnum.get_values():
+            raise ImproperlyConfigured(f"invalid gateway action: {action}")
+        return action
 
-    def has_permission(self, request, view):
-        gateway = self.get_gateway_object(view)
-        if not gateway:
-            return True
 
-        request.gateway = gateway
-        if getattr(view, "gateway_permission_exempt", False):
-            return True
-
-        return GatewayMember.objects.has_gateway_approve_permission(gateway.id, request.user.username)
+# Keep the old import path compatible while all callers migrate to the Action-based name.
+GatewayPermission = GatewayActionPermission

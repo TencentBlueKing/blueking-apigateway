@@ -31,6 +31,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.access_log import (
     ES_LOG_FIELDS,
     LOG_LINK_EXPIRE_SECONDS,
@@ -41,7 +42,7 @@ from apigateway.biz.access_log import (
     LogSearchClient,
 )
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
@@ -63,6 +64,8 @@ from .serializers import (
     ),
 )
 class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def retrieve(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -96,6 +99,8 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class SearchLogListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def list(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -144,6 +149,8 @@ class SearchLogListApi(generics.ListAPIView):
     ),
 )
 class LogExportApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def get(self, request, *args, **kwargs):
         # 定义限制条数为10000条
         limit = 10000
@@ -178,7 +185,7 @@ class LogExportApi(generics.RetrieveAPIView):
         logs = LogHandler.add_or_refine_fields(logs)
 
         # 准备文件名称数据
-        gateway = Gateway.objects.get(id=request.gateway.id)
+        gateway = request.gateway
 
         # 格式化时间
         time_start_dt = datetime.fromtimestamp(int(data.get("time_start")))
@@ -222,6 +229,7 @@ class LogExportApi(generics.RetrieveAPIView):
     ),
 )
 class LogDetailRetrieveApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
     # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
     gateway_permission_exempt = True
 
@@ -232,7 +240,7 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
-        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
+        total_count, logs = LogHandler.search_logs_by_request_id(request_id, gateway_id=request.gateway.id)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 
@@ -286,7 +294,7 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
     ),
 )
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
-    gateway_permission_exempt = False
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def retrieve(self, request, request_id, *args, **kwargs):
         """

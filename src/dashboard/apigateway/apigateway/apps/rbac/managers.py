@@ -41,6 +41,16 @@ class _GatewayMemberInput(Protocol):
 
 
 class GatewayMemberManager(models.Manager):
+    def get_gateway_member(self, gateway_id: int, username: str) -> GatewayMember | None:
+        return (
+            self.filter(
+                gateway_id=gateway_id,
+                username=username,
+            )
+            .only("id", "gateway_id", "username", "role")
+            .first()
+        )
+
     def list_gateway_members(self, gateway_id: int) -> list[GatewayMember]:
         return list(self.filter(gateway_id=gateway_id).order_by("role", "username"))
 

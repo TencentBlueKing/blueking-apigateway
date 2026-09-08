@@ -23,7 +23,7 @@ from io import StringIO
 
 import pytest
 
-from apigateway.biz.access_log import ES_LOG_FIELDS, TOOLBOX_LOG_FIELD_MAPPINGS
+from apigateway.biz.access_log import ES_LOG_FIELDS, TOOLBOX_LOG_FIELD_MAPPINGS, LogHandler
 
 pytestmark = pytest.mark.django_db
 
@@ -109,6 +109,7 @@ class TestSearchLogListApi:
 
 class TestLogDetailListApi:
     def test_list(self, mocker, request_view, fake_gateway):
+        request_id = "2230d0e25b274cb98b57ca5d0946d0f7"
         llm_summary = {
             "request_model": "",
             "prompt_tokens": 107,
@@ -121,13 +122,14 @@ class TestLogDetailListApi:
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
             return_value=(1, [{"a": 1, "llm_summary": llm_summary}]),
         )
+        search_logs = mocker.spy(LogHandler, "search_logs_by_request_id")
 
         mocker.patch("apigateway.apis.web.access_log.views.SignatureValidator.is_valid")
 
         response = request_view(
             "GET",
             "access_log.logs.detail",
-            path_params={"gateway_id": fake_gateway.id, "request_id": "2230d0e25b274cb98b57ca5d0946d0f7"},
+            path_params={"gateway_id": fake_gateway.id, "request_id": request_id},
             gateway=fake_gateway,
             data={
                 "bk_nonce": 12345,
@@ -141,6 +143,7 @@ class TestLogDetailListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["fields"] == ES_LOG_FIELDS
         assert result["data"]["results"][0]["llm_summary"] == llm_summary
+        search_logs.assert_called_once_with(request_id, gateway_id=fake_gateway.id)
 
 
 class TestLogLinkRetrieveApi:

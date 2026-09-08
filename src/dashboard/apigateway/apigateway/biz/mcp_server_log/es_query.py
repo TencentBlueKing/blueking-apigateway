@@ -35,11 +35,25 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TIME_RANGE_SECONDS = 7 * 24 * 60 * 60
 
 
+def _filter_gateway(search: Search, gateway_id: int) -> Search:
+    if not gateway_id:
+        return search
+    return search.filter(
+        "bool",
+        should=[
+            Q("term", gateway_id=gateway_id),
+            Q({"term": {"__ext_json.gateway_id": gateway_id}}),
+        ],
+        minimum_should_match=1,
+    )
+
+
 def search_all_layers(
     es_client: BKLogESClient,
     es_time_field_name: str,
     request_id: str = "",
     x_request_id: str = "",
+    gateway_id: int = 0,
 ) -> List[Dict]:  # noqa: C901, PLR0912
     """从 ES 中查询同一 request_id 或 x_request_id 的所有层级日志"""
     s = Search()
@@ -69,6 +83,8 @@ def search_all_layers(
         )
     else:
         return []
+
+    s = _filter_gateway(s, gateway_id)
 
     # 添加默认时间范围（最近7天），避免ES查询超时或返回过多数据
     # 由于request_id/x_request_id是唯一的，时间范围不会影响结果准确性
@@ -114,6 +130,7 @@ def search_by_upstream_request_id(
     es_client: BKLogESClient,
     es_time_field_name: str,
     upstream_request_id: str,
+    gateway_id: int = 0,
 ) -> List[Dict]:
     """从 ES 中查询 upstream_request_id 匹配的日志
 
@@ -134,6 +151,7 @@ def search_by_upstream_request_id(
         ],
         minimum_should_match=1,
     )
+    s = _filter_gateway(s, gateway_id)
 
     # 添加默认时间范围（最近7天）
     time_range = SmartTimeRange(time_range=_DEFAULT_TIME_RANGE_SECONDS)

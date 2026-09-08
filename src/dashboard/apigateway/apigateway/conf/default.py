@@ -259,7 +259,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apigateway.common.exception_handler.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
-        "apigateway.apis.permissions.GatewayPermission",
+        "apigateway.apis.permissions.GatewayActionPermission",
     ),
     "DEFAULT_PAGINATION_CLASS": "apigateway.common.pagination.StandardLimitOffsetPagination",
     "PAGE_SIZE": 10,

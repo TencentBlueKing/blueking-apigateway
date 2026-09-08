@@ -26,6 +26,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
@@ -76,6 +77,11 @@ from .serializers import (
 )
 
 
+class RequestGatewayObjectMixin:
+    def get_object(self):
+        return self.request.gateway
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -101,7 +107,14 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         user_tenant_id = get_user_tenant_id(request)
 
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username, user_tenant_id)
+        gateways = GatewayHandler.list_gateways_by_user(
+            request.user.username,
+            user_tenant_id,
+            roles=(
+                GatewayRoleEnum.ADMINISTRATOR.value,
+                GatewayRoleEnum.OPERATOR.value,
+            ),
+        )
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -295,7 +308,8 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.RetrieveUpdateDestroyAPIView):
+    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
     queryset = Gateway.objects.all()
     serializer_class = GatewayRetrieveOutputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -398,7 +412,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayUpdateStatusApi(generics.UpdateAPIView):
+class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
     queryset = Gateway.objects.all()
     serializer_class = GatewayUpdateStatusInputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -470,7 +484,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayTenantAppListApi(generics.ListAPIView):
+class GatewayTenantAppListApi(RequestGatewayObjectMixin, generics.ListAPIView):
     queryset = Gateway.objects.all()
     lookup_url_kwarg = "gateway_id"
 
@@ -501,7 +515,7 @@ class GatewayTenantAppListApi(generics.ListAPIView):
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
+class GatewayDevGuidelineRetrieveApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
     queryset = Gateway.objects.all()
     serializer_class = GatewayDevGuidelineOutputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -550,7 +564,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayReleasingStatusApi(generics.RetrieveAPIView):
+class GatewayReleasingStatusApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
     queryset = Gateway.objects.all()
     serializer_class = GatewayReleasingStatusOutputSLZ
     lookup_url_kwarg = "gateway_id"
