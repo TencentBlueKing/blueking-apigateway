@@ -153,7 +153,7 @@ class TestSDKUsageExampleApi:
         fake_sdk.url = "https://repo.example.com/sdk-package"
         fake_sdk._config = json.dumps(
             {
-                "project_name": "git.example.com/bkapi/demo",
+                "project_name": "bk.tencent.com/bkapi/demo",
                 "package_name": "bkapi_demo",
                 "artifacts": [
                     {
@@ -214,7 +214,7 @@ class TestSDKUsageExampleApi:
         fake_sdk._config = json.dumps(
             {
                 "project_name": "bkapi-demo",
-                "package_name": "com.tencent.bkapi.demo",
+                "package_name": "com.tencent.bk.bkapi.demo",
                 "artifacts": [],
             }
         )
@@ -234,8 +234,8 @@ class TestSDKUsageExampleApi:
             )
 
         content = resp.json()["data"]["content"]
-        assert "import com.tencent.bkapi.demo.ApiClient;" in content
-        assert "import com.tencent.bkapi.demo.Configuration;" in content
+        assert "import com.tencent.bk.bkapi.demo.ApiClient;" in content
+        assert "import com.tencent.bk.bkapi.demo.Configuration;" in content
         assert 'apiClient.updateBaseUri("' in content
         assert "apiClient.setRequestInterceptor" in content
         assert "addDefaultHeader" not in content
@@ -246,7 +246,7 @@ class TestSDKUsageExampleApi:
         fake_sdk.language = "go"
         fake_sdk._config = json.dumps(
             {
-                "project_name": "git.example.com/bkapi/demo",
+                "project_name": "bk.tencent.com/bkapi/demo",
                 "package_name": "bkapi_demo",
                 "artifacts": [],
             }
@@ -267,7 +267,9 @@ class TestSDKUsageExampleApi:
             )
 
         content = resp.json()["data"]["content"]
-        assert 'bkapi_demo "git.example.com/bkapi/demo"' in content
+        assert 'bkapi_demo "bk.tencent.com/bkapi/demo"' in content
+        assert "go mod edit -replace=bk.tencent.com/bkapi/demo=./sdks/bkapi" in content
+        assert "go mod tidy" in content
         assert "cfg := bkapi_demo.NewConfiguration()" in content
         assert 'cfg.AddDefaultHeader("X-Bkapi-Authorization"' in content
         assert "client := bkapi_demo.NewAPIClient(cfg)" in content

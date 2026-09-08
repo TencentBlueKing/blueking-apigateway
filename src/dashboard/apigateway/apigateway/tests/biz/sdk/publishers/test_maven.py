@@ -87,7 +87,7 @@ def test_maven_partial_coordinate_uploads_only_missing_artifact(mocker, built_ar
 
     upload.assert_called_once_with(
         artifacts[1].path,
-        "https://repo/maven/com/tencent/bkapi/bkapi-demo/1.2.3/bkapi-demo-1.2.3.pom",
+        "https://repo/maven/com/tencent/bk/bkapi/bkapi-demo/1.2.3/bkapi-demo-1.2.3.pom",
         username="",
         password="",
         verify=True,

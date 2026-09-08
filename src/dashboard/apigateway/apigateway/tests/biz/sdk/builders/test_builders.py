@@ -22,12 +22,12 @@ def language_config(language):
             "buildSystem": "poetry",
         },
         "java": {
-            "groupId": "com.tencent.bkapi",
+            "groupId": "com.tencent.bk.bkapi",
             "artifactId": "bkapi-demo",
             "artifactVersion": "1.2.3",
-            "invokerPackage": "com.tencent.bkapi.demo",
-            "apiPackage": "com.tencent.bkapi.demo.api",
-            "modelPackage": "com.tencent.bkapi.demo.model",
+            "invokerPackage": "com.tencent.bk.bkapi.demo",
+            "apiPackage": "com.tencent.bk.bkapi.demo.api",
+            "modelPackage": "com.tencent.bk.bkapi.demo.model",
             "library": "native",
         },
         "go": {"packageName": "bkapi_demo", "packageVersion": "v1.2.3", "withGoMod": "true"},
@@ -40,7 +40,7 @@ def language_config(language):
     return SDKLanguageConfig(
         language=language,
         generator_name="typescript-fetch" if language == "javascript" else language,
-        project_name="git.example.com/bkapi/openapi/demo" if language == "go" else "bkapi-openapi-demo",
+        project_name="bk.tencent.com/bkapi/openapi/demo" if language == "go" else "bkapi-openapi-demo",
         package_name="@bkapi/openapi-demo" if language == "javascript" else "bkapi_openapi_demo",
         package_version="v1.2.3" if language == "go" else "1.2.3",
         additional_properties=properties,
@@ -100,7 +100,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
         (target / "demo-1.2.3-javadoc.jar").write_bytes(b"javadoc")
         (source_dir / "pom.xml").write_text("<project />")
     elif language == "go":
-        (source_dir / "go.mod").write_text("module git.example.com/bkapi/openapi/demo\n")
+        (source_dir / "go.mod").write_text("module bk.tencent.com/bkapi/openapi/demo\n")
         (source_dir / "client.go").write_text("package demo\n")
     elif language == "javascript":
         (output_dir / "bkapi-openapi-demo-1.2.3.tgz").write_bytes(b"npm")
@@ -139,7 +139,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
             "mod",
             "edit",
             "-module",
-            "git.example.com/bkapi/openapi/demo",
+            "bk.tencent.com/bkapi/openapi/demo",
         ]
     if language == "javascript":
         assert run.call_args_list[0].args[0] == [
@@ -164,7 +164,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
 def test_go_module_zip_has_required_prefix(mocker, tmp_path):
     source_dir = tmp_path / "source"
     source_dir.mkdir()
-    (source_dir / "go.mod").write_text("module git.example.com/bkapi/openapi/demo\n")
+    (source_dir / "go.mod").write_text("module bk.tencent.com/bkapi/openapi/demo\n")
     (source_dir / "client.go").write_text("package demo\n")
     mocker.patch(
         "apigateway.biz.sdk.builders.common.subprocess.run",
@@ -176,7 +176,7 @@ def test_go_module_zip_has_required_prefix(mocker, tmp_path):
     module_zip = next(item.path for item in artifacts if item.artifact_type == "go_zip")
 
     with zipfile.ZipFile(module_zip) as archive:
-        assert all(name.startswith("git.example.com/bkapi/openapi/demo@v1.2.3/") for name in archive.namelist())
+        assert all(name.startswith("bk.tencent.com/bkapi/openapi/demo@v1.2.3/") for name in archive.namelist())
 
 
 def test_builder_rejects_rust(tmp_path):

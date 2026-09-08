@@ -36,6 +36,9 @@ def test_get_sdk_generation_settings_uses_common_defaults():
     assert settings["enabled"] is False
     assert settings["enabled_languages"] == ["python", "java", "go", "javascript"]
     assert settings["retry_delays"] == [30, 120]
+    assert settings["java_group_id"] == "com.tencent.bk.bkapi"
+    assert settings["java_package_prefix"] == "com.tencent.bk.bkapi.openapi"
+    assert settings["go_module_prefix"] == "bk.tencent.com/bkapi"
     assert settings["server_url_template"] == "https://bkapi.example.com/{gateway_name}/{stage_name}"
     assert "generator_jar" not in settings
     assert "generator_version" not in settings
@@ -64,7 +67,7 @@ def test_get_sdk_generation_settings_rejects_invalid_languages_at_settings_const
         ("SDK_PYTHON_DISTRIBUTION_PREFIX", "not a package"),
         ("SDK_JAVA_GROUP_ID", "com.example-bad"),
         ("SDK_JAVA_PACKAGE_PREFIX", "9example.openapi"),
-        ("SDK_GO_MODULE_PREFIX", "https://git.example.com/bkapi"),
+        ("SDK_GO_MODULE_PREFIX", "https://bk.tencent.com/bkapi"),
         ("SDK_JAVASCRIPT_PACKAGE_SCOPE", "bkapi"),
     ],
 )

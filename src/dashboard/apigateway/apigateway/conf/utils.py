@@ -349,13 +349,13 @@ def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
             env.str("SDK_PYTHON_DISTRIBUTION_PREFIX", "bkapi-openapi"),
             PYTHON_DISTRIBUTION_PATTERN,
         ),
-        "SDK_JAVA_GROUP_ID": (env.str("SDK_JAVA_GROUP_ID", "com.tencent.bkapi"), JAVA_PACKAGE_PATTERN),
+        "SDK_JAVA_GROUP_ID": (env.str("SDK_JAVA_GROUP_ID", "com.tencent.bk.bkapi"), JAVA_PACKAGE_PATTERN),
         "SDK_JAVA_PACKAGE_PREFIX": (
-            env.str("SDK_JAVA_PACKAGE_PREFIX", "com.tencent.bkapi.openapi"),
+            env.str("SDK_JAVA_PACKAGE_PREFIX", "com.tencent.bk.bkapi.openapi"),
             JAVA_PACKAGE_PATTERN,
         ),
         "SDK_GO_MODULE_PREFIX": (
-            env.str("SDK_GO_MODULE_PREFIX", "git.example.com/bkapi").rstrip("/"),
+            env.str("SDK_GO_MODULE_PREFIX", "bk.tencent.com/bkapi").rstrip("/"),
             GO_MODULE_PREFIX_PATTERN,
         ),
         "SDK_JAVASCRIPT_PACKAGE_SCOPE": (

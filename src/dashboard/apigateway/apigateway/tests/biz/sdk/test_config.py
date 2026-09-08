@@ -157,8 +157,9 @@ def test_sdk_generation_coordinates_and_versions_are_fixed():
         "1.2.3rc1",
     )
     assert java.additional_properties["artifactId"] == "bkapi-openapi-demo"
-    assert (java.package_name, java.package_version) == ("com.tencent.bkapi.openapi.demo", "1.2.3-rc.1")
-    assert (go.project_name, go.package_version) == ("git.example.com/bkapi/openapi/demo", "v1.2.3-rc.1")
+    assert java.additional_properties["groupId"] == "com.tencent.bk.bkapi"
+    assert (java.package_name, java.package_version) == ("com.tencent.bk.bkapi.openapi.demo", "1.2.3-rc.1")
+    assert (go.project_name, go.package_version) == ("bk.tencent.com/bkapi/openapi/demo", "v1.2.3-rc.1")
     assert (javascript.package_name, javascript.package_version) == ("@bkapi/openapi-demo", "1.2.3-rc.1")
 
 

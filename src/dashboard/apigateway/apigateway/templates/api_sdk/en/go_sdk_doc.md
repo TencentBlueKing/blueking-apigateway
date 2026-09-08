@@ -1,11 +1,11 @@
 ## Runtime requirements and dependencies
 
 - Go 1.23 or later.
-- Use Go Modules and ensure your internal Go proxy can access the SDK module and its dependencies.
+- Use Go Modules and ensure the SDK's third-party dependencies can be downloaded.
 
 ## Install
 
-Download the `.info`, `.mod`, and `.zip` files from BKRepo Generic and expose them through your Go proxy:
+Download the SDK `.zip` file from BKRepo Generic, then extract and reference it locally as described below:
 
 ```shell
 {% if install_command %}{{ install_command }}{% else %}curl -fLO "<BKRepo Generic Go module URL>"{% endif %}
