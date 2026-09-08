@@ -17,6 +17,7 @@
  */
 
 import type { IPosition } from 'monaco-editor';
+import type { GatewayPermissionKey } from '@/constants/gateway-permission';
 
 // 导航栏菜单
 export interface IHeaderNav {
@@ -35,6 +36,8 @@ export interface IMenu {
   children?: IMenu[]
   // 是否在可编程网关中隐藏，默认 false
   hideInProgrammable?: boolean
+  // 成员权限矩阵 key，运营者按此收口导航
+  permission?: GatewayPermissionKey
 }
 
 // 分页接口

@@ -23,7 +23,10 @@ const route: RouteRecordRaw[] = [
     path: 'resource',
     name: 'ResourceManagement',
     redirect: { name: 'ResourceSetting' },
-    meta: { title: t('资源管理') },
+    meta: {
+      title: t('资源管理'),
+      permission: 'resource',
+    },
     children: [
       {
         path: 'setting',

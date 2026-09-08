@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
       title: t('模型服务'),
       matchRoute: 'ModelService',
       topMenu: 'Home',
+      permission: 'model',
     },
   },
 ];
