@@ -10,6 +10,7 @@ from django.conf import settings
 from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR
 from apigateway.biz.sdk.exceptions import SDKGenerateError
 from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
+from apigateway.biz.sdk.runtime import apply_runtime_requirements
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,4 +78,6 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
             "generator_failed",
             f"OpenAPI Generator exited with status {result.returncode}{detail}",
         )
+    _validate_output(output_dir)
+    apply_runtime_requirements(config.language, output_dir)
     _validate_output(output_dir)

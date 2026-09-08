@@ -1,10 +1,23 @@
+import ast
+import json
 import subprocess
+import tomllib
 
 import pytest
 
 from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDKLanguageConfig
 from apigateway.biz.sdk.exceptions import SDKGenerateError
 from apigateway.biz.sdk.generator import generate_client
+
+
+def write_runtime_descriptors(output_dir, language):
+    if language == "python":
+        (output_dir / "pyproject.toml").write_text('[project]\nrequires-python = ">=3.9"\n')
+        (output_dir / "setup.py").write_text('PYTHON_REQUIRES = ">= 3.10"\nsetup(\n    name="demo",\n)\n')
+        (output_dir / "README.md").write_text("# demo\n\n## Requirements.\n\nPython 3.10+\n")
+    elif language == "javascript":
+        (output_dir / "package.json").write_text('{"name":"demo","engines":{"npm":">=10"}}')
+        (output_dir / "README.md").write_text("# demo\n")
 
 
 @pytest.fixture
@@ -78,6 +91,7 @@ def test_generate_client_uses_native_generator_and_fixed_coordinates(
     spec_path = tmp_path / "openapi.json"
     spec_path.write_text("{}")
     (tmp_path / "out").mkdir()
+    write_runtime_descriptors(tmp_path / "out", language)
     run = mocker.patch("apigateway.biz.sdk.generator.subprocess.run")
     run.return_value = subprocess.CompletedProcess([], 0, "generated", "")
 
@@ -106,6 +120,46 @@ def test_generate_client_uses_native_generator_and_fixed_coordinates(
     assert run.call_args.kwargs["stdout"] is subprocess.DEVNULL
     assert run.call_args.kwargs["stderr"] is subprocess.PIPE
     assert "BKREPO_PASSWORD" not in run.call_args.kwargs["env"]
+
+    if language == "python":
+        output_dir = tmp_path / "out"
+        metadata = tomllib.loads((output_dir / "pyproject.toml").read_text())
+        assert metadata["project"]["requires-python"] == ">=3.10"
+        setup = ast.parse((output_dir / "setup.py").read_text())
+        assert setup.body[0].value.value == ">=3.10"
+        assert any(keyword.arg == "python_requires" for keyword in setup.body[1].value.keywords)
+        assert "Python >=3.10" in (output_dir / "README.md").read_text()
+        assert config.build_fingerprint_payload()["runtime_requirement"] == ">=3.10"
+    elif language == "javascript":
+        package = json.loads((tmp_path / "out" / "package.json").read_text())
+        assert package["engines"] == {"node": ">=22", "npm": ">=10"}
+        readme = (tmp_path / "out" / "README.md").read_text()
+        assert "Node.js >=22" in readme
+        assert "Fetch" in readme
+        assert "No polyfills are bundled" in readme
+        assert config.build_fingerprint_payload()["runtime_requirement"] == ">=22"
+
+
+def test_generate_client_rejects_missing_runtime_metadata(mocker, tmp_path, python_language_config):
+    spec = tmp_path / "openapi.json"
+    spec.write_text("{}")
+    output = tmp_path / "out"
+    output.mkdir()
+    mocker.patch("apigateway.biz.sdk.generator.subprocess.run", return_value=subprocess.CompletedProcess([], 0))
+    with pytest.raises(SDKGenerateError, match="cannot apply SDK runtime requirements"):
+        generate_client(spec, output, python_language_config)
+
+
+def test_generate_client_rejects_changed_runtime_declaration(mocker, tmp_path, python_language_config):
+    spec = tmp_path / "openapi.json"
+    spec.write_text("{}")
+    output = tmp_path / "out"
+    output.mkdir()
+    write_runtime_descriptors(output, "python")
+    (output / "pyproject.toml").write_text('[project]\nname = "demo"\n')
+    mocker.patch("apigateway.biz.sdk.generator.subprocess.run", return_value=subprocess.CompletedProcess([], 0))
+    with pytest.raises(SDKGenerateError, match="unexpected runtime declaration"):
+        generate_client(spec, output, python_language_config)
 
 
 def test_generate_client_rejects_oversized_output(mocker, python_language_config, tmp_path, settings):

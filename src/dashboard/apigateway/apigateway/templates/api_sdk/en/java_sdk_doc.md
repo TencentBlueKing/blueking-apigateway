@@ -1,3 +1,8 @@
+## Runtime requirements and dependencies
+
+- Java 11 or later, using the JDK's native HTTP client.
+- Maven resolves dependencies from the POM automatically. For manual installation, add the SDK JAR and dependency JARs from `lib/` in the distribution ZIP to the classpath.
+
 ## Install
 
 Use the Maven coordinate when native Maven publication is enabled. Otherwise download the distribution ZIP:

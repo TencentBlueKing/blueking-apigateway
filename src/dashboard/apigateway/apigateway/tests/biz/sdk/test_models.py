@@ -19,13 +19,40 @@ from types import SimpleNamespace
 
 import pytest
 from ddf import G
+from django.template.loader import render_to_string
 
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import SDKDocContext, SDKFactory
-from apigateway.biz.sdk.models import SDK, GoSDK, JavaScriptSDK, JavaSDK, PythonSDK
+from apigateway.biz.sdk.models import SDK, DummySDKDocContext, GoSDK, JavaScriptSDK, JavaSDK, PythonSDK
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.mark.parametrize("locale", ["zh-hans", "en"])
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        ("python", ["Python 3.10", "pydantic >=2.11", "urllib3 >=2.1.0,<3.0.0", "OpenSSL", "1.1.1"]),
+        ("javascript", ["Node.js 22", "engines.node", "Fetch", "URLSearchParams", "polyfill"]),
+        ("java", ["Java 11", "classpath"]),
+        ("go", ["Go 1.23", "Go Modules"]),
+    ],
+)
+def test_sdk_docs_render_runtime_requirements(locale, language, expected):
+    content = render_to_string(f"api_sdk/{locale}/{language}_sdk_doc.md", DummySDKDocContext().as_dict())
+    for requirement in expected:
+        assert requirement in content
+    assert "{{" not in content
+
+
+@pytest.mark.parametrize("locale", ["zh-hans", "en"])
+def test_sdk_docs_follow_generation_runtime_requirements(mocker, locale):
+    mocker.patch("apigateway.biz.sdk.models.SDK_RUNTIME_REQUIREMENTS", {"python": ">=3.12", "javascript": ">=24"})
+    context = DummySDKDocContext().as_dict()
+    for language, requirement in [("python", "Python 3.12"), ("javascript", "Node.js 24")]:
+        content = render_to_string(f"api_sdk/{locale}/{language}_sdk_doc.md", context)
+        assert requirement in content
 
 
 class TestSDKDocContext:

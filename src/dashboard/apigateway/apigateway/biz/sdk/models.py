@@ -29,6 +29,7 @@ from apigateway.apps.support.constants import (
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
 )
+from apigateway.biz.sdk.runtime import SDK_RUNTIME_REQUIREMENTS
 from apigateway.common.pypi.pip import PipHelper
 from apigateway.utils.pypi import RepositoryConfig
 
@@ -71,6 +72,7 @@ class SDKDocContext:
             "artifact_url": self.artifact_url,
             "project_name": self.project_name,
             "package_name": self.package_name,
+            "sdk_runtime_requirements": dict(SDK_RUNTIME_REQUIREMENTS),
             "server_url": f"{self.bk_api_url_tmpl.replace('{api_name}', self.gateway_name).rstrip('/')}/{self.stage_name}",
         }
 

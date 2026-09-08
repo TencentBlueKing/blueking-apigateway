@@ -25,6 +25,7 @@ from packaging.version import InvalidVersion, Version
 
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.sdk.exceptions import SDKRepoConfigError
+from apigateway.biz.sdk.runtime import SDK_RUNTIME_REQUIREMENTS
 from apigateway.common.constants import SDKGenerationLanguageEnum
 
 SDK_OPENAPI_GENERATOR_JAR = "/opt/openapi-generator/openapi-generator-cli.jar"
@@ -80,6 +81,11 @@ class SDKLanguageConfig:
             "package_name": self.package_name,
             "package_version": self.package_version,
             "additional_properties": dict(self.additional_properties),
+            **(
+                {"runtime_requirement": SDK_RUNTIME_REQUIREMENTS[self.language]}
+                if self.language in SDK_RUNTIME_REQUIREMENTS
+                else {}
+            ),
         }
 
 
