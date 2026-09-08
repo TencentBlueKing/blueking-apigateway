@@ -1,7 +1,7 @@
 import copy
 import json
 from dataclasses import asdict, replace
-from types import MappingProxyType, SimpleNamespace
+from types import SimpleNamespace
 
 import pytest
 
@@ -68,7 +68,16 @@ def test_dump_and_fingerprint_are_canonical_and_config_sensitive():
     assert first == second
     assert json.loads(first) == document
 
-    tool_versions = MappingProxyType({"openapi-generator": "7.23.0"})
+    tool_versions = SDKToolchainIdentity(
+        openapi_generator="7.23.0",
+        python="3.14.1",
+        java="17.0.15",
+        maven="3.9.9",
+        go="1.24.4",
+        node="22.17.0",
+        npm="11.4.2",
+        dependency_lock_sha256="a" * 64,
+    )
     assert calculate_input_fingerprint(document, _language_config(), tool_versions) == calculate_input_fingerprint(
         document, _language_config(), tool_versions
     )

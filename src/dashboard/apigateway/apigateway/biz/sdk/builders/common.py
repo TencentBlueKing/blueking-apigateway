@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 
 from apigateway.biz.sdk.artifacts import BuiltArtifact, create_built_artifact, validate_artifact_names
-from apigateway.biz.sdk.exceptions import SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKGenerationError
 from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 
 if TYPE_CHECKING:
@@ -31,11 +31,11 @@ def run_build(command: list[str], *, cwd: Path, capture_output: bool = False) ->
             timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
-        raise SDKGenerateError("build_failed", "SDK package build timed out", retryable=True) from error
+        raise SDKGenerationError("build_failed", "SDK package build timed out", retryable=True) from error
     if result.returncode != 0:
         stderr = redact_sensitive_text(" ".join((result.stderr or "").split()))[:768]
         detail = f": {stderr}" if stderr else ""
-        raise SDKGenerateError("build_failed", f"SDK package build exited with status {result.returncode}{detail}")
+        raise SDKGenerationError("build_failed", f"SDK package build exited with status {result.returncode}{detail}")
     return result
 
 

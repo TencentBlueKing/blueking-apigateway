@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import requests
 from django.conf import settings
 
-from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerationError
 from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 
 if TYPE_CHECKING:
@@ -93,11 +93,13 @@ def run_publisher(
             timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
-        raise SDKGenerateError("native_publish_failed", "native SDK publication timed out", retryable=True) from error
+        raise SDKGenerationError(
+            "native_publish_failed", "native SDK publication timed out", retryable=True
+        ) from error
     if result.returncode != 0:
         stderr = redact_sensitive_text(" ".join((result.stderr or "").split()), sensitive_values)[:768]
         detail = f": {stderr}" if stderr else ""
-        raise SDKGenerateError(
+        raise SDKGenerationError(
             "native_publish_failed", f"native SDK publication exited with status {result.returncode}{detail}"
         )
 

@@ -10,15 +10,13 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from openapi_spec_validator import validate
 
-from apigateway.biz.sdk.toolchain import SDKToolchainIdentity
 from apigateway.core.constants import HTTP_METHOD_CHOICES
 from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from apigateway.biz.sdk.config import SDKLanguageConfig
+    from apigateway.biz.sdk.toolchain import SDKToolchainIdentity
     from apigateway.core.models import ResourceVersion
 
 
@@ -74,13 +72,12 @@ def dump_sdk_openapi(document: dict[str, Any]) -> str:
 def calculate_input_fingerprint(
     document: dict[str, Any],
     language_config: SDKLanguageConfig,
-    tool_versions: Mapping[str, str] | SDKToolchainIdentity,
+    tool_versions: SDKToolchainIdentity,
 ) -> str:
-    toolchain = tool_versions.as_dict() if isinstance(tool_versions, SDKToolchainIdentity) else dict(tool_versions)
     payload = {
         "openapi": document,
         "language_config": language_config.build_fingerprint_payload(),
-        "tool_versions": toolchain,
+        "tool_versions": tool_versions.as_dict(),
     }
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()

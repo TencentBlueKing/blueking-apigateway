@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerationError
 from apigateway.biz.sdk.publishers import publish_native
 
 
@@ -156,7 +156,7 @@ def test_publisher_timeout_is_sanitized(mocker, built_artifact, python_config, s
         side_effect=subprocess.TimeoutExpired(["twine"], 1),
     )
 
-    with pytest.raises(SDKGenerateError) as exc_info:
+    with pytest.raises(SDKGenerationError) as exc_info:
         publish_native(
             "python",
             [built_artifact("wheel", "demo.whl"), built_artifact("sdist", "demo.tar.gz")],
@@ -188,7 +188,7 @@ def test_pypi_failure_redacts_credentials_and_authorization(mocker, built_artifa
         ),
     )
 
-    with pytest.raises(SDKGenerateError) as exc_info:
+    with pytest.raises(SDKGenerationError) as exc_info:
         publish_native(
             "python",
             [built_artifact("wheel", "demo.whl"), built_artifact("sdist", "demo.tar.gz")],

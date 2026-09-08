@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping, Protocol
 
@@ -105,15 +105,6 @@ class SDKLanguageConfig:
 
 
 @dataclass(frozen=True)
-class BKRepoGenericConfig:
-    endpoint_url: str
-    username: str
-    password: str = field(repr=False)
-    project: str = ""
-    bucket: str = ""
-
-
-@dataclass(frozen=True)
 class SDKGenerationPolicy:
     enabled: bool
     languages: tuple[str, ...]
@@ -128,18 +119,88 @@ class SDKGenerationPolicy:
     def for_resource_version(
         self, gateway_name: str, resource_version: ResourceVersionLike, language: str
     ) -> SDKLanguageConfig:
-        return build_language_config(self, gateway_name, resource_version, language)
+        if language not in self.languages:
+            raise ValueError(f"SDK language is not enabled: {language}")
 
+        gateway_name_normalized = normalize_gateway_name(gateway_name)
+        package_version = normalize_package_version(language, resource_version.version)
 
-@dataclass(frozen=True)
-class SDKWorkerConfig:
-    server_url_template: str
-    generic_repository: BKRepoGenericConfig
-    generic_retention_hours: int
-    subprocess_timeout_seconds: int
-    max_openapi_bytes: int
-    max_output_bytes: int
-    max_artifact_bytes: int
+        if language == "python":
+            project_name = f"{self.python_distribution_prefix}-{gateway_name}"
+            package_name = normalize_gateway_name(project_name)
+            return SDKLanguageConfig(
+                language=language,
+                generator_name=language,
+                project_name=project_name,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "packageName": package_name,
+                    "packageVersion": package_version,
+                    "projectName": project_name,
+                    "buildSystem": "poetry",
+                },
+                native_distributor=get_native_distributor(language),
+            )
+
+        if language == "java":
+            artifact_id = f"bkapi-openapi-{gateway_name}"
+            package_name = f"{self.java_package_prefix}.{gateway_name_normalized}"
+            return SDKLanguageConfig(
+                language=language,
+                generator_name=language,
+                project_name=artifact_id,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "groupId": self.java_group_id,
+                    "artifactId": artifact_id,
+                    "artifactVersion": package_version,
+                    "invokerPackage": package_name,
+                    "apiPackage": f"{package_name}.api",
+                    "modelPackage": f"{package_name}.model",
+                    "library": "native",
+                },
+                native_distributor=get_native_distributor(language),
+            )
+
+        if language == "go":
+            project_name = f"{self.go_module_prefix}/openapi/{gateway_name}"
+            major_version = int(resource_version.version.split(".", 1)[0])
+            if major_version >= 2:
+                project_name = f"{project_name}/v{major_version}"
+            package_name = f"bkapi_{gateway_name_normalized}"
+            return SDKLanguageConfig(
+                language=language,
+                generator_name=language,
+                project_name=project_name,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "packageName": package_name,
+                    "packageVersion": package_version,
+                    "withGoMod": "true",
+                },
+                native_distributor=None,
+            )
+
+        if language == "javascript":
+            package_name = f"{self.javascript_package_scope}/openapi-{gateway_name}"
+            return SDKLanguageConfig(
+                language=language,
+                generator_name="typescript-fetch",
+                project_name=package_name,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "npmName": package_name,
+                    "npmVersion": package_version,
+                    "supportsES6": "true",
+                },
+                native_distributor=None,
+            )
+
+        raise ValueError(f"unsupported SDK generation language: {language}")
 
 
 def get_sdk_generation_policy() -> SDKGenerationPolicy:
@@ -156,34 +217,17 @@ def get_sdk_generation_policy() -> SDKGenerationPolicy:
     )
 
 
-def get_sdk_worker_config() -> SDKWorkerConfig:
-    generic_repository = BKRepoGenericConfig(
-        endpoint_url=settings.BKREPO_ENDPOINT_URL,
-        username=settings.BKREPO_USERNAME,
-        password=settings.BKREPO_PASSWORD,
-        project=settings.BKREPO_PROJECT,
-        bucket=settings.BKREPO_GENERIC_BUCKET,
-    )
+def validate_sdk_repository_config() -> None:
     if not all(
         (
-            generic_repository.endpoint_url,
-            generic_repository.username,
-            generic_repository.password,
-            generic_repository.project,
-            generic_repository.bucket,
+            settings.BKREPO_ENDPOINT_URL,
+            settings.BKREPO_USERNAME,
+            settings.BKREPO_PASSWORD,
+            settings.BKREPO_PROJECT,
+            settings.BKREPO_GENERIC_BUCKET,
         )
     ):
         raise SDKRepoConfigError("BKRepo Generic configuration is required for SDK generation")
-
-    return SDKWorkerConfig(
-        generic_repository=generic_repository,
-        server_url_template=settings.SDK_SERVER_URL_TEMPLATE,
-        generic_retention_hours=settings.SDK_GENERIC_RETENTION_HOURS,
-        subprocess_timeout_seconds=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
-        max_openapi_bytes=settings.SDK_MAX_OPENAPI_BYTES,
-        max_output_bytes=settings.SDK_MAX_OUTPUT_BYTES,
-        max_artifact_bytes=settings.SDK_MAX_ARTIFACT_BYTES,
-    )
 
 
 def normalize_gateway_name(gateway_name: str) -> str:
@@ -204,93 +248,6 @@ def normalize_package_version(language: str, version: str) -> str:
     if language == "go":
         return f"v{version}"
     return version
-
-
-def build_language_config(
-    policy: SDKGenerationPolicy, gateway_name: str, resource_version: ResourceVersionLike, language: str
-) -> SDKLanguageConfig:
-    if language not in policy.languages:
-        raise ValueError(f"SDK language is not enabled: {language}")
-
-    gateway_name_normalized = normalize_gateway_name(gateway_name)
-    package_version = normalize_package_version(language, resource_version.version)
-
-    if language == "python":
-        project_name = f"{policy.python_distribution_prefix}-{gateway_name}"
-        package_name = normalize_gateway_name(project_name)
-        return SDKLanguageConfig(
-            language=language,
-            generator_name=language,
-            project_name=project_name,
-            package_name=package_name,
-            package_version=package_version,
-            additional_properties={
-                "packageName": package_name,
-                "packageVersion": package_version,
-                "projectName": project_name,
-                "buildSystem": "poetry",
-            },
-            native_distributor=get_native_distributor(language),
-        )
-
-    if language == "java":
-        artifact_id = f"bkapi-openapi-{gateway_name}"
-        package_name = f"{policy.java_package_prefix}.{gateway_name_normalized}"
-        return SDKLanguageConfig(
-            language=language,
-            generator_name=language,
-            project_name=artifact_id,
-            package_name=package_name,
-            package_version=package_version,
-            additional_properties={
-                "groupId": policy.java_group_id,
-                "artifactId": artifact_id,
-                "artifactVersion": package_version,
-                "invokerPackage": package_name,
-                "apiPackage": f"{package_name}.api",
-                "modelPackage": f"{package_name}.model",
-                "library": "native",
-            },
-            native_distributor=get_native_distributor(language),
-        )
-
-    if language == "go":
-        project_name = f"{policy.go_module_prefix}/openapi/{gateway_name}"
-        major_version = int(resource_version.version.split(".", 1)[0])
-        if major_version >= 2:
-            project_name = f"{project_name}/v{major_version}"
-        package_name = f"bkapi_{gateway_name_normalized}"
-        return SDKLanguageConfig(
-            language=language,
-            generator_name=language,
-            project_name=project_name,
-            package_name=package_name,
-            package_version=package_version,
-            additional_properties={
-                "packageName": package_name,
-                "packageVersion": package_version,
-                "withGoMod": "true",
-            },
-            native_distributor=None,
-        )
-
-    if language == "javascript":
-        package_name = f"{policy.javascript_package_scope}/openapi-{gateway_name}"
-        return SDKLanguageConfig(
-            language=language,
-            generator_name="typescript-fetch",
-            project_name=package_name,
-            package_name=package_name,
-            package_version=package_version,
-            additional_properties={
-                "npmName": package_name,
-                "npmVersion": package_version,
-                "supportsES6": "true",
-            },
-            native_distributor=None,
-        )
-
-    raise ValueError(f"unsupported SDK generation language: {language}")
 
 
 def get_native_distributor(language: str) -> str | None:

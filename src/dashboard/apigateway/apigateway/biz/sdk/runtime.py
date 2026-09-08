@@ -7,7 +7,7 @@ import re
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from apigateway.biz.sdk.exceptions import SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKGenerationError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -18,7 +18,7 @@ SDK_RUNTIME_REQUIREMENTS = MappingProxyType({"python": ">=3.10", "javascript": "
 def _replace_declaration(path: Path, pattern: str, replacement: str) -> None:
     content, count = re.subn(pattern, replacement, path.read_text(), flags=re.MULTILINE)
     if count != 1:
-        raise SDKGenerateError("generator_failed", f"unexpected runtime declaration in {path.name}")
+        raise SDKGenerationError("generator_failed", f"unexpected runtime declaration in {path.name}")
     path.write_text(content)
 
 
@@ -53,4 +53,4 @@ def apply_runtime_requirements(language: str, output_dir: Path) -> None:
                 "- No polyfills are bundled. Environments missing these APIs must provide compatible polyfills.\n"
             )
     except (OSError, ValueError, TypeError) as error:
-        raise SDKGenerateError("generator_failed", "cannot apply SDK runtime requirements") from error
+        raise SDKGenerationError("generator_failed", "cannot apply SDK runtime requirements") from error

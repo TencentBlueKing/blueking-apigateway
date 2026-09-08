@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from datetime import timedelta
 from functools import partial
+from typing import cast
 
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
 from apigateway.apps.support.constants import SDKGenerationItemStatusEnum, SDKNativePublicationStatusEnum
 from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
-from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
+from apigateway.biz.sdk.config import get_sdk_generation_policy, validate_sdk_repository_config
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.orchestrator import execute_generation_item, execute_native_publication, refresh_task_status
 from apigateway.biz.sdk.storage import delete_incomplete_artifacts
@@ -169,8 +171,8 @@ def recover_stale_sdk_generation_items() -> int:
 def cleanup_incomplete_sdk_artifacts() -> int:
     if not get_sdk_generation_policy().enabled:
         return 0
-    config = get_sdk_worker_config()
-    cutoff = timezone.now() - timedelta(hours=config.generic_retention_hours)
+    validate_sdk_repository_config()
+    cutoff = timezone.now() - timedelta(hours=settings.SDK_GENERIC_RETENTION_HOURS)
     now = timezone.now()
     item_ids = SDKGenerationItem.objects.filter(
         Q(status=SDKGenerationItemStatusEnum.FAILED.value)
@@ -178,9 +180,7 @@ def cleanup_incomplete_sdk_artifacts() -> int:
         input_fingerprint__gt="",
         updated_time__lt=cutoff,
     ).values_list("id", flat=True)
-    bkrepo = BKRepoComponent.default()
-    if not bkrepo:
-        return 0
+    bkrepo = cast("BKRepoComponent", BKRepoComponent.default())
     deleted = 0
     for item_id in item_ids.iterator():
         item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 
 from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR
-from apigateway.biz.sdk.exceptions import SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKGenerationError
 from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 from apigateway.biz.sdk.runtime import apply_runtime_requirements
 
@@ -20,15 +20,15 @@ if TYPE_CHECKING:
 
 def _validate_output(output_dir: Path) -> None:
     if not output_dir.is_dir():
-        raise SDKGenerateError("generator_failed", "OpenAPI Generator did not create an output directory")
+        raise SDKGenerationError("generator_failed", "OpenAPI Generator did not create an output directory")
     size = 0
     for path in output_dir.rglob("*"):
         if path.is_symlink():
-            raise SDKGenerateError("generator_failed", "OpenAPI Generator output contains a symlink")
+            raise SDKGenerationError("generator_failed", "OpenAPI Generator output contains a symlink")
         if path.is_file():
             size += path.stat().st_size
             if size > settings.SDK_MAX_OUTPUT_BYTES:
-                raise SDKGenerateError(
+                raise SDKGenerationError(
                     "generator_failed", "OpenAPI Generator output exceeds the configured size limit"
                 )
 
@@ -46,12 +46,12 @@ def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
             timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
-        raise SDKGenerateError("generator_failed", "OpenAPI Generator timed out", retryable=True) from error
+        raise SDKGenerationError("generator_failed", "OpenAPI Generator timed out", retryable=True) from error
 
 
 def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig) -> None:
     if not spec_path.is_file():
-        raise SDKGenerateError("generator_failed", "OpenAPI input file does not exist")
+        raise SDKGenerationError("generator_failed", "OpenAPI input file does not exist")
 
     additional_properties = ",".join(f"{key}={value}" for key, value in sorted(config.additional_properties.items()))
     command = [
@@ -74,7 +74,7 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
     if result.returncode != 0:
         stderr = redact_sensitive_text(" ".join((result.stderr or "").split()))[:768]
         detail = f": {stderr}" if stderr else ""
-        raise SDKGenerateError(
+        raise SDKGenerationError(
             "generator_failed",
             f"OpenAPI Generator exited with status {result.returncode}{detail}",
         )

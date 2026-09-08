@@ -194,10 +194,6 @@ class SDK:
     def created_time(self):
         return self.instance.created_time
 
-    @classmethod
-    def from_model(cls, instance: GatewaySDK):
-        return cls(instance=instance)
-
     def as_dict(self) -> dict[str, Any]:
         return {
             "language": self.language.value,
@@ -215,14 +211,6 @@ class PythonSDK(SDK):
     language = ProgrammingLanguageEnum.PYTHON
 
     @property
-    def sdk_name(self) -> str:
-        return self.name
-
-    @property
-    def download_url(self) -> str:
-        return self.url
-
-    @property
     def install_command(self) -> str:
         pypi = self.find_artifact(distributor="pypi")
         if pypi and pypi.get("package_reference"):
@@ -234,10 +222,6 @@ class PythonSDK(SDK):
         repository = self.config.get("repository", "")
         index_url = RepositoryConfig.by_name(repository).index_url if repository else ""
         return PipHelper(index_url).install_command(self.name, self.version) if index_url else ""
-
-    @property
-    def is_uploaded_to_pypi(self) -> bool:
-        return self.find_artifact(distributor="pypi") is not None
 
 
 @dataclass
@@ -283,4 +267,4 @@ class SDKFactory:
     @classmethod
     def create(cls, model: GatewaySDK) -> SDK:
         sdk_cls = cls._mappings.get(model.language, SDK)
-        return sdk_cls.from_model(model)
+        return sdk_cls(instance=model)

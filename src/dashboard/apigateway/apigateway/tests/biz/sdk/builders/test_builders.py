@@ -8,7 +8,7 @@ import pytest
 
 from apigateway.biz.sdk.builders import build_artifacts
 from apigateway.biz.sdk.config import SDKLanguageConfig
-from apigateway.biz.sdk.exceptions import SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKGenerationError
 from apigateway.biz.sdk.maven_settings import write_maven_settings
 from apigateway.utils.maven import RepositoryConfig
 
@@ -193,7 +193,7 @@ def test_builder_redacts_failure_details(mocker, tmp_path):
     )
     mocker.patch("apigateway.biz.sdk.builders.python.prepare_generated_dependency_inputs", create=True)
 
-    with pytest.raises(SDKGenerateError) as exc_info:
+    with pytest.raises(SDKGenerationError) as exc_info:
         build_artifacts("python", source_dir, tmp_path / "dist", language_config("python"))
 
     assert "build-token" not in str(exc_info.value)

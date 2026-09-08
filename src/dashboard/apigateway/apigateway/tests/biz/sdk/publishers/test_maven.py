@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKArtifactConflict, SDKGenerationError
 from apigateway.biz.sdk.publishers import publish_native
 
 
@@ -111,7 +111,7 @@ def test_maven_failure_redacts_repository_credentials(mocker, built_artifact, ja
         return_value=subprocess.CompletedProcess([], 2, "", "token=maven-token password=sdk-password"),
     )
 
-    with pytest.raises(SDKGenerateError) as exc_info:
+    with pytest.raises(SDKGenerationError) as exc_info:
         publish_native("java", maven_artifacts(built_artifact), java_config)
 
     message = str(exc_info.value)

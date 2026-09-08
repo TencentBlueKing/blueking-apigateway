@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import requests
 from blue_krill.storages.blobstore.exceptions import RequestError
@@ -35,9 +35,9 @@ from apigateway.biz.sdk.config import (
     SDKLanguageConfig,
     get_native_distributor,
     get_sdk_generation_policy,
-    get_sdk_worker_config,
+    validate_sdk_repository_config,
 )
-from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerateError, SDKGenerationError
+from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerationError
 from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection, get_compatible_legacy_sdk
 from apigateway.biz.sdk.generator import generate_client
 from apigateway.biz.sdk.metrics import sdk_generation_metrics
@@ -342,7 +342,7 @@ def _renew_claim(claim: GenerationClaim) -> bool:
 
 def _require_claim(claim: GenerationClaim) -> None:
     if not _renew_claim(claim):
-        raise SDKGenerateError("lease_lost", "SDK generation lease was lost")
+        raise SDKGenerationError("lease_lost", "SDK generation lease was lost")
 
 
 def _record_lost_claim(item: SDKGenerationItem, claim: GenerationClaim) -> None:
@@ -432,7 +432,7 @@ def _renew_native_claim(claim: NativePublicationClaim) -> bool:
 
 def _require_native_claim(claim: NativePublicationClaim) -> None:
     if not _renew_native_claim(claim):
-        raise SDKGenerateError("native_lease_lost", "SDK native publication lease was lost")
+        raise SDKGenerationError("native_lease_lost", "SDK native publication lease was lost")
 
 
 def _get_item_language_config(item: SDKGenerationItem) -> SDKLanguageConfig:
@@ -443,7 +443,7 @@ def _get_item_language_config(item: SDKGenerationItem) -> SDKLanguageConfig:
 
 
 def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
-    get_sdk_worker_config()
+    validate_sdk_repository_config()
     language_config = _get_item_language_config(item)
     with sdk_generation_metrics.observe_phase(item.language, "openapi"):
         toolchain_identity = probe_toolchain_identity()
@@ -501,9 +501,7 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> ItemExecutionR
         language_config, document, tool_versions, fingerprint = prepared
         _require_claim(claim)
 
-        bkrepo = BKRepoComponent.default()
-        if not bkrepo:
-            raise ValueError("BKRepo Generic configuration is required")
+        bkrepo = cast("BKRepoComponent", BKRepoComponent.default())
         prefix = generic_prefix(
             item.task.gateway.name,
             item.language,
@@ -598,15 +596,13 @@ def execute_native_publication(item_id: int, celery_task_id: str) -> ItemExecuti
         return None
     item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
     try:
-        get_sdk_worker_config()
+        validate_sdk_repository_config()
         language_config = _get_item_language_config(item)
         if not language_config.native_distributor or (
             get_native_distributor(item.language) != language_config.native_distributor
         ):
             raise SDKConfigurationError("configured native SDK repository is unavailable")
-        bkrepo = BKRepoComponent.default()
-        if not bkrepo:
-            raise SDKConfigurationError("BKRepo Generic configuration is required")
+        bkrepo = cast("BKRepoComponent", BKRepoComponent.default())
         _require_native_claim(claim)
         with tempfile.TemporaryDirectory(prefix="sdk-native-publication-") as directory:
             _, artifacts = restore_generic_artifacts(item, bkrepo, Path(directory))

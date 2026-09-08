@@ -20,16 +20,15 @@ import json
 from types import SimpleNamespace
 
 import pytest
-from django.conf import settings
 from django.test import override_settings
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.sdk.config import (
     SDKLanguageConfig,
     get_sdk_generation_policy,
-    get_sdk_worker_config,
     normalize_gateway_name,
     normalize_package_version,
+    validate_sdk_repository_config,
 )
 from apigateway.biz.sdk.exceptions import SDKRepoConfigError
 
@@ -73,12 +72,6 @@ def test_programming_languages_are_the_new_supported_set():
     ]
 
 
-def test_sdk_generation_config_uses_the_default_server_template():
-    config = get_sdk_worker_config()
-
-    assert config.server_url_template == settings.SDK_SERVER_URL_TEMPLATE
-
-
 def test_sdk_generation_policy_is_lightweight_and_disabled_by_default():
     policy = get_sdk_generation_policy()
 
@@ -88,14 +81,8 @@ def test_sdk_generation_policy_is_lightweight_and_disabled_by_default():
     assert policy.queue == "sdk.generate"
 
 
-def test_sdk_worker_config_requires_bkrepo_generic_for_deployment():
-    config = get_sdk_worker_config()
-
-    assert config.generic_repository.endpoint_url == "https://bkrepo.example.com"
-    assert config.generic_repository.username == "sdk-user"
-    assert config.generic_repository.password == "sdk-password"
-    assert config.generic_repository.project == "sdk-project"
-    assert config.generic_repository.bucket == "sdk-generic"
+def test_sdk_repository_config_accepts_complete_bkrepo_generic():
+    validate_sdk_repository_config()
 
 
 @pytest.mark.parametrize(
@@ -108,11 +95,11 @@ def test_sdk_worker_config_requires_bkrepo_generic_for_deployment():
         "BKREPO_GENERIC_BUCKET",
     ],
 )
-def test_sdk_worker_config_rejects_incomplete_bkrepo_generic(settings, setting_name):
+def test_sdk_repository_config_rejects_incomplete_bkrepo_generic(settings, setting_name):
     setattr(settings, setting_name, "")
 
     with pytest.raises(SDKRepoConfigError, match="BKRepo Generic"):
-        get_sdk_worker_config()
+        validate_sdk_repository_config()
 
 
 @override_settings(

@@ -6,7 +6,7 @@ import tomllib
 import pytest
 
 from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDKLanguageConfig
-from apigateway.biz.sdk.exceptions import SDKGenerateError
+from apigateway.biz.sdk.exceptions import SDKGenerationError
 from apigateway.biz.sdk.generator import generate_client
 
 
@@ -146,7 +146,7 @@ def test_generate_client_rejects_missing_runtime_metadata(mocker, tmp_path, pyth
     output = tmp_path / "out"
     output.mkdir()
     mocker.patch("apigateway.biz.sdk.generator.subprocess.run", return_value=subprocess.CompletedProcess([], 0))
-    with pytest.raises(SDKGenerateError, match="cannot apply SDK runtime requirements"):
+    with pytest.raises(SDKGenerationError, match="cannot apply SDK runtime requirements"):
         generate_client(spec, output, python_language_config)
 
 
@@ -158,7 +158,7 @@ def test_generate_client_rejects_changed_runtime_declaration(mocker, tmp_path, p
     write_runtime_descriptors(output, "python")
     (output / "pyproject.toml").write_text('[project]\nname = "demo"\n')
     mocker.patch("apigateway.biz.sdk.generator.subprocess.run", return_value=subprocess.CompletedProcess([], 0))
-    with pytest.raises(SDKGenerateError, match="unexpected runtime declaration"):
+    with pytest.raises(SDKGenerationError, match="unexpected runtime declaration"):
         generate_client(spec, output, python_language_config)
 
 
@@ -174,7 +174,7 @@ def test_generate_client_rejects_oversized_output(mocker, python_language_config
         return_value=subprocess.CompletedProcess([], 0, "", ""),
     )
 
-    with pytest.raises(SDKGenerateError, match="output exceeds"):
+    with pytest.raises(SDKGenerationError, match="output exceeds"):
         generate_client(spec_path, output_dir, python_language_config)
 
 
@@ -189,7 +189,7 @@ def test_generate_client_sanitizes_failures(mocker, python_language_config, tmp_
     spec_path.write_text("{}")
     mocker.patch("apigateway.biz.sdk.generator.subprocess.run", return_value=result)
 
-    with pytest.raises(SDKGenerateError) as exc_info:
+    with pytest.raises(SDKGenerationError) as exc_info:
         generate_client(spec_path, tmp_path / "out", python_language_config)
 
     assert exc_info.value.code == "generator_failed"
@@ -208,7 +208,7 @@ def test_generate_client_maps_timeout(mocker, python_language_config, tmp_path):
         side_effect=subprocess.TimeoutExpired(["java"], 1),
     )
 
-    with pytest.raises(SDKGenerateError) as exc_info:
+    with pytest.raises(SDKGenerationError) as exc_info:
         generate_client(spec_path, tmp_path / "out", python_language_config)
 
     assert exc_info.value.code == "generator_failed"

@@ -33,16 +33,12 @@ class SDKGenerationError(GenerateError):
         super().__init__(message)
 
 
-class SDKGenerateError(SDKGenerationError):
-    """Backward-compatible exception name used by existing SDK builders and publishers."""
-
-
-class SDKArtifactConflict(SDKGenerateError):
+class SDKArtifactConflict(SDKGenerationError):
     def __init__(self, message: str):
         super().__init__("artifact_conflict", message)
 
 
-class LegacySDKVersionConflict(SDKGenerateError, ValueError):
+class LegacySDKVersionConflict(SDKGenerationError, ValueError):
     def __init__(self):
         super().__init__(
             "legacy_sdk_version_conflict",
@@ -57,22 +53,3 @@ class SDKConfigurationError(SDKException):
 
 class SDKRepoConfigError(SDKConfigurationError):
     """SDK 配置错误"""
-
-
-class DistributeError(SDKException):
-    """发布错误"""
-
-
-class PackError(SDKException):
-    """打包错误"""
-
-
-class ResourcesIsEmpty(Exception):
-    """网关下无资源"""
-
-
-class TooManySDKVersion(Exception):
-    """SDK 版本过多"""
-
-    def __init__(self, max_count):
-        self.max_count = max_count

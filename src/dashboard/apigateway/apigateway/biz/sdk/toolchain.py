@@ -10,8 +10,9 @@ import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import cast
 
-from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDK_WORKER_LOCK_FILE, get_sdk_worker_config
+from apigateway.biz.sdk.config import SDK_OPENAPI_GENERATOR_JAR, SDK_WORKER_LOCK_FILE, validate_sdk_repository_config
 from apigateway.biz.sdk.exceptions import SDKConfigurationError
 from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
 
@@ -90,7 +91,7 @@ def _load_worker_lock(path: str) -> dict[str, object]:
 
 
 def validate_sdk_worker_environment() -> dict[str, str]:
-    get_sdk_worker_config()
+    validate_sdk_repository_config()
     lock = _load_worker_lock(SDK_WORKER_LOCK_FILE)
     identity = probe_toolchain_identity()
     expected_generator = lock.get("openapi_generator")
@@ -124,10 +125,10 @@ def _read_text(path: Path) -> str:
 
 
 def prepare_generated_dependency_inputs(language: str, output_dir: Path) -> None:
-    get_sdk_worker_config()
+    validate_sdk_repository_config()
     lock = _load_worker_lock(SDK_WORKER_LOCK_FILE)
-    dependencies = lock["generated_dependencies"]
-    if not isinstance(dependencies, dict) or not isinstance(expected := dependencies.get(language), dict):
+    dependencies = cast("dict[str, object]", lock["generated_dependencies"])
+    if not isinstance(expected := dependencies.get(language), dict):
         raise SDKConfigurationError(f"generated dependency lock is unavailable for {language}")
 
     if language == "python":
