@@ -20,37 +20,17 @@ import { t } from '@/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: 'stage',
-    name: 'StageManagement',
-    redirect: { name: 'StageOverview' },
+    path: 'members',
+    name: 'MemberManagement',
+    component: () => import('./Index.vue'),
     meta: {
-      title: t('环境管理'),
-      matchRoute: 'StageOverview',
-      permission: 'stage',
+      title: t('成员管理'),
+      matchRoute: 'MemberManagement',
+      permission: 'member',
     },
-    children: [
-      {
-        path: 'overview',
-        name: 'StageOverview',
-        component: () => import('./overview/Index.vue'),
-        meta: {
-          title: t('环境概览'),
-          matchRoute: 'StageOverview',
-        },
-      },
-      {
-        path: 'release-record',
-        name: 'StageReleaseRecord',
-        component: () => import('./release-record/Index.vue'),
-        meta: {
-          title: t('发布记录'),
-          matchRoute: 'StageReleaseRecord',
-        },
-      },
-    ],
   },
 ];
 
-export default function getStageManagementRoutes() {
+export default function getMemberManagementRoutes() {
   return routes;
 }

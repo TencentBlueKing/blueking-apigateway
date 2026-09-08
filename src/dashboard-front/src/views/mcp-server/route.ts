@@ -34,6 +34,7 @@ const routes: RouteRecordRaw[] = [
           title: 'MCP Server',
           matchRoute: 'MCPServer',
           topMenu: 'MCP',
+          permission: 'mcp-server',
         },
       },
       {
@@ -44,6 +45,7 @@ const routes: RouteRecordRaw[] = [
           title: t('详情'),
           matchRoute: 'MCPServer',
           topMenu: 'MCP',
+          permission: 'mcp-server',
         },
       },
       {
@@ -54,6 +56,7 @@ const routes: RouteRecordRaw[] = [
           title: t('权限审批'),
           matchRoute: 'MCPServerPermission',
           topMenu: 'MCP',
+          permission: 'mcp-perm',
         },
       },
       {
@@ -65,6 +68,7 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'MCPServerObservability',
           topMenu: 'MCPServerObservability',
           hideHeaderBorder: true,
+          permission: 'mcp-obs',
         },
       },
     ],

@@ -17,12 +17,17 @@
  */
 
 import { type RouteLocationNormalized, type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
+import { t } from '@/locales';
+import { setupGatewayRoleGuard } from './gateway-role-guard';
+import { auditGatewayRoutePermissions } from './audit-route-permissions';
 // 环境概览
 import getStageManagementRoutes from '@/views/stage-management/route';
 // 资源管理
 import getResourceManagementRoutes from '@/views/resource-management/route';
 // 基本信息
 import getBasicInfoRoutes from '@/views/basic-info/routes';
+// 成员管理
+import getMemberManagementRoutes from '@/views/member-management/routes';
 // 组件管理
 import getComponentManagementRoutes from '@/views/component-management/route';
 // 后端服务
@@ -75,6 +80,7 @@ const routes: RouteRecordRaw[] = [
       ...getStageManagementRoutes(),
       ...getResourceManagementRoutes(),
       ...getBasicInfoRoutes(),
+      ...getMemberManagementRoutes(),
       ...getBackendServicesRoutes(),
       ...getModelServicesRoutes(),
       ...getPermissionManagementRoutes(),
@@ -83,6 +89,32 @@ const routes: RouteRecordRaw[] = [
       ...getAuditLogRoutes(),
       ...getMonitorAlarmRoutes(),
       ...getMCPServerRoutes(),
+      // 裸访问 /:id 时默认进入基本信息页
+      {
+        path: '',
+        redirect: to => ({
+          name: 'BasicInfo',
+          params: { id: to.params.id },
+        }),
+      },
+      // 网关内 404：无权限访问或页面不存在时展示，保留左侧菜单便于切换到有权限的页面
+      {
+        path: 'not-found',
+        name: 'GatewayNotFound',
+        component: () => import('@/views/404.vue'),
+        meta: {
+          title: t('页面不存在'),
+          skipRoleCheck: true,
+        },
+      },
+      // 网关下未匹配到的路径，统一收口到 404
+      {
+        path: ':pathMatch(.*)*',
+        redirect: to => ({
+          name: 'GatewayNotFound',
+          params: { id: to.params.id },
+        }),
+      },
     ],
   },
   {
@@ -128,11 +160,27 @@ const routes: RouteRecordRaw[] = [
     redirect: '/personal-workbench/my-apply',
     children: [...getPersonalWorkbench()],
   },
+  // 全局兜底：所有未匹配到的路径
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/404.vue'),
+    meta: {
+      title: t('页面不存在'),
+      skipRoleCheck: true,
+    },
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(window.BK_SITE_PATH),
   routes,
 });
+
+setupGatewayRoleGuard(router);
+
+if (import.meta.env.DEV) {
+  auditGatewayRoutePermissions(routes.find(route => route.name === 'Resources')?.children ?? []);
+}
 
 export default router;

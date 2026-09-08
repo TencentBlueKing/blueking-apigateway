@@ -15,34 +15,15 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import type { RouteRecordRaw } from 'vue-router';
-import { t } from '@/locales';
 
-const routes: RouteRecordRaw[] = [
-  {
-    path: '/:id/monitor/alarm-strategy',
-    name: 'MonitorAlarmStrategy',
-    component: () => import('@/views//monitor-alarm/alarm-strategy/Index.vue'),
-    meta: {
-      title: t('告警策略'),
-      matchRoute: 'MonitorAlarmStrategy',
-      enabled: true,
-      permission: 'alarm-strategy',
-    },
-  },
-  {
-    path: '/:id/monitor/alarm-history',
-    name: 'MonitorAlarmHistory',
-    component: () => import('@/views/monitor-alarm/alarm-history/Index.vue'),
-    meta: {
-      title: t('告警记录'),
-      matchRoute: 'MonitorAlarmHistory',
-      enabled: true,
-      permission: 'alarm-history',
-    },
-  },
-];
+import 'vue-router';
+import type { GatewayPermissionKey } from '@/constants/gateway-permission';
 
-export default function getMonitorAlarmRoutes() {
-  return routes;
+declare module 'vue-router' {
+  interface RouteMeta {
+    // 网关成员权限矩阵 key，用于网关内路由的角色校验
+    permission?: GatewayPermissionKey
+    // 跳过角色校验，用于 404 等异常页，避免重定向死循环
+    skipRoleCheck?: boolean
+  }
 }

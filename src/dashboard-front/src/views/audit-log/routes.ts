@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: t('操作记录'),
       matchRoute: 'AuditLog',
+      permission: 'audit',
     },
   },
 ];

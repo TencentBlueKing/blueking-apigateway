@@ -103,7 +103,7 @@
           :active-key="activeMenuKey"
           :unique-open="false"
         >
-          <template v-for="menu in menuList">
+          <template v-for="menu in visibleMenuList">
             <template v-if="menu.enabled">
               <template v-if="menu.children?.length">
                 <BkSubmenu
@@ -211,6 +211,8 @@ import type { IMenu } from '@/types/common';
 import { getStageList } from '@/services/source/stage';
 import { getPermissionApplyList } from '@/services/source/permission';
 import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
+import { useGatewayRole } from '@/hooks';
+import type { GatewayPermissionKey } from '@/constants/gateway-permission';
 
 type GatewayItemType = IExtractListApiResults<typeof getGatewayList>;
 
@@ -222,6 +224,7 @@ const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 const permissionStore = usePermission();
 const stageStore = useStage();
+const { currentRole, canAccess } = useGatewayRole();
 
 // 选中的菜单
 const activeMenuKey = ref('StageOverview');
@@ -247,16 +250,19 @@ const menuList = computed<IMenu[]>(() => [
     enabled: true,
     title: t('环境管理'),
     icon: 'resource',
+    permission: 'stage',
     children: [
       {
         name: 'StageOverview',
         enabled: true,
         title: t('环境概览'),
+        permission: 'stage',
       },
       {
         name: 'StageReleaseRecord',
         enabled: true,
         title: t('发布记录'),
+        permission: 'stage',
       },
     ],
   },
@@ -265,18 +271,21 @@ const menuList = computed<IMenu[]>(() => [
     enabled: true,
     title: t('后端服务'),
     icon: 'fuwuguanli',
+    permission: 'backend',
   },
   {
     name: 'ModelService',
     title: t('模型服务'),
     icon: 'cube-1',
     enabled: isAIGateway.value,
+    permission: 'model',
   },
   {
     name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
     icon: 'ziyuanguanli',
+    permission: 'resource',
     children: [
       {
         name: 'ResourceSetting',
@@ -284,11 +293,13 @@ const menuList = computed<IMenu[]>(() => [
         title: t('资源配置'),
         // 是否在可编程网关中隐藏
         hideInProgrammable: true,
+        permission: 'resource',
       },
       {
         name: 'ResourceVersion',
         enabled: true,
         title: t('资源版本'),
+        permission: 'resource',
       },
     ],
   },
@@ -297,16 +308,19 @@ const menuList = computed<IMenu[]>(() => [
     enabled: true,
     title: t('权限管理'),
     icon: 'quanxianguanli',
+    permission: 'permission',
     children: [
       {
         name: 'PermissionApply',
         enabled: true,
         title: t('权限审批'),
+        permission: 'permission',
       },
       {
         name: 'PermissionApp',
         enabled: true,
         title: t('应用权限'),
+        permission: 'permission',
       },
     ],
   },
@@ -315,21 +329,25 @@ const menuList = computed<IMenu[]>(() => [
     enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
     title: t('运行数据'),
     icon: 'keguancexing',
+    permission: 'runtime',
     children: [
       {
         name: 'AccessLog',
         enabled: true,
         title: t('流水日志'),
+        permission: 'runtime',
       },
       {
         name: 'Dashboard',
         enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
         title: t('仪表盘'),
+        permission: 'runtime',
       },
       {
         name: 'Report',
         enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
         title: t('统计报表'),
+        permission: 'runtime',
       },
     ],
   },
@@ -343,11 +361,13 @@ const menuList = computed<IMenu[]>(() => [
         name: 'MonitorAlarmStrategy',
         title: t('告警策略'),
         enabled: true,
+        permission: 'alarm-strategy',
       },
       {
         name: 'MonitorAlarmHistory',
         title: t('告警记录'),
         enabled: true,
+        permission: 'alarm-history',
       },
     ],
   },
@@ -356,6 +376,7 @@ const menuList = computed<IMenu[]>(() => [
     enabled: true,
     title: t('在线调试'),
     icon: 'zaixiandiaoshi',
+    permission: 'debug',
   },
   {
     name: 'MCP',
@@ -367,32 +388,76 @@ const menuList = computed<IMenu[]>(() => [
         name: 'MCPServer',
         enabled: true,
         title: 'MCP Server',
+        permission: 'mcp-server',
       },
       {
         name: 'MCPServerPermission',
         title: t('MCP 权限管理'),
         enabled: true,
+        permission: 'mcp-perm',
       },
       {
         name: 'MCPServerObservability',
         title: t('可观测'),
         enabled: featureFlagStore.flags.ENABLE_MCP_SERVER_OBSERVABILITY,
+        permission: 'mcp-obs',
       },
     ],
   },
   {
-    name: 'BasicInfo',
+    name: 'GatewaySettings',
     enabled: true,
-    title: t('基本信息'),
+    title: t('网关设置'),
     icon: 'jibenxinxi',
-  },
-  {
-    name: 'AuditLog',
-    enabled: true,
-    title: t('操作记录'),
-    icon: 'history',
+    children: [
+      {
+        name: 'BasicInfo',
+        enabled: true,
+        title: t('基本信息'),
+        permission: 'basic-view',
+      },
+      {
+        name: 'MemberManagement',
+        enabled: true,
+        title: t('成员管理'),
+        permission: 'member',
+      },
+      {
+        name: 'AuditLog',
+        enabled: true,
+        title: t('操作记录'),
+        permission: 'audit',
+      },
+    ],
   },
 ]);
+
+const visibleMenuList = computed(() => menuList.value
+  .map((menu) => {
+    if (!menu.children?.length) {
+      return menu;
+    }
+    return {
+      ...menu,
+      children: menu.children.filter(child => isMenuVisible(child)),
+    };
+  })
+  .filter((menu) => {
+    if (menu.children) {
+      return menu.enabled && menu.children.length > 0;
+    }
+    return isMenuVisible(menu);
+  }));
+
+const firstVisibleRouteName = computed(() => {
+  for (const menu of visibleMenuList.value) {
+    if (menu.children?.length) {
+      return menu.children[0].name;
+    }
+    return menu.name;
+  }
+  return 'BasicInfo';
+});
 
 // 表格需要兼容的页面模块
 const needBkuiTablePage = computed(() => {
@@ -405,6 +470,7 @@ const needBkuiTablePage = computed(() => {
     'AuditLog',
     'MonitorAlarmStrategy',
     'MonitorAlarmHistory',
+    'MemberManagement',
   ];
 });
 
@@ -433,6 +499,14 @@ const setBreadcrumbTitle = (payload: typeof route) => {
   }
   else {
     headerTitle.value = (title as string) ?? '';
+  }
+};
+
+// 检查网关下的环境 schema 版本
+const checkStageVersion = async () => {
+  const stageList = await getStageList(gatewayId.value);
+  if (stageList.some(item => item.status === 1 && item.resource_version?.schema_version === '1.0')) {
+    version113UpdateNoticeRef.value?.show();
   }
 };
 
@@ -487,6 +561,26 @@ watch(
   { flush: 'post' },
 );
 
+// 兜底防线：覆盖停留在页面上时角色被变更（如成员管理中移除了自己的角色）的场景
+watch(
+  [
+    currentRole,
+    () => route.meta.permission,
+    () => gatewayStore.currentGateway?.id,
+  ],
+  () => {
+    if (!gatewayStore.currentGateway?.id || route.meta.skipRoleCheck) {
+      return;
+    }
+    if (!canAccess(route.meta.permission)) {
+      router.replace({
+        name: 'GatewayNotFound',
+        params: { id: gatewayId.value },
+      });
+    }
+  },
+);
+
 const getGatewayData = async () => {
   const response = await getGatewayList({ limit: 10000 });
   gatewayList.value = response.results || [];
@@ -506,13 +600,31 @@ const getPermissionData = async () => {
   permissionStore.setCount(res.count);
 };
 
-// 检查网关下的环境 schema 版本
-async function checkStageVersion() {
-  const stageList = await getStageList(gatewayId.value);
-  if (stageList.some(item => item.status === 1 && item.resource_version?.schema_version === '1.0')) {
-    version113UpdateNoticeRef.value?.show();
+const isMenuVisible = (menu: IMenu) => {
+  if (!menu.enabled) {
+    return false;
   }
-}
+  if (menu.hideInProgrammable && isProgrammableGateway.value) {
+    return false;
+  }
+  return canAccess(menu.permission);
+};
+
+const findMenuPermission = (menus: IMenu[], routeName: string): GatewayPermissionKey | undefined => {
+  for (const menu of menus) {
+    if (menu.name === routeName) {
+      return menu.permission;
+    }
+    if (menu.children?.length) {
+      const childPermission = findMenuPermission(menu.children, routeName);
+      if (childPermission) {
+        return childPermission;
+      }
+    }
+  }
+  return undefined;
+};
+
 // 根据网关不同状态展示文案最大宽度
 const getOptionTextWidth = (gateway: GatewayItemType) => {
   // 如果当前网关既是编辑网关且已停用
@@ -563,8 +675,10 @@ const handleGoPage = (routeName: string) => {
   // 如果是可编程网关，则不展示资源配置，需要跳转到环境概览
   const gatewayData = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value);
   const isEditGateway = gatewayData?.kind === 1;
+  const nextRouteName = ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName;
+  const permission = findMenuPermission(menuList.value, nextRouteName);
   router.push({
-    name: ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName,
+    name: canAccess(permission) ? nextRouteName : firstVisibleRouteName.value,
     params: { id: gatewayId.value },
   });
   getGatewayIconDistance(gatewayData?.name ?? '');
@@ -826,31 +940,31 @@ onMounted(() => {
   width: 224px;
 
   .bk-input {
+    position: relative;
     display: flex;
-    align-items: center;
     background-color: #f5f7fa;
     border: none;
     border-radius: 2px;
     box-shadow: none;
-    position: relative;
+    align-items: center;
 
     .bk-input--text {
+      max-width: fit-content;
+      padding-right: 24px;
+      margin-left: 6px;
       font-size: 14px;
       color: #63656e;
       background-color: transparent;
-      max-width: fit-content;
-      margin-left: 6px;
-      padding-right: 24px;
       order: 1;
     }
 
     .gateway-selector-prefix {
-      width: 16px;
-      flex-shrink: 0;
-      color: #3a84ff;
       position: absolute;
       top: 50%;
+      width: 16px;
+      color: #3a84ff;
       transform: translateY(-50%);
+      flex-shrink: 0;
       order: 2;
     }
   }

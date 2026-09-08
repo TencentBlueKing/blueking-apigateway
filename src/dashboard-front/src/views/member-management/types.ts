@@ -15,34 +15,22 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import type { RouteRecordRaw } from 'vue-router';
-import { t } from '@/locales';
 
-const routes: RouteRecordRaw[] = [
-  {
-    path: '/:id/monitor/alarm-strategy',
-    name: 'MonitorAlarmStrategy',
-    component: () => import('@/views//monitor-alarm/alarm-strategy/Index.vue'),
-    meta: {
-      title: t('告警策略'),
-      matchRoute: 'MonitorAlarmStrategy',
-      enabled: true,
-      permission: 'alarm-strategy',
-    },
-  },
-  {
-    path: '/:id/monitor/alarm-history',
-    name: 'MonitorAlarmHistory',
-    component: () => import('@/views/monitor-alarm/alarm-history/Index.vue'),
-    meta: {
-      title: t('告警记录'),
-      matchRoute: 'MonitorAlarmHistory',
-      enabled: true,
-      permission: 'alarm-history',
-    },
-  },
-];
+/**
+ * 成员管理的类型声明
+ */
 
-export default function getMonitorAlarmRoutes() {
-  return routes;
+import type { IGatewayMemberOutput } from '@/services/types/responses/gateway-members';
+import type { GatewayPermissionKey } from '@/constants/gateway-permission';
+
+export type IMember = IGatewayMemberOutput;
+
+// 权限矩阵表格的一行：授权策略（administrator/operator/aiOnly）与展示文案（label/tip）的合体
+export interface IPermissionItem {
+  key: GatewayPermissionKey
+  label: string
+  administrator: boolean
+  operator: boolean
+  aiOnly?: boolean
+  tip?: string
 }
