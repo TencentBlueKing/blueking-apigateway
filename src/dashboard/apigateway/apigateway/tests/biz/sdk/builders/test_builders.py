@@ -112,7 +112,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
     captured_settings = {}
     run = mock_build_commands(mocker, stdout, captured_settings)
     validate_dependencies = mocker.patch(
-        f"apigateway.biz.sdk.builders.{language}.validate_generated_dependency_inputs",
+        f"apigateway.biz.sdk.builders.{language}.prepare_generated_dependency_inputs",
         create=True,
     )
 
@@ -144,7 +144,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
     if language == "javascript":
         assert run.call_args_list[0].args[0] == [
             "npm",
-            "install",
+            "ci",
             "--ignore-scripts",
             "--no-audit",
             "--no-fund",
@@ -170,7 +170,7 @@ def test_go_module_zip_has_required_prefix(mocker, tmp_path):
         "apigateway.biz.sdk.builders.common.subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, "", ""),
     )
-    mocker.patch("apigateway.biz.sdk.builders.go.validate_generated_dependency_inputs", create=True)
+    mocker.patch("apigateway.biz.sdk.builders.go.prepare_generated_dependency_inputs", create=True)
 
     artifacts = build_artifacts("go", source_dir, tmp_path / "dist", language_config("go"))
     module_zip = next(item.path for item in artifacts if item.artifact_type == "go_zip")
@@ -191,7 +191,7 @@ def test_builder_redacts_failure_details(mocker, tmp_path):
         "apigateway.biz.sdk.builders.common.subprocess.run",
         return_value=subprocess.CompletedProcess([], 2, "", "token=build-token password=build-password"),
     )
-    mocker.patch("apigateway.biz.sdk.builders.python.validate_generated_dependency_inputs", create=True)
+    mocker.patch("apigateway.biz.sdk.builders.python.prepare_generated_dependency_inputs", create=True)
 
     with pytest.raises(SDKGenerateError) as exc_info:
         build_artifacts("python", source_dir, tmp_path / "dist", language_config("python"))

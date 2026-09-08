@@ -45,9 +45,7 @@ def build_sdk_openapi(resource_version: ResourceVersion) -> dict[str, Any]:
             missing = [parameter for parameter in inferred_parameters if parameter["name"] not in declared_names]
             if missing:
                 operation["parameters"] = [*parameters, *missing]
-    server_url = settings.SDK_GENERATION["server_url_template"].replace(
-        "{gateway_name}", resource_version.gateway.name
-    )
+    server_url = settings.SDK_SERVER_URL_TEMPLATE.replace("{gateway_name}", resource_version.gateway.name)
     document["servers"] = [
         {
             "url": server_url,
@@ -68,7 +66,7 @@ def build_sdk_openapi(resource_version: ResourceVersion) -> dict[str, Any]:
 
 def dump_sdk_openapi(document: dict[str, Any]) -> str:
     encoded = json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    if len(encoded.encode()) > settings.SDK_GENERATION["max_openapi_bytes"]:
+    if len(encoded.encode()) > settings.SDK_MAX_OPENAPI_BYTES:
         raise ValueError("SDK OpenAPI document exceeds the configured size limit")
     return encoded
 

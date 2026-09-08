@@ -29,7 +29,7 @@ def _language_config(package_version="1.2.3"):
 
 def test_build_sdk_openapi_adds_server_and_api_key(mocker, settings):
     resource_version = SimpleNamespace(version="1.2.3", gateway=SimpleNamespace(name="demo"), data=[])
-    settings.SDK_GENERATION["server_url_template"] = "https://{gateway_name}.example.com/{stage_name}"
+    settings.SDK_SERVER_URL_TEMPLATE = "https://{gateway_name}.example.com/{stage_name}"
     mocker.patch(
         "apigateway.biz.sdk.openapi.OpenAPIExportManager.get_resource_version_openapi",
         return_value={
@@ -101,7 +101,7 @@ def test_fingerprint_owns_every_toolchain_field_and_ignores_dictionary_order():
 
 def test_build_sdk_openapi_keeps_public_and_private_resources_without_secrets(mocker, settings):
     resource_version = SimpleNamespace(version="1.2.3", gateway=SimpleNamespace(name="demo"), data=[])
-    settings.SDK_GENERATION["server_url_template"] = "https://{gateway_name}.example.com/{stage_name}"
+    settings.SDK_SERVER_URL_TEMPLATE = "https://{gateway_name}.example.com/{stage_name}"
     settings.BKREPO_PASSWORD = "must-not-leak"
     mocker.patch(
         "apigateway.biz.sdk.openapi.OpenAPIExportManager.get_resource_version_openapi",

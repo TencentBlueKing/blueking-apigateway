@@ -76,8 +76,7 @@ def test_programming_languages_are_the_new_supported_set():
 def test_sdk_generation_config_uses_the_default_server_template():
     config = get_sdk_worker_config()
 
-    assert config.enabled_languages == ("python", "java", "go", "javascript")
-    assert config.server_url_template == settings.SDK_GENERATION["server_url_template"]
+    assert config.server_url_template == settings.SDK_SERVER_URL_TEMPLATE
 
 
 def test_sdk_generation_policy_is_lightweight_and_disabled_by_default():
@@ -124,7 +123,7 @@ def test_sdk_worker_config_rejects_incomplete_bkrepo_generic(settings, setting_n
     SDK_JAVASCRIPT_PACKAGE_SCOPE="@example",
 )
 def test_sdk_generation_config_uses_organization_namespaces():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
 
     resource_version = make_resource_version()
     python_config = config.for_resource_version("my-gateway", resource_version, "python")
@@ -143,7 +142,7 @@ def test_sdk_generation_config_uses_organization_namespaces():
 
 
 def test_sdk_generation_coordinates_and_versions_are_fixed():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
     resource_version = make_resource_version("1.2.3-rc.1")
 
     python = config.for_resource_version("demo", resource_version, "python")
@@ -164,7 +163,7 @@ def test_sdk_generation_coordinates_and_versions_are_fixed():
 
 
 def test_sdk_generation_callers_cannot_override_package_identity():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
 
     with pytest.raises(TypeError):
         config.for_resource_version(
@@ -180,7 +179,7 @@ def test_sdk_generation_callers_cannot_override_package_identity():
     MAVEN_MIRRORS_CONFIG={"default": {"repository_url": "https://maven.example.com"}},
 )
 def test_sdk_generation_config_detects_optional_native_distributors():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
 
     resource_version = make_resource_version()
 
@@ -190,7 +189,7 @@ def test_sdk_generation_config_detects_optional_native_distributors():
 
 
 def test_sdk_generation_config_keeps_native_distributors_optional():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
 
     resource_version = make_resource_version()
 
@@ -200,7 +199,7 @@ def test_sdk_generation_config_keeps_native_distributors_optional():
 
 @pytest.mark.parametrize("language", ["python", "java", "go", "javascript"])
 def test_sdk_generation_config_uses_only_supported_generator_properties(language):
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
 
     language_config = config.for_resource_version("my-gateway", make_resource_version(), language)
 
@@ -272,7 +271,7 @@ def test_sdk_language_config_forces_generation_timestamps_off():
 
 
 def test_sdk_language_fingerprint_excludes_bkrepo_credentials():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
 
     fingerprint = config.for_resource_version(
         "my-gateway", make_resource_version(), "python"
@@ -293,7 +292,7 @@ def test_package_versions_are_derived_from_resource_version():
 
 
 def test_sdk_generation_config_uses_only_the_resource_version_version():
-    config = get_sdk_worker_config()
+    config = get_sdk_generation_policy()
     resource_version = make_resource_version("1.2.3-beta.1")
 
     language_config = config.for_resource_version("my-gateway", resource_version, "python")

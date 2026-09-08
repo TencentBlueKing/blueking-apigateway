@@ -123,7 +123,7 @@ def _read_text(path: Path) -> str:
         raise SDKConfigurationError(f"generated dependency descriptor is unavailable: {path.name}") from error
 
 
-def validate_generated_dependency_inputs(language: str, output_dir: Path) -> None:
+def prepare_generated_dependency_inputs(language: str, output_dir: Path) -> None:
     get_sdk_worker_config()
     lock = _load_worker_lock(SDK_WORKER_LOCK_FILE)
     dependencies = lock["generated_dependencies"]
@@ -163,21 +163,14 @@ def validate_generated_dependency_inputs(language: str, output_dir: Path) -> Non
 
     if language == "javascript":
         package = json.loads(_read_text(output_dir / "package.json"))
-        package_lock = json.loads(_read_text(output_dir / "package-lock.json"))
-        integrity_records = [
-            {"package": name, "version": value.get("version"), "integrity": value["integrity"]}
-            for name, value in package_lock.get("packages", {}).items()
-            if "integrity" in value
-        ]
-        integrity_hash = hashlib.sha256(
-            json.dumps(integrity_records, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
-        if (
-            package.get("dependencies", {}) != expected.get("runtime_ranges")
-            or package.get("devDependencies", {}) != expected.get("development_ranges")
-            or integrity_hash != expected.get("package_lock_integrities_sha256")
-        ):
+        package_lock = expected["package_lock"]
+        root = package_lock["packages"][""]
+        if any(package.get(name, {}) != root.get(name, {}) for name in ("dependencies", "devDependencies")):
             raise SDKConfigurationError("generated JavaScript dependencies do not match the worker lock")
+        identity = {"name": package["name"], "version": package["version"]}
+        package_lock.update(identity)
+        root.update(identity)
+        (output_dir / "package-lock.json").write_text(json.dumps(package_lock, indent=2) + "\n")
         return
 
     raise SDKConfigurationError(f"unsupported generated dependency language: {language}")

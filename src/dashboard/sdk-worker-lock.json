@@ -50,11 +50,31 @@
       ]
     },
     "javascript": {
-      "runtime_ranges": {},
-      "development_ranges": {
-        "typescript": "^4.0 || ^5.0"
-      },
-      "package_lock_integrities_sha256": "de3ce9531a61913d7fc2d35da9d72a5beccc7daa1995244f93cfb378507ed122"
+      "package_lock": {
+        "lockfileVersion": 3,
+        "requires": true,
+        "packages": {
+          "": {
+            "devDependencies": {
+              "typescript": "^4.0 || ^5.0"
+            }
+          },
+          "node_modules/typescript": {
+            "version": "5.9.3",
+            "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+            "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+            "dev": true,
+            "license": "Apache-2.0",
+            "bin": {
+              "tsc": "bin/tsc",
+              "tsserver": "bin/tsserver"
+            },
+            "engines": {
+              "node": ">=14.17"
+            }
+          }
+        }
+      }
     }
   }
 }

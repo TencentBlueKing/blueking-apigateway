@@ -167,6 +167,8 @@ def recover_stale_sdk_generation_items() -> int:
 
 @shared_task(name="apigateway.biz.sdk.tasks.cleanup_incomplete_sdk_artifacts", ignore_result=True)
 def cleanup_incomplete_sdk_artifacts() -> int:
+    if not get_sdk_generation_policy().enabled:
+        return 0
     config = get_sdk_worker_config()
     cutoff = timezone.now() - timedelta(hours=config.generic_retention_hours)
     now = timezone.now()

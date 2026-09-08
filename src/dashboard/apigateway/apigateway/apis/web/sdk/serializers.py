@@ -18,14 +18,14 @@
 #
 from rest_framework import serializers
 
-from apigateway.apis.sdk_fields import SDKGenerationLanguageField
+from apigateway.apis.fields import SDKGenerationLanguageField
 from apigateway.apps.support.constants import (
     ProgrammingLanguageEnum,
-    SDKArtifactTypeEnum,
     SDKGenerationItemStatusEnum,
     SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem
+from apigateway.biz.sdk.artifacts import select_generic_artifact
 from apigateway.common.fields import CurrentGatewayDefault
 
 
@@ -129,16 +129,7 @@ class GatewaySDKListOutputSLZ(serializers.Serializer):
         resource_version = item.task.resource_version
         gateway_sdk = item.gateway_sdk if item.gateway_sdk_id else None
         artifacts = item.successful_artifacts
-        preferred_types = {
-            "python": SDKArtifactTypeEnum.WHEEL.value,
-            "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
-            "go": SDKArtifactTypeEnum.GO_ZIP.value,
-            "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
-        }
-        preferred = next(
-            (artifact for artifact in artifacts if artifact.artifact_type == preferred_types[item.language]),
-            artifacts[0] if artifacts else None,
-        )
+        preferred = select_generic_artifact(item.language, artifacts)
         return {
             "id": gateway_sdk.id if gateway_sdk else None,
             "generation_task_id": item.task_id,

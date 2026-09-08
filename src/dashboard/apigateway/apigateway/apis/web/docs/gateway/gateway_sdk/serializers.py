@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.apis.sdk_fields import SDKGenerationLanguageField
+from apigateway.apis.fields import SDKGenerationLanguageField
 
 
 class SDKListInputSLZ(serializers.Serializer):

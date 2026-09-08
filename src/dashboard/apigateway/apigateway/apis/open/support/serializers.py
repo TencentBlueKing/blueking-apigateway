@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.apis.sdk_fields import SDKGenerationLanguageField
+from apigateway.apis.fields import SDKGenerationLanguageField
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.common.constants import SDKGenerationLanguageEnum
 

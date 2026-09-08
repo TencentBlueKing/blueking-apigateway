@@ -290,7 +290,7 @@ class TestGatewaySDKListCreateApi:
     def test_create_rejects_disabled_language(self, request_view, fake_gateway, fake_admin_user, settings):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         settings.SDK_GENERATION_ENABLED = True
-        settings.BK_SDK_LANGUAGES = ["python"]
+        settings.SDK_ENABLED_LANGUAGES = ["python"]
 
         response = request_view(
             method="POST",

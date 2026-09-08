@@ -30,32 +30,11 @@ from apigateway.apps.support.constants import (
     SDKGenerationItemStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem
+from apigateway.biz.sdk.artifacts import select_generic_artifact
 from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
 from apigateway.core.models import Release
 
 from .models import SDKFactory
-
-_PREFERRED_GENERIC_ARTIFACT_TYPES = {
-    "python": SDKArtifactTypeEnum.WHEEL.value,
-    "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
-    "go": SDKArtifactTypeEnum.GO_ZIP.value,
-    "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
-}
-
-
-def _preferred_generic_artifact(item: SDKGenerationItem):
-    artifacts = list(
-        item.artifacts.filter(
-            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
-            status=SDKArtifactStatusEnum.SUCCESS.value,
-        )
-        .exclude(artifact_type=SDKArtifactTypeEnum.MANIFEST.value)
-        .order_by("id")
-    )
-    preferred_type = _PREFERRED_GENERIC_ARTIFACT_TYPES.get(item.language)
-    return next((artifact for artifact in artifacts if artifact.artifact_type == preferred_type), None) or (
-        artifacts[0] if artifacts else None
-    )
 
 
 @atomic
@@ -120,7 +99,7 @@ def ensure_gateway_sdk_projection(item: SDKGenerationItem) -> GatewaySDK:
         artifact_type=SDKArtifactTypeEnum.MANIFEST.value,
         status=SDKArtifactStatusEnum.SUCCESS.value,
     ).exists()
-    artifact = _preferred_generic_artifact(item)
+    artifact = select_generic_artifact(item.language, item.artifacts.all())
     if not has_manifest or artifact is None:
         raise ValueError("Generic SDK artifacts must be committed before creating a projection")
 

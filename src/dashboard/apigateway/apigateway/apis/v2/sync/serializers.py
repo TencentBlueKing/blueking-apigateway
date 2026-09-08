@@ -25,7 +25,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
-from apigateway.apis.sdk_fields import SDKGenerationLanguageField
+from apigateway.apis.fields import SDKGenerationLanguageField
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,

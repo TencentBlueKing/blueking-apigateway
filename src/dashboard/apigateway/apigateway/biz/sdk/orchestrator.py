@@ -29,9 +29,14 @@ from apigateway.apps.support.constants import (
     SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
-from apigateway.biz.sdk.artifacts import build_manifest
+from apigateway.biz.sdk.artifacts import build_manifest, select_generic_artifact
 from apigateway.biz.sdk.builders import build_artifacts
-from apigateway.biz.sdk.config import get_sdk_generation_policy, get_sdk_worker_config
+from apigateway.biz.sdk.config import (
+    SDKLanguageConfig,
+    get_native_distributor,
+    get_sdk_generation_policy,
+    get_sdk_worker_config,
+)
 from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKGenerateError, SDKGenerationError
 from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection, get_compatible_legacy_sdk
 from apigateway.biz.sdk.generator import generate_client
@@ -198,7 +203,7 @@ def claim_generation_item(item_id: int, celery_task_id: str) -> GenerationClaim 
     if not eligible:
         return None
 
-    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    timeout = settings.SDK_SUBPROCESS_TIMEOUT_SECONDS
     token = f"{celery_task_id}:{uuid.uuid4().hex}"
     item.status = SDKGenerationItemStatusEnum.RUNNING.value
     item.lease_token = token
@@ -322,7 +327,7 @@ def _classify_generation_error(error: Exception) -> SDKGenerationError:
 
 
 def _renew_claim(claim: GenerationClaim) -> bool:
-    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    timeout = settings.SDK_SUBPROCESS_TIMEOUT_SECONDS
     return bool(
         SDKGenerationItem.objects.filter(
             id=claim.item_id,
@@ -361,7 +366,7 @@ def claim_native_publication(item_id: int, celery_task_id: str) -> NativePublica
     if not eligible:
         return None
 
-    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    timeout = settings.SDK_SUBPROCESS_TIMEOUT_SECONDS
     token = f"{celery_task_id[:24]}:{uuid.uuid4().hex}"
     item.native_status = SDKNativePublicationStatusEnum.RUNNING.value
     item.native_lease_token = token
@@ -412,7 +417,7 @@ def finish_native_publication(
 
 
 def _renew_native_claim(claim: NativePublicationClaim) -> bool:
-    timeout = settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    timeout = settings.SDK_SUBPROCESS_TIMEOUT_SECONDS
     return bool(
         SDKGenerationItem.objects.filter(
             id=claim.item_id,
@@ -430,25 +435,25 @@ def _require_native_claim(claim: NativePublicationClaim) -> None:
         raise SDKGenerateError("native_lease_lost", "SDK native publication lease was lost")
 
 
+def _get_item_language_config(item: SDKGenerationItem) -> SDKLanguageConfig:
+    # Package identity is frozen, but deployment language restrictions still apply.
+    if item.language not in settings.SDK_ENABLED_LANGUAGES:
+        raise SDKConfigurationError(f"SDK language is not enabled: {item.language}")
+    return SDKLanguageConfig.from_snapshot(item.config_snapshot)
+
+
 def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
-    language_config = get_sdk_worker_config().for_resource_version(
-        item.task.gateway.name, item.task.resource_version, item.language
-    )
+    get_sdk_worker_config()
+    language_config = _get_item_language_config(item)
     with sdk_generation_metrics.observe_phase(item.language, "openapi"):
         toolchain_identity = probe_toolchain_identity()
         document = build_sdk_openapi(item.task.resource_version)
         fingerprint = calculate_input_fingerprint(document, language_config, toolchain_identity)
-    config_snapshot = {
-        **language_config.build_fingerprint_payload(),
-        "native_distributor": language_config.native_distributor,
-    }
     if not SDKGenerationItem.objects.filter(id=item.id, lease_token=claim.lease_token).update(
         input_fingerprint=fingerprint,
-        config_snapshot=config_snapshot,
     ):
         return None
     item.input_fingerprint = fingerprint
-    item.config_snapshot = config_snapshot
     return language_config, document, toolchain_identity.as_dict(), fingerprint
 
 
@@ -593,12 +598,11 @@ def execute_native_publication(item_id: int, celery_task_id: str) -> ItemExecuti
         return None
     item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
     try:
-        worker_config = get_sdk_worker_config()
-        language_config = worker_config.for_resource_version(
-            item.task.gateway.name, item.task.resource_version, item.language
-        )
-        expected_distributor = item.config_snapshot.get("native_distributor")
-        if not expected_distributor or language_config.native_distributor != expected_distributor:
+        get_sdk_worker_config()
+        language_config = _get_item_language_config(item)
+        if not language_config.native_distributor or (
+            get_native_distributor(item.language) != language_config.native_distributor
+        ):
             raise SDKConfigurationError("configured native SDK repository is unavailable")
         bkrepo = BKRepoComponent.default()
         if not bkrepo:
@@ -643,14 +647,67 @@ def refresh_task_status(task_id: int) -> str:
     return status
 
 
+def retry_generation_item(item: SDKGenerationItem) -> bool:
+    """Reset an item locked by the caller; return whether only native publication needs retry."""
+    generation_failed = item.status == SDKGenerationItemStatusEnum.FAILED.value
+    native_failed = (
+        item.status == SDKGenerationItemStatusEnum.SUCCESS.value
+        and item.native_status == SDKNativePublicationStatusEnum.FAILED.value
+    )
+    if not generation_failed and not native_failed:
+        raise ValueError("Only failed SDK generation or native publication items can be retried")
+
+    if native_failed:
+        item.native_status = SDKNativePublicationStatusEnum.PENDING.value
+        item.native_lease_token = ""
+        item.native_lease_expires_at = None
+        item.native_next_attempt_at = None
+        item.native_attempt_cycle_count = 0
+        item.native_error_code = ""
+        item.native_error_message = ""
+        item.save(
+            update_fields=[
+                "native_status",
+                "native_lease_token",
+                "native_lease_expires_at",
+                "native_next_attempt_at",
+                "native_attempt_cycle_count",
+                "native_error_code",
+                "native_error_message",
+                "updated_time",
+            ]
+        )
+        return True
+
+    item.status = SDKGenerationItemStatusEnum.PENDING.value
+    item.lease_token = ""
+    item.lease_expires_at = None
+    item.next_attempt_at = None
+    item.attempt_cycle_count = 0
+    item.finished_at = None
+    item.error_code = ""
+    item.error_message = ""
+    item.error_retryable = False
+    item.save(
+        update_fields=[
+            "status",
+            "lease_token",
+            "lease_expires_at",
+            "next_attempt_at",
+            "attempt_cycle_count",
+            "finished_at",
+            "error_code",
+            "error_message",
+            "error_retryable",
+            "updated_time",
+        ]
+    )
+    refresh_task_status(item.task_id)
+    return False
+
+
 def serialize_generation_task(task: SDKGenerationTask) -> dict[str, Any]:
     items = task.items.all()
-    preferred_types = {
-        "python": SDKArtifactTypeEnum.WHEEL.value,
-        "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
-        "go": SDKArtifactTypeEnum.GO_ZIP.value,
-        "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
-    }
     serialized_items = []
     for item in items:
         artifact_rows = [
@@ -659,10 +716,7 @@ def serialize_generation_task(task: SDKGenerationTask) -> dict[str, Any]:
             if artifact.status == SDKArtifactStatusEnum.SUCCESS.value
             and artifact.artifact_type != SDKArtifactTypeEnum.MANIFEST.value
         ]
-        preferred = next(
-            (artifact for artifact in artifact_rows if artifact.artifact_type == preferred_types.get(item.language)),
-            artifact_rows[0] if artifact_rows else None,
-        )
+        preferred = select_generic_artifact(item.language, artifact_rows)
         serialized_items.append(
             {
                 "id": item.id,

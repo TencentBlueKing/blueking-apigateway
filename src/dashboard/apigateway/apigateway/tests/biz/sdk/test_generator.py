@@ -116,7 +116,7 @@ def test_generate_client_uses_native_generator_and_fixed_coordinates(
     assert "bkapi-client-core" not in " ".join(command)
     assert "-t" not in command
     assert run.call_args.kwargs["shell"] is False
-    assert run.call_args.kwargs["timeout"] == settings.SDK_GENERATION["subprocess_timeout_seconds"]
+    assert run.call_args.kwargs["timeout"] == settings.SDK_SUBPROCESS_TIMEOUT_SECONDS
     assert run.call_args.kwargs["stdout"] is subprocess.DEVNULL
     assert run.call_args.kwargs["stderr"] is subprocess.PIPE
     assert "BKREPO_PASSWORD" not in run.call_args.kwargs["env"]
@@ -168,7 +168,7 @@ def test_generate_client_rejects_oversized_output(mocker, python_language_config
     output_dir = tmp_path / "out"
     output_dir.mkdir()
     (output_dir / "client.py").write_bytes(b"oversized")
-    settings.SDK_GENERATION = {**settings.SDK_GENERATION, "max_output_bytes": 4}
+    settings.SDK_MAX_OUTPUT_BYTES = 4
     mocker.patch(
         "apigateway.biz.sdk.generator.subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, "", ""),

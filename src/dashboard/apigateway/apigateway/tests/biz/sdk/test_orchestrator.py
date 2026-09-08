@@ -715,3 +715,97 @@ def test_execute_stops_after_lease_is_stolen(fake_resource_version, mocker, capl
     publish.assert_not_called()
     record_result.assert_called_once_with("python", "failed", "lease_lost")
     assert "lease" in caplog.text.lower()
+
+
+@pytest.mark.parametrize("native_enabled", [False, True])
+def test_generation_preserves_native_publication_choice_from_creation(
+    fake_resource_version, settings, mocker, native_enabled
+):
+    repository = {"default": {"repository_url": "https://repo/pypi"}}
+    settings.PYPI_MIRRORS_CONFIG = repository if native_enabled else {"default": {}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    snapshot = item.config_snapshot
+    settings.PYPI_MIRRORS_CONFIG = {"default": {}} if native_enabled else repository
+    _patch_pipeline(mocker, FakeBKRepo())
+
+    assert execute_generation_item(item.id, "generation").status == "success"
+
+    item.refresh_from_db()
+    assert item.config_snapshot == snapshot
+    assert item.native_status == ("pending" if native_enabled else "not_required")
+
+
+@pytest.mark.parametrize("language", ["python", "java"])
+def test_native_publication_preserves_generated_package_identity(fake_resource_version, settings, mocker, language):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    settings.MAVEN_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/maven"}}
+    task = create_or_resume_generation(fake_resource_version, [language], "admin")
+    item = task.items.get()
+    build, publish = _patch_pipeline(mocker, FakeBKRepo())
+    publish.return_value = []
+    assert execute_generation_item(item.id, "generation").status == "success"
+    settings.SDK_PYTHON_DISTRIBUTION_PREFIX = "new-prefix"
+    settings.SDK_JAVA_GROUP_ID = "com.new"
+    settings.SDK_JAVA_PACKAGE_PREFIX = "com.new.openapi"
+
+    assert execute_native_publication(item.id, "publication").status == "success"
+
+    assert publish.call_args.args[2] == build.call_args.args[3]
+
+
+def test_generation_preserves_package_identity_from_creation(fake_resource_version, settings, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    original_name = item.config_snapshot["project_name"]
+    settings.SDK_PYTHON_DISTRIBUTION_PREFIX = "new-prefix"
+    build, _ = _patch_pipeline(mocker, FakeBKRepo())
+
+    assert execute_generation_item(item.id, "generation").status == "success"
+    assert build.call_args.args[3].project_name == original_name
+
+
+def test_generation_rejects_invalid_snapshot_without_rebuilding_identity(fake_resource_version, mocker):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    task.items.filter(id=item.id).update(config_snapshot={})
+    build, _ = _patch_pipeline(mocker, FakeBKRepo())
+
+    assert execute_generation_item(item.id, "generation").status == "failed"
+    item.refresh_from_db()
+    assert item.error_code == "configuration_error"
+    build.assert_not_called()
+
+
+def test_native_publication_requires_the_selected_repository(fake_resource_version, settings, mocker):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    _, publish = _patch_pipeline(mocker, FakeBKRepo())
+    assert execute_generation_item(item.id, "generation").status == "success"
+    settings.PYPI_MIRRORS_CONFIG = {"default": {}}
+
+    assert execute_native_publication(item.id, "publication").status == "failed"
+    item.refresh_from_db()
+    assert item.native_error_code == "configuration_error"
+    publish.assert_not_called()
+
+
+@pytest.mark.parametrize("native_only", [False, True])
+def test_disabled_language_cannot_execute_a_queued_item(fake_resource_version, settings, mocker, native_only):
+    settings.PYPI_MIRRORS_CONFIG = {"default": {"repository_url": "https://repo/pypi"}}
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    build, publish = _patch_pipeline(mocker, FakeBKRepo())
+    if native_only:
+        assert execute_generation_item(item.id, "generation").status == "success"
+    publish.return_value = []
+    settings.SDK_ENABLED_LANGUAGES = ["java"]
+
+    execute = execute_native_publication if native_only else execute_generation_item
+    assert execute(item.id, "disabled-language").status == "failed"
+    item.refresh_from_db()
+    assert (item.native_error_code if native_only else item.error_code) == "configuration_error"
+    if not native_only:
+        build.assert_not_called()
+    publish.assert_not_called()

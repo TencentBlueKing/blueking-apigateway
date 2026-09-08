@@ -15,7 +15,7 @@ settings.configure(
     USE_I18N=False,
     MAX_BACKEND_TIMEOUT_IN_SECOND=600,
     SDK_GENERATION_ENABLED=True,
-    BK_SDK_LANGUAGES=["python", "java", "go", "javascript"],
+    SDK_ENABLED_LANGUAGES=["python", "java", "go", "javascript"],
     SDK_GENERATION_RETRY_DELAYS=(30, 120),
     SDK_PYTHON_DISTRIBUTION_PREFIX="bkapi-openapi",
     SDK_JAVA_GROUP_ID="com.example.bkapi",
@@ -38,15 +38,13 @@ settings.configure(
             "mirror_url": "https://repo.maven.apache.org/maven2",
         }
     },
-    SDK_GENERATION={
-        "queue": "sdk.generate",
-        "server_url_template": "https://{gateway_name}.example.com/{stage_name}",
-        "generic_retention_hours": 24,
-        "subprocess_timeout_seconds": 1200,
-        "max_openapi_bytes": 10 * 1024 * 1024,
-        "max_output_bytes": 1024 * 1024 * 1024,
-        "max_artifact_bytes": 500 * 1024 * 1024,
-    },
+    SDK_GENERATION_QUEUE="sdk.generate",
+    SDK_SERVER_URL_TEMPLATE="https://{gateway_name}.example.com/{stage_name}",
+    SDK_GENERIC_RETENTION_HOURS=24,
+    SDK_SUBPROCESS_TIMEOUT_SECONDS=1200,
+    SDK_MAX_OPENAPI_BYTES=10 * 1024 * 1024,
+    SDK_MAX_OUTPUT_BYTES=1024 * 1024 * 1024,
+    SDK_MAX_ARTIFACT_BYTES=500 * 1024 * 1024,
 )
 django.setup()
 

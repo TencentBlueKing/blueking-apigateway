@@ -1,4 +1,3 @@
-import hashlib
 import json
 from dataclasses import FrozenInstanceError, replace
 from pathlib import Path
@@ -8,8 +7,8 @@ import pytest
 from apigateway.biz.sdk.exceptions import SDKConfigurationError
 from apigateway.biz.sdk.toolchain import (
     SDKToolchainIdentity,
+    prepare_generated_dependency_inputs,
     probe_toolchain_identity,
-    validate_generated_dependency_inputs,
 )
 
 
@@ -75,52 +74,31 @@ def test_checked_in_worker_lock_covers_four_language_dependencies(settings):
         "jar_sha256": "cb087e40001e31eb08ef6140dd5de10938dbeb89016a1fe0481eaa25cd569026",
     }
     assert set(lock["generated_dependencies"]) == {"python", "java", "go", "javascript"}
-    assert lock["generated_dependencies"]["javascript"]["package_lock_integrities_sha256"]
-
-
-def test_validate_generated_javascript_dependencies_uses_package_lock_integrities(mocker, tmp_path):
-    package = {"dependencies": {"superagent": "^5.3.0"}}
-    package_lock = {
-        "packages": {
-            "": {"name": "@bkapi/openapi-demo"},
-            "node_modules/superagent": {
-                "version": "5.3.1",
-                "integrity": "sha512-example",
-            },
-        }
-    }
-    integrity_records = [
-        {
-            "package": "node_modules/superagent",
-            "version": "5.3.1",
-            "integrity": "sha512-example",
-        }
+    assert lock["generated_dependencies"]["javascript"]["package_lock"]["packages"]["node_modules/typescript"][
+        "integrity"
     ]
-    integrity_hash = hashlib.sha256(
-        json.dumps(integrity_records, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    lock = {
-        "format_version": 1,
-        "generated_dependencies": {
-            "python": {},
-            "java": {},
-            "go": {},
-            "javascript": {
-                "runtime_ranges": package["dependencies"],
-                "development_ranges": {},
-                "package_lock_integrities_sha256": integrity_hash,
-            },
-        },
+
+
+def test_javascript_dependencies_are_locked_before_install(mocker, tmp_path, settings):
+    lock_path = Path(settings.BASE_DIR).parents[1] / "sdk-worker-lock.json"
+    package = {
+        "name": "@custom/openapi-gateway",
+        "version": "2.3.4",
+        "devDependencies": {"typescript": "^4.0 || ^5.0"},
     }
     (tmp_path / "package.json").write_text(json.dumps(package))
-    (tmp_path / "package-lock.json").write_text(json.dumps(package_lock))
-    lock_path = tmp_path / "sdk-worker-lock.json"
-    lock_path.write_text(json.dumps(lock))
     mocker.patch("apigateway.biz.sdk.toolchain.SDK_WORKER_LOCK_FILE", str(lock_path))
 
-    validate_generated_dependency_inputs("javascript", tmp_path)
+    prepare_generated_dependency_inputs("javascript", tmp_path)
 
-    package_lock["packages"]["node_modules/superagent"]["integrity"] = "sha512-changed"
-    (tmp_path / "package-lock.json").write_text(json.dumps(package_lock))
+    installed_lock = json.loads((tmp_path / "package-lock.json").read_text())
+    assert installed_lock["name"] == package["name"]
+    assert installed_lock["version"] == package["version"]
+    assert installed_lock["packages"][""]["name"] == package["name"]
+    assert installed_lock["packages"]["node_modules/typescript"]["version"] == "5.9.3"
+    assert installed_lock["packages"]["node_modules/typescript"]["integrity"]
+
+    package["devDependencies"]["typescript"] = "^6.0"
+    (tmp_path / "package.json").write_text(json.dumps(package))
     with pytest.raises(SDKConfigurationError, match="JavaScript dependencies"):
-        validate_generated_dependency_inputs("javascript", tmp_path)
+        prepare_generated_dependency_inputs("javascript", tmp_path)

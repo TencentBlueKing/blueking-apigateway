@@ -32,14 +32,12 @@ from apigateway.apis.web.sdk import serializers
 from apigateway.apps.support.constants import (
     SDKArtifactStatusEnum,
     SDKArtifactTypeEnum,
-    SDKGenerationItemStatusEnum,
-    SDKNativePublicationStatusEnum,
 )
 from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk.config import get_sdk_generation_policy
 from apigateway.biz.sdk.orchestrator import (
     create_or_resume_generation,
-    refresh_task_status,
+    retry_generation_item,
     serialize_generation_task,
 )
 from apigateway.biz.sdk.tasks import enqueue_generation_items, enqueue_native_publications
@@ -220,68 +218,13 @@ class SDKGenerationItemRetryApi(APIView):
 
         task = get_object_or_404(SDKGenerationTask.objects.select_for_update(), id=task_id, gateway=request.gateway)
         item = get_object_or_404(SDKGenerationItem.objects.select_for_update(), id=item_id, task=task)
-        generation_failed = item.status == SDKGenerationItemStatusEnum.FAILED.value
-        native_failed = (
-            item.status == SDKGenerationItemStatusEnum.SUCCESS.value
-            and item.native_status == SDKNativePublicationStatusEnum.FAILED.value
-        )
-        if not generation_failed and not native_failed:
-            raise error_codes.INVALID_ARGUMENT.format(
-                "Only failed SDK generation or native publication items can be retried", replace=True
-            )
-
-        if native_failed:
-            item.native_status = SDKNativePublicationStatusEnum.PENDING.value
-            item.native_lease_token = ""
-            item.native_lease_expires_at = None
-            item.native_next_attempt_at = None
-            item.native_attempt_cycle_count = 0
-            item.native_error_code = ""
-            item.native_error_message = ""
-            item.save(
-                update_fields=[
-                    "native_status",
-                    "native_lease_token",
-                    "native_lease_expires_at",
-                    "native_next_attempt_at",
-                    "native_attempt_cycle_count",
-                    "native_error_code",
-                    "native_error_message",
-                    "updated_time",
-                ]
-            )
-            transaction.on_commit(partial(enqueue_native_publications, [item.id]))
-            return OKJsonResponse(
-                status=status.HTTP_202_ACCEPTED,
-                data={"id": item.id, "status": SDKGenerationItemStatusEnum.SUCCESS.value},
-            )
-
-        item.status = SDKGenerationItemStatusEnum.PENDING.value
-        item.lease_token = ""
-        item.lease_expires_at = None
-        item.next_attempt_at = None
-        item.attempt_cycle_count = 0
-        item.finished_at = None
-        item.error_code = ""
-        item.error_message = ""
-        item.error_retryable = False
-        item.save(
-            update_fields=[
-                "status",
-                "lease_token",
-                "lease_expires_at",
-                "next_attempt_at",
-                "attempt_cycle_count",
-                "finished_at",
-                "error_code",
-                "error_message",
-                "error_retryable",
-                "updated_time",
-            ]
-        )
-        refresh_task_status(task.id)
-        transaction.on_commit(partial(enqueue_generation_items, [item.id]))
+        try:
+            native_only = retry_generation_item(item)
+        except ValueError as error:
+            raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True) from error
+        enqueue = enqueue_native_publications if native_only else enqueue_generation_items
+        transaction.on_commit(partial(enqueue, [item.id]))
         return OKJsonResponse(
             status=status.HTTP_202_ACCEPTED,
-            data={"id": item.id, "status": SDKGenerationItemStatusEnum.PENDING.value},
+            data={"id": item.id, "status": item.status},
         )

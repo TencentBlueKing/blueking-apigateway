@@ -1,8 +1,14 @@
 import json
+from types import SimpleNamespace
 
 import pytest
 
-from apigateway.biz.sdk.artifacts import build_manifest, create_built_artifact, validate_artifact_names
+from apigateway.biz.sdk.artifacts import (
+    build_manifest,
+    create_built_artifact,
+    select_generic_artifact,
+    validate_artifact_names,
+)
 
 
 def test_manifest_is_deterministic(tmp_path):
@@ -44,3 +50,26 @@ def test_artifact_names_are_case_insensitively_unique(tmp_path):
 
     with pytest.raises(ValueError, match="unique ignoring case"):
         validate_artifact_names(artifacts)
+
+
+@pytest.mark.parametrize(
+    ("language", "artifact_type"),
+    [("python", "wheel"), ("java", "distribution_zip"), ("go", "go_zip"), ("javascript", "npm_tgz")],
+)
+def test_download_selection_prefers_successful_generic_artifact(language, artifact_type):
+    def artifact(kind, filename, distributor="bkrepo_generic", status="success"):
+        return SimpleNamespace(artifact_type=kind, filename=filename, distributor=distributor, status=status)
+
+    preferred = artifact(artifact_type, "preferred")
+    fallback = artifact("archive", "fallback")
+    rows = [
+        artifact(artifact_type, "native", distributor="pypi"),
+        artifact(artifact_type, "failed", status="failed"),
+        artifact("manifest", "manifest.json"),
+        fallback,
+        preferred,
+    ]
+    assert select_generic_artifact(language, rows) is preferred
+    assert select_generic_artifact(language, list(reversed(rows))) is preferred
+    assert select_generic_artifact(language, rows[:-1]) is fallback
+    assert select_generic_artifact(language, rows[:3]) is None

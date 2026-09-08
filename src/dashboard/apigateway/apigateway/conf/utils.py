@@ -333,6 +333,7 @@ def get_bkrepo_config(env: Env) -> dict:
 
 def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
     enabled_languages = env.str("BK_SDK_LANGUAGES", default=",".join(SDK_GENERATION_LANGUAGES)).split(",")
+    enabled_languages = ["go" if language == "golang" else language for language in enabled_languages]
     if not enabled_languages or any(not language for language in enabled_languages):
         raise ImproperlyConfigured("BK_SDK_LANGUAGES cannot contain empty entries")
     if invalid_languages := set(enabled_languages).difference(SDK_GENERATION_LANGUAGES):
@@ -367,10 +368,9 @@ def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
         if not pattern.fullmatch(value):
             raise ImproperlyConfigured(f"{name} is invalid")
 
-    return {
+    config = {
         "enabled": env.bool("SDK_GENERATION_ENABLED", False),
         "enabled_languages": enabled_languages,
-        "queue": env.str("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate"),
         "retry_delays": retry_delays,
         "python_distribution_prefix": namespace_settings["SDK_PYTHON_DISTRIBUTION_PREFIX"][0],
         "java_group_id": namespace_settings["SDK_JAVA_GROUP_ID"][0],
@@ -387,6 +387,17 @@ def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
         "max_output_bytes": env.int("SDK_MAX_OUTPUT_BYTES", 1073741824),
         "max_artifact_bytes": env.int("SDK_MAX_ARTIFACT_BYTES", 524288000),
     }
+
+    for name in (
+        "generic_retention_hours",
+        "subprocess_timeout_seconds",
+        "max_openapi_bytes",
+        "max_output_bytes",
+        "max_artifact_bytes",
+    ):
+        if config[name] <= 0:
+            raise ImproperlyConfigured(f"SDK_{name.upper()} must be positive")
+    return config
 
 
 def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "ZH") -> dict:

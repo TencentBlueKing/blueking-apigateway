@@ -27,7 +27,7 @@ def _validate_output(output_dir: Path) -> None:
             raise SDKGenerateError("generator_failed", "OpenAPI Generator output contains a symlink")
         if path.is_file():
             size += path.stat().st_size
-            if size > settings.SDK_GENERATION["max_output_bytes"]:
+            if size > settings.SDK_MAX_OUTPUT_BYTES:
                 raise SDKGenerateError(
                     "generator_failed", "OpenAPI Generator output exceeds the configured size limit"
                 )
@@ -43,7 +43,7 @@ def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
             stderr=subprocess.PIPE,
             text=True,
             env=build_subprocess_env(),
-            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+            timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
         raise SDKGenerateError("generator_failed", "OpenAPI Generator timed out", retryable=True) from error

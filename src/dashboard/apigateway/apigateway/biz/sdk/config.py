@@ -24,7 +24,7 @@ from django.conf import settings
 from packaging.version import InvalidVersion, Version
 
 from apigateway.biz.constants import SEMVER_PATTERN
-from apigateway.biz.sdk.exceptions import SDKRepoConfigError
+from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKRepoConfigError
 from apigateway.biz.sdk.runtime import SDK_RUNTIME_REQUIREMENTS
 from apigateway.common.constants import SDKGenerationLanguageEnum
 
@@ -73,6 +73,21 @@ class SDKLanguageConfig:
             raise ValueError(f"unsupported generator properties for {self.language}")
         object.__setattr__(self, "additional_properties", MappingProxyType(additional_properties))
 
+    @classmethod
+    def from_snapshot(cls, snapshot: dict) -> "SDKLanguageConfig":
+        try:
+            return cls(
+                language=snapshot["language"],
+                generator_name=snapshot["generator_name"],
+                project_name=snapshot["project_name"],
+                package_name=snapshot["package_name"],
+                package_version=snapshot["package_version"],
+                additional_properties=snapshot["additional_properties"],
+                native_distributor=snapshot["native_distributor"],
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise SDKConfigurationError("SDK generation configuration snapshot is invalid") from error
+
     def build_fingerprint_payload(self) -> dict[str, object]:
         return {
             "language": self.language,
@@ -118,7 +133,6 @@ class SDKGenerationPolicy:
 
 @dataclass(frozen=True)
 class SDKWorkerConfig:
-    policy: SDKGenerationPolicy
     server_url_template: str
     generic_repository: BKRepoGenericConfig
     generic_retention_hours: int
@@ -127,38 +141,13 @@ class SDKWorkerConfig:
     max_output_bytes: int
     max_artifact_bytes: int
 
-    @property
-    def enabled_languages(self) -> tuple[str, ...]:
-        return self.policy.languages
-
-    @property
-    def queue(self) -> str:
-        return self.policy.queue
-
-    def for_resource_version(
-        self, gateway_name: str, resource_version: ResourceVersionLike, language: str
-    ) -> SDKLanguageConfig:
-        return self.policy.for_resource_version(gateway_name, resource_version, language)
-
 
 def get_sdk_generation_policy() -> SDKGenerationPolicy:
-    config = settings.SDK_GENERATION
-    languages = tuple(settings.BK_SDK_LANGUAGES)
-    invalid_languages = set(languages).difference(SUPPORTED_GENERATION_LANGUAGES)
-    if invalid_languages:
-        raise SDKRepoConfigError(f"unsupported SDK generation languages: {sorted(invalid_languages)}")
-    if len(languages) != len(set(languages)):
-        raise SDKRepoConfigError("SDK generation languages must be unique")
-
-    retry_delays = tuple(settings.SDK_GENERATION_RETRY_DELAYS)
-    if len(retry_delays) != 2 or any(delay <= 0 for delay in retry_delays):
-        raise SDKRepoConfigError("SDK generation retry delays must contain two positive values")
-
     return SDKGenerationPolicy(
         enabled=settings.SDK_GENERATION_ENABLED,
-        languages=languages,
-        queue=config["queue"],
-        retry_delays=retry_delays,
+        languages=tuple(settings.SDK_ENABLED_LANGUAGES),
+        queue=settings.SDK_GENERATION_QUEUE,
+        retry_delays=tuple(settings.SDK_GENERATION_RETRY_DELAYS),
         python_distribution_prefix=settings.SDK_PYTHON_DISTRIBUTION_PREFIX,
         java_group_id=settings.SDK_JAVA_GROUP_ID,
         java_package_prefix=settings.SDK_JAVA_PACKAGE_PREFIX,
@@ -168,19 +157,6 @@ def get_sdk_generation_policy() -> SDKGenerationPolicy:
 
 
 def get_sdk_worker_config() -> SDKWorkerConfig:
-    config = settings.SDK_GENERATION
-    policy = get_sdk_generation_policy()
-
-    numeric_settings = (
-        "generic_retention_hours",
-        "subprocess_timeout_seconds",
-        "max_openapi_bytes",
-        "max_output_bytes",
-        "max_artifact_bytes",
-    )
-    if any(config[name] <= 0 for name in numeric_settings):
-        raise SDKRepoConfigError("SDK generation limits must be positive")
-
     generic_repository = BKRepoGenericConfig(
         endpoint_url=settings.BKREPO_ENDPOINT_URL,
         username=settings.BKREPO_USERNAME,
@@ -200,13 +176,13 @@ def get_sdk_worker_config() -> SDKWorkerConfig:
         raise SDKRepoConfigError("BKRepo Generic configuration is required for SDK generation")
 
     return SDKWorkerConfig(
-        policy=policy,
         generic_repository=generic_repository,
-        **{
-            name: config[name]
-            for name in SDKWorkerConfig.__dataclass_fields__
-            if name not in {"policy", "generic_repository"}
-        },
+        server_url_template=settings.SDK_SERVER_URL_TEMPLATE,
+        generic_retention_hours=settings.SDK_GENERIC_RETENTION_HOURS,
+        subprocess_timeout_seconds=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
+        max_openapi_bytes=settings.SDK_MAX_OPENAPI_BYTES,
+        max_output_bytes=settings.SDK_MAX_OUTPUT_BYTES,
+        max_artifact_bytes=settings.SDK_MAX_ARTIFACT_BYTES,
     )
 
 
@@ -254,7 +230,7 @@ def build_language_config(
                 "projectName": project_name,
                 "buildSystem": "poetry",
             },
-            native_distributor=_get_native_distributor(language),
+            native_distributor=get_native_distributor(language),
         )
 
     if language == "java":
@@ -275,7 +251,7 @@ def build_language_config(
                 "modelPackage": f"{package_name}.model",
                 "library": "native",
             },
-            native_distributor=_get_native_distributor(language),
+            native_distributor=get_native_distributor(language),
         )
 
     if language == "go":
@@ -317,7 +293,7 @@ def build_language_config(
     raise ValueError(f"unsupported SDK generation language: {language}")
 
 
-def _get_native_distributor(language: str) -> str | None:
+def get_native_distributor(language: str) -> str | None:
     if language == "python":
         repository_url = settings.PYPI_MIRRORS_CONFIG.get("default", {}).get("repository_url", "")
         return "pypi" if repository_url else None

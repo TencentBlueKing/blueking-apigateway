@@ -34,7 +34,7 @@ def sdk_settings(settings, fake_resource_version):
     settings.BKREPO_PASSWORD = "password"
     settings.BKREPO_PROJECT = "project"
     settings.BKREPO_GENERIC_BUCKET = "generic"
-    settings.SDK_GENERATION["queue"] = "sdk.custom"
+    settings.SDK_GENERATION_QUEUE = "sdk.custom"
     settings.SDK_GENERATION_ENABLED = True
 
 
@@ -276,7 +276,7 @@ def test_cleanup_only_processes_old_failed_or_expired_items(fake_resource_versio
     failed = task.items.get(language="python")
     expired = task.items.get(language="go")
     recent = task.items.get(language="javascript")
-    old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
+    old = timezone.now() - timedelta(hours=settings.SDK_GENERIC_RETENTION_HOURS + 1)
     task.items.filter(id=failed.id).update(
         status=SDKGenerationItemStatusEnum.FAILED.value, input_fingerprint="a" * 64, updated_time=old
     )
@@ -298,7 +298,7 @@ def test_cleanup_only_processes_old_failed_or_expired_items(fake_resource_versio
 def test_cleanup_rechecks_item_state_before_deleting(fake_resource_version, settings, mocker):
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
-    old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
+    old = timezone.now() - timedelta(hours=settings.SDK_GENERIC_RETENTION_HOURS + 1)
     task.items.filter(id=item.id).update(
         status=SDKGenerationItemStatusEnum.FAILED.value,
         input_fingerprint="a" * 64,
@@ -324,7 +324,7 @@ def test_cleanup_rechecks_item_state_before_deleting(fake_resource_version, sett
 def test_cleanup_rechecks_fingerprint_before_deleting(fake_resource_version, settings, mocker):
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
-    old = timezone.now() - timedelta(hours=settings.SDK_GENERATION["generic_retention_hours"] + 1)
+    old = timezone.now() - timedelta(hours=settings.SDK_GENERIC_RETENTION_HOURS + 1)
     task.items.filter(id=item.id).update(
         status=SDKGenerationItemStatusEnum.FAILED.value,
         input_fingerprint="a" * 64,
@@ -339,3 +339,12 @@ def test_cleanup_rechecks_fingerprint_before_deleting(fake_resource_version, set
     mocker.patch("apigateway.biz.sdk.tasks.delete_incomplete_artifacts", side_effect=replace_fingerprint)
 
     assert cleanup_incomplete_sdk_artifacts() == 0
+
+
+def test_disabled_cleanup_does_not_require_a_repository(settings, mocker):
+    settings.SDK_GENERATION_ENABLED = False
+    settings.BKREPO_ENDPOINT_URL = ""
+    repository = mocker.patch("apigateway.biz.sdk.tasks.BKRepoComponent.default")
+
+    assert cleanup_incomplete_sdk_artifacts() == 0
+    repository.assert_not_called()

@@ -28,7 +28,7 @@ def run_build(command: list[str], *, cwd: Path, capture_output: bool = False) ->
             stderr=subprocess.PIPE,
             text=True,
             env=build_subprocess_env(),
-            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+            timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
         raise SDKGenerateError("build_failed", "SDK package build timed out", retryable=True) from error

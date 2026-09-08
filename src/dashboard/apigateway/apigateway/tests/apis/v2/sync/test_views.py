@@ -112,7 +112,7 @@ class TestSyncApi:
         disable_app_permission,
     ):
         settings.SDK_GENERATION_ENABLED = True
-        settings.BK_SDK_LANGUAGES = ("python",)
+        settings.SDK_ENABLED_LANGUAGES = ("python",)
 
         response = request_view(
             method="POST",

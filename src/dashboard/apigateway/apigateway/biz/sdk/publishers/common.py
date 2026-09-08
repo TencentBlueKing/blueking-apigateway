@@ -37,7 +37,7 @@ def remote_sha256(
     response = requests.get(
         url,
         auth=(username, password) if username or password else None,
-        timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+        timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         verify=verify,
         stream=True,
     )
@@ -67,7 +67,7 @@ def upload_file(path: Path, url: str, *, username: str, password: str, verify: b
             url,
             data=file,
             auth=(username, password) if username or password else None,
-            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+            timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
             verify=verify,
         )
     response.raise_for_status()
@@ -90,7 +90,7 @@ def run_publisher(
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=settings.SDK_GENERATION["subprocess_timeout_seconds"],
+            timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
         raise SDKGenerateError("native_publish_failed", "native SDK publication timed out", retryable=True) from error

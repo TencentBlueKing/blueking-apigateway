@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.apis.sdk_fields import SDKGenerationLanguageField
+from apigateway.apis.fields import SDKGenerationLanguageField
 from apigateway.common.i18n.field import SerializerTranslatedField
 
 

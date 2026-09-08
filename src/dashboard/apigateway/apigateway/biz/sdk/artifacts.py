@@ -10,8 +10,38 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
+from apigateway.apps.support.constants import SDKArtifactStatusEnum, SDKArtifactTypeEnum, SDKDistributorEnum
+
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
+
+    from apigateway.apps.support.models import SDKArtifact
+
+
+PREFERRED_GENERIC_ARTIFACT_TYPES = {
+    "python": SDKArtifactTypeEnum.WHEEL.value,
+    "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
+    "go": SDKArtifactTypeEnum.GO_ZIP.value,
+    "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
+}
+
+
+def select_generic_artifact(language: str, artifacts: Iterable[SDKArtifact]) -> SDKArtifact | None:
+    """Choose a committed download consistently, regardless of queryset ordering."""
+    candidates = [
+        artifact
+        for artifact in artifacts
+        if artifact.distributor == SDKDistributorEnum.BKREPO_GENERIC.value
+        and artifact.status == SDKArtifactStatusEnum.SUCCESS.value
+        and artifact.artifact_type != SDKArtifactTypeEnum.MANIFEST.value
+    ]
+    preferred_type = PREFERRED_GENERIC_ARTIFACT_TYPES.get(language)
+    return min(
+        candidates,
+        key=lambda artifact: (artifact.artifact_type != preferred_type, artifact.filename),
+        default=None,
+    )
 
 
 @dataclass(frozen=True)
@@ -77,7 +107,7 @@ def create_built_artifact(
         raise ValueError(f"SDK artifact path contains a symlink: {path}")
 
     size = resolved.stat().st_size
-    limit = max_size or settings.SDK_GENERATION["max_artifact_bytes"]
+    limit = max_size or settings.SDK_MAX_ARTIFACT_BYTES
     if size > limit:
         raise ValueError(f"SDK artifact exceeds the configured size limit: {path.name}")
 

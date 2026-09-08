@@ -29,6 +29,7 @@ from apigateway.apps.support.constants import (
     SDKArtifactTypeEnum,
     SDKDistributorEnum,
 )
+from apigateway.biz.sdk.artifacts import PREFERRED_GENERIC_ARTIFACT_TYPES, select_generic_artifact
 from apigateway.biz.sdk.runtime import SDK_RUNTIME_REQUIREMENTS
 from apigateway.common.pypi.pip import PipHelper
 from apigateway.utils.pypi import RepositoryConfig
@@ -90,7 +91,6 @@ class SDK:
     instance: GatewaySDK
 
     language = ProgrammingLanguageEnum.UNKNOWN
-    preferred_generic_artifact_type = ""
 
     @property
     def generation_item(self):
@@ -175,9 +175,13 @@ class SDK:
 
     @property
     def url(self):
+        item = self.generation_item
+        if item is not None:
+            artifact = select_generic_artifact(self.language.value, item.artifacts.all())
+            return artifact.url if artifact and artifact.url else self.instance.url
         artifact = self.find_artifact(
             distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
-            artifact_type=self.preferred_generic_artifact_type,
+            artifact_type=PREFERRED_GENERIC_ARTIFACT_TYPES.get(self.language.value, ""),
         )
         if artifact and artifact.get("url"):
             return artifact["url"]
@@ -209,7 +213,6 @@ class SDK:
 @dataclass
 class PythonSDK(SDK):
     language = ProgrammingLanguageEnum.PYTHON
-    preferred_generic_artifact_type = SDKArtifactTypeEnum.WHEEL.value
 
     @property
     def sdk_name(self) -> str:
@@ -240,7 +243,6 @@ class PythonSDK(SDK):
 @dataclass
 class GoSDK(SDK):
     language = ProgrammingLanguageEnum.GO
-    preferred_generic_artifact_type = SDKArtifactTypeEnum.GO_ZIP.value
 
     @property
     def install_command(self) -> str:
@@ -251,7 +253,6 @@ class GoSDK(SDK):
 @dataclass
 class JavaSDK(SDK):
     language = ProgrammingLanguageEnum.JAVA
-    preferred_generic_artifact_type = SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value
 
     @property
     def install_command(self) -> str:
@@ -264,7 +265,6 @@ class JavaSDK(SDK):
 @dataclass
 class JavaScriptSDK(SDK):
     language = ProgrammingLanguageEnum.JAVASCRIPT
-    preferred_generic_artifact_type = SDKArtifactTypeEnum.NPM_TGZ.value
 
     @property
     def install_command(self) -> str:

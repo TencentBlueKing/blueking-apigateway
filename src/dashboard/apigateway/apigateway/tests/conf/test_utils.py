@@ -48,7 +48,6 @@ def test_get_sdk_generation_settings_uses_common_defaults():
 @pytest.mark.parametrize(
     "languages",
     [
-        "golang",
         "ruby",
         "python,,go",
         "python,python",
@@ -161,3 +160,34 @@ def test_get_doc_links_includes_personal_token():
         en_links["PERSONAL_TOKEN"]
         == "https://docs.example.com/markdown/EN/APIGateway/1.24/UserGuide/Explanation/personal-token.md"
     )
+
+
+def test_sdk_generation_settings_accepts_legacy_golang_when_disabled(monkeypatch):
+    monkeypatch.setenv("SDK_GENERATION_ENABLED", "false")
+    monkeypatch.setenv("BK_SDK_LANGUAGES", "python,golang,java")
+    config = get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://example.com/{api_name}")
+    assert config["enabled"] is False
+    assert config["enabled_languages"] == ["python", "go", "java"]
+
+
+def test_sdk_generation_settings_rejects_duplicate_language_aliases(monkeypatch):
+    monkeypatch.setenv("BK_SDK_LANGUAGES", "go,golang")
+    with pytest.raises(ImproperlyConfigured, match="duplicate"):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://example.com/{api_name}")
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "SDK_GENERIC_RETENTION_HOURS",
+        "SDK_SUBPROCESS_TIMEOUT_SECONDS",
+        "SDK_MAX_OPENAPI_BYTES",
+        "SDK_MAX_OUTPUT_BYTES",
+        "SDK_MAX_ARTIFACT_BYTES",
+    ],
+)
+@pytest.mark.parametrize("value", ["0", "-1"])
+def test_sdk_generation_limits_must_be_positive(monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ImproperlyConfigured, match=name):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://example.com/{api_name}")

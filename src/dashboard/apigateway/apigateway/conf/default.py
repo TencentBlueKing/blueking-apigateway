@@ -522,14 +522,23 @@ CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 # 模板变量
 # ==============================================================================
 BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
-SDK_GENERATION = get_sdk_generation_settings(env, bk_api_url_tmpl=BK_API_URL_TMPL)
-SDK_GENERATION_ENABLED = SDK_GENERATION["enabled"]
-SDK_GENERATION_RETRY_DELAYS = SDK_GENERATION["retry_delays"]
-SDK_PYTHON_DISTRIBUTION_PREFIX = SDK_GENERATION["python_distribution_prefix"]
-SDK_JAVA_GROUP_ID = SDK_GENERATION["java_group_id"]
-SDK_JAVA_PACKAGE_PREFIX = SDK_GENERATION["java_package_prefix"]
-SDK_GO_MODULE_PREFIX = SDK_GENERATION["go_module_prefix"]
-SDK_JAVASCRIPT_PACKAGE_SCOPE = SDK_GENERATION["javascript_package_scope"]
+_sdk_generation = get_sdk_generation_settings(env, bk_api_url_tmpl=BK_API_URL_TMPL)
+SDK_GENERATION_ENABLED = _sdk_generation["enabled"]
+# SDK 支持的语言列表
+SDK_ENABLED_LANGUAGES = _sdk_generation["enabled_languages"]
+SDK_GENERATION_RETRY_DELAYS = _sdk_generation["retry_delays"]
+SDK_PYTHON_DISTRIBUTION_PREFIX = _sdk_generation["python_distribution_prefix"]
+SDK_JAVA_GROUP_ID = _sdk_generation["java_group_id"]
+SDK_JAVA_PACKAGE_PREFIX = _sdk_generation["java_package_prefix"]
+SDK_GO_MODULE_PREFIX = _sdk_generation["go_module_prefix"]
+SDK_JAVASCRIPT_PACKAGE_SCOPE = _sdk_generation["javascript_package_scope"]
+SDK_SERVER_URL_TEMPLATE = _sdk_generation["server_url_template"]
+SDK_GENERIC_RETENTION_HOURS = _sdk_generation["generic_retention_hours"]
+SDK_SUBPROCESS_TIMEOUT_SECONDS = _sdk_generation["subprocess_timeout_seconds"]
+SDK_MAX_OPENAPI_BYTES = _sdk_generation["max_openapi_bytes"]
+SDK_MAX_OUTPUT_BYTES = _sdk_generation["max_output_bytes"]
+SDK_MAX_ARTIFACT_BYTES = _sdk_generation["max_artifact_bytes"]
+del _sdk_generation
 # TODO: remove in the future, and remove in the helm-chart and te repo
 # BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
@@ -898,9 +907,6 @@ if ENABLE_RUN_DATA_METRICS:
 BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs")
 BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
 
-# SDK 支持的语言列表
-BK_SDK_LANGUAGES = SDK_GENERATION["enabled_languages"]
-
 ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     env,
     edition=EDITION,
@@ -915,7 +921,7 @@ ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     bk_apigateway_version=BK_APIGATEWAY_VERSION,
     bk_docs_url_prefix=BK_DOCS_URL_PREFIX,
     bk_login_url=BK_LOGIN_URL,
-    bk_sdk_languages=BK_SDK_LANGUAGES,
+    bk_sdk_languages=SDK_ENABLED_LANGUAGES,
     bk_paas3_url=BK_PAAS3_URL,
 )
 
