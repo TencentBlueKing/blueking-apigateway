@@ -865,3 +865,18 @@ def test_disabled_language_cannot_execute_a_queued_item(fake_resource_version, s
     if not native_only:
         build.assert_not_called()
     publish.assert_not_called()
+
+
+@pytest.mark.parametrize("enabled,languages", [(False, ["python"]), (True, [])])
+def test_create_noop_does_not_create_task_or_enqueue(
+    settings, fake_resource_version, mocker, django_capture_on_commit_callbacks, enabled, languages
+):
+    settings.SDK_GENERATION_ENABLED = enabled
+    enqueue = mocker.Mock()
+
+    with django_capture_on_commit_callbacks(execute=True):
+        task = create_or_resume_generation(fake_resource_version, languages, "admin", enqueue)
+
+    assert task is None
+    assert not SDKGenerationTask.objects.filter(resource_version=fake_resource_version).exists()
+    enqueue.assert_not_called()

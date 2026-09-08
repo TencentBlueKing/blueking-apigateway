@@ -617,16 +617,15 @@ class LegacySDKGenerateApi(generics.CreateAPIView):
         resource_version = get_object_or_404(
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        if get_sdk_generation_policy().enabled:
-            try:
-                create_or_resume_generation(
-                    resource_version,
-                    data["languages"],
-                    None,
-                    enqueue_generation_items,
-                )
-            except ValueError as error:
-                raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True) from error
+        try:
+            create_or_resume_generation(
+                resource_version,
+                data["languages"],
+                None,
+                enqueue_generation_items,
+            )
+        except ValueError as error:
+            raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True) from error
         return OKJsonResponse(status=status.HTTP_201_CREATED, data=[])
 
 
@@ -634,18 +633,19 @@ class LegacySDKGenerateApi(generics.CreateAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="创建可查询的 SDK 生成任务",
-        request_body=SDKGenerateInputSLZ(),
+        request_body=serializers.SDKGenerationTaskCreateInputSLZ(),
         responses={status.HTTP_202_ACCEPTED: SDKGenerateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
 class SDKGenerationTaskCreateApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
-    serializer_class = SDKGenerateInputSLZ
+    serializer_class = serializers.SDKGenerationTaskCreateInputSLZ
 
     def post(self, request, gateway_name: str, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
+        # Preserve the 503 response even when the requested resource version does not exist.
         if not get_sdk_generation_policy().enabled:
             return FailJsonResponse(
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -665,6 +665,13 @@ class SDKGenerationTaskCreateApi(generics.CreateAPIView):
             )
         except ValueError as error:
             raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
+
+        if task is None:
+            return FailJsonResponse(
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                code="SERVICE_UNAVAILABLE",
+                message=_("SDK generation is unavailable"),
+            )
 
         status_url = f"/api/v2/sync/gateways/{gateway_name}/sdk-generation-tasks/{task.id}/"
         return OKJsonResponse(

@@ -309,7 +309,6 @@ class TestGatewaySDKListCreateApi:
     ):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         settings.SDK_GENERATION_ENABLED = False
-        create = mocker.patch("apigateway.apis.web.sdk.views.create_or_resume_generation")
 
         response = request_view(
             method="POST",
@@ -322,7 +321,7 @@ class TestGatewaySDKListCreateApi:
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
-        create.assert_not_called()
+        assert not SDKGenerationTask.objects.exists()
 
 
 class TestSDKGenerationTaskApi:

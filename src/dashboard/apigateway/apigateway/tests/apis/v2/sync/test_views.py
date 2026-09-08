@@ -160,9 +160,12 @@ class TestSyncApi:
             }
         }
 
-    def test_disabled_legacy_generate_keeps_created_empty_response(
+    @pytest.mark.parametrize("enabled,languages", [(False, ["python"]), (True, [])])
+    def test_noop_legacy_generate_keeps_created_empty_response(
         self,
         settings,
+        enabled,
+        languages,
         mocker,
         request_view,
         fake_admin_user,
@@ -170,8 +173,8 @@ class TestSyncApi:
         fake_resource_version,
         disable_app_permission,
     ):
-        settings.SDK_GENERATION_ENABLED = False
-        create = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
+        settings.SDK_GENERATION_ENABLED = enabled
+        enqueue = mocker.patch("apigateway.apis.v2.sync.views.enqueue_generation_items")
 
         response = request_view(
             method="POST",
@@ -179,16 +182,35 @@ class TestSyncApi:
             path_params={"gateway_name": fake_gateway.name},
             gateway=fake_gateway,
             user=fake_admin_user,
-            data={"resource_version": fake_resource_version.version},
+            data={"resource_version": fake_resource_version.version, "languages": languages},
         )
 
         assert response.status_code == 201
         assert response.json() == {"data": []}
-        create.assert_not_called()
+        enqueue.assert_not_called()
+        assert not SDKGenerationTask.objects.filter(resource_version=fake_resource_version).exists()
 
+    def test_generation_task_rejects_empty_languages(
+        self, settings, request_view, fake_admin_user, fake_gateway, fake_resource_version, disable_app_permission
+    ):
+        settings.SDK_GENERATION_ENABLED = True
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generation_task_create",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            data={"resource_version": fake_resource_version.version, "languages": []},
+        )
+
+        assert response.status_code == 400
+        assert not SDKGenerationTask.objects.exists()
+
+    @pytest.mark.parametrize("missing_version", [False, True])
     def test_disabled_generation_surfaces(
         self,
         settings,
+        missing_version,
         mocker,
         request_view,
         fake_admin_user,
@@ -197,7 +219,6 @@ class TestSyncApi:
         disable_app_permission,
     ):
         settings.SDK_GENERATION_ENABLED = False
-        create = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
 
         response = request_view(
             method="POST",
@@ -205,12 +226,12 @@ class TestSyncApi:
             path_params={"gateway_name": fake_gateway.name},
             gateway=fake_gateway,
             user=fake_admin_user,
-            data={"resource_version": fake_resource_version.version},
+            data={"resource_version": "missing" if missing_version else fake_resource_version.version},
         )
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
-        create.assert_not_called()
+        assert not SDKGenerationTask.objects.exists()
 
     def test_get_sdk_generation_task(
         self,

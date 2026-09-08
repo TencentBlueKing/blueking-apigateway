@@ -100,13 +100,14 @@ class NativePublicationClaim:
     lease_token: str
 
 
-def _deduplicate_languages(languages: list[str]) -> list[str]:
+def _validate_requested_languages(languages: list[str], enabled_languages: tuple[str, ...]) -> list[str]:
     result = list(dict.fromkeys(languages))
-    if not result:
-        raise ValueError("at least one SDK language is required")
     invalid = set(result).difference(SDKGenerationLanguageEnum.get_values())
     if invalid:
         raise ValueError(f"unsupported SDK generation languages: {sorted(invalid)}")
+    disabled = set(result).difference(enabled_languages)
+    if disabled:
+        raise ValueError(f"SDK generation languages are disabled: {sorted(disabled)}")
     return result
 
 
@@ -126,12 +127,12 @@ def create_or_resume_generation(
     languages: list[str],
     operator: str | None,
     enqueue: Callable[[list[int]], None] | None = None,
-) -> SDKGenerationTask:
-    requested = _deduplicate_languages(languages)
+) -> SDKGenerationTask | None:
+    """Return no task when generation is disabled or no languages were requested."""
     policy = get_sdk_generation_policy()
-    disabled = set(requested).difference(policy.languages)
-    if disabled:
-        raise ValueError(f"SDK generation languages are disabled: {sorted(disabled)}")
+    if not policy.enabled or not languages:
+        return None
+    requested = _validate_requested_languages(languages, policy.languages)
 
     task, _ = SDKGenerationTask.objects.select_for_update().get_or_create(
         resource_version=resource_version,

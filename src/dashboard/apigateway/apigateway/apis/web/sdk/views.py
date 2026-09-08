@@ -153,13 +153,6 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
             },
         )
         slz.is_valid(raise_exception=True)
-        if not get_sdk_generation_policy().enabled:
-            return FailJsonResponse(
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-                code="SERVICE_UNAVAILABLE",
-                message="SDK generation is unavailable",
-            )
-
         data = cast("dict", slz.validated_data)
         resource_version = get_object_or_404(ResourceVersion, gateway=request.gateway, id=data["resource_version_id"])
         try:
@@ -171,6 +164,13 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
             )
         except ValueError as error:
             raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
+
+        if task is None:
+            return FailJsonResponse(
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                code="SERVICE_UNAVAILABLE",
+                message="SDK generation is unavailable",
+            )
 
         status_url = reverse(
             "gateway.sdk.generation_task_detail",

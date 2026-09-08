@@ -1577,7 +1577,7 @@ paths:
                   items:
                     type: string
                     enum: [python, java, go, javascript]
-                  description: 需要生成 SDK 的语言列表，默认为 python
+                  description: 需要生成 SDK 的语言列表，默认为 python；传空列表时不生成 SDK，仍返回成功
                   example: ["python"]
                 version:
                   type: string
@@ -5458,7 +5458,7 @@ paths:
                   items:
                     type: string
                     enum: [python, java, go, javascript]
-                  description: 需要生成 SDK 的语言列表，默认为 python
+                  description: 需要生成 SDK 的语言列表，默认为 python；传空列表时不生成 SDK，仍返回成功
                   example: ["python"]
                 version:
                   type: string
@@ -5524,10 +5524,11 @@ paths:
                   example: "1.0.1"
                 languages:
                   type: array
+                  minItems: 1
                   items:
                     type: string
                     enum: [python, java, go, javascript]
-                  description: 需要生成 SDK 的语言列表，默认为 python
+                  description: 需要生成 SDK 的语言列表，默认为 python，不允许空列表
                   example: ["python", "javascript"]
                 version:
                   type: string

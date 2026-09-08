@@ -37,10 +37,10 @@ if TYPE_CHECKING:
 
 
 PREFERRED_GENERIC_ARTIFACT_TYPES = {
-    "python": SDKArtifactTypeEnum.WHEEL.value,
-    "java": SDKArtifactTypeEnum.DISTRIBUTION_ZIP.value,
+    "python": SDKArtifactTypeEnum.PYTHON_WHEEL.value,
+    "java": SDKArtifactTypeEnum.JAVA_DISTRIBUTION_ZIP.value,
     "go": SDKArtifactTypeEnum.GO_ZIP.value,
-    "javascript": SDKArtifactTypeEnum.NPM_TGZ.value,
+    "javascript": SDKArtifactTypeEnum.JAVASCRIPT_NPM_TGZ.value,
 }
 
 

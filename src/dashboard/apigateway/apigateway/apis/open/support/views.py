@@ -24,7 +24,6 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.support import serializers
-from apigateway.biz.sdk.config import get_sdk_generation_policy
 from apigateway.biz.sdk.orchestrator import create_or_resume_generation
 from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.core.models import ResourceVersion
@@ -49,13 +48,12 @@ class SDKGenerateViewSet(viewsets.ViewSet):
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
         try:
-            if get_sdk_generation_policy().enabled:
-                create_or_resume_generation(
-                    resource_version,
-                    data["languages"],
-                    None,
-                    enqueue_generation_items,
-                )
+            create_or_resume_generation(
+                resource_version,
+                data["languages"],
+                None,
+                enqueue_generation_items,
+            )
         except ValueError as error:
             return V1FailJsonResponse(str(error))
 

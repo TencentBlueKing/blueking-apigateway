@@ -136,6 +136,12 @@ class TestGatewaySyncInputSLZ:
 
 
 class TestSDKGenerateInputSLZ:
+    def test_empty_languages_is_accepted(self):
+        slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0", "languages": []})
+
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["languages"] == []
+
     def test_omitted_languages_defaults_to_python(self):
         slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0"})
 

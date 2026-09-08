@@ -29,6 +29,5 @@ class SDKGenerateV1SLZ(serializers.Serializer):
         child=SDKGenerationLanguageField(),
         help_text="需要生成SDK的语言列表",
         default=[SDKGenerationLanguageEnum.PYTHON.value],
-        allow_empty=False,
     )
     version = serializers.RegexField(SEMVER_PATTERN, default="", allow_blank=True, max_length=128, help_text="版本号")

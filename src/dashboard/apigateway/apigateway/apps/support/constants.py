@@ -69,19 +69,21 @@ class SDKDistributorEnum(StructuredEnum):
 
 
 class SDKArtifactTypeEnum(StructuredEnum):
+    """Built artifact kinds used for storage, publication, and download selection."""
+
     ARCHIVE = EnumField("archive")
     PACKAGE = EnumField("package")
     MANIFEST = EnumField("manifest")
-    WHEEL = EnumField("wheel")
-    SDIST = EnumField("sdist")
-    JAR = EnumField("jar")
-    POM = EnumField("pom")
-    SOURCES_JAR = EnumField("sources_jar")
-    DISTRIBUTION_ZIP = EnumField("distribution_zip")
+    PYTHON_WHEEL = EnumField("wheel")
+    PYTHON_SDIST = EnumField("sdist")
+    JAVA_JAR = EnumField("jar")
+    JAVA_POM = EnumField("pom")
+    JAVA_SOURCES_JAR = EnumField("sources_jar")
+    JAVA_DISTRIBUTION_ZIP = EnumField("distribution_zip")
     GO_INFO = EnumField("go_info")
     GO_MOD = EnumField("go_mod")
     GO_ZIP = EnumField("go_zip")
-    NPM_TGZ = EnumField("npm_tgz")
+    JAVASCRIPT_NPM_TGZ = EnumField("npm_tgz")
 
 
 class DocLanguageEnum(StructuredEnum):

@@ -22,6 +22,12 @@ from apigateway.apis.open.support.serializers import SDKGenerateV1SLZ
 
 
 class TestSDKGenerateV1SLZ:
+    def test_empty_languages_is_accepted(self):
+        slz = SDKGenerateV1SLZ(data={"resource_version": "1.0.0", "languages": []})
+
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["languages"] == []
+
     def test_omitted_languages_defaults_to_python(self):
         slz = SDKGenerateV1SLZ(data={"resource_version": "1.0.0"})
 

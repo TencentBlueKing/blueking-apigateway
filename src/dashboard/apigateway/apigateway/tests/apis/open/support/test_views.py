@@ -22,6 +22,8 @@ import json
 import pytest
 from django.urls import NoReverseMatch, reverse
 
+from apigateway.apps.support.models import SDKGenerationTask
+
 pytestmark = pytest.mark.django_db
 
 
@@ -99,9 +101,12 @@ class TestSDKGenerateViewSet:
         assert response.status_code == 400
         assert json.loads(response.content)["result"] is False
 
-    def test_disabled_generation_keeps_legacy_success_without_enqueue(
+    @pytest.mark.parametrize("enabled,languages", [(False, ["python"]), (True, [])])
+    def test_noop_generation_keeps_legacy_success_without_enqueue(
         self,
         settings,
+        enabled,
+        languages,
         has_related_app_permission,
         mocker,
         fake_gateway,
@@ -109,9 +114,13 @@ class TestSDKGenerateViewSet:
         rf,
         request_to_view,
     ):
-        settings.SDK_GENERATION_ENABLED = False
-        create = mocker.patch("apigateway.apis.open.support.views.create_or_resume_generation")
-        request = rf.post("", data={"resource_version": fake_resource_version.version})
+        settings.SDK_GENERATION_ENABLED = enabled
+        enqueue = mocker.patch("apigateway.apis.open.support.views.enqueue_generation_items")
+        request = rf.post(
+            "",
+            data={"resource_version": fake_resource_version.version, "languages": languages},
+            content_type="application/json",
+        )
         request.gateway = fake_gateway
 
         response = request_to_view(
@@ -122,7 +131,8 @@ class TestSDKGenerateViewSet:
 
         assert response.status_code == 200
         assert json.loads(response.content)["data"] == []
-        create.assert_not_called()
+        enqueue.assert_not_called()
+        assert not SDKGenerationTask.objects.filter(resource_version=fake_resource_version).exists()
 
     def test_v1_has_no_generation_task_detail_route(self):
         with pytest.raises(NoReverseMatch):
