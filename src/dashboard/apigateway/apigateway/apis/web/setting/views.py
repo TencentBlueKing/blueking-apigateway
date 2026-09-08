@@ -65,28 +65,15 @@ class FeatureFlagListApi(generics.ListAPIView):
         """获取特性开关列表"""
         feature_flags = copy.copy(settings.DEFAULT_FEATURE_FLAG)
 
-        # 多租户模式下，没有 esb 相关的页面：组件管理 + 组件 API 文档
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            feature_flags.update(
-                {
-                    "MENU_ITEM_ESB_API": False,
-                    "MENU_ITEM_ESB_API_DOC": False,
-                }
-            )
-        # 非多租户模式才会有 esb 相关的页面：组件管理 + 组件 API 文档
-        else:
-            feature_flags.update(
-                {
-                    "MENU_ITEM_ESB_API": feature_flags.get("MENU_ITEM_ESB_API", False) and request.user.is_superuser,
-                    # "MENU_ITEM_ESB_API_DOC": feature_flags.get("MENU_ITEM_ESB_API_DOC", False),
-                }
-            )
-
         user_feature_flags = UserFeatureFlag.objects.get_feature_flags(request.user.username)
         feature_flags.update(user_feature_flags)
 
-        if settings.EDITION == "ee":
-            for name in ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"):
-                feature_flags[name] = False
+        # Removed management flags must not be revived by per-user overrides.
+        for name in ("MENU_ITEM_ESB_API", "SYNC_ESB_TO_APIGW_ENABLED"):
+            feature_flags.pop(name, None)
+        if settings.EDITION != "te":
+            feature_flags.pop("MENU_ITEM_ESB_API_DOC", None)
+        elif settings.ENABLE_MULTI_TENANT_MODE:
+            feature_flags["MENU_ITEM_ESB_API_DOC"] = False
 
         return OKJsonResponse(data=feature_flags)

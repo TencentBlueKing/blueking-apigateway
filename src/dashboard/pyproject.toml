@@ -324,7 +324,6 @@ ignore_imports = [
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.service.release",
-    # -- esb legacy
     # 需要重构的依赖
 ]
 
@@ -462,7 +461,6 @@ ignore_imports = [
     "apigateway.apps.permission.management.commands.reconcile_oauth2_builtin_permissions -> apigateway.controller.tasks.oauth2_builtin",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
-    # -- esb legacy
 ]
 
 [[tool.importlinter.contracts]]

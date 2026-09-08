@@ -12,8 +12,10 @@ make init
 # 查看当前版本
 make edition
 
-# 切换开源版
-make edition-ee
+# EE 直接使用公共源码，无需切换
+# 验证 TE 时先关联 TE 仓库
+make edition-te
+EDITION=te uv run make test
 
 # 进入开发模式
 make edition-develop

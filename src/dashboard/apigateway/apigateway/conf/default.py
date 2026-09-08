@@ -31,7 +31,6 @@ from django.utils.encoding import force_bytes
 from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
-from apigateway.conf.edition import configure as configure_edition
 from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import (
     PatchFeatures,
@@ -873,9 +872,6 @@ MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = _gateway_quota["MAX_PYTHON_SDK_COUNT
 # RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE", 50)
 
 # ==============================================================================
-# ESB 配置
-# ==============================================================================
-# ==============================================================================
 # 版本差异配置
 # ==============================================================================
 # 用户验证类型
@@ -893,7 +889,3 @@ USER_AUTH_TYPE = {
 # ==============================================================================
 FORBIDDEN_HOSTS = env.list("FORBIDDEN_HOSTS", default=["localhost", "127.0.0.1", "0.0.0.0"])
 FORBIDDEN_PORTS = env.list("FORBIDDEN_PORTS", default=[])
-
-# Apply edition-owned integrations after shared defaults are available.
-
-configure_edition(globals())

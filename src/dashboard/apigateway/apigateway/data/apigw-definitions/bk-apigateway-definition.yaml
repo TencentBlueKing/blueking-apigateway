@@ -99,7 +99,13 @@ grant_permissions:
       # monitor related
       - v2_inner_list_app_alarm_records
       - v2_inner_list_app_request_logs
-      # esb related
+      - v2_inner_list_esb_systems
+      - v2_inner_list_esb_system_permission_components
+      - v2_inner_apply_esb_system_component_permissions
+      - v2_inner_renew_esb_component_permissions
+      - v2_inner_list_app_esb_component_permissions
+      - v2_inner_list_app_esb_component_permission_apply_records
+      - v2_inner_get_app_esb_component_permission_apply_record
       # mcp server related
       - v2_inner_list_mcp_server
       - v2_inner_lookup_mcp_servers

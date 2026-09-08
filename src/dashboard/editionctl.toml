@@ -5,7 +5,3 @@ linker_type = 'symbol-link'
 [[editions]]
 name = "TE"
 rel_directory = 'te'
-
-[[editions]]
-name = "EE"
-rel_directory = 'ee'

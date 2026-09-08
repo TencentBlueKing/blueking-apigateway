@@ -1,23 +1,31 @@
-"""EE must start and expose its APIs without an ESB database or application."""
+"""Shared routing and configuration preserve only TE ESB integrations."""
 
 import pytest
 from django.conf import settings
 from django.urls import Resolver404, resolve
 
 
-def test_ee_has_no_esb_database_or_app():
-    assert "bkcore" not in settings.DATABASES
-    assert not any(name.startswith("apigateway.apps.esb") for name in settings.INSTALLED_APPS)
+def test_esb_database_and_application_boundary():
+    enabled = settings.EDITION == "te" and not settings.ENABLE_MULTI_TENANT_MODE
+    assert ("bkcore" in settings.DATABASES) is enabled
+    assert ("apigateway.apps.esb.bkcore" in settings.INSTALLED_APPS) is enabled
 
 
 @pytest.mark.parametrize(
     "path",
     [
         "/backend/api/v2/inner/esb/systems/",
-        "/backend/esb/systems/",
-        "/backend/docs/esb/boards/default/systems/",
+        "/backend/docs/esb/boards/ieod/systems/",
     ],
 )
-def test_ee_does_not_register_esb_apis(path):
+def test_esb_permission_and_document_routes(path):
+    if settings.EDITION == "te" and not settings.ENABLE_MULTI_TENANT_MODE:
+        assert resolve(path).func is not None
+    else:
+        with pytest.raises(Resolver404):
+            resolve(path)
+
+
+def test_removed_component_management_route():
     with pytest.raises(Resolver404):
-        resolve(path)
+        resolve("/backend/esb/systems/")

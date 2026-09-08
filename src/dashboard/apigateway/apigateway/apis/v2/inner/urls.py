@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.urls import include, path
 
 from . import itsm_views, monitor_views, views
@@ -229,4 +230,72 @@ urlpatterns = [
     ),
 ]
 
-urlpatterns += [path("", include("apigateway.apis.v2.inner.edition_urls"))]
+# 非多租户模式才会有 esb 相关的接口
+if settings.EDITION == "te" and not settings.ENABLE_MULTI_TENANT_MODE:
+    from . import views_esb  # type: ignore[attr-defined]  # Provided by the TE edition.
+
+    urlpatterns += [
+        path(
+            "esb/systems/",
+            include(
+                [
+                    # GET /api/v2/inner/esb/systems/
+                    path(
+                        "",
+                        views_esb.EsbSystemListApi.as_view(),
+                        name="openapi.v2.inner.esb.systems.list",
+                    ),
+                    path(
+                        "<int:system_id>/",
+                        include(
+                            [
+                                # GET /api/v2/inner/esb/systems/{system_id}/permissions/components/
+                                path(
+                                    "permissions/components/",
+                                    views_esb.EsbPermissionComponentListApi.as_view(),
+                                    name="openapi.v2.inner.esb.permission.apply",
+                                ),
+                                # POST /api/v2/inner/esb/systems/{system_id}/permissions/apply/
+                                path(
+                                    "permissions/apply/",
+                                    views_esb.EsbAppPermissionApplyCreateApi.as_view(),
+                                    name="openapi.v2.inner.esb.permission.apply",
+                                ),
+                            ]
+                        ),
+                    ),
+                    path(
+                        "permissions/",
+                        include(
+                            [
+                                # POST /api/v2/inner/esb/systems/permissions/renew/
+                                path(
+                                    "renew/",
+                                    views_esb.EsbAppPermissionRenewPutApi.as_view(),
+                                    name="openapi.v2.inner.esb.permission.renew",
+                                ),
+                                # GET /api/v2/inner/esb/systems/permissions/app-permissions/
+                                path(
+                                    "app-permissions/",
+                                    views_esb.EsbAppPermissionListApi.as_view(),
+                                    name="openapi.v2.inner.esb.permission.app-permissions",
+                                ),
+                                # GET /api/v2/inner/esb/systems/permissions/apply-records/
+                                path(
+                                    "apply-records/",
+                                    views_esb.EsbAppPermissionApplyRecordListApi.as_view(),
+                                    name="openapi.v2.inner.esb.permission.apply-records",
+                                ),
+                                # GET /api/v2/inner/esb/systems/permissions/apply-records/{record_id}/
+                                path(
+                                    "apply-records/<int:record_id>/",
+                                    views_esb.EsbAppPermissionApplyRecordRetrieveApi.as_view(),
+                                    name="openapi.v2.inner.esb.permission.apply-record-detail",
+                                ),
+                            ]
+                        ),
+                    ),
+                ]
+            ),
+        ),
+    ]

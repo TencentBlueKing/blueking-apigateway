@@ -24,6 +24,7 @@ class DBRouter:
     """
 
     APP_LABEL_TO_DB = {
+        "bkcore": "bkcore",
         "apigateway": "legacy",
     }
 

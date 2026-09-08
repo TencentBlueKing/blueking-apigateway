@@ -96,10 +96,6 @@ edition:
 edition-te:
 	editionctl activate TE
 
-.PHONY: edition-ee
-edition-ee:
-	editionctl activate EE
-
 .PHONY: edition-develop
 edition-develop:
 	editionctl develop
@@ -145,7 +141,6 @@ _build_image:
 
 .PHONY: image-ee
 image-ee:
-	editionctl activate --linker-type copy EE
 	make _build_dir
 	make _build_image
 	make _clean_build_dir
@@ -159,7 +154,6 @@ image-te:
 
 .PHONY: dev-ee-image
 dev-ee-image:
-	editionctl activate --linker-type copy EE
 	make _build_dir
 	docker build \
 		-t "apigateway-dashboard:development" \

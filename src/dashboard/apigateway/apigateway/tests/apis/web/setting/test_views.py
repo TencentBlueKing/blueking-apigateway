@@ -22,30 +22,23 @@ from apigateway.apis.web.setting.views import FeatureFlagListApi
 from apigateway.tests.utils.testing import get_response_json
 
 
-class TestFeatureFlagListApi:
-    @pytest.mark.parametrize(
-        "is_superuser, expected",
-        [
-            (True, True),
-            (False, False),
-        ],
+@pytest.mark.parametrize("edition", ["ee", "te"])
+@pytest.mark.parametrize("tenant_mode", [False, True])
+def test_esb_flags_cannot_restore_removed_features(settings, request_factory, mocker, edition, tenant_mode):
+    settings.EDITION = edition
+    settings.ENABLE_MULTI_TENANT_MODE = tenant_mode
+    settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API_DOC": True}
+    mocker.patch(
+        "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags",
+        return_value={"MENU_ITEM_ESB_API": True, "SYNC_ESB_TO_APIGW_ENABLED": True, "MENU_ITEM_ESB_API_DOC": True},
     )
-    @pytest.mark.parametrize("edition", ["ee", "te"])
-    def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected, edition):
-        settings.EDITION = edition
-        settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
-        mocker.patch(
-            "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags",
-            return_value={faker.color_name(): False},
-        )
-
-        # user is not suerperuser
-        request = request_factory.get("")
-        request.user = mocker.MagicMock(username=faker.color_name(), is_superuser=is_superuser)
-        view = FeatureFlagListApi.as_view()
-        response = view(request)
-        result = get_response_json(response)
-        assert len(result["data"]) == (4 if edition == "ee" else 3)
-        assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
-        assert result["data"]["MENU_ITEM_ESB_API"] == (expected if edition == "te" else False)
-        assert result["data"]["MENU_ITEM_ESB_API_DOC"] is (edition == "te")
+    request = request_factory.get("")
+    request.user = mocker.MagicMock(username="admin", is_superuser=True)
+    data = get_response_json(FeatureFlagListApi.as_view()(request))["data"]
+    assert "MENU_ITEM_ESB_API" not in data
+    assert "SYNC_ESB_TO_APIGW_ENABLED" not in data
+    if edition == "te":
+        assert data["MENU_ITEM_ESB_API_DOC"] is (not tenant_mode)
+    else:
+        assert "MENU_ITEM_ESB_API_DOC" not in data
+    assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API_DOC": True}

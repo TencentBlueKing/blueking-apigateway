@@ -27,7 +27,7 @@ try:
 except ImportError:
     PythonLegacySDKManager = None
 
-SDKManagerFactory = TypeFactory()
+SDKManagerFactory: TypeFactory[BaseSDKManager] = TypeFactory()
 
 SDKManagerFactory.register(ProgrammingLanguageEnum.PYTHON.value, python.SDKManager)
 SDKManagerFactory.register(ProgrammingLanguageEnum.GOLANG.value, golang.SDKManager)
