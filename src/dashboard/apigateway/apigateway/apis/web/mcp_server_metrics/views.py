@@ -39,8 +39,6 @@ from .serializers import (
 
 
 class MCPServerQueryRangeApi(generics.ListAPIView):
-    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
-
     """MCP Server 时序图指标查询 API
 
     支持的 metrics 类型:
@@ -52,6 +50,8 @@ class MCPServerQueryRangeApi(generics.ListAPIView):
     - response_time_95th: P95 响应时间分布
     - method_requests: 按 MCP 方法分组的请求趋势
     """
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     @swagger_auto_schema(
         query_serializer=MCPServerMetricsQueryRangeInputSLZ(),
@@ -94,14 +94,14 @@ class MCPServerQueryRangeApi(generics.ListAPIView):
 
 
 class MCPServerQueryInstantApi(generics.ListAPIView):
-    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
-
     """MCP Server 瞬时值指标查询 API
 
     支持的 metrics 类型:
     - requests_total: 总请求数
     - non_2xx_total: 非 2XX 请求数
     """
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     @swagger_auto_schema(
         query_serializer=MCPServerMetricsQueryInstantInputSLZ(),

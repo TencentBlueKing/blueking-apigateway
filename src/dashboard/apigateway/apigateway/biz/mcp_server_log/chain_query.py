@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .chain_helpers import (
     build_chain_summary,
@@ -27,7 +27,7 @@ from .chain_search import MCPServerLogChainSearchClient
 from .constants import MCP_SERVER_LOG_FIELDS
 
 
-def search_chain_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
+def search_chain_by_any_id(request_id: str = "", gateway_id: Optional[int] = None) -> Dict:
     """通过 request_id 查询调用链路，自动尝试多种 ID 类型
 
     按优先级依次尝试：
@@ -37,6 +37,7 @@ def search_chain_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
 
     Args:
         request_id: 用户传入的请求 ID，可能是任意类型
+        gateway_id: 网关 ID；不传时保持原有全局查询
     """
     client = MCPServerLogChainSearchClient(request_id=request_id, gateway_id=gateway_id)
     chain_data = client.search_chain()
@@ -52,7 +53,7 @@ def search_chain_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
     return chain_data
 
 
-def search_chain_logs_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
+def search_chain_logs_by_any_id(request_id: str = "", gateway_id: Optional[int] = None) -> Dict:
     """通过 request_id 查询调用链路并扁平化为日志列表
 
     适用于日志详情查询场景（MCPServerLogDetailApi / MCPServerLogQueryApi），
@@ -60,13 +61,14 @@ def search_chain_logs_by_any_id(request_id: str = "", gateway_id: int = 0) -> Di
 
     Args:
         request_id: 用户传入的请求 ID
+        gateway_id: 网关 ID；不传时保持原有全局查询
     """
     chain_data = search_chain_by_any_id(request_id, gateway_id=gateway_id)
     logs = flatten_spans_to_logs(chain_data)
     return _build_paginated_log_result(logs, chain_data)
 
 
-def search_chain_logs_with_gateway_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
+def search_chain_logs_with_gateway_by_any_id(request_id: str = "", gateway_id: Optional[int] = None) -> Dict:
     """通过 request_id 查询调用链路并扁平化为日志列表，同时附加网关日志
 
     适用于链路追踪场景（MCPServerLogTraceApi / MCPServerLogQueryApi），
@@ -74,6 +76,7 @@ def search_chain_logs_with_gateway_by_any_id(request_id: str = "", gateway_id: i
 
     Args:
         request_id: 用户传入的请求 ID
+        gateway_id: 网关 ID；不传时保持原有全局查询
     """
     chain_data = search_chain_by_any_id(request_id, gateway_id=gateway_id)
     logs = flatten_spans_to_logs(chain_data)
@@ -92,25 +95,27 @@ def search_chain_logs_with_gateway_by_any_id(request_id: str = "", gateway_id: i
     return _build_paginated_log_result(logs, chain_data)
 
 
-def search_chain_with_summary_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
+def search_chain_with_summary_by_any_id(request_id: str = "", gateway_id: Optional[int] = None) -> Dict:
     """通过 request_id 查询调用链路并添加汇总统计信息
 
     适用于瀑布图场景（MCPServerLogChainApi / MCPServerLogQueryChainApi）。
 
     Args:
         request_id: 用户传入的请求 ID
+        gateway_id: 网关 ID；不传时保持原有全局查询
     """
     chain_data = search_chain_by_any_id(request_id, gateway_id=gateway_id)
     return enrich_chain_data(chain_data)
 
 
-def search_chain_summary_by_any_id(request_id: str = "", gateway_id: int = 0) -> Dict:
+def search_chain_summary_by_any_id(request_id: str = "", gateway_id: Optional[int] = None) -> Dict:
     """通过 request_id 查询调用链路并构建汇总信息
 
     适用于工具箱汇总查询场景（MCPServerLogQuerySummaryApi）。
 
     Args:
         request_id: 用户传入的请求 ID
+        gateway_id: 网关 ID；不传时保持原有全局查询
     """
     chain_data = search_chain_by_any_id(request_id, gateway_id=gateway_id)
     summary = build_chain_summary(chain_data)

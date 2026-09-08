@@ -42,14 +42,10 @@ class _GatewayMemberInput(Protocol):
 
 class GatewayMemberManager(models.Manager):
     def get_gateway_member(self, gateway_id: int, username: str) -> GatewayMember | None:
-        return (
-            self.filter(
-                gateway_id=gateway_id,
-                username=username,
-            )
-            .only("id", "gateway_id", "username", "role")
-            .first()
-        )
+        return self.filter(
+            gateway_id=gateway_id,
+            username=username,
+        ).first()
 
     def list_gateway_members(self, gateway_id: int) -> list[GatewayMember]:
         return list(self.filter(gateway_id=gateway_id).order_by("role", "username"))
@@ -118,13 +114,6 @@ class GatewayMemberManager(models.Manager):
             gateway_id=gateway_id,
             username=username,
             role=GatewayRoleEnum.ADMINISTRATOR.value,
-        ).exists()
-
-    def has_gateway_approve_permission(self, gateway_id: int, username: str) -> bool:
-        return self.filter(
-            gateway_id=gateway_id,
-            username=username,
-            role__in=(GatewayRoleEnum.ADMINISTRATOR.value, GatewayRoleEnum.OPERATOR.value),
         ).exists()
 
     def list_gateway_ids_by_username(self, username: str, roles: Iterable[str]) -> list[int]:

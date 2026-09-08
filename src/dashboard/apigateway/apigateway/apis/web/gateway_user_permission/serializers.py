@@ -21,6 +21,7 @@ from apigateway.apps.rbac.constants import GatewayRoleEnum
 
 
 class GatewayUserPermissionOutputSLZ(serializers.Serializer):
+    # choices 仅用于 swagger 渲染 enum，输出序列化不做校验
     role = serializers.ChoiceField(
         choices=GatewayRoleEnum.get_choices(),
         read_only=True,

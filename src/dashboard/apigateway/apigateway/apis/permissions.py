@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
@@ -7,6 +9,8 @@ from apigateway.apps.rbac.constants import GATEWAY_ROLE_ACTIONS, GatewayActionEn
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.models import Gateway
 
+logger = logging.getLogger(__name__)
+
 
 class GatewayActionPermission(permissions.BasePermission):
     """获取网关并按 View 声明的 Action 验证网关权限。"""
@@ -14,6 +18,7 @@ class GatewayActionPermission(permissions.BasePermission):
     message = gettext_lazy("当前用户无访问网关权限")
 
     def has_permission(self, request, view):
+        request.gateway_member = None
         gateway = self.get_gateway_object(view)
         # 路径参数 gateway_id 不存在时，忽略网关权限校验
         if not gateway:
@@ -30,7 +35,16 @@ class GatewayActionPermission(permissions.BasePermission):
             return False
 
         request.gateway_member = member
-        return required_action in GATEWAY_ROLE_ACTIONS.get(member.role, ())
+        allowed_actions = GATEWAY_ROLE_ACTIONS.get(member.role)
+        if allowed_actions is None:
+            logger.warning(
+                "unknown gateway member role, gateway_id=%s username=%s role=%s",
+                gateway.id,
+                request.user.username,
+                member.role,
+            )
+            return False
+        return required_action in allowed_actions
 
     def get_gateway_object(self, view):
         """根据路径参数 gateway_id 获取网关对象。"""
@@ -53,7 +67,3 @@ class GatewayActionPermission(permissions.BasePermission):
         if action not in GatewayActionEnum.get_values():
             raise ImproperlyConfigured(f"invalid gateway action: {action}")
         return action
-
-
-# Keep the old import path compatible while all callers migrate to the Action-based name.
-GatewayPermission = GatewayActionPermission

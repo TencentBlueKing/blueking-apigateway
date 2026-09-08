@@ -229,7 +229,6 @@ class LogExportApi(generics.RetrieveAPIView):
     ),
 )
 class LogDetailRetrieveApi(generics.RetrieveAPIView):
-    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
     # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
     gateway_permission_exempt = True
 

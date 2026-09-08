@@ -63,6 +63,7 @@ def test_check_gateway_rbac_data_rejects_gateway_without_administrator():
         ("", GatewayRoleEnum.ADMINISTRATOR.value),
         (" ", GatewayRoleEnum.ADMINISTRATOR.value),
         (" member ", GatewayRoleEnum.ADMINISTRATOR.value),
+        ("member ", GatewayRoleEnum.ADMINISTRATOR.value),
     ],
 )
 def test_check_gateway_rbac_data_rejects_invalid_member(fake_gateway, username, role):

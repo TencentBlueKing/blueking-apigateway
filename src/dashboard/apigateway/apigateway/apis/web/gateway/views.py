@@ -78,6 +78,12 @@ from .serializers import (
 
 
 class RequestGatewayObjectMixin:
+    """复用 GatewayActionPermission 已加载的 request.gateway，避免按 pk 再查一次。
+
+    覆盖 get_object() 会跳过 DRF 的 check_object_permissions()。当前这些 View
+    没有对象级权限类，权限已在 GatewayActionPermission.has_permission 中完成。
+    """
+
     def get_object(self):
         return self.request.gateway
 
@@ -103,17 +109,12 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     serializer_class = GatewayListInputSLZ
 
     def list(self, request, *args, **kwargs):
-        # 获取用户有权限的网关列表，后续切换到 IAM
-
         user_tenant_id = get_user_tenant_id(request)
 
         gateways = GatewayHandler.list_gateways_by_user(
             request.user.username,
             user_tenant_id,
-            roles=(
-                GatewayRoleEnum.ADMINISTRATOR.value,
-                GatewayRoleEnum.OPERATOR.value,
-            ),
+            roles=tuple(GatewayRoleEnum.get_values()),
         )
         gateway_ids = [gateway.id for gateway in gateways]
 
@@ -310,9 +311,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 )
 class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.RetrieveUpdateDestroyAPIView):
     gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
-    queryset = Gateway.objects.all()
     serializer_class = GatewayRetrieveOutputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -413,9 +412,7 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
     ),
 )
 class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
-    queryset = Gateway.objects.all()
     serializer_class = GatewayUpdateStatusInputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -485,9 +482,6 @@ class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
     ),
 )
 class GatewayTenantAppListApi(RequestGatewayObjectMixin, generics.ListAPIView):
-    queryset = Gateway.objects.all()
-    lookup_url_kwarg = "gateway_id"
-
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -516,9 +510,7 @@ class GatewayTenantAppListApi(RequestGatewayObjectMixin, generics.ListAPIView):
     ),
 )
 class GatewayDevGuidelineRetrieveApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
-    queryset = Gateway.objects.all()
     serializer_class = GatewayDevGuidelineOutputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -565,9 +557,7 @@ class GatewayDevGuidelineRetrieveApi(RequestGatewayObjectMixin, generics.Retriev
     ),
 )
 class GatewayReleasingStatusApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
-    queryset = Gateway.objects.all()
     serializer_class = GatewayReleasingStatusOutputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

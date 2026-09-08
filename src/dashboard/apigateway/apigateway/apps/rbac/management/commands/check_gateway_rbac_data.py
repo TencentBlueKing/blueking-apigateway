@@ -17,7 +17,7 @@
 #
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Exists, F, OuterRef, Q
-from django.db.models.functions import Trim
+from django.db.models.functions import Length, Trim
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
@@ -26,6 +26,14 @@ from apigateway.core.models import Gateway
 
 class Command(BaseCommand):
     help = "检查切换网关 RBAC 前的 GatewayMember 数据"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=20,
+            help="每类问题最多打印的记录数，0 表示打印全部",
+        )
 
     def handle(self, *args, **options):
         members = GatewayMember.objects.filter(gateway_id=OuterRef("pk"))
@@ -45,8 +53,11 @@ class Command(BaseCommand):
             .values_list("id", "gateway_id", "username", "role")
         )
         invalid_username_members = list(
-            GatewayMember.objects.annotate(_trimmed_username=Trim("username"))
-            .filter(Q(_trimmed_username="") | ~Q(username=F("_trimmed_username")))
+            GatewayMember.objects.annotate(
+                _username_length=Length("username"),
+                _trimmed_length=Length(Trim("username")),
+            )
+            .filter(Q(_trimmed_length=0) | ~Q(_username_length=F("_trimmed_length")))
             .order_by("gateway_id", "id")
             .values_list("id", "gateway_id", "username")
         )
@@ -57,8 +68,10 @@ class Command(BaseCommand):
             "invalid_members": invalid_members,
             "invalid_username_members": invalid_username_members,
         }
+        limit = options["limit"]
         for name, records in failures.items():
-            self.stdout.write(f"{name}: count={len(records)}, records={records}")
+            preview = records if limit <= 0 else records[:limit]
+            self.stdout.write(f"{name}: count={len(records)}, records={preview}")
 
         if any(failures.values()):
             raise CommandError("GatewayMember 数据检查失败")

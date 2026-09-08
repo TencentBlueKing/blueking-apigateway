@@ -103,19 +103,6 @@ def test_is_gateway_administrator(fake_gateway):
     assert not GatewayMember.objects.is_gateway_administrator(fake_gateway.id, "guest")
 
 
-def test_has_gateway_approve_permission(fake_gateway):
-    G(
-        GatewayMember,
-        gateway=fake_gateway,
-        username="operator",
-        role=GatewayRoleEnum.OPERATOR.value,
-    )
-
-    assert GatewayMember.objects.has_gateway_approve_permission(fake_gateway.id, "admin")
-    assert GatewayMember.objects.has_gateway_approve_permission(fake_gateway.id, "operator")
-    assert not GatewayMember.objects.has_gateway_approve_permission(fake_gateway.id, "guest")
-
-
 def test_list_gateway_ids_by_username(fake_gateway):
     administrator_gateway_ids = GatewayMember.objects.list_gateway_ids_by_username(
         "admin",

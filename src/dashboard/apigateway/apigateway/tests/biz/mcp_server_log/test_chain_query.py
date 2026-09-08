@@ -22,6 +22,7 @@ from apigateway.biz.mcp_server_log.chain_query import search_chain_by_any_id
 from apigateway.biz.mcp_server_log.chain_search import MCPServerLogChainSearchClient
 from apigateway.biz.mcp_server_log.es_query import search_all_layers
 from apigateway.biz.mcp_server_log.gateway_log import search_gateway_log
+from apigateway.biz.mcp_server_log.log_search import MCPServerLogSearchClient
 
 
 def test_search_chain_by_any_id_keeps_gateway_scope_for_fallbacks(mocker):
@@ -55,6 +56,7 @@ def test_search_all_layers_filters_gateway_id(mocker):
     query = json.dumps(es_client.execute_search.call_args.args[0])
     assert '"gateway_id": 123' in query
     assert '"__ext_json.gateway_id": 123' in query
+    assert '"__ext_json.gateway_id": "123"' in query
 
 
 def test_search_gateway_log_filters_upstream_gateway(mocker):
@@ -84,3 +86,29 @@ def test_upstream_request_fallback_does_not_query_gateway_log_without_scoped_mcp
     assert result["spans"] == []
     assert result["downstream_gateway_log"] is None
     search_gateway.assert_not_called()
+
+
+def test_upstream_request_fallback_queries_gateway_log_without_gateway_scope(mocker):
+    mocker.patch("apigateway.biz.mcp_server_log.chain_search.BKLogESClient")
+    mocker.patch(
+        "apigateway.biz.mcp_server_log.chain_search.search_by_upstream_request_id",
+        return_value=[],
+    )
+    search_gateway = mocker.patch(
+        "apigateway.biz.mcp_server_log.chain_search.search_gateway_log",
+        return_value={"request_id": "request-id"},
+    )
+    client = MCPServerLogChainSearchClient(upstream_request_id="request-id")
+
+    result = client.search_chain_by_upstream_request_id()
+
+    assert result["downstream_gateway_log"] == {"request_id": "request-id"}
+    search_gateway.assert_called_once_with("request-id", gateway_type="downstream")
+
+
+def test_log_search_reuses_gateway_filter_helper(mocker):
+    mocker.patch("apigateway.biz.mcp_server_log.log_search.BKLogESClient")
+
+    query = json.dumps(MCPServerLogSearchClient(gateway_id=123)._build_base_search().to_dict())
+    assert '"gateway_id": 123' in query
+    assert '"__ext_json.gateway_id": "123"' in query

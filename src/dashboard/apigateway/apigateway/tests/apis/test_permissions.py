@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
-from apigateway.apis.permissions import GatewayActionPermission, GatewayPermission
+from apigateway.apis.permissions import GatewayActionPermission
 from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 
@@ -86,7 +86,9 @@ def test_gateway_permission_rejects_invalid_action(mocker, fake_request, fake_ga
 
 
 def test_gateway_permission_without_gateway_id(fake_request):
-    assert GatewayActionPermission().has_permission(fake_request, _view())
+    permission = GatewayActionPermission()
+    assert permission.has_permission(fake_request, _view())
+    assert fake_request.gateway_member is None
 
 
 def test_gateway_permission_exempt_skips_member_query(mocker, fake_request, fake_gateway):
@@ -96,6 +98,7 @@ def test_gateway_permission_exempt_skips_member_query(mocker, fake_request, fake
 
     assert permission.has_permission(fake_request, _view(fake_gateway.id, gateway_permission_exempt=True))
     get_member.assert_not_called()
+    assert fake_request.gateway_member is None
 
 
 def test_superuser_does_not_bypass_gateway_membership(mocker, fake_request, fake_gateway):
@@ -109,7 +112,7 @@ def test_superuser_does_not_bypass_gateway_membership(mocker, fake_request, fake
     )
 
 
-def test_gateway_permission_rejects_invalid_member_role(mocker, fake_request, fake_gateway):
+def test_gateway_permission_rejects_invalid_member_role(mocker, fake_request, fake_gateway, caplog):
     permission = GatewayActionPermission()
     mocker.patch.object(permission, "get_gateway_object", return_value=fake_gateway)
     fake_request.user = mock.MagicMock(username="invalid-role")
@@ -119,11 +122,9 @@ def test_gateway_permission_rejects_invalid_member_role(mocker, fake_request, fa
         role="invalid",
     )
 
-    assert not permission.has_permission(
-        fake_request,
-        _view(fake_gateway.id, gateway_action=GatewayActionEnum.OPERATE_GATEWAY.value),
-    )
-
-
-def test_gateway_permission_compatibility_alias():
-    assert GatewayPermission is GatewayActionPermission
+    with caplog.at_level("WARNING"):
+        assert not permission.has_permission(
+            fake_request,
+            _view(fake_gateway.id, gateway_action=GatewayActionEnum.OPERATE_GATEWAY.value),
+        )
+    assert "unknown gateway member role" in caplog.text
