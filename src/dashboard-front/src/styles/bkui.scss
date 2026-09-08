@@ -17,15 +17,34 @@
  */
 
 // 处理升级组件库后兼容bkui组件样式
+
+.ag-infobox-custom-icon {
+
+  .bk-infobox-title {
+    margin-top: 0;
+  }
+
+  .info-box-icon {
+    display: flex;
+    margin-bottom: 24px;
+    justify-content: center;
+  }
+}
+
 .bk-table {
+
   .bk-table-body {
+
     &.is-bk-scrollbar {
       overflow-y: auto !important;
+
       /* 兼容table滚动条异常 */
+
       .bk__rail-x,
       .bk__rail-y {
         top: unset !important;
       }
+
       .bk__thumb-y {
         display: none;
       }
@@ -33,17 +52,20 @@
   }
 
  .bk-table-footer {
-    background: #ffffff;
+    background: #fff;
   }
 
   .bk-exception-part {
+
     .bk-exception-img {
       width: 100%;
     }
   }
 
   &.bordered-outer {
+
     .bk-table-body {
+
       .bk-exception {
         padding-bottom: 20px;
         border-bottom: 1px solid #dcdee5;
@@ -53,13 +75,16 @@
 }
 
 .bk-sideslider {
+
   .bk-modal-footer {
+
     &.is-fixed {
+
       .bk-sideslider-footer {
         height: 54px !important;
+        background-color: #fff !important;
         border-top: 1px solid transparent !important;
-        background-color: #ffffff !important;
-        box-shadow: rgba(0, 0, 0, 0.05882) 0 -2px 4px;
+        box-shadow: rgb(0 0 0 / 5.88%) 0 -2px 4px;
       }
     }
   }
@@ -77,15 +102,17 @@
 
   &.t-is-indeterminate,
   &.t-is-checked:not(.t-is-disabled) {
+
     .t-checkbox__input {
-      border-color: #3a84ff !important;
       background-color: #3a84ff !important;
+      border-color: #3a84ff !important;
     }
   }
 }
 
 
 .t-radio {
+
   .t-radio__input {
     border: 1px solid #dcdee5;
 
@@ -110,8 +137,8 @@
 .t-table__filter--bottom-buttons {
 
   .t-button--theme-primary {
-    border-color: #3a84ff !important;
     background-color: #3a84ff !important;
+    border-color: #3a84ff !important;
   }
 }
 

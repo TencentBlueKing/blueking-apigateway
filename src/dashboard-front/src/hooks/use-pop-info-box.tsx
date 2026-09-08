@@ -19,10 +19,17 @@
 /** 基于infoBox二次封装  */
 import { InfoBox } from 'bkui-vue';
 import { isFunction } from 'lodash-es';
+import AgIcon from '@/components/ag-icon/Index.vue';
 
 type Align = 'center' | 'left' | 'right';
 type Theme = 'danger' | 'success' | 'warning' | 'primary';
 type InfoType = 'danger' | 'success' | 'warning' | 'loading';
+
+const INFO_ICON_MAP: Partial<Record<InfoType, string>> = {
+  success: 'infobox-success',
+  danger: 'infobox-danger',
+  warning: 'infobox-warning',
+};
 
 export interface IProps {
   isShow?: boolean
@@ -58,9 +65,19 @@ export class InfoModel implements IProps {
 
 export function usePopInfoBox(props: Partial<IProps>) {
   const infoBoxInstance = InfoBox(new InfoModel());
+  const iconName = props.type ? INFO_ICON_MAP[props.type] : undefined;
 
   const renderTitle = () => {
-    return <div class="break-all info-box-title">{ isFunction(props.title) ? props.title() : props.title }</div>;
+    return (
+      <div>
+        {iconName && (
+          <div class="info-box-icon">
+            <AgIcon name={iconName} size="42" svg />
+          </div>
+        )}
+        <div class="break-all info-box-title">{ isFunction(props.title) ? props.title() : props.title }</div>
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -72,6 +89,9 @@ export function usePopInfoBox(props: Partial<IProps>) {
     const subTitle = props.content ? 'content' : 'subTitle';
     infoBoxInstance.update({
       ...props,
+      // 自定义图标通过标题渲染，关闭 BKUI 内置图标，保留 loading 的默认行为。
+      type: iconName ? undefined : props.type,
+      class: iconName ? ['ag-infobox-custom-icon', props.class ?? []].flat() : props.class,
       title: renderTitle(),
       [subTitle]: renderContent(),
     });

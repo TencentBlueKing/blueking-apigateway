@@ -1084,12 +1084,12 @@ onBeforeUnmount(() => {
         .name {
           min-width: 0;
           margin-right: 10px;
+          overflow: hidden;
           font-weight: 700;
           color: #313238;
-          cursor: pointer;
-          overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          cursor: pointer;
 
           &:hover {
             color: #3a84ff;
