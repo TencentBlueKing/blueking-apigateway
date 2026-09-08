@@ -42,6 +42,7 @@ from apigateway.biz.resource_doc.importer.models import (
     SchemaDoc,
     SchemaFieldDoc,
 )
+from apigateway.biz.resource_doc.importer.presenters import OperationDocBuilder
 from apigateway.utils.file import write_to_file
 
 
@@ -122,7 +123,7 @@ def operation_context():
         fields=[
             SchemaFieldDoc(
                 path="id",
-                type="integer<int64>",
+                type="integer&lt;int64&gt;",
                 required=True,
                 description="User ID",
                 constraints="",
@@ -218,7 +219,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Method | Path | Operation ID | Tags | Deprecated |
         | --- | --- | --- | --- | :---: |
-        | `POST` | `/users/{user_id}` | `update_user` | users | Yes |
+        | <code>POST</code> | <code>/users/{user_id}</code> | <code>update_user</code> | users | Yes |
 
         ### Description
 
@@ -232,7 +233,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Name | Type | Required | Description | Default | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | verbose | `boolean` | No | Return details | false |  | true |
+        | verbose | <code>boolean</code> | No | Return details | false |  | true |
 
         ### Request body
 
@@ -242,13 +243,13 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         #### application/json
 
-        Type: `object`
+        Type: <code>object</code>
 
         Profile payload
 
         | Field | Type | Required | Description | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- |
-        | name | `string` | Yes | Display name | minLength: 1 | Alice |
+        | name | <code>string</code> | Yes | Display name | minLength: 1 | Alice |
 
         ##### Example: profile - Example profile
 
@@ -260,7 +261,7 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Status code | Status | Description |
         | --- | --- | --- |
-        | `200` | OK | Updated user |
+        | <code>200</code> | OK | Updated user |
 
         #### 200 - OK
 
@@ -268,15 +269,15 @@ def test_generate_openapi_doc_in_english(operation_context):
 
         | Name | Type | Required | Description | Default | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | X-Request-ID | `string` | No | Request ID |  |  | req-1 |
+        | X-Request-ID | <code>string</code> | No | Request ID |  |  | req-1 |
 
         ##### application/json
 
-        Type: `object`
+        Type: <code>object</code>
 
         | Field | Type | Required | Description | Constraints | Example |
         | --- | --- | :---: | --- | --- | --- |
-        | id | `integer<int64>` | Yes | User ID |  | 1 |
+        | id | <code>integer&lt;int64&gt;</code> | Yes | User ID |  | 1 |
         """
         ).strip()
     )
@@ -293,7 +294,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 方法 | 路径 | 操作 ID | 标签 | 已废弃 |
         | --- | --- | --- | --- | :---: |
-        | `POST` | `/users/{user_id}` | `update_user` | users | 是 |
+        | <code>POST</code> | <code>/users/{user_id}</code> | <code>update_user</code> | users | 是 |
 
         ### 描述
 
@@ -307,7 +308,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 名称 | 类型 | 必填 | 描述 | 默认值 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | verbose | `boolean` | 否 | Return details | false |  | true |
+        | verbose | <code>boolean</code> | 否 | Return details | false |  | true |
 
         ### 请求体
 
@@ -317,13 +318,13 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         #### application/json
 
-        类型: `object`
+        类型: <code>object</code>
 
         Profile payload
 
         | 字段 | 类型 | 必填 | 描述 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- |
-        | name | `string` | 是 | Display name | minLength: 1 | Alice |
+        | name | <code>string</code> | 是 | Display name | minLength: 1 | Alice |
 
         ##### 示例: profile - Example profile
 
@@ -335,7 +336,7 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 状态码 | 状态 | 描述 |
         | --- | --- | --- |
-        | `200` | OK | Updated user |
+        | <code>200</code> | OK | Updated user |
 
         #### 200 - OK
 
@@ -343,15 +344,15 @@ def test_generate_openapi_doc_in_chinese(operation_context):
 
         | 名称 | 类型 | 必填 | 描述 | 默认值 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- | --- |
-        | X-Request-ID | `string` | 否 | Request ID |  |  | req-1 |
+        | X-Request-ID | <code>string</code> | 否 | Request ID |  |  | req-1 |
 
         ##### application/json
 
-        类型: `object`
+        类型: <code>object</code>
 
         | 字段 | 类型 | 必填 | 描述 | 约束 | 示例 |
         | --- | --- | :---: | --- | --- | --- |
-        | id | `integer<int64>` | 是 | User ID |  | 1 |
+        | id | <code>integer&lt;int64&gt;</code> | 是 | User ID |  | 1 |
         """
         ).strip()
     )
@@ -386,7 +387,7 @@ def test_generate_openapi_doc_omits_empty_response_details(empty_operation_conte
 
     content = OpenAPIToMarkdownGenerator(context, DocLanguageEnum.EN).generate_doc_content()
 
-    assert "| `204` | No Content | No content |" in content
+    assert "| <code>204</code> | No Content | No content |" in content
     assert "#### 204 - No Content" not in content
 
 
@@ -403,3 +404,65 @@ def test_generate_openapi_doc_wraps_template_error(mocker, empty_operation_conte
     )
     with pytest.raises(OpenAPIDocGenerationError):
         OpenAPIToMarkdownGenerator(empty_operation_context, DocLanguageEnum.EN).generate_doc_content()
+
+
+@pytest.mark.parametrize("language", [DocLanguageEnum.EN, DocLanguageEnum.ZH])
+@pytest.mark.parametrize(
+    ("payload", "escaped"),
+    [
+        ("<img src=x onerror=\"alert('x')\">", "&lt;img src=x onerror=&quot;alert(&#x27;x&#x27;)&quot;&gt;"),
+        ("<script>alert(1)</script>", "&lt;script&gt;alert(1)&lt;/script&gt;"),
+        ("&lt;img src=x&gt;", "&amp;lt;img src=x&amp;gt;"),
+    ],
+)
+def test_generated_openapi_doc_escapes_user_html(language, payload, escaped):
+    schema = {
+        "type": "object",
+        "description": payload,
+        "properties": {payload: {"type": "string", "description": payload, "example": payload}},
+    }
+    operation = {
+        "operationId": payload,
+        "summary": payload,
+        "description": f"**Details**\n\n{payload}\n\n- first\n- second",
+        "tags": [payload],
+        "parameters": [
+            {
+                "name": payload,
+                "in": "query",
+                "description": payload + "\nnext",
+                "schema": {"type": "string", "default": payload, "pattern": payload},
+            }
+        ],
+        "requestBody": {"description": payload, "content": {payload: {"schema": schema}}},
+        "responses": {"200": {"description": payload, "headers": {payload: {"description": payload}}}},
+    }
+    context = OperationDocBuilder({"paths": {"/users": {"get": operation}}}).build()
+
+    content = OpenAPIToMarkdownGenerator(context, language).generate_doc_content()
+
+    assert payload not in content
+    assert f"**Details**\n\n{escaped}\n\n- first\n- second" in content
+    assert f"{escaped}<br>next" in content
+    assert content.count(escaped) >= 13
+    assert "&lt;br&gt;next" not in content
+
+
+def test_generated_openapi_doc_keeps_example_inside_code_fence(empty_operation_context):
+    payload = '```\n<img src=x onerror="alert(1)">\n````'
+    context = replace(
+        empty_operation_context,
+        request_body=RequestBodyDoc(
+            required=False,
+            description="",
+            contents=[
+                MediaTypeDoc(
+                    media_type="text/plain", schema=None, examples=[ExampleDoc(name="", summary="", value=payload)]
+                )
+            ],
+        ),
+    )
+
+    content = OpenAPIToMarkdownGenerator(context, DocLanguageEnum.EN).generate_doc_content()
+
+    assert f"`````json\n{payload}\n`````" in content

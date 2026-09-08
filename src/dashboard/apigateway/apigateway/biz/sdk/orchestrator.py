@@ -264,7 +264,19 @@ def _sanitize_error(error: Exception) -> tuple[str, str]:
     for secret in secrets:
         if secret:
             message = message.replace(secret, "***")
-    return code, redact_sensitive_text(message, tuple(secrets))[:1024]
+    message = redact_sensitive_text(message, tuple(secrets))
+    # Strip local directories after credential redaction; preserve diagnostic URLs.
+    message = re.sub(
+        r"""(['"])(/[^'"]+)\1""",
+        lambda match: f"{match[1]}{Path(match[2]).name}{match[1]}",
+        message,
+    )
+    message = re.sub(
+        r"""https?://[^\s'"]+|(?<![\w/])/(?:[^\s'",;:)\]}]+)""",
+        lambda match: Path(match[0]).name if match[0].startswith("/") else match[0],
+        message,
+    )
+    return code, message[:1024]
 
 
 def _persist_native_artifacts(item: SDKGenerationItem, published) -> None:

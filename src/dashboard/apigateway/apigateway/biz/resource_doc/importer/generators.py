@@ -17,6 +17,7 @@
 #
 import logging
 import os
+import re
 from typing import TYPE_CHECKING
 
 from django.conf import settings
@@ -164,11 +165,13 @@ class OpenAPIToMarkdownGenerator:
         env = SandboxedEnvironment(
             loader=FileSystemLoader(template_dir),
             undefined=StrictUndefined,
+            # The builder escapes prose; code examples are protected by their fence.
             autoescape=False,
             keep_trailing_newline=True,
             trim_blocks=True,
             lstrip_blocks=True,
         )
+        env.filters["code_fence"] = self._code_fence
         try:
             language = str(getattr(self.language, "value", self.language))
             labels = DOC_LABELS[language]
@@ -176,3 +179,9 @@ class OpenAPIToMarkdownGenerator:
         except (KeyError, TemplateError) as err:
             logger.exception("failed to render built-in OpenAPI resource documentation")
             raise OpenAPIDocGenerationError("failed to render OpenAPI resource documentation") from err
+
+    @staticmethod
+    def _code_fence(value: str) -> str:
+        # An example must never be able to close its surrounding code block.
+        length = max((len(run) for run in re.findall(r"`+", value)), default=0)
+        return "`" * max(3, length + 1)

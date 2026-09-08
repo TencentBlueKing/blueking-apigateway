@@ -158,6 +158,7 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, settings, languag
             "-module",
             "bk.tencent.com/bkapi/openapi/demo",
         ]
+        assert run.call_args_list[1].args[0] == ["go", "build", "./..."]
     if language == "javascript":
         assert run.call_args_list[0].args[0] == [
             "npm",

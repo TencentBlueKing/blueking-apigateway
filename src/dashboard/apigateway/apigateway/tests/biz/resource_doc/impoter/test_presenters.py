@@ -85,7 +85,7 @@ def test_build_operation_doc_context():
     assert doc.summary == "Update user"
     assert doc.deprecated is True
     assert doc.tags == ["users"]
-    assert doc.parameters[0].type == "integer<int64>"
+    assert doc.parameters[0].type == "integer&lt;int64&gt;"
     assert doc.parameters[0].constraints == "minimum: 1"
     assert doc.parameters[1].type == "boolean \\| null"
     assert doc.parameters[1].default == "false"
@@ -171,7 +171,7 @@ def test_build_parameter_from_content_schema():
     parameter = OperationDocBuilder(openapi).build().parameters[0]
 
     assert parameter.type == "object"
-    assert parameter.example == '{<br>  "active": false<br>}'
+    assert parameter.example == "{<br>  &quot;active&quot;: false<br>}"
 
 
 def test_schema_type_expressions_for_array_map_and_compositions():
@@ -207,11 +207,11 @@ def test_schema_type_expressions_for_array_map_and_compositions():
     schema = OperationDocBuilder(openapi).build().request_body.contents[0].schema
     fields = {field.path: field.type for field in schema.fields}
 
-    assert fields["ids"] == "array<integer<int64>>"
-    assert fields["metadata"] == "map<string, string>"
-    assert fields["choice"] == "oneOf<string \\| integer>"
-    assert fields["loose"] == "anyOf<boolean \\| null>"
-    assert fields["combined"] == "allOf<object & object>"
+    assert fields["ids"] == "array&lt;integer&lt;int64&gt;&gt;"
+    assert fields["metadata"] == "map&lt;string, string&gt;"
+    assert fields["choice"] == "oneOf&lt;string \\| integer&gt;"
+    assert fields["loose"] == "anyOf&lt;boolean \\| null&gt;"
+    assert fields["combined"] == "allOf&lt;object &amp; object&gt;"
     assert fields["combined.name"] == "string"
     assert fields["combined.age"] == "integer"
     assert fields["optional"] == "string \\| null"
@@ -248,7 +248,7 @@ def test_schema_constraints_include_supported_keywords_in_stable_order():
     constraints = OperationDocBuilder(openapi).build().parameters[0].constraints
 
     assert constraints == (
-        'enum: [<br>  "a",<br>  "b"<br>]<br>default: a<br>minimum: 1<br>exclusiveMinimum: true'
+        "enum: [<br>  &quot;a&quot;,<br>  &quot;b&quot;<br>]<br>default: a<br>minimum: 1<br>exclusiveMinimum: true"
         "<br>maximum: 10<br>exclusiveMaximum: false<br>minLength: 1<br>maxLength: 10"
         "<br>pattern: a\\|b<br>minItems: 1<br>maxItems: 2"
     )

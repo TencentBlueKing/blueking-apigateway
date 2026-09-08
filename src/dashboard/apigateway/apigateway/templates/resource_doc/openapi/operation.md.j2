@@ -1,14 +1,16 @@
+{# Text is HTML-escaped by OperationDocBuilder. HTML code spans let entities
+   display correctly instead of showing their literal spelling in backticks. #}
 {% macro parameter_table(parameters, title, heading='####') %}
 {{ heading }} {{ title }}
 
 | {{ labels.name }} | {{ labels.type }} | {{ labels.required }} | {{ labels.description }} | {{ labels.default }} | {{ labels.constraints }} | {{ labels.example }} |
 | --- | --- | :---: | --- | --- | --- | --- |
 {% for parameter in parameters %}
-| {{ parameter.name }} | `{{ parameter.type }}` | {{ labels.yes if parameter.required else labels.no }} | {{ parameter.description }} | {{ parameter.default }} | {{ parameter.constraints }} | {{ parameter.example }} |
+| {{ parameter.name }} | <code>{{ parameter.type }}</code> | {{ labels.yes if parameter.required else labels.no }} | {{ parameter.description }} | {{ parameter.default }} | {{ parameter.constraints }} | {{ parameter.example }} |
 {% endfor %}
 {% endmacro %}
 {% macro schema_content(schema) %}
-{{ labels.type }}: `{{ schema.type }}`
+{{ labels.type }}: <code>{{ schema.type }}</code>
 {% if schema.description %}
 
 {{ schema.description }}
@@ -18,7 +20,7 @@
 | {{ labels.field }} | {{ labels.type }} | {{ labels.required }} | {{ labels.description }} | {{ labels.constraints }} | {{ labels.example }} |
 | --- | --- | :---: | --- | --- | --- |
 {% for field in schema.fields %}
-| {{ field.path }} | `{{ field.type }}` | {{ labels.yes if field.required else labels.no }} | {{ field.description }} | {{ field.constraints }} | {{ field.example }} |
+| {{ field.path }} | <code>{{ field.type }}</code> | {{ labels.yes if field.required else labels.no }} | {{ field.description }} | {{ field.constraints }} | {{ field.example }} |
 {% endfor %}
 {% endif %}
 {% endmacro %}
@@ -26,9 +28,10 @@
 {% for example in examples %}
 {{ heading }} {{ labels.example }}{{ ': ' + example.name if example.name else '' }}{{ ' - ' + example.summary if example.summary else '' }}
 
-```json
+{% set fence = example.value | code_fence %}
+{{ fence }}json
 {{ example.value }}
-```
+{{ fence }}
 {% if not loop.last %}
 
 {% endif %}
@@ -38,7 +41,7 @@
 
 | {{ labels.method }} | {{ labels.path }} | {{ labels.operation_id }} | {{ labels.tags }} | {{ labels.deprecated }} |
 | --- | --- | --- | --- | :---: |
-| `{{ doc.method }}` | `{{ doc.path }}` | `{{ doc.operation_id }}` | {{ doc.tags | join(', ') }} | {{ labels.yes if doc.deprecated else labels.no }} |
+| <code>{{ doc.method }}</code> | <code>{{ doc.path }}</code> | <code>{{ doc.operation_id }}</code> | {{ doc.tags | join(', ') }} | {{ labels.yes if doc.deprecated else labels.no }} |
 {% if doc.summary or doc.description %}
 
 ### {{ labels.description }}
@@ -104,7 +107,7 @@
 | {{ labels.status_code }} | {{ labels.status }} | {{ labels.description }} |
 | --- | --- | --- |
 {% for response in doc.responses %}
-| `{{ response.status_code }}` | {{ response.status_text }} | {{ response.description }} |
+| <code>{{ response.status_code }}</code> | {{ response.status_text }} | {{ response.description }} |
 {% endfor %}
 {% for response in doc.responses %}
 {% set response_schemas = response.contents | selectattr('schema') | list %}

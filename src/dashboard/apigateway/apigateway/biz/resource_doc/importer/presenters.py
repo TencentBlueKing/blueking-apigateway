@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import html
 import json
 from collections.abc import Mapping
 from http import HTTPStatus
@@ -58,11 +59,11 @@ class OperationDocBuilder:
     def build(self) -> OperationDocContext:
         path, method, operation = self._get_operation()
         return OperationDocContext(
-            operation_id=str(operation.get("operationId", "")),
+            operation_id=self._table_text(operation.get("operationId", "")),
             method=method.upper(),
-            path=path,
+            path=self._table_text(path),
             summary=self._table_text(operation.get("summary", "")),
-            description=str(operation.get("description", "")).strip(),
+            description=html.escape(str(operation.get("description", "")).strip()),
             deprecated=bool(operation.get("deprecated", False)),
             tags=[self._table_text(tag) for tag in operation.get("tags", [])],
             parameters=self._build_parameters(operation.get("parameters", [])),
@@ -128,7 +129,7 @@ class OperationDocBuilder:
             return None
         return RequestBodyDoc(
             required=bool(request_body.get("required", False)),
-            description=str(request_body.get("description", "")).strip(),
+            description=html.escape(str(request_body.get("description", "")).strip()),
             contents=self._build_contents(request_body.get("content", {})),
         )
 
@@ -173,7 +174,7 @@ class OperationDocBuilder:
             schema_mapping = schema if isinstance(schema, Mapping) else None
             result.append(
                 MediaTypeDoc(
-                    media_type=str(media_type),
+                    media_type=self._table_text(media_type),
                     schema=self._build_schema(schema_mapping),
                     examples=self._build_examples(media, schema_mapping),
                 )
@@ -215,7 +216,7 @@ class OperationDocBuilder:
         if schema is None:
             return None
         return SchemaDoc(
-            type=self._schema_type(schema),
+            type=self._table_text(self._schema_type(schema)),
             description=self._table_text(schema.get("description", "")),
             fields=self._flatten_schema(schema),
             example=self._display_value(schema.get("example", MISSING)),
@@ -474,4 +475,11 @@ class OperationDocBuilder:
     def _table_text(value: Any) -> str:
         if value is None:
             return ""
-        return str(value).replace("|", r"\|").replace("\r\n", "<br>").replace("\n", "<br>").replace("\r", "<br>")
+        # Escape user HTML before adding the trusted table line breaks.
+        return (
+            html.escape(str(value))
+            .replace("|", r"\|")
+            .replace("\r\n", "<br>")
+            .replace("\n", "<br>")
+            .replace("\r", "<br>")
+        )

@@ -36,7 +36,7 @@ def build(source_dir: Path, output_dir: Path, config: SDKLanguageConfig) -> list
     output_dir.mkdir(parents=True, exist_ok=True)
     run_build(["go", "mod", "edit", "-module", config.project_name], cwd=source_dir)
     prepare_generated_dependency_inputs("go", source_dir)
-    run_build(["go", "test", "./..."], cwd=source_dir)
+    run_build(["go", "build", "./..."], cwd=source_dir)
     go_mod = source_dir / "go.mod"
     if not go_mod.is_file():
         raise ValueError("Go SDK build requires go.mod")

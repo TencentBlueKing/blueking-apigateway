@@ -167,8 +167,8 @@ class TestSwagger:
         assert all(yaml_loads(doc.openapi)["openapi"] == "3.0.1" for doc in docs)
         assert all("swagger" not in yaml_loads(doc.openapi) for doc in docs)
         assert "### API 信息" in docs[0].content
-        assert "`GET`" in docs[0].content
-        assert "`/http/get/mapping/{userId}`" in docs[0].content
+        assert "<code>GET</code>" in docs[0].content
+        assert "<code>/http/get/mapping/{userId}</code>" in docs[0].content
 
     def test_parse_openapi_31_request_and_response_examples(self, fake_gateway, fake_default_backend):
         openapi = json.dumps(

@@ -267,6 +267,45 @@ def test_finish_rejects_wrong_lease_token(fake_resource_version):
     assert item.status == "running"
 
 
+@pytest.mark.parametrize("native", [False, True])
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("cannot read /app/sdk-worker-lock.json", "cannot read sdk-worker-lock.json"),
+        ("build failed in /tmp/sdk-generation-xxx/", "build failed in sdk-generation-xxx"),
+        ("[Errno 2] missing: '/tmp/sdk generation/client.json'", "[Errno 2] missing: 'client.json'"),
+        (
+            'copy "/tmp/sdk-generation-xxx/client.json" to /app/output/client.json',
+            'copy "client.json" to client.json',
+        ),
+        (
+            "upload /tmp/client.whl to https://user:password@repo/pypi/ failed token=private-token",
+            "upload client.whl to https://***@repo/pypi/ failed token=***",
+        ),
+        ("request failed: https://repo/pypi/", "request failed: https://repo/pypi/"),
+    ],
+)
+def test_failure_response_hides_internal_paths(fake_resource_version, native, message, expected):
+    task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
+    item = task.items.get()
+    if native:
+        task.items.filter(id=item.id).update(status="success", native_status="pending")
+        claim = claim_native_publication(item.id, "owner")
+        finish = finish_native_publication
+    else:
+        claim = claim_generation_item(item.id, "owner")
+        finish = finish_generation_item
+    assert claim is not None
+
+    assert finish(claim, "failed", error=SDKGenerationError("build_failed", message))
+
+    payload = serialize_generation_task(task)
+    assert payload["items"][0]["native_error" if native else "error"] == {
+        "code": "build_failed",
+        "message": expected,
+    }
+
+
 def test_claim_marks_parent_task_running(fake_resource_version):
     task = create_or_resume_generation(fake_resource_version, ["python"], "admin")
     item = task.items.get()
