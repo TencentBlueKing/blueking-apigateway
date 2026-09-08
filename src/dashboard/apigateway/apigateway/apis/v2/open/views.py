@@ -51,6 +51,7 @@ from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceD
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
+from apigateway.common.env import Env
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import (
@@ -479,7 +480,10 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             queryset.filter(mcp_server_id=OuterRef("mcp_server_id")).order_by("-applied_time", "-id").values("id")[:1]
         )
         queryset = queryset.filter(id=Subquery(latest_record_id)).order_by("-applied_time", "-id")
-        use_legacy_response = settings.ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT and request.app.app_code == "bk_aidev"
+        # TODO: bk_aidev 切换分页协议后，删除此临时开关及下方旧版响应分支，恢复直接分页。
+        use_legacy_response = request.app.app_code == "bk_aidev" and Env().bool(
+            "ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT", default=False
+        )
         page = queryset if use_legacy_response else self.paginate_queryset(queryset)
 
         # Build categories map

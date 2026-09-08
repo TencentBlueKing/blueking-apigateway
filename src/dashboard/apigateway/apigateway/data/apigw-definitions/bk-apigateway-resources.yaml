@@ -3783,11 +3783,7 @@ paths:
   /api/v2/open/mcp-servers/permissions/apply-records/:
     get:
       operationId: v2_open_list_mcp_server_app_permissions_apply_records
-      description: >-
-        获取指定应用的 mcp_server 权限申请记录列表。默认返回分页结果；
-        Dashboard 环境变量 ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT=True 时，
-        仅已认证调用方 bk_aidev 使用旧版协议，data 直接返回完整记录数组，忽略 limit/offset，
-        仍保留查询条件、租户过滤和每个 MCPServer 的最新记录。开关默认 False。
+      description: 获取指定应用的 mcp_server 权限申请记录列表
       tags:
         - v2_open
       parameters:

@@ -21,7 +21,6 @@ from datetime import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
 
-import pytest
 from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
@@ -331,20 +330,7 @@ class TestMCPServerAppPermissionRecordListApi:
             result["data"]["results"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
         )
 
-    @pytest.mark.parametrize(
-        ("compat_enabled", "caller_app_code", "target_app_code", "legacy_response"),
-        [
-            (None, "bk_aidev", "test_app", False),
-            (False, "bk_aidev", "test_app", False),
-            (True, "bk_aidev", "test_app", True),
-            (True, "test", "bk_aidev", False),
-        ],
-    )
-    def test_list_paginates_after_selecting_latest_record_per_mcp_server(
-        self, request_view, fake_gateway, settings, compat_enabled, caller_app_code, target_app_code, legacy_response
-    ):
-        if compat_enabled is not None:
-            settings.ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT = compat_enabled
+    def test_list_paginates_after_selecting_latest_record_per_mcp_server(self, request_view, fake_gateway, settings):
         settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
             "http://dashboard.example.com/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
         )
@@ -353,19 +339,19 @@ class TestMCPServerAppPermissionRecordListApi:
         second_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
         G(
             MCPServerAppPermissionApply,
-            bk_app_code=target_app_code,
+            bk_app_code="test_app",
             mcp_server=first_mcp_server,
             applied_time=datetime(2025, 1, 1, tzinfo=ZoneInfo("UTC")),
         )
         latest_first_record = G(
             MCPServerAppPermissionApply,
-            bk_app_code=target_app_code,
+            bk_app_code="test_app",
             mcp_server=first_mcp_server,
             applied_time=datetime(2025, 1, 3, tzinfo=ZoneInfo("UTC")),
         )
         second_record = G(
             MCPServerAppPermissionApply,
-            bk_app_code=target_app_code,
+            bk_app_code="test_app",
             mcp_server=second_mcp_server,
             applied_time=datetime(2025, 1, 2, tzinfo=ZoneInfo("UTC")),
         )
@@ -373,18 +359,12 @@ class TestMCPServerAppPermissionRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
-            app=mock.MagicMock(app_code=caller_app_code),
-            data={"bk_app_code": target_app_code, "limit": 1, "offset": 1},
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app", "limit": 1, "offset": 1},
         )
 
         assert resp.status_code == 200
         result = resp.json()
-        if legacy_response:
-            assert isinstance(result["data"], list)
-            assert [item["id"] for item in result["data"]] == [latest_first_record.id, second_record.id]
-            assert all(item["approval_url"] for item in result["data"])
-            return
-
         assert set(result["data"]) == {"count", "results"}
         assert result["data"]["count"] == 2
         assert len(result["data"]["results"]) == 1

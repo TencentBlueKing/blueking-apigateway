@@ -537,9 +537,6 @@ BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
     env.str("DASHBOARD_FE_URL", "").rstrip("/") + "/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
 )
 
-# 临时兼容 bk_aidev 调用 MCP Server 权限申请记录列表时使用的旧版非分页协议。
-ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT = env.bool("ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT", default=False)
-
 # ==============================================================================
 # AI Open API 配置
 # ==============================================================================

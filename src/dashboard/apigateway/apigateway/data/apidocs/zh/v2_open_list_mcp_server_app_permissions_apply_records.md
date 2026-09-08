@@ -2,13 +2,6 @@
 
 获取指定应用的 mcp_server 权限申请记录列表
 
-默认返回分页结果。Dashboard 环境变量 `ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT` 默认为 `False`；
-设为 `True` 并重启 Dashboard 后，仅已认证调用方应用编码为 `bk_aidev` 时返回旧版非分页协议：
-`data` 直接为记录数组（无记录时为 `[]`），不包含 `count` / `results`，忽略 `limit` / `offset`。
-数组元素字段与下方 `data.results` 一致，每个 MCPServer 仍只返回最新申请记录。
-`bk_app_code`、`mcp_server_id`、`record_id` 和租户过滤仍生效。
-兼容判断使用调用方身份，不使用查询参数 `bk_app_code`；其他调用方始终返回分页结果。
-
 ### 输入参数
 
 #### 请求参数
