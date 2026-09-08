@@ -295,8 +295,10 @@ const schedulePolling = (rows: IGatewaySDKListOutput[]) => {
   const hasActiveLifecycle = rows.some(row => (
     row.status === 'pending'
     || row.status === 'running'
-    || row.native_status === 'pending'
-    || row.native_status === 'running'
+    || (row.status === 'success' && (
+      row.native_status === 'pending'
+      || row.native_status === 'running'
+    ))
   ));
   if (!isUnmounted && hasActiveLifecycle) {
     pollingTimer = setTimeout(() => {
