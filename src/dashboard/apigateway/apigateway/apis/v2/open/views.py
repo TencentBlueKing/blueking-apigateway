@@ -479,7 +479,8 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             queryset.filter(mcp_server_id=OuterRef("mcp_server_id")).order_by("-applied_time", "-id").values("id")[:1]
         )
         queryset = queryset.filter(id=Subquery(latest_record_id)).order_by("-applied_time", "-id")
-        page = self.paginate_queryset(queryset)
+        use_legacy_response = settings.ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT and request.app.app_code == "bk_aidev"
+        page = queryset if use_legacy_response else self.paginate_queryset(queryset)
 
         # Build categories map
         categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in page])
@@ -487,6 +488,8 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(
             page, many=True, context={"categories": categories_map}
         )
+        if use_legacy_response:
+            return OKJsonResponse(data=output_slz.data)
         return self.get_paginated_response(output_slz.data)
 
 
