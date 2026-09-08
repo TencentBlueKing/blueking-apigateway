@@ -124,7 +124,7 @@ const handleRefresh = () => {
     .bk-exception-title {
       font-size: 14px;
       color: #63656e;
-      margin-top: -8px;
+      margin-top: 0;
     }
 
     .bk-exception-img {

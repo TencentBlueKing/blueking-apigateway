@@ -36,6 +36,7 @@
       <div class="header-search">
         <BkInput
           v-model="filterData.name"
+          type="search"
           class="search-input"
           :placeholder="t('请输入服务名称')"
           clearable

@@ -159,6 +159,7 @@
                             <AgTable
                               ref="toolTableRef"
                               v-model:table-data="filteredToolList"
+                              class="mb-16px!"
                               show-selection
                               local-page
                               :show-settings="false"

@@ -978,10 +978,14 @@ defineExpose({
 
   &.t-size-m {
 
-    thead.t-table__header {
+    .t-table__header {
 
       th {
         padding-top: 10.5px;
+
+        &.t-table__th-row-select {
+          padding-top: 9.5px;
+        }
       }
     }
   }
