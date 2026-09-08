@@ -27,6 +27,8 @@ make edition-develop
 make edition-modules
 ```
 
+EE 镜像请在未激活 TE 的独立 checkout 中构建；`image-ee` 和 `dev-ee-image` 会拒绝打包已激活的 TE 源码。
+
 ## 本地开发
 
 准备数据库

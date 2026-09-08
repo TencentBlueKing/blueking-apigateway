@@ -139,8 +139,13 @@ _build_image:
 		--build-arg PYPI="${pypi}" \
 		.
 
+# Edition overlays may replace files; build EE from an unactivated checkout.
+.PHONY: _check_ee_source
+_check_ee_source:
+	@test ! -f apigateway/apigateway/conf/te_default.py || (echo "EE image requires an unactivated shared-source checkout; TE is active."; exit 1)
+
 .PHONY: image-ee
-image-ee:
+image-ee: _check_ee_source
 	make _build_dir
 	make _build_image
 	make _clean_build_dir
@@ -153,7 +158,7 @@ image-te:
 	make _clean_build_dir
 
 .PHONY: dev-ee-image
-dev-ee-image:
+dev-ee-image: _check_ee_source
 	make _build_dir
 	docker build \
 		-t "apigateway-dashboard:development" \
