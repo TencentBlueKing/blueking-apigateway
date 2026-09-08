@@ -6,7 +6,7 @@ from django.urls import Resolver404, resolve
 
 
 def test_esb_database_and_application_boundary():
-    enabled = settings.EDITION == "te" and not settings.ENABLE_MULTI_TENANT_MODE
+    enabled = settings.EDITION == "te"
     assert ("bkcore" in settings.DATABASES) is enabled
     assert ("apigateway.apps.esb.bkcore" in settings.INSTALLED_APPS) is enabled
 
@@ -15,11 +15,12 @@ def test_esb_database_and_application_boundary():
     "path",
     [
         "/backend/api/v2/inner/esb/systems/",
+        "/backend/api/v1/esb/systems/",
         "/backend/docs/esb/boards/ieod/systems/",
     ],
 )
 def test_esb_permission_and_document_routes(path):
-    if settings.EDITION == "te" and not settings.ENABLE_MULTI_TENANT_MODE:
+    if settings.EDITION == "te":
         assert resolve(path).func is not None
     else:
         with pytest.raises(Resolver404):

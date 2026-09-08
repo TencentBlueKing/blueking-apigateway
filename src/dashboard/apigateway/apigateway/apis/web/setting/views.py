@@ -72,8 +72,6 @@ class FeatureFlagListApi(generics.ListAPIView):
         for name in ("MENU_ITEM_ESB_API", "SYNC_ESB_TO_APIGW_ENABLED"):
             feature_flags.pop(name, None)
         if settings.EDITION != "te":
-            feature_flags.pop("MENU_ITEM_ESB_API_DOC", None)
-        elif settings.ENABLE_MULTI_TENANT_MODE:
             feature_flags["MENU_ITEM_ESB_API_DOC"] = False
 
         return OKJsonResponse(data=feature_flags)

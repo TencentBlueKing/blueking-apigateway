@@ -24,21 +24,25 @@ from apigateway.tests.utils.testing import get_response_json
 
 @pytest.mark.parametrize("edition", ["ee", "te"])
 @pytest.mark.parametrize("tenant_mode", [False, True])
-def test_esb_flags_cannot_restore_removed_features(settings, request_factory, mocker, edition, tenant_mode):
+@pytest.mark.parametrize("docs_enabled", [False, True])
+def test_esb_flags_cannot_restore_removed_features(
+    settings, request_factory, mocker, edition, tenant_mode, docs_enabled
+):
     settings.EDITION = edition
     settings.ENABLE_MULTI_TENANT_MODE = tenant_mode
-    settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API_DOC": True}
+    settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API_DOC": docs_enabled}
     mocker.patch(
         "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags",
-        return_value={"MENU_ITEM_ESB_API": True, "SYNC_ESB_TO_APIGW_ENABLED": True, "MENU_ITEM_ESB_API_DOC": True},
+        return_value={
+            "MENU_ITEM_ESB_API": True,
+            "SYNC_ESB_TO_APIGW_ENABLED": True,
+            "MENU_ITEM_ESB_API_DOC": docs_enabled,
+        },
     )
     request = request_factory.get("")
     request.user = mocker.MagicMock(username="admin", is_superuser=True)
     data = get_response_json(FeatureFlagListApi.as_view()(request))["data"]
     assert "MENU_ITEM_ESB_API" not in data
     assert "SYNC_ESB_TO_APIGW_ENABLED" not in data
-    if edition == "te":
-        assert data["MENU_ITEM_ESB_API_DOC"] is (not tenant_mode)
-    else:
-        assert "MENU_ITEM_ESB_API_DOC" not in data
-    assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API_DOC": True}
+    assert data["MENU_ITEM_ESB_API_DOC"] is (edition == "te" and docs_enabled)
+    assert settings.DEFAULT_FEATURE_FLAG["MENU_ITEM_ESB_API_DOC"] is docs_enabled
