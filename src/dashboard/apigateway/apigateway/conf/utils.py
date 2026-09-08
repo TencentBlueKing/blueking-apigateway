@@ -180,12 +180,12 @@ def get_default_feature_flags(
         # 是否展示 "运行数据" => 仪表盘 子菜单
         "ENABLE_RUN_DATA_METRICS": enable_run_data_metrics,
         # 是否展示"组件管理"菜单项，企业版展示，上云版不展示
-        "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
+        "MENU_ITEM_ESB_API": False,
         # TODO: remove in the future, and remove in the helm-chart and te repo
         # 是否展示"组件 API 文档"菜单项
-        "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
+        "MENU_ITEM_ESB_API_DOC": False,
         # 是否将 ESB 数据同步到网关。需要考虑这个是否还需要
-        "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
+        "SYNC_ESB_TO_APIGW_ENABLED": False,
         # 网关编辑页，是否支持填写网关"绑定应用"
         "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
         # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?
@@ -430,37 +430,4 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-audience-validate.md",
         # bk-query-string-rewrite
         "PLUGIN_BK_QUERY_STRING_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-query-string-rewrite.md",
-    }
-
-
-def get_esb_board_configs(env: Env, *, bk_component_api_url: str) -> dict:
-    # django translation, 避免循环引用
-    gettext = lambda s: s  # noqa
-
-    return {
-        "default": {
-            "name": "default",
-            "label": gettext("蓝鲸智云"),
-            "api_envs": [
-                {
-                    "name": "prod",
-                    "label": gettext("正式环境"),
-                    "host": env.str("ESB_DEFAULT_BOARD_PROD_URL", "") or bk_component_api_url,
-                    "description": gettext("访问后端正式环境"),
-                },
-                {
-                    "name": "test",
-                    "label": gettext("测试环境"),
-                    "host": env.str("ESB_DEFAULT_BOARD_TEST_URL", ""),
-                    "description": gettext("访问后端测试环境"),
-                },
-            ],
-            "has_sdk": env.bool("ESB_DEFAULT_BOARD_HAS_SDK", True),
-            "sdk_name": "bkapi-component-open",
-            "sdk_package_prefix": "bkapi_component.open",
-            "sdk_doc_templates": {
-                "python_sdk_usage_example": "python_sdk_usage_example_v2.md",
-            },
-            "sdk_description": gettext("访问蓝鲸智云组件 API"),
-        },
     }

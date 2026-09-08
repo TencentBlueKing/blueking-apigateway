@@ -141,10 +141,5 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
                 "level": "INFO",
                 "propagate": True,
             },
-            "apigateway.apps.esb.management": {
-                "handlers": ["console_simple"],
-                "level": "INFO",
-                "propagate": True,
-            },
         },
     }

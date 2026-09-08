@@ -21,7 +21,6 @@ This project is the "BlueKing API Gateway - Control Plane".
   - operator： Gateway config converter
   - core-api: Gateway high performance core API
   - mcp-proxy: Gateway MCP server proxy
-  - esb: ESB component service
 - BlueKing API Gateway - [Data Plane](https://github.com/TencentBlueKing/blueking-apigateway-apisix)
 
 ## Features

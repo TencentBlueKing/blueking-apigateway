@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import os
 
 from celery.schedules import crontab
 
@@ -38,9 +37,6 @@ CELERY_IMPORTS = [
     "apigateway.apps.mcp_server.tasks",
     "apigateway.controller.tasks",
 ]
-
-if os.getenv("ENABLE_MULTI_TENANT_MODE", "False").lower() not in ("true", "on", "ok", "y", "yes", "1"):
-    CELERY_IMPORTS.append("apigateway.apps.esb.component.tasks")
 
 CELERY_BEAT_SCHEDULE = {
     # "add-every-minute": {

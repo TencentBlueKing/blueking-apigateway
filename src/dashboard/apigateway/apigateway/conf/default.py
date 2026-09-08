@@ -31,13 +31,13 @@ from django.utils.encoding import force_bytes
 from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
+from apigateway.conf.edition import configure as configure_edition
 from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import (
     PatchFeatures,
     get_bkrepo_config,
     get_default_feature_flags,
     get_default_keepalive_options,
-    get_esb_board_configs,
     get_frontend_env_vars,
     get_gateway_quota_config,
     get_plugin_metadata_config,
@@ -129,13 +129,6 @@ INSTALLED_APPS = [
     # 蓝鲸通知中心
     "bk_notice_sdk",
 ]
-
-# 非多租户模式才会有 esb 相关的模型
-if not ENABLE_MULTI_TENANT_MODE:
-    INSTALLED_APPS += [
-        "apigateway.apps.esb",
-        "apigateway.apps.esb.bkcore",
-    ]
 
 MIDDLEWARE = [
     # 这个必须在最前
@@ -292,20 +285,6 @@ DATABASES = {
     },
 }
 
-# 非多租户模式才会有 esb 相关的模型
-if not ENABLE_MULTI_TENANT_MODE:
-    DATABASES["bkcore"] = {
-        "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
-        "USER": env.str("BK_ESB_DATABASE_USER", BK_APP_CODE),
-        "PASSWORD": env.str("BK_ESB_DATABASE_PASSWORD", ""),
-        "HOST": env.str("BK_ESB_DATABASE_HOST", "localhost"),
-        "PORT": env.int("BK_ESB_DATABASE_PORT", 3306),
-        "OPTIONS": {
-            "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
-        },
-    }
-
 # Django 5.2 changed the default MySQL connection charset from utf8(mb3) to utf8mb4.
 # Existing tables are utf8mb3, so pin the connection charset to keep the pre-upgrade
 # behavior and avoid "Illegal mix of collations" errors; override via env when the
@@ -338,27 +317,6 @@ if BK_APIGW_DATABASE_TLS_ENABLED:
 
     DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
 
-
-BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
-if not ENABLE_MULTI_TENANT_MODE and BK_ESB_DATABASE_TLS_ENABLED:
-    bkcore_ssl_options = {
-        "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
-    }
-    # mTLS
-    bkcore_cert_file = env.str("BK_ESB_DATABASE_TLS_CERT_FILE", "")
-    bkcore_key_file = env.str("BK_ESB_DATABASE_TLS_CERT_KEY_FILE", "")
-    if bkcore_cert_file and bkcore_key_file:
-        bkcore_ssl_options["cert"] = bkcore_cert_file
-        bkcore_ssl_options["key"] = bkcore_key_file
-
-    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
-    check_hostname = env.bool("BK_ESB_DATABASE_TLS_CHECK_HOSTNAME", True)
-    bkcore_ssl_options["check_hostname"] = check_hostname
-
-    if "OPTIONS" not in DATABASES["bkcore"]:
-        DATABASES["bkcore"]["OPTIONS"] = {}
-
-    DATABASES["bkcore"]["OPTIONS"]["ssl"] = bkcore_ssl_options
 
 # ==============================================================================
 # redis 配置
@@ -654,8 +612,6 @@ FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
 # so we do a special process for them
 LEGACY_INVALID_PARAMS_GATEWAY_NAMES = env.list("LEGACY_INVALID_PARAMS_GATEWAY_NAMES", default=[])
 
-# 使用网关 bk-esb 管理组件 API 的权限
-USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS = env.bool("USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS", True)
 
 # paas 开发者中心权限续期地址
 BK_PAAS3_URL = env.str("BK_PAAS3_URL", "")
@@ -706,16 +662,11 @@ BKAUTH_SESSION_TIMEOUT = 60
 # 启用多租户模式
 BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
 
-# 验证用户信息的网关 API(租户版本) => 走网关，不走 esb
-# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-login
-if EDITION == "ee" and ENABLE_MULTI_TENANT_MODE:
+# EE 登录统一走 bk-login；TE 由 te_default.py 配置认证端点。
+if EDITION == "ee":
     BKAUTH_USER_INFO_APIGW_URL = (
         BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
     )
-else:
-    # 只在 te 生效，并且会被 te_default.py 中的值覆盖
-    BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
-    BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 
 # ==============================================================================
 # login 配置
@@ -774,10 +725,6 @@ ACCESS_LOG_CONFIG = {
     "es_index": env.str("BK_APIGW_API_LOG_ES_INDEX", "2_bklog_bkapigateway_apigateway_container*"),
 }
 
-BK_ESB_ACCESS_LOG_CONFIG = {
-    "es_time_field_name": "dtEventTimeStamp",
-    "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
-}
 
 MCP_SERVER_ACCESS_LOG_CONFIG = {
     "es_time_field_name": "dtEventTimeStamp",
@@ -928,38 +875,6 @@ MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = _gateway_quota["MAX_PYTHON_SDK_COUNT
 # ==============================================================================
 # ESB 配置
 # ==============================================================================
-ESB_DEFAULT_BOARD = "default"
-
-ESB_MANAGERS = env.list("ESB_MANAGERS", default=APIGW_MANAGERS)
-
-# ESB 组件对应网关的名称
-BK_ESB_GATEWAY_NAME = "bk-esb"
-
-# 用户类型配置
-USER_AUTH_TYPE_CONFIGS = {
-    "default": {
-        "boards": [
-            "default",
-        ],
-    },
-}
-
-# 将 esb 的 jwt 密钥同步到指定名称的网关
-SYNC_ESB_JWT_KEY_GATEWAY_NAMES = {
-    BK_ESB_GATEWAY_NAME: {
-        "description": "蓝鲸 ESB 编码组件",
-        "description_en": "ESB Coding Component",
-        "is_public": False,
-    },
-    "apigw": {
-        "description": "蓝鲸 ESB 占位网关",
-        "description_en": "ESB placeholder gateway",
-        "is_public": False,
-    },
-}
-
-ESB_BOARD_CONFIGS = get_esb_board_configs(env, bk_component_api_url=BK_COMPONENT_API_URL)
-
 # ==============================================================================
 # 版本差异配置
 # ==============================================================================
@@ -978,3 +893,7 @@ USER_AUTH_TYPE = {
 # ==============================================================================
 FORBIDDEN_HOSTS = env.list("FORBIDDEN_HOSTS", default=["localhost", "127.0.0.1", "0.0.0.0"])
 FORBIDDEN_PORTS = env.list("FORBIDDEN_PORTS", default=[])
+
+# Apply edition-owned integrations after shared defaults are available.
+
+configure_edition(globals())

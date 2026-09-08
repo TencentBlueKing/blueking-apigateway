@@ -553,16 +553,17 @@ class APIConsistencyChecker:
             dirs_to_scan = [self.SCOPE_MAP[scope]["code_dir"]]
 
         for sub in dirs_to_scan:
-            urls_file = self.apis_dir / sub / "urls.py"
             scope_prefix = f"/api/v2/{sub}/"
-
-            if urls_file.exists():
-                routes = parse_django_urls(urls_file, prefix=scope_prefix)
-                for route in routes:
-                    norm = normalize_path(route["full_path"]).rstrip("/") + "/"
-                    route["norm_path"] = norm
-                    route["scope_dir"] = sub
-                    self.code_routes[norm] = route
+            # editionctl composes edition_urls.py alongside the shared routes.
+            for filename in ("urls.py", "edition_urls.py"):
+                urls_file = self.apis_dir / sub / filename
+                if urls_file.exists():
+                    routes = parse_django_urls(urls_file, prefix=scope_prefix)
+                    for route in routes:
+                        norm = normalize_path(route["full_path"]).rstrip("/") + "/"
+                        route["norm_path"] = norm
+                        route["scope_dir"] = sub
+                        self.code_routes[norm] = route
 
             # 收集 View 方法信息 和 View→Serializer 映射
             # 使用 "子目录:类名" 作为 key，避免不同子模块同名类互相覆盖

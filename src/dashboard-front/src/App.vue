@@ -97,7 +97,7 @@
           </div>
         </template>
         <div class="content">
-          <RouterView v-if="userLoaded" />
+          <RouterView v-if="userLoaded && !isUnavailableEsbRoute" />
         </div>
       </BkNavigation>
     </div>
@@ -158,6 +158,17 @@ if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
 const systemCls = ref('mac');
 const activeIndex = ref(0);
 const userLoaded = ref(false);
+const isUnavailableEsbRoute = computed(() => userLoaded.value && (
+  (route.params.curTab === 'component' && !featureFlagStore.isEsbDocsEnabled)
+  || (route.matched.some(record => record.name === 'ComponentsMain') && !featureFlagStore.isEnableComManagement)
+));
+watch(isUnavailableEsbRoute, (unavailable) => {
+  if (unavailable) {
+    router.replace({ name: 'ApiDocs',
+      params: { curTab: 'gateway' } });
+  }
+});
+
 const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
 const curLeavePageData = ref({});

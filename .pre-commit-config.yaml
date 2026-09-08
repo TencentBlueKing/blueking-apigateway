@@ -30,26 +30,6 @@ repos:
         pass_filenames: false
   - repo: local
     hooks:
-      - id: black
-        name: black
-        language: python
-        types: [python]
-        entry: black --config=src/esb/pyproject.toml
-        files: src/esb/
-      - id: ruff
-        name: ruff
-        language: python
-        types: [python]
-        entry: bash -c 'cd src/esb && ruff check --config=pyproject.toml --force-exclude --fix .'
-        files: ^src/esb/
-      - id: mypy
-        name: mypy
-        language: python
-        types: [python]
-        entry: mypy --config-file=src/esb/pyproject.toml
-        files: src/esb/
-  - repo: local
-    hooks:
       - id: Name check
         name: Check sensitive info
         verbose: true

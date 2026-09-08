@@ -85,4 +85,8 @@ class FeatureFlagListApi(generics.ListAPIView):
         user_feature_flags = UserFeatureFlag.objects.get_feature_flags(request.user.username)
         feature_flags.update(user_feature_flags)
 
+        if settings.EDITION == "ee":
+            for name in ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"):
+                feature_flags[name] = False
+
         return OKJsonResponse(data=feature_flags)

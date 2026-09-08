@@ -60,6 +60,8 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     apiBaseUrl: () => import.meta.env.VITE_BK_USER_WEB_API_URL || '',
     // 是否开启了多租户模式
     isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
+    // 是否展示独立 ESB 的组件文档
+    isEsbDocsEnabled: state => !state.flags?.ENABLE_MULTI_TENANT_MODE && !!state.flags?.MENU_ITEM_ESB_API_DOC,
     // 是否需要展示display_name
     isEnableDisplayName: state => !!state.flags?.ENABLE_DISPLAY_NAME_RENDER,
     // 是否启用了 AI 问答和翻译功能

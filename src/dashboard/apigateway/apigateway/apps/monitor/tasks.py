@@ -54,6 +54,12 @@ def get_es_index(alarm_type: AlarmTypeEnum) -> str:
     return config[alarm_type.value]["es_index"]
 
 
+def get_notice_ways() -> list[str]:
+    if settings.EDITION == "ee":
+        return [NoticeWayEnum.WECHAT.value]
+    return [NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]
+
+
 @shared_task(name="apigateway.apps.monitor.tasks.monitor_resource_backend")
 def monitor_resource_backend(event_data: Dict[str, Any]):
     """
@@ -68,7 +74,7 @@ def monitor_resource_backend(event_data: Dict[str, Any]):
     flow.append(ResourceBackendAlarmStrategyEnabledFilter())
     flow.append(RelatedLogRecordsFetcher(es_index=get_es_index(alarm_type), output_fields=API_ERRORLOG_OUTPUT_FIELDS))
     # FIXME: the notice_way should be from the alarm_strategy
-    flow.append(ResourceBackendAlerter(notice_ways=[NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]))
+    flow.append(ResourceBackendAlerter(notice_ways=get_notice_ways()))
 
     flow.run(events=[event])
 
@@ -87,7 +93,7 @@ def monitor_app_request(event_data: Dict[str, Any]):
     flow.append(AppRequestAppCodeRequiredFilter())
     flow.append(RelatedLogRecordsFetcher(es_index=get_es_index(alarm_type), output_fields=API_ERRORLOG_OUTPUT_FIELDS))
     # FIXME: the notice_way should be from the alarm_strategy
-    flow.append(AppRequestAlerter(notice_ways=[NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]))
+    flow.append(AppRequestAlerter(notice_ways=get_notice_ways()))
 
     flow.run(events=[event])
 
@@ -104,7 +110,7 @@ def monitor_nginx_error(event_data: Dict[str, Any]):
     flow = AlertFlow()
     flow.append(AlarmRecordCreator())
     flow.append(RelatedLogRecordsFetcher(es_index=get_es_index(alarm_type), output_fields=NGINX_ERROR_OUTPUT_FIELDS))
-    flow.append(NginxErrorAlerter(notice_ways=[NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]))
+    flow.append(NginxErrorAlerter(notice_ways=get_notice_ways()))
 
     flow.run(events=[event])
 

@@ -120,15 +120,15 @@ class BKCMSIGateway(BaseCMSIComponent):
         return True, ""
 
     def send_im(self, tenant_id: str, params: dict, username: str = "") -> Tuple[bool, str]:
-        # NOTE: only works in ieod-clouds, there is no im service in other clouds
-        raise NotImplementedError
+        # IM is available through TE ESB only. Return the transport failure
+        # contract so alerting can continue with the remaining channels.
+        return False, _("当前通知网关不支持 IM 通知")
 
 
 cmsi_component: BaseCMSIComponent
 
-# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-cmsi
-if settings.EDITION == "ee" and settings.ENABLE_MULTI_TENANT_MODE:
-    logger.info("multi-tenant mode enabled, use bkcmsi gateway instead of cmsi component in esb")
+if settings.EDITION == "ee":
+    logger.info("EE uses the bk-cmsi gateway")
     cmsi_component = BKCMSIGateway()
 else:
     # NOTE: ieod-clouds should use this component, not the bk-cmsi-gateway

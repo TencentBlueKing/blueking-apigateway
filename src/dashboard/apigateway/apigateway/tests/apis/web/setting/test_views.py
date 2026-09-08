@@ -30,7 +30,9 @@ class TestFeatureFlagListApi:
             (False, False),
         ],
     )
-    def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected):
+    @pytest.mark.parametrize("edition", ["ee", "te"])
+    def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected, edition):
+        settings.EDITION = edition
         settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
         mocker.patch(
             "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags",
@@ -43,7 +45,7 @@ class TestFeatureFlagListApi:
         view = FeatureFlagListApi.as_view()
         response = view(request)
         result = get_response_json(response)
-        assert len(result["data"]) == 3
+        assert len(result["data"]) == (4 if edition == "ee" else 3)
         assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
-        assert result["data"]["MENU_ITEM_ESB_API"] == expected
-        assert result["data"]["MENU_ITEM_ESB_API_DOC"] is True
+        assert result["data"]["MENU_ITEM_ESB_API"] == (expected if edition == "te" else False)
+        assert result["data"]["MENU_ITEM_ESB_API_DOC"] is (edition == "te")
