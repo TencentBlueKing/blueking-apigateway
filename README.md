@@ -21,7 +21,6 @@
   - operator: 网关配置转换
   - core-api: 网关高性能核心 API
   - mcp-proxy: 网关 MCP server 代理
-  - esb: ESB 组件服务
 - 蓝鲸 API 网关 - [数据面](https://github.com/TencentBlueKing/blueking-apigateway-apisix)
 
 ## 功能特性

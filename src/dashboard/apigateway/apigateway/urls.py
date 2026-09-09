@@ -120,12 +120,6 @@ urlpatterns = [
     path("backend/notice/", include(("apigateway.notice.urls", "notice"), namespace="notice")),
 ]
 
-# 非多租户模式才会有 esb 相关的接口
-if not settings.ENABLE_MULTI_TENANT_MODE:
-    urlpatterns += [
-        # esb
-        path("backend/esb/", include("apigateway.apps.esb.urls")),
-    ]
 
 if settings.DEBUG:
     # backend/docs/

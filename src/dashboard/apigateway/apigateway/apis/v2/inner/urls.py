@@ -230,9 +230,9 @@ urlpatterns = [
     ),
 ]
 
-# 非多租户模式才会有 esb 相关的接口
-if not settings.ENABLE_MULTI_TENANT_MODE:
-    from . import views_esb
+# TE 使用独立部署的 ESB，接口与租户模式无关
+if settings.EDITION == "te":
+    from . import views_esb  # type: ignore[attr-defined]  # Provided by the TE edition.
 
     urlpatterns += [
         path(

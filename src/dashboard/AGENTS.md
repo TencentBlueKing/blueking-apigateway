@@ -164,16 +164,11 @@ uv lock --check
 
 ## Edition System
 
-Edition-specific code lives under `apigateway/apigateway/editions/`. CI uses
-the enterprise edition before lint and tests:
-
-```bash
-cd "$DASHBOARD_ROOT"
-uv run make edition-ee
-```
-
-Use the other edition targets in the Makefile only when the task explicitly
-requires another edition or an edition reset.
+EE uses the shared source directly; it needs no edition activation. TE-specific
+implementations live in the linked `apigateway/apigateway/editions/te` checkout.
+For TE verification, run `uv run make edition-te`, then
+`EDITION=te uv run make lint-check` and `EDITION=te uv run make test`.
+Keep shared API definitions, routes and database routing in the main repository.
 
 ## Linting
 
@@ -197,7 +192,6 @@ The full test gate is:
 
 ```bash
 cd "$DASHBOARD_ROOT"
-uv run make edition-ee
 uv run make test
 ```
 
@@ -236,8 +230,8 @@ For code changes:
 1. Add or update focused tests under `apigateway/apigateway/tests/`.
 2. Update API docs and gateway YAML when an API contract changes.
 3. Run the narrow relevant pytest target first.
-4. Run `uv run make edition-ee && uv run make lint-check` for the CI-style lint
+4. Run `uv run make lint-check` for the CI-style lint
    gate. Use `uv run make lint` only when auto-fix changes are intended.
-5. Run `uv run make edition-ee && uv run make test` for broad or shared changes.
+5. Run `uv run make test` for broad or shared changes.
 
 If a required verification command is skipped, say exactly why.

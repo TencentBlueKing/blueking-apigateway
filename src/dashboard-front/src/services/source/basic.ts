@@ -61,9 +61,7 @@ export function getFeatureFlags(params: {
     ENABLE_MCP_SERVER_OBSERVABILITY: boolean
     ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT: boolean
     GATEWAY_APP_BINDING_ENABLED: boolean
-    MENU_ITEM_ESB_API: boolean
     MENU_ITEM_ESB_API_DOC: boolean
-    SYNC_ESB_TO_APIGW_ENABLED: boolean
   }>(`${path}/settings/feature-flags/`, params);
 }
 

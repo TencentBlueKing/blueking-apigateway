@@ -20,7 +20,7 @@
   <div class="docs-main">
     <!--  顶部 网关 / 组件 Tab  -->
     <header
-      v-if="!featureFlagStore.isTenantMode"
+      v-if="featureFlagStore.isEsbDocsEnabled"
       class="page-tabs"
     >
       <nav class="tabs-group">
@@ -42,7 +42,7 @@
     </header>
     <!--  正文  -->
     <main
-      :class="[{ 'pt-24px': featureFlagStore.isTenantMode}, routerViewWrapperClass]"
+      :class="[{ 'pt-24px': !featureFlagStore.isEsbDocsEnabled}, routerViewWrapperClass]"
       class="docs-main-content"
     >
       <!--  当选中 网关API文档 时  -->
@@ -591,8 +591,8 @@ const isActiveNavPanel = (panelName: string) => {
 
 onBeforeMount(() => {
   const { params } = route;
-  // 如果是多租户模式，直接跳转到网关API文档
-  if (featureFlagStore.isTenantMode) {
+  // 未启用 ESB 文档时只展示网关 API 文档
+  if (!featureFlagStore.isEsbDocsEnabled) {
     curTab.value = 'gateway';
     return;
   }
@@ -601,8 +601,8 @@ onBeforeMount(() => {
 });
 
 onMounted(async () => {
-  // 如果是多租户模式，不需要获取 esb 列表
-  if (!featureFlagStore.isTenantMode) {
+  // 仅为启用 ESB 文档的版本请求组件数据
+  if (featureFlagStore.isEsbDocsEnabled) {
     await fetchComponentSystemList();
   }
 });

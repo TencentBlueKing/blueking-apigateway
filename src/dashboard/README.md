@@ -12,8 +12,10 @@ make init
 # 查看当前版本
 make edition
 
-# 切换开源版
-make edition-ee
+# EE 直接使用公共源码，无需切换
+# 验证 TE 时先关联 TE 仓库
+make edition-te
+EDITION=te uv run make test
 
 # 进入开发模式
 make edition-develop
@@ -24,6 +26,8 @@ make edition-develop
 ```shell
 make edition-modules
 ```
+
+EE 镜像请在未激活 TE 的独立 checkout 中构建；`image-ee` 和 `dev-ee-image` 会拒绝打包已激活的 TE 源码。
 
 ## 本地开发
 

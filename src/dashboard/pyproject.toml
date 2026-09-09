@@ -324,11 +324,6 @@ ignore_imports = [
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.service.release",
-    # -- esb legacy
-    "apigateway.apps.esb.*.* -> apigateway.biz.*",
-    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
-    "apigateway.apps.esb.component.convertor -> apigateway.components.esb_components",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
     # 需要重构的依赖
 ]
 
@@ -405,7 +400,6 @@ forbidden_modules = [
     "apigateway.biz.release.*",
     "apigateway.biz.release.*.*",
     "apigateway.biz.esb.board_config",
-    "apigateway.biz.esb.component_resource_binding",
     "apigateway.biz.esb.decorators",
     "apigateway.biz.esb.permissions",
     "apigateway.biz.esb.system_doc_category",
@@ -467,13 +461,6 @@ ignore_imports = [
     "apigateway.apps.permission.management.commands.reconcile_oauth2_builtin_permissions -> apigateway.controller.tasks.oauth2_builtin",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
-    # -- esb legacy
-    "apigateway.apps.esb.*.* -> apigateway.core.models",
-    "apigateway.apps.esb.*.* -> apigateway.core.constants",
-    "apigateway.apps.esb.*.* -> apigateway.biz.*",
-    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
-    "apigateway.apps.esb.*.* -> apigateway.components.*",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
 ]
 
 [[tool.importlinter.contracts]]

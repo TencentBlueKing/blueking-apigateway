@@ -1,14 +1,6 @@
 #!/bin/bash
 set -ex
 
-while getopts ":a:" opt; do
-    case ${opt} in
-        a)
-            esb_verified_user_exempted_apps=${OPTARG}
-            ;;
-    esac
-done
-
 envfile="${BK_HOME}/etc/bk_apigateway/bk_apigateway.env"
 
 if [ -f "${envfile}" ]; then
@@ -19,10 +11,6 @@ fi
 
 # 数据库
 python manage.py migrate
-# only init esb when ENABLE_MULTI_TENANT_MODE != true/True
-if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
-python manage.py migrate bkcore --database bkcore
-fi
 
 python manage.py loaddata -i apigateway/fixtures/*.yaml
 
@@ -35,16 +23,6 @@ python manage.py init_default_data_plane
 python manage.py bind_gateways_to_default_data_plane
 
 
-# only init esb when ENABLE_MULTI_TENANT_MODE != true/True
-if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
-    # ESB 相关
-    python manage.py create_esb_jwt_key
-    python manage.py create_esb_gateway
-    python manage.py sync_esb_jwt_key_to_gateway
-    python manage.py update_esb_user_verified_unrequired_apps ${esb_verified_user_exempted_apps}
-    python manage.py sync_esb_verified_user_exempted_apps_to_gateway
-    python manage.py add_plugin_error_status_code_200
-fi
 
 # 蓝鲸通知中心
 python manage.py register_to_bk_notice

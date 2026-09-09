@@ -29,8 +29,8 @@ urlpatterns = [
 ]
 
 
-# 非多租户模式才会有 esb 相关的接口
-if not settings.ENABLE_MULTI_TENANT_MODE:
+# TE 使用独立部署的 ESB，接口与租户模式无关
+if settings.EDITION == "te":
     urlpatterns += [
         # esb
         path("esb/boards/<slug:board>/systems/", include("apigateway.apis.web.docs.esb.system.urls")),

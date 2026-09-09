@@ -36,7 +36,7 @@ jobs:
       run: cd src/dashboard && export UV_PROJECT_ENVIRONMENT="${pythonLocation}" && uv sync --locked --all-extras --dev
 
     - name: Lint
-      run: make edition-ee && make lint-check
+      run: make lint-check
       working-directory: src/dashboard
 
     - name: Aqua Security Trivy
@@ -47,5 +47,5 @@ jobs:
         scan-ref: 'src/dashboard'
 
     - name: Test
-      run:  make edition-ee && make test
+      run:  make test
       working-directory: src/dashboard

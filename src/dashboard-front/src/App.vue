@@ -97,7 +97,7 @@
           </div>
         </template>
         <div class="content">
-          <RouterView v-if="userLoaded" />
+          <RouterView v-if="userLoaded && !isUnavailableEsbRoute" />
         </div>
       </BkNavigation>
     </div>
@@ -158,6 +158,16 @@ if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
 const systemCls = ref('mac');
 const activeIndex = ref(0);
 const userLoaded = ref(false);
+const isUnavailableEsbRoute = computed(() => userLoaded.value && (
+  (route.params.curTab === 'component' && !featureFlagStore.isEsbDocsEnabled)
+));
+watch(isUnavailableEsbRoute, (unavailable) => {
+  if (unavailable) {
+    router.replace({ name: 'ApiDocs',
+      params: { curTab: 'gateway' } });
+  }
+});
+
 const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
 const curLeavePageData = ref({});
@@ -170,13 +180,6 @@ const menuList = ref<IHeaderNav[]>([
     id: 1,
     url: 'Home',
     enabled: true,
-    link: '',
-  },
-  {
-    name: t('组件管理'),
-    id: 2,
-    url: 'ComponentsMain',
-    enabled: false,
     link: '',
   },
   {
@@ -273,16 +276,8 @@ async function getFlagList() {
   try {
     await featureFlagStore.fetchFlags();
     enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
-    const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
-      && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
 
     featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
-    featureFlagStore.setDisplayComManagement(isEnabledComManagement);
-
-    const comNav = menuList.value.find(item => ['ComponentsMain'].includes(item.url));
-    if (comNav) {
-      comNav.enabled = isEnabledComManagement;
-    }
 
     // 如果开启了bk-cli菜单，则需要将bk-cli菜单显示出来
     const isBkCliEnabled = featureFlagStore.flags?.ENABLE_BK_CLI;

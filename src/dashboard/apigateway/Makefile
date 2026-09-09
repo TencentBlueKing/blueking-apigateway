@@ -22,10 +22,6 @@ edition:
 edition-te:
 	cd .. && make edition-te
 
-.PHONY: edition-ee
-edition-ee:
-	cd .. && make edition-ee
-
 .PHONY: edition-reset
 edition-reset:
 	cd .. && make edition-reset

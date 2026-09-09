@@ -28,25 +28,8 @@ sync_bk_apigateway() {
     echo "API gateway bk-apigateway sync definition end"
 }
 
-sync_bk_esb() {
-    # sync gateway bk-esb
-    echo "API gateway bk-esb sync definition start ..."
-    python manage.py sync_apigw_config --gateway-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
-    python manage.py sync_apigw_stage --gateway-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
-    python manage.py update_esb_gateway_config
-    python manage.py sync_to_gateway_and_release
-    python manage.py grant_apigw_permissions --gateway-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-esb-definition.yaml"
-    python manage.py fetch_apigw_public_key --gateway-name=bk-esb --host=${DASHBOARD_INNER_URL}/backend
-    echo "API gateway bk-esb sync definition end"
-}
-
 # 同步全局资源
 python manage.py sync_global_resources
 
 # 同步内置网关
 sync_bk_apigateway
-
-# only init esb when ENABLE_MULTI_TENANT_MODE != true/True
-if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
-    sync_bk_esb
-fi

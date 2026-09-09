@@ -1,4 +1,9 @@
-export BKPAAS_ENVIRONMENT="dev"
+export EDITION="${EDITION:-ee}"
+if [ "$EDITION" = "te" ]; then
+    export BKPAAS_ENVIRONMENT="te_dev"
+else
+    export BKPAAS_ENVIRONMENT="dev"
+fi
 export ENCRYPT_KEY="dGVzdDMzNDA4YWJlNDMyNGJmYzE4Mjk4NGM3ZXRlc3Q="
 export BK_APP_CODE="test"
 export BK_APP_SECRET="egrKq5TnJvlFiPLIrtquv3Mow792xVgTzqTiSrVkUIk="
