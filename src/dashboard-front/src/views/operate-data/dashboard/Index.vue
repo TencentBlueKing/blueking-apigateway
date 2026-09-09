@@ -789,8 +789,8 @@ onMounted(() => {
 
   .line-container {
     display: flex;
-    align-items: center;
     margin-bottom: 16px;
+    align-items: stretch;
   }
 
   .requests {
