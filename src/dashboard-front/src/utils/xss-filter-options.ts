@@ -15,25 +15,22 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-export * from './calcTextWidth';
-export * from './dom';
-export * from './encode';
-export * from './getSearchSelectorParams';
-export * from './message';
-export * from './generateColorHue';
-export * from './random';
-export * from './url';
-export * from './isAfter24h';
-export * from './copy';
-export * from './sortByKey';
-export * from './downloadFile';
-export * from './getStatusText';
-export * from './getStageStatus';
-export * from './json2Yaml';
-export * from './yaml2Json';
-export * from './getMethodsTheme';
-export * from './blobDownload';
-export * from './getStrFromFile';
-export * from './getLoginURL';
-export * from './dayUtc';
-export * from './xss-filter-options';
+
+/**
+ * Drop <style> tags and their bodies. The package whitelist keeps the tag,
+ * so global rules and @import would otherwise survive filtering.
+ */
+export function rejectStyleTag(
+  tag: string,
+  _html: string,
+  options: { isWhite?: boolean },
+): void {
+  if (tag === 'style') {
+    options.isWhite = false;
+  }
+}
+
+export const xssFilterDefaultOptions = {
+  stripIgnoreTagBody: ['style'],
+  onTag: rejectStyleTag,
+};

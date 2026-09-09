@@ -521,3 +521,39 @@ class TestSanitizeDescriptionsForCodegen:
         # info is preserved (gateway-controlled, sanitize skips info block)
         assert document["info"]["description"] == "SDK for demo"
         assert document["info"]["title"] == "demo"
+
+
+def test_build_sdk_openapi_rejects_external_ref_without_fetching(mocker, settings):
+    resource_version = SimpleNamespace(version="1.2.3", gateway=SimpleNamespace(name="demo"), data=[])
+    settings.SDK_SERVER_URL_TEMPLATE = "https://{gateway_name}.example.com/{stage_name}"
+    mock_get = mocker.patch("requests.get")
+    mocker.patch(
+        "apigateway.biz.sdk.openapi.OpenAPIExportManager.get_resource_version_openapi",
+        return_value={
+            "openapi": "3.0.1",
+            "info": {"title": "demo", "version": "1.2.3"},
+            "servers": [{"url": "/"}],
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "list_users",
+                        "responses": {
+                            "200": {
+                                "description": "",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"$ref": "http://203.0.113.10/internal-schema.json"},
+                                    }
+                                },
+                            }
+                        },
+                    }
+                }
+            },
+        },
+    )
+
+    with pytest.raises(ValueError, match="external \\$ref"):
+        build_sdk_openapi(resource_version)
+
+    mock_get.assert_not_called()

@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import signal
 
 import pytest
 from ddf import G
@@ -1665,6 +1666,21 @@ class TestOpenAPIImportManagerValidateRefs:
         }
 
         assert OpenAPIImportManager._has_unsafe_refs(data) is False
+
+    def test_cyclic_structure_finishes(self):
+        """Shared or cyclic nodes must be visited once, or the scan never returns."""
+        data = {"name": "cycle"}
+        data["self"] = data
+
+        def _stop(signum, frame):
+            raise TimeoutError("ref scan did not terminate")
+
+        signal.signal(signal.SIGALRM, _stop)
+        signal.setitimer(signal.ITIMER_REAL, 1.0)
+        try:
+            OpenAPIImportManager._validate_refs(data)
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
 
 
 class TestSyncOpenAPIResourcesFromContent:

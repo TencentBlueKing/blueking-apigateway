@@ -40,6 +40,7 @@ import '@unocss/reset/tailwind-compat.css';
 
 import i18n from './locales';
 import { BkXssFilterDirective } from '@blueking/xss-filter';
+import { xssFilterDefaultOptions } from '@/utils/xss-filter-options';
 
 import directive from '@/directives';
 import AgIcon from '@/components/ag-icon/Index.vue';
@@ -62,7 +63,9 @@ app.use(createPinia())
   .use(bkui)
   .use(i18n)
   .use(mavonEditor)
-  .use(BkXssFilterDirective)
+  .use(BkXssFilterDirective, {
+    defaultOptions: xssFilterDefaultOptions,
+  })
   .use(directive)
   // 全局组件
   .component('AgIcon', AgIcon)

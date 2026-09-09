@@ -37,11 +37,13 @@ from collections.abc import MutableMapping, MutableSequence
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from openapi_spec_validator import validate
+from jsonschema_path import SchemaPath
+from openapi_spec_validator.shortcuts import get_validator_cls
 
 from apigateway.core.constants import HTTP_METHOD_CHOICES
 from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
+from apigateway.utils.openapi_refs import UNSAFE_OPENAPI_REF_MESSAGE, validate_openapi_refs
 
 if TYPE_CHECKING:
     from apigateway.biz.sdk.config import SDKLanguageConfig
@@ -155,6 +157,25 @@ def _sanitize_components(components: MutableMapping[str, Any]) -> None:
                 _sanitize_spec_object(obj)
 
 
+def _reject_remote_ref(_uri: str) -> None:
+    raise ValueError(UNSAFE_OPENAPI_REF_MESSAGE)
+
+
+_SAFE_REF_HANDLERS = {
+    "http": _reject_remote_ref,
+    "https": _reject_remote_ref,
+    "file": _reject_remote_ref,
+}
+
+
+def _validate_sdk_document(document: dict[str, Any]) -> None:
+    """Validate the SDK spec without retrieving remote or file $ref targets."""
+    validate_openapi_refs(document)
+    validator_cls = get_validator_cls(document)
+    spec_path = SchemaPath.from_dict(document, handlers=_SAFE_REF_HANDLERS)
+    validator_cls(spec_path).validate()
+
+
 def sanitize_descriptions_for_codegen(document: dict[str, Any]) -> None:
     """Strip free-form descriptive text from an OpenAPI document **in place**.
 
@@ -218,7 +239,7 @@ def build_sdk_openapi(resource_version: ResourceVersion) -> dict[str, Any]:
 
     sanitize_descriptions_for_codegen(document)
 
-    validate(document)
+    _validate_sdk_document(document)
     return document
 
 
