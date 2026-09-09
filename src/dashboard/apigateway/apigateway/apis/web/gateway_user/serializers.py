@@ -29,4 +29,4 @@ class GatewayUserRoleOutputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.gateway_user_permission.serializers.GatewayUserRoleOutputSLZ"
+        ref_name = "apigateway.apis.web.gateway_user.serializers.GatewayUserRoleOutputSLZ"

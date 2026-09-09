@@ -20,7 +20,7 @@ from django.urls import URLPattern, URLResolver, get_resolver
 
 from apigateway.apis.web.access_log import views as access_log_views
 from apigateway.apis.web.gateway import views as gateway_views
-from apigateway.apis.web.gateway_user_permission import views as gateway_user_permission_views
+from apigateway.apis.web.gateway_user import views as gateway_user_views
 from apigateway.apis.web.mcp_server import views as mcp_server_views
 from apigateway.apis.web.mcp_server_log import views as mcp_server_log_views
 from apigateway.apis.web.mcp_server_metrics import views as mcp_server_metrics_views
@@ -35,7 +35,7 @@ OPERATE_VIEWS = (
     access_log_views.LogTimeChartRetrieveApi,
     access_log_views.SearchLogListApi,
     access_log_views.LogExportApi,
-    gateway_user_permission_views.GatewayUserRoleRetrieveApi,
+    gateway_user_views.GatewayUserRoleRetrieveApi,
     metrics_views.QueryRangeApi,
     metrics_views.QueryInstantApi,
     metrics_views.QuerySummaryApi,
