@@ -18,7 +18,7 @@
 
 import type { SetupContext } from 'vue';
 import { Divider, PopConfirm, Popover } from 'bkui-vue';
-import { bkTooltips } from 'bkui-vue/lib/directives';
+import { type IOptions, bkTooltips } from 'bkui-vue/lib/directives';
 import { debounce } from 'lodash-es';
 import {
   type ViewedBoundsFunctionType,
@@ -269,7 +269,6 @@ export default defineComponent({
       ebpf_tap_port_name: ebpfTapPortName = '',
       group_info: groupInfo,
       is_expand: isExpand,
-      attributes,
       depth = 0,
     } = span as Record<string, any>;
 
@@ -399,13 +398,14 @@ export default defineComponent({
                             <span
                               class={isHaveRead ? 'read-service' : ''}
                               onClick={() => {
-                                this.setActiveSpan(
-                                  `${span?.span_id}&${span?.service}&${span?.parent_span_id ?? ''}&${span?.layer}`,
-                                );
+                                // 复用上方 curClickSpan，保证激活态标识与渲染层判定永远一致
+                                this.setActiveSpan(curClickSpan);
                               }}
                               v-clickOutSide={(e: MouseEvent) => {
                                 e.stopPropagation();
-                                if ((e?.target as HTMLElement)?.className !== 'read-service') {
+                                const target = e?.target as HTMLElement | null;
+                                // className 可能包含多个类名，用 classList 做包含判断更健壮
+                                if (!target?.classList.contains('read-service')) {
                                   this.setActiveSpan('');
                                 }
                               }}
@@ -502,7 +502,7 @@ export default defineComponent({
                           extCls: 'trace-viewer-popover-confirm',
                           popoverDelay: 0,
                           arrow: false,
-                        }}
+                        } as any}
                       />
                       {rpc && (
                         <span>

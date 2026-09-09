@@ -47,10 +47,13 @@
           class="card-item add-stage"
           @click="handleAddStage"
         >
-          <AgIcon
-            name="add-small"
-            size="40"
-          />
+          <div class="flex flex-column add-stage-text">
+            <AgIcon
+              name="add-small"
+              size="40"
+            />
+            <div>{{ t('新建环境') }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -438,16 +441,16 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
 
-    i {
-      font-size: 40px;
-      color: #979BA5;
-    }
-
-    &:hover {
-      cursor: pointer;
+    .add-stage-text {
+      color: #979ba5;
 
       i {
-        color: #3A84FF;
+        font-size: 40px;
+      }
+
+      &:hover {
+        cursor: pointer;
+        color: #3a84ff;
       }
     }
   }
