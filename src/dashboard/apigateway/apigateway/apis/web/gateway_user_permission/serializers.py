@@ -20,7 +20,7 @@ from rest_framework import serializers
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 
 
-class GatewayUserPermissionOutputSLZ(serializers.Serializer):
+class GatewayUserRoleOutputSLZ(serializers.Serializer):
     # choices 仅用于 swagger 渲染 enum，输出序列化不做校验
     role = serializers.ChoiceField(
         choices=GatewayRoleEnum.get_choices(),
@@ -29,4 +29,4 @@ class GatewayUserPermissionOutputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.gateway_user_permission.serializers.GatewayUserPermissionOutputSLZ"
+        ref_name = "apigateway.apis.web.gateway_user_permission.serializers.GatewayUserRoleOutputSLZ"

@@ -20,6 +20,7 @@ import json
 from copy import deepcopy
 from datetime import datetime
 from io import StringIO
+from unittest import mock
 
 import pytest
 
@@ -143,7 +144,7 @@ class TestLogDetailListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["fields"] == ES_LOG_FIELDS
         assert result["data"]["results"][0]["llm_summary"] == llm_summary
-        search_logs.assert_called_once_with(request_id, gateway_id=fake_gateway.id)
+        search_logs.assert_called_once_with(request_id)
 
 
 class TestLogLinkRetrieveApi:
@@ -161,6 +162,22 @@ class TestLogLinkRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["link"]
+
+    def test_retrieve_allows_non_member(self, request_view, fake_gateway):
+        user = mock.MagicMock(username="guest", is_authenticated=True, is_anonymous=False)
+        response = request_view(
+            "GET",
+            "access_log.logs.link",
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "request_id": "2230d0e25b274cb98b57ca5d0946d0f7",
+            },
+            gateway=fake_gateway,
+            user=user,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["link"]
 
 
 class TestLogDetailInfoApi:

@@ -21,17 +21,17 @@ from rest_framework import generics, status
 from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import GatewayUserPermissionOutputSLZ
+from .serializers import GatewayUserRoleOutputSLZ
 
 
-class GatewayUserPermissionRetrieveApi(generics.RetrieveAPIView):
+class GatewayUserRoleRetrieveApi(generics.RetrieveAPIView):
     gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     @swagger_auto_schema(
         operation_description="获取当前用户在该网关的角色",
-        responses={status.HTTP_200_OK: GatewayUserPermissionOutputSLZ()},
+        responses={status.HTTP_200_OK: GatewayUserRoleOutputSLZ()},
         tags=["WebAPI.Gateway"],
     )
     def get(self, request, *args, **kwargs):
-        slz = GatewayUserPermissionOutputSLZ(request.gateway_member)
+        slz = GatewayUserRoleOutputSLZ(request.gateway_member)
         return OKJsonResponse(data=slz.data)

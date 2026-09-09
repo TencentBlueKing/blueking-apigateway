@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext as _
 
@@ -41,11 +41,11 @@ class LogHandler:
         return logs
 
     @staticmethod
-    def search_logs_by_request_id(request_id: str, gateway_id: Optional[int] = None) -> Tuple[int, List[Dict]]:
+    def search_logs_by_request_id(request_id: str) -> Tuple[int, List[Dict]]:
         """
         根据 request_id 查询日志
         """
-        client = LogSearchClient(request_id=request_id, gateway_id=gateway_id)
+        client = LogSearchClient(request_id=request_id)
 
         total_count, logs = client.search_logs()
         # 去除 params、body 中的敏感数据

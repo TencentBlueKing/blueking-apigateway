@@ -17,8 +17,8 @@
 #
 from django.urls import path
 
-from .views import GatewayUserPermissionRetrieveApi
+from .views import GatewayUserRoleRetrieveApi
 
 urlpatterns = [
-    path("permissions/", GatewayUserPermissionRetrieveApi.as_view(), name="gateway.user_permissions.retrieve"),
+    path("role/", GatewayUserRoleRetrieveApi.as_view(), name="gateway.user_role.retrieve"),
 ]

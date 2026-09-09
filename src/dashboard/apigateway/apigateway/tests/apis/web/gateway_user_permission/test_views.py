@@ -32,7 +32,7 @@ pytestmark = pytest.mark.django_db
         ("operator", GatewayRoleEnum.OPERATOR.value),
     ],
 )
-def test_retrieve_gateway_user_permissions(request_view, fake_gateway, username, role):
+def test_retrieve_gateway_user_role(request_view, fake_gateway, username, role):
     GatewayMember.objects.update_or_create(
         gateway=fake_gateway,
         username=username,
@@ -46,7 +46,7 @@ def test_retrieve_gateway_user_permissions(request_view, fake_gateway, username,
 
     response = request_view(
         "GET",
-        "gateway.user_permissions.retrieve",
+        "gateway.user_role.retrieve",
         path_params={"gateway_id": fake_gateway.id},
         user=user,
     )
@@ -55,7 +55,7 @@ def test_retrieve_gateway_user_permissions(request_view, fake_gateway, username,
     assert response.json()["data"] == {"role": role}
 
 
-def test_retrieve_gateway_user_permissions_rejects_non_member(request_view, fake_gateway):
+def test_retrieve_gateway_user_role_rejects_non_member(request_view, fake_gateway):
     user = mock.MagicMock(
         username="guest",
         is_authenticated=True,
@@ -64,7 +64,7 @@ def test_retrieve_gateway_user_permissions_rejects_non_member(request_view, fake
 
     response = request_view(
         "GET",
-        "gateway.user_permissions.retrieve",
+        "gateway.user_role.retrieve",
         path_params={"gateway_id": fake_gateway.id},
         user=user,
     )
@@ -72,7 +72,7 @@ def test_retrieve_gateway_user_permissions_rejects_non_member(request_view, fake
     assert response.status_code == 403
 
 
-def test_retrieve_gateway_user_permissions_reuses_permission_queries(
+def test_retrieve_gateway_user_role_reuses_permission_queries(
     request_view,
     django_assert_num_queries,
     fake_gateway,
@@ -80,7 +80,7 @@ def test_retrieve_gateway_user_permissions_reuses_permission_queries(
     with django_assert_num_queries(2):
         response = request_view(
             "GET",
-            "gateway.user_permissions.retrieve",
+            "gateway.user_role.retrieve",
             path_params={"gateway_id": fake_gateway.id},
         )
 

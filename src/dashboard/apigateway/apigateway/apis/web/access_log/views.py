@@ -239,7 +239,7 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
-        total_count, logs = LogHandler.search_logs_by_request_id(request_id, gateway_id=request.gateway.id)
+        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 
@@ -293,7 +293,7 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
     ),
 )
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
-    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+    gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
         """

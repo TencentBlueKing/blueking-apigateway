@@ -192,7 +192,7 @@ class MCPServerLogDetailApi(generics.RetrieveAPIView):
     gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        result = search_chain_logs_by_any_id(request_id, gateway_id=request.gateway.id)
+        result = search_chain_logs_by_any_id(request_id)
         return OKJsonResponse(data=result)
 
 
@@ -217,7 +217,7 @@ class MCPServerLogTraceApi(generics.RetrieveAPIView):
     gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def retrieve(self, request, x_request_id, *args, **kwargs):
-        result = search_chain_logs_with_gateway_by_any_id(x_request_id, gateway_id=request.gateway.id)
+        result = search_chain_logs_with_gateway_by_any_id(x_request_id)
         return OKJsonResponse(data=result)
 
 
@@ -249,7 +249,7 @@ class MCPServerLogChainApi(generics.RetrieveAPIView):
     gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        chain_data = search_chain_with_summary_by_any_id(request_id, gateway_id=request.gateway.id)
+        chain_data = search_chain_with_summary_by_any_id(request_id)
         slz = MCPServerLogChainOutputSLZ(instance=chain_data)
         return OKJsonResponse(data=slz.data)
 

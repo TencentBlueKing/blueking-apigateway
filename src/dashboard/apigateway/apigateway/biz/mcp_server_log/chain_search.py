@@ -49,12 +49,10 @@ class MCPServerLogChainSearchClient:
         request_id: str = "",
         x_request_id: str = "",
         upstream_request_id: str = "",
-        gateway_id: Optional[int] = None,
     ):
         self._request_id = request_id
         self._x_request_id = x_request_id
         self._upstream_request_id = upstream_request_id
-        self._gateway_id = gateway_id
         self._es_client = BKLogESClient(self._es_index)
 
     def search_chain(self) -> Dict[str, Any]:
@@ -96,7 +94,6 @@ class MCPServerLogChainSearchClient:
             self._es_client,
             self._es_time_field_name,
             request_id=self._request_id,
-            gateway_id=self._gateway_id,
         )
 
         if not logs:
@@ -141,7 +138,6 @@ class MCPServerLogChainSearchClient:
             search_gateway_log(
                 self._request_id,
                 gateway_type="upstream",
-                gateway_id=self._gateway_id,
             )
             if self._request_id
             else None
@@ -186,7 +182,6 @@ class MCPServerLogChainSearchClient:
             self._es_client,
             self._es_time_field_name,
             x_request_id=self._x_request_id,
-            gateway_id=self._gateway_id,
         )
 
         if not logs:
@@ -231,7 +226,6 @@ class MCPServerLogChainSearchClient:
             search_gateway_log(
                 request_id,
                 gateway_type="upstream",
-                gateway_id=self._gateway_id,
             )
             if request_id
             else None
@@ -283,31 +277,22 @@ class MCPServerLogChainSearchClient:
                 "downstream_gateway_log": None,
             }
 
-        # 1. 先在当前网关范围内定位 MCP 日志，避免使用任意 request_id 跨网关查询日志。
         mcp_logs = search_by_upstream_request_id(
             self._es_client,
             self._es_time_field_name,
             self._upstream_request_id,
-            gateway_id=self._gateway_id,
         )
         if not mcp_logs:
-            # 网关内接口必须绑定 gateway_id，没有 MCP 日志时不再跨网关查下游。
-            # 工具箱路径未限定网关，保留「仅有下游网关日志」的原有回退。
-            downstream = (
-                None
-                if self._gateway_id is not None
-                else search_gateway_log(self._upstream_request_id, gateway_type="downstream")
-            )
             return {
                 "request_id": "",
                 "x_request_id": "",
                 "total_latency_ms": 0,
                 "spans": [],
                 "upstream_gateway_log": None,
-                "downstream_gateway_log": downstream,
+                "downstream_gateway_log": search_gateway_log(self._upstream_request_id, gateway_type="downstream"),
             }
 
-        # 2. 当前网关 MCP 日志已建立关联后，才查询其对应的下游网关日志。
+        # 2. MCP 日志已建立关联后，再查询其对应的下游网关日志。
         downstream_gateway_log = search_gateway_log(self._upstream_request_id, gateway_type="downstream")
 
         # 3. 从查到的日志中提取 mcp-proxy 的 request_id
