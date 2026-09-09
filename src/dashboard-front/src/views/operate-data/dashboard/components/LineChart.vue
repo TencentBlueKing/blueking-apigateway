@@ -415,6 +415,8 @@ const getChartOption = () => {
   }
   if (['llm_token_usage', 'llm_token_95th'].includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} Token' };
+    // y 轴刻度带 "Token" 单位，文本较长，预留左侧空间避免超出容器（图表随之右移）
+    chartOption.grid.left = 110;
   }
   // }
   // else {

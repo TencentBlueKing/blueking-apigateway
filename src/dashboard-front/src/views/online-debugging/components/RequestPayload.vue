@@ -109,6 +109,8 @@ const {
   schema = {} as ISchema,
 } = defineProps<IProps>();
 
+const emit = defineEmits<{ 'active-change': [tab: string] }>();
+
 const active = ref<string>(tab);
 const payloadBodyRef = ref();
 const payloadParamsRef = ref();
@@ -119,6 +121,14 @@ watch(
   (value: string) => {
     active.value = value;
   },
+);
+
+watch(
+  active,
+  (value: string) => {
+    emit('active-change', value);
+  },
+  { immediate: true },
 );
 
 const validate = async () => {

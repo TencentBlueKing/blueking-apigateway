@@ -30,7 +30,7 @@
     />
     <div
       v-show="versionConfigs.needNewVersion && isCollapsed"
-      class="pt-20px"
+      class="pt-24px"
     >
       <BkAlert
         class="mx-24px"
@@ -66,7 +66,10 @@
         @collapse-change="handleCollapseChange"
       >
         <template #main>
-          <div class="px-24px py-20px flex-column h-100px">
+          <div
+            class="p-24px flex-column h-100px"
+            :class="{'pt-16px': versionConfigs.needNewVersion && isCollapsed}"
+          >
             <div
               class="operate flex justify-between mb-16px"
               :class="{'flex-col gap-y-16px': !isCollapsed}"
@@ -144,7 +147,9 @@
                 <Divider
                   v-show="!showBatch && isCollapsed"
                   direction="vertical"
-                  class="h-12px"
+                  :width="1"
+                  class="h-14px color-#C4C6CC"
+                  type="solid"
                 />
                 <div
                   v-show="!showBatch && isCollapsed"
@@ -190,7 +195,9 @@
                 <Divider
                   v-show="isCollapsed"
                   direction="vertical"
-                  class="h-12px"
+                  :width="1"
+                  class="h-14px color-#C4C6CC"
+                  type="solid"
                 />
                 <AgDropdown
                   v-show="!isCollapsed"
