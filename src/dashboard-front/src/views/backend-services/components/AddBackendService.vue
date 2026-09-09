@@ -913,7 +913,6 @@ defineExpose({ show });
   }
 
   .title {
-    margin-left: 8px;
     font-size: 14px;
     font-weight: 700;
     color: #323237;

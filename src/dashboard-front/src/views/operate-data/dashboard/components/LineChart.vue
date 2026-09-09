@@ -665,7 +665,17 @@ defineExpose({ syncParams });
   }
 }
 
-.basic-height {
-  height: 286px;
+.ap-nodata {
+
+  .api-gateways-exception {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, 50%);
+  }
+
+  &.basic-height {
+    height: 286px;
+  }
 }
 </style>

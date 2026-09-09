@@ -1494,7 +1494,7 @@
   "确认删除风险": "Confirm risk",
   "发布的环境": "Published environment",
   "系统错误，请稍后重试": "System error, please try again later",
-  "发布资源至环境【{stage}】": "Publishing resources to the environment 【{stage}】",
+  "发布资源到环境": "Publishing resources to the environment",
   "资源更新成功后, 需发布到指定的环境, 方可生效": "After the resource update is successful, it takes effect only after it is released to the specified environment",
   "发布信息": "Release information",
   "当前版本号: {version},于 {created_time} 发布成功; 资源更新成功后, 需发布到指定的环境, 方可生效": "Current version: {version}, published successfully in {created_time}; After the resource update is successful, it takes effect only after it is released to the specified environment",
