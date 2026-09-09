@@ -25,6 +25,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.mcp_server_log import (
     MCP_SERVER_LOG_FIELDS,
     build_mcp_server_log_client,
@@ -60,6 +61,8 @@ logger = logging.getLogger(__name__)
 class MCPServerLogTimeChartRetrieveApi(generics.RetrieveAPIView):
     """MCP Server 日志时间分布图"""
 
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def retrieve(self, request, *args, **kwargs):
         slz = MCPServerLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -80,6 +83,8 @@ class MCPServerLogTimeChartRetrieveApi(generics.RetrieveAPIView):
 )
 class MCPServerSearchLogListApi(generics.ListAPIView):
     """MCP Server 日志列表"""
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def list(self, request, *args, **kwargs):
         slz = MCPServerLogQueryInputSLZ(data=request.query_params)
@@ -111,6 +116,8 @@ class MCPServerSearchLogListApi(generics.ListAPIView):
 )
 class MCPServerLogExportApi(generics.RetrieveAPIView):
     """MCP Server 日志导出"""
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def get(self, request, *args, **kwargs):
         limit = 10000
@@ -182,6 +189,8 @@ class MCPServerLogDetailApi(generics.RetrieveAPIView):
     不强制要求 mcp_method 字段存在。
     """
 
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def retrieve(self, request, request_id, *args, **kwargs):
         result = search_chain_logs_by_any_id(request_id)
         return OKJsonResponse(data=result)
@@ -204,6 +213,8 @@ class MCPServerLogTraceApi(generics.RetrieveAPIView):
     注意：此接口查询所有层级的日志（HTTP 层、MCP 协议层、审计日志），
     不强制要求 mcp_method 字段存在。
     """
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def retrieve(self, request, x_request_id, *args, **kwargs):
         result = search_chain_logs_with_gateway_by_any_id(x_request_id)
@@ -234,6 +245,8 @@ class MCPServerLogChainApi(generics.RetrieveAPIView):
     - status: 请求状态 (success/failed)
     - latency_distribution: 耗时分布（各服务耗时统计）
     """
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     def retrieve(self, request, request_id, *args, **kwargs):
         chain_data = search_chain_with_summary_by_any_id(request_id)

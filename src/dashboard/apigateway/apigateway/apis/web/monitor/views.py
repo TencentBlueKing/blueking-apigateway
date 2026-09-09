@@ -23,6 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.common.factories import SchemaFactory
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime
@@ -202,6 +203,7 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
     ),
 )
 class AlarmRecordListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
     serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
 
@@ -227,6 +229,7 @@ class AlarmRecordListApi(generics.ListAPIView):
     ),
 )
 class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
     serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
 

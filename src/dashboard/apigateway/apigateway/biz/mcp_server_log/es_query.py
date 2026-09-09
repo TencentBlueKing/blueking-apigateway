@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from elasticsearch_dsl import Q, Search
 
@@ -33,6 +33,25 @@ logger = logging.getLogger(__name__)
 
 # 默认时间范围（7天），避免ES查询超时或返回过多数据
 _DEFAULT_TIME_RANGE_SECONDS = 7 * 24 * 60 * 60
+
+
+def filter_search_by_gateway_id(search: Search, gateway_id: Optional[int]) -> Search:
+    """按网关过滤 ES 查询。未传 gateway_id 时保持全量查询。
+
+    顶层 gateway_id 是整数；BKLog flattened 的 __ext_json 值为字符串，需同时匹配两种类型。
+    Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 去掉 __ 前缀，必须用 raw dict。
+    """
+    if gateway_id is None:
+        return search
+    return search.filter(
+        "bool",
+        should=[
+            Q("term", gateway_id=gateway_id),
+            Q({"term": {"__ext_json.gateway_id": gateway_id}}),
+            Q({"term": {"__ext_json.gateway_id": str(gateway_id)}}),
+        ],
+        minimum_should_match=1,
+    )
 
 
 def search_all_layers(

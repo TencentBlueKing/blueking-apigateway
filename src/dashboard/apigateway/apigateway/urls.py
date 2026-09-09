@@ -69,6 +69,7 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/resources/", include("apigateway.apis.web.resource.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
     path("backend/gateways/<int:gateway_id>/members/", include("apigateway.apis.web.gateway_member.urls")),
+    path("backend/gateways/<int:gateway_id>/me/", include("apigateway.apis.web.gateway_user.urls")),
     path("backend/gateways/<int:gateway_id>/metrics/", include("apigateway.apis.web.metrics.urls")),
     path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
     path("backend/gateways/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),

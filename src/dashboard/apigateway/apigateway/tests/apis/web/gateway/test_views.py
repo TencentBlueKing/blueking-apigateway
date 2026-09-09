@@ -45,6 +45,27 @@ class TestGatewayListCreateApi:
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
 
+    def test_list_includes_operator_gateways(self, request_view, fake_gateway, mocker):
+        GatewayMember.objects.create(
+            gateway=fake_gateway,
+            username="operator",
+            role=GatewayRoleEnum.OPERATOR.value,
+        )
+        user = mocker.MagicMock(
+            username="operator",
+            is_authenticated=True,
+            is_anonymous=False,
+        )
+
+        response = request_view(
+            method="GET",
+            view_name="gateways.list_create",
+            user=user,
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["data"]["results"]] == [fake_gateway.id]
+
     def test_create(self, request_view, faker, unique_gateway_name, default_data_plane):
         data = {
             "name": unique_gateway_name,

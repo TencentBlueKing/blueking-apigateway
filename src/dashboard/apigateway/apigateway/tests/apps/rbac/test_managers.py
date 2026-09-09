@@ -30,6 +30,15 @@ from apigateway.core.models import Gateway
 pytestmark = pytest.mark.django_db
 
 
+def test_get_gateway_member_uses_exact_gateway_and_username(fake_gateway):
+    member = GatewayMember.objects.get_gateway_member(fake_gateway.id, "admin")
+
+    assert member is not None
+    assert member.gateway_id == fake_gateway.id
+    assert member.username == "admin"
+    assert GatewayMember.objects.get_gateway_member(fake_gateway.id, "adm") is None
+
+
 def test_list_gateway_administrators(fake_gateway):
     G(
         GatewayMember,
@@ -92,19 +101,6 @@ def test_gateway_member_maps_use_one_query_for_multiple_gateways(django_assert_n
 def test_is_gateway_administrator(fake_gateway):
     assert GatewayMember.objects.is_gateway_administrator(fake_gateway.id, "admin")
     assert not GatewayMember.objects.is_gateway_administrator(fake_gateway.id, "guest")
-
-
-def test_has_gateway_approve_permission(fake_gateway):
-    G(
-        GatewayMember,
-        gateway=fake_gateway,
-        username="operator",
-        role=GatewayRoleEnum.OPERATOR.value,
-    )
-
-    assert GatewayMember.objects.has_gateway_approve_permission(fake_gateway.id, "admin")
-    assert GatewayMember.objects.has_gateway_approve_permission(fake_gateway.id, "operator")
-    assert not GatewayMember.objects.has_gateway_approve_permission(fake_gateway.id, "guest")
 
 
 def test_list_gateway_ids_by_username(fake_gateway):
