@@ -405,7 +405,15 @@ defineExpose({ syncParams });
     vertical-align: middle;
   }
 }
-.basic-height {
-  height: 286px;
+
+.ap-nodata {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 100px);
+
+  &.basic-height {
+    height: 286px;
+  }
 }
 </style>

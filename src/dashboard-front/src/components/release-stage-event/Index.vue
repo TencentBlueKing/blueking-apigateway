@@ -24,8 +24,17 @@
   >
     <template #header>
       <div class="log-details-title">
-        <div class="log-details-name">
-          【{{ logDetails?.stage?.name }}】{{ t('发布日志详情') }}
+        <div class="flex items-center mr-8px">
+          <div class="text-14px color-#313238 font-700">
+            {{ t('发布日志详情') }}
+          </div>
+          <Divider
+            direction="vertical"
+            type="solid"
+          />
+          <div class="text-14px color-#979ba5">
+            {{ logDetails?.stage?.name || '--' }}
+          </div>
         </div>
         <BkTag
           v-if="logDetails?.status === 'success'"
@@ -79,10 +88,11 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import { getReleaseEvents } from '@/services/source/release';
-import AgEditor from '@/components/ag-editor/Index.vue';
+import { Divider } from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { useStage } from '@/stores';
+import { getReleaseEvents } from '@/services/source/release';
+import AgEditor from '@/components/ag-editor/Index.vue';
 
 interface IStep {
   name?: string
@@ -264,13 +274,6 @@ defineExpose({ showSideslider });
 .log-details-title {
   display: flex;
   align-items: center;
-
-  .log-details-name {
-    margin-right: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #2c2e35;
-  }
 
   .title-publish-info {
     margin-left: 16px;

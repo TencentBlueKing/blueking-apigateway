@@ -169,7 +169,6 @@ const columns = computed(() => {
         <span
           v-bk-tooltips={{
             content: t('去版本列表'),
-            theme: 'light',
             placement: 'top',
           }}
           class="color-#3a84ff cursor-pointer"

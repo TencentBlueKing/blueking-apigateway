@@ -22,10 +22,23 @@
       v-model:is-show="isShow"
       class="release-sideslider"
       :width="1100"
-      :title="t('发布资源至环境【{stage}】', { stage: chooseAssets?.name || '--' })"
       quick-close
       @animation-end="handleAnimationEnd"
     >
+      <template #header>
+        <div class="flex items-center">
+          <div class="text-14px color-#313238 font-700">
+            {{ t('发布资源到环境') }}
+          </div>
+          <Divider
+            direction="vertical"
+            type="solid"
+          />
+          <div class="text-14px color-#979ba5">
+            {{ chooseAssets?.name || '--' }}
+          </div>
+        </div>
+      </template>
       <template #default>
         <div class="sideslider-content">
           <div class="top-steps">
@@ -289,6 +302,9 @@
 
 <script setup lang="ts">
 // @ts-nocheck
+import dayjs from 'dayjs';
+import { Divider, Message } from 'bkui-vue';
+import { usePopInfoBox } from '@/hooks';
 import {
   type IStageListItem,
   getStageList,
@@ -298,9 +314,6 @@ import { createRelease } from '@/services/source/release.ts';
 import { checkMcpServersDel } from '@/services/source/mcp-market.ts';
 import VersionDiff from '@/components/version-diff/Index.vue';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
-import { Message } from 'bkui-vue';
-import dayjs from 'dayjs';
-import { usePopInfoBox } from '@/hooks';
 
 interface FormData {
   resource_version_id: number | undefined

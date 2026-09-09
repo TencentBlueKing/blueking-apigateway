@@ -20,12 +20,25 @@
   <div>
     <BkSideslider
       v-model:is-show="isShow"
-      :title="t('发布资源至环境【{stage}】', { stage: currentStage?.name })"
       :width="1100"
       class="release-sideslider"
       quick-close
       @animation-end="handleAnimationEnd"
     >
+      <template #header>
+        <div class="flex items-center">
+          <div class="text-14px color-#313238 font-700">
+            {{ t('发布资源到环境') }}
+          </div>
+          <Divider
+            direction="vertical"
+            type="solid"
+          />
+          <div class="text-14px color-#979ba5">
+            {{ currentStage?.name ?? '--' }}
+          </div>
+        </div>
+      </template>
       <template #default>
         <BkLoading :loading="isLoading">
           <div class="sideslider-content">

@@ -100,7 +100,7 @@
                       <div class="color-#313238 lh-20px font-700">
                         {{ item.label }}
                       </div>
-                      <div class="color-#313238 lh-20px">
+                      <div class="color-#979ba5 lh-20px">
                         {{ item.description }}
                       </div>
                     </div>

@@ -108,8 +108,8 @@
             </BkSelect>
             <BkButton
               theme="primary"
+              class="text-12px!"
               text
-              class="presuppose-btn"
               @click="setPresuppose"
             >
               {{ t('保存为预设') }}
@@ -494,12 +494,7 @@ defineExpose({
     justify-content: space-between;
 
     .presuppose-select {
-      width: 80px;
-    }
-
-    .presuppose-btn {
-      font-size: 14px;
-      color: #3A84FF;
+      width: 300px;
     }
   }
 }

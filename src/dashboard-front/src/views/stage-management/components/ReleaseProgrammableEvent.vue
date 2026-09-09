@@ -24,8 +24,15 @@
   >
     <template #header>
       <div class="log-details-title">
-        <div class="log-details-name">
-          【{{ stage?.name || historyStage?.name }}】{{ t('发布日志详情') }}
+        <div class="text-14px color-#313238 font-700">
+          {{ t('发布日志详情') }}
+        </div>
+        <Divider
+          direction="vertical"
+          type="solid"
+        />
+        <div class="text-14px color-#979ba5">
+          {{ stage?.name || historyStage?.name || '--' }}
         </div>
       </div>
     </template>
@@ -704,13 +711,6 @@ defineExpose({ showSideslider });
 .log-details-title {
   display: flex;
   align-items: center;
-
-  .log-details-name {
-    margin-right: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #2c2e35;
-  }
 
   .title-publish-info {
     margin-left: 32px;
