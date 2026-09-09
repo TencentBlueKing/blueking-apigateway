@@ -22,7 +22,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_serializer_method
+from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
 
 from apigateway.apis.v2.validators import (
@@ -571,7 +571,7 @@ class MCPServerPermissionBaseSLZ(serializers.Serializer):
     handled_by = serializers.SerializerMethodField(help_text="处理人")
     approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
 
-    @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_handled_by(self, obj):
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
             obj.get("tenant_mode", ""),
@@ -695,7 +695,7 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
 
         return ""
 
-    @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.CharField()))
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_handled_by(self, obj):
         """获取处理人 display_name"""
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
@@ -921,13 +921,6 @@ class MonitorCallbackInputSLZ(serializers.Serializer):
         return value
 
 
-class MonitorCallbackRequestBodySLZ(serializers.Serializer):
-    """监控告警回调请求体（透传 BkMonitor 告警内容，结构不固定）"""
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.MonitorCallbackRequestBodySLZ"
-
-
 class AppAlarmRecordListInputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(
         choices=AlarmStatusEnum.get_choices(),
@@ -1042,6 +1035,7 @@ class AppRequestLogListOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListOutputSLZ"
 
 
+@extend_schema_serializer(many=False)
 class AppRequestLogPaginatedOutputSLZ(serializers.Serializer):
     count = serializers.IntegerField(read_only=True, help_text="数据总数")
     results = AppRequestLogListOutputSLZ(many=True, read_only=True)

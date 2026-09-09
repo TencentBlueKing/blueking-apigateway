@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 
 from apigateway.apis.open.monitor import serializers
@@ -26,6 +27,11 @@ from apigateway.utils.responses import V1OKJsonResponse
 
 
 class AlarmCallbackViewSet(viewsets.ViewSet):
+    @extend_schema(
+        parameters=[serializers.MonitorCallbackSLZ],
+        request={"application/json": {"type": "object", "additionalProperties": True}},
+        responses={200: {"type": "null"}},
+    )
     def callback(self, request, alarm_type: str, *args, **kwargs):
         slz = serializers.MonitorCallbackSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)

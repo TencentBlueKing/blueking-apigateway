@@ -26,7 +26,7 @@ from urllib.parse import urljoin
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
@@ -85,19 +85,19 @@ class BackendHostIsEmpty(Exception):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取资源列表，分页",
-        query_serializer=ResourceQueryInputSLZ,
+    decorator=extend_schema(
+        description="获取资源列表，分页",
+        parameters=[ResourceQueryInputSLZ],
         responses={status.HTTP_200_OK: ResourceListOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="新建资源",
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=ResourceInputSLZ,
+    decorator=extend_schema(
+        description="新建资源",
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        request=ResourceInputSLZ,
         tags=["WebAPI.Resource"],
     ),
 )
@@ -165,28 +165,29 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定资源信息",
+    decorator=extend_schema(
+        description="获取指定资源信息",
         responses={status.HTTP_200_OK: ResourceOutputSLZ()},
         tags=["WebAPI.Resource"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新资源",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=ResourceInputSLZ,
+    decorator=extend_schema(
+        description="更新资源",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=ResourceInputSLZ,
         tags=["WebAPI.Resource"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除资源", responses={status.HTTP_204_NO_CONTENT: ""}, tags=["WebAPI.Resource"]
+    decorator=extend_schema(
+        description="删除资源", responses={status.HTTP_204_NO_CONTENT: None}, tags=["WebAPI.Resource"]
     ),
 )
 class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    schema_request_partial = False
     serializer_class = ResourceInputSLZ
     lookup_field = "id"
 
@@ -318,23 +319,25 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="批量更新资源，如是否公开、是否允许申请资源权限",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=ResourceBatchUpdateInputSLZ,
+    decorator=extend_schema(
+        description="批量更新资源，如是否公开、是否允许申请资源权限",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=ResourceBatchUpdateInputSLZ,
         tags=["WebAPI.Resource"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="批量删除资源",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=ResourceBatchDestroyInputSLZ,
+    decorator=extend_schema(
+        description="批量删除资源",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=ResourceBatchDestroyInputSLZ,
         tags=["WebAPI.Resource"],
     ),
 )
 class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
+    schema_request_partial = False
+    schema_delete_request_body = True
     serializer_class = ResourceBatchUpdateInputSLZ
 
     @transaction.atomic
@@ -402,14 +405,15 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新资源标签",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=ResourceLabelUpdateInputSLZ,
+    decorator=extend_schema(
+        description="更新资源标签",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=ResourceLabelUpdateInputSLZ,
         tags=["WebAPI.Resource"],
     ),
 )
 class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
+    schema_request_partial = False
     serializer_class = ResourceLabelUpdateInputSLZ
     lookup_url_kwarg = "resource_id"
     lookup_field = "id"
@@ -433,9 +437,9 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
 
 
 class ResourceImportCheckApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="导入资源检查，导入资源前，检查资源配置是否正确",
-        request_body=ResourceImportCheckInputSLZ,
+    @extend_schema(
+        description="导入资源检查，导入资源前，检查资源配置是否正确",
+        request=ResourceImportCheckInputSLZ,
         responses={
             status.HTTP_200_OK: ResourceImportInfoSLZ(many=True),
             status.HTTP_400_BAD_REQUEST: ResourceImportCheckFailOutputSLZ(many=True),
@@ -484,10 +488,10 @@ class ResourceImportCheckApi(generics.CreateAPIView):
 
 
 class ResourceImportApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="yaml/json check之后的标准化资源数据导入",
-        request_body=ResourceImportInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    @extend_schema(
+        description="yaml/json check之后的标准化资源数据导入",
+        request=ResourceImportInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Resource"],
     )
     @transaction.atomic
@@ -543,9 +547,10 @@ class ResourceImportApi(generics.CreateAPIView):
 
 
 class ResourceImportDocPreviewApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="导入文档预览",
-        request_body=ResourceImportDocPreviewInputSLZ,
+    @extend_schema(
+        responses={200: {"type": "object", "properties": {"doc": {"type": "string"}}}},
+        description="导入文档预览",
+        request=ResourceImportDocPreviewInputSLZ,
         tags=["WebAPI.Resource"],
     )
     @transaction.atomic
@@ -568,10 +573,10 @@ class ResourceImportDocPreviewApi(generics.CreateAPIView):
 
 
 class ResourceExportApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="导出资源",
-        request_body=ResourceExportInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+    @extend_schema(
+        description="导出资源",
+        request=ResourceExportInputSLZ,
+        responses={(200, "application/octet-stream"): bytes},
         tags=["WebAPI.Resource"],
     )
     def post(self, request, *args, **kwargs):
@@ -637,9 +642,9 @@ class ResourceExportApi(generics.CreateAPIView):
 class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
     serializer_class = BackendPathCheckInputSLZ
 
-    @swagger_auto_schema(
-        operation_description="资源后端地址检查，校验后端配置中的请求路径",
-        query_serializer=BackendPathCheckInputSLZ,
+    @extend_schema(
+        description="资源后端地址检查，校验后端配置中的请求路径",
+        parameters=[BackendPathCheckInputSLZ],
         responses={status.HTTP_200_OK: BackendPathCheckOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
     )
@@ -710,8 +715,8 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="过滤出需要认证用户的资源列表，免用户认证应用白名单插件，需要使用此数据过滤资源",
+    decorator=extend_schema(
+        description="过滤出需要认证用户的资源列表，免用户认证应用白名单插件，需要使用此数据过滤资源",
         responses={status.HTTP_200_OK: ResourceWithVerifiedUserRequiredOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
     ),

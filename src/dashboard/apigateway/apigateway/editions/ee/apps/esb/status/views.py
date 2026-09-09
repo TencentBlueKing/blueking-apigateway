@@ -19,6 +19,8 @@
 import time
 
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
 from apigateway.apps.esb.bkcore.models import RealTimelineEvent
@@ -30,6 +32,7 @@ from apigateway.utils.responses import OKJsonResponse
 class SysAllSummaryView(APIView):
     """Summary data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request):
         time_since = request.GET.get("time_since") or "24h"
         result = es_get_system_stats(time_since)
@@ -50,6 +53,7 @@ class SysEventsTimeline(APIView):
     time_interval = "5m"
     time_interval_seconds = str_to_seconds(time_interval)
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request):  # noqa
         time_since = request.GET.get("time_since") or "12h"
 
@@ -188,6 +192,7 @@ class SysEventsTimeline(APIView):
 class SysUnstableSystemsView(APIView):
     """Get recent unstable systems"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request):
         time_since = request.GET.get("time_since") or "10m"
 
@@ -202,6 +207,7 @@ class SysUnstableSystemsView(APIView):
 class SysSummaryView(APIView):
     """Summary data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         mts_start = request.GET.get("mts_start")
         mts_end = request.GET.get("mts_end")
@@ -228,6 +234,7 @@ class SysSummaryView(APIView):
 class SysDateHistogramView(APIView):
     """date_histogram data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         mts_start = request.GET.get("mts_start")
         mts_end = request.GET.get("mts_end", int(time.time() * 1000))
@@ -271,6 +278,7 @@ class SysDateHistogramView(APIView):
 class SysDetailsGroupByView(APIView):
     """Perc95 resp time data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         mts_start = request.GET.get("mts_start")
         mts_end = request.GET.get("mts_end") or int(time.time() * 1000)
@@ -305,6 +313,7 @@ class SysDetailsGroupByView(APIView):
 class SysErrorsView(APIView):
     """查询某个运营系统错误详情"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         url = request.GET.get("url", "")
         app_code = request.GET.get("app_code", "")

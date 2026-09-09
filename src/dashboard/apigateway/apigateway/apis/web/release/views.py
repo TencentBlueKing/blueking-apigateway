@@ -23,8 +23,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
@@ -68,9 +67,9 @@ logger = logging.getLogger(__name__)
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         tags=["WebAPI.Release"],
-        operation_description="获取环境下可用的资源列表接口 (在线调试)",
+        description="获取环境下可用的资源列表接口 (在线调试)",
         responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
     ),
 )
@@ -106,9 +105,9 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         tags=["WebAPI.Release"],
-        operation_description="获取环境下可用的某个资源接口 schema(在线调试)",
+        description="获取环境下可用的某个资源接口 schema(在线调试)",
         responses={status.HTTP_200_OK: ReleaseResourceSchemaOutputSLZ()},
     ),
 )
@@ -155,11 +154,11 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=ReleaseInputSLZ,
+    decorator=extend_schema(
+        request=ReleaseInputSLZ,
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="版本发布接口",
+        description="版本发布接口",
     ),
 )
 class ReleaseCreateApi(generics.CreateAPIView):
@@ -248,11 +247,11 @@ class ReleaseCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=ReleaseHistoryQueryInputSLZ(),
+    decorator=extend_schema(
+        parameters=[ReleaseHistoryQueryInputSLZ()],
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ(many=True)},
         tags=["WebAPI.Release"],
-        operation_description="发布历史列表获取接口",
+        description="发布历史列表获取接口",
     ),
 )
 class ReleaseHistoryListApi(generics.ListAPIView):
@@ -293,11 +292,11 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=ReleaseHistoryQueryInputSLZ(),
+    decorator=extend_schema(
+        parameters=[ReleaseHistoryQueryInputSLZ()],
         responses={status.HTTP_200_OK: DeployHistoryOutputSLZ(many=True)},
         tags=["WebAPI.Release"],
-        operation_description="编程部署历史列表获取接口",
+        description="编程部署历史列表获取接口",
     ),
 )
 class DeployHistoryListApi(generics.ListAPIView):
@@ -336,10 +335,10 @@ class DeployHistoryListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: ReleaseHistoryEventRetrieveOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="查询发布事件 (日志)",
+        description="查询发布事件 (日志)",
     ),
 )
 class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
@@ -371,11 +370,11 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=ProgrammableDeployCreateInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        request=ProgrammableDeployCreateInputSLZ(),
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.Release"],
-        operation_description="编程网关部署接口",
+        description="编程网关部署接口",
     ),
 )
 class ProgrammableDeployCreateApi(generics.CreateAPIView):
@@ -411,10 +410,10 @@ class ProgrammableDeployCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.Release"],
-        operation_description="可编程网关 PaaS 部署详情查询",
+        description="可编程网关 PaaS 部署详情查询",
     ),
 )
 class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
@@ -523,20 +522,20 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         operation_id="get_deploy_events_by_deploy_id",
-        manual_parameters=[
-            openapi.Parameter(
+        parameters=[
+            OpenApiParameter(
                 name="deploy_id",
-                in_=openapi.IN_PATH,
-                type=openapi.TYPE_STRING,
+                location=OpenApiParameter.PATH,
+                type=str,
                 description="部署任务 ID",
                 required=True,
             )
         ],
         responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="通过部署 ID 查询编程网关事件",
+        description="通过部署 ID 查询编程网关事件",
     ),
 )
 class DeployIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):
@@ -556,20 +555,20 @@ class DeployIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         operation_id="get_deploy_events_by_history_id",
-        manual_parameters=[
-            openapi.Parameter(
+        parameters=[
+            OpenApiParameter(
                 name="history_id",
-                in_=openapi.IN_PATH,
-                type=openapi.TYPE_STRING,
+                location=OpenApiParameter.PATH,
+                type=str,
                 description="发布历史 ID",
                 required=True,
             )
         ],
         responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="通过发布历史 ID 查询编程网关事件",
+        description="通过发布历史 ID 查询编程网关事件",
     ),
 )
 class HistoryIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):

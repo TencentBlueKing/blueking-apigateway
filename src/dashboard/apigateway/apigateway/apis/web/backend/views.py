@@ -19,7 +19,7 @@
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -56,18 +56,18 @@ class BackendQuerySetMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取后端服务列表",
+    decorator=extend_schema(
+        description="获取后端服务列表",
         responses={status.HTTP_200_OK: BackendListOutputSLZ(many=True)},
         tags=["WebAPI.Backend"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建后端服务",
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=BackendInputSLZ,
+    decorator=extend_schema(
+        description="创建后端服务",
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        request=BackendInputSLZ,
         tags=["WebAPI.Backend"],
     ),
 )
@@ -126,9 +126,9 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
 class BackendConnectivityTestApi(generics.CreateAPIView):
     serializer_class = AIBackendConnectivityInputSLZ
 
-    @swagger_auto_schema(
-        operation_description="测试模型服务连通性并获取模型列表",
-        request_body=AIBackendConnectivityInputSLZ,
+    @extend_schema(
+        description="测试模型服务连通性并获取模型列表",
+        request=AIBackendConnectivityInputSLZ,
         responses={status.HTTP_200_OK: AIBackendConnectivityOutputSLZ},
         tags=["WebAPI.Backend"],
     )
@@ -153,30 +153,31 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取后端服务详情",
+    decorator=extend_schema(
+        description="获取后端服务详情",
         responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
         tags=["WebAPI.Backend"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新后端服务",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=BackendInputSLZ,
+    decorator=extend_schema(
+        description="更新后端服务",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=BackendInputSLZ,
         tags=["WebAPI.Backend"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除后端服务",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除后端服务",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Backend"],
     ),
 )
 class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    schema_request_partial = False
     lookup_field = "id"
     serializer_class = BackendInputSLZ
     queryset = Backend.objects.all()

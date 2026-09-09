@@ -20,7 +20,7 @@ import logging
 import operator
 
 from django.db import transaction
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.permission import serializers
@@ -43,8 +43,8 @@ class ComponentViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionComponentSLZ
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionComponentQuerySLZ,
+    @extend_schema(
+        parameters=[serializers.AppPermissionComponentQuerySLZ],
         responses={status.HTTP_200_OK: serializers.AppPermissionComponentSLZ(many=True)},
         tags=["OpenAPI.ESB.Permission"],
     )
@@ -127,6 +127,10 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
 class AppPermissionViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIPermission]
 
+    @extend_schema(
+        parameters=[serializers.AppPermissionQuerySLZ],
+        responses={200: serializers.AppPermissionComponentSLZ(many=True)},
+    )
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
         slz = serializers.AppPermissionQuerySLZ(data=request.query_params)

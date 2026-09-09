@@ -18,8 +18,8 @@
 #
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from drf_spectacular.utils import extend_schema
+from rest_framework import generics
 
 from apigateway.apps.monitor.constants import AlarmTypeEnum
 from apigateway.apps.monitor.tasks import monitor_app_request, monitor_nginx_error, monitor_resource_backend
@@ -30,15 +30,27 @@ from . import serializers
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="监控告警回调",
-        query_serializer=serializers.MonitorCallbackInputSLZ,
-        request_body=serializers.MonitorCallbackRequestBodySLZ,
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        description="监控告警回调",
+        parameters=[serializers.MonitorCallbackInputSLZ],
+        request={"application/json": {"type": "object", "additionalProperties": True}},
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer"},
+                    "result": {"type": "boolean"},
+                    "message": {"type": "string"},
+                    "data": {"type": "null"},
+                },
+                "required": ["code", "result", "message", "data"],
+            }
+        },
         tags=["OpenAPI.V2.Inner"],
     ),
 )
 class AlarmCallbackApi(generics.CreateAPIView):
+    schema_response_envelope = False
     permission_classes = []  # type: ignore  # 回调接口由 token 校验保护，不需要应用认证
 
     def create(self, request, alarm_type: str, *args, **kwargs):

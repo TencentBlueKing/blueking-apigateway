@@ -21,7 +21,7 @@ from typing import List
 
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2Permission
@@ -37,8 +37,8 @@ from .serializers import GatewayAppPermissionApplyCreateOutputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.EsbSystemListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.EsbSystemListInputSLZ],
         responses={status.HTTP_200_OK: serializers.EsbSystemListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -69,8 +69,8 @@ class EsbSystemListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.EsbPermissionComponentListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.EsbPermissionComponentListInputSLZ],
         responses={status.HTTP_200_OK: serializers.EsbPermissionComponentListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -100,9 +100,9 @@ class EsbPermissionComponentListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建申请资源权限的申请单据",
-        request_body=serializers.EsbAppPermissionApplyCreateInputSLZ,
+    decorator=extend_schema(
+        description="创建申请资源权限的申请单据",
+        request=serializers.EsbAppPermissionApplyCreateInputSLZ,
         responses={status.HTTP_201_CREATED: GatewayAppPermissionApplyCreateOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -149,10 +149,10 @@ class EsbAppPermissionApplyCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="权限续期",
-        request_body=serializers.EsbAppPermissionRenewInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="权限续期",
+        request=serializers.EsbAppPermissionRenewInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -182,8 +182,8 @@ class EsbAppPermissionRenewPutApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.EsbAppPermissionListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.EsbAppPermissionListInputSLZ],
         responses={status.HTTP_200_OK: serializers.EsbAppPermissionOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -211,8 +211,8 @@ class EsbAppPermissionListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.EsbAppPermissionApplyRecordListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.EsbAppPermissionApplyRecordListInputSLZ],
         responses={status.HTTP_200_OK: serializers.EsbAppPermissionApplyRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -250,8 +250,8 @@ class EsbAppPermissionApplyRecordListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.EsbAppPermissionApplyRecordRetrieveInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.EsbAppPermissionApplyRecordRetrieveInputSLZ],
         responses={status.HTTP_200_OK: serializers.EsbAppPermissionApplyRecordRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),

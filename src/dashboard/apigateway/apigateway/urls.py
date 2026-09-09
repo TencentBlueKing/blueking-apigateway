@@ -35,6 +35,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.i18n import set_language
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from apigateway.apis.web.access_log.views import LogDetailInfoApi
 from apigateway.apis.web.mcp_server_log.views import (
@@ -42,7 +43,6 @@ from apigateway.apis.web.mcp_server_log.views import (
     MCPServerLogQueryChainApi,
     MCPServerLogQuerySummaryApi,
 )
-from apigateway.common.swagger import schema_view
 
 urlpatterns = [
     # /metrics
@@ -130,14 +130,20 @@ if not settings.ENABLE_MULTI_TENANT_MODE:
 if settings.DEBUG:
     # backend/docs/
     urlpatterns += [
-        # drf-yasg automatically generated documents
+        # OpenAPI 3 schema and locally served documentation viewers
         re_path(
             r"^backend/docs/auto/swagger\.(?P<format>json|yaml)$",
-            schema_view.without_ui(cache_timeout=0),
+            SpectacularAPIView.as_view(),
             name="schema-json",
         ),
         re_path(
-            r"^backend/docs/auto/swagger/$", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"
+            r"^backend/docs/auto/swagger/$",
+            SpectacularSwaggerView.as_view(url="/backend/docs/auto/swagger.json"),
+            name="schema-swagger-ui",
         ),
-        re_path(r"^backend/docs/auto/redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+        re_path(
+            r"^backend/docs/auto/redoc/$",
+            SpectacularRedocView.as_view(url="/backend/docs/auto/swagger.json"),
+            name="schema-redoc",
+        ),
     ]

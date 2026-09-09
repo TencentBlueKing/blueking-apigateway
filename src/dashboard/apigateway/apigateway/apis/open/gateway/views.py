@@ -24,7 +24,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apis.open.permissions import (
@@ -70,14 +70,15 @@ if TYPE_CHECKING:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关列表，网关需公开且已发布",
-        query_serializer=GatewayListV1InputSLZ,
+    decorator=extend_schema(
+        description="获取网关列表，网关需公开且已发布",
+        parameters=[GatewayListV1InputSLZ],
         responses={status.HTTP_200_OK: GatewayListV1OutputSLZ(many=True)},
         tags=["OpenAPI.V1"],
     ),
 )
 class GatewayListApi(generics.ListAPIView):
+    pagination_class = None
     serializer_class = GatewayListV1OutputSLZ
     permission_classes = [OpenAPIPermission]
 
@@ -167,7 +168,7 @@ class GatewayListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: GatewayRetrieveV1OutputSLZ()},
         tags=["OpenAPI.V1"],
     ),
@@ -190,7 +191,9 @@ class GatewayIdRetrieveApi(generics.RetrieveAPIView):
 class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayNamePermission]
 
-    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["OpenAPI.V1"])
+    @extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}}, tags=["OpenAPI.V1"]
+    )
     def get(self, request, gateway_name: str, *args, **kwargs):
         jwt = JWT.objects.get(gateway=request.gateway)
         return V1OKJsonResponse(
@@ -207,7 +210,7 @@ class GatewaySyncApi(generics.CreateAPIView):
     allow_gateway_not_exist = True
     serializer_class = GatewaySyncInputSLZ
 
-    @swagger_auto_schema(request_body=GatewaySyncInputSLZ, tags=["OpenAPI.V1"])
+    @extend_schema(request=GatewaySyncInputSLZ, tags=["OpenAPI.V1"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         gateway = getattr(request, "gateway", None)
@@ -269,7 +272,7 @@ class GatewayRelatedAppUpdateStatusApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = GatewayUpdateStatusInputSLZ
 
-    @swagger_auto_schema(request_body=GatewayUpdateStatusInputSLZ, tags=["OpenAPI.V1"])
+    @extend_schema(request=GatewayUpdateStatusInputSLZ, tags=["OpenAPI.V1"])
     def post(self, request, *args, **kwargs):
         slz = self.get_serializer(request.gateway, data=request.data)
         slz.is_valid(raise_exception=True)
@@ -295,7 +298,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = GatewayRelatedAppsAddInputSLZ
 
-    @swagger_auto_schema(request_body=GatewayRelatedAppsAddInputSLZ, tags=["OpenAPI.V1"])
+    @extend_schema(request=GatewayRelatedAppsAddInputSLZ, tags=["OpenAPI.V1"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
@@ -346,7 +349,7 @@ class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
     def get_queryset(self):
         return Gateway.objects.all()
 
-    @swagger_auto_schema(request_body=GatewayMaintainerUpdateInputSLZ, tags=["OpenAPI.V1"])
+    @extend_schema(request=GatewayMaintainerUpdateInputSLZ, tags=["OpenAPI.V1"])
     def put(self, request, *args, **kwargs):
         slz = self.get_serializer(request.gateway, data=request.data)
         slz.is_valid(raise_exception=True)
@@ -388,7 +391,7 @@ class GatewayIdUpdateStatusApi(generics.UpdateAPIView):
     def get_queryset(self):
         return Gateway.objects.all()
 
-    @swagger_auto_schema(request_body=GatewayUpdateStatusInputSLZ, tags=["OpenAPI.V1"])
+    @extend_schema(request=GatewayUpdateStatusInputSLZ, tags=["OpenAPI.V1"])
     def put(self, request, *args, **kwargs):
         # FIXME: should check it has the right to update the gateway status
         instance = self.get_object()

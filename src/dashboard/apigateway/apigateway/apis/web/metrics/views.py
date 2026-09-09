@@ -23,7 +23,7 @@ from typing import Any, List
 from django.http import Http404
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.metrics.constants import (
@@ -51,10 +51,10 @@ from .serializers import (
 
 
 class QueryRangeApi(generics.ListAPIView):
-    @swagger_auto_schema(
-        query_serializer=MetricsQueryRangeInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
-        operation_description="查询 metrics",
+    @extend_schema(
+        parameters=[MetricsQueryRangeInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="查询 metrics",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
@@ -107,10 +107,10 @@ class QueryRangeApi(generics.ListAPIView):
 
 
 class QueryInstantApi(generics.ListAPIView):
-    @swagger_auto_schema(
-        query_serializer=MetricsQueryInstantInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
-        operation_description="查询 metrics",
+    @extend_schema(
+        parameters=[MetricsQueryInstantInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="查询 metrics",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
@@ -178,10 +178,10 @@ class QueryInstantApi(generics.ListAPIView):
 
 
 class QuerySummaryApi(generics.ListAPIView):
-    @swagger_auto_schema(
-        query_serializer=MetricsQuerySummaryInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
-        operation_description="查询请求总量/失败请求总量",
+    @extend_schema(
+        parameters=[MetricsQuerySummaryInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="查询请求总量/失败请求总量",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
@@ -209,10 +209,10 @@ class QuerySummaryApi(generics.ListAPIView):
 
 
 class QuerySummaryCallerListApi(generics.ListAPIView):
-    @swagger_auto_schema(
-        query_serializer=MetricsQuerySummaryCallerListInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
-        operation_description="历史请求统计调用方列表",
+    @extend_schema(
+        parameters=[MetricsQuerySummaryCallerListInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="历史请求统计调用方列表",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
@@ -238,14 +238,13 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
         return OKJsonResponse(data={"app_codes": app_codes})
 
 
+@extend_schema(methods=["POST"], exclude=True)
 class QuerySummaryExportApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        decorator=swagger_auto_schema(
-            operation_description="资源-蓝鲸应用调用统计导出",
-            request_body=MetricsQuerySummaryExportInputSLZ,
-            responses={status.HTTP_200_OK: ""},
-            tags=["WebAPI.Metrics"],
-        ),
+    @extend_schema(
+        description="资源-蓝鲸应用调用统计导出",
+        parameters=[MetricsQuerySummaryExportInputSLZ],
+        responses={(200, "application/octet-stream"): bytes},
+        tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
         slz = MetricsQuerySummaryExportInputSLZ(data=request.query_params)

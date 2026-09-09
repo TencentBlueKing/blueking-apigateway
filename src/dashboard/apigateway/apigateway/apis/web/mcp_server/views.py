@@ -26,7 +26,7 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
@@ -101,19 +101,19 @@ from .serializers import (
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关的 MCPServer 列表",
-        query_serializer=MCPServerListInputSLZ,
+    decorator=extend_schema(
+        description="获取网关的 MCPServer 列表",
+        parameters=[MCPServerListInputSLZ],
         responses={status.HTTP_200_OK: MCPServerListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建 MCPServer",
-        request_body=MCPServerCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="创建 MCPServer",
+        request=MCPServerCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.MCPServer"],
     ),
 )
@@ -240,35 +240,35 @@ class MCPServerQuerySetMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定网关的信息",
+    decorator=extend_schema(
+        description="获取指定网关的信息",
         responses={status.HTTP_200_OK: MCPServerRetrieveOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新 MCPServer",
-        request_body=MCPServerUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新 MCPServer",
+        request=MCPServerUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="更新 MCPServer 部分信息",
-        request_body=MCPServerUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新 MCPServer 部分信息",
+        request=MCPServerUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除 MCPServer",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除 MCPServer",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
@@ -371,14 +371,15 @@ class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.Retriev
 
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="更新 MCPServer 状态，如启用、停用",
-        request_body=MCPServerUpdateStatusInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新 MCPServer 状态，如启用、停用",
+        request=MCPServerUpdateStatusInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPServerUpdateStatusApi(MCPServerQuerySetMixin, generics.UpdateAPIView):
+    schema_request_partial = False
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerUpdateStatusInputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -406,8 +407,8 @@ class MCPServerUpdateStatusApi(MCPServerQuerySetMixin, generics.UpdateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 工具列表",
+    decorator=extend_schema(
+        description="获取 MCPServer 工具列表",
         responses={status.HTTP_200_OK: MCPServerToolOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -436,8 +437,8 @@ class MCPServerToolsListApi(MCPServerQuerySetMixin, generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 官方使用指南",
+    decorator=extend_schema(
+        description="获取 MCPServer 官方使用指南",
         responses={status.HTTP_200_OK: MCPServerGuidelineOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -469,8 +470,8 @@ class MCPServerGuidelineRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPI
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、VSCode 等工具的配置）",
+    decorator=extend_schema(
+        description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、VSCode 等工具的配置）",
         responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -495,8 +496,8 @@ class MCPServerConfigListApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 某个工具的文档",
+    decorator=extend_schema(
+        description="获取 MCPServer 某个工具的文档",
         responses={status.HTTP_200_OK: MCPServerToolDocOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -522,42 +523,45 @@ class MCPServerToolDocRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPIVi
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 用户自定义文档",
+    decorator=extend_schema(
+        description="获取 MCPServer 用户自定义文档",
         responses={status.HTTP_200_OK: MCPServerUserCustomDocOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建 MCPServer 用户自定义文档",
-        request_body=MCPServerUserCustomDocInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="创建 MCPServer 用户自定义文档",
+        request=MCPServerUserCustomDocInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新 MCPServer 用户自定义文档",
-        request_body=MCPServerUserCustomDocInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新 MCPServer 用户自定义文档",
+        request=MCPServerUserCustomDocInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除 MCPServer 用户自定义文档",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除 MCPServer 用户自定义文档",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
+@method_decorator(name="patch", decorator=extend_schema(request=MCPServerUserCustomDocInputSLZ, responses={204: None}))
 class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
+    schema_request_partial = False
     queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
+    @extend_schema(responses={200: MCPServerUserCustomDocOutputSLZ})
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -570,6 +574,7 @@ class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateD
 
         return OKJsonResponse(data=slz.data)
 
+    @extend_schema(request=MCPServerUserCustomDocInputSLZ, responses={201: {"type": "null"}})
     def create(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -603,6 +608,7 @@ class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateD
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=MCPServerUserCustomDocInputSLZ, responses={204: None})
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -634,6 +640,7 @@ class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateD
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(responses={204: None})
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -660,9 +667,9 @@ class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateD
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="环境发布前检查对应环境 MCP Server 是否存在资源变更",
-        query_serializer=MCPServerStageReleaseCheckInputSLZ,
+    decorator=extend_schema(
+        description="环境发布前检查对应环境 MCP Server 是否存在资源变更",
+        parameters=[MCPServerStageReleaseCheckInputSLZ],
         responses={status.HTTP_200_OK: MCPServerStageReleaseCheckOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -741,19 +748,19 @@ class MCPServerAppPermissionApplyQuerySetMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=MCPServerAppPermissionListInputSLZ,
-        operation_description="获取已授权应用列表",
+    decorator=extend_schema(
+        parameters=[MCPServerAppPermissionListInputSLZ],
+        description="获取已授权应用列表",
         responses={status.HTTP_200_OK: MCPServerAppPermissionListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="主动授权应用",
-        request_body=MCPServerAppPermissionCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="主动授权应用",
+        request=MCPServerAppPermissionCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.MCPServer"],
     ),
 )
@@ -819,9 +826,9 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
 
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除授权应用",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除授权应用",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
@@ -866,9 +873,9 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=MCPServerAppPermissionApplyListInputSLZ,
-        operation_description="获取授权审批列表",
+    decorator=extend_schema(
+        parameters=[MCPServerAppPermissionApplyListInputSLZ],
+        description="获取授权审批列表",
         responses={status.HTTP_200_OK: MCPServerAppPermissionApplyListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -909,10 +916,10 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取授权审批申请人列表",
-        query_serializer=MCPServerAppPermissionApplyApplicantListInputSLZ(),
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        description="获取授权审批申请人列表",
+        parameters=[MCPServerAppPermissionApplyApplicantListInputSLZ()],
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.MCPServer"],
     ),
 )
@@ -935,14 +942,15 @@ class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQue
 
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="更新授权审批状态，通过/驳回",
-        request_body=MCPServerAppPermissionApplyUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新授权审批状态，通过/驳回",
+        request=MCPServerAppPermissionApplyUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuerySetMixin, generics.UpdateAPIView):
+    schema_request_partial = False
     serializer_class = MCPServerAppPermissionApplyUpdateInputSLZ
     lookup_url_kwarg = "id"
 
@@ -984,9 +992,9 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="从第三方平台获取 Prompts 列表",
-        query_serializer=MCPServerRemotePromptsQueryInputSLZ,
+    decorator=extend_schema(
+        description="从第三方平台获取 Prompts 列表",
+        parameters=[MCPServerRemotePromptsQueryInputSLZ],
         responses={status.HTTP_200_OK: MCPServerRemotePromptsOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1008,9 +1016,9 @@ class MCPServerRemotePromptsListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="根据 ID 列表批量获取第三方平台 Prompts 内容",
-        request_body=MCPServerRemotePromptsBatchInputSLZ,
+    decorator=extend_schema(
+        description="根据 ID 列表批量获取第三方平台 Prompts 内容",
+        request=MCPServerRemotePromptsBatchInputSLZ,
         responses={status.HTTP_200_OK: MCPServerRemotePromptsBatchOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1033,8 +1041,8 @@ class MCPServerRemotePromptsBatchApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取可用的 MCPServer 分类列表（排除官方和精选）",
+    decorator=extend_schema(
+        description="获取可用的 MCPServer 分类列表（排除官方和精选）",
         responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1061,8 +1069,8 @@ class MCPServerCategoriesListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 搜索过滤选项（环境、标签、分类），用于前端下拉列表",
+    decorator=extend_schema(
+        description="获取 MCPServer 搜索过滤选项（环境、标签、分类），用于前端下拉列表",
         responses={status.HTTP_200_OK: MCPServerFilterOptionsOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1104,9 +1112,9 @@ class MCPServerFilterOptionsApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取有 MCPServer 调用权限的 bk_app_code 列表（网关级别），用于前端下拉列表",
-        query_serializer=MCPServerAppPermissionAppCodeListInputSLZ,
+    decorator=extend_schema(
+        description="获取有 MCPServer 调用权限的 bk_app_code 列表（网关级别），用于前端下拉列表",
+        parameters=[MCPServerAppPermissionAppCodeListInputSLZ],
         responses={status.HTTP_200_OK: MCPServerAppPermissionAppCodeListOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1137,9 +1145,9 @@ class MCPServerAppPermissionAppCodeListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="批量获取 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）",
-        request_body=MCPServerBatchConfigInputSLZ,
+    decorator=extend_schema(
+        description="批量获取 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）",
+        request=MCPServerBatchConfigInputSLZ,
         responses={status.HTTP_200_OK: MCPServerBatchConfigOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1237,9 +1245,9 @@ def _order_gateway_app_permissions(queryset, order_by):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关下 MCPServer 应用权限列表",
-        query_serializer=GatewayMCPServerAppPermissionListInputSLZ,
+    decorator=extend_schema(
+        description="获取网关下 MCPServer 应用权限列表",
+        parameters=[GatewayMCPServerAppPermissionListInputSLZ],
         responses={status.HTTP_200_OK: GatewayMCPServerAppPermissionListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1271,10 +1279,10 @@ class GatewayMCPServerAppPermissionListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="导出网关下 MCPServer 应用权限列表",
-        request_body=GatewayMCPServerAppPermissionExportInputSLZ,
-        responses={status.HTTP_200_OK: "file/csv"},
+    decorator=extend_schema(
+        description="导出网关下 MCPServer 应用权限列表",
+        request=GatewayMCPServerAppPermissionExportInputSLZ,
+        responses={(200, "application/octet-stream"): bytes},
         tags=["WebAPI.MCPServer"],
     ),
 )

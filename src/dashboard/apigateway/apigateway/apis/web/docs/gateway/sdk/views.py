@@ -18,7 +18,7 @@
 
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.biz.sdk import DummySDKDocContext
@@ -30,9 +30,9 @@ from .serializers import SDKDocInputSLZ, SDKDocOutputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定语言（python）的网关 SDK 说明文档",
-        query_serializer=SDKDocInputSLZ,
+    decorator=extend_schema(
+        description="获取指定语言（python）的网关 SDK 说明文档",
+        parameters=[SDKDocInputSLZ],
         responses={status.HTTP_200_OK: SDKDocOutputSLZ},
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),

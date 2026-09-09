@@ -19,7 +19,7 @@
 
 
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
@@ -40,19 +40,19 @@ from .serializers import (
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=AlarmStrategyQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[AlarmStrategyQueryInputSLZ],
         responses={status.HTTP_200_OK: AlarmStrategyListOutputSLZ(many=True)},
-        operation_description="获取告警策略列表",
+        description="获取告警策略列表",
         tags=["WebAPI.Monitor"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=AlarmStrategyInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
-        operation_description="创建告警策略",
+    decorator=extend_schema(
+        request=AlarmStrategyInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        description="创建告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -98,28 +98,29 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取告警策略",
+    decorator=extend_schema(
+        description="获取告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        operation_description="更新告警策略",
+    decorator=extend_schema(
+        responses={status.HTTP_204_NO_CONTENT: None},
+        description="更新告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        operation_description="删除告警策略",
+    decorator=extend_schema(
+        responses={status.HTTP_204_NO_CONTENT: None},
+        description="删除告警策略",
         tags=["WebAPI.Monitor"],
     ),
 )
 class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    schema_request_partial = False
     serializer_class = AlarmStrategyInputSLZ
     lookup_field = "id"
 
@@ -155,19 +156,19 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=AlarmStrategyUpdateStatusInputSLZ,
-        operation_description="更新告警策略状态",
+    decorator=extend_schema(
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=AlarmStrategyUpdateStatusInputSLZ,
+        description="更新告警策略状态",
         tags=["WebAPI.Monitor"],
     ),
 )
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=AlarmStrategyUpdateStatusInputSLZ,
-        operation_description="更新告警策略状态",
+    decorator=extend_schema(
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=AlarmStrategyUpdateStatusInputSLZ,
+        description="更新告警策略状态",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -194,10 +195,10 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=AlarmRecordQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[AlarmRecordQueryInputSLZ],
         responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ(many=True)},
-        operation_description="获取告警记录列表",
+        description="获取告警记录列表",
         tags=["WebAPI.Monitor"],
     ),
 )
@@ -220,9 +221,9 @@ class AlarmRecordListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: AlarmRecordQueryOutputSLZ()},
-        operation_description="获取某条告警记录详情",
+        description="获取某条告警记录详情",
         tags=["WebAPI.Monitor"],
     ),
 )

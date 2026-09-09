@@ -18,7 +18,7 @@
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
@@ -70,18 +70,18 @@ class StageQuerySetMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取环境列表",
+    decorator=extend_schema(
+        description="获取环境列表",
         responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建环境",
-        responses={status.HTTP_201_CREATED: ""},
-        request_body=StageInputSLZ,
+    decorator=extend_schema(
+        description="创建环境",
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
+        request=StageInputSLZ,
         tags=["WebAPI.Stage"],
     ),
 )
@@ -136,39 +136,40 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取环境详情",
+    decorator=extend_schema(
+        description="获取环境详情",
         responses={status.HTTP_200_OK: StageOutputSLZ()},
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新环境",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=StageInputSLZ,
+    decorator=extend_schema(
+        description="更新环境",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=StageInputSLZ,
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除环境",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除环境",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="局部更新环境",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=StagePartialInputSLZ,
+    decorator=extend_schema(
+        description="局部更新环境",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=StagePartialInputSLZ,
         tags=["WebAPI.Stage"],
     ),
 )
 class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    schema_request_partial = False
     lookup_field = "id"
     queryset = Stage.objects.all()
 
@@ -269,18 +270,18 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取环境变量",
+    decorator=extend_schema(
+        description="获取环境变量",
         responses={status.HTTP_200_OK: StageVarsSLZ()},
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新环境变量",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=StageVarsSLZ,
+    decorator=extend_schema(
+        description="更新环境变量",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=StageVarsSLZ,
         tags=["WebAPI.Stage"],
     ),
 )
@@ -334,8 +335,8 @@ class BackendConfigQuerySetMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取环境的后端服务列表",
+    decorator=extend_schema(
+        description="获取环境的后端服务列表",
         responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
         tags=["WebAPI.Stage"],
     ),
@@ -351,19 +352,25 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取环境的后端服务详情",
+    decorator=extend_schema(
+        description="获取环境的后端服务详情",
         responses={status.HTTP_200_OK: StageBackendOutputSLZ()},
         tags=["WebAPI.Stage"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新环境的后端服务",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=BackendConfigInputSLZ,
+    decorator=extend_schema(
+        description="更新环境的后端服务",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request={"application/json": {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.Stage"],
+    ),
+)
+@method_decorator(
+    name="patch",
+    decorator=extend_schema(
+        request={"application/json": {"type": "object", "additionalProperties": True}}, responses={204: None}
     ),
 )
 class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.RetrieveUpdateAPIView):
@@ -409,14 +416,15 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="环境下架",
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        request_body=StageStatusInputSLZ,
+    decorator=extend_schema(
+        description="环境下架",
+        responses={status.HTTP_204_NO_CONTENT: None},
+        request=StageStatusInputSLZ,
         tags=["WebAPI.Stage"],
     ),
 )
 class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
+    schema_request_partial = False
     lookup_field = "id"
     serializer_class = StageStatusInputSLZ
     queryset = Stage.objects.all()
@@ -462,8 +470,8 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取编程网关环境部署详情",
+    decorator=extend_schema(
+        description="获取编程网关环境部署详情",
         responses={status.HTTP_200_OK: ProgrammableStageDeployOutputSLZ()},
         tags=["WebAPI.Stage"],
     ),

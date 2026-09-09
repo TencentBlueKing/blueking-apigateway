@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.conf import settings
+from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
 from apigateway.utils.responses import OKJsonResponse
@@ -28,6 +29,21 @@ class UserAPIView(APIView):
     get: 当前登录用户信息
     """
 
+    @extend_schema(
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "chinese_name": {"type": "string"},
+                    "avatar_url": {"type": "string"},
+                    "username": {"type": "string"},
+                    "display_name": {"type": "string"},
+                    "tenant_id": {"type": "string"},
+                    "time_zone": {"type": "string"},
+                },
+            }
+        }
+    )
     def get(self, request, *args, **kwargs):
         user = request.user
         data = {
