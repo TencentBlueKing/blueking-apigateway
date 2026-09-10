@@ -111,6 +111,7 @@
       <template #empty>
         <slot name="empty">
           <TableEmpty
+            class="py-24px"
             :error="error"
             :empty-type="tableEmptyType"
             :no-search-fields="noSearchFields"

@@ -998,6 +998,7 @@ const handleCancel = () => {
   .create-form {
     padding: 24px;
     background: #FFF;
+    box-shadow: 0 2px 4px 0 #0000001a;
     flex: 1;
 
     .form-item-name {
@@ -1205,6 +1206,7 @@ const handleCancel = () => {
     padding: 24px;
     box-sizing: border-box;
     background: #FFF;
+    box-shadow: 0 2px 4px 0 #1919290d;
     margin-left: 24px;
 
     .title {
