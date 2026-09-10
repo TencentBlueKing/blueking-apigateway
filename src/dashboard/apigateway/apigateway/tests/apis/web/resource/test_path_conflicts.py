@@ -69,7 +69,7 @@ def test_single_excludes_self_and_unrelated_conflicts(request_view, fake_gateway
     G(Resource, gateway=fake_gateway, method="GET", path="/other/{name}")
     response = check(request_view, fake_gateway, {"method": "GET", "path": "/x/{new_id}", "resource_id": resource.id})
     assert response.status_code == 200
-    assert response.json()["data"] == {"has_conflicts": False, "conflicts": []}
+    assert response.json()["data"] == {"has_conflicts": False, "conflicts": [], "truncated": False}
     response = check(request_view, fake_gateway, {"method": "GET", "path": "/x/{new_id}"})
     assert response.status_code == 200
     assert response.json()["data"]["has_conflicts"] is True
@@ -110,4 +110,21 @@ def test_single_literal_parameter_pair(request_view, fake_gateway, path):
 
 
 def test_empty_gateway(request_view, fake_gateway):
-    assert check(request_view, fake_gateway).json()["data"] == {"has_conflicts": False, "conflicts": []}
+    assert check(request_view, fake_gateway).json()["data"] == {
+        "has_conflicts": False,
+        "conflicts": [],
+        "truncated": False,
+    }
+
+
+@pytest.mark.parametrize("single", [False, True])
+def test_conflict_response_is_capped(request_view, fake_gateway, single):
+    for index in range(201 if single else 21):
+        G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{{param_{index}}}")
+    data = {"method": "GET", "path": "/x/{candidate}"} if single else None
+    response = check(request_view, fake_gateway, data)
+    assert response.status_code == 200
+    result = response.json()["data"]
+    assert len(result["conflicts"]) == 200
+    assert result["has_conflicts"] is True
+    assert result["truncated"] is True

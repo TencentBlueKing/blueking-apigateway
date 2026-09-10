@@ -71,7 +71,8 @@ from .serializers import (
     ResourceListOutputSLZ,
     ResourceOutputSLZ,
     ResourcePathConflictCheckInputSLZ,
-    ResourcePathConflictOutputSLZ,
+    ResourcePathConflictCheckOutputSLZ,
+    ResourcePathConflictListOutputSLZ,
     ResourceQueryInputSLZ,
     ResourceWithVerifiedUserRequiredOutputSLZ,
 )
@@ -734,26 +735,51 @@ class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListA
         return OKJsonResponse(data=slz.data)
 
 
-class ResourcePathConflictListApi(ResourceQuerySetMixin, generics.GenericAPIView):
-    @swagger_auto_schema(
-        operation_description="检测资源编辑区全部资源的请求路径冲突，仅返回提示",
-        responses={status.HTTP_200_OK: ResourcePathConflictOutputSLZ},
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description=(
+            "检测资源编辑区全部资源的请求路径冲突，仅返回提示。"
+            "仅检测归一化路径相同，或归一化父路径相同且末段为固定文本与完整参数的重叠。"
+            "不展开环境变量，不检测匹配子路径通配符及其他路径交叉，不预测实际命中资源。"
+            "has_conflicts=false 不保证实际路由完全无重叠。"
+            "最多返回 200 个冲突对；存在更多冲突时 truncated=true。"
+        ),
+        responses={status.HTTP_200_OK: ResourcePathConflictListOutputSLZ},
         tags=["WebAPI.Resource"],
-    )
-    def get(self, request, *args, **kwargs):
+    ),
+)
+class ResourcePathConflictListApi(ResourceQuerySetMixin, generics.ListAPIView):
+    serializer_class = ResourcePathConflictListOutputSLZ
+
+    def list(self, request, *args, **kwargs):
         resources = list(self.get_queryset().order_by("id").values("id", "name", "method", "path"))
-        conflicts = find_resource_path_conflicts(resources)
-        return OKJsonResponse(data={"has_conflicts": bool(conflicts), "conflicts": conflicts})
+        conflicts, truncated = find_resource_path_conflicts(resources)
+        slz = ResourcePathConflictListOutputSLZ(
+            {"has_conflicts": bool(conflicts), "conflicts": conflicts, "truncated": truncated}
+        )
+        return OKJsonResponse(data=slz.data)
 
 
-class ResourcePathConflictCheckApi(ResourceQuerySetMixin, generics.GenericAPIView):
-    @swagger_auto_schema(
-        operation_description="检测待新增或编辑资源与编辑区其他资源的请求路径冲突，仅返回提示",
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description=(
+            "检测待新增或编辑资源与编辑区其他资源的请求路径冲突，仅返回提示。"
+            "仅检测归一化路径相同，或归一化父路径相同且末段为固定文本与完整参数的重叠。"
+            "不展开环境变量，不检测匹配子路径通配符及其他路径交叉，不预测实际命中资源。"
+            "has_conflicts=false 不保证实际路由完全无重叠。"
+            "最多返回 200 个冲突对；存在更多冲突时 truncated=true。"
+        ),
         request_body=ResourcePathConflictCheckInputSLZ,
-        responses={status.HTTP_200_OK: ResourcePathConflictOutputSLZ},
+        responses={status.HTTP_200_OK: ResourcePathConflictCheckOutputSLZ},
         tags=["WebAPI.Resource"],
-    )
-    def post(self, request, *args, **kwargs):
+    ),
+)
+class ResourcePathConflictCheckApi(ResourceQuerySetMixin, generics.CreateAPIView):
+    serializer_class = ResourcePathConflictCheckInputSLZ
+
+    def create(self, request, *args, **kwargs):
         slz = ResourcePathConflictCheckInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
@@ -764,5 +790,8 @@ class ResourcePathConflictCheckApi(ResourceQuerySetMixin, generics.GenericAPIVie
             candidate.update(id=resource.id, name=resource.name)
             queryset = queryset.exclude(id=resource.id)
         resources = list(queryset.order_by("id").values("id", "name", "method", "path"))
-        conflicts = find_resource_path_conflicts(resources, candidate)
-        return OKJsonResponse(data={"has_conflicts": bool(conflicts), "conflicts": conflicts})
+        conflicts, truncated = find_resource_path_conflicts(resources, candidate)
+        slz = ResourcePathConflictCheckOutputSLZ(
+            {"has_conflicts": bool(conflicts), "conflicts": conflicts, "truncated": truncated}
+        )
+        return OKJsonResponse(data=slz.data)

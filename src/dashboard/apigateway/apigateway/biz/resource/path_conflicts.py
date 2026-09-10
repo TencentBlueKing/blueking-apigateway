@@ -17,23 +17,32 @@
 #
 import re
 from collections import defaultdict
-from itertools import combinations, product
+from itertools import combinations, islice, product
 from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 from apigateway.core.constants import HTTP_METHOD_ANY
 
 _ResourceEntry = Tuple[int, Dict[str, Any]]
+_MAX_CONFLICT_PAIRS = 200
 _PATH_PARAMETER = re.compile(r"\{\w+\}")
 
 
 def find_resource_path_conflicts(
     resources: List[Dict[str, Any]], candidate: Optional[Dict[str, Any]] = None
-) -> List[Dict[str, Any]]:
+) -> Tuple[List[Dict[str, Any]], bool]:
     """Find the two supported overlap types; this does not predict APISIX's winning route.
 
+    Return at most 200 pairs and whether additional conflicts were found.
     Trailing slashes follow RouteConvertor._convert_uris. Environment references
     are deliberately not parameters. Subpath wildcard overlaps are outside scope.
     """
+    conflicts = list(islice(_iter_resource_path_conflicts(resources, candidate), _MAX_CONFLICT_PAIRS + 1))
+    return conflicts[:_MAX_CONFLICT_PAIRS], len(conflicts) > _MAX_CONFLICT_PAIRS
+
+
+def _iter_resource_path_conflicts(
+    resources: List[Dict[str, Any]], candidate: Optional[Dict[str, Any]]
+) -> Iterable[Dict[str, Any]]:
     normalized: DefaultDict[str, List[_ResourceEntry]] = defaultdict(list)
     prefixes: DefaultDict[str, Dict[str, List[_ResourceEntry]]] = defaultdict(
         lambda: {"parameters": [], "literals": []}
@@ -55,18 +64,6 @@ def find_resource_path_conflicts(
         elif last and "{" not in last and "}" not in last:
             prefixes[prefix]["literals"].append(entry)
 
-    conflicts = []
-
-    def add_pair(left, right, conflict_type):
-        left_index, left_item = left
-        right_index, right_item = right
-        if candidate is not None and len(resources) not in (left_index, right_index):
-            return
-        methods = {left_item["method"], right_item["method"]}
-        if len(methods) > 1 and HTTP_METHOD_ANY not in methods:
-            return
-        conflicts.append({"type": conflict_type, "resources": [left_item, right_item]})
-
     pairs: Iterable[Tuple[_ResourceEntry, _ResourceEntry]]
     for entries in normalized.values():
         if candidate is None:
@@ -78,11 +75,23 @@ def find_resource_path_conflicts(
                 [entry for entry in entries if entry[0] == len(resources)],
             )
         for left, right in pairs:
-            add_pair(left, right, "normalized_path")
+            conflict = _make_conflict(left, right, "normalized_path")
+            if conflict is not None:
+                yield conflict
     for group in prefixes.values():
         for left, right in _literal_parameter_pairs(group, len(resources) if candidate is not None else None):
-            add_pair(left, right, "literal_parameter")
-    return conflicts
+            conflict = _make_conflict(left, right, "literal_parameter")
+            if conflict is not None:
+                yield conflict
+
+
+def _make_conflict(left: _ResourceEntry, right: _ResourceEntry, conflict_type: str) -> Optional[Dict[str, Any]]:
+    _, left_item = left
+    _, right_item = right
+    methods = {left_item["method"], right_item["method"]}
+    if len(methods) > 1 and HTTP_METHOD_ANY not in methods:
+        return None
+    return {"type": conflict_type, "resources": [left_item, right_item]}
 
 
 def _literal_parameter_pairs(
