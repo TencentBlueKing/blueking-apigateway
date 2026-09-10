@@ -979,3 +979,40 @@ class ResourceWithVerifiedUserRequiredOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceWithVerifiedUserRequiredOutputSLZ"
+
+
+class ResourcePathConflictCheckInputSLZ(serializers.Serializer):
+    method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES)
+    path = serializers.RegexField(PATH_PATTERN, max_length=2048)
+    resource_id = serializers.IntegerField(required=False, min_value=1, help_text="编辑时排除的当前资源 ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictCheckInputSLZ"
+        validators = [PathVarsValidator()]
+
+
+class ResourcePathConflictResourceSLZ(serializers.Serializer):
+    id = serializers.IntegerField(allow_null=True)
+    name = serializers.CharField(allow_blank=True)
+    method = serializers.CharField()
+    path = serializers.CharField()
+    normalized_path = serializers.CharField()
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictResourceSLZ"
+
+
+class ResourcePathConflictSLZ(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["normalized_path", "literal_parameter"])
+    resources = ResourcePathConflictResourceSLZ(many=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictSLZ"
+
+
+class ResourcePathConflictOutputSLZ(serializers.Serializer):
+    has_conflicts = serializers.BooleanField()
+    conflicts = ResourcePathConflictSLZ(many=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictOutputSLZ"
