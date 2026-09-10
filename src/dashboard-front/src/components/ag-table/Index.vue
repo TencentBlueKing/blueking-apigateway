@@ -976,6 +976,13 @@ defineExpose({
     background-color: transparent !important;
   }
 
+  &.t-table--hoverable {
+
+    .t-table__body tr:hover {
+      background-color: #f5f7fa !important;
+    }
+  }
+
   &.t-size-m {
 
     .t-table__header {

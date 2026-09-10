@@ -731,7 +731,7 @@ defineExpose({ showReleaseSideslider });
     }
 
     .main {
-      padding: 0 40px;
+      padding: 0 24px;
 
       .add {
         color: #34d97b;
@@ -751,7 +751,7 @@ defineExpose({ showReleaseSideslider });
     }
 
     .operate1 {
-      padding: 8px 40px 24px;
+      padding: 8px 24px 24px;
     }
 
     .operate2 {
