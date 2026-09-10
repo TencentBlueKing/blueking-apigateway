@@ -40,7 +40,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
+from apigateway.core.constants import HTTP_METHOD_ANY, HTTP_METHOD_CHOICES, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
@@ -1002,22 +1002,25 @@ class ResourcePathConflictResourceOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictResourceOutputSLZ"
 
 
-class ResourcePathConflictPairOutputSLZ(serializers.Serializer):
+class ResourcePathConflictGroupOutputSLZ(serializers.Serializer):
+    method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES, read_only=True, help_text="本组对应的具体请求方法")
     type = serializers.ChoiceField(
         choices=["normalized_path", "literal_parameter"], read_only=True, help_text="路径重叠类型"
     )
-    resources = ResourcePathConflictResourceOutputSLZ(many=True, read_only=True, help_text="发生重叠的两个资源")
+    resources = ResourcePathConflictResourceOutputSLZ(
+        many=True, read_only=True, help_text="重叠资源组；末段重叠表示字面量与参数之间重叠，非所有资源两两重叠"
+    )
 
     class Meta:
-        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictPairOutputSLZ"
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictGroupOutputSLZ"
 
 
 class ResourcePathConflictBaseSLZ(serializers.Serializer):
     has_conflicts = serializers.BooleanField(
         read_only=True, help_text="是否发现支持范围内的路径重叠；false 不保证实际路由无重叠"
     )
-    conflicts = ResourcePathConflictPairOutputSLZ(many=True, read_only=True, help_text="最多返回 200 个冲突对")
-    truncated = serializers.BooleanField(read_only=True, help_text="是否存在未返回的冲突对；恰好 200 个时为 false")
+    conflicts = ResourcePathConflictGroupOutputSLZ(many=True, read_only=True, help_text="最多返回 200 个冲突组")
+    truncated = serializers.BooleanField(read_only=True, help_text="是否存在未返回的冲突组；恰好 200 个时为 false")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictBaseSLZ"

@@ -97,7 +97,7 @@ def test_foreign_resource(request_view, fake_gateway):
 
 
 @pytest.mark.parametrize("path", ["/x/batch", "/x/{new_id}"])
-def test_single_literal_parameter_pair(request_view, fake_gateway, path):
+def test_single_literal_parameter_group(request_view, fake_gateway, path):
     G(Resource, gateway=fake_gateway, method="DELETE", path="/x/{id}")
     G(Resource, gateway=fake_gateway, method="DELETE", path="/x/batch")
     G(Resource, gateway=fake_gateway, method="DELETE", path="/unrelated/{id}")
@@ -117,14 +117,25 @@ def test_empty_gateway(request_view, fake_gateway):
     }
 
 
-@pytest.mark.parametrize("single", [False, True])
-def test_conflict_response_is_capped(request_view, fake_gateway, single):
-    for index in range(201 if single else 21):
-        G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{{param_{index}}}")
-    data = {"method": "GET", "path": "/x/{candidate}"} if single else None
-    response = check(request_view, fake_gateway, data)
-    assert response.status_code == 200
-    result = response.json()["data"]
+def test_conflict_groups_are_capped(request_view, fake_gateway):
+    for index in range(201):
+        G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{index}/{{first}}")
+        G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{index}/{{second}}")
+    result = check(request_view, fake_gateway).json()["data"]
     assert len(result["conflicts"]) == 200
     assert result["has_conflicts"] is True
     assert result["truncated"] is True
+
+
+@pytest.mark.parametrize("single", [False, True])
+def test_response_contains_groups(request_view, fake_gateway, single):
+    resources = [G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{{p{index}}}") for index in range(3)]
+    data = {"method": "GET", "path": "/x/{candidate}"} if single else None
+    result = check(request_view, fake_gateway, data).json()["data"]
+    assert result["truncated"] is False
+    assert len(result["conflicts"]) == 1
+    group = result["conflicts"][0]
+    assert group["method"] == "GET"
+    assert {item["id"] for item in group["resources"]} == {resource.id for resource in resources} | (
+        {None} if single else set()
+    )
