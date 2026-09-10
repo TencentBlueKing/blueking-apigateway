@@ -235,7 +235,7 @@ import {
   useRouter,
 } from 'vue-router';
 import ReleaseProgrammableEvent from '../../components/ReleaseProgrammableEvent.vue';
-import { Message } from 'bkui-vue';
+import { Divider, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { usePopInfoBox } from '@/hooks';
 import { useFeatureFlag } from '@/stores';
@@ -557,7 +557,7 @@ defineExpose({ showReleaseSideslider });
     width: 100%;
 
     .main {
-      padding: 0 40px;
+      padding: 0 24px;
 
       :deep(.bk-alert-wraper) {
         align-items: center;
@@ -574,7 +574,7 @@ defineExpose({ showReleaseSideslider });
     }
 
     .operate1 {
-      padding: 8px 40px 24px;
+      padding: 8px 24px 24px;
     }
 
     .operate2 {
