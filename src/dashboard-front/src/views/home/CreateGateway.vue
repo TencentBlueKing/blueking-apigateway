@@ -41,12 +41,11 @@
               @click="handleKindChange(0)"
             >
               <div class="type flex">
-                <div class="icon">
-                  <AgIcon
-                    name="apiwangguan"
-                    size="32"
-                    color="#3A84FF"
-                  />
+                <div class="icon icon-api">
+                  <img
+                    :src="apiIcon"
+                    :alt="t('API 网关')"
+                  >
                 </div>
                 <div class="title ml-8px">
                   {{ t('API 网关') }}
@@ -76,12 +75,11 @@
               @click="handleKindChange(2)"
             >
               <div class="type flex">
-                <div class="icon">
-                  <AgIcon
-                    name="AIwangguan"
-                    size="32"
-                    color="#3A84FF"
-                  />
+                <div class="icon icon-ai">
+                  <img
+                    :src="aiIcon"
+                    :alt="t('AI 网关')"
+                  >
                 </div>
                 <div class="title ml-8px">
                   {{ t('AI 网关') }}
@@ -113,12 +111,11 @@
               @click="handleKindChange(1)"
             >
               <div class="type flex">
-                <div class="icon">
-                  <AgIcon
-                    name="kebiancheng"
-                    size="32"
-                    color="#3A84FF"
-                  />
+                <div class="icon icon-programmable">
+                  <img
+                    :src="programmableIcon"
+                    :alt="t('可编程网关')"
+                  >
                 </div>
                 <div class="title ml-8px">
                   {{ t('可编程网关') }}
@@ -468,6 +465,9 @@ import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways
 import MemberSelector from '@/components/member-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
 import bareGit from '@/images/bare_git.png';
+import apiIcon from '@/images/api.png';
+import aiIcon from '@/images/ai.png';
+import programmableIcon from '@/images/programmable.png';
 import {
   useEnv,
   useFeatureFlag,
@@ -1104,6 +1104,11 @@ const handleCancel = () => {
           }
         }
 
+        &:hover {
+          border: 1px solid #3A84FF;
+          background: #FFF;
+        }
+
         &.active {
           border: 1px solid #3A84FF;
           background: #F0F5FF;
@@ -1132,9 +1137,30 @@ const handleCancel = () => {
       .type {
         margin-bottom: 12px;
         .icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           width: 32px;
           height: 32px;
           border-radius: 4px;
+
+          img {
+            display: block;
+            width: 20px;
+            height: 20px;
+          }
+
+          &.icon-api {
+            background: #3a84ff;
+          }
+
+          &.icon-ai {
+            background: #6328ff;
+          }
+
+          &.icon-programmable {
+            background: #0e3377;
+          }
         }
         .title {
           color: #313238;
