@@ -117,14 +117,16 @@
             @change="handleResourceChange"
           />
         </BkFormItem>
-        <BkFormItem
-          :label="t('查询语句')"
-          class="ag-form-item-inline"
-        >
+        <BkFormItem class="ag-form-item-inline">
+          <template #label>
+            <span class="query-statement-label">
+              {{ t('查询语句') }}
+              <QueryUsagePopover @choose="handleChoose" />
+            </span>
+          </template>
           <SearchInput
             v-model:mode-value="keyword"
             style="min-width: 250px;"
-            @choose="handleChoose"
             @search="handleSearch"
           />
         </BkFormItem>
@@ -381,6 +383,7 @@ import {
 
 import { copy } from '@/utils';
 import { useChartIntervalOption, useDatePicker } from '@/hooks';
+import QueryUsagePopover from './components/QueryUsagePopover.vue';
 import SearchInput from './components/SearchInput.vue';
 import { useAccessLog, useFeatureFlag, useGateway } from '@/stores';
 import {
@@ -1344,6 +1347,11 @@ onBeforeUnmount(() => {
 
   .ag-top-header {
     margin-bottom: 16px;
+
+    .query-statement-label {
+      display: inline-flex;
+      align-items: center;
+    }
 
     .search-form {
       display: flex;
