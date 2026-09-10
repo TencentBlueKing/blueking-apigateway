@@ -1252,10 +1252,11 @@ onBeforeUnmount(() => {
   .collapse-panel {
     padding: 24px;
     background-color: #fff;
+    box-shadow: 0 2px 4px 0 #1919290d;
 
     .collapse-panel-header {
       display: flex;
-      margin-bottom: 24px;
+      margin-bottom: 0;
       cursor: pointer;
       align-items: center;
 
@@ -1299,6 +1300,10 @@ onBeforeUnmount(() => {
       .packUp {
         transform: rotate(-90deg);
       }
+    }
+
+    &.bk-collapse-item-active .collapse-panel-header {
+      margin-bottom: 24px;
     }
   }
 
