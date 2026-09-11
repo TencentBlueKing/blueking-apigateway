@@ -22,13 +22,12 @@ from pydantic import ValidationError
 
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import (
+    ItsmApprovalTaskList,
     ItsmFormModelUpdateResult,
-    ItsmTicketItem,
-    ItsmTicketSearchResult,
     ItsmWorkflowList,
     _call_bkitsm_api,
     create_ticket,
-    get_ticket_by_id,
+    list_approval_tasks,
     system_workflow_list,
     update_form_model,
 )
@@ -127,67 +126,128 @@ def test_itsm_form_model_update_result_extract_updated_fields():
     assert result.updated_field_keys == frozenset({"apply_reason", "gateway_name"})
 
 
-def test_itsm_ticket_item_prefers_first_history_user():
-    detail = ItsmTicketItem.model_validate(
+def test_itsm_approval_task_list_extracts_approver_from_real_payload():
+    result = ItsmApprovalTaskList.from_response(
         {
-            "id": "t-001",
-            "history_processors": [
-                {"id": "admin", "type": "user", "display": "管理员(admin)"},
-                {"id": "neoling", "type": "user", "display": "neoling"},
-            ],
-        }
-    )
-
-    assert detail.actual_approver == "admin"
-
-
-def test_itsm_ticket_item_returns_empty_without_history_user():
-    detail = ItsmTicketItem.model_validate(
-        {
-            "id": "t-001",
-            "history_processors": [
-                {"id": "group-a", "type": "group", "display": "group-a"},
-            ],
-        }
-    )
-
-    assert detail.actual_approver == ""
-
-
-def test_itsm_ticket_item_requires_processors_list():
-    with pytest.raises(ValidationError):
-        ItsmTicketItem.model_validate(
-            {
-                "id": "t-001",
-                "history_processors": {"id": "admin", "type": "user"},
-            }
-        )
-
-
-def test_itsm_ticket_search_result_extract_actual_approver():
-    result = ItsmTicketSearchResult.from_response(
-        {
-            "results": [
+            "items": [
                 {
-                    "id": "t-001",
-                    "history_processors": [
-                        {"id": "admin", "type": "user", "display": "管理员(admin)"},
-                        {"id": "neoling", "type": "user", "display": "neoling"},
-                    ],
+                    "id": "task-001",
+                    "name": "审批节点: 任务[task-001]",
+                    "activity_key": "activityobject_1",
+                    "desc": "提单人自动审批同意",
+                    "type": "APPROVE_TASK",
+                    "status": "approve",
+                    "status_display": "同意",
+                    "operator": "admin",
+                    "operator_type": "user",
+                    "operator_at": "2026-01-01T00:00:00+08:00",
+                    "current_processors": [],
                 }
-            ],
-            "page": 1,
-            "page_size": 10,
-            "count": 1,
+            ]
         }
     )
 
-    assert result.actual_approver == "admin"
+    assert result.get_actual_approver() == "admin"
 
 
-def test_itsm_ticket_search_result_requires_results_list():
+def test_itsm_approval_task_list_uses_last_approved_user():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "status": "approve",
+                    "operator": "admin",
+                    "operator_type": "user",
+                },
+                {
+                    "status": "approve",
+                    "operator": "admin_user",
+                    "operator_type": "user",
+                },
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == "admin_user"
+
+
+def test_itsm_approval_task_list_returns_empty_when_last_approve_is_not_user():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "status": "approve",
+                    "operator": "admin",
+                    "operator_type": "user",
+                },
+                {
+                    "status": "approve",
+                    "operator": "gateway-maintainers",
+                    "operator_type": "group",
+                },
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == ""
+
+
+def test_itsm_approval_task_list_returns_empty_without_approve_task():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "status": "reject",
+                    "operator": "admin",
+                    "operator_type": "user",
+                }
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == ""
+
+
+def test_itsm_approval_task_list_returns_empty_when_operator_blank():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "status": "approve",
+                    "operator": "  ",
+                    "operator_type": "user",
+                }
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == ""
+
+
+def test_itsm_approval_task_list_ignores_non_approve_after_user_approve():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "status": "approve",
+                    "operator": "admin",
+                    "operator_type": "user",
+                },
+                {
+                    "status": "running",
+                    "operator": "admin",
+                    "operator_type": "user",
+                },
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == "admin"
+
+
+def test_itsm_approval_task_list_requires_items_list():
     with pytest.raises(ValidationError):
-        ItsmTicketSearchResult.from_response({"results": {}, "count": 1})
+        ItsmApprovalTaskList.from_response({"items": {}})
 
 
 def test_create_ticket_prefers_system_token(settings, mocker):
@@ -247,30 +307,27 @@ def test_update_form_model_fallback_to_global_token(settings, mocker):
     assert result.updated_field_keys == frozenset({"apply_reason"})
 
 
-def test_get_ticket_by_id(settings, mocker):
+def test_list_approval_tasks(settings, mocker):
     settings.BK_ITSM4_URL_PREFIX = "http://bk-itsm4.example.com/prod"
     settings.BK_ITSM4_API_TIMEOUT = 30
-    settings.BK_ITSM4_QUERY_OPERATOR = "admin"
 
     mock_call = mocker.patch(
         "apigateway.components.bkitsm._call_bkitsm_api",
         return_value={
-            "results": [{"id": "t-001", "history_processors": [{"id": "admin", "type": "user"}]}],
-            "count": 1,
+            "items": [
+                {
+                    "status": "approve",
+                    "operator": "admin",
+                    "operator_type": "user",
+                }
+            ]
         },
     )
 
-    result = get_ticket_by_id("t-001")
+    result = list_approval_tasks("t-001")
 
     args, kwargs = mock_call.call_args
-    assert args[1] == "/api/v1/ticket_search/full_text_search/"
-    assert args[2] == {
-        "page": 1,
-        "page_size": 1,
-        "id__in": "t-001",
-        "operator": "admin",
-        "group_key": "all",
-    }
+    assert args[1] == "/api/v1/approval_tasks/"
+    assert args[2] == {"ticket_id": "t-001"}
     assert kwargs["timeout"] == 30
-    assert result.actual_approver == "admin"
-    assert result.count == 1
+    assert result.get_actual_approver() == "admin"
