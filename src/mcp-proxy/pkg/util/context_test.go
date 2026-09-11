@@ -330,9 +330,19 @@ var _ = Describe("Context", func() {
 		It("omits absent built-in IP headers", func() {
 			c, _ := gin.CreateTestContext(httptest.NewRecorder())
 			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
-			util.SetBkApiAllowedHeaders(c, "X-Real-IP")
+			util.SetBkApiAllowedHeaders(c, "")
 			headers := util.GetBkApiAllowedHeaders(c.Request.Context())
 			Expect(headers).To(HaveLen(2))
+		})
+
+		It("preserves explicitly allowed empty IP headers", func() {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			util.SetBkApiAllowedHeaders(c, "x-real-ip,X-Forwarded-For,X-Client-IP")
+			headers := util.GetBkApiAllowedHeaders(c.Request.Context())
+			Expect(headers).To(HaveKeyWithValue("X-Real-Ip", ""))
+			Expect(headers).To(HaveKeyWithValue("X-Forwarded-For", ""))
+			Expect(headers).To(HaveKeyWithValue("X-Client-Ip", ""))
 		})
 
 		It("should set and get allowed headers", func() {

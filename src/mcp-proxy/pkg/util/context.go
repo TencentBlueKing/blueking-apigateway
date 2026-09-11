@@ -308,8 +308,6 @@ func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
 	for _, header := range []string{"X-Real-Ip", "X-Forwarded-For", "X-Client-Ip"} {
 		if value := c.GetHeader(header); value != "" {
 			allowedHeadersMap[header] = value
-		} else {
-			delete(allowedHeadersMap, header)
 		}
 	}
 	// 默认添加 mcp-server 相关请求头
