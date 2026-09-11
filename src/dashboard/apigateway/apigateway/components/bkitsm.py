@@ -18,10 +18,10 @@
 #
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from django.conf import settings
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from apigateway.utils.url import url_join
 
@@ -76,36 +76,35 @@ class ItsmFormModelUpdateResult(BaseModel):
         return frozenset(self.meta.fields.keys())
 
 
-class ItsmTicketProcessor(BaseModel):
-    id: str
-    type: str
-    display: str = ""
+class ItsmApprovalTask(BaseModel):
+    """ITSM 审批任务。只建模回填审批人需要的字段，其余响应字段忽略。"""
+
+    APPROVED_STATUS: ClassVar[str] = "approve"
+    USER_OPERATOR_TYPE: ClassVar[str] = "user"
+
+    status: str = ""
+    operator: str = ""
+    operator_type: str = ""
 
 
-class ItsmTicketItem(BaseModel):
-    id: str
-    history_processors: Optional[list[ItsmTicketProcessor]] = None
-
-    @property
-    def actual_approver(self) -> str:
-        history_processors = [processor for processor in (self.history_processors or []) if processor.type == "user"]
-        return history_processors[0].id if history_processors else ""
-
-
-class ItsmTicketSearchResult(BaseModel):
-    results: list[ItsmTicketItem]
-    page: int = 1
-    page_size: int = 10
-    count: int
+class ItsmApprovalTaskList(BaseModel):
+    items: list[ItsmApprovalTask] = Field(default_factory=list)
 
     @classmethod
-    def from_response(cls, resp: Any) -> "ItsmTicketSearchResult":
-        return cls.model_validate(resp)
+    def from_response(cls, resp: Any) -> "ItsmApprovalTaskList":
+        return cls.model_validate(resp or {})
 
-    @property
-    def actual_approver(self) -> str:
-        approvers = [ticket.actual_approver for ticket in self.results if ticket.actual_approver]
-        return approvers[0] if approvers else ""
+    def get_actual_approver(self) -> str:
+        """取 items 中最后一个同意任务的用户操作人；不满足则返回空串。"""
+        approved_tasks = [task for task in self.items if task.status == ItsmApprovalTask.APPROVED_STATUS]
+        if not approved_tasks:
+            return ""
+
+        last_approved = approved_tasks[-1]
+        if last_approved.operator_type != ItsmApprovalTask.USER_OPERATOR_TYPE:
+            return ""
+
+        return last_approved.operator.strip()
 
 
 def _call_bkitsm_api(
@@ -296,26 +295,17 @@ def create_ticket(
     )
 
 
-def get_ticket_by_id(ticket_id: str, operator: Optional[str] = None) -> ItsmTicketSearchResult:
+def list_approval_tasks(ticket_id: str) -> ItsmApprovalTaskList:
     """
-    按工单 ID 查询单条 ITSM 工单。
+    按工单 ID 查询审批任务列表，用于回填真实审批人。
 
-    因 /ticket/detail/ 暂无法返回 history_processors，先走搜索接口按 id__in 精确查询。
-    调用接口: ticket_search_full_text_search (POST)
-    路径: /api/v1/ticket_search/full_text_search/
+    调用接口: approval_tasks (POST)
+    路径: /api/v1/approval_tasks/
     """
-    data = {
-        "page": 1,
-        # 按单个 ticket_id 查询，只需返回一条
-        "page_size": 1,
-        "id__in": ticket_id,
-        "operator": operator or settings.BK_ITSM4_QUERY_OPERATOR,
-        "group_key": "all",
-    }
     resp = _call_bkitsm_api(
         http_post,
-        "/api/v1/ticket_search/full_text_search/",
-        data,
+        "/api/v1/approval_tasks/",
+        {"ticket_id": ticket_id},
         timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
-    return ItsmTicketSearchResult.from_response(resp)
+    return ItsmApprovalTaskList.from_response(resp)

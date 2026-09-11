@@ -45,7 +45,7 @@ from apigateway.apps.permission.models import (
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkcmsi import cmsi_component
-from apigateway.components.bkitsm import get_ticket_by_id
+from apigateway.components.bkitsm import list_approval_tasks
 from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_app_developers
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
@@ -242,13 +242,12 @@ def _update_gateway_or_resource_permission_record_handled_by(
 
 def _get_itsm_approver_for_backfill(ticket_id: str) -> str:
     try:
-        # /ticket/detail/ 暂无法返回 history_processors，先用工单搜索接口，修复后可切回详情接口。
-        ticket_search_result = get_ticket_by_id(ticket_id)
+        approval_tasks = list_approval_tasks(ticket_id)
     except Exception:
-        logger.warning("query or parse itsm ticket failed, ticket_id=%s", ticket_id, exc_info=True)
+        logger.warning("query or parse itsm approval tasks failed, ticket_id=%s", ticket_id, exc_info=True)
         return ""
 
-    approver = ticket_search_result.actual_approver
+    approver = approval_tasks.get_actual_approver()
     if not approver:
         logger.info("skip filling itsm approver because approver is empty, ticket_id=%s", ticket_id)
         return ""
