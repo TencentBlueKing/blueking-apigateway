@@ -17,6 +17,7 @@
 #
 import re
 from collections import defaultdict
+from itertools import zip_longest
 from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 from apigateway.core.constants import HTTP_METHOD_ANY, HTTP_METHOD_CHOICES
@@ -81,11 +82,13 @@ def _find_all_groups(normalized: _PathIndex, literals: _PathIndex) -> List[Dict[
     ]
     # 第二类：同父路径下同时有字面量末段和参数末段，报告两类资源之间的重叠。
     # 不同字面量之间未必重叠，因此这里不是组内资源的两两冲突声明。
+    literal_groups = []
     for (method, prefix), items in literals.items():
         parameters = normalized.get((method, prefix + "/{}"), [])
         if parameters:
-            groups.append({"type": "literal_parameter", "method": method, "resources": items + parameters})
-    return groups
+            literal_groups.append({"type": "literal_parameter", "method": method, "resources": items + parameters})
+    # 两类组交替返回，避免归一化路径组占满上限后隐藏所有末段重叠组。
+    return [group for pair in zip_longest(groups, literal_groups) for group in pair if group is not None]
 
 
 def _find_candidate_groups(

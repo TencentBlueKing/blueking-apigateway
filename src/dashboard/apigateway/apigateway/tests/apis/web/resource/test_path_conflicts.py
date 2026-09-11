@@ -46,7 +46,7 @@ def check(request_view, gateway, data=None):
         ("/x/batch", "/x/other", "GET", None),
     ],
 )
-def test_all(request_view, fake_gateway, left, right, method, conflict_type):
+def test_list_reports_supported_path_overlaps(request_view, fake_gateway, left, right, method, conflict_type):
     first = G(Resource, gateway=fake_gateway, method="GET" if method == "ANY" else method, path=left)
     second = G(Resource, gateway=fake_gateway, method=method, path=right)
     G(Resource, gateway=G(Gateway), method=method, path=left)
@@ -121,10 +121,13 @@ def test_conflict_groups_are_capped(request_view, fake_gateway):
     for index in range(201):
         G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{index}/{{first}}")
         G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{index}/{{second}}")
+    G(Resource, gateway=fake_gateway, method="GET", path="/literal/batch")
+    G(Resource, gateway=fake_gateway, method="GET", path="/literal/{id}")
     result = check(request_view, fake_gateway).json()["data"]
     assert len(result["conflicts"]) == 200
     assert result["has_conflicts"] is True
     assert result["truncated"] is True
+    assert {group["type"] for group in result["conflicts"]} == {"normalized_path", "literal_parameter"}
 
 
 @pytest.mark.parametrize("single", [False, True])

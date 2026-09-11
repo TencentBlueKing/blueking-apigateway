@@ -735,17 +735,23 @@ class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListA
         return OKJsonResponse(data=slz.data)
 
 
+_RESOURCE_PATH_CONFLICT_DESCRIPTION = (
+    "仅检测归一化路径相同，或归一化父路径相同且末段为固定文本与完整参数的重叠。"
+    "不展开环境变量，不检测匹配子路径通配符及其他路径交叉，不预测实际命中资源。"
+    "has_conflicts=false 不保证实际路由完全无重叠。"
+    "按具体请求方法返回冲突组，ANY 展开为所有支持的方法；资源保留原始 method。"
+    "末段重叠组表示字面量与参数之间重叠，不表示组内所有资源两两重叠。"
+    "最多返回 200 个冲突组；存在更多组时 truncated=true，单组资源不截断。"
+)
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
         operation_description=(
             "检测资源编辑区全部资源的请求路径冲突，仅返回提示。"
-            "仅检测归一化路径相同，或归一化父路径相同且末段为固定文本与完整参数的重叠。"
-            "不展开环境变量，不检测匹配子路径通配符及其他路径交叉，不预测实际命中资源。"
-            "has_conflicts=false 不保证实际路由完全无重叠。"
-            "按具体请求方法返回冲突组，ANY 展开为所有支持的方法；资源保留原始 method。"
-            "末段重叠组表示字面量与参数之间重叠，不表示组内所有资源两两重叠。"
-            "最多返回 200 个冲突组；存在更多组时 truncated=true，单组资源不截断。"
+            + _RESOURCE_PATH_CONFLICT_DESCRIPTION
+            + "两类冲突组交替返回，一类耗尽后继续返回另一类。"
         ),
         responses={status.HTTP_200_OK: ResourcePathConflictListOutputSLZ},
         tags=["WebAPI.Resource"],
@@ -767,13 +773,7 @@ class ResourcePathConflictListApi(ResourceQuerySetMixin, generics.ListAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description=(
-            "检测待新增或编辑资源与编辑区其他资源的请求路径冲突，仅返回提示。"
-            "仅检测归一化路径相同，或归一化父路径相同且末段为固定文本与完整参数的重叠。"
-            "不展开环境变量，不检测匹配子路径通配符及其他路径交叉，不预测实际命中资源。"
-            "has_conflicts=false 不保证实际路由完全无重叠。"
-            "按具体请求方法返回冲突组，ANY 展开为所有支持的方法；资源保留原始 method。"
-            "末段重叠组表示字面量与参数之间重叠，不表示组内所有资源两两重叠。"
-            "最多返回 200 个冲突组；存在更多组时 truncated=true，单组资源不截断。"
+            "检测待新增或编辑资源与编辑区其他资源的请求路径冲突，仅返回提示。" + _RESOURCE_PATH_CONFLICT_DESCRIPTION
         ),
         request_body=ResourcePathConflictCheckInputSLZ,
         responses={status.HTTP_200_OK: ResourcePathConflictCheckOutputSLZ},

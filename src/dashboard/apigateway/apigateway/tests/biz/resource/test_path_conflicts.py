@@ -99,3 +99,53 @@ def test_different_methods_do_not_conflict():
     resources = [{"id": index, "method": "POST", "path": f"/x/{{p{index}}}"} for index in range(201)]
     candidate = {"method": "GET", "path": "/x/{candidate}"}
     assert find_resource_path_conflicts(resources, candidate) == ([], False)
+
+
+@pytest.mark.parametrize(
+    "normalized_count,literal_count,expected_normalized,expected_literal,truncated",
+    [(201, 1, 199, 1, True), (1, 201, 1, 199, True), (101, 101, 100, 100, True), (100, 100, 100, 100, False)],
+)
+def test_group_limit_preserves_both_overlap_types(
+    normalized_count, literal_count, expected_normalized, expected_literal, truncated
+):
+    resources = [
+        {"method": "GET", "path": f"/normalized/{index}/" + suffix}
+        for index in range(normalized_count)
+        for suffix in ["{left}", "{right}"]
+    ] + [
+        {"method": "GET", "path": f"/literal/{index}/" + suffix}
+        for index in range(literal_count)
+        for suffix in ["batch", "{id}"]
+    ]
+    groups, actual_truncated = find_resource_path_conflicts(resources)
+    assert len(groups) == 200
+    assert actual_truncated is truncated
+    assert sum(group["type"] == "normalized_path" for group in groups) == expected_normalized
+    assert sum(group["type"] == "literal_parameter" for group in groups) == expected_literal
+
+
+@pytest.mark.parametrize("single", [False, True])
+@pytest.mark.parametrize(
+    "left,right,expected_path",
+    [
+        ("/", "///", "/"),
+        ("/{env.region}/x/{id}", "/{env.region}/x/{name}", "/{env.region}/x/{}"),
+        ("/{env.region}/x/{id}", "/{env.other}/x/{name}", None),
+        ("/x/{env.name}", "/x/{id}", None),
+        ("/x/{env.name}", "/x/batch", None),
+        ("/x/batch/list", "/x/{id}/list", None),
+    ],
+)
+def test_supported_rules_preserve_environment_references(single, left, right, expected_path):
+    resources = [{"id": 1, "method": "GET", "path": left}]
+    candidate = {"id": 2, "method": "GET", "path": right}
+    if not single:
+        resources.append(candidate)
+        candidate = None
+    groups, truncated = find_resource_path_conflicts(resources, candidate)
+    assert truncated is False
+    if expected_path is None:
+        assert groups == []
+    else:
+        assert len(groups) == 1
+        assert {resource["normalized_path"] for resource in groups[0]["resources"]} == {expected_path}
