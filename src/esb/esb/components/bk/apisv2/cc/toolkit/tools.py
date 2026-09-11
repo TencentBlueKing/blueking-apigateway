@@ -49,6 +49,7 @@ class CCClient(object):
                 "HTTP_BLUEKING_SUPPLIER_ID": "0",
             }
         )
+        kwargs["with_jwt_header"] = configs.JWT_ENABLED
         return self.http_client.request(
             method,
             host,

@@ -253,6 +253,8 @@ HOST_CC = env.str("BK_CMDB_URL", "")
 
 # host for cc v3
 HOST_CC_V3 = env.str("BK_CMDB_V3_URL", "")
+# Include an ESB-signed JWT in requests to CC when enabled.
+BK_ESB_CC_JWT_ENABLED = env.bool("BK_ESB_CC_JWT_ENABLED", False)
 
 # host for job, default 80 for http/8443 for https
 HOST_JOB = env.str("BK_JOB_URL", "")
