@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 
 import pytest
 from dateutil.tz import tzutc
@@ -265,6 +266,27 @@ class TestResourceInputSLZ:
         result = slz._validate_backend_id(fake_gateway, backend.id)
         assert result == backend
 
+    def test_validate_openapi_schema_rejects_external_ref(self):
+        slz = ResourceInputSLZ()
+        with pytest.raises(ValidationError, match="external \\$ref"):
+            slz._validate_openapi_schema(
+                {
+                    "openapi_schema": {
+                        "parameters": [{"$ref": "http://evil.com/schema.json#/definitions/User"}],
+                    }
+                }
+            )
+
+    def test_validate_openapi_schema_allows_internal_ref(self):
+        slz = ResourceInputSLZ()
+        slz._validate_openapi_schema(
+            {
+                "openapi_schema": {
+                    "parameters": [{"$ref": "#/components/parameters/q"}],
+                }
+            }
+        )
+
 
 class TestResourceDataImportSLZ:
     @pytest.mark.parametrize(
@@ -279,6 +301,59 @@ class TestResourceDataImportSLZ:
         slz = ResourceDataImportSLZ()
         result = slz.validate_description_en(description_en)
         assert result == expected
+
+    def _import_payload(self, backend_name, openapi_schema):
+        return {
+            "name": "get_test",
+            "description": "test",
+            "method": "GET",
+            "path": "/test/",
+            "match_subpath": False,
+            "is_public": True,
+            "allow_apply_permission": True,
+            "auth_config": {
+                "auth_verified_required": True,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+            },
+            "backend_name": backend_name,
+            "backend_config": {
+                "method": "GET",
+                "path": "/test/",
+                "match_subpath": False,
+                "timeout": 30,
+            },
+            "openapi_schema": openapi_schema,
+        }
+
+    def test_openapi_schema_rejects_external_ref(self, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway)
+        slz = ResourceDataImportSLZ(
+            data=self._import_payload(
+                backend.name,
+                {
+                    "parameters": [{"$ref": "http://evil.com/schema.json#/definitions/User"}],
+                },
+            ),
+            context={"gateway": fake_gateway, "stages": Stage.objects.filter(gateway=fake_gateway)},
+        )
+
+        assert slz.is_valid() is False
+        assert "external $ref" in json.dumps(slz.errors)
+
+    def test_openapi_schema_allows_internal_ref(self, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway)
+        slz = ResourceDataImportSLZ(
+            data=self._import_payload(
+                backend.name,
+                {
+                    "parameters": [{"$ref": "#/components/parameters/q"}],
+                },
+            ),
+            context={"gateway": fake_gateway, "stages": Stage.objects.filter(gateway=fake_gateway)},
+        )
+
+        assert slz.is_valid() is True
 
 
 class TestResourceExportOutputSLZ:

@@ -18,6 +18,7 @@
 from .archive_factory import ArchiveFileFactory
 from .exceptions import (
     NoResourceDocError,
+    OpenAPIDocGenerationError,
     ResourceDocJinja2TemplateError,
     ResourceDocJinja2TemplateNotFound,
     ResourceDocJinja2TemplateSyntaxError,
@@ -30,6 +31,7 @@ __all__ = [
     # class
     "ArchiveFileFactory",
     "NoResourceDocError",
+    "OpenAPIDocGenerationError",
     "ResourceDocHandler",
     "ResourceDocJinja2TemplateError",
     "ResourceDocJinja2TemplateNotFound",

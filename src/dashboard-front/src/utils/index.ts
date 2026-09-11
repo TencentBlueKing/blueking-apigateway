@@ -36,3 +36,4 @@ export * from './blobDownload';
 export * from './getStrFromFile';
 export * from './getLoginURL';
 export * from './dayUtc';
+export * from './xss-filter-options';

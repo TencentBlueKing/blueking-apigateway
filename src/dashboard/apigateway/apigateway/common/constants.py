@@ -31,6 +31,13 @@ class LanguageCodeEnum(StructuredEnum):
     ZH_HANS = EnumField("zh-hans", "zh-hans")
 
 
+class SDKGenerationLanguageEnum(StructuredEnum):
+    PYTHON = EnumField("python")
+    JAVA = EnumField("java")
+    GO = EnumField("go")
+    JAVASCRIPT = EnumField("javascript")
+
+
 # IP 或 IP 网段正则
 # IPV4 + mask
 # IP_OR_SEGMENT_PATTERN = re.compile(

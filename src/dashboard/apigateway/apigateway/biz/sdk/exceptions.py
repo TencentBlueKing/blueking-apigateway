@@ -25,24 +25,31 @@ class GenerateError(SDKException):
     """生成错误"""
 
 
-class SDKRepoConfigError(SDKException):
+class SDKGenerationError(GenerateError):
+    def __init__(self, code: str, message: str, *, retryable: bool = False):
+        self.code = code
+        self.message = message
+        self.retryable = retryable
+        super().__init__(message)
+
+
+class SDKArtifactConflict(SDKGenerationError):
+    def __init__(self, message: str):
+        super().__init__("artifact_conflict", message)
+
+
+class LegacySDKVersionConflict(SDKGenerationError, ValueError):
+    def __init__(self):
+        super().__init__(
+            "legacy_sdk_version_conflict",
+            "This SDK version belongs to another resource version or generation item; "
+            "create a new resource version before generating again.",
+        )
+
+
+class SDKConfigurationError(SDKException):
+    """SDK worker or policy configuration is invalid."""
+
+
+class SDKRepoConfigError(SDKConfigurationError):
     """SDK 配置错误"""
-
-
-class DistributeError(SDKException):
-    """发布错误"""
-
-
-class PackError(SDKException):
-    """打包错误"""
-
-
-class ResourcesIsEmpty(Exception):
-    """网关下无资源"""
-
-
-class TooManySDKVersion(Exception):
-    """SDK 版本过多"""
-
-    def __init__(self, max_count):
-        self.max_count = max_count

@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.biz.resource_doc import OpenAPIDocGenerationError
+
+
 class TestDocImportByArchiveApi:
     def test_post(self, request_view, mocker, fake_tgz_file, ignore_related_app_permission, fake_gateway):
         mocker.patch("apigateway.apis.open.resource_doc.views.ArchiveParser.parse", return_value=[])
@@ -38,8 +41,8 @@ class TestDocImportByArchiveApi:
 
 class TestDocImportBySwaggerApi:
     def test_post(self, request_view, mocker, faker, ignore_related_app_permission, fake_gateway):
-        mocker.patch("apigateway.apis.web.resource_doc.views.OpenAPIParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
+        mocker.patch("apigateway.apis.open.resource_doc.views.OpenAPIParser.parse", return_value=[])
+        mocker.patch("apigateway.apis.open.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(
             method="POST",
@@ -55,3 +58,27 @@ class TestDocImportBySwaggerApi:
 
         assert resp.status_code == 200
         assert result["code"] == 0
+
+    def test_post_generation_error(
+        self,
+        request_view,
+        mocker,
+        ignore_related_app_permission,
+        fake_gateway,
+    ):
+        mocker.patch(
+            "apigateway.apis.open.resource_doc.views.OpenAPIParser.parse",
+            side_effect=OpenAPIDocGenerationError("render failed"),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource_doc.import.by_swagger",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"swagger": "openapi input", "language": "zh"},
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 500
+        assert resp.json()["code"] == 50103
+        assert "根据 swagger 描述生成 markdown 格式文档出现错误" in resp.json()["message"]

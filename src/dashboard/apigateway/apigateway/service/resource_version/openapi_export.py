@@ -17,6 +17,7 @@
 #
 """OpenAPI export helpers for resource-version data."""
 
+import copy
 import json
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -65,7 +66,12 @@ class BaseExporter:
         self.description = description
 
     def to_openapi(self, resources: list, file_type: str = "") -> str:
-        content = self._get_openapi_content(resources)
+        return self.serialize_openapi(self.get_openapi_content(resources), file_type)
+
+    def get_openapi_content(self, resources: list) -> Dict[str, Any]:
+        return self._get_openapi_content(resources)
+
+    def serialize_openapi(self, content: Dict[str, Any], file_type: str = "") -> str:
 
         if file_type == OpenAPIFormatEnum.JSON.value:
             # 设置 ensure_ascii=False,防止中文被编码
@@ -88,30 +94,6 @@ class BaseExporter:
             },
             "paths": self._generate_paths(resources),
         }
-
-    def get_swagger_by_paths(
-        self,
-        paths: Dict[str, Any],
-        openapi_format: OpenAPIFormatEnum,
-    ) -> str:
-        info = {
-            "version": self.api_version,
-            "title": self.title,
-            "description": self.description,
-        }
-
-        content = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {key: value for key, value in info.items() if value is not None},
-            "schemes": ["http"],
-            "paths": paths,
-        }
-
-        if openapi_format == OpenAPIFormatEnum.JSON:
-            return json.dumps(content, indent=4)
-
-        return yaml_export_dumps(content)
 
     def _generate_paths(self, resources: List[Dict]) -> Dict[str, Any]:
         paths: Dict[str, Any] = {}
@@ -148,46 +130,6 @@ class BaseExporter:
 
             paths[path][method] = operation
 
-        return paths
-
-    def get_swagger_by_resource(self, resources: List[Dict], file_type: str = ""):
-        content = {
-            "swagger": "2.0",
-            "basePath": "/",
-            "info": {
-                "version": self.api_version,
-                "title": self.title,
-                "description": self.description,
-            },
-            "schemes": ["http"],
-            "paths": self._gen_swagger_paths(resources),
-        }
-
-        if file_type == OpenAPIFormatEnum.JSON.value:
-            return json.dumps(content, indent=4)
-
-        return yaml_export_dumps(content)
-
-    def _gen_swagger_paths(self, resources: List[Dict]) -> Dict[str, Any]:
-        paths: Dict[str, Any] = {}
-        for resource in resources:
-            path = resource["path"]
-            paths.setdefault(path, {})
-
-            method = self._adapt_method(resource["method"])
-            operation = {
-                "operationId": resource["name"],
-                "description": resource["description"],
-                "tags": resource.get("labels", []),
-                "responses": {
-                    "default": {"description": ""},
-                },
-            }
-
-            if self.include_bk_apigateway_resource:
-                self._generate_bk_apigateway_resource(operation, resource)
-
-            paths[path][method] = operation
         return paths
 
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
@@ -306,15 +248,27 @@ class OpenAPIExportManager:
         """
         根据资源版本数据导出openapi
         """
-        backend_id_to_config = get_backend_id_to_instance(resource_version.gateway.id)
+        return self._exporter.serialize_openapi(self.get_resource_version_openapi(resource_version), file_type)
+
+    def get_resource_version_openapi(self, resource_version: ResourceVersion) -> Dict[str, Any]:
+        return self._exporter.get_openapi_content(self._build_resource_version_resources(resource_version))
+
+    def _build_resource_version_resources(self, resource_version: ResourceVersion) -> list[Dict[str, Any]]:
+        backend_id_to_config = (
+            get_backend_id_to_instance(resource_version.gateway.id) if self.include_bk_apigateway_resource else {}
+        )
         resource_labels = get_gateway_resource_id_to_labels(resource_version.gateway.id)
         resource_id_to_schema = get_resource_id_to_schema_by_resource_version(resource_version.id)
 
         resource_data_list = []
-        for resource in resource_version.data:
+        for resource_snapshot in resource_version.data:
+            resource = copy.deepcopy(resource_snapshot)
             labels = resource_labels.get(resource["id"], [])
             resource["labels"] = [label["name"] for label in labels]
             resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
+            if not self.include_bk_apigateway_resource:
+                resource_data_list.append(resource)
+                continue
             resource["auth_config"] = json.loads(resource["contexts"]["resource_auth"]["config"])
             resource["backend"] = {
                 "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,
@@ -329,7 +283,7 @@ class OpenAPIExportManager:
             ]
             resource_data_list.append(resource)
 
-        return self.export_openapi(resource_data_list, file_type)
+        return resource_data_list
 
     def export_openapi(self, resources: list, file_type: str = ""):
         """
@@ -337,18 +291,6 @@ class OpenAPIExportManager:
         """
         return self._exporter.to_openapi(resources, file_type)
 
-    def get_swagger_by_paths(
-        self,
-        paths: Dict[str, Any],
-        openapi_format: OpenAPIFormatEnum,
-    ) -> str:
-        """
-        获取swagger2.0的格式导出(主要用于文档生成)
-        """
-        return self._exporter.get_swagger_by_paths(paths, openapi_format)
-
-    def get_swagger_by_resources(self, resources: List[Dict], file_type: str = "") -> str:
-        """
-        获取swagger2.0的格式导出(主要用于sdk生成)
-        """
-        return self._exporter.get_swagger_by_resource(resources, file_type)
+    def get_openapi_content(self, resources: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Return an OAS3 document without mutating caller-owned resource data."""
+        return self._exporter.get_openapi_content(copy.deepcopy(resources))

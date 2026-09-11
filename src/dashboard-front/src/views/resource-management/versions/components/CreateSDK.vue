@@ -55,17 +55,6 @@
           </BkSelect>
         </BkFormItem>
         <BkFormItem
-          :label="t('SDK 版本号')"
-          required
-          property="version"
-        >
-          <BkInput
-            v-model="formData.version"
-            :placeholder="t('请输入 SDK 版本号')"
-            clearable
-          />
-        </BkFormItem>
-        <BkFormItem
           :label="t('生成语言')"
           required
           property="language"
@@ -87,9 +76,8 @@ import {
 import { Message } from 'bkui-vue';
 import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 
-interface CreateDialog {
+interface ICreateDialog {
   resource_version_id: string
-  version: string
   language: string
 }
 
@@ -98,12 +86,16 @@ interface IProps {
   resourceVersionId?: string
 }
 
+interface IEmits {
+  done: [void]
+}
+
 const {
   versionList = [],
   resourceVersionId = '',
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ done: [void] }>();
+const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 const route = useRoute();
@@ -123,9 +115,8 @@ const dialogConfig: IDialog = reactive({
 });
 
 // 提交表单
-const formData: CreateDialog = reactive({
+const formData: ICreateDialog = reactive({
   resource_version_id: '',
-  version: '',
   language: 'python',
 });
 
@@ -136,13 +127,6 @@ const rules = {
       required: true,
       message: t('必填项'),
       trigger: 'change',
-    },
-  ],
-  version: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
     },
   ],
   language: [
@@ -175,7 +159,6 @@ watch(
         id = Number(id);
         versionOpts.value = opts;
         formData.resource_version_id = id;
-        formData.version = opts?.filter((item: any) => item.id === id)[0]?.version;
       }
       else {
         getResourceVersions();
@@ -184,7 +167,6 @@ watch(
     else {
       setTimeout(() => {
         formData.resource_version_id = '';
-        formData.version = '';
         formData.language = 'python';
       }, 500);
     }
@@ -198,16 +180,16 @@ const handleCreate = async () => {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
 
-    await createSDK(apigwId.value, formData as any);
-
+    await createSDK(apigwId.value, {
+      resource_version_id: Number(formData.resource_version_id),
+      languages: [formData.language],
+    });
     Message({
-      message: t('创建成功'),
+      message: t('SDK 生成任务已提交'),
       theme: 'success',
     });
+    emit('done');
     handleClosed();
-    setTimeout(() => {
-      emit('done');
-    }, 300);
   }
   finally {
     dialogConfig.loading = false;
@@ -216,6 +198,7 @@ const handleCreate = async () => {
 
 const handleClosed = () => {
   dialogConfig.isShow = false;
+  dialogConfig.loading = false;
   baseInfoRef.value?.clearValidate();
 };
 

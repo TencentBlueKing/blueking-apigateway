@@ -45,6 +45,7 @@ from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
+from apigateway.utils.openapi_refs import validate_openapi_refs
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
 from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
@@ -237,6 +238,10 @@ class OpenapiSchemaSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.resource.serializers.OpenapiSchemaSLZ"
 
     def validate(self, value):
+        try:
+            validate_openapi_refs(value)
+        except ValueError as err:
+            raise serializers.ValidationError(str(err)) from err
         # 如果 none_schema 为 True，则不需要校验其他参数
         if value.get("none_schema"):
             return value
@@ -435,10 +440,14 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         if not data.get("openapi_schema"):
             return
 
-        if "none_schema" in data.get("openapi_schema") and data.get("openapi_schema").get("none_schema") is True:
-            return
-
         openapi_schema = data.get("openapi_schema")
+        try:
+            validate_openapi_refs(openapi_schema)
+        except ValueError as err:
+            raise serializers.ValidationError(str(err)) from err
+
+        if "none_schema" in openapi_schema and openapi_schema.get("none_schema") is True:
+            return
         request_body = openapi_schema.get("requestBody")
         parameters = openapi_schema.get("parameters")
         if not request_body and not parameters:
@@ -722,6 +731,14 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         # description_en 为 None 时，文档中描述会展示 description 内容，
         # 因此，前端未传入有效 description_en 时，将其设置为 None
         return value or None
+
+    def validate_openapi_schema(self, value):
+        if value:
+            try:
+                validate_openapi_refs(value)
+            except ValueError as err:
+                raise serializers.ValidationError(str(err)) from err
+        return value
 
     def validate(self, data):
         if data["kind"] == ResourceKindEnum.AI.value:

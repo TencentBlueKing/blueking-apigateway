@@ -573,7 +573,7 @@ const steps: {
   },
   {
     name: t('对接业界规范：'),
-    describe: t('Swagger 2.0 / OpenAPI 3.0 / 3.1 协议进行导入导出，自动生成档、SDK 以及在线调试参数'),
+    describe: t('支持 Swagger 2.0 / OpenAPI 3.0 / 3.1 导入、OpenAPI 3 导出，自动生成文档、SDK 以及在线调试参数'),
   },
   {
     name: t('安全：'),
