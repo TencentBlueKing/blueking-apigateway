@@ -585,6 +585,19 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return resp, nil
 }
 
+// setForwardedIPHeaders preserves ingress IP headers over tool-supplied header parameters.
+func setForwardedIPHeaders(req runtime.ClientRequest, headers, headerInfo map[string]string) error {
+	for _, key := range []string{"X-Real-Ip", "X-Forwarded-For", "X-Client-Ip"} {
+		if value := headers[key]; value != "" {
+			if err := req.SetHeaderParam(key, value); err != nil {
+				return err
+			}
+			headerInfo[key] = value
+		}
+	}
+	return nil
+}
+
 // setHandlerRequestParams sets header, query, path and body parameters from HandlerRequest onto the ClientRequest.
 func setHandlerRequestParams(
 	req runtime.ClientRequest,
@@ -1108,7 +1121,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				); err != nil {
 					return err
 				}
-				return nil
+				return setForwardedIPHeaders(req, headers, headerInfo)
 			},
 		)
 		operation := &runtime.ClientOperation{
