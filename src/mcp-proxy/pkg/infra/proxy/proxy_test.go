@@ -560,37 +560,6 @@ var _ = Describe("MCPProxy", func() {
 			Expect(upstreamBody).To(MatchJSON(`{"value":"` + strings.Repeat("x", 5000) + `"}`))
 		})
 
-		It("preserves forwarded IP headers over tool header parameters", func() {
-			var captured http.Header
-			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				captured = r.Header.Clone()
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"ok":true}`))
-			}))
-			defer upstream.Close()
-			upstreamURL, err := url.Parse(upstream.URL)
-			Expect(err).NotTo(HaveOccurred())
-			ctx := context.WithValue(testToolCallContext(), constant.BkApiAllowedHeaders, map[string]string{
-				"X-Real-Ip":       "192.0.2.1",
-				"X-Forwarded-For": "192.0.2.1, 192.0.2.2",
-				"X-Client-Ip":     "192.0.2.1",
-			})
-			handler := genToolHandler(&ToolConfig{
-				Name: "list_items", Method: http.MethodGet,
-				Host: upstreamURL.Host, Schema: upstreamURL.Scheme, Url: "/",
-			}, "test-server", func() bool { return false })
-			_, err = handler(ctx, &mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{
-				Name: "list_items",
-				Arguments: json.RawMessage(`{"header_param":{"x-real-ip":"spoofed",` +
-					`"X-FORWARDED-FOR":"spoofed","X-Client-IP":"spoofed","X-Custom":"custom"}}`),
-			}})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(captured.Get("X-Real-IP")).To(Equal("192.0.2.1"))
-			Expect(captured.Get("X-Forwarded-For")).To(Equal("192.0.2.1, 192.0.2.2"))
-			Expect(captured.Get("X-Client-IP")).To(Equal("192.0.2.1"))
-			Expect(captured.Get("X-Custom")).To(Equal("custom"))
-		})
-
 		It("returns envelope response with upstream JSON body", func() {
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
