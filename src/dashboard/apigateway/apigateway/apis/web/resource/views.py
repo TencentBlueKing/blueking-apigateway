@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -38,7 +39,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.openapi import OpenAPIImportManager, ResourceDataConvertor, ResourceImportValidator
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.biz.resource import ResourceHandler, ResourcesSaver
+from apigateway.biz.resource import ResourceHandler, ResourcesSaver, find_resource_path_conflicts
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_doc.importer import DocImporter, OpenAPIParser
@@ -69,6 +70,9 @@ from .serializers import (
     ResourceLabelUpdateInputSLZ,
     ResourceListOutputSLZ,
     ResourceOutputSLZ,
+    ResourcePathConflictCheckInputSLZ,
+    ResourcePathConflictCheckOutputSLZ,
+    ResourcePathConflictListOutputSLZ,
     ResourceQueryInputSLZ,
     ResourceWithVerifiedUserRequiredOutputSLZ,
 )
@@ -728,4 +732,70 @@ class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListA
         ]
         slz = ResourceWithVerifiedUserRequiredOutputSLZ(matched_resources, many=True)
 
+        return OKJsonResponse(data=slz.data)
+
+
+_RESOURCE_PATH_CONFLICT_DESCRIPTION = (
+    "仅检测归一化路径相同，或归一化父路径相同且末段为固定文本与完整参数的重叠。"
+    "不展开环境变量，不检测匹配子路径通配符及其他路径交叉，不预测实际命中资源。"
+    "has_conflicts=false 不保证实际路由完全无重叠。"
+    "按具体请求方法返回冲突组，ANY 展开为所有支持的方法；资源保留原始 method。"
+    "末段重叠组表示字面量与参数之间重叠，不表示组内所有资源两两重叠。"
+    "最多返回 200 个冲突组；存在更多组时 truncated=true，单组资源不截断。"
+)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description=(
+            "检测资源编辑区全部资源的请求路径冲突，仅返回提示。"
+            + _RESOURCE_PATH_CONFLICT_DESCRIPTION
+            + "两类冲突组交替返回，一类耗尽后继续返回另一类。"
+        ),
+        responses={status.HTTP_200_OK: ResourcePathConflictListOutputSLZ},
+        tags=["WebAPI.Resource"],
+    ),
+)
+class ResourcePathConflictListApi(ResourceQuerySetMixin, generics.ListAPIView):
+    serializer_class = ResourcePathConflictListOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        resources = list(self.get_queryset().order_by("id").values("id", "name", "method", "path"))
+        conflicts, truncated = find_resource_path_conflicts(resources)
+        slz = ResourcePathConflictListOutputSLZ(
+            {"has_conflicts": bool(conflicts), "conflicts": conflicts, "truncated": truncated}
+        )
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description=(
+            "检测待新增或编辑资源与编辑区其他资源的请求路径冲突，仅返回提示。" + _RESOURCE_PATH_CONFLICT_DESCRIPTION
+        ),
+        request_body=ResourcePathConflictCheckInputSLZ,
+        responses={status.HTTP_200_OK: ResourcePathConflictCheckOutputSLZ},
+        tags=["WebAPI.Resource"],
+    ),
+)
+class ResourcePathConflictCheckApi(ResourceQuerySetMixin, generics.CreateAPIView):
+    serializer_class = ResourcePathConflictCheckInputSLZ
+
+    def create(self, request, *args, **kwargs):
+        slz = ResourcePathConflictCheckInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+        queryset = self.get_queryset()
+        candidate = {"id": None, "name": "", "method": data["method"], "path": data["path"]}
+        if "resource_id" in data:
+            resource = get_object_or_404(queryset, id=data["resource_id"])
+            candidate.update(id=resource.id, name=resource.name)
+            queryset = queryset.exclude(id=resource.id)
+        resources = list(queryset.order_by("id").values("id", "name", "method", "path"))
+        conflicts, truncated = find_resource_path_conflicts(resources, candidate)
+        slz = ResourcePathConflictCheckOutputSLZ(
+            {"has_conflicts": bool(conflicts), "conflicts": conflicts, "truncated": truncated}
+        )
         return OKJsonResponse(data=slz.data)

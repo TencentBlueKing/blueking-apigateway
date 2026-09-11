@@ -40,7 +40,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
+from apigateway.core.constants import HTTP_METHOD_ANY, HTTP_METHOD_CHOICES, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
@@ -979,3 +979,58 @@ class ResourceWithVerifiedUserRequiredOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceWithVerifiedUserRequiredOutputSLZ"
+
+
+class ResourcePathConflictCheckInputSLZ(serializers.Serializer):
+    method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
+    path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
+    resource_id = serializers.IntegerField(required=False, min_value=1, help_text="编辑时排除的当前资源 ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictCheckInputSLZ"
+        validators = [PathVarsValidator()]
+
+
+class ResourcePathConflictResourceOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(allow_null=True, read_only=True, help_text="资源 ID；待新增资源为 null")
+    name = serializers.CharField(allow_blank=True, read_only=True, help_text="资源名称；待新增资源为空")
+    method = serializers.CharField(read_only=True, help_text="请求方法")
+    path = serializers.CharField(read_only=True, help_text="原始请求路径")
+    normalized_path = serializers.CharField(read_only=True, help_text="归一化请求路径")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictResourceOutputSLZ"
+
+
+class ResourcePathConflictGroupOutputSLZ(serializers.Serializer):
+    method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES, read_only=True, help_text="本组对应的具体请求方法")
+    type = serializers.ChoiceField(
+        choices=["normalized_path", "literal_parameter"], read_only=True, help_text="路径重叠类型"
+    )
+    resources = ResourcePathConflictResourceOutputSLZ(
+        many=True, read_only=True, help_text="重叠资源组；末段重叠表示字面量与参数之间重叠，非所有资源两两重叠"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictGroupOutputSLZ"
+
+
+class ResourcePathConflictBaseSLZ(serializers.Serializer):
+    has_conflicts = serializers.BooleanField(
+        read_only=True, help_text="是否发现支持范围内的路径重叠；false 不保证实际路由无重叠"
+    )
+    conflicts = ResourcePathConflictGroupOutputSLZ(many=True, read_only=True, help_text="最多返回 200 个冲突组")
+    truncated = serializers.BooleanField(read_only=True, help_text="是否存在未返回的冲突组；恰好 200 个时为 false")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictBaseSLZ"
+
+
+class ResourcePathConflictListOutputSLZ(ResourcePathConflictBaseSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictListOutputSLZ"
+
+
+class ResourcePathConflictCheckOutputSLZ(ResourcePathConflictBaseSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourcePathConflictCheckOutputSLZ"
