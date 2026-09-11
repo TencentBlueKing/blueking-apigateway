@@ -1206,3 +1206,12 @@ defineExpose({ show });
   }
 }
 </style>
+
+<style lang="scss">
+.backend-service-slider {
+
+  .drawer-content {
+    scrollbar-gutter: unset;
+  }
+}
+</style>

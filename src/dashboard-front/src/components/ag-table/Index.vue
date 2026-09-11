@@ -973,14 +973,14 @@ defineExpose({
     }
   }
 
-  .t-table__row--hover {
-    background-color: transparent !important;
-  }
-
   &.t-table--hoverable {
 
-    .t-table__body tr:hover {
-      background-color: #f5f7fa !important;
+    .t-table__header th,
+    .t-table__body tr {
+
+      &:hover {
+        background-color: #f0f1f5 !important;
+      }
     }
   }
 
@@ -1026,6 +1026,14 @@ defineExpose({
           border-left: 1px solid #dcdee5;
         }
       }
+    }
+  }
+
+  .t-table__header--fixed.t-table__header {
+
+    th {
+      border-bottom: 0;
+      box-shadow: inset 0 -1px 0 #dcdee5;
     }
   }
 

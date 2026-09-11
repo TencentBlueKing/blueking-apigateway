@@ -176,9 +176,9 @@
           </div>
           <div class="item-chart-wrapper">
             <StageCardLineChart
-              v-if="stage.status === 1"
-              :data="data"
-              :mount-id="uniqueId('stage-chart')"
+              :data="isUnreleased ? EMPTY_CHART_DATA : data"
+              :mount-id="chartMountId"
+              :tone="isUnreleased ? 'unreleased' : 'zero'"
             />
           </div>
         </div>
@@ -230,9 +230,12 @@ const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 
+const EMPTY_CHART_DATA: number[] = [];
 const data = ref<number[]>([]);
-
 const requestCount = ref(0);
+const chartMountId = uniqueId('stage-chart-');
+// 未发布环境使用空数组（灰线占位），已发布但无请求量使用全 0 数据（绿线占位）
+const isUnreleased = computed(() => stage.status === 0);
 
 const gatewayId = computed(() => Number(route.params.id));
 
@@ -528,7 +531,8 @@ const handleChartClick = () => {
     display: flex;
     height: 60px;
     cursor: pointer;
-    justify-content: space-between;
+    gap: 16px;
+    align-items: stretch;
 
     .request-counter {
       display: flex;
@@ -547,6 +551,7 @@ const handleChartClick = () => {
         font-weight: 700;
         line-height: 18px;
         color: #313238;
+        text-align: center;
       }
 
       &.empty-state {
@@ -556,8 +561,14 @@ const handleChartClick = () => {
           font-size: 12px;
           font-weight: normal;
           color: #979ba5;
+          white-space: nowrap;
         }
       }
+    }
+
+    .item-chart-wrapper {
+      min-width: 0;
+      flex: 1;
     }
   }
 }
