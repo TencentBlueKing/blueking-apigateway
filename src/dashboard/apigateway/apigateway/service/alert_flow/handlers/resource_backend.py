@@ -25,6 +25,7 @@ from pydantic import BaseModel
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.monitor.constants import AlarmStatusEnum, ResourceBackendAlarmSubTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.service.alert_flow.helpers import AlertHandler, MonitorEvent
 from apigateway.utils import time as time_utils
@@ -123,7 +124,7 @@ class ResourceBackendAlerter(Alerter):
     def get_receivers(self, event: MonitorEvent):
         alarm_strategies = event.extend["alarm_strategies"]
         if not alarm_strategies:
-            return event.extend["gateway"].maintainers
+            return GatewayMember.objects.list_gateway_administrators(event.extend["gateway"].id)
 
         receivers = set()
         for strategy in alarm_strategies:

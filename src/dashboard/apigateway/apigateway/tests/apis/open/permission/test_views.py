@@ -143,7 +143,6 @@ class TestResourceViewSet:
         fake_gateway = G(
             Gateway,
             name="test",
-            _maintainers="admin",
             status=1,
             is_public=True,
         )

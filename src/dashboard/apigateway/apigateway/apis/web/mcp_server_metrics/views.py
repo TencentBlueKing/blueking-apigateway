@@ -24,6 +24,7 @@ from apigateway.apps.mcp_server.metrics_constants import (
     MCPServerMetricsRangeEnum,
 )
 from apigateway.apps.metrics.constants import MetricsStepEnum
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.service.prometheus import (
     MCPServerMetricsInstantFactory,
     MCPServerMetricsRangeFactory,
@@ -49,6 +50,8 @@ class MCPServerQueryRangeApi(generics.ListAPIView):
     - response_time_95th: P95 响应时间分布
     - method_requests: 按 MCP 方法分组的请求趋势
     """
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     @swagger_auto_schema(
         query_serializer=MCPServerMetricsQueryRangeInputSLZ(),
@@ -97,6 +100,8 @@ class MCPServerQueryInstantApi(generics.ListAPIView):
     - requests_total: 总请求数
     - non_2xx_total: 非 2XX 请求数
     """
+
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
 
     @swagger_auto_schema(
         query_serializer=MCPServerMetricsQueryInstantInputSLZ(),

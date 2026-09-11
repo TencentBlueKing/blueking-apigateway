@@ -26,6 +26,7 @@ from django_dynamic_fixture import G
 from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
+from apigateway.biz.gateway import replace_gateway_administrators
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 
@@ -43,18 +44,21 @@ def create_user(username="admin"):
     return UserModel(username=username)
 
 
-def create_gateway(**defaults):
+def create_gateway(*, maintainers=None, **defaults):
     user = create_user()
+    maintainers = [user.username] if maintainers is None else maintainers
     data = {
         "created_by": user.username,
-        "_maintainers": user.username,
         "status": GatewayStatusEnum.ACTIVE.value,
         "tenant_mode": "single",
         "tenant_id": "default",
         "is_public": True,
     }
     data.update(defaults)
-    return G(Gateway, **data)
+    gateway = G(Gateway, **data)
+    if maintainers:
+        replace_gateway_administrators(gateway, maintainers, user.username)
+    return gateway
 
 
 def get_response_json(response):

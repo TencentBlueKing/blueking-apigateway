@@ -24,6 +24,8 @@ from django.utils import timezone
 
 from apigateway.apps.gateway.tasks import InactiveGatewayNotifier, notify_inactive_gateway_maintainers
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
@@ -34,7 +36,7 @@ def _make_released_gateway(faker):
     """Create a gateway with an active released stage."""
 
     def factory(
-        maintainers="admin",
+        maintainers=("admin",),
         created_time_delta_days=200,
         stage_name="prod",
         gateway_status=GatewayStatusEnum.ACTIVE.value,
@@ -43,13 +45,19 @@ def _make_released_gateway(faker):
         gateway = G(
             Gateway,
             name=faker.pystr(),
-            _maintainers=maintainers,
             status=gateway_status,
             is_public=True,
             created_by="creator",
             tenant_mode="single",
             tenant_id="default",
         )
+        for username in maintainers:
+            G(
+                GatewayMember,
+                gateway=gateway,
+                username=username,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
         # push created_time back
         Gateway.objects.filter(id=gateway.id).update(
             created_time=timezone.now() - timedelta(days=created_time_delta_days)
@@ -144,8 +152,15 @@ class TestInactiveGatewayNotifierGetInactiveGateways:
 
 class TestInactiveGatewayNotifierGroupByUser:
     def test_single_maintainer(self, faker):
-        gw1 = G(Gateway, name=faker.pystr(), _maintainers="user1", status=1, tenant_mode="single", tenant_id="default")
-        gw2 = G(Gateway, name=faker.pystr(), _maintainers="user1", status=1, tenant_mode="single", tenant_id="default")
+        gw1 = G(Gateway, name=faker.pystr(), status=1, tenant_mode="single", tenant_id="default")
+        gw2 = G(Gateway, name=faker.pystr(), status=1, tenant_mode="single", tenant_id="default")
+        for gateway in [gw1, gw2]:
+            G(
+                GatewayMember,
+                gateway=gateway,
+                username="user1",
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
 
         result = InactiveGatewayNotifier._group_by_user([gw1, gw2])
         assert result["user1"] == {gw1.id, gw2.id}
@@ -154,11 +169,17 @@ class TestInactiveGatewayNotifierGroupByUser:
         gw = G(
             Gateway,
             name=faker.pystr(),
-            _maintainers="user1;user2",
             status=1,
             tenant_mode="single",
             tenant_id="default",
         )
+        for username in ["user1", "user2"]:
+            G(
+                GatewayMember,
+                gateway=gw,
+                username=username,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
 
         result = InactiveGatewayNotifier._group_by_user([gw])
         assert gw.id in result["user1"]
@@ -188,7 +209,6 @@ class TestInactiveGatewayNotifierSendMails:
         gw = G(
             Gateway,
             name=faker.pystr(),
-            _maintainers="user1;user2",
             status=1,
             created_by="creator",
             tenant_mode="single",
@@ -222,7 +242,6 @@ class TestInactiveGatewayNotifierSendMails:
         gw = G(
             Gateway,
             name=faker.pystr(),
-            _maintainers="user1;user2",
             status=1,
             created_by="creator",
             tenant_mode="single",
@@ -255,7 +274,6 @@ class TestInactiveGatewayNotifierSendMails:
         gw = G(
             Gateway,
             name=faker.pystr(),
-            _maintainers="user1;user2",
             status=1,
             created_by="creator",
             tenant_mode="single",
@@ -288,7 +306,6 @@ class TestInactiveGatewayNotifierSendMails:
         gw = G(
             Gateway,
             name=faker.pystr(),
-            _maintainers="user1",
             status=1,
             created_by="creator",
             tenant_mode="single",
@@ -330,7 +347,7 @@ class TestInactiveGatewayNotifierNotify:
         settings.DASHBOARD_FE_URL = "https://example.com"
         mock_cmsi.send_mail.return_value = (True, "")
 
-        _make_released_gateway(maintainers="user_a;user_b")
+        _make_released_gateway(maintainers=("user_a", "user_b"))
 
         notifier = InactiveGatewayNotifier()
         notifier.notify()

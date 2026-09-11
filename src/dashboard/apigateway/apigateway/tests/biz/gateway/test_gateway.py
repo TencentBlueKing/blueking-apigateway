@@ -28,6 +28,8 @@ from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
 from apigateway.apps.monitor.models import AlarmStrategy
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.core.constants import (
@@ -56,17 +58,33 @@ class TestGatewayHandler:
         self.gateway = G(Gateway, created_by="admin", tenant_mode="single", tenant_id="default")
 
     def test_get_gateways_by_user(self):
-        G(Gateway, _maintainers="admin1", tenant_mode="single", tenant_id="default")
-        G(Gateway, _maintainers="admin2;admin1", tenant_mode="single", tenant_id="default")
-        G(Gateway, _maintainers="admin3", tenant_mode="single", tenant_id="abc")
-        G(Gateway, _maintainers="admin4", tenant_mode="single", tenant_id="system")
-        G(Gateway, _maintainers="admin4", tenant_mode="global", tenant_id="")
+        gateway_1 = G(Gateway, tenant_mode="single", tenant_id="default")
+        gateway_2 = G(Gateway, tenant_mode="single", tenant_id="default")
+        gateway_3 = G(Gateway, tenant_mode="single", tenant_id="abc")
+        gateway_4 = G(Gateway, tenant_mode="single", tenant_id="system")
+        gateway_5 = G(Gateway, tenant_mode="global", tenant_id="")
+        for gateway, username, role in [
+            (gateway_1, "admin1", GatewayRoleEnum.ADMINISTRATOR.value),
+            (gateway_2, "admin1", GatewayRoleEnum.ADMINISTRATOR.value),
+            (gateway_2, "admin2", GatewayRoleEnum.OPERATOR.value),
+            (gateway_3, "admin3", GatewayRoleEnum.ADMINISTRATOR.value),
+            (gateway_4, "admin4", GatewayRoleEnum.ADMINISTRATOR.value),
+            (gateway_5, "admin4", GatewayRoleEnum.OPERATOR.value),
+        ]:
+            G(GatewayMember, gateway=gateway, username=username, role=role)
 
         gateways = GatewayHandler.list_gateways_by_user("admin1", "default")
         assert len(gateways) >= 2
 
         gateways = GatewayHandler.list_gateways_by_user("admin2", "default")
-        assert len(gateways) >= 1
+        assert len(gateways) == 0
+
+        gateways = GatewayHandler.list_gateways_by_user(
+            "admin2",
+            "default",
+            roles=(GatewayRoleEnum.OPERATOR.value,),
+        )
+        assert len(gateways) == 1
 
         gateways = GatewayHandler.list_gateways_by_user("not_exist_user", "default")
         assert len(gateways) == 0
@@ -77,9 +95,9 @@ class TestGatewayHandler:
         # other tenant
         gateways = GatewayHandler.list_gateways_by_user("admin3", "abc")
         assert len(gateways) == 1
-        # system tenant: would got 2 gateways, one is global, one is single
+        # system tenant: admin role can only get single-tenant gateway
         gateways = GatewayHandler.list_gateways_by_user("admin4", "system")
-        assert len(gateways) == 2
+        assert len(gateways) == 1
 
     def test_get_stages_with_release_status(self, fake_gateway):
         Gateway.objects.filter(id=fake_gateway.id).update(status=GatewayStatusEnum.ACTIVE.value)

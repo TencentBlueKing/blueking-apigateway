@@ -20,6 +20,7 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.gateway import serializers
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
 from apigateway.service.contexts import GatewayAuthContext
 
@@ -86,6 +87,9 @@ class TestGatewayListV1OutputSLZ:
             fake_gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(
+                    [fake_gateway.id]
+                ),
             },
         )
         assert slz.data
@@ -100,6 +104,9 @@ class TestGatewayListV1OutputSLZ:
             fake_gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(
+                    [fake_gateway.id]
+                ),
             },
         )
 
@@ -112,6 +119,9 @@ class TestGatewayListV1OutputSLZ:
             fake_gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(
+                    [fake_gateway.id]
+                ),
             },
         )
 
@@ -120,7 +130,14 @@ class TestGatewayListV1OutputSLZ:
 
 class TestGatewayRetrieveV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
-        slz = serializers.GatewayRetrieveV1OutputSLZ(fake_gateway)
+        slz = serializers.GatewayRetrieveV1OutputSLZ(
+            fake_gateway,
+            context={
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(
+                    [fake_gateway.id]
+                ),
+            },
+        )
         assert slz.data
         assert "api_type" not in slz.data
         assert "user_auth_type" not in slz.data
@@ -232,20 +249,8 @@ class TestGatewaySyncInputSLZ:
                         "from_username": True,
                     },
                 },
-                {
-                    "name": "test",
-                    "description": "desc",
-                    "maintainers": [],
-                    "is_public": False,
-                    "status": GatewayStatusEnum.INACTIVE.value,
-                    "gateway_type": None,
-                    "user_config": {
-                        "from_bk_token": True,
-                        "from_username": True,
-                    },
-                    "allow_delete_sensitive_params": True,
-                },
-                False,
+                None,
+                True,
             ),
             (
                 {

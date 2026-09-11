@@ -20,13 +20,21 @@ from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.apps.monitor.models import AlarmStrategy
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import Gateway
 
 
 class TestAlarmStrategy(TestCase):
     def test_notice_receivers(self):
-        gateway = G(Gateway, _maintainers="test")
+        gateway = G(Gateway)
+        G(
+            GatewayMember,
+            gateway=gateway,
+            username="test",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
         strategy = G(
             AlarmStrategy,
             gateway=gateway,

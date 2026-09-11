@@ -1402,7 +1402,6 @@ class TestMCPServerHandler:
     def test_validate_access_check_public_not_public(self, fake_gateway, fake_stage):
         """check_public=True 时，非公开且非维护者应抛出 NOT_FOUND"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway._maintainers = "admin"
         fake_gateway.save()
         fake_stage.status = StageStatusEnum.ACTIVE.value
         fake_stage.save()
@@ -1421,7 +1420,6 @@ class TestMCPServerHandler:
     def test_validate_access_check_public_maintainer_allowed(self, fake_gateway, fake_stage):
         """check_public=True 时，非公开但是维护者可以访问"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway._maintainers = "admin"
         fake_gateway.save()
         fake_stage.status = StageStatusEnum.ACTIVE.value
         fake_stage.save()
@@ -2026,7 +2024,6 @@ class TestMCPServerHandler:
     def test_build_retrieve_context_check_public_raises(self, fake_gateway, fake_stage):
         """check_public=True 且非公开非维护者时应抛出异常"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway._maintainers = "admin"
         fake_gateway.save()
         fake_stage.status = StageStatusEnum.ACTIVE.value
         fake_stage.save()

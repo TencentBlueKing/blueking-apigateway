@@ -21,6 +21,8 @@ from ddf import G
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.monitor.models import AlarmStrategy
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.alert_flow import resource_backend
 
@@ -158,7 +160,13 @@ class TestResourceBackendAlerter:
         self.alerter = resource_backend.ResourceBackendAlerter(notice_ways=[])
 
     def test_get_receivers(self, mocker, mock_event):
-        gateway = G(Gateway, _maintainers="admin1")
+        gateway = G(Gateway)
+        G(
+            GatewayMember,
+            gateway=gateway,
+            username="admin1",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
 
         mock_event.extend = {
             "alarm_strategies": [],

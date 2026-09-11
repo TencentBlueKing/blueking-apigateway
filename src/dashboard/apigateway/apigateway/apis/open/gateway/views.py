@@ -34,9 +34,10 @@ from apigateway.apis.open.permissions import (
     OpenAPIPermission,
 )
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
-from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler, replace_gateway_administrators
 from apigateway.common.constants import (
     CACHE_MAXSIZE,
     CACHE_TIME_5_MINUTES,
@@ -105,13 +106,15 @@ class GatewayListApi(generics.ListAPIView):
             tenant_id=tenant_id,
             kind=data.get("kind"),
         )
-        gateway_ids = list(queryset.values_list("id", flat=True))
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
 
         slz = self.get_serializer(
-            queryset,
+            gateways,
             many=True,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
             },
         )
         return V1OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("name")))
@@ -183,7 +186,12 @@ class GatewayIdRetrieveApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = self.get_serializer(instance)
+        slz = self.get_serializer(
+            instance,
+            context={
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map([instance.id]),
+            },
+        )
         return V1OKJsonResponse(data=slz.data)
 
 
@@ -347,6 +355,7 @@ class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
         return Gateway.objects.all()
 
     @swagger_auto_schema(request_body=GatewayMaintainerUpdateInputSLZ, tags=["OpenAPI.V1"])
+    @transaction.atomic
     def put(self, request, *args, **kwargs):
         slz = self.get_serializer(request.gateway, data=request.data)
         slz.is_valid(raise_exception=True)
@@ -360,11 +369,10 @@ class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
         # FIXME: if multi tenant mode, the maintainers should be the same tenant of the gateway
         # currently, the gateway list filtered by tenant_id, so it's not so important for now
 
-        data_before = instance.maintainers
-        instance.maintainers = maintainers
-        instance.save()
+        data_before = GatewayMember.objects.list_gateway_administrators(instance.id)
 
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        replace_gateway_administrators(instance, maintainers, username)
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=username,

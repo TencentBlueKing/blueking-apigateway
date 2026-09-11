@@ -26,6 +26,8 @@ from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, ResourceVersion, Stage
@@ -42,6 +44,27 @@ class TestGatewayListCreateApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
+
+    def test_list_includes_operator_gateways(self, request_view, fake_gateway, mocker):
+        GatewayMember.objects.create(
+            gateway=fake_gateway,
+            username="operator",
+            role=GatewayRoleEnum.OPERATOR.value,
+        )
+        user = mocker.MagicMock(
+            username="operator",
+            is_authenticated=True,
+            is_anonymous=False,
+        )
+
+        response = request_view(
+            method="GET",
+            view_name="gateways.list_create",
+            user=user,
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["data"]["results"]] == [fake_gateway.id]
 
     def test_create(self, request_view, faker, unique_gateway_name, default_data_plane):
         data = {
@@ -70,6 +93,12 @@ class TestGatewayListCreateApi:
         assert JWT.objects.filter(gateway=gateway).count() == 1
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
         assert gateway.kind == GatewayKindEnum.NORMAL.value
+        assert list(
+            GatewayMember.objects.filter(
+                gateway=gateway,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            ).values_list("username", flat=True)
+        ) == ["admin"]
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_auth_from_params"] is False
@@ -392,6 +421,12 @@ class TestGatewayRetrieveUpdateDestroyApi:
         assert resp.status_code == 204
         assert gateway.description == data["description"]
         assert gateway.is_public is data["is_public"]
+        assert list(
+            GatewayMember.objects.filter(
+                gateway=gateway,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            ).values_list("username", flat=True)
+        ) == ["admin"]
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 1
 

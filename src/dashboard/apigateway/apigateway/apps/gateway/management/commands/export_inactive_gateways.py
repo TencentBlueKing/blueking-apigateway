@@ -24,6 +24,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.models import Gateway
 
 
@@ -49,8 +50,9 @@ class Command(BaseCommand):
 
         start_time = timezone.now() + datetime.timedelta(days=-days)
 
-        gateways = Gateway.objects.filter(created_time__lte=start_time, status=1).all()
+        gateways = Gateway.objects.filter(created_time__lte=start_time, status=1)
         gateway_ids = list(gateways.values_list("id", flat=True))
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(gateway_ids)
 
         exclude_gateway_ids = list(
             StatisticsGatewayRequestByDay.objects.filter(
@@ -67,7 +69,7 @@ class Command(BaseCommand):
                 "desc": obj.description or "",
                 "access_url": template.format(gateway_id=obj.id),
                 "deactivated": "否" if obj.is_active else "是",
-                "maintainers": obj._maintainers,
+                "maintainers": ";".join(gateway_administrators.get(obj.id, [])),
                 "created_by": obj.created_by,
                 "created_time": obj.created_time,
                 "options": "",

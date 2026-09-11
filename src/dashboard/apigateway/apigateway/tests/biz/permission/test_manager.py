@@ -30,6 +30,8 @@ from apigateway.apps.permission.models import (
     AppPermissionRecord,
     AppResourcePermission,
 )
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.permission import (
     GatewayPermissionDimensionManager,
     PermissionDimensionManager,
@@ -230,6 +232,23 @@ class TestGatewayPermissionDimensionManager:
         assert AppPermissionRecord.objects.filter(id=record.id).exists()
         assert AppPermissionApply.objects.filter(apply_record_id=record.id).exists()
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).exists()
+
+    def test_create_apply_record_allows_gateway_without_approvers(self, settings, fake_gateway, fake_resource):
+        settings.ENABLE_ITSM4_PERMISSION_APPLY = False
+        GatewayMember.objects.filter(gateway=fake_gateway).delete()
+
+        record = GatewayPermissionDimensionManager().create_apply_record(
+            "test",
+            fake_gateway,
+            [fake_resource.id],
+            GrantDimensionEnum.API.value,
+            "",
+            180,
+            "admin",
+        )
+
+        assert AppPermissionRecord.objects.filter(id=record.id, gateway=fake_gateway).exists()
+        assert AppPermissionApply.objects.filter(apply_record_id=record.id, gateway=fake_gateway).exists()
 
 
 class TestResourcePermissionDimensionManager:
@@ -503,6 +522,35 @@ class TestPermissionDimensionManagerItsmIntegration:
         helper.create_permission_apply_ticket.assert_called_once()
         assert helper.create_permission_apply_ticket.call_args.kwargs["callback_token"] == "cb-token-001"
         assert helper.create_permission_apply_ticket.call_args.kwargs["apply_reason"] == "reason"
+
+    def test_create_apply_record_with_itsm_ticket_prefers_operators(
+        self, settings, mocker, fake_gateway, fake_resource
+    ):
+        settings.ENABLE_ITSM4_PERMISSION_APPLY = True
+        G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="operator",
+            role=GatewayRoleEnum.OPERATOR.value,
+        )
+
+        helper = mocker.MagicMock()
+        helper.is_ready.return_value = True
+        helper.generate_callback_token.return_value = "cb-token-001"
+        helper.create_permission_apply_ticket.return_value = {"id": "ticket-001"}
+        mocker.patch("apigateway.biz.permission.manager.ItsmPermissionApplyHelper", return_value=helper)
+
+        GatewayPermissionDimensionManager().create_apply_record(
+            "test-app",
+            fake_gateway,
+            [fake_resource.id],
+            GrantDimensionEnum.API.value,
+            "reason",
+            180,
+            "admin",
+        )
+
+        assert helper.create_permission_apply_ticket.call_args.kwargs["approvers"] == ["operator"]
 
     def test_create_apply_record_with_itsm_ticket_fallback_applicant(
         self, settings, mocker, fake_gateway, fake_resource

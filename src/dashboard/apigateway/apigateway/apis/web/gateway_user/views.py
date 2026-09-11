@@ -15,6 +15,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .permissions import GatewayDisplayablePermission, GatewayPermission
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, status
 
-__all__ = ["GatewayDisplayablePermission", "GatewayPermission"]
+from apigateway.apps.rbac.constants import GatewayActionEnum
+from apigateway.utils.responses import OKJsonResponse
+
+from .serializers import GatewayUserRoleOutputSLZ
+
+
+class GatewayUserRoleRetrieveApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
+    @swagger_auto_schema(
+        operation_description="获取当前用户在该网关的角色",
+        responses={status.HTTP_200_OK: GatewayUserRoleOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    )
+    def get(self, request, *args, **kwargs):
+        slz = GatewayUserRoleOutputSLZ(request.gateway_member)
+        return OKJsonResponse(data=slz.data)

@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     "apigateway.apps.monitor",
     "apigateway.schema",
     "apigateway.core",
+    "apigateway.apps.rbac",
     "apigateway.apps.gateway",
     "apigateway.apps.plugin",
     "apigateway.apps.label",
@@ -258,7 +259,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apigateway.common.exception_handler.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
-        "apigateway.common.permissions.GatewayPermission",
+        "apigateway.apis.permissions.GatewayActionPermission",
     ),
     "DEFAULT_PAGINATION_CLASS": "apigateway.common.pagination.StandardLimitOffsetPagination",
     "PAGE_SIZE": 10,

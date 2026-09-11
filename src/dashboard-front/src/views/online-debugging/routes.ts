@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: t('在线调试'),
       matchRoute: 'OnlineDebugging',
+      permission: 'debug',
     },
   },
 ];

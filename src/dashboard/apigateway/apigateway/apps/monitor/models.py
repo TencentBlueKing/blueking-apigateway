@@ -31,6 +31,7 @@ from apigateway.apps.monitor.constants import (
     ResourceBackendAlarmSubTypeEnum,
 )
 from apigateway.apps.monitor.managers import AlarmFilterConfigManager, AlarmRecordManager, AlarmStrategyManager
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.mixins.models import ConfigModelMixin
 from apigateway.core.models import Gateway
 from apigateway.schema.models import Schema
@@ -111,8 +112,7 @@ class AlarmStrategy(ConfigModelMixin):
 
         config = self.config
         if NoticeRoleEnum.MAINTAINER.value in config["notice_config"]["notice_role"]:
-            gateway = Gateway.objects.get(id=self.gateway_id)
-            receivers.update(gateway.maintainers)
+            receivers.update(GatewayMember.objects.list_gateway_administrators(self.gateway_id))
         if config["notice_config"]["notice_extra_receiver"]:
             receivers.update(config["notice_config"]["notice_extra_receiver"])
         return list(receivers)

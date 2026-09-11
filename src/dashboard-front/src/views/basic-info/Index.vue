@@ -89,41 +89,50 @@
               width="1008px"
               :placeholder="t('请输入描述')"
               :content="basicInfoData.description ?? ''"
+              :mode="canEditBasicInfo ? 'edit' : 'detail'"
               @on-change="(e:Record<string, string>) => handleInfoChange(e)"
             />
           </div>
-          <div class="header-info-button">
-            <div>
+          <div
+            v-if="canEditBasicInfo || basicInfoData.kind === 1"
+            class="header-info-button"
+          >
+            <template v-if="canEditBasicInfo">
+              <div>
+                <BkButton
+                  v-if="basicInfoData.status > 0"
+                  v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
+                  class="deactivate-btn operate-btn"
+                  :disabled="releasingStatus"
+                  @click="() => handleOperate('enable')"
+                >
+                  {{ t('停用') }}
+                </BkButton>
+                <BkButton
+                  v-else
+                  v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
+                  theme="primary"
+                  class="operate-btn"
+                  :disabled="releasingStatus"
+                  @click="() => handleOperate('deactivate')"
+                >
+                  {{ t('立即启用') }}
+                </BkButton>
+              </div>
               <BkButton
-                v-if="basicInfoData.status > 0"
-                v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
-                class="deactivate-btn operate-btn"
-                :disabled="releasingStatus"
-                @click="() => handleOperate('enable')"
-              >
-                {{ t('停用') }}
-              </BkButton>
-              <BkButton
-                v-else
-                v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
-                theme="primary"
+                v-bk-tooltips="{ content: t('请先停用才可删除'), disabled: basicInfoData.status <= 0 }"
                 class="operate-btn"
-                :disabled="releasingStatus"
-                @click="() => handleOperate('deactivate')"
+                :disabled="basicInfoData.status > 0"
+                @click="() => handleOperate('delete')"
               >
-                {{ t('立即启用') }}
+                {{ t('删除') }}
               </BkButton>
-            </div>
-            <BkButton
-              v-bk-tooltips="{ content: t('请先停用才可删除'), disabled: basicInfoData.status <= 0 }"
-              class="operate-btn"
-              :disabled="basicInfoData.status > 0"
-              @click="() => handleOperate('delete')"
-            >
-              {{ t('删除') }}
-            </BkButton>
+            </template>
             <template v-if="basicInfoData.kind === 1">
-              <span class="btn-line" />
+              <span
+                v-if="canEditBasicInfo"
+                class="btn-line"
+              />
               <BkButton
                 class="operate-btn"
                 @click="showGuide"
@@ -136,6 +145,7 @@
               </BkButton>
             </template>
             <BkDropdown
+              v-if="canEditBasicInfo"
               :popover-options="{ clickContentAutoHide: true }"
               placement="right"
             >
@@ -178,6 +188,7 @@
               <div class="pannel-title">
                 {{ t('基础信息') }}
                 <div
+                  v-if="canEditBasicInfo"
                   class="area-edit"
                   @click.stop="() => handleOperate('edit')"
                 >
@@ -239,12 +250,14 @@
                 </div>
                 <div class="value">
                   <BkSwitcher
+                    v-if="canEditBasicInfo"
                     v-model="basicInfoData.is_public"
                     theme="primary"
                     size="small"
                     class="min-w-28px"
                     @change="handleChangePublic"
                   />
+                  <span v-else>{{ basicInfoData.is_public ? t('是') : t('否') }}</span>
                 </div>
               </div>
               <div class="pannel-content-item">
@@ -254,37 +267,6 @@
                 <div class="value url">
                   <span>{{ basicInfoData.api_domain || '--' }}</span>
                   <CopyButton :source="basicInfoData.api_domain" />
-                </div>
-              </div>
-              <div class="pannel-content-item">
-                <div class="label">
-                  {{ `${t('维护人员')}：` }}
-                </div>
-                <div class="value">
-                  <EditMember
-                    v-if="!featureFlagStore.isTenantMode"
-                    mode="edit"
-                    width="600px"
-                    field="maintainers"
-                    is-required
-                    :placeholder="t('请选择维护人员')"
-                    :content="basicInfoData.maintainers"
-                    :is-error-class="'maintainers-error-tip'"
-                    :error-value="t('维护人员不能为空')"
-                    @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
-                  />
-                  <TenantUserSelector
-                    v-else
-                    :content="basicInfoData.maintainers"
-                    :error-value="t('维护人员不能为空')"
-                    :is-error-class="'maintainers-error-tip'"
-                    is-required
-                    :placeholder="t('请选择维护人员')"
-                    field="maintainers"
-                    mode="edit"
-                    width="600px"
-                    @on-submit="(e: Record<string, string[]>) => handleMaintainerChange(e)"
-                  />
                 </div>
               </div>
               <div class="pannel-content-item">
@@ -332,6 +314,7 @@
                     width="100%"
                     :placeholder="t('请输入应用ID，以回车键确认')"
                     :content="basicInfoData.related_app_codes ?? []"
+                    :mode="canEditBasicInfo ? 'edit' : 'detail'"
                     @on-submit="(e: Record<string, string[]>) => handleRelatedAppCodesChange(e)"
                   />
                 </div>
@@ -351,6 +334,7 @@
               <div class="pannel-title">
                 {{ t('API文档') }}
                 <div
+                  v-if="canEditBasicInfo"
                   class="area-edit"
                   @click.stop="showApiDocEdit"
                 >
@@ -796,7 +780,7 @@ import {
   useFeatureFlag,
   useGateway,
 } from '@/stores';
-import { usePopInfoBox } from '@/hooks';
+import { useGatewayRole, usePopInfoBox } from '@/hooks';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 
@@ -814,6 +798,7 @@ const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 const gatewayStore = useGateway();
+const { canEditBasicInfo } = useGatewayRole();
 
 // 网关id
 const apigwId = ref(0);
@@ -1202,16 +1187,6 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   };
   await patchGateway(apigwId.value, params as IGatewayUpdateInputSLZ);
   basicInfoData.value = Object.assign(basicInfoData.value, params);
-  Message({
-    message: t('编辑成功'),
-    theme: 'success',
-    width: 'auto',
-  });
-};
-
-const handleMaintainerChange = async (payload: Record<string, string[]>) => {
-  await putGatewayBasics(apigwId.value, payload as { maintainers: string[] });
-  basicInfoData.value = Object.assign(basicInfoData.value, payload);
   Message({
     message: t('编辑成功'),
     theme: 'success',

@@ -20,10 +20,10 @@ from rest_framework.permissions import IsAuthenticated
 
 from apigateway.apis.web.docs.gateway.gateway.views import GatewayRetrieveApi
 from apigateway.apis.web.docs.gateway.gateway_sdk.views import SDKListApi, SDKUsageExampleApi
+from apigateway.apis.web.docs.gateway.permissions import GatewayDisplayablePermission
 from apigateway.apis.web.docs.gateway.resource.doc.views import DocRetrieveApi
 from apigateway.apis.web.docs.gateway.resource.views import ResourceListApi
 from apigateway.apis.web.docs.gateway.stage.views import StageListApi
-from apigateway.common.permissions import GatewayDisplayablePermission
 
 
 class TestDocsGatewayPermissionClasses:

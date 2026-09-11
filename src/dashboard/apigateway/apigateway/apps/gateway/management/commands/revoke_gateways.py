@@ -20,6 +20,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import gettext as _
 
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
@@ -65,8 +66,8 @@ class Command(BaseCommand):
         if not (do_deactivate or do_remove):
             raise CommandError("You must specify either --deactivate or --remove.")
 
-        gateways = Gateway.objects.filter(name__in=gateway_names)
-        found_names = set(gateways.values_list("name", flat=True))
+        gateways = list(Gateway.objects.filter(name__in=gateway_names))
+        found_names = {gateway.name for gateway in gateways}
         not_found = [name for name in gateway_names if name not in found_names]
 
         for name in not_found:
@@ -76,9 +77,13 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("No valid gateways found. Exiting."))
             return
 
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(
+            gateway.id for gateway in gateways
+        )
+
         # Show info
         for gw in gateways:
-            maintainers = ", ".join(gw.maintainers)
+            maintainers = ", ".join(gateway_administrators.get(gw.id, []))
             status = "ACTIVE" if gw.is_active else "INACTIVE"
             self.stdout.write(f"Gateway id={gw.id}, name={gw.name}, maintainers=[{maintainers}], status={status}")
             if do_remove:

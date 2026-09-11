@@ -63,7 +63,9 @@ def calc_max_end_time(span_list: List[Dict], max_end: float = 0) -> float:
     return max_end
 
 
-def build_mcp_server_log_client(gateway_name: str, data: dict, gateway_id: int = 0) -> MCPServerLogSearchClient:
+def build_mcp_server_log_client(
+    gateway_name: str, data: dict, gateway_id: Optional[int] = None
+) -> MCPServerLogSearchClient:
     """根据网关名称和查询参数构建 MCP Server 日志搜索客户端
 
     Args:

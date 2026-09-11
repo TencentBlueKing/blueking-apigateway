@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.query import (
     gateway_filter_by_maintainer_tenant_id,
@@ -47,12 +48,13 @@ logger = logging.getLogger(__name__)
 class MCPServerPermissionHandler:
     @staticmethod
     def get_pending_apply_queryset_for_gateway_maintainer(username: str, tenant_id: str):
-        """获取指定用户作为网关管理员待审批的 MCP Server 权限申请列表"""
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        """获取指定用户作为当前审批责任人的 MCP Server 权限申请列表"""
+        gateway_ids = GatewayMember.objects.list_gateway_ids_by_approver(username)
         if tenant_id:
+            queryset = Gateway.objects.filter(id__in=gateway_ids)
             queryset = gateway_filter_by_maintainer_tenant_id(queryset, tenant_id)
+            gateway_ids = queryset.values_list("id", flat=True)
 
-        gateway_ids = [gateway.id for gateway in queryset if gateway.has_permission(username)]
         return MCPServerAppPermissionApply.objects.filter(
             mcp_server__gateway_id__in=gateway_ids,
             status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
@@ -127,7 +129,11 @@ class MCPServerPermissionHandler:
                 )
                 return
 
-            for apply in applies.select_related("mcp_server__gateway"):
+            apply_list = list(applies.select_related("mcp_server__gateway"))
+            gateway_approvers = GatewayMember.objects.build_gateway_approvers_map(
+                {apply.mcp_server.gateway_id for apply in apply_list}
+            )
+            for apply in apply_list:
                 try:
                     gateway = apply.mcp_server.gateway
                     callback_token = helper.generate_callback_token()
@@ -142,7 +148,7 @@ class MCPServerPermissionHandler:
                         applied_by=apply.applied_by,
                         apply_record_id=apply.id,
                         apply_reason=apply.reason,
-                        approvers=gateway.maintainers,
+                        approvers=gateway_approvers.get(gateway.id, []),
                         callback_token=callback_token,
                     )
 
