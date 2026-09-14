@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: SDK worker smoke API
+  version: 1.2.3
+servers:
+  - url: https://api.example.com/prod
+paths:
+  /ping:
+    get:
+      operationId: ping
+      tags: [Default]
+      security:
+        - BkApiAuthorization: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  securitySchemes:
+    BkApiAuthorization:
+      type: apiKey
+      in: header
+      name: X-Bkapi-Authorization

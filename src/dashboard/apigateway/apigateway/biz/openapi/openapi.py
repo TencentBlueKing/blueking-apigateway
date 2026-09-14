@@ -27,6 +27,7 @@ from prance.util.url import ResolutionError
 from pydantic import ValidationError
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
+from apigateway.utils.openapi_refs import has_unsafe_openapi_refs, validate_openapi_refs
 from apigateway.utils.yaml import yaml_loads
 
 from .constants import OpenAPIVersionKeyEnum
@@ -168,27 +169,12 @@ class OpenAPIImportManager:
 
         防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
         """
-        if OpenAPIImportManager._has_unsafe_refs(data):
-            raise ValueError("OpenAPI document contains external $ref which is not allowed")
+        validate_openapi_refs(data)
 
     @staticmethod
     def _has_unsafe_refs(node: Any) -> bool:
         """迭代检查是否存在非文档内部 $ref 引用。"""
-        stack: List[Any] = [node]
-
-        while stack:
-            current_node = stack.pop()
-            if isinstance(current_node, dict):
-                for key, value in current_node.items():
-                    if key == "$ref":
-                        if isinstance(value, str) and not value.startswith("#"):
-                            return True
-                    else:
-                        stack.append(value)
-            elif isinstance(current_node, list):
-                stack.extend(current_node)
-
-        return False
+        return has_unsafe_openapi_refs(node)
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:

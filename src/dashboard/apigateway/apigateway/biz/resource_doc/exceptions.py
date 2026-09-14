@@ -27,6 +27,10 @@ class NoResourceDocError(Exception):
     """没有资源文档"""
 
 
+class OpenAPIDocGenerationError(Exception):
+    """Failed to generate resource documentation from normalized OAS3 data."""
+
+
 class ResourceDocJinja2TemplateError(Exception):
     """资源文档模板错误"""
 

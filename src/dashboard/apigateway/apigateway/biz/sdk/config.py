@@ -1,0 +1,260 @@
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# BlueKing - APIGateway available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Mapping, Protocol
+
+from django.conf import settings
+from packaging.version import InvalidVersion, Version
+
+from apigateway.biz.constants import SEMVER_PATTERN
+from apigateway.biz.sdk.exceptions import SDKConfigurationError, SDKRepoConfigError
+from apigateway.biz.sdk.runtime import SDK_RUNTIME_REQUIREMENTS
+from apigateway.common.constants import SDKGenerationLanguageEnum
+
+SDK_OPENAPI_GENERATOR_JAR = "/opt/openapi-generator/openapi-generator-cli.jar"
+SDK_WORKER_LOCK_FILE = "/app/sdk-worker-lock.json"
+
+
+GENERATOR_PROPERTIES = {
+    "python": ("packageName", "packageVersion", "projectName", "buildSystem", "hideGenerationTimestamp"),
+    "java": (
+        "groupId",
+        "artifactId",
+        "artifactVersion",
+        "invokerPackage",
+        "apiPackage",
+        "modelPackage",
+        "library",
+        "hideGenerationTimestamp",
+    ),
+    "go": ("packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"),
+    "javascript": ("npmName", "npmVersion", "supportsES6", "hideGenerationTimestamp"),
+}
+
+SUPPORTED_GENERATION_LANGUAGES = tuple(SDKGenerationLanguageEnum.get_values())
+
+
+class ResourceVersionLike(Protocol):
+    version: str
+
+
+@dataclass(frozen=True)
+class SDKLanguageConfig:
+    language: str
+    generator_name: str
+    project_name: str
+    package_name: str
+    package_version: str
+    additional_properties: Mapping[str, str]
+    native_distributor: str | None
+
+    def __post_init__(self):
+        additional_properties = dict(self.additional_properties)
+        additional_properties["hideGenerationTimestamp"] = "true"
+        allowed_properties = set(GENERATOR_PROPERTIES.get(self.language, ()))
+        if set(additional_properties) != allowed_properties:
+            raise ValueError(f"unsupported generator properties for {self.language}")
+        object.__setattr__(self, "additional_properties", MappingProxyType(additional_properties))
+
+    @classmethod
+    def from_snapshot(cls, snapshot: dict) -> "SDKLanguageConfig":
+        try:
+            return cls(
+                language=snapshot["language"],
+                generator_name=snapshot["generator_name"],
+                project_name=snapshot["project_name"],
+                package_name=snapshot["package_name"],
+                package_version=snapshot["package_version"],
+                additional_properties=snapshot["additional_properties"],
+                native_distributor=snapshot["native_distributor"],
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise SDKConfigurationError("SDK generation configuration snapshot is invalid") from error
+
+    def build_fingerprint_payload(self) -> dict[str, object]:
+        return {
+            "language": self.language,
+            "generator_name": self.generator_name,
+            "project_name": self.project_name,
+            "package_name": self.package_name,
+            "package_version": self.package_version,
+            "additional_properties": dict(self.additional_properties),
+            **(
+                {"runtime_requirement": SDK_RUNTIME_REQUIREMENTS[self.language]}
+                if self.language in SDK_RUNTIME_REQUIREMENTS
+                else {}
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class SDKGenerationPolicy:
+    enabled: bool
+    languages: tuple[str, ...]
+    queue: str
+    retry_delays: tuple[int, int]
+    python_distribution_prefix: str
+    java_group_id: str
+    java_package_prefix: str
+    go_module_prefix: str
+    javascript_package_scope: str
+
+    def for_resource_version(
+        self, gateway_name: str, resource_version: ResourceVersionLike, language: str
+    ) -> SDKLanguageConfig:
+        if language not in self.languages:
+            raise ValueError(f"SDK language is not enabled: {language}")
+
+        gateway_name_normalized = normalize_gateway_name(gateway_name)
+        package_version = normalize_package_version(language, resource_version.version)
+
+        if language == "python":
+            project_name = f"{self.python_distribution_prefix}-{gateway_name}"
+            package_name = normalize_gateway_name(project_name)
+            return SDKLanguageConfig(
+                language=language,
+                generator_name=language,
+                project_name=project_name,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "packageName": package_name,
+                    "packageVersion": package_version,
+                    "projectName": project_name,
+                    "buildSystem": "poetry",
+                },
+                native_distributor=get_native_distributor(language),
+            )
+
+        if language == "java":
+            artifact_id = f"bkapi-openapi-{gateway_name}"
+            package_name = f"{self.java_package_prefix}.{gateway_name_normalized}"
+            return SDKLanguageConfig(
+                language=language,
+                generator_name=language,
+                project_name=artifact_id,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "groupId": self.java_group_id,
+                    "artifactId": artifact_id,
+                    "artifactVersion": package_version,
+                    "invokerPackage": package_name,
+                    "apiPackage": f"{package_name}.api",
+                    "modelPackage": f"{package_name}.model",
+                    "library": "native",
+                },
+                native_distributor=get_native_distributor(language),
+            )
+
+        if language == "go":
+            project_name = f"{self.go_module_prefix}/openapi/{gateway_name}"
+            major_version = int(resource_version.version.split(".", 1)[0])
+            if major_version >= 2:
+                project_name = f"{project_name}/v{major_version}"
+            package_name = f"bkapi_{gateway_name_normalized}"
+            return SDKLanguageConfig(
+                language=language,
+                generator_name=language,
+                project_name=project_name,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "packageName": package_name,
+                    "packageVersion": package_version,
+                    "withGoMod": "true",
+                },
+                native_distributor=None,
+            )
+
+        if language == "javascript":
+            package_name = f"{self.javascript_package_scope}/openapi-{gateway_name}"
+            return SDKLanguageConfig(
+                language=language,
+                generator_name="typescript-fetch",
+                project_name=package_name,
+                package_name=package_name,
+                package_version=package_version,
+                additional_properties={
+                    "npmName": package_name,
+                    "npmVersion": package_version,
+                    "supportsES6": "true",
+                },
+                native_distributor=None,
+            )
+
+        raise ValueError(f"unsupported SDK generation language: {language}")
+
+
+def get_sdk_generation_policy() -> SDKGenerationPolicy:
+    return SDKGenerationPolicy(
+        enabled=settings.SDK_GENERATION_ENABLED,
+        languages=tuple(settings.SDK_ENABLED_LANGUAGES),
+        queue=settings.SDK_GENERATION_QUEUE,
+        retry_delays=tuple(settings.SDK_GENERATION_RETRY_DELAYS),
+        python_distribution_prefix=settings.SDK_PYTHON_DISTRIBUTION_PREFIX,
+        java_group_id=settings.SDK_JAVA_GROUP_ID,
+        java_package_prefix=settings.SDK_JAVA_PACKAGE_PREFIX,
+        go_module_prefix=settings.SDK_GO_MODULE_PREFIX,
+        javascript_package_scope=settings.SDK_JAVASCRIPT_PACKAGE_SCOPE,
+    )
+
+
+def validate_sdk_repository_config() -> None:
+    if not all(
+        (
+            settings.BKREPO_ENDPOINT_URL,
+            settings.BKREPO_USERNAME,
+            settings.BKREPO_PASSWORD,
+            settings.BKREPO_PROJECT,
+            settings.BKREPO_GENERIC_BUCKET,
+        )
+    ):
+        raise SDKRepoConfigError("BKRepo Generic configuration is required for SDK generation")
+
+
+def normalize_gateway_name(gateway_name: str) -> str:
+    return gateway_name.replace("-", "_")
+
+
+def normalize_package_version(language: str, version: str) -> str:
+    if language not in SUPPORTED_GENERATION_LANGUAGES:
+        raise ValueError(f"unsupported SDK generation language: {language}")
+    if not SEMVER_PATTERN.fullmatch(version):
+        raise ValueError("SDK package versions must follow Semantic Versioning")
+
+    if language == "python":
+        try:
+            return str(Version(version))
+        except InvalidVersion as error:
+            raise ValueError("SDK package version cannot be normalized as PEP 440") from error
+    if language == "go":
+        return f"v{version}"
+    return version
+
+
+def get_native_distributor(language: str) -> str | None:
+    if language == "python":
+        repository_url = settings.PYPI_MIRRORS_CONFIG.get("default", {}).get("repository_url", "")
+        return "pypi" if repository_url else None
+    if language == "java":
+        repository_url = settings.MAVEN_MIRRORS_CONFIG.get("default", {}).get("repository_url", "")
+        return "maven" if repository_url else None
+    return None

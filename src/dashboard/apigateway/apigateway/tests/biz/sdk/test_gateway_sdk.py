@@ -15,18 +15,144 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from types import SimpleNamespace
-from unittest.mock import call
-
 import pytest
 from ddf import G
 
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import GatewaySDKHandler, exceptions, generate_sdks_for_resource_version
-from apigateway.common.error_codes import APIError
+from apigateway.apps.support.constants import SDKArtifactStatusEnum, SDKGenerationItemStatusEnum
+from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
+from apigateway.biz.sdk import GatewaySDKHandler
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.gateway_sdk import ensure_gateway_sdk_projection
+from apigateway.core.models import ResourceVersion
+
+pytestmark = pytest.mark.django_db
 
 
 class TestGatewaySDKHandler:
+    def test_generation_projection_links_item_without_duplicating_artifact_state(
+        self, fake_gateway, fake_resource_version
+    ):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="python",
+            input_fingerprint="fingerprint",
+            config_snapshot={
+                "project_name": "bkapi-openapi-demo",
+                "package_name": "bkapi_openapi_demo",
+                "package_version": "1.2.3rc1",
+            },
+        )
+        G(
+            SDKArtifact,
+            item=item,
+            distributor="bkrepo_generic",
+            artifact_type="wheel",
+            filename="demo.whl",
+            url="https://repo/demo.whl",
+            package_version="1.2.3rc1",
+            status=SDKArtifactStatusEnum.SUCCESS.value,
+        )
+        G(
+            SDKArtifact,
+            item=item,
+            distributor="bkrepo_generic",
+            artifact_type="manifest",
+            filename="manifest.json",
+            url="https://repo/manifest.json",
+            status=SDKArtifactStatusEnum.SUCCESS.value,
+        )
+
+        sdk = ensure_gateway_sdk_projection(item)
+        item.refresh_from_db()
+
+        assert item.gateway_sdk == sdk
+        assert sdk.config == {}
+        assert sdk.version_number == "1.2.3"
+        assert sdk.name == "bkapi-openapi-demo"
+        assert sdk.url == "https://repo/demo.whl"
+
+    def test_projection_links_matching_legacy_sdk_without_updating_or_backfilling(
+        self, fake_gateway, fake_resource_version
+    ):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(
+            SDKGenerationItem,
+            task=task,
+            language="go",
+            status=SDKGenerationItemStatusEnum.PENDING.value,
+        )
+        legacy = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=fake_resource_version,
+            language="go",
+            version_number="1.2.3",
+            name="legacy-name",
+            url="https://legacy/sdk.zip",
+            _config='{"go":{"legacy":true}}',
+        )
+        original = (legacy.name, legacy.url, legacy._config, legacy.updated_time)
+
+        sdk = ensure_gateway_sdk_projection(item)
+        item.refresh_from_db()
+        legacy.refresh_from_db()
+
+        assert sdk == legacy
+        assert item.gateway_sdk == legacy
+        assert item.status == SDKGenerationItemStatusEnum.SUCCESS.value
+        assert not item.artifacts.exists()
+        assert (legacy.name, legacy.url, legacy._config, legacy.updated_time) == original
+
+    def test_projection_rejects_legacy_sdk_for_another_resource_version(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        other_version = G(ResourceVersion, gateway=fake_gateway, version="older-resource-version")
+        legacy = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=other_version,
+            language="python",
+            version_number="1.2.3",
+        )
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(SDKGenerationItem, task=task, language="python")
+
+        with pytest.raises(LegacySDKVersionConflict):
+            ensure_gateway_sdk_projection(item)
+
+        item.refresh_from_db()
+        assert item.gateway_sdk_id is None
+        assert not SDKGenerationItem.objects.filter(gateway_sdk=legacy).exists()
+
+    def test_projection_rejects_legacy_sdk_owned_by_another_item(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        legacy = G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=fake_resource_version,
+            language="java",
+            version_number="1.2.3",
+        )
+        owner_version = G(ResourceVersion, gateway=fake_gateway, version="owner-resource-version")
+        owner_task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=owner_version)
+        owner = G(SDKGenerationItem, task=owner_task, language="java", gateway_sdk=legacy)
+        target_task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        target = G(SDKGenerationItem, task=target_task, language="java")
+
+        with pytest.raises(LegacySDKVersionConflict):
+            ensure_gateway_sdk_projection(target)
+
+        target.refresh_from_db()
+        assert target.gateway_sdk_id is None
+        assert SDKGenerationItem.objects.get(gateway_sdk=legacy) == owner
+
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
         result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
         assert len(result) == 1
@@ -66,54 +192,3 @@ class TestGatewaySDKHandler:
         assert GatewaySDK.objects.get(id=sdk1.id).is_recommended is False
         assert GatewaySDK.objects.get(id=sdk2.id).is_recommended is True
         assert GatewaySDK.objects.get(id=sdk3.id).is_recommended is True
-
-
-def test_generate_sdks_for_resource_version_returns_sdk_payload(fake_resource_version, mocker):
-    helper = mocker.MagicMock()
-    helper.create.side_effect = [
-        SimpleNamespace(
-            sdk=SimpleNamespace(name="python-sdk", version_number=fake_resource_version.version, url="url1")
-        ),
-        SimpleNamespace(sdk=SimpleNamespace(name="go-sdk", version_number=fake_resource_version.version, url="url2")),
-    ]
-    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
-    mocked_helper.return_value.__enter__.return_value = helper
-
-    result = generate_sdks_for_resource_version(
-        resource_version=fake_resource_version,
-        languages=["python", "go"],
-        version="",
-    )
-
-    assert result == [
-        {
-            "name": "python-sdk",
-            "version": fake_resource_version.version,
-            "url": "url1",
-        },
-        {
-            "name": "go-sdk",
-            "version": fake_resource_version.version,
-            "url": "url2",
-        },
-    ]
-    assert helper.create.call_args_list == [
-        call(language="python", version=fake_resource_version.version, operator=None),
-        call(language="go", version=fake_resource_version.version, operator=None),
-    ]
-
-
-def test_generate_sdks_for_resource_version_maps_sdk_errors(fake_resource_version, mocker):
-    helper = mocker.MagicMock()
-    helper.create.side_effect = exceptions.ResourcesIsEmpty
-    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
-    mocked_helper.return_value.__enter__.return_value = helper
-
-    with pytest.raises(APIError) as err:
-        generate_sdks_for_resource_version(
-            fake_resource_version,
-            ["python"],
-            "",
-        )
-
-    assert err.value.code.message == "网关下无资源，无法生成 SDK。"

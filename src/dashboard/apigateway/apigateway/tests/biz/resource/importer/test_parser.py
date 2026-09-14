@@ -131,6 +131,29 @@ class TestResourceDataConvertor:
 
 
 class TestBaseParser:
+    def test_get_resources_preserves_operation_doc_metadata(self):
+        parser = BaseParser(
+            _openapi_data={
+                "basePath": "/",
+                "paths": {
+                    "/users": {
+                        "get": {
+                            "operationId": "get_users",
+                            "summary": "Get users",
+                            "deprecated": True,
+                            "responses": {"200": {"description": "OK"}},
+                        }
+                    }
+                },
+            }
+        )
+
+        resource = parser.get_resources()[0]
+
+        assert resource["summary"] == "Get users"
+        assert resource["operation_description"] == ""
+        assert resource["deprecated"] is True
+
     def test_get_ai_resource(self):
         parser = BaseParser(
             _openapi_data={

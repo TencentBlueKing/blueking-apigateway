@@ -116,8 +116,8 @@ export const PLUGIN_ICONS_MIN = [
 // 资源导入示例
 export const RESOURCE_IMPORT_EXAMPLE = {
   content: `\
-# Swagger yaml format template example
-openapi: 3.0.1
+# OpenAPI 3.1 YAML template example
+openapi: 3.1.0
 servers:
 - url: /
 info:
@@ -130,6 +130,9 @@ paths:
       operationId: get_users
       description: get users
       tags: []
+      responses:
+        '200':
+          description: OK
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -146,7 +149,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
           oauth2PersonalClientEnabled: false
-        descriptionEn: None
+        descriptionEn: null
       `,
 };
 

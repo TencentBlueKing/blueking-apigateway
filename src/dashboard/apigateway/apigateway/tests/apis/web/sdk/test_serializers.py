@@ -16,48 +16,53 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-
 import pytest
-from django_dynamic_fixture import G
+from ddf import G
 
 from apigateway.apis.web.sdk.serializers import GatewaySDKGenerateInputSLZ, GatewaySDKListOutputSLZ
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import SDKFactory
-from apigateway.common.factories import SchemaFactory
-from apigateway.core.models import ResourceVersion
+from apigateway.apps.support.models import SDKGenerationItem, SDKGenerationTask
 from apigateway.tests.utils.testing import dummy_time
 
 
 class TestGatewaySDKGenerateInputSLZ:
     @pytest.mark.parametrize(
-        "version, is_valid",
+        "languages, is_valid",
         [
-            ("", True),
-            ("1.2.3", True),
-            ("1.2.3-beta.1+build.1", True),
-            ("v1.2.3", False),
-            ("1.2", False),
-            ("1.0.0');__import__('os').system('touch /tmp/sdk-version-pwned')#", False),
+            (["python"], True),
+            (["python", "java", "go", "javascript"], True),
+            (["rust"], False),
+            ([], False),
+            (["unknown"], False),
         ],
     )
-    def test_validate_version(self, mocker, fake_gateway, version, is_valid):
-        mocker.patch(
-            "apigateway.apis.web.sdk.serializers.GatewaySDK.objects.get_latest_sdk",
-            return_value=None,
-        )
+    def test_validate_languages(self, fake_gateway, languages, is_valid):
         slz = GatewaySDKGenerateInputSLZ(
             data={
                 "resource_version_id": 1,
-                "language": "python",
-                "version": version,
+                "languages": languages,
             },
             context={"gateway": fake_gateway},
         )
 
         assert slz.is_valid() is is_valid
         if not is_valid:
-            assert "version" in slz.errors
+            assert "languages" in slz.errors
+
+    def test_languages_are_required(self, fake_gateway):
+        slz = GatewaySDKGenerateInputSLZ(data={"resource_version_id": 1}, context={"gateway": fake_gateway})
+
+        assert not slz.is_valid()
+        assert "languages" in slz.errors
+
+    def test_legacy_golang_is_normalized(self, fake_gateway):
+        slz = GatewaySDKGenerateInputSLZ(
+            data={"resource_version_id": 1, "languages": ["golang"]},
+            context={"gateway": fake_gateway},
+        )
+
+        assert slz.is_valid()
+        assert slz.validated_data["languages"] == ["go"]
+        assert "golang" not in slz.fields["languages"].child.choices
 
 
 class TestSDKListOutputSLZ:
@@ -65,41 +70,46 @@ class TestSDKListOutputSLZ:
         slz = GatewaySDKListOutputSLZ()
         assert slz.fields["created_by"].help_text == "SDK 创建者"
 
-    def test_to_representation(self, fake_gateway):
-        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
-        sdk_1 = G(
-            GatewaySDK,
-            gateway=fake_gateway,
-            resource_version=resource_version,
+    def test_to_representation(self):
+        row = {
+            "id": None,
+            "generation_task_id": 17,
+            "generation_item_id": 38,
+            "resource_version": {"id": 12, "version": "1.2.3"},
+            "version_number": "1.2.3",
+            "language": "python",
+            "name": "bkapi-openapi-demo",
+            "status": "failed",
+            "native_status": "not_required",
+            "error": {"code": "build_failed", "message": "wheel build failed"},
+            "native_error": None,
+            "download_url": None,
+            "created_by": "test",
+            "created_time": dummy_time.time,
+            "updated_time": dummy_time.time,
+        }
+
+        assert GatewaySDKListOutputSLZ(instance=row).data == {
+            **row,
+            "created_time": dummy_time.str,
+            "updated_time": dummy_time.str,
+        }
+
+    @pytest.mark.django_db
+    def test_to_representation_accepts_generation_item(self, fake_gateway, fake_resource_version):
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(
+            SDKGenerationItem,
+            task=task,
             language="python",
-            name="bkapigw-test",
-            version_number="12345",
-            _config=json.dumps({"python": {"is_uploaded_to_pypi": True}}),
-            schema=SchemaFactory().get_api_sdk_schema(),
-            created_time=dummy_time.time,
-            updated_time=dummy_time.time,
-            created_by="test",
-            url="http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
+            config_snapshot={"project_name": "bkapi-openapi-demo"},
+            created_by="admin",
         )
-        sdks = [SDKFactory.create(model=sdk_1)]
-        slz = GatewaySDKListOutputSLZ(
-            instance=sdks,
-            many=True,
-        )
-        print(slz.data)
-        assert slz.data == [
-            {
-                "id": sdk_1.id,
-                "language": "python",
-                "name": "bkapigw-test",
-                "version_number": "12345",
-                "created_time": dummy_time.str,
-                "created_by": "test",
-                "updated_time": dummy_time.str,
-                "download_url": "http://bking.com/pypi/bkapigw-test/12345/bkapigw-test-12345.tar.gz",
-                "resource_version": {
-                    "id": resource_version.id,
-                    "version": resource_version.version,
-                },
-            },
-        ]
+        item.successful_artifacts = []
+
+        data = GatewaySDKListOutputSLZ(instance=item).data
+
+        assert data["generation_task_id"] == task.id
+        assert data["generation_item_id"] == item.id
+        assert data["resource_version"] == {"id": fake_resource_version.id, "version": fake_resource_version.version}
+        assert data["name"] == "bkapi-openapi-demo"

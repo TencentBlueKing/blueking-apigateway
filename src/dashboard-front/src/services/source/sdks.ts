@@ -18,7 +18,10 @@
 
 import http from '../http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IGatewaySDKListOutput } from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaySDKListOutput,
+  ISDKGenerationTaskAccepted,
+} from '@/services/types/responses/gateways.ts';
 import type { IDocsSdksDocReadResponse } from '@/services/types/responses/docs.ts';
 import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs.ts';
 import type { IGatewaysSdksListQuery } from '@/services/types/query/gateways.ts';
@@ -30,7 +33,10 @@ export const getSDKList = (apigwId: number, data: IGatewaysSdksListQuery = {}) =
   http.get<ICountAndResults<IGatewaySDKListOutput>>(`${path}/${apigwId}/sdks/`, data);
 
 export const createSDK = (apigwId: number, data: IGatewaySDKGenerateInputSLZ) =>
-  http.post(`${path}/${apigwId}/sdks/`, data);
+  http.post<ISDKGenerationTaskAccepted>(`${path}/${apigwId}/sdks/`, data);
+
+export const retrySDKGenerationItem = (apigwId: number, taskId: number, itemId: number) =>
+  http.post(`${path}/${apigwId}/sdks/tasks/${taskId}/items/${itemId}/retry/`);
 
 /**
  *  获取指定语言（python）的网关 SDK 说明文档

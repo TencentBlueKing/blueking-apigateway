@@ -27,8 +27,63 @@ class DocTypeEnum(StructuredEnum):
 class ProgrammingLanguageEnum(StructuredEnum):
     UNKNOWN = EnumField("unknown")
     PYTHON = EnumField("python")
-    GOLANG = EnumField("golang")
     JAVA = EnumField("java")
+    GO = EnumField("go")
+    JAVASCRIPT = EnumField("javascript")
+
+
+class SDKGenerationTaskStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    PARTIAL = EnumField("partial")
+    FAILED = EnumField("failed")
+
+
+class SDKGenerationItemStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    FAILED = EnumField("failed")
+
+
+class SDKArtifactStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    FAILED = EnumField("failed")
+
+
+class SDKNativePublicationStatusEnum(StructuredEnum):
+    NOT_REQUIRED = EnumField("not_required")
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    FAILED = EnumField("failed")
+
+
+class SDKDistributorEnum(StructuredEnum):
+    BKREPO_GENERIC = EnumField("bkrepo_generic")
+    PYPI = EnumField("pypi")
+    MAVEN = EnumField("maven")
+
+
+class SDKArtifactTypeEnum(StructuredEnum):
+    """Built artifact kinds used for storage, publication, and download selection."""
+
+    ARCHIVE = EnumField("archive")
+    PACKAGE = EnumField("package")
+    MANIFEST = EnumField("manifest")
+    PYTHON_WHEEL = EnumField("wheel")
+    PYTHON_SDIST = EnumField("sdist")
+    JAVA_JAR = EnumField("jar")
+    JAVA_POM = EnumField("pom")
+    JAVA_SOURCES_JAR = EnumField("sources_jar")
+    JAVA_DISTRIBUTION_ZIP = EnumField("distribution_zip")
+    GO_INFO = EnumField("go_info")
+    GO_MOD = EnumField("go_mod")
+    GO_ZIP = EnumField("go_zip")
+    JAVASCRIPT_NPM_TGZ = EnumField("npm_tgz")
 
 
 class DocLanguageEnum(StructuredEnum):

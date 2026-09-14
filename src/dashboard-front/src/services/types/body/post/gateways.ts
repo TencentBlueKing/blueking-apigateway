@@ -470,8 +470,7 @@ export interface IDocInputSLZ {
 // POST /gateways/{gateway_id}/sdks/ - sdk创建接口
 export interface IGatewaySDKGenerateInputSLZ {
   resource_version_id: number
-  language: string
-  version?: string
+  languages: string[]
 }
 
 interface IStageStandardBackendConfigInput {

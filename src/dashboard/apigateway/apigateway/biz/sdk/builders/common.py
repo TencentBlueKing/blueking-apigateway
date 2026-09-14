@@ -1,0 +1,74 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# BlueKing - APIGateway available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+"""Shared safety helpers for ecosystem builders."""
+
+from __future__ import annotations
+
+import subprocess
+import zipfile
+from typing import TYPE_CHECKING
+
+from django.conf import settings
+
+from apigateway.biz.sdk.artifacts import BuiltArtifact, create_built_artifact, validate_artifact_names
+from apigateway.biz.sdk.exceptions import SDKGenerationError
+from apigateway.biz.sdk.process import build_subprocess_env, redact_sensitive_text
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
+
+
+def run_build(command: list[str], *, cwd: Path, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            shell=False,
+            check=False,
+            stdout=subprocess.PIPE if capture_output else subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=build_subprocess_env(),
+            timeout=settings.SDK_SUBPROCESS_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise SDKGenerationError("build_failed", "SDK package build timed out", retryable=True) from error
+    if result.returncode != 0:
+        stderr = redact_sensitive_text(" ".join((result.stderr or "").split()))[:768]
+        detail = f": {stderr}" if stderr else ""
+        raise SDKGenerationError("build_failed", f"SDK package build exited with status {result.returncode}{detail}")
+    return result
+
+
+def collect_artifacts(entries: Iterable[tuple[str, Path]], source_dir: Path, output_dir: Path) -> list[BuiltArtifact]:
+    artifacts = [create_built_artifact(kind, path, allowed_roots=(source_dir, output_dir)) for kind, path in entries]
+    validate_artifact_names(artifacts)
+    return artifacts
+
+
+def write_deterministic_zip(destination: Path, entries: Iterable[tuple[str, Path]]) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
+        for archive_name, path in sorted(entries):
+            if path.is_symlink() or not path.is_file():
+                raise ValueError(f"invalid SDK source file: {path}")
+            info = zipfile.ZipInfo(archive_name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o100644 << 16
+            archive.writestr(info, path.read_bytes())

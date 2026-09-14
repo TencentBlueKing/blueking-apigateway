@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
+from django.core.exceptions import ImproperlyConfigured
 from environ import Env
 
 from apigateway.conf.utils import (
@@ -24,7 +26,55 @@ from apigateway.conf.utils import (
     get_doc_links,
     get_frontend_env_vars,
     get_plugin_metadata_config,
+    get_sdk_generation_settings,
 )
+
+
+def test_get_sdk_generation_settings_uses_common_defaults():
+    settings = get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
+
+    assert settings["enabled"] is False
+    assert settings["enabled_languages"] == ["python", "java", "go", "javascript"]
+    assert settings["retry_delays"] == [30, 120]
+    assert settings["java_group_id"] == "com.tencent.bk.bkapi"
+    assert settings["java_package_prefix"] == "com.tencent.bk.bkapi.openapi"
+    assert settings["go_module_prefix"] == "bk.tencent.com/bkapi"
+    assert settings["server_url_template"] == "https://bkapi.example.com/{gateway_name}/{stage_name}"
+    assert "generator_jar" not in settings
+    assert "generator_version" not in settings
+    assert "worker_lock_file" not in settings
+
+
+@pytest.mark.parametrize(
+    "languages",
+    [
+        "ruby",
+        "python,,go",
+        "python,python",
+    ],
+)
+def test_get_sdk_generation_settings_rejects_invalid_languages_at_settings_construction(monkeypatch, languages):
+    monkeypatch.setenv("BK_SDK_LANGUAGES", languages)
+
+    with pytest.raises(ImproperlyConfigured, match="BK_SDK_LANGUAGES"):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("SDK_PYTHON_DISTRIBUTION_PREFIX", "not a package"),
+        ("SDK_JAVA_GROUP_ID", "com.example-bad"),
+        ("SDK_JAVA_PACKAGE_PREFIX", "9example.openapi"),
+        ("SDK_GO_MODULE_PREFIX", "https://bk.tencent.com/bkapi"),
+        ("SDK_JAVASCRIPT_PACKAGE_SCOPE", "bkapi"),
+    ],
+)
+def test_get_sdk_generation_settings_rejects_invalid_namespaces(monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+
+    with pytest.raises(ImproperlyConfigured, match=name):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
 
 
 def test_get_plugin_metadata_config_uses_local_concurrency_policy():
@@ -42,6 +92,7 @@ def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch
         "enable_gateway_operation_status": False,
         "enable_run_data_metrics": False,
         "enable_itsm4_permission_apply": False,
+        "sdk_generation_enabled": False,
     }
 
     flags = get_default_feature_flags(env, **kwargs)
@@ -50,6 +101,24 @@ def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch
     monkeypatch.setenv("FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", "false")
     flags = get_default_feature_flags(env, **kwargs)
     assert flags["ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT"] is False
+
+
+@pytest.mark.parametrize("sdk_generation_enabled", [False, True])
+def test_get_default_feature_flags_sdk_flag_follows_generation_enabled(monkeypatch, sdk_generation_enabled):
+    monkeypatch.setenv("FEATURE_FLAG_ENABLE_SDK", str(not sdk_generation_enabled).lower())
+
+    flags = get_default_feature_flags(
+        Env(),
+        enable_bk_notice=False,
+        enable_multi_tenant_mode=False,
+        ai_open_api_base_url="",
+        enable_gateway_operation_status=False,
+        enable_run_data_metrics=False,
+        enable_itsm4_permission_apply=False,
+        sdk_generation_enabled=sdk_generation_enabled,
+    )
+
+    assert flags["ENABLE_SDK"] is sdk_generation_enabled
 
 
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
@@ -91,3 +160,34 @@ def test_get_doc_links_includes_personal_token():
         en_links["PERSONAL_TOKEN"]
         == "https://docs.example.com/markdown/EN/APIGateway/1.24/UserGuide/Explanation/personal-token.md"
     )
+
+
+def test_sdk_generation_settings_accepts_legacy_golang_when_disabled(monkeypatch):
+    monkeypatch.setenv("SDK_GENERATION_ENABLED", "false")
+    monkeypatch.setenv("BK_SDK_LANGUAGES", "python,golang,java")
+    config = get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://example.com/{api_name}")
+    assert config["enabled"] is False
+    assert config["enabled_languages"] == ["python", "go", "java"]
+
+
+def test_sdk_generation_settings_rejects_duplicate_language_aliases(monkeypatch):
+    monkeypatch.setenv("BK_SDK_LANGUAGES", "go,golang")
+    with pytest.raises(ImproperlyConfigured, match="duplicate"):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://example.com/{api_name}")
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "SDK_GENERIC_RETENTION_HOURS",
+        "SDK_SUBPROCESS_TIMEOUT_SECONDS",
+        "SDK_MAX_OPENAPI_BYTES",
+        "SDK_MAX_OUTPUT_BYTES",
+        "SDK_MAX_ARTIFACT_BYTES",
+    ],
+)
+@pytest.mark.parametrize("value", ["0", "-1"])
+def test_sdk_generation_limits_must_be_positive(monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ImproperlyConfigured, match=name):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://example.com/{api_name}")

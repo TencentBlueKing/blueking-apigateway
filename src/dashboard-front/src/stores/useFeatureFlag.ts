@@ -31,7 +31,6 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
   state: (): IState => ({
     flags: {
       ALLOW_CREATE_APPCHAT: false,
-      ALLOW_UPLOAD_SDK_TO_REPOSITORY: false,
       ENABLE_AI_COMPLETION: false,
       ENABLE_BK_CLI: false,
       ENABLE_BK_NOTICE: false,

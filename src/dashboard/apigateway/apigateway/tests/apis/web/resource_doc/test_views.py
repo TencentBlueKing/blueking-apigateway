@@ -18,6 +18,7 @@
 import json
 
 from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.biz.resource_doc import OpenAPIDocGenerationError
 from apigateway.biz.resource_doc.importer import ArchiveDoc
 
 
@@ -97,6 +98,27 @@ class TestDocImportBySwaggerApi:
         )
 
         assert resp.status_code == 204
+
+    def test_post_generation_error(self, request_view, fake_gateway, mocker):
+        mocker.patch(
+            "apigateway.apis.web.resource_doc.views.OpenAPIParser.parse",
+            side_effect=OpenAPIDocGenerationError("render failed"),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="resource_doc.import.by_swagger",
+            path_params={"gateway_id": fake_gateway.id},
+            data={
+                "selected_resource_docs": [{"language": "zh", "resource_name": "get_user"}],
+                "swagger": "openapi input",
+                "language": "zh",
+            },
+        )
+
+        assert resp.status_code == 500
+        assert resp.json()["error"]["code"] == "INTERNAL"
+        assert "根据 swagger 描述生成 markdown 格式文档出现错误" in resp.json()["error"]["message"]
 
 
 class TestDocExportApi:

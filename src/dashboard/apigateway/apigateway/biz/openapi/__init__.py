@@ -18,7 +18,7 @@
 from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum, OpenAPIVersionKeyEnum
 from .openapi import OpenAPIImportManager
 from .parser import BaseParser, OpenAPIV3Parser, ResourceDataConvertor
-from .schema import SchemaValidateErr, convert_operation_v3_to_v2
+from .schema import SchemaValidateErr
 from .validate import ResourceImportValidator
 
 __all__ = [
@@ -35,6 +35,5 @@ __all__ = [
     "ResourceImportValidator",
     "SchemaValidateErr",
     # functions
-    "convert_operation_v3_to_v2",
     # others
 ]
