@@ -19,9 +19,11 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable
+from typing import Iterable
 
+from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,9 +32,15 @@ from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkpaas import update_app_maintainers
+from apigateway.core.models import Gateway
 
-if TYPE_CHECKING:
-    from apigateway.core.models import Gateway
+from .iam_authorization import (
+    GatewayMemberSnapshot,
+    apply_gateway_member_snapshots_to_iam,
+    build_gateway_member_snapshot,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayMemberInput(BaseModel):
@@ -57,6 +65,58 @@ class GatewayMemberRoleUpdateResult:
     changed: bool
 
 
+def _lock_gateway(gateway: Gateway) -> Gateway:
+    return Gateway.objects.select_for_update().get(pk=gateway.pk)
+
+
+def _get_gateway_member_snapshot(gateway_id: int) -> GatewayMemberSnapshot:
+    return build_gateway_member_snapshot(GatewayMember.objects.filter(gateway_id=gateway_id))
+
+
+def _administrator_usernames(snapshot: GatewayMemberSnapshot) -> list[str]:
+    return sorted(
+        username
+        for username, authorization in snapshot.items()
+        if authorization.role == GatewayRoleEnum.ADMINISTRATOR.value
+    )
+
+
+def _sync_external_member_state(
+    gateway: Gateway,
+    before: GatewayMemberSnapshot,
+    operated_by: str,
+    *,
+    sync_paas: bool,
+) -> None:
+    after = _get_gateway_member_snapshot(gateway.id)
+    if before == after:
+        return
+
+    before_administrators = _administrator_usernames(before)
+    after_administrators = _administrator_usernames(after)
+    paas_synced = False
+
+    if sync_paas and gateway.is_programmable and before_administrators != after_administrators:
+        _sync_programmable_gateway_administrators(gateway)
+        paas_synced = True
+
+    try:
+        if settings.BK_IAM_V4_ENABLED:
+            apply_gateway_member_snapshots_to_iam(gateway.id, before, after, operated_by)
+    except Exception:
+        if paas_synced:
+            try:
+                update_app_maintainers(gateway.name, before_administrators)
+            except Exception:
+                logger.critical(
+                    "failed to compensate programmable gateway maintainers, gateway_id=%s",
+                    gateway.id,
+                    exc_info=True,
+                )
+        raise
+
+
+@transaction.atomic
 def replace_gateway_administrators(
     gateway: Gateway,
     usernames: Iterable[str],
@@ -67,24 +127,33 @@ def replace_gateway_administrators(
     if not target_usernames:
         raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
-    return GatewayMember.objects.replace_gateway_administrators(
-        gateway.id,
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
+    administrators = GatewayMember.objects.replace_gateway_administrators(
+        locked_gateway.id,
         target_usernames,
         operated_by,
     )
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
+    return administrators
 
 
+@transaction.atomic
 def add_gateway_administrators(
     gateway: Gateway,
     usernames: Iterable[str],
     operated_by: str,
 ) -> list[str]:
     """Add gateway administrators without removing existing ones."""
-    return GatewayMember.objects.add_gateway_administrators(
-        gateway.id,
-        usernames,
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
+    administrators = GatewayMember.objects.add_gateway_administrators(
+        locked_gateway.id,
+        set(usernames),
         operated_by,
     )
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
+    return administrators
 
 
 def _unique_members(members: Iterable[GatewayMemberInput]) -> list[GatewayMemberInput]:
@@ -102,14 +171,15 @@ def add_gateway_members(
     operated_by: str,
 ) -> GatewayMemberBatchCreateResult:
     """Add gateway members, skipping usernames that already exist."""
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
     created, skipped = GatewayMember.objects.add_gateway_members(
-        gateway.id,
+        locked_gateway.id,
         _unique_members(members),
         operated_by,
     )
 
-    if gateway.is_programmable and any(member.role == GatewayRoleEnum.ADMINISTRATOR.value for member in created):
-        _sync_programmable_gateway_administrators(gateway)
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=True)
 
     return GatewayMemberBatchCreateResult(created=created, skipped=skipped)
 
@@ -122,26 +192,27 @@ def update_gateway_member_role(
     operated_by: str,
 ) -> GatewayMemberRoleUpdateResult:
     """Update one member role while preserving at least one administrator."""
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
     member, previous_role, changed = GatewayMember.objects.update_gateway_member_role(
-        gateway.id,
+        locked_gateway.id,
         member_id,
         role,
         operated_by,
     )
 
-    if gateway.is_programmable and changed:
-        _sync_programmable_gateway_administrators(gateway)
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=True)
 
     return GatewayMemberRoleUpdateResult(member=member, previous_role=previous_role, changed=changed)
 
 
 @transaction.atomic
-def delete_gateway_member(gateway: Gateway, member_id: int) -> GatewayMember:
+def delete_gateway_member(gateway: Gateway, member_id: int, operated_by: str) -> GatewayMember:
     """Delete one member while preserving at least one administrator."""
-    member = GatewayMember.objects.delete_gateway_member(gateway.id, member_id)
-
-    if gateway.is_programmable and member.role == GatewayRoleEnum.ADMINISTRATOR.value:
-        _sync_programmable_gateway_administrators(gateway)
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
+    member = GatewayMember.objects.delete_gateway_member(locked_gateway.id, member_id)
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=True)
 
     return member
 

@@ -1627,7 +1627,7 @@ class TestGatewayDestroyApi:
             "apigateway.apis.v2.inner.views.trigger_gateway_publish",
             return_value=None,
         )
-        mocker.patch(
+        delete_gateway = mocker.patch(
             "apigateway.apis.v2.inner.views.GatewayHandler.delete_gateway",
             return_value=None,
         )
@@ -1643,6 +1643,7 @@ class TestGatewayDestroyApi:
         )
 
         assert response.status_code == 204
+        delete_gateway.assert_called_once_with(gateway_id, operated_by=request.user.username)
 
 
 class TestAppPermissionRecordListApi:

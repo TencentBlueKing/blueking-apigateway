@@ -411,6 +411,115 @@ class TestGatewayHandler:
             with pytest.raises(ObjectDoesNotExist):
                 model.refresh_from_db()
 
+    def test_delete_gateway_revokes_member_authorizations(self, settings, mocker, fake_gateway):
+        settings.BK_IAM_V4_ENABLED = True
+        G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="alice",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
+        revoke_authorization = mocker.patch(
+            "apigateway.biz.gateway.iam_authorization.revoke_authorization",
+        )
+
+        GatewayHandler.delete_gateway(fake_gateway.id, operated_by="request-user")
+
+        revoke_authorization.assert_called_once_with(
+            [
+                {
+                    "subject": {"type": "user", "id": "admin"},
+                    "role_id": GatewayRoleEnum.ADMINISTRATOR.value,
+                    "related_resource_type_id": "gateway",
+                    "resources": [{"type": "gateway", "id": str(fake_gateway.id)}],
+                },
+                {
+                    "subject": {"type": "user", "id": "alice"},
+                    "role_id": GatewayRoleEnum.ADMINISTRATOR.value,
+                    "related_resource_type_id": "gateway",
+                    "resources": [{"type": "gateway", "id": str(fake_gateway.id)}],
+                },
+            ],
+            "request-user",
+        )
+
+    def test_delete_gateway_does_not_call_iam_when_disabled(self, settings, mocker, fake_gateway):
+        settings.BK_IAM_V4_ENABLED = False
+        apply_snapshots = mocker.patch(
+            "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
+        )
+
+        GatewayHandler.delete_gateway(fake_gateway.id)
+
+        apply_snapshots.assert_not_called()
+
+    def test_delete_gateway_rolls_back_local_deletions_when_iam_fails(self, settings, mocker, fake_gateway):
+        settings.BK_IAM_V4_ENABLED = True
+        settings.BK_IAM_V4_MANAGERS = ["admin"]
+        GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
+        context = Context.objects.get(
+            scope_type=ContextScopeTypeEnum.GATEWAY.value,
+            type=ContextTypeEnum.GATEWAY_AUTH.value,
+            scope_id=fake_gateway.id,
+        )
+        member = G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="alice",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
+        mocker.patch(
+            "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
+            side_effect=RuntimeError("IAM unavailable"),
+        )
+
+        with pytest.raises(RuntimeError, match="IAM unavailable"):
+            GatewayHandler.delete_gateway(fake_gateway.id)
+
+        assert Gateway.objects.filter(id=fake_gateway.id).exists()
+        assert Context.objects.filter(id=context.id).exists()
+        assert GatewayMember.objects.filter(id=member.id).exists()
+
+    def test_delete_gateway_restores_iam_when_final_delete_fails(self, settings, mocker, fake_gateway):
+        settings.BK_IAM_V4_ENABLED = True
+        G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="alice",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
+        apply_snapshots = mocker.patch(
+            "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
+        )
+        mocker.patch.object(Gateway, "delete", side_effect=RuntimeError("delete failed"))
+
+        with pytest.raises(RuntimeError, match="delete failed"):
+            GatewayHandler.delete_gateway(fake_gateway.id, operated_by="request-user")
+
+        assert apply_snapshots.call_count == 2
+        revoke_call, restore_call = apply_snapshots.call_args_list
+        assert revoke_call.args[0] == fake_gateway.id
+        assert revoke_call.args[1]["alice"].role == GatewayRoleEnum.ADMINISTRATOR.value
+        assert revoke_call.args[2] == {}
+        assert revoke_call.args[3] == "request-user"
+        assert restore_call.args[0] == fake_gateway.id
+        assert restore_call.args[1] == {}
+        assert restore_call.args[2]["alice"].role == GatewayRoleEnum.ADMINISTRATOR.value
+        assert restore_call.args[3] == "request-user"
+        assert Gateway.objects.filter(id=fake_gateway.id).exists()
+
+    def test_delete_gateway_uses_system_operator_when_omitted(self, settings, mocker, fake_gateway):
+        settings.BK_IAM_V4_ENABLED = True
+        settings.BK_IAM_V4_MANAGERS = ["  iam-admin  ", "other"]
+        apply_snapshots = mocker.patch(
+            "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
+        )
+
+        GatewayHandler.delete_gateway(fake_gateway.id)
+
+        apply_snapshots.assert_called_once()
+        assert apply_snapshots.call_args.args[3] == "iam-admin"
+
     def test_get_docs_url(self, settings, fake_gateway, fake_stage, fake_resource_version):
         settings.API_DOCS_URL_TMPL = "http://apigw.example.com/docs/{api_name}"
         result = GatewayHandler.get_docs_url(fake_gateway)

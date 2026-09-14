@@ -220,9 +220,10 @@ class GatewayMemberManager(models.Manager):
 
         now = timezone.now()
         member.role = role.value
+        member.expires = now + timedelta(days=GATEWAY_MEMBER_EXPIRE_DAYS)
         member.updated_by = operated_by
         member.updated_time = now
-        member.save(update_fields=["role", "updated_by", "updated_time"])
+        member.save(update_fields=["role", "expires", "updated_by", "updated_time"])
         return member, previous_role, True
 
     @transaction.atomic

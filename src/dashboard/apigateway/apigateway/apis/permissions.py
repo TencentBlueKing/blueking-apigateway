@@ -7,6 +7,8 @@ from rest_framework import permissions
 
 from apigateway.apps.rbac.constants import GATEWAY_ROLE_ACTIONS, GatewayActionEnum
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.biz.gateway import is_iam_auth_active, is_iam_gateway_action_allowed
+from apigateway.components.bkiam import BkIamError
 from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
@@ -21,7 +23,7 @@ class GatewayActionPermission(permissions.BasePermission):
         request.gateway_member = None
         gateway = self.get_gateway_object(view)
         # 路径参数 gateway_id 不存在时，忽略网关权限校验
-        if not gateway:
+        if gateway is None:
             return True
 
         request.gateway = gateway
@@ -29,18 +31,41 @@ class GatewayActionPermission(permissions.BasePermission):
         if getattr(view, "gateway_permission_exempt", False):
             return True
 
-        required_action = self.get_required_action(request, view)
+        # 本地成员用于请求上下文，以及 IAM 未启用或调用失败时的本地鉴权
         member = GatewayMember.objects.get_gateway_member(gateway.id, request.user.username)
+        if member is not None:
+            request.gateway_member = member
+
+        required_action = self.get_required_action(request, view)
+        if not is_iam_auth_active():
+            return self._is_locally_allowed(member, required_action)
+
+        try:
+            return is_iam_gateway_action_allowed(request.user.username, gateway.id, required_action)
+        except BkIamError as exc:
+            logger.warning(
+                "gateway IAM authorization failed, fallback to local, "
+                "error=%s operation=%s status_code=%s gateway_id=%s username=%s action_id=%s",
+                exc.__class__.__name__,
+                exc.operation,
+                exc.status_code,
+                gateway.id,
+                request.user.username,
+                required_action,
+                exc_info=True,
+            )
+            return self._is_locally_allowed(member, required_action)
+
+    def _is_locally_allowed(self, member: GatewayMember | None, required_action: str) -> bool:
         if member is None:
             return False
 
-        request.gateway_member = member
         allowed_actions = GATEWAY_ROLE_ACTIONS.get(member.role)
         if allowed_actions is None:
             logger.warning(
                 "unknown gateway member role, gateway_id=%s username=%s role=%s",
-                gateway.id,
-                request.user.username,
+                member.gateway_id,
+                member.username,
                 member.role,
             )
             return False

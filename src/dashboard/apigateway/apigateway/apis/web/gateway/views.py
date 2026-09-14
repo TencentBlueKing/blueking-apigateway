@@ -387,7 +387,7 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
                 user_credentials=None,
             )
 
-        GatewayHandler.delete_gateway(instance_id)
+        GatewayHandler.delete_gateway(instance_id, operated_by=request.user.username)
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.DELETE,
