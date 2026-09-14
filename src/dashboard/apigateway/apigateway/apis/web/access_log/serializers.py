@@ -83,6 +83,7 @@ class TimeChartOutputSLZ(serializers.Serializer):
 
 
 class RequestLogOutputSLZ(serializers.Serializer):
+    gateway_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="网关名称")
     request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求 ID")
     timestamp = serializers.IntegerField(required=False, allow_null=True, help_text="请求时间戳")
 

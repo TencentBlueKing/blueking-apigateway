@@ -123,7 +123,7 @@ class TestLogDetailListApi:
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
             return_value=(1, [{"a": 1, "llm_summary": llm_summary}]),
         )
-        search_logs = mocker.spy(LogHandler, "search_logs_by_request_id")
+        search_logs = mocker.spy(LogHandler, "search_logs_by_request_id_for_toolbox")
 
         mocker.patch("apigateway.apis.web.access_log.views.SignatureValidator.is_valid")
 
@@ -142,9 +142,44 @@ class TestLogDetailListApi:
 
         assert response.status_code == 200
         assert result["data"]["count"] == 1
-        assert result["data"]["fields"] == ES_LOG_FIELDS
+        assert any(field["field"] == "gateway_name" for field in result["data"]["fields"])
         assert result["data"]["results"][0]["llm_summary"] == llm_summary
         search_logs.assert_called_once_with(request_id)
+
+    @pytest.mark.parametrize("logs", [[{"api_name": "example-gateway"}], [{}], []])
+    def test_matches_toolbox(self, mocker, request_view, fake_gateway, logs):
+        mocker.patch(
+            "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
+            side_effect=lambda: (len(logs), deepcopy(logs)),
+        )
+        validator = mocker.patch("apigateway.apis.web.access_log.views.SignatureValidator.is_valid")
+        shared = request_view(
+            "GET",
+            "access_log.logs.detail",
+            path_params={"gateway_id": fake_gateway.id, "request_id": "rid"},
+            gateway=fake_gateway,
+        )
+        validator.assert_called_once_with(raise_exception=True)
+        toolbox = request_view("GET", "access_log.logs.query", path_params={"request_id": "rid"})
+
+        assert shared.status_code == toolbox.status_code == 200
+        assert shared.json()["data"] == toolbox.json()["data"]
+        if logs:
+            log = shared.json()["data"]["results"][0]
+            assert log["gateway_name"] == logs[0].get("api_name")
+            assert "api_name" not in log
+
+    def test_requires_signature(self, mocker, request_view, fake_gateway):
+        search = mocker.patch("apigateway.apis.web.access_log.views.LogSearchClient.search_logs")
+        response = request_view(
+            "GET",
+            "access_log.logs.detail",
+            path_params={"gateway_id": fake_gateway.id, "request_id": "rid"},
+            gateway=fake_gateway,
+        )
+
+        assert response.status_code == 400
+        search.assert_not_called()
 
 
 class TestLogLinkRetrieveApi:
