@@ -2742,5 +2742,6 @@
   "可编程网关请参考框架文档，配置资源请求参数声明": "For programmable gateways, please refer to the framework documentation to configure the resource request parameter declaration",
   "已上线": "Released",
   "已显示最前": "Already displayed at the front",
-  "没有更多了": "No more"
+  "没有更多了": "No more",
+  "网关加载失败": "Failed to load gateway"
 }

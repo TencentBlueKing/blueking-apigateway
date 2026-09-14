@@ -17,70 +17,33 @@
  */
 
 // 直接从具体文件导入，避免经由 @/stores 桶文件与 @/router 形成循环依赖
-import { useGateway } from '@/stores/useGateway';
-import { useUserInfo } from '@/stores/useUserInfo';
-import {
-  GATEWAY_PERMISSION_MATRIX,
-  type GatewayPermissionKey,
-  type MemberRole,
-} from '@/constants/gateway-permission';
-
-export function getGatewayRole(
-  username: string,
-  maintainers: string[] = [],
-  developers: string[] = [],
-): MemberRole | '' {
-  if (!username) {
-    return '';
-  }
-  if (maintainers.includes(username)) {
-    return 'administrator';
-  }
-  if (developers.includes(username)) {
-    return 'operator';
-  }
-  return '';
-}
+import { type GatewayRoleStatus, useGatewayRoleStore } from '@/stores/useGatewayRole';
+import type { GatewayPermissionKey } from '@/constants/gateway-permission';
+import { canAccessByRole } from '@/utils/gateway-permission';
 
 /**
- * 纯函数版权限判定，供路由守卫等非组件上下文复用
- * @param role 当前用户在该网关下的角色
- * @param permission 权限矩阵 key，对应 GATEWAY_PERMISSION_MATRIX
- * @returns 是否允许访问。运营者采用 fail-closed 策略：未声明 permission 即视为无权限
+ * 当前网关角色的只读视图，不发起请求或监听身份变化。
+ * 角色加载由路由守卫负责，身份变化后的补载由网关布局负责。
  */
-export function canAccessByRole(role: MemberRole | '', permission?: GatewayPermissionKey) {
-  // 管理员及其他角色不受权限矩阵限制
-  if (role !== 'operator') {
-    return true;
-  }
-  if (!permission) {
-    return false;
-  }
-  return !!GATEWAY_PERMISSION_MATRIX[permission]?.operator;
-}
-
 export function useGatewayRole() {
-  const gatewayStore = useGateway();
-  const userStore = useUserInfo();
+  const roleStore = useGatewayRoleStore();
+  const route = useRoute();
 
-  const currentRole = computed<MemberRole | ''>(() => getGatewayRole(
-    userStore.info.username,
-    gatewayStore.currentGateway?.maintainers || [],
-    gatewayStore.currentGateway?.developers || [],
-  ));
+  const gatewayId = computed(() => Number(route.params.id));
+  const roleStatus = computed<GatewayRoleStatus>(() => roleStore.roles[gatewayId.value]?.status ?? 'idle');
+  const roleError = computed(() => roleStore.roles[gatewayId.value]?.error);
+  const currentRole = computed(() => roleStore.roles[gatewayId.value]?.role ?? '');
 
-  const isAdmin = computed(() => currentRole.value === 'administrator');
-  const isOperator = computed(() => currentRole.value === 'operator');
-  const canEditBasicInfo = computed(() => !isOperator.value);
+  const canEditBasicInfo = computed(() => canAccessByRole(currentRole.value, 'basic-edit'));
 
   const canAccess = (permission?: GatewayPermissionKey) => {
-    return isOperator.value ? canAccessByRole('operator', permission) : true;
+    return canAccessByRole(currentRole.value, permission);
   };
 
   return {
     currentRole,
-    isAdmin,
-    isOperator,
+    roleStatus,
+    roleError,
     canEditBasicInfo,
     canAccess,
   };
