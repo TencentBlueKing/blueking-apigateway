@@ -111,8 +111,15 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     cell: (h: any, { row }: { row: any }) => <span>{ row.description || '--' }</span>,
   },
   {
-    title: t('关联资源数'),
     colKey: 'resource_count',
+    title: () => (
+      <span
+        v-bk-tooltips={t('当前【资源配置编辑区】及所有【已发布环境】关联的资源数')}
+        class="underline decoration-dashed underline-offset-4"
+      >
+        {t('关联的资源')}
+      </span>
+    ),
     cell: (h: any, { row }: { row: any }) => {
       return !row.resource_count || gatewayStore.isProgrammableGateway
         ? (
