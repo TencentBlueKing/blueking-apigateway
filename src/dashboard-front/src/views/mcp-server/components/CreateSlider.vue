@@ -751,6 +751,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 trigger={'manual' as any}
                 width="400"
                 placement="right"
+                // @ts-expect-error fix later
                 extCls="tool-name-popover"
                 arrow={false}
                 is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
@@ -2250,10 +2251,10 @@ defineExpose({
       position: relative;
       min-width: 92px;
       text-align: center;
+      cursor: pointer;
       border-top: 1px solid #dcdee5;
       border-right: 1px solid #dcdee5;
       transition: all 0.2s;
-      cursor: pointer;
 
       .required-mark {
         position: absolute;
@@ -2266,7 +2267,7 @@ defineExpose({
       &:hover,
       &.is-active {
         color: #3a84ff;
-        background-color: #ffffff;
+        background-color: #fff;
       }
     }
   }
