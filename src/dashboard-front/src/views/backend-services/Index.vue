@@ -135,19 +135,26 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     cell: (h: any, { row }: { row: any }) => {
       return (
         <span>
-          { row?.description || '--' }
+          { row.description || '--' }
         </span>
       );
     },
   },
   {
-    title: t('关联的资源'),
     colKey: 'resource_count',
+    title: () => (
+      <span
+        v-bk-tooltips={t('当前【资源配置编辑区】及所有【已发布环境】关联的资源数')}
+        class="underline decoration-dashed underline-offset-4"
+      >
+        {t('关联的资源')}
+      </span>
+    ),
     cell: (h: any, { row }: { row: any }) => {
-      return !row?.resource_count || gatewayStore.isProgrammableGateway
+      return !row.resource_count || gatewayStore.isProgrammableGateway
         ? (
           <span>
-            { row?.resource_count || '--' }
+            { row.resource_count || '--' }
           </span>
         )
         : (
@@ -156,7 +163,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
             theme="primary"
             onClick={() => handleResource(row.id)}
           >
-            { row?.resource_count }
+            { row.resource_count }
           </bk-button>
         );
     },
@@ -169,7 +176,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     cell: (h: any, { row }: { row: any }) => {
       return (
         <span>
-          { row?.updated_time }
+          { row.updated_time }
         </span>
       );
     },
@@ -196,19 +203,19 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
             { t('编辑') }
           </bk-button>
           {
-            row?.resource_count
+            row.resource_count
               ? (
                 <span
                   v-bk-tooltips={{
-                    content: ['default'].includes(row?.name)
-                      ? t('默认后端服务，且被{resourceCount}个资源引用了，不能删除', { resourceCount: row?.resource_count })
-                      : t('服务被{resourceCount}个资源引用了，不能删除', { resourceCount: row?.resource_count }),
+                    content: ['default'].includes(row.name)
+                      ? t('默认后端服务，且被{resourceCount}个资源引用了，不能删除', { resourceCount: row.resource_count })
+                      : t('服务被{resourceCount}个资源引用了，不能删除', { resourceCount: row.resource_count }),
                   }}
                 >
                   <bk-button
                     text
                     theme="primary"
-                    disabled={Boolean(row?.resource_count) || ['default'].includes(row?.name)}
+                    disabled={Boolean(row.resource_count) || ['default'].includes(row.name)}
                     onClick={() => handleDelete(row)}
                   >
                     { t('删除') }
@@ -219,13 +226,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                 <span
                   v-bk-tooltips={{
                     content: t('默认后端服务，不能删除'),
-                    disabled: !['default'].includes(row?.name),
+                    disabled: !['default'].includes(row.name),
                   }}
                 >
                   <bk-button
                     theme="primary"
                     text
-                    disabled={['default'].includes(row?.name)}
+                    disabled={['default'].includes(row.name)}
                     onClick={() => handleDelete(row)}
                   >
                     { t('删除') }
