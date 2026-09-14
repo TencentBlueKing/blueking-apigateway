@@ -26,3 +26,5 @@ SYSTEM_NAME = "CC"
 host = SmartHost(host_prod=getattr(settings, "HOST_CC_V3", ""))
 
 DEFAULT_BK_SUPPLIER_ACCOUNT = "0"
+
+JWT_ENABLED = getattr(settings, "BK_ESB_CC_JWT_ENABLED", False)
