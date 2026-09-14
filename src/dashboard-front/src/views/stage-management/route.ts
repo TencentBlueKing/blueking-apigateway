@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: t('环境管理'),
       matchRoute: 'StageOverview',
+      permission: 'stage',
     },
     children: [
       {

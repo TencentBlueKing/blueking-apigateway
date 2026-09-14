@@ -169,7 +169,6 @@ const renderFormatFormItem = (
         else {
           return child['default'] && String(child['default']).trim().length > 0;
         }
-        return true;
       },
     },
     {
@@ -184,7 +183,6 @@ const renderFormatFormItem = (
         else {
           return child['default'] && String(child['default']).trim().length > 0;
         }
-        return true;
       },
     },
     {
@@ -285,16 +283,16 @@ const handleClone = (index: number) => {
 };
 </script>
 
-<style langs="scss" scoped>
+<style lang="scss" scoped>
 .schema-title {
+  display: flex;
+  height: 50px;
+  padding: 0 24px;
+  margin: 0 -24px 8px;
   font-size: 14px;
   font-weight: 600;
   color: #63656e;
-  display: flex;
-  height: 50px;
   align-items: center;
-  padding: 0 24px;
-  margin: 0 -24px 8px -24px;
 }
 
 :deep(.bk-form-item) {
@@ -308,8 +306,8 @@ const handleClone = (index: number) => {
 
 .operate-icon {
   position: absolute;
-  right: 8px;
   top: 18px;
+  right: 8px;
   color: #979ba5;
 
   &:hover {

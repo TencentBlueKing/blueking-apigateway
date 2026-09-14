@@ -41,6 +41,7 @@
       <div class="flex justify-end">
         <BkInput
           v-model="filterData.keyword"
+          type="search"
           :placeholder="t('请输入已发布的环境或版本号')"
           class="operate-input"
         />
@@ -74,7 +75,6 @@
 
 <script lang="tsx" setup>
 import { useDatePicker } from '@/hooks';
-import { Spinner } from 'bkui-vue/lib/icon';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { getReleaseHistories } from '@/services/source/release';
 import {
@@ -167,6 +167,10 @@ const columns = computed(() => {
       width: 200,
       cell: (_: unknown, { row }: { row: TableRowData }) => (
         <span
+          v-bk-tooltips={{
+            content: t('去版本列表'),
+            placement: 'top',
+          }}
           class="color-#3a84ff cursor-pointer"
           onClick={() => goVersionList(row)}
         >
@@ -178,14 +182,9 @@ const columns = computed(() => {
       colKey: 'status',
       title: t('操作状态'),
       cell: (_: unknown, { row }: { row: TableRowData }) => (
-        <div>
-          {
-            row?.status === 'doing'
-              ? <Spinner fill="#3a84ff" />
-              : <span class={`dot ${row?.status}`}></span>
-          }
-          <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
-        </div>
+        <bk-tag theme={getStatusTheme(row?.status)}>
+          {getTextFromEnum(publishStatusEnum, row?.status)}
+        </bk-tag>
       ),
     },
     {
@@ -261,14 +260,9 @@ const columns = computed(() => {
       colKey: 'deployStatus',
       title: t('部署状态'),
       cell: (_: unknown, { row }: { row: TableRowData }) => (
-        <div>
-          {
-            row?.status === 'doing'
-              ? <Spinner fill="#3a84ff" />
-              : <span class={`dot ${row?.status}`}></span>
-          }
-          <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
-        </div>
+        <bk-tag theme={getStatusTheme(row?.status)}>
+          {getTextFromEnum(publishStatusEnum, row?.status)}
+        </bk-tag>
       ),
     },
     {
@@ -353,6 +347,15 @@ const goVersionList = (data: any) => {
   });
 };
 
+// 操作状态 -> tag 主题
+type TagTheme = '' | 'danger' | 'success' | 'warning' | 'info';
+const statusThemeMap: Record<string, TagTheme> = {
+  success: 'success',
+  failure: 'danger',
+  doing: '',
+};
+const getStatusTheme = (status?: unknown): TagTheme => statusThemeMap[String(status)] ?? 'info';
+
 // 从枚举对象中获取文本
 const getTextFromEnum = (e: Enums, key?: unknown) => {
   if (!key) return '--';
@@ -378,7 +381,7 @@ onUnmounted(() => {
 
   .operate{
     display: flex;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 
     .operate-input {
       width: 500px;

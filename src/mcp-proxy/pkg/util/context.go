@@ -21,6 +21,7 @@ package util
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -297,11 +298,17 @@ func GetBkApiTimeout(ctx context.Context) time.Duration {
 func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
 	allowedHeadersMap := make(map[string]string)
 	for header := range strings.SplitSeq(allowedHeaders, ",") {
-		header = strings.TrimSpace(header)
+		header = http.CanonicalHeaderKey(strings.TrimSpace(header))
 		if header == "" {
 			continue
 		}
 		allowedHeadersMap[header] = c.Request.Header.Get(header)
+	}
+	// Forward ingress IP headers by default, preserving the original values and XFF chain.
+	for _, header := range []string{"X-Real-Ip", "X-Forwarded-For", "X-Client-Ip"} {
+		if value := c.GetHeader(header); value != "" {
+			allowedHeadersMap[header] = value
+		}
 	}
 	// 默认添加 mcp-server 相关请求头
 	allowedHeadersMap[constant.BkApiMCPServerIDKey] = strconv.Itoa(GetMCPServerID(c))

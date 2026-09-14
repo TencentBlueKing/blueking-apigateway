@@ -159,6 +159,7 @@
                             <AgTable
                               ref="toolTableRef"
                               v-model:table-data="filteredToolList"
+                              class="mb-16px!"
                               show-selection
                               local-page
                               :show-settings="false"
@@ -415,7 +416,7 @@
       >
         <OAuthAlert
           v-if="isExistOAuthData"
-          class="py-8px"
+          class="my-8px"
           :is-edit-mode="isEditMode"
           :is-enabled-personal-client="isEnabledPersonalClient"
           :is-enabled-public-client="isEnabledPublicClient"
@@ -455,6 +456,7 @@ import {
   ResizeLayout,
 } from 'bkui-vue';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
+import type { IOptions } from 'bkui-vue/lib/directives';
 import type { TableRowData } from 'tdesign-vue-next';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { IFormMethod, IMethodFilterItem, ISearchSelectFilter, ITableEmptyType, ITableMethod } from '@/types/common';
@@ -539,6 +541,7 @@ const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const toolNameRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
 const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
+const toolNameInputRef = ref<InstanceType<typeof Input> & { focus: () => void }>();
 const defaultFormData = ref<IMCPFormData>({
   name: '',
   title: '',
@@ -745,10 +748,10 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
             <div class="flex items-center">
               <PopConfirm
                 ref={popoverConfirmRef}
-                // @ts-ignore
-                trigger="manual"
+                trigger={'manual' as any}
                 width="400"
                 placement="right"
+                // @ts-expect-error fix later
                 extCls="tool-name-popover"
                 arrow={false}
                 is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
@@ -759,7 +762,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                   default: () => (
                     <ag-icon
                       name="edit-line"
-                      class="hidden cursor-pointer vertical-mid tool-name-edit-icon"
+                      class="invisible cursor-pointer vertical-mid tool-name-edit-icon"
                       onClick={(e: MouseEvent) => {
                         e?.stopPropagation();
                         handleEditToolName(row);
@@ -795,10 +798,11 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                           >
                             <Input
                               v-model={toolNameRowData.value.tool_name}
+                              ref={toolNameInputRef}
                               placeholder={t('请输入工具名称')}
                               maxlength={toolNameMaxLen.value}
                               tooltipsOptions={{
-                                content: () => (
+                                content: (
                                   <div>
                                     { t('MCP Server 名称 + 工具名称不得超过 64 字符') }
                                     ，
@@ -812,8 +816,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                                 placement: 'right',
                                 disabled: false,
                                 allowHtml: true,
-                              }}
-                              autofocus={true}
+                              } as Partial<IOptions>}
                             />
                           </Form.FormItem>
                         </Form>
@@ -1876,7 +1879,7 @@ const getSliderContentHeight = () => {
     if (modalContentEl) {
       (modalContentEl as HTMLElement).style.maxHeight = !isEnabledOAuth.value
         ? (modalContentEl as HTMLElement).style.height
-        : `calc(100% - ${(footerH ?? 0) + 54}px)`;
+        : `calc(100% - ${(footerH ?? 0) + 62}px)`;
     }
   });
 };
@@ -1948,6 +1951,9 @@ const handleEditToolName = (row: IMCPServerTool) => {
     tool_name: row.tool_name ?? row.name,
     isShow: true,
   };
+  setTimeout(() => {
+    toolNameInputRef.value?.focus?.();
+  }, 200);
 };
 
 const handleConfirmToolName = async (row: IMCPServerTool) => {
@@ -1969,7 +1975,10 @@ const handleConfirmToolName = async (row: IMCPServerTool) => {
 };
 
 const handleCancelToolName = () => {
-  toolNameRowData.value = {};
+  toolNameRowData.value.isShow = false;
+  setTimeout(() => {
+    toolNameRowData.value = {};
+  }, 200);
 };
 
 /**
@@ -2169,7 +2178,6 @@ defineExpose({
 
   :deep(.bk-modal-content) {
     overflow-x: hidden !important;
-    overflow-y: auto;
     background-color: #f5f7fa;
   }
 
@@ -2186,7 +2194,7 @@ defineExpose({
       &:hover {
 
         .icon-ag-edit-line {
-          display: block;
+          visibility: visible;
         }
       }
     }
@@ -2243,10 +2251,10 @@ defineExpose({
       position: relative;
       min-width: 92px;
       text-align: center;
+      cursor: pointer;
       border-top: 1px solid #dcdee5;
       border-right: 1px solid #dcdee5;
       transition: all 0.2s;
-      cursor: pointer;
 
       .required-mark {
         position: absolute;
@@ -2259,7 +2267,7 @@ defineExpose({
       &:hover,
       &.is-active {
         color: #3a84ff;
-        background-color: #ffffff;
+        background-color: #fff;
       }
     }
   }

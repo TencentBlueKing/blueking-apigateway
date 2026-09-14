@@ -194,7 +194,7 @@
                 </span>
               </section>
             </article>
-            <div class="pl-24px pr-24px mb-16px! text-14px">
+            <div class="pl-40px pr-24px mb-16px! text-14px">
               <div class="color-#4d4f56 font-700 mb-16px">
                 {{ t('描述') }}
               </div>
@@ -684,7 +684,7 @@ $code-color: #63656e;
     .tool-name,
     .tool-basics,
     .tool-detail-content {
-      margin: 24px;
+      margin: 24px 40px;
       background-color: #fff;
       border-radius: 2px;
     }
@@ -952,7 +952,7 @@ $code-color: #63656e;
 
     .title {
       padding: 0;
-      margin: 25px 0 17px;
+      margin: 24px 0 16px;
       font-size: 14px;
       font-weight: 700;
       line-height: 22px;

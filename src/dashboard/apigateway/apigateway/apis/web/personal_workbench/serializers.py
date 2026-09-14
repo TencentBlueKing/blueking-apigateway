@@ -121,7 +121,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
-    approvers = serializers.SerializerMethodField(help_text="当前网关管理员列表（潜在审批人，非历史实际审批人）")
+    approvers = serializers.SerializerMethodField(help_text="当前审批责任人列表（非历史实际审批人）")
     itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
 
@@ -166,7 +166,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
         )
 
     def get_approvers(self, obj) -> list[str]:
-        return obj.gateway.maintainers
+        return self.context["gateway_approvers"].get(obj.gateway_id, [])
 
     def get_itsm_ticket_url(self, obj) -> str:
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
@@ -256,7 +256,7 @@ class WorkbenchMCPPermissionApplyOutputSLZ(serializers.ModelSerializer):
 
     mcp_server = WorkbenchMCPServerBaseSLZ(help_text="MCP Server 信息")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
-    approvers = serializers.SerializerMethodField(help_text="当前网关管理员列表（潜在审批人，非历史实际审批人）")
+    approvers = serializers.SerializerMethodField(help_text="当前审批责任人列表（非历史实际审批人）")
     itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
     status_display = serializers.SerializerMethodField(help_text="审批状态显示")
 
@@ -289,7 +289,7 @@ class WorkbenchMCPPermissionApplyOutputSLZ(serializers.ModelSerializer):
         )
 
     def get_approvers(self, obj) -> list[str]:
-        return obj.mcp_server.gateway.maintainers
+        return self.context["gateway_approvers"].get(obj.mcp_server.gateway_id, [])
 
     def get_itsm_ticket_url(self, obj) -> str:
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)

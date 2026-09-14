@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
       title: t('告警策略'),
       matchRoute: 'MonitorAlarmStrategy',
       enabled: true,
+      permission: 'alarm-strategy',
     },
   },
   {
@@ -37,6 +38,7 @@ const routes: RouteRecordRaw[] = [
       title: t('告警记录'),
       matchRoute: 'MonitorAlarmHistory',
       enabled: true,
+      permission: 'alarm-history',
     },
   },
 ];

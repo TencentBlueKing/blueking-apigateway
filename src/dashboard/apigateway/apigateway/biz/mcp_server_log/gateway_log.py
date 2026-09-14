@@ -23,7 +23,10 @@ from apigateway.biz.access_log import LogSearchClient
 logger = logging.getLogger(__name__)
 
 
-def search_gateway_log(request_id: str, gateway_type: str = "upstream") -> Optional[Dict]:
+def search_gateway_log(
+    request_id: str,
+    gateway_type: str = "upstream",
+) -> Optional[Dict]:
     """通过 request_id 查询网关日志
 
     bk-apigateway 的 access_log ES 中，request_id 字段对应的是 X-Bkapi-Request-ID，
@@ -47,7 +50,10 @@ def search_gateway_log(request_id: str, gateway_type: str = "upstream") -> Optio
             gateway_type,
             request_id,
         )
-        client = LogSearchClient(request_id=request_id, time_range=7 * 24 * 60 * 60)  # 7天
+        client = LogSearchClient(
+            request_id=request_id,
+            time_range=7 * 24 * 60 * 60,
+        )
         total_count, logs = client.search_logs(offset=0, limit=1)
         logger.debug(
             "%s gateway log search result: request_id=%s, total_count=%s, has_logs=%s",

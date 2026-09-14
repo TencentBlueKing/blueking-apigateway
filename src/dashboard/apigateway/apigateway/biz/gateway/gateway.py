@@ -20,9 +20,10 @@
 import logging
 from collections import defaultdict
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 from pydantic import BaseModel, Field, TypeAdapter, field_validator
@@ -30,6 +31,8 @@ from pydantic import BaseModel, Field, TypeAdapter, field_validator
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
@@ -53,6 +56,7 @@ from apigateway.service.resource import delete_gateway_resource_versions, delete
 from apigateway.utils.dict import deep_update
 
 from .app_binding import GatewayAppBindingHandler
+from .members import add_gateway_administrators, replace_gateway_administrators
 from .related_app import GatewayRelatedAppHandler
 
 if TYPE_CHECKING:
@@ -98,14 +102,20 @@ class GatewayData(BaseModel):
 
 class GatewayHandler:
     @staticmethod
-    def list_gateways_by_user(username: str, tenant_id: str = "") -> List[Gateway]:
+    def list_gateways_by_user(
+        username: str,
+        tenant_id: str = "",
+        roles: Tuple[str, ...] = (GatewayRoleEnum.ADMINISTRATOR.value,),
+    ) -> List[Gateway]:
         """获取用户有权限的网关列表"""
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        gateway_ids = GatewayMember.objects.list_gateway_ids_by_username(username, roles)
+        queryset = Gateway.objects.filter(
+            id__in=gateway_ids,
+        )
         if tenant_id:
             queryset = gateway_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
-        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
-        return [gateway for gateway in queryset if gateway.has_permission(username)]
+        return list(queryset)
 
     @staticmethod
     def get_stages_with_release_status(gateway_ids: List[int]) -> Dict[int, list]:
@@ -539,6 +549,7 @@ class GatewaySaver:
 
         return None
 
+    @transaction.atomic
     def save(self) -> Gateway:
         # 网关为 None，则新建网关；非 None，则更新网关
         if not self._gateway:
@@ -557,7 +568,6 @@ class GatewaySaver:
             name=self._gateway_data.name,
             description=self._gateway_data.description,
             description_en=self._gateway_data.description_en,
-            maintainers=self._gateway_data.maintainers,
             status=self._gateway_data.status,
             is_public=self._gateway_data.is_public,
             kind=self._gateway_data.kind,
@@ -571,6 +581,10 @@ class GatewaySaver:
 
         # 2. save gateway
         gateway.save()
+        maintainers = self._gateway_data.maintainers
+        if not maintainers:
+            maintainers = [self.username or settings.GATEWAY_DEFAULT_CREATOR]
+        replace_gateway_administrators(gateway, maintainers, self.username or settings.GATEWAY_DEFAULT_CREATOR)
 
         # 3. save related data
         GatewayHandler.save_related_data(
@@ -630,13 +644,14 @@ class GatewaySaver:
         # 1. update gateway
         gateway.description = self._gateway_data.description
         gateway.description_en = self._gateway_data.description_en
-        # 更新网关时，仅新增网关管理员，不删除，以防止删除已更新的管理员数据
-        gateway.maintainers = sorted(set(self._gateway_data.maintainers + gateway.maintainers))
         gateway.is_public = self._gateway_data.is_public
         if self._gateway_data.gateway_type is not None:
             gateway.is_official = _is_official_gateway_type(self._gateway_data.gateway_type)
         gateway.updated_by = self.username
         gateway.save()
+        # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据
+        if self._gateway_data.maintainers:
+            add_gateway_administrators(gateway, self._gateway_data.maintainers, self.username)
 
         # 2. update auth config
         GatewayHandler.save_auth_config(

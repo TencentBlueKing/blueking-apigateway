@@ -58,6 +58,13 @@ export const useGateway = defineStore('useGateway', {
     async fetchGatewayDetail(id: number) {
       this.currentGateway = await getGatewayDetail(id) ?? {};
     },
+    // 确保当前网关详情已加载，幂等，供路由守卫前置调用
+    async ensureGatewayDetail(id: number) {
+      if (this.currentGateway?.id === id) {
+        return;
+      }
+      await this.fetchGatewayDetail(id);
+    },
     clearCurrentGateway() {
       this.currentGateway = null;
     },

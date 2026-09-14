@@ -398,6 +398,15 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-zonghe:before {
 	content: "\e148";
 }
+.icon-ag-infobox-danger:before {
+	content: "\e22b";
+}
+.icon-ag-infobox-success:before {
+	content: "\e22c";
+}
+.icon-ag-infobox-warning:before {
+	content: "\e22d";
+}
 .icon-ag-gengduo:before {
 	content: "\e156";
 }

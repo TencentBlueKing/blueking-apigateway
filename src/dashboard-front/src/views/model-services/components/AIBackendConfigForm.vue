@@ -259,14 +259,32 @@
         class="test-tip color-#299e56"
       ><AgIcon name="check-circle-shape" />{{ t('连通正常') }}</span>
       <span
-        v-else-if="config.testStatus === 'failed'"
-        class="test-tip color-#ea3636"
-      ><AgIcon name="close-circle-filled" />{{ t('连通失败') }}</span>
-      <span
-        v-else
+        v-else-if="config.testStatus === 'untested'"
         class="test-tip color-#979ba5"
       ><AgIcon name="info" />{{ t('配置变更后需重新测试') }}</span>
     </div>
+    <BkAlert
+      v-if="config.testStatus === 'failed'"
+      theme="danger"
+      class="mt-12px"
+    >
+      <template #icon>
+        <div class="line-height-20px">
+          <AgIcon
+            name="remind"
+            class="color-#ea3636"
+          />
+        </div>
+      </template>
+      <template #title>
+        <div class="ml-8px line-height-20px">
+          <div class="color-#ea3636">
+            {{ t('连通失败') }}
+          </div>
+          <div>{{ testFailMessage }}</div>
+        </div>
+      </template>
+    </BkAlert>
   </BkForm>
 </template>
 
@@ -309,6 +327,8 @@ const {
 } = defineProps<IProps>();
 
 const { t } = useI18n();
+
+const testFailMessage = ref('');
 
 const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 
@@ -495,6 +515,7 @@ const handleTest = async () => {
     return;
   }
   const testSnapshot = cloneDeep(buildAIBackendConfig(config.value, stageId));
+  testFailMessage.value = '';
   config.value.testStatus = 'testing';
   config.value.testConfigSnapshot = testSnapshot;
   const params: IBackendTestConnectionInputSLZ = {
@@ -521,8 +542,10 @@ const handleTest = async () => {
       theme: 'success',
     });
   }
-  catch {
+  catch (e) {
     config.value.testStatus = 'failed';
+    const _e = e as { error: { message: string } };
+    testFailMessage.value = _e?.error?.message ?? '';
   }
 };
 
@@ -594,7 +617,7 @@ defineExpose({ validate });
 }
 
 .danger-text {
-  color: #ea3636;
+  color: #F59500;
 }
 
 .timeout-item {

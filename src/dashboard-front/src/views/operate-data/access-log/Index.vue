@@ -21,7 +21,7 @@
     <div class="ag-top-header">
       <BkForm
         class="search-form"
-        form-type="vertical"
+        label-width="auto"
       >
         <BkFormItem
           :label="t('选择时间')"
@@ -32,7 +32,7 @@
             ref="datePickerRef"
             v-model="dateValue"
             type="datetimerange"
-            style="max-width: 310px;"
+            style="max-width: 300px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
             use-shortcut-text
@@ -48,7 +48,6 @@
           <BkSelect
             v-model="searchParams.stage_id"
             :clearable="false"
-            style="width: 150px;"
             @change="handleStageChange"
           >
             <BkOption
@@ -66,7 +65,6 @@
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 250px;"
             @change="handleBackendChange"
           >
             <BkOption
@@ -84,7 +82,6 @@
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 250px;"
             @change="handleBackendChange"
           >
             <BkOptionGroup
@@ -117,23 +114,24 @@
             :list="resourceList"
             :need-prefix="false"
             :placeholder="t('请输入资源名称或资源URL链接')"
-            style="min-width: 250px;"
             @change="handleResourceChange"
           />
         </BkFormItem>
-        <BkFormItem
-          :label="t('查询语句')"
-          class="ag-form-item-inline"
-        >
+        <BkFormItem class="ag-form-item-inline">
+          <template #label>
+            <span class="query-statement-label">
+              {{ t('查询语句') }}
+              <QueryUsagePopover @choose="handleChoose" />
+            </span>
+          </template>
           <SearchInput
             v-model:mode-value="keyword"
-            style="max-width: 466px; min-width: 340px;"
-            @choose="handleChoose"
+            style="min-width: 250px;"
             @search="handleSearch"
           />
         </BkFormItem>
         <BkFormItem label=" ">
-          <div style="display: flex;justify-content: center;align-items: center;">
+          <div class="flex justify-center items-center">
             <BkButton
               theme="primary"
               @click="() => handleSearch(keyword)"
@@ -385,6 +383,7 @@ import {
 
 import { copy } from '@/utils';
 import { useChartIntervalOption, useDatePicker } from '@/hooks';
+import QueryUsagePopover from './components/QueryUsagePopover.vue';
 import SearchInput from './components/SearchInput.vue';
 import { useAccessLog, useFeatureFlag, useGateway } from '@/stores';
 import {
@@ -1251,15 +1250,16 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .access-log-wrapper {
   min-height: calc(100vh - 208px);
-  padding: 20px 24px;
+  padding: 24px;
 
   .collapse-panel {
     padding: 24px;
     background-color: #fff;
+    box-shadow: 0 2px 4px 0 #1919290d;
 
     .collapse-panel-header {
       display: flex;
-      margin-bottom: 24px;
+      margin-bottom: 0;
       cursor: pointer;
       align-items: center;
 
@@ -1304,6 +1304,10 @@ onBeforeUnmount(() => {
         transform: rotate(-90deg);
       }
     }
+
+    &.bk-collapse-item-active .collapse-panel-header {
+      margin-bottom: 24px;
+    }
   }
 
   .search-term {
@@ -1342,44 +1346,42 @@ onBeforeUnmount(() => {
   }
 
   .ag-top-header {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 
-    :deep(.search-form) {
+    .query-statement-label {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .search-form {
       display: flex;
+      align-items: center;
       flex-wrap: wrap;
-      gap: 0 16px;
+      gap: 16px;
+      flex: 1;
+      min-width: 0;
 
-      .bk-form-item {
-
-        &:first-child {
-          margin-left: 0;
-        }
+      :deep(.bk-form-item) {
+        display: flex;
+        max-width: fit-content;
+        min-width: 0;
+        margin: 0;
+        align-items: center;
+        flex: 1;
 
         .bk-form-label {
-          padding: 0 15px 0 0;
+          width: auto;
+          text-align: right;
+          white-space: nowrap;
+          padding-right: 8px !important;
+        }
 
-          span {
-            display: inline-block;
-            line-height: 20px;
+        .bk-form-content {
+          .bk-input,
+          .bk-user-selector,
+          .member-selector {
+            width: 100%;
           }
-        }
-
-        .bk-form-content {
-          margin-left: 0 !important;
-        }
-      }
-
-      .ag-form-item-inline {
-        margin-top: 0 !important;
-        margin-left: 0 !important;
-
-        .bk-form-content {
-          display: flex !important;
-          font-size: unset;
-        }
-
-        .suffix {
-          margin-left: 4px;
         }
       }
     }

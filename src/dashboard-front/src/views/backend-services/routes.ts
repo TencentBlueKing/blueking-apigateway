@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
       title: t('后端服务'),
       matchRoute: 'BackendService',
       topMenu: 'Home',
+      permission: 'backend',
     },
   },
 ];

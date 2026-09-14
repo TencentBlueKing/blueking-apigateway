@@ -22,6 +22,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.biz.gateway import build_gateway_doc_maintainers
 from apigateway.biz.validators import BKAppCodeListValidator, GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
 from apigateway.common.django.validators import NameValidator
@@ -70,10 +71,10 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
 
     def get_maintainers(self, obj):
         # TODO: 网关对外的维护者（助手号），便于用户咨询网关问题，需要单独使用一个新字段去维护？
-        return obj.maintainers
+        return self.context["gateway_administrators_map"].get(obj.id, [])
 
     def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+        return build_gateway_doc_maintainers(obj, self.get_maintainers(obj))
 
 
 class GatewayRetrieveV1OutputSLZ(GatewayListV1OutputSLZ):
@@ -173,6 +174,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         kind = convert_gateway_kind_name_to_value(data["kind"])
         effective_kind = self.instance.kind if self.instance else kind
         self._validate_name(data["name"], data.get("api_type"), effective_kind)
+        if "maintainers" in data and not data["maintainers"]:
+            raise serializers.ValidationError({"maintainers": _("网关至少需要保留一个管理员。")})
 
         if self.instance is None:
             validate_gateway_name_kind(data["name"], kind)

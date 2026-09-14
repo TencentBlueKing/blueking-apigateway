@@ -32,7 +32,8 @@
       <div class="header-search">
         <BkInput
           v-model="filterData.keyword"
-          class="w-300px search-input"
+          class="w-380px search-input"
+          type="search"
           :placeholder="t('请输入告警策略名称，按Enter搜索')"
         />
       </div>

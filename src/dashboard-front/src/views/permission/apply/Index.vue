@@ -684,13 +684,6 @@ const handleClearSelection = () => {
 </script>
 
 <style lang="scss" scoped>
-.permission-apply-container {
-
-  .apply-content {
-    border: 1px solid #DCDEE5;
-  }
-}
-
 .apply-expand-alert {
   padding: 20px;
   line-height: 60px;
@@ -716,7 +709,7 @@ const handleClearSelection = () => {
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 24px;
+    gap: 16px;
     flex: 1;
     min-width: 0;
 
@@ -732,6 +725,7 @@ const handleClearSelection = () => {
         width: auto;
         text-align: right;
         white-space: nowrap;
+        padding-right: 8px !important;
       }
 
       .bk-form-content {

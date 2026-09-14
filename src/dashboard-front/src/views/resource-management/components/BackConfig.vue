@@ -57,6 +57,20 @@
               </template>
             </div>
           </BkOption>
+          <template #extension>
+            <div class="model-service-extension">
+              <div
+                class="model-service-extension-add"
+                @click="handleOpenService"
+              >
+                <AgIcon
+                  class="mr-6px color-#979ba5 text-16px"
+                  name="plus-circle"
+                />
+                <span>{{ t('去新建') }}</span>
+              </div>
+            </div>
+          </template>
         </BkSelect>
         <BkButton
           v-if="isEditService"
@@ -281,7 +295,7 @@
 
 <script setup lang="tsx">
 import { cloneDeep } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { Input, Message } from 'bkui-vue';
 import { useGateway } from '@/stores';
 import { t } from '@/locales';
 import {
@@ -317,7 +331,9 @@ const {
 const emit = defineEmits(['service-init']);
 
 const gatewayStore = useGateway();
+const router = useRouter();
 
+const timeOutInputRef = ref<InstanceType<typeof Input> & { focus?: () => void }>();
 const backRef = ref();
 const frontPath = ref('');
 const backConfigData = ref<any>({
@@ -447,6 +463,9 @@ const handleRefreshTime = () => {
 const handleShowPopover = () => {
   isShowPopConfirm.value = true;
   isTimeEmpty.value = false;
+  setTimeout(() => {
+    timeOutInputRef.value?.focus?.();
+  }, 200);
   servicesConfigs.value.forEach((item: any) => {
     item.isEditTime = false;
   });
@@ -481,16 +500,14 @@ const handleTimeOutInput = (value: string) => {
   isTimeEmpty.value = !value;
 };
 
-const handleClickOutSide = (e: Event) => {
-  if (
-    isShowPopConfirm.value
-    && !unref(popoverConfirmRef)
-      .content
-      .el
-      .contains(e.target)
-  ) {
-    handleCancelTime();
-  }
+const handleClickOutSide = (e: MouseEvent) => {
+  setTimeout(() => {
+    const target = e?.target as HTMLElement | null;
+    const isInsidePopover = !!target?.closest?.('.back-config-timeout-popover');
+    if (isShowPopConfirm.value && !isInsidePopover) {
+      handleCancelTime();
+    }
+  });
 };
 
 const renderTimeOutLabel = () => {
@@ -508,7 +525,7 @@ const renderTimeOutLabel = () => {
         <span>{t('超时时间')}</span>
         <bk-pop-confirm
           width="280"
-          trigger="manual"
+          trigger={'manual' as const}
           ref={popoverConfirmRef}
           title={t('批量修改超时时间')}
           extCls="back-config-timeout-popover"
@@ -528,14 +545,18 @@ const renderTimeOutLabel = () => {
                   ),
                 }}
                 onClick={() => handleShowPopover()}
-                v-clickOutSide={(e: any) => handleClickOutSide(e)}
+                v-clickOutSide={(e: MouseEvent) => {
+                  e.stopPropagation();
+                  handleClickOutSide(e);
+                }}
               />
             ),
             content: () => (
               <div class="back-config-timeout-wrapper">
                 <div class="back-config-timeout-content">
                   <div class="back-config-timeout-input">
-                    <bk-input
+                    <Input
+                      ref={timeOutInputRef}
                       v-model={timeOutValue.value}
                       maxlength={3}
                       overMaxLengthLimit={true}
@@ -547,7 +568,6 @@ const renderTimeOutLabel = () => {
                       // nativeOnKeypress={(value: string) => {
                       //   value = value.replace(/\d/g, '');
                       // }}
-                      autofocus={true}
                       suffix="s"
                       onEnter={() => handleConfirmTime()}
                     />
@@ -693,6 +713,17 @@ const handleCheckPath = async () => {
 //     isEditTime: true,
 //   });
 // };
+
+const handleOpenService = () => {
+  const name = isModelProxy ? 'ModelService' : 'BackendService';
+  const routeData = router.resolve({
+    name,
+    query: {
+      mode: 'add',
+    },
+  });
+  window.open(routeData.href, '_blank');
+};
 
 const handleMouseEnter = (e: Event, row: Record<string, number | string | boolean>) => {
   setTimeout(() => {
@@ -919,5 +950,17 @@ defineExpose({
 
 .back-config-timeout-popover {
   padding: 16px !important;
+}
+
+.model-service-extension {
+  margin: 0 auto;
+  cursor: pointer;
+
+  .model-service-extension-add {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #63656e;
+  }
 }
 </style>

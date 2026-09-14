@@ -306,6 +306,45 @@ var _ = Describe("Context", func() {
 	})
 
 	Describe("BkApiAllowedHeaders", func() {
+		It("forwards built-in IP headers without an explicit allowlist and deduplicates names", func() {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			c.Request.Header.Set("X-Real-IP", "192.0.2.1")
+			c.Request.Header.Set("X-Forwarded-For", "192.0.2.1, 192.0.2.2")
+			c.Request.Header.Set("X-Client-IP", "192.0.2.1")
+			c.Request.Header.Set("X-Custom", "custom")
+			for _, allowlist := range []string{"", "x-real-ip,X-REAL-IP,X-Custom"} {
+				util.SetBkApiAllowedHeaders(c, allowlist)
+				headers := util.GetBkApiAllowedHeaders(c.Request.Context())
+				Expect(headers).To(HaveKeyWithValue("X-Real-Ip", "192.0.2.1"))
+				Expect(headers).To(HaveKeyWithValue("X-Forwarded-For", "192.0.2.1, 192.0.2.2"))
+				Expect(headers).To(HaveKeyWithValue("X-Client-Ip", "192.0.2.1"))
+				Expect(headers).NotTo(HaveKey("x-real-ip"))
+				Expect(headers).NotTo(HaveKey("X-REAL-IP"))
+				if allowlist != "" {
+					Expect(headers).To(HaveKeyWithValue("X-Custom", "custom"))
+				}
+			}
+		})
+
+		It("omits absent built-in IP headers", func() {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			util.SetBkApiAllowedHeaders(c, "")
+			headers := util.GetBkApiAllowedHeaders(c.Request.Context())
+			Expect(headers).To(HaveLen(2))
+		})
+
+		It("preserves explicitly allowed empty IP headers", func() {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			util.SetBkApiAllowedHeaders(c, "x-real-ip,X-Forwarded-For,X-Client-IP")
+			headers := util.GetBkApiAllowedHeaders(c.Request.Context())
+			Expect(headers).To(HaveKeyWithValue("X-Real-Ip", ""))
+			Expect(headers).To(HaveKeyWithValue("X-Forwarded-For", ""))
+			Expect(headers).To(HaveKeyWithValue("X-Client-Ip", ""))
+		})
+
 		It("should set and get allowed headers", func() {
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)

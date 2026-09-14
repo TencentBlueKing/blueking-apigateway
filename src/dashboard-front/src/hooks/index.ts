@@ -58,3 +58,5 @@ export * from './use-personal-workbench';
 export * from './use-mcp-permission';
 // JSON转换
 export * from './use-json-transformer';
+// 当前网关角色
+export * from './use-gateway-role';

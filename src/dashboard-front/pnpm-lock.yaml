@@ -22,7 +22,7 @@ importers:
         version: 0.0.38(@blueking/bkui-library@0.0.0-beta.6)
       '@blueking/date-picker':
         specifier: 2.0.0-beta.48
-        version: 2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(dayjs@1.11.13)(vue@3.5.34(typescript@5.9.3))
+        version: 2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(dayjs@1.11.13)(vue@3.5.34(typescript@5.9.3))
       '@blueking/login-modal':
         specifier: ^1.0.6
         version: 1.0.6
@@ -34,13 +34,13 @@ importers:
         version: 2.0.5(dompurify@3.2.6)
       '@blueking/release-note':
         specifier: 0.0.1-beta.17
-        version: 0.0.1-beta.17(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(markdown-it@13.0.2)(vue@3.5.34(typescript@5.9.3))
+        version: 0.0.1-beta.17(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(markdown-it@13.0.2)(vue@3.5.34(typescript@5.9.3))
       '@blueking/status-tag':
         specifier: ^1.2.1
         version: 1.2.1(lit@3.3.3)
       '@blueking/tdesign-ui':
-        specifier: 0.0.2-beta.13
-        version: 0.0.2-beta.13(vue@3.5.34(typescript@5.9.3))
+        specifier: 0.0.7
+        version: 0.0.7(vue@3.5.34(typescript@5.9.3))
       '@blueking/xss-filter':
         specifier: ^0.0.10
         version: 0.0.10
@@ -63,8 +63,8 @@ importers:
         specifier: ^1.16.1
         version: 1.16.1(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
       bkui-vue:
-        specifier: 2.0.2-beta.93
-        version: 2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3))
+        specifier: 3.0.8
+        version: 3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3))
       change-case:
         specifier: ^5.4.4
         version: 5.4.4
@@ -487,6 +487,10 @@ packages:
     resolution: {integrity: sha512-KHp2IflsnGywDjBWDkR9iEqiWSpc8GIi0lgTT3mOElT0PP1tG26P4tmFI2YvAdzgq9RGyoHZQEIEdZy6Ec5xCA==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/runtime@7.29.7':
+    resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/template@7.27.2':
     resolution: {integrity: sha512-LPDZ85aEJyYSd18/DkjNh4/y1ntkE5KwUHWTiqgRxruuZL2F1yuHligVHLvcHY2vMHXttKFpJn6LwfI7cw7ODw==}
     engines: {node: '>=6.9.0'}
@@ -561,8 +565,8 @@ packages:
       tippy.js:
         optional: true
 
-  '@blueking/tdesign-ui@0.0.2-beta.13':
-    resolution: {integrity: sha512-tpQu+OSejo5WIikYfbQ6/jLV2KhG1ovj14GYKa7KGSmfvI/6sqrs6TgF41gMN9P6endSDQnMskRnFZn2ItNK/w==}
+  '@blueking/tdesign-ui@0.0.7':
+    resolution: {integrity: sha512-EeU1Vm2yyeDg6ZTW0Gpx/Qc6Zlkc5dRo1Cy5Y69Qtz9hWslS8Y8Q7WxnVNbRqzN8pMoexiDDOLUxiQ8Byy1YCg==}
     peerDependencies:
       vue: ^3
 
@@ -893,15 +897,6 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@floating-ui/core@1.7.2':
-    resolution: {integrity: sha512-wNB5ooIKHQc+Kui96jE/n69rHFWAVoxn5CAzL1Xdd8FG03cgY3MLO+GF9U3W737fYDSgPWA6MReKhBQBop6Pcw==}
-
-  '@floating-ui/dom@1.5.4':
-    resolution: {integrity: sha512-jByEsHIY+eEdCjnTVu+E3ephzTOzkQ8hgUfGwos+bg7NlH33Zc5uO+QHz1mrQUOgIKKDD1RtS201P9NvAfq3XQ==}
-
-  '@floating-ui/utils@0.2.10':
-    resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1695,6 +1690,9 @@ packages:
   '@types/sortablejs@1.15.8':
     resolution: {integrity: sha512-b79830lW+RZfwaztgs1aVPgbasJ8e7AXtZYHTELNXZPsERt4ymJdjV4OccDbHQAvHrCcFpbF78jkm0R6h/pZVg==}
 
+  '@types/sortablejs@1.15.9':
+    resolution: {integrity: sha512-7HP+rZGE2p886PKV9c9OJzLBI6BBJu1O7lJGYnPyG3fS4/duUCcngkNCjsLwIMV+WMqANe3tt4irrXHSIe68OQ==}
+
   '@types/tinycolor2@1.4.6':
     resolution: {integrity: sha512-iEN8J0BoMnsWBqjVbWH/c0G0Hh7O21lpR2/+PrvAVgWdzL7eexIFm4JN/Wn10PTcmNdtS6U67r499mlWMXOxNw==}
 
@@ -1703,6 +1701,9 @@ packages:
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  '@types/validator@13.15.10':
+    resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
 
   '@types/validator@13.15.2':
     resolution: {integrity: sha512-y7pa/oEJJ4iGYBxOpfAKn5b9+xuihvzDVnC/OSvlVnGxVg0pOqmjiMafiJ1KVNQEaPZf9HsEp5icEwGg8uIe5Q==}
@@ -2194,8 +2195,9 @@ packages:
   birpc@2.9.0:
     resolution: {integrity: sha512-KrayHS5pBi69Xi9JmvoqrIgYGDkD6mcSe/i6YKi3w5kekCLzrX4+nawcXqrj2tIp50Kw/mT/s3p+GVK0A0sKxw==}
 
-  bkui-vue@2.0.2-beta.93:
-    resolution: {integrity: sha512-26KnnB4jL1l9VyzUfeW9rr2nM+SEPei5x07gv9jQBT209JnyRwKGOqiMDimMeLNpWm+lAide5BhmDx6tfO36CA==}
+  bkui-vue@3.0.8:
+    resolution: {integrity: sha512-S5CVxVG7KhhPKGBBbplmiMXbwxec/+oOZrr9wUSBxjYgCAMgHuNHiePboJvpi2auX4GIwFOG+1HO0ZNJ5jFOqw==}
+    engines: {node: '>=20.19.0'}
     peerDependencies:
       highlight.js: ~11.5.0
       vue: ^3.2.0
@@ -3989,8 +3991,8 @@ packages:
     resolution: {integrity: sha512-9kY+CygyYM6j02t5YFHbNz2FN5QmYGv9zAjVp4lCDjlCw7amdckXlEt/bjMhUIfj4ThGRE4gCUH5+yGnNuPo5A==}
     engines: {node: '>=10.0.0'}
 
-  tdesign-icons-vue-next@0.3.7:
-    resolution: {integrity: sha512-Q5ebVty/TCqhBa0l/17kkhjC0pBAOGvn7C35MAt1xS+johKVM9QEDOy9R6XEl332AiwQ37MwqioczqjYC30ckw==}
+  tdesign-icons-vue-next@0.4.11:
+    resolution: {integrity: sha512-lBkRUy8bdb6lQLFOOkSb1LPdl4CmZRewrc8SOUlmWkDD/DG3BTsSd/ZQ4Z767pPSlypyvxwSwcJgRv6+zjubAQ==}
     peerDependencies:
       vue: ^3.0.0
 
@@ -4001,6 +4003,12 @@ packages:
 
   tdesign-vue-next@1.18.0:
     resolution: {integrity: sha512-JSLb82fXAsO0FXFuMBCiLDSIvUlqG2bZ1CkWOLYfE4IFyPQ2hwjTxTsJRugVoLRYBuhiIKprhmoucZ4tlgWrGg==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      vue: '>=3.1.0'
+
+  tdesign-vue-next@1.20.7:
+    resolution: {integrity: sha512-7/ulTYKbkPZf9QnwHFf0TiQXrCZDQwj2Kwn734AsJ4nHnuCMCjLy+UwN7/oMLZOjfKIg1+e9VPwg3yzXBoouhg==}
     engines: {node: '>= 18'}
     peerDependencies:
       vue: '>=3.1.0'
@@ -4191,10 +4199,6 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
-  validator@13.15.15:
-    resolution: {integrity: sha512-BgWVbCI72aIQy937xbawcs+hrVaN/CZ2UwutgaJ36hGqRrLNM+f5LUT/YPRbo8IV/ASeFzXszezV+y2+rq3l8A==}
-    engines: {node: '>= 0.10'}
-
   validator@13.15.26:
     resolution: {integrity: sha512-spH26xU080ydGggxRyR1Yhcbgx+j3y5jbNXk/8L+iRvdIEQ4uTRH2Sgf2dokud6Q4oAtsbNvJ1Ft+9xmm6IZcA==}
     engines: {node: '>= 0.10'}
@@ -4321,11 +4325,14 @@ packages:
     peerDependencies:
       typescript: '>=5.0.0'
 
-  vue-types@4.1.1:
-    resolution: {integrity: sha512-Jq2GZ/w6rExJbLA/h7nHBFLciu+YNekgox0DB64wN1snZ4IIJMq+qnqp1/vE4fc7vEjZcP5KGhLzkkSjIHLRzw==}
-    engines: {node: '>=12.16.0'}
+  vue-types@6.0.0:
+    resolution: {integrity: sha512-fBgCA4nrBrB8SCU/AN40tFq8HUxLGBvU2ds7a5+SEDse6dYc+TJyvy8mWiwwL8oWIC/aGS/8nTqmhwxApgU5eA==}
+    engines: {node: '>=14.0.0'}
     peerDependencies:
-      vue: ^2.0.0 || ^3.0.0
+      vue: ^3.0.0
+    peerDependenciesMeta:
+      vue:
+        optional: true
 
   vue@3.5.34:
     resolution: {integrity: sha512-WdLBG9gm02OgJIG9axd5Hpx0TFLdzVgfG2evFFu8Rur5O/IoGc5cMjnjh3tPL6GnRGsYvUhBSKVPYVcxRKpMCA==}
@@ -4717,6 +4724,8 @@ snapshots:
 
   '@babel/runtime@7.28.2': {}
 
+  '@babel/runtime@7.29.7': {}
+
   '@babel/template@7.27.2':
     dependencies:
       '@babel/code-frame': 7.27.1
@@ -4775,10 +4784,10 @@ snapshots:
     dependencies:
       '@vue/runtime-dom': 3.5.34
 
-  '@blueking/date-picker@2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(dayjs@1.11.13)(vue@3.5.34(typescript@5.9.3))':
+  '@blueking/date-picker@2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(dayjs@1.11.13)(vue@3.5.34(typescript@5.9.3))':
     dependencies:
       '@blueking/bkui-library': 0.0.0-beta.6
-      bkui-vue: 2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3))
+      bkui-vue: 3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3))
       dayjs: 1.11.13
       vue: 3.5.34(typescript@5.9.3)
 
@@ -4793,9 +4802,9 @@ snapshots:
     dependencies:
       dompurify: 3.2.6
 
-  '@blueking/release-note@0.0.1-beta.17(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(markdown-it@13.0.2)(vue@3.5.34(typescript@5.9.3))':
+  '@blueking/release-note@0.0.1-beta.17(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(markdown-it@13.0.2)(vue@3.5.34(typescript@5.9.3))':
     dependencies:
-      bkui-vue: 2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3))
+      bkui-vue: 3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3))
       markdown-it: 13.0.2
       vue: 3.5.34(typescript@5.9.3)
 
@@ -4803,22 +4812,22 @@ snapshots:
     dependencies:
       lit: 3.3.3
 
-  '@blueking/tdesign-ui@0.0.2-beta.13(vue@3.5.34(typescript@5.9.3))':
+  '@blueking/tdesign-ui@0.0.7(vue@3.5.34(typescript@5.9.3))':
     dependencies:
-      '@babel/runtime': 7.28.2
+      '@babel/runtime': 7.29.7
       '@popperjs/core': 2.11.8
       '@types/lodash-es': 4.17.12
-      '@types/sortablejs': 1.15.8
+      '@types/sortablejs': 1.15.9
       '@types/tinycolor2': 1.4.6
-      '@types/validator': 13.15.2
+      '@types/validator': 13.15.10
       dayjs: 1.11.10
       lodash-es: 4.18.1
       mitt: 3.0.1
       sortablejs: 1.15.6
-      tdesign-icons-vue-next: 0.3.7(vue@3.5.34(typescript@5.9.3))
-      tdesign-vue-next: 1.18.0(vue@3.5.34(typescript@5.9.3))
+      tdesign-icons-vue-next: 0.4.2(vue@3.5.34(typescript@5.9.3))
+      tdesign-vue-next: 1.20.7(vue@3.5.34(typescript@5.9.3))
       tinycolor2: 1.6.0
-      validator: 13.15.15
+      validator: 13.15.26
       vue: 3.5.34(typescript@5.9.3)
 
   '@blueking/xss-filter@0.0.10':
@@ -5117,17 +5126,6 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
-
-  '@floating-ui/core@1.7.2':
-    dependencies:
-      '@floating-ui/utils': 0.2.10
-
-  '@floating-ui/dom@1.5.4':
-    dependencies:
-      '@floating-ui/core': 1.7.2
-      '@floating-ui/utils': 0.2.10
-
-  '@floating-ui/utils@0.2.10': {}
 
   '@humanfs/core@0.19.1': {}
 
@@ -5634,6 +5632,8 @@ snapshots:
 
   '@types/sortablejs@1.15.8': {}
 
+  '@types/sortablejs@1.15.9': {}
+
   '@types/tinycolor2@1.4.6': {}
 
   '@types/to-json-schema@0.2.4':
@@ -5641,6 +5641,8 @@ snapshots:
       '@types/json-schema': 7.0.15
 
   '@types/trusted-types@2.0.7': {}
+
+  '@types/validator@13.15.10': {}
 
   '@types/validator@13.15.2': {}
 
@@ -6265,9 +6267,9 @@ snapshots:
 
   birpc@2.9.0: {}
 
-  bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)):
+  bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)):
     dependencies:
-      '@floating-ui/dom': 1.5.4
+      '@blueking/login-userinfo': 0.0.13(vue@3.5.34(typescript@5.9.3))
       '@popperjs/core': 2.11.8
       date-fns: 2.30.0
       dompurify: 3.2.6
@@ -6277,7 +6279,7 @@ snapshots:
       lodash: 4.18.1
       tinycolor2: 1.6.0
       vue: 3.5.34(typescript@5.9.3)
-      vue-types: 4.1.1(vue@3.5.34(typescript@5.9.3))
+      vue-types: 6.0.0(vue@3.5.34(typescript@5.9.3))
 
   boolbase@1.0.0: {}
 
@@ -8090,7 +8092,7 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
-  tdesign-icons-vue-next@0.3.7(vue@3.5.34(typescript@5.9.3)):
+  tdesign-icons-vue-next@0.4.11(vue@3.5.34(typescript@5.9.3)):
     dependencies:
       '@babel/runtime': 7.28.2
       vue: 3.5.34(typescript@5.9.3)
@@ -8113,6 +8115,23 @@ snapshots:
       mitt: 3.0.1
       sortablejs: 1.15.6
       tdesign-icons-vue-next: 0.4.2(vue@3.5.34(typescript@5.9.3))
+      tinycolor2: 1.6.0
+      validator: 13.15.26
+      vue: 3.5.34(typescript@5.9.3)
+
+  tdesign-vue-next@1.20.7(vue@3.5.34(typescript@5.9.3)):
+    dependencies:
+      '@babel/runtime': 7.28.2
+      '@popperjs/core': 2.11.8
+      '@types/lodash-es': 4.17.12
+      '@types/sortablejs': 1.15.8
+      '@types/tinycolor2': 1.4.6
+      '@types/validator': 13.15.2
+      dayjs: 1.11.13
+      lodash-es: 4.18.1
+      mitt: 3.0.1
+      sortablejs: 1.15.6
+      tdesign-icons-vue-next: 0.4.11(vue@3.5.34(typescript@5.9.3))
       tinycolor2: 1.6.0
       validator: 13.15.26
       vue: 3.5.34(typescript@5.9.3)
@@ -8307,8 +8326,6 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  validator@13.15.15: {}
-
   validator@13.15.26: {}
 
   varint@6.0.0: {}
@@ -8426,9 +8443,8 @@ snapshots:
       '@vue/language-core': 2.2.12(typescript@5.9.3)
       typescript: 5.9.3
 
-  vue-types@4.1.1(vue@3.5.34(typescript@5.9.3)):
-    dependencies:
-      is-plain-object: 5.0.0
+  vue-types@6.0.0(vue@3.5.34(typescript@5.9.3)):
+    optionalDependencies:
       vue: 3.5.34(typescript@5.9.3)
 
   vue@3.5.34(typescript@5.9.3):

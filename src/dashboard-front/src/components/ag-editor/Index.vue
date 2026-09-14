@@ -17,7 +17,10 @@
  */
 
 <template>
-  <div class="codemirror">
+  <div
+    class="codemirror"
+    :class="{ 'with-tools': showFormat || showCopy || showFullScreen }"
+  >
     <div
       id="monacoEditor"
       ref="monacoEditor"
@@ -393,11 +396,19 @@ defineExpose({
 .codemirror {
   position: relative;
   width: 100%;
-  height: calc(100% - 26px);
+  height: 100%;
 
   .monaco-editor {
     position: absolute;
-    inset: 26px 0 0;
+    inset: 0;
+  }
+
+  &.with-tools {
+    height: calc(100% - 26px);
+
+    .monaco-editor {
+      inset: 26px 0 0;
+    }
   }
 
   .tools {

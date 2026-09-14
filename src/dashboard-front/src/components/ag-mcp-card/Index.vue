@@ -381,7 +381,7 @@ const handleEnableClick = () => {
 };
 
 const handleDeleteClick = () => {
-  if (Boolean(server.status)) return;
+  if (server.status) return;
   emit('delete', server.id);
 };
 

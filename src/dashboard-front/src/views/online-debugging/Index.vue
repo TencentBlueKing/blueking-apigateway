@@ -429,11 +429,15 @@
             </div>
           </template>
           <template #main>
-            <div class="request-payload">
+            <div
+              class="request-payload"
+              :class="{ 'payload-content-height': tab !== 'Body' }"
+            >
               <RequestPayload
                 ref="requestPayloadRef"
                 :schema="payloadType"
                 :tab="tab"
+                @active-change="handlePayloadActiveChange"
               />
             </div>
           </template>
@@ -911,6 +915,10 @@ watch(isShowDoc, () => {
     });
   }
 });
+
+const handlePayloadActiveChange = (value: string) => {
+  tab.value = value;
+};
 
 const getApigwReleaseResources = async () => {
   if (!stage.value) return;
@@ -1605,7 +1613,7 @@ init();
     }
 
     .search-source {
-      margin: 0 24px 18px;
+      margin: 0 24px 16px;
     }
   }
 
@@ -1771,6 +1779,11 @@ init();
   border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
   box-sizing: border-box;
+
+  &.payload-content-height {
+    height: auto;
+    max-height: calc(100% - 24px);
+  }
 }
 
 .request-response {
@@ -1807,7 +1820,7 @@ init();
 
   .my-menu-header {
     display: flex;
-    padding: 7px 24px;
+    padding: 0px 24px 7px;
     cursor: pointer;
     align-items: center;
 

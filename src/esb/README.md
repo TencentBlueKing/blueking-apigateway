@@ -44,6 +44,20 @@ JOB_CLIENT_CERT = "xxx"
 JOB_CLIENT_KEY = "xxx"
 ```
 
+#### CC 请求携带 JWT
+
+在 ESB 部署环境中设置以下环境变量，并重启 ESB 进程：
+
+```bash
+BK_ESB_CC_JWT_ENABLED=true
+```
+
+默认值为 `false`。开启后，通过 `CCClient` 转发的 CC 请求会携带 ESB 签发的
+`X-Bkapi-JWT`，原有身份请求头保持不变。
+
+ESB 需要已配置 JWT 签名私钥，否则 JWT 为空；CC 如需验签，应使用对应公钥。
+此开关只控制 ESB 发送 JWT，不会开启 CC 服务端的验签功能。
+
 ### 2. 开发新组件
 
 以系统 my_app，组件 get_hello_msg 为例，说明新组件开发过程

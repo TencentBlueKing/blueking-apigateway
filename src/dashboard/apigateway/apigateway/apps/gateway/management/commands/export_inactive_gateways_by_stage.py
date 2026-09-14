@@ -25,6 +25,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Release, ResourceVersion, Stage
 
@@ -93,6 +94,9 @@ class Command(BaseCommand):
 
         # 获取无访问记录的网关和环境
         export_gateway_stage_set = gateway_stage_set - statistics_gateway_stage_set
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(
+            gateway_id for gateway_id, _ in export_gateway_stage_set
+        )
         data = [
             {
                 "gateway_name": obj.gateway.name,
@@ -100,7 +104,7 @@ class Command(BaseCommand):
                 "desc": obj.description or "",
                 "access_url": template.format(gateway_id=obj.gateway.id, stage_name=obj.name),
                 "deactivated": "否" if obj.is_active else "是",
-                "maintainers": obj.gateway._maintainers,
+                "maintainers": ";".join(gateway_administrators.get(obj.gateway_id, [])),
                 "created_by": obj.created_by,
                 "created_time": obj.created_time,
                 "options": "",

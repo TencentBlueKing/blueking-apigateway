@@ -18,7 +18,7 @@
 
 <template>
   <div class="resource-container page-wrapper-padding">
-    <div class="flex justify-between mb-15px">
+    <div class="flex justify-between mb-16px">
       <div class="flex grow-1 items-center">
         <div class="mr-10px">
           <BkButton
@@ -29,10 +29,11 @@
           </BkButton>
         </div>
       </div>
-      <div class="flex grow-1 justify-end">
+      <div class="flex justify-end">
         <BkInput
           v-model="keyword"
-          class="mx-10px"
+          class="mx-10px w-380px"
+          type="search"
           :placeholder="t('请输入 SDK 版本号，资源版本或语言')"
           @change="handleKeywordChange"
         />

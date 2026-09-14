@@ -24,8 +24,17 @@
   >
     <template #header>
       <div class="log-details-title">
-        <div class="log-details-name">
-          【{{ logDetails?.stage?.name }}】{{ t('发布日志详情') }}
+        <div class="flex items-center mr-8px">
+          <div class="text-14px color-#313238 font-700">
+            {{ t('发布日志详情') }}
+          </div>
+          <Divider
+            direction="vertical"
+            type="solid"
+          />
+          <div class="text-14px color-#979ba5">
+            {{ logDetails?.stage?.name || '--' }}
+          </div>
         </div>
         <BkTag
           v-if="logDetails?.status === 'success'"
@@ -79,10 +88,11 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import { getReleaseEvents } from '@/services/source/release';
-import AgEditor from '@/components/ag-editor/Index.vue';
+import { Divider } from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { useStage } from '@/stores';
+import { getReleaseEvents } from '@/services/source/release';
+import AgEditor from '@/components/ag-editor/Index.vue';
 
 interface IStep {
   name?: string
@@ -265,15 +275,8 @@ defineExpose({ showSideslider });
   display: flex;
   align-items: center;
 
-  .log-details-name {
-    margin-right: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #2c2e35;
-  }
-
   .title-publish-info {
-    margin-left: 32px;
+    margin-left: 16px;
     font-size: 12px;
     color: #63656E;
 
@@ -286,18 +289,22 @@ defineExpose({ showSideslider });
 .log-details-main {
   display: flex;
   height: calc(100vh - 52px);
-  padding: 16px 16px 0;
+  padding: 24px 8px 24px 24px;
   box-sizing: border-box;
-  align-items: center;
+  align-items: stretch;
 
   .main-process {
     width: 270px;
     height: 100%;
     padding: 16px;
-    margin-right: 16px;
+    margin-right: 24px;
     overflow-y: auto;
     background-color: #f5f7fa;
     box-sizing: border-box;
+
+    :deep(.bk-timeline .bk-timeline-dot) {
+      padding-bottom: 16px !important;
+    }
 
     :deep(.bk-timeline .bk-timeline-dot .bk-timeline-icon .bk-timeline-icon-inner>:first-child) {
       font-size: 20px !important;
@@ -318,7 +325,7 @@ defineExpose({ showSideslider });
       border-left: 1px dashed #d8d8d8;
 
       &.bk-timeline-large {
-        margin-top: 11px;
+        margin-top: 0px;
 
         &::before {
           top: -10px;

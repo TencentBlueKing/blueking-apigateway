@@ -32,6 +32,7 @@ from apigateway.apps.metrics.constants import (
     MetricsStepEnum,
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.service.prometheus import (
     MetricsInstantFactory,
@@ -51,6 +52,8 @@ from .serializers import (
 
 
 class QueryRangeApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @extend_schema(
         parameters=[MetricsQueryRangeInputSLZ()],
         responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
@@ -107,6 +110,8 @@ class QueryRangeApi(generics.ListAPIView):
 
 
 class QueryInstantApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @extend_schema(
         parameters=[MetricsQueryInstantInputSLZ()],
         responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
@@ -178,6 +183,8 @@ class QueryInstantApi(generics.ListAPIView):
 
 
 class QuerySummaryApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @extend_schema(
         parameters=[MetricsQuerySummaryInputSLZ()],
         responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
@@ -209,6 +216,8 @@ class QuerySummaryApi(generics.ListAPIView):
 
 
 class QuerySummaryCallerListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @extend_schema(
         parameters=[MetricsQuerySummaryCallerListInputSLZ()],
         responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
@@ -240,6 +249,8 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
 
 @extend_schema(methods=["POST"], exclude=True)
 class QuerySummaryExportApi(generics.CreateAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     @extend_schema(
         description="资源-蓝鲸应用调用统计导出",
         parameters=[MetricsQuerySummaryExportInputSLZ],

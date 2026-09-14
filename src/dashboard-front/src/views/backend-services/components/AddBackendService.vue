@@ -105,7 +105,6 @@
                     <BkFormItem
                       :label="t('描述')"
                       property="description"
-                      class="m-t-12px"
                     >
                       <BkInput
                         v-model="baseInfo.description"
@@ -120,7 +119,9 @@
 
             <BkCollapsePanel name="stage-config">
               <template #header>
-                <div class="flex items-center panel-header">
+                <div
+                  :class="`flex items-center panel-header ${!activeKey?.includes('stage-config') ? 'mb-0!' : ''}`"
+                >
                   <AngleUpFill
                     :class="[
                       activeKey?.includes('stage-config')
@@ -346,7 +347,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="pl-40px">
+        <div class="pl-24px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"
@@ -912,7 +913,6 @@ defineExpose({ show });
   }
 
   .title {
-    margin-left: 8px;
     font-size: 14px;
     font-weight: 700;
     color: #323237;
@@ -924,7 +924,7 @@ defineExpose({ show });
   }
 
   .slider-content {
-    padding: 20px 34px 32px 40px;
+    padding: 24px 24px 22px 24px;
 
     .bk-form-label {
       line-height: 22px;
@@ -1203,6 +1203,15 @@ defineExpose({ show });
     .dialog-footer {
       text-align: center;
     }
+  }
+}
+</style>
+
+<style lang="scss">
+.backend-service-slider {
+
+  .drawer-content {
+    scrollbar-gutter: unset;
   }
 }
 </style>

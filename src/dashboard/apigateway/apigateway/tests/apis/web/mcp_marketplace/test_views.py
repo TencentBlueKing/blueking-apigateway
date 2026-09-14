@@ -817,7 +817,6 @@ class TestMCPMarketplaceCategoryListApi:
         same_tenant_gateway = G(
             Gateway,
             name=faker.pystr()[:20],
-            _maintainers="admin",
             status=GatewayStatusEnum.ACTIVE.value,
             is_public=True,
             tenant_mode=TenantModeEnum.SINGLE.value,
@@ -842,7 +841,6 @@ class TestMCPMarketplaceCategoryListApi:
         other_tenant_gateway = G(
             Gateway,
             name=faker.pystr()[:20],
-            _maintainers="admin",
             status=GatewayStatusEnum.ACTIVE.value,
             is_public=True,
             tenant_mode=TenantModeEnum.SINGLE.value,

@@ -28,6 +28,7 @@ const routes: RouteRecordRaw[] = [
       title: t('流水日志'),
       matchRoute: 'AccessLog',
       topMenu: 'home',
+      permission: 'runtime',
     },
   },
   {
@@ -39,6 +40,7 @@ const routes: RouteRecordRaw[] = [
       matchRoute: 'AccessLogDetail',
       topMenu: 'home',
       isMenu: false,
+      permission: 'runtime',
     },
   },
   {
@@ -49,6 +51,7 @@ const routes: RouteRecordRaw[] = [
       title: t('仪表盘'),
       matchRoute: 'Dashboard',
       topMenu: 'home',
+      permission: 'runtime',
     },
   },
   {
@@ -59,6 +62,7 @@ const routes: RouteRecordRaw[] = [
       title: t('统计报表'),
       matchRoute: 'Report',
       topMenu: 'home',
+      permission: 'runtime',
     },
   },
 ];

@@ -24,6 +24,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apigateway.apps.plugin.models import PluginBinding, PluginType
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Resource
 
@@ -77,15 +78,16 @@ class Command(BaseCommand):
         }
 
     def _build_gateway_list_section(self, plugin_bindings) -> Optional[Dict[str, Any]]:
-        gateway_ids = plugin_bindings.values_list("gateway_id", flat=True).distinct()
+        gateway_ids = list(plugin_bindings.values_list("gateway_id", flat=True).distinct())
         gateways = Gateway.objects.filter(id__in=gateway_ids)
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(gateway_ids)
 
         gateway_data = [
             {
                 "gateway_id": gateway.id,
                 "gateway_name": gateway.name,
                 "gateway_desc": gateway.description or "",
-                "gateway_maintainers": gateway._maintainers or "",
+                "gateway_maintainers": ";".join(gateway_administrators.get(gateway.id, [])),
                 "gateway_status": "启用" if gateway.is_active else "停用",
             }
             for gateway in gateways

@@ -34,6 +34,8 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply, MCPServerCategory
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
@@ -218,6 +220,12 @@ class TestMCPServerAppPermissionApplyCreateApi:
         )
 
         another_gateway = G(Gateway, status=GatewayStatusEnum.ACTIVE.value)
+        G(
+            GatewayMember,
+            gateway=another_gateway,
+            username="another-admin",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
         another_stage = G(Stage, gateway=another_gateway, status=StageStatusEnum.ACTIVE.value)
         another_mcp_server = G(
             MCPServer,
@@ -780,7 +788,11 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_public_mcp_server(self, request_view, fake_gateway, mocker):
         """测试获取公开的 MCPServer 详情"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -837,7 +849,11 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_returns_tool_name_with_rename(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回 tool_name（重命名后的名称）"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -904,7 +920,11 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -953,7 +973,11 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回 oauth2_public_client_enabled=False"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1002,8 +1026,8 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_private_mcp_server_by_maintainer(self, request_view, fake_gateway, mocker):
         """测试网关维护者获取私有的 MCPServer 详情"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["test_user"]
         fake_gateway.save()
+        GatewayMember.objects.filter(gateway=fake_gateway).update(username="test_user")
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
         mcp_server = G(
@@ -1050,7 +1074,6 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_private_mcp_server_by_non_maintainer(self, request_view, fake_gateway, mocker):
         """测试非维护者无法获取私有的 MCPServer 详情"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1152,7 +1175,11 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_returns_categories(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回分类信息"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1212,7 +1239,11 @@ class TestMCPServerRetrieveApi:
     def test_retrieve_returns_tool_schema(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回工具的 schema 信息"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
-        fake_gateway.maintainers = ["admin"]
+        GatewayMember.objects.update_or_create(
+            gateway=fake_gateway,
+            username="admin",
+            defaults={"role": GatewayRoleEnum.ADMINISTRATOR.value},
+        )
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)

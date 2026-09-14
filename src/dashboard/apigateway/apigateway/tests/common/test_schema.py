@@ -44,7 +44,7 @@ class TestUrls:
 
                 assert response.status_code == 200
                 schema = response.json()
-                assert schema["openapi"].startswith("3.")
+                assert schema["openapi"] == "3.1.0"
                 assert "swagger" not in schema
                 alarm_record_parameters = schema["paths"]["/api/v2/inner/apps/{app_code}/monitor/alarm-records/"][
                     "get"
@@ -171,7 +171,7 @@ def test_oas3_response_and_upload_contracts(client, documentation_urls):
 def test_yaml_and_offline_documentation_viewers(client, documentation_urls):
     response = client.get("/backend/docs/auto/swagger.yaml")
     assert response.status_code == 200
-    assert yaml.safe_load(response.content)["openapi"].startswith("3.")
+    assert yaml.safe_load(response.content)["openapi"] == "3.1.0"
     for url in ("/backend/docs/auto/swagger/", "/backend/docs/auto/redoc/"):
         response = client.get(url)
         assert response.status_code == 200
@@ -360,3 +360,36 @@ def test_patch_handlers_that_support_partial_payload_keep_optional_fields(client
     schema = resolve_schema(document, body["content"]["application/json"]["schema"])
     assert not schema.get("required")
     assert not body.get("required")
+
+
+def test_gateway_member_and_current_user_role_contracts(client, documentation_urls):
+    document = client.get("/backend/docs/auto/swagger.json").json()
+    members = document["paths"]["/gateways/{gateway_id}/members/"]
+    listing = members["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert listing["properties"]["data"]["type"] == "array"
+    member = resolve_schema(document, listing["properties"]["data"]["items"])
+    assert set(member["properties"]) == {"id", "username", "role"}
+    assert not any(parameter["name"] in {"limit", "offset"} for parameter in members["get"]["parameters"])
+
+    body = members["post"]["requestBody"]
+    assert body["required"] is True
+    batch = body["content"]["application/json"]["schema"]
+    assert batch["type"] == "array"
+    assert set(resolve_schema(document, batch["items"])["required"]) == {"username", "role"}
+    created = members["post"]["responses"]["201"]["content"]["application/json"]["schema"]
+    result = resolve_schema(document, created["properties"]["data"])
+    assert set(result["properties"]) == {"created", "skipped"}
+    assert all(field["type"] == "array" for field in result["properties"].values())
+
+    detail = document["paths"]["/gateways/{gateway_id}/members/{member_id}/"]
+    patch = detail["patch"]["requestBody"]
+    assert patch["required"] is True
+    assert resolve_schema(document, patch["content"]["application/json"]["schema"])["required"] == ["role"]
+    updated = detail["patch"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert resolve_schema(document, updated["properties"]["data"]) == member
+    assert "requestBody" not in detail["delete"]
+    assert "content" not in detail["delete"]["responses"]["204"]
+
+    role = document["paths"]["/gateways/{gateway_id}/me/role/"]["get"]
+    envelope = role["responses"]["200"]["content"]["application/json"]["schema"]
+    assert set(resolve_schema(document, envelope["properties"]["data"])["properties"]) == {"role"}

@@ -172,22 +172,16 @@
               </div>
             </template>
             <template v-else>
-              <BkTable
-                class="table-layout"
-                :data="tableData"
-                show-overflow-tooltip
-                row-hover="auto"
-                :border="['outer', 'col']"
-              >
-                <BkTableColumn
-                  :label="t('名称')"
-                  prop="name"
-                />
-                <BkTableColumn
-                  :label="t('值')"
-                  prop="value"
-                />
-              </BkTable>
+              <AgTable
+                class="request-header-table"
+                size="small"
+                table-row-key="value"
+                local-page
+                :show-pagination="false"
+                :show-settings="false"
+                :table-data="tableData"
+                :columns="requestHeaderCols"
+              />
             </template>
           </div>
         </template>
@@ -206,6 +200,7 @@
 import { useFeatureFlag } from '@/stores';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import AiChatSlider from '@/components/ai-seek/AiChatSlider.vue';
 
@@ -261,6 +256,17 @@ const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
 const data = ref<any>({});
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
+
+const requestHeaderCols = [
+  {
+    title: t('名称'),
+    colKey: 'name',
+  },
+  {
+    title: t('值'),
+    colKey: 'value',
+  },
+];
 
 const statusColor = computed(() => {
   let color = 'value';
@@ -501,13 +507,6 @@ defineExpose({ setInit });
       background-color: #fff;
       border-radius: 2px;
     }
-  }
-}
-
-.table-layout {
-  :deep(.bk-scrollbar .bk__rail-x) {
-    display: none;
-    opacity: 0
   }
 }
 </style>

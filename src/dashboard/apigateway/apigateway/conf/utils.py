@@ -344,6 +344,11 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         ),
         # 网关认证
         "AUTH": env.str("DOC_LINK_AUTH", default=f"{doc_link_prefix}/UserGuide/Explanation/authorization.md"),
+        # 个人令牌认证
+        "AUTH_PERSONAL_TOKEN": env.str(
+            "DOC_LINK_AUTH_PERSONAL_TOKEN",
+            default=f"{doc_link_prefix}/UserGuide/Explanation/personal-token.md",
+        ),
         # 负载均衡
         "LOADBALANCE": env.str(
             "DOC_LINK_LOADBALANCE", default=f"{doc_link_prefix}/UserGuide/Explanation/loadbalance.md"

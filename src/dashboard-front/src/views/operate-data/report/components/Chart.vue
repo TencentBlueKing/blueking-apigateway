@@ -329,7 +329,6 @@ defineExpose({ syncParams });
     margin-left: 24px;
     color: #313238;
     font-size: 14px;
-    font-weight: bold;
     line-height: 22px;
   }
   .line-chart {
@@ -406,7 +405,15 @@ defineExpose({ syncParams });
     vertical-align: middle;
   }
 }
-.basic-height {
-  height: 286px;
+
+.ap-nodata {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 100px);
+
+  &.basic-height {
+    height: 286px;
+  }
 }
 </style>

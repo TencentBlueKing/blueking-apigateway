@@ -24,7 +24,7 @@ urlpatterns = [
     path("check-name-available/", views.GatewayCheckNameAvailableApi.as_view(), name="gateways.check_name_available"),
     path("repo-authorization/", views.GatewayRepoAuthorizationApi.as_view(), name="gateways.repo_authorization"),
     path(
-        # 使用 gateway_id，复用 GatewayPermission 的权限校验
+        # 使用 gateway_id，复用 GatewayActionPermission 的权限校验
         "<int:gateway_id>/",
         include(
             [

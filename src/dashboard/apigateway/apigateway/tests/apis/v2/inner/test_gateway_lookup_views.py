@@ -6,6 +6,8 @@ from django.urls import reverse
 from django.utils import translation
 
 from apigateway.apis.v2.inner import serializers as inner_serializers
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
@@ -170,7 +172,13 @@ class TestGatewayLookupApi:
         mock_convert_maintainers.assert_not_called()
 
     def test_returns_default_fields_without_maintainers(self, request_view):
-        gateway = G(Gateway, name="all-fields", _maintainers="admin", is_official=True)
+        gateway = G(Gateway, name="all-fields", is_official=True)
+        G(
+            GatewayMember,
+            gateway=gateway,
+            username="admin",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
 
         response = request_view(
             method="GET",
@@ -194,8 +202,14 @@ class TestGatewayLookupApi:
         "apigateway.apis.v2.inner.serializers.ResourcePermissionHandler.convert_gateway_maintainers_to_display_names"
     )
     def test_default_fields_do_not_query_bk_user(self, mock_convert_maintainers, request_view):
-        G(Gateway, name="gateway-a", _maintainers="admin")
-        G(Gateway, name="gateway-b", _maintainers="admin")
+        for name in ("gateway-a", "gateway-b"):
+            gateway = G(Gateway, name=name)
+            G(
+                GatewayMember,
+                gateway=gateway,
+                username="admin",
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
 
         response = request_view(
             method="GET",
@@ -212,7 +226,13 @@ class TestGatewayLookupApi:
     )
     def test_maintainers_requires_explicit_fields(self, mock_convert_maintainers, request_view):
         mock_convert_maintainers.return_value = ["Admin User"]
-        gateway = G(Gateway, name="with-maintainers", _maintainers="admin")
+        gateway = G(Gateway, name="with-maintainers")
+        G(
+            GatewayMember,
+            gateway=gateway,
+            username="admin",
+            role=GatewayRoleEnum.ADMINISTRATOR.value,
+        )
 
         response = request_view(
             method="GET",

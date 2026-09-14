@@ -53,6 +53,8 @@
         <BkInput
           v-model="filterData.keyword"
           :placeholder="t('搜索版本号')"
+          type="search"
+          class="w-380px"
         />
       </div>
     </div>

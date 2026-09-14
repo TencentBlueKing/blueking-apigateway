@@ -22,6 +22,7 @@ import datetime
 from django.core.management.base import BaseCommand
 from django.utils.translation import gettext as _
 
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.constants import (
     GatewayStatusEnum,
     ResourceVersionSchemaEnum,
@@ -45,17 +46,25 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         output_path = options["output"]
 
-        releases = Release.objects.filter(
-            gateway__status=GatewayStatusEnum.ACTIVE.value,
-            stage__status=StageStatusEnum.ACTIVE.value,
-            resource_version__schema_version=ResourceVersionSchemaEnum.V1.value,
-        ).select_related("gateway", "stage", "resource_version")
+        releases = (
+            Release.objects.filter(
+                gateway__status=GatewayStatusEnum.ACTIVE.value,
+                stage__status=StageStatusEnum.ACTIVE.value,
+                resource_version__schema_version=ResourceVersionSchemaEnum.V1.value,
+            )
+            .select_related("gateway", "stage", "resource_version")
+            .order_by("gateway__id", "stage__name")
+        )
+        releases = list(releases)
+        gateway_administrators = GatewayMember.objects.build_gateway_administrators_map(
+            release.gateway_id for release in releases
+        )
 
         data = [
             {
                 "gateway_id": release.gateway.id,
                 "gateway_name": release.gateway.name,
-                "gateway_maintainers": release.gateway._maintainers,
+                "gateway_maintainers": ";".join(gateway_administrators.get(release.gateway_id, [])),
                 "gateway_created_by": release.gateway.created_by,
                 "gateway_created_time": release.gateway.created_time,
                 "stage_name": release.stage.name,
@@ -63,7 +72,7 @@ class Command(BaseCommand):
                 "resource_version_schema_version": release.resource_version.schema_version,
                 "resource_version_created_time": release.resource_version.created_time,
             }
-            for release in releases.order_by("gateway__id", "stage__name")
+            for release in releases
         ]
 
         if not data:
