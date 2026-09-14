@@ -130,6 +130,7 @@ class DocListCreateApi(generics.ListCreateAPIView):
         description="删除资源文档", responses={status.HTTP_204_NO_CONTENT: None}, tags=["WebAPI.Resource.Doc"]
     ),
 )
+@extend_schema(tags=["WebAPI.Resource.Doc"])
 class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
     schema_request_partial = False
     serializer_class = DocInputSLZ

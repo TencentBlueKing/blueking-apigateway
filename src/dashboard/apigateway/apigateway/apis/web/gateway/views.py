@@ -411,6 +411,7 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
         tags=["WebAPI.Gateway"],
     ),
 )
+@extend_schema(tags=["WebAPI.Gateway"])
 class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
     schema_request_partial = False
     serializer_class = GatewayUpdateStatusInputSLZ

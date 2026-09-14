@@ -29,6 +29,7 @@ from apigateway.apps.esb.status.utils import get_system_basic_info, str_percenta
 from apigateway.utils.responses import OKJsonResponse
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysAllSummaryView(APIView):
     """Summary data for third-party system"""
 
@@ -47,6 +48,7 @@ class SysAllSummaryView(APIView):
         return OKJsonResponse(data=result)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysEventsTimeline(APIView):
     """Get timeline data for all system events"""
 
@@ -189,6 +191,7 @@ class SysEventsTimeline(APIView):
         return events
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysUnstableSystemsView(APIView):
     """Get recent unstable systems"""
 
@@ -204,6 +207,7 @@ class SysUnstableSystemsView(APIView):
         return OKJsonResponse(data=ret)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysSummaryView(APIView):
     """Summary data for third-party system"""
 
@@ -231,6 +235,7 @@ class SysSummaryView(APIView):
         return OKJsonResponse(data=data)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysDateHistogramView(APIView):
     """date_histogram data for third-party system"""
 
@@ -275,6 +280,7 @@ class SysDateHistogramView(APIView):
         return OKJsonResponse(data=result[0] if result else None)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysDetailsGroupByView(APIView):
     """Perc95 resp time data for third-party system"""
 
@@ -310,6 +316,7 @@ class SysDetailsGroupByView(APIView):
         return OKJsonResponse(data=result[:size])
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysErrorsView(APIView):
     """查询某个运营系统错误详情"""
 

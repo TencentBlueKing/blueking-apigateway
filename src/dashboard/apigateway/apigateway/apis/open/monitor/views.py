@@ -26,6 +26,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import V1OKJsonResponse
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AlarmCallbackViewSet(viewsets.ViewSet):
     @extend_schema(
         parameters=[serializers.MonitorCallbackSLZ],

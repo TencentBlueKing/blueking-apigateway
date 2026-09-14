@@ -253,6 +253,7 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
         tags=["WebAPI.ResourceDebugHistory"],
     ),
 )
+@extend_schema(tags=["WebAPI.ResourceDebugHistory"])
 class APIDebugHistoryRetrieveDestroyApi(APIDebugHistoriesQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
     serializer_class = APIDebugHistoriesListOutputSLZ

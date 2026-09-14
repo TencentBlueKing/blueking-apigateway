@@ -347,6 +347,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
         return V1OKJsonResponse()
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
     permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = GatewayMaintainerUpdateInputSLZ
@@ -389,6 +390,7 @@ class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
         return V1OKJsonResponse()
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class GatewayIdUpdateStatusApi(generics.UpdateAPIView):
     permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = GatewayUpdateStatusInputSLZ

@@ -1434,6 +1434,7 @@ def _validate_gateway_name_prefix(gateway_name: str) -> None:
         tags=["OpenAPI.V2.Inner"],
     ),
 )
+@extend_schema(tags=["OpenAPI.V2.Inner"])
 class GatewayUpdateStatusApi(generics.UpdateAPIView):
     """
     更新网关状态

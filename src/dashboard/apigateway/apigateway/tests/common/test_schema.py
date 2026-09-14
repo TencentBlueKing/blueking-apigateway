@@ -393,3 +393,35 @@ def test_gateway_member_and_current_user_role_contracts(client, documentation_ur
     role = document["paths"]["/gateways/{gateway_id}/me/role/"]["get"]
     envelope = role["responses"]["200"]["content"]["application/json"]["schema"]
     assert set(resolve_schema(document, envelope["properties"]["data"])["properties"]) == {"role"}
+
+
+def test_operation_tags_keep_api_families_and_http_methods_together(client, documentation_urls):
+    document = client.get("/backend/docs/auto/swagger.json").json()
+    expected_groups = {
+        "/accounts/userinfo/": "WebAPI.Account",
+        "/version-log/": "WebAPI.VersionLog",
+        "/esb/status/": "ESB.Status",
+        "/api/v1/apis/": "OpenAPI.V1",
+        "/api/v1/esb/systems/permissions/": "OpenAPI.ESB.Permission",
+        "/api/v2/inner/": "OpenAPI.V2.Inner",
+        "/api/v2/open/": "OpenAPI.V2.Open",
+        "/api/v2/sync/": "OpenAPI.V2.Sync",
+        "/mcp-marketplace/": "WebAPI.MCPMarketplace",
+        "/gateways/{gateway_id}/ai/": "WebAPI.AICompletion",
+        "/gateways/{gateway_id}/docs/": "WebAPI.Resource.Doc.ImportExport",
+        "/gateways/{gateway_id}/resources/{resource_id}/docs/": "WebAPI.Resource.Doc",
+        "/gateways/{gateway_id}/members/": "WebAPI.GatewayMember",
+        "/gateways/{gateway_id}/me/role/": "WebAPI.Gateway",
+    }
+    for path, path_item in document["paths"].items():
+        operations = {
+            method: op for method, op in path_item.items() if method in {"get", "post", "put", "patch", "delete"}
+        }
+        tags = {tuple(op.get("tags", [])) for op in operations.values()}
+        assert len(tags) == 1, (path, tags)
+        for method, operation in operations.items():
+            assert len(operation["tags"]) == 1, (method, path)
+            assert operation["tags"][0].startswith(("WebAPI.", "OpenAPI.", "ESB.")), (method, path)
+            for prefix, expected in expected_groups.items():
+                if path.startswith(prefix):
+                    assert operation["tags"] == [expected], (method, path)

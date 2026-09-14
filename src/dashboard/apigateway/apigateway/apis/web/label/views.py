@@ -103,6 +103,7 @@ class GatewayLabelListCreateApi(generics.ListCreateAPIView):
         description="删除网关标签", responses={status.HTTP_204_NO_CONTENT: None}, tags=["WebAPI.GatewayLabel"]
     ),
 )
+@extend_schema(tags=["WebAPI.GatewayLabel"])
 class GatewayLabelRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     schema_request_partial = False
     serializer_class = GatewayLabelInputSLZ

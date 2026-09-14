@@ -65,6 +65,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK", data=output_slz.data)
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionApplySLZ
@@ -100,6 +101,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK", data={"record_id": record.id})
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionRenewAPIView(viewsets.GenericViewSet):
     """
     权限续期
@@ -124,6 +126,7 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIPermission]
 
@@ -148,6 +151,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionApplyRecordQuerySLZ

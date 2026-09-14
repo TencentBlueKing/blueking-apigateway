@@ -176,6 +176,7 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
         tags=["WebAPI.Backend"],
     ),
 )
+@extend_schema(tags=["WebAPI.Backend"])
 class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     schema_request_partial = False
     lookup_field = "id"

@@ -105,6 +105,7 @@ class ResourceViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK", data=slz.data)
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = serializers.AppGatewayPermissionInputSLZ
@@ -187,6 +188,7 @@ class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
         )
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
     """
     PaaS 中应用申请访问网关 API 的权限
@@ -199,6 +201,7 @@ class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
         return serializers.PaaSAppPermissionApplyInputSLZ
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
     """
     普通应用直接申请访问网关 API 的权限
@@ -214,6 +217,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
         return serializers.AppPermissionApplyV1InputSLZ
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionGrantViewSet(viewsets.ViewSet):
     """网关关联应用，主动为应用授权访问网关 API 的权限"""
 
@@ -244,6 +248,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
     """网关关联应用，回收应用访问网关 API 的权限"""
 
@@ -265,6 +270,7 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionRenewAPIView(APIView):
     """
     权限续期
@@ -303,6 +309,7 @@ class AppPermissionRenewAPIView(APIView):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIPermission]
 
@@ -322,6 +329,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionRecordInputSLZ

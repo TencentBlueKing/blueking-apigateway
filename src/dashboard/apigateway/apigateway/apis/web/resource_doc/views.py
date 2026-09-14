@@ -50,7 +50,7 @@ class DocArchiveParseApi(generics.CreateAPIView):
         description="导入资源文档前，检查归档文件是否正确",
         request=DocArchiveParseInputSLZ,
         responses={status.HTTP_200_OK: DocArchiveParseOutputSLZ},
-        tags=["WebAPI.ResourceDoc"],
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     def post(self, request, *args, **kwargs):
         slz = DocArchiveParseInputSLZ(data=request.data)
@@ -73,7 +73,7 @@ class DocImportByArchiveApi(generics.CreateAPIView):
         description="根据归档文件导入资源文档",
         request=DocImportByArchiveInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: None},
-        tags=["WebAPI.ResourceDoc"],
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -107,7 +107,7 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
         description="根据 swagger 描述文件导入资源文档",
         request=DocImportBySwaggerInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: None},
-        tags=["WebAPI.ResourceDoc"],
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -140,7 +140,7 @@ class DocExportApi(generics.CreateAPIView):
         description="导出资源文档",
         request=DocExportInputSLZ,
         responses={(200, "application/octet-stream"): bytes},
-        tags=["WebAPI.ResourceDoc"],
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     def post(self, request, *args, **kwargs):
         """导出资源文档"""

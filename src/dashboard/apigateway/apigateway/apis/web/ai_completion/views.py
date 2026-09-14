@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
     decorator=extend_schema(
         request=AICompletionInputSLZ(),
         responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
-        tags=["WebAPI.AI_Completion"],
+        tags=["WebAPI.AICompletion"],
         description="AI Completion",
     ),
 )
@@ -101,7 +101,7 @@ class AICompletionCreateApi(generics.CreateAPIView):
     decorator=extend_schema(
         request=BatchTranslateInputSLZ(),
         responses={status.HTTP_200_OK: BatchTranslateOutputSLZ()},
-        tags=["WebAPI.AI_Completion"],
+        tags=["WebAPI.AICompletion"],
         description="批量翻译文档",
     ),
 )

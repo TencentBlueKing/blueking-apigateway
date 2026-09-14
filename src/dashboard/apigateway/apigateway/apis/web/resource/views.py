@@ -186,6 +186,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
         description="删除资源", responses={status.HTTP_204_NO_CONTENT: None}, tags=["WebAPI.Resource"]
     ),
 )
+@extend_schema(tags=["WebAPI.Resource"])
 class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     schema_request_partial = False
     serializer_class = ResourceInputSLZ
@@ -335,6 +336,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         tags=["WebAPI.Resource"],
     ),
 )
+@extend_schema(tags=["WebAPI.Resource"])
 class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
     schema_request_partial = False
     schema_delete_request_body = True
@@ -412,6 +414,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
         tags=["WebAPI.Resource"],
     ),
 )
+@extend_schema(tags=["WebAPI.Resource"])
 class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
     schema_request_partial = False
     serializer_class = ResourceLabelUpdateInputSLZ

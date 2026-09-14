@@ -31,7 +31,7 @@ from .utils import get_version_list
     decorator=extend_schema(
         description="版本信息",
         responses={status.HTTP_200_OK: VersionLogSLZ(label="版本信息", many=True)},
-        tags=["version_log"],
+        tags=["WebAPI.VersionLog"],
     ),
 )
 class VersionLogListApi(generics.ListAPIView):

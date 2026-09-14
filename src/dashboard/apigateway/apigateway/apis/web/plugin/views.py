@@ -335,6 +335,7 @@ class PluginConfigCreateApi(
         tags=["WebAPI.Plugin"],
     ),
 )
+@extend_schema(tags=["WebAPI.Plugin"])
 class PluginConfigRetrieveUpdateDestroyApi(
     generics.RetrieveUpdateDestroyAPIView,
     ScopeValidationMixin,

@@ -120,6 +120,7 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
         tags=["WebAPI.Monitor"],
     ),
 )
+@extend_schema(tags=["WebAPI.Monitor"])
 class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
     schema_request_partial = False
     serializer_class = AlarmStrategyInputSLZ

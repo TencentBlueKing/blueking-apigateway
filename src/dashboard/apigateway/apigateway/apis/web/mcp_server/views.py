@@ -379,6 +379,7 @@ class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.Retriev
         tags=["WebAPI.MCPServer"],
     ),
 )
+@extend_schema(tags=["WebAPI.MCPServer"])
 class MCPServerUpdateStatusApi(MCPServerQuerySetMixin, generics.UpdateAPIView):
     schema_request_partial = False
     queryset = MCPServer.objects.all()
@@ -557,6 +558,7 @@ class MCPServerToolDocRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPIVi
     ),
 )
 @method_decorator(name="patch", decorator=extend_schema(request=MCPServerUserCustomDocInputSLZ, responses={204: None}))
+@extend_schema(tags=["WebAPI.MCPServer"])
 class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
     schema_request_partial = False
     queryset = MCPServer.objects.all()
@@ -957,6 +959,7 @@ class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQue
         tags=["WebAPI.MCPServer"],
     ),
 )
+@extend_schema(tags=["WebAPI.MCPServer"])
 class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuerySetMixin, generics.UpdateAPIView):
     gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
     schema_request_partial = False

@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 from apigateway.utils.responses import OKJsonResponse
 
 
+@extend_schema(tags=["WebAPI.Account"])
 class UserAPIView(APIView):
     """
     用户信息 相关

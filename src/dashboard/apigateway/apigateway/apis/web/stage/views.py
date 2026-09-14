@@ -285,6 +285,7 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
         tags=["WebAPI.Stage"],
     ),
 )
+@extend_schema(tags=["WebAPI.Stage"])
 class StageVarsRetrieveUpdateApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
     lookup_field = "id"
     serializer_class = StageVarsSLZ
@@ -373,6 +374,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
         request={"application/json": {"type": "object", "additionalProperties": True}}, responses={204: None}
     ),
 )
+@extend_schema(tags=["WebAPI.Stage"])
 class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.RetrieveUpdateAPIView):
     queryset = BackendConfig.objects.prefetch_related("backend")
     serializer_class = BackendConfigInputSLZ
@@ -423,6 +425,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         tags=["WebAPI.Stage"],
     ),
 )
+@extend_schema(tags=["WebAPI.Stage"])
 class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
     schema_request_partial = False
     lookup_field = "id"
@@ -476,6 +479,7 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         tags=["WebAPI.Stage"],
     ),
 )
+@extend_schema(tags=["WebAPI.Stage"])
 class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
     lookup_field = "id"
     serializer_class = ProgrammableStageDeployOutputSLZ
