@@ -156,14 +156,14 @@ def _sync_result(gateway, *, applied=False, grant_count=0):
     )
 
 
-def test_sync_gateway_rbac_to_iam_skips_when_disabled(settings, mocker):
+def test_sync_gateway_rbac_auth_to_iam_skips_when_disabled(settings, mocker):
     settings.BK_IAM_V4_ENABLED = False
     synchronizer = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     )
     output = StringIO()
 
-    call_command("sync_gateway_rbac_to_iam", stdout=output)
+    call_command("sync_gateway_rbac_auth_to_iam", stdout=output)
 
     assert output.getvalue() == "BK_IAM_V4_ENABLED=false; skipped\n"
     synchronizer.assert_not_called()
@@ -178,11 +178,11 @@ def test_sync_gateway_rbac_to_iam_skips_when_disabled(settings, mocker):
         {"username": "alice", "all": True},
     ],
 )
-def test_sync_gateway_rbac_to_iam_rejects_argument_conflicts(settings, options):
+def test_sync_gateway_rbac_auth_to_iam_rejects_argument_conflicts(settings, options):
     _enable_iam(settings)
 
     with pytest.raises(CommandError):
-        call_command("sync_gateway_rbac_to_iam", **options)
+        call_command("sync_gateway_rbac_auth_to_iam", **options)
 
 
 @pytest.mark.parametrize(
@@ -193,30 +193,30 @@ def test_sync_gateway_rbac_to_iam_rejects_argument_conflicts(settings, options):
         {"initial": True, "username": "alice", "apply": True},
     ],
 )
-def test_sync_gateway_rbac_to_iam_rejects_invalid_initial_options(settings, options):
+def test_sync_gateway_rbac_auth_to_iam_rejects_invalid_initial_options(settings, options):
     _enable_iam(settings)
 
     with pytest.raises(CommandError, match="--initial 必须与 --all --apply 配合使用"):
-        call_command("sync_gateway_rbac_to_iam", **options)
+        call_command("sync_gateway_rbac_auth_to_iam", **options)
 
 
 @pytest.mark.parametrize("page_size", [0, 101])
-def test_sync_gateway_rbac_to_iam_rejects_invalid_page_size(settings, page_size):
+def test_sync_gateway_rbac_auth_to_iam_rejects_invalid_page_size(settings, page_size):
     _enable_iam(settings)
 
     with pytest.raises(CommandError, match="1 到 100"):
-        call_command("sync_gateway_rbac_to_iam", all=True, page_size=page_size)
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, page_size=page_size)
 
 
-def test_sync_gateway_rbac_to_iam_rejects_negative_gateway_delay(settings):
+def test_sync_gateway_rbac_auth_to_iam_rejects_negative_gateway_delay(settings):
     _enable_iam(settings)
 
     with pytest.raises(CommandError, match="--gateway-delay"):
-        call_command("sync_gateway_rbac_to_iam", all=True, gateway_delay=-0.1)
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, gateway_delay=-0.1)
 
 
 @pytest.mark.parametrize("selector", ["id", "name"])
-def test_sync_gateway_rbac_to_iam_accepts_gateway_id_or_name(
+def test_sync_gateway_rbac_auth_to_iam_accepts_gateway_id_or_name(
     settings,
     mocker,
     fake_gateway,
@@ -224,12 +224,12 @@ def test_sync_gateway_rbac_to_iam_accepts_gateway_id_or_name(
 ):
     _enable_iam(settings)
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.return_value = _sync_result(fake_gateway)
 
     call_command(
-        "sync_gateway_rbac_to_iam",
+        "sync_gateway_rbac_auth_to_iam",
         gateway=str(fake_gateway.id) if selector == "id" else fake_gateway.name,
     )
 
@@ -241,47 +241,47 @@ def test_sync_gateway_rbac_to_iam_accepts_gateway_id_or_name(
     )
 
 
-def test_sync_gateway_rbac_to_iam_username_checks_every_gateway(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_username_checks_every_gateway(settings, mocker, fake_gateway):
     _enable_iam(settings)
     second_gateway = G(Gateway)
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.side_effect = [_sync_result(gateway) for gateway in Gateway.objects.order_by("id")]
 
-    call_command("sync_gateway_rbac_to_iam", username="alice")
+    call_command("sync_gateway_rbac_auth_to_iam", username="alice")
 
     assert [call.args[0] for call in reconcile.call_args_list] == sorted([fake_gateway.id, second_gateway.id])
     assert all(call.kwargs["username"] == "alice" for call in reconcile.call_args_list)
 
 
-def test_sync_gateway_rbac_to_iam_rate_limits_between_gateways(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_rate_limits_between_gateways(settings, mocker, fake_gateway):
     _enable_iam(settings)
     second_gateway = G(Gateway)
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.side_effect = [_sync_result(gateway) for gateway in Gateway.objects.order_by("id")]
-    sleep = mocker.patch("apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.time.sleep")
+    sleep = mocker.patch("apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.time.sleep")
 
-    call_command("sync_gateway_rbac_to_iam", all=True, gateway_delay=0.25)
+    call_command("sync_gateway_rbac_auth_to_iam", all=True, gateway_delay=0.25)
 
     assert reconcile.call_count == 2
     sleep.assert_called_once_with(0.25)
 
 
-def test_sync_gateway_rbac_to_iam_threshold_rejects_before_apply(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_threshold_rejects_before_apply(settings, mocker, fake_gateway):
     _enable_iam(settings)
     second_gateway = G(Gateway)
     gateways = list(Gateway.objects.order_by("id"))
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.side_effect = [_sync_result(gateway, grant_count=1) for gateway in gateways]
 
     with pytest.raises(CommandError, match="超过 --max-changes=1"):
         call_command(
-            "sync_gateway_rbac_to_iam",
+            "sync_gateway_rbac_auth_to_iam",
             all=True,
             apply=True,
             max_changes=1,
@@ -291,7 +291,7 @@ def test_sync_gateway_rbac_to_iam_threshold_rejects_before_apply(settings, mocke
     assert all(call.kwargs["apply"] is False for call in reconcile.call_args_list)
 
 
-def test_sync_gateway_rbac_to_iam_threshold_rejection_makes_no_iam_writes(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
         "apigateway.biz.gateway.iam_sync.list_authorization_subject",
@@ -302,7 +302,7 @@ def test_sync_gateway_rbac_to_iam_threshold_rejection_makes_no_iam_writes(settin
 
     with pytest.raises(CommandError, match="超过 --max-changes=0"):
         call_command(
-            "sync_gateway_rbac_to_iam",
+            "sync_gateway_rbac_auth_to_iam",
             gateway=str(fake_gateway.id),
             apply=True,
             max_changes=0,
@@ -312,7 +312,7 @@ def test_sync_gateway_rbac_to_iam_threshold_rejection_makes_no_iam_writes(settin
     revoke.assert_not_called()
 
 
-def test_sync_gateway_rbac_to_iam_force_applies_over_threshold(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_force_applies_over_threshold(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
         "apigateway.biz.gateway.iam_sync.list_authorization_subject",
@@ -321,7 +321,7 @@ def test_sync_gateway_rbac_to_iam_force_applies_over_threshold(settings, mocker,
     add = mocker.patch("apigateway.biz.gateway.iam_sync.add_authorization")
 
     call_command(
-        "sync_gateway_rbac_to_iam",
+        "sync_gateway_rbac_auth_to_iam",
         gateway=str(fake_gateway.id),
         apply=True,
         max_changes=0,
@@ -331,67 +331,67 @@ def test_sync_gateway_rbac_to_iam_force_applies_over_threshold(settings, mocker,
     add.assert_called_once()
 
 
-def test_sync_gateway_rbac_to_iam_all_apply_runs_on_every_invocation(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_all_apply_runs_on_every_invocation(settings, mocker, fake_gateway):
     _enable_iam(settings)
     GatewayIAMSyncContext().mark_initial_sync_completed()
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.return_value = _sync_result(fake_gateway)
 
     for _ in range(2):
-        call_command("sync_gateway_rbac_to_iam", all=True, apply=True, force=True, gateway_delay=0)
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, force=True, gateway_delay=0)
 
     assert [call.kwargs["apply"] for call in reconcile.call_args_list] == [False, True, False, True]
 
 
-def test_sync_gateway_rbac_to_iam_apply_failure_raises_command_error(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settings, mocker, fake_gateway):
     _enable_iam(settings)
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.side_effect = RuntimeError("IAM unavailable")
 
     with pytest.raises(CommandError, match="IAM unavailable"):
-        call_command("sync_gateway_rbac_to_iam", all=True, apply=True, force=True, gateway_delay=0)
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, force=True, gateway_delay=0)
 
 
-def test_sync_gateway_rbac_to_iam_initial_marks_completion_after_success(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_initial_marks_completion_after_success(settings, mocker, fake_gateway):
     _enable_iam(settings)
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.return_value = _sync_result(fake_gateway)
 
-    call_command("sync_gateway_rbac_to_iam", initial=True, all=True, apply=True, force=True, gateway_delay=0)
+    call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, force=True, gateway_delay=0)
 
     assert GatewayIAMSyncContext().is_initial_sync_completed()
     assert [call.kwargs["apply"] for call in reconcile.call_args_list] == [False, True]
 
 
-def test_sync_gateway_rbac_to_iam_initial_failure_does_not_mark_completion(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_initial_failure_does_not_mark_completion(settings, mocker, fake_gateway):
     _enable_iam(settings)
     reconcile = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.side_effect = RuntimeError("IAM unavailable")
 
     with pytest.raises(CommandError, match="IAM unavailable"):
-        call_command("sync_gateway_rbac_to_iam", initial=True, all=True, apply=True, force=True, gateway_delay=0)
+        call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, force=True, gateway_delay=0)
 
     assert not GatewayIAMSyncContext().is_initial_sync_completed()
 
 
-def test_sync_gateway_rbac_to_iam_initial_skips_after_completion(settings, mocker):
+def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, mocker):
     _enable_iam(settings)
     GatewayIAMSyncContext().mark_initial_sync_completed()
     synchronizer = mocker.patch(
-        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_to_iam.GatewayIAMAuthorizationSynchronizer"
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     )
     output = StringIO()
 
     call_command(
-        "sync_gateway_rbac_to_iam",
+        "sync_gateway_rbac_auth_to_iam",
         initial=True,
         all=True,
         apply=True,
