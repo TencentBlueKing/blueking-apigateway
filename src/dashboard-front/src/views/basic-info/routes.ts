@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: t('基本信息'),
       matchRoute: 'BasicInfo',
+      permission: 'basic-view',
     },
   },
 ];

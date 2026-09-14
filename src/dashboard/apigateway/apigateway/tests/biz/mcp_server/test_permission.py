@@ -296,6 +296,22 @@ class TestMCPServerPermissionHandler:
         dispatched_ids = sorted(dispatched_applies.values_list("id", flat=True))
         assert dispatched_ids == apply_ids
 
+    def test_create_apply_allows_gateway_without_approvers(self, mocker, fake_gateway, fake_stage):
+        MCPServer.objects.filter(gateway=fake_gateway).delete()
+        fake_gateway.members.all().delete()
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
+        mock_dispatch = mocker.patch.object(MCPServerPermissionHandler, "_create_itsm_tickets_for_applies")
+
+        applies = MCPServerPermissionHandler.create_apply(
+            bk_app_code="test-app",
+            mcp_server_ids=[mcp_server.id],
+            reason="for test",
+            applied_by="tester",
+        )
+
+        assert list(applies.values_list("mcp_server_id", flat=True)) == [mcp_server.id]
+        mock_dispatch.assert_called_once()
+
     def test_create_apply_should_reject_partial_invalid_mcp_server_ids(self, mocker, fake_gateway, fake_stage):
         active_mcp_server = G(
             MCPServer,

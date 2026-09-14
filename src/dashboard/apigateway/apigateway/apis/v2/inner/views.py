@@ -28,7 +28,7 @@ from django.db.models import Q
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
@@ -46,6 +46,7 @@ from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.access_log import LogSearchClient
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
@@ -135,9 +136,9 @@ def _serialize_mcp_servers(mcp_servers, fields):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 OAuth2 客户端可选的 MCP Server 范围",
-        query_serializer=serializers.OAuth2MCPServerScopeListInputSLZ,
+    decorator=extend_schema(
+        description="获取 OAuth2 客户端可选的 MCP Server 范围",
+        parameters=[serializers.OAuth2MCPServerScopeListInputSLZ],
         responses={status.HTTP_200_OK: serializers.OAuth2MCPServerScopeGatewayOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -171,9 +172,9 @@ class OAuth2MCPServerScopeListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 OAuth2 客户端可选的 API 资源范围",
-        query_serializer=serializers.OAuth2ResourceScopeListInputSLZ,
+    decorator=extend_schema(
+        description="获取 OAuth2 客户端可选的 API 资源范围",
+        parameters=[serializers.OAuth2ResourceScopeListInputSLZ],
         responses={status.HTTP_200_OK: serializers.OAuth2ResourceScopeGatewayOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -216,9 +217,9 @@ def _validate_resource_ids_in_released_resources(resource_ids: list[int], releas
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="按名称查询网关",
-        query_serializer=serializers.GatewayLookupInputSLZ,
+    decorator=extend_schema(
+        description="按名称查询网关",
+        parameters=[serializers.GatewayLookupInputSLZ],
         responses={status.HTTP_200_OK: serializers.GatewayLookupOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -236,11 +237,16 @@ class GatewayLookupApi(generics.ListAPIView):
         if tenant_id:
             queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
         queryset = queryset.order_by("name", "id")
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
 
         output_slz = serializers.GatewayLookupOutputSLZ(
-            queryset,
+            gateways,
             many=True,
-            context=self.get_serializer_context(),
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
+            },
             fields=data.get("fields") or serializers.GATEWAY_LOOKUP_DEFAULT_FIELDS,
         )
         return OKJsonResponse(data=output_slz.data)
@@ -288,9 +294,9 @@ class _GatewayReleasedResourceApiMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定网关当前已发布资源",
-        query_serializer=serializers.GatewayReleasedResourceListInputSLZ,
+    decorator=extend_schema(
+        description="获取指定网关当前已发布资源",
+        parameters=[serializers.GatewayReleasedResourceListInputSLZ],
         responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -310,9 +316,9 @@ class GatewayReleasedResourceListApi(_GatewayReleasedResourceApiMixin, generics.
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="按名称查询指定网关当前已发布资源",
-        query_serializer=serializers.GatewayReleasedResourceLookupInputSLZ,
+    decorator=extend_schema(
+        description="按名称查询指定网关当前已发布资源",
+        parameters=[serializers.GatewayReleasedResourceLookupInputSLZ],
         responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -329,9 +335,9 @@ class GatewayReleasedResourceLookupApi(_GatewayReleasedResourceApiMixin, generic
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关列表，网关需公开且已发布",
-        query_serializer=serializers.GatewayListInputSLZ,
+    decorator=extend_schema(
+        description="获取网关列表，网关需公开且已发布",
+        parameters=[serializers.GatewayListInputSLZ],
         responses={status.HTTP_200_OK: serializers.GatewayListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -375,7 +381,16 @@ class GatewayListApi(generics.ListAPIView):
                 kind_query |= Q(kind__isnull=True)
             queryset = queryset.filter(kind_query)
 
-        output_slz = self.get_serializer(queryset, many=True)
+        gateways = list(queryset)
+        gateway_ids = [gateway.id for gateway in gateways]
+        output_slz = self.get_serializer(
+            gateways,
+            many=True,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map(gateway_ids),
+            },
+        )
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 
         return OKJsonResponse(data=output_data)
@@ -383,16 +398,16 @@ class GatewayListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: serializers.GatewayRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除网关，仅支持 bp- 开头的网关",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除网关，仅支持 bp- 开头的网关",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -413,7 +428,13 @@ class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = self.get_serializer(instance)
+        slz = self.get_serializer(
+            instance,
+            context={
+                **self.get_serializer_context(),
+                "gateway_administrators_map": GatewayMember.objects.build_gateway_administrators_map([instance.id]),
+            },
+        )
         return OKJsonResponse(data=slz.data)
 
     @transaction.atomic
@@ -450,8 +471,8 @@ class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.AppResourcePermissionListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.AppResourcePermissionListInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppResourcePermissionListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -485,8 +506,8 @@ class GatewayPermissionResourceListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.AppGatewayPermissionInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.AppGatewayPermissionInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppGatewayPermissionOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -513,8 +534,8 @@ class GatewayAppPermissionIsAllowedApplyCheckApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        request_body=serializers.GatewayAppPermissionApplyCreateInputSLZ,
+    decorator=extend_schema(
+        request=serializers.GatewayAppPermissionApplyCreateInputSLZ,
         responses={status.HTTP_201_CREATED: serializers.GatewayAppPermissionApplyCreateOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -588,10 +609,10 @@ class GatewayAppPermissionApplyCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="权限续期",
-        request_body=serializers.AppPermissionRenewInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="权限续期",
+        request=serializers.AppPermissionRenewInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -624,8 +645,8 @@ class AppPermissionRenewApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.AppPermissionListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.AppPermissionListInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppResourcePermissionListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -648,8 +669,8 @@ class AppPermissionListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.AppPermissionRecordListInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.AppPermissionRecordListInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppPermissionRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -664,7 +685,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = AppPermissionRecord.objects.all()
+        queryset = AppPermissionRecord.objects.select_related("gateway")
         queryset = AppPermissionRecord.objects.filter_record(
             queryset,
             bk_app_code=data["target_app_code"],
@@ -677,14 +698,21 @@ class AppPermissionRecordListApi(generics.ListAPIView):
         )
 
         page = self.paginate_queryset(queryset)
-        slz = serializers.AppPermissionRecordListOutputSLZ(page, many=True)
+        gateway_ids = {record.gateway_id for record in page}
+        slz = serializers.AppPermissionRecordListOutputSLZ(
+            page,
+            many=True,
+            context={
+                "gateway_approvers_map": GatewayMember.objects.build_gateway_approvers_map(gateway_ids),
+            },
+        )
         return self.get_paginated_response(slz.data)
 
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.AppPermissionRecordRetrieveInputSLZ,
+    decorator=extend_schema(
+        parameters=[serializers.AppPermissionRecordRetrieveInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppPermissionRecordOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -705,7 +733,10 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         data = slz.validated_data
 
         try:
-            return AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+            return AppPermissionRecord.objects.select_related("gateway").get(
+                bk_app_code=data["target_app_code"],
+                id=record_id,
+            )
         except AppPermissionRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
 
@@ -716,6 +747,7 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             instance,
             context={
                 "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=instance.gateway.id),
+                "gateway_approvers_map": GatewayMember.objects.build_gateway_approvers_map([instance.gateway_id]),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -723,9 +755,9 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="查询应用维度告警记录列表",
-        query_serializer=serializers.AppAlarmRecordListInputSLZ,
+    decorator=extend_schema(
+        description="查询应用维度告警记录列表",
+        parameters=[serializers.AppAlarmRecordListInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppAlarmRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -828,9 +860,9 @@ class AppAlarmRecordListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="查询应用维度调用流水日志列表（开发者视角）",
-        query_serializer=serializers.AppRequestLogListInputSLZ,
+    decorator=extend_schema(
+        description="查询应用维度调用流水日志列表（开发者视角）",
+        parameters=[serializers.AppRequestLogListInputSLZ],
         responses={status.HTTP_200_OK: serializers.AppRequestLogPaginatedOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -913,9 +945,9 @@ class AppRequestLogListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="MCPServer 权限列表",
-        query_serializer=serializers.MCPServerPermissionListInputSLZ,
+    decorator=extend_schema(
+        description="MCPServer 权限列表",
+        parameters=[serializers.MCPServerPermissionListInputSLZ],
         responses={status.HTTP_200_OK: serializers.MCPServerPermissionListOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -929,9 +961,10 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value).select_related(
-            "gateway", "stage"
-        )
+        queryset = MCPServer.objects.filter(
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        ).select_related("gateway", "stage")
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
@@ -940,7 +973,11 @@ class MCPServerPermissionListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
-        mcp_server_ids = list(queryset.values_list("id", flat=True))
+        mcp_servers = list(queryset)
+        mcp_server_ids = [mcp_server.id for mcp_server in mcp_servers]
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map(
+            {mcp_server.gateway_id for mcp_server in mcp_servers}
+        )
         target_app_code = data["target_app_code"]
 
         # 1. 查询 MCPServerAppPermission（实际权限表），覆盖主动授权（grant）和申请通过（apply）两种场景
@@ -977,12 +1014,12 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         mcp_server_permissions = []
         # Build categories map for queryset
-        categories_map = MCPServerHandler.build_categories_map([obj.id for obj in queryset])
+        categories_map = MCPServerHandler.build_categories_map(mcp_server_ids)
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        least_privileges = MCPServerHandler.get_least_privileges(list(queryset))
+        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
 
-        for obj in queryset:
+        for obj in mcp_servers:
             permission_status = mcp_server_permission_status.get(
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
             )
@@ -1004,7 +1041,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "status": permission_status,
                         "action": action,
                         "expires_in": None,
-                        "handled_by": [handled_by] if handled_by else obj.gateway.maintainers,
+                        "handled_by": [handled_by] if handled_by else gateway_approvers_map.get(obj.gateway_id, []),
                         "mcp_server_id": obj.id,
                         "gateway_id": obj.gateway_id,
                         "itsm_ticket_id": itsm_ticket_id,
@@ -1027,9 +1064,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="MCPServer 申请权限/批量申请权限",
-        request_body=serializers.MCPServerAppPermissionApplyCreateInputSLZ,
+    decorator=extend_schema(
+        description="MCPServer 申请权限/批量申请权限",
+        request=serializers.MCPServerAppPermissionApplyCreateInputSLZ,
         responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -1064,9 +1101,9 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="MCPServer 已申请权限列表",
-        query_serializer=serializers.MCPServerAppPermissionListInputSLZ,
+    decorator=extend_schema(
+        description="MCPServer 已申请权限列表",
+        parameters=[serializers.MCPServerAppPermissionListInputSLZ],
         responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -1089,6 +1126,10 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
             granted_permissions = mcp_server_related_filter_by_user_tenant_id(granted_permissions, tenant_id)
+        granted_permissions = list(granted_permissions)
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map(
+            {permission.mcp_server.gateway_id for permission in granted_permissions}
+        )
 
         # 2. 查询申请通过的记录，用于获取 handled_by 信息
         approved_applies = MCPServerAppPermissionApply.objects.filter(
@@ -1114,7 +1155,9 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
                     "action": "",
                     "expires_in": None,
-                    "handled_by": [handled_by_map.get(perm.mcp_server_id, "")],
+                    "handled_by": [handled_by_map[perm.mcp_server_id]]
+                    if handled_by_map.get(perm.mcp_server_id)
+                    else gateway_approvers_map.get(perm.mcp_server.gateway_id, []),
                     "mcp_server_id": perm.mcp_server_id,
                     "gateway_id": perm.mcp_server.gateway_id,
                     "tenant_mode": perm.mcp_server.gateway.tenant_mode,
@@ -1137,9 +1180,9 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="MCPServer 申请记录列表",
-        query_serializer=serializers.MCPServerAppPermissionRecordListInputSLZ,
+    decorator=extend_schema(
+        description="MCPServer 申请记录列表",
+        parameters=[serializers.MCPServerAppPermissionRecordListInputSLZ],
         responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -1161,10 +1204,18 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             data.get("query"),
             data.get("applied_time_start"),
             data.get("applied_time_end"),
-        ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
+        ).select_related(
+            "mcp_server",
+            "mcp_server__gateway",
+            "mcp_server__stage",
+        )
         tenant_id = get_request_tenant_id(request)
         if tenant_id:
             queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
+        records = list(queryset)
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map(
+            {record.mcp_server.gateway_id for record in records}
+        )
 
         mcp_server_permission_records = [
             {
@@ -1174,7 +1225,9 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "bk_app_code": obj.bk_app_code,
                     "applied_by": obj.applied_by,
                     "applied_time": obj.applied_time,
-                    "handled_by": [obj.handled_by] if obj.handled_by else obj.mcp_server.gateway.maintainers,
+                    "handled_by": [obj.handled_by]
+                    if obj.handled_by
+                    else gateway_approvers_map.get(obj.mcp_server.gateway_id, []),
                     "handled_time": obj.handled_time,
                     "apply_status": obj.status,
                     "apply_status_display": MCPServerAppPermissionApplyStatusEnum.get_choice_label(obj.status),
@@ -1188,14 +1241,14 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "tenant_id": obj.mcp_server.gateway.tenant_id,
                 },
             }
-            for obj in queryset
+            for obj in records
         ]
 
         # Build categories map
-        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in records])
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        mcp_servers = [obj.mcp_server for obj in queryset]
+        mcp_servers = [obj.mcp_server for obj in records]
         least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
 
         slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(
@@ -1212,9 +1265,9 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="MCPServer 申请记录详情",
-        query_serializer=serializers.MCPServerAppPermissionRecordRetrieveInputSLZ,
+    decorator=extend_schema(
+        description="MCPServer 申请记录详情",
+        parameters=[serializers.MCPServerAppPermissionRecordRetrieveInputSLZ],
         responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -1234,8 +1287,13 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
         try:
             queryset = MCPServerAppPermissionApply.objects.select_related(
-                "mcp_server", "mcp_server__gateway", "mcp_server__stage"
-            ).filter(bk_app_code=data["target_app_code"], id=record_id)
+                "mcp_server",
+                "mcp_server__gateway",
+                "mcp_server__stage",
+            ).filter(
+                bk_app_code=data["target_app_code"],
+                id=record_id,
+            )
             tenant_id = get_request_tenant_id(self.request)
             if tenant_id:
                 queryset = mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
@@ -1245,6 +1303,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        gateway_approvers_map = GatewayMember.objects.build_gateway_approvers_map([instance.mcp_server.gateway_id])
 
         mcp_server_permission_record = {
             "mcp_server": instance.mcp_server,
@@ -1254,7 +1313,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "applied_time": instance.applied_time,
                 "handled_by": [instance.handled_by]
                 if instance.handled_by
-                else instance.mcp_server.gateway.maintainers,
+                else gateway_approvers_map.get(instance.mcp_server.gateway_id, []),
                 "handled_time": instance.handled_time,
                 "apply_status": instance.status,
                 "apply_status_display": MCPServerAppPermissionApplyStatusEnum.get_choice_label(instance.status),
@@ -1286,9 +1345,9 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取全量的 MCPServer 列表（应用态接口）",
-        query_serializer=serializers.MCPServerListInputSLZ,
+    decorator=extend_schema(
+        description="获取全量的 MCPServer 列表（应用态接口）",
+        parameters=[serializers.MCPServerListInputSLZ],
         responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -1323,9 +1382,9 @@ class MCPServerListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="按 ID 或名称查询 MCPServer",
-        query_serializer=serializers.MCPServerLookupInputSLZ,
+    decorator=extend_schema(
+        description="按 ID 或名称查询 MCPServer",
+        parameters=[serializers.MCPServerLookupInputSLZ],
         responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -1368,13 +1427,14 @@ def _validate_gateway_name_prefix(gateway_name: str) -> None:
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关状态（停用/启用），仅支持 bp- 开头的网关",
-        request_body=serializers.GatewayUpdateStatusInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关状态（停用/启用），仅支持 bp- 开头的网关",
+        request=serializers.GatewayUpdateStatusInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
+@extend_schema(tags=["OpenAPI.V2.Inner"])
 class GatewayUpdateStatusApi(generics.UpdateAPIView):
     """
     更新网关状态
@@ -1382,6 +1442,8 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
     - 启用网关：status=1
     - 仅支持 bp- 开头的网关，避免误操作
     """
+
+    schema_request_partial = False
 
     permission_classes = [OpenAPIV2GatewayNamePermission]
     serializer_class = serializers.GatewayUpdateStatusInputSLZ

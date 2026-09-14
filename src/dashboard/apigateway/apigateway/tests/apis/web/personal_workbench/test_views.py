@@ -26,6 +26,8 @@ from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStat
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Resource, Stage
@@ -40,29 +42,41 @@ FAKE_USERNAME = "admin"
 @pytest.fixture
 def fake_other_gateway(faker):
     """创建一个当前用户不是 maintainer 的网关"""
-    return G(
+    gateway = G(
         Gateway,
         name=faker.pystr(),
-        _maintainers="other_user",
         status=GatewayStatusEnum.ACTIVE.value,
         is_public=True,
         tenant_mode="single",
         tenant_id="default",
     )
+    G(
+        GatewayMember,
+        gateway=gateway,
+        username="other_user",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    return gateway
 
 
 @pytest.fixture
 def fake_substring_gateway(faker):
     """创建一个 maintainer 包含当前用户名子串的网关（superadmin 包含 admin），用于验证精确匹配"""
-    return G(
+    gateway = G(
         Gateway,
         name=faker.pystr(),
-        _maintainers="superadmin",
         status=GatewayStatusEnum.ACTIVE.value,
         is_public=True,
         tenant_mode="single",
         tenant_id="default",
     )
+    G(
+        GatewayMember,
+        gateway=gateway,
+        username="superadmin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    return gateway
 
 
 @pytest.fixture
@@ -313,7 +327,6 @@ class TestWorkbenchGatewayFilterOptionListApi:
         gw_z = G(
             Gateway,
             name="z_gateway",
-            _maintainers=FAKE_USERNAME,
             status=GatewayStatusEnum.ACTIVE.value,
             is_public=True,
             tenant_mode="single",
@@ -322,13 +335,18 @@ class TestWorkbenchGatewayFilterOptionListApi:
         gw_a = G(
             Gateway,
             name="a_gateway",
-            _maintainers=FAKE_USERNAME,
             status=GatewayStatusEnum.ACTIVE.value,
             is_public=True,
             tenant_mode="single",
             tenant_id="default",
         )
         for gateway in [gw_z, gw_a]:
+            G(
+                GatewayMember,
+                gateway=gateway,
+                username=FAKE_USERNAME,
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+            )
             G(
                 AppPermissionApply,
                 gateway=gateway,
@@ -1142,6 +1160,12 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
     def test_list(self, request_view, fake_gateway):
         """测试我的申请 - API 网关：返回当前用户提交的申请"""
         G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="operator",
+            role=GatewayRoleEnum.OPERATOR.value,
+        )
+        G(
             AppPermissionApply,
             gateway=fake_gateway,
             bk_app_code="app1",
@@ -1159,7 +1183,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
-        assert result["data"]["results"][0]["approvers"] == fake_gateway.maintainers
+        assert result["data"]["results"][0]["approvers"] == ["operator"]
         assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
 
@@ -1316,6 +1340,12 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
     def test_list(self, request_view, fake_gateway, fake_mcp_server):
         """测试我的申请 - MCP Server：返回当前用户提交的 MCP 权限申请"""
         G(
+            GatewayMember,
+            gateway=fake_gateway,
+            username="operator",
+            role=GatewayRoleEnum.OPERATOR.value,
+        )
+        G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
             bk_app_code="app1",
@@ -1334,7 +1364,7 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
-        assert result["data"]["results"][0]["approvers"] == fake_gateway.maintainers
+        assert result["data"]["results"][0]["approvers"] == ["operator"]
         assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
 

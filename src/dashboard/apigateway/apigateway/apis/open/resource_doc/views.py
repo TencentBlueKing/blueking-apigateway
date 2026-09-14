@@ -19,7 +19,7 @@
 from bkapi_client_generator import ExpandSwaggerError, GenerateMarkdownError
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.open.permissions import (
@@ -41,9 +41,9 @@ from .serializers import (
 class DocImportByArchiveApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(
-        request_body=DocImportByArchiveV1InputSLZ,
-        responses={status.HTTP_200_OK: ""},
+    @extend_schema(
+        request=DocImportByArchiveV1InputSLZ,
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["OpenAPI.V1"],
     )
     @transaction.atomic
@@ -71,9 +71,9 @@ class DocImportByArchiveApi(generics.CreateAPIView):
 class DocImportBySwaggerApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(
-        request_body=DocImportBySwaggerV1InputSLZ,
-        responses={status.HTTP_200_OK: ""},
+    @extend_schema(
+        request=DocImportBySwaggerV1InputSLZ,
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
         tags=["OpenAPI.V1"],
     )
     @transaction.atomic

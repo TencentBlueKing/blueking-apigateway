@@ -1,6 +1,6 @@
 {
   "name": "blueking-api-gateway",
-  "version": "1.22.0",
+  "version": "1.25.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,7 +25,7 @@
     "@blueking/notice-component": "^2.0.5",
     "@blueking/release-note": "0.0.1-beta.17",
     "@blueking/status-tag": "^1.2.1",
-    "@blueking/tdesign-ui": "0.0.2-beta.13",
+    "@blueking/tdesign-ui": "0.0.7",
     "@blueking/xss-filter": "^0.0.10",
     "@unocss/reset": "^66.6.8",
     "@vueuse/components": "^14.1.0",
@@ -33,7 +33,7 @@
     "@vueuse/integrations": "^13.6.0",
     "@vueuse/router": "^13.6.0",
     "axios": "^1.16.1",
-    "bkui-vue": "2.0.2-beta.93",
+    "bkui-vue": "3.0.8",
     "change-case": "^5.4.4",
     "dayjs": "^1.11.13",
     "echarts": "^5.6.0",

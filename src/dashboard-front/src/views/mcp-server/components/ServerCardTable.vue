@@ -373,9 +373,9 @@ const tableColumns = computed(() => {
           <Button
             text
             theme="primary"
-            onClick={() => Boolean(row.status) ? handleEditClick(row) : handleEnableClick(row)}
+            onClick={() => row.status ? handleEditClick(row) : handleEnableClick(row)}
           >
-            {t(Boolean(row.status) ? '编辑' : '启用')}
+            {t(row.status ? '编辑' : '启用')}
           </Button>
           <div
             class="ml-12px"

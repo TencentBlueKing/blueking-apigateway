@@ -35,6 +35,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.i18n import set_language
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from apigateway.apis.web.access_log.views import LogDetailInfoApi
 from apigateway.apis.web.mcp_server_log.views import (
@@ -42,7 +43,6 @@ from apigateway.apis.web.mcp_server_log.views import (
     MCPServerLogQueryChainApi,
     MCPServerLogQuerySummaryApi,
 )
-from apigateway.common.swagger import schema_view
 
 urlpatterns = [
     # /metrics
@@ -68,6 +68,8 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/tests/", include("apigateway.apis.web.api_test.urls")),
     path("backend/gateways/<int:gateway_id>/resources/", include("apigateway.apis.web.resource.urls")),
     path("backend/gateways/<int:gateway_id>/labels/", include("apigateway.apis.web.label.urls")),
+    path("backend/gateways/<int:gateway_id>/members/", include("apigateway.apis.web.gateway_member.urls")),
+    path("backend/gateways/<int:gateway_id>/me/", include("apigateway.apis.web.gateway_user.urls")),
     path("backend/gateways/<int:gateway_id>/metrics/", include("apigateway.apis.web.metrics.urls")),
     path("backend/gateways/<int:gateway_id>/monitors/", include("apigateway.apis.web.monitor.urls")),
     path("backend/gateways/<int:gateway_id>/permissions/", include("apigateway.apis.web.permission.urls")),
@@ -130,14 +132,20 @@ if not settings.ENABLE_MULTI_TENANT_MODE:
 if settings.DEBUG:
     # backend/docs/
     urlpatterns += [
-        # drf-yasg automatically generated documents
+        # OpenAPI 3 schema and locally served documentation viewers
         re_path(
             r"^backend/docs/auto/swagger\.(?P<format>json|yaml)$",
-            schema_view.without_ui(cache_timeout=0),
+            SpectacularAPIView.as_view(),
             name="schema-json",
         ),
         re_path(
-            r"^backend/docs/auto/swagger/$", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"
+            r"^backend/docs/auto/swagger/$",
+            SpectacularSwaggerView.as_view(url="/backend/docs/auto/swagger.json"),
+            name="schema-swagger-ui",
         ),
-        re_path(r"^backend/docs/auto/redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+        re_path(
+            r"^backend/docs/auto/redoc/$",
+            SpectacularRedocView.as_view(url="/backend/docs/auto/swagger.json"),
+            name="schema-redoc",
+        ),
     ]

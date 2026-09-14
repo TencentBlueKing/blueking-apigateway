@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
       title: t('权限审批'),
       matchRoute: 'PermissionApply',
       topMenu: 'Home',
+      permission: 'permission',
     },
   },
   {
@@ -38,6 +39,7 @@ const routes: RouteRecordRaw[] = [
       matchRoute: 'PermissionApply',
       topMenu: 'Home',
       showBackIcon: true,
+      permission: 'permission',
     },
   },
   {
@@ -48,6 +50,7 @@ const routes: RouteRecordRaw[] = [
       title: t('应用权限'),
       matchRoute: 'PermissionApp',
       topMenu: 'Home',
+      permission: 'permission',
     },
   },
 ];

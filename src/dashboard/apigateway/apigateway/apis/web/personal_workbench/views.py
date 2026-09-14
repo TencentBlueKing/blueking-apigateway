@@ -17,13 +17,14 @@
 #
 
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum
-from apigateway.apps.permission.models import AppPermissionApply
+from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.personal_workbench import WorkbenchPermissionHandler
@@ -108,9 +109,8 @@ class ResourcePrefetchMixin:
         page = self.paginate_queryset(queryset)
         items = page if page is not None else queryset
 
-        prefetched_resources = self._prefetch_resources(items)
         context = self.get_serializer_context()
-        context["prefetched_resources"] = prefetched_resources
+        context["prefetched_resources"] = self._prefetch_resources(items)
         serializer = self.get_serializer(items, many=True, context=context)
 
         if page is not None:
@@ -123,9 +123,9 @@ class ResourcePrefetchMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 网关下拉筛选选项列表",
-        query_serializer=WorkbenchFilterOptionQueryInputSLZ,
+    decorator=extend_schema(
+        description="个人工作台 - 网关下拉筛选选项列表",
+        parameters=[WorkbenchFilterOptionQueryInputSLZ],
         responses={status.HTTP_200_OK: WorkbenchGatewayFilterOptionSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -175,9 +175,9 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.Lis
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - MCP Server 下拉筛选选项列表",
-        query_serializer=WorkbenchFilterOptionQueryInputSLZ,
+    decorator=extend_schema(
+        description="个人工作台 - MCP Server 下拉筛选选项列表",
+        parameters=[WorkbenchFilterOptionQueryInputSLZ],
         responses={status.HTTP_200_OK: WorkbenchMCPServerFilterOptionSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -232,9 +232,9 @@ class WorkbenchMCPServerFilterOptionListApi(WorkbenchPermissionMixin, generics.L
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - MCP Server 维度网关下拉筛选选项列表",
-        query_serializer=WorkbenchFilterOptionQueryInputSLZ,
+    decorator=extend_schema(
+        description="个人工作台 - MCP Server 维度网关下拉筛选选项列表",
+        parameters=[WorkbenchFilterOptionQueryInputSLZ],
         responses={status.HTTP_200_OK: WorkbenchGatewayFilterOptionSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -294,8 +294,8 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的待办 - API 网关权限申请列表",
+    decorator=extend_schema(
+        description="个人工作台 - 我的待办 - API 网关权限申请列表",
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -303,20 +303,37 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
 class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchPermissionMixin, generics.ListAPIView):
     """我的待办 - API 网关
 
-    展示当前用户作为网关管理员（maintainer）待审批的权限申请单
+    展示当前用户作为网关审批责任人待审批的权限申请单
     """
 
     serializer_class = WorkbenchGatewayPermissionApplyOutputSLZ
+    queryset = AppPermissionApply.objects.none()  # Model metadata for schema generation.
     filterset_class = WorkbenchGatewayPendingPermissionApplyFilter
 
     def get_queryset(self):
         return self._get_pending_gateway_permission_apply_queryset().select_related("gateway").order_by("-id")
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.gateway_id for item in items}
+        )
+        context["prefetched_resources"] = self._prefetch_resources(items)
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
+
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的待办 - MCP Server 权限申请列表",
+    decorator=extend_schema(
+        description="个人工作台 - 我的待办 - MCP Server 权限申请列表",
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -324,10 +341,11 @@ class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
 class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的待办 - MCP Server
 
-    展示当前用户作为 MCP Server 所属网关管理员待审批的申请单
+    展示当前用户作为 MCP Server 所属网关审批责任人待审批的申请单
     """
 
     serializer_class = WorkbenchMCPPermissionApplyOutputSLZ
+    queryset = MCPServerAppPermissionApply.objects.none()  # Model metadata for schema generation.
     filterset_class = WorkbenchMCPPendingPermissionApplyFilter
 
     def get_queryset(self):
@@ -337,14 +355,29 @@ class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
             .order_by("-id")
         )
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.mcp_server.gateway_id for item in items}
+        )
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
+
 
 # ========== 我的申请 ==========
 
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的申请 - API 网关权限申请列表",
+    decorator=extend_schema(
+        description="个人工作台 - 我的申请 - API 网关权限申请列表",
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -364,11 +397,27 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         queryset = AppPermissionApply.objects.filter(applied_by=username).select_related("gateway").order_by("-id")
         return gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.gateway_id for item in items}
+        )
+        context["prefetched_resources"] = self._prefetch_resources(items)
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
+
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的申请 - MCP Server 权限申请列表",
+    decorator=extend_schema(
+        description="个人工作台 - 我的申请 - MCP Server 权限申请列表",
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -395,11 +444,26 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
         )
         return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        context = self.get_serializer_context()
+        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
+            {item.mcp_server.gateway_id for item in items}
+        )
+        serializer = self.get_serializer(items, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return OKJsonResponse(data=serializer.data)
+
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的已办 - API 网关权限申请列表",
+    decorator=extend_schema(
+        description="个人工作台 - 我的已办 - API 网关权限申请列表",
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionRecordOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -411,6 +475,7 @@ class WorkbenchHandledGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
     """
 
     serializer_class = WorkbenchGatewayPermissionRecordOutputSLZ
+    queryset = AppPermissionRecord.objects.none()  # Model metadata for schema generation.
     filterset_class = WorkbenchGatewayPermissionRecordFilter
 
     def get_queryset(self):
@@ -426,8 +491,8 @@ class WorkbenchHandledGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的已办 - MCP Server 权限申请列表",
+    decorator=extend_schema(
+        description="个人工作台 - 我的已办 - MCP Server 权限申请列表",
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionHandledOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
@@ -439,6 +504,7 @@ class WorkbenchHandledMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
     """
 
     serializer_class = WorkbenchMCPPermissionHandledOutputSLZ
+    queryset = MCPServerAppPermissionApply.objects.none()  # Model metadata for schema generation.
     filterset_class = WorkbenchMCPPermissionApplyFilter
 
     def get_queryset(self):

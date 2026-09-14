@@ -473,7 +473,7 @@ const handleSuspendToggle = async () => {
 };
 
 const handleDelete = () => {
-  if (Boolean(server.value.status)) return;
+  if (server.value.status) return;
 
   usePopInfoBox({
     isShow: true,

@@ -19,6 +19,7 @@
 from typing import Any, Dict, List, Optional
 
 from django.utils.translation import gettext as _
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
@@ -35,6 +36,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.biz.constants import BK_USERNAME_PATTERN
+from apigateway.biz.gateway import build_gateway_doc_maintainers
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, UserManagedBKAppCodeValidator
@@ -107,10 +109,10 @@ class GatewayListOutputSLZ(serializers.Serializer):
     kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return obj.maintainers
+        return self.context["gateway_administrators_map"].get(obj.id, [])
 
     def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+        return build_gateway_doc_maintainers(obj, self.get_maintainers(obj))
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)
@@ -128,10 +130,10 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return obj.maintainers
+        return self.context["gateway_administrators_map"].get(obj.id, [])
 
     def get_doc_maintainers(self, obj):
-        return obj.doc_maintainers
+        return build_gateway_doc_maintainers(obj, self.get_maintainers(obj))
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)
@@ -869,6 +871,7 @@ class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
         )
 
 
+@extend_schema_serializer(many=False)
 class GatewayReleasedResourceListOutputSLZ(serializers.Serializer):
     count = serializers.IntegerField(read_only=True, help_text="资源数量")
     results = GatewayReleasedResourceListItemOutputSLZ(many=True, read_only=True)

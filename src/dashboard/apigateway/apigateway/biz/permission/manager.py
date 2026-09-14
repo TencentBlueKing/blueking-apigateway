@@ -37,6 +37,7 @@ from apigateway.apps.permission.models import (
     AppPermissionRecord,
     AppResourcePermission,
 )
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkpaas import get_app_maintainers
 from apigateway.core.models import Gateway, Resource
@@ -177,9 +178,11 @@ class PermissionDimensionManager(metaclass=ABCMeta):
 
         # 如果启用了 ITSM 权限申请工单，创建 ITSM 工单
         if settings.ENABLE_ITSM4_PERMISSION_APPLY:
+            approvers = GatewayMember.objects.list_gateway_approvers(gateway.id)
             self._create_itsm_ticket(
                 record=record,
                 gateway=gateway,
+                approvers=approvers,
                 bk_app_code=bk_app_code,
                 grant_dimension=grant_dimension,
                 resource_ids=resource_ids,
@@ -204,6 +207,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         self,
         record: AppPermissionRecord,
         gateway: Gateway,
+        approvers: List[str],
         bk_app_code: str,
         grant_dimension: str,
         resource_ids: List[int],
@@ -238,7 +242,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
                 applied_by=ticket_applicant,
                 apply_record_id=record.id,
                 apply_reason=record.reason,
-                approvers=gateway.maintainers,
+                approvers=approvers,
                 callback_token=callback_token,
             )
 

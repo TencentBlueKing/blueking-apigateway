@@ -21,6 +21,7 @@ from pydantic import TypeAdapter
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayData, GatewayHandler, GatewaySaver
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, GatewayTypeEnum
@@ -143,7 +144,7 @@ class TestGatewaySaver:
         assert gateway.id == saver._gateway.id
         assert gateway.description == "desc"
         assert gateway.description_en == "desc en"
-        assert gateway.maintainers == ["admin"]
+        assert GatewayMember.objects.list_gateway_administrators(gateway.id) == ["admin"]
         assert gateway.status == 1
         assert gateway.is_public is True
         assert gateway.is_official is True
@@ -187,7 +188,7 @@ class TestGatewaySaver:
         assert gateway.id == saver._gateway.id
         assert gateway.description == "desc"
         assert gateway.description_en == "desc en"
-        assert gateway.maintainers == ["admin", "admin2"]
+        assert GatewayMember.objects.list_gateway_administrators(gateway.id) == ["admin", "admin2"]
         assert gateway.status == 1
         assert gateway.is_public is True
         assert gateway.is_official is True
@@ -219,6 +220,24 @@ class TestGatewaySaver:
 
         assert gateway.is_official is True
         assert Gateway.objects.get(id=fake_gateway.id).is_official is True
+
+    def test_update_skips_member_sync_when_maintainers_not_provided(self, fake_gateway, mocker):
+        mocked_add_gateway_administrators = mocker.patch("apigateway.biz.gateway.gateway.add_gateway_administrators")
+
+        saver = GatewaySaver(
+            fake_gateway.id,
+            GatewayData(
+                name=fake_gateway.name,
+                description="desc",
+                status=0,
+                is_public=True,
+                tenant_mode="single",
+                tenant_id="default",
+            ),
+        )
+        saver._update_gateway()
+
+        mocked_add_gateway_administrators.assert_not_called()
 
     def test_get_gateway_unfiltered_sensitive_keys(self, settings):
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {"foo": {"unfiltered_sensitive_keys": ["bar"]}}

@@ -40,7 +40,6 @@ def gen_programmable_gateway_links(app_code: str) -> dict:
         ],
         # 更多操作
         "more": [
-            {"name": "部署管理", "link": f"{base_url}/deployments/prod"},
             {"name": "访问管理", "link": f"{base_url}/app_entry_config?tab=moduleAddress"},
         ],
     }

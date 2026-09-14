@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
@@ -30,8 +30,8 @@ from .serializers import StageOutputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关公开、可用的环境列表",
+    decorator=extend_schema(
+        description="获取网关公开、可用的环境列表",
         responses={status.HTTP_200_OK: StageOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Stage"],
     ),

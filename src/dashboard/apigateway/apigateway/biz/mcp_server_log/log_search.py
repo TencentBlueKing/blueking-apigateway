@@ -27,6 +27,7 @@ from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
 from .constants import MCP_SERVER_LOG_OUTPUT_FIELDS, STATUS_HTTP_CODES
+from .es_query import filter_search_by_gateway_id
 
 logger = logging.getLogger(__name__)
 
@@ -110,18 +111,7 @@ class MCPServerLogSearchClient:
         # mcp-proxy 的 HTTP 层日志和 MCP 协议层日志共用同一个 ES index，
         # 同时展示 HTTP 层和 MCP 协议层日志，不再强制要求 mcp_method 字段存在
 
-        # BKLog 中 Go logger 输出的字段存储在 __ext_json 中，gateway_id 需要同时搜顶层和 __ext_json
-        # 注意：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
-        # 把 __ext_json 前缀的 __ 去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict
-        if self._gateway_id:
-            s = s.filter(
-                "bool",
-                should=[
-                    Q("term", gateway_id=self._gateway_id),
-                    Q({"term": {"__ext_json.gateway_id": self._gateway_id}}),
-                ],
-                minimum_should_match=1,
-            )
+        s = filter_search_by_gateway_id(s, self._gateway_id)
 
         s = self._apply_term_filters(s)
         s = self._apply_conditions(s)

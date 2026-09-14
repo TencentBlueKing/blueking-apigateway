@@ -15,6 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .permissions import GatewayDisplayablePermission, GatewayPermission
+from django.urls import path
 
-__all__ = ["GatewayDisplayablePermission", "GatewayPermission"]
+from .views import GatewayUserRoleRetrieveApi
+
+urlpatterns = [
+    path("role/", GatewayUserRoleRetrieveApi.as_view(), name="gateway.user_role.retrieve"),
+]

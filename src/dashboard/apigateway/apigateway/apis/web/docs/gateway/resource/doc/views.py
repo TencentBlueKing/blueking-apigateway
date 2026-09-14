@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
@@ -32,9 +32,9 @@ from .serializers import DocInputSLZ, DocOutputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关资源的文档",
-        query_serializer=DocInputSLZ,
+    decorator=extend_schema(
+        description="获取网关资源的文档",
+        parameters=[DocInputSLZ],
         responses={status.HTTP_200_OK: DocOutputSLZ},
         tags=["WebAPI.Docs.ResourceDoc"],
     ),

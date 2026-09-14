@@ -18,7 +18,7 @@
 #
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apis.open.permissions import (
@@ -37,8 +37,8 @@ class ResourceSyncApi(generics.CreateAPIView):
     def get_queryset(self):
         return Resource.objects.filter(gateway=self.request.gateway)
 
-    @swagger_auto_schema(
-        request_body=ResourceImportInputSLZ,
+    @extend_schema(
+        request=ResourceImportInputSLZ,
         responses={status.HTTP_200_OK: ResourceSyncOutputSLZ()},
         tags=["OpenAPI.V1"],
     )

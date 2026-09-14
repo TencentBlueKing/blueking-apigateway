@@ -18,7 +18,7 @@
 #
 from typing import List
 
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.system import serializers
@@ -43,8 +43,8 @@ class SystemViewSet(viewsets.GenericViewSet):
 
         return ComponentSystem.objects.filter(board__in=boards, id__in=system_ids)
 
-    @swagger_auto_schema(
-        query_serializer=serializers.SystemQueryV1SLZ,
+    @extend_schema(
+        parameters=[serializers.SystemQueryV1SLZ],
         responses={status.HTTP_200_OK: serializers.SystemV1SLZ(many=True)},
         tags=["OpenAPI.ESB.System"],
     )

@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.esb.bkcore.models import ComponentSystem
@@ -30,8 +30,8 @@ from .serializers import SystemListOutputSLZ, SystemRetrieveOutputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取组件系统列表",
+    decorator=extend_schema(
+        description="获取组件系统列表",
         responses={status.HTTP_200_OK: SystemListOutputSLZ(many=True)},
         tags=["WebAPI.Docs.ESB.System"],
     ),
@@ -46,8 +46,8 @@ class SystemListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取组件系统信息",
+    decorator=extend_schema(
+        description="获取组件系统信息",
         responses={status.HTTP_200_OK: SystemRetrieveOutputSLZ},
         tags=["WebAPI.Docs.ESB.System"],
     ),

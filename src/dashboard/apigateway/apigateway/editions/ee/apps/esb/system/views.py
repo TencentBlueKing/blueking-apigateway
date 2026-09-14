@@ -19,7 +19,7 @@
 import logging
 
 from django.db import transaction
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -39,8 +39,8 @@ class SystemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
     lookup_field = "id"
 
-    @swagger_auto_schema(
-        response_serializer=serializers.SystemSLZ(many=True),
+    @extend_schema(
+        responses=serializers.SystemSLZ(many=True),
         tags=["ESB.System"],
     )
     def list(self, request, *args, **kwargs):
@@ -58,8 +58,8 @@ class SystemViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
-        response_serializer=serializers.SystemSLZ,
+    @extend_schema(
+        responses=serializers.SystemSLZ,
         tags=["ESB.System"],
     )
     def retrieve(self, request, *args, **kwargs):
@@ -74,8 +74,8 @@ class SystemViewSet(viewsets.ModelViewSet):
         )
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
-        request_body=serializers.SystemSLZ,
+    @extend_schema(
+        request=serializers.SystemSLZ,
         tags=["ESB.System"],
     )
     @transaction.atomic
@@ -103,8 +103,8 @@ class SystemViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse(data={"id": slz.instance.id})
 
-    @swagger_auto_schema(
-        request_body=serializers.SystemSLZ,
+    @extend_schema(
+        request=serializers.SystemSLZ,
         tags=["ESB.System"],
     )
     @transaction.atomic
@@ -129,7 +129,7 @@ class SystemViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(tags=["ESB.System"])
+    @extend_schema(tags=["ESB.System"])
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

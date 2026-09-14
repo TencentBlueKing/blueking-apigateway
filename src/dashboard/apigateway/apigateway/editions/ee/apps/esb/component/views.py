@@ -22,7 +22,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -55,7 +55,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
     filterset_class = ESBChannelFilter
 
-    @swagger_auto_schema(response_serializer=serializers.ESBChannelSLZ(many=True), tags=["ESB.Component"])
+    @extend_schema(responses=serializers.ESBChannelSLZ(many=True), tags=["ESB.Component"])
     def list(self, request, *args, **kwargs):
         queryset = ESBChannel.objects.exclude(system__data_type=DataTypeEnum.OFFICIAL_HIDDEN.value).order_by(
             "-is_active", "system__name", "path"
@@ -73,13 +73,13 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
         return self.get_paginated_response(slz.data)
 
-    @swagger_auto_schema(response_serializer=serializers.ESBChannelDetailSLZ, tags=["ESB.Component"])
+    @extend_schema(responses=serializers.ESBChannelDetailSLZ, tags=["ESB.Component"])
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.ESBChannelDetailSLZ(instance)
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(request_body=serializers.ESBChannelSLZ, tags=["ESB.Component"])
+    @extend_schema(request=serializers.ESBChannelSLZ, tags=["ESB.Component"])
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
@@ -98,7 +98,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse(data={"id": slz.instance.id})
 
-    @swagger_auto_schema(request_body=serializers.ESBChannelSLZ, tags=["ESB.Component"])
+    @extend_schema(request=serializers.ESBChannelSLZ, tags=["ESB.Component"])
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -112,7 +112,7 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(tags=["ESB.Component"])
+    @extend_schema(tags=["ESB.Component"])
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -127,12 +127,13 @@ class ESBChannelViewSet(viewsets.ModelViewSet):
 
 
 class ESBChannelBatchViewSet(viewsets.ModelViewSet):
+    schema_delete_request_body = True
     queryset = ESBChannel.objects.all()
     serializer_class = serializers.ESBChannelBatchSLZ
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
     lookup_field = "id"
 
-    @swagger_auto_schema(request_body=serializers.ESBChannelBatchSLZ, tags=["ESB.Component"])
+    @extend_schema(request=serializers.ESBChannelBatchSLZ, tags=["ESB.Component"])
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
@@ -150,7 +151,7 @@ class ESBChannelBatchViewSet(viewsets.ModelViewSet):
 class ComponentSyncViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
 
-    @swagger_auto_schema(tags=["ESB.Component"])
+    @extend_schema(responses={200: {"type": "object", "additionalProperties": True}}, tags=["ESB.Component"])
     def need_new_release(self, request, *args, **kwargs):
         if ComponentReleaseHistory.objects.need_new_release():
             return OKJsonResponse(
@@ -162,20 +163,22 @@ class ComponentSyncViewSet(viewsets.ViewSet):
 
         return OKJsonResponse(data={"need_new_release": False})
 
-    @swagger_auto_schema(tags=["ESB.Component"])
+    @extend_schema(responses={200: {"type": "object", "additionalProperties": True}}, tags=["ESB.Component"])
     def get_release_status(self, request, *args, **kwargs):
         """获取组件的发布状态"""
         release_lock = get_release_lock()
         locked = release_lock.locked()
         return OKJsonResponse(data={"is_releasing": locked})
 
-    @swagger_auto_schema(tags=["ESB.Component"])
+    @extend_schema(responses={200: {"type": "object", "additionalProperties": True}}, tags=["ESB.Component"])
     def retrieve_esb_gateway(self, request, *args, **kwargs):
         """获取 ESB 组件对应网关的信息"""
         esb_gateway = self._get_esb_gateway()
         return OKJsonResponse(data={"gateway_id": esb_gateway.id, "gateway_name": esb_gateway.name})
 
-    @swagger_auto_schema(tags=["ESB.Component"])
+    @extend_schema(
+        request=None, responses={200: serializers.ComponentResourceBindingSLZ(many=True)}, tags=["ESB.Component"]
+    )
     def sync_check(self, request, *args, **kwargs):
         esb_gateway = self._get_esb_gateway()
 
@@ -197,7 +200,9 @@ class ComponentSyncViewSet(viewsets.ViewSet):
         slz = serializers.ComponentResourceBindingSLZ(resources, many=True)
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(tags=["ESB.Component"])
+    @extend_schema(
+        request=None, responses={200: {"type": "object", "additionalProperties": True}}, tags=["ESB.Component"]
+    )
     def sync_and_release(self, request, *args, **kwargs):
         esb_gateway = self._get_esb_gateway()
 
@@ -241,8 +246,8 @@ class ComponentReleaseHistoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
     lookup_field = "id"
 
-    @swagger_auto_schema(
-        query_serializer=serializers.QueryComponentReleaseHistorySLZ,
+    @extend_schema(
+        parameters=[serializers.QueryComponentReleaseHistorySLZ],
         responses={status.HTTP_200_OK: serializers.ComponentReleaseHistorySLZ(many=True)},
         tags=["ESB.Component"],
     )
@@ -269,7 +274,7 @@ class ComponentReleaseHistoryViewSet(viewsets.ModelViewSet):
         )
         return self.get_paginated_response(slz.data)
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses={status.HTTP_200_OK: serializers.ComponentResourceBindingSLZ(many=True)},
         tags=["ESB.Component"],
     )
@@ -284,7 +289,7 @@ class ComponentReleaseHistoryStatusViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ComponentReleaseHistoryStatusSLZ
     lookup_field = "id"
 
-    @swagger_auto_schema(
+    @extend_schema(
         responses={status.HTTP_200_OK: serializers.ComponentReleaseHistoryStatusSLZ},
         tags=["ESB.Component"],
     )

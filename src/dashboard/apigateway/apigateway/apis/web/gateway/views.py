@@ -22,10 +22,12 @@ from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
@@ -75,20 +77,31 @@ from .serializers import (
 )
 
 
+class RequestGatewayObjectMixin:
+    """复用 GatewayActionPermission 已加载的 request.gateway，避免按 pk 再查一次。
+
+    覆盖 get_object() 会跳过 DRF 的 check_object_permissions()。当前这些 View
+    没有对象级权限类，权限已在 GatewayActionPermission.has_permission 中完成。
+    """
+
+    def get_object(self):
+        return self.request.gateway
+
+
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关列表",
+    decorator=extend_schema(
+        description="获取网关列表",
         responses={status.HTTP_200_OK: GatewayListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建网关",
-        request_body=GatewayCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="创建网关",
+        request=GatewayCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.Gateway"],
     ),
 )
@@ -96,11 +109,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     serializer_class = GatewayListInputSLZ
 
     def list(self, request, *args, **kwargs):
-        # 获取用户有权限的网关列表，后续切换到 IAM
-
         user_tenant_id = get_user_tenant_id(request)
 
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username, user_tenant_id)
+        gateways = GatewayHandler.list_gateways_by_user(
+            request.user.username,
+            user_tenant_id,
+            roles=tuple(GatewayRoleEnum.get_values()),
+        )
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -262,48 +277,48 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定网关的信息",
+    decorator=extend_schema(
+        description="获取指定网关的信息",
         responses={status.HTTP_200_OK: GatewayRetrieveOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关",
-        request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关",
+        request=GatewayUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关部分信息",
-        request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关部分信息",
+        request=GatewayUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除网关",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除网关",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Gateway.objects.all()
+class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.RetrieveUpdateDestroyAPIView):
+    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
     serializer_class = GatewayRetrieveOutputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = GatewayRetrieveOutputSLZ(
             instance,
             context={
+                "gateway_administrators": GatewayMember.objects.list_gateway_administrators(instance.id),
                 "auth_config": GatewayAuthContext().get_auth_config(instance.pk),
                 "bk_app_codes": GatewayAppBindingHandler.get_bound_app_codes(instance),
                 "related_app_codes": GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id),
@@ -334,7 +349,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         if request.gateway.is_programmable:
             update_app_maintainers(
                 slz.instance.name,
-                slz.instance.maintainers,
+                GatewayMember.objects.list_gateway_administrators(slz.instance.id),
                 user_credentials=get_user_credentials_from_request(request),
             )
 
@@ -389,17 +404,17 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关状态，如启用、停用",
-        request_body=GatewayUpdateStatusInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关状态，如启用、停用",
+        request=GatewayUpdateStatusInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayUpdateStatusApi(generics.UpdateAPIView):
-    queryset = Gateway.objects.all()
+@extend_schema(tags=["WebAPI.Gateway"])
+class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
+    schema_request_partial = False
     serializer_class = GatewayUpdateStatusInputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -462,16 +477,13 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关可配置的应用列表，用于应用选择器",
+    decorator=extend_schema(
+        description="获取网关可配置的应用列表，用于应用选择器",
         responses={status.HTTP_200_OK: GatewayTenantAppListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayTenantAppListApi(generics.ListAPIView):
-    queryset = Gateway.objects.all()
-    lookup_url_kwarg = "gateway_id"
-
+class GatewayTenantAppListApi(RequestGatewayObjectMixin, generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -493,16 +505,14 @@ class GatewayTenantAppListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定网关的开发指引页面",
+    decorator=extend_schema(
+        description="获取指定网关的开发指引页面",
         responses={status.HTTP_200_OK: GatewayDevGuidelineOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
-    queryset = Gateway.objects.all()
+class GatewayDevGuidelineRetrieveApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
     serializer_class = GatewayDevGuidelineOutputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -542,16 +552,14 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="网关环境发布状态",
+    decorator=extend_schema(
+        description="网关环境发布状态",
         responses={status.HTTP_200_OK: GatewayReleasingStatusOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayReleasingStatusApi(generics.RetrieveAPIView):
-    queryset = Gateway.objects.all()
+class GatewayReleasingStatusApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
     serializer_class = GatewayReleasingStatusOutputSLZ
-    lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -571,9 +579,9 @@ class GatewayReleasingStatusApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="检查网关名称是否可用",
-        query_serializer=GatewayCheckNameAvailableInputSLZ,
+    decorator=extend_schema(
+        description="检查网关名称是否可用",
+        parameters=[GatewayCheckNameAvailableInputSLZ],
         responses={status.HTTP_200_OK: GatewayCheckNameAvailableOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
@@ -596,8 +604,8 @@ class GatewayCheckNameAvailableApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="检查用户是否已授权代码仓库",
+    decorator=extend_schema(
+        description="检查用户是否已授权代码仓库",
         responses={status.HTTP_200_OK: GatewayRepoAuthorizationOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),

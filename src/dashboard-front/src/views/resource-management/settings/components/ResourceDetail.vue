@@ -1019,7 +1019,8 @@ const backPathEdit = ref(false);
 const nameInputRef = ref();
 // 服务列表下拉框数据
 const backendsList = ref<IBackendListOutput[]>([]);
-const popoverConfirmRef = ref();
+const popoverConfirmRef = ref<InstanceType<typeof BkPopConfirm>>();
+const timeOutInputRef = ref<InstanceType<typeof BkInput> & { focus: () => void }>();
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);
 const timeOutValue = ref('');
@@ -1204,17 +1205,22 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
 // 服务详情缓存数据
 const servicesConfigsStorage = ref<any[]>([]);
 
-const handleClickOutSide = (e: Event) => {
-  if (
-    isShowPopConfirm.value
-    && !unref(popoverConfirmRef)?.content?.el?.contains(e?.target)
-  ) {
-    handleCancelTime();
-  }
+const handleClickOutSide = (e: MouseEvent) => {
+  setTimeout(() => {
+    const target = e?.target as HTMLElement | null;
+    const isInsidePopover = !!target?.closest?.('.back-config-timeout-popover');
+    if (isShowPopConfirm.value && !isInsidePopover) {
+      handleCancelTime();
+    }
+  });
 };
+
 const handleShowPopover = () => {
   isShowPopConfirm.value = true;
   isTimeEmpty.value = false;
+  setTimeout(() => {
+    timeOutInputRef.value?.focus?.();
+  }, 200);
   servicesData.value.config.forEach((item: any) => {
     item.isEditTime = false;
   });
@@ -1272,6 +1278,7 @@ const renderTimeOutLabel = () => {
               <div class="back-config-timeout-content">
                 <div class="back-config-timeout-input">
                   <BkInput
+                    ref={timeOutInputRef}
                     v-model={timeOutValue.value}
                     maxlength={3}
                     overMaxLengthLimit={true}
@@ -1283,7 +1290,6 @@ const renderTimeOutLabel = () => {
                     // nativeOnKeypress={(value: string) => {
                     //   value = value.replace(/\d/g, '');
                     // }}
-                    autofocus={true}
                     suffix="s"
                     onEnter={() => handleConfirmTime()}
                   />

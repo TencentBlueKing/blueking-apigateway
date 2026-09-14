@@ -18,7 +18,7 @@
 from django.db.models import Count, Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.mcp_server.serializers import (
@@ -56,11 +56,11 @@ from .serializers import (
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关的 MCPServer 列表",
-        query_serializer=MCPServerListInputSLZ,
+    decorator=extend_schema(
+        description="获取网关的 MCPServer 列表",
+        parameters=[MCPServerListInputSLZ],
         responses={status.HTTP_200_OK: MCPServerListOutputSLZ(many=True)},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceServerListApi(generics.ListAPIView):
@@ -125,14 +125,14 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="发起 MCPServer 权限申请",
-        request_body=MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
+    decorator=extend_schema(
+        description="发起 MCPServer 权限申请",
+        request=MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
         responses={
             status.HTTP_201_CREATED: MCPServerAppPermissionApplyCreateOutputSLZ(many=True),
-            status.HTTP_409_CONFLICT: "已存在待审批或已审批的 MCPServer 权限申请记录",
+            status.HTTP_409_CONFLICT: {"type": "object", "additionalProperties": True},
         },
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
@@ -181,10 +181,10 @@ class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取发起 MCPServer 权限申请时可选择的蓝鲸应用列表",
+    decorator=extend_schema(
+        description="获取发起 MCPServer 权限申请时可选择的蓝鲸应用列表",
         responses={status.HTTP_200_OK: MCPMarketplaceApplicableAppOutputSLZ(many=True)},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceApplicableAppListApi(generics.ListAPIView):
@@ -205,10 +205,10 @@ class MCPMarketplaceApplicableAppListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCP 市场中某个 Server 的详情",
+    decorator=extend_schema(
+        description="获取 MCP 市场中某个 Server 的详情",
         responses={status.HTTP_200_OK: MCPServerRetrieveOutputSLZ()},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
@@ -235,10 +235,10 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCP 市场中某个 Server 的某个工具的文档",
+    decorator=extend_schema(
+        description="获取 MCP 市场中某个 Server 的某个工具的文档",
         responses={status.HTTP_200_OK: MCPServerToolDocOutputSLZ()},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
@@ -269,10 +269,10 @@ class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、VSCode 等工具的配置）",
+    decorator=extend_schema(
+        description="获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、VSCode 等工具的配置）",
         responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
@@ -300,11 +300,11 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取 MCP 市场分类列表",
-        query_serializer=MCPServerListInputSLZ,
+    decorator=extend_schema(
+        description="获取 MCP 市场分类列表",
+        parameters=[MCPServerListInputSLZ],
         responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceCategoryListApi(generics.ListAPIView):
@@ -374,11 +374,11 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="批量获取 MCP 市场 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）",
-        request_body=MCPServerBatchConfigInputSLZ,
+    decorator=extend_schema(
+        description="批量获取 MCP 市场 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）",
+        request=MCPServerBatchConfigInputSLZ,
         responses={status.HTTP_200_OK: MCPServerBatchConfigOutputSLZ()},
-        tags=["WebAPI.MCPServer"],
+        tags=["WebAPI.MCPMarketplace"],
     ),
 )
 class MCPMarketplaceBatchConfigApi(generics.CreateAPIView):

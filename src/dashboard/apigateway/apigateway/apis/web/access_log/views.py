@@ -28,9 +28,10 @@ from django.conf import settings
 from django.http import Http404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.access_log import (
     ES_LOG_FIELDS,
     LOG_LINK_EXPIRE_SECONDS,
@@ -41,7 +42,7 @@ from apigateway.biz.access_log import (
     LogSearchClient,
 )
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
@@ -54,15 +55,40 @@ from .serializers import (
 )
 
 
+def _get_log_detail_data(request_id: str) -> dict:
+    """查询日志并组装分享链接和工具箱共用的展示数据。"""
+    total_count, logs = LogHandler.search_logs_by_request_id_for_toolbox(request_id)
+
+    paginator = LimitOffsetPaginator(total_count, 0, total_count)
+
+    # 将字段信息添加到结果中，便于前端展示
+    results = paginator.get_paginated_data(logs)
+    fields = deepcopy(ES_LOG_FIELDS)
+    for mapping in TOOLBOX_LOG_FIELD_MAPPINGS:
+        fields.insert(
+            mapping["insert_at"],
+            {
+                "label": mapping["label"],
+                "field": mapping["output_field"],
+                "is_filter": mapping["is_filter"],
+            },
+        )
+    results["fields"] = fields
+
+    return results
+
+
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=RequestLogQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[RequestLogQueryInputSLZ],
         responses={status.HTTP_200_OK: TimeChartOutputSLZ()},
         tags=["WebAPI.Log"],
     ),
 )
 class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def retrieve(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -90,12 +116,14 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],
     ),
 )
 class SearchLogListApi(generics.ListAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def list(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -138,12 +166,14 @@ class SearchLogListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: "file/csv"},
+    decorator=extend_schema(
+        responses={(200, "application/octet-stream"): bytes},
         tags=["WebAPI.Log"],
     ),
 )
 class LogExportApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     def get(self, request, *args, **kwargs):
         # 定义限制条数为10000条
         limit = 10000
@@ -178,7 +208,7 @@ class LogExportApi(generics.RetrieveAPIView):
         logs = LogHandler.add_or_refine_fields(logs)
 
         # 准备文件名称数据
-        gateway = Gateway.objects.get(id=request.gateway.id)
+        gateway = request.gateway
 
         # 格式化时间
         time_start_dt = datetime.fromtimestamp(int(data.get("time_start")))
@@ -215,8 +245,8 @@ class LogExportApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=LogDetailQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[LogDetailQueryInputSLZ],
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
@@ -232,20 +262,12 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
-        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
-
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        # 将字段信息添加到结果中，便于前端展示
-        results = paginator.get_paginated_data(logs)
-        results["fields"] = ES_LOG_FIELDS
-
-        return OKJsonResponse(data=results)
+        return OKJsonResponse(data=_get_log_detail_data(request_id))
 
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
@@ -257,36 +279,18 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
         """
         获取指定 request_id 日志的分享链接
         """
-        total_count, logs = LogHandler.search_logs_by_request_id_for_toolbox(request_id)
-
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        # 将字段信息添加到结果中，便于前端展示
-        results = paginator.get_paginated_data(logs)
-        fields = deepcopy(ES_LOG_FIELDS)
-        for mapping in TOOLBOX_LOG_FIELD_MAPPINGS:
-            fields.insert(
-                mapping["insert_at"],
-                {
-                    "label": mapping["label"],
-                    "field": mapping["output_field"],
-                    "is_filter": mapping["is_filter"],
-                },
-            )
-        results["fields"] = fields
-
-        return OKJsonResponse(data=results)
+        return OKJsonResponse(data=_get_log_detail_data(request_id))
 
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
         tags=["WebAPI.Log"],
     ),
 )
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
-    gateway_permission_exempt = False
+    gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
         """

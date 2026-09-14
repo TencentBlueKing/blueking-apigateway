@@ -18,7 +18,7 @@
 #
 from django.db.models import Q
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.models import AuditEventLog
@@ -28,10 +28,10 @@ from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=AuditEventLogQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[AuditEventLogQueryInputSLZ],
         responses={status.HTTP_200_OK: AuditEventLogOutputSLZ(many=True)},
-        operation_description="操作审计列表",
+        description="操作审计列表",
         tags=["WebAPI.Audit"],
     ),
 )

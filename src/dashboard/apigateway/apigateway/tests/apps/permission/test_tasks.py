@@ -114,22 +114,22 @@ class TestRenewAppResourcePermission:
 class TestAsyncFillItsmApprover:
     def test_get_itsm_approver_returns_structured_result(self, mocker):
         mocker.patch(
-            "apigateway.apps.permission.tasks.get_ticket_by_id",
-            return_value=mocker.Mock(actual_approver="admin"),
+            "apigateway.apps.permission.tasks.list_approval_tasks",
+            return_value=mocker.Mock(get_actual_approver=mocker.Mock(return_value="admin")),
         )
 
         assert _get_itsm_approver_for_backfill("ticket-001") == "admin"
 
     def test_get_itsm_approver_returns_empty_when_ticket_has_no_approver(self, mocker):
         mocker.patch(
-            "apigateway.apps.permission.tasks.get_ticket_by_id",
-            return_value=mocker.Mock(actual_approver=""),
+            "apigateway.apps.permission.tasks.list_approval_tasks",
+            return_value=mocker.Mock(get_actual_approver=mocker.Mock(return_value="")),
         )
 
         assert _get_itsm_approver_for_backfill("ticket-001") == ""
 
     def test_get_itsm_approver_returns_empty_when_query_failed(self, mocker):
-        mocker.patch("apigateway.apps.permission.tasks.get_ticket_by_id", side_effect=Exception("remote error"))
+        mocker.patch("apigateway.apps.permission.tasks.list_approval_tasks", side_effect=Exception("remote error"))
 
         assert _get_itsm_approver_for_backfill("ticket-001") == ""
 
@@ -150,8 +150,8 @@ class TestAsyncFillItsmApprover:
             handled_by="itsm",
         )
         mocker.patch(
-            "apigateway.apps.permission.tasks.get_ticket_by_id",
-            return_value=mocker.Mock(actual_approver="admin"),
+            "apigateway.apps.permission.tasks.list_approval_tasks",
+            return_value=mocker.Mock(get_actual_approver=mocker.Mock(return_value="admin")),
         )
 
         async_fill_gateway_or_resource_itsm_approver(GrantDimensionEnum.API.value, record.id, "ticket-001")
@@ -180,8 +180,8 @@ class TestAsyncFillItsmApprover:
             handled_by="itsm",
         )
         mocker.patch(
-            "apigateway.apps.permission.tasks.get_ticket_by_id",
-            return_value=mocker.Mock(actual_approver="admin"),
+            "apigateway.apps.permission.tasks.list_approval_tasks",
+            return_value=mocker.Mock(get_actual_approver=mocker.Mock(return_value="admin")),
         )
 
         async_fill_gateway_or_resource_itsm_approver(GrantDimensionEnum.RESOURCE.value, record.id, "ticket-001")
@@ -201,8 +201,8 @@ class TestAsyncFillItsmApprover:
             handled_by="itsm",
         )
         mocker.patch(
-            "apigateway.apps.permission.tasks.get_ticket_by_id",
-            return_value=mocker.Mock(actual_approver="admin"),
+            "apigateway.apps.permission.tasks.list_approval_tasks",
+            return_value=mocker.Mock(get_actual_approver=mocker.Mock(return_value="admin")),
         )
 
         async_fill_mcp_server_itsm_approver(apply.id, "ticket-001")

@@ -792,7 +792,7 @@ watch(
     getExportDropData(filterFields, filterData);
     getApplicant();
     filterData.value.applied_by = '';
-    tableEmptyType.value = Boolean(filterData.value.mcp_server_id) ? 'searchEmpty' : 'empty';
+    tableEmptyType.value = filterData.value.mcp_server_id ? 'searchEmpty' : 'empty';
     getList();
   },
   { immediate: true },

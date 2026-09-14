@@ -29,7 +29,7 @@ import './assets/bk_icon_font/iconcool.js';
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
 // 全量引入 bkui-vue 样式
-import 'bkui-vue/dist/cli.css';
+import 'bkui-vue/dist/style.css';
 // 全局通知组件样式
 import '@blueking/notice-component/dist/style.css';
 // 版本发布通知组件样式

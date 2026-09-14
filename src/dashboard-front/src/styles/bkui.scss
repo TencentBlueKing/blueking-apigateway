@@ -152,3 +152,10 @@
     display: none;
   }
 }
+
+.bk-popover.bk-pop2-content[data-theme^=light] {
+
+  .bk-dropdown-menu {
+    border: none;
+  }
+}

@@ -23,7 +23,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.sdk import serializers
@@ -36,20 +36,20 @@ from apigateway.utils.responses import OKJsonResponse
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=serializers.GatewaySDKQueryInputSLZ(),
+    decorator=extend_schema(
+        parameters=[serializers.GatewaySDKQueryInputSLZ()],
         responses={status.HTTP_200_OK: serializers.GatewaySDKListOutputSLZ(many=True)},
         tags=["WebAPI.SDK"],
-        operation_description="sdk列表查询接口",
+        description="sdk列表查询接口",
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        request_body=serializers.GatewaySDKGenerateInputSLZ,
+    decorator=extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        request=serializers.GatewaySDKGenerateInputSLZ,
         tags=["WebAPI.SDK"],
-        operation_description="sdk创建接口",
+        description="sdk创建接口",
     ),
 )
 class GatewaySDKListCreateApi(generics.ListCreateAPIView):

@@ -18,7 +18,7 @@
 #
 from django.db import transaction
 from django.db.models import Count
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -36,8 +36,8 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserAccessESBPermission]
     lookup_field = "id"
 
-    @swagger_auto_schema(
-        response_serializer=serializers.DocCategorySLZ(many=True),
+    @extend_schema(
+        responses=serializers.DocCategorySLZ(many=True),
         tags=["ESB.DocCategory"],
     )
     def list(self, request, *args, **kwargs):
@@ -62,8 +62,8 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
-        response_serializer=serializers.DocCategorySLZ,
+    @extend_schema(
+        responses=serializers.DocCategorySLZ,
         tags=["ESB.DocCategory"],
     )
     def retrieve(self, request, *args, **kwargs):
@@ -71,8 +71,8 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
         slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
-        request_body=serializers.DocCategorySLZ,
+    @extend_schema(
+        request=serializers.DocCategorySLZ,
         tags=["ESB.DocCategory"],
     )
     def create(self, request, *args, **kwargs):
@@ -87,8 +87,8 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse(data={"id": slz.instance.id})
 
-    @swagger_auto_schema(
-        request_body=serializers.DocCategorySLZ,
+    @extend_schema(
+        request=serializers.DocCategorySLZ,
         tags=["ESB.DocCategory"],
     )
     def update(self, request, *args, **kwargs):
@@ -102,7 +102,7 @@ class DocCategoryViewSet(viewsets.ModelViewSet):
 
         return OKJsonResponse()
 
-    @swagger_auto_schema(tags=["ESB.DocCategory"])
+    @extend_schema(tags=["ESB.DocCategory"])
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
