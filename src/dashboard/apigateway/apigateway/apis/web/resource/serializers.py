@@ -1003,12 +1003,13 @@ class ResourcePathConflictResourceOutputSLZ(serializers.Serializer):
 
 
 class ResourcePathConflictGroupOutputSLZ(serializers.Serializer):
+    resources_truncated = serializers.BooleanField(read_only=True, help_text="本组是否存在未返回的资源")
     method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES, read_only=True, help_text="本组对应的具体请求方法")
     type = serializers.ChoiceField(
         choices=["normalized_path", "literal_parameter"], read_only=True, help_text="路径重叠类型"
     )
     resources = ResourcePathConflictResourceOutputSLZ(
-        many=True, read_only=True, help_text="重叠资源组；末段重叠表示字面量与参数之间重叠，非所有资源两两重叠"
+        many=True, read_only=True, help_text="最多 50 条资源；整段字面量与参数重叠，非所有资源两两重叠"
     )
 
     class Meta:

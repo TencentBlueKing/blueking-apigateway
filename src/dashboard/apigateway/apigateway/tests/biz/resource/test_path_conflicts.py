@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.biz.resource import find_resource_path_conflicts
+from apigateway.biz.resource import find_resource_path_conflicts, path_conflicts
 
 
 @pytest.mark.parametrize("count", [199, 200, 201])
@@ -42,8 +42,10 @@ def test_dense_resources_form_one_group(single):
     assert truncated is False
     assert len(groups) == 1
     assert groups[0]["method"] == "GET"
-    assert len(groups[0]["resources"]) == 2000
-    assert {item["id"] for item in groups[0]["resources"]} == set(range(2000))
+    assert len(groups[0]["resources"]) == 50
+    assert groups[0]["resources_truncated"] is True
+    if single:
+        assert any(item["id"] == candidate["id"] for item in groups[0]["resources"])
 
 
 @pytest.mark.parametrize("single", [False, True])
@@ -177,3 +179,49 @@ def test_parameter_overlap_at_any_segment(single, reverse, left, right, overlap)
         assert len(groups) == 1
         assert groups[0]["type"] == "literal_parameter"
         assert {item["id"] for item in groups[0]["resources"]} == {0, 1}
+
+
+@pytest.mark.parametrize("single", [False, True])
+@pytest.mark.parametrize("count", [49, 50, 51])
+def test_group_resource_limit_boundary(single, count):
+    resources = [{"id": index, "method": "GET", "path": f"/x/{{p{index}}}"} for index in range(count)]
+    candidate = resources.pop() if single else None
+    groups, truncated = find_resource_path_conflicts(resources, candidate)
+    assert truncated is False
+    assert len(groups[0]["resources"]) == min(count, 50)
+    assert groups[0]["resources_truncated"] is (count > 50)
+
+
+@pytest.mark.parametrize("single", [False, True])
+def test_overlap_limit_preserves_anchor_and_a_different_pattern(single):
+    resources = [{"id": index, "method": "GET", "path": f"/x/{{p{index}}}/{{tail}}"} for index in range(100)]
+    resources += [{"id": 100 + index, "method": "GET", "path": f"/x/{{parent}}/v{index}"} for index in range(100)]
+    candidate = {"id": None, "method": "GET", "path": "/x/{candidate}/{tail}"} if single else None
+    groups, truncated = find_resource_path_conflicts(resources, candidate)
+    assert truncated is False
+    overlap = next(group for group in groups if group["type"] == "literal_parameter")
+    assert len(overlap["resources"]) == 50
+    assert overlap["resources_truncated"] is True
+    assert len({item["normalized_path"] for item in overlap["resources"]}) >= 2
+    if single:
+        assert overlap["resources"][0]["id"] is None
+
+
+def test_cross_overlap_work_stops_after_result_limits(monkeypatch):
+    resources = [{"method": "GET", "path": f"/{{p}}/x{index}"} for index in range(400)]
+    resources += [{"method": "GET", "path": f"/y{index}/{{p}}"} for index in range(400)]
+    original = path_conflicts._overlapping_paths
+    visits = 0
+
+    def counted(*args):
+        nonlocal visits
+        for path in original(*args):
+            visits += 1
+            assert visits <= 201 * 51, "enumerated overlaps beyond the response limits"
+            yield path
+
+    monkeypatch.setattr(path_conflicts, "_overlapping_paths", counted)
+    groups, truncated = find_resource_path_conflicts(resources)
+    assert truncated is True
+    assert len(groups) == 200
+    assert all(len(group["resources"]) == 50 and group["resources_truncated"] for group in groups)

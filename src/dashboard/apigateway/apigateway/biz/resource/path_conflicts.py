@@ -18,13 +18,14 @@
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from itertools import zip_longest
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Tuple
+from itertools import chain, islice
+from typing import Any, DefaultDict, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from apigateway.core.constants import HTTP_METHOD_ANY, HTTP_METHOD_CHOICES
 
 _PathIndex = DefaultDict[Tuple[str, str], List[Dict[str, Any]]]
 _MAX_CONFLICT_GROUPS = 200
+_MAX_GROUP_RESOURCES = 50
 _PATH_PARAMETER = re.compile(r"\{\w+\}")
 
 
@@ -46,10 +47,11 @@ def find_resource_path_conflicts(
 
     trees = _build_parameter_trees(normalized)
     if candidate is None:
-        groups = _find_all_groups(normalized, trees)
+        group_iterator = _find_all_groups(normalized, trees)
     else:
-        groups = _find_candidate_groups(normalized, trees, _normalize_resource(candidate))
-    # Preserve group limits and complete resource lists within each returned group.
+        group_iterator = _find_candidate_groups(normalized, trees, _normalize_resource(candidate))
+    # Read one extra group to distinguish exactly 200 from a truncated result.
+    groups = list(islice(group_iterator, _MAX_CONFLICT_GROUPS + 1))
     return groups[:_MAX_CONFLICT_GROUPS], len(groups) > _MAX_CONFLICT_GROUPS
 
 
@@ -116,13 +118,44 @@ def _overlapping_paths(root: _PathNode, segments: List[str], path: str) -> Itera
         pending.extend((child, index + 1) for child in children)
 
 
-def _find_all_groups(normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathNode]) -> List[Dict[str, Any]]:
-    groups = [
-        {"type": "normalized_path", "method": method, "resources": items}
-        for (method, _), items in normalized.items()
-        if len(items) > 1
-    ]
-    overlap_groups = []
+def _make_group(kind: str, method: str, resources: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+    items = list(islice(resources, _MAX_GROUP_RESOURCES + 1))
+    return {
+        "type": kind,
+        "method": method,
+        "resources": items[:_MAX_GROUP_RESOURCES],
+        "resources_truncated": len(items) > _MAX_GROUP_RESOURCES,
+    }
+
+
+def _overlap_group(
+    method: str, anchors: List[Dict[str, Any]], overlaps: Iterator[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    first = next(overlaps, None)
+    if first is None:
+        return None
+    # Retain a visible conflicting pair even if equivalent anchor resources fill the limit.
+    return _make_group("literal_parameter", method, chain(anchors[:1], [first], islice(anchors, 1, None), overlaps))
+
+
+def _find_all_groups(normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathNode]) -> Iterator[Dict[str, Any]]:
+    equivalent_groups = (
+        _make_group("normalized_path", method, items) for (method, _), items in normalized.items() if len(items) > 1
+    )
+    overlap_groups = _find_overlap_groups(normalized, trees)
+    # Alternate lazily: neither conflict type can consume the entire result budget first.
+    while True:
+        equivalent = next(equivalent_groups, None)
+        if equivalent is not None:
+            yield equivalent
+        overlap = next(overlap_groups, None)
+        if overlap is not None:
+            yield overlap
+        if equivalent is None and overlap is None:
+            return
+
+
+def _find_overlap_groups(normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathNode]) -> Iterator[Dict[str, Any]]:
     visited = set()
     # General patterns first retain a compact group for one parameter versus many literals.
     for method, path in sorted(normalized, key=lambda key: -key[1].count("{}")):
@@ -130,32 +163,31 @@ def _find_all_groups(normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathN
         if not segments:
             continue
         visited.add((method, path))
-        overlaps = [
-            other
+        overlaps = (
+            item
             for other in _overlapping_paths(trees[method, len(segments)], segments, path)
             if (method, other) not in visited
-        ]
-        if overlaps:
-            items = normalized[method, path] + [item for other in overlaps for item in normalized[method, other]]
-            # Each other pattern overlaps the anchor; other patterns need not overlap each other.
-            overlap_groups.append({"type": "literal_parameter", "method": method, "resources": items})
-    return [group for pair in zip_longest(groups, overlap_groups) for group in pair if group is not None]
+            for item in normalized[method, other]
+        )
+        group = _overlap_group(method, normalized[method, path], overlaps)
+        if group is not None:
+            # Other patterns overlap the anchor, but need not overlap each other.
+            yield group
 
 
 def _find_candidate_groups(
     normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathNode], candidate: Dict[str, Any]
-) -> List[Dict[str, Any]]:
-    groups = []
+) -> Iterator[Dict[str, Any]]:
     path = candidate["normalized_path"]
     segments = _parameter_segments(path)
     for method in _resource_methods(candidate):
         same_path = normalized.get((method, path), [])
         if same_path:
-            groups.append({"type": "normalized_path", "method": method, "resources": same_path + [candidate]})
+            yield _make_group("normalized_path", method, chain([candidate], same_path))
         root = trees.get((method, len(segments)))
         if root is None:
             continue
-        overlaps = [item for other in _overlapping_paths(root, segments, path) for item in normalized[method, other]]
-        if overlaps:
-            groups.append({"type": "literal_parameter", "method": method, "resources": overlaps + [candidate]})
-    return groups
+        overlaps = (item for other in _overlapping_paths(root, segments, path) for item in normalized[method, other])
+        group = _overlap_group(method, [candidate], overlaps)
+        if group is not None:
+            yield group

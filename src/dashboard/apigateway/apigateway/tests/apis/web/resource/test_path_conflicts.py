@@ -145,3 +145,17 @@ def test_response_contains_groups(request_view, fake_gateway, single):
     assert {item["id"] for item in group["resources"]} == {resource.id for resource in resources} | (
         {None} if single else set()
     )
+
+
+@pytest.mark.parametrize("single", [False, True])
+def test_response_exposes_resource_truncation(request_view, fake_gateway, single):
+    for index in range(51):
+        G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{{p{index}}}")
+    data = {"method": "GET", "path": "/x/{candidate}"} if single else None
+    result = check(request_view, fake_gateway, data).json()["data"]
+    assert result["truncated"] is False
+    group = result["conflicts"][0]
+    assert group["resources_truncated"] is True
+    assert len(group["resources"]) == 50
+    if single:
+        assert any(item["id"] is None for item in group["resources"])
