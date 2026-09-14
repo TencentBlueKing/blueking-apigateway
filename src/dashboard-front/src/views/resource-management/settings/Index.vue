@@ -703,7 +703,14 @@ const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const isShowSelection = computed(() => showBatch.value);
 const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
-const hiddenColumns = computed(() => !gatewayStore.isAIGateway ? ['kind'] : []);
+const hiddenColumns = computed(() => {
+  const hideCols = [];
+  const hidePersonalClient = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT;
+  if (!gatewayStore.isAIGateway) hideCols.push('kind');
+  if (hidePersonalClient) hideCols.push('oauth2_personal_client_enabled');
+
+  return hideCols;
+});
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
     label: item.name,
@@ -849,6 +856,26 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       title: t('前端请求路径'),
       minWidth: 250,
       ellipsis: true,
+    },
+    {
+      title: t('个人令牌'),
+      colKey: 'oauth2_personal_client_enabled',
+      ellipsis: true,
+      width: 100,
+      cell: (_, { row }) => {
+        return (
+          <bk-tag
+            class={
+              [
+                'border-transparent',
+                { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row?.auth_config?.oauth2_personal_client_enabled },
+              ]
+            }
+          >
+            {t(row?.auth_config?.oauth2_personal_client_enabled ? '已开启' : '未开启')}
+          </bk-tag>
+        );
+      },
     },
     {
       colKey: 'plugin_count',

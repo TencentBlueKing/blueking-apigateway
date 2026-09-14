@@ -78,7 +78,19 @@
                 :description="t('开启后，用户可以使用个人令牌调用该 MCP Server。')"
                 :icon="'user-token'"
                 @oauth-change="getSliderContentHeight"
-              />
+              >
+                <template #externalDescription>
+                  <BkButton
+                    size="small"
+                    theme="primary"
+                    text
+                    class="text-12px!"
+                    @click="handleViewDoc"
+                  >
+                    {{ t('查看文档') }}
+                  </BkButton>
+                </template>
+              </OAuthSwitcher>
               <!-- 资源选择表格 -->
               <BkFormItem :class="`resource-table-form-item ${activeTab}`">
                 <template #label>
@@ -489,6 +501,7 @@ import type { IMCPServerCreateInputSLZ } from '@/services/types/body/post/gatewa
 import { usePopInfoBox, useSidebar } from '@/hooks';
 import { HTTP_METHODS } from '@/constants';
 import {
+  useEnv,
   useFeatureFlag,
   useGateway,
 } from '@/stores';
@@ -522,6 +535,7 @@ const emit = defineEmits<{ updated: [] }>();
 
 const router = useRouter();
 const gatewayStore = useGateway();
+const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
@@ -664,7 +678,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
             <Popover
               trigger="hover"
               placement="top"
-              popoverDelay={0}
+              popoverDelay={300}
             >
               {{
                 default: () => (
@@ -2095,6 +2109,10 @@ const handleMcpTypeChange = (tab: string) => {
     },
   };
   return tabMap[tab]?.();
+};
+
+const handleViewDoc = () => {
+  window.open(envStore.env.DOC_LINKS.AUTH_PERSONAL_TOKEN, '_blank');
 };
 
 const resetSliderData = () => {

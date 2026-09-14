@@ -120,12 +120,14 @@ const isEnabledOAuth = computed(() =>
 );
 // 需要隐藏的列
 const hiddenColumn = computed(() => {
-  const hidePromptsCount = featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT;
+  const hidePromptsCount = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT;
+  const hidePersonalClient = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT;
   const hideOAuthClient = !isEnabledOAuth.value;
 
   const hiddenColumns = [];
   if (hidePromptsCount) hiddenColumns.push('prompts_count');
   if (hideOAuthClient) hiddenColumns.push('oauth2_public_client_enabled');
+  if (hidePersonalClient) hiddenColumns.push('oauth2_personal_client_enabled');
 
   return hiddenColumns;
 });
@@ -314,6 +316,12 @@ const tableColumns = computed(() => {
       ellipsis: true,
     },
     {
+      title: t('Prompt数量'),
+      colKey: 'prompts_count',
+      width: 80,
+      ellipsis: true,
+    },
+    {
       title: t('是否公开'),
       colKey: 'is_public',
       ellipsis: true,
@@ -328,13 +336,6 @@ const tableColumns = computed(() => {
           </Tag>
         );
       },
-    },
-    {
-      title: t('Prompt数量'),
-      colKey: 'prompts_count',
-      align: 'right',
-      width: 100,
-      ellipsis: true,
     },
     {
       title: t('OAuth2 公开客户端'),
@@ -352,6 +353,26 @@ const tableColumns = computed(() => {
             }
           >
             {t(row?.oauth2_public_client_enabled ? '已开启' : '未开启')}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: t('个人令牌'),
+      colKey: 'oauth2_personal_client_enabled',
+      ellipsis: true,
+      width: 100,
+      cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        return (
+          <Tag
+            class={
+              [
+                'border-transparent',
+                { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_personal_client_enabled },
+              ]
+            }
+          >
+            {t(row?.oauth2_personal_client_enabled ? '已开启' : '未开启')}
           </Tag>
         );
       },

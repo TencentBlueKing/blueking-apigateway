@@ -20,83 +20,128 @@
   <CustomTop :server="server" />
   <div class="page-wrapper">
     <section class="server-info">
-      <div
-        :class="{ 'no-release': !server.status }"
-        class="server-name"
-      >
-        <div class="flex status-tag">
-          <div
-            v-if="isEnabledOAuth"
-            v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
-            class="external-oauth-tag bg-#3a84ff cursor-pointer"
-          >
-            <AgIcon
-              name="deqiu"
-              size="14"
-              color="white"
-            />
+      <div class="flex items-center justify-between header">
+        <div class="flex items-center max-w-[calc(100%-300px)] gap-8px">
+          <div class="flex items-center min-w-0 title">
+            <BkOverflowTitle
+              type="tips"
+              class="truncate"
+            >
+              {{ server?.title }}
+            </BkOverflowTitle>
+            <BkOverflowTitle
+              type="tips"
+              class="truncate ml-8px"
+            >
+              ({{ server?.name }})
+            </BkOverflowTitle>
           </div>
-          <BkTag :theme="Boolean(server.status) ? 'success' : 'warning'">
-            {{ t(Boolean(server.status) ? '启用中' : '未启用') }}
-          </BkTag>
+          <div class="flex items-center gap-8px flex-shrink-0">
+            <BkTag
+              class="h-18px"
+              :class="statusTag.color"
+            >
+              <AgIcon :name="statusTag.icon" />
+              {{ statusTag.text }}
+            </BkTag>
+            <BkTag
+              v-if="server.stage?.name"
+              theme="info"
+              class="h-18px"
+            >
+              {{ server.stage.name }}
+            </BkTag>
+            <div
+              v-if="isEnabledOAuth"
+              v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
+              class="external-oauth-tag bg-#e1ecff cursor-pointer"
+            >
+              <AgIcon
+                name="deqiu"
+                size="14"
+                color="#3a84ff"
+              />
+            </div>
+            <div
+              v-if="isEnablePersonalClient"
+              v-bk-tooltips="t('可用个人令牌调用该 MCP Server')"
+              class="external-oauth-tag bg-#e1ecff cursor-pointer"
+            >
+              <AgIcon
+                name="key-fill"
+                size="14"
+                color="#3a84ff"
+              />
+            </div>
+          </div>
         </div>
-        <div class="mt-8px flex items-center flex-col">
-          <BkOverflowTitle
-            type="tips"
-            class="text-16px truncate name"
+        <div class="operate">
+          <BkButton
+            theme="primary"
+            @click="handleEdit"
           >
-            {{ server?.title }}
-          </BkOverflowTitle>
-          <BkOverflowTitle
-            type="tips"
-            class="text-14px truncate name"
+            {{ t('编辑') }}
+          </BkButton>
+          <BkButton @click="handleSuspendToggle">
+            {{ t(Boolean(server.status) ? '停用' : '启用') }}
+          </BkButton>
+          <BkDropdown
+            v-model:is-show="showDropdown"
+            trigger="hover"
           >
-            ({{ server?.name }})
-          </BkOverflowTitle>
+            <BkButton
+              class="more-cls"
+              @click="showDropdown = true"
+            >
+              <AgIcon name="gengduo" />
+            </BkButton>
+            <template #content>
+              <BkDropdownMenu ext-cls="stage-more-actions">
+                <BkDropdownItem
+                  v-bk-tooltips="{
+                    content: t('请先停用再删除'),
+                    disabled: !server.status,
+                  }"
+                  :class="[{'cursor-not-allowed!': Boolean(server.status) }]"
+                  @click.stop="handleDelete"
+                >
+                  <BkButton
+                    :disabled="Boolean(server.status)"
+                    text
+                  >
+                    {{ t('删除') }}
+                  </BkButton>
+                </BkDropdownItem>
+              </BkDropdownMenu>
+            </template>
+          </BkDropdown>
         </div>
       </div>
-      <div class="info">
-        <div class="column">
-          <div class="apigw-form-item">
+      <div class="info-content">
+        <div class="info-column">
+          <div class="info-item">
             <div class="label">
               {{ t('访问地址') }}:
             </div>
-            <div class="value flex items-center">
+            <div class="w-full flex items-baseline value">
               <BkOverflowTitle
                 type="tips"
                 :popover-options="{
                   extCls: 'break-all'
                 }"
-                class="max-w-95%"
+                class="max-w-full truncate"
               >
                 {{ server?.url || '--' }}
               </BkOverflowTitle>
               <AgIcon
                 name="copy"
-                class="ml-4px text-12px color-#3a84ff cursor-pointer"
+                size="16"
+                class="shrink-0 ml-8px icon"
                 @click.self.stop="copy(server.url)"
               />
             </div>
           </div>
-          <div class="apigw-form-item">
-            <div class="label">
-              {{ t('是否公开') }}:
-            </div>
-            <div class="value">
-              <BkTag :theme="server?.is_public ? 'success' : 'warning'">
-                {{ t(server?.is_public ? '公开' : '不公开') }}
-              </BkTag>
-            </div>
-          </div>
-          <div class="apigw-form-item">
-            <div class="label">
-              {{ t('环境') }}:
-            </div>
-            <div class="value">
-              {{ server.stage?.name || '--' }}
-            </div>
-          </div>
-          <div class="apigw-form-item">
+          <div class="info-item">
             <div class="label">
               {{ t('描述') }}:
             </div>
@@ -106,21 +151,35 @@
                 :popover-options="{
                   extCls: 'break-all'
                 }"
+                class="truncate"
               >
                 {{ server?.description || '--' }}
               </BkOverflowTitle>
             </div>
           </div>
-          <div class="apigw-form-item">
+        </div>
+        <div class="info-column">
+          <div class="info-item">
+            <div class="label">
+              {{ t('是否公开') }}:
+            </div>
+            <div class="flex flex-wrap gap-8px lh-22px value">
+              <BkTag :theme="server?.is_public ? 'success' : 'warning'">
+                {{ t(server?.is_public ? '公开' : '不公开') }}
+              </BkTag>
+            </div>
+          </div>
+          <div class="info-item">
             <div class="label">
               {{ t('分类') }}:
             </div>
-            <div class="value lh-22px!">
+            <!-- value 用 flex 容器承载标签，行内元素间的模板空白不会换行生成空行盒 -->
+            <div class="flex flex-wrap gap-8px lh-22px value">
               <template v-if="server?.categories?.length">
                 <BkTag
                   v-for="category of server?.categories"
                   :key="category"
-                  class="mr-8px"
+                  class="flex-shrink-0 max-w-full break-all"
                 >
                   {{ category.display_name }}
                 </BkTag>
@@ -130,21 +189,21 @@
               </template>
             </div>
           </div>
-          <div class="apigw-form-item">
+          <div class="info-item">
             <div class="label">
               {{ t('标签') }}:
             </div>
-            <div class="value lh-22px">
+            <div class="lh-22px value">
               <div
                 v-if="server?.labels?.length"
-                class="flex flex-wrap gap-8px"
+                class="flex flex-wrap gap-8px w-full"
               >
                 <template
                   v-for="label of server.labels"
                   :key="label"
                 >
                   <BkTag
-                    class="max-w-full break-all truncate"
+                    class="flex-shrink-0 max-w-full break-all"
                     :title="label"
                   >
                     {{ label }}
@@ -157,52 +216,6 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="operate">
-        <div class="line" />
-        <BkButton
-          class="mr-10px"
-          theme="primary"
-          @click="handleEdit"
-        >
-          {{ t('编辑') }}
-        </BkButton>
-        <BkButton
-          class="mr-10px"
-          @click="handleSuspendToggle"
-        >
-          {{ t(Boolean(server.status) ? '停用' : '启用') }}
-        </BkButton>
-        <BkDropdown
-          v-model:is-show="showDropdown"
-          trigger="hover"
-        >
-          <BkButton
-            class="more-cls"
-            @click="showDropdown = true"
-          >
-            <AgIcon name="gengduo" />
-          </BkButton>
-          <template #content>
-            <BkDropdownMenu ext-cls="stage-more-actions">
-              <BkDropdownItem
-                v-bk-tooltips="{
-                  content: t('请先停用再删除'),
-                  disabled: !server.status,
-                }"
-                :class="[{'cursor-not-allowed!': Boolean(server.status) }]"
-                @click.stop="handleDelete"
-              >
-                <BkButton
-                  :disabled="Boolean(server.status)"
-                  text
-                >
-                  {{ t('删除') }}
-                </BkButton>
-              </BkDropdownItem>
-            </BkDropdownMenu>
-          </template>
-        </BkDropdown>
       </div>
     </section>
     <section
@@ -361,6 +374,17 @@ const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && server.value?.oauth2_public_client_enabled,
 );
+const isEnablePersonalClient = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT && server.value?.oauth2_personal_client_enabled,
+);
+const statusTag = computed(() => {
+  const enabled = Boolean(server.value?.status);
+  return {
+    text: enabled ? t('启用中') : t('已停用'),
+    icon: enabled ? 'yiqiyong' : 'minus-circle',
+    color: enabled ? 'color-#14a568 bg-#e4faf0 hover-bg-#e4faf0' : 'color-#63656e bg-#f0f1f5',
+  };
+});
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
     panels.value = panels.value.filter((item: any) => !['prompts'].includes(item.name));
@@ -561,142 +585,91 @@ const updateCount = (count?: number, panelName?: string) => {
       }
     }
   }
-
-  .external-oauth-tag {
-    display: flex;
-    min-width: 22px;
-    min-height: 22px;
-    text-align: center;
-    align-items: center;
-    justify-content: center;
-  }
 }
 
 .server-info {
-  display: flex;
-  padding: 24px;
   margin-bottom: 16px;
   background-color: #fff;
+  border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
 
-  .server-name {
-    position: relative;
-    display: flex;
-    min-height: 120px;
-    margin-right: 16px;
-    background-color: #f0f5ff;
-    border-radius: 8px;
-    padding-inline: 24px;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  .header {
+    height: 52px;
+    padding: 0 24px;
+    border-bottom: 1px solid #eaebf0;
 
-    .status-tag {
-      position: absolute;
-      top: 0;
-      left: 0;
-      overflow: hidden;
-      border-top-left-radius: 8px;
+    .title {
+      margin-right: 8px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #313238;
+    }
+  }
+
+  .info-content {
+    display: grid;
+    align-items: start;
+    grid-template-columns: calc((100% - 40px) * 2 / 3 + 20px) minmax(0, 1fr);
+    gap: 0 40px;
+    padding: 3px 24px 12px;
+
+    .info-column {
+      display: grid;
+      align-items: start;
+      align-content: start;
+      grid-template-columns: max-content minmax(0, 1fr);
+      min-width: 0;
     }
 
-    &.no-release {
-      background-color: #f0f1f5;
-
-      .name {
-        color: #979ba5;
-      }
-    }
-
-    .no-release-dot {
-      width: 8px;
-      height: 8px;
-      margin-right: 2px;
-      background-color: #f0f1f5;
-      border: 1px solid #c4c6cc;
-      border-radius: 50%;
-    }
-
-    .no-release-label {
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      padding: 2px 6px;
-      font-size: 12px;
-      color: #63656e;
-      background-color: #fafbfd;
-      border-radius: 2px;
-    }
-
-    .no-release-icon {
-      position: absolute;
-      top: 3px;
-      right: 3px;
-      padding: 4px;
+    .info-item {
+      display: contents;
       font-size: 14px;
-      color: #979ba5;
-      cursor: pointer;
-      background-color: #fff;
-      border-radius: 4px;
-    }
-  }
-
-  .name {
-    padding: 0 3px;
-    font-weight: 700;
-    color: #3a84ff;
-  }
-
-  .info {
-    display: flex;
-    flex: 1;
-    min-width: 0;
-
-    .column {
-      display: flex;
-      width: 100%;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .apigw-form-item {
-      display: flex;
-      font-size: 12px;
-      line-height: 32px;
-      color: #4d4f56;
-      align-items: baseline;
-      flex-wrap: nowrap;
+      line-height: 22px;
 
       .label {
-        flex-shrink: 0;
+        padding: 9px 0;
+        margin-right: 12px;
+        color: #4d4f56;
+        text-align: right;
       }
 
       .value {
+        padding: 9px 0;
+        line-height: 22px;
         min-width: 0;
-        margin-left: 8px;
-        word-break: break-all;
-      }
+        color: #313238;
 
-      .unrelease {
-        display: inline-block;
-        padding: 2px 5px;
-        font-size: 10px;
-        line-height: 1;
-        border-radius: 2px;
+        .icon {
+          color: #3a84ff;
+          cursor: pointer;
+        }
       }
     }
   }
 
   .operate {
     display: flex;
+    gap: 8px;
     align-items: center;
     flex-shrink: 0;
     margin-left: 40px;
+  }
 
-    .line {
-      width: 1px;
-      height: 32px;
-      margin-right: 20px;
-      background-color: #dcdee5;
+  :deep(.external-oauth-tag) {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    font-size: 0;
+    line-height: 1;
+    flex-shrink: 0;
+    border-radius: 2px;
+    box-sizing: border-box;
+
+    .apigateway-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
   }
 }

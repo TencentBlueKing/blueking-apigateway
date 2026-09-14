@@ -31,8 +31,11 @@
         <div class="text-14px color-#313238 lh-22px font-700">
           {{ title }}
         </div>
-        <div class="text-12px color-#4d4f56 lh-20px">
-          {{ description }}
+        <div class="flex items-center">
+          <div class="text-12px color-#4d4f56 lh-20px">
+            {{ description }}
+          </div>
+          <slot name="externalDescription" />
         </div>
       </div>
     </div>
