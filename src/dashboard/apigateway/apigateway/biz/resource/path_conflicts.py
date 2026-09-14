@@ -17,8 +17,9 @@
 #
 import re
 from collections import defaultdict
+from dataclasses import dataclass, field
 from itertools import zip_longest
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Tuple
 
 from apigateway.core.constants import HTTP_METHOD_ANY, HTTP_METHOD_CHOICES
 
@@ -30,29 +31,25 @@ _PATH_PARAMETER = re.compile(r"\{\w+\}")
 def find_resource_path_conflicts(
     resources: List[Dict[str, Any]], candidate: Optional[Dict[str, Any]] = None
 ) -> Tuple[List[Dict[str, Any]], bool]:
-    """Group the two supported overlap types by concrete HTTP method in O(n).
+    """Find equivalent paths and segment overlaps between parameterized routes.
 
-    ANY expands to the supported methods. Trailing slashes follow RouteConvertor;
-    environment references and subpath wildcards are not expanded.
+    ANY expands to concrete methods. Static routes take precedence over parameter
+    routes, so only exact normalization conflicts are reported for static paths.
+    Environment references, mixed parameter segments and subpath wildcards are
+    outside the segment-overlap analysis.
     """
-    # 完整路径索引用于查找同路径资源；父路径索引只收集末段为字面量的资源。
-    # 末段参数资源可以直接通过 normalized[(method, prefix + "/{}")] 查到。
     normalized: _PathIndex = defaultdict(list)
-    literals: _PathIndex = defaultdict(list)
     for resource in resources:
         item = _normalize_resource(resource)
-        path = item["normalized_path"]
-        prefix, _, last = path.rpartition("/")
         for method in _resource_methods(resource):
-            normalized[method, path].append(item)
-            if last and "{" not in last and "}" not in last:
-                literals[method, prefix].append(item)
+            normalized[method, item["normalized_path"]].append(item)
 
+    trees = _build_parameter_trees(normalized)
     if candidate is None:
-        groups = _find_all_groups(normalized, literals)
+        groups = _find_all_groups(normalized, trees)
     else:
-        groups = _find_candidate_groups(normalized, literals, _normalize_resource(candidate))
-    # 限制的是组数，保留组内全部资源；不展开两两配对，输出规模仍与资源数成正比。
+        groups = _find_candidate_groups(normalized, trees, _normalize_resource(candidate))
+    # Preserve group limits and complete resource lists within each returned group.
     return groups[:_MAX_CONFLICT_GROUPS], len(groups) > _MAX_CONFLICT_GROUPS
 
 
@@ -73,44 +70,92 @@ def _resource_methods(resource: Dict[str, Any]) -> List[str]:
     return [resource["method"]]
 
 
-def _find_all_groups(normalized: _PathIndex, literals: _PathIndex) -> List[Dict[str, Any]]:
-    # 第一类：相同具体方法、相同归一化路径下有多个资源，就构成一个冲突组。
+@dataclass
+class _PathNode:
+    children: Dict[str, "_PathNode"] = field(default_factory=dict)
+    path: Optional[str] = None
+
+
+def _parameter_segments(path: str) -> List[str]:
+    segments = path.split("/")
+    if "{}" not in segments or any("{" in part or "}" in part for part in segments if part != "{}"):
+        return []
+    return segments
+
+
+def _build_parameter_trees(normalized: _PathIndex) -> Dict[Tuple[str, int], _PathNode]:
+    # Index unique patterns, not resources: thousands of equivalent paths share a leaf.
+    trees: Dict[Tuple[str, int], _PathNode] = {}
+    for method, path in normalized:
+        segments = _parameter_segments(path)
+        if not segments:
+            continue
+        node = trees.setdefault((method, len(segments)), _PathNode())
+        for segment in segments:
+            node = node.children.setdefault(segment, _PathNode())
+        node.path = path
+    return trees
+
+
+def _overlapping_paths(root: _PathNode, segments: List[str], path: str) -> Iterator[str]:
+    # Fixed segments visit only the identical literal and parameter branches.
+    # Parameters can match any nonempty segment. Iteration avoids recursion depth limits.
+    pending = [(root, 0)]
+    while pending:
+        node, index = pending.pop()
+        if index == len(segments):
+            if node.path is not None and node.path != path:
+                yield node.path
+            continue
+        segment = segments[index]
+        if segment == "{}":
+            children = [child for key, child in node.children.items() if key]
+        else:
+            keys = (segment, "{}") if segment else (segment,)
+            children = [node.children[key] for key in keys if key in node.children]
+        pending.extend((child, index + 1) for child in children)
+
+
+def _find_all_groups(normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathNode]) -> List[Dict[str, Any]]:
     groups = [
         {"type": "normalized_path", "method": method, "resources": items}
         for (method, _), items in normalized.items()
         if len(items) > 1
     ]
-    # 第二类：同父路径下同时有字面量末段和参数末段，报告两类资源之间的重叠。
-    # 不同字面量之间未必重叠，因此这里不是组内资源的两两冲突声明。
-    literal_groups = []
-    for (method, prefix), items in literals.items():
-        parameters = normalized.get((method, prefix + "/{}"), [])
-        if parameters:
-            literal_groups.append({"type": "literal_parameter", "method": method, "resources": items + parameters})
-    # 两类组交替返回，避免归一化路径组占满上限后隐藏所有末段重叠组。
-    return [group for pair in zip_longest(groups, literal_groups) for group in pair if group is not None]
+    overlap_groups = []
+    visited = set()
+    # General patterns first retain a compact group for one parameter versus many literals.
+    for method, path in sorted(normalized, key=lambda key: -key[1].count("{}")):
+        segments = _parameter_segments(path)
+        if not segments:
+            continue
+        visited.add((method, path))
+        overlaps = [
+            other
+            for other in _overlapping_paths(trees[method, len(segments)], segments, path)
+            if (method, other) not in visited
+        ]
+        if overlaps:
+            items = normalized[method, path] + [item for other in overlaps for item in normalized[method, other]]
+            # Each other pattern overlaps the anchor; other patterns need not overlap each other.
+            overlap_groups.append({"type": "literal_parameter", "method": method, "resources": items})
+    return [group for pair in zip_longest(groups, overlap_groups) for group in pair if group is not None]
 
 
 def _find_candidate_groups(
-    normalized: _PathIndex, literals: _PathIndex, candidate: Dict[str, Any]
+    normalized: _PathIndex, trees: Dict[Tuple[str, int], _PathNode], candidate: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
-    # 候选资源不加入索引：直接查询它对应的 key，避免遍历或返回与它无关的冲突。
-    # 编辑场景由调用方先排除当前资源，避免把旧路径作为另一个资源参与检测。
     groups = []
     path = candidate["normalized_path"]
-    prefix, _, last = path.rpartition("/")
+    segments = _parameter_segments(path)
     for method in _resource_methods(candidate):
         same_path = normalized.get((method, path), [])
         if same_path:
             groups.append({"type": "normalized_path", "method": method, "resources": same_path + [candidate]})
-
-        # 只查询另一类末段；例如候选 /x/batch 不能把已有 /x/other 带入结果。
-        if last == "{}":
-            overlaps = literals.get((method, prefix), [])
-        elif last and "{" not in last and "}" not in last:
-            overlaps = normalized.get((method, prefix + "/{}"), [])
-        else:
-            overlaps = []
+        root = trees.get((method, len(segments)))
+        if root is None:
+            continue
+        overlaps = [item for other in _overlapping_paths(root, segments, path) for item in normalized[method, other]]
         if overlaps:
             groups.append({"type": "literal_parameter", "method": method, "resources": overlaps + [candidate]})
     return groups

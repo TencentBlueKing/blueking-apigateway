@@ -37,13 +37,16 @@ def check(request_view, gateway, data=None):
     [
         ("/api/{bizId}/apps/{appId}", "/api/{bizI_d}/apps/{app_Id}", "GET", "normalized_path"),
         ("/api/{biz}/batch", "/api/{biz}/{set_id}", "DELETE", "literal_parameter"),
-        ("/x/batch", "/x/{name}", "GET", "literal_parameter"),
+        ("/x/batch", "/x/{name}", "GET", None),
         ("/x/{id}/", "/x/{name}", "GET", "normalized_path"),
         ("/x/{id}", "/x/{name}", "ANY", "normalized_path"),
         ("/x/{id}/a", "/x/{name}/b", "GET", None),
         ("/x/{id}/a", "/y/{name}/a", "GET", None),
         ("/x/{id}/a", "/x/{name}/a/b", "GET", None),
         ("/x/batch", "/x/other", "GET", None),
+        ("/a/{id}/fixed/detail", "/a/{id}/{kind}/detail", "GET", "literal_parameter"),
+        ("/a/{id}/fixed/{x}", "/a/{id}/{y}/fixed", "GET", "literal_parameter"),
+        ("/a/{x}/fixed", "/a/fixed/{y}", "GET", "literal_parameter"),
     ],
 )
 def test_list_reports_supported_path_overlaps(request_view, fake_gateway, left, right, method, conflict_type):
@@ -96,10 +99,10 @@ def test_foreign_resource(request_view, fake_gateway):
     assert response.status_code == 404
 
 
-@pytest.mark.parametrize("path", ["/x/batch", "/x/{new_id}"])
+@pytest.mark.parametrize("path", ["/x/{parent}/batch", "/x/{parent}/{new_id}"])
 def test_single_literal_parameter_group(request_view, fake_gateway, path):
-    G(Resource, gateway=fake_gateway, method="DELETE", path="/x/{id}")
-    G(Resource, gateway=fake_gateway, method="DELETE", path="/x/batch")
+    G(Resource, gateway=fake_gateway, method="DELETE", path="/x/{parent}/{id}")
+    G(Resource, gateway=fake_gateway, method="DELETE", path="/x/{parent}/batch")
     G(Resource, gateway=fake_gateway, method="DELETE", path="/unrelated/{id}")
     G(Resource, gateway=fake_gateway, method="DELETE", path="/unrelated/batch")
     response = check(request_view, fake_gateway, {"method": "DELETE", "path": path})
@@ -121,8 +124,8 @@ def test_conflict_groups_are_capped(request_view, fake_gateway):
     for index in range(201):
         G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{index}/{{first}}")
         G(Resource, gateway=fake_gateway, method="GET", path=f"/x/{index}/{{second}}")
-    G(Resource, gateway=fake_gateway, method="GET", path="/literal/batch")
-    G(Resource, gateway=fake_gateway, method="GET", path="/literal/{id}")
+    G(Resource, gateway=fake_gateway, method="GET", path="/literal/{parent}/batch")
+    G(Resource, gateway=fake_gateway, method="GET", path="/literal/{parent}/{id}")
     result = check(request_view, fake_gateway).json()["data"]
     assert len(result["conflicts"]) == 200
     assert result["has_conflicts"] is True

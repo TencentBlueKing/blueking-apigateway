@@ -25,7 +25,7 @@ from apigateway.biz.resource import find_resource_path_conflicts
 @pytest.mark.parametrize("literal", [False, True])
 def test_conflict_group_limit(count, literal):
     resources = [
-        {"id": index * 2 + side, "method": "GET", "path": f"/x/{index}/" + suffix}
+        {"id": index * 2 + side, "method": "GET", "path": f"/x/{index}/{{parent}}/" + suffix}
         for index in range(count)
         for side, suffix in enumerate(["batch" if literal else "{left}", "{right}"])
     ]
@@ -50,10 +50,10 @@ def test_dense_resources_form_one_group(single):
 @pytest.mark.parametrize("literal", [False, True])
 def test_any_expands_without_mixing_concrete_methods(single, literal):
     resources = [
-        {"id": 1, "method": "GET", "path": "/x/batch" if literal else "/x/{get}"},
-        {"id": 2, "method": "POST", "path": "/x/batch" if literal else "/x/{post}"},
+        {"id": 1, "method": "GET", "path": "/x/{parent}/batch" if literal else "/x/{parent}/{get}"},
+        {"id": 2, "method": "POST", "path": "/x/{parent}/batch" if literal else "/x/{parent}/{post}"},
     ]
-    candidate = {"id": 3, "method": "ANY", "path": "/x/{any}"}
+    candidate = {"id": 3, "method": "ANY", "path": "/x/{parent}/{any}"}
     if not single:
         resources.append(candidate)
         candidate = None
@@ -82,11 +82,11 @@ def test_any_against_any_has_one_group_per_method(single):
 
 def test_literal_candidate_only_returns_overlapping_resources():
     resources = [
-        {"id": 1, "method": "GET", "path": "/x/batch"},
-        {"id": 2, "method": "GET", "path": "/x/other"},
-        {"id": 3, "method": "GET", "path": "/x/{id}"},
+        {"id": 1, "method": "GET", "path": "/x/{parent}/batch"},
+        {"id": 2, "method": "GET", "path": "/x/{parent}/other"},
+        {"id": 3, "method": "GET", "path": "/x/{parent}/{id}"},
     ]
-    candidate = {"id": 4, "method": "GET", "path": "/x/batch"}
+    candidate = {"id": 4, "method": "GET", "path": "/x/{parent}/batch"}
     groups, truncated = find_resource_path_conflicts(resources, candidate)
     assert truncated is False
     assert {group["type"]: {item["id"] for item in group["resources"]} for group in groups} == {
@@ -113,7 +113,7 @@ def test_group_limit_preserves_both_overlap_types(
         for index in range(normalized_count)
         for suffix in ["{left}", "{right}"]
     ] + [
-        {"method": "GET", "path": f"/literal/{index}/" + suffix}
+        {"method": "GET", "path": f"/literal/{index}/{{parent}}/" + suffix}
         for index in range(literal_count)
         for suffix in ["batch", "{id}"]
     ]
@@ -131,8 +131,8 @@ def test_group_limit_preserves_both_overlap_types(
         ("/", "///", "/"),
         ("/{env.region}/x/{id}", "/{env.region}/x/{name}", "/{env.region}/x/{}"),
         ("/{env.region}/x/{id}", "/{env.other}/x/{name}", None),
-        ("/x/{env.name}", "/x/{id}", None),
-        ("/x/{env.name}", "/x/batch", None),
+        ("/x/{env.name}", "/x/{parent}/{id}", None),
+        ("/x/{env.name}", "/x/{parent}/batch", None),
         ("/x/batch/list", "/x/{id}/list", None),
     ],
 )
@@ -149,3 +149,31 @@ def test_supported_rules_preserve_environment_references(single, left, right, ex
     else:
         assert len(groups) == 1
         assert {resource["normalized_path"] for resource in groups[0]["resources"]} == {expected_path}
+
+
+@pytest.mark.parametrize("single", [False, True])
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize(
+    "left,right,overlap",
+    [
+        ("/a/{id}/fixed/detail", "/a/{id}/{kind}/detail", True),
+        ("/a/{id}/fixed/{x}", "/a/{id}/{y}/fixed", True),
+        ("/a/{x}/fixed", "/a/fixed/{y}", True),
+        ("/a/fixed", "/a/{id}", False),
+        ("/a/fixed/detail", "/a/{id}/detail", False),
+        ("/a/{id}/fixed/detail", "/a/{id}/{kind}/other", False),
+        ("/a/{id}/fixed", "/a/{id}/fixed/{tail}", False),
+        ("/a/{id}/", "/a//{other}", False),
+    ],
+)
+def test_parameter_overlap_at_any_segment(single, reverse, left, right, overlap):
+    paths = [right, left] if reverse else [left, right]
+    resources = [{"id": index, "method": "GET", "path": path} for index, path in enumerate(paths)]
+    candidate = resources.pop() if single else None
+    groups, truncated = find_resource_path_conflicts(resources, candidate)
+    assert truncated is False
+    assert bool(groups) is overlap
+    if overlap:
+        assert len(groups) == 1
+        assert groups[0]["type"] == "literal_parameter"
+        assert {item["id"] for item in groups[0]["resources"]} == {0, 1}
