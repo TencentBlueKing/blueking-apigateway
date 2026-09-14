@@ -20,7 +20,7 @@
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now as timezone_now
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
@@ -39,9 +39,9 @@ from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExamp
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关 SDK 列表",
-        query_serializer=SDKListInputSLZ,
+    decorator=extend_schema(
+        description="获取网关 SDK 列表",
+        parameters=[SDKListInputSLZ],
         responses={status.HTTP_200_OK: StageSDKOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),
@@ -62,9 +62,9 @@ class SDKListApi(GatewayDocsPermissionMixin, generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关 SDK 调用示例",
-        query_serializer=SDKUsageExampleInputSLZ,
+    decorator=extend_schema(
+        description="获取网关 SDK 调用示例",
+        parameters=[SDKUsageExampleInputSLZ],
         responses={status.HTTP_200_OK: SDKUsageExampleOutputSLZ},
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),

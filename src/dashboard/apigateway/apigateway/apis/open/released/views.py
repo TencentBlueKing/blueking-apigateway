@@ -19,7 +19,7 @@
 
 from django.http import Http404
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.open.permissions import (
@@ -36,7 +36,7 @@ from apigateway.utils.responses import V1OKJsonResponse
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: serializers.ReleasedResourceOutputSLZ()},
         tags=["OpenAPI.V1"],
     ),
@@ -81,7 +81,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: serializers.ReleasedResourceListV1InputSLZ(many=True)},
         tags=["OpenAPI.V1"],
     ),

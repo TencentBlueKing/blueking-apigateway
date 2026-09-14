@@ -23,7 +23,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
@@ -84,9 +84,9 @@ logger = logging.getLogger(__name__)
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="同步网关",
-        request_body=serializers.GatewaySyncInputSLZ,
+    decorator=extend_schema(
+        description="同步网关",
+        request=serializers.GatewaySyncInputSLZ,
         responses={status.HTTP_200_OK: GatewaySyncOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -150,8 +150,8 @@ class GatewaySyncApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关公钥",
+    decorator=extend_schema(
+        description="获取网关公钥",
         responses={status.HTTP_200_OK: GatewayPublicKeyRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -172,9 +172,9 @@ class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="同步网关stage",
-        request_body=StageSyncInputSLZ,
+    decorator=extend_schema(
+        description="同步网关stage",
+        request=StageSyncInputSLZ,
         responses={status.HTTP_200_OK: StageSyncOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -216,9 +216,9 @@ class GatewayStageSyncViewSet(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="同步网关resources",
-        request_body=serializers.ResourceImportInputSLZ,
+    decorator=extend_schema(
+        description="同步网关resources",
+        request=serializers.ResourceImportInputSLZ,
         responses={status.HTTP_200_OK: ResourceSyncOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -256,10 +256,10 @@ class GatewayResourceSyncApi(generics.CreateAPIView):
 class DocImportByArchiveApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(
-        operation_description="根据 tgz/zip 归档文件，导入资源文档",
-        request_body=DocImportByArchiveInputSLZ(),
-        responses={status.HTTP_201_CREATED: ""},
+    @extend_schema(
+        description="根据 tgz/zip 归档文件，导入资源文档",
+        request=DocImportByArchiveInputSLZ(),
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["OpenAPI.V2.Sync"],
     )
     @transaction.atomic
@@ -286,10 +286,10 @@ class DocImportByArchiveApi(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="添加网关关联的应用",
-        request_body=serializers.GatewayRelatedAppsAddInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="添加网关关联的应用",
+        request=serializers.GatewayRelatedAppsAddInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -338,9 +338,9 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关权限列表",
-        query_serializer=serializers.GatewayPermissionListInputSLZ(),
+    decorator=extend_schema(
+        description="获取网关权限列表",
+        parameters=[serializers.GatewayPermissionListInputSLZ()],
         responses={status.HTTP_200_OK: serializers.GatewayPermissionListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -414,10 +414,10 @@ class GatewayPermissionListApi(generics.ListAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="网关关联应用，主动为应用授权访问网关 API 的权限",
-        request_body=serializers.GatewayAppPermissionGrantInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="网关关联应用，主动为应用授权访问网关 API 的权限",
+        request=serializers.GatewayAppPermissionGrantInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -456,18 +456,18 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关资源版本列表",
-        query_serializer=ResourceVersionListInputSLZ(),
+    decorator=extend_schema(
+        description="获取网关资源版本列表",
+        parameters=[ResourceVersionListInputSLZ()],
         responses={status.HTTP_200_OK: ResourceVersionListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建网关资源版本",
-        request_body=ResourceVersionCreateInputSLZ(),
+    decorator=extend_schema(
+        description="创建网关资源版本",
+        request=ResourceVersionCreateInputSLZ(),
         responses={status.HTTP_200_OK: ResourceVersionCreateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -504,9 +504,9 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="按 ID 或版本号查询网关资源版本",
-        query_serializer=ResourceVersionLookupInputSLZ(),
+    decorator=extend_schema(
+        description="按 ID 或版本号查询网关资源版本",
+        parameters=[ResourceVersionLookupInputSLZ()],
         responses={status.HTTP_200_OK: ResourceVersionLookupOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -531,8 +531,8 @@ class ResourceVersionLookupApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关最新资源版本",
+    decorator=extend_schema(
+        description="获取网关最新资源版本",
         responses={status.HTTP_200_OK: serializers.GatewayResourceVersionLatestRetrieveOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -552,9 +552,9 @@ class ResourceVersionLatestRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="发布网关资源版本",
-        request_body=ReleaseInputSLZ(),
+    decorator=extend_schema(
+        description="发布网关资源版本",
+        request=ReleaseInputSLZ(),
         responses={status.HTTP_200_OK: ReleaseOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -592,9 +592,9 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="生成网关sdk",
-        request_body=SDKGenerateInputSLZ(),
+    decorator=extend_schema(
+        description="生成网关sdk",
+        request=SDKGenerateInputSLZ(),
         responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Sync"],
     ),
@@ -625,9 +625,9 @@ class SDKGenerateApi(generics.CreateAPIView):
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="同步网关 MCP Server",
-        request_body=StageMcpServersSyncInputSLZ(),
+    decorator=extend_schema(
+        description="同步网关 MCP Server",
+        request=StageMcpServersSyncInputSLZ(),
         responses={status.HTTP_200_OK: StageMcpServersSyncOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),

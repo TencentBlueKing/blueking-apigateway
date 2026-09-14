@@ -20,7 +20,7 @@ import copy
 
 from django.conf import settings
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.data_plane.models import DataPlane
@@ -32,9 +32,9 @@ from apigateway.utils.responses import OKJsonResponse
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        operation_description="获取环境变量列表",
+    decorator=extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="获取环境变量列表",
         tags=["WebAPI.Settings"],
     ),
 )
@@ -54,9 +54,9 @@ class EnvVarListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
-        operation_description="获取 feature flag 全局特性开关列表",
+    decorator=extend_schema(
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        description="获取 feature flag 全局特性开关列表",
         tags=["WebAPI.Settings"],
     ),
 )

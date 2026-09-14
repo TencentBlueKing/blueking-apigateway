@@ -20,7 +20,6 @@ import datetime
 import math
 
 import pytest
-import pytz
 
 from apigateway.apis.open.esb.permission import serializers
 from apigateway.apps.permission.constants import RENEWABLE_EXPIRE_DAYS
@@ -215,8 +214,8 @@ class TestAppPermissionApplyRecordQuerySLZ:
                 {
                     "target_app_code": "test",
                     "applied_by": "admin",
-                    "applied_time_start": datetime.datetime.fromtimestamp(1614665385, tz=pytz.UTC),
-                    "applied_time_end": datetime.datetime.fromtimestamp(1614665385, tz=pytz.UTC),
+                    "applied_time_start": datetime.datetime.fromtimestamp(1614665385, tz=datetime.UTC),
+                    "applied_time_end": datetime.datetime.fromtimestamp(1614665385, tz=datetime.UTC),
                     "apply_status": "pending",
                     "query": "test",
                 },

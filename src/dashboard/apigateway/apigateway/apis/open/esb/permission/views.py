@@ -20,7 +20,7 @@ import logging
 import operator
 
 from django.db import transaction
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.permission import serializers
@@ -43,8 +43,8 @@ class ComponentViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionComponentSLZ
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionComponentQuerySLZ,
+    @extend_schema(
+        parameters=[serializers.AppPermissionComponentQuerySLZ],
         responses={status.HTTP_200_OK: serializers.AppPermissionComponentSLZ(many=True)},
         tags=["OpenAPI.ESB.Permission"],
     )
@@ -65,6 +65,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK", data=output_slz.data)
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionApplySLZ
@@ -100,6 +101,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK", data={"record_id": record.id})
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionRenewAPIView(viewsets.GenericViewSet):
     """
     权限续期
@@ -124,9 +126,14 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIPermission]
 
+    @extend_schema(
+        parameters=[serializers.AppPermissionQuerySLZ],
+        responses={200: serializers.AppPermissionComponentSLZ(many=True)},
+    )
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
         slz = serializers.AppPermissionQuerySLZ(data=request.query_params)
@@ -144,6 +151,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))
 
 
+@extend_schema(tags=["OpenAPI.ESB.Permission"])
 class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionApplyRecordQuerySLZ

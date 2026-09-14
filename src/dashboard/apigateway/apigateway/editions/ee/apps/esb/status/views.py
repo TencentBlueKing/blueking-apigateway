@@ -19,6 +19,8 @@
 import time
 
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
 from apigateway.apps.esb.bkcore.models import RealTimelineEvent
@@ -27,9 +29,11 @@ from apigateway.apps.esb.status.utils import get_system_basic_info, str_percenta
 from apigateway.utils.responses import OKJsonResponse
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysAllSummaryView(APIView):
     """Summary data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request):
         time_since = request.GET.get("time_since") or "24h"
         result = es_get_system_stats(time_since)
@@ -44,12 +48,14 @@ class SysAllSummaryView(APIView):
         return OKJsonResponse(data=result)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysEventsTimeline(APIView):
     """Get timeline data for all system events"""
 
     time_interval = "5m"
     time_interval_seconds = str_to_seconds(time_interval)
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request):  # noqa
         time_since = request.GET.get("time_since") or "12h"
 
@@ -185,9 +191,11 @@ class SysEventsTimeline(APIView):
         return events
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysUnstableSystemsView(APIView):
     """Get recent unstable systems"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request):
         time_since = request.GET.get("time_since") or "10m"
 
@@ -199,9 +207,11 @@ class SysUnstableSystemsView(APIView):
         return OKJsonResponse(data=ret)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysSummaryView(APIView):
     """Summary data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         mts_start = request.GET.get("mts_start")
         mts_end = request.GET.get("mts_end")
@@ -225,9 +235,11 @@ class SysSummaryView(APIView):
         return OKJsonResponse(data=data)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysDateHistogramView(APIView):
     """date_histogram data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         mts_start = request.GET.get("mts_start")
         mts_end = request.GET.get("mts_end", int(time.time() * 1000))
@@ -268,9 +280,11 @@ class SysDateHistogramView(APIView):
         return OKJsonResponse(data=result[0] if result else None)
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysDetailsGroupByView(APIView):
     """Perc95 resp time data for third-party system"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         mts_start = request.GET.get("mts_start")
         mts_end = request.GET.get("mts_end") or int(time.time() * 1000)
@@ -302,9 +316,11 @@ class SysDetailsGroupByView(APIView):
         return OKJsonResponse(data=result[:size])
 
 
+@extend_schema(tags=["ESB.Status"])
 class SysErrorsView(APIView):
     """查询某个运营系统错误详情"""
 
+    @extend_schema(responses={200: OpenApiTypes.ANY})
     def get(self, request, system_name):
         url = request.GET.get("url", "")
         app_code = request.GET.get("app_code", "")

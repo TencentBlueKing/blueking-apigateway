@@ -22,7 +22,7 @@ from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -90,18 +90,18 @@ class RequestGatewayObjectMixin:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关列表",
+    decorator=extend_schema(
+        description="获取网关列表",
         responses={status.HTTP_200_OK: GatewayListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="创建网关",
-        request_body=GatewayCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+    decorator=extend_schema(
+        description="创建网关",
+        request=GatewayCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: {"type": "object", "additionalProperties": True}},
         tags=["WebAPI.Gateway"],
     ),
 )
@@ -277,35 +277,35 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定网关的信息",
+    decorator=extend_schema(
+        description="获取指定网关的信息",
         responses={status.HTTP_200_OK: GatewayRetrieveOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关",
-        request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关",
+        request=GatewayUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关部分信息",
-        request_body=GatewayUpdateInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关部分信息",
+        request=GatewayUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="删除网关",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="删除网关",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
@@ -404,14 +404,16 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
 
 @method_decorator(
     name="put",
-    decorator=swagger_auto_schema(
-        operation_description="更新网关状态，如启用、停用",
-        request_body=GatewayUpdateStatusInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="更新网关状态，如启用、停用",
+        request=GatewayUpdateStatusInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.Gateway"],
     ),
 )
+@extend_schema(tags=["WebAPI.Gateway"])
 class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
+    schema_request_partial = False
     serializer_class = GatewayUpdateStatusInputSLZ
 
     def update(self, request, *args, **kwargs):
@@ -475,8 +477,8 @@ class GatewayUpdateStatusApi(RequestGatewayObjectMixin, generics.UpdateAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关可配置的应用列表，用于应用选择器",
+    decorator=extend_schema(
+        description="获取网关可配置的应用列表，用于应用选择器",
         responses={status.HTTP_200_OK: GatewayTenantAppListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
@@ -503,8 +505,8 @@ class GatewayTenantAppListApi(RequestGatewayObjectMixin, generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取指定网关的开发指引页面",
+    decorator=extend_schema(
+        description="获取指定网关的开发指引页面",
         responses={status.HTTP_200_OK: GatewayDevGuidelineOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
@@ -550,8 +552,8 @@ class GatewayDevGuidelineRetrieveApi(RequestGatewayObjectMixin, generics.Retriev
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="网关环境发布状态",
+    decorator=extend_schema(
+        description="网关环境发布状态",
         responses={status.HTTP_200_OK: GatewayReleasingStatusOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
@@ -577,9 +579,9 @@ class GatewayReleasingStatusApi(RequestGatewayObjectMixin, generics.RetrieveAPIV
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="检查网关名称是否可用",
-        query_serializer=GatewayCheckNameAvailableInputSLZ,
+    decorator=extend_schema(
+        description="检查网关名称是否可用",
+        parameters=[GatewayCheckNameAvailableInputSLZ],
         responses={status.HTTP_200_OK: GatewayCheckNameAvailableOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
@@ -602,8 +604,8 @@ class GatewayCheckNameAvailableApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="检查用户是否已授权代码仓库",
+    decorator=extend_schema(
+        description="检查用户是否已授权代码仓库",
         responses={status.HTTP_200_OK: GatewayRepoAuthorizationOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),

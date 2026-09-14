@@ -24,7 +24,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
@@ -76,8 +76,8 @@ def _validate_resource_ids_in_released_resources(resource_ids: list[int], releas
 class ResourceViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayIdPermission]
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppResourcePermissionInputSLZ(),
+    @extend_schema(
+        parameters=[serializers.AppResourcePermissionInputSLZ()],
         responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
         tags=["OpenAPI.V1"],
     )
@@ -105,6 +105,7 @@ class ResourceViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK", data=slz.data)
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = serializers.AppGatewayPermissionInputSLZ
@@ -187,6 +188,7 @@ class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
         )
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
     """
     PaaS 中应用申请访问网关 API 的权限
@@ -199,6 +201,7 @@ class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
         return serializers.PaaSAppPermissionApplyInputSLZ
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
     """
     普通应用直接申请访问网关 API 的权限
@@ -214,11 +217,13 @@ class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
         return serializers.AppPermissionApplyV1InputSLZ
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionGrantViewSet(viewsets.ViewSet):
     """网关关联应用，主动为应用授权访问网关 API 的权限"""
 
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
+    @extend_schema(request=serializers.GrantAppPermissionInputSLZ, responses={200: {"type": "null"}})
     def grant(self, request, *args, **kwargs):
         slz = serializers.GrantAppPermissionInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -243,11 +248,13 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
     """网关关联应用，回收应用访问网关 API 的权限"""
 
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
+    @extend_schema(request=serializers.RevokeAppPermissionInputSLZ, responses={200: {"type": "null"}})
     def revoke(self, request, *args, **kwargs):
         slz = serializers.RevokeAppPermissionInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -263,6 +270,7 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionRenewAPIView(APIView):
     """
     权限续期
@@ -270,6 +278,7 @@ class AppPermissionRenewAPIView(APIView):
 
     permission_classes = [OpenAPIPermission]
 
+    @extend_schema(request=serializers.AppPermissionRenewInputSLZ, responses={200: {"type": "null"}})
     def post(self, request, *args, **kwargs):
         slz = serializers.AppPermissionRenewInputSLZ(
             data=request.data,
@@ -300,9 +309,14 @@ class AppPermissionRenewAPIView(APIView):
         return V1OKJsonResponse("OK")
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIPermission]
 
+    @extend_schema(
+        parameters=[serializers.AppPermissionInputSLZ],
+        responses={200: serializers.AppResourcePermissionOutputSLZ(many=True)},
+    )
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
         slz = serializers.AppPermissionInputSLZ(data=request.query_params)
@@ -315,6 +329,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 
 
+@extend_schema(tags=["OpenAPI.V1"])
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
     permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionRecordInputSLZ

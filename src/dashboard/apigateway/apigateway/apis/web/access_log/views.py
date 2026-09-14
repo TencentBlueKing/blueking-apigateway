@@ -28,7 +28,7 @@ from django.conf import settings
 from django.http import Http404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.rbac.constants import GatewayActionEnum
@@ -57,8 +57,8 @@ from .serializers import (
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=RequestLogQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[RequestLogQueryInputSLZ],
         responses={status.HTTP_200_OK: TimeChartOutputSLZ()},
         tags=["WebAPI.Log"],
     ),
@@ -93,7 +93,7 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],
     ),
@@ -143,8 +143,8 @@ class SearchLogListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: "file/csv"},
+    decorator=extend_schema(
+        responses={(200, "application/octet-stream"): bytes},
         tags=["WebAPI.Log"],
     ),
 )
@@ -222,8 +222,8 @@ class LogExportApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=LogDetailQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[LogDetailQueryInputSLZ],
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
@@ -252,7 +252,7 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
@@ -287,7 +287,7 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: LogLinkOutputSLZ()},
         tags=["WebAPI.Log"],
     ),

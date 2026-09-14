@@ -22,7 +22,7 @@ from datetime import datetime
 from io import StringIO
 
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.rbac.constants import GatewayActionEnum
@@ -51,10 +51,10 @@ logger = logging.getLogger(__name__)
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=MCPServerLogQueryInputSLZ,
+    decorator=extend_schema(
+        parameters=[MCPServerLogQueryInputSLZ],
         responses={status.HTTP_200_OK: MCPServerLogTimeChartOutputSLZ()},
-        operation_description="查询 MCP Server 日志时间分布图",
+        description="查询 MCP Server 日志时间分布图",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -75,9 +75,9 @@ class MCPServerLogTimeChartRetrieveApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogOutputSLZ(many=True)},
-        operation_description="查询 MCP Server 日志列表",
+        description="查询 MCP Server 日志列表",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -107,10 +107,10 @@ class MCPServerSearchLogListApi(generics.ListAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=MCPServerLogQueryInputSLZ,
-        responses={status.HTTP_200_OK: "file/csv"},
-        operation_description="导出 MCP Server 日志",
+    decorator=extend_schema(
+        parameters=[MCPServerLogQueryInputSLZ],
+        responses={(200, "application/octet-stream"): bytes},
+        description="导出 MCP Server 日志",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -173,9 +173,9 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogOutputSLZ(many=True)},
-        operation_description="根据 request_id 获取 MCP Server 日志详情",
+        description="根据 request_id 获取 MCP Server 日志详情",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -198,9 +198,9 @@ class MCPServerLogDetailApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogOutputSLZ(many=True)},
-        operation_description="根据 x_request_id 查询全链路关联日志",
+        description="根据 x_request_id 查询全链路关联日志",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -223,9 +223,9 @@ class MCPServerLogTraceApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogChainOutputSLZ()},
-        operation_description="根据 request_id 查询 MCP Server 调用链路（瀑布图数据）",
+        description="根据 request_id 查询 MCP Server 调用链路（瀑布图数据）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -256,9 +256,9 @@ class MCPServerLogChainApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogOutputSLZ(many=True)},
-        operation_description="根据 request_id 或 x_request_id 查询 MCP Server 日志（工具箱，无需网关权限）",
+        description="根据 request_id 或 x_request_id 查询 MCP Server 日志（工具箱，无需网关权限）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -284,9 +284,9 @@ class MCPServerLogQueryApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogQuerySummaryOutputSLZ()},
-        operation_description="根据 request_id 或 x_request_id 查询 MCP Server 调用链汇总信息（工具箱，无需网关权限）",
+        description="根据 request_id 或 x_request_id 查询 MCP Server 调用链汇总信息（工具箱，无需网关权限）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
@@ -310,9 +310,9 @@ class MCPServerLogQuerySummaryApi(generics.RetrieveAPIView):
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
+    decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogChainOutputSLZ()},
-        operation_description="根据 request_id 或 x_request_id 查询 MCP Server 调用链路详情（工具箱，无需网关权限）",
+        description="根据 request_id 或 x_request_id 查询 MCP Server 调用链路详情（工具箱，无需网关权限）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )

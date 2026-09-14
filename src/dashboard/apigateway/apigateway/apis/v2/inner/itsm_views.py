@@ -21,8 +21,8 @@ import logging
 from django.conf import settings
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from drf_spectacular.utils import extend_schema
+from rest_framework import generics
 
 from apigateway.apis.v2.permissions import OpenAPIV2Permission
 from apigateway.biz.bk_itsm import ItsmCallbackResultHandler
@@ -35,14 +35,21 @@ logger = logging.getLogger(__name__)
 
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="ITSM 工单审批结果回调",
-        request_body=serializers.ItsmCallbackInputSLZ,
-        responses={status.HTTP_200_OK: ""},
+    decorator=extend_schema(
+        description="ITSM 工单审批结果回调",
+        request=serializers.ItsmCallbackInputSLZ,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {"result": {"type": "boolean"}, "message": {"type": "string"}},
+                "required": ["result", "message"],
+            }
+        },
         tags=["OpenAPI.V2.Inner"],
     ),
 )
 class ItsmCallbackApi(generics.CreateAPIView):
+    schema_response_envelope = False
     permission_classes = [OpenAPIV2Permission]
 
     def create(self, request, *args, **kwargs):

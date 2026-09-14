@@ -38,7 +38,7 @@ The API surfaces are intentionally independent and enforced by the
   requires them.
 - Keep client-visible security errors sanitized and log the original exception
   with `logger.exception(...)`.
-- Preserve unique drf-yasg `Meta.ref_name` values when adding serializers.
+- Preserve unique schema `Meta.ref_name` values (supported by drf-spectacular) when adding serializers.
 
 Web AI backend payloads use the flat `AIBackendWebConfigAdapter` contract.
 Open and v2 automation surfaces use the normalized stored protocol instead.

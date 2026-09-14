@@ -21,7 +21,9 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
+from django.urls import path
 from django_dynamic_fixture import G
+from drf_spectacular.generators import SchemaGenerator
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
 from openapi_schema_to_json_schema import to_json_schema
@@ -37,8 +39,11 @@ pytestmark = pytest.mark.django_db
 
 
 def test_programmable_deploy_retrieve_api_description():
-    schema = ProgrammableDeployRetrieveApi.get._swagger_auto_schema
-    assert schema["operation_description"] == "可编程网关 PaaS 部署详情查询"
+    document = SchemaGenerator(
+        patterns=[path("deploy/<str:deploy_id>/", ProgrammableDeployRetrieveApi.as_view())]
+    ).get_schema(public=True)
+    schema = document["paths"]["/deploy/{deploy_id}/"]["get"]
+    assert schema["description"] == "可编程网关 PaaS 部署详情查询"
 
 
 class TestReleaseCreateApi:

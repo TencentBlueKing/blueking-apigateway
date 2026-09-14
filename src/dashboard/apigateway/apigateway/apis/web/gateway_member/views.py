@@ -17,7 +17,7 @@
 #
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -46,22 +46,23 @@ def _serialize_member(member: GatewayMember) -> dict:
 
 @method_decorator(
     name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关成员列表",
+    decorator=extend_schema(
+        description="获取网关成员列表",
         responses={status.HTTP_200_OK: GatewayMemberOutputSLZ(many=True)},
         tags=["WebAPI.GatewayMember"],
     ),
 )
 @method_decorator(
     name="post",
-    decorator=swagger_auto_schema(
-        operation_description="批量添加网关成员",
-        request_body=GatewayMemberCreateInputSLZ(many=True),
+    decorator=extend_schema(
+        description="批量添加网关成员",
+        request=GatewayMemberCreateInputSLZ(many=True),
         responses={status.HTTP_201_CREATED: GatewayMemberBatchCreateOutputSLZ()},
         tags=["WebAPI.GatewayMember"],
     ),
 )
 class GatewayMemberListCreateApi(generics.GenericAPIView):
+    pagination_class = None
     serializer_class = GatewayMemberCreateInputSLZ
 
     def get(self, request, *args, **kwargs):
@@ -104,22 +105,23 @@ class GatewayMemberListCreateApi(generics.GenericAPIView):
 
 @method_decorator(
     name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="变更网关成员角色",
-        request_body=GatewayMemberRoleUpdateInputSLZ,
+    decorator=extend_schema(
+        description="变更网关成员角色",
+        request=GatewayMemberRoleUpdateInputSLZ,
         responses={status.HTTP_200_OK: GatewayMemberOutputSLZ()},
         tags=["WebAPI.GatewayMember"],
     ),
 )
 @method_decorator(
     name="delete",
-    decorator=swagger_auto_schema(
-        operation_description="移除网关成员",
-        responses={status.HTTP_204_NO_CONTENT: ""},
+    decorator=extend_schema(
+        description="移除网关成员",
+        responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.GatewayMember"],
     ),
 )
 class GatewayMemberUpdateDestroyApi(generics.GenericAPIView):
+    schema_request_partial = False
     serializer_class = GatewayMemberRoleUpdateInputSLZ
 
     @transaction.atomic

@@ -22,7 +22,7 @@ from typing import Any, Dict, List
 from bkapi_client_generator import ExpandSwaggerError, GenerateMarkdownError
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
@@ -46,11 +46,11 @@ from .serializers import (
 
 
 class DocArchiveParseApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="导入资源文档前，检查归档文件是否正确",
-        request_body=DocArchiveParseInputSLZ,
+    @extend_schema(
+        description="导入资源文档前，检查归档文件是否正确",
+        request=DocArchiveParseInputSLZ,
         responses={status.HTTP_200_OK: DocArchiveParseOutputSLZ},
-        tags=["WebAPI.ResourceDoc"],
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     def post(self, request, *args, **kwargs):
         slz = DocArchiveParseInputSLZ(data=request.data)
@@ -69,11 +69,11 @@ class DocArchiveParseApi(generics.CreateAPIView):
 
 
 class DocImportByArchiveApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="根据归档文件导入资源文档",
-        request_body=DocImportByArchiveInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.ResourceDoc"],
+    @extend_schema(
+        description="根据归档文件导入资源文档",
+        request=DocImportByArchiveInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -103,11 +103,11 @@ class DocImportByArchiveApi(generics.CreateAPIView):
 
 
 class DocImportBySwaggerApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="根据 swagger 描述文件导入资源文档",
-        request_body=DocImportBySwaggerInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.ResourceDoc"],
+    @extend_schema(
+        description="根据 swagger 描述文件导入资源文档",
+        request=DocImportBySwaggerInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -136,11 +136,11 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
 
 
 class DocExportApi(generics.CreateAPIView):
-    @swagger_auto_schema(
-        operation_description="导出资源文档",
-        request_body=DocExportInputSLZ,
-        responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.ResourceDoc"],
+    @extend_schema(
+        description="导出资源文档",
+        request=DocExportInputSLZ,
+        responses={(200, "application/octet-stream"): bytes},
+        tags=["WebAPI.Resource.Doc.ImportExport"],
     )
     def post(self, request, *args, **kwargs):
         """导出资源文档"""
