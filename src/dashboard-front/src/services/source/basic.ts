@@ -117,6 +117,7 @@ export function getEnv() {
       USER_VERIFY: string
       TEMPLATE_VARS: string
       AUTH: string
+      AUTH_PERSONAL_TOKEN: string
       SWAGGER: string
       CORS: string
       BREAKER: string

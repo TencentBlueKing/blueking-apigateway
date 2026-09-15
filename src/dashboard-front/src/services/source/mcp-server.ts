@@ -70,12 +70,13 @@ export interface IMCPServer {
   }
   updated_time?: string
   created_time?: string
-  categories?: string | string[]
+  categories?: IMCPServerCategory[]
   is_official?: boolean
   is_featured?: boolean
   raw_response_enabled?: boolean
   prompts_count?: number
   oauth2_public_client_enabled?: boolean
+  oauth2_personal_client_enabled?: boolean
   app_permission_risk?: {
     has_risk: boolean
     risk_tools: string[]

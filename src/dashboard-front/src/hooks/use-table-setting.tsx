@@ -20,6 +20,8 @@
 import type { ITableSettings } from '@/types/common';
 import type { BkUiSettings } from '@blueking/tdesign-ui';
 import { isEqual } from 'lodash-es';
+import { locale } from '@/locales';
+import router from '@/router';
 import { useEnv } from '@/stores';
 
 export function useTableSetting(
@@ -27,10 +29,8 @@ export function useTableSetting(
   useCache: boolean = false,
   cacheIdentifier?: string,
 ) {
-  const { locale } = useI18n();
-  const route = useRoute();
   const envStore = useEnv();
-  const tableIdentifier = ref(cacheIdentifier || String(route.name));
+  const tableIdentifier = ref(cacheIdentifier || String(router.currentRoute.value.name));
 
   const needCache = computed(() => useCache && tableIdentifier.value);
 

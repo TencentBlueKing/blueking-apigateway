@@ -84,6 +84,17 @@
                   color="#3a84ff"
                 />
               </div>
+              <div
+                v-if="isEnablePersonalClient"
+                v-bk-tooltips="t('可用个人令牌调用该 MCP Server')"
+                class="external-oauth-tag bg-#e1ecff cursor-pointer"
+              >
+                <AgIcon
+                  name="key-fill"
+                  size="14"
+                  color="#3a84ff"
+                />
+              </div>
             </div>
           </div>
 
@@ -97,112 +108,116 @@
           </div>
         </div>
         <div class="info-content">
-          <div class="info-item">
-            <div class="label">
-              {{ t('访问地址') }}:
+          <div class="info-column">
+            <div class="info-item">
+              <div class="label">
+                {{ t('访问地址') }}:
+              </div>
+              <div class="w-full flex items-baseline value">
+                <div
+                  v-bk-tooltips="{
+                    content: mcpDetails?.url ?? '',
+                    disabled: !mcpDetails?.isOverflow,
+                    extCls: 'max-w-[calc(100%-100px)]'
+                  }"
+                  class="max-w-[calc(100%-100px)] truncate"
+                  @mouseenter="(e: MouseEvent) => handleMouseenter(e, mcpDetails)"
+                  @mouseleave="(e: MouseEvent) => handleMouseleave(e, mcpDetails)"
+                >
+                  {{ mcpDetails?.url }}
+                </div>
+                <AgIcon
+                  name="copy"
+                  size="16"
+                  class="shrink-0 ml-8px icon"
+                  @click="() => handleCopy(mcpDetails?.url)"
+                />
+              </div>
             </div>
-            <div class="w-full flex items-baseline value">
+            <div class="info-item">
+              <div class="label">
+                {{ t('描述') }}:
+              </div>
               <div
                 v-bk-tooltips="{
-                  content: mcpDetails?.url ?? '',
+                  content: mcpDetails?.description ?? '',
                   disabled: !mcpDetails?.isOverflow,
-                  extCls: 'max-w-[calc(100%-100px)]'
+                  extCls: 'max-w-[calc(100%-100px)] break-all'
                 }"
-                class="max-w-[calc(100%-100px)] truncate"
+                class="truncate value"
                 @mouseenter="(e: MouseEvent) => handleMouseenter(e, mcpDetails)"
                 @mouseleave="(e: MouseEvent) => handleMouseleave(e, mcpDetails)"
               >
-                {{ mcpDetails?.url }}
+                {{ mcpDetails?.description }}
               </div>
-              <AgIcon
-                name="copy"
-                size="16"
-                class="shrink-0 ml-8px icon"
-                @click="() => handleCopy(mcpDetails?.url)"
-              />
+            </div>
+            <div class="info-item">
+              <div class="label">
+                {{ t('负责人') }}:
+              </div>
+              <div class="value">
+                <TenantUserSelector
+                  v-if="featureFlagStore.isEnableDisplayName"
+                  :content="mcpDetails?.maintainers"
+                  field="maintainers"
+                  mode="detail"
+                  width="600px"
+                />
+                <EditMember
+                  v-else
+                  mode="detail"
+                  width="600px"
+                  field="maintainers"
+                  :content="mcpDetails?.maintainers"
+                />
+              </div>
             </div>
           </div>
-          <div class="info-item">
-            <div class="label">
-              {{ t('描述') }}:
-            </div>
-            <div
-              v-bk-tooltips="{
-                content: mcpDetails?.description ?? '',
-                disabled: !mcpDetails?.isOverflow,
-                extCls: 'max-w-[calc(100%-100px)] break-all'
-              }"
-              class="truncate value"
-              @mouseenter="(e: MouseEvent) => handleMouseenter(e, mcpDetails)"
-              @mouseleave="(e: MouseEvent) => handleMouseleave(e, mcpDetails)"
-            >
-              {{ mcpDetails?.description }}
-            </div>
-          </div>
-          <div class="info-item">
-            <div class="label">
-              {{ t('标签') }}:
-            </div>
-            <div class="value lh-22px">
-              <div
-                v-if="mcpDetails?.labels?.length"
-                class="flex flex-wrap gap-8px w-full"
-              >
-                <template
-                  v-for="label of mcpDetails.labels"
-                  :key="label"
-                >
+          <div class="info-column">
+            <div class="info-item">
+              <div class="label">
+                {{ t('分类') }}:
+              </div>
+              <div class="value flex flex-wrap gap-8px lh-22px">
+                <template v-if="mcpDetails?.categories?.length">
                   <BkTag
+                    v-for="category of mcpDetails?.categories"
+                    :key="category"
                     class="flex-shrink-0 max-w-full break-all"
-                    :title="label"
                   >
-                    {{ label }}
+                    {{ category.display_name }}
                   </BkTag>
                 </template>
+                <template v-else>
+                  --
+                </template>
               </div>
-              <template v-else>
-                --
-              </template>
             </div>
-          </div>
-          <div class="info-item">
-            <div class="label">
-              {{ t('分类') }}:
-            </div>
-            <div class="value lh-22px">
-              <template v-if="mcpDetails?.categories?.length">
-                <BkTag
-                  v-for="category of mcpDetails?.categories"
-                  :key="category"
-                  class="mr-8px"
+            <div class="info-item">
+              <div class="label">
+                {{ t('标签') }}:
+              </div>
+              <div class="value lh-22px">
+                <div
+                  v-if="mcpDetails?.labels?.length"
+                  class="flex flex-wrap gap-8px w-full"
                 >
-                  {{ category.display_name }}
-                </BkTag>
-              </template>
-              <template v-else>
-                --
-              </template>
-            </div>
-          </div>
-          <div class="info-item">
-            <div class="label">
-              {{ t('负责人') }}:
-            </div>
-            <div class="value">
-              <TenantUserSelector
-                v-if="featureFlagStore.isEnableDisplayName"
-                :content="mcpDetails?.maintainers"
-                field="maintainers"
-                mode="detail"
-                width="600px"
-              />
-              <EditMember
-                v-else
-                mode="detail"
-                width="600px"
-                field="maintainers"
-                :content="mcpDetails?.maintainers"
-              />
+                  <template
+                    v-for="label of mcpDetails.labels"
+                    :key="label"
+                  >
+                    <BkTag
+                      class="flex-shrink-0 max-w-full break-all"
+                      :title="label"
+                    >
+                      {{ label }}
+                    </BkTag>
+                  </template>
+                </div>
+                <template v-else>
+                  --
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -472,6 +487,9 @@ const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && mcpDetails.value?.oauth2_public_client_enabled,
 );
+const isEnablePersonalClient = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT && mcpDetails.value?.oauth2_personal_client_enabled,
+);
 const isShowConfig = computed(() => ['tools', 'guide'].includes(active.value) && mcpConfigList.value.length > 0);
 
 const selectedAppName = computed(() => {
@@ -650,25 +668,36 @@ watch(
       }
 
       .info-content {
-        padding: 24px 24px 20px;
+        display: grid;
+        align-items: start;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: 0 40px;
+        padding: 3px 24px 12px;
+
+        .info-column {
+          display: grid;
+          align-items: start;
+          align-content: start;
+          grid-template-columns: max-content minmax(0, 1fr);
+          min-width: 0;
+        }
 
         .info-item {
-          display: flex;
-          align-items: baseline;
+          display: contents;
           font-size: 14px;
-          line-height: 40px;
+          line-height: 22px;
 
           .label {
+            padding: 9px 0;
             margin-right: 12px;
             color: #4d4f56;
             text-align: right;
-            flex-shrink: 0;
           }
 
           .value {
+            padding: 9px 0;
             line-height: 22px;
             color: #313238;
-            flex: 1;
             min-width: 0;
 
             .icon {
@@ -676,8 +705,9 @@ watch(
               cursor: pointer;
             }
 
-            .member-item {
-              line-height: 22px;
+            :deep(.edit-content),
+            :deep(.member-item) {
+              line-height: 22px !important;
             }
           }
 
