@@ -54,23 +54,6 @@ def fake_statistics_api_request_metrics(fake_resource):
 
 
 @pytest.fixture()
-def fake_statistics_api_request_duration_metrics(fake_resource):
-    fake_gateway = fake_resource.gateway
-    return {
-        "series": [
-            {
-                "dimensions": {
-                    "api_name": fake_gateway.name,
-                    "stage_name": "prod",
-                    "resource_name": fake_resource.name,
-                },
-                "datapoints": [[154, 1689292799000]],
-            },
-        ]
-    }
-
-
-@pytest.fixture()
 def fake_statistics_app_request_metrics(fake_resource):
     fake_gateway = fake_resource.gateway
     return {

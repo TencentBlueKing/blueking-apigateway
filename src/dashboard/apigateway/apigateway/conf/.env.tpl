@@ -3,7 +3,7 @@ BK_APP_SECRET="egrKq5TnJvlFiPLIrtquv3Mow792xVgTzqTiSrVkUIk="
 
 DASHBOARD_CSRF_COOKIE_DOMAIN=".example.com"
 # DASHBOARD_CSRF_COOKIE_NAME="bk_apigateway_csrftoken"
-BK_PAAS_LOGIN_URL="http://paas.example.com/login"
+BK_LOGIN_URL="http://paas.example.com/login"
 
 BK_APIGW_DATABASE_HOST="localhost"
 
