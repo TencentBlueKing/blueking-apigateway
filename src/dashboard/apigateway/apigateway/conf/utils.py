@@ -213,6 +213,8 @@ def get_default_feature_flags(
         "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
         # 是否开启 MCP 可观测功能
         "ENABLE_MCP_SERVER_OBSERVABILITY": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OBSERVABILITY", False),
+        # 前端是否启用资源路径冲突检测；不限制后端检测接口访问
+        "ENABLE_RESOURCE_PATH_CONFLICT_CHECK": env.bool("FEATURE_FLAG_ENABLE_RESOURCE_PATH_CONFLICT_CHECK", False),
         # 是否启用健康检查
         "ENABLE_HEALTH_CHECK": env.bool("FEATURE_FLAG_ENABLE_HEALTH_CHECK", False),
         # 是否开启 MCP Server OAuth2 公开客户端模式

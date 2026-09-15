@@ -112,8 +112,14 @@ def test_single_literal_parameter_group(request_view, fake_gateway, path):
     assert all(any(resource["id"] is None for resource in item["resources"]) for item in conflicts)
 
 
-def test_empty_gateway(request_view, fake_gateway):
-    assert check(request_view, fake_gateway).json()["data"] == {
+@pytest.mark.parametrize("enabled", [False, True])
+@pytest.mark.parametrize("single", [False, True])
+def test_empty_gateway(request_view, fake_gateway, settings, enabled, single):
+    settings.DEFAULT_FEATURE_FLAG = {"ENABLE_RESOURCE_PATH_CONFLICT_CHECK": enabled}
+    data = {"method": "GET", "path": "/x/{id}"} if single else None
+    response = check(request_view, fake_gateway, data)
+    assert response.status_code == 200
+    assert response.json()["data"] == {
         "has_conflicts": False,
         "conflicts": [],
         "truncated": False,
