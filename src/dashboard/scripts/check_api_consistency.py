@@ -607,16 +607,6 @@ class APIConsistencyChecker:
         return m.group(1).strip() if m else ""
 
     @staticmethod
-    def _extract_doc_params(content: str) -> list[str]:
-        """从文档的参数表格中提取参数名（兼容旧接口）"""
-        params = []
-        for line in content.splitlines():
-            m = re.match(r"^\|\s*`?(\w+)`?\s*\|", line)
-            if m and m.group(1) not in ("参数名称", "参数名", "Field", "字段", "Name", "Parameter"):
-                params.append(m.group(1))
-        return params
-
-    @staticmethod
     def _extract_doc_params_detailed(content: str) -> dict[str, list[str]]:
         """
         从文档中提取分类的参数名。

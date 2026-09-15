@@ -27,9 +27,6 @@ class TypeFactory(Generic[FACTORY_TYPE]):
     def register(self, name: str, type_: Type[FACTORY_TYPE]):
         self.__types__[name] = type_
 
-    def deregister(self, name: str):
-        del self.__types__[name]
-
     def create(self, name: str, **kwargs) -> FACTORY_TYPE:
         type_ = self.__types__[name]
         return type_(name=name, **kwargs)  # type: ignore

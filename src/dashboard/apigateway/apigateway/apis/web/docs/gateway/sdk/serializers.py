@@ -19,18 +19,6 @@
 from rest_framework import serializers
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.common.i18n.field import SerializerTranslatedField
-
-
-class GatewaySLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="网关 ID")
-    name = serializers.CharField(read_only=True, help_text="网关名称")
-    description = SerializerTranslatedField(
-        translated_fields={"en": "description_en"}, read_only=True, help_text="网关描述"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.sdk.serializers.GatewaySLZ"
 
 
 class SDKDocInputSLZ(serializers.Serializer):

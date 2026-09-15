@@ -132,20 +132,6 @@ class PaaSAppPermissionApplyInputSLZ(serializers.Serializer):
         return data
 
 
-class GatewayResourceIDs(serializers.Serializer):
-    gateway_id = serializers.IntegerField(
-        help_text="gateway_id",
-        required=True,
-    )
-    resource_ids = serializers.ListField(
-        help_text="如果不传则为网关维度申请",
-        child=serializers.IntegerField(),
-        allow_empty=True,
-        required=False,
-        max_length=100,
-    )
-
-
 class AppPermissionApplyV1InputSLZ(serializers.Serializer):
     """
     普通应用直接申请访问网关API的权限
