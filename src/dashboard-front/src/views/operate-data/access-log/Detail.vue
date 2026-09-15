@@ -41,7 +41,7 @@
           <dl class="details">
             <template v-for="({ label, field }, index) in details.fields">
               <div
-                v-if="field !== 'llm_summary' || (field === 'llm_summary' && isAIGateway)"
+                v-if="field !== 'llm_summary' || hasLlmSummary"
                 :key="index"
                 class="item"
               >
@@ -56,6 +56,15 @@
           </dl>
         </div>
       </div>
+      <div
+        v-if="hasError"
+        class="error-panel"
+      >
+        <BkException
+          :title="t('分享链接已失效或日志不存在')"
+          type="403"
+        />
+      </div>
     </div>
   </BkLoading>
 </template>
@@ -66,16 +75,9 @@ import {
   type ILogDetailInterface,
   fetchApigwAccessLogDetail,
 } from '@/services/source/access-log';
-import { useGatewaysList } from '@/hooks';
-import type { IExtractListApiResults } from '@/services/types/utils.ts';
-import { getGatewayList } from '@/services/source/gateway';
-import { useGateway } from '@/stores';
-
-type IGatewayListItem = IExtractListApiResults<typeof getGatewayList>;
 
 const { t } = useI18n();
 const route = useRoute();
-const gatewayStore = useGateway();
 // const common = useCommon();
 
 // 组件默认不展示任何请求的错误 Message
@@ -83,7 +85,6 @@ const gatewayStore = useGateway();
 
 const isDataLoading = ref(false);
 const hasError = ref(false);
-const apigwDataList = ref<IGatewayListItem[]>([]);
 const details = ref<{
   fields: {
     label: string
@@ -94,20 +95,15 @@ const details = ref<{
   fields: [],
   result: {},
 });
-// @ts-expect-error useGatewaysList 接受 Ref 类型参数
-const { getGatewaysListData } = useGatewaysList({});
-
 const routeQuery = computed(() => route.query);
 
 const routeParams = computed(() => route.params);
 
-const isAIGateway = computed(() => gatewayStore.isAIGateway);
+// 按日志数据本身判断是否展示 LLM 摘要
+const hasLlmSummary = computed(() => Boolean(details.value.result?.llm_summary));
 
-const currentApigwName = computed(() => {
-  const current = apigwDataList.value.find((item: IGatewayListItem) =>
-    String(item.id) === String(routeParams.value.id)) || {} as IGatewayListItem;
-  return current.name || '--';
-});
+// 网关名直接取分享接口返回的 gateway_name：仅登录、无任何网关权限的访客拿不到网关详情
+const currentApigwName = computed(() => details.value.result?.gateway_name || '--');
 
 const titleInfo = computed(() => t(
   '蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情',
@@ -163,10 +159,6 @@ const getFieldText = (field: string) => {
 
 onMounted(async () => {
   await initData();
-  const result = await getGatewaysListData();
-  if (result) {
-    apigwDataList.value = result as unknown as IGatewayListItem[];
-  }
 });
 
 // 离开组件前重置 noGlobalError 状态，避免其他页面也不展示错误 Message
@@ -185,6 +177,13 @@ onBeforeUnmount(() => {
   min-height: calc(100vh - 138px);
   margin: 0 auto;
   overflow: hidden;
+}
+
+.error-panel {
+  display: flex;
+  padding: 80px 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .detail-panel {
