@@ -62,7 +62,7 @@ class ApigwOperationValidator(OperationValidator):
     ) -> Iterator[ValidationError]:
         assert self.operation_ids_registry is not None
 
-        operation_id = operation.getkey("operationId")
+        operation_id = (operation / "operationId").read_value() if "operationId" in operation else None
         if operation_id is not None and operation_id in self.operation_ids_registry:
             yield DuplicateOperationIDError(f"Operation ID '{operation_id}' for '{name}' in '{url}' is not unique")
         self.operation_ids_registry.append(operation_id)

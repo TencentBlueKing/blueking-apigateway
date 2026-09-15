@@ -15,17 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import shlex
+
 import pytest
 from requests import PreparedRequest
 
 from apigateway.utils.curlify import to_curl
 
 
-@pytest.fixture
-def fake_request():
+@pytest.fixture(params=["GET", "PUT"])
+def fake_request(request):
+    method = request.param
     request = PreparedRequest()
     request.prepare(
-        method="GET",
+        method=method,
         url="http://example.com",
         headers={"X-Request-Token": "testing"},
     )
@@ -33,19 +36,24 @@ def fake_request():
 
 
 def test_to_curl(fake_request):
+    def assert_method(result):
+        args = shlex.split(result)
+        method = args[args.index("-X") + 1] if "-X" in args else "GET"
+        assert method == fake_request.method
+
     result = to_curl(fake_request)
-    assert "-X GET" in result
+    assert_method(result)
     assert "http://example.com" in result
     assert "X-Request-Token: testing" in result
 
     result = to_curl(fake_request, headers={"foo": "bar"})
-    assert "-X GET" in result
+    assert_method(result)
     assert "http://example.com" in result
     assert "foo: bar" in result
     assert "X-Request-Token: testing" not in result
 
     result = to_curl(fake_request, headers={"foo": "bar"}, header_keys=())
-    assert "-X GET" in result
+    assert_method(result)
     assert "http://example.com" in result
     assert "foo: bar" not in result
     assert "X-Request-Token: testing" not in result
