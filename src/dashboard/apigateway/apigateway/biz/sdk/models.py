@@ -211,10 +211,6 @@ class PythonSDK(SDK):
         return self.name
 
     @property
-    def download_url(self) -> str:
-        return self.instance.url
-
-    @property
     def install_command(self) -> str:
         if not self.index_url:
             return ""

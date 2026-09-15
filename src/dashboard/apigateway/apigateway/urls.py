@@ -95,13 +95,6 @@ urlpatterns = [
     path("backend/mcp-marketplace/", include("apigateway.apis.web.mcp_marketplace.urls")),
     # personal workbench: /me/workbench/
     path("backend/me/workbench/", include("apigateway.apis.web.personal_workbench.urls")),
-    # todo 不应该放在顶层，后续要想办法挪到下层
-    # FIXME: not used? commented out in 2026-03-23, remove in the future
-    # path(
-    #     "backend/gateways/monitors/alarm/records/summary/",
-    #     AlarmRecordSummaryListApi.as_view(),
-    #     name="monitors.alarm_records.summary",
-    # ),
     path("backend/gateways/logs/query/<slug:request_id>/", LogDetailInfoApi.as_view(), name="access_log.logs.query"),
     path(
         "backend/gateways/mcp-server-logs/query/<slug:request_id>/",

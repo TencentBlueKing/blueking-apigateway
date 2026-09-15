@@ -42,9 +42,6 @@ class SchemaFactory:
     def get_context_resource_bkauth_schema(self):
         return self._get_schema_instance(instances.ContextResourceBKAuth())
 
-    def get_context_gateway_feature_flag_schema(self):
-        return self._get_schema_instance(instances.ContextGatewayFeatureFlag())
-
     def get_monitor_alarm_strategy_schema(self):
         return self._get_schema_instance(instances.MonitorAlarmStrategy())
 

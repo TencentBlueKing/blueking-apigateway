@@ -16,10 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-import os
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from django.utils.translation import gettext as _
 
@@ -44,9 +43,6 @@ logger = logging.getLogger(__name__)
 class SDKInfo:
     context: SDKContext
     sdk: GatewaySDK
-
-    def get_packaged_files(self) -> Dict[str, str]:
-        return {os.path.basename(file_path): file_path for file_path in self.context.files}
 
 
 @dataclass
