@@ -91,3 +91,16 @@ def test_get_doc_links_includes_personal_token():
         en_links["PERSONAL_TOKEN"]
         == "https://docs.example.com/markdown/EN/APIGateway/1.24/UserGuide/Explanation/personal-token.md"
     )
+
+
+def test_get_doc_links_route_match_rules(monkeypatch):
+    monkeypatch.delenv("DOC_LINK_ROUTE_MATCH_RULES", raising=False)
+    for lang in ("ZH", "EN"):
+        links = get_doc_links("1.24.0-beta.1", "https://docs.example.com", lang)
+        assert links["ROUTE_MATCH_RULES"] == (
+            f"https://docs.example.com/markdown/{lang}/APIGateway/1.24/UserGuide/Explanation/route-match-rules.md"
+        )
+
+    monkeypatch.setenv("DOC_LINK_ROUTE_MATCH_RULES", "https://docs.example.com/custom-route-rules")
+    links = get_doc_links("1.24.0", "https://docs.example.com", "ZH")
+    assert links["ROUTE_MATCH_RULES"] == "https://docs.example.com/custom-route-rules"

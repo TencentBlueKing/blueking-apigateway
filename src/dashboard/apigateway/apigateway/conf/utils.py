@@ -344,6 +344,10 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "TEMPLATE_VARS": env.str(
             "DOC_LINK_TEMPLATE_VARS", default=f"{doc_link_prefix}/UserGuide/Explanation/template-var.md"
         ),
+        # 路由匹配规则
+        "ROUTE_MATCH_RULES": env.str(
+            "DOC_LINK_ROUTE_MATCH_RULES", default=f"{doc_link_prefix}/UserGuide/Explanation/route-match-rules.md"
+        ),
         # 网关认证
         "AUTH": env.str("DOC_LINK_AUTH", default=f"{doc_link_prefix}/UserGuide/Explanation/authorization.md"),
         # 个人令牌认证
