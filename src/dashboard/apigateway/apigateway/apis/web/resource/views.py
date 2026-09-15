@@ -745,23 +745,18 @@ class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListA
 
 
 _RESOURCE_PATH_CONFLICT_DESCRIPTION = (
-    "检测归一化路径相同，或相同段数的参数路由在任意整段字面量与完整参数之间的重叠。"
-    "完整静态路径与参数路径之间的重叠不提示。不展开环境变量，不检测混合参数段、匹配子路径通配符，不模拟参数后字面量中的点号等正则匹配语义，不预测实际命中资源。"
-    "has_conflicts=false 不保证实际路由完全无重叠。"
-    "按具体请求方法返回冲突组，ANY 展开为所有支持的方法；资源保留原始 method。"
-    "literal_parameter 组以第一条资源为基准，其余资源与基准路径重叠或归一化相同；不表示组内所有资源两两重叠。"
-    "最多返回 200 个冲突组；存在更多组时 truncated=true。每组最多 50 条资源，存在更多资源时 resources_truncated=true；单资源检测始终保留候选资源。"
+    "检查同一请求方法下的常见路径冲突：\n"
+    "1. 路径相同，仅参数名不同，例如 /users/{id} 和 /users/{name}。"
+    "请合并重复资源，或修改路径；只改参数名不能消除冲突。\n"
+    "2. 参数可能匹配另一条路径中的固定文字，例如 /biz/{id}/batch 和 /biz/{id}/{name}。"
+    "请增加区分用途的路径段，例如将后者改为 /biz/{id}/items/{name}。"
 )
 
 
 @method_decorator(
     name="get",
     decorator=extend_schema(
-        description=(
-            "检测资源编辑区全部资源的请求路径冲突，仅返回提示。"
-            + _RESOURCE_PATH_CONFLICT_DESCRIPTION
-            + "两类冲突组交替返回，一类耗尽后继续返回另一类。"
-        ),
+        description="检测资源编辑区全部资源的请求路径冲突，仅返回提示。\n" + _RESOURCE_PATH_CONFLICT_DESCRIPTION,
         responses={status.HTTP_200_OK: ResourcePathConflictListOutputSLZ},
         tags=["WebAPI.Resource"],
     ),
