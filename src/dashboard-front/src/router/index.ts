@@ -122,6 +122,17 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // 流水日志分享页：顶级路由，不套网关 layout
+  {
+    path: '/:id/access-log/:requestId',
+    name: 'AccessLogDetail',
+    component: () => import('@/views/operate-data/access-log/Detail.vue'),
+    meta: {
+      title: t('流水日志'),
+      matchRoute: 'AccessLogDetail',
+      topMenu: 'home',
+    },
+  },
   {
     path: '/platform-tools',
     name: 'PlatformTools',

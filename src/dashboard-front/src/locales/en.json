@@ -2742,5 +2742,6 @@
   "可编程网关请参考框架文档，配置资源请求参数声明": "For programmable gateways, please refer to the framework documentation to configure the resource request parameter declaration",
   "已上线": "Released",
   "已显示最前": "Already displayed at the front",
-  "没有更多了": "No more"
+  "没有更多了": "No more",
+  "分享链接已失效或日志不存在": "The share link has expired or the log does not exist"
 }
