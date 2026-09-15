@@ -17,28 +17,30 @@
  */
 
 import type { Router } from 'vue-router';
-// 直接从具体文件导入，避免经由 @/stores、@/hooks 桶文件放大循环依赖
+// 直接导入具体 Store，避免桶文件引入路由循环依赖。
 import { useGateway } from '@/stores/useGateway';
+import { useGatewayRoleStore } from '@/stores/useGatewayRole';
 import { useUserInfo } from '@/stores/useUserInfo';
-import { canAccessByRole, getGatewayRole } from '@/hooks/use-gateway-role';
+import { canAccessByRole } from '@/utils/gateway-permission';
+import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
+
+const pendingRouters = new WeakSet<Router>();
+
+// 守卫刷新角色时，由目标路由决定落点；布局不能按尚未离开的旧页面权限抢先重定向。
+export const isGatewayNavigationPending = (router: Router) => pendingRouters.has(router);
 
 /**
- * 网关内页面的角色权限守卫
- * 依据当前用户在该网关下的角色（administrator / operator）判断能否进入目标页面，
- * 无权限或网关不存在时统一导向网关内 404 页面
+ * 角色决定授权，详情只用于展示。确认无权限进入 404，查询失败进入可重试错误页；
+ * 两种异常都不挂载目标业务页面，不能以“请求失败”为由绕过授权。
  */
 export function setupGatewayRoleGuard(router: Router) {
-  router.beforeEach(async (to) => {
-    // 仅 /:id 下的网关内路由需要角色校验
-    if (!to.matched.some(record => record.name === 'Resources')) {
-      return true;
-    }
-
-    // 404 等异常页自身跳过，避免死循环
-    if (to.meta.skipRoleCheck) {
-      return true;
-    }
-
+  // Vue Router 会取消过期导航，但异步 beforeEach 返回的重定向可能先于其取消检查执行。
+  // 因此每次 await 后仍需核对序号，尤其不能让旧请求的失败重定向覆盖已完成的新导航。
+  let navigationId = 0;
+  const checkedSwitches = new WeakSet<object>();
+  router.beforeEach(async (to, from) => {
+    const currentNavigationId = ++navigationId;
+    pendingRouters.add(router);
     const gatewayId = Number(to.params.id);
     const toNotFound = () => ({
       name: 'GatewayNotFound',
@@ -46,38 +48,65 @@ export function setupGatewayRoleGuard(router: Router) {
       replace: true,
     });
 
-    if (!gatewayId) {
-      return toNotFound();
-    }
-
-    const userStore = useUserInfo();
-    const gatewayStore = useGateway();
-
     try {
-      // 角色判定依赖 username 与网关的 maintainers/developers，必须先就绪，
-      // 否则刷新页面时角色为空会导致校验被绕过
+      // 异常页不触发请求，避免失败 → 异常页 → 再次请求形成重试环。
+      if (!to.matched.some(record => record.name === 'Resources') || to.meta.skipRoleCheck) {
+        return true;
+      }
+      if (!Number.isSafeInteger(gatewayId) || gatewayId <= 0) {
+        return toNotFound();
+      }
+      const userStore = useUserInfo();
+      const gatewayStore = useGateway();
+      const roleStore = useGatewayRoleStore();
       if (!userStore.info.username) {
         await userStore.fetchUserInfo();
       }
-      await gatewayStore.ensureGatewayDetail(gatewayId);
-    }
-    catch {
-      // 网关不存在或当前用户无权查看，同样视为页面不存在
+      if (currentNavigationId !== navigationId) {
+        return false;
+      }
+
+      const fromGateway = from.matched.some(record => record.name === 'Resources');
+      const switchingGateway = fromGateway && from.params.id !== to.params.id;
+      // 同网关导航受 Store 的 TTL 约束；重新进入、切换或从异常页重试必须刷新。
+      // 仅复用本守卫刚检查过的切换回退，不把普通路由 redirect 当作缓存有效的依据。
+      const checkedRedirect = !!to.redirectedFrom && checkedSwitches.has(to.redirectedFrom);
+      const force = !checkedRedirect && (!fromGateway || switchingGateway || !!from.meta.skipRoleCheck);
+      const role = await roleStore.fetchGatewayRole(gatewayId, force);
+      if (currentNavigationId !== navigationId) {
+        return false;
+      }
+      if (role) {
+        await gatewayStore.ensureGatewayDetail(gatewayId, force);
+      }
+      if (currentNavigationId !== navigationId) {
+        return false;
+      }
+      if (canAccessByRole(role, to.meta.permission)) {
+        return true;
+      }
+      // 切换网关优先保留菜单，目标角色不支持该菜单时回退；直接访问无权页面仍是 404。
+      if (switchingGateway && canAccessByRole(role, 'basic-view')) {
+        checkedSwitches.add(to);
+        return {
+          name: 'BasicInfo',
+          params: { id: to.params.id },
+          replace: true,
+        };
+      }
       return toNotFound();
     }
-
-    const role = getGatewayRole(
-      userStore.info.username,
-      gatewayStore.currentGateway?.maintainers,
-      gatewayStore.currentGateway?.developers,
-    );
-
-    // 运营者采用 fail-closed 策略，未声明 permission 的网关内路由会被拒绝，
-    // 漏标情况由 audit-route-permissions 在开发环境启动时统一提示
-    if (!canAccessByRole(role, to.meta.permission)) {
-      return toNotFound();
+    catch (error) {
+      if (currentNavigationId !== navigationId) {
+        return false;
+      }
+      return getGatewayErrorRoute(error, gatewayId, to.fullPath);
     }
-
-    return true;
+    finally {
+      // 旧导航结束时不能解除新导航的保护。
+      if (currentNavigationId === navigationId) {
+        pendingRouters.delete(router);
+      }
+    }
   });
 }
