@@ -16,17 +16,9 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-export * from './useEnv';
-export * from './useUserInfo';
-export * from './useFeatureFlag';
-export * from './useGateway';
-export * from './useGatewayRole';
-export * from './useAccessLog';
-export * from './useStaff';
-export * from './usePermission';
-export * from './useAuditLog';
-export * from './useResourceVersion';
-export * from './useResourceSetting';
-export * from './useStage';
-export * from './useOnlineDebugging';
-export * from './useTrace';
+import http from '@/services/http';
+import type { GatewayMemberRole } from '@/services/types/responses/gateway-members';
+
+export function getUserGatewayRole(gatewayId: number) {
+  return http.get<{ role: GatewayMemberRole }>(`/gateways/${gatewayId}/me/role/`);
+}

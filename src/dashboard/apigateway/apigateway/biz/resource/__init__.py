@@ -17,6 +17,7 @@
 #
 from .models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from .openapi_schema import ResourceOpenAPISchemaHandler
+from .path_conflicts import find_resource_path_conflicts
 from .proxy import ProxyHandler
 from .resource import ResourceHandler
 from .savers import ResourcesSaver
@@ -33,5 +34,6 @@ __all__ = [
     "ResourceOpenAPISchemaHandler",
     "ResourcesSaver",
     # functions
+    "find_resource_path_conflicts",
     # others
 ]

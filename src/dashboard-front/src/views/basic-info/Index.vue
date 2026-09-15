@@ -728,12 +728,12 @@
     <CreateGateway
       v-model="createGatewayShow"
       :init-data="(basicInfoDetailData as ParamType)"
-      @done="getBasicInfo"
+      @done="getBasicInfo()"
     />
     <EditAPIDoc
       v-model="isShowApiDoc"
       :data="basicInfoData"
-      @done="getBasicInfo"
+      @done="getBasicInfo()"
     />
     <AgSideslider
       v-model="isShowMarkdown"
@@ -756,7 +756,6 @@ import {
   deleteGateway,
   getGatewayDetail,
   getGuideDocs,
-  getReleasingStatus,
   patchGateway,
   putGatewayBasics,
   toggleStatus,
@@ -779,10 +778,14 @@ import {
   useEnv,
   useFeatureFlag,
   useGateway,
+  useGatewayRoleStore,
 } from '@/stores';
 import { useGatewayRole, usePopInfoBox } from '@/hooks';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
+import { useGatewayReleasingStatus } from '@/hooks/use-gateway-releasing-status';
+import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
+import { isGatewayNavigationPending } from '@/router/gateway-role-guard';
 
 interface IBasicInfoType extends IExtractApiReturn<typeof getGatewayDetail> {
   programmable_gateway_git_info?: {
@@ -798,6 +801,7 @@ const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 const gatewayStore = useGateway();
+const roleStore = useGatewayRoleStore();
 const { canEditBasicInfo } = useGatewayRole();
 
 // 网关id
@@ -807,7 +811,6 @@ const basicInfoDetailLoading = ref(false);
 const isShowMarkdown = ref(false);
 const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
-const releasingStatus = ref<boolean>(false);
 const dropdownList = ref([
   {
     name: t('标记为弃用'),
@@ -818,6 +821,12 @@ const dropdownList = ref([
     value: 'undeprecated',
   },
 ]);
+
+const {
+  releasingStatus,
+  refreshReleasingStatus,
+  startReleasingStatusPolling,
+} = useGatewayReleasingStatus(apigwId, canEditBasicInfo);
 
 const dropdownItemDisabled = (item: { value: string }) => {
   if (item?.value === 'deprecated') {
@@ -893,6 +902,9 @@ const deprecatedDialog = ref({
   formData: { deprecated_note: '' },
 });
 
+let isUnmounted = false;
+let basicInfoVersion = 0;
+
 const formRemoveApigw = computed(() => {
   return basicInfoData.value.name === formRemoveConfirmApigw.value;
 });
@@ -923,42 +935,49 @@ const getIconClass = (activeCollapse: string) => {
 };
 
 // 获取网关基本信息
-const getBasicInfo = async () => {
-  basicInfoData.value = await getGatewayDetail(apigwId.value) as IBasicInfoType;
-};
-
-const getCurrentReleasingStatus = async () => {
-  const res = await getReleasingStatus(apigwId.value);
-  releasingStatus.value = res?.is_releasing;
-};
-
-let interval: number | null = null;
-const setIntervalReleasingStatus = () => {
-  interval = setInterval(async () => {
-    await getCurrentReleasingStatus();
-    if (!releasingStatus.value) {
-      clearInterval(interval as number);
-      interval = null;
+const getBasicInfo = async (force = true) => {
+  // 保存请求可能在离开页面后才完成，不能再发起旧网关的详情请求干扰目标导航。
+  if (isUnmounted || isGatewayNavigationPending(router)) {
+    return;
+  }
+  const id = apigwId.value;
+  const version = ++basicInfoVersion;
+  const currentRoute = router.currentRoute.value;
+  try {
+    // 初次进入复用守卫刚加载的详情，编辑完成后强制刷新，同时更新布局使用的 Store。
+    const data = await gatewayStore.ensureGatewayDetail(id, force);
+    if (!isUnmounted && id === apigwId.value && version === basicInfoVersion) {
+      // 本地编辑可能先修改字段再请求后端，不能通过对象引用提前污染布局缓存。
+      basicInfoData.value = cloneDeep(data) as IBasicInfoType;
     }
-  }, 5000);
+  }
+  catch (error) {
+    if (!isUnmounted && !isGatewayNavigationPending(router)
+      && currentRoute === router.currentRoute.value && version === basicInfoVersion) {
+      await router.replace(getGatewayErrorRoute(error, id, currentRoute.fullPath));
+    }
+  }
+};
+
+const syncBasicInfo = () => {
+  // 保存成功后同步布局缓存；旧页面的异步保存不能覆盖用户新切换到的网关。
+  if (!isUnmounted && !isGatewayNavigationPending(router)
+    && basicInfoData.value.id === Number(route.params.id)) {
+    basicInfoVersion += 1;
+    gatewayStore.setCurrentGateway(cloneDeep(basicInfoData.value));
+  }
 };
 
 watch(
-  () => route.params,
-  async () => {
+  () => route.params.id,
+  () => {
     if (route.params?.id) {
       apigwId.value = Number(route.params.id);
-      getBasicInfo();
-
-      await getCurrentReleasingStatus();
-      if (releasingStatus.value) {
-        setIntervalReleasingStatus();
-      }
+      void getBasicInfo(false);
     }
   },
   {
     immediate: true,
-    deep: true,
   },
 );
 
@@ -993,9 +1012,12 @@ const showGuide = async () => {
 };
 
 const handleDeleteApigw = async () => {
+  const id = apigwId.value;
   try {
     delApigwDialog.value.loading = true;
-    await deleteGateway(apigwId.value);
+    await deleteGateway(id);
+    // 删除网关时显式撤销角色，详情 Store 不再隐式操作权限缓存。
+    roleStore.invalidateGatewayRole(id);
     Message({
       theme: 'success',
       message: t('删除成功'),
@@ -1025,6 +1047,7 @@ const handleDeleteApigw = async () => {
 const handleChangePublic = async (value: boolean) => {
   basicInfoData.value.is_public = value;
   await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
+  syncBasicInfo();
   Message({
     message: t('更新成功'),
     theme: 'success',
@@ -1038,6 +1061,7 @@ const handleChangeApigwStatus = async () => {
     statusChanging.value = true;
     await toggleStatus(apigwId.value, { status });
     basicInfoData.value = Object.assign(basicInfoData.value, { status });
+    syncBasicInfo();
     Message({
       theme: 'success',
       message: status === 1 ? t('启用网关成功') : t('停用网关成功'),
@@ -1045,9 +1069,8 @@ const handleChangeApigwStatus = async () => {
     });
 
     releasingStatus.value = true;
-    setIntervalReleasingStatus();
+    startReleasingStatusPolling();
     await getBasicInfo();
-    gatewayStore.setCurrentGateway(basicInfoData.value);
   }
   catch (e) {
     console.error(e);
@@ -1078,6 +1101,7 @@ const handleDeprecatedClick = (type: string) => {
         basicInfoData.value.deprecated_note = '';
 
         await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
+        syncBasicInfo();
         Message({
           message: t('更新成功'),
           theme: 'success',
@@ -1098,6 +1122,7 @@ const handleDeprecatedConfirm = async () => {
     basicInfoData.value.deprecated_note = deprecated_note;
 
     await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
+    syncBasicInfo();
     Message({
       message: t('更新成功'),
       theme: 'success',
@@ -1112,9 +1137,19 @@ const handleDeprecatedConfirm = async () => {
 
 const handleOperate = async (type: string) => {
   if (['enable', 'deactivate'].includes(type)) {
-    await getCurrentReleasingStatus();
-    if (releasingStatus.value) {
-      setIntervalReleasingStatus();
+    let isReleasing: boolean | undefined;
+    try {
+      isReleasing = await refreshReleasingStatus();
+    }
+    catch {
+      // 无法确认发布状态时不执行启停，错误由统一 HTTP 层提示。
+      return;
+    }
+    if (isReleasing === undefined) {
+      return;
+    }
+    if (isReleasing) {
+      startReleasingStatusPolling();
       Message({
         theme: 'warning',
         message: t('正在发布环境，请稍后再试'),
@@ -1135,7 +1170,7 @@ const handleOperate = async (type: string) => {
       subTitle,
       confirmText: t('确认'),
       onConfirm: () => {
-        if (statusChanging.value) {
+        if (statusChanging.value || !canEditBasicInfo.value || isUnmounted) {
           return;
         }
         handleChangeApigwStatus();
@@ -1187,6 +1222,7 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   };
   await patchGateway(apigwId.value, params as IGatewayUpdateInputSLZ);
   basicInfoData.value = Object.assign(basicInfoData.value, params);
+  syncBasicInfo();
   Message({
     message: t('编辑成功'),
     theme: 'success',
@@ -1201,6 +1237,7 @@ const handleRelatedAppCodesChange = async (payload: Record<string, string[]>) =>
   };
   await putGatewayBasics(apigwId.value, params as IGatewayUpdateInputSLZ);
   basicInfoData.value = Object.assign(basicInfoData.value, params);
+  syncBasicInfo();
   Message({
     message: t('编辑成功'),
     theme: 'success',
@@ -1209,10 +1246,7 @@ const handleRelatedAppCodesChange = async (payload: Record<string, string[]>) =>
 };
 
 onUnmounted(() => {
-  if (interval) {
-    clearInterval(interval as number);
-    interval = null;
-  }
+  isUnmounted = true;
 });
 
 </script>

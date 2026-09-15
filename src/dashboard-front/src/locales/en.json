@@ -2743,5 +2743,6 @@
   "已上线": "Released",
   "已显示最前": "Already displayed at the front",
   "没有更多了": "No more",
-  "分享链接已失效或日志不存在": "The share link has expired or the log does not exist"
+  "分享链接已失效或日志不存在": "The share link has expired or the log does not exist",
+  "网关加载失败": "Failed to load gateway"
 }

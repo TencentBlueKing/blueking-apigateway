@@ -16,17 +16,22 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-export * from './useEnv';
-export * from './useUserInfo';
-export * from './useFeatureFlag';
-export * from './useGateway';
-export * from './useGatewayRole';
-export * from './useAccessLog';
-export * from './useStaff';
-export * from './usePermission';
-export * from './useAuditLog';
-export * from './useResourceVersion';
-export * from './useResourceSetting';
-export * from './useStage';
-export * from './useOnlineDebugging';
-export * from './useTrace';
+import {
+  GATEWAY_PERMISSION_MATRIX,
+  type GatewayPermissionKey,
+  type MemberRole,
+} from '@/constants/gateway-permission';
+
+/**
+ * 独立于 Store 和路由的权限判定，供路由守卫与角色 Hook 共用。
+ * 运营者未声明 permission 时拒绝访问；未知角色始终拒绝访问。
+ */
+export function canAccessByRole(role: MemberRole | '', permission?: GatewayPermissionKey) {
+  if (role === 'administrator') {
+    return true;
+  }
+  if (role !== 'operator' || !permission) {
+    return false;
+  }
+  return !!GATEWAY_PERMISSION_MATRIX[permission]?.operator;
+}

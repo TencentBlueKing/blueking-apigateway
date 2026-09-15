@@ -213,6 +213,8 @@ def get_default_feature_flags(
         "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
         # 是否开启 MCP 可观测功能
         "ENABLE_MCP_SERVER_OBSERVABILITY": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OBSERVABILITY", False),
+        # 前端是否启用资源路径冲突检测；不限制后端检测接口访问
+        "ENABLE_RESOURCE_PATH_CONFLICT_CHECK": env.bool("FEATURE_FLAG_ENABLE_RESOURCE_PATH_CONFLICT_CHECK", False),
         # 是否启用健康检查
         "ENABLE_HEALTH_CHECK": env.bool("FEATURE_FLAG_ENABLE_HEALTH_CHECK", False),
         # 是否开启 MCP Server OAuth2 公开客户端模式
@@ -341,6 +343,10 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         # API 资源模板变量
         "TEMPLATE_VARS": env.str(
             "DOC_LINK_TEMPLATE_VARS", default=f"{doc_link_prefix}/UserGuide/Explanation/template-var.md"
+        ),
+        # 路由匹配规则
+        "ROUTE_MATCH_RULES": env.str(
+            "DOC_LINK_ROUTE_MATCH_RULES", default=f"{doc_link_prefix}/UserGuide/Explanation/route-match-rules.md"
         ),
         # 网关认证
         "AUTH": env.str("DOC_LINK_AUTH", default=f"{doc_link_prefix}/UserGuide/Explanation/authorization.md"),
