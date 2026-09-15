@@ -18,7 +18,6 @@
 #
 from cachetools import TTLCache, cached
 from django.db import models
-from django.db.models import Count, Max, Q
 
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
 
@@ -66,38 +65,3 @@ class AlarmStrategyManager(models.Manager):
             queryset = queryset.order_by(order_by)
 
         return queryset.distinct().prefetch_related("api_labels")
-
-    def annotate_alarm_record_by_strategy(self, gateway_ids, time_start=None, time_end=None):
-        """
-        统计指定的告警策略下，告警记录的数量，及最新的告警记录ID
-        """
-        alarm_record_count = self._get_alarm_record_count_object(time_start, time_end)
-        return (
-            self.filter(gateway_id__in=gateway_ids)
-            .annotate(alarm_record_count=alarm_record_count, latest_alarm_record_id=Max("alarmrecord"))
-            .filter(alarm_record_count__gt=0)
-        )
-
-    def annotate_alarm_record_by_gateway(self, gateway_ids, time_start=None, time_end=None):
-        """
-        统计指定网关下，告警记录的数量
-        """
-        alarm_record_count = self._get_alarm_record_count_object(time_start, time_end)
-        return dict(
-            self.filter(gateway_id__in=gateway_ids)
-            .values_list("gateway_id")
-            .annotate(alarm_record_count=alarm_record_count)
-        )
-
-    def _get_alarm_record_count_object(self, time_start=None, time_end=None):
-        """
-        获取监控告警记录的统计 Count 对象
-        """
-        if time_start and time_end:
-            return Count(
-                "alarmrecord",
-                distinct=True,
-                filter=Q(alarmrecord__created_time__range=(time_start, time_end)),
-            )
-
-        return Count("alarmrecord", distinct=True)

@@ -244,14 +244,6 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
                 result.append(resource_name)
         self._resource_names = ";".join(result)
 
-    def get_category_names(self) -> List[str]:
-        """获取分类名称列表"""
-        return list(self.categories.filter(is_active=True).values_list("name", flat=True))
-
-    def get_category_display_names(self) -> List[str]:
-        """获取分类显示名称列表"""
-        return list(self.categories.filter(is_active=True).values_list("display_name", flat=True))
-
     def is_official(self) -> bool:
         """是否为官方 MCPServer"""
         return self.categories.filter(name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True).exists()

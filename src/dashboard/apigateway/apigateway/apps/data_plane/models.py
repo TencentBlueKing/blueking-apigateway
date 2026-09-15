@@ -28,7 +28,6 @@ from apigateway.utils.crypto import get_crypto
 
 from .constants import (
     CURRENT_DATA_PLANE_APISIX_VERSION,
-    DEFAULT_DATA_PLANE_NAME,
     DataPlaneApisixVersionEnum,
     DataPlaneStatusEnum,
 )
@@ -122,10 +121,6 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
     def is_active(self) -> bool:
         """Check if data plane is active"""
         return self.status == DataPlaneStatusEnum.ACTIVE.value
-
-    def is_default(self) -> bool:
-        """Check if data plane is the default one"""
-        return self.name == DEFAULT_DATA_PLANE_NAME
 
 
 class GatewayDataPlaneBinding(TimestampedModelMixin, OperatorModelMixin):

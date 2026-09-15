@@ -84,13 +84,6 @@ class AppGatewayPermission(TimestampedModelMixin):
         return None
 
     @property
-    def has_expired(self) -> bool:
-        if self.expires_in is None:
-            return False
-
-        return self.expires_in <= 0
-
-    @property
     def allow_apply_permission(self):
         if self.expires_in is not None and self.expires_in < to_seconds(days=RENEWABLE_EXPIRE_DAYS):
             return True
@@ -131,14 +124,6 @@ class AppResourcePermission(TimestampedModelMixin):
             return int((self.expires - timezone.now()).total_seconds())
 
         return None
-
-    @property
-    def has_expired(self) -> bool:
-        expires_in = self.expires_in
-        if expires_in is None:
-            return False
-
-        return expires_in <= 0
 
     def will_expired_in(self, seconds: int) -> bool:
         expires_in = self.expires_in

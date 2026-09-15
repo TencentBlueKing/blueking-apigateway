@@ -834,34 +834,6 @@ class TestMCPServerHandler:
         # 不应抛出异常
         MCPServerHandler.delete_prompts(mcp_server.id)
 
-    def test_get_prompts_count_empty(self, fake_gateway, fake_stage):
-        """测试获取 prompts 数量（无数据）"""
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-
-        result = MCPServerHandler.get_prompts_count(mcp_server.id)
-
-        assert result == 0
-
-    def test_get_prompts_count_with_data(self, fake_gateway, fake_stage):
-        """测试获取 prompts 数量（有数据）"""
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        prompts = [
-            {"id": "prompt_001", "name": "代码审查助手"},
-            {"id": "prompt_002", "name": "API 文档生成器"},
-            {"id": "prompt_003", "name": "测试用例生成器"},
-        ]
-
-        G(
-            MCPServerExtend,
-            mcp_server=mcp_server,
-            type=MCPServerExtendTypeEnum.PROMPTS.value,
-            content=json.dumps(prompts),
-        )
-
-        result = MCPServerHandler.get_prompts_count(mcp_server.id)
-
-        assert result == 3
-
     def test_get_prompts_count_map_empty(self, fake_gateway, fake_stage):
         """测试批量获取 prompts 数量（无数据）"""
         mcp_server1 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)

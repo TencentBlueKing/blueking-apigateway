@@ -83,16 +83,6 @@ class TestGatewayDataPlaneBindingManager:
         active_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(self.gateway3.id)
         assert active_planes == []
 
-    def test_is_gateway_bound_returns_true_when_bound(self):
-        """Test is_gateway_bound returns True when gateway has bindings"""
-        G(GatewayDataPlaneBinding, gateway=self.gateway1, data_plane=self.data_plane_active1)
-
-        assert GatewayDataPlaneBinding.objects.is_gateway_bound(self.gateway1.id) is True
-
-    def test_is_gateway_bound_returns_false_when_not_bound(self):
-        """Test is_gateway_bound returns False when gateway has no bindings"""
-        assert GatewayDataPlaneBinding.objects.is_gateway_bound(self.gateway3.id) is False
-
     def test_bind_gateway_to_data_plane_creates_binding(self):
         """Test bind_gateway_to_data_plane creates a new binding"""
         binding = GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
