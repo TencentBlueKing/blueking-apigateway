@@ -79,7 +79,10 @@
                 :icon="'user-token'"
                 @oauth-change="getSliderContentHeight"
               >
-                <template #externalDescription>
+                <template
+                  v-if="personalTokenLink"
+                  #externalDescription
+                >
                   <BkButton
                     size="small"
                     theme="primary"
@@ -1186,6 +1189,7 @@ const maxToolNameLen = computed(() => {
   }
   return count;
 });
+const personalTokenLink = computed(() => envStore?.env?.DOC_LINKS?.AUTH_PERSONAL_TOKEN);
 
 // 开启OAuth2 公开客户端模式才展示工具应用态或用户态
 const isEnabledOAuthTag = (payload: IMCPServerResource | IMCPSelections): boolean => {
@@ -2112,7 +2116,7 @@ const handleMcpTypeChange = (tab: string) => {
 };
 
 const handleViewDoc = () => {
-  window.open(envStore.env.DOC_LINKS.AUTH_PERSONAL_TOKEN, '_blank');
+  window.open(personalTokenLink.value, '_blank');
 };
 
 const resetSliderData = () => {

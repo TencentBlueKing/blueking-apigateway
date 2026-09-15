@@ -293,29 +293,33 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
         return (
           <div>
             <bk-popover
-              allow-html
-              content="#plugins_header_tip"
+              trigger="hover"
               theme="light"
               popoverDelay={0}
             >
-              <div class="underline decoration-dashed underline-offset-4">
-                {t('生效的插件')}
-              </div>
+              {{
+                default: () => (
+                  <div class="underline decoration-dashed underline-offset-4">
+                    {t('生效的插件')}
+                  </div>
+                ),
+                content: () => (
+                  <div class="plugins_header_tip">
+                    <div class="mb-16px break-all">
+                      { t('当环境与资源同时启用同一个插件时，资源的优先级将高于环境')}
+                    </div>
+                    <div class="mb-8px">
+                      { renderResourceTag.value }
+                      <span class="ml-8px">{t('代表“ 资源中配置的插件生效 ”')}</span>
+                    </div>
+                    <div>
+                      { renderStageTag.value }
+                      <span class="ml-8px">{t('代表“ 环境中配置的插件生效 ”')}</span>
+                    </div>
+                  </div>
+                ),
+              }}
             </bk-popover>
-
-            <div id="plugins_header_tip">
-              <div class="mb-16px break-all">
-                { t('当环境与资源同时启用同一个插件时，资源的优先级将高于环境')}
-              </div>
-              <div class="mb-8px">
-                { renderResourceTag.value }
-                <span class="ml-8px">{t('代表“ 资源中配置的插件生效 ”')}</span>
-              </div>
-              <div>
-                { renderStageTag.value }
-                <span class="ml-8px">{t('代表“ 环境中配置的插件生效 ”')}</span>
-              </div>
-            </div>
           </div>
         );
       },

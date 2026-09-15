@@ -54,7 +54,7 @@
               </BkOverflowTitle>
               <BkOverflowTitle
                 type="tips"
-                class="truncate ml-8px"
+                class="truncate text-14px ml-4px"
               >
                 ({{ mcpDetails?.name }})
               </BkOverflowTitle>
@@ -649,19 +649,20 @@ watch(
     box-sizing: border-box;
 
     .base-info {
+      padding: 16px 16px 7px 16px;
       margin-bottom: 16px;
       background-color: #fff;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
+      box-sizing: border-box;
 
       .header {
-        height: 52px;
-        padding: 0 24px;
+        height: auto;
+        padding-bottom: 11px;
         border-bottom: 1px solid #eaebf0;
 
         .title {
-          margin-right: 8px;
-          font-size: 20px;
+          font-size: 16px;
           font-weight: 700;
           color: #313238;
         }
@@ -671,8 +672,9 @@ watch(
         display: grid;
         align-items: start;
         grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-        gap: 0 40px;
-        padding: 3px 24px 12px;
+        gap: 24px;
+        padding-top: 3px;
+        padding-left: 8px;
 
         .info-column {
           display: grid;
@@ -686,18 +688,17 @@ watch(
           display: contents;
           font-size: 14px;
           line-height: 22px;
+          color: #4d4f56;
 
           .label {
             padding: 9px 0;
-            margin-right: 12px;
-            color: #4d4f56;
+            margin-right: 8px;
             text-align: right;
           }
 
           .value {
             padding: 9px 0;
             line-height: 22px;
-            color: #313238;
             min-width: 0;
 
             .icon {
@@ -717,12 +718,12 @@ watch(
 
     // 屏幕宽度小于1680px时，padding自动适配
     @media (max-width: 1680px) {
-      padding: 0 calc(100vw / 24); // 小屏幕按比例缩放边距
+      padding: 0 calc(100vw / 24) 24px; // 小屏幕按比例缩放边距
     }
 
     // 极小屏幕强制最小边距，避免挤压
     @media (max-width: 768px) {
-      padding: 0 24px;
+      padding: 0 24px 24px;
     }
   }
 
@@ -735,11 +736,12 @@ watch(
 
     &.on {
       color: #3a84ff;
-      background: #E1ECFF;
+      background-color: #cce0ff;
     }
 
     &.off {
       color: #4d4f56;
+      background-color: #dcdee5;
     }
   }
 
