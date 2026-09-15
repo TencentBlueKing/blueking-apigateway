@@ -21,11 +21,9 @@ from unittest.mock import call
 import pytest
 
 from apigateway.apps.rbac.constants import GATEWAY_ROLE_ACTIONS, GatewayActionEnum, GatewayResourceTypeEnum
-from apigateway.biz.gateway import GatewayIAMModelSyncer, GatewayIAMModelSyncResult
-from apigateway.biz.gateway.iam_model import (
-    GATEWAY_IAM_MODEL,
-    SYSTEM_DESCRIPTION,
-    SYSTEM_NAME,
+from apigateway.biz.iam import GatewayIAMModelSyncer, GatewayIAMModelSyncResult
+from apigateway.biz.iam.constants import SYSTEM_DESCRIPTION, SYSTEM_NAME
+from apigateway.biz.iam.model import (
     get_gateway_iam_model,
 )
 from apigateway.components import bkiam
@@ -34,15 +32,15 @@ from apigateway.components import bkiam
 @pytest.fixture(autouse=True)
 def _iam_settings(settings):
     settings.BK_APP_CODE = "bk-apigateway"
-    settings.BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
     settings.BK_IAM_V4_MANAGERS = ["admin", "maintainer"]
 
 
 @pytest.fixture
 def iam_client(mocker):
-    client = mocker.patch("apigateway.biz.gateway.iam_model.bkiam")
+    client = mocker.patch("apigateway.biz.iam.model.bkiam")
     client.DEFAULT_PAGE_SIZE = bkiam.DEFAULT_PAGE_SIZE
     client.MAX_BATCH_SIZE = bkiam.MAX_BATCH_SIZE
+    client.chunked = bkiam.chunked
     client.BkIamNotFoundError = bkiam.BkIamNotFoundError
     return client
 
@@ -62,10 +60,14 @@ def _page(items):
     return {"count": len(items), "results": items}
 
 
+def _iam_model():
+    return get_gateway_iam_model()
+
+
 def test_gateway_iam_model_is_derived_from_local_rbac_declarations():
     model = get_gateway_iam_model()
 
-    assert model == GATEWAY_IAM_MODEL
+    assert model == _iam_model()
     assert model["resource_types"] == [{"id": "gateway", "name": "网关", "ancestors": []}]
     assert [action["id"] for action in model["actions"]] == GatewayActionEnum.get_values()
     assert {action["resource_type_id"] for action in model["actions"]} == {GatewayResourceTypeEnum.GATEWAY.value}
@@ -76,9 +78,10 @@ def test_gateway_iam_model_is_derived_from_local_rbac_declarations():
 
 def _configure_existing_model(iam_client):
     iam_client.retrieve_system.return_value = _desired_system()
-    iam_client.list_resource_type.return_value = _page(deepcopy(GATEWAY_IAM_MODEL["resource_types"]))
-    iam_client.list_action.return_value = _page(deepcopy(GATEWAY_IAM_MODEL["actions"]))
-    iam_client.list_role.return_value = _page(deepcopy(GATEWAY_IAM_MODEL["roles"]))
+    model = _iam_model()
+    iam_client.list_resource_type.return_value = _page(deepcopy(model["resource_types"]))
+    iam_client.list_action.return_value = _page(deepcopy(model["actions"]))
+    iam_client.list_role.return_value = _page(deepcopy(model["roles"]))
 
 
 def _assert_no_writes(iam_client):
@@ -107,11 +110,7 @@ def test_sync_is_idempotent_when_model_matches(iam_client):
 
 
 def test_sync_creates_missing_model_in_dependency_order(iam_client):
-    iam_client.retrieve_system.side_effect = bkiam.BkIamNotFoundError(
-        "missing",
-        operation="retrieve_system",
-        status_code=404,
-    )
+    iam_client.retrieve_system.side_effect = bkiam.BkIamNotFoundError("missing")
     iam_client.list_resource_type.return_value = _page([])
     iam_client.list_action.return_value = _page([])
     iam_client.list_role.return_value = _page([])
@@ -222,12 +221,13 @@ def test_sync_replaces_role_action_with_wrong_resource_type(iam_client):
 def test_sync_lists_every_page_and_preserves_unknown_objects(iam_client):
     iam_client.retrieve_system.return_value = _desired_system()
     unknown_resource_types = [{"id": f"unknown-{index}", "name": "未知"} for index in range(100)]
+    model = _iam_model()
     iam_client.list_resource_type.side_effect = [
         {"count": 101, "results": unknown_resource_types},
-        {"count": 101, "results": deepcopy(GATEWAY_IAM_MODEL["resource_types"])},
+        {"count": 101, "results": deepcopy(model["resource_types"])},
     ]
-    iam_client.list_action.return_value = _page(deepcopy(GATEWAY_IAM_MODEL["actions"]))
-    iam_client.list_role.return_value = _page(deepcopy(GATEWAY_IAM_MODEL["roles"]))
+    iam_client.list_action.return_value = _page(deepcopy(model["actions"]))
+    iam_client.list_role.return_value = _page(deepcopy(model["roles"]))
 
     result = GatewayIAMModelSyncer().sync()
 

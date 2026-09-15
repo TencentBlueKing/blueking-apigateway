@@ -21,7 +21,7 @@ import pytest
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.biz.gateway.iam_sync import GatewayIAMAuthorizationSynchronizer
+from apigateway.biz.iam.sync import GatewayIAMAuthorizationSynchronizer
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -32,10 +32,7 @@ def _expires(timestamp: int) -> datetime:
 
 
 def _iam_result(username: str, expired_at: int) -> dict:
-    return {
-        "subject": {"type": "user", "id": username},
-        "expired_at": expired_at,
-    }
+    return {"id": username, "expired_at": expired_at}
 
 
 def _mock_iam(mocker, authorizations_by_role):
@@ -44,7 +41,7 @@ def _mock_iam(mocker, authorizations_by_role):
         return {"count": len(results), "results": results}
 
     return mocker.patch(
-        "apigateway.biz.gateway.iam_sync.list_authorization_subject",
+        "apigateway.biz.iam.sync.list_authorization_subject",
         side_effect=list_authorizations,
     )
 
@@ -122,7 +119,7 @@ def test_reconcile_reads_all_pages_for_every_known_role(fake_gateway, mocker):
         }
 
     list_api = mocker.patch(
-        "apigateway.biz.gateway.iam_sync.list_authorization_subject",
+        "apigateway.biz.iam.sync.list_authorization_subject",
         side_effect=list_authorizations,
     )
 
@@ -145,8 +142,8 @@ def test_reconcile_reads_all_pages_for_every_known_role(fake_gateway, mocker):
 
 def test_reconcile_dry_run_does_not_write_iam(fake_gateway, mocker):
     _mock_iam(mocker, {})
-    add = mocker.patch("apigateway.biz.gateway.iam_sync.add_authorization")
-    revoke = mocker.patch("apigateway.biz.gateway.iam_sync.revoke_authorization")
+    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
+    revoke = mocker.patch("apigateway.biz.iam.sync.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -178,7 +175,7 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(fake_gateway, mocker)
         "select_for_update",
         wraps=Gateway.objects.select_for_update,
     )
-    add = mocker.patch("apigateway.biz.gateway.iam_sync.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -207,11 +204,11 @@ def test_reconcile_apply_failure_leaves_local_member_unchanged(fake_gateway, moc
     )
     calls = []
     mocker.patch(
-        "apigateway.biz.gateway.iam_sync.revoke_authorization",
+        "apigateway.biz.iam.sync.revoke_authorization",
         side_effect=lambda payloads, operator: calls.append("revoke"),
     )
     mocker.patch(
-        "apigateway.biz.gateway.iam_sync.add_authorization",
+        "apigateway.biz.iam.sync.add_authorization",
         side_effect=RuntimeError("grant failed"),
     )
 

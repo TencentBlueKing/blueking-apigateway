@@ -28,3 +28,9 @@ GATEWAY_ROLE_ACTIONS = {
         GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value,
     ),
 }
+
+# 注册到权限中心 V4 的系统 ID
+BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
+
+# GatewayMember 续期与 IAM 授权有效期保持一致。
+GATEWAY_MEMBER_EXPIRE_DAYS = 365

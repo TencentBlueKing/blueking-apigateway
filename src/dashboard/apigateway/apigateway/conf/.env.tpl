@@ -8,12 +8,7 @@ BK_PAAS_LOGIN_URL="http://paas.example.com/login"
 BK_API_URL_TMPL="https://bkapi.example.com/api/{api_name}"
 
 BK_IAM_V4_ENABLED="false"
-BK_IAM_V4_API_URL=""
-BK_IAM_V4_SYSTEM_ID="bk_apigateway"
 BK_IAM_V4_MANAGERS="admin"
-BK_IAM_V4_CONNECT_TIMEOUT="1.0"
-BK_IAM_V4_READ_TIMEOUT="2.0"
-BK_IAM_V4_ALLOW_CACHE_TTL="60"
 
 BK_APIGW_DATABASE_HOST="localhost"
 

@@ -15,27 +15,29 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.apps import AppConfig
-from django.core.management import call_command
-from django.db.models.signals import post_migrate
+from apigateway.apps.rbac.apps import sync_gateway_iam
 
 
-class RbacConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "apigateway.apps.rbac"
+def test_sync_gateway_iam_runs_model_then_auth_commands(mocker):
+    call = mocker.patch("apigateway.apps.rbac.apps.call_command")
 
-    def ready(self):
-        post_migrate.connect(sync_gateway_iam, sender=self, dispatch_uid="apigateway.apps.rbac.sync_gateway_iam")
+    sync_gateway_iam(sender=None, using="default")
+
+    assert call.call_args_list == [
+        mocker.call("sync_gateway_rbac_model_to_iam"),
+        mocker.call(
+            "sync_gateway_rbac_auth_to_iam",
+            initial=True,
+            all=True,
+            apply=True,
+            force=True,
+        ),
+    ]
 
 
-def sync_gateway_iam(sender, using, **kwargs):
-    if using != "default":
-        return
-    call_command("sync_gateway_rbac_model_to_iam")
-    call_command(
-        "sync_gateway_rbac_auth_to_iam",
-        initial=True,
-        all=True,
-        apply=True,
-        force=True,
-    )
+def test_sync_gateway_iam_skips_non_default_database(mocker):
+    call = mocker.patch("apigateway.apps.rbac.apps.call_command")
+
+    sync_gateway_iam(sender=None, using="bkcore")
+
+    call.assert_not_called()

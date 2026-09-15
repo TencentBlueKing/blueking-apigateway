@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Callable, Iterable, TypeVar
 
 from django.conf import settings
 from django.db import transaction
@@ -30,17 +30,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.common.error_codes import error_codes
-from apigateway.components.bkpaas import update_app_maintainers
-from apigateway.core.models import Gateway
-
-from .iam_authorization import (
+from apigateway.biz.iam import (
     GatewayMemberSnapshot,
     apply_gateway_member_snapshots_to_iam,
     build_gateway_member_snapshot,
 )
+from apigateway.common.error_codes import error_codes
+from apigateway.components.bkpaas import update_app_maintainers
+from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 class GatewayMemberInput(BaseModel):
@@ -116,6 +117,20 @@ def _sync_external_member_state(
         raise
 
 
+def _write_gateway_members(
+    gateway: Gateway,
+    operated_by: str,
+    mutate: Callable[[Gateway], _T],
+    *,
+    sync_paas: bool,
+) -> _T:
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
+    result = mutate(locked_gateway)
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=sync_paas)
+    return result
+
+
 @transaction.atomic
 def replace_gateway_administrators(
     gateway: Gateway,
@@ -127,15 +142,16 @@ def replace_gateway_administrators(
     if not target_usernames:
         raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
-    locked_gateway = _lock_gateway(gateway)
-    before = _get_gateway_member_snapshot(locked_gateway.id)
-    administrators = GatewayMember.objects.replace_gateway_administrators(
-        locked_gateway.id,
-        target_usernames,
+    return _write_gateway_members(
+        gateway,
         operated_by,
+        lambda locked: GatewayMember.objects.replace_gateway_administrators(
+            locked.id,
+            target_usernames,
+            operated_by,
+        ),
+        sync_paas=False,
     )
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
-    return administrators
 
 
 @transaction.atomic
@@ -145,15 +161,16 @@ def add_gateway_administrators(
     operated_by: str,
 ) -> list[str]:
     """Add gateway administrators without removing existing ones."""
-    locked_gateway = _lock_gateway(gateway)
-    before = _get_gateway_member_snapshot(locked_gateway.id)
-    administrators = GatewayMember.objects.add_gateway_administrators(
-        locked_gateway.id,
-        set(usernames),
+    return _write_gateway_members(
+        gateway,
         operated_by,
+        lambda locked: GatewayMember.objects.add_gateway_administrators(
+            locked.id,
+            set(usernames),
+            operated_by,
+        ),
+        sync_paas=False,
     )
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
-    return administrators
 
 
 def _unique_members(members: Iterable[GatewayMemberInput]) -> list[GatewayMemberInput]:
@@ -171,16 +188,16 @@ def add_gateway_members(
     operated_by: str,
 ) -> GatewayMemberBatchCreateResult:
     """Add gateway members, skipping usernames that already exist."""
-    locked_gateway = _lock_gateway(gateway)
-    before = _get_gateway_member_snapshot(locked_gateway.id)
-    created, skipped = GatewayMember.objects.add_gateway_members(
-        locked_gateway.id,
-        _unique_members(members),
+    created, skipped = _write_gateway_members(
+        gateway,
         operated_by,
+        lambda locked: GatewayMember.objects.add_gateway_members(
+            locked.id,
+            _unique_members(members),
+            operated_by,
+        ),
+        sync_paas=True,
     )
-
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=True)
-
     return GatewayMemberBatchCreateResult(created=created, skipped=skipped)
 
 
@@ -192,29 +209,29 @@ def update_gateway_member_role(
     operated_by: str,
 ) -> GatewayMemberRoleUpdateResult:
     """Update one member role while preserving at least one administrator."""
-    locked_gateway = _lock_gateway(gateway)
-    before = _get_gateway_member_snapshot(locked_gateway.id)
-    member, previous_role, changed = GatewayMember.objects.update_gateway_member_role(
-        locked_gateway.id,
-        member_id,
-        role,
+    member, previous_role, changed = _write_gateway_members(
+        gateway,
         operated_by,
+        lambda locked: GatewayMember.objects.update_gateway_member_role(
+            locked.id,
+            member_id,
+            role,
+            operated_by,
+        ),
+        sync_paas=True,
     )
-
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=True)
-
     return GatewayMemberRoleUpdateResult(member=member, previous_role=previous_role, changed=changed)
 
 
 @transaction.atomic
 def delete_gateway_member(gateway: Gateway, member_id: int, operated_by: str) -> GatewayMember:
     """Delete one member while preserving at least one administrator."""
-    locked_gateway = _lock_gateway(gateway)
-    before = _get_gateway_member_snapshot(locked_gateway.id)
-    member = GatewayMember.objects.delete_gateway_member(locked_gateway.id, member_id)
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=True)
-
-    return member
+    return _write_gateway_members(
+        gateway,
+        operated_by,
+        lambda locked: GatewayMember.objects.delete_gateway_member(locked.id, member_id),
+        sync_paas=True,
+    )
 
 
 def _sync_programmable_gateway_administrators(gateway: Gateway) -> None:

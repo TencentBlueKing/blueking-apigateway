@@ -18,12 +18,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from django.conf import settings
 from django.utils.encoding import force_str
 
 from apigateway.apps.rbac.constants import (
+    BK_IAM_V4_SYSTEM_ID,
     GATEWAY_ROLE_ACTIONS,
     GatewayActionEnum,
     GatewayResourceTypeEnum,
@@ -31,13 +32,10 @@ from apigateway.apps.rbac.constants import (
 )
 from apigateway.components import bkiam
 
+from .constants import SYSTEM_DESCRIPTION, SYSTEM_NAME
+
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Mapping, Sequence
-
-_T = TypeVar("_T")
-
-SYSTEM_NAME = "蓝鲸 API 网关"
-SYSTEM_DESCRIPTION = "蓝鲸 API 网关 RBAC 权限管理"
+    from collections.abc import Callable, Mapping, Sequence
 
 
 class GatewayIAMModel(TypedDict):
@@ -86,9 +84,6 @@ def get_gateway_iam_model() -> GatewayIAMModel:
     }
 
 
-GATEWAY_IAM_MODEL = get_gateway_iam_model()
-
-
 @dataclass(frozen=True)
 class GatewayIAMModelSyncResult:
     created: int = 0
@@ -101,6 +96,7 @@ class GatewayIAMModelSyncResult:
 
 class GatewayIAMModelSyncer:
     def sync(self) -> GatewayIAMModelSyncResult:
+        desired_model = get_gateway_iam_model()
         counts = {
             "created": 0,
             "updated": 0,
@@ -111,15 +107,15 @@ class GatewayIAMModelSyncer:
         }
 
         self._sync_system(counts)
-        self._sync_resource_types(counts)
-        self._sync_actions(counts)
-        self._sync_roles(counts)
+        self._sync_resource_types(desired_model["resource_types"], counts)
+        self._sync_actions(desired_model["actions"], counts)
+        self._sync_roles(desired_model["roles"], counts)
 
         return GatewayIAMModelSyncResult(**counts)
 
     def _sync_system(self, counts: dict[str, int]) -> None:
         desired: bkiam.SystemPayload = {
-            "id": settings.BK_IAM_V4_SYSTEM_ID,
+            "id": BK_IAM_V4_SYSTEM_ID,
             "name": SYSTEM_NAME,
             "description": SYSTEM_DESCRIPTION,
             "managers": list(settings.BK_IAM_V4_MANAGERS),
@@ -140,8 +136,7 @@ class GatewayIAMModelSyncer:
         else:
             counts["unchanged"] += 1
 
-    def _sync_resource_types(self, counts: dict[str, int]) -> None:
-        desired_items = GATEWAY_IAM_MODEL["resource_types"]
+    def _sync_resource_types(self, desired_items: list[bkiam.ResourceTypePayload], counts: dict[str, int]) -> None:
         existing_by_id = _by_id(_list_all(bkiam.list_resource_type))
         missing: list[bkiam.ResourceTypePayload] = []
 
@@ -161,12 +156,11 @@ class GatewayIAMModelSyncer:
             else:
                 counts["unchanged"] += 1
 
-        for batch in _batches(missing):
+        for batch in bkiam.chunked(missing):
             bkiam.batch_create_resource_type(batch)
             counts["created"] += len(batch)
 
-    def _sync_actions(self, counts: dict[str, int]) -> None:
-        desired_items = GATEWAY_IAM_MODEL["actions"]
+    def _sync_actions(self, desired_items: list[bkiam.ActionPayload], counts: dict[str, int]) -> None:
         existing_by_id = _by_id(_list_all(bkiam.list_action))
         missing: list[bkiam.ActionPayload] = []
 
@@ -188,12 +182,11 @@ class GatewayIAMModelSyncer:
             else:
                 counts["unchanged"] += 1
 
-        for batch in _batches(missing):
+        for batch in bkiam.chunked(missing):
             bkiam.batch_create_action(batch)
             counts["created"] += len(batch)
 
-    def _sync_roles(self, counts: dict[str, int]) -> None:
-        desired_items = GATEWAY_IAM_MODEL["roles"]
+    def _sync_roles(self, desired_items: list[bkiam.RolePayload], counts: dict[str, int]) -> None:
         existing_by_id = _by_id(_list_all(bkiam.list_role))
         missing: list[bkiam.RolePayload] = []
         existing_roles: list[tuple[bkiam.RolePayload, dict[str, Any]]] = []
@@ -213,7 +206,7 @@ class GatewayIAMModelSyncer:
                 counts["unchanged"] += 1
             existing_roles.append((desired, existing))
 
-        for batch in _batches(missing):
+        for batch in bkiam.chunked(missing):
             bkiam.batch_create_role(batch)
             counts["created"] += len(batch)
 
@@ -243,9 +236,9 @@ class GatewayIAMModelSyncer:
         counts["action_bindings_deleted"] += len(deletions)
         counts["action_bindings_unchanged"] += len((desired_ids & existing_ids) - changed_ids)
 
-        for deletion_batch in _batches(deletions):
+        for deletion_batch in bkiam.chunked(deletions):
             bkiam.batch_delete_role_action(desired["id"], deletion_batch)
-        for addition_batch in _batches(additions):
+        for addition_batch in bkiam.chunked(additions):
             bkiam.batch_create_role_action(
                 desired["id"],
                 cast("list[bkiam.RoleActionPayload]", addition_batch),
@@ -276,8 +269,3 @@ def _list_all(list_page: Callable[..., bkiam.PaginationData]) -> list[dict[str, 
 
 def _by_id(items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return {item["id"]: item for item in items}
-
-
-def _batches(items: Sequence[_T]) -> Iterator[list[_T]]:
-    for start in range(0, len(items), bkiam.MAX_BATCH_SIZE):
-        yield list(items[start : start + bkiam.MAX_BATCH_SIZE])

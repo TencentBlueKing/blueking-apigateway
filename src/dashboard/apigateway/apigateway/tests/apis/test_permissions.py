@@ -7,7 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 from apigateway.apis.permissions import GatewayActionPermission
 from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.components.bkiam import BkIamParameterError, BkIamUnavailableError
+from apigateway.common.error_codes import error_codes
 
 pytestmark = pytest.mark.django_db
 
@@ -183,7 +183,7 @@ def test_unavailable_iam_falls_back_to_local_permission(mocker, fake_request, fa
     mocker.patch("apigateway.apis.permissions.is_iam_auth_active", return_value=True)
     mocker.patch(
         "apigateway.apis.permissions.is_iam_gateway_action_allowed",
-        side_effect=BkIamUnavailableError("timeout", operation="direct_auth"),
+        side_effect=error_codes.REMOTE_REQUEST_ERROR.format("timeout"),
     )
     fake_request.user = mock.MagicMock(username="admin")
 
@@ -194,7 +194,7 @@ def test_unavailable_iam_falls_back_to_local_permission(mocker, fake_request, fa
         )
 
     assert "fallback to local" in caplog.text
-    assert "BkIamUnavailableError" in caplog.text
+    assert "timeout" in caplog.text
 
 
 def test_unavailable_iam_rejects_without_local_permission(mocker, fake_request, fake_gateway, caplog):
@@ -203,7 +203,7 @@ def test_unavailable_iam_rejects_without_local_permission(mocker, fake_request, 
     mocker.patch("apigateway.apis.permissions.is_iam_auth_active", return_value=True)
     is_allowed = mocker.patch(
         "apigateway.apis.permissions.is_iam_gateway_action_allowed",
-        side_effect=BkIamUnavailableError("timeout", operation="direct_auth"),
+        side_effect=error_codes.REMOTE_REQUEST_ERROR.format("timeout"),
     )
     fake_request.user = mock.MagicMock(username="guest")
 
@@ -223,7 +223,7 @@ def test_iam_error_falls_back_to_local_permission(mocker, fake_request, fake_gat
     mocker.patch("apigateway.apis.permissions.is_iam_auth_active", return_value=True)
     mocker.patch(
         "apigateway.apis.permissions.is_iam_gateway_action_allowed",
-        side_effect=BkIamParameterError("bad request", operation="direct_auth", status_code=400),
+        side_effect=error_codes.REMOTE_REQUEST_ERROR.format("bad request"),
     )
     fake_request.user = mock.MagicMock(username="admin")
 
@@ -234,5 +234,4 @@ def test_iam_error_falls_back_to_local_permission(mocker, fake_request, fake_gat
         )
 
     assert "fallback to local" in caplog.text
-    assert "BkIamParameterError" in caplog.text
-    assert "status_code=400" in caplog.text
+    assert "bad request" in caplog.text

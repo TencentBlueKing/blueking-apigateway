@@ -15,27 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.apps import AppConfig
-from django.core.management import call_command
-from django.db.models.signals import post_migrate
+from datetime import timedelta
 
+from apigateway.apps.rbac.constants import GATEWAY_MEMBER_EXPIRE_DAYS
 
-class RbacConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "apigateway.apps.rbac"
+SYSTEM_NAME = "蓝鲸 API 网关"
+SYSTEM_DESCRIPTION = "蓝鲸 API 网关 RBAC 权限管理"
 
-    def ready(self):
-        post_migrate.connect(sync_gateway_iam, sender=self, dispatch_uid="apigateway.apps.rbac.sync_gateway_iam")
+ALLOW_CACHE_TTL = 60
+DEFAULT_MEMBER_EXPIRY = timedelta(days=GATEWAY_MEMBER_EXPIRE_DAYS)
+EXPIRY_TOLERANCE = timedelta(minutes=1)
 
-
-def sync_gateway_iam(sender, using, **kwargs):
-    if using != "default":
-        return
-    call_command("sync_gateway_rbac_model_to_iam")
-    call_command(
-        "sync_gateway_rbac_auth_to_iam",
-        initial=True,
-        all=True,
-        apply=True,
-        force=True,
-    )
+MISSING_GRANT = "missing"
+ROLE_MISMATCH_GRANT = "role-mismatch"
+EXPIRY_REFRESH_GRANT = "expiry-refresh"
+ROLE_MISMATCH_REVOKE = "role-mismatch"
+EXTRA_REVOKE = "extra"

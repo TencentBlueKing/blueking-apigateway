@@ -34,6 +34,11 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.iam import (
+    apply_gateway_member_snapshots_to_iam,
+    build_gateway_member_snapshot,
+    get_gateway_iam_system_operator,
+)
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
@@ -56,11 +61,6 @@ from apigateway.service.resource import delete_gateway_resource_versions, delete
 from apigateway.utils.dict import deep_update
 
 from .app_binding import GatewayAppBindingHandler
-from .iam_authorization import (
-    apply_gateway_member_snapshots_to_iam,
-    build_gateway_member_snapshot,
-    get_gateway_iam_system_operator,
-)
 from .members import add_gateway_administrators, replace_gateway_administrators
 from .related_app import GatewayRelatedAppHandler
 

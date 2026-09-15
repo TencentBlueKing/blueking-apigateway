@@ -19,15 +19,13 @@ from unittest.mock import call
 
 import pytest
 
+from apigateway.common.error_codes import error_codes
 from apigateway.components import bkiam
 
 
 @pytest.fixture(autouse=True)
 def _bkiam_settings(settings):
     settings.BK_IAM_V4_API_URL = "https://bkiam.example.com/prod"
-    settings.BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
-    settings.BK_IAM_V4_CONNECT_TIMEOUT = 1.0
-    settings.BK_IAM_V4_READ_TIMEOUT = 2.0
 
 
 @pytest.fixture
@@ -38,9 +36,16 @@ def mock_headers(mocker):
     )
 
 
+def _patch_http(mocker, name, **kwargs):
+    mock = mocker.patch(f"apigateway.components.bkiam.{name}", **kwargs)
+    mock.__name__ = name
+    return mock
+
+
 def test_direct_auth_returns_explicit_decision_and_uses_gateway_contract(mocker, mock_headers):
-    mock_post = mocker.patch(
-        "apigateway.components.bkiam.http_post",
+    mock_post = _patch_http(
+        mocker,
+        "http_post",
         side_effect=[
             (True, {"data": {"allowed": True}}),
             (True, {"data": {"allowed": False}}),
@@ -60,42 +65,33 @@ def test_direct_auth_returns_explicit_decision_and_uses_gateway_contract(mocker,
             data=payload,
             headers={"X-Bkapi-Authorization": "credentials"},
             timeout=(1.0, 2.0),
+            request_session=None,
         ),
         call(
             url=("https://bkiam.example.com/prod/api/v1/open/rbac/authorization/systems/bk_apigateway/auth/"),
             data=payload,
             headers={"X-Bkapi-Authorization": "credentials"},
             timeout=(1.0, 2.0),
+            request_session=None,
         ),
     ]
 
 
-@pytest.mark.parametrize(
-    ("status_code", "exception_type"),
-    [
-        (400, bkiam.BkIamParameterError),
-        (401, bkiam.BkIamUnavailableError),
-        (403, bkiam.BkIamUnavailableError),
-        (404, bkiam.BkIamUnavailableError),
-        (429, bkiam.BkIamUnavailableError),
-        (500, bkiam.BkIamUnavailableError),
-        (409, bkiam.BkIamError),
-    ],
-)
-def test_http_error_classification(mocker, mock_headers, status_code, exception_type):
-    mocker.patch(
-        "apigateway.components.bkiam.http_post",
+def test_http_error_raises_remote_request_error(mocker, mock_headers):
+    mock_post = _patch_http(
+        mocker,
+        "http_post",
         return_value=(
             False,
             {
-                "error": "request failed",
-                "status_code": status_code,
+                "error": "status_code is 500, not 2xx!",
+                "status_code": 500,
                 "response_data": {"message": "failure"},
             },
         ),
     )
 
-    with pytest.raises(exception_type) as exc_info:
+    with pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__):
         bkiam.direct_auth(
             {
                 "subject": {"type": "user", "id": "alice"},
@@ -104,14 +100,11 @@ def test_http_error_classification(mocker, mock_headers, status_code, exception_
             }
         )
 
-    assert exc_info.value.status_code == status_code
-    assert exc_info.value.operation == "direct_auth"
-    assert exc_info.value.response_data == {"message": "failure"}
-
 
 def test_retrieve_system_classifies_404_as_not_found(mocker, mock_headers):
-    mocker.patch(
-        "apigateway.components.bkiam.http_get",
+    _patch_http(
+        mocker,
+        "http_get",
         return_value=(
             False,
             {
@@ -121,27 +114,14 @@ def test_retrieve_system_classifies_404_as_not_found(mocker, mock_headers):
         ),
     )
 
-    with pytest.raises(bkiam.BkIamNotFoundError) as exc_info:
+    with pytest.raises(bkiam.BkIamNotFoundError, match="does not exist"):
         bkiam.retrieve_system()
 
-    assert exc_info.value.status_code == 404
-    assert exc_info.value.operation == "retrieve_system"
 
+def test_direct_auth_transport_response_is_unavailable(mocker, mock_headers):
+    mock_post = _patch_http(mocker, "http_post", return_value=(False, {"error": "timeout"}))
 
-@pytest.mark.parametrize(
-    "response",
-    [
-        (False, {"error": "timeout"}),
-        (True, []),
-        (True, {}),
-        (True, {"data": {}}),
-        (True, {"data": {"allowed": "true"}}),
-    ],
-)
-def test_direct_auth_malformed_or_transport_response_is_unavailable(mocker, mock_headers, response):
-    mocker.patch("apigateway.components.bkiam.http_post", return_value=response)
-
-    with pytest.raises(bkiam.BkIamUnavailableError):
+    with pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__):
         bkiam.direct_auth(
             {
                 "subject": {"type": "user", "id": "alice"},
@@ -151,10 +131,10 @@ def test_direct_auth_malformed_or_transport_response_is_unavailable(mocker, mock
         )
 
 
-def test_direct_auth_malformed_success_json_is_unavailable(mocker, mock_headers):
+def test_direct_auth_malformed_success_json_raises(mocker, mock_headers):
     mocker.patch("apigateway.components.bkiam.http_post", side_effect=ValueError("invalid json"))
 
-    with pytest.raises(bkiam.BkIamUnavailableError, match="malformed JSON"):
+    with pytest.raises(ValueError, match="invalid json"):
         bkiam.direct_auth(
             {
                 "subject": {"type": "user", "id": "alice"},
@@ -165,8 +145,8 @@ def test_direct_auth_malformed_success_json_is_unavailable(mocker, mock_headers)
 
 
 def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_headers):
-    mock_post = mocker.patch("apigateway.components.bkiam.http_post", return_value=(True, {}))
-    mock_delete = mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, {}))
+    mock_post = mocker.patch("apigateway.components.bkiam.http_post", return_value=(True, {"data": None}))
+    mock_delete = mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, {"data": None}))
     authorization = {
         "subject": {"type": "user", "id": "alice"},
         "role_id": "administrator",
@@ -186,6 +166,7 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
             "X-Bkiam-Operator": "admin",
         },
         "timeout": (1.0, 2.0),
+        "request_session": None,
     }
     mock_post.assert_called_once_with(data=[authorization], **common)
     mock_delete.assert_called_once_with(data=[revoke], **common)
@@ -200,8 +181,9 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
 
 
 def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
-    mock_get = mocker.patch(
-        "apigateway.components.bkiam.http_get",
+    mock_get = _patch_http(
+        mocker,
+        "http_get",
         side_effect=[
             (True, {"data": {"id": "bk_apigateway"}}),
             (True, {"data": {"count": 1, "results": [{"id": "gateway"}]}}),
@@ -219,7 +201,7 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
             (True, {"data": ["manage_gateway"]}),
         ],
     )
-    mock_put = mocker.patch("apigateway.components.bkiam.http_put", return_value=(True, {}))
+    mock_put = mocker.patch("apigateway.components.bkiam.http_put", return_value=(True, {"data": None}))
 
     assert bkiam.retrieve_system() == {"id": "bk_apigateway"}
     assert bkiam.create_system({"id": "bk_apigateway", "name": "API 网关", "clients": ["bk_apigateway"]}) == {
@@ -264,11 +246,11 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
 @pytest.mark.parametrize(
     "response",
     [
-        {},
-        {"code": 0, "message": "ok"},
+        {"data": None},
+        {"code": 0, "message": "ok", "data": None},
     ],
 )
-def test_write_endpoints_accept_success_without_data(mocker, mock_headers, response):
+def test_write_endpoints_ignore_success_data(mocker, mock_headers, response):
     mocker.patch("apigateway.components.bkiam.http_put", return_value=(True, response))
     mocker.patch("apigateway.components.bkiam.http_post", return_value=(True, response))
     mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, response))
@@ -287,7 +269,7 @@ def test_write_endpoints_accept_success_without_data(mocker, mock_headers, respo
 
 
 def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
-    mock_delete = mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, {}))
+    mock_delete = mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, {"data": None}))
 
     bkiam.batch_delete_role_action("administrator", ["manage_gateway", "operate_gateway"])
 
@@ -298,6 +280,7 @@ def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
         data=None,
         headers={"X-Bkapi-Authorization": "credentials"},
         timeout=(1.0, 2.0),
+        request_session=None,
         params={"ids": "manage_gateway,operate_gateway"},
     )
 
@@ -328,7 +311,10 @@ def test_list_authorization_subject_returns_validated_page(mocker, mock_headers)
         "page_size": 100,
     }
 
-    assert bkiam.list_authorization_subject(payload)["count"] == 1
+    assert bkiam.list_authorization_subject(payload) == {
+        "count": 1,
+        "results": [{"id": "alice", "expired_at": 1_800_000_000}],
+    }
     mock_post.assert_called_once_with(
         url=(
             "https://bkiam.example.com/prod/api/v1/open/rbac/mgmt/systems/bk_apigateway/authorizations/query-subject/"
@@ -336,7 +322,39 @@ def test_list_authorization_subject_returns_validated_page(mocker, mock_headers)
         data=payload,
         headers={"X-Bkapi-Authorization": "credentials"},
         timeout=(1.0, 2.0),
+        request_session=None,
     )
+
+
+def test_list_authorization_subject_rejects_non_user_subject(mocker, mock_headers):
+    mocker.patch(
+        "apigateway.components.bkiam.http_post",
+        return_value=(
+            True,
+            {
+                "data": {
+                    "count": 1,
+                    "results": [
+                        {
+                            "subject": {"type": "department", "id": "1"},
+                            "expired_at": 1_800_000_000,
+                        }
+                    ],
+                }
+            },
+        ),
+    )
+
+    with pytest.raises(ValueError, match="subject type must be user"):
+        bkiam.list_authorization_subject(
+            {
+                "role_id": "administrator",
+                "related_resource_type_id": "gateway",
+                "resource": {"type": "gateway", "id": "42"},
+                "page": 1,
+                "page_size": 100,
+            }
+        )
 
 
 @pytest.mark.parametrize(

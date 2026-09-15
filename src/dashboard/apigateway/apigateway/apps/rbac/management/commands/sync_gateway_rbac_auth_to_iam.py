@@ -26,7 +26,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
-from apigateway.biz.gateway import GatewayIAMAuthorizationSynchronizer, get_gateway_iam_system_operator
+from apigateway.biz.iam import GatewayIAMAuthorizationSynchronizer, get_gateway_iam_system_operator
 from apigateway.core.models import Gateway
 
 DEFAULT_MAX_CHANGES = 1000

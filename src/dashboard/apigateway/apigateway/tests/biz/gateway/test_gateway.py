@@ -420,7 +420,7 @@ class TestGatewayHandler:
             role=GatewayRoleEnum.ADMINISTRATOR.value,
         )
         revoke_authorization = mocker.patch(
-            "apigateway.biz.gateway.iam_authorization.revoke_authorization",
+            "apigateway.biz.iam.authorization.revoke_authorization",
         )
 
         GatewayHandler.delete_gateway(fake_gateway.id, operated_by="request-user")

@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.biz.gateway import GatewayIAMModelSyncer
+from apigateway.biz.iam import GatewayIAMModelSyncer
 
 
 class Command(BaseCommand):

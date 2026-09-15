@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
 
 import redis_lock
 from celery import shared_task
@@ -28,25 +27,17 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from apigateway.apps.rbac.constants import GATEWAY_MEMBER_EXPIRE_DAYS
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.biz.gateway import build_gateway_authorization, get_gateway_iam_system_operator
-from apigateway.components.bkiam import MAX_BATCH_SIZE, add_authorization
+from apigateway.biz.iam import build_gateway_authorization, get_gateway_iam_system_operator
+from apigateway.components.bkiam import add_authorization, chunked
 from apigateway.core.models import Gateway
 from apigateway.utils.redis_utils import get_default_redis_client
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
 
 logger = logging.getLogger(__name__)
 
 RENEWAL_WINDOW_DAYS = 30
-AUTHORIZATION_EXPIRE_DAYS = 365
 RENEWAL_LOCK_NAME = "renew_gateway_member_iam_authorizations"
-
-
-def _chunks(members: list[GatewayMember]) -> Iterable[list[GatewayMember]]:
-    for offset in range(0, len(members), MAX_BATCH_SIZE):
-        yield members[offset : offset + MAX_BATCH_SIZE]
 
 
 def _due_members(gateway_id: int, due_before: datetime) -> list[GatewayMember]:
@@ -63,6 +54,7 @@ def _renew_gateway_member_iam_authorizations(
     due_before: datetime,
     renewed_expires: datetime,
 ) -> int:
+    """按网关执行续期；单批失败只记录并继续后续批次。"""
     # Member writes use this same gateway row lock, so role changes and deletes
     # cannot race the snapshot sent to IAM.
     gateway = Gateway.objects.select_for_update().filter(id=gateway_id).first()
@@ -72,7 +64,7 @@ def _renew_gateway_member_iam_authorizations(
     operator = get_gateway_iam_system_operator()
     members = _due_members(gateway.id, due_before)
     failed_batches = 0
-    for batch_members in _chunks(members):
+    for batch_members in chunked(members):
         member_ids = [member.id for member in batch_members]
         authorizations = [
             build_gateway_authorization(
@@ -122,7 +114,7 @@ def renew_gateway_member_iam_authorizations() -> None:
     try:
         now = timezone.now()
         due_before = now + timedelta(days=RENEWAL_WINDOW_DAYS)
-        renewed_expires = now + timedelta(days=AUTHORIZATION_EXPIRE_DAYS)
+        renewed_expires = now + timedelta(days=GATEWAY_MEMBER_EXPIRE_DAYS)
         gateway_ids = list(
             GatewayMember.objects.filter(Q(expires__isnull=True) | Q(expires__lte=due_before))
             .order_by("gateway_id")

@@ -26,13 +26,11 @@ from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from apigateway.apps.rbac.constants import GatewayRoleEnum
+from apigateway.apps.rbac.constants import GATEWAY_MEMBER_EXPIRE_DAYS, GatewayRoleEnum
 from apigateway.common.error_codes import error_codes
 
 if TYPE_CHECKING:
     from apigateway.apps.rbac.models import GatewayMember
-
-GATEWAY_MEMBER_EXPIRE_DAYS = 365
 
 
 class _GatewayMemberInput(Protocol):

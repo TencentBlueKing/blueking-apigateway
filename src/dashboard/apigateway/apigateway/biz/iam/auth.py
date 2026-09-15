@@ -17,7 +17,6 @@
 #
 from __future__ import annotations
 
-from dataclasses import dataclass
 from threading import RLock
 
 from cachetools import TTLCache
@@ -26,17 +25,9 @@ from django.conf import settings
 from apigateway.common.constants import CACHE_MAXSIZE
 from apigateway.components.bkiam import direct_auth
 
+from .constants import ALLOW_CACHE_TTL
 
-@dataclass
-class _AllowCacheState:
-    cache: TTLCache
-    ttl: int
-
-
-_allow_cache_state = _AllowCacheState(
-    cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=0),
-    ttl=0,
-)
+_allow_cache: TTLCache[tuple[str, int, str], bool] = TTLCache(maxsize=CACHE_MAXSIZE, ttl=ALLOW_CACHE_TTL)
 _allow_cache_lock = RLock()
 
 
@@ -44,23 +35,15 @@ def is_iam_auth_active() -> bool:
     return settings.BK_IAM_V4_ENABLED
 
 
-def _get_allow_cache() -> TTLCache:
-    ttl = settings.BK_IAM_V4_ALLOW_CACHE_TTL
-    if ttl != _allow_cache_state.ttl:
-        _allow_cache_state.cache = TTLCache(maxsize=CACHE_MAXSIZE, ttl=ttl)
-        _allow_cache_state.ttl = ttl
-    return _allow_cache_state.cache
-
-
 def clear_gateway_iam_auth_cache() -> None:
     with _allow_cache_lock:
-        _get_allow_cache().clear()
+        _allow_cache.clear()
 
 
 def is_iam_gateway_action_allowed(username: str, gateway_id: int, action: str) -> bool:
     cache_key = (username, gateway_id, action)
     with _allow_cache_lock:
-        if cache_key in _get_allow_cache():
+        if cache_key in _allow_cache:
             return True
 
     allowed = direct_auth(
@@ -72,5 +55,5 @@ def is_iam_gateway_action_allowed(username: str, gateway_id: int, action: str) -
     )
     if allowed:
         with _allow_cache_lock:
-            _get_allow_cache()[cache_key] = True
+            _allow_cache[cache_key] = True
     return allowed

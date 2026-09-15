@@ -7,8 +7,8 @@ from rest_framework import permissions
 
 from apigateway.apps.rbac.constants import GATEWAY_ROLE_ACTIONS, GatewayActionEnum
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.biz.gateway import is_iam_auth_active, is_iam_gateway_action_allowed
-from apigateway.components.bkiam import BkIamError
+from apigateway.biz.iam import is_iam_auth_active, is_iam_gateway_action_allowed
+from apigateway.common.error_codes import APIError
 from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
@@ -42,13 +42,10 @@ class GatewayActionPermission(permissions.BasePermission):
 
         try:
             return is_iam_gateway_action_allowed(request.user.username, gateway.id, required_action)
-        except BkIamError as exc:
+        except APIError as exc:
             logger.warning(
-                "gateway IAM authorization failed, fallback to local, "
-                "error=%s operation=%s status_code=%s gateway_id=%s username=%s action_id=%s",
-                exc.__class__.__name__,
-                exc.operation,
-                exc.status_code,
+                "gateway IAM authorization failed, fallback to local, error=%s gateway_id=%s username=%s action_id=%s",
+                exc,
                 gateway.id,
                 request.user.username,
                 required_action,

@@ -365,7 +365,6 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         data_before = get_model_dict(instance)

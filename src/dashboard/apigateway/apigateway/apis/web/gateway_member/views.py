@@ -155,7 +155,6 @@ class GatewayMemberUpdateDestroyApi(generics.GenericAPIView):
 
         return OKJsonResponse(data=GatewayMemberOutputSLZ(result.member).data)
 
-    @transaction.atomic
     def delete(self, request, member_id: int, *args, **kwargs):
         member = delete_gateway_member(request.gateway, member_id, request.user.username)
         Auditor.record_gateway_op_success(

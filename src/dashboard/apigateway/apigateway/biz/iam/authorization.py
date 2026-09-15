@@ -20,19 +20,21 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Mapping, TypeVar
+from typing import TYPE_CHECKING, Mapping
 
 from django.conf import settings
 from django.utils import timezone
 
 from apigateway.apps.rbac.constants import GatewayResourceTypeEnum
 from apigateway.components.bkiam import (
-    MAX_BATCH_SIZE,
     AuthorizationPayload,
     RevokeAuthorizationPayload,
     add_authorization,
+    chunked,
     revoke_authorization,
 )
+
+from .constants import GATEWAY_MEMBER_EXPIRE_DAYS
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -40,9 +42,6 @@ if TYPE_CHECKING:
     from apigateway.apps.rbac.models import GatewayMember
 
 logger = logging.getLogger(__name__)
-
-GATEWAY_MEMBER_EXPIRE_DAYS = 365
-_T = TypeVar("_T")
 
 
 def get_gateway_iam_system_operator() -> str:
@@ -99,11 +98,6 @@ def build_gateway_member_snapshot(members: Iterable[GatewayMember]) -> dict[str,
     }
 
 
-def _chunks(items: list[_T]) -> Iterable[list[_T]]:
-    for offset in range(0, len(items), MAX_BATCH_SIZE):
-        yield items[offset : offset + MAX_BATCH_SIZE]
-
-
 def _revoke(
     gateway_id: int,
     authorizations: Iterable[tuple[str, str]],
@@ -112,7 +106,7 @@ def _revoke(
     payloads = [
         build_gateway_revoke_authorization(username, role, gateway_id) for username, role in sorted(authorizations)
     ]
-    for payload_chunk in _chunks(payloads):
+    for payload_chunk in chunked(payloads):
         revoke_authorization(payload_chunk, operated_by)
 
 
@@ -133,7 +127,7 @@ def _grant(
         )
         for username in sorted(usernames)
     ]
-    for payload_chunk in _chunks(payloads):
+    for payload_chunk in chunked(payloads):
         add_authorization(payload_chunk, operated_by)
 
 

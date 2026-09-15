@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,20 +16,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, cast
+from typing import Any, Iterator, NotRequired, TypedDict, TypeVar
 
 from django.conf import settings
 
-from apigateway.components.http import http_delete, http_get, http_post, http_put
-from apigateway.components.utils import gen_gateway_headers
+from apigateway.utils.url import url_join
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+from .http import http_delete, http_get, http_post, http_put
+from .utils import do_blueking_http_request, gen_gateway_headers
 
 MAX_BATCH_SIZE = 20
 DEFAULT_PAGE_SIZE = 100
+CONNECT_TIMEOUT = 1.0
+READ_TIMEOUT = 2.0
+# 与 apps.rbac.constants.BK_IAM_V4_SYSTEM_ID 保持一致；component 不能依赖 apps。
+BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
+_T = TypeVar("_T")
 
 SYSTEMS_PATH = "/api/v1/open/rbac/model/systems/"
 SYSTEM_PATH = "/api/v1/open/rbac/model/systems/{system_id}/"
@@ -147,374 +150,294 @@ class PaginationData(TypedDict):
     results: list[dict[str, Any]]
 
 
-class BkIamError(Exception):
-    def __init__(
-        self,
-        message: str,
-        *,
-        operation: str,
-        status_code: int | None = None,
-        response_data: Any = None,
-    ):
-        super().__init__(message)
-        self.operation = operation
-        self.status_code = status_code
-        self.response_data = response_data
+class AuthorizationSubjectItem(TypedDict):
+    id: str
+    expired_at: int
 
 
-class BkIamUnavailableError(BkIamError):
-    pass
+class AuthorizationSubjectPage(TypedDict):
+    count: int
+    results: list[AuthorizationSubjectItem]
 
 
-class BkIamNotFoundError(BkIamError):
-    pass
+class BkIamNotFoundError(Exception):
+    """IAM 系统尚未注册。"""
 
 
-class BkIamParameterError(BkIamError):
-    pass
-
-
-def _url(path: str) -> str:
-    return f"{settings.BK_IAM_V4_API_URL.rstrip('/')}{path}"
+class BkIamParameterError(Exception):
+    """本地请求参数不合法。"""
 
 
 def _system_path(path: str, **kwargs: str) -> str:
-    return path.format(system_id=settings.BK_IAM_V4_SYSTEM_ID, **kwargs)
+    """把当前 IAM 系统 ID 填进路径。"""
+    return path.format(system_id=BK_IAM_V4_SYSTEM_ID, **kwargs)
 
 
-def _timeout() -> tuple[float, float]:
-    return settings.BK_IAM_V4_CONNECT_TIMEOUT, settings.BK_IAM_V4_READ_TIMEOUT
-
-
-def _raise_http_error(operation: str, response: Any, *, not_found_is_missing: bool = False) -> None:
-    if not isinstance(response, dict):
-        raise BkIamUnavailableError(
-            f"bkiam {operation} transport failure",
-            operation=operation,
-            response_data=response,
-        )
-
-    status_code = response.get("status_code")
-    if status_code is not None and (not isinstance(status_code, int) or isinstance(status_code, bool)):
-        raise BkIamUnavailableError(
-            f"bkiam {operation} returned an invalid status code",
-            operation=operation,
-            response_data=response,
-        )
-    response_data = response.get("response_data")
-    message = f"bkiam {operation} request failed"
-    if status_code == 404 and not_found_is_missing:
-        raise BkIamNotFoundError(
-            message,
-            operation=operation,
-            status_code=status_code,
-            response_data=response_data,
-        )
-    if status_code == 400:
-        raise BkIamParameterError(
-            message,
-            operation=operation,
-            status_code=status_code,
-            response_data=response_data,
-        )
-    if status_code is None or status_code in {401, 403, 404, 429} or status_code >= 500:
-        raise BkIamUnavailableError(
-            message,
-            operation=operation,
-            status_code=status_code,
-            response_data=response_data,
-        )
-    raise BkIamError(
-        message,
-        operation=operation,
-        status_code=status_code,
-        response_data=response_data,
-    )
-
-
-def _request(
-    operation: str,
-    http_func: Callable[..., tuple[bool, Any]],
-    path: str,
-    data: dict[str, Any] | list[Any] | None = None,
-    *,
-    operator: str | None = None,
-    expect_data: bool = True,
-    not_found_is_missing: bool = False,
-    **kwargs: Any,
-) -> Any:
+def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs):
+    """
+    统一调用权限中心 V4 网关 API。
+    """
     headers = gen_gateway_headers()
-    if operator is not None:
-        headers["X-Bkiam-Operator"] = operator
+    if more_headers:
+        headers.update(more_headers)
 
-    try:
-        ok, response = http_func(
-            url=_url(path),
-            data=data,
-            headers=headers,
-            timeout=_timeout(),
-            **kwargs,
-        )
-    except ValueError as exc:
-        raise BkIamUnavailableError(
-            f"bkiam {operation} returned malformed JSON",
-            operation=operation,
-        ) from exc
-    if not ok:
-        _raise_http_error(operation, response, not_found_is_missing=not_found_is_missing)
-    if not isinstance(response, dict):
-        raise BkIamUnavailableError(
-            f"bkiam {operation} returned a malformed response",
-            operation=operation,
-            response_data=response,
-        )
-    if not expect_data:
-        return None
-    if "data" not in response:
-        raise BkIamUnavailableError(
-            f"bkiam {operation} response has no data",
-            operation=operation,
-            response_data=response,
-        )
-    return response["data"]
+    url = url_join(settings.BK_IAM_V4_API_URL, path)
+    timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+    return do_blueking_http_request("bkiam", http_func, url, data, headers, timeout, **kwargs)
 
 
-def _require_type(operation: str, data: Any, expected_type: type) -> Any:
-    if not isinstance(data, expected_type):
-        raise BkIamUnavailableError(
-            f"bkiam {operation} returned invalid data",
-            operation=operation,
-            response_data=data,
-        )
-    return data
+def _retrieve_system_http_get():
+    """查询系统：HTTP 404 视为尚未注册。"""
+
+    def request(*args, **kwargs):
+        ok, resp_data = http_get(*args, **kwargs)
+        if not ok and resp_data.get("status_code") == 404:
+            raise BkIamNotFoundError(f"IAM system does not exist, system_id={BK_IAM_V4_SYSTEM_ID}")
+        return ok, resp_data
+
+    request.__name__ = http_get.__name__
+    return request
 
 
-def _require_page(operation: str, data: Any) -> PaginationData:
-    _require_type(operation, data, dict)
-    if (
-        not isinstance(data.get("count"), int)
-        or isinstance(data.get("count"), bool)
-        or not isinstance(data.get("results"), list)
-    ):
-        raise BkIamUnavailableError(
-            f"bkiam {operation} returned invalid pagination data",
-            operation=operation,
-            response_data=data,
-        )
-    return cast("PaginationData", data)
-
-
-def _batch(items: Sequence[Any], operation: str) -> list[Any]:
+def _batch(items):
+    """批量接口本地校验条数，超过 MAX_BATCH_SIZE 直接拒绝。"""
     values = list(items)
     if len(values) > MAX_BATCH_SIZE:
-        raise BkIamParameterError(
-            f"bkiam {operation} accepts at most {MAX_BATCH_SIZE} items",
-            operation=operation,
-        )
+        raise BkIamParameterError(f"at most {MAX_BATCH_SIZE} items")
     return values
 
 
-def _page_query(operation: str, page: int, page_size: int) -> dict[str, int]:
+def chunked(items: list[_T], size: int = MAX_BATCH_SIZE) -> Iterator[list[_T]]:
+    """按固定大小切分顺序列表，保持原顺序。"""
+    for offset in range(0, len(items), size):
+        yield list(items[offset : offset + size])
+
+
+def _page_query(page: int, page_size: int) -> dict[str, int]:
+    """分页参数校验，page_size 上限为 DEFAULT_PAGE_SIZE。"""
     if page < 1 or page_size < 1 or page_size > DEFAULT_PAGE_SIZE:
-        raise BkIamParameterError(
-            f"bkiam {operation} requires page >= 1 and page_size between 1 and {DEFAULT_PAGE_SIZE}",
-            operation=operation,
-        )
+        raise BkIamParameterError(f"page_size between 1 and {DEFAULT_PAGE_SIZE}")
     return {"page": page, "page_size": page_size}
 
 
-def _validate_authorization_resources(
-    authorizations: Sequence[AuthorizationPayload | RevokeAuthorizationPayload],
-    operation: str,
-) -> None:
+def _validate_authorization_resources(authorizations) -> None:
+    """单条授权的 resources 数量不能超过批量上限。"""
     if any(len(authorization.get("resources", [])) > MAX_BATCH_SIZE for authorization in authorizations):
-        raise BkIamParameterError(
-            f"bkiam {operation} accepts at most {MAX_BATCH_SIZE} resources per authorization",
-            operation=operation,
-        )
+        raise BkIamParameterError(f"at most {MAX_BATCH_SIZE} resources per authorization")
+
+
+def _authorization_subject_item(item: dict[str, Any]) -> AuthorizationSubjectItem:
+    """把 IAM 原始 subject 收成用户 id + 过期时间。"""
+    subject = item["subject"]
+    if subject["type"] != "user":
+        raise ValueError(f"IAM authorization subject type must be user, got {subject['type']!r}")
+    return {"id": subject["id"], "expired_at": item["expired_at"]}
 
 
 def retrieve_system() -> dict[str, Any]:
-    operation = "retrieve_system"
-    data = _request(operation, http_get, _system_path(SYSTEM_PATH), {}, not_found_is_missing=True)
-    return cast("dict[str, Any]", _require_type(operation, data, dict))
+    """
+    查询当前系统。系统不存在时抛 BkIamNotFoundError。
+
+    调用接口: retrieve_system (GET)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/
+    """
+    return _call_bkiam_api(_retrieve_system_http_get(), _system_path(SYSTEM_PATH), {})
 
 
 def create_system(system: SystemPayload) -> dict[str, Any]:
-    operation = "create_system"
-    data = _request(operation, http_post, SYSTEMS_PATH, cast("dict[str, Any]", system))
-    return cast("dict[str, Any]", _require_type(operation, data, dict))
+    """
+    创建 IAM 系统。
+
+    调用接口: create_system (POST)
+    路径: /api/v1/open/rbac/model/systems/
+    """
+    return _call_bkiam_api(http_post, SYSTEMS_PATH, system)
 
 
 def update_system(system: SystemUpdatePayload) -> None:
-    _request(
-        "update_system",
-        http_put,
-        _system_path(SYSTEM_PATH),
-        cast("dict[str, Any]", system),
-        expect_data=False,
-    )
+    """
+    更新 IAM 系统。
+
+    调用接口: update_system (PUT)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/
+    """
+    _call_bkiam_api(http_put, _system_path(SYSTEM_PATH), system)
 
 
 def list_resource_type(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
-    operation = "list_resource_type"
-    data = _request(
-        operation,
-        http_get,
-        _system_path(RESOURCE_TYPES_PATH),
-        _page_query(operation, page, page_size),
-    )
-    return _require_page(operation, data)
+    """
+    分页查询资源类型。
+
+    调用接口: list_resource_type (GET)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/
+    """
+    return _call_bkiam_api(http_get, _system_path(RESOURCE_TYPES_PATH), _page_query(page, page_size))
 
 
-def batch_create_resource_type(resource_types: Sequence[ResourceTypePayload]) -> list[str]:
-    operation = "batch_create_resource_type"
-    data = _request(operation, http_post, _system_path(RESOURCE_TYPES_PATH), _batch(resource_types, operation))
-    return cast("list[str]", _require_type(operation, data, list))
+def batch_create_resource_type(resource_types: list[ResourceTypePayload]) -> list[str]:
+    """
+    批量创建资源类型。
+
+    调用接口: batch_create_resource_type (POST)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/
+    """
+    return _call_bkiam_api(http_post, _system_path(RESOURCE_TYPES_PATH), _batch(resource_types))
 
 
 def update_resource_type(resource_type_id: str, resource_type: ResourceTypeUpdatePayload) -> None:
-    _request(
-        "update_resource_type",
-        http_put,
-        _system_path(RESOURCE_TYPE_PATH, resource_type_id=resource_type_id),
-        cast("dict[str, Any]", resource_type),
-        expect_data=False,
-    )
+    """
+    更新资源类型。
+
+    调用接口: update_resource_type (PUT)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/{resource_type_id}/
+    """
+    _call_bkiam_api(http_put, _system_path(RESOURCE_TYPE_PATH, resource_type_id=resource_type_id), resource_type)
 
 
 def list_action(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
-    operation = "list_action"
-    data = _request(
-        operation,
-        http_get,
-        _system_path(ACTIONS_PATH),
-        _page_query(operation, page, page_size),
-    )
-    return _require_page(operation, data)
+    """
+    分页查询操作。
+
+    调用接口: list_action (GET)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/actions/
+    """
+    return _call_bkiam_api(http_get, _system_path(ACTIONS_PATH), _page_query(page, page_size))
 
 
-def batch_create_action(actions: Sequence[ActionPayload]) -> list[str]:
-    operation = "batch_create_action"
-    data = _request(operation, http_post, _system_path(ACTIONS_PATH), _batch(actions, operation))
-    return cast("list[str]", _require_type(operation, data, list))
+def batch_create_action(actions: list[ActionPayload]) -> list[str]:
+    """
+    批量创建操作。
+
+    调用接口: batch_create_action (POST)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/actions/
+    """
+    return _call_bkiam_api(http_post, _system_path(ACTIONS_PATH), _batch(actions))
 
 
 def update_action(action_id: str, action: ActionUpdatePayload) -> None:
-    _request(
-        "update_action",
-        http_put,
-        _system_path(ACTION_PATH, action_id=action_id),
-        cast("dict[str, Any]", action),
-        expect_data=False,
-    )
+    """
+    更新操作。
+
+    调用接口: update_action (PUT)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/actions/{action_id}/
+    """
+    _call_bkiam_api(http_put, _system_path(ACTION_PATH, action_id=action_id), action)
 
 
 def list_role(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
-    operation = "list_role"
-    data = _request(
-        operation,
-        http_get,
-        _system_path(ROLES_PATH),
-        _page_query(operation, page, page_size),
-    )
-    return _require_page(operation, data)
+    """
+    分页查询角色。
+
+    调用接口: list_role (GET)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/roles/
+    """
+    return _call_bkiam_api(http_get, _system_path(ROLES_PATH), _page_query(page, page_size))
 
 
-def batch_create_role(roles: Sequence[RolePayload]) -> list[str]:
-    operation = "batch_create_role"
-    data = _request(operation, http_post, _system_path(ROLES_PATH), _batch(roles, operation))
-    return cast("list[str]", _require_type(operation, data, list))
+def batch_create_role(roles: list[RolePayload]) -> list[str]:
+    """
+    批量创建角色。
+
+    调用接口: batch_create_role (POST)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/roles/
+    """
+    return _call_bkiam_api(http_post, _system_path(ROLES_PATH), _batch(roles))
 
 
 def update_role(role_id: str, role: RoleUpdatePayload) -> None:
-    _request(
-        "update_role",
-        http_put,
-        _system_path(ROLE_PATH, role_id=role_id),
-        cast("dict[str, Any]", role),
-        expect_data=False,
-    )
+    """
+    更新角色。
+
+    调用接口: update_role (PUT)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/roles/{role_id}/
+    """
+    _call_bkiam_api(http_put, _system_path(ROLE_PATH, role_id=role_id), role)
 
 
-def batch_create_role_action(role_id: str, actions: Sequence[RoleActionPayload]) -> list[str]:
-    operation = "batch_create_role_action"
-    data = _request(
-        operation,
+def batch_create_role_action(role_id: str, actions: list[RoleActionPayload]) -> list[str]:
+    """
+    批量为角色绑定操作。
+
+    调用接口: batch_create_role_action (POST)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/roles/{role_id}/actions/
+    """
+    return _call_bkiam_api(
         http_post,
         _system_path(ROLE_ACTIONS_PATH, role_id=role_id),
-        _batch(actions, operation),
+        _batch(actions),
     )
-    return cast("list[str]", _require_type(operation, data, list))
 
 
-def batch_delete_role_action(role_id: str, action_ids: Sequence[str]) -> None:
-    operation = "batch_delete_role_action"
-    ids = _batch(action_ids, operation)
-    _request(
-        operation,
+def batch_delete_role_action(role_id: str, action_ids: list[str]) -> None:
+    """
+    批量解绑角色操作。
+
+    调用接口: batch_delete_role_action (DELETE)
+    路径: /api/v1/open/rbac/model/systems/{system_id}/roles/{role_id}/actions/
+    """
+    _call_bkiam_api(
         http_delete,
         _system_path(ROLE_ACTIONS_PATH, role_id=role_id),
         None,
-        expect_data=False,
-        params={"ids": ",".join(ids)},
+        params={"ids": ",".join(_batch(action_ids))},
     )
 
 
 def direct_auth(payload: DirectAuthPayload) -> bool:
-    operation = "direct_auth"
-    data = _request(
-        operation,
-        http_post,
-        _system_path(DIRECT_AUTH_PATH),
-        cast("dict[str, Any]", payload),
-    )
-    if not isinstance(data, dict) or type(data.get("allowed")) is not bool:
-        raise BkIamUnavailableError(
-            "bkiam direct_auth returned invalid allowed value",
-            operation=operation,
-            response_data=data,
-        )
+    """
+    鉴权：判断主体是否拥有指定操作。
+
+    调用接口: direct_auth (POST)
+    路径: /api/v1/open/rbac/authorization/systems/{system_id}/auth/
+    """
+    data = _call_bkiam_api(http_post, _system_path(DIRECT_AUTH_PATH), payload)
     return data["allowed"]
 
 
-def add_authorization(authorizations: Sequence[AuthorizationPayload], operator: str) -> None:
-    operation = "add_authorization"
-    payload = cast("list[AuthorizationPayload]", _batch(authorizations, operation))
-    _validate_authorization_resources(payload, operation)
-    _request(
-        operation,
+def add_authorization(authorizations: list[AuthorizationPayload], operator: str) -> None:
+    """
+    批量授予角色授权。
+
+    调用接口: add_authorization (POST)
+    路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/
+    """
+    payload = _batch(authorizations)
+    _validate_authorization_resources(payload)
+    _call_bkiam_api(
         http_post,
         _system_path(AUTHORIZATIONS_PATH),
-        cast("list[Any]", payload),
-        operator=operator,
-        expect_data=False,
+        payload,
+        more_headers={"X-Bkiam-Operator": operator},
     )
 
 
-def revoke_authorization(authorizations: Sequence[RevokeAuthorizationPayload], operator: str) -> None:
-    operation = "revoke_authorization"
-    payload = cast("list[RevokeAuthorizationPayload]", _batch(authorizations, operation))
-    _validate_authorization_resources(payload, operation)
-    _request(
-        operation,
+def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str) -> None:
+    """
+    批量回收角色授权。
+
+    调用接口: revoke_authorization (DELETE)
+    路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/
+    """
+    payload = _batch(authorizations)
+    _validate_authorization_resources(payload)
+    _call_bkiam_api(
         http_delete,
         _system_path(AUTHORIZATIONS_PATH),
-        cast("list[Any]", payload),
-        operator=operator,
-        expect_data=False,
+        payload,
+        more_headers={"X-Bkiam-Operator": operator},
     )
 
 
-def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> PaginationData:
-    operation = "list_authorization_subject"
-    page = payload.get("page", 1)
-    page_size = payload.get("page_size", DEFAULT_PAGE_SIZE)
-    _page_query(operation, page, page_size)
-    data = _request(
-        operation,
-        http_post,
-        _system_path(AUTHORIZATION_SUBJECTS_PATH),
-        cast("dict[str, Any]", payload),
-    )
-    return _require_page(operation, data)
+def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> AuthorizationSubjectPage:
+    """
+    按角色和资源查询已授权主体。
+
+    调用接口: list_authorization_subject (POST)
+    路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/query-subject/
+    """
+    _page_query(payload.get("page", 1), payload.get("page_size", DEFAULT_PAGE_SIZE))
+    data = _call_bkiam_api(http_post, _system_path(AUTHORIZATION_SUBJECTS_PATH), payload)
+    return {
+        "count": data["count"],
+        "results": [_authorization_subject_item(item) for item in data["results"]],
+    }

@@ -27,7 +27,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.biz.gateway import GatewayIAMModelSyncResult, GatewayIAMSyncItem, GatewayIAMSyncResult
+from apigateway.biz.iam import GatewayIAMModelSyncResult, GatewayIAMSyncItem, GatewayIAMSyncResult
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -133,7 +133,6 @@ def test_sync_gateway_rbac_model_to_iam_converts_failure_to_command_error(settin
 def _enable_iam(settings):
     settings.BK_IAM_V4_ENABLED = True
     settings.BK_IAM_V4_API_URL = "https://bkiam.example.com"
-    settings.BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
     settings.BK_IAM_V4_MANAGERS = ["admin"]
 
 
@@ -294,11 +293,11 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejects_before_apply(settings, 
 def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
-        "apigateway.biz.gateway.iam_sync.list_authorization_subject",
+        "apigateway.biz.iam.sync.list_authorization_subject",
         return_value={"count": 0, "results": []},
     )
-    add = mocker.patch("apigateway.biz.gateway.iam_sync.add_authorization")
-    revoke = mocker.patch("apigateway.biz.gateway.iam_sync.revoke_authorization")
+    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
+    revoke = mocker.patch("apigateway.biz.iam.sync.revoke_authorization")
 
     with pytest.raises(CommandError, match="超过 --max-changes=0"):
         call_command(
@@ -315,10 +314,10 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(s
 def test_sync_gateway_rbac_auth_to_iam_force_applies_over_threshold(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
-        "apigateway.biz.gateway.iam_sync.list_authorization_subject",
+        "apigateway.biz.iam.sync.list_authorization_subject",
         return_value={"count": 0, "results": []},
     )
-    add = mocker.patch("apigateway.biz.gateway.iam_sync.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
 
     call_command(
         "sync_gateway_rbac_auth_to_iam",

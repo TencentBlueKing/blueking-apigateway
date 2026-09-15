@@ -19,7 +19,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, TypeVar
 
 from django.db import transaction
 from django.utils import timezone
@@ -27,30 +26,25 @@ from django.utils import timezone
 from apigateway.apps.rbac.constants import GatewayResourceTypeEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.components.bkiam import (
-    MAX_BATCH_SIZE,
+    DEFAULT_PAGE_SIZE,
     AuthorizationSubjectQueryPayload,
     add_authorization,
+    chunked,
     list_authorization_subject,
     revoke_authorization,
 )
 from apigateway.core.models import Gateway
 
-from .iam_authorization import build_gateway_authorization, build_gateway_revoke_authorization
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
-
-_T = TypeVar("_T")
-
-DEFAULT_PAGE_SIZE = 100
-EXPIRY_TOLERANCE = timedelta(minutes=1)
-DEFAULT_MEMBER_EXPIRY = timedelta(days=365)
-
-MISSING_GRANT = "missing"
-ROLE_MISMATCH_GRANT = "role-mismatch"
-EXPIRY_REFRESH_GRANT = "expiry-refresh"
-ROLE_MISMATCH_REVOKE = "role-mismatch"
-EXTRA_REVOKE = "extra"
+from .authorization import build_gateway_authorization, build_gateway_revoke_authorization
+from .constants import (
+    DEFAULT_MEMBER_EXPIRY,
+    EXPIRY_REFRESH_GRANT,
+    EXPIRY_TOLERANCE,
+    EXTRA_REVOKE,
+    MISSING_GRANT,
+    ROLE_MISMATCH_GRANT,
+    ROLE_MISMATCH_REVOKE,
+)
 
 
 @dataclass(frozen=True, order=True)
@@ -92,11 +86,6 @@ class GatewayIAMSyncResult:
     @property
     def change_count(self) -> int:
         return self.grant_count + self.revoke_count
-
-
-def _chunks(items: Sequence[_T]) -> Iterable[Sequence[_T]]:
-    for offset in range(0, len(items), MAX_BATCH_SIZE):
-        yield items[offset : offset + MAX_BATCH_SIZE]
 
 
 class GatewayIAMAuthorizationSynchronizer:
@@ -194,25 +183,14 @@ class GatewayIAMAuthorizationSynchronizer:
                 "page_size": self._page_size,
             }
             data = list_authorization_subject(payload)
-            for result in data["results"]:
-                subject = result.get("subject")
-                expired_at = result.get("expired_at")
-                if (
-                    not isinstance(subject, dict)
-                    or subject.get("type") != "user"
-                    or not isinstance(subject.get("id"), str)
-                    or not subject["id"]
-                    or not isinstance(expired_at, int)
-                    or isinstance(expired_at, bool)
-                ):
-                    raise ValueError(f"IAM returned an invalid authorization for gateway {gateway_id}, role {role!r}")
-                authorizations.append(
-                    GatewayIAMAuthorization(
-                        username=subject["id"],
-                        role=role,
-                        expired_at=expired_at,
-                    )
+            authorizations.extend(
+                GatewayIAMAuthorization(
+                    username=result["id"],
+                    role=role,
+                    expired_at=result["expired_at"],
                 )
+                for result in data["results"]
+            )
 
             if len(authorizations) >= data["count"]:
                 break
@@ -296,7 +274,7 @@ class GatewayIAMAuthorizationSynchronizer:
             for item in result.grants
         ]
 
-        for payloads in _chunks(revoke_payloads):
-            revoke_authorization(payloads, operator)
-        for payloads in _chunks(grant_payloads):
-            add_authorization(payloads, operator)
+        for revoke_batch in chunked(revoke_payloads):
+            revoke_authorization(revoke_batch, operator)
+        for grant_batch in chunked(grant_payloads):
+            add_authorization(grant_batch, operator)

@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.gateway.iam_auth import (
+from apigateway.biz.iam.auth import (
     clear_gateway_iam_auth_cache,
     is_iam_auth_active,
     is_iam_gateway_action_allowed,
@@ -41,10 +41,9 @@ def test_is_iam_auth_active_follows_setting(settings):
     assert is_iam_auth_active()
 
 
-def test_is_iam_gateway_action_allowed_caches_only_allowed_results(settings, mocker):
-    settings.BK_IAM_V4_ALLOW_CACHE_TTL = 60
+def test_is_iam_gateway_action_allowed_caches_only_allowed_results(mocker):
     direct_auth = mocker.patch(
-        "apigateway.biz.gateway.iam_auth.direct_auth",
+        "apigateway.biz.iam.auth.direct_auth",
         side_effect=[True, False, False],
     )
 
@@ -61,13 +60,3 @@ def test_is_iam_gateway_action_allowed_caches_only_allowed_results(settings, moc
             "resource": {"id": "7"},
         }
     )
-
-
-def test_is_iam_gateway_action_allowed_respects_zero_ttl(settings, mocker):
-    settings.BK_IAM_V4_ALLOW_CACHE_TTL = 0
-    direct_auth = mocker.patch("apigateway.biz.gateway.iam_auth.direct_auth", return_value=True)
-
-    assert is_iam_gateway_action_allowed("alice", 7, "manage_gateway")
-    assert is_iam_gateway_action_allowed("alice", 7, "manage_gateway")
-
-    assert direct_auth.call_count == 2
