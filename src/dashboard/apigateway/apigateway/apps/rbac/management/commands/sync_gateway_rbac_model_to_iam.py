@@ -15,8 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from urllib.parse import urlparse
-
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
@@ -46,9 +44,5 @@ class Command(BaseCommand):
         )
 
     def _validate_settings(self) -> None:
-        parsed_url = urlparse(settings.BK_IAM_V4_API_URL)
-        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
-            raise CommandError("BK_IAM_V4_API_URL 必须是有效的 HTTP(S) URL")
-
         if not settings.BK_IAM_V4_MANAGERS:
             raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员")

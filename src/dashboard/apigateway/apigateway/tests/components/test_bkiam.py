@@ -25,7 +25,7 @@ from apigateway.components import bkiam
 
 @pytest.fixture(autouse=True)
 def _bkiam_settings(settings):
-    settings.BK_IAM_V4_API_URL = "https://bkiam.example.com/prod"
+    settings.BK_API_URL_TMPL = "https://{api_name}.example.com"
 
 
 @pytest.fixture

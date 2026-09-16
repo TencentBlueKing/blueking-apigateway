@@ -95,7 +95,6 @@ def test_sync_gateway_rbac_model_to_iam_skips_when_disabled(settings, mocker):
 
 def test_sync_gateway_rbac_model_to_iam_reports_deterministic_counts(settings, mocker):
     settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_API_URL = "https://bkiam.example.com"
     settings.BK_IAM_V4_MANAGERS = ["admin"]
     sync = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_model_to_iam.GatewayIAMModelSyncer"
@@ -114,7 +113,6 @@ def test_sync_gateway_rbac_model_to_iam_reports_deterministic_counts(settings, m
 
 def test_sync_gateway_rbac_model_to_iam_converts_failure_to_command_error(settings, mocker):
     settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_API_URL = "https://bkiam.example.com"
     settings.BK_IAM_V4_MANAGERS = ["admin"]
     mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_model_to_iam.GatewayIAMModelSyncer"
@@ -126,7 +124,6 @@ def test_sync_gateway_rbac_model_to_iam_converts_failure_to_command_error(settin
 
 def _enable_iam(settings):
     settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_API_URL = "https://bkiam.example.com"
     settings.BK_IAM_V4_MANAGERS = ["admin"]
 
 

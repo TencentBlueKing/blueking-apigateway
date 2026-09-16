@@ -548,12 +548,7 @@ BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
 BK_AUTH_SERVER_URL = env.str("BK_AUTH_SERVER_URL", "")
 
 # IAM V4 RBAC
-# 网关名写死；系统 ID 见 apps.rbac.constants；地址拼法与 ITSM 一致：模板 + 网关名 + stage
 BK_IAM_V4_ENABLED = env.bool("BK_IAM_V4_ENABLED", False)
-BK_IAM_V4_GATEWAY_NAME = "bkiam"
-BK_IAM_V4_API_URL = (
-    BK_API_URL_TMPL.format(api_name=BK_IAM_V4_GATEWAY_NAME) + "/" + env.str("BK_IAM_V4_GATEWAY_STAGE", "prod")
-).rstrip("/")
 BK_IAM_V4_MANAGERS = [manager.strip() for manager in env.list("BK_IAM_V4_MANAGERS", default=[]) if manager.strip()]
 
 BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (

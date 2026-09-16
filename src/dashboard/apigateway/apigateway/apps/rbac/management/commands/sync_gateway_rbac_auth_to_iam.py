@@ -18,7 +18,6 @@
 import time
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError, CommandParser
@@ -163,10 +162,6 @@ class Command(BaseCommand):
             raise CommandError("--username 不能为空")
 
     def _validate_settings(self) -> str:
-        parsed_url = urlparse(settings.BK_IAM_V4_API_URL)
-        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
-            raise CommandError("BK_IAM_V4_API_URL 必须是有效的 HTTP(S) URL")
-
         try:
             return get_gateway_iam_system_operator()
         except ValueError as exc:

@@ -162,7 +162,8 @@ def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs
     if more_headers:
         headers.update(more_headers)
 
-    url = url_join(settings.BK_IAM_V4_API_URL, path)
+    host = settings.BK_API_URL_TMPL.format(api_name="bkiam") + "/prod"
+    url = url_join(host, path)
     return do_blueking_http_request("bkiam", http_func, url, data, headers, REQUEST_TIMEOUT, **kwargs)
 
 
