@@ -465,7 +465,7 @@ class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
             )
 
         # 删除网关及相关数据
-        GatewayHandler.delete_gateway(instance_id)
+        GatewayHandler.delete_gateway(instance_id, operated_by=request.user.username)
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 

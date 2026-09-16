@@ -738,6 +738,12 @@ def mock_rest_framework_settings(settings):
     settings.REST_FRAMEWORK.update({"DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S"})
 
 
+@pytest.fixture(autouse=True)
+def disable_iam_v4_by_default(settings):
+    """Avoid dual-writing to a live IAM when local .env enables BK_IAM_V4_ENABLED."""
+    settings.BK_IAM_V4_ENABLED = False
+
+
 @shared_task(name="testing.mock")
 def celery_mock_task_for_testing(celery_task_mocker=None, *args, **kwargs):
     if celery_task_mocker:

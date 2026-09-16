@@ -36,11 +36,7 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 
 client = get_client_by_request(request)
 result = client.api.create_resource_version(
-    {
-        "version": "1.0.0",
-        "title": "发布新版本",
-        "comment": "这是一个什么样的新版本"
-    },
+    {"version": "1.0.0", "title": "发布新版本", "comment": "这是一个什么样的新版本"},
     path_params={
         "api_name": "demo",
     },

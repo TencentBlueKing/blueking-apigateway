@@ -35,6 +35,7 @@ CELERY_IMPORTS = [
     "apigateway.apps.metrics.tasks",
     "apigateway.apps.permission.tasks",
     "apigateway.apps.gateway.tasks",
+    "apigateway.apps.rbac.tasks",
     "apigateway.apps.mcp_server.tasks",
     "apigateway.controller.tasks",
 ]
@@ -86,6 +87,10 @@ CELERY_BEAT_SCHEDULE = {
     "apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category": {
         "task": "apigateway.apps.mcp_server.tasks.refresh_official_mcp_server_category",
         "schedule": crontab(minute=0),
+    },
+    "apigateway.apps.rbac.tasks.renew_gateway_member_iam_authorizations": {
+        "task": "apigateway.apps.rbac.tasks.renew_gateway_member_iam_authorizations",
+        "schedule": crontab(day_of_week="*", hour=2, minute=10),
     },
 }
 

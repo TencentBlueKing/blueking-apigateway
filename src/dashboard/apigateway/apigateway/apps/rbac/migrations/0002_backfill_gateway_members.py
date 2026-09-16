@@ -5,6 +5,7 @@ from django.db import migrations, transaction
 from django.utils import timezone
 
 BATCH_SIZE = 1000
+# 历史迁移需要冻结常量值，不能 import 运行时代码。
 MEMBER_EXPIRE_DAYS = 365
 MAX_USERNAME_LENGTH = 64
 ADMINISTRATOR_ROLE = "administrator"

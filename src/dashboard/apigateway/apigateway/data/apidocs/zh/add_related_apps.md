@@ -32,9 +32,7 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 
 client = get_client_by_request(request)
 result = client.api.add_related_apps(
-    {
-        "target_app_codes": ["my-app"]
-    },
+    {"target_app_codes": ["my-app"]},
     path_params={
         "api_name": "demo",
     },

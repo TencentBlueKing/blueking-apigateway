@@ -5,6 +5,11 @@ DASHBOARD_CSRF_COOKIE_DOMAIN=".example.com"
 # DASHBOARD_CSRF_COOKIE_NAME="bk_apigateway_csrftoken"
 BK_LOGIN_URL="http://paas.example.com/login"
 
+BK_API_URL_TMPL="https://bkapi.example.com/api/{api_name}"
+
+BK_IAM_V4_ENABLED="false"
+BK_IAM_V4_MANAGERS="admin"
+
 BK_APIGW_DATABASE_HOST="localhost"
 
 BK_APIGW_DATABASE_NAME="bk_apigateway"

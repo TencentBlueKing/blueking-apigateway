@@ -42,12 +42,7 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 
 client = get_client_by_request(request)
 result = client.api.apply_permissions(
-    {
-        "target_app_code": "my-app",
-        "expire_days": 360,
-        "grant_dimension": "api",
-        "reason": "test"
-    }
+    {"target_app_code": "my-app", "expire_days": 360, "grant_dimension": "api", "reason": "test"}
 )
 ```
 

@@ -15,9 +15,34 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.apps import AppConfig
+from datetime import UTC, datetime
+
+import pytest
+from apigw_manager.apigw.models import Context as ManagerContext
+
+from apigateway.apps.rbac.iam_context import (
+    INITIAL_SYNC_COMPLETED_AT_KEY,
+    GatewayIAMSyncContext,
+)
+
+pytestmark = pytest.mark.django_db
 
 
-class RbacConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "apigateway.apps.rbac"
+def test_initial_sync_is_incomplete_without_context():
+    assert not GatewayIAMSyncContext().is_initial_sync_completed()
+
+
+def test_mark_initial_sync_completed_persists_timestamp():
+    completed_at = datetime(2026, 9, 11, 9, 30, tzinfo=UTC)
+    context = GatewayIAMSyncContext()
+
+    context.mark_initial_sync_completed(completed_at)
+
+    assert context.is_initial_sync_completed()
+    assert (
+        ManagerContext.objects.get(
+            scope=GatewayIAMSyncContext.scope,
+            key=INITIAL_SYNC_COMPLETED_AT_KEY,
+        ).value
+        == completed_at.isoformat()
+    )

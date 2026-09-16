@@ -15,9 +15,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.apps import AppConfig
+from typing import TYPE_CHECKING
+
+from apigw_manager.apigw.helper import ContextManager
+from django.utils import timezone
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+INITIAL_SYNC_COMPLETED_AT_KEY = "gateway_rbac_initial_sync_completed_at"
 
 
-class RbacConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "apigateway.apps.rbac"
+class GatewayIAMSyncContext(ContextManager):
+    """Persist IAM initialization metadata in the shared manager context."""
+
+    scope = "iam_v4"
+
+    def is_initial_sync_completed(self) -> bool:
+        return bool(self.get_value(INITIAL_SYNC_COMPLETED_AT_KEY))
+
+    def mark_initial_sync_completed(self, completed_at: datetime | None = None) -> None:
+        self.set_value(INITIAL_SYNC_COMPLETED_AT_KEY, (completed_at or timezone.now()).isoformat())

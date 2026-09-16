@@ -195,10 +195,11 @@ def test_add_gateway_members_creates_and_skips_existing(fake_gateway):
     )
 
 
-def test_update_gateway_member_role_keeps_expiry(fake_gateway):
+def test_update_gateway_member_role_refreshes_expiry(fake_gateway):
     GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["another-admin"], "operator-user")
     member = GatewayMember.objects.get(gateway=fake_gateway, username="admin")
     old_expires = member.expires
+    before = timezone.now()
 
     updated_member, previous_role, changed = GatewayMember.objects.update_gateway_member_role(
         fake_gateway.id,
@@ -210,7 +211,9 @@ def test_update_gateway_member_role_keeps_expiry(fake_gateway):
     assert changed
     assert previous_role == GatewayRoleEnum.ADMINISTRATOR.value
     assert updated_member.role == GatewayRoleEnum.OPERATOR.value
-    assert updated_member.expires == old_expires
+    assert updated_member.expires != old_expires
+    assert updated_member.expires is not None
+    assert updated_member.expires > before + timedelta(days=364)
 
 
 def test_update_gateway_member_role_rejects_last_administrator(fake_gateway):
