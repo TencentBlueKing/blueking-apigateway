@@ -58,6 +58,8 @@ from .serializers import (
     ),
 )
 class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
+    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
+
     serializer_class = AlarmStrategyInputSLZ
 
     def get_queryset(self):

@@ -119,6 +119,8 @@ from .serializers import (
     ),
 )
 class MCPServerListCreateApi(generics.ListCreateAPIView):
+    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
+
     def list(self, request, *args, **kwargs):
         slz = MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)

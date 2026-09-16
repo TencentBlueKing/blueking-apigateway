@@ -23,6 +23,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import (
     AIBackendConnectivityError,
@@ -72,6 +73,8 @@ class BackendQuerySetMixin:
     ),
 )
 class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
+    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
+
     queryset = Backend.objects.order_by("-updated_time")
     serializer_class = BackendListOutputSLZ
     filterset_class = BackendFilter
