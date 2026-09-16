@@ -271,6 +271,7 @@ const handleBack = () => {
   }
 
   :deep(.navigation-container) {
+    background-color: #f5f7fa;
 
     .container-header {
       height: 0 !important;
@@ -280,25 +281,24 @@ const handleBack = () => {
   }
 
   .navigation-main-content {
-    border: 1px solid #ddd;
 
     .content-view {
       height: 100%;
       overflow: hidden;
       font-size: 14px;
+      background-color: #f5f7fa;
 
       .content-header {
         display: flex;
-        height: 51px;
+        align-items: center;
+        flex-basis: 52px;
+        height: 52px;
         padding: 0 24px;
         margin-right: auto;
         font-size: 16px;
         color: #313238;
-        background: #fff;
+        background-color: #fff;
         border-bottom: 1px solid #dcdee5;
-        box-shadow: 0 3px 4px rgb(64 112 203 / 5.88%);
-        align-items: center;
-        flex-basis: 51px;
 
         .icon-ag-return-small {
           font-size: 32px;
@@ -308,8 +308,9 @@ const handleBack = () => {
       }
 
       .default-header-view {
-        height: calc(100vh - 105px);
+        height: calc(100vh - 104px);
         overflow: auto;
+        background-color: #f5f7fa;
         scrollbar-gutter: stable;
 
         &.custom-header-view {
@@ -319,7 +320,7 @@ const handleBack = () => {
         }
 
         &.show-notice {
-          height: calc(100vh - 145px);
+          height: calc(100vh - 144px);
         }
       }
     }
