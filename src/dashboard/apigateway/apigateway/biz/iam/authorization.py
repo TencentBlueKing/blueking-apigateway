@@ -45,9 +45,9 @@ logger = logging.getLogger(__name__)
 def get_gateway_iam_system_operator() -> str:
     """Return the configured IAM system operator for background writes."""
     managers = settings.BK_IAM_V4_MANAGERS
-    if not managers or any(not isinstance(manager, str) or not manager.strip() for manager in managers):
+    if not managers:
         raise ValueError("BK_IAM_V4_MANAGERS must contain at least one non-empty manager")
-    return managers[0].strip()
+    return managers[0]
 
 
 @dataclass(frozen=True)

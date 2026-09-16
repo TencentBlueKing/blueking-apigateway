@@ -554,7 +554,7 @@ BK_IAM_V4_GATEWAY_NAME = "bkiam"
 BK_IAM_V4_API_URL = (
     BK_API_URL_TMPL.format(api_name=BK_IAM_V4_GATEWAY_NAME) + "/" + env.str("BK_IAM_V4_GATEWAY_STAGE", "prod")
 ).rstrip("/")
-BK_IAM_V4_MANAGERS = env.list("BK_IAM_V4_MANAGERS", default=[])
+BK_IAM_V4_MANAGERS = [manager.strip() for manager in env.list("BK_IAM_V4_MANAGERS", default=[]) if manager.strip()]
 
 BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
     env.str("DASHBOARD_FE_URL", "").rstrip("/") + "/{gateway_id}/mcp/permission?serverId={mcp_server_id}"

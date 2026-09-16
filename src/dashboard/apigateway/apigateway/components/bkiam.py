@@ -193,13 +193,6 @@ def chunked(items: list[_T], size: int = MAX_BATCH_SIZE) -> Iterator[list[_T]]:
         yield list(items[offset : offset + size])
 
 
-def _validate_pagination_args(page: int, page_size: int) -> dict[str, int]:
-    """分页参数校验，page_size 上限为 DEFAULT_PAGE_SIZE。"""
-    if page < 1 or page_size < 1 or page_size > DEFAULT_PAGE_SIZE:
-        raise BkIamParameterError(f"page_size between 1 and {DEFAULT_PAGE_SIZE}")
-    return {"page": page, "page_size": page_size}
-
-
 def _validate_authorization_resources(authorizations) -> None:
     """单条授权的 resources 数量不能超过批量上限。"""
     if any(len(authorization.get("resources", [])) > MAX_BATCH_SIZE for authorization in authorizations):
@@ -247,7 +240,7 @@ def update_system(system: SystemUpdatePayload) -> None:
     _call_bkiam_api(http_put, path, system)
 
 
-def list_resource_type(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
+def list_resource_type() -> PaginationData:
     """
     分页查询资源类型。
 
@@ -255,7 +248,7 @@ def list_resource_type(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> Pag
     路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/
     """
     path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/resource-types/"
-    params = _validate_pagination_args(page, page_size)
+    params: dict[str, int] = {}
     return _call_bkiam_api(http_get, path, params)
 
 
@@ -281,7 +274,7 @@ def update_resource_type(resource_type_id: str, resource_type: ResourceTypeUpdat
     _call_bkiam_api(http_put, path, resource_type)
 
 
-def list_action(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
+def list_action() -> PaginationData:
     """
     分页查询操作。
 
@@ -289,7 +282,7 @@ def list_action(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> Pagination
     路径: /api/v1/open/rbac/model/systems/{system_id}/actions/
     """
     path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/actions/"
-    params = _validate_pagination_args(page, page_size)
+    params: dict[str, int] = {}
     return _call_bkiam_api(http_get, path, params)
 
 
@@ -315,7 +308,7 @@ def update_action(action_id: str, action: ActionUpdatePayload) -> None:
     _call_bkiam_api(http_put, path, action)
 
 
-def list_role(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
+def list_role() -> PaginationData:
     """
     分页查询角色。
 
@@ -323,7 +316,7 @@ def list_role(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationDa
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/
     """
     path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/"
-    params = _validate_pagination_args(page, page_size)
+    params: dict[str, int] = {}
     return _call_bkiam_api(http_get, path, params)
 
 
@@ -416,7 +409,6 @@ def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> Aut
     调用接口: list_authorization_subject (POST)
     路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/query-subject/
     """
-    _validate_pagination_args(payload.get("page", 1), payload.get("page_size", DEFAULT_PAGE_SIZE))
     path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/query-subject/"
     data = _call_bkiam_api(http_post, path, payload)
     return {

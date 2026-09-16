@@ -50,6 +50,5 @@ class Command(BaseCommand):
         if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
             raise CommandError("BK_IAM_V4_API_URL 必须是有效的 HTTP(S) URL")
 
-        managers = settings.BK_IAM_V4_MANAGERS
-        if not managers or any(not isinstance(manager, str) or not manager.strip() for manager in managers):
+        if not settings.BK_IAM_V4_MANAGERS:
             raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员")

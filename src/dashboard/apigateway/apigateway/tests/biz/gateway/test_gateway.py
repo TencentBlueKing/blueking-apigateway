@@ -510,7 +510,7 @@ class TestGatewayHandler:
 
     def test_delete_gateway_uses_system_operator_when_omitted(self, settings, mocker, fake_gateway):
         settings.BK_IAM_V4_ENABLED = True
-        settings.BK_IAM_V4_MANAGERS = ["  iam-admin  ", "other"]
+        settings.BK_IAM_V4_MANAGERS = ["iam-admin", "other"]
         apply_snapshots = mocker.patch(
             "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
         )

@@ -153,22 +153,14 @@ def test_apply_gateway_member_snapshots_logs_compensation_failure(mocker, caplog
     assert "failed to compensate gateway IAM authorizations" in caplog.text
 
 
-@pytest.mark.parametrize(
-    "managers, expected",
-    [
-        (["admin", "maintainer"], "admin"),
-        (["  admin  "], "admin"),
-    ],
-)
-def test_get_gateway_iam_system_operator_uses_first_manager(settings, managers, expected):
-    settings.BK_IAM_V4_MANAGERS = managers
+def test_get_gateway_iam_system_operator_uses_first_manager(settings):
+    settings.BK_IAM_V4_MANAGERS = ["admin", "maintainer"]
 
-    assert get_gateway_iam_system_operator() == expected
+    assert get_gateway_iam_system_operator() == "admin"
 
 
-@pytest.mark.parametrize("managers", [[], [""], [" "], [None], [1]])
-def test_get_gateway_iam_system_operator_rejects_invalid_managers(settings, managers):
-    settings.BK_IAM_V4_MANAGERS = managers
+def test_get_gateway_iam_system_operator_rejects_empty_managers(settings):
+    settings.BK_IAM_V4_MANAGERS = []
 
     with pytest.raises(ValueError, match="BK_IAM_V4_MANAGERS"):
         get_gateway_iam_system_operator()

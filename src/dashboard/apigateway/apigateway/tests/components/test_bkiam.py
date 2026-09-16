@@ -285,7 +285,7 @@ def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
     )
 
 
-def test_list_authorization_subject_returns_validated_page(mocker, mock_headers):
+def test_list_authorization_subject_returns_page(mocker, mock_headers):
     mock_post = mocker.patch(
         "apigateway.components.bkiam.http_post",
         return_value=(
@@ -438,20 +438,3 @@ def test_iter_authorization_subjects_uses_first_count_as_upper_bound(mocker, moc
         {"id": "b", "expired_at": 1_800_000_000},
     ]
     assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
-
-
-@pytest.mark.parametrize(
-    ("page", "page_size"),
-    [
-        (0, 100),
-        (1, 0),
-        (1, 101),
-    ],
-)
-def test_list_endpoints_reject_invalid_pagination(mocker, mock_headers, page, page_size):
-    http_get = mocker.patch("apigateway.components.bkiam.http_get")
-
-    with pytest.raises(bkiam.BkIamParameterError, match="page_size between"):
-        bkiam.list_role(page=page, page_size=page_size)
-
-    http_get.assert_not_called()
