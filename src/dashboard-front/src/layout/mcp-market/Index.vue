@@ -582,11 +582,19 @@ onUnmounted(() => {
   }
 
   .main {
-    padding: 24px;
+    width: 80%;
+    min-width: 1200px;
+    padding: 24px 0;
+    margin: 0 auto;
 
     .mcp-categorize {
       position: sticky;
       top: 24px;
+      align-self: flex-start;
+      background-color: #fff;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
+      overflow: hidden;
 
       .mcp-categorize-item {
         display: flex;

@@ -977,7 +977,7 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: space-between;
     width: 100%;
-    padding: 28px 0;
+    padding: 24px 0;
     background-color: #f5f7fa;
 
     .left {
@@ -1034,7 +1034,7 @@ onBeforeUnmount(() => {
 
     .table-header {
       position: sticky;
-      top: 88px;
+      top: 80px;
       z-index: 990;
       display: flex;
       width: 100%;

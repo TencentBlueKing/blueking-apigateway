@@ -1,5 +1,8 @@
 <template>
-  <div class="platform-tools-cli-page-content">
+  <div
+    class="platform-tools-cli-page-content"
+    :class="{ 'is-top-level': isTopLevel }"
+  >
     <!-- 顶部横幅 -->
     <div class="cli-banner">
       <div class="banner-left">
@@ -140,9 +143,12 @@ import AdvancedUsage from './components/AdvancedUsage.vue';
 import { useEnv } from '@/stores/useEnv';
 
 const { t } = useI18n();
+const route = useRoute();
 const envStore = useEnv();
 
 const activeTab = ref('overview');
+
+const isTopLevel = computed(() => route.name === 'BkCli');
 
 const openDetailUrl = () => {
   window.open(envStore.env.CLI.DETAIL_URL, '_blank');
@@ -154,6 +160,13 @@ const openDetailUrl = () => {
 .platform-tools-cli-page-content {
   padding: 24px;
 
+  &.is-top-level {
+    width: 80%;
+    min-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 0 32px;
+  }
+
   .cli-banner {
     display: flex;
     align-items: center;
@@ -161,7 +174,7 @@ const openDetailUrl = () => {
     padding: 24px;
     background: #fff;
     border-radius: 2px;
-    box-shadow: 0 2px 6px 0 rgb(0 0 0 / 10%);
+    box-shadow: 0 2px 4px 0 #1919290d;
 
     .banner-left {
       display: flex;
@@ -213,7 +226,7 @@ const openDetailUrl = () => {
       padding: 24px;
       background: #fff;
       border-radius: 2px;
-      box-shadow: 0 2px 6px 0 rgb(0 0 0 / 10%);
+      box-shadow: 0 2px 4px 0 #1919290d;
 
       .feature-icon {
         display: flex;
@@ -300,7 +313,7 @@ const openDetailUrl = () => {
     margin-top: 16px;
     background: #FFF;
     border-radius: 2px;
-    box-shadow: 0 0 8px 0 #374a641a;
+    box-shadow: 0 2px 4px 0 #1919290d;
 
     :deep(.bk-tab-header) {
       padding-left: 24px;

@@ -153,7 +153,7 @@ watch(() => route.query.toolbox_id, (value) => {
 <style lang="scss" scoped>
 
 .toolbox-page-wrapper {
-  height: calc(100vh - 106px);
+  height: calc(100vh - 104px);
   background-color: #f5f7fa;
 }
 
