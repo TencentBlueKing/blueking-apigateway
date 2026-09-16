@@ -378,7 +378,7 @@
               </div>
             </template>
             <template #content>
-              <div>
+              <div class="pb-24px">
                 <!--  新增资源 table  -->
                 <TableResToAction
                   v-model:temp-auth-config="tempAuthConfig"
@@ -439,7 +439,7 @@
               </div>
             </template>
             <template #content>
-              <div>
+              <div class="pb-24px">
                 <!--  更新资源 table  -->
                 <TableResToAction
                   v-model:temp-auth-config="tempAuthConfig"
@@ -479,7 +479,7 @@
               </div>
             </template>
             <template #content>
-              <div>
+              <div class="pb-24px">
                 <TableResToUncheck
                   :table-data="tableDataUnchecked"
                   :is-ai-gateway="isAIGateway"
@@ -1917,6 +1917,8 @@ const handleReturnClick = () => {
     }
 
     :deep(.bk-collapse-content) {
+      // 将表格固定列和表头的层级限制在内容区内，避免遮挡分区吸顶标题。
+      isolation: isolate;
       padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
