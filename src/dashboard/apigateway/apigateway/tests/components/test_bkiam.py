@@ -64,14 +64,14 @@ def test_direct_auth_returns_explicit_decision_and_uses_gateway_contract(mocker,
             url=("https://bkiam.example.com/prod/api/v1/open/rbac/authorization/systems/bk_apigateway/auth/"),
             data=payload,
             headers={"X-Bkapi-Authorization": "credentials"},
-            timeout=(1.0, 2.0),
+            timeout=bkiam.REQUEST_TIMEOUT,
             request_session=None,
         ),
         call(
             url=("https://bkiam.example.com/prod/api/v1/open/rbac/authorization/systems/bk_apigateway/auth/"),
             data=payload,
             headers={"X-Bkapi-Authorization": "credentials"},
-            timeout=(1.0, 2.0),
+            timeout=bkiam.REQUEST_TIMEOUT,
             request_session=None,
         ),
     ]
@@ -165,7 +165,7 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
             "X-Bkapi-Authorization": "credentials",
             "X-Bkiam-Operator": "admin",
         },
-        "timeout": (1.0, 2.0),
+        "timeout": bkiam.REQUEST_TIMEOUT,
         "request_session": None,
     }
     mock_post.assert_called_once_with(data=[authorization], **common)
@@ -279,7 +279,7 @@ def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
         ),
         data=None,
         headers={"X-Bkapi-Authorization": "credentials"},
-        timeout=(1.0, 2.0),
+        timeout=bkiam.REQUEST_TIMEOUT,
         request_session=None,
         params={"ids": "manage_gateway,operate_gateway"},
     )
@@ -321,7 +321,7 @@ def test_list_authorization_subject_returns_validated_page(mocker, mock_headers)
         ),
         data=payload,
         headers={"X-Bkapi-Authorization": "credentials"},
-        timeout=(1.0, 2.0),
+        timeout=bkiam.REQUEST_TIMEOUT,
         request_session=None,
     )
 
@@ -355,6 +355,89 @@ def test_list_authorization_subject_rejects_non_user_subject(mocker, mock_header
                 "page_size": 100,
             }
         )
+
+
+def _authorization_subject_response(count, results):
+    return (True, {"data": {"count": count, "results": results}})
+
+
+def _authorization_subject_raw(username):
+    return {"subject": {"type": "user", "id": username}, "expired_at": 1_800_000_000}
+
+
+def test_iter_authorization_subjects_pages_until_count(mocker, mock_headers):
+    mock_post = _patch_http(
+        mocker,
+        "http_post",
+        side_effect=[
+            _authorization_subject_response(
+                3,
+                [_authorization_subject_raw("a"), _authorization_subject_raw("b")],
+            ),
+            _authorization_subject_response(3, [_authorization_subject_raw("c")]),
+        ],
+    )
+    payload = {
+        "role_id": "administrator",
+        "related_resource_type_id": "gateway",
+        "resource": {"type": "gateway", "id": "42"},
+        "page_size": 2,
+    }
+
+    assert list(bkiam.iter_authorization_subjects(payload)) == [
+        {"id": "a", "expired_at": 1_800_000_000},
+        {"id": "b", "expired_at": 1_800_000_000},
+        {"id": "c", "expired_at": 1_800_000_000},
+    ]
+    assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
+
+
+def test_iter_authorization_subjects_stops_on_empty_page_when_count_shrinks(mocker, mock_headers):
+    mock_post = _patch_http(
+        mocker,
+        "http_post",
+        side_effect=[
+            _authorization_subject_response(3, [_authorization_subject_raw("a")]),
+            _authorization_subject_response(1, []),
+        ],
+    )
+    payload = {
+        "role_id": "administrator",
+        "related_resource_type_id": "gateway",
+        "resource": {"type": "gateway", "id": "42"},
+        "page_size": 1,
+    }
+
+    assert list(bkiam.iter_authorization_subjects(payload)) == [
+        {"id": "a", "expired_at": 1_800_000_000},
+    ]
+    assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
+
+
+def test_iter_authorization_subjects_uses_first_count_as_upper_bound(mocker, mock_headers):
+    mock_post = _patch_http(
+        mocker,
+        "http_post",
+        side_effect=[
+            _authorization_subject_response(2, [_authorization_subject_raw("a")]),
+            _authorization_subject_response(
+                3,
+                [_authorization_subject_raw("b"), _authorization_subject_raw("c")],
+            ),
+        ],
+    )
+    payload = {
+        "role_id": "administrator",
+        "related_resource_type_id": "gateway",
+        "resource": {"type": "gateway", "id": "42"},
+        "page_size": 1,
+    }
+
+    assert list(bkiam.iter_authorization_subjects(payload)) == [
+        {"id": "a", "expired_at": 1_800_000_000},
+        {"id": "b", "expired_at": 1_800_000_000},
+    ]
+    assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
 
 
 @pytest.mark.parametrize(

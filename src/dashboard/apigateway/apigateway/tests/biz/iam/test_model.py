@@ -22,7 +22,7 @@ import pytest
 
 from apigateway.apps.rbac.constants import GATEWAY_ROLE_ACTIONS, GatewayActionEnum, GatewayResourceTypeEnum
 from apigateway.biz.iam import GatewayIAMModelSyncer, GatewayIAMModelSyncResult
-from apigateway.biz.iam.constants import SYSTEM_DESCRIPTION, SYSTEM_NAME
+from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID, SYSTEM_DESCRIPTION, SYSTEM_NAME
 from apigateway.biz.iam.model import (
     get_gateway_iam_model,
 )
@@ -47,7 +47,7 @@ def iam_client(mocker):
 
 def _desired_system():
     return {
-        "id": "bk_apigateway",
+        "id": BK_IAM_V4_SYSTEM_ID,
         "name": SYSTEM_NAME,
         "description": SYSTEM_DESCRIPTION,
         "managers": ["admin", "maintainer"],
@@ -105,7 +105,7 @@ def test_sync_is_idempotent_when_model_matches(iam_client):
 
     result = GatewayIAMModelSyncer().sync()
 
-    assert result == GatewayIAMModelSyncResult(unchanged=7, action_bindings_unchanged=5)
+    assert result == GatewayIAMModelSyncResult(unchanged=7)
     _assert_no_writes(iam_client)
 
 
@@ -125,7 +125,7 @@ def test_sync_creates_missing_model_in_dependency_order(iam_client):
 
     result = GatewayIAMModelSyncer().sync()
 
-    assert result == GatewayIAMModelSyncResult(created=7, action_bindings_added=5)
+    assert result == GatewayIAMModelSyncResult(created=7)
     assert calls == [
         "create_system",
         "batch_create_resource_type",
@@ -157,9 +157,6 @@ def test_sync_updates_mutable_fields_and_role_action_diff(iam_client):
     assert result == GatewayIAMModelSyncResult(
         updated=4,
         unchanged=3,
-        action_bindings_added=2,
-        action_bindings_deleted=1,
-        action_bindings_unchanged=3,
     )
     iam_client.update_system.assert_called_once_with({"name": "蓝鲸 API 网关"})
     iam_client.update_resource_type.assert_called_once_with("gateway", {"ancestors": []})
@@ -208,8 +205,7 @@ def test_sync_replaces_role_action_with_wrong_resource_type(iam_client):
 
     result = GatewayIAMModelSyncer().sync()
 
-    assert result.action_bindings_deleted == 1
-    assert result.action_bindings_added == 1
+    assert result == GatewayIAMModelSyncResult(unchanged=7)
     action_id = administrator["actions"][0]["id"]
     iam_client.batch_delete_role_action.assert_called_once_with("administrator", [action_id])
     iam_client.batch_create_role_action.assert_called_once_with(
@@ -231,7 +227,7 @@ def test_sync_lists_every_page_and_preserves_unknown_objects(iam_client):
 
     result = GatewayIAMModelSyncer().sync()
 
-    assert result == GatewayIAMModelSyncResult(unchanged=7, action_bindings_unchanged=5)
+    assert result == GatewayIAMModelSyncResult(unchanged=7)
     assert iam_client.list_resource_type.call_args_list == [
         call(page=1, page_size=100),
         call(page=2, page_size=100),

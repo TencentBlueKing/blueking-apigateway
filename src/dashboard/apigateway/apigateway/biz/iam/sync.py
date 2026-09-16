@@ -15,8 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from __future__ import annotations
-
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
@@ -30,7 +28,7 @@ from apigateway.components.bkiam import (
     AuthorizationSubjectQueryPayload,
     add_authorization,
     chunked,
-    list_authorization_subject,
+    iter_authorization_subjects,
     revoke_authorization,
 )
 from apigateway.core.models import Gateway
@@ -38,12 +36,12 @@ from apigateway.core.models import Gateway
 from .authorization import build_gateway_authorization, build_gateway_revoke_authorization
 from .constants import (
     DEFAULT_MEMBER_EXPIRY,
-    EXPIRY_REFRESH_GRANT,
     EXPIRY_TOLERANCE,
-    EXTRA_REVOKE,
-    MISSING_GRANT,
-    ROLE_MISMATCH_GRANT,
-    ROLE_MISMATCH_REVOKE,
+    REASON_EXPIRY_REFRESH_GRANT,
+    REASON_EXTRA_REVOKE,
+    REASON_MISSING_GRANT,
+    REASON_ROLE_MISMATCH_GRANT,
+    REASON_ROLE_MISMATCH_REVOKE,
 )
 
 
@@ -114,17 +112,17 @@ class GatewayIAMAuthorizationSynchronizer:
     ) -> GatewayIAMSyncResult:
         if not apply:
             gateway = Gateway.objects.get(pk=gateway_id)
-            return self._plan_gateway(gateway, username=username)
+            return self._build_reconciliation_plan(gateway, username=username)
 
         with transaction.atomic():
             # This must be the first database read in the transaction. Online
             # member writes take the same lock before reading GatewayMember.
             gateway = Gateway.objects.select_for_update().get(pk=gateway_id)
-            result = self._plan_gateway(gateway, username=username)
-            self._apply(result, operator)
-            return replace(result, applied=True)
+            plan = self._build_reconciliation_plan(gateway, username=username)
+            self._apply_plan(plan, operator)
+            return replace(plan, applied=True)
 
-    def _plan_gateway(self, gateway: Gateway, *, username: str | None) -> GatewayIAMSyncResult:
+    def _build_reconciliation_plan(self, gateway: Gateway, *, username: str | None) -> GatewayIAMSyncResult:
         now = timezone.now()
         desired = self._get_desired_authorizations(gateway.id, now=now)
         actual = self._get_iam_authorizations(gateway.id)
@@ -140,11 +138,8 @@ class GatewayIAMAuthorizationSynchronizer:
         now: datetime,
     ) -> dict[tuple[str, str], GatewayIAMAuthorization]:
         desired: dict[tuple[str, str], GatewayIAMAuthorization] = {}
-        known_roles = set(GatewayRoleEnum.get_values())
         members = GatewayMember.objects.filter(gateway_id=gateway_id).order_by("username", "role")
         for member in members:
-            if member.role not in known_roles:
-                raise ValueError(f"gateway {gateway_id} member {member.username!r} has unknown role {member.role!r}")
             expires = member.expires or now + DEFAULT_MEMBER_EXPIRY
             item = GatewayIAMAuthorization(
                 username=member.username,
@@ -158,46 +153,27 @@ class GatewayIAMAuthorizationSynchronizer:
         authorizations: dict[tuple[str, str], GatewayIAMAuthorization] = {}
         for role in sorted(GatewayRoleEnum.get_values()):
             for item in self._list_role_authorizations(gateway_id, role):
-                key = (item.username, item.role)
-                previous = authorizations.get(key)
-                if previous is not None and previous != item:
-                    raise ValueError(
-                        f"IAM returned duplicate authorizations with different expiry for "
-                        f"gateway {gateway_id}, user {item.username!r}, role {role!r}"
-                    )
-                authorizations[key] = item
+                authorizations[(item.username, item.role)] = item
         return authorizations
 
     def _list_role_authorizations(self, gateway_id: int, role: str) -> list[GatewayIAMAuthorization]:
-        page = 1
-        authorizations: list[GatewayIAMAuthorization] = []
-        while True:
-            payload: AuthorizationSubjectQueryPayload = {
-                "role_id": role,
-                "related_resource_type_id": GatewayResourceTypeEnum.GATEWAY.value,
-                "resource": {
-                    "type": GatewayResourceTypeEnum.GATEWAY.value,
-                    "id": str(gateway_id),
-                },
-                "page": page,
-                "page_size": self._page_size,
-            }
-            data = list_authorization_subject(payload)
-            authorizations.extend(
-                GatewayIAMAuthorization(
-                    username=result["id"],
-                    role=role,
-                    expired_at=result["expired_at"],
-                )
-                for result in data["results"]
+        payload: AuthorizationSubjectQueryPayload = {
+            "role_id": role,
+            "related_resource_type_id": GatewayResourceTypeEnum.GATEWAY.value,
+            "resource": {
+                "type": GatewayResourceTypeEnum.GATEWAY.value,
+                "id": str(gateway_id),
+            },
+            "page_size": self._page_size,
+        }
+        return [
+            GatewayIAMAuthorization(
+                username=item["id"],
+                role=role,
+                expired_at=item["expired_at"],
             )
-
-            if len(authorizations) >= data["count"]:
-                break
-            if not data["results"]:
-                raise ValueError(f"IAM pagination ended before count for gateway {gateway_id}, role {role!r}")
-            page += 1
-        return authorizations
+            for item in iter_authorization_subjects(payload)
+        ]
 
     def _build_result(
         self,
@@ -216,7 +192,11 @@ class GatewayIAMAuthorizationSynchronizer:
         for key, authorization in sorted(desired.items()):
             current = actual.get(key)
             if current is None:
-                reason = ROLE_MISMATCH_GRANT if actual_roles_by_username.get(authorization.username) else MISSING_GRANT
+                reason = (
+                    REASON_ROLE_MISMATCH_GRANT
+                    if actual_roles_by_username.get(authorization.username)
+                    else REASON_MISSING_GRANT
+                )
                 grants.append(
                     GatewayIAMSyncItem(
                         username=authorization.username,
@@ -231,7 +211,7 @@ class GatewayIAMAuthorizationSynchronizer:
                         username=authorization.username,
                         role=authorization.role,
                         expired_at=authorization.expired_at,
-                        reason=EXPIRY_REFRESH_GRANT,
+                        reason=REASON_EXPIRY_REFRESH_GRANT,
                     )
                 )
             else:
@@ -242,7 +222,7 @@ class GatewayIAMAuthorizationSynchronizer:
             expected = desired_by_username.get(authorization.username)
             if key in desired:
                 continue
-            reason = ROLE_MISMATCH_REVOKE if expected is not None else EXTRA_REVOKE
+            reason = REASON_ROLE_MISMATCH_REVOKE if expected is not None else REASON_EXTRA_REVOKE
             revokes.append(
                 GatewayIAMSyncItem(
                     username=authorization.username,
@@ -260,18 +240,18 @@ class GatewayIAMAuthorizationSynchronizer:
             unchanged=unchanged,
         )
 
-    def _apply(self, result: GatewayIAMSyncResult, operator: str) -> None:
+    def _apply_plan(self, plan: GatewayIAMSyncResult, operator: str) -> None:
         revoke_payloads = [
-            build_gateway_revoke_authorization(item.username, item.role, result.gateway_id) for item in result.revokes
+            build_gateway_revoke_authorization(item.username, item.role, plan.gateway_id) for item in plan.revokes
         ]
         grant_payloads = [
             build_gateway_authorization(
                 item.username,
                 item.role,
-                result.gateway_id,
+                plan.gateway_id,
                 datetime.fromtimestamp(item.expired_at, tz=UTC),
             )
-            for item in result.grants
+            for item in plan.grants
         ]
 
         for revoke_batch in chunked(revoke_payloads):

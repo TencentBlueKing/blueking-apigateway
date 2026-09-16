@@ -27,24 +27,10 @@ from .utils import do_blueking_http_request, gen_gateway_headers
 
 MAX_BATCH_SIZE = 20
 DEFAULT_PAGE_SIZE = 100
-CONNECT_TIMEOUT = 1.0
-READ_TIMEOUT = 2.0
-# 与 apps.rbac.constants.BK_IAM_V4_SYSTEM_ID 保持一致；component 不能依赖 apps。
+REQUEST_TIMEOUT = 3
+# 与 biz.iam.constants.BK_IAM_V4_SYSTEM_ID 保持一致；component 不能依赖 biz。
 BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
 _T = TypeVar("_T")
-
-SYSTEMS_PATH = "/api/v1/open/rbac/model/systems/"
-SYSTEM_PATH = "/api/v1/open/rbac/model/systems/{system_id}/"
-RESOURCE_TYPES_PATH = "/api/v1/open/rbac/model/systems/{system_id}/resource-types/"
-RESOURCE_TYPE_PATH = RESOURCE_TYPES_PATH + "{resource_type_id}/"
-ACTIONS_PATH = "/api/v1/open/rbac/model/systems/{system_id}/actions/"
-ACTION_PATH = ACTIONS_PATH + "{action_id}/"
-ROLES_PATH = "/api/v1/open/rbac/model/systems/{system_id}/roles/"
-ROLE_PATH = ROLES_PATH + "{role_id}/"
-ROLE_ACTIONS_PATH = ROLE_PATH + "actions/"
-DIRECT_AUTH_PATH = "/api/v1/open/rbac/authorization/systems/{system_id}/auth/"
-AUTHORIZATIONS_PATH = "/api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/"
-AUTHORIZATION_SUBJECTS_PATH = AUTHORIZATIONS_PATH + "query-subject/"
 
 
 class SubjectPayload(TypedDict):
@@ -168,11 +154,6 @@ class BkIamParameterError(Exception):
     """本地请求参数不合法。"""
 
 
-def _system_path(path: str, **kwargs: str) -> str:
-    """把当前 IAM 系统 ID 填进路径。"""
-    return path.format(system_id=BK_IAM_V4_SYSTEM_ID, **kwargs)
-
-
 def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs):
     """
     统一调用权限中心 V4 网关 API。
@@ -182,8 +163,7 @@ def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs
         headers.update(more_headers)
 
     url = url_join(settings.BK_IAM_V4_API_URL, path)
-    timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return do_blueking_http_request("bkiam", http_func, url, data, headers, timeout, **kwargs)
+    return do_blueking_http_request("bkiam", http_func, url, data, headers, REQUEST_TIMEOUT, **kwargs)
 
 
 def _retrieve_system_http_get():
@@ -213,7 +193,7 @@ def chunked(items: list[_T], size: int = MAX_BATCH_SIZE) -> Iterator[list[_T]]:
         yield list(items[offset : offset + size])
 
 
-def _page_query(page: int, page_size: int) -> dict[str, int]:
+def _validate_pagination_args(page: int, page_size: int) -> dict[str, int]:
     """分页参数校验，page_size 上限为 DEFAULT_PAGE_SIZE。"""
     if page < 1 or page_size < 1 or page_size > DEFAULT_PAGE_SIZE:
         raise BkIamParameterError(f"page_size between 1 and {DEFAULT_PAGE_SIZE}")
@@ -241,7 +221,8 @@ def retrieve_system() -> dict[str, Any]:
     调用接口: retrieve_system (GET)
     路径: /api/v1/open/rbac/model/systems/{system_id}/
     """
-    return _call_bkiam_api(_retrieve_system_http_get(), _system_path(SYSTEM_PATH), {})
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/"
+    return _call_bkiam_api(_retrieve_system_http_get(), path, {})
 
 
 def create_system(system: SystemPayload) -> dict[str, Any]:
@@ -251,7 +232,8 @@ def create_system(system: SystemPayload) -> dict[str, Any]:
     调用接口: create_system (POST)
     路径: /api/v1/open/rbac/model/systems/
     """
-    return _call_bkiam_api(http_post, SYSTEMS_PATH, system)
+    path = "/api/v1/open/rbac/model/systems/"
+    return _call_bkiam_api(http_post, path, system)
 
 
 def update_system(system: SystemUpdatePayload) -> None:
@@ -261,7 +243,8 @@ def update_system(system: SystemUpdatePayload) -> None:
     调用接口: update_system (PUT)
     路径: /api/v1/open/rbac/model/systems/{system_id}/
     """
-    _call_bkiam_api(http_put, _system_path(SYSTEM_PATH), system)
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/"
+    _call_bkiam_api(http_put, path, system)
 
 
 def list_resource_type(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
@@ -271,7 +254,9 @@ def list_resource_type(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> Pag
     调用接口: list_resource_type (GET)
     路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/
     """
-    return _call_bkiam_api(http_get, _system_path(RESOURCE_TYPES_PATH), _page_query(page, page_size))
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/resource-types/"
+    params = _validate_pagination_args(page, page_size)
+    return _call_bkiam_api(http_get, path, params)
 
 
 def batch_create_resource_type(resource_types: list[ResourceTypePayload]) -> list[str]:
@@ -281,7 +266,8 @@ def batch_create_resource_type(resource_types: list[ResourceTypePayload]) -> lis
     调用接口: batch_create_resource_type (POST)
     路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/
     """
-    return _call_bkiam_api(http_post, _system_path(RESOURCE_TYPES_PATH), _batch(resource_types))
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/resource-types/"
+    return _call_bkiam_api(http_post, path, _batch(resource_types))
 
 
 def update_resource_type(resource_type_id: str, resource_type: ResourceTypeUpdatePayload) -> None:
@@ -291,7 +277,8 @@ def update_resource_type(resource_type_id: str, resource_type: ResourceTypeUpdat
     调用接口: update_resource_type (PUT)
     路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/{resource_type_id}/
     """
-    _call_bkiam_api(http_put, _system_path(RESOURCE_TYPE_PATH, resource_type_id=resource_type_id), resource_type)
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/resource-types/{resource_type_id}/"
+    _call_bkiam_api(http_put, path, resource_type)
 
 
 def list_action(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
@@ -301,7 +288,9 @@ def list_action(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> Pagination
     调用接口: list_action (GET)
     路径: /api/v1/open/rbac/model/systems/{system_id}/actions/
     """
-    return _call_bkiam_api(http_get, _system_path(ACTIONS_PATH), _page_query(page, page_size))
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/actions/"
+    params = _validate_pagination_args(page, page_size)
+    return _call_bkiam_api(http_get, path, params)
 
 
 def batch_create_action(actions: list[ActionPayload]) -> list[str]:
@@ -311,7 +300,8 @@ def batch_create_action(actions: list[ActionPayload]) -> list[str]:
     调用接口: batch_create_action (POST)
     路径: /api/v1/open/rbac/model/systems/{system_id}/actions/
     """
-    return _call_bkiam_api(http_post, _system_path(ACTIONS_PATH), _batch(actions))
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/actions/"
+    return _call_bkiam_api(http_post, path, _batch(actions))
 
 
 def update_action(action_id: str, action: ActionUpdatePayload) -> None:
@@ -321,7 +311,8 @@ def update_action(action_id: str, action: ActionUpdatePayload) -> None:
     调用接口: update_action (PUT)
     路径: /api/v1/open/rbac/model/systems/{system_id}/actions/{action_id}/
     """
-    _call_bkiam_api(http_put, _system_path(ACTION_PATH, action_id=action_id), action)
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/actions/{action_id}/"
+    _call_bkiam_api(http_put, path, action)
 
 
 def list_role(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
@@ -331,7 +322,9 @@ def list_role(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationDa
     调用接口: list_role (GET)
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/
     """
-    return _call_bkiam_api(http_get, _system_path(ROLES_PATH), _page_query(page, page_size))
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/"
+    params = _validate_pagination_args(page, page_size)
+    return _call_bkiam_api(http_get, path, params)
 
 
 def batch_create_role(roles: list[RolePayload]) -> list[str]:
@@ -341,7 +334,8 @@ def batch_create_role(roles: list[RolePayload]) -> list[str]:
     调用接口: batch_create_role (POST)
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/
     """
-    return _call_bkiam_api(http_post, _system_path(ROLES_PATH), _batch(roles))
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/"
+    return _call_bkiam_api(http_post, path, _batch(roles))
 
 
 def update_role(role_id: str, role: RoleUpdatePayload) -> None:
@@ -351,7 +345,8 @@ def update_role(role_id: str, role: RoleUpdatePayload) -> None:
     调用接口: update_role (PUT)
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/{role_id}/
     """
-    _call_bkiam_api(http_put, _system_path(ROLE_PATH, role_id=role_id), role)
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/{role_id}/"
+    _call_bkiam_api(http_put, path, role)
 
 
 def batch_create_role_action(role_id: str, actions: list[RoleActionPayload]) -> list[str]:
@@ -361,11 +356,8 @@ def batch_create_role_action(role_id: str, actions: list[RoleActionPayload]) -> 
     调用接口: batch_create_role_action (POST)
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/{role_id}/actions/
     """
-    return _call_bkiam_api(
-        http_post,
-        _system_path(ROLE_ACTIONS_PATH, role_id=role_id),
-        _batch(actions),
-    )
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/{role_id}/actions/"
+    return _call_bkiam_api(http_post, path, _batch(actions))
 
 
 def batch_delete_role_action(role_id: str, action_ids: list[str]) -> None:
@@ -375,12 +367,8 @@ def batch_delete_role_action(role_id: str, action_ids: list[str]) -> None:
     调用接口: batch_delete_role_action (DELETE)
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/{role_id}/actions/
     """
-    _call_bkiam_api(
-        http_delete,
-        _system_path(ROLE_ACTIONS_PATH, role_id=role_id),
-        None,
-        params={"ids": ",".join(_batch(action_ids))},
-    )
+    path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/{role_id}/actions/"
+    _call_bkiam_api(http_delete, path, None, params={"ids": ",".join(_batch(action_ids))})
 
 
 def direct_auth(payload: DirectAuthPayload) -> bool:
@@ -390,7 +378,8 @@ def direct_auth(payload: DirectAuthPayload) -> bool:
     调用接口: direct_auth (POST)
     路径: /api/v1/open/rbac/authorization/systems/{system_id}/auth/
     """
-    data = _call_bkiam_api(http_post, _system_path(DIRECT_AUTH_PATH), payload)
+    path = f"/api/v1/open/rbac/authorization/systems/{BK_IAM_V4_SYSTEM_ID}/auth/"
+    data = _call_bkiam_api(http_post, path, payload)
     return data["allowed"]
 
 
@@ -403,12 +392,8 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str)
     """
     payload = _batch(authorizations)
     _validate_authorization_resources(payload)
-    _call_bkiam_api(
-        http_post,
-        _system_path(AUTHORIZATIONS_PATH),
-        payload,
-        more_headers={"X-Bkiam-Operator": operator},
-    )
+    path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/"
+    _call_bkiam_api(http_post, path, payload, more_headers={"X-Bkiam-Operator": operator})
 
 
 def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str) -> None:
@@ -420,12 +405,8 @@ def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], opera
     """
     payload = _batch(authorizations)
     _validate_authorization_resources(payload)
-    _call_bkiam_api(
-        http_delete,
-        _system_path(AUTHORIZATIONS_PATH),
-        payload,
-        more_headers={"X-Bkiam-Operator": operator},
-    )
+    path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/"
+    _call_bkiam_api(http_delete, path, payload, more_headers={"X-Bkiam-Operator": operator})
 
 
 def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> AuthorizationSubjectPage:
@@ -435,9 +416,47 @@ def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> Aut
     调用接口: list_authorization_subject (POST)
     路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/query-subject/
     """
-    _page_query(payload.get("page", 1), payload.get("page_size", DEFAULT_PAGE_SIZE))
-    data = _call_bkiam_api(http_post, _system_path(AUTHORIZATION_SUBJECTS_PATH), payload)
+    _validate_pagination_args(payload.get("page", 1), payload.get("page_size", DEFAULT_PAGE_SIZE))
+    path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/query-subject/"
+    data = _call_bkiam_api(http_post, path, payload)
     return {
         "count": data["count"],
         "results": [_authorization_subject_item(item) for item in data["results"]],
     }
+
+
+def iter_authorization_subjects(payload: AuthorizationSubjectQueryPayload) -> Iterator[AuthorizationSubjectItem]:
+    """按页迭代已授权主体，分页循环由本组件封装。
+
+    调用方只需传入查询条件（page/page_size 会被覆盖）。以第一页的 count 作为本次
+    查询快照的数量上限；查询期间数据减少导致提前出现空页时，正常结束。
+    """
+    page_size = payload.get("page_size", DEFAULT_PAGE_SIZE)
+    page = 1
+    snapshot_count = 0
+    fetched = 0
+    while page == 1 or fetched < snapshot_count:
+        query_payload: AuthorizationSubjectQueryPayload = {
+            "role_id": payload["role_id"],
+            "page": page,
+            "page_size": page_size,
+        }
+        if "related_resource_type_id" in payload:
+            query_payload["related_resource_type_id"] = payload["related_resource_type_id"]
+        if "resource" in payload:
+            query_payload["resource"] = payload["resource"]
+        data = list_authorization_subject(query_payload)
+        if page == 1:
+            snapshot_count = data["count"]
+
+        results = data["results"]
+        if not results:
+            return
+
+        remaining = snapshot_count - fetched
+        page_results = results[:remaining]
+        for item in page_results:
+            yield item
+
+        fetched += len(page_results)
+        page += 1

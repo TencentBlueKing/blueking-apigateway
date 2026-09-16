@@ -38,15 +38,10 @@ class Command(BaseCommand):
             raise CommandError(f"同步网关 RBAC 模型到权限中心失败: {err}") from err
 
         self.stdout.write(
-            "created={created} updated={updated} unchanged={unchanged} "
-            "action-bindings-added={added} action-bindings-deleted={deleted} "
-            "action-bindings-unchanged={bindings_unchanged}".format(
+            "created={created} updated={updated} unchanged={unchanged}".format(
                 created=result.created,
                 updated=result.updated,
                 unchanged=result.unchanged,
-                added=result.action_bindings_added,
-                deleted=result.action_bindings_deleted,
-                bindings_unchanged=result.action_bindings_unchanged,
             )
         )
 

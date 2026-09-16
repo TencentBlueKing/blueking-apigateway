@@ -36,13 +36,12 @@ def _iam_result(username: str, expired_at: int) -> dict:
 
 
 def _mock_iam(mocker, authorizations_by_role):
-    def list_authorizations(payload):
-        results = authorizations_by_role.get(payload["role_id"], [])
-        return {"count": len(results), "results": results}
+    def iter_authorizations(payload):
+        yield from authorizations_by_role.get(payload["role_id"], [])
 
     return mocker.patch(
-        "apigateway.biz.iam.sync.list_authorization_subject",
-        side_effect=list_authorizations,
+        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        side_effect=iter_authorizations,
     )
 
 
@@ -102,25 +101,20 @@ def test_reconcile_plan_adds_fixes_revokes_and_refreshes_expiry(fake_gateway, mo
     assert result.applied is False
 
 
-def test_reconcile_reads_all_pages_for_every_known_role(fake_gateway, mocker):
+def test_reconcile_consumes_all_authorizations_for_every_known_role(fake_gateway, mocker):
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
 
-    pages = {
-        ("administrator", 1): [_iam_result("a", 1_900_000_000)],
-        ("administrator", 2): [_iam_result("b", 1_900_000_000)],
-        ("operator", 1): [_iam_result("c", 1_900_000_000)],
-        ("operator", 2): [_iam_result("d", 1_900_000_000)],
+    authorizations_by_role = {
+        "administrator": [_iam_result("a", 1_900_000_000), _iam_result("b", 1_900_000_000)],
+        "operator": [_iam_result("c", 1_900_000_000), _iam_result("d", 1_900_000_000)],
     }
 
-    def list_authorizations(payload):
-        return {
-            "count": 2,
-            "results": pages[(payload["role_id"], payload["page"])],
-        }
+    def iter_authorizations(payload):
+        yield from authorizations_by_role.get(payload["role_id"], [])
 
-    list_api = mocker.patch(
-        "apigateway.biz.iam.sync.list_authorization_subject",
-        side_effect=list_authorizations,
+    iterator = mocker.patch(
+        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        side_effect=iter_authorizations,
     )
 
     result = GatewayIAMAuthorizationSynchronizer(page_size=1).reconcile_gateway(
@@ -130,13 +124,9 @@ def test_reconcile_reads_all_pages_for_every_known_role(fake_gateway, mocker):
     )
 
     assert [item.username for item in result.revokes] == ["a", "b", "c", "d"]
-    assert [
-        (call.args[0]["role_id"], call.args[0]["page"], call.args[0]["page_size"]) for call in list_api.call_args_list
-    ] == [
-        ("administrator", 1, 1),
-        ("administrator", 2, 1),
-        ("operator", 1, 1),
-        ("operator", 2, 1),
+    assert sorted((call.args[0]["role_id"], call.args[0]["page_size"]) for call in iterator.call_args_list) == [
+        ("administrator", 1),
+        ("operator", 1),
     ]
 
 

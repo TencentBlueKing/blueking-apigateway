@@ -21,13 +21,14 @@ from apigateway.apps.rbac.constants import GATEWAY_MEMBER_EXPIRE_DAYS
 
 SYSTEM_NAME = "蓝鲸 API 网关"
 SYSTEM_DESCRIPTION = "蓝鲸 API 网关 RBAC 权限管理"
+BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
 
 ALLOW_CACHE_TTL = 60
 DEFAULT_MEMBER_EXPIRY = timedelta(days=GATEWAY_MEMBER_EXPIRE_DAYS)
 EXPIRY_TOLERANCE = timedelta(minutes=1)
 
-MISSING_GRANT = "missing"
-ROLE_MISMATCH_GRANT = "role-mismatch"
-EXPIRY_REFRESH_GRANT = "expiry-refresh"
-ROLE_MISMATCH_REVOKE = "role-mismatch"
-EXTRA_REVOKE = "extra"
+REASON_MISSING_GRANT = "missing"
+REASON_ROLE_MISMATCH_GRANT = "role-mismatch"
+REASON_EXPIRY_REFRESH_GRANT = "expiry-refresh"
+REASON_ROLE_MISMATCH_REVOKE = "role-mismatch"
+REASON_EXTRA_REVOKE = "extra"

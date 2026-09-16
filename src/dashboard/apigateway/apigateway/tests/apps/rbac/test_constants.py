@@ -1,10 +1,10 @@
 from apigateway.apps.rbac.constants import (
-    BK_IAM_V4_SYSTEM_ID,
     GATEWAY_MEMBER_EXPIRE_DAYS,
     GATEWAY_ROLE_ACTIONS,
     GatewayActionEnum,
     GatewayRoleEnum,
 )
+from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
 from apigateway.components.bkiam import BK_IAM_V4_SYSTEM_ID as CLIENT_SYSTEM_ID
 
 

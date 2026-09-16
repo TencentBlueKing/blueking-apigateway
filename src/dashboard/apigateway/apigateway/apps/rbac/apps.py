@@ -16,26 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.apps import AppConfig
-from django.core.management import call_command
-from django.db.models.signals import post_migrate
 
 
 class RbacConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apigateway.apps.rbac"
-
-    def ready(self):
-        post_migrate.connect(sync_gateway_iam, sender=self, dispatch_uid="apigateway.apps.rbac.sync_gateway_iam")
-
-
-def sync_gateway_iam(sender, using, **kwargs):
-    if using != "default":
-        return
-    call_command("sync_gateway_rbac_model_to_iam")
-    call_command(
-        "sync_gateway_rbac_auth_to_iam",
-        initial=True,
-        all=True,
-        apply=True,
-        force=True,
-    )

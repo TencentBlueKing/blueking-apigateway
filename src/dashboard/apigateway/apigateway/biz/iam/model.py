@@ -15,8 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from __future__ import annotations
-
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
@@ -24,7 +23,6 @@ from django.conf import settings
 from django.utils.encoding import force_str
 
 from apigateway.apps.rbac.constants import (
-    BK_IAM_V4_SYSTEM_ID,
     GATEWAY_ROLE_ACTIONS,
     GatewayActionEnum,
     GatewayResourceTypeEnum,
@@ -32,10 +30,12 @@ from apigateway.apps.rbac.constants import (
 )
 from apigateway.components import bkiam
 
-from .constants import SYSTEM_DESCRIPTION, SYSTEM_NAME
+from .constants import BK_IAM_V4_SYSTEM_ID, SYSTEM_DESCRIPTION, SYSTEM_NAME
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayIAMModel(TypedDict):
@@ -89,21 +89,22 @@ class GatewayIAMModelSyncResult:
     created: int = 0
     updated: int = 0
     unchanged: int = 0
-    action_bindings_added: int = 0
-    action_bindings_deleted: int = 0
-    action_bindings_unchanged: int = 0
 
 
 class GatewayIAMModelSyncer:
+    def _log_sync(self, kind: str, item_id: str, status: str, detail: str = "") -> None:
+        if detail:
+            logger.info("sync iam v4 %s id=%s status=%s %s", kind, item_id, status, detail)
+            return
+
+        logger.info("sync iam v4 %s id=%s status=%s", kind, item_id, status)
+
     def sync(self) -> GatewayIAMModelSyncResult:
         desired_model = get_gateway_iam_model()
         counts = {
             "created": 0,
             "updated": 0,
             "unchanged": 0,
-            "action_bindings_added": 0,
-            "action_bindings_deleted": 0,
-            "action_bindings_unchanged": 0,
         }
 
         self._sync_system(counts)
@@ -127,17 +128,20 @@ class GatewayIAMModelSyncer:
         except bkiam.BkIamNotFoundError:
             bkiam.create_system(desired)
             counts["created"] += 1
+            self._log_sync("system", desired["id"], "created")
             return
 
         changes = _changed_fields(existing, desired, ("name", "description", "managers", "clients", "callback_url"))
         if changes:
             bkiam.update_system(cast("bkiam.SystemUpdatePayload", changes))
             counts["updated"] += 1
+            self._log_sync("system", desired["id"], "updated", f"fields={','.join(sorted(changes))}")
         else:
             counts["unchanged"] += 1
+            self._log_sync("system", desired["id"], "unchanged")
 
     def _sync_resource_types(self, desired_items: list[bkiam.ResourceTypePayload], counts: dict[str, int]) -> None:
-        existing_by_id = _by_id(_list_all(bkiam.list_resource_type))
+        existing_by_id = {item["id"]: item for item in _list_all(bkiam.list_resource_type)}
         missing: list[bkiam.ResourceTypePayload] = []
 
         for desired in desired_items:
@@ -153,15 +157,19 @@ class GatewayIAMModelSyncer:
                     cast("bkiam.ResourceTypeUpdatePayload", changes),
                 )
                 counts["updated"] += 1
+                self._log_sync("resource_type", desired["id"], "updated", f"fields={','.join(sorted(changes))}")
             else:
                 counts["unchanged"] += 1
+                self._log_sync("resource_type", desired["id"], "unchanged")
 
         for batch in bkiam.chunked(missing):
             bkiam.batch_create_resource_type(batch)
             counts["created"] += len(batch)
+            for item in batch:
+                self._log_sync("resource_type", item["id"], "created")
 
     def _sync_actions(self, desired_items: list[bkiam.ActionPayload], counts: dict[str, int]) -> None:
-        existing_by_id = _by_id(_list_all(bkiam.list_action))
+        existing_by_id = {item["id"]: item for item in _list_all(bkiam.list_action)}
         missing: list[bkiam.ActionPayload] = []
 
         for desired in desired_items:
@@ -179,15 +187,19 @@ class GatewayIAMModelSyncer:
             if changes:
                 bkiam.update_action(desired["id"], cast("bkiam.ActionUpdatePayload", changes))
                 counts["updated"] += 1
+                self._log_sync("action", desired["id"], "updated", f"fields={','.join(sorted(changes))}")
             else:
                 counts["unchanged"] += 1
+                self._log_sync("action", desired["id"], "unchanged")
 
         for batch in bkiam.chunked(missing):
             bkiam.batch_create_action(batch)
             counts["created"] += len(batch)
+            for item in batch:
+                self._log_sync("action", item["id"], "created")
 
     def _sync_roles(self, desired_items: list[bkiam.RolePayload], counts: dict[str, int]) -> None:
-        existing_by_id = _by_id(_list_all(bkiam.list_role))
+        existing_by_id = {item["id"]: item for item in _list_all(bkiam.list_role)}
         missing: list[bkiam.RolePayload] = []
         existing_roles: list[tuple[bkiam.RolePayload, dict[str, Any]]] = []
 
@@ -195,15 +207,17 @@ class GatewayIAMModelSyncer:
             existing = existing_by_id.get(desired["id"])
             if existing is None:
                 missing.append(desired)
-                counts["action_bindings_added"] += len(desired["actions"])
+                self._log_sync("role", desired["id"], "created", f"action_bindings_added={len(desired['actions'])}")
                 continue
 
             changes = _changed_fields(existing, desired, ("name", "description"))
             if changes:
                 bkiam.update_role(desired["id"], cast("bkiam.RoleUpdatePayload", changes))
                 counts["updated"] += 1
+                self._log_sync("role", desired["id"], "updated", f"fields={','.join(sorted(changes))}")
             else:
                 counts["unchanged"] += 1
+                self._log_sync("role", desired["id"], "unchanged")
             existing_roles.append((desired, existing))
 
         for batch in bkiam.chunked(missing):
@@ -219,8 +233,8 @@ class GatewayIAMModelSyncer:
         existing: dict[str, Any],
         counts: dict[str, int],
     ) -> None:
-        desired_by_id = _by_id(desired.get("actions", []))
-        existing_by_id = _by_id(existing.get("actions", []))
+        desired_by_id = {item["id"]: item for item in desired.get("actions", [])}
+        existing_by_id = {item["id"]: item for item in existing.get("actions", [])}
         desired_ids = set(desired_by_id)
         existing_ids = set(existing_by_id)
 
@@ -232,9 +246,17 @@ class GatewayIAMModelSyncer:
         }
         additions = [desired_by_id[action_id] for action_id in sorted((desired_ids - existing_ids) | changed_ids)]
         deletions = sorted((existing_ids - desired_ids) | changed_ids)
-        counts["action_bindings_added"] += len(additions)
-        counts["action_bindings_deleted"] += len(deletions)
-        counts["action_bindings_unchanged"] += len((desired_ids & existing_ids) - changed_ids)
+        unchanged = len((desired_ids & existing_ids) - changed_ids)
+        self._log_sync(
+            "role_actions",
+            desired["id"],
+            "synced",
+            "added={added} deleted={deleted} unchanged={unchanged}".format(
+                added=len(additions),
+                deleted=len(deletions),
+                unchanged=unchanged,
+            ),
+        )
 
         for deletion_batch in bkiam.chunked(deletions):
             bkiam.batch_delete_role_action(desired["id"], deletion_batch)
@@ -265,7 +287,3 @@ def _list_all(list_page: Callable[..., bkiam.PaginationData]) -> list[dict[str, 
         if len(items) >= page_data["count"] or not results:
             return items
         page += 1
-
-
-def _by_id(items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    return {item["id"]: item for item in items}

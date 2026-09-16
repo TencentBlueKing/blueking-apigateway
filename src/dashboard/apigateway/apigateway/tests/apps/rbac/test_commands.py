@@ -104,18 +104,12 @@ def test_sync_gateway_rbac_model_to_iam_reports_deterministic_counts(settings, m
         created=2,
         updated=3,
         unchanged=4,
-        action_bindings_added=5,
-        action_bindings_deleted=6,
-        action_bindings_unchanged=7,
     )
     output = StringIO()
 
     call_command("sync_gateway_rbac_model_to_iam", stdout=output)
 
-    assert output.getvalue() == (
-        "created=2 updated=3 unchanged=4 action-bindings-added=5 "
-        "action-bindings-deleted=6 action-bindings-unchanged=7\n"
-    )
+    assert output.getvalue() == "created=2 updated=3 unchanged=4\n"
 
 
 def test_sync_gateway_rbac_model_to_iam_converts_failure_to_command_error(settings, mocker):
@@ -293,8 +287,8 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejects_before_apply(settings, 
 def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
-        "apigateway.biz.iam.sync.list_authorization_subject",
-        return_value={"count": 0, "results": []},
+        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        return_value=iter([]),
     )
     add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
     revoke = mocker.patch("apigateway.biz.iam.sync.revoke_authorization")
@@ -314,8 +308,8 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(s
 def test_sync_gateway_rbac_auth_to_iam_force_applies_over_threshold(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
-        "apigateway.biz.iam.sync.list_authorization_subject",
-        return_value={"count": 0, "results": []},
+        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        return_value=iter([]),
     )
     add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
 
