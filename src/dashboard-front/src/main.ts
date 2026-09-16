@@ -68,5 +68,19 @@ app.use(createPinia())
   .component('AgIcon', AgIcon)
   .component('IconButton', IconButton)
   .component('CopyButton', CopyButton)
-  .component('CardContainer', CardContainer)
-  .mount('#app');
+  .component('CardContainer', CardContainer);
+
+// 等首次导航完成后再挂载：否则挂载时 currentRoute 仍是初始 location，
+// 依赖当前路由信息的逻辑（如 use-table-setting 的表格列缓存标识）会取到空值。
+// 超时兜底：isReady 只在 resolve/reject 后 settle，若守卫内请求异常挂起会阻塞挂载，
+// 超过阈值则先挂载外壳（内容区仍由 App.vue 的 userLoaded 门控，路由就绪后状态会响应式补齐）。
+const ROUTER_READY_TIMEOUT = 10_000;
+
+Promise.race([
+  router.isReady().catch(() => undefined),
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ROUTER_READY_TIMEOUT);
+  }),
+]).then(() => {
+  app.mount('#app');
+});

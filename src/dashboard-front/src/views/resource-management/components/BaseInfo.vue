@@ -162,6 +162,7 @@
                 ? t('开启后，用户可以用个人令牌调用本接口，请求会带上该用户的身份。')
                 : t('依赖「用户认证」。先勾选用户认证后才能开启。') }}
               <BkButton
+                v-if="personalTokenLink"
                 size="small"
                 theme="primary"
                 text
@@ -326,6 +327,8 @@ const authSceneAlertTheme = computed(() => (
     : 'info'
 ));
 
+const personalTokenLink = computed(() => envStore?.env?.DOC_LINKS?.AUTH_PERSONAL_TOKEN);
+
 const namePlaceholder = t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符');
 
 const rules = {
@@ -429,7 +432,7 @@ const resetOauth2Switch = () => {
 };
 
 const handleViewDoc = () => {
-  window.open(envStore.env.DOC_LINKS.AUTH_PERSONAL_TOKEN, '_blank');
+  window.open(personalTokenLink.value, '_blank');
 };
 
 const handleAuthVerifiedRequiredChange = (value: boolean) => {

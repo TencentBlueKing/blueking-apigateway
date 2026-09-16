@@ -31,7 +31,7 @@
             </BkOverflowTitle>
             <BkOverflowTitle
               type="tips"
-              class="truncate ml-8px"
+              class="truncate ml-4px text-14px"
             >
               ({{ server?.name }})
             </BkOverflowTitle>
@@ -173,7 +173,6 @@
             <div class="label">
               {{ t('分类') }}:
             </div>
-            <!-- value 用 flex 容器承载标签，行内元素间的模板空白不会换行生成空行盒 -->
             <div class="flex flex-wrap gap-8px lh-22px value">
               <template v-if="server?.categories?.length">
                 <BkTag
@@ -588,19 +587,20 @@ const updateCount = (count?: number, panelName?: string) => {
 }
 
 .server-info {
+  padding: 16px 16px 7px 16px;
   margin-bottom: 16px;
   background-color: #fff;
   border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
+  box-sizing: border-box;
 
   .header {
-    height: 52px;
-    padding: 0 24px;
+    height: auto;
+    padding-bottom: 11px;
     border-bottom: 1px solid #eaebf0;
 
     .title {
-      margin-right: 8px;
-      font-size: 20px;
+      font-size: 16px;
       font-weight: 700;
       color: #313238;
     }
@@ -609,9 +609,10 @@ const updateCount = (count?: number, panelName?: string) => {
   .info-content {
     display: grid;
     align-items: start;
-    grid-template-columns: calc((100% - 40px) * 2 / 3 + 20px) minmax(0, 1fr);
-    gap: 0 40px;
-    padding: 3px 24px 12px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 24px;
+    padding-top: 3px;
+    padding-left: 8px;
 
     .info-column {
       display: grid;
@@ -628,7 +629,7 @@ const updateCount = (count?: number, panelName?: string) => {
 
       .label {
         padding: 9px 0;
-        margin-right: 12px;
+        margin-right: 8px;
         color: #4d4f56;
         text-align: right;
       }

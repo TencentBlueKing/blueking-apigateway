@@ -26,10 +26,11 @@
         {
           'primary-table-no-data': !localTableData.length,
           'primary-table-no-border': !bordered,
-          'primary-table-show-pagination': showPagination && localTableData.length > 0
+          'primary-table-show-pagination': showPagination && localTableData.length > 0,
+          'primary-table-hide-pagination': !showPagination && localTableData.length > 0
         }
       ]"
-      :size="tableSettings?.rowSize ?? 'medium'"
+      :size="tableSettingSize"
       :data="localTableData"
       :columns="tableColumns"
       :pagination="showPagination ? pagination : null"
@@ -40,7 +41,7 @@
       :table-layout="tableLayout"
       :row-key="isExistUniqueKey ? tableRowKey : 'tempUniqueId'"
       :max-height="maxHeight || clientHeight"
-      :bk-ui-settings="tableSettings"
+      :bk-ui-settings="innerTableSettings"
       :resizable="resizable"
       v-bind="$attrs"
       @bk-ui-settings-change="handleSettingChange"
@@ -263,7 +264,12 @@ const { t, locale } = i18n.global;
 
 const slots = useSlots();
 
-const { maxTableLimit, clientHeight } = useMaxTableLimit(maxLimitConfig);
+// 行高缓存的读取与 use-table-setting 的写入必须用同一个标识，
+// 因此表格自定义了 cacheIdentifier 时要一并传给 useMaxTableLimit
+const { maxTableLimit, clientHeight } = useMaxTableLimit({
+  ...(maxLimitConfig ?? {}),
+  className: maxLimitConfig?.className ?? cacheIdentifier,
+});
 
 const {
   localStorageKey,
@@ -303,7 +309,7 @@ const isAllSelection = ref(false);
 // 用于处理同步更新表格组件数据后，组件实例销毁重建
 const tableKey = ref(-1);
 
-if (Object.keys(maxLimitConfig)?.length) {
+if (Object.keys(maxLimitConfig ?? {})?.length) {
   pagination.value = Object.assign(pagination.value, {
     pageSize: maxTableLimit,
     pageSizeOptions: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
@@ -534,31 +540,47 @@ const initTableSettings = () => {
   };
 };
 
+// 业务侧会通过 v-model:settings 主动置 null 来触发设置重算（如每次请求数据前），
+// 若把 null 直接透传给 tdesign/bkui，中间态会把内部 rowSize/fontSize 固化为默认值，
+// 导致刷新后设置面板（行高、字号）回显不正确，因此对外统一暴露一个非空的设置对象
+const innerTableSettings = computed<BkUiSettings>(() => tableSettings.value ?? initTableSettings());
+
+const tableSettingSize = computed(() => innerTableSettings.value?.rowSize ?? 'medium');
+
+// 同步初始化：表格设置必须在首次渲染前就绪，
+// 否则 tdesign-ui 会把内部 rowSize/fontSize 固化为默认值，导致设置面板回显错误
 watch(
   tableSettings,
   () => {
     if (!tableSettings.value && showSettings) {
-      nextTick(() => {
-        tableSettings.value = initTableSettings();
-      });
+      tableSettings.value = initTableSettings();
     }
   },
   {
     deep: true,
     immediate: true,
+    // 外部置空后需要同步补齐，避免 null 中间态被 tdesign/bkui 固化成默认值
+    flush: 'sync',
   },
 );
 
-// 当cacheIdentifier发生变化时，清空表格设置缓存并重新渲染表格（使用场景，同路由下多表格复用）
+// 当cacheIdentifier发生变化时需要按新的缓存读取设置（使用场景，同路由下多表格复用）
+// 用标记位跳过 immediate 首次执行，而非用 oldVal !== undefined 守卫：
+// 否则当 cacheIdentifier 初始为 undefined、挂载后才被赋值时，'undefined -> 有值' 的首次
+// 切换也会因 oldVal 仍为 undefined 而被跳过，导致新标识下的表格设置不会被读取
+let isCacheIdentifierWatchInitialized = false;
 watch(
   () => cacheIdentifier,
   (newVal: string, oldVal: string) => {
+    if (!isCacheIdentifierWatchInitialized) {
+      isCacheIdentifierWatchInitialized = true;
+      return;
+    }
     if (newVal && newVal !== oldVal && showSettings) {
-      tableSettings.value = null;
-      nextTick(() => {
-        updateCacheIdentifier(newVal);
-        tableKey.value = +new Date();
-      });
+      updateCacheIdentifier(newVal);
+      // 直接重算设置，不销毁表格实例，避免整体重绘
+      tableSettings.value = initTableSettings();
+      tableKey.value = +new Date();
     }
   },
   { immediate: true },
@@ -600,15 +622,13 @@ watch([selections, selectedRowKeys], () => {
   }
 }, { deep: true });
 
+// hiddenColumn 只影响表格设置的列清单与默认勾选，
+// 变化时按新的列集合重算设置即可，无需销毁表格实例
 watch(
   () => hiddenColumn,
   (newVal: string[], oldVal: string[]) => {
-    if ((!showSettings || !newVal) && isEqual(newVal, oldVal)) return;
-    // 清空旧配置，触发重新初始化
-    tableSettings.value = null;
-    nextTick(() => {
-      tableKey.value = Date.now();
-    });
+    if (!showSettings || isEqual(newVal, oldVal)) return;
+    tableSettings.value = initTableSettings();
   },
   { deep: true },
 );
@@ -1023,17 +1043,9 @@ defineExpose({
         }
 
         &[data-colkey="__col_setting__"] {
-          border-left: 1px solid #dcdee5;
+          box-shadow: inset 1px 0 0 #dcdee5;
         }
       }
-    }
-  }
-
-  .t-table__header--fixed.t-table__header {
-
-    th {
-      border-bottom: 0;
-      box-shadow: inset 0 -1px 0 #dcdee5;
     }
   }
 
@@ -1052,6 +1064,22 @@ defineExpose({
 
     .t-table--scroll-vertical {
       bottom: 64px;
+    }
+  }
+
+  &.primary-table-hide-pagination {
+
+    .t-table__body {
+
+      tr {
+
+        &:last-of-type {
+
+          td {
+            border-bottom: none;
+          }
+        }
+      }
     }
   }
 }
