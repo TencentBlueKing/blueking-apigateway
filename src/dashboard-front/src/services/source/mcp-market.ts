@@ -22,8 +22,8 @@ import type {
   IMCPServerCategoryOutput,
   IMCPServerConfigListOutput,
   IMCPServerListOutput,
+  IMCPServerRetrieveOutput,
   IMCPServerToolDocOutput,
-  IMCPServerToolOutput,
   IMarketplacePermissionApplyOutput,
   IMcpClientConfig,
 } from '@/services/types/responses/mcp-marketplace.ts';
@@ -175,7 +175,7 @@ export const getMcpMarketplace = (data: IMCPMarketplaceServersGetQuery) =>
  * @param mcp_server_id  id
  */
 export const getMcpServerDetails = (mcp_server_id: string) =>
-  http.get<IMCPServerToolOutput>(`/mcp-marketplace/servers/${mcp_server_id}/`);
+  http.get<IMCPServerRetrieveOutput>(`/mcp-marketplace/servers/${mcp_server_id}/`);
 
 /**
  *  环境发布前检查对应环境 MCP Server 是否存在资源变更

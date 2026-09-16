@@ -267,7 +267,7 @@
                 </template>
                 <div class="panel-content">
                   <ServerTools
-                    :server="mcpDetails"
+                    :server="mcpServerInfo"
                     page="market"
                   />
                 </div>
@@ -290,7 +290,7 @@
                 </template>
                 <div class="panel-content">
                   <ServerPrompts
-                    :server="mcpDetails"
+                    :server="mcpServerInfo"
                     page="market"
                   />
                 </div>
@@ -340,103 +340,50 @@
       :markdown-text="defaultMarkdownStr"
     />
 
-    <BkDialog
+    <ApplyPermissionDialog
       v-model:is-show="isShowApplyPermissionDialog"
-      :title="t('申请权限')"
-      :quick-close="false"
-      width="480"
-      @closed="handleCloseApplyPermissionDialog"
-    >
-      <BkForm
-        ref="formRef"
-        :model="permissionFormData"
-        :rules="rules"
-        form-type="vertical"
-      >
-        <BkFormItem
-          :label="t('选择应用')"
-          property="application"
-          class="relative"
-          required
-        >
-          <BkSelect
-            v-model="permissionFormData.application"
-            :placeholder="t('请选择要申请权限的应用')"
-          >
-            <BkOption
-              v-for="app in applicableApps"
-              :key="app.bk_app_code"
-              :label="`${app.name} (${app.bk_app_code})`"
-              :value="app.bk_app_code"
-            />
-          </BkSelect>
-          <div
-            class="new-application flex align-items-center cursor-pointer"
-            @click="handleCreateNewApp"
-          >
-            <AgIcon
-              name="add-small"
-              size="22"
-              color="#3A84FF"
-            />
-            <span class="color-#3A84FF ml--2px">{{ t('新建应用') }}</span>
-          </div>
-        </BkFormItem>
-      </BkForm>
-      <template #footer>
-        <BkButton
-          theme="primary"
-          class="mr-8px"
-          @click="handleApplyConfirm"
-        >
-          {{ t('确定') }}
-        </BkButton>
-        <BkButton @click="handleCloseApplyPermissionDialog()">
-          {{ t('取消') }}
-        </BkButton>
-      </template>
-    </BkDialog>
+      :mcp-id="Number(mcpId)"
+      :mcp-name="mcpDetails?.title ?? ''"
+    />
   </div>
 </template>
 
 <script lang="tsx" setup>
-// @ts-nocheck
 import { copy } from '@/utils';
 import { useMcpConfigDivideRatio } from '@/hooks';
-import {
-  useEnv,
-  useFeatureFlag,
-} from '@/stores';
-import {
-  InfoBox,
-} from 'bkui-vue';
+import { useFeatureFlag } from '@/stores';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import {
+  type IMCPMarketCategory,
   type IMarketplaceConfig,
-  type IMarketplaceDetails,
-  getApplicableApps,
   getMcpAIConfigList,
   getMcpServerDetails,
-  marketplacePermissionApply,
 } from '@/services/source/mcp-market';
-import type { IApplicableAppOutput } from '@/services/types/responses/mcp-marketplace.ts';
+import type { IMCPServerRetrieveOutput } from '@/services/types/responses/mcp-marketplace.ts';
+import type { getServer } from '@/services/source/mcp-server';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import Guideline from './components/GuideLine.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import DefaultMdGuideSlider from '@/views/mcp-market/components/DefaultMdGuideSlider.vue';
+import ApplyPermissionDialog from '@/views/mcp-market/components/ApplyPermissionDialog.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
 
-interface IMarketplaceDetailsWithOverflow extends IMarketplaceDetails {
+type MCPServerType = Awaited<ReturnType<typeof getServer>>;
+
+type IMarketplaceDetailsWithOverflow = Omit<IMCPServerRetrieveOutput, 'categories' | 'stage'> & {
+  categories?: IMCPMarketCategory[]
+  stage?: { name?: string }
+  oauth2_public_client_enabled?: boolean
+  oauth2_personal_client_enabled?: boolean
   isOverflow?: boolean
-}
+};
 
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const featureFlagStore = useFeatureFlag();
-const envStore = useEnv();
 const { divideRatio } = useMcpConfigDivideRatio([
   {
     maxWidth: 1440,
@@ -463,22 +410,6 @@ const isExistCustomGuide = ref(false);
 const isShowGuideSlider = ref(false);
 const mcpConfigList = ref<IMarketplaceConfig[]>([]);
 const isShowApplyPermissionDialog = ref<boolean>(false);
-const formRef = ref('');
-const applicableApps = ref<IApplicableAppOutput[]>([]);
-const itsmTicketUrl = ref('');
-const permissionFormData = ref<{
-  application: string
-}>({
-  application: '',
-});
-const rules = {
-  application: [
-    {
-      required: true,
-      message: t('请选择应用'),
-    },
-  ],
-};
 
 const mcpId = computed(() => {
   return route.params.id;
@@ -491,14 +422,10 @@ const isEnablePersonalClient = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT && mcpDetails.value?.oauth2_personal_client_enabled,
 );
 const isShowConfig = computed(() => ['tools', 'guide'].includes(active.value) && mcpConfigList.value.length > 0);
+const mcpServerInfo = computed(() => (mcpDetails.value ?? {}) as unknown as MCPServerType);
 
-const selectedAppName = computed(() => {
-  const app = applicableApps.value.find(a => a.bk_app_code === permissionFormData.value.application);
-  return app?.name ?? '';
-});
-
-const handleCopy = (str: string) => {
-  copy(str);
+const handleCopy = (str?: string) => {
+  copy(str ?? '');
 };
 
 const goBack = () => {
@@ -507,7 +434,7 @@ const goBack = () => {
 
 const getDetails = async () => {
   const res = await getMcpServerDetails(mcpId.value as string);
-  mcpDetails.value = res ?? {};
+  mcpDetails.value = (res ?? {}) as unknown as IMarketplaceDetailsWithOverflow;
   const { tools_count = 0, prompts_count = 0, guideline = '', user_custom_doc = '' } = mcpDetails.value;
   toolsCount.value = tools_count;
   promptCount.value = prompts_count;
@@ -519,92 +446,32 @@ const getDetails = async () => {
 };
 
 const fetchMcpAIConfigList = async () => {
-  const res = await getMcpAIConfigList(mcpId.value);
-  mcpConfigList.value = res?.configs ?? [];
+  const res = await getMcpAIConfigList(Number(mcpId.value));
+  mcpConfigList.value = (res?.configs ?? []).map(item => ({
+    ...item,
+    install_url: item.install_url ?? '',
+  }));
 };
 
 const handleShowGuide = () => {
   isShowGuideSlider.value = true;
 };
 
-const handleApplyPermission = async () => {
-  try {
-    const res = await getApplicableApps();
-    applicableApps.value = res ?? [];
-    isShowApplyPermissionDialog.value = true;
-  }
-  catch (e) {
-    console.error(e);
-  }
+const handleApplyPermission = () => {
+  isShowApplyPermissionDialog.value = true;
 };
 
-const handleCreateNewApp = () => {
-  const url = envStore.env.PAAS_APP_CREATE_LINK;
-  if (url) {
-    window.open(url, '_blank');
-  }
-};
-
-const handleApplyConfirm = async () => {
-  try {
-    await formRef.value?.validate();
-    const name = selectedAppName.value;
-
-    const res = await marketplacePermissionApply(Number(mcpId.value), {
-      reason: t('申请权限'),
-      bk_app_code: permissionFormData.value.application,
-    });
-
-    itsmTicketUrl.value = res[0]?.itsm_ticket_url ?? '';
-    permissionFormData.value.application = '';
-    isShowApplyPermissionDialog.value = false;
-
-    InfoBox({
-      type: 'success',
-      title: t('权限申请已提交'),
-      confirmText: t('完成'),
-      content: () => (
-        <div class="info-content">
-          <div class="py-12px px-16px text-align-left bg-#f5f7fa mb-16px">
-            {t('申请成功后，{name} 应用将拥有 {mcp} MCP 所有工具的权限。权限审批通过后即可正常使用。',
-              { name,
-                mcp: mcpDetails.value?.title ?? '' })}
-          </div>
-          {
-            itsmTicketUrl.value && (
-              <div
-                class="color-#3A84FF font-size-14px cursor-pointer"
-                onClick={() => window.open(itsmTicketUrl.value, '_blank')}
-              >
-                {t('查看审批进度')}
-                <AgIcon name="jump" color="#3A84FF" size="16" class="ml-6px" />
-              </div>
-            )
-          }
-        </div>
-      ),
-    });
-  }
-  catch (e) {
-    console.error(e);
-  }
-};
-
-const handleCloseApplyPermissionDialog = () => {
-  permissionFormData.value.application = '';
-  isShowApplyPermissionDialog.value = false;
-  formRef.value?.clearValidate();
-};
-
-const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceDetailsWithOverflow) => {
-  const cell = e.target.closest('.truncate') as HTMLElement | null;
-  if (cell) {
+const handleMouseenter = (e: MouseEvent, row?: IMarketplaceDetailsWithOverflow) => {
+  const cell = (e.target as HTMLElement | null)?.closest('.truncate') as HTMLElement | null;
+  if (cell && row) {
     row.isOverflow = cell.scrollWidth > cell.offsetWidth;
   }
 };
 
-const handleMouseleave = (_: MouseEvent, row: IMarketplaceDetailsWithOverflow) => {
-  row.isOverflow = false;
+const handleMouseleave = (_: MouseEvent, row?: IMarketplaceDetailsWithOverflow) => {
+  if (row) {
+    row.isOverflow = false;
+  }
 };
 
 watch(
@@ -799,13 +666,6 @@ watch(
       transform: translate(-50%, -50%);
     }
   }
-}
-
-.new-application {
-  cursor: pointer;
-  position: absolute;
-  top: -32px;
-  right: 0;
 }
 
 </style>
