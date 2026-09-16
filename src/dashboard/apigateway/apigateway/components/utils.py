@@ -19,7 +19,7 @@
 import copy
 import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, TypeAlias
+from typing import TYPE_CHECKING, Dict, List, Optional
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -33,8 +33,6 @@ if TYPE_CHECKING:
     from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger("component")
-
-RequestTimeout: TypeAlias = int | tuple[float, float] | None
 
 
 def gen_gateway_headers(
@@ -114,7 +112,7 @@ def do_legacy_blueking_http_request(
     url: str,
     data: Optional[Dict] = None,
     headers: Optional[Dict] = None,
-    timeout: RequestTimeout = None,
+    timeout: Optional[int] = None,
     request_session=None,
 ) -> List | Dict:
     kwargs = {"url": url, "data": data, "headers": headers, "timeout": timeout, "request_session": request_session}
@@ -176,7 +174,7 @@ def do_blueking_http_request(
     url: str,
     data: Optional[Dict] = None,
     headers: Optional[Dict] = None,
-    timeout: RequestTimeout = None,
+    timeout: Optional[int] = None,
     request_session=None,
     **kwargs,
 ) -> List | Dict:
