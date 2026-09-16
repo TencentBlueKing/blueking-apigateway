@@ -62,6 +62,8 @@ from apigateway.service.mcp import (
 from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
+from .helpers import build_gateway_permission_approval_url
+
 logger = logging.getLogger(__name__)
 RELEASED_RESOURCE_FIELDS = frozenset(
     {
@@ -397,12 +399,6 @@ class AppPermissionRecordRetrieveInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordRetrieveInputSLZ"
-
-
-def build_gateway_permission_approval_url(gateway_id: int, itsm_ticket_id: str) -> str:
-    """优先返回 ITSM 工单地址，否则返回网关权限审批页。"""
-    itsm_url = ItsmPermissionApplyHelper.build_ticket_url(itsm_ticket_id)
-    return itsm_url or f"{settings.DASHBOARD_FE_URL}/{gateway_id}/permission/apply"
 
 
 class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):

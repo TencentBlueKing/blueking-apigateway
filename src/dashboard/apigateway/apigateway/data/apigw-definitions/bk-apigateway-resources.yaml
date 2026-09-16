@@ -6886,22 +6886,7 @@ paths:
           description: ''
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      count:
-                        type: integer
-                      results:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            approval_url:
-                              type: string
-                              description: 权限审批 URL，优先返回 ITSM 工单地址，否则返回网关权限审批页
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
