@@ -603,6 +603,9 @@ class GatewayAppPermissionApplyCreateApi(generics.CreateAPIView):
                 "record_id": record.id,
                 "itsm_ticket_id": record.itsm_ticket_id or "",
                 "itsm_ticket_url": ItsmPermissionApplyHelper.build_ticket_url(record.itsm_ticket_id),
+                "approval_url": serializers.build_gateway_permission_approval_url(
+                    record.gateway_id, record.itsm_ticket_id
+                ),
             },
         )
 
