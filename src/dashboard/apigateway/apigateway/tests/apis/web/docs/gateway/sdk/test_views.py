@@ -17,24 +17,6 @@
 #
 
 
-# class TestSDKListApi:
-#     def test_list(self, request_view, fake_sdk):
-#         resp = request_view(
-#             method="GET",
-#             view_name="docs.gateway.sdk.list",
-#             data={
-#                 "language": fake_sdk.language,
-#             },
-#         )
-#         result = resp.json()
-
-#         assert resp.status_code == 200
-#         assert len(result["data"]["results"]) >= 1
-#         assert result["data"]["results"][0]["gateway"]
-#         assert result["data"]["results"][0]["sdk"]
-#         assert result["data"]["results"][0]["resource_version"]
-
-
 class TestSDKDocApi:
     def test_retrieve(self, request_view):
         resp = request_view(

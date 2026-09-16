@@ -20,6 +20,7 @@ export * from './useEnv';
 export * from './useUserInfo';
 export * from './useFeatureFlag';
 export * from './useGateway';
+export * from './useGatewayRole';
 export * from './useAccessLog';
 export * from './useStaff';
 export * from './usePermission';

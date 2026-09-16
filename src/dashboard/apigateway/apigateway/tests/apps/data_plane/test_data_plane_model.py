@@ -96,16 +96,6 @@ class TestDataPlaneApisixVersion:
         assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_16.value
 
 
-class TestDataPlaneIsDefault:
-    def test_default(self):
-        data_plane = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
-        assert data_plane.is_default() is True
-
-    def test_non_default(self):
-        data_plane = G(DataPlane, name="non-default")
-        assert data_plane.is_default() is False
-
-
 class TestDataPlaneManager:
     def test_get_default_exists(self):
         dp = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
@@ -115,29 +105,6 @@ class TestDataPlaneManager:
     def test_get_default_not_exists(self):
         with pytest.raises(DataPlane.DoesNotExist):
             DataPlane.objects.get_default()
-
-    def test_get_recommended_with_recommended_plane(self):
-        G(DataPlane, name="recommended", is_recommend=True, status=DataPlaneStatusEnum.ACTIVE.value)
-        G(DataPlane, name=DEFAULT_DATA_PLANE_NAME, is_recommend=False, status=DataPlaneStatusEnum.ACTIVE.value)
-
-        result = DataPlane.objects.get_recommended()
-        assert result is not None
-        assert result.name == "recommended"
-
-    def test_get_recommended_falls_back_to_default(self):
-        G(DataPlane, name=DEFAULT_DATA_PLANE_NAME, is_recommend=False, status=DataPlaneStatusEnum.ACTIVE.value)
-
-        result = DataPlane.objects.get_recommended()
-        assert result is not None
-        assert result.name == DEFAULT_DATA_PLANE_NAME
-
-    def test_get_recommended_skips_inactive(self):
-        G(DataPlane, name="recommended-inactive", is_recommend=True, status=DataPlaneStatusEnum.INACTIVE.value)
-        default = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME, status=DataPlaneStatusEnum.ACTIVE.value)
-
-        result = DataPlane.objects.get_recommended()
-        assert result is not None
-        assert result.id == default.id
 
     def test_get_active_data_planes(self):
         G(DataPlane, name="active1", status=DataPlaneStatusEnum.ACTIVE.value)

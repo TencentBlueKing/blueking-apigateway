@@ -32,18 +32,6 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: 'access-log/:requestId',
-    name: 'AccessLogDetail',
-    component: () => import('@/views/operate-data/access-log/Detail.vue'),
-    meta: {
-      title: t('流水日志'),
-      matchRoute: 'AccessLogDetail',
-      topMenu: 'home',
-      isMenu: false,
-      permission: 'runtime',
-    },
-  },
-  {
     path: 'dashboard',
     name: 'Dashboard',
     component: () => import('@/views/operate-data/dashboard/Index.vue'),

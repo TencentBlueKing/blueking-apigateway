@@ -59,6 +59,17 @@
                 color="#3a84ff"
               />
             </div>
+            <div
+              v-if="isEnablePersonalClient"
+              v-bk-tooltips="personalClientTooltip"
+              class="external-oauth-tag bg-#e1ecff"
+            >
+              <AgIcon
+                name="key-fill"
+                size="14"
+                color="#3a84ff"
+              />
+            </div>
             <slot name="externalTag" />
           </div>
         </div>
@@ -238,7 +249,7 @@
         <div class="flex items-center justify-between text-12px content-item">
           <div
             v-bk-tooltips="{
-              content: `${t('发布于')} ${getUtcTimeAgo(server?.updated_time)}`,
+              content: `${t('发布于')} ${getUtcTimeAgo(server?.updated_time as string)}`,
               disabled: !isOverflow,
             }"
             class="flex items-baseline gap-8px min-w-100px item-label"
@@ -250,11 +261,11 @@
               @mouseenter="handleMouseenter"
               @mouseleave="handleMouseleave"
             >
-              {{ t("发布于") }} {{ getUtcTimeAgo(server?.updated_time) }}
+              {{ t("发布于") }} {{ getUtcTimeAgo(server?.updated_time as string) }}
             </div>
           </div>
           <div
-            :ref="(el) => setMapRefs(el, operateIconRefs, 'item-value-')"
+            :ref="(el: Element | ComponentPublicInstance | null) => setMapRefs(el, operateIconRefs, 'item-value-')"
             class="flex items-center item-value"
           >
             <slot name="mcpCopyConfig" />
@@ -290,9 +301,12 @@
 </template>
 
 <script lang="ts" setup>
-// @ts-nocheck
 import { locale, t } from '@/locales';
-import type { IMCPServerCategory, IMCPServerWithUIState } from '@/services/source/mcp-server';
+import type {
+  IMCPServer,
+  IMCPServerCategory,
+  IMCPServerWithUIState,
+} from '@/services/source/mcp-server';
 import { useFeatureFlag } from '@/stores';
 import { getUtcTimeAgo, setupDayjsLocale } from '@/utils/dayUtc';
 import AgDescription from '@/components/ag-description/Index.vue';
@@ -302,6 +316,7 @@ interface IProps {
   showActions?: boolean
   showPublic?: boolean
   oauth2Tooltip?: string
+  personalClientTooltip?: string
 }
 
 interface IEmits {
@@ -318,6 +333,7 @@ const {
   showActions = true,
   showPublic = true,
   oauth2Tooltip = '',
+  personalClientTooltip = t('可用个人令牌调用该 MCP Server'),
 } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
@@ -331,20 +347,26 @@ const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
 
 const isChecked = computed(() => server?.is_checked ?? false);
 const isEnablePrompt = computed(() =>
-  featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && server?.prompts_count > 0,
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && (server?.prompts_count ?? 0) > 0,
+);
+const isEnablePersonalClient = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT && server?.oauth2_personal_client_enabled,
 );
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && server?.oauth2_public_client_enabled,
 );
 const categoriesFilter = computed(() =>
-  server?.categories?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name)) || [],
-);
+  (server?.categories ?? []).filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name)));
 
 setupDayjsLocale(locale.value);
 
-const setMapRefs = (el: HTMLElement | null, anyRef: Ref<Map<string, HTMLElement | null>>, prefix: string) => {
+const setMapRefs = (
+  el: Element | ComponentPublicInstance | null,
+  refsMap: Map<string, HTMLElement | null>,
+  prefix: string,
+) => {
   if (el) {
-    anyRef.value?.set(`${prefix}${server?.id}`, el);
+    refsMap?.set(`${prefix}${server?.id}`, el as HTMLElement);
   }
 };
 
@@ -390,15 +412,15 @@ const handleChecked = (value: boolean) => {
 };
 
 const handleMouseenter = (e: MouseEvent) => {
-  const cell = e.target.closest('.truncate');
-  isOverflow.value = cell?.scrollWidth > cell?.clientWidth;
+  const cell = (e?.target as HTMLElement)?.closest<HTMLElement>('.truncate');
+  isOverflow.value = (cell?.scrollWidth ?? 0) > (cell?.clientWidth ?? 0);
 };
 
 const handleMouseleave = () => {
   isOverflow.value = false;
 };
 
-const preventDefault = (e) => {
+const preventDefault = (e: MouseEvent) => {
   e.preventDefault();
 };
 

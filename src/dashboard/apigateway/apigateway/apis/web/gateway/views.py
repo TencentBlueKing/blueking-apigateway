@@ -511,6 +511,8 @@ class GatewayTenantAppListApi(RequestGatewayObjectMixin, generics.ListAPIView):
     ),
 )
 class GatewayDevGuidelineRetrieveApi(RequestGatewayObjectMixin, generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
+
     serializer_class = GatewayDevGuidelineOutputSLZ
 
     def retrieve(self, request, *args, **kwargs):

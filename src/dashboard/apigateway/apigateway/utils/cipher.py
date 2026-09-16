@@ -23,7 +23,6 @@ AES 对称加密，GCM 模式
 
 import abc
 import base64
-import os
 from binascii import a2b_hex, b2a_hex
 
 from blue_krill.encoding import force_bytes, force_text
@@ -32,7 +31,6 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 VALID_AES128_KEY_SIZE = 16
 VALID_AES256_KEY_SIZE = 32
 MODE_GCM_NONCE_SIZE = 12
-MODE_GCM_MAC_LEN = 16
 
 
 class AbstractCipher(metaclass=abc.ABCMeta):
@@ -74,14 +72,3 @@ class AESGCMCipher(AbstractCipher):
     def decrypt_from_hex(self, encrypted_text: str) -> str:
         unhex_encrypted_text = a2b_hex(encrypted_text)
         return force_text(self._decrypt(unhex_encrypted_text, self.nonce))
-
-    def encrypt_with_random_nonce_to_base64(self, plaintext: str) -> str:
-        nonce = os.urandom(MODE_GCM_NONCE_SIZE)
-        encrypted_text = self._encrypt(force_bytes(plaintext), nonce)
-        return force_text(base64.b64encode(nonce + encrypted_text))
-
-    def decrypt_with_random_nonce_from_base64(self, encrypted_text: str) -> str:
-        decoded_encrypted_text = base64.b64decode(force_bytes(encrypted_text))
-        nonce = decoded_encrypted_text[:MODE_GCM_NONCE_SIZE]
-        ciphertext = decoded_encrypted_text[MODE_GCM_NONCE_SIZE:]
-        return force_text(self._decrypt(ciphertext, nonce))

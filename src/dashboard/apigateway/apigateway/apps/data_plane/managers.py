@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 from django.db import models
 
@@ -36,15 +36,6 @@ class DataPlaneManager(models.Manager):
         """Get the default data plane"""
         return self.get(name=DEFAULT_DATA_PLANE_NAME)
 
-    def get_recommended(self) -> Optional["DataPlane"]:
-        """Get the recommended data plane for new gateways"""
-        # First try to get an active recommended data plane
-        data_plane = self.filter(is_recommend=True, status=DataPlaneStatusEnum.ACTIVE.value).first()
-        if data_plane:
-            return data_plane
-        # Fall back to the default data plane
-        return self.get_default()
-
     def get_active_data_planes(self) -> List["DataPlane"]:
         """Get all active data planes"""
         return list(self.filter(status=DataPlaneStatusEnum.ACTIVE.value))
@@ -63,10 +54,6 @@ class GatewayDataPlaneBindingManager(models.Manager):
             data_plane__status=DataPlaneStatusEnum.ACTIVE.value,
         ).select_related("data_plane")
         return [binding.data_plane for binding in bindings]
-
-    def is_gateway_bound(self, gateway_id: int) -> bool:
-        """Check if a gateway is bound to any data plane"""
-        return self.filter(gateway_id=gateway_id).exists()
 
     def bind_gateway_to_data_plane(
         self, gateway: Gateway, data_plane: "DataPlane", created_by: str = ""

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,3 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+"""Helpers for inner API response shaping."""
+
+from django.conf import settings
+
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+
+
+def build_gateway_permission_approval_url(gateway_id: int, itsm_ticket_id: str) -> str:
+    """优先返回 ITSM 工单地址，否则返回网关权限审批页。"""
+    itsm_url = ItsmPermissionApplyHelper.build_ticket_url(itsm_ticket_id)
+    return itsm_url or f"{settings.DASHBOARD_FE_URL}/{gateway_id}/permission/apply"

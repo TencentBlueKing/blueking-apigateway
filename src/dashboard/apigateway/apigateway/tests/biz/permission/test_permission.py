@@ -59,7 +59,7 @@ class TestResourcePermissionHandler:
                 resource_id=test["resource_id"],
                 bk_app_code=test["bk_app_code"],
             )
-            assert not app_resource_permission.has_expired
+            assert app_resource_permission.expires > now_datetime()
 
     def test_sync_from_gateway_permission(self):
         bk_app_code = "test"

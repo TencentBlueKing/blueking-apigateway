@@ -961,4 +961,16 @@ $code-color: #63656e;
     }
   }
 }
+
+@media (min-width: 769px) and (max-width: 1500px) {
+  .mcp-tool-wrapper {
+
+    .main-content-wrap {
+
+      .tool-basics {
+        grid-template-columns: 204px 264px;
+      }
+    }
+  }
+}
 </style>

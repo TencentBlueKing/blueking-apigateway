@@ -187,8 +187,8 @@
         </div>
         <div :class="routerViewWrapperClass">
           <RouterView
-            :key="gatewayId"
-            :gateway-id="gatewayId"
+            :key="route.params.id as string"
+            :gateway-id="Number(route.params.id)"
           />
         </div>
       </div>
@@ -202,8 +202,10 @@
 import {
   useFeatureFlag,
   useGateway,
+  useGatewayRoleStore,
   usePermission,
   useStage,
+  useUserInfo,
 } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway';
 import type { IExtractListApiResults } from '@/services/types/utils';
@@ -213,6 +215,8 @@ import { getPermissionApplyList } from '@/services/source/permission';
 import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
 import { useGatewayRole } from '@/hooks';
 import type { GatewayPermissionKey } from '@/constants/gateway-permission';
+import { isGatewayNavigationPending } from '@/router/gateway-role-guard';
+import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
 
 type GatewayItemType = IExtractListApiResults<typeof getGatewayList>;
 
@@ -224,7 +228,9 @@ const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 const permissionStore = usePermission();
 const stageStore = useStage();
-const { currentRole, canAccess } = useGatewayRole();
+const roleStore = useGatewayRoleStore();
+const userStore = useUserInfo();
+const { currentRole, roleStatus, roleError, canAccess } = useGatewayRole();
 
 // 选中的菜单
 const activeMenuKey = ref('StageOverview');
@@ -503,9 +509,10 @@ const setBreadcrumbTitle = (payload: typeof route) => {
 };
 
 // 检查网关下的环境 schema 版本
-const checkStageVersion = async () => {
-  const stageList = await getStageList(gatewayId.value);
-  if (stageList.some(item => item.status === 1 && item.resource_version?.schema_version === '1.0')) {
+const checkStageVersion = async (id: number) => {
+  const stageList = await getStageList(id);
+  if (id === Number(route.params.id) && canAccess('stage')
+    && stageList.some(item => item.status === 1 && item.resource_version?.schema_version === '1.0')) {
     version113UpdateNoticeRef.value?.show();
   }
 };
@@ -520,11 +527,7 @@ watch(
   () => {
     activeMenuKey.value = (route.meta?.matchRoute || route.name) as string;
     gatewayId.value = Number(route.params.id || 0);
-    // 设置全局网关
-    gatewayStore.fetchGatewayDetail(gatewayId.value);
-    // if (!route.meta?.isMenu) {
-    //   needMenu.value = false;
-    // }
+    // 网关详情与角色已由路由守卫加载，布局不再重复请求。
     // 设置面包屑标题
     setBreadcrumbTitle(route);
 
@@ -535,10 +538,6 @@ watch(
       if (menuItem) {
         openedKeys.value.push(item.name);
       }
-    }
-
-    if (gatewayId.value) {
-      checkStageVersion();
     }
   },
   {
@@ -561,21 +560,76 @@ watch(
   { flush: 'post' },
 );
 
+// 身份变化后由布局补载当前网关；导航中的角色校验与缓存刷新仍交给守卫。
+const refreshCurrentGateway = async () => {
+  const currentRoute = router.currentRoute.value;
+  const id = Number(currentRoute.params.id);
+  if (
+    !Number.isSafeInteger(id)
+    || id <= 0
+    || !userStore.info.username
+    || currentRoute.meta.skipRoleCheck
+    || isGatewayNavigationPending(router)
+  ) {
+    return;
+  }
+  try {
+    const role = await roleStore.fetchGatewayRole(id);
+    if (role && currentRoute === router.currentRoute.value && !isGatewayNavigationPending(router)) {
+      await gatewayStore.ensureGatewayDetail(id);
+    }
+  }
+  catch (error) {
+    // 角色错误由下面的 watcher 统一处理；这里仅补上详情失败，且不能影响新导航。
+    if (roleStatus.value !== 'error' && currentRoute === router.currentRoute.value
+      && !isGatewayNavigationPending(router)) {
+      await router.replace(getGatewayErrorRoute(error, id, currentRoute.fullPath));
+    }
+  }
+};
+
+watch(
+  [() => userStore.info.username, () => userStore.info.tenant_id],
+  (_identity, previousIdentity) => {
+    if (previousIdentity.length) {
+      // 详情同样属于旧身份的上下文，不能在重新登录后继续命中缓存。
+      gatewayStore.clearCurrentGateway();
+    }
+    // 复用守卫已加载/正在加载的结果，也不自动重试失败请求。
+    if (roleStatus.value !== 'idle') {
+      return;
+    }
+    void refreshCurrentGateway();
+  },
+  // 覆盖守卫完成后、布局挂载前发生身份变化的情况。
+  { immediate: true },
+);
+
 // 兜底防线：覆盖停留在页面上时角色被变更（如成员管理中移除了自己的角色）的场景
 watch(
   [
     currentRole,
+    roleStatus,
     () => route.meta.permission,
-    () => gatewayStore.currentGateway?.id,
+    () => route.params.id,
   ],
   () => {
-    if (!gatewayStore.currentGateway?.id || route.meta.skipRoleCheck) {
+    if (
+      !route.params.id
+      || route.meta.skipRoleCheck
+      || isGatewayNavigationPending(router)
+      || !['ready', 'error'].includes(roleStatus.value)
+    ) {
+      return;
+    }
+    if (roleStatus.value === 'error') {
+      router.replace(getGatewayErrorRoute(roleError.value, Number(route.params.id), route.fullPath));
       return;
     }
     if (!canAccess(route.meta.permission)) {
       router.replace({
         name: 'GatewayNotFound',
-        params: { id: gatewayId.value },
+        params: { id: route.params.id },
       });
     }
   },
@@ -589,16 +643,41 @@ const getGatewayData = async () => {
 };
 
 // 获取权限审批的数量
-const getPermissionData = async () => {
+const getPermissionData = async (id: number) => {
   const res = await getPermissionApplyList(
-    gatewayId.value,
+    id,
     {
       offset: 0,
       limit: 10,
     },
   );
-  permissionStore.setCount(res.count);
+  if (id === Number(route.params.id) && canAccess('permission')) {
+    permissionStore.setCount(res.count);
+  }
 };
+
+// 附加数据只能在目标网关角色就绪后查询，运营者不调用管理员的环境接口。
+watch(
+  [() => route.params.id, currentRole, roleStatus],
+  () => {
+    permissionStore.setCount(0);
+    const id = Number(route.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0 || roleStatus.value !== 'ready') {
+      return;
+    }
+    const requests: Promise<void>[] = [];
+    if (canAccess('stage')) {
+      requests.push(checkStageVersion(id));
+    }
+    if (canAccess('permission')) {
+      requests.push(getPermissionData(id));
+    }
+    Promise.all(requests).catch(() => {
+      // 附加数据失败不影响导航，错误由统一 HTTP 封装提示。
+    });
+  },
+  { immediate: true },
+);
 
 const isMenuVisible = (menu: IMenu) => {
   if (!menu.enabled) {
@@ -670,19 +749,38 @@ const handleCollapse = (collapsed: boolean) => {
   isMenuCollapsed.value = !collapsed;
 };
 
-const handleGoPage = (routeName: string) => {
-  gatewayStore.setApigwId(gatewayId.value);
-  // 如果是可编程网关，则不展示资源配置，需要跳转到环境概览
-  const gatewayData = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value);
-  const isEditGateway = gatewayData?.kind === 1;
-  const nextRouteName = ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName;
+const handleGoPage = async (routeName: string) => {
+  const targetGatewayId = gatewayId.value;
+  const gatewayData = gatewayList.value.find(item => item.id === targetGatewayId);
+  // 网关类型也会影响菜单可用性；不可用的菜单使用既有落点或基本信息。
+  let nextRouteName = routeName;
+  if (routeName === 'ResourceSetting' && gatewayData?.kind === 1) {
+    nextRouteName = 'StageOverview';
+  }
+  if ((routeName === 'ModelService' && gatewayData?.kind !== 2)
+    || ['GatewayNotFound', 'GatewayLoadError'].includes(routeName)) {
+    nextRouteName = 'BasicInfo';
+  }
+  // 不能用当前网关角色判断目标网关权限；先保留菜单，再由守卫查询目标角色并决定是否回退。
+  if (targetGatewayId !== Number(route.params.id)) {
+    try {
+      await router.push({
+        name: nextRouteName,
+        params: { id: targetGatewayId },
+      });
+    }
+    finally {
+      // 导航可能被取消，选择器始终跟随实际生效的路由；不提前修改全局 apigwId。
+      gatewayId.value = Number(route.params.id);
+    }
+    return;
+  }
   const permission = findMenuPermission(menuList.value, nextRouteName);
-  router.push({
+  await router.push({
     name: canAccess(permission) ? nextRouteName : firstVisibleRouteName.value,
     params: { id: gatewayId.value },
   });
   getGatewayIconDistance(gatewayData?.name ?? '');
-  getPermissionData();
 };
 
 const handleBack = () => {
@@ -690,7 +788,7 @@ const handleBack = () => {
 };
 
 onMounted(() => {
-  Promise.all([getGatewayData(), getPermissionData()]);
+  getGatewayData();
 });
 </script>
 

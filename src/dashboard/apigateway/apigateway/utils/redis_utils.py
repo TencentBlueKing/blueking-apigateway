@@ -96,11 +96,6 @@ def get_default_redis_client():
     return get_redis_client("default", getattr(settings, "DEFAULT_REDIS_CONFIG", None))
 
 
-def get_redis_key(key):
-    """Get redis key with prefix"""
-    return f"{settings.REDIS_PREFIX}{key}"
-
-
 class Lock(object):
     def __init__(self, key, timeout=5, try_get_times=5):
         """初始化锁对象
@@ -139,7 +134,3 @@ class Lock(object):
         """释放锁"""
         with contextlib.suppress(Exception):
             self.client.delete(self.key)
-
-    def force_unlock(self):
-        """强制释放锁"""
-        self.client.delete(self.key)

@@ -381,11 +381,12 @@ export interface IMCPServerListOutput {
   }
   updated_time: string
   created_time: string
-  categories: string
+  categories: IMCPServerCategoryOutput[]
   is_official: boolean
   is_featured: boolean
   prompts_count: number
   oauth2_public_client_enabled?: boolean
+  oauth2_personal_client_enabled?: boolean
   app_permission_risk?: any
   [key: string]: any
 }
@@ -512,7 +513,8 @@ export interface IMCPServerRetrieveOutput {
   }
   updated_time: string
   created_time: string
-  categories: string | any[]
+  categories: IMCPServerCategoryOutput[]
+  oauth2_personal_client_enabled?: boolean
   prompts: string | any[]
   tools?: any[]
   gateway?: {

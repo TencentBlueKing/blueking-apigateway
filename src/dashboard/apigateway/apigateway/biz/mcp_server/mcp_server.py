@@ -1089,19 +1089,6 @@ class MCPServerHandler:
         ).delete()
 
     @staticmethod
-    def get_prompts_count(mcp_server_id: int) -> int:
-        """获取 MCPServer 已关联的 prompts 数量
-
-        Args:
-            mcp_server_id: MCPServer ID
-
-        Returns:
-            prompts 数量
-        """
-        prompts = MCPServerHandler.get_prompts(mcp_server_id)
-        return len(prompts)
-
-    @staticmethod
     def get_prompts_count_map(mcp_server_ids: List[int]) -> Dict[int, int]:
         """批量获取 MCPServer 的 prompts 数量
 

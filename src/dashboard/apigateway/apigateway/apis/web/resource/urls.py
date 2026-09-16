@@ -27,11 +27,15 @@ from apigateway.apis.web.resource.views import (
     ResourceImportDocPreviewApi,
     ResourceLabelUpdateApi,
     ResourceListCreateApi,
+    ResourcePathConflictCheckApi,
+    ResourcePathConflictListApi,
     ResourceRetrieveUpdateDestroyApi,
     ResourcesWithVerifiedUserRequiredApi,
 )
 
 urlpatterns = [
+    path("-/path-conflicts/", ResourcePathConflictListApi.as_view(), name="resource.path_conflicts"),
+    path("-/path-conflicts/check/", ResourcePathConflictCheckApi.as_view(), name="resource.path_conflicts.check"),
     path("", ResourceListCreateApi.as_view(), name="resource.list_create"),
     path("<int:id>/", ResourceRetrieveUpdateDestroyApi.as_view(), name="resource.retrieve_update_destroy"),
     path("batch/", ResourceBatchUpdateDestroyApi.as_view(), name="resource.batch_update_destroy"),

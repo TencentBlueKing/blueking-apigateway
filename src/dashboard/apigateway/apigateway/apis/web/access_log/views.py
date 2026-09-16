@@ -55,6 +55,29 @@ from .serializers import (
 )
 
 
+def _get_log_detail_data(request_id: str) -> dict:
+    """查询日志并组装分享链接和工具箱共用的展示数据。"""
+    total_count, logs = LogHandler.search_logs_by_request_id_for_toolbox(request_id)
+
+    paginator = LimitOffsetPaginator(total_count, 0, total_count)
+
+    # 将字段信息添加到结果中，便于前端展示
+    results = paginator.get_paginated_data(logs)
+    fields = deepcopy(ES_LOG_FIELDS)
+    for mapping in TOOLBOX_LOG_FIELD_MAPPINGS:
+        fields.insert(
+            mapping["insert_at"],
+            {
+                "label": mapping["label"],
+                "field": mapping["output_field"],
+                "is_filter": mapping["is_filter"],
+            },
+        )
+    results["fields"] = fields
+
+    return results
+
+
 @method_decorator(
     name="get",
     decorator=extend_schema(
@@ -239,15 +262,7 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
-        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
-
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        # 将字段信息添加到结果中，便于前端展示
-        results = paginator.get_paginated_data(logs)
-        results["fields"] = ES_LOG_FIELDS
-
-        return OKJsonResponse(data=results)
+        return OKJsonResponse(data=_get_log_detail_data(request_id))
 
 
 @method_decorator(
@@ -264,25 +279,7 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
         """
         获取指定 request_id 日志的分享链接
         """
-        total_count, logs = LogHandler.search_logs_by_request_id_for_toolbox(request_id)
-
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        # 将字段信息添加到结果中，便于前端展示
-        results = paginator.get_paginated_data(logs)
-        fields = deepcopy(ES_LOG_FIELDS)
-        for mapping in TOOLBOX_LOG_FIELD_MAPPINGS:
-            fields.insert(
-                mapping["insert_at"],
-                {
-                    "label": mapping["label"],
-                    "field": mapping["output_field"],
-                    "is_filter": mapping["is_filter"],
-                },
-            )
-        results["fields"] = fields
-
-        return OKJsonResponse(data=results)
+        return OKJsonResponse(data=_get_log_detail_data(request_id))
 
 
 @method_decorator(

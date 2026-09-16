@@ -2960,3 +2960,61 @@ def test_v2_inner_does_not_import_shared_api_mcp_module():
     assert not any(
         getattr(obj, "__module__", "") == shared_api_mcp_module for obj in inner_serializers.__dict__.values()
     )
+
+
+@pytest.mark.parametrize("surface", ["create", "list", "retrieve"])
+@pytest.mark.parametrize(
+    ("ticket_id", "ticket_template", "expected_itsm_url"),
+    [
+        ("itsm-001", "https://itsm.example.com/ticket/{ticket_id}", "https://itsm.example.com/ticket/itsm-001"),
+        ("", "https://itsm.example.com/ticket/{ticket_id}", ""),
+        ("itsm-001", "", ""),
+    ],
+)
+def test_api_permission_approval_url(
+    surface, ticket_id, ticket_template, expected_itsm_url, request_view, fake_gateway, settings, mocker
+):
+    settings.DASHBOARD_FE_URL = "https://dashboard.example.com"
+    settings.BK_ITSM4_TICKET_URL_TEMPLATE = ticket_template
+    record = G(
+        AppPermissionRecord,
+        gateway=fake_gateway,
+        bk_app_code="test-app",
+        grant_dimension="api",
+        status="pending",
+        itsm_ticket_id=ticket_id,
+    )
+    kwargs = {
+        "method": "GET",
+        "data": {"target_app_code": "test-app"},
+        "app": mock.MagicMock(app_code="test"),
+    }
+    if surface == "create":
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.PermissionDimensionManager.get_manager"
+        ).return_value.create_apply_record.return_value = record
+        mocker.patch("apigateway.apis.v2.inner.views.apply_async_on_commit")
+        kwargs.update(
+            method="POST",
+            view_name="openapi.v2.inner.gateway.permission.apply",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"target_app_code": "test-app", "grant_dimension": "api", "expire_days": 180},
+        )
+    elif surface == "list":
+        kwargs["view_name"] = "openapi.v2.inner.permission.apply-records"
+    else:
+        kwargs.update(
+            view_name="openapi.v2.inner.permission.apply-record-detail",
+            path_params={"record_id": record.id},
+        )
+
+    response = request_view(**kwargs)
+    assert response.status_code == (201 if surface == "create" else 200), response.content
+    data = response.json()["data"]
+    if surface == "list":
+        data = data["results"][0]
+    assert data["itsm_ticket_id"] == ticket_id
+    assert data["itsm_ticket_url"] == expected_itsm_url
+    assert data["approval_url"] == (
+        expected_itsm_url or f"https://dashboard.example.com/{fake_gateway.id}/permission/apply"
+    )

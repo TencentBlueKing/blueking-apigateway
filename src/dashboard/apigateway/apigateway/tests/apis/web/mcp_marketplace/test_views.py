@@ -1082,16 +1082,6 @@ class TestMCPServerCategoryModel:
         # 添加分类
         fake_public_mcp_server.categories.add(fake_categories["official"], fake_categories["devops"])
 
-        # 测试获取分类名称
-        category_names = fake_public_mcp_server.get_category_names()
-        assert OFFICIAL_MCP_CATEGORY_NAME in category_names
-        assert "DevOps" in category_names
-
-        # 测试获取分类显示名称
-        display_names = fake_public_mcp_server.get_category_display_names()
-        assert "官方" in display_names
-        assert "运维工具" in display_names
-
         # 测试是否为官方
         assert fake_public_mcp_server.is_official() is True
 

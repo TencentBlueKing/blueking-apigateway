@@ -30,7 +30,6 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
-from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.openapi.models import (
@@ -527,11 +526,6 @@ def fake_release(fake_gateway, fake_stage, fake_resource_version):
 
 
 @pytest.fixture
-def fake_release_v1(fake_gateway, fake_stage, fake_resource_version_v1):
-    return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version_v1)
-
-
-@pytest.fixture
 def fake_release_v2(fake_gateway, fake_stage, fake_resource_version_v2):
     return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version_v2)
 
@@ -737,11 +731,6 @@ def request_view(request_factory):
         return response
 
     return fn
-
-
-@pytest.fixture
-def skip_view_permissions_check(mocker):
-    mocker.patch("rest_framework.views.APIView.check_permissions")
 
 
 @pytest.fixture(autouse=True)
@@ -1075,14 +1064,6 @@ def fake_resource_doc(faker, fake_resource):
         language=faker.random_element(
             ["en", "zh"],
         ),
-    )
-
-
-@pytest.fixture
-def fake_debug_history(faker, fake_resource):
-    return G(
-        APIDebugHistory,
-        gateway=fake_resource.gateway,
     )
 
 

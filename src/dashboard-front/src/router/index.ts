@@ -112,6 +112,16 @@ const routes: RouteRecordRaw[] = [
           skipRoleCheck: true,
         },
       },
+      // 查询失败只展示错误壳，不加载受保护的业务页面；重试由用户显式触发。
+      {
+        path: 'load-error',
+        name: 'GatewayLoadError',
+        component: () => import('@/views/GatewayLoadError.vue'),
+        meta: {
+          title: t('网关加载失败'),
+          skipRoleCheck: true,
+        },
+      },
       // 网关下未匹配到的路径，统一收口到 404
       {
         path: ':pathMatch(.*)*',
@@ -121,6 +131,18 @@ const routes: RouteRecordRaw[] = [
         }),
       },
     ],
+  },
+  // 流水日志分享页：顶级路由，不套网关 layout
+  {
+    path: '/:id/access-log/:requestId',
+    name: 'AccessLogDetail',
+    component: () => import('@/views/operate-data/access-log/Detail.vue'),
+    meta: {
+      title: t('流水日志'),
+      matchRoute: 'AccessLogDetail',
+      topMenu: 'home',
+      skipRoleCheck: true,
+    },
   },
   {
     path: '/platform-tools',

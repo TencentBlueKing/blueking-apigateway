@@ -17,8 +17,6 @@
 #
 from typing import Dict, List, Optional, Set
 
-from .constants import MCP_SERVER_LOG_FIELDS
-
 
 def span_to_log(span: dict) -> dict:
     """将 span 转换为日志格式"""
@@ -210,8 +208,3 @@ def flatten_spans_to_logs(chain_data: dict) -> List[Dict]:
         logs.append(span_to_log(span))
         logs.extend(span_to_log(child) for child in span.get("children", []))
     return logs
-
-
-def get_log_fields() -> List[Dict]:
-    """获取日志字段定义"""
-    return MCP_SERVER_LOG_FIELDS

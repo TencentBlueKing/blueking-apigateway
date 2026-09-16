@@ -16,10 +16,9 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import { useWindowSize } from '@vueuse/core';
-import { locale } from '@/locales';
 import { useFeatureFlag } from '@/stores';
 import type { ReturnRecordType } from '@/types/common';
-import router from '@/router';
+import { getTableSettingsCacheKey, resolveTableCacheIdentifier } from './use-table-setting';
 
 type ITableLimit = {
   allocatedHeight: number
@@ -35,11 +34,6 @@ type ITableLimit = {
  * @returns lineH行高  topHead 表头高度
  */
 function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string, number> {
-  const curSetting = localStorage.getItem(`table-setting-${locale.value}-${className}`);
-  let tableSize = curSetting ? JSON.parse(curSetting)?.size : 'small';
-  if (['tdesign'].includes(mode)) {
-    tableSize = curSetting ? JSON.parse(curSetting)?.rowSize : 'medium';
-  }
   // 后续其他表格也可以适配，默认先以bkui-vue表格为例
   const sizeMap: ReturnRecordType<string, Record<string, number>> = {
     mini: () => {
@@ -109,7 +103,24 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
       };
     },
   };
-  return sizeMap[tableSize || 'mini']?.();
+
+  // 行高设置由 use-table-setting 写入，读这里必须使用同一个 key，否则永远读不到
+  const curSetting = localStorage.getItem(getTableSettingsCacheKey(className));
+  const isTDesign = ['tdesign'].includes(mode);
+  const defaultSize = isTDesign ? 'medium' : 'small';
+
+  let storageSettings: Record<string, any> | null = null;
+  try {
+    storageSettings = curSetting ? JSON.parse(curSetting) : null;
+  }
+  catch {
+    // 缓存内容损坏时按默认行高计算
+    storageSettings = null;
+  }
+
+  // 缓存存在但缺少对应字段时也要回退到默认值，避免落到 sizeMap 之外的尺寸
+  const tableSize = (isTDesign ? storageSettings?.rowSize : storageSettings?.size) || defaultSize;
+  return sizeMap[tableSize]?.() ?? sizeMap[defaultSize]();
 }
 
 /**
@@ -135,9 +146,10 @@ export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   const noticeComH = featureFlagStore.isEnabledNotice ? 40 : 0;
   // 获取表格的最大可视化区域
   const clientHeight = viewportHeight - hasAllocatedHeight - noticeComH;
-  const name = payload?.className ?? router?.currentRoute?.value?.name;
+  // 与 use-table-setting 使用同一套标识解析规则（cacheIdentifier -> 路由 name -> matched -> fullPath）
+  const name = resolveTableCacheIdentifier(payload?.className);
   // topHead是指vxe-table根据不同表格大小动态设置了距离表头top
-  const { lineH, topHead } = getTableSizeLineHeight(name as string, payload?.mode);
+  const { lineH, topHead } = getTableSizeLineHeight(name, payload?.mode);
   // 优先获取自定义传入行高，默认设置不同大小表格的固定行高
   const rowHeight = payload?.customLineHeight ?? lineH;
   // 为了防止body区域出现滚动条，需要减去表头和分页器的高度

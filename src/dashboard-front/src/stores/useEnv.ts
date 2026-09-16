@@ -71,6 +71,8 @@ export const useEnv = defineStore('useEnv', {
         TEMPLATE_VARS: '',
         // 网关认证
         AUTH: '',
+        // 个人token查看文档
+        AUTH_PERSONAL_TOKEN: '',
         // Swagger说明文档
         SWAGGER: '',
         // 跨域资源共享(CORS)

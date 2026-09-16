@@ -89,7 +89,7 @@ import {
   deleteGatewayMember,
   getGatewayMemberList,
 } from '@/services/source/gateway-member';
-import { useFeatureFlag, useGateway, useUserInfo } from '@/stores';
+import { useFeatureFlag, useGateway, useGatewayRoleStore, useUserInfo } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import AddMember from './components/AddMember.vue';
@@ -101,6 +101,7 @@ import {
   getRoleLabel,
 } from './utils';
 import type { MemberRole } from '@/constants/gateway-permission';
+import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
 
 type RoleTabKey = 'all' | MemberRole;
 
@@ -108,6 +109,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
+const roleStore = useGatewayRoleStore();
 const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
@@ -257,6 +259,10 @@ const fetchMembers = async () => {
 };
 
 const handleMembersChanged = async (member?: IMember) => {
+  const id = apigwId.value;
+  const currentRoute = router.currentRoute.value;
+  // 成员变更由调用方显式失效一次；清理详情不会再隐式清理角色。
+  roleStore.invalidateGatewayRole(id);
   if (member?.username === currentUsername.value) {
     // 自己被移除或降级后，成员接口不再可访问，且不能沿用旧管理员身份。
     gatewayStore.clearCurrentGateway();
@@ -264,24 +270,27 @@ const handleMembersChanged = async (member?: IMember) => {
     return;
   }
   try {
-    await Promise.all([fetchMembers(), gatewayStore.fetchGatewayDetail(apigwId.value)]);
+    const role = await roleStore.fetchGatewayRole(id);
+    if (currentRoute !== router.currentRoute.value) {
+      return;
+    }
+    if (role !== 'administrator') {
+      await router.replace({
+        name: 'GatewayNotFound',
+        params: { id },
+      });
+      return;
+    }
+    await Promise.all([fetchMembers(), gatewayStore.fetchGatewayDetail(id)]);
   }
-  catch {
-    // 网关详情刷新失败时清理缓存，下次进入网关时重新获取。
+  catch (error) {
+    if (currentRoute !== router.currentRoute.value) {
+      return;
+    }
+    // 请求失败不等于成员被移除，保留错误语义，允许显式重试。
     gatewayStore.clearCurrentGateway();
+    await router.replace(getGatewayErrorRoute(error, id, currentRoute.fullPath));
   }
-};
-
-const confirmSelfLeaveAdmin = (onConfirm: () => Promise<boolean>) => {
-  usePopInfoBox({
-    isShow: true,
-    type: 'warning',
-    title: () => t('确认移除自己的管理员权限？'),
-    subTitle: t('您已将自己从管理员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！'),
-    confirmText: t('确定'),
-    cancelText: t('取消'),
-    beforeClose: action => action === 'confirm' ? onConfirm() : true,
-  });
 };
 
 const handleChangeRole = (row: IMember) => {
@@ -297,6 +306,9 @@ const handleDelete = (row: IMember) => {
     });
     return;
   }
+
+  // InfoBox 为全局单例，嵌套弹出会被父级的关闭逻辑覆盖；移除自己的管理员权限时改为单次强警示确认。
+  const isSelfAdmin = row.username === currentUsername.value && row.role === 'administrator';
 
   const persist = async () => {
     try {
@@ -317,21 +329,14 @@ const handleDelete = (row: IMember) => {
   usePopInfoBox({
     isShow: true,
     type: 'warning',
-    title: () => t('确认删除成员？'),
-    subTitle: t('删除后该成员将失去对应权限，请确认'),
-    confirmText: t('删除'),
+    title: () => isSelfAdmin ? t('确认移除自己的管理员权限？') : t('确认删除成员？'),
+    subTitle: isSelfAdmin
+      ? t('您已将自己从管理员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')
+      : t('删除后该成员将失去对应权限，请确认'),
+    confirmText: isSelfAdmin ? t('确定') : t('删除'),
     cancelText: t('取消'),
-    confirmButtonTheme: 'danger',
-    beforeClose: (action) => {
-      if (action !== 'confirm') {
-        return true;
-      }
-      if (row.username === currentUsername.value && row.role === 'administrator') {
-        confirmSelfLeaveAdmin(persist);
-        return true;
-      }
-      return persist();
-    },
+    confirmButtonTheme: isSelfAdmin ? 'primary' : 'danger',
+    beforeClose: action => action === 'confirm' ? persist() : true,
   });
 };
 

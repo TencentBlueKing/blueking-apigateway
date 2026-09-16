@@ -161,6 +161,16 @@
               {{ formData.auth_config.auth_verified_required
                 ? t('开启后，用户可以用个人令牌调用本接口，请求会带上该用户的身份。')
                 : t('依赖「用户认证」。先勾选用户认证后才能开启。') }}
+              <BkButton
+                v-if="personalTokenLink"
+                size="small"
+                theme="primary"
+                text
+                class="text-12px! ml-8px"
+                @click="handleViewDoc"
+              >
+                {{ t('查看文档') }}
+              </BkButton>
             </p>
           </div>
         </div>
@@ -212,7 +222,7 @@
 
 <script setup lang="ts">
 import { useRouteParams, useRouteQuery } from '@vueuse/router';
-import { useGateway } from '@/stores';
+import { useEnv, useGateway } from '@/stores';
 import { getGatewayLabels } from '@/services/source/gateway.ts';
 import SelectCheckBox from '@/views/resource-management/settings/components/SelectCheckBox.vue';
 
@@ -230,6 +240,7 @@ const {
 } = defineProps<IProps>();
 
 const { t } = useI18n();
+const envStore = useEnv();
 const gatewayStore = useGateway();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 const queryKind = useRouteQuery('kind');
@@ -315,6 +326,8 @@ const authSceneAlertTheme = computed(() => (
     ? 'warning'
     : 'info'
 ));
+
+const personalTokenLink = computed(() => envStore?.env?.DOC_LINKS?.AUTH_PERSONAL_TOKEN);
 
 const namePlaceholder = t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符');
 
@@ -416,6 +429,10 @@ const handleLabelAddSuccess = async (labelId: number) => {
 const resetOauth2Switch = () => {
   // formData.value.auth_config.oauth2_public_client_enabled = false;
   formData.value.auth_config.oauth2_personal_client_enabled = false;
+};
+
+const handleViewDoc = () => {
+  window.open(personalTokenLink.value, '_blank');
 };
 
 const handleAuthVerifiedRequiredChange = (value: boolean) => {

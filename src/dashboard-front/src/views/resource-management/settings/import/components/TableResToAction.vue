@@ -17,195 +17,22 @@
  */
 
 <template>
-  <BkTable
-    :data="tableData"
-    :pagination="pagination"
-    row-key="name"
-    show-overflow-tooltip
+  <AgTable
+    ref="tableRef"
+    :table-data="tableData"
+    :columns="columns as PrimaryTableProps['columns']"
+    table-row-key="name"
+    local-page
+    :resizable="false"
     v-bind="$attrs"
   >
-    <BkTableColumn
-      :label="t('资源名称')"
-      :min-width="160"
-      fixed="left"
-      prop="name"
-      width="160"
-    />
-    <BkTableColumn
-      v-if="isAiGateway"
-      :label="t('资源类型')"
-      :min-width="100"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkTag :theme="getResourceTypeData(row.kind)?.theme ?? 'default'">
-          {{ getResourceTypeData(row.kind)?.label ?? t('普通 API') }}
-        </BkTag>
-      </template>
-    </BkTableColumn>
-    <!--  认证方式列  -->
-    <BkTableColumn
-      :label="() => renderAuthConfigColLabel()"
-      :show-overflow-tooltip="false"
-      width="100"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <span v-bk-tooltips="{ content: `${getAuthConfigText(row?.auth_config)}`, placement: 'top' }">
-          {{ getAuthConfigText(row?.auth_config) }}
-        </span>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="t('校验应用权限')"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <span
-          :class="{ 'color-#ffb400': getPermRequiredText(row?.auth_config) === t('是') }"
-        >{{ getPermRequiredText(row?.auth_config) }}</span>
-      </template>
-    </BkTableColumn>
-    <!--  “是否公开”列  -->
-    <BkTableColumn
-      :label="() => renderIsPublicColLabel()"
-      width="100"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <span :class="{ 'color-#ffb400': getPublicSettingText(row.is_public) === t('是') }">
-          {{ getPublicSettingText(row.is_public) }}
-        </span>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="t('允许申请权限')"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <span :class="{ 'color-#ffb400': getAllowApplyPermissionText(row.allow_apply_permission) === t('是') }">
-          {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
-        </span>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="t('前端请求路径')"
-      :min-width="160"
-      :width="160"
-    >
-      <template #default="{ row }">
-        <span>{{ row.match_subpath ? row.path_display : row.path }}</span>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="t('前端请求方法')"
-      :show-overflow-tooltip="false"
-      prop="method"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkTag :theme="(METHOD_THEMES as any)[row.method!]">
-          {{ row.method }}
-        </BkTag>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="isAiGateway ? t('后端/模型服务') : t('后端服务')"
-      prop="method"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        {{ row.backend?.name ?? 'default' }}
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      v-if="!isAiGateway"
-      :label="t('后端请求方法')"
-      :show-overflow-tooltip="false"
-      prop="method"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkTag
-          :theme="(METHOD_THEMES as any)[(row.backend?.config.method ?? row.method)!]"
-        >
-          {{ row.backend?.config.method ?? row.method }}
-        </BkTag>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      v-if="!isAiGateway"
-      :label="t('后端请求路径')"
-      :min-width="160"
-      :width="160"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        {{ row.backend?.config?.path ?? row.backend?.path ?? row.path }}
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="() => action === 'add' ? renderDocColLabel() : t('资源文档')"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkButton
-          v-if="docConfig.showDoc"
-          text
-          theme="primary"
-          @click="() => handleShowResourceDoc(row)"
-        >
-          <AgIcon
-            name="doc-2"
-            class="mr-4px color-#3A84FF"
-          />{{ t('详情') }}
-        </BkButton>
-        <span v-else>{{ t('未生成') }}</span>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="t('插件数量')"
-      width="85"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkButton
-          class="text-12px!"
-          text
-          theme="primary"
-          @click="() => handleShowPluginsSlider(row)"
-        >
-          <span
-            v-bk-tooltips="{ content: `${row.plugin_configs?.map((c)=>c.name || c.type).join('，') || '无插件'}` }"
-          >
-            {{ row.plugin_configs?.length ?? 0 }}
-          </span>
-        </BkButton>
-      </template>
-    </BkTableColumn>
-    <BkTableColumn
-      :label="t('操作')"
-      fixed="right"
-      prop="act"
-      width="150"
-      :show-overflow-tooltip="false"
-    >
-      <template #default="{ row }: { row: ILocalImportedResource }">
-        <div class="flex gap-12px">
-          <BkButton
-            text
-            theme="primary"
-            @click="() => handleEdit(row)"
-          >
-            {{ t('修改配置') }}
-          </BkButton>
-          <BkButton
-            class="px-10px"
-            text
-            theme="primary"
-            @click="() => toggleRowUnchecked(row)"
-          >
-            {{ t('不导入') }}
-          </BkButton>
-        </div>
-      </template>
-    </BkTableColumn>
     <template #empty>
       <TableEmpty
         :empty-type="keyword ? 'search-empty' : 'empty'"
         @clear-filter="handleClearFilter"
       />
     </template>
-  </BkTable>
+  </AgTable>
 </template>
 
 <script lang="tsx" setup>
@@ -215,6 +42,8 @@ import {
   type ILocalImportedResource,
   type IPublicConfig,
 } from '@/types/resource';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import AgTable from '@/components/ag-table/Index.vue';
 import { RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { useTextGetter } from '@/hooks';
@@ -264,12 +93,179 @@ const {
 
 const { t } = useI18n();
 
-const pagination = ref({
-  count: tableData.length,
-  limit: 10,
-});
-
 const localDocConfig = ref({ ...docConfig });
+
+const tableRef = useTemplateRef('tableRef');
+
+const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>(() => [
+  {
+    title: t('资源名称'),
+    colKey: 'name',
+    fixed: 'left',
+    width: 160,
+    minWidth: 160,
+    ellipsis: true,
+  },
+  ...(isAiGateway
+    ? [{
+      title: t('资源类型'),
+      colKey: 'kind',
+      minWidth: 100,
+      ellipsis: true,
+      cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+        <bk-tag theme={getResourceTypeData(row.kind)?.theme ?? 'default'}>
+          {getResourceTypeData(row.kind)?.label ?? t('普通 API')}
+        </bk-tag>
+      ),
+    }]
+    : []),
+  {
+    title: () => renderAuthConfigColLabel(),
+    colKey: 'auth_config',
+    width: 100,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <span v-bk-tooltips={{ content: `${getAuthConfigText(row?.auth_config)}`,
+        placement: 'top' }}
+      >
+        {getAuthConfigText(row?.auth_config)}
+      </span>
+    ),
+  },
+  {
+    title: t('校验应用权限'),
+    colKey: 'resource_perm_required',
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <span class={{ 'color-#ffb400': getPermRequiredText(row?.auth_config) === t('是') }}>
+        {getPermRequiredText(row?.auth_config)}
+      </span>
+    ),
+  },
+  {
+    title: () => renderIsPublicColLabel(),
+    colKey: 'is_public',
+    width: 100,
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <span class={{ 'color-#ffb400': getPublicSettingText(row.is_public) === t('是') }}>
+        {getPublicSettingText(row.is_public)}
+      </span>
+    ),
+  },
+  {
+    title: t('允许申请权限'),
+    colKey: 'allow_apply_permission',
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <span class={{ 'color-#ffb400': getAllowApplyPermissionText(row.allow_apply_permission) === t('是') }}>
+        {getAllowApplyPermissionText(row.allow_apply_permission)}
+      </span>
+    ),
+  },
+  {
+    title: t('前端请求路径'),
+    colKey: 'path',
+    width: 160,
+    minWidth: 160,
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource & { path_display?: string } }) => (
+      <span>{row.match_subpath ? row.path_display : row.path}</span>
+    ),
+  },
+  {
+    title: t('前端请求方法'),
+    colKey: 'method',
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <bk-tag theme={(METHOD_THEMES as any)[row.method!]}>
+        {row.method}
+      </bk-tag>
+    ),
+  },
+  {
+    title: isAiGateway ? t('后端/模型服务') : t('后端服务'),
+    colKey: 'backend',
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => row.backend?.name ?? 'default',
+  },
+  ...(!isAiGateway
+    ? [
+      {
+        title: t('后端请求方法'),
+        colKey: 'backend_method',
+        cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+          <bk-tag theme={(METHOD_THEMES as any)[(row.backend?.config.method ?? row.method)!]}>
+            {row.backend?.config.method ?? row.method}
+          </bk-tag>
+        ),
+      },
+      {
+        title: t('后端请求路径'),
+        colKey: 'backend_path',
+        width: 160,
+        minWidth: 160,
+        ellipsis: true,
+        cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+          row.backend?.config?.path ?? row.backend?.path ?? row.path
+        ),
+      },
+    ]
+    : []),
+  {
+    title: () => action === 'add' ? renderDocColLabel() : t('资源文档'),
+    colKey: 'doc',
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      docConfig.showDoc
+        ? (
+          <bk-button text theme="primary" onClick={() => handleShowResourceDoc(row)}>
+            <ag-icon name="doc-2" class="mr-4px color-#3A84FF" />
+            {t('详情')}
+          </bk-button>
+        )
+        : <span>{t('未生成')}</span>
+    ),
+  },
+  {
+    title: t('插件数量'),
+    colKey: 'plugin_configs',
+    width: 85,
+    ellipsis: true,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <bk-button class="text-12px!" text theme="primary" onClick={() => handleShowPluginsSlider(row)}>
+        <span v-bk-tooltips={{ content: `${row.plugin_configs?.map(c => c.name || c.type).join('，') || '无插件'}` }}>
+          {row.plugin_configs?.length ?? 0}
+        </span>
+      </bk-button>
+    ),
+  },
+  {
+    title: t('操作'),
+    colKey: 'act',
+    fixed: 'right',
+    width: 150,
+    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+      <div class="flex gap-12px">
+        <bk-button text theme="primary" onClick={() => handleEdit(row)}>
+          {t('修改配置')}
+        </bk-button>
+        <bk-button class="px-10px" text theme="primary" onClick={() => toggleRowUnchecked(row)}>
+          {t('不导入')}
+        </bk-button>
+      </div>
+    ),
+  },
+]);
+
+// 筛选或取消导入后，保持原表格在页码越界时回到第一页的行为。
+watch(() => tableData.length, (count) => {
+  const { current = 1, pageSize = 10 } = tableRef.value?.getPagination() ?? {};
+  if (current > Math.max(Math.ceil(count / pageSize), 1)) {
+    tableRef.value?.setPagination({
+      current: 1,
+      pageSize,
+    });
+  }
+});
 
 const getResourceTypeData = (kind?: ILocalImportedResource['kind']) => {
   return RESOURCE_TYPE_LIST.find(item => item.value === kind);
