@@ -41,7 +41,7 @@
   "data": {
     "record_id": 6,
     "itsm_ticket_id": "102025051310362600001802",
-    "itsm_ticket_url": "https://itsm.example.com/#/ticket/102025051310362600001802"
+    "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001802"
   }
 }
 
@@ -59,5 +59,5 @@
 |---------------|--------|------------|
 | record_id     | int    | 权限申请单的单据ID |
 | itsm_ticket_id | string | 关联的 ITSM 工单 ID，未关联时为空字符串 |
-| itsm_ticket_url | string | ITSM 工单 URL，未关联时为空字符串 |
+| approval_url | string | 权限审批 URL；优先返回 ITSM 工单地址，否则返回 `{DASHBOARD_FE_URL}/{gateway_id}/permission/apply` |
 

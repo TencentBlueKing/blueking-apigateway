@@ -6732,6 +6732,9 @@ paths:
                   data:
                     type: object
                     properties:
+                      approval_url:
+                        type: string
+                        description: 权限审批 URL，优先返回 ITSM 工单地址，否则返回网关权限审批页
                       record_id:
                         type: integer
                         description: 权限申请单的单据ID
@@ -6933,6 +6936,9 @@ paths:
                   data:
                     type: object
                     properties:
+                      approval_url:
+                        type: string
+                        description: 权限审批 URL，优先返回 ITSM 工单地址，否则返回网关权限审批页
                       id:
                         type: integer
                         description: 申请ID

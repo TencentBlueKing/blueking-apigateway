@@ -62,6 +62,8 @@ from apigateway.service.mcp import (
 from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
 from apigateway.utils import time
 
+from .helpers import build_gateway_permission_approval_url
+
 logger = logging.getLogger(__name__)
 RELEASED_RESOURCE_FIELDS = frozenset(
     {
@@ -407,6 +409,7 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     comment = serializers.SerializerMethodField()
     applied_by = serializers.SerializerMethodField()
     itsm_ticket_url = serializers.SerializerMethodField()
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
 
     class Meta:
         model = AppPermissionRecord
@@ -425,6 +428,7 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
             "expire_days",
             "itsm_ticket_id",
             "itsm_ticket_url",
+            "approval_url",
             "gateway_name",
         ]
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordBaseSLZ"
@@ -459,6 +463,9 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
             obj.gateway.tenant_mode,
             obj.gateway.tenant_id,
         )
+
+    def get_approval_url(self, obj) -> str:
+        return build_gateway_permission_approval_url(obj.gateway_id, obj.itsm_ticket_id)
 
     def get_itsm_ticket_url(self, obj):
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
@@ -509,6 +516,7 @@ class GatewayAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(read_only=True)
     itsm_ticket_id = serializers.CharField(read_only=True, allow_blank=True, default="")
     itsm_ticket_url = serializers.CharField(read_only=True, allow_blank=True, default="")
+    approval_url = serializers.CharField(read_only=True, help_text="权限审批 URL")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateOutputSLZ"
