@@ -3,10 +3,13 @@ from unittest import mock
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
+from django.urls import resolve
+from django_dynamic_fixture import G
 
 from apigateway.apis.permissions import GatewayActionPermission
 from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
 
@@ -128,3 +131,45 @@ def test_gateway_permission_rejects_invalid_member_role(mocker, fake_request, fa
             _view(fake_gateway.id, gateway_action=GatewayActionEnum.OPERATE_GATEWAY.value),
         )
     assert "unknown gateway member role" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "endpoint, method",
+    [
+        (endpoint, "GET")
+        for endpoint in (
+            "resources/",
+            "backends/",
+            "stages/",
+            "monitors/alarm/strategies/",
+            "mcp-servers/",
+            "dev-guideline/",
+        )
+    ]
+    + [
+        (endpoint, "POST")
+        for endpoint in (
+            "resources/",
+            "backends/",
+            "stages/",
+            "monitors/alarm/strategies/",
+            "mcp-servers/",
+        )
+    ],
+)
+@pytest.mark.parametrize("identity", ["administrator", "operator", "nonmember", "other_gateway_operator"])
+def test_operator_page_dependency_permissions(fake_request, fake_gateway, endpoint, method, identity):
+    # Resolve the real route so permission declarations cannot drift from the page's URL.
+    if identity in ("administrator", "operator"):
+        GatewayMember.objects.create(gateway=fake_gateway, username=identity, role=identity)
+    elif identity == "other_gateway_operator":
+        GatewayMember.objects.create(gateway=G(Gateway), username=identity, role=GatewayRoleEnum.OPERATOR.value)
+
+    match = resolve(f"/backend/gateways/{fake_gateway.id}/{endpoint}")
+    view = match.func.cls(**match.func.initkwargs)
+    view.kwargs = match.kwargs
+    fake_request.user = mock.MagicMock(username=identity)
+    fake_request.method = method
+
+    expected = identity == "administrator" or (identity == "operator" and method == "GET")
+    assert GatewayActionPermission().has_permission(fake_request, view) == expected

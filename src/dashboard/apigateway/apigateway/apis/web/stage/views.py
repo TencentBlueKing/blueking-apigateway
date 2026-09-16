@@ -24,6 +24,7 @@ from rest_framework import generics, status
 from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
+from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
@@ -86,6 +87,8 @@ class StageQuerySetMixin:
     ),
 )
 class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
+    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
+
     queryset = Stage.objects.select_related("gateway").order_by("id")
 
     def list(self, request, *args, **kwargs):
