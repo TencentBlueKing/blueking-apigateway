@@ -17,8 +17,10 @@
  */
 
 <template>
-  <div class="docs-main">
-    <!--  顶部 网关 / 组件 Tab  -->
+  <div
+    class="docs-main"
+    :class="{ 'has-page-tabs': !featureFlagStore.isTenantMode }"
+  >
     <header
       v-if="!featureFlagStore.isTenantMode"
       class="page-tabs"
@@ -40,42 +42,29 @@
         </section>
       </nav>
     </header>
-    <!--  正文  -->
-    <main
-      :class="[{ 'pt-24px': featureFlagStore.isTenantMode}, routerViewWrapperClass]"
-      class="docs-main-content"
-    >
+    <div class="docs-container">
+      <header
+        v-if="curTab === 'gateway'"
+        class="title-container"
+      >
+        <BkInput
+          v-model="filterData.keyword"
+          class="mr-8px flex-grow-1"
+          type="search"
+          :placeholder="t('请输入网关名称或描述')"
+          clearable
+        />
+        <div class="plugin-filter">
+          <BkCheckbox v-model="filterData.show_plugin_gateway">
+            {{ t('展示插件网关') }}
+          </BkCheckbox>
+        </div>
+      </header>
       <!--  当选中 网关API文档 时  -->
       <div
         v-if="curTab === 'gateway'"
         class="content-of-apigw"
       >
-        <!--  搜索栏和 SDK使用说明  -->
-        <header class="flex items-center justify-between mb-16px">
-          <div>
-            <BkCheckbox v-model="filterData.show_plugin_gateway">
-              {{ t('展示插件网关') }}
-            </BkCheckbox>
-          </div>
-          <div>
-            <BkInput
-              v-model="filterData.keyword"
-              type="search"
-              :placeholder="t('请输入网关名称或描述')"
-              clearable
-              style="width: 400px"
-            />
-            <BkLink
-              theme="primary"
-              class="text-12px ml-24px"
-              @click.prevent="isSdkInstructionSliderShow = true"
-            >
-              <AgIcon name="document" />
-              {{ t('SDK 使用说明') }}
-            </BkLink>
-          </div>
-        </header>
-        <!--  网关列表  -->
         <main class="docs-list">
           <AgTable
             ref="tableRef"
@@ -173,7 +162,7 @@
           </article>
         </main>
         <!--  右侧导航目录  -->
-        <BkAffix :offset-top="128">
+        <BkAffix :offset-top="152">
           <aside class="component-nav-list">
             <BkCollapse
               v-model="navPanelNamesList"
@@ -218,7 +207,7 @@
           </aside>
         </BkAffix>
       </div>
-    </main>
+    </div>
     <!--  SDK使用说明 Slider  -->
     <SDKInstructionSlider v-model="isSdkInstructionSliderShow" />
     <!--  网关/组件 SDK 地址 dialog  -->
@@ -227,7 +216,7 @@
       :sdks="curSdks"
       :languages="curTab === 'component' ? ['python'] : undefined"
       :target-name="curTargetName"
-      :maintainers="curTargetMaintainers"
+      :board="curSdkBoard"
     />
   </div>
 </template>
@@ -242,20 +231,30 @@ import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
 import SDKDetailDialog from './components/SDKDetailDialog.vue';
 import ComponentSearcher from './components/ComponentSearcher.vue';
 import type {
-  IApiGatewayBasics,
-  IBoard,
-  ICategory,
-  IComponentSdk,
-  ISdk,
-  ISystem,
-  TabType,
-} from './types.d.ts';
+  IDocsEsbBoardsSdksListResponse,
+  IDocsEsbBoardsSystemsListResponse,
+  IDocsGatewaysListResponse,
+  ISystemCategorySLZ,
+  ISystemSLZ,
+} from '@/services/types/responses/docs';
+import type { ISdkItem } from './components/DocSdkSection.vue';
+import { type DocTab, docTabKey } from './utils/doc-context';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useFeatureFlag } from '@/stores';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import AgTable from '@/components/ag-table/Index.vue';
+
+interface ICategory extends ISystemCategorySLZ { _navId: string }
+
+interface IBoard extends IDocsEsbBoardsSystemsListResponse {
+  categories: ICategory[]
+  sdk?: IDocsEsbBoardsSdksListResponse & { language: string }
+}
+
+type GatewayRow = IDocsGatewaysListResponse & { isOverflow?: boolean };
+type TableCell = Exclude<NonNullable<PrimaryTableProps['columns']>[number]['cell'], string | undefined>;
 
 const { t } = useI18n();
 const route = useRoute();
@@ -267,12 +266,13 @@ const filterData = ref({
   show_plugin_gateway: false,
 });
 
-const tableRef = ref();
+const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
+
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
 
 // 当前展示的是 网关 | 组件 相关内容
-const curTab = ref<TabType>('gateway');
+const curTab = ref<DocTab>('gateway');
 const curTargetName = ref('');
 const board = ref('default');
 const curCategoryNavId = ref('');
@@ -280,19 +280,22 @@ const navPanelNamesList = ref<string[]>([]);
 const isSdkInstructionSliderShow = ref(false);
 const isSdkDetailDialogShow = ref(false);
 const componentSystemList = ref<IBoard[]>([]); // 组件系统列表
-const curSdks = ref<ISdk[]>([]);
-const curTargetMaintainers = ref<string[]>([]);
+const curSdks = ref<ISdkItem[]>([]);
+const curSdkBoard = ref('default');
 
 // 提供当前 tab 的值
-// 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
-provide('curTab', curTab);
+provide(docTabKey, curTab);
+
+// AgTable 暂不支持泛型，在单元格入口绑定 getTableData 返回的网关行类型。
+const gatewayCell = (render: (row: GatewayRow) => ReturnType<TableCell>): TableCell =>
+  (_h, { row }) => render(row as GatewayRow);
 
 const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'name',
     title: t('网关名称'),
     width: 200,
-    cell: (h: any, { row }: any) => {
+    cell: gatewayCell((row) => {
       if (!row?.name) {
         return '--';
       }
@@ -310,11 +313,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               e,
               row,
             })}
-            onMouseleave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
-              e,
-              row,
-            })}
-            onClick={() => gotoDetails(row as IApiGatewayBasics)}
+            onMouseleave={() => tableRef.value?.handleCellLeave({ row })}
+            onClick={() => gotoDetails(row)}
           >
             { row.name }
           </div>
@@ -322,7 +322,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
             row.kind === 2
               ? (
                 <ag-icon
-                  name={row.kind === 1 ? 'square-program' : 'AIwangguan'}
+                  name="AIwangguan"
                   size="16"
                   class="ml-4px color-#3a84ff"
                 />
@@ -357,7 +357,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           }
         </div>
       );
-    },
+    }),
   },
   ...(featureFlagStore.isTenantMode
     ? [
@@ -366,14 +366,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         title: t('租户模式'),
         width: 120,
         ellipsis: true,
-        cell: (h: any, { row }: any) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }</span>,
+        cell: gatewayCell(row => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode || ''] || '--' }</span>),
       },
       {
         colKey: 'tenant_id',
         title: t('租户 ID'),
         width: 120,
         ellipsis: true,
-        cell: (h: any, { row }: any) => <span>{ row.tenant_id || '--' }</span>,
+        cell: gatewayCell(row => <span>{ row.tenant_id || '--' }</span>),
       },
     ]
     : []),
@@ -381,8 +381,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'description',
     title: t('网关描述'),
     ellipsis: true,
-    cell: (h: any, { row }: any) =>
-      <span>{ row.description || '--' }</span>,
+    cell: gatewayCell(row => <span>{ row.description || '--' }</span>),
   },
   ...(!featureFlagStore.isTenantMode
     ? [
@@ -390,7 +389,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         colKey: 'maintainers',
         title: t('网关负责人'),
         width: 180,
-        cell: (h: any, { row }: any) => (
+        cell: gatewayCell(row => (
           row.maintainers?.length
             ? (
               <div
@@ -405,10 +404,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                   e,
                   row,
                 })}
-                onMouseleave={(e: any) => tableRef.value?.handleCellLeave({
-                  e,
-                  row,
-                })}
+                onMouseleave={() => tableRef.value?.handleCellLeave({ row })}
               >
                 {
                   !featureFlagStore.isEnableDisplayName
@@ -420,10 +416,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                     : (
                       <span>
                         {
-                          row.maintainers.map((maintainer: any, index: number) => (
-                            <span
-                              key={maintainer.login_name}
-                            >
+                          row.maintainers.map((maintainer, index) => (
+                            <span key={`${row.id}-${maintainer}`}>
                               <bk-user-display-name userId={maintainer} />
                               {
                                 index !== (row.maintainers.length - 1)
@@ -439,35 +433,34 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               </div>
             )
             : '--'
-
-        ),
+        )),
       },
     ]
     : []),
   {
     colKey: 'is_plugin_gateway',
-    displayTitle: t('是否为插件网关'),
-    width: 180,
+    displayTitle: t('插件网关'),
+    width: 100,
     title: () => {
       return (
         <div
           v-bk-tooltips={{ content: t('由蓝鲸应用插件自动创建的网关') }}
           class="underline decoration-dashed underline-offset-4"
         >
-          {t('是否为插件网关')}
+          {t('插件网关')}
         </div>
       );
     },
-    cell: (h: any, { row }: any) => (
+    cell: gatewayCell(row => (
       row.is_plugin_gateway ? t('是') : t('否')
-    ),
+    )),
   },
   {
     colKey: 'actions',
     title: t('操作'),
-    width: 120,
+    width: 100,
     fixed: 'right',
-    cell: (h: any, { row }: any) => (
+    cell: gatewayCell(row => (
       <bk-button
         v-bk-tooltips={{
           content: t('SDK未生成，可联系负责人生成SDK'),
@@ -476,29 +469,18 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         text
         theme="primary"
         disabled={!row.sdks?.length}
-        onClick={() => handleSdkDetailClick(row as IApiGatewayBasics)}
+        onClick={() => handleSdkDetailClick(row)}
       >
         {t('查看 SDK')}
       </bk-button>
-    ),
+    )),
   },
 ]);
-
-const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-
-const routerViewWrapperClass = computed(() => {
-  const initClass = 'default-header-view';
-  const displayBkuiTable = ['ApiDocs'].includes(route.name as string) ? 'need-bkui-table-wrapper' : '';
-  if (isShowNoticeAlert.value) {
-    return `${initClass} show-notice ${displayBkuiTable}`;
-  }
-  return `${initClass} ${displayBkuiTable}`;
-});
 
 watch(
   filterData,
   () => {
-    tableRef.value!.fetchData(filterData.value, { resetPage: true });
+    tableRef.value?.fetchData(filterData.value, { resetPage: true });
   },
   { deep: true },
 );
@@ -506,13 +488,12 @@ watch(
 const getTableData = async (params: {
   offset?: number
   limit?: number
-} = {},
-) => getGatewaysDocs({
+} = {}) => getGatewaysDocs({
   ...params,
   show_plugin_gateway: filterData.value.show_plugin_gateway,
 });
 
-const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
+const gotoDetails = (row: IDocsGatewaysListResponse | ISystemSLZ, systemBoard?: string) => {
   const params = {
     targetName: row.name,
     curTab: curTab.value,
@@ -529,30 +510,32 @@ const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => 
 };
 
 const handleClearFilterKey = () => {
-  filterData.value = Object.assign(filterData.value, {
+  filterData.value = {
     keyword: '',
     show_plugin_gateway: false,
-  });
+  };
 };
 
 const fetchComponentSystemList = async () => {
   try {
-    const systemList = await getComponentSystemList(board.value) as IBoard[];
+    const systemList = await getComponentSystemList(board.value);
     // esb 的 sdk 语言，目前只有 python
     const language = 'python';
-    const sdkResponse = await getESBSDKList(board.value, { language }) as IComponentSdk[];
-    const sdkList = sdkResponse || [];
-    sdkList.forEach((sdk) => {
-      sdk.language = language;
-    });
+    const sdkResponse = await getESBSDKList(board.value, { language });
+    const sdkList = (sdkResponse || []).map(sdk => ({
+      ...sdk,
+      language,
+    }));
     systemList.forEach((system) => {
-      // 给组件分类添加一个跳转用的 _navId
-      system.categories.forEach((category) => {
-        category._navId = `${system.board}-${category.id}`;
+      // 分类导航 ID 和 SDK 是页面展示数据，不属于接口响应。
+      componentSystemList.value.push({
+        ...system,
+        categories: system.categories.map(category => ({
+          ...category,
+          _navId: `${system.board}-${category.id}`,
+        })),
+        sdk: sdkList.find(sdk => sdk.board_label === system.board_label),
       });
-      // 找到组件的 sdk
-      system.sdk = sdkList.find(sdk => sdk.board_label === system.board_label);
-      componentSystemList.value.push(system);
       navPanelNamesList.value.push(system.board);
     });
   }
@@ -570,17 +553,17 @@ const handleNavClick = (cat: ICategory) => {
   }
 };
 
-const handleSdkDetailClick = (row: IApiGatewayBasics) => {
+const handleSdkDetailClick = (row: IDocsGatewaysListResponse) => {
   curTargetName.value = row.name;
   curSdks.value = row.sdks ?? [];
+  curSdkBoard.value = 'default';
   isSdkDetailDialogShow.value = true;
-  curTargetMaintainers.value = row.maintainers || [];
 };
 
 const handleESBSdkDetailClick = (board: IBoard) => {
   curTargetName.value = board.sdk?.board_label ?? '';
   curSdks.value = board.sdk ? [board.sdk] : [];
-  curTargetMaintainers.value = [];
+  curSdkBoard.value = board.board;
   isSdkDetailDialogShow.value = true;
 };
 
@@ -597,7 +580,7 @@ onBeforeMount(() => {
     return;
   }
   // 记录返回到此页时选中的 tab
-  curTab.value = params.curTab as TabType || 'gateway';
+  curTab.value = params.curTab === 'component' ? 'component' : 'gateway';
 });
 
 onMounted(async () => {
@@ -606,21 +589,21 @@ onMounted(async () => {
     await fetchComponentSystemList();
   }
 });
-
 </script>
 
 <style lang="scss" scoped>
 $primary-color: #3a84ff;
 
 .docs-main {
+  min-height: calc(100vh - 52px);
+  background: #f5f7fa;
 
   .page-tabs {
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 10;
     display: flex;
     height: 52px;
-    margin-bottom: 24px;
     background: #fff;
     box-shadow: 0 3px 4px 0 #0000000a;
     justify-content: center;
@@ -652,17 +635,91 @@ $primary-color: #3a84ff;
     }
   }
 
-  .docs-main-content {
-    width: 1280px;
-    margin: auto;
+  .docs-container {
+    width: 80%;
+    min-width: 1200px;
+    padding-bottom: 24px;
+    margin: 0 auto;
+  }
 
-    .content-of-component {
+  .title-container {
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    display: flex;
+    width: 100%;
+    padding: 24px 0;
+    background-color: #f5f7fa;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &.has-page-tabs {
+
+    .title-container {
+      top: 52px;
+    }
+  }
+
+  .plugin-filter {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    margin-right: 12px;
+    font-size: 12px;
+    line-height: 20px;
+    color: #63656e;
+    white-space: nowrap;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #c4c6cc;
+    border-radius: 2px;
+
+    &:hover {
+      border-color: #979ba5;
+    }
+
+    &:has(.is-checked) {
+      color: #3a84ff;
+      background: #f0f5ff;
+      border-color: #3a84ff;
+
+      :deep(.bk-checkbox-label) {
+        color: #3a84ff;
+      }
+    }
+
+    :deep(.bk-checkbox) {
+      display: inline-flex;
+      align-items: center;
+      margin: 0;
+      font-size: 12px;
+      line-height: 20px;
+    }
+
+    :deep(.bk-checkbox-label) {
+      font-size: 12px;
+      line-height: 20px;
+      color: #63656e;
+    }
+  }
+
+  .content-of-apigw {
+
+    .docs-list {
+      min-height: calc(100vh - 220px);
+    }
+  }
+
+  .content-of-component {
       display: flex;
+      padding-top: 24px;
       padding-bottom: 12px;
 
       .category-list {
         width: 1000px;
-        height: calc(100vh - 128px);
+        height: calc(100vh - 152px);
         overflow-y: scroll;
 
         &::-webkit-scrollbar {
@@ -879,41 +936,5 @@ $primary-color: #3a84ff;
         }
       }
     }
-
-    &.default-header-view {
-      height: calc(100vh - 105px);
-      overflow: hidden;
-
-      &.show-notice {
-        height: calc(100vh - 145px);
-
-        .components-wrap {
-          max-height: calc(100vh - 200px);
-        }
-      }
-
-      &.need-bkui-table-wrapper {
-        overflow-y: hidden;
-
-        :deep(.bk-table-body) {
-
-          &.bk-scrollbar {
-
-            .bk__rail-x,
-            .bk__rail-y {
-              display: none !important;
-            }
-          }
-        }
-      }
-    }
   }
-}
-
-.docs-list {
-
-  :deep(.t-table__content) {
-    max-height: 652px !important;
-  }
-}
 </style>

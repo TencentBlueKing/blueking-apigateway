@@ -35,7 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import type { INavItem } from '../types.d.ts';
+export interface INavItem {
+  id: string
+  name: string
+}
 
 interface IProps { list?: INavItem[] }
 

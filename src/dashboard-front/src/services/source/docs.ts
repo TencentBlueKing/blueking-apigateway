@@ -19,6 +19,7 @@ import http from '../http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IDocsGatewaysListResponse,
+  IDocsGatewaysPermissionApplyResponse,
   IDocsGatewaysReadResponse,
   IDocsGatewaysResourcesDocReadResponse,
   IDocsGatewaysResourcesListResponse,
@@ -68,3 +69,17 @@ export const getApigwResourcesDocs = (gatewayName: string, data: IDocsGatewaysRe
 // 获取网关公开、可用的环境列表
 export const getApigwStagesDocs = (gatewayName: string, data: IDocsGatewaysStagesListQuery = {}) =>
   http.get<IDocsGatewaysStagesListResponse[]>(`${path}/${gatewayName}/stages/`, data);
+
+export interface IDocsPermissionApplyInput {
+  bk_app_code: string
+  reason: string
+  resource_name: string
+}
+
+// 从文档页申请当前资源权限
+// TODO: 后端暂未提供此接口，待接口实现后根据最终契约调整请求路径及请求、响应类型。
+export const applyDocsResourcePermission = (
+  gatewayName: string,
+  data: IDocsPermissionApplyInput,
+) =>
+  http.post<IDocsGatewaysPermissionApplyResponse>(`${path}/${gatewayName}/permissions/apply/`, data);

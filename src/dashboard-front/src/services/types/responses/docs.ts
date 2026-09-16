@@ -1,3 +1,5 @@
+import type { DocMaintainers } from '@/types/gateway';
+
 // /docs/esb/boards/{board}/sdks/
 export interface IDocsEsbBoardsSdksListResponse {
   board_label: string
@@ -51,7 +53,7 @@ export interface IDocsEsbBoardsSystemsReadResponse {
   name: string
   description: string
   comment: string | null
-  maintainers: string | null
+  maintainers: string[]
 }
 
 // /docs/esb/boards/{board}/systems/{system_name}/components/
@@ -59,9 +61,9 @@ export interface IDocsEsbBoardsSystemsComponentsListResponse {
   id: number
   name: string
   description: string
-  verified_app_required: string
-  verified_user_required: string
-  component_permission_required: string
+  verified_app_required: boolean
+  verified_user_required: boolean
+  component_permission_required: boolean
 }
 
 // /docs/esb/boards/{board}/systems/{system_name}/components/search/
@@ -81,37 +83,24 @@ export interface IDocsEsbBoardsSystemsComponentsDocReadResponse {
 
 // /docs/gateways/
 export interface IDocsGatewaysListResponse {
+  kind?: number
   id: number
   name: string
   description: string | null
   tenant_mode: string | null
   tenant_id: string | null
-  maintainers: (string | null)[]
-  doc_maintainers: object
-  is_official: string | null
-  is_plugin_gateway: string | null
+  maintainers: string[]
+  doc_maintainers: DocMaintainers
+  is_official: boolean
+  is_plugin_gateway: boolean
   is_deprecated: boolean
   deprecated_note: string
   api_url: string | null
-  sdks: string | null
+  sdks: IDocsGatewaySDK[]
 }
 
 // /docs/gateways/{gateway_name}/
-export interface IDocsGatewaysReadResponse {
-  id: number
-  name: string
-  description: string | null
-  tenant_mode: string | null
-  tenant_id: string | null
-  maintainers: (string | null)[]
-  doc_maintainers: object
-  is_official: string | null
-  is_plugin_gateway: string | null
-  is_deprecated: boolean
-  deprecated_note: string
-  api_url: string | null
-  sdks: string | null
-}
+export type IDocsGatewaysReadResponse = IDocsGatewaysListResponse;
 
 // /docs/gateways/{gateway_name}/resources/
 export interface IDocsGatewaysResourcesListResponse {
@@ -124,14 +113,69 @@ export interface IDocsGatewaysResourcesListResponse {
   verified_app_required: boolean
   resource_perm_required: boolean
   allow_apply_permission: boolean
-  labels: string | null
+  labels: {
+    id: number
+    name: string
+  }[]
 }
+
+export interface IDocsResourceDocPlugin {
+  type: string
+  config?: Record<string, unknown>
+}
+
+// 文档参数渲染所使用的 OpenAPI Schema 节点。
+export interface IDocsSchemaObject {
+  type?: string | string[]
+  description?: string
+  required?: string[]
+  properties?: Record<string, IDocsSchemaObject>
+  items?: IDocsSchemaObject
+  [keyword: string]: unknown
+}
+
+export interface IDocsOpenAPISchema {
+  none_schema?: boolean
+  parameters?: {
+    name: string
+    in: 'header' | 'query' | 'path' | 'cookie'
+    required?: boolean
+    description?: string
+    schema?: IDocsSchemaObject
+  }[]
+  requestBody?: {
+    description?: string
+    required?: boolean
+    content?: Record<string, { schema?: IDocsSchemaObject }>
+  }
+  responses?: Record<string, {
+    description?: string
+    content?: Record<string, { schema?: IDocsSchemaObject }>
+  }>
+}
+
+export type DocsDocSource = 'import' | 'custom' | 'openapi';
+export type DocsDocRenderMode = 'auto' | 'schema_first' | 'markdown_first';
 
 // /docs/gateways/{gateway_name}/resources/{resource_name}/doc/
 export interface IDocsGatewaysResourcesDocReadResponse {
   type: string
   content: string
   updated_time: string
+  source?: DocsDocSource
+  render_mode?: DocsDocRenderMode
+  plugins?: IDocsResourceDocPlugin[]
+  openapi_schema?: IDocsOpenAPISchema
+}
+
+// POST /docs/gateways/{gateway_name}/permissions/apply/
+export interface IDocsGatewaysPermissionApplyResponse {
+  record_id: number
+  bk_app_code: string
+  gateway_name: string
+  resource_name: string
+  itsm_ticket_id: string
+  itsm_ticket_url: string
 }
 
 // /docs/gateways/{gateway_name}/sdks/
@@ -173,4 +217,9 @@ export interface IDocsGatewaysStagesListResponse {
 // /docs/sdks/doc/
 export interface IDocsSdksDocReadResponse {
   content: string
+}
+
+// 网关列表和详情响应中内嵌的 SDK。
+export interface IDocsGatewaySDK extends ISDKSLZ {
+  language: string
 }
