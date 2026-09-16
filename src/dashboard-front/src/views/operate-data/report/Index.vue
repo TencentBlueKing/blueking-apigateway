@@ -18,7 +18,7 @@
 
 <template>
   <div class="page-wrapper-padding app-content">
-    <div class="flex align-items-center justify-between mb-24px">
+    <div class="mb-24px">
       <BkForm
         class="search-form"
         label-width="auto"
@@ -74,14 +74,16 @@
             />
           </BkSelect>
         </BkFormItem>
+        <BkFormItem label="">
+          <BkButton
+            :loading="downloading"
+            @click="() => handleDownload()"
+          >
+            {{ t('导出') }}
+            <AgIcon name="download" />
+          </BkButton>
+        </BkFormItem>
       </BkForm>
-      <BkButton
-        :loading="downloading"
-        @click="() => handleDownload()"
-      >
-        {{ t('导出') }}
-        <AgIcon name="download" />
-      </BkButton>
     </div>
 
     <div class="page-content">
@@ -499,7 +501,7 @@ init();
   :deep(.bk-form-item) {
     display: flex;
     max-width: fit-content;
-    min-width: 0;
+    min-width: auto;
     margin: 0;
     align-items: center;
     flex: 1;

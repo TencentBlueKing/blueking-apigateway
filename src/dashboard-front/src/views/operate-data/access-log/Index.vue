@@ -32,7 +32,7 @@
             ref="datePickerRef"
             v-model="dateValue"
             type="datetimerange"
-            style="max-width: 300px;"
+            style="max-width: 290px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
             use-shortcut-text
@@ -126,7 +126,7 @@
           </template>
           <SearchInput
             v-model:mode-value="keyword"
-            style="min-width: 250px;"
+            style="min-width: 220px;"
             @search="handleSearch"
           />
         </BkFormItem>
@@ -1312,6 +1312,8 @@ onBeforeUnmount(() => {
 
   .search-term {
     display: flex;
+    flex-wrap: wrap;
+    row-gap: 8px;
     margin-bottom: 24px;
     align-items: center;
 
@@ -1357,14 +1359,14 @@ onBeforeUnmount(() => {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 12px;
       flex: 1;
       min-width: 0;
 
       :deep(.bk-form-item) {
         display: flex;
         max-width: fit-content;
-        min-width: 0;
+        min-width: auto;
         margin: 0;
         align-items: center;
         flex: 1;
@@ -1383,6 +1385,11 @@ onBeforeUnmount(() => {
             width: 100%;
           }
         }
+      }
+
+      :deep(.bk-select) {
+        min-width: 160px;
+        max-width: 160px;
       }
     }
   }
