@@ -65,7 +65,7 @@ const handleLogout = () => {
       </template>
       <template #action>
         <ActionItem
-          v-if="envStore.env.BK_USER_PERSONAL_CENTER_LINK"
+          v-if="envStore.env.EDITION !== 'te' && envStore.env.BK_USER_PERSONAL_CENTER_LINK"
           @click="handleBkUserClick"
         >
           <template #icon>
