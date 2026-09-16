@@ -1427,7 +1427,7 @@ onUnmounted(() => {
     }
 
     .pannel-content {
-      width: 1060px;
+      max-width: 1060px;
       padding-top: 24px;
       padding-left: 100px;
 
@@ -1553,7 +1553,6 @@ onUnmounted(() => {
       }
 
       .guide-wrapper {
-        width: 912px;
         border-top: 1px solid #DCDEE5;
 
         .guide-item {
@@ -1594,8 +1593,8 @@ onUnmounted(() => {
       }
 
       .process-img {
-        width: 912px;
-        height: 223px;
+        width: 100%;
+        height: auto;
         background: #F5F7FA;
       }
     }

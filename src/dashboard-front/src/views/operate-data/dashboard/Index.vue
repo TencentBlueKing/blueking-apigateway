@@ -60,7 +60,7 @@
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 300px;"
+            style="max-width: 300px;"
             @change="handleBackendChange"
           >
             <BkOption
@@ -78,7 +78,7 @@
           <BkSelect
             v-model="backend_id"
             clearable
-            style="width: 300px;"
+            style="max-width: 300px;"
             @change="handleBackendChange"
           >
             <BkOptionGroup
@@ -753,7 +753,7 @@ onMounted(() => {
   :deep(.bk-form-item) {
     display: flex;
     max-width: fit-content;
-    min-width: 0;
+    min-width: auto;
     margin: 0;
     align-items: center;
     flex: 1;
