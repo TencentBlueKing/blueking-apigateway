@@ -293,18 +293,6 @@ const handleMembersChanged = async (member?: IMember) => {
   }
 };
 
-const confirmSelfLeaveAdmin = (onConfirm: () => Promise<boolean>) => {
-  usePopInfoBox({
-    isShow: true,
-    type: 'warning',
-    title: () => t('确认移除自己的管理员权限？'),
-    subTitle: t('您已将自己从管理员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！'),
-    confirmText: t('确定'),
-    cancelText: t('取消'),
-    beforeClose: action => action === 'confirm' ? onConfirm() : true,
-  });
-};
-
 const handleChangeRole = (row: IMember) => {
   changeMember.value = row;
   isChangeShow.value = true;
@@ -318,6 +306,9 @@ const handleDelete = (row: IMember) => {
     });
     return;
   }
+
+  // InfoBox 为全局单例，嵌套弹出会被父级的关闭逻辑覆盖；移除自己的管理员权限时改为单次强警示确认。
+  const isSelfAdmin = row.username === currentUsername.value && row.role === 'administrator';
 
   const persist = async () => {
     try {
@@ -338,21 +329,14 @@ const handleDelete = (row: IMember) => {
   usePopInfoBox({
     isShow: true,
     type: 'warning',
-    title: () => t('确认删除成员？'),
-    subTitle: t('删除后该成员将失去对应权限，请确认'),
-    confirmText: t('删除'),
+    title: () => isSelfAdmin ? t('确认移除自己的管理员权限？') : t('确认删除成员？'),
+    subTitle: isSelfAdmin
+      ? t('您已将自己从管理员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')
+      : t('删除后该成员将失去对应权限，请确认'),
+    confirmText: isSelfAdmin ? t('确定') : t('删除'),
     cancelText: t('取消'),
-    confirmButtonTheme: 'danger',
-    beforeClose: (action) => {
-      if (action !== 'confirm') {
-        return true;
-      }
-      if (row.username === currentUsername.value && row.role === 'administrator') {
-        confirmSelfLeaveAdmin(persist);
-        return true;
-      }
-      return persist();
-    },
+    confirmButtonTheme: isSelfAdmin ? 'primary' : 'danger',
+    beforeClose: action => action === 'confirm' ? persist() : true,
   });
 };
 

@@ -94,6 +94,15 @@ export function setupGatewayRoleGuard(router: Router) {
           replace: true,
         };
       }
+
+      // 从首页进入的话，不要直接进入 404，应进入“基础信息”页
+      if (from.name === 'Home') {
+        return {
+          name: 'BasicInfo',
+          params: { id: to.params.id },
+          replace: true,
+        };
+      }
       return toNotFound();
     }
     catch (error) {
