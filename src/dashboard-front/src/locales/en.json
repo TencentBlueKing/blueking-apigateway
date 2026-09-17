@@ -2162,6 +2162,7 @@
   "参数类型": "Type",
   "新增状态码": "New Status",
   "请输入合法的状态码": "Please input a valid status code",
+  "请输入 HTTP 状态码，按 Enter 确认": "Enter an HTTP status code and press Enter to confirm",
   "请求配置": "Request Config",
   "请输入状态码": "Input status code",
   "是否配置请求参数声明": "Has request params",

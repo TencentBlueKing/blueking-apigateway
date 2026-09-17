@@ -23,6 +23,7 @@
   >
     <div class="scalar-parameter-table__scroll">
       <table>
+        <!-- 基础参数表头：名称、类型、必填、默认值、说明，以及编辑态操作列。 -->
         <thead>
           <tr>
             <th class="name-column">
@@ -49,11 +50,13 @@
           </tr>
         </thead>
 
+        <!-- 每个 Header、Query 或 Path 参数对应一行。 -->
         <tbody>
           <tr
             v-for="row in rows"
             :key="row.id"
           >
+            <!-- 参数名：查看态显示文本，编辑态显示输入框及校验错误。 -->
             <td
               class="name-column"
               :class="{ 'control-cell': !readonly }"
@@ -83,6 +86,7 @@
               </div>
             </td>
 
+            <!-- 参数类型：仅允许 string、number、boolean。 -->
             <td
               class="type-column"
               :class="{ 'control-cell': !readonly }"
@@ -109,6 +113,7 @@
               </BkSelect>
             </td>
 
+            <!-- 必填状态：Path 参数固定必填，其他位置允许编辑。 -->
             <td class="required-column">
               <span
                 v-if="readonly"
@@ -125,6 +130,7 @@
               />
             </td>
 
+            <!-- 默认值：boolean 使用下拉框，其余类型使用输入框。 -->
             <td
               class="default-column"
               :class="{ 'control-cell': !readonly }"
@@ -152,6 +158,7 @@
               />
             </td>
 
+            <!-- Schema 说明在查看态展示文本，编辑态可直接输入。 -->
             <td
               class="description-column"
               :class="{ 'control-cell': !readonly }"
@@ -169,6 +176,7 @@
               />
             </td>
 
+            <!-- 操作列仅在编辑态展示字段设置和删除入口。 -->
             <td
               v-if="!readonly"
               class="operation-column"
@@ -195,6 +203,7 @@
             </td>
           </tr>
 
+          <!-- 当前参数分组没有数据时，用合并单元格展示空态。 -->
           <tr v-if="!rows.length">
             <td
               :colspan="readonly ? 5 : 6"
@@ -207,6 +216,7 @@
       </table>
     </div>
 
+    <!-- 新增入口位于表格底部，并跟随当前参数位置创建对应行。 -->
     <div
       v-if="!readonly"
       class="add-row"
@@ -225,13 +235,13 @@
 
 <script lang="ts" setup>
 import FieldSettingsPopover from './FieldSettingsPopover.vue';
-import { createRequestParameter } from './request-schema';
+import { createRequestParameter } from '../utils';
 import {
   type IRequestParameterRow,
   type ParameterLocation,
   SCALAR_PARAMETER_TYPES,
   type ScalarParameterType,
-} from './types';
+} from '../types';
 
 interface IProps {
   errors?: Record<string, string>
@@ -266,6 +276,7 @@ const booleanOptions = [
   },
 ];
 
+/** 将默认值格式化为只读表格可展示的文本。 */
 const formatValue = (value: unknown) => {
   if (value === undefined || value === null || value === '') {
     return '--';
@@ -274,11 +285,13 @@ const formatValue = (value: unknown) => {
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 };
 
+/** 将默认值转换为输入框使用的字符串，空值保持为空。 */
 const getEditableDefault = (row: IRequestParameterRow) => {
   const value = row.options.default;
   return value === undefined || value === null ? '' : String(value);
 };
 
+/** 更新参数默认值，并按参数类型进行数值转换或清空。 */
 const handleDefaultChange = (
   row: IRequestParameterRow,
   value: unknown,
@@ -291,6 +304,7 @@ const handleDefaultChange = (
   row.options.default = row.type === 'number' ? Number(value) : value;
 };
 
+/** 切换基础参数类型，同时清空旧类型遗留的 Schema 配置。 */
 const handleTypeChange = (
   row: IRequestParameterRow,
   value: unknown,
@@ -303,10 +317,12 @@ const handleTypeChange = (
   row.options = {};
 };
 
+/** 在当前 header、query 或 path 分组末尾新增空参数。 */
 const addRow = () => {
   rows.value.push(createRequestParameter(location));
 };
 
+/** 删除指定参数行并清除对应校验错误。 */
 const removeRow = (id: string) => {
   const index = rows.value.findIndex(row => row.id === id);
 

@@ -67,18 +67,22 @@ const JSON_SCHEMA_TYPE_NAMES = [
   'string',
 ];
 
+/** 判断输入是否为非数组的普通对象。 */
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
+/** 将普通对象收窄为组件可处理的 JSON Schema 对象。 */
 const isJsonSchemaObject = (value: unknown): value is IJsonSchemaObject => {
   return isRecord(value);
 };
 
+/** 判断输入是否为请求参数支持的 header、query 或 path 位置。 */
 const isParameterLocation = (value: unknown): value is ParameterLocation => {
   return PARAMETER_LOCATIONS.includes(value as ParameterLocation);
 };
 
+/** 根据示例值推断非 Body 参数支持的基础类型。 */
 const inferScalarType = (value: unknown): ScalarParameterType => {
   if (typeof value === 'boolean') {
     return 'boolean';
@@ -91,6 +95,7 @@ const inferScalarType = (value: unknown): ScalarParameterType => {
   return 'string';
 };
 
+/** 解析 Schema 类型，并将 integer 统一映射为编辑器使用的 number。 */
 const getSchemaType = (schema: IJsonSchemaObject): BodyParameterType => {
   const rawType = Array.isArray(schema.type)
     ? schema.type.find(type => type !== 'null')
@@ -120,6 +125,7 @@ const getSchemaType = (schema: IJsonSchemaObject): BodyParameterType => {
   return 'string';
 };
 
+/** 提取非结构性的 Schema 配置，供字段设置浮窗继续编辑。 */
 const getSchemaOptions = (schema: IJsonSchemaObject) => {
   const options = cloneDeep(schema);
   STRUCTURAL_SCHEMA_KEYS.forEach((key) => {
@@ -128,6 +134,7 @@ const getSchemaOptions = (schema: IJsonSchemaObject) => {
   return options;
 };
 
+/** 将未知输入规范化为可安全修改的 Schema 副本。 */
 const normalizeSchema = (schema: unknown): IJsonSchemaObject => {
   if (isJsonSchemaObject(schema)) {
     return cloneDeep(schema);
@@ -136,6 +143,7 @@ const normalizeSchema = (schema: unknown): IJsonSchemaObject => {
   return {};
 };
 
+/** 将 Schema 限制为基础类型，并移除 header、query、path 不支持的嵌套结构。 */
 const normalizeScalarSchema = (schema: IJsonSchemaObject) => {
   const type = getSchemaType(schema);
   const scalarType: ScalarParameterType = [
@@ -155,6 +163,7 @@ const normalizeScalarSchema = (schema: IJsonSchemaObject) => {
   return normalizedSchema;
 };
 
+/** 创建一个带唯一标识的 Body 字段行。 */
 export const createRequestField = (
   type: BodyParameterType = 'string',
   name = '',
@@ -169,6 +178,7 @@ export const createRequestField = (
   };
 };
 
+/** 创建指定参数位置的空参数行，path 参数默认必填。 */
 export const createRequestParameter = (
   location: ParameterLocation,
 ): IRequestParameterRow => {
@@ -183,6 +193,7 @@ export const createRequestParameter = (
   };
 };
 
+/** 创建使用 application/json 的空请求体状态。 */
 export const createRequestBody = (): IRequestBodyState => {
   return {
     mediaType: 'application/json',
@@ -191,6 +202,7 @@ export const createRequestBody = (): IRequestBodyState => {
   };
 };
 
+/** 创建不包含任何参数与请求体的初始编辑状态。 */
 export const createEmptyRequestParamsState = (): IRequestParamsState => {
   return {
     parameters: {
@@ -201,6 +213,7 @@ export const createEmptyRequestParamsState = (): IRequestParamsState => {
   };
 };
 
+/** 递归地将 JSON Schema 转换为 Body 参数树。 */
 export const schemaToFieldRow = (
   schemaValue: JsonSchema | undefined,
   name = '',
@@ -242,6 +255,7 @@ export const schemaToFieldRow = (
   return row;
 };
 
+/** 递归地将 Body 参数树还原为 JSON Schema。 */
 export const fieldRowToSchema = (row: IRequestFieldRow): IJsonSchemaObject => {
   const schema = cloneDeep(row.options);
   schema.type = row.type;
@@ -289,6 +303,7 @@ export const fieldRowToSchema = (row: IRequestFieldRow): IJsonSchemaObject => {
   return schema;
 };
 
+/** 将单个 OpenAPI 参数转换为表格行，不支持的位置会被忽略。 */
 const parameterToRow = (parameter: IOpenApiParameter): IRequestParameterRow | undefined => {
   if (!isParameterLocation(parameter.in)) {
     return undefined;
@@ -314,6 +329,7 @@ const parameterToRow = (parameter: IOpenApiParameter): IRequestParameterRow | un
   };
 };
 
+/** 从 OpenAPI requestBody 中提取可编辑的 application/json 请求体状态。 */
 const getRequestBodyState = (
   requestBody: IOpenApiRequestBody | undefined,
 ): IRequestBodyState | undefined => {
@@ -343,6 +359,7 @@ const getRequestBodyState = (
   };
 };
 
+/** 将 OpenAPI Operation 转换为请求参数编辑器的内部状态。 */
 export const openApiSchemaToState = (
   operation: IOpenApiOperationSchema | undefined,
 ): IRequestParamsState => {
@@ -376,6 +393,7 @@ export const openApiSchemaToState = (
   return state;
 };
 
+/** 将基础参数表格行序列化为 OpenAPI Parameter。 */
 const parameterRowToOpenApi = (row: IRequestParameterRow): IOpenApiParameter => {
   const schema = cloneDeep(row.options);
   schema.type = row.type;
@@ -389,6 +407,7 @@ const parameterRowToOpenApi = (row: IRequestParameterRow): IOpenApiParameter => 
   };
 };
 
+/** 将请求参数编辑状态转换为组件对外输出的 OpenAPI 数据。 */
 export const requestParamsStateToValue = (state: IRequestParamsState): IRequestParamsValue => {
   const parameters = PARAMETER_LOCATIONS.flatMap((location) => {
     return state.parameters[location].map(parameterRowToOpenApi);
@@ -411,6 +430,7 @@ export const requestParamsStateToValue = (state: IRequestParamsState): IRequestP
   };
 };
 
+/** 将普通 JSON 示例转换为 Schema，转换失败时回退为基础类型。 */
 const sampleToSchema = (value: unknown): IJsonSchemaObject => {
   try {
     return normalizeSchema(toJsonSchema(value));
@@ -422,6 +442,7 @@ const sampleToSchema = (value: unknown): IJsonSchemaObject => {
   }
 };
 
+/** 判断对象是否包含足以识别为 JSON Schema 的关键字。 */
 const isSchemaLike = (value: unknown): value is IJsonSchemaObject => {
   if (!isRecord(value)) {
     return false;
@@ -443,6 +464,7 @@ const isSchemaLike = (value: unknown): value is IJsonSchemaObject => {
     .some(key => key in value);
 };
 
+/** 将分组 JSON 中的单个参数转换为 OpenAPI Parameter。 */
 const groupedParameterToOpenApi = (
   name: string,
   value: unknown,
@@ -519,6 +541,7 @@ const groupedParameterToOpenApi = (
   };
 };
 
+/** 兼容数组和键值对象两种分组参数写法，并统一输出参数列表。 */
 const parseGroupedParameters = (
   value: unknown,
   location: ParameterLocation,
@@ -544,6 +567,7 @@ const parseGroupedParameters = (
   });
 };
 
+/** 将分组 JSON 的 body 内容转换为 OpenAPI requestBody。 */
 const groupedBodyToRequestBody = (value: unknown): IOpenApiRequestBody | undefined => {
   if (isRecord(value) && isRecord(value.content)) {
     return value as unknown as IOpenApiRequestBody;
@@ -574,12 +598,14 @@ const groupedBodyToRequestBody = (value: unknown): IOpenApiRequestBody | undefin
   };
 };
 
+/** 判断输入是否具备 OpenAPI Operation 的请求参数结构。 */
 const isOpenApiOperation = (value: Record<string, unknown>) => {
   return Array.isArray(value.parameters)
     || isRecord(value.parameters)
     || isRecord(value.requestBody);
 };
 
+/** 判断输入是否为按 header、query、path、body 分组的请求 JSON。 */
 const isGroupedRequest = (value: Record<string, unknown>) => {
   const locations = PARAMETER_LOCATIONS.filter(location => location in value);
 
@@ -598,6 +624,10 @@ const isGroupedRequest = (value: Record<string, unknown>) => {
     && (locations.length > 1 || onlyContainsRequestGroups);
 };
 
+/**
+ * 将编辑器或导入文件中的 JSON 转换为请求参数状态。
+ * 兼容包装后的 OpenAPI、分组参数以及作为 Body 示例的普通 JSON。
+ */
 export const requestJsonToState = (input: unknown): IRequestParamsState => {
   if (!isRecord(input)) {
     const state = createEmptyRequestParamsState();
@@ -651,6 +681,7 @@ export const requestJsonToState = (input: unknown): IRequestParamsState => {
   return state;
 };
 
+/** 生成 JSON 编辑器需要展示的 OpenAPI 请求参数结构。 */
 export const requestParamsStateToEditorJson = (state: IRequestParamsState) => {
   const value = requestParamsStateToValue(state);
 
@@ -660,9 +691,11 @@ export const requestParamsStateToEditorJson = (state: IRequestParamsState) => {
   };
 };
 
+/** 按深度优先顺序展开 Body 参数树，并保留层级、父节点和 Schema 路径。 */
 export const flattenRequestFields = (root: IRequestFieldRow): IFlatRequestFieldRow[] => {
   const result: IFlatRequestFieldRow[] = [];
 
+  /** 递归遍历字段树并记录表格渲染所需的上下文。 */
   const visit = (
     row: IRequestFieldRow,
     depth: number,
@@ -689,6 +722,7 @@ export const flattenRequestFields = (root: IRequestFieldRow): IFlatRequestFieldR
   return result;
 };
 
+/** 切换字段类型，并清理新类型不兼容的子节点和 Schema 配置。 */
 export const resetFieldForType = (
   row: IRequestFieldRow,
   type: BodyParameterType,
@@ -774,6 +808,7 @@ export const resetFieldForType = (
   row.options = nextOptions;
 };
 
+/** 深拷贝请求参数状态，避免导入结果与原始对象共享引用。 */
 export const cloneRequestParamsState = (state: IRequestParamsState) => {
   return cloneDeep(state);
 };

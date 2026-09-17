@@ -266,7 +266,7 @@ import { getMcpServerToolDoc } from '@/services/source/mcp-market';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
+import ResponseParams from '@/views/resource-management/components/response-params-v2/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
 import AgDescription from '@/components/ag-description/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
@@ -963,6 +963,7 @@ $code-color: #63656e;
 }
 
 @media (min-width: 769px) and (max-width: 1500px) {
+
   .mcp-tool-wrapper {
 
     .main-content-wrap {
