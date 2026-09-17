@@ -23,7 +23,6 @@ from django.utils import timezone
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import (
@@ -39,19 +38,6 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime, to_datetime_fr
 class TestRenewAppResourcePermission:
     def test(self, fake_gateway, unique_id):
         bk_app_code = unique_id
-        now = now_datetime()
-
-        G(
-            StatisticsAppRequestByDay,
-            gateway_id=fake_gateway.id,
-            bk_app_code=bk_app_code,
-            resource_id=1,
-            end_time=to_datetime_from_now(days=-3),
-        )
-        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=2, end_time=now)
-        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=3, end_time=now)
-        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=4, end_time=now)
-        G(StatisticsAppRequestByDay, gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=5, end_time=now)
 
         G(
             AppResourcePermission,
@@ -93,7 +79,7 @@ class TestRenewAppResourcePermission:
 
         assert AppResourcePermission.objects.get(
             gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=1
-        ).expires < to_datetime_from_now(days=4)
+        ).expires > to_datetime_from_now(days=179)
         assert (
             AppResourcePermission.objects.get(
                 gateway_id=fake_gateway.id, bk_app_code=bk_app_code, resource_id=2

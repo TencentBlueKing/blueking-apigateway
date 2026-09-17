@@ -30,8 +30,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
-from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.constants import (
+    DEFAULT_PERMISSION_EXPIRE_DAYS,
     ApplyStatusEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
@@ -51,7 +51,7 @@ from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file
-from apigateway.utils.time import NeverExpiresTime
+from apigateway.utils.time import NeverExpiresTime, now_datetime, to_datetime_from_now
 
 logger = logging.getLogger(__name__)
 
@@ -185,27 +185,13 @@ def renew_app_resource_permission():
 
     - 仅续期未过期的应用资源权限
     """
-    # 为防止统计数据获取偏差，时间跨度设置为 2 天
-    time_range_days = 2
-
-    time_ = timezone.now() + datetime.timedelta(days=-time_range_days)
-    queryset = StatisticsAppRequestByDay.objects.filter(end_time__gt=time_)
-
-    app_request_data = defaultdict(dict)
-    for item in queryset:
-        if not item.bk_app_code:
-            continue
-        app_request_data[item.bk_app_code].setdefault(item.gateway_id, set())
-        app_request_data[item.bk_app_code][item.gateway_id].add(item.resource_id)
-
-    for bk_app_code, gateway_resources in app_request_data.items():
-        for gateway_id, resource_ids in gateway_resources.items():
-            AppResourcePermission.objects.renew_not_expired_permissions(
-                gateway_id,
-                bk_app_code=bk_app_code,
-                resource_ids=resource_ids,
-                grant_type=GrantTypeEnum.AUTO_RENEW.value,
-            )
+    renewed_expires = to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
+    AppResourcePermission.objects.filter(
+        expires__range=(now_datetime(), renewed_expires),
+    ).update(
+        expires=renewed_expires,
+        grant_type=GrantTypeEnum.AUTO_RENEW.value,
+    )
 
 
 def _update_gateway_or_resource_permission_record_handled_by(

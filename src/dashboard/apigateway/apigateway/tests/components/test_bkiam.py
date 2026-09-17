@@ -208,15 +208,15 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
         "id": "bk_apigateway"
     }
     bkiam.update_system({"managers": ["admin"]})
-    assert bkiam.list_resource_type()["count"] == 1
+    assert bkiam.list_resource_type(page=2, page_size=50)["count"] == 1
     assert bkiam.batch_create_resource_type([{"id": "gateway", "name": "网关"}]) == ["gateway"]
     bkiam.update_resource_type("gateway", {"name": "网关"})
-    assert bkiam.list_action()["results"][0]["id"] == "manage_gateway"
+    assert bkiam.list_action(page=2, page_size=50)["results"][0]["id"] == "manage_gateway"
     assert bkiam.batch_create_action(
         [{"id": "manage_gateway", "name": "管理网关", "resource_type_id": "gateway"}]
     ) == ["manage_gateway"]
     bkiam.update_action("manage_gateway", {"name": "管理网关"})
-    assert bkiam.list_role()["results"][0]["id"] == "administrator"
+    assert bkiam.list_role(page=2, page_size=50)["results"][0]["id"] == "administrator"
     assert bkiam.batch_create_role(
         [
             {
@@ -239,6 +239,12 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
         "https://bkiam.example.com/prod/api/v1/open/rbac/model/systems/bk_apigateway/actions/",
         "https://bkiam.example.com/prod/api/v1/open/rbac/model/systems/bk_apigateway/roles/",
     ]
+    assert [item.kwargs["data"] for item in mock_get.call_args_list] == [
+        {},
+        {"page": 2, "page_size": 50},
+        {"page": 2, "page_size": 50},
+        {"page": 2, "page_size": 50},
+    ]
     assert mock_post.call_count == 5
     assert mock_put.call_count == 4
 
@@ -246,6 +252,7 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
 @pytest.mark.parametrize(
     "response",
     [
+        {},
         {"data": None},
         {"code": 0, "message": "ok", "data": None},
     ],

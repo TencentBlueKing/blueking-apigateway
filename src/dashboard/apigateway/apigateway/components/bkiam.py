@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import Any, Iterator, NotRequired, TypedDict, TypeVar
 
 from django.conf import settings
@@ -24,6 +25,8 @@ from apigateway.utils.url import url_join
 
 from .http import http_delete, http_get, http_post, http_put
 from .utils import do_blueking_http_request, gen_gateway_headers
+
+logger = logging.getLogger(__name__)
 
 MAX_BATCH_SIZE = 20
 DEFAULT_PAGE_SIZE = 100
@@ -164,6 +167,8 @@ def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs
 
     host = settings.BK_API_URL_TMPL.format(api_name="bkiam") + "/prod"
     url = url_join(host, path)
+    method = getattr(http_func, "__name__", type(http_func).__name__)
+    logger.debug("call bkiam api: %s %s, data=%s", method, url, data)
     return do_blueking_http_request("bkiam", http_func, url, data, headers, REQUEST_TIMEOUT, **kwargs)
 
 
@@ -241,7 +246,7 @@ def update_system(system: SystemUpdatePayload) -> None:
     _call_bkiam_api(http_put, path, system)
 
 
-def list_resource_type() -> PaginationData:
+def list_resource_type(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
     """
     分页查询资源类型。
 
@@ -249,7 +254,7 @@ def list_resource_type() -> PaginationData:
     路径: /api/v1/open/rbac/model/systems/{system_id}/resource-types/
     """
     path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/resource-types/"
-    params: dict[str, int] = {}
+    params = {"page": page, "page_size": page_size}
     return _call_bkiam_api(http_get, path, params)
 
 
@@ -275,7 +280,7 @@ def update_resource_type(resource_type_id: str, resource_type: ResourceTypeUpdat
     _call_bkiam_api(http_put, path, resource_type)
 
 
-def list_action() -> PaginationData:
+def list_action(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
     """
     分页查询操作。
 
@@ -283,7 +288,7 @@ def list_action() -> PaginationData:
     路径: /api/v1/open/rbac/model/systems/{system_id}/actions/
     """
     path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/actions/"
-    params: dict[str, int] = {}
+    params = {"page": page, "page_size": page_size}
     return _call_bkiam_api(http_get, path, params)
 
 
@@ -309,7 +314,7 @@ def update_action(action_id: str, action: ActionUpdatePayload) -> None:
     _call_bkiam_api(http_put, path, action)
 
 
-def list_role() -> PaginationData:
+def list_role(page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> PaginationData:
     """
     分页查询角色。
 
@@ -317,7 +322,7 @@ def list_role() -> PaginationData:
     路径: /api/v1/open/rbac/model/systems/{system_id}/roles/
     """
     path = f"/api/v1/open/rbac/model/systems/{BK_IAM_V4_SYSTEM_ID}/roles/"
-    params: dict[str, int] = {}
+    params = {"page": page, "page_size": page_size}
     return _call_bkiam_api(http_get, path, params)
 
 
