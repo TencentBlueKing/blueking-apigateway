@@ -118,12 +118,10 @@
                 >{{ t('（允许申请权限）') }}</span>
                 <span
                   v-if="api.allow_apply_permission"
-                  class="perm-extra"
                 >{{ t('（允许申请权限）') }}</span>
                 <span
                   v-else
                   v-bk-tooltips="t('本资源仅支持由网关管理员授权，不支持在线申请。')"
-                  class="perm-extra"
                 >{{ t('（只能主动授权）') }}</span>
               </span>
               <span v-else>{{ t('否') }}</span>
@@ -157,30 +155,31 @@
           v-if="curTab === 'gateway' || showStructured || markdownHtml"
           class="res-detail-content"
         >
-          <section
-            v-if="curTab === 'gateway'"
-            class="call-guide"
-          >
-            <h3 id="doc-heading-调用地址">
-              {{ t('调用地址') }}
-            </h3>
-            <div class="url-hero">
-              <span
-                class="method-badge"
-                :class="api.method"
-              >{{ api.method || '--' }}</span>
-              <code
-                class="url-text"
-                :title="resourceUrl || '--'"
-              >{{ resourceUrl || '--' }}</code>
-              <CopyButton
-                v-if="resourceUrl"
-                v-bk-tooltips="t('复制')"
-                class="url-copy"
-                :source="resourceUrl"
-              />
-            </div>
-          </section>
+          <!-- TODO 先隐藏，等后端改好 -->
+          <!--          <section -->
+          <!--            v-if="curTab === 'gateway'" -->
+          <!--            class="call-guide" -->
+          <!--          > -->
+          <!--            <h3 id="doc-heading-调用地址"> -->
+          <!--              {{ t('调用地址') }} -->
+          <!--            </h3> -->
+          <!--            <div class="url-hero"> -->
+          <!--              <span -->
+          <!--                class="method-badge" -->
+          <!--                :class="api.method" -->
+          <!--              >{{ api.method || '&#45;&#45;' }}</span> -->
+          <!--              <code -->
+          <!--                class="url-text" -->
+          <!--                :title="resourceUrl || '&#45;&#45;'" -->
+          <!--              >{{ resourceUrl || '&#45;&#45;' }}</code> -->
+          <!--              <CopyButton -->
+          <!--                v-if="resourceUrl" -->
+          <!--                v-bk-tooltips="t('复制')" -->
+          <!--                class="url-copy" -->
+          <!--                :source="resourceUrl" -->
+          <!--              /> -->
+          <!--            </div> -->
+          <!--          </section> -->
           <DocAuthSection
             v-if="showStructured"
             :plugins="doc?.plugins || []"
