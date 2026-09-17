@@ -17,213 +17,148 @@
  */
 
 <template>
-  <!--  页面右侧的网关详情/组件详情  -->
   <div class="intro-side-content-wrap">
-    <header class="intro-header">
-      <article
-        v-if="curTab === 'gateway'"
-        class="title"
-      >
-        {{ t('网关详情') }}
-      </article>
-      <article
-        v-else-if="curTab === 'component'"
-        class="title"
-      >
-        {{ t('组件详情') }}
-      </article>
-      <template v-if="curTab === 'gateway'">
-        <aside v-if="basics?.doc_maintainers?.type === 'user'">
-          <Chat
-            v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
-            :default-user-list="userList"
-            :owner="curUser.username"
-            :name="chatName"
-            :content="chatContent"
-            is-query
-          />
-        </aside>
-        <aside v-else>
-          <a
-            target="_blank"
-            class="link-item"
-            :href="basics?.doc_maintainers?.service_account?.link"
-          >
-            <i class="ag-doc-icon doc-qw text-16px apigateway-icon icon-ag-qw" />
-            {{ t('联系') }} {{ basics?.doc_maintainers?.service_account?.name }}
-          </a>
-        </aside>
-      </template>
-    </header>
-    <main
-      v-if="curTab === 'gateway'"
-      class="component-content"
+    <BkCollapse
+      v-model="activePanels"
+      class="detail-block-collapse"
     >
-      <div
-        id="markdown"
-        class="ag-markdown-view"
-      >
-        <article>
-          <header class="content-title">
-            {{ t('网关描述') }}
-          </header>
-          <main class="content-main">
-            {{ basics?.description }}
-          </main>
-        </article>
-        <template v-if="featureFlagStore.isTenantMode">
-          <article>
-            <header class="content-title">
-              {{ t('租户模式') }}
-            </header>
-            <main class="content-main">
-              {{ (basics?.tenant_mode && TENANT_MODE_TEXT_MAP[basics.tenant_mode]) || '--' }}
-            </main>
-          </article>
-          <article>
-            <header class="content-title">
-              {{ t('租户 ID') }}
-            </header>
-            <main class="content-main">
-              {{ basics?.tenant_id || '--' }}
-            </main>
-          </article>
-        </template>
-        <article>
-          <header class="content-title">
-            {{ t('网关负责人') }}
-          </header>
-          <main class="content-main">
-            <span v-if="!featureFlagStore.isEnableDisplayName">{{ basics?.maintainers?.join(', ') }}</span>
-            <span v-else>
-              <bk-user-display-name
-                :user-id="basics?.maintainers?.join(', ')"
-                style="word-break: break-all;"
+      <BkCollapsePanel name="basic">
+        <template #header>
+          <div class="block-header">
+            <div class="block-header-left">
+              <AgIcon
+                name="down-shape"
+                class="block-header-icon"
+                :class="{ 'is-fold': !activePanels.includes('basic') }"
               />
-            </span>
-          </main>
-        </article>
-        <article>
-          <header class="content-title">
-            {{ t('文档联系人') }}
-          </header>
-          <main class="content-main">
-            <span v-if="!featureFlagStore.isEnableDisplayName">
-              {{ basics?.doc_maintainers?.type === 'user' ?
-                basics?.doc_maintainers?.contacts.join(', ') :
-                basics?.doc_maintainers?.service_account?.name }}
-            </span>
-            <span v-else><bk-user-display-name
-              :user-id="basics?.doc_maintainers?.type === 'user' ?
-                basics?.doc_maintainers?.contacts.join(', ') :
-                basics?.doc_maintainers?.service_account?.name"
-            /></span>
-          </main>
-        </article>
-        <article>
-          <header class="content-title">
-            {{ t('网关访问地址') }}
-          </header>
-          <main class="content-main">
-            {{ basics?.api_url }}
-          </main>
-        </article>
-        <!--  网关 SDK 信息  -->
-        <template v-if="featureFlagStore.flags.ENABLE_SDK">
-          <article>
-            <header class="content-title">
-              {{ t('网关 SDK') }}
-            </header>
-            <SdkLanguageSelector
-              v-model="language"
-              :sdk-languages="sdks.map((item: any) => item.language)"
-              :width="90"
-              :margin-bottom="12"
-            />
-            <main class="content-main">
-              <SDKDetail
-                v-if="curSdk"
-                :sdk="curSdk"
-                is-apigw
-              />
-              <p
-                v-else
-                class="color-#63656e lh-16px font-normal text-12px mt-5px"
-              >
-                {{ t('SDK未生成，可联系负责人生成SDK') }}
-              </p>
-            </main>
-          </article>
-        </template>
-      </div>
-    </main>
-
-    <main
-      v-else-if="curTab === 'component'"
-      class="component-content"
-    >
-      <div class="ag-markdown-view">
-        <article>
-          <header class="content-title">
-            {{ t('组件描述') }}
-          </header>
-          <main class="content-main">
-            {{ basics?.comment }}
-          </main>
-        </article>
-        <article>
-          <header class="content-title">
-            {{ t('组件负责人') }}
-          </header>
-          <main class="content-main">
-            {{ basics?.maintainers?.join(', ') }}
-          </main>
-        </article>
-        <article>
-          <header class="content-title">
-            {{ t('组件 API SDK') }}
-            <BkTag
-              class="ml-20px"
-              theme="info"
+              <span>{{ t('基本信息') }}</span>
+            </div>
+            <div
+              v-if="curTab === 'gateway'"
+              @click.stop
             >
-              Python
-            </BkTag>
-          </header>
-          <main class="content-main">
-            <SDKDetail
-              v-if="sdks[0]"
-              :sdk="sdks[0]"
-            />
-          </main>
-        </article>
-      </div>
-    </main>
+              <DocDetailMaintainerAction :basics="basics" />
+            </div>
+          </div>
+        </template>
+        <template #content>
+          <template v-if="curTab === 'gateway'">
+            <DocDetailField :label="t('网关描述')">
+              {{ basics?.description || '--' }}
+            </DocDetailField>
+            <template v-if="featureFlagStore.isTenantMode">
+              <DocDetailField :label="t('租户模式')">
+                {{ (basics?.tenant_mode && TENANT_MODE_TEXT_MAP[basics.tenant_mode]) || '--' }}
+              </DocDetailField>
+              <DocDetailField :label="t('租户 ID')">
+                {{ basics?.tenant_id || '--' }}
+              </DocDetailField>
+            </template>
+            <DocDetailField :label="t('网关负责人')">
+              <span v-if="!featureFlagStore.isEnableDisplayName">{{ maintainerText }}</span>
+              <bk-user-display-name
+                v-else
+                :user-id="maintainerText"
+              />
+            </DocDetailField>
+            <DocDetailField :label="t('文档联系人')">
+              <span v-if="!featureFlagStore.isEnableDisplayName">{{ docMaintainerText }}</span>
+              <bk-user-display-name
+                v-else
+                :user-id="docMaintainerText"
+              />
+            </DocDetailField>
+            <DocDetailField :label="t('网关访问地址')">
+              <span>{{ basics?.api_url || '--' }}</span>
+              <CopyButton
+                v-if="basics?.api_url"
+                :source="basics.api_url"
+              />
+            </DocDetailField>
+          </template>
+          <template v-else>
+            <DocDetailField :label="t('组件描述')">
+              {{ basics?.comment || '--' }}
+            </DocDetailField>
+            <DocDetailField :label="t('组件负责人')">
+              {{ basics?.maintainers?.join(', ') || '--' }}
+            </DocDetailField>
+          </template>
+        </template>
+      </BkCollapsePanel>
+      <BkCollapsePanel
+        v-if="featureFlagStore.flags.ENABLE_SDK"
+        name="sdk"
+      >
+        <template #header>
+          <div class="block-header">
+            <div class="block-header-left">
+              <AgIcon
+                name="down-shape"
+                class="block-header-icon"
+                :class="{ 'is-fold': !activePanels.includes('sdk') }"
+              />
+              <span>{{ curTab === 'gateway' ? t('网关 SDK') : t('组件 API SDK') }}</span>
+            </div>
+            <div @click.stop>
+              <BkSelect
+                v-model="sdkLanguage"
+                class="sdk-lang-select"
+                size="small"
+                filterable
+                :clearable="false"
+                :input-search="false"
+              >
+                <BkOption
+                  v-for="lang in sdkLangList"
+                  :key="lang"
+                  :value="lang"
+                  :label="formatSdkLang(lang)"
+                />
+              </BkSelect>
+            </div>
+          </div>
+        </template>
+        <template #content>
+          <DocSdkSection
+            v-model:language="sdkLanguage"
+            :sdks="sdks"
+            :board="board"
+          />
+        </template>
+      </BkCollapsePanel>
+    </BkCollapse>
   </div>
 </template>
 
 <script lang="ts" setup>
-import Chat from '@/components/chat/Index.vue';
-import SDKDetail from './SDKDetail.vue';
+import DocDetailField from './DocDetailField.vue';
+import DocDetailMaintainerAction from './DocDetailMaintainerAction.vue';
+import DocSdkSection, { type ISdkItem } from './DocSdkSection.vue';
 import type {
-  IApiGatewayBasics,
-  IApiGatewaySdkDoc,
-  IComponentSdk,
-  ISystemBasics,
-  TabType,
-} from '../types.d.ts';
-import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
+  IDocsEsbBoardsSystemsReadResponse,
+  IDocsGatewaysReadResponse,
+} from '@/services/types/responses/docs';
+import { docTabKey } from '../utils/doc-context';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useBkUserDisplayName } from '@/hooks';
-import { useFeatureFlag, useUserInfo } from '@/stores';
+import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
+
+// 网关和组件的公共信息必填，各自的详情字段按需提供。
+export interface IDocBasics extends Pick<IDocsGatewaysReadResponse, 'name' | 'description' | 'maintainers'>,
+  Partial<Omit<IDocsGatewaysReadResponse, 'name' | 'description' | 'maintainers' | 'sdks'>>,
+  Partial<Pick<IDocsEsbBoardsSystemsReadResponse, 'comment'>> {}
 
 interface IProps {
-  basics?: IApiGatewayBasics & ISystemBasics | null
-  sdks?: IApiGatewaySdkDoc[] & IComponentSdk[]
+  basics?: IDocBasics | null
+  sdks?: ISdkItem[]
+  board?: string
 }
 
 const {
   basics = null,
   sdks = [],
+  board = 'default',
 } = defineProps<IProps>();
 
 const { t } = useI18n();
@@ -231,25 +166,32 @@ const featureFlagStore = useFeatureFlag();
 const userStore = useUserInfo();
 const { configure: configureDisplayName } = useBkUserDisplayName();
 
-// 注入当前的总 tab 变量
-const curTab = inject<Ref<TabType>>('curTab');
+const curTab = inject(docTabKey);
+const envStore = useEnv();
+const activePanels = ref(['basic', 'sdk']);
+const sdkLanguage = ref('python');
 
-const language = ref('python');
-
-const curUser = computed(() => userStore?.info);
-const userList = computed(() => {
-  // 去重
-  const set = new Set([
-    curUser.value?.username,
-    ...(basics?.maintainers ?? []),
-  ]);
-  return [...set].filter((s): s is string => !!s);
+const generatedSdkLanguages = computed(() => {
+  return sdks.map(item => item.language).filter((language): language is string => !!language);
 });
-const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${basics?.name}`);
-const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
+const sdkLangList = computed(() => {
+  const fromEnv = envStore.env.BK_SDK_LANGUAGES || [];
+  return [...new Set([...generatedSdkLanguages.value, ...fromEnv])];
+});
 
-const curSdk = computed(() => {
-  return sdks.find((item: any) => item.language === language.value) ?? null;
+const formatSdkLang = (lang: string) => {
+  if (!lang) {
+    return '';
+  }
+  return lang.charAt(0).toUpperCase() + lang.slice(1);
+};
+
+const maintainerText = computed(() => basics?.maintainers?.join(', ') || '--');
+const docMaintainerText = computed(() => {
+  if (basics?.doc_maintainers?.type === 'user') {
+    return basics.doc_maintainers.contacts?.join(', ') || '--';
+  }
+  return basics?.doc_maintainers?.service_account?.name || '--';
 });
 
 watch(
@@ -263,54 +205,92 @@ watch(
     immediate: true,
   });
 
-watchEffect(() => {
-  language.value = sdks[0]?.language || 'python';
-});
+watch(sdkLangList, (list) => {
+  if (!list.includes(sdkLanguage.value)
+    || (generatedSdkLanguages.value.length && !generatedSdkLanguages.value.includes(sdkLanguage.value))
+  ) {
+    sdkLanguage.value = generatedSdkLanguages.value[0] || list[0] || 'python';
+  }
+}, { immediate: true });
 </script>
 
 <style lang="scss" scoped>
 .intro-side-content-wrap {
-  padding: 0 24px 12px;
+  min-height: calc(100vh - 52px);
+  padding: 16px;
+  background: #f5f7fa;
+}
 
-  .intro-header {
-    display: flex;
-    height: 48px;
-    margin-bottom: 12px;
-    justify-content: space-between;
-    align-items: center;
-  }
+.block-header {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #313238;
+}
 
-  .component-content {
-    width: auto;
+.block-header-left {
+  display: flex;
+  min-width: 0;
+  align-items: center;
 
-    .ag-markdown-view {
-
-      .content-title,
-      .content-main {
-        font-size: 14px;
-        line-height: 22px;
-        letter-spacing: 0;
-        color: #63656e;
-      }
-
-      .content-title {
-        margin-bottom: 12px;
-        font-weight: 700;
-      }
-
-      .content-main {
-        margin-bottom: 32px;
-      }
-    }
+  > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-.link-item {
+.block-header-icon {
+  flex-shrink: 0;
+  margin-right: 8px;
   font-size: 12px;
-  color: #3A84FF;
+  color: #63656e;
+  transition: transform 0.2s;
 
-  i {
-    margin-right: 3px;
+  &.is-fold {
+    transform: rotate(-90deg);
+  }
+}
+
+.block-header > div:last-child {
+  flex-shrink: 0;
+  margin-left: 12px;
+  font-weight: 400;
+}
+
+.sdk-lang-select {
+  width: 140px;
+}
+
+.detail-block-collapse {
+
+  :deep(> .bk-collapse-item) {
+    margin-bottom: 16px;
+    overflow: visible;
+    background: #fff;
+    border: none;
+    border-radius: 2px;
+    box-shadow: none;
+  }
+
+  :deep(> .bk-collapse-item:last-child) {
+    margin-bottom: 0;
+  }
+
+  :deep(> .bk-collapse-item > div:first-child:not(.bk-collapse-content)) {
+    display: flex;
+    min-height: 48px;
+    padding: 0 16px;
+    cursor: pointer;
+    align-items: center;
+  }
+
+  :deep(> .bk-collapse-item > .bk-collapse-content) {
+    padding: 0 16px 16px;
   }
 }
 </style>

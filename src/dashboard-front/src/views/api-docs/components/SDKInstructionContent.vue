@@ -19,23 +19,22 @@
 <template>
   <!--  SDK使用说明 Slider 的内容  -->
   <div class="sdk-wrapper">
-    <SdkLanguageSelector
-      v-if="curTab === 'gateway'"
+    <BkSelect
       v-model="language"
-      :margin-bottom="0"
-      @select="handleLangSelect"
-    />
-    <div
-      v-else
-      class="bk-button-group"
+      class="sdk-lang-select"
+      size="small"
+      filterable
+      :clearable="false"
+      :input-search="false"
+      :disabled="curTab === 'component'"
     >
-      <BkButton
-        class="is-selected"
-        style="width: 150px"
-      >
-        Python
-      </BkButton>
-    </div>
+      <BkOption
+        v-for="lang in langList"
+        :key="lang"
+        :value="lang"
+        :label="formatSdkLang(lang)"
+      />
+    </BkSelect>
     <div
       v-if="sdkDoc"
       id="sdk-instruction-markdown"
@@ -59,14 +58,29 @@ import hljs from 'highlight.js';
 import { copy } from '@/utils';
 import { getESBSDKDoc } from '@/services/source/docs-esb';
 import { getGatewaySDKDoc } from '@/services/source/sdks';
-import type { TabType } from '../types.d.ts';
+import { docTabKey } from '../utils/doc-context';
 import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs';
-import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
+import { useEnv } from '@/stores';
 import 'highlight.js/styles/github.css';
 
 const { t } = useI18n();
+const envStore = useEnv();
 
-const curTab = inject<Ref<TabType>>('curTab');
+const curTab = inject(docTabKey);
+
+const formatSdkLang = (lang: string) => {
+  if (!lang) {
+    return '';
+  }
+  return lang.charAt(0).toUpperCase() + lang.slice(1);
+};
+
+const langList = computed(() => {
+  if (curTab?.value === 'component') {
+    return ['python'];
+  }
+  return envStore.env.BK_SDK_LANGUAGES || ['python'];
+});
 
 const language = ref('python');
 const board = ref('default');
@@ -108,7 +122,7 @@ const initMarkdownHtml = (content: string) => {
     const markdownDom = document.getElementById('sdk-instruction-markdown');
     // 复制代码
     markdownDom?.querySelectorAll('a')
-      .forEach((item: any) => {
+      .forEach((item) => {
         item.target = '_blank';
       });
     markdownDom?.querySelectorAll('pre')
@@ -130,12 +144,9 @@ const initMarkdownHtml = (content: string) => {
         parentDiv?.appendChild(item);
       });
     setTimeout(() => {
-      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
-      const handleCopy = function (this: any) {
-        copy(this.dataset?.copy);
-      };
-      copyDoms.forEach((dom: any) => {
-        dom.onclick = handleCopy;
+      const copyDoms = document.querySelectorAll<HTMLElement>('.ag-copy-btn');
+      copyDoms.forEach((dom) => {
+        dom.onclick = () => copy(dom.dataset.copy ?? '');
       });
     }, 1000);
   });
@@ -163,11 +174,6 @@ const getSDKDoc = async () => {
   }
 };
 
-const handleLangSelect = (lang: string) => {
-  if (lang === language.value) return;
-  init();
-};
-
 const init = async () => {
   try {
     await getSDKDoc();
@@ -183,16 +189,14 @@ const init = async () => {
   }
 };
 
-// 监听 tab 的变化，改变内容时重新渲染
 watch(
-  () => curTab?.value,
+  [() => curTab?.value, language],
   () => {
     renderKey.value += 1;
     init();
   },
   {
     immediate: true,
-    deep: true,
   },
 );
 
@@ -207,11 +211,9 @@ $code-color: #63656e;
   padding: 24px 40px;
 }
 
-:deep(.bk-button-group) {
-
-  .is-selected {
-    background-color: #f6f9ff !important;
-  }
+.sdk-lang-select {
+  width: 140px;
+  margin-bottom: 16px;
 }
 
 :deep(.ag-markdown-view) {

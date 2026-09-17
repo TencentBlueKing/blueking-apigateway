@@ -73,7 +73,6 @@
 <script setup lang="ts">
 import { useEnv, useFeatureFlag } from '@/stores';
 import type { IMenu } from '@/types/common';
-import AgIcon from '@/components/ag-icon/Index.vue';
 
 const { t } = useI18n();
 const route = useRoute();

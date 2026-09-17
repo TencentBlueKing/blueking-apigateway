@@ -108,7 +108,7 @@
 <script setup lang="ts">
 import { searchAPI } from '@/services/source/docs-esb';
 import type { IExtractApiReturn } from '@/services/types/utils';
-import type { IBoard } from '../types.d.ts';
+import type { IDocsEsbBoardsSystemsListResponse as IBoard } from '@/services/types/responses/docs';
 
 type ISearchResult = IExtractApiReturn<typeof searchAPI>[number];
 
@@ -127,13 +127,13 @@ const router = useRouter();
 
 const curVersionList = ref<IBoard[]>([]);
 const resultList = ref<ISearchResult[]>([]);
-const keyword = ref<string>('');
-const contentMaxHeight = ref<number>(410);
-const selectIndex = ref<number>(0);
-const isLoading = ref<boolean>(false);
-const dropdown = ref();
-const searchListContainer = ref<HTMLElement | null>(null);
-const curVersion = ref<any>({
+const keyword = ref('');
+const contentMaxHeight = ref(410);
+const selectIndex = ref(0);
+const isLoading = ref(false);
+const dropdown = useTemplateRef<{ hide?: () => void }>('dropdown');
+const searchListContainer = useTemplateRef<HTMLElement>('searchListContainer');
+const curVersion = ref<IBoard>({
   board: '',
   board_label: '',
   categories: [],
@@ -148,31 +148,31 @@ watch(
   () => {
     if (versionList.length) {
       curVersion.value = versionList[0];
-      curVersionList.value = versionList as IBoard[];
+      curVersionList.value = versionList;
     }
   },
   { immediate: true },
 );
 
-const hightlight = (node: any) => {
+const hightlight = (node: ISearchResult) => {
   if (keyword.value) {
     return node.name.replace(new RegExp(`(${keyword.value})`), '<em class="keyword">$1</em>');
   }
   return node.name;
 };
-const hightlightSystemName = (node: any) => {
+const hightlightSystemName = (node: ISearchResult) => {
   if (keyword.value) {
     return node.system_name.replace(new RegExp(`(${keyword.value.toUpperCase()})`), '<em class="keyword">$1</em>');
   }
   return node.system_name;
 };
 
-const triggerHandler = (version: any) => {
+const triggerHandler = (version: IBoard) => {
   curVersion.value = version;
   dropdown.value?.hide?.();
 };
 // 跳转指定组件
-const handleShowDoc = (version: any, board: string) => {
+const handleShowDoc = (version: ISearchResult, board: string) => {
   router.push({
     name: 'ApiDocDetail',
     params: {
@@ -198,7 +198,7 @@ const handleSearch = async () => {
     console.log('error', error);
   }
 };
-const handleKeyup = (e: any) => {
+const handleKeyup = (e: KeyboardEvent) => {
   const curKeyCode = e.keyCode;
   const curLength = resultList.value.length;
   e.preventDefault?.();
@@ -214,9 +214,9 @@ const handleKeyup = (e: any) => {
       else {
         selectIndex.value -= 1;
         nextTick(() => {
-          const curSelectNode = searchListContainer.value?.querySelector('li.cur');
+          const curSelectNode = searchListContainer.value?.querySelector<HTMLElement>('li.cur');
           if (curSelectNode) {
-            const { offsetTop } = curSelectNode as HTMLElement;
+            const { offsetTop } = curSelectNode;
             if (searchListContainer.value && offsetTop < searchListContainer.value.scrollTop) {
               searchListContainer.value.scrollTop -= 41;
             }
@@ -229,9 +229,9 @@ const handleKeyup = (e: any) => {
       if (selectIndex.value < curLength - 1) {
         selectIndex.value += 1;
         nextTick(() => {
-          const curSelectNode = searchListContainer.value?.querySelector('li.cur');
+          const curSelectNode = searchListContainer.value?.querySelector<HTMLElement>('li.cur');
           if (curSelectNode) {
-            const { offsetTop } = curSelectNode as HTMLElement;
+            const { offsetTop } = curSelectNode;
             // searchListContainer 上下各有 6px 的 padding
             if (offsetTop > contentMaxHeight.value - 2 * 6) {
               // 每一个 item 是 41px height

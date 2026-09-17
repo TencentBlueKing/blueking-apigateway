@@ -163,8 +163,8 @@ const openDetailUrl = () => {
   &.is-top-level {
     width: 80%;
     min-width: 1200px;
-    margin: 0 auto;
     padding: 24px 0 32px;
+    margin: 0 auto;
   }
 
   .cli-banner {

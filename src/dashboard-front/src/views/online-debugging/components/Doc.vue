@@ -163,7 +163,7 @@ const curComponent = ref<IDocCom>({
   verified_app_required: false,
   resource_perm_required: false,
   allow_apply_permission: false,
-  labels: '',
+  labels: [],
   content: '',
   innerHtml: '',
   markdownHtml: '',
