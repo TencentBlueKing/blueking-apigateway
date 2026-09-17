@@ -284,6 +284,7 @@ watch(
       fetchSdkDoc();
     }
   },
+  { immediate: true },
 );
 </script>
 

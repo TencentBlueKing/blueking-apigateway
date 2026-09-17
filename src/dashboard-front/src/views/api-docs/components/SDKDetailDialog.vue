@@ -65,7 +65,6 @@
               v-model:language="language"
               :sdks="sdks"
               :board="board"
-              default-expand-doc
             />
           </template>
         </BkCollapsePanel>
