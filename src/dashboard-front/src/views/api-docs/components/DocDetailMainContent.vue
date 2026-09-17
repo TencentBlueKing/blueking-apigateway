@@ -57,13 +57,16 @@
               />
               {{ curTab === 'gateway' ? t('网关详情') : t('组件详情') }}
             </BkButton>
-            <BkButton
-              v-if="showApplyPermission"
-              theme="primary"
-              @click="handleApplyClick"
-            >
-              {{ t('申请权限') }}
-            </BkButton>
+            <!-- TODO 待权限申请接口完成后再放开 -->
+            <template v-if="false">
+              <BkButton
+                v-if="showApplyPermission"
+                theme="primary"
+                @click="handleApplyClick"
+              >
+                {{ t('申请权限') }}
+              </BkButton>
+            </template>
           </aside>
         </header>
         <p class="res-desc">
@@ -106,11 +109,16 @@
               </span>：
               <span v-if="api.verified_app_required && api.resource_perm_required">
                 <span>{{ t('是') }}</span>
+                <!-- TODO 待权限申请接口完成后再放开 -->
                 <span
-                  v-if="api.allow_apply_permission"
+                  v-if="false"
                   v-bk-tooltips="t('可点击右上角「申请权限」提交申请，审批通过后方可调用。')"
                   class="perm-extra is-link"
                   @click="handleApplyClick"
+                >{{ t('（允许申请权限）') }}</span>
+                <span
+                  v-if="api.allow_apply_permission"
+                  class="perm-extra"
                 >{{ t('（允许申请权限）') }}</span>
                 <span
                   v-else
