@@ -204,4 +204,4 @@ def do_blueking_http_request(
             f"error={resp_data['error']}"
         )
 
-    return resp_data["data"]
+    return resp_data.get("data")
