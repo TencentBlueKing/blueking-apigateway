@@ -129,6 +129,7 @@ watch(visible, async (value) => {
   editorRef.value?.setValue(source.value);
 });
 
+/** 读取本地 JSON 文件，完成大小与内容检查后写入 Monaco 编辑器。 */
 const handleImportJSON = async () => {
   await open();
 
@@ -152,6 +153,7 @@ const handleImportJSON = async () => {
   editorRef.value?.setValue(importedJsonText.value);
 };
 
+/** 解析编辑器内容并向父组件提交 JSON，格式错误时阻止关闭侧栏。 */
 const handleEditorConfirm = () => {
   try {
     const editorValue = editorRef.value?.getValue() ?? source.value;
@@ -167,6 +169,7 @@ const handleEditorConfirm = () => {
   }
 };
 
+/** 调用 Monaco 的文档格式化能力整理当前 JSON。 */
 const handleFormat = () => {
   editorRef.value?.handleFormat();
 };
@@ -174,15 +177,22 @@ const handleFormat = () => {
 
 <style lang="scss" scoped>
 .request-params-json-slider {
+  display: flex;
+  height: calc(100vh - 106px);
+  min-height: 0;
   padding: 32px 40px 0;
   font-size: 12px;
+  box-sizing: border-box;
+  flex-direction: column;
 
   &__actions {
     margin-bottom: 16px;
+    flex-shrink: 0;
   }
 
   &__alert {
     margin-bottom: 12px;
+    flex-shrink: 0;
   }
 
   &__footer {
@@ -192,10 +202,11 @@ const handleFormat = () => {
 
 .editor-layout {
   display: flex;
-  height: 520px;
+  min-height: 0;
   overflow: hidden;
   background: #1E1E1E;
   border-radius: 3px;
+  flex: 1;
   flex-direction: column;
 
   .editor-toolbar {

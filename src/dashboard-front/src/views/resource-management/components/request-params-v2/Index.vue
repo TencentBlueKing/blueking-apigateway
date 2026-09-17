@@ -18,6 +18,7 @@
 
 <template>
   <div class="request-params-v2">
+    <!-- 编辑态工具栏：控制“无请求参数”状态，并提供 JSON 批量生成入口。 -->
     <div
       v-if="!readonly"
       class="request-params-v2__toolbar"
@@ -38,6 +39,10 @@
       </IconButton>
     </div>
 
+    <!--
+      主体区域按以下顺序互斥展示：
+      只读空态 → 只读参数详情 → 编辑器 → “无请求参数”编辑空态。
+    -->
     <div
       v-if="readonly && isEmpty"
       class="request-params-v2__empty"
@@ -49,6 +54,7 @@
       v-else-if="readonly"
       class="request-params-v2__readonly"
     >
+      <!-- Header、Query、Path 仅在存在参数时分栏展示。 -->
       <template
         v-for="location in PARAMETER_LOCATIONS"
         :key="location"
@@ -73,6 +79,7 @@
         </section>
       </template>
 
+      <!-- Body 使用树形表格单独展示，与基础参数分区保持一致。 -->
       <section
         v-if="state.body"
         class="readonly-section"
@@ -94,6 +101,7 @@
       v-else-if="!disabled"
       class="request-params-v2__editor"
     >
+      <!-- 编辑态通过页签隔离 Header、Query、Path、Body 四类参数。 -->
       <BkTab
         v-model:active="activeTab"
         class="request-params-tabs"
@@ -139,6 +147,7 @@
           :label="getTabLabel('body')"
           name="body"
         >
+          <!-- Body 已存在时展示编辑表格，否则展示创建请求体的空态。 -->
           <div
             v-if="state.body"
             class="body-editor"
@@ -186,10 +195,12 @@
       v-else
       class="request-params-v2__disabled"
     >
+      <!-- 用户勾选“该资源无请求参数”后的编辑空态。 -->
       {{ t('该资源无请求参数') }}
     </div>
   </div>
 
+  <!-- JSON 侧栏独立于主区域渲染，用于批量导入并回填四类参数。 -->
   <RequestParamsJsonSlider
     v-model="jsonEditorVisible"
     v-model:source="jsonSource"
@@ -199,7 +210,7 @@
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
-import BodyParameterTable from './BodyParameterTable.vue';
+import BodyParameterTable from './components/BodyParameterTable.vue';
 import {
   cloneRequestParamsState,
   createEmptyRequestParamsState,
@@ -210,9 +221,9 @@ import {
   requestJsonToState,
   requestParamsStateToEditorJson,
   requestParamsStateToValue,
-} from './request-schema';
-import RequestParamsJsonSlider from './RequestParamsJsonSlider.vue';
-import ScalarParameterTable from './ScalarParameterTable.vue';
+} from './utils';
+import RequestParamsJsonSlider from './components/RequestParamsJsonSlider.vue';
+import ScalarParameterTable from './components/ScalarParameterTable.vue';
 import {
   type IRequestBodyState,
   type IRequestFieldRow,
@@ -275,6 +286,7 @@ watch(
   },
 );
 
+/** 获取参数位置对应的页签与只读分区名称。 */
 const getLocationLabel = (location: ParameterLocation) => {
   const labels: Record<ParameterLocation, string> = {
     header: 'Header',
@@ -285,6 +297,7 @@ const getLocationLabel = (location: ParameterLocation) => {
   return labels[location];
 };
 
+/** 生成带当前参数数量的页签标题。 */
 const getTabLabel = (tab: RequestParamsTab) => {
   const count = tab === 'body'
     ? Number(Boolean(state.value.body))
@@ -294,14 +307,17 @@ const getTabLabel = (tab: RequestParamsTab) => {
   return `${label} (${count})`;
 };
 
+/** 清除指定参数或字段的校验错误。 */
 const clearValidationError = (id: string) => {
   delete validationErrors.value[id];
 };
 
+/** 创建默认的 application/json 请求体。 */
 const addBody = () => {
   state.value.body = createRequestBody();
 };
 
+/** 删除请求体，并同步清理请求体字段的校验错误。 */
 const removeBody = () => {
   if (state.value.body) {
     flattenRequestFields(state.value.body.root).forEach(({ row }) => {
@@ -312,6 +328,7 @@ const removeBody = () => {
   delete state.value.body;
 };
 
+/** 将当前请求参数序列化后打开 JSON 编辑侧栏。 */
 const handleOpenJsonEditor = () => {
   jsonSource.value = JSON.stringify(
     requestParamsStateToEditorJson(state.value),
@@ -321,6 +338,7 @@ const handleOpenJsonEditor = () => {
   jsonEditorVisible.value = true;
 };
 
+/** 查找导入结果中第一个有数据的页签，便于导入后直接定位内容。 */
 const getFirstPopulatedTab = (nextState: IRequestParamsState): RequestParamsTab => {
   const location = PARAMETER_LOCATIONS.find((item) => {
     return nextState.parameters[item].length > 0;
@@ -333,6 +351,7 @@ const getFirstPopulatedTab = (nextState: IRequestParamsState): RequestParamsTab 
   return nextState.body ? 'body' : 'header';
 };
 
+/** 将 JSON 编辑器确认的数据解析并回填到四类请求参数中。 */
 const handleJsonConfirm = (json: unknown) => {
   try {
     const nextState = requestJsonToState(json);
@@ -349,6 +368,7 @@ const handleJsonConfirm = (json: unknown) => {
   }
 };
 
+/** 递归校验 Body 对象字段名是否为空或在同级重复。 */
 const validateFieldRows = (
   row: IRequestFieldRow,
   errors: Record<string, string>,
@@ -377,6 +397,7 @@ const validateFieldRows = (
   }
 };
 
+/** 校验全部请求参数，并自动切换到第一个存在错误的页签。 */
 const validate = () => {
   const errors: Record<string, string> = {};
   let firstErrorTab: RequestParamsTab | undefined;
@@ -425,6 +446,7 @@ const validate = () => {
 };
 
 defineExpose({
+  /** 校验并返回 OpenAPI 请求参数；无请求参数时返回空结构。 */
   getValue: async () => {
     if (!disabled.value && !validate()) {
       Message({

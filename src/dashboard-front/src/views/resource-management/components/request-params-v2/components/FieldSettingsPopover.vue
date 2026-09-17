@@ -373,7 +373,7 @@
 import {
   type BodyParameterType,
   JSON_SCHEMA_STRING_FORMATS,
-} from './types';
+} from '../types';
 
 interface IProps {
   fieldName?: string
@@ -404,6 +404,7 @@ const supportsValues = computed(() => [
   'string',
 ].includes(type));
 
+/** 不直接修改原对象，使用新对象写入或删除指定 Schema 关键字。 */
 const updateKeyword = (
   keyword: string,
   value: unknown,
@@ -421,21 +422,25 @@ const updateKeyword = (
   schemaOptions.value = nextSchema;
 };
 
+/** 获取字符串类型的 Schema 关键字值，类型不匹配时返回空字符串。 */
 const getTextValue = (keyword: string) => {
   const value = schemaOptions.value[keyword];
   return typeof value === 'string' ? value : '';
 };
 
+/** 获取数值类型的 Schema 关键字值，类型不匹配时返回 undefined。 */
 const getNumberValue = (keyword: string) => {
   const value = schemaOptions.value[keyword];
   return typeof value === 'number' ? value : undefined;
 };
 
+/** 更新字符串关键字，输入为空时从 Schema 中移除该配置。 */
 const updateTextKeyword = (keyword: string, value: unknown) => {
   const text = typeof value === 'string' ? value : '';
   updateKeyword(keyword, text, !text);
 };
 
+/** 更新数值关键字，忽略非法数字并在输入为空时删除该配置。 */
 const updateNumberKeyword = (keyword: string, value: unknown) => {
   if (value === '' || value === undefined || value === null) {
     updateKeyword(keyword, undefined, true);
@@ -449,15 +454,18 @@ const updateNumberKeyword = (keyword: string, value: unknown) => {
   }
 };
 
+/** 更新布尔关键字，关闭时删除默认值为 false 的冗余配置。 */
 const updateBooleanKeyword = (keyword: string, value: unknown) => {
   const boolValue = Boolean(value);
   updateKeyword(keyword, boolValue, !boolValue);
 };
 
+/** 将“允许额外属性”开关转换为 additionalProperties 的反向禁用配置。 */
 const handleAdditionalPropertiesChange = (value: unknown) => {
   updateKeyword('additionalProperties', false, Boolean(value));
 };
 
+/** 按当前字段类型将 Schema 值序列化为输入框文本。 */
 const serializeValue = (value: unknown) => {
   if (value === undefined) {
     return '';
@@ -470,6 +478,7 @@ const serializeValue = (value: unknown) => {
   return JSON.stringify(value);
 };
 
+/** 按当前字段类型解析输入文本，并对非法数字或布尔值抛出可读错误。 */
 const parseValue = (value: string) => {
   if (type === 'string') {
     return value;
@@ -500,6 +509,7 @@ const parseValue = (value: string) => {
   return JSON.parse(value);
 };
 
+/** 提交默认值或示例值，示例值会按 JSON Schema 约定存入数组。 */
 const commitValue = (
   keyword: 'default' | 'examples',
   value: string,
@@ -520,14 +530,17 @@ const commitValue = (
   }
 };
 
+/** 将默认值输入框内容提交到 Schema。 */
 const commitDefaultValue = () => {
   commitValue('default', defaultValueInput.value);
 };
 
+/** 将示例值输入框内容提交到 Schema 的 examples 数组。 */
 const commitExampleValue = () => {
   commitValue('examples', exampleValueInput.value);
 };
 
+/** 按行解析枚举输入，并将转换后的同类型值写入 Schema。 */
 const commitEnumValues = () => {
   valueError.value = '';
   const values = enumValueInput.value
