@@ -154,8 +154,9 @@ const handleImportJSON = async () => {
 
 const handleEditorConfirm = () => {
   try {
-    source.value = editorRef.value?.getValue() ?? source.value;
-    emit('confirm', JSON.parse(source.value));
+    const editorValue = editorRef.value?.getValue() ?? source.value;
+    source.value = editorValue;
+    emit('confirm', JSON.parse(editorValue));
     visible.value = false;
   }
   catch {
