@@ -187,24 +187,24 @@ const menuList = ref<IHeaderNav[]>([
     link: '',
   },
   {
-    name: t('平台工具'),
-    id: 4,
-    url: 'PlatformTools',
-    enabled: true,
-    link: '',
-  },
-  {
     name: t('MCP 市场'),
-    id: 5,
+    id: 4,
     url: 'McpMarket',
     enabled: true,
     link: '',
   },
   {
     name: 'BK-CLI',
-    id: 6,
+    id: 5,
     url: 'BkCli',
     enabled: false,
+    link: '',
+  },
+  {
+    name: t('平台工具'),
+    id: 6,
+    url: 'PlatformTools',
+    enabled: true,
     link: '',
   },
   {
