@@ -41,6 +41,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ENABLE_MCP_SERVER_PROMPT: false,
       ENABLE_MONITOR: false,
       ENABLE_MULTI_TENANT_MODE: false,
+      ENABLE_RESOURCE_PATH_CONFLICT_CHECK: false,
       ENABLE_RUN_DATA: false,
       ENABLE_RUN_DATA_METRICS: false,
       ENABLE_SDK: false,
@@ -68,6 +69,8 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     isEnabledNotice: state => state.showNoticeAlert,
     // 是否显示组件管理
     isEnableComManagement: state => state.showComManagement,
+    // 是否开启资源路由冲突检测
+    isEnablePathConflictCheck: state => !!state.flags?.ENABLE_RESOURCE_PATH_CONFLICT_CHECK,
   },
   actions: {
     async fetchFlags() {
