@@ -49,7 +49,6 @@ const displayValue = computed(() => value || '--');
 <style lang="scss" scoped>
 .detail-field {
   display: flex;
-  align-items: center;
   margin-bottom: 12px;
   font-size: 14px;
   line-height: 22px;

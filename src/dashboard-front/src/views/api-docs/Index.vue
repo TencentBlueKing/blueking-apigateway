@@ -49,7 +49,7 @@
       >
         <BkInput
           v-model="filterData.keyword"
-          class="mr-8px flex-grow-1"
+          class="flex-grow-1"
           type="search"
           :placeholder="t('请输入网关名称或描述')"
           clearable
@@ -652,6 +652,7 @@ $primary-color: #3a84ff;
     background-color: #f5f7fa;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
   }
 
   &.has-page-tabs {
@@ -666,7 +667,6 @@ $primary-color: #3a84ff;
     align-items: center;
     height: 32px;
     padding: 0 12px;
-    margin-right: 12px;
     font-size: 12px;
     line-height: 20px;
     color: #63656e;
