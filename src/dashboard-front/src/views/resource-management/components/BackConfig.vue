@@ -97,6 +97,7 @@
     >
       <BkTableColumn
         :label="t('环境名称')"
+        width="20%"
         :resizable="false"
       >
         <template #default="{ data }">
@@ -106,6 +107,7 @@
       <template v-if="isModelProxy">
         <BkTableColumn
           label="Provider"
+          width="20%"
           :resizable="false"
         >
           <template #default="{ data }">
@@ -114,6 +116,7 @@
         </BkTableColumn>
         <BkTableColumn
           label="Endpoint"
+          width="20%"
           :resizable="false"
         >
           <template #default="{ data }">
@@ -122,6 +125,7 @@
         </BkTableColumn>
         <BkTableColumn
           label="Model"
+          width="20%"
           :resizable="false"
         >
           <template #default="{ data }">
@@ -132,6 +136,7 @@
       <BkTableColumn
         v-if="!isModelProxy"
         :label="t('后端服务地址')"
+        width="60%"
         :resizable="false"
       >
         <template #default="{ data }">
@@ -150,6 +155,7 @@
       <BkTableColumn
         :label="renderTimeOutLabel"
         prop="timeout"
+        width="20%"
         :resizable="false"
       >
         <template #default="{ row }">
