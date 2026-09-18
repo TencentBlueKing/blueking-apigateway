@@ -2,6 +2,10 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
 
+class GatewayResourceTypeEnum(StructuredEnum):
+    GATEWAY = EnumField("gateway", _("网关"))
+
+
 class GatewayRoleEnum(StructuredEnum):
     ADMINISTRATOR = EnumField("administrator", _("管理员"))
     OPERATOR = EnumField("operator", _("运营者"))
@@ -24,3 +28,6 @@ GATEWAY_ROLE_ACTIONS = {
         GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value,
     ),
 }
+
+# GatewayMember 续期与 IAM 授权有效期保持一致。
+GATEWAY_MEMBER_EXPIRE_DAYS = 365

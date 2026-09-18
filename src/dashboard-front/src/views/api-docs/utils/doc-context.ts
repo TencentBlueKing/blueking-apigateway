@@ -16,8 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-export { default } from './Index.vue';
-export type {
-  IRequestParamsDetail,
-  IRequestParamsValue,
-} from './types';
+import type { InjectionKey, Ref } from 'vue';
+
+export type DocTab = 'gateway' | 'component';
+
+export const docTabKey: InjectionKey<Ref<DocTab>> = Symbol('api-docs-tab');

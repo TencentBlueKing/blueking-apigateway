@@ -546,6 +546,11 @@ BK_PAAS3_API_TIMEOUT = env.int("BK_PAAS3_API_TIMEOUT", 30)
 BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
 # BKAuth 站点地址 用于 OAuth2 跳转
 BK_AUTH_SERVER_URL = env.str("BK_AUTH_SERVER_URL", "")
+
+# IAM V4 RBAC
+BK_IAM_V4_ENABLED = env.bool("BK_IAM_V4_ENABLED", False)
+BK_IAM_V4_MANAGERS = [manager.strip() for manager in env.list("BK_IAM_V4_MANAGERS", default=[]) if manager.strip()]
+
 BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
     env.str("DASHBOARD_FE_URL", "").rstrip("/") + "/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
 )

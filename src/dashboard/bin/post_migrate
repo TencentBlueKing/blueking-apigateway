@@ -50,3 +50,9 @@ sync_bk_apigateway
 if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
     sync_bk_esb
 fi
+
+# only sync IAM when BK_IAM_V4_ENABLED = true/True
+if [ "${BK_IAM_V4_ENABLED}" = "true" ] || [ "${BK_IAM_V4_ENABLED}" = "True" ]; then
+    python manage.py sync_gateway_rbac_model_to_iam
+    python manage.py sync_gateway_rbac_auth_to_iam --initial --all --apply --force
+fi

@@ -23,6 +23,7 @@
   >
     <div class="body-parameter-table__scroll">
       <table>
+        <!-- Body 表头：字段名称、类型、必填、默认值、说明，以及编辑态操作列。 -->
         <thead>
           <tr>
             <th class="name-column pl-12px!">
@@ -49,6 +50,7 @@
           </tr>
         </thead>
 
+        <!-- 参数树被扁平化为表格行，并通过缩进保留对象和数组层级。 -->
         <tbody>
           <tr
             v-for="item in flatRows"
@@ -58,6 +60,7 @@
               'is-root': item.isRoot,
             }"
           >
+            <!-- 名称列展示层级缩进和类型图标；根节点、数组元素名称不可编辑。 -->
             <td
               class="name-column"
               :class="{
@@ -100,6 +103,7 @@
               </div>
             </td>
 
+            <!-- 类型列控制当前节点的 Schema 类型。 -->
             <td
               class="type-column"
               :class="{ 'control-cell': !readonly }"
@@ -126,6 +130,7 @@
               </BkSelect>
             </td>
 
+            <!-- 根节点对应整个请求体的必填状态，其余行对应字段必填状态。 -->
             <td class="required-column">
               <span
                 v-if="readonly"
@@ -142,6 +147,7 @@
               />
             </td>
 
+            <!-- 仅基础类型支持默认值，对象和数组固定展示为空。 -->
             <td
               class="default-column"
               :class="{
@@ -177,6 +183,7 @@
               />
             </td>
 
+            <!-- Schema 说明在查看态展示文本，编辑态可直接输入。 -->
             <td
               class="description-column"
               :class="{ 'control-cell': !readonly }"
@@ -194,6 +201,7 @@
               />
             </td>
 
+            <!-- 操作列提供字段设置、添加子字段和删除当前字段。 -->
             <td
               v-if="!readonly"
               class="operation-column"
@@ -235,6 +243,7 @@
       </table>
     </div>
 
+    <!-- 根节点为对象时，可从表格底部快速新增一级字段。 -->
     <div
       v-if="!readonly && body.root.type === 'object'"
       class="add-row"
@@ -257,14 +266,14 @@ import {
   createRequestField,
   flattenRequestFields,
   resetFieldForType,
-} from './request-schema';
+} from '../utils';
 import {
   BODY_PARAMETER_TYPES,
   type BodyParameterType,
   type IFlatRequestFieldRow,
   type IRequestBodyState,
   type IRequestFieldRow,
-} from './types';
+} from '../types';
 
 interface IProps {
   errors?: Record<string, string>
@@ -299,6 +308,7 @@ const booleanOptions = [
 
 const flatRows = computed(() => flattenRequestFields(body.value.root));
 
+/** 将默认值格式化为只读表格可展示的文本。 */
 const formatValue = (value: unknown) => {
   if (value === undefined || value === null || value === '') {
     return '--';
@@ -307,11 +317,13 @@ const formatValue = (value: unknown) => {
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 };
 
+/** 将默认值转换为输入框使用的字符串，空值保持为空。 */
 const getEditableDefault = (row: IRequestFieldRow) => {
   const value = row.options.default;
   return value === undefined || value === null ? '' : String(value);
 };
 
+/** 获取字段展示名，并为根节点和数组元素提供固定名称。 */
 const getFieldName = (item: IFlatRequestFieldRow) => {
   if (item.isRoot) {
     return t('根节点');
@@ -324,6 +336,7 @@ const getFieldName = (item: IFlatRequestFieldRow) => {
   return item.row.name || '--';
 };
 
+/** 获取字段类型在名称列中展示的简写图标文本。 */
 const getTypeInitial = (type: BodyParameterType) => {
   const initials: Record<BodyParameterType, string> = {
     array: '[]',
@@ -336,10 +349,12 @@ const getTypeInitial = (type: BodyParameterType) => {
   return initials[type];
 };
 
+/** 根节点读取请求体必填状态，其余节点读取字段自身的必填状态。 */
 const getRequired = (item: IFlatRequestFieldRow) => {
   return item.isRoot ? body.value.required : item.row.required;
 };
 
+/** 更新根请求体或普通字段的必填状态。 */
 const handleRequiredChange = (
   item: IFlatRequestFieldRow,
   value: unknown,
@@ -352,6 +367,7 @@ const handleRequiredChange = (
   }
 };
 
+/** 更新字段默认值，并按字段类型进行数值转换或清空。 */
 const handleDefaultChange = (
   row: IRequestFieldRow,
   value: unknown,
@@ -364,6 +380,7 @@ const handleDefaultChange = (
   row.options.default = row.type === 'number' ? Number(value) : value;
 };
 
+/** 切换字段类型，并同步清理不兼容的子节点和 Schema 配置。 */
 const handleTypeChange = (
   row: IRequestFieldRow,
   value: unknown,
@@ -375,6 +392,7 @@ const handleTypeChange = (
   resetFieldForType(row, value as BodyParameterType);
 };
 
+/** 判断对象能否继续添加属性，或数组是否还缺少元素定义。 */
 const canAddChild = (row: IRequestFieldRow) => {
   if (row.type === 'object') {
     return true;
@@ -383,6 +401,7 @@ const canAddChild = (row: IRequestFieldRow) => {
   return row.type === 'array' && !row.children?.length;
 };
 
+/** 为对象追加属性；数组仅保留一个元素 Schema。 */
 const addChild = (row: IRequestFieldRow) => {
   const child = createRequestField();
   row.children = row.children ?? [];
@@ -396,6 +415,7 @@ const addChild = (row: IRequestFieldRow) => {
   }
 };
 
+/** 从父节点移除字段并清理该字段的校验错误。 */
 const removeField = (item: IFlatRequestFieldRow) => {
   if (!item.parent) {
     return;

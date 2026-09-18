@@ -34,6 +34,11 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.support.models import ReleasedResourceDoc
+from apigateway.biz.iam import (
+    apply_gateway_member_snapshots_to_iam,
+    build_gateway_member_snapshot,
+    get_gateway_iam_system_operator,
+)
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
@@ -315,7 +320,11 @@ class GatewayHandler:
             logger.info("Bound gateway '%s' to data plane '%s'", gateway.name, data_plane.name)
 
     @staticmethod
-    def delete_gateway(gateway_id: int):
+    @transaction.atomic
+    def delete_gateway(gateway_id: int, operated_by: Optional[str] = None):
+        gateway = Gateway.objects.select_for_update().get(id=gateway_id)
+        member_snapshot = build_gateway_member_snapshot(GatewayMember.objects.filter(gateway_id=gateway_id))
+
         # 1. delete gateway context
 
         Context.objects.delete_by_scope_ids(
@@ -354,8 +363,25 @@ class GatewayHandler:
         StatisticsGatewayRequestByDay.objects.filter(gateway_id=gateway_id).delete()
         StatisticsAppRequestByDay.objects.filter(gateway_id=gateway_id).delete()
 
-        # 10. delete gateway
-        Gateway.objects.filter(id=gateway_id).delete()
+        # 10. revoke IAM authorizations and delete gateway
+        iam_operator = None
+        if settings.BK_IAM_V4_ENABLED:
+            iam_operator = operated_by if operated_by is not None else get_gateway_iam_system_operator()
+            apply_gateway_member_snapshots_to_iam(gateway_id, member_snapshot, {}, iam_operator)
+
+        try:
+            gateway.delete()
+        except Exception:
+            if iam_operator is not None:
+                try:
+                    apply_gateway_member_snapshots_to_iam(gateway_id, {}, member_snapshot, iam_operator)
+                except Exception:
+                    logger.critical(
+                        "failed to restore gateway IAM authorizations after gateway deletion failed, gateway_id=%s",
+                        gateway_id,
+                        exc_info=True,
+                    )
+            raise
 
     @staticmethod
     def get_docs_url(gateway: Gateway) -> str:

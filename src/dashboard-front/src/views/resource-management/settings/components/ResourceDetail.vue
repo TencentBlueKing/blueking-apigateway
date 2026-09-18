@@ -967,7 +967,7 @@ import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
 import RequestParams from '../../components/request-params-v2/Index.vue';
-import ResponseParams from '../../components/response-params/Index.vue';
+import ResponseParams from '../../components/response-params-v2/Index.vue';
 import { useGateway, useStage } from '@/stores';
 import { useStickyBottom } from '@/hooks';
 import SelectCheckBox from './SelectCheckBox.vue';

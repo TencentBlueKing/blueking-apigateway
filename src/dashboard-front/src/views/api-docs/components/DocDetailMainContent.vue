@@ -25,39 +25,53 @@
       class="target-detail custom-scroll-bar"
     >
       <header class="detail-header">
-        <header class="flex items-center flex-wrap res-name">
-          <div class="mr-12px font-700">
-            {{ api.name ?? '--' }}
-          </div>
-          <BkTag
-            v-if="basics?.kind === 2"
-            theme="info"
-            class="mr-12px"
-          >
-            {{ t('模型代理 API') }}
-          </BkTag>
-          <BkTag
-            v-if="basics?.is_deprecated"
-            theme="danger"
-            class="font-400"
-          >
-            deprecated
-          </BkTag>
-        </header>
-        <footer class="res-header-footer">
-          <main class="res-desc">
-            {{ api.description ?? '--' }}
-          </main>
-          <aside class="res-sdk">
-            <span
-              class="text-12px"
-              @click="handleSdkInstructionClick"
+        <header class="res-name-row">
+          <div class="res-name-main">
+            <div class="res-name">
+              {{ api.name ?? '--' }}
+            </div>
+            <BkTag
+              v-if="basics?.kind === 2"
+              theme="info"
             >
-              <AgIcon name="document" />
-              {{ t('SDK 使用说明') }}
-            </span>
+              {{ t('模型代理 API') }}
+            </BkTag>
+            <BkTag
+              v-if="basics?.is_deprecated"
+              theme="danger"
+              class="font-400"
+            >
+              deprecated
+            </BkTag>
+          </div>
+          <aside class="res-header-actions">
+            <BkButton
+              text
+              theme="primary"
+              class="gateway-detail-btn"
+              @click="handleGatewayDetailClick"
+            >
+              <AgIcon
+                name="info"
+                class="gateway-detail-icon"
+              />
+              {{ curTab === 'gateway' ? t('网关详情') : t('组件详情') }}
+            </BkButton>
+            <!-- TODO 待权限申请接口完成后再放开 -->
+            <template v-if="false">
+              <BkButton
+                v-if="showApplyPermission"
+                theme="primary"
+                @click="handleApplyClick"
+              >
+                {{ t('申请权限') }}
+              </BkButton>
+            </template>
           </aside>
-        </footer>
+        </header>
+        <p class="res-desc">
+          {{ api.description ?? '--' }}
+        </p>
         <BkAlert
           v-if="basics?.deprecated_note"
           theme="warning"
@@ -95,15 +109,19 @@
               </span>：
               <span v-if="api.verified_app_required && api.resource_perm_required">
                 <span>{{ t('是') }}</span>
+                <!-- TODO 待权限申请接口完成后再放开 -->
+                <span
+                  v-if="false"
+                  v-bk-tooltips="t('可点击右上角「申请权限」提交申请，审批通过后方可调用。')"
+                  class="perm-extra is-link"
+                  @click="handleApplyClick"
+                >{{ t('（允许申请权限）') }}</span>
                 <span
                   v-if="api.allow_apply_permission"
-                  v-bk-tooltips="t('需要在开发者中心申请该网关API权限')"
-                  class="border-b-1px border-b-dashed border-b-#979ba5 cursor-pointer"
                 >{{ t('（允许申请权限）') }}</span>
                 <span
                   v-else
-                  v-bk-tooltips="t('只能由网关管理员主动授权')"
-                  class="border-b-1px border-b-dashed border-b-#979ba5 cursor-pointer"
+                  v-bk-tooltips="t('本资源仅支持由网关管理员授权，不支持在线申请。')"
                 >{{ t('（只能主动授权）') }}</span>
               </span>
               <span v-else>{{ t('否') }}</span>
@@ -115,8 +133,8 @@
               >
                 {{ t('权限申请') }}
               </span>：
-              {{ api.verified_app_required ?
-                ((api.allow_apply_permission || api.component_permission_required) ? t('是') : t('否'))
+              {{ api.verified_app_required
+                ? ((api.allow_apply_permission || api.component_permission_required) ? t('是') : t('否'))
                 : t('否')
               }}
             </span>
@@ -133,12 +151,92 @@
             </span>
           </section>
         </article>
-        <!--  API markdown 文档  -->
         <article
-          v-if="markdownHtml"
+          v-if="curTab === 'gateway' || showStructured || markdownHtml"
           class="res-detail-content"
         >
+          <!-- TODO 先隐藏，等后端改好 -->
+          <!--          <section -->
+          <!--            v-if="curTab === 'gateway'" -->
+          <!--            class="call-guide" -->
+          <!--          > -->
+          <!--            <h3 id="doc-heading-调用地址"> -->
+          <!--              {{ t('调用地址') }} -->
+          <!--            </h3> -->
+          <!--            <div class="url-hero"> -->
+          <!--              <span -->
+          <!--                class="method-badge" -->
+          <!--                :class="api.method" -->
+          <!--              >{{ api.method || '&#45;&#45;' }}</span> -->
+          <!--              <code -->
+          <!--                class="url-text" -->
+          <!--                :title="resourceUrl || '&#45;&#45;'" -->
+          <!--              >{{ resourceUrl || '&#45;&#45;' }}</code> -->
+          <!--              <CopyButton -->
+          <!--                v-if="resourceUrl" -->
+          <!--                v-bk-tooltips="t('复制')" -->
+          <!--                class="url-copy" -->
+          <!--                :source="resourceUrl" -->
+          <!--              /> -->
+          <!--            </div> -->
+          <!--          </section> -->
+          <DocAuthSection
+            v-if="showStructured"
+            :plugins="doc?.plugins || []"
+            :verified-app-required="api.verified_app_required"
+            :verified-user-required="api.verified_user_required"
+            :resource-url="resourceUrl"
+            :method="api.method"
+          />
+          <section
+            v-if="showRequestParams"
+            class="params-section"
+          >
+            <h3
+              id="doc-heading-请求参数"
+              class="params-title"
+            >
+              {{ t('请求参数') }}
+            </h3>
+            <DocSchemaParams
+              :schema="mergedSchema"
+              mode="request"
+            />
+          </section>
+          <section
+            v-if="showResponseParams"
+            class="params-section"
+          >
+            <h3
+              id="doc-heading-响应参数"
+              class="params-title"
+            >
+              {{ t('响应参数') }}
+            </h3>
+            <DocSchemaParams
+              :schema="mergedSchema"
+              mode="response"
+            />
+          </section>
+          <section
+            v-if="showStructured && extraMarkdownHtml"
+            class="extra-markdown"
+          >
+            <h3
+              v-if="!hasExtraHeading"
+              id="doc-heading-补充说明"
+              class="params-title"
+            >
+              {{ t('补充说明') }}
+            </h3>
+            <div
+              id="resMarkdownExtra"
+              v-bk-xss-html="extraMarkdownHtml"
+              class="ag-markdown-view"
+            />
+          </section>
           <div
+            v-if="!showStructured && markdownHtml"
             id="resMarkdown"
             v-bk-xss-html="markdownHtml"
             class="ag-markdown-view"
@@ -157,28 +255,54 @@
 </template>
 
 <script setup lang="ts">
-import DocDetailSideNav from './DocDetailSideNav.vue';
+import DocDetailSideNav, { type INavItem } from './DocDetailSideNav.vue';
+import DocAuthSection from './DocAuthSection.vue';
+import DocSchemaParams from './DocSchemaParams.vue';
 import type {
-  IApiGatewayBasics,
-  IComponent,
-  INavItem,
-  IResource,
-  ISystemBasics,
-  TabType,
-} from '../types.d.ts';
+  IDocsEsbBoardsSystemsComponentsListResponse,
+  IDocsGatewaysResourcesDocReadResponse,
+  IDocsGatewaysResourcesListResponse,
+} from '@/services/types/responses/docs';
+import type { IDocBasics } from './DocDetailSideContent.vue';
+import { docTabKey } from '../utils/doc-context';
 import { copy } from '@/utils';
 import {
   useElementBounding,
   useScroll,
 } from '@vueuse/core';
 import { minBy } from 'lodash-es';
+import {
+  getContentSchema,
+  isStructuredDoc,
+  mergeGatewayConfigIntoSchema,
+  shouldRenderSchemaParams,
+} from '../utils/compose-doc';
+
+// 两类 API 的公共字段必填，网关资源或 ESB 组件特有的字段按需提供。
+export interface IDocApi extends Pick<IDocsGatewaysResourcesListResponse,
+  'id' | 'name' | 'description' | 'verified_app_required' | 'verified_user_required'>,
+  Partial<Pick<IDocsGatewaysResourcesListResponse,
+    'method' | 'path' | 'resource_perm_required' | 'allow_apply_permission' | 'labels'>>,
+  Partial<Pick<IDocsEsbBoardsSystemsComponentsListResponse, 'component_permission_required'>> {}
+
+export type IDocContent = Omit<IDocsGatewaysResourcesDocReadResponse, 'updated_time'> & {
+  updated_time: string | null
+};
 
 interface IProps {
-  api?: IResource & IComponent | null
-  basics?: IApiGatewayBasics & ISystemBasics | null
+  api?: IDocApi | null
+  basics?: IDocBasics | null
   navList?: INavItem[]
   markdownHtml?: string
+  extraMarkdownHtml?: string
   updatedTime?: string | null
+  doc?: IDocContent | null
+  resourceUrl?: string
+}
+
+interface IEmits {
+  'show-gateway-detail': []
+  'show-apply-permission': []
 }
 
 const {
@@ -186,15 +310,18 @@ const {
   basics = null,
   navList = [],
   markdownHtml = '',
+  extraMarkdownHtml = '',
   updatedTime = null,
+  doc = null,
+  resourceUrl = '',
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ 'show-sdk-instruction': [void] }>();
+const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 
 // 注入当前的总 tab 变量
-const curTab = inject<Ref<TabType>>('curTab');
+const curTab = inject(docTabKey);
 
 const detailWrapRef = ref<HTMLElement | null>(null);
 // API 文档大标题元素集合
@@ -213,6 +340,34 @@ const { y } = useScroll(detailWrapRef, {
   },
 });
 
+const showStructured = computed(() => isStructuredDoc(doc));
+const mergedSchema = computed(() => mergeGatewayConfigIntoSchema(doc?.openapi_schema, {
+  path: api?.path,
+  plugins: doc?.plugins,
+}));
+const showRequestParams = computed(() => {
+  if (!doc || !showStructured.value || !shouldRenderSchemaParams(doc)) {
+    return false;
+  }
+  return Boolean(
+    mergedSchema.value.parameters?.length
+    || getContentSchema(mergedSchema.value.requestBody?.content),
+  );
+});
+const showResponseParams = computed(() => {
+  if (!doc || !showStructured.value || !shouldRenderSchemaParams(doc)) {
+    return false;
+  }
+  return Object.values(mergedSchema.value.responses || {}).some((response) => {
+    return Boolean(response.description || getContentSchema(response.content));
+  });
+});
+const showApplyPermission = computed(() => {
+  return curTab?.value === 'gateway'
+    && Boolean(api?.verified_app_required && api?.resource_perm_required && api?.allow_apply_permission);
+});
+const hasExtraHeading = computed(() => /<h[1-6][\s>]/i.test(extraMarkdownHtml));
+
 const appVerifiedTooltips = computed(() => {
   if (curTab?.value === 'gateway') return t('应用访问该网关API时，是否需提供应用认证信息');
   if (curTab?.value === 'component') return t('应用访问该组件API时，是否需提供应用认证信息');
@@ -226,9 +381,9 @@ const userVerifiedTooltips = computed(() => {
 });
 
 watch(
-  () => markdownHtml,
+  () => [markdownHtml, extraMarkdownHtml, showStructured.value],
   () => {
-    initMarkdownHtml('resMarkdown');
+    initMarkdownHtml(showStructured.value ? 'resMarkdownExtra' : 'resMarkdown');
   },
 );
 
@@ -259,7 +414,8 @@ const initMarkdownHtml = (box: string) => {
       parentDiv.className = 'pre-wrapper';
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
-      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+      btn.title = t('复制');
+      btn.innerHTML = '<span><i class="apigateway-icon icon-ag-copy-info"></i></span>';
       btn.setAttribute('data-copy', code ?? '');
       parentDiv?.appendChild(btn);
       const codeEl = item?.querySelector('code');
@@ -269,26 +425,22 @@ const initMarkdownHtml = (box: string) => {
       parentDiv?.appendChild(item);
     });
     // 获取文档中的标题元素，它们的 id 以 doc-heading- 开头
-    docHeadingElements.value = Array.from(document.querySelectorAll('.target-detail [id^=doc-heading-]'));
-
-    setTimeout(() => {
-      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
-
-      const handleCopy = function (this: any) {
-        copy(this.dataset?.copy);
-      };
-
-      copyDoms.forEach((dom: any) => {
-        dom.onclick = handleCopy;
-      });
-    }, 1000);
+    docHeadingElements.value = Array.from(
+      detailWrapRef.value?.querySelectorAll<HTMLElement>('[id^=doc-heading-]') || [],
+    );
+    markdownDom?.querySelectorAll<HTMLElement>('.ag-copy-btn').forEach((dom) => {
+      dom.onclick = () => copy(dom.dataset.copy ?? '');
+    });
   });
 };
 
-const handleSdkInstructionClick = () => {
-  emit('show-sdk-instruction');
+const handleGatewayDetailClick = () => {
+  emit('show-gateway-detail');
 };
 
+const handleApplyClick = () => {
+  emit('show-apply-permission');
+};
 </script>
 
 <style scoped lang="scss">
@@ -299,41 +451,67 @@ $code-color: #63656e;
 
 .content-wrap {
   display: flex;
+  height: 100%;
+  min-height: 0;
   align-items: flex-start;
 
   .target-detail {
-    height: calc(100vh - 144px);
+    height: 100%;
+    min-height: 0;
     padding-right: 8px;
     padding-left: 8px;
     overflow-y: scroll;
+    box-sizing: border-box;
     flex-grow: 1;
 
     .detail-header {
       margin-bottom: 16px;
 
-      .res-name {
+      .res-name-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
         margin-bottom: 4px;
+      }
+
+      .res-name-main {
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .res-name {
         font-size: 20px;
+        font-weight: 700;
         line-height: 28px;
         color: #313238;
       }
 
-      .res-header-footer {
+      .res-desc {
+        margin: 0;
+        font-size: 14px;
+        line-height: 22px;
+        color: #979ba5;
+      }
+
+      .res-header-actions {
         display: flex;
-        justify-content: space-between;
+        flex-shrink: 0;
+        gap: 8px;
         align-items: center;
+      }
 
-        .res-desc {
-          font-size: 14px;
-          line-height: 22px;
-          letter-spacing: 0;
-          color: #979ba5;
-        }
+      .gateway-detail-btn {
+        padding: 0 8px;
+      }
 
-        .res-sdk {
-          color: #3a84ff;
-          cursor: pointer;
-        }
+      .gateway-detail-icon {
+        margin-right: 4px;
+        font-size: 14px;
       }
     }
 
@@ -350,15 +528,9 @@ $code-color: #63656e;
 
       .res-basics {
         display: grid;
-        margin-bottom: 16px;
         grid-template-columns: 1fr 1fr;
         grid-template-rows: 40px 40px;
-
-        @container (width < 640px) {
-          padding-block: 12px;
-          grid-template-columns: 1fr;
-          grid-template-rows: 40px 40px 40px 40px;
-        }
+        margin-bottom: 16px;
 
         .basic-cell {
           display: flex;
@@ -376,6 +548,106 @@ $code-color: #63656e;
             border: none;
           }
         }
+
+        .perm-extra {
+          border-bottom: 1px dashed #979ba5;
+
+          &.is-link {
+            cursor: pointer;
+          }
+        }
+      }
+
+      .call-guide {
+        margin-bottom: 24px;
+
+        h3 {
+          margin: 0 0 12px;
+          font-size: 16px;
+          font-weight: 700;
+          line-height: 22px;
+          color: #313238;
+        }
+      }
+
+      .url-hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        min-height: 40px;
+        padding: 9px 12px;
+        margin-bottom: 0;
+        background: #f5f7fa;
+        border: 1px solid #dcdee5;
+        border-radius: 2px;
+      }
+
+      .method-badge {
+        flex-shrink: 0;
+        min-width: 56px;
+        padding: 2px 8px;
+        margin-top: 1px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 20px;
+        color: #3a84ff;
+        text-align: center;
+        background: #e1ecff;
+        border-radius: 2px;
+
+        &.GET {
+          color: #14a568;
+          background: #e4f5e9;
+        }
+
+        &.POST {
+          color: #3a84ff;
+          background: #e1ecff;
+        }
+
+        &.PUT,
+        &.PATCH {
+          color: #e38b02;
+          background: #fff3e0;
+        }
+
+        &.DELETE {
+          color: #ea3636;
+          background: #feebea;
+        }
+      }
+
+      .url-text {
+        flex: 1;
+        min-width: 0;
+        font-family: "Lucida Console", "Courier New", Monaco, monospace;
+        font-size: 13px;
+        line-height: 22px;
+        color: #313238;
+        overflow-wrap: anywhere;
+        word-break: break-all;
+        white-space: normal;
+      }
+
+      .url-copy {
+        flex-shrink: 0;
+        margin-top: 3px;
+      }
+
+      .params-title {
+        margin: 0 0 12px;
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 22px;
+        color: #313238;
+      }
+
+      .params-section {
+        margin-top: 24px;
+      }
+
+      .extra-markdown {
+        margin-top: 24px;
       }
     }
 

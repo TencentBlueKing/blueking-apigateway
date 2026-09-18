@@ -17,43 +17,73 @@
  */
 
 <template>
-  <!--  查看 SDK 弹窗  -->
-  <BkDialog
+  <BkSideslider
     v-model:is-show="isShow"
+    :width="720"
     :title="title"
-    class="custom-main-dialog"
-    width="640"
-    mask-close
+    ext-cls="sdk-detail-sideslider"
+    quick-close
   >
-    <main class="dialog-content">
-      <div class="dialog-main">
-        <SdkLanguageSelector
-          v-model="language"
-          :sdk-languages="sdks.map((item: ISdk) => item.language).filter((l: any): l is string => !!l)"
-          :lang-list="languages"
-          :maintainers="maintainers"
-        />
-        <SdkDetail
-          v-if="curSdk"
-          :sdk="curSdk"
-          is-apigw
-        />
-      </div>
-    </main>
-  </BkDialog>
+    <div class="intro-side-content-wrap">
+      <BkCollapse
+        v-model="activePanels"
+        class="detail-block-collapse"
+      >
+        <BkCollapsePanel name="sdk">
+          <template #header>
+            <div class="block-header">
+              <div class="block-header-left">
+                <AgIcon
+                  name="down-shape"
+                  class="block-header-icon"
+                  :class="{ 'is-fold': !activePanels.includes('sdk') }"
+                />
+                <span>{{ curTab === 'component' ? t('组件 API SDK') : t('网关 SDK') }}</span>
+              </div>
+              <div @click.stop>
+                <BkSelect
+                  v-model="language"
+                  class="sdk-lang-select"
+                  size="small"
+                  filterable
+                  :clearable="false"
+                  :input-search="false"
+                >
+                  <BkOption
+                    v-for="lang in langList"
+                    :key="lang"
+                    :value="lang"
+                    :label="formatSdkLang(lang)"
+                  />
+                </BkSelect>
+              </div>
+            </div>
+          </template>
+          <template #content>
+            <DocSdkSection
+              v-if="isShow"
+              v-model:language="language"
+              :sdks="sdks"
+              :board="board"
+            />
+          </template>
+        </BkCollapsePanel>
+      </BkCollapse>
+    </div>
+  </BkSideslider>
 </template>
 
 <script setup lang="ts">
-import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
-import type { ISdk } from '../types.d.ts';
-import SdkDetail from './SDKDetail.vue';
+import { docTabKey } from '../utils/doc-context';
+import DocSdkSection, { type ISdkItem } from './DocSdkSection.vue';
 import { useI18n } from 'vue-i18n';
+import { useEnv } from '@/stores';
 
 interface IProps {
-  sdks?: ISdk[]
+  sdks?: ISdkItem[]
   targetName?: string
   languages: string[] | undefined
-  maintainers?: string[]
+  board?: string
 }
 
 const isShow = defineModel<boolean>({
@@ -64,69 +94,133 @@ const isShow = defineModel<boolean>({
 const {
   sdks = [],
   targetName = '',
-  maintainers = [],
+  languages,
+  board = 'default',
 } = defineProps<IProps>();
 
 const { t } = useI18n();
+const envStore = useEnv();
+const curTab = inject(docTabKey);
 
 const language = ref('python');
+const activePanels = ref(['sdk']);
 
-const curSdk = computed(() => {
-  return sdks.find((item: ISdk) => item.language === language.value) ?? null;
+const formatSdkLang = (lang: string) => {
+  if (!lang) {
+    return '';
+  }
+  return lang.charAt(0).toUpperCase() + lang.slice(1);
+};
+
+const langList = computed(() => {
+  if (languages?.length) {
+    return languages;
+  }
+  const fromEnv = envStore.env.BK_SDK_LANGUAGES || [];
+  const fromSdks = sdks.map(item => item.language).filter((item): item is string => !!item);
+  return [...new Set([...fromEnv, ...fromSdks])];
 });
 
 const title = computed(() => {
   return targetName ? t('{name} SDK', { name: targetName }) : t('查看 SDK');
 });
 
-watchEffect(() => {
-  language.value = sdks[0]?.language || 'python';
+watch(isShow, (visible) => {
+  if (visible) {
+    activePanels.value = ['sdk'];
+    language.value = sdks[0]?.language || langList.value[0] || 'python';
+  }
 });
-
 </script>
 
 <style scoped lang="scss">
-.custom-main-dialog {
+.intro-side-content-wrap {
+  min-height: calc(100vh - 52px);
+  padding: 16px;
+  background: #f5f7fa;
+}
 
-  :deep(.bk-dialog-title) {
-    line-height: 28px;
+.block-header {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #313238;
+}
+
+.block-header-left {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+
+  > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.block-header-icon {
+  flex-shrink: 0;
+  margin-right: 8px;
+  font-size: 12px;
+  color: #63656e;
+  transition: transform 0.2s;
+
+  &.is-fold {
+    transform: rotate(-90deg);
+  }
+}
+
+.block-header > div:last-child {
+  flex-shrink: 0;
+  margin-left: 12px;
+  font-weight: 400;
+}
+
+.sdk-lang-select {
+  width: 140px;
+}
+
+.detail-block-collapse {
+
+  :deep(> .bk-collapse-item) {
+    margin-bottom: 16px;
+    overflow: visible;
+    background: #fff;
+    border: none;
+    border-radius: 2px;
+    box-shadow: none;
   }
 
-  :deep(.bk-dialog-content) {
-    padding-right: 8px;
-    margin-top: 20px;
+  :deep(> .bk-collapse-item:last-child) {
+    margin-bottom: 0;
   }
 
-  :deep(.bk-modal-footer) {
-    display: none;
+  :deep(> .bk-collapse-item > div:first-child:not(.bk-collapse-content)) {
+    display: flex;
+    min-height: 48px;
+    padding: 0 16px;
+    cursor: pointer;
+    align-items: center;
   }
 
-  .dialog-content {
+  :deep(> .bk-collapse-item > .bk-collapse-content) {
+    padding: 0 16px 16px;
+  }
+}
+</style>
 
-    .dialog-main {
+<style lang="scss">
+.sdk-detail-sideslider {
 
-      .data-box {
-        padding: 24px 12px;
-        background: #f5f7fa;
-
-        .row-item {
-          display: flex;
-          line-height: 40px;
-
-          .key {
-            width: 100px;
-            padding-right: 10px;
-            text-align: right;
-          }
-
-          .value {
-            color: #313238;
-            white-space: nowrap;
-            flex: 1;
-          }
-        }
-      }
-    }
+  .bk-sideslider-title {
+    display: flex;
+    width: 100%;
+    padding-right: 0;
   }
 }
 </style>
