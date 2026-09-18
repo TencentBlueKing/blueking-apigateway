@@ -393,11 +393,22 @@ def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, 
     synchronizer.assert_not_called()
 
 
-def test_add_global_gateway_administrators_rejects_when_iam_disabled(settings):
+def test_add_global_gateway_administrators_apply_succeeds_when_iam_disabled(settings, mocker):
     settings.BK_IAM_V4_ENABLED = False
+    settings.BK_IAM_V4_MANAGERS = []
+    gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    apply_iam = mocker.patch("apigateway.biz.gateway.members.apply_gateway_member_snapshots_to_iam")
+    synchronizer = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    )
+    output = StringIO()
 
-    with pytest.raises(CommandError, match="requires IAM V4 enabled"):
-        call_command("add_global_gateway_administrators", username=["alice"])
+    call_command("add_global_gateway_administrators", username=["alice"], apply=True, stdout=output)
+    assert GatewayMember.objects.is_gateway_administrator(gateway.id, "alice")
+    apply_iam.assert_not_called()
+    synchronizer.assert_not_called()
+    assert "iam_enabled=false" in output.getvalue()
+    assert "iam_skipped=true" in output.getvalue()
 
 
 def test_add_global_gateway_administrators_dry_run_only_plans_global_gateways(settings, mocker):
@@ -528,3 +539,19 @@ def test_add_global_gateway_administrators_rejects_empty_comma_separated_usernam
 
     with pytest.raises(CommandError, match="--username 不能为空"):
         call_command("add_global_gateway_administrators", username=["alice,,bob"])
+
+
+def test_add_global_gateway_administrators_rejects_when_iam_enabled_but_managers_empty(settings):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.BK_IAM_V4_MANAGERS = []
+
+    with pytest.raises(CommandError, match="BK_IAM_V4_MANAGERS"):
+        call_command("add_global_gateway_administrators", username=["alice"], apply=True)
+
+
+def test_add_global_gateway_administrators_dry_run_ignores_empty_managers(settings):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.BK_IAM_V4_MANAGERS = []
+    G(Gateway, tenant_mode="global", tenant_id="")
+
+    call_command("add_global_gateway_administrators", username=["alice"])

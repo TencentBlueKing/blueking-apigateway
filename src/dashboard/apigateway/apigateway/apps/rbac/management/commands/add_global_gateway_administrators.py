@@ -54,23 +54,21 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        if not settings.BK_IAM_V4_ENABLED:
-            raise CommandError("BK_IAM_V4_ENABLED=false; command requires IAM V4 enabled")
-
         usernames = self._normalize_usernames(options["username"])
-        operator = self._get_default_operator()
+        apply = options["apply"]
+        iam_enabled = settings.BK_IAM_V4_ENABLED
+        operator = self._resolve_operator(iam_enabled=iam_enabled) if apply else settings.GATEWAY_DEFAULT_CREATOR
         gateways = self._list_gateways()
         if not gateways:
             self.stdout.write("no global gateways found; skipped")
             return
 
-        apply = options["apply"]
         planned = 0
         applied = 0
         unchanged = 0
         failures: list[_Failure] = []
         requested = set(usernames)
-        synchronizer = GatewayIAMAuthorizationSynchronizer() if apply else None
+        synchronizer = GatewayIAMAuthorizationSynchronizer() if (apply and iam_enabled) else None
         for gateway in gateways:
             existing = set(GatewayMember.objects.list_gateway_administrators(gateway.id))
             local_change_required = not requested.issubset(existing)
@@ -82,7 +80,7 @@ class Command(BaseCommand):
 
             self.stdout.write(
                 f"gateway={gateway.id}:{gateway.name} local_change={str(local_change_required).lower()} "
-                f"administrators={usernames} apply={str(apply).lower()}"
+                f"administrators={usernames} apply={str(apply).lower()} iam_enabled={str(iam_enabled).lower()}"
             )
             if not apply:
                 continue
@@ -90,15 +88,15 @@ class Command(BaseCommand):
             try:
                 administrators = add_gateway_administrators(gateway, usernames, operator)
                 iam_changes = 0
-                assert synchronizer is not None
-                for username in usernames_to_reconcile:
-                    result = synchronizer.reconcile_gateway(
-                        gateway.id,
-                        apply=True,
-                        operator=operator,
-                        username=username,
-                    )
-                    iam_changes += result.change_count
+                if synchronizer is not None:
+                    for username in usernames_to_reconcile:
+                        result = synchronizer.reconcile_gateway(
+                            gateway.id,
+                            apply=True,
+                            operator=operator,
+                            username=username,
+                        )
+                        iam_changes += result.change_count
             except Exception as err:
                 failures.append(_Failure(gateway.id, gateway.name, str(err)))
                 self.stderr.write(f"gateway={gateway.id}:{gateway.name} status=failed error={err}")
@@ -107,7 +105,7 @@ class Command(BaseCommand):
             applied += 1
             self.stdout.write(
                 f"gateway={gateway.id}:{gateway.name} status=applied administrators={administrators} "
-                f"iam_reconciled_changes={iam_changes}"
+                f"iam_reconciled_changes={iam_changes} iam_skipped={str(not iam_enabled).lower()}"
             )
 
         self.stdout.write(
@@ -132,7 +130,10 @@ class Command(BaseCommand):
                 normalized.append(candidate)
         return sorted(set(normalized))
 
-    def _get_default_operator(self) -> str:
+    def _resolve_operator(self, *, iam_enabled: bool) -> str:
+        if not iam_enabled:
+            return settings.GATEWAY_DEFAULT_CREATOR
+
         try:
             return get_gateway_iam_system_operator()
         except ValueError as err:
