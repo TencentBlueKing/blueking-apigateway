@@ -29,32 +29,32 @@
         />
         {{ curTab === 'gateway' ? curTargetName : curTargetBasics?.description ?? '' }}
         <!--  组件系统下拉菜单  -->
-        <aside
-          v-if="curTab === 'component'"
-          class="system-dropdown-wrap"
-        >
-          <BkDropdown :popover-options="{ boundary: 'body', placement: 'bottom-start' }">
-            <div class="dropdown-trigger-btn">
-              <span>{{ curTargetName }}</span>
-              <i class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape" />
-            </div>
-            <template #content>
-              <BkDropdownMenu class="dropdown-trigger-content bk-dropdown-list">
-                <BkDropdownItem
-                  v-for="system in allSystemList"
-                  :key="system.name"
-                  :title="system.description ?? undefined"
-                  @click="() => handleSystemChange(system)"
-                >
-                  <span class="text-14px">
-                    <span class="mr-5px">{{ system.description }}</span>
-                    ({{ system.name }})
-                  </span>
-                </BkDropdownItem>
-              </BkDropdownMenu>
-            </template>
-          </BkDropdown>
-        </aside>
+        <template v-if="curTab === 'component'">
+          <BkDivider direction="vertical" />
+          <aside class="system-dropdown-wrap">
+            <BkDropdown :popover-options="{ boundary: 'body', placement: 'bottom-start' }">
+              <div class="dropdown-trigger-btn">
+                <span>{{ curTargetName }}</span>
+                <i class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape" />
+              </div>
+              <template #content>
+                <BkDropdownMenu class="dropdown-trigger-content bk-dropdown-list">
+                  <BkDropdownItem
+                    v-for="system in allSystemList"
+                    :key="system.name"
+                    :title="system.description ?? undefined"
+                    @click="() => handleSystemChange(system)"
+                  >
+                    <span class="text-12px">
+                      <span class="mr-5px">{{ system.description }}</span>
+                      ({{ system.name }})
+                    </span>
+                  </BkDropdownItem>
+                </BkDropdownMenu>
+              </template>
+            </BkDropdown>
+          </aside>
+        </template>
       </main>
     </header>
     <!--  正文  -->
@@ -890,14 +890,17 @@ onBeforeMount(() => {
     .system-dropdown-wrap {
       display: flex;
       align-items: center;
-      margin-left: 8px;
 
       .dropdown-trigger-btn {
+        display: flex;
         height: 30px;
         font-size: 12px;
         line-height: 28px;
-        color: #63656E;
+        color: #3a84ff;
         padding-inline: 6px;
+        gap: 4px;
+        align-items: center;
+        cursor: pointer;
       }
 
       .dropdown-trigger-content {
