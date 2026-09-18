@@ -648,7 +648,7 @@ $primary-color: #3a84ff;
     z-index: 9;
     display: flex;
     width: 100%;
-    padding: 24px 0;
+    padding: 24px 0 16px;
     background-color: #f5f7fa;
     justify-content: space-between;
     align-items: center;
