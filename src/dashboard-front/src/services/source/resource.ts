@@ -23,6 +23,7 @@ import type {
   IBackendPathCheckOutput,
   IDocListOutput,
   IResourceListPageOutput,
+  IResourcePathConflictOutput,
   IResourceRetrieveOutput,
   IResourceVersionDiffOutput,
   IResourceVersionListOutput,
@@ -223,6 +224,17 @@ export const checkNeedNewVersion = (apigwId: number) =>
 
 export const getVersionDiff = (apigwId: number, data: IGatewaysResourceVersionsDiffReadQuery) =>
   http.get<IResourceVersionDiffOutput>(`${path}/${apigwId}/resource-versions/diff/`, data);
+
+/**
+ * 检测编辑区全部资源的请求路径冲突
+ * @param apigwId 网关id
+ */
+export const getResourcePathConflicts = (apigwId: number) =>
+  http.get<IResourcePathConflictOutput>(
+    `${path}/${apigwId}/resources/-/path-conflicts/`,
+    undefined,
+    { catchError: true },
+  );
 
 export const exportVersion = async (apigwId: number, data: IResourceVersionExportInputSLZ) => {
   const { id } = data;

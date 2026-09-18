@@ -53,6 +53,7 @@ export function getFeatureFlags(params: {
     ENABLE_MCP_SERVER_PROMPT: boolean
     ENABLE_MONITOR: boolean
     ENABLE_MULTI_TENANT_MODE: boolean
+    ENABLE_RESOURCE_PATH_CONFLICT_CHECK: boolean
     ENABLE_RUN_DATA: boolean
     ENABLE_RUN_DATA_METRICS: boolean
     ENABLE_SDK: boolean
@@ -116,6 +117,7 @@ export function getEnv() {
       QUERY_USE: string
       USER_VERIFY: string
       TEMPLATE_VARS: string
+      ROUTE_MATCH_RULES: string
       AUTH: string
       AUTH_PERSONAL_TOKEN: string
       SWAGGER: string

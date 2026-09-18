@@ -2745,5 +2745,13 @@
   "已显示最前": "Already displayed at the front",
   "没有更多了": "No more",
   "分享链接已失效或日志不存在": "The share link has expired or the log does not exist",
-  "网关加载失败": "Failed to load gateway"
+  "网关加载失败": "Failed to load gateway",
+  "检测到 {count} 个资源存在路由冲突": "{count} resource(s) have conflicting routes",
+  "这些资源的请求方法与路径可能互相覆盖，实际请求可能命中非预期资源。": "The request methods and paths of these resources may overlap, so a request may hit an unexpected resource.",
+  "冲突最多的资源与 {count} 个资源重叠。": "The most conflicting resource overlaps with {count} resource(s).",
+  "与 {count} 个资源冲突": "Conflicts with {count} resource(s)",
+  "可能与以下 {count} 个资源冲突：": "May conflict with the following {count} resource(s):",
+  "查看路由匹配规则": "View route matching rules",
+  "冲突数": "Conflicts",
+  "显示剩余 {count} 个": "Show remaining {count}"
 }

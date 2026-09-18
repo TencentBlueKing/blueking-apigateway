@@ -1266,6 +1266,37 @@ export interface IResourceListPageOutput {
 }
 
 /**
+ * GET /gateways/{gateway_id}/resources/-/path-conflicts/
+ */
+export interface IResourcePathConflictResourceOutput {
+  id: number | null
+  name: string
+  method: string
+  path: string
+  normalized_path: string
+}
+
+/**
+ * 冲突组：normalized_path 组内资源归一化路径相同，两两互相冲突；
+ * literal_parameter 组只保证基准资源与其他路径重叠，组内资源之间不保证两两冲突
+ */
+export interface IResourcePathConflictGroupOutput {
+  method: string
+  type: 'normalized_path' | 'literal_parameter'
+  resources_truncated: boolean
+  resources: IResourcePathConflictResourceOutput[]
+}
+
+/**
+ * GET /gateways/{gateway_id}/resources/-/path-conflicts/
+ */
+export interface IResourcePathConflictOutput {
+  has_conflicts: boolean
+  conflicts: IResourcePathConflictGroupOutput[]
+  truncated: boolean
+}
+
+/**
  * GET /gateways/{gateway_id}/resources/backend-path/check/
  */
 export interface IBackendPathCheckOutput {

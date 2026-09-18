@@ -69,6 +69,8 @@ export const useEnv = defineStore('useEnv', {
         USER_VERIFY: '',
         // API资源模板变量
         TEMPLATE_VARS: '',
+        // 路由匹配规则
+        ROUTE_MATCH_RULES: '',
         // 网关认证
         AUTH: '',
         // 个人token查看文档

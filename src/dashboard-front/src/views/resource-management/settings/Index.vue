@@ -29,30 +29,8 @@
       :show-new-tips="!!tableData.length"
     />
     <div
-      v-show="versionConfigs.needNewVersion && isCollapsed"
-      class="pt-24px"
-    >
-      <BkAlert
-        class="mx-24px"
-        theme="warning"
-      >
-        <template #title>
-          {{ versionConfigs.versionMessage }}
-          <BkButton
-            v-if="versionConfigs.needNewVersion"
-            text
-            theme="primary"
-            @click="handleCreateResourceVersion"
-          >
-            {{ t('立即生成版本') }}
-          </BkButton>
-        </template>
-      </BkAlert>
-    </div>
-    <div
       ref="resizeLayoutParentRef"
       class="resize-layout-wrapper"
-      :class="{ 'new-version-alert-visible': versionConfigs.needNewVersion && isCollapsed }"
     >
       <BkResizeLayout
         placement="right"
@@ -66,10 +44,7 @@
         @collapse-change="handleCollapseChange"
       >
         <template #main>
-          <div
-            class="p-24px flex-column h-100px"
-            :class="{'pt-16px': versionConfigs.needNewVersion && isCollapsed}"
-          >
+          <div class="p-24px flex-column h-100px">
             <div
               class="operate flex justify-between mb-16px"
               :class="{'flex-col gap-y-16px': !isCollapsed}"
@@ -264,6 +239,15 @@
                 />
               </div>
             </div>
+            <ResourcePathConflictTips
+              ref="alertTipsRef"
+              class="mb-16px"
+              :hidden="!isCollapsed"
+              :gateway-id="gatewayId"
+              :need-new-version="versionConfigs.needNewVersion"
+              :version-message="versionConfigs.versionMessage"
+              @create-version="handleCreateResourceVersion"
+            />
             <div class="flex-1">
               <AgTable
                 ref="tableRef"
@@ -487,6 +471,7 @@ import ResourceDocViewer from '@/views/resource-management/settings/components/R
 import TopBar from '@/views/resource-management/components/TopBar.vue';
 import ExportResourceDialog from '@/views/resource-management/components/ExportResourceDialog.vue';
 import ResourceDocSlider from '@/views/resource-management/components/ResourceDocSlider.vue';
+import ResourcePathConflictTips from '@/views/resource-management/components/ResourcePathConflictTips.vue';
 import PageNotFound from '@/views/404.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin-manage/Index.vue';
@@ -494,7 +479,7 @@ import AgTable from '@/components/ag-table/Index.vue';
 import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
-import { useWindowSize } from '@vueuse/core';
+import { useElementSize, useWindowSize } from '@vueuse/core';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -1063,9 +1048,13 @@ const getFilterValue = computed(() => {
   return resultObj;
 });
 
-// 表格最大高度
+// 资源提示框（版本提示 + 路由冲突汇总）整体高度，含其下方 16px 间距；不可见时为 0
 const { height: windowHeight } = useWindowSize();
+const alertTipsRef = useTemplateRef('alertTipsRef');
+const { height: alertTipsHeight } = useElementSize(() => alertTipsRef.value?.$el as HTMLElement | undefined);
+const alertTipsAreaHeight = computed(() => (alertTipsHeight.value > 0 ? alertTipsHeight.value + 16 : 0));
 
+// 表格最大高度
 const tableMaxHeight = computed(() => {
   const viewportHeight = windowHeight.value;
   // 通知栏高度
@@ -1076,8 +1065,6 @@ const tableMaxHeight = computed(() => {
   const routeTitleHeight = 52;
   // 页面上下padding
   const pageVerticalPadding = 40;
-  // 版本提示高度
-  const versionAlertHeight = (versionConfigs.needNewVersion && isCollapsed.value) ? 52 : 0;
   // 操作栏高度
   const operationBarHeight = 48;
   // 分页器高度
@@ -1088,10 +1075,11 @@ const tableMaxHeight = computed(() => {
     - navBarHeight
     - routeTitleHeight
     - pageVerticalPadding
-    - versionAlertHeight
+    - alertTipsAreaHeight.value
     - operationBarHeight
     - paginationHeight;
-  return usableHeight;
+  // 冲突汇总展开后提示框会很高，视口偏矮时给表格留一个可用的最小高度
+  return Math.max(usableHeight, 240);
 });
 
 watch(
@@ -1702,6 +1690,7 @@ const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
 const handleSuccess = () => {
   tableRef.value!.fetchData(tableQueries.value);
   handleShowVersion();
+  refreshPathConflicts();
 };
 
 // 获取资源是否需要发版本更新
@@ -1715,6 +1704,11 @@ const handleShowVersion = async () => {
     versionConfigs.needNewVersion = false;
     versionConfigs.versionMessage = error?.msg;
   }
+};
+
+// 重新检测编辑区资源的路由冲突
+const refreshPathConflicts = () => {
+  alertTipsRef.value?.refresh();
 };
 
 // 处理标签点击
@@ -1777,6 +1771,7 @@ const handleUpdated = () => {
 // 删除成功
 const handleDeleteSuccess = () => {
   tableRef.value!.fetchData(tableQueries.value);
+  refreshPathConflicts();
   isCollapsed.value = true;
 };
 
@@ -1793,6 +1788,7 @@ const recoverPageStatus = () => {
 const handleVersionCreated = () => {
   tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
   handleShowVersion();
+  refreshPathConflicts();
 };
 
 onBeforeRouteLeave((to) => {
@@ -1897,12 +1893,6 @@ onMounted(() => {
 
 .resize-layout-wrapper {
   height: 100%;
-
-  // 新资源版本 alert 提示可见时，应减少高度
-
-  &.new-version-alert-visible {
-    height: calc(100% - 54px);
-  }
 
   .bk-resize-layout {
     height: 100%;
