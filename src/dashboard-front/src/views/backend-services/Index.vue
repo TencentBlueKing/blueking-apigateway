@@ -110,7 +110,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       return (
         <div
           v-bk-tooltips={{
-            content: row.name,
+            content: row.name ?? '',
             placement: 'top',
             disabled: !row.isOverflow,
             extCls: 'max-w-480px',

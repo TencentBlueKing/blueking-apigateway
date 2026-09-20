@@ -303,7 +303,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         <div class="flex-row items-center">
           <div
             v-bk-tooltips={{
-              content: row.name,
+              content: row.name ?? '',
               placement: 'top',
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
@@ -343,7 +343,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               ? (
                 <bk-tag
                   v-bk-tooltips={{
-                    content: row.deprecated_note,
+                    content: row.deprecated_note ?? '',
                     placement: 'top',
                     disabled: !row.deprecated_note,
                     extCls: 'max-w-200px',

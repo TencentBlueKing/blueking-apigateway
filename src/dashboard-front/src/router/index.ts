@@ -97,6 +97,7 @@ const routes: RouteRecordRaw[] = [
       // 裸访问 /:id 时默认进入基本信息页
       {
         path: '',
+        name: 'ResourcesIndex',
         redirect: to => ({
           name: 'BasicInfo',
           params: { id: to.params.id },

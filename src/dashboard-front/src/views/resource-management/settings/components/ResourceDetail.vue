@@ -103,7 +103,7 @@
               >
                 <div
                   v-bk-tooltips="{
-                    content: formData.description,
+                    content: formData.description ?? '',
                     disabled: !formData.description || formData.description.length <= 50,
                   }"
                   class="value-cls"

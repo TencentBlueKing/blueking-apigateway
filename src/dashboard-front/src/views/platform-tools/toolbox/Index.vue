@@ -40,7 +40,7 @@
               {{ tool.name }}
             </header>
             <main
-              v-bk-tooltips="{ content: tool.desc, disabled: tool.id !== 3 }"
+              v-bk-tooltips="{ content: tool.desc ?? '', disabled: tool.id !== 3 }"
               class="tool-nav-item-desc"
             >
               {{ tool.desc }}

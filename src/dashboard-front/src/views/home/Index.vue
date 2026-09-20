@@ -211,7 +211,7 @@
                 <span
                   :ref="(el: any) => setNameRef(el, item.id)"
                   v-bk-tooltips="{
-                    content: item.name,
+                    content: item.name ?? '',
                     theme: 'light',
                     placement: 'top',
                     disabled: !overflowMap[item.id]

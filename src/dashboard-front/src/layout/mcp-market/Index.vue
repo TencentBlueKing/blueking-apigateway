@@ -67,7 +67,7 @@
             <div
               v-bk-tooltips="{
                 placement:'top',
-                content: categorize.display_name,
+                content: categorize.display_name ?? '',
                 disabled: !categorize.isOverflow,
               }"
               class="truncate categorize-text"

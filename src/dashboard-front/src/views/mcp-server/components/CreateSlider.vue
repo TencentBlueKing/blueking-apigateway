@@ -356,7 +356,7 @@
                                     <div
                                       v-bk-tooltips="{
                                         placement:'top',
-                                        content: checks.tool_name || checks.name,
+                                        content: (checks.tool_name || checks.name) ?? '',
                                         disabled: !isOverflow
                                       }"
                                       class="min-w-20px color-#4d4f56 text-12px truncate name"
@@ -474,7 +474,13 @@ import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
 import type { IOptions } from 'bkui-vue/lib/directives';
 import type { TableRowData } from 'tdesign-vue-next';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import type { IFormMethod, IMethodFilterItem, ISearchSelectFilter, ITableEmptyType, ITableMethod } from '@/types/common';
+import type {
+  IFormMethod,
+  IMethodFilterItem,
+  ISearchSelectFilter,
+  ITableEmptyType,
+  ITableMethod,
+} from '@/types/common';
 import type { IAuthConfig } from '@/types/resource';
 import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
@@ -640,7 +646,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
           <div
             v-bk-tooltips={{
               placement: 'top',
-              content: row.name,
+              content: row.name ?? '',
               disabled: !row.isOverflow,
             }}
             class={[
@@ -734,7 +740,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
           <div
             v-bk-tooltips={{
               placement: 'top',
-              content: row.tool_name,
+              content: row.tool_name ?? '',
               disabled: !row.isOverflow,
             }}
             class={[
@@ -919,7 +925,7 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
         <div class="flex-row">
           <div
             v-bk-tooltips={{
-              content: row.name,
+              content: row.name ?? '',
               placement: 'top',
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',

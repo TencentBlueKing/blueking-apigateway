@@ -156,7 +156,7 @@
         </div>
         <div class="value">
           <span
-            v-bk-tooltips="{ content: doc.stage?.name, placement: 'top' }"
+            v-bk-tooltips="{ content: doc.stage?.name ?? '', placement: 'top' }"
             class="column-value"
           >{{ doc.stage?.name || '--' }}</span>
         </div>
