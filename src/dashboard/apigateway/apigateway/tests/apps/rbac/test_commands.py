@@ -391,3 +391,167 @@ def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, 
 
     assert output.getvalue() == "gateway RBAC initial sync already completed; skipped\n"
     synchronizer.assert_not_called()
+
+
+def test_add_global_gateway_administrators_apply_succeeds_when_iam_disabled(settings, mocker):
+    settings.BK_IAM_V4_ENABLED = False
+    settings.BK_IAM_V4_MANAGERS = []
+    gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    apply_iam = mocker.patch("apigateway.biz.gateway.members.apply_gateway_member_snapshots_to_iam")
+    synchronizer = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    )
+    output = StringIO()
+
+    call_command("add_global_gateway_administrators", username=["alice"], apply=True, stdout=output)
+    assert GatewayMember.objects.is_gateway_administrator(gateway.id, "alice")
+    apply_iam.assert_not_called()
+    synchronizer.assert_not_called()
+    assert "iam_enabled=false" in output.getvalue()
+    assert "iam_skipped=true" in output.getvalue()
+
+
+def test_add_global_gateway_administrators_dry_run_only_plans_global_gateways(settings, mocker):
+    _enable_iam(settings)
+    global_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    single_gateway = G(Gateway, tenant_mode="single", tenant_id="default")
+    add_administrators = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.add_gateway_administrators"
+    )
+    synchronizer = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    )
+    output = StringIO()
+
+    call_command("add_global_gateway_administrators", username=["alice"], stdout=output)
+
+    add_administrators.assert_not_called()
+    synchronizer.assert_not_called()
+    assert (
+        f"gateway={global_gateway.id}:{global_gateway.name} local_change=true administrators=['alice'] apply=false"
+    ) in output.getvalue()
+    assert f"gateway={single_gateway.id}:{single_gateway.name}" not in output.getvalue()
+
+
+def test_add_global_gateway_administrators_apply_processes_all_global_gateways(settings, mocker):
+    _enable_iam(settings)
+    active_gateway = G(Gateway, tenant_mode="global", tenant_id="", status=1)
+    inactive_gateway = G(Gateway, tenant_mode="global", tenant_id="", status=0)
+    add_administrators = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.add_gateway_administrators",
+        return_value=["alice"],
+    )
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.return_value = _sync_result(active_gateway, applied=True)
+    output = StringIO()
+
+    call_command(
+        "add_global_gateway_administrators",
+        username=["alice"],
+        apply=True,
+        stdout=output,
+    )
+
+    assert add_administrators.call_args_list == [
+        mocker.call(active_gateway, ["alice"], "admin"),
+        mocker.call(inactive_gateway, ["alice"], "admin"),
+    ]
+    reconcile.assert_not_called()
+    assert "summary gateways=2 planned=2 applied=2 unchanged=0 failed=0\n" in output.getvalue()
+
+
+def test_add_global_gateway_administrators_writes_local_member_and_iam(settings, mocker):
+    _enable_iam(settings)
+    gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    apply_iam = mocker.patch("apigateway.biz.gateway.members.apply_gateway_member_snapshots_to_iam")
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.return_value = _sync_result(gateway, applied=True)
+
+    call_command("add_global_gateway_administrators", username=["alice"], apply=True)
+
+    assert GatewayMember.objects.is_gateway_administrator(gateway.id, "alice")
+    apply_iam.assert_called_once()
+    reconcile.assert_not_called()
+
+
+def test_add_global_gateway_administrators_reconciles_existing_local_member(settings, mocker):
+    _enable_iam(settings)
+    gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    G(
+        GatewayMember,
+        gateway=gateway,
+        username="alice",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.return_value = _sync_result(gateway, applied=True, grant_count=1)
+    output = StringIO()
+
+    call_command("add_global_gateway_administrators", username=["alice"], apply=True, stdout=output)
+
+    reconcile.assert_called_once_with(
+        gateway.id,
+        apply=True,
+        operator="admin",
+        username="alice",
+    )
+    assert "summary gateways=1 planned=0 applied=1 unchanged=1 failed=0\n" in output.getvalue()
+
+
+def test_add_global_gateway_administrators_rejects_too_long_username(settings):
+    _enable_iam(settings)
+
+    with pytest.raises(CommandError, match="长度不能超过 64"):
+        call_command("add_global_gateway_administrators", username=["a" * 65])
+
+
+def test_add_global_gateway_administrators_accepts_comma_separated_usernames(settings, mocker):
+    _enable_iam(settings)
+    gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    add_administrators = mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.add_gateway_administrators",
+        return_value=["alice", "bob", "charlie"],
+    )
+    mocker.patch(
+        "apigateway.apps.rbac.management.commands.add_global_gateway_administrators.GatewayIAMAuthorizationSynchronizer"
+    )
+
+    call_command(
+        "add_global_gateway_administrators",
+        "--username",
+        "alice, bob",
+        "--username",
+        "charlie,alice",
+        "--apply",
+    )
+
+    add_administrators.assert_called_once_with(gateway, ["alice", "bob", "charlie"], "admin")
+
+
+def test_add_global_gateway_administrators_rejects_empty_comma_separated_username(settings):
+    _enable_iam(settings)
+
+    with pytest.raises(CommandError, match="--username 不能为空"):
+        call_command("add_global_gateway_administrators", username=["alice,,bob"])
+
+
+def test_add_global_gateway_administrators_rejects_when_iam_enabled_but_managers_empty(settings):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.BK_IAM_V4_MANAGERS = []
+
+    with pytest.raises(CommandError, match="BK_IAM_V4_MANAGERS"):
+        call_command("add_global_gateway_administrators", username=["alice"], apply=True)
+
+
+def test_add_global_gateway_administrators_dry_run_ignores_empty_managers(settings):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.BK_IAM_V4_MANAGERS = []
+    G(Gateway, tenant_mode="global", tenant_id="")
+
+    call_command("add_global_gateway_administrators", username=["alice"])
