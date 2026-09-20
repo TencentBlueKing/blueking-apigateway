@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import ClassVar, Dict, List
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
@@ -48,6 +49,7 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
+    ReleaseStatusEnum,
     ResourceKindEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
@@ -689,6 +691,20 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         related_name="release_histories",
         help_text="The data plane this release was published to",
     )
+
+    def get_status(self, latest_event: "PublishEvent | None") -> str:
+        """Derive status without leaving an eventless publish pending forever.
+
+        Failure means that the publish result could not be confirmed, not that
+        the data plane necessarily failed to apply its configuration.
+        """
+        if latest_event is not None:
+            return latest_event.get_release_history_status()
+
+        if self.created_time and (timezone.now() - self.created_time).total_seconds() > EVENT_FAIL_INTERVAL_TIME:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        return ReleaseStatusEnum.PENDING.value
 
     def __str__(self):
         return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"

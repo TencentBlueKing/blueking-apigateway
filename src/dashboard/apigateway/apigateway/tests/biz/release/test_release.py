@@ -21,6 +21,7 @@ from unittest.mock import call
 
 import pytest
 from ddf import G
+from django.utils import timezone
 
 import apigateway.biz.release as release_biz
 from apigateway.apps.data_plane.models import DataPlane
@@ -470,3 +471,16 @@ class TestReleaseHandler:
         assert result["publish_id"] == latest_release_history.id
         assert result["resource_version_id"] == latest_resource_version.id
         assert result["resource_version_display"] == latest_resource_version.object_display
+
+
+@pytest.mark.parametrize(
+    "age_seconds, expected", [(0, "pending"), (600, "pending"), (601, "failure"), (400 * 86400, "failure")]
+)
+def test_missing_events_expire_consistently(fake_release_history, mocker, age_seconds, expected):
+    now = timezone.now()
+    mocker.patch("django.utils.timezone.now", return_value=now)
+    fake_release_history.created_time = now - datetime.timedelta(seconds=age_seconds)
+    fake_release_history.save(update_fields=["created_time"])
+
+    state = ReleaseHandler.batch_get_stage_release_status([fake_release_history.stage_id])
+    assert state[fake_release_history.stage_id]["status"] == expected

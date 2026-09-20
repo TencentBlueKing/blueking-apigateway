@@ -21,7 +21,7 @@ from datetime import timedelta
 from celery import shared_task
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Max
 from django.utils import timezone
 
 from apigateway.apps.api_debug.models import APIDebugHistory
@@ -30,7 +30,7 @@ from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.core.constants import ResourceVersionSchemaEnum
-from apigateway.core.models import PublishEvent, Release, ReleasedResource, ResourceVersion
+from apigateway.core.models import PublishEvent, Release, ReleasedResource, ReleaseHistory, ResourceVersion
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +38,24 @@ logger = logging.getLogger(__name__)
 @shared_task(ignore_result=True)
 def delete_old_publish_events():
     """
-    Deletes publish events that are more than a year old.
+    Delete expired events except those of the latest publish per stage/data plane.
     """
     deleted_end_time = timezone.now() - timedelta(days=settings.CLEAN_TABLE_INTERVAL_DAYS)
     logger.info("deleting publish events older than %s", deleted_end_time)
 
-    deleted_count, _ = PublishEvent.objects.filter(created_time__lt=deleted_end_time).delete()
+    # These events are the source of the current publish status. Preserve the
+    # entire latest publish, including legacy histories with no data plane.
+    latest_history_ids = (
+        ReleaseHistory.objects.order_by()
+        .values("stage_id", "data_plane_id")
+        .annotate(latest_id=Max("id"))
+        .values("latest_id")
+    )
+    deleted_count, _ = (
+        PublishEvent.objects.filter(created_time__lt=deleted_end_time)
+        .exclude(publish_id__in=latest_history_ids)
+        .delete()
+    )
 
     logger.info("deleted %s publish events older than %s", deleted_count, deleted_end_time)
 
