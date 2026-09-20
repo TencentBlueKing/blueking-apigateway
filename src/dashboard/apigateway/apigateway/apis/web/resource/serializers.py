@@ -40,7 +40,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY, HTTP_METHOD_CHOICES, RESOURCE_METHOD_CHOICES, ResourceKindEnum
+from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
@@ -1004,7 +1004,9 @@ class ResourcePathConflictResourceOutputSLZ(serializers.Serializer):
 
 class ResourcePathConflictGroupOutputSLZ(serializers.Serializer):
     resources_truncated = serializers.BooleanField(read_only=True, help_text="本组是否存在未返回的资源")
-    method = serializers.ChoiceField(choices=HTTP_METHOD_CHOICES, read_only=True, help_text="本组对应的具体请求方法")
+    method = serializers.ChoiceField(
+        choices=RESOURCE_METHOD_CHOICES, read_only=True, help_text="冲突请求方法；纯 ANY 资源的重复冲突组合并为 ANY"
+    )
     type = serializers.ChoiceField(
         choices=["normalized_path", "literal_parameter"], read_only=True, help_text="路径重叠类型"
     )

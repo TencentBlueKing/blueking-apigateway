@@ -58,9 +58,72 @@ def find_resource_path_conflicts(
         group_iterator = _find_all_groups(normalized, trees)
     else:
         group_iterator = _find_candidate_groups(normalized, trees, _normalize_resource(candidate))
+    # 先合并 ANY 重复组，再计算 200 组上限，避免重复组占用展示名额。
+    group_iterator = _deduplicate_any_groups(group_iterator, normalized)
     # 多取第 201 组，只用于判断是否截断；恰好 200 组时不能标记为截断。
     groups = list(islice(group_iterator, _MAX_CONFLICT_GROUPS + 1))
     return groups[:_MAX_CONFLICT_GROUPS], len(groups) > _MAX_CONFLICT_GROUPS
+
+
+def _deduplicate_any_groups(groups: Iterator[Dict[str, Any]], normalized: _PathIndex) -> Iterator[Dict[str, Any]]:
+    """相同的纯 ANY 冲突只返回一次，组方法标为 ANY；含具体方法资源的组不合并。
+
+    未截断时比较基准资源和完整资源集合。截断时不能仅比较前 50 条：
+    等价组检查完整路径索引；逐段重叠组要求整棵树的资源都为 ANY 且索引顺序一致。
+    无法证明完整结果相同时，保留具体方法组，不额外遍历所有重叠路径。
+    """
+    seen = set()
+    bucket_signatures = None
+    for group in groups:
+        resources = group["resources"]
+        if any(resource["method"] != HTTP_METHOD_ANY for resource in resources):
+            yield group
+            continue
+
+        # ANY 展开时复用同一个归一化资源对象。对象标识仅在本次检测内部比较，
+        # 不依赖数据库 ID：新增候选资源及部分内部调用的资源可能没有 ID。
+        signature = frozenset(id(resource) for resource in resources)
+        full_signature: Optional[Tuple[int, ...]] = ()
+        if group["resources_truncated"]:
+            method = group["method"]
+            path = resources[0]["normalized_path"]
+            if group["type"] == "normalized_path":
+                full_signature = _any_resource_signature(normalized[method, path])
+            else:
+                if bucket_signatures is None:
+                    bucket_signatures = _any_bucket_signatures(normalized)
+                full_signature = bucket_signatures.get((method, len(path.split("/"))))
+            if full_signature is None:
+                yield group
+                continue
+        key = (group["type"], id(resources[0]), full_signature, signature)
+
+        if key in seen:
+            continue
+        seen.add(key)
+        group["method"] = HTTP_METHOD_ANY
+        yield group
+
+
+def _any_resource_signature(resources: List[Dict[str, Any]]) -> Optional[Tuple[int, ...]]:
+    """完整资源列表均为 ANY 时返回有序标识；存在具体方法资源时返回 None。"""
+    if any(resource["method"] != HTTP_METHOD_ANY for resource in resources):
+        return None
+    return tuple(id(resource) for resource in resources)
+
+
+def _any_bucket_signatures(normalized: _PathIndex) -> Dict[Tuple[str, int], Optional[Tuple[int, ...]]]:
+    """为完整路径树建立有序资源签名；只扫描索引，不枚举所有路径对。
+
+    同一基准、同一有序树索引产生相同的重叠组，包括未展示的资源。
+    这允许合并较大的纯 ANY 组，同时保留原有的按需检测和组内截断。
+    """
+    buckets: DefaultDict[Tuple[str, int], List[Dict[str, Any]]] = defaultdict(list)
+    for (method, path), resources in normalized.items():
+        segments = _parameter_segments(path)
+        if segments:
+            buckets[method, len(segments)].extend(resources)
+    return {key: _any_resource_signature(resources) for key, resources in buckets.items()}
 
 
 def _normalize_resource(resource: Dict[str, Any]) -> Dict[str, Any]:

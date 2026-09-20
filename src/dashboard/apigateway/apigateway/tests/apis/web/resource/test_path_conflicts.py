@@ -165,3 +165,19 @@ def test_response_exposes_resource_truncation(request_view, fake_gateway, single
     assert len(group["resources"]) == 50
     if single:
         assert any(item["id"] is None for item in group["resources"])
+
+
+@pytest.mark.parametrize("single", [False, True])
+@pytest.mark.parametrize("path", ["/x/{name}/fixed", "/x/{name}/{tail}"])
+def test_any_conflicts_return_one_any_group(request_view, fake_gateway, single, path):
+    G(Resource, gateway=fake_gateway, method="ANY", path="/x/{id}/fixed")
+    data = {"method": "ANY", "path": path} if single else None
+    if not single:
+        G(Resource, gateway=fake_gateway, method="ANY", path=path)
+    result = check(request_view, fake_gateway, data).json()["data"]
+    assert result["truncated"] is False
+    assert len(result["conflicts"]) == 1
+    group = result["conflicts"][0]
+    assert group["method"] == "ANY"
+    assert len(group["resources"]) == 2
+    assert all(resource["method"] == "ANY" for resource in group["resources"])
