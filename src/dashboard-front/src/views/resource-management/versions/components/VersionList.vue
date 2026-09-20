@@ -360,7 +360,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                           <bk-dropdown-item
                             key={item.id}
                             v-bk-tooltips={{
-                              content: item.publish_validate_msg,
+                              content: item.publish_validate_msg ?? '',
                               disabled: !item.publish_validate_msg,
                             }}
                             class={{ 'menu-item-disabled': !!item.publish_validate_msg }}

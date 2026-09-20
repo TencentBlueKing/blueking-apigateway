@@ -29,7 +29,7 @@
           </strong>
           <span
             v-bk-tooltips.top="{
-              content: curComponent.description,
+              content: curComponent.description ?? '',
               disabled: !curComponent.description,
               allowHTML: false,
             }"

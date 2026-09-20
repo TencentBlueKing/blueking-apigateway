@@ -34,7 +34,7 @@
       :data="localTableData"
       :columns="tableColumns"
       :pagination="showPagination ? pagination : null"
-      :loading="loading"
+      :loading="tableLoading"
       :filter-row="null"
       :hover="hover"
       :bordered="bordered"
@@ -107,7 +107,7 @@
         </template>
       </template>
       <template #loading>
-        <Loading :loading="loading" />
+        <Loading :loading="tableLoading" />
       </template>
       <template #empty>
         <slot name="empty">
@@ -165,6 +165,8 @@ interface IProps {
   tableRowKey?: string
   immediate?: boolean
   localPage?: boolean
+  // 外部传入的加载态，不传时本地分页模式下由组件内部在数据更新时自动展示 loading
+  loading?: boolean
   showFirstFullRow?: boolean
   showSelection?: boolean
   showSettings?: boolean
@@ -198,6 +200,8 @@ const {
   immediate = true,
   // 是否需要本地分页
   localPage = false,
+  // 外部传入的加载态，不传时本地分页模式下由组件内部在数据更新时自动展示 loading
+  loading = undefined,
   // 是否显示自定义首行内容
   showFirstFullRow = false,
   // 自定义处理筛选查询状态
@@ -288,13 +292,21 @@ const {
 
 const TDesignTableRef = useTemplateRef<InstanceType<typeof PrimaryTable> & ITableMethod>('primaryTableRef');
 
+// 本地分页场景下数据由外部异步注入，组件内部没有请求，这里统一补充 loading 效果
+// 首屏 loading 的兜底时长，避免父组件始终不注入数据时一直 loading
+const LOCAL_PAGE_FIRST_LOADING_TIMEOUT = 1000;
+// 本地切页 loading 的最小展示时长，确保覆盖当前页重新渲染的过程（避免露出空状态）
+const LOCAL_PAGE_CHANGE_LOADING_DURATION = 150;
+let isLocalPageFirstLoading = false;
+// 用于跳过 watch 挂载时的首次触发，避免初始值触发无意义的 loading
+let isTableDataWatchInitialized = false;
+let localPageFirstLoadingTimer: ReturnType<typeof setTimeout> | null = null;
 let radioClickHandler: ((e: Event) => void) | null = null;
 // 标记filterPopup是否已经触发过一次emit
 let hasEmitFilterPopup = false;
 
-const paramsData: Record<string, any> = ref({});
-
 const radioEl = ref<HTMLElement | undefined | null>(null);
+const paramsData: Record<string, any> = ref({});
 // 设置列实例
 const settingColumnEl = ref<HTMLElement | null>(null);
 const localTableData = ref<any[]>([]);
@@ -308,6 +320,7 @@ const pagination = ref<PrimaryTableProps['pagination']>({
 const isAllSelection = ref(false);
 // 用于处理同步更新表格组件数据后，组件实例销毁重建
 const tableKey = ref(-1);
+const localPageLoading = ref(false);
 
 if (Object.keys(maxLimitConfig ?? {})?.length) {
   pagination.value = Object.assign(pagination.value, {
@@ -456,7 +469,7 @@ const localeConfig = computed(() => locale.value === 'zh-cn' ? cnConfig : enConf
  * @param {Object | Null} error 错误信息
  * @param run 手动触发请求的函数
  */
-const { params: requestParams, loading, error, refresh, run } = useRequest(apiMethod, {
+const { params: requestParams, loading: requestLoading, error, refresh, run } = useRequest(apiMethod, {
   manual: true,
   // 是否立即执行请求
   // @ts-ignore
@@ -493,6 +506,50 @@ const { params: requestParams, loading, error, refresh, run } = useRequest(apiMe
     console.error(error);
   },
 });
+
+// 表格最终加载态：外部传入 true 时优先展示 loading，
+// 外部为 false 或未传时由内部加载态决定，避免外部提前结束时打断正在接续的 loading（露出空状态）
+const tableLoading = computed(() => {
+  const innerLoading = localPage ? localPageLoading.value : requestLoading.value;
+  return loading || innerLoading;
+});
+
+// 数据刷新时的 loading：只覆盖「数据变更 -> 同步渲染完成」这段，
+// 避免数据已经渲染出来而遮罩还在（看起来像又调了一次 loading）
+const startLocalPageRefreshLoading = () => {
+  // 首屏 loading 未结束时直接延续为刷新 loading，避免先结束再重新开始出现两次 loading
+  isLocalPageFirstLoading = false;
+  if (localPageFirstLoadingTimer) {
+    clearTimeout(localPageFirstLoadingTimer);
+    localPageFirstLoadingTimer = null;
+  }
+  localPageLoading.value = true;
+};
+
+// 数据已同步渲染完成，结束本地分页 loading（含首屏 loading）
+const stopLocalPageLoading = () => {
+  isLocalPageFirstLoading = false;
+  if (localPageFirstLoadingTimer) {
+    clearTimeout(localPageFirstLoadingTimer);
+    localPageFirstLoadingTimer = null;
+  }
+  localPageLoading.value = false;
+};
+
+// 首屏 loading：本地分页首次渲染时内部数据尚未同步完成，先展示 loading，避免先闪一次空状态占位
+const startLocalPageFirstLoading = () => {
+  if (!localPage) {
+    return;
+  }
+  isLocalPageFirstLoading = true;
+  localPageLoading.value = true;
+  // 兜底：父组件始终不注入数据时避免一直 loading
+  localPageFirstLoadingTimer = setTimeout(() => {
+    stopLocalPageLoading();
+  }, LOCAL_PAGE_FIRST_LOADING_TIMEOUT);
+};
+
+startLocalPageFirstLoading();
 
 // 初始化表格配置项
 const initTableSettings = () => {
@@ -589,10 +646,26 @@ watch(
 watch(
   tableData,
   (newTableData: any) => {
+    // 首次触发为挂载时的初始数据，之后均为外部注入
+    const isFirstSync = !isTableDataWatchInitialized;
+    if (localPage) {
+      if (!isFirstSync) {
+        // 外部注入数据后展示刷新 loading，首屏 loading 未结束时自动延续
+        startLocalPageRefreshLoading();
+      }
+      isTableDataWatchInitialized = true;
+    }
+
     setTimeout(() => {
       localTableData.value = cloneDeep(newTableData || []);
       if (localPage) {
         pagination.value.total = localTableData.value.length;
+        // 挂载时的初始数据为空时保留 loading，等待外部注入数据或兜底超时；
+        // 外部注入的数据即使为空也视为已就绪，结束 loading 避免数据渲染后遮罩仍在
+        if (isFirstSync && isLocalPageFirstLoading && !localTableData.value.length) {
+          return;
+        }
+        stopLocalPageLoading();
       }
     }, 0);
 
@@ -749,7 +822,17 @@ const handlePageChange = ({ current, pageSize }: {
   }
   // 本地分页切换后，重新渲染当前页的勾选状态
   if (localPage) {
-    getSelectionData();
+    // 本地切页时补充 loading，覆盖当前页重新渲染的过程，避免大数据量下的空白感
+    startLocalPageRefreshLoading();
+    nextTick(() => {
+      if (showSelection) {
+        getSelectionData();
+      }
+      // 延后关闭：表格重渲染存在中间帧，过早结束会露出空状态
+      setTimeout(() => {
+        stopLocalPageLoading();
+      }, LOCAL_PAGE_CHANGE_LOADING_DURATION);
+    });
   }
   emit('page-change', {
     current,
@@ -886,6 +969,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (localPageFirstLoadingTimer) {
+    clearTimeout(localPageFirstLoadingTimer);
+    localPageFirstLoadingTimer = null;
+  }
   memoizedFilter?.cache?.clear();
   document.removeEventListener('click', handleRadioFilterClick);
   radioEl.value?.removeEventListener('click', radioClickHandler);
@@ -898,7 +985,7 @@ onBeforeUnmount(() => {
 
 defineExpose({
   TDesignTableRef,
-  loading,
+  loading: tableLoading,
   fetchData,
   getSelectionData,
   getPagination,

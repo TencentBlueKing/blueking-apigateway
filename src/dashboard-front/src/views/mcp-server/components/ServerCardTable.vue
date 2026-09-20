@@ -154,7 +154,7 @@ const tableColumns = computed(() => {
             <div
               v-bk-tooltips={{
                 placement: 'top',
-                content: row.name,
+                content: row.name ?? '',
                 extCls: 'max-w-480px',
                 disabled: !row.isOverflow,
               }}

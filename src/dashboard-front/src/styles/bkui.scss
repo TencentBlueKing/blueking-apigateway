@@ -51,7 +51,7 @@
     }
   }
 
- .bk-table-footer {
+  .bk-table-footer {
     background: #fff;
   }
 
@@ -64,7 +64,12 @@
 
   &.bordered-outer {
 
+    .bk-table-body-wrapper {
+      border: none !important;
+    }
+
     .bk-table-body {
+      border: 1px solid #dcdee5;
 
       .bk-exception {
         padding-bottom: 20px;

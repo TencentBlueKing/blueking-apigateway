@@ -43,21 +43,13 @@
         table-row-key="id"
         show-settings
         :filter-row="null"
-        :frontend-search="isSearching"
         local-page
-        hover
         resizable
         :row-class-name="getRowClassName"
+        :table-empty-type="tableEmptyType"
         @filter-change="handleFilterChange"
         @clear-filter="handleClearQueries"
-      >
-        <template #empty>
-          <TableEmpty
-            :empty-type="filterValue.keyword ? 'search-empty' : 'empty'"
-            @clear-filter="filterValue.keyword = ''"
-          />
-        </template>
-      </AgTable>
+      />
     </div>
   </template>
 
@@ -76,24 +68,24 @@
 </template>
 
 <script setup lang="tsx">
+import { cloneDeep } from 'lodash-es';
+import { copy } from '@/utils';
 import { useGateway, useStage } from '@/stores';
-import { getGatewayLabels } from '@/services/source/gateway';
+import { METHOD_THEMES } from '@/enums';
+import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
+import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
+import type { ITableEmptyType } from '@/types/common';
 import {
   type IStageListItem,
   getStageList,
 } from '@/services/source/stage';
-import { getVersionDetail } from '@/services/source/resource';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import { getGatewayLabels } from '@/services/source/gateway';
+import { getVersionDetail } from '@/services/source/resource';
 import ResourceDetails from './ResourceDetails.vue';
 import CreateStage from '../../components/CreateStage.vue';
-import { copy } from '@/utils';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import { METHOD_THEMES } from '@/enums';
-import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
-import { cloneDeep } from 'lodash-es';
-import TableEmpty from '@/components/table-empty/Index.vue';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number];
@@ -107,7 +99,6 @@ interface IProps {
 const {
   stageAddress,
   stageId,
-  // versionId,
 } = defineProps<IProps>();
 
 const { t } = useI18n();
@@ -133,8 +124,6 @@ const initTableData = ref<IVersionResource[]>([]);
 const stageList = ref<IStageListItem[]>([]);
 
 const gatewayId = computed<number>(() => gatewayStore.apigwId);
-
-const isSearching = computed(() => !!filterValue.value.keyword);
 
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
@@ -398,6 +387,8 @@ const labelsList = computed(() => {
 const currentStageVersionId = computed(() => {
   return currentStage.value?.resource_version?.id;
 });
+
+const tableEmptyType = computed<ITableEmptyType>(() => filterValue.value.keyword ? 'search-empty' : 'empty');
 
 watch(filterValue, () => {
   tableData.value = initTableData.value.filter((row: any) => {

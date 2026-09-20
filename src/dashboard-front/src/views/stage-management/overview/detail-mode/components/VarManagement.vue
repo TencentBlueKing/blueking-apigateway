@@ -62,7 +62,7 @@
           <template #default="{ row, index, column }">
             <span
               v-if="!row.isEdit"
-              v-bk-tooltips="{ content: row.name, disabled: !row.name }"
+              v-bk-tooltips="{ content: row.name ?? '', disabled: !row.name }"
               class="no-edit-value"
             >
               {{ row?.name }}
@@ -111,7 +111,7 @@
           <template #default="{ row, index, column }">
             <span
               v-show="!row.isEdit"
-              v-bk-tooltips="{ content: row.value, disabled: !row.value }"
+              v-bk-tooltips="{ content: row.value ?? '', disabled: !row.value }"
               class="no-edit-value"
             >
               {{ row?.value }}

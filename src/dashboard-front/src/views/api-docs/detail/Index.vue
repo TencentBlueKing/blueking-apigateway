@@ -145,7 +145,7 @@
                             <header
                               :ref="(el) => setNameRef(el, api.id)"
                               v-bk-xss-html="getHighlightedHtml(api.name)"
-                              v-bk-tooltips="{ content: api.name, disabled: !overflowMap[api.id]?.name }"
+                              v-bk-tooltips="{ content: api.name ?? '', disabled: !overflowMap[api.id]?.name }"
                               class="res-item-name mr-8px"
                             />
                             <BkTag
@@ -164,7 +164,7 @@
                           <main
                             :ref="(el) => setDescRef(el, api.id)"
                             v-bk-xss-html="getHighlightedHtml(api.description ?? '')"
-                            v-bk-tooltips="{ content: api.description, disabled: !overflowMap[api.id]?.desc }"
+                            v-bk-tooltips="{ content: api.description ?? '', disabled: !overflowMap[api.id]?.desc }"
                             class="res-item-desc"
                           />
                         </article>

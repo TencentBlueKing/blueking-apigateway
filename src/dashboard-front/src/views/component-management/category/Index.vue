@@ -125,7 +125,7 @@ const tableColumns = ref<any[]>([
         <div class="flex-row">
           <div
             v-bk-tooltips={{
-              content: row.name,
+              content: row.name ?? '',
               placement: 'top',
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',

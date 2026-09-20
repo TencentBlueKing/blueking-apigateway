@@ -279,7 +279,7 @@
             </BkTableColumn>
             <BkTableColumn :label="t('请求地址')">
               <template #default="{ data }">
-                <span v-bk-tooltips="{ content: data.backend_url, disabled: !data.backend_url }">
+                <span v-bk-tooltips="{ content: data.backend_url ?? '', disabled: !data.backend_url }">
                   {{ data.backend_url }}
                 </span>
               </template>

@@ -124,7 +124,7 @@
             <header class="tool-name">
               <div
                 v-bk-tooltips="{
-                  content: selectedTool.tool_name || selectedTool.name,
+                  content: (selectedTool.tool_name || selectedTool.name) ?? '',
                   disabled: selectedTool.tool_name
                     ? selectedTool.tool_name.length <= 30
                     : selectedTool.name.length <= 30
