@@ -45,7 +45,7 @@
       class="w-740px!"
     >
       <BkTable
-        class="variable-table mt-15px"
+        class="variable-table mt-16px"
         :data="tableData"
         show-overflow-tooltip
         row-hover="auto"
