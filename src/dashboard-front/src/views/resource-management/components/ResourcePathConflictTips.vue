@@ -253,49 +253,34 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
 ]);
 
 /**
- * 把冲突组摊平成「资源 -> 可能冲突的其他资源」。
- * 后端 literal_parameter 组内不保证两两冲突，因此这里只统计同组共同出现过的资源，
- * 用「可能冲突」表述，不重新实现路径归一化与重叠判定。
+ * 把后端冲突组数据转换为「资源 -> 与其冲突的其他资源」。
+ * 每个冲突组以 resources[0] 作为主行展示，组内其余资源作为该主行的冲突项；
+ * 后端 normalized_path 组内两两互相冲突，literal_parameter 组仅保证基准资源与
+ * 其他路径重叠、组内资源之间不保证两两冲突，因此只信任 resources[0] 为主行。
  */
-const buildConflictRows = (conflicts: IResourcePathConflictGroupOutput[]): IConflictRow[] => {
-  const rows = new Map<number, IConflictRow>();
-  const partners = new Map<number, Map<number, IConflictPartner>>();
-
-  conflicts.forEach((group) => {
-    group.resources.forEach((resource) => {
-      if (resource.id === null) return;
-
-      if (!rows.has(resource.id)) {
-        rows.set(resource.id, {
-          id: resource.id,
-          name: resource.name || resource.path,
-          method: resource.method,
-          path: resource.path,
-          conflicts: [],
-        });
-        partners.set(resource.id, new Map());
-      }
-
-      const currentPartners = partners.get(resource.id)!;
-      group.resources.forEach((other) => {
-        if (other.id === null || other.id === resource.id || currentPartners.has(other.id)) return;
-        currentPartners.set(other.id, {
-          id: other.id,
-          name: other.name || other.path,
-          method: other.method,
-          path: other.path,
-        });
-      });
-    });
-  });
-
-  return [...rows.values()]
-    .map(row => ({
-      ...row,
-      conflicts: [...(partners.get(row.id)?.values() ?? [])],
-    }))
-    .sort((a, b) => b.conflicts.length - a.conflicts.length || a.path.localeCompare(b.path));
-};
+const buildConflictRows = (conflicts: IResourcePathConflictGroupOutput[]): IConflictRow[] => (
+  conflicts
+    .flatMap((group) => {
+      const primary = group.resources[0];
+      if (!primary || primary.id === null) return [];
+      return [{
+        id: primary.id,
+        name: primary.name || primary.path,
+        method: primary.method,
+        path: primary.path,
+        conflicts: group.resources.slice(1).flatMap((r) => {
+          if (r.id === null) return [];
+          return [{
+            id: r.id,
+            name: r.name || r.path,
+            method: r.method,
+            path: r.path,
+          }];
+        }),
+      }];
+    })
+    .sort((a, b) => b.conflicts.length - a.conflicts.length || a.path.localeCompare(b.path))
+);
 
 const fetchConflicts = async () => {
   // 未开启冲突检测时不请求，也不展示汇总
