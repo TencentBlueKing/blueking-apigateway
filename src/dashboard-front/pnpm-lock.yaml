@@ -18,8 +18,8 @@ importers:
         specifier: 1.0.3-beta.7
         version: 1.0.3-beta.7
       '@blueking/bk-user-selector':
-        specifier: ^0.0.38
-        version: 0.0.38(@blueking/bkui-library@0.0.0-beta.6)
+        specifier: 0.1.1
+        version: 0.1.1(@blueking/bkui-library@0.0.0-beta.6)
       '@blueking/date-picker':
         specifier: 2.0.0-beta.48
         version: 2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(dayjs@1.11.13)(vue@3.5.34(typescript@5.9.3))
@@ -518,8 +518,8 @@ packages:
   '@blueking/bk-user-display-name@1.0.3-beta.7':
     resolution: {integrity: sha512-WdVIhyWW5N9tjR7kTKBwvqERjfMGcA1wfoX5n6n4XT7sBEtM2u1fVmeFHYed4LuQwCwZVZrtUFnQlUNEWlP+3w==}
 
-  '@blueking/bk-user-selector@0.0.38':
-    resolution: {integrity: sha512-ltQOoKC4m8evGc/dT8l2ZW7GQXjLHLu0U5V0KU4X1gtLM4ffPlozw29TMBS92DZzxKFRuTpNyv40RB9lAhTqPw==}
+  '@blueking/bk-user-selector@0.1.1':
+    resolution: {integrity: sha512-zXJCdrEDKPgkF+pacv4DQ5BcNiQ+Du1yao+e4YrOT76jSIixesyCJoM/MKL5D3ekOXnXCQTi0/Bpg6QPq4gBtg==}
     engines: {node: '>=18.16.0'}
     peerDependencies:
       '@blueking/bkui-library': ^0.0.0-beta.4
@@ -4774,7 +4774,7 @@ snapshots:
 
   '@blueking/bk-user-display-name@1.0.3-beta.7': {}
 
-  '@blueking/bk-user-selector@0.0.38(@blueking/bkui-library@0.0.0-beta.6)':
+  '@blueking/bk-user-selector@0.1.1(@blueking/bkui-library@0.0.0-beta.6)':
     dependencies:
       '@blueking/bkui-library': 0.0.0-beta.6
       lodash: 4.18.1

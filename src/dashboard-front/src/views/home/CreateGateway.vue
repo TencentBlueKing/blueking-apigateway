@@ -841,9 +841,11 @@ const handleMemberChange = (member: string[]) => {
   isShowMemberError.value = !member.length;
 };
 
-const handleTenantUserChange = (members: { id: string }[]) => {
-  formData.value.maintainers = members.map(member => member.id);
-  isShowMemberError.value = !members.length;
+// 多选模式下 payload 恒为数组；此处统一归一，兼容组件 change 事件的联合类型签名
+const handleTenantUserChange = (members: { id: string } | { id: string }[] | null) => {
+  const list = members ? (Array.isArray(members) ? members : [members]) : [];
+  formData.value.maintainers = list.map(member => member.id);
+  isShowMemberError.value = !list.length;
 };
 
 const getUrlPrefix = async () => {
