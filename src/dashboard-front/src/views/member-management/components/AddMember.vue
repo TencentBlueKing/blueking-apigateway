@@ -164,8 +164,10 @@ const handleMemberChange = (member: string[]) => {
   formData.value.usernames = member;
 };
 
-const handleTenantUserChange = (members: { id: string }[]) => {
-  formData.value.usernames = members.map(member => member.id);
+// 多选模式下 payload 恒为数组；此处统一归一，兼容组件 change 事件的联合类型签名
+const handleTenantUserChange = (members: { id: string } | { id: string }[] | null) => {
+  const list = members ? (Array.isArray(members) ? members : [members]) : [];
+  formData.value.usernames = list.map(member => member.id);
 };
 
 const handleCancel = () => {
