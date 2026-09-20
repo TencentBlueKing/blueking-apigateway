@@ -69,7 +69,7 @@ def test_any_expands_without_mixing_concrete_methods(single, literal):
 
 
 @pytest.mark.parametrize("single", [False, True])
-def test_any_against_any_has_one_group_per_method(single):
+def test_any_against_any_has_one_group(single):
     resources = [{"id": 1, "method": "ANY", "path": "/x/{first}"}]
     candidate = {"id": 2, "method": "ANY", "path": "/x/{second}"}
     if not single:
@@ -77,8 +77,8 @@ def test_any_against_any_has_one_group_per_method(single):
         candidate = None
     groups, truncated = find_resource_path_conflicts(resources, candidate)
     assert truncated is False
-    assert len(groups) == 7
-    assert {group["method"] for group in groups} == {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+    assert len(groups) == 1
+    assert groups[0]["method"] == "ANY"
     assert all(len(group["resources"]) == 2 for group in groups)
 
 
@@ -225,3 +225,51 @@ def test_cross_overlap_work_stops_after_result_limits(monkeypatch):
     assert truncated is True
     assert len(groups) == 200
     assert all(len(group["resources"]) == 50 and group["resources_truncated"] for group in groups)
+
+
+@pytest.mark.parametrize("single", [False, True])
+@pytest.mark.parametrize("literal", [False, True])
+@pytest.mark.parametrize("count", [2, 60])
+def test_any_groups_deduplicate_even_when_resources_truncated(single, literal, count):
+    resources = [{"id": index, "method": "ANY", "path": f"/a/{{p{index}}}/fixed"} for index in range(count - 1)]
+    candidate = {"id": count, "method": "ANY", "path": "/a/{id}/{tail}" if literal else "/a/{id}/fixed"}
+    if not single:
+        resources.append(candidate)
+        candidate = None
+    groups, truncated = find_resource_path_conflicts(resources, candidate)
+    overlaps = [group for group in groups if group["type"] == ("literal_parameter" if literal else "normalized_path")]
+    assert len(overlaps) == 1
+    assert overlaps[0]["method"] == "ANY"
+    assert overlaps[0]["resources_truncated"] is (count > 50)
+    assert truncated is False
+
+
+@pytest.mark.parametrize("literal", [False, True])
+def test_any_deduplication_precedes_group_limit(literal):
+    resources = [
+        {"method": "ANY", "path": f"/a/{index}/{{parent}}/" + suffix}
+        for index in range(200)
+        for suffix in ["fixed" if literal else "{left}", "{right}"]
+    ]
+    groups, truncated = find_resource_path_conflicts(resources)
+    assert len(groups) == 200
+    assert truncated is False
+    assert all(group["method"] == "ANY" for group in groups)
+    resources += [{"method": "ANY", "path": "/extra/{a}"}, {"method": "ANY", "path": "/extra/{b}"}]
+    groups, truncated = find_resource_path_conflicts(resources)
+    assert len(groups) == 200
+    assert truncated is True
+
+
+@pytest.mark.parametrize("literal", [False, True])
+def test_truncated_any_prefix_does_not_hide_concrete_resources(literal):
+    # 前 50 条都是相同的 ANY，但每个方法还有一个不同的具体资源，不能误合并。
+    resources = [{"id": i, "method": "ANY", "path": f"/a/{{p{i}}}/fixed"} for i in range(60)]
+    methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+    resources += [{"id": 100 + i, "method": method, "path": "/a/{id}/fixed"} for i, method in enumerate(methods)]
+    candidate = {"method": "ANY", "path": "/a/{id}/{tail}" if literal else "/a/{id}/fixed"}
+    groups, truncated = find_resource_path_conflicts(resources, candidate)
+    assert len(groups) == 7
+    assert {group["method"] for group in groups} == set(methods)
+    assert all(group["resources_truncated"] for group in groups)
+    assert truncated is False
