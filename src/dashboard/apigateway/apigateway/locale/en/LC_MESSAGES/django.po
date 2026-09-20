@@ -301,9 +301,51 @@ msgstr ""
 msgid "可编程网关 Git 信息不能为空。"
 msgstr "Programmable gateway Git information cannot be empty."
 
-#: apigateway/apis/web/gateway/views.py:189
-msgid "Git 信息无效。"
-msgstr "Invalid Git information."
+#: apigateway/utils/git.py
+msgid "无法连接 Git 服务，请检查仓库地址和网络连接，或稍后重试。"
+msgstr "Unable to connect to the Git service. Check the repository URL and network connection, or try again later."
+
+#: apigateway/utils/git.py
+msgid "响应不是 Git Smart HTTP 格式，请检查仓库地址。"
+msgstr "The response is not in Git Smart HTTP format. Check the repository URL."
+
+#: apigateway/utils/git.py
+msgid "Git 服务重定向异常，请检查仓库地址或联系 Git 服务管理员。"
+msgstr "The Git service returned an invalid redirect or too many redirects. Check the repository URL or contact its administrator."
+
+#: apigateway/utils/git.py
+msgid "请求 Git 服务失败，请检查仓库地址和服务状态。"
+msgstr "The Git request failed. Check the repository URL and service status."
+
+#: apigateway/utils/git.py
+msgid "认证未通过，请检查所填账号、密码或访问令牌是否正确、有效。"
+msgstr "Authentication failed. Check that the account, password, or access token you entered is correct and valid."
+
+#: apigateway/utils/git.py
+msgid "访问被拒绝，请检查仓库权限及 Git 服务访问限制。"
+msgstr "Access was denied. Check repository permissions and Git service access restrictions."
+
+#: apigateway/utils/git.py
+msgid "仓库不存在或当前账号无权访问，请检查仓库地址和权限。"
+msgstr "The repository does not exist or is inaccessible to this account. Check the repository URL and permissions."
+
+#: apigateway/utils/git.py
+msgid "Git 服务请求受限，请稍后重试。"
+msgstr "The Git service is rate limiting requests. Try again later."
+
+#: apigateway/utils/git.py
+msgid "Git 服务返回异常，请稍后重试或联系 Git 服务管理员。"
+msgstr "The Git service returned an error. Try again later or contact its administrator."
+
+#: apigateway/utils/git.py
+#, python-format
+msgid "%(host)s 返回 HTTP %(status_code)s，%(reason)s"
+msgstr "%(host)s returned HTTP %(status_code)s: %(reason)s"
+
+#: apigateway/apis/web/gateway/views.py
+#, python-format
+msgid "Git 凭据检查失败：%(detail)s"
+msgstr "Git credential check failed: %(detail)s"
 
 #: apigateway/apis/web/gateway/views.py:196
 msgid "用户未关联仓库授权。"
