@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import List, Optional
 
 from django.conf import settings
@@ -59,6 +60,7 @@ from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.git import check_git_credentials
+from apigateway.utils.local import local
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -75,6 +77,8 @@ from .serializers import (
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class RequestGatewayObjectMixin:
@@ -195,12 +199,21 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                 if not git_info:
                     raise error_codes.INVALID_ARGUMENT.format(_("可编程网关 Git 信息不能为空。"), replace=True)
                 # 校验 git_info 合法性
-                if not check_git_credentials(
+                ok, message = check_git_credentials(
                     repo_url=git_info.get("repository"),
                     username=git_info.get("account"),
                     token=git_info.get("password"),
-                ):
-                    raise error_codes.INVALID_ARGUMENT.format(_("Git 信息无效。"), replace=True)
+                )
+                if not ok:
+                    logger.warning(
+                        "Git repository probe failed: %s, request_id=%s",
+                        message,
+                        local.request_id,
+                    )
+                    raise error_codes.INVALID_ARGUMENT.format(
+                        _("Git 凭据检查失败：%(detail)s") % {"detail": message},
+                        replace=True,
+                    )
 
             user_credentials = get_user_credentials_from_request(request)
             if settings.EDITION != "te" and not git_info:
