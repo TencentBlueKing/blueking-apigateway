@@ -48,6 +48,7 @@ class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
     APPROVED = EnumField("approved", label=_("通过"))
     REJECTED = EnumField("rejected", label=_("驳回"))
     PENDING = EnumField("pending", label=_("待审批"))
+    REVOKED = EnumField("revoked", label=_("已撤销"))
 
 
 class MCPServerAppPermissionApplyProcessedStateEnum(StructuredEnum):

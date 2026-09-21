@@ -26,6 +26,7 @@ from django_dynamic_fixture import G
 from apigateway.apis.web.permission import views
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.permission import models
+from apigateway.apps.permission.constants import ApplyStatusEnum
 from apigateway.core.models import Resource
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, dummy_time, get_response_json
 from apigateway.utils.time import now_datetime
@@ -573,7 +574,14 @@ class TestAppPermissionApplyViewSet:
             models.AppPermissionApply,
             gateway=fake_gateway,
             bk_app_code="test",
+            status=ApplyStatusEnum.PENDING.value,
             itsm_ticket_id="102025092210362600001802",
+        )
+        G(
+            models.AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-revoked",
+            status=ApplyStatusEnum.REVOKED.value,
         )
 
         data = [
@@ -729,6 +737,31 @@ class TestAppPermissionRecordViewSet(TestCase):
             result = get_response_json(response)
             self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"]["count"], test["expected"]["count"])
+
+    def test_list_excludes_revoked_apply(self):
+        G(
+            models.AppPermissionRecord,
+            gateway=self.gateway,
+            bk_app_code="approved-app",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            models.AppPermissionRecord,
+            gateway=self.gateway,
+            bk_app_code="revoked-app",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.REVOKED.value,
+        )
+
+        request = self.factory.get(f"/gateways/{self.gateway.id}/permissions/app-permission-records/")
+        view = views.AppPermissionRecordListApi.as_view()
+        response = view(request, gateway_id=self.gateway.id)
+
+        result = get_response_json(response)
+        self.assertEqual(response.status_code, 200, result)
+        self.assertEqual(result["data"]["count"], 1)
+        self.assertEqual(result["data"]["results"][0]["bk_app_code"], "approved-app")
 
     def test_retrieve(self):
         resource = G(Resource, gateway=self.gateway)

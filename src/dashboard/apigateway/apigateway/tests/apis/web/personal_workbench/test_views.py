@@ -22,13 +22,15 @@ import datetime
 import pytest
 from ddf import G
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.apps.permission.models import AppPermissionApply, AppPermissionApplyStatus, AppPermissionRecord
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
+from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Resource, Stage
 from apigateway.utils.time import now_datetime, timestamp
@@ -1208,7 +1210,11 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
 
     def test_list_includes_all_status(self, request_view, fake_gateway):
         """测试我的申请 - 包含各种状态的申请"""
-        for status_val in [ApplyStatusEnum.PENDING.value, ApplyStatusEnum.APPROVED.value]:
+        for status_val in [
+            ApplyStatusEnum.PENDING.value,
+            ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.REVOKED.value,
+        ]:
             G(
                 AppPermissionApply,
                 gateway=fake_gateway,
@@ -1224,7 +1230,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 2
+        assert result["data"]["count"] == 3
 
     def test_list_filter_by_status(self, request_view, fake_gateway):
         """测试我的申请 - API 网关按状态筛选"""
@@ -1333,6 +1339,198 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         assert result["data"]["results"][0]["resources"] == []
 
 
+class TestWorkbenchMyApplyGatewayPermissionRevokeApi:
+    def test_revoke_pending_apply(self, request_view, fake_gateway, mocker):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
+        )
+        G(
+            AppPermissionApplyStatus,
+            apply=apply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        mocked_record = mocker.patch(
+            "apigateway.biz.personal_workbench.permission.Auditor.record_permission_op_success"
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.gateway.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 204
+        apply.refresh_from_db()
+        record.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.REVOKED.value
+        assert record.status == ApplyStatusEnum.REVOKED.value
+        assert not AppPermissionApplyStatus.objects.filter(apply_id=apply.id).exists()
+        mocked_record.assert_called_once()
+        assert mocked_record.call_args.kwargs["op_type"] == OpTypeEnum.MODIFY
+        assert mocked_record.call_args.kwargs["username"] == FAKE_USERNAME
+        assert mocked_record.call_args.kwargs["gateway_id"] == fake_gateway.id
+        assert mocked_record.call_args.kwargs["instance_id"] == apply.id
+        assert mocked_record.call_args.kwargs["instance_name"] == "app1"
+        assert mocked_record.call_args.kwargs["comment"] == "撤销权限申请"
+
+    def test_revoke_itsm_apply(self, request_view, fake_gateway, mocker):
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="t-001",
+        )
+        mock_revoke = mocker.patch(
+            "apigateway.biz.personal_workbench.permission.ItsmPermissionApplyHelper.revoke_permission_apply_ticket"
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.gateway.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 204
+        mock_revoke.assert_called_once_with("t-001")
+
+    def test_revoke_other_user_apply_returns_not_found(self, request_view, fake_gateway):
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="other-user",
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.gateway.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 404
+        assert AppPermissionApply.objects.filter(id=apply.id).exists()
+
+    def test_revoke_itsm_failure_keeps_local_apply(self, request_view, fake_gateway, mocker):
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="t-001",
+        )
+        mocker.patch(
+            "apigateway.biz.personal_workbench.permission.ItsmPermissionApplyHelper.revoke_permission_apply_ticket",
+            side_effect=error_codes.REMOTE_REQUEST_ERROR.format("ITSM unavailable"),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.gateway.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 500
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.PENDING.value
+        assert AppPermissionApply.objects.filter(id=apply.id).exists()
+
+    def test_revoke_processed_apply_is_rejected(self, request_view, fake_gateway):
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.gateway.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 400
+        assert AppPermissionApply.objects.filter(id=apply.id).exists()
+
+
+class TestWorkbenchMyApplyGatewayPermissionDestroyApi:
+    def test_delete_revoked_apply(self, request_view, fake_gateway, mocker):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.REVOKED.value,
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.REVOKED.value,
+            apply_record_id=record.id,
+        )
+        mocked_record = mocker.patch(
+            "apigateway.biz.personal_workbench.permission.Auditor.record_permission_op_success"
+        )
+
+        resp = request_view(
+            method="DELETE",
+            view_name="workbench.permissions.gateway.applied.destroy",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 204
+        assert not AppPermissionApply.objects.filter(id=apply.id).exists()
+        assert not AppPermissionRecord.objects.filter(id=record.id).exists()
+        mocked_record.assert_called_once()
+        assert mocked_record.call_args.kwargs["op_type"] == OpTypeEnum.DELETE
+        assert mocked_record.call_args.kwargs["username"] == FAKE_USERNAME
+        assert mocked_record.call_args.kwargs["gateway_id"] == fake_gateway.id
+        assert mocked_record.call_args.kwargs["instance_id"] == apply.id
+        assert mocked_record.call_args.kwargs["instance_name"] == "app1"
+        assert mocked_record.call_args.kwargs["data_after"] == {}
+        assert mocked_record.call_args.kwargs["comment"] == "删除已撤销的权限申请"
+
+    def test_delete_pending_apply_is_rejected(self, request_view, fake_gateway):
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        resp = request_view(
+            method="DELETE",
+            view_name="workbench.permissions.gateway.applied.destroy",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 400
+        assert AppPermissionApply.objects.filter(id=apply.id).exists()
+
+
 # ==================== 我的申请 - MCP Server ====================
 
 
@@ -1388,6 +1586,27 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 0
+
+    def test_list_includes_revoked_apply(self, request_view, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="revoked-app",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.applied",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["status"] == MCPServerAppPermissionApplyStatusEnum.REVOKED.value
 
     def test_list_filter_by_status(self, request_view, fake_gateway, fake_mcp_server):
         """测试我的申请 - MCP Server 按状态筛选"""
@@ -1454,6 +1673,116 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
         assert result["data"]["results"][0]["bk_app_code"] == "current_app"
 
 
+class TestWorkbenchMyApplyMCPPermissionRevokeApi:
+    def test_revoke_pending_apply(self, request_view, fake_mcp_server, mocker):
+        apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+        mocked_record = mocker.patch(
+            "apigateway.biz.personal_workbench.permission.Auditor.record_mcp_server_permission_op_success"
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.mcp.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 204
+        apply.refresh_from_db()
+        assert apply.status == MCPServerAppPermissionApplyStatusEnum.REVOKED.value
+        mocked_record.assert_called_once()
+        assert mocked_record.call_args.kwargs["op_type"] == OpTypeEnum.MODIFY
+        assert mocked_record.call_args.kwargs["username"] == FAKE_USERNAME
+        assert mocked_record.call_args.kwargs["gateway_id"] == fake_mcp_server.gateway_id
+        assert mocked_record.call_args.kwargs["instance_id"] == apply.id
+        assert mocked_record.call_args.kwargs["instance_name"] == "app1"
+        assert mocked_record.call_args.kwargs["comment"] == "撤销 MCP Server 权限申请"
+
+    def test_revoke_itsm_apply(self, request_view, fake_mcp_server, mocker):
+        apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+            itsm_ticket_id="t-mcp-001",
+        )
+        mock_revoke = mocker.patch(
+            "apigateway.biz.personal_workbench.permission.ItsmPermissionApplyHelper.revoke_permission_apply_ticket"
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.mcp.applied.revoke",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 204
+        mock_revoke.assert_called_once_with("t-mcp-001")
+
+
+class TestWorkbenchMyApplyMCPPermissionDestroyApi:
+    def test_delete_revoked_apply(self, request_view, fake_mcp_server, mocker):
+        apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+            is_deleted=False,
+        )
+        mocked_record = mocker.patch(
+            "apigateway.biz.personal_workbench.permission.Auditor.record_mcp_server_permission_op_success"
+        )
+
+        resp = request_view(
+            method="DELETE",
+            view_name="workbench.permissions.mcp.applied.destroy",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 204
+        assert not MCPServerAppPermissionApply.objects.filter(id=apply.id).exists()
+        mocked_record.assert_called_once()
+        assert mocked_record.call_args.kwargs["op_type"] == OpTypeEnum.DELETE
+        assert mocked_record.call_args.kwargs["username"] == FAKE_USERNAME
+        assert mocked_record.call_args.kwargs["gateway_id"] == fake_mcp_server.gateway_id
+        assert mocked_record.call_args.kwargs["instance_id"] == apply.id
+        assert mocked_record.call_args.kwargs["instance_name"] == "app1"
+        assert mocked_record.call_args.kwargs["data_after"] == {}
+        assert mocked_record.call_args.kwargs["comment"] == "删除已撤销的 MCP Server 权限申请"
+
+    def test_delete_pending_apply_is_rejected(self, request_view, fake_mcp_server):
+        apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="DELETE",
+            view_name="workbench.permissions.mcp.applied.destroy",
+            path_params={"apply_id": apply.id},
+        )
+
+        assert resp.status_code == 400
+        assert MCPServerAppPermissionApply.objects.filter(id=apply.id).exists()
+
+
 # ==================== 我的已办 - API 网关 ====================
 
 
@@ -1483,6 +1812,27 @@ class TestWorkbenchHandledGatewayPermissionListApi:
         assert result["data"]["results"][0]["handled_by"] == FAKE_USERNAME
         assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
+
+    def test_list_excludes_revoked_apply(self, request_view, fake_gateway):
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="revoked-app",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=FAKE_USERNAME,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.REVOKED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.handled",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 0
 
     def test_list_includes_itsm_records_for_maintainer(self, request_view, fake_gateway, fake_other_gateway):
         """测试我的已办 - API 网关：ITSM 回调无实际审批人，按当前用户维护网关补充可见记录"""
@@ -1709,6 +2059,28 @@ class TestWorkbenchHandledMCPPermissionListApi:
         assert result["data"]["results"][0]["mcp_server"]["id"] == fake_mcp_server.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
+
+    def test_list_excludes_revoked_apply(self, request_view, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="revoked-app",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=FAKE_USERNAME,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.handled",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 0
 
     def test_list_includes_itsm_records_for_maintainer(
         self,

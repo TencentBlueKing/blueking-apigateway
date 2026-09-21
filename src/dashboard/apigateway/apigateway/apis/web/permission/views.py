@@ -727,7 +727,11 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
 
 class AppPermissionApplyQuerySetMixin:
     def get_queryset(self):
-        return AppPermissionApply.objects.filter(gateway=self.request.gateway).order_by("-id")
+        return (
+            AppPermissionApply.objects.filter(gateway=self.request.gateway)
+            .exclude(status=ApplyStatusEnum.REVOKED.value)
+            .order_by("-id")
+        )
 
 
 @method_decorator(
@@ -797,7 +801,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
     def get_queryset(self):
         return (
             AppPermissionRecord.objects.filter(gateway=self.request.gateway)
-            .exclude(status=ApplyStatusEnum.PENDING.value)
+            .exclude(status__in=[ApplyStatusEnum.PENDING.value, ApplyStatusEnum.REVOKED.value])
             .order_by("-handled_time")
         )
 

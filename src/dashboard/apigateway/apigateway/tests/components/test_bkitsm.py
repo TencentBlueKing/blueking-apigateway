@@ -28,6 +28,7 @@ from apigateway.components.bkitsm import (
     _call_bkitsm_api,
     create_ticket,
     list_approval_tasks,
+    revoke_ticket,
     system_workflow_list,
     update_form_model,
 )
@@ -283,6 +284,31 @@ def test_create_ticket_fallback_to_global_token(settings, mocker):
 
     _, kwargs = mock_call.call_args
     assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "fallback-token"}
+
+
+def test_revoke_ticket(settings, mocker):
+    settings.BK_ITSM4_API_TIMEOUT = 30
+    settings.BK_ITSM4_SYSTEM_TOKEN = "fallback-token"
+    mock_call = mocker.patch(
+        "apigateway.components.bkitsm._call_bkitsm_api",
+        return_value={"result": True},
+    )
+
+    result = revoke_ticket(
+        system_id="bk-apigateway",
+        ticket_id="t-001",
+        system_token="explicit-token",
+    )
+
+    args, kwargs = mock_call.call_args
+    assert args[1] == "/api/v1/tickets/revoked/"
+    assert args[2] == {
+        "system_id": "bk-apigateway",
+        "ticket_id": "t-001",
+    }
+    assert kwargs["more_headers"] == {"SYSTEM-TOKEN": "explicit-token"}
+    assert kwargs["timeout"] == 30
+    assert result is True
 
 
 def test_update_form_model_fallback_to_global_token(settings, mocker):

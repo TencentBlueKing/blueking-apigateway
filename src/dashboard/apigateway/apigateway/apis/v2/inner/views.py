@@ -998,6 +998,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 mcp_server_id__in=mcp_server_ids,
                 is_deleted=False,
             )
+            .exclude(status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value)
             .order_by("-applied_time")
             .values("mcp_server_id", "status", "handled_by", "itsm_ticket_id")
         )

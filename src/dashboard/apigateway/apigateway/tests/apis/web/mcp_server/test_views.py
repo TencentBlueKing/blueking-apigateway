@@ -1420,6 +1420,14 @@ class TestMCPServerAppPermissionApplyListApi:
             status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
             itsm_ticket_id="102025092210362600001802",
         )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="revoked-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+        )
 
         resp = request_view(
             method="GET",

@@ -34,6 +34,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerLeastPrivilegeEnum,
+    MCPServerPermissionActionEnum,
     MCPServerPermissionStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -632,6 +633,38 @@ class TestMCPServerPermissionListApi:
 
         permission_data = result["data"][0]["permission"]
         assert permission_data["status"] == MCPServerPermissionStatusEnum.NEED_APPLY.value
+
+    def test_list_with_revoked_apply_allows_reapply(self, request_view, fake_gateway, fake_stage):
+        """测试已撤销申请不影响重新申请 MCP Server 权限"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-revoked",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["status"] == MCPServerPermissionStatusEnum.NEED_APPLY.value
+        assert permission_data["action"] == MCPServerPermissionActionEnum.APPLY.value
 
     def test_list_grant_overrides_apply_status(self, request_view, fake_gateway, fake_stage):
         """测试主动授权（grant）优先级高于申请记录状态"""
