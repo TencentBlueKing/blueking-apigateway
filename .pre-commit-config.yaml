@@ -82,7 +82,7 @@ repos:
     rev: v1.5.5
     hooks:
       - id: insert-license
-        exclude: "^src/mcp-proxy/docs/docs.go"
+        exclude: "^src/mcp-proxy/(docs/docs.go|third_party/bk-kms-sdk/)"
         files: ^src/mcp-proxy/.*\.go$
         args:
           - --license-filepath

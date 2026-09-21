@@ -181,5 +181,6 @@ formatters:
     generated: lax
     paths:
       - third_party$
+      - ^third_party/bk-kms-sdk/
       - builtin$
       - examples$

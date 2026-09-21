@@ -132,6 +132,9 @@ func Load(v *viper.Viper) (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
+	if err := cfg.applyKMS(); err != nil {
+		return nil, err
+	}
 
 	if cfg.Auth.ID == "" || cfg.Auth.Secret == "" {
 		return nil, errors.New("auth id and secret cannot be empty")

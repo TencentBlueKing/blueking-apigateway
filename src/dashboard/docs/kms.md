@@ -1,6 +1,6 @@
-# Dashboard KMS 配置
+# KMS 配置（Dashboard 与 Go 组件）
 
-`ENABLE_KMS` 默认关闭，关闭时保持原有环境变量、`.env` 和配置文件的读取行为，
+Dashboard 的 `ENABLE_KMS` 默认关闭，关闭时保持原有环境变量、`.env` 和配置文件的读取行为，
 不导入 KMS SDK、不读取信封。开启时，在生成数据库、Redis、Celery 等配置之前，
 使用 `bk_kms.decrypt()` 解密并校验所需凭证。明文只保存在配置读取器及 Django
 配置的内存中；本加载过程不写回 `os.environ` 或文件。
@@ -33,7 +33,10 @@ Dashboard 启动失败，不回退到原有密码。错误只显示阶段或字�
     "esb": {"username": "<ESB 数据库账号>", "password": "<ESB 数据库密码>"}
   },
   "redis": {"default": {"password": "<Redis 密码>"}},
-  "etcd": {"default": {"username": "<etcd 账号>", "password": "<etcd 密码>"}},
+  "etcd": {
+    "default": {"username": "<控制面 etcd 账号>", "password": "<控制面 etcd 密码>"},
+    "apisix": {"username": "<数据面 etcd 账号>", "password": "<数据面 etcd 密码>"}
+  },
   "rabbitmq": {"default": {"username": "<RabbitMQ 账号>", "password": "<RabbitMQ 密码>"}},
   "bkrepo": {
     "default": {"username": "<Generic 仓库账号>", "password": "<Generic 仓库密码>"},
@@ -47,7 +50,7 @@ Dashboard 启动失败，不回退到原有密码。错误只显示阶段或字�
 }
 ```
 
-实例名 `default`、`bk_apigw_test`、`apigw`、`esb`、`pypi`、`maven` 是固定映射名；
+实例名 `default`、`bk_apigw_test`、`apigw`、`esb`、`apisix`、`pypi`、`maven` 是固定映射名；
 `app_code` 和 `username` 的实际值不受这些名称限制。各制品仓库账号独立映射，
 即使部署使用相同账号，也应在对应实例中填写。
 
@@ -67,7 +70,7 @@ Dashboard 启动失败，不回退到原有密码。错误只显示阶段或字�
 | `encryption.bkkrillEncryptSecretKey` | `BKKRILL_ENCRYPT_SECRET_KEY` | `BK_CRYPTO_TYPE` 为 `CLASSIC` 或 `SHANGMI` |
 
 条件不满足的实例可以省略；未消费的字段忽略，允许多个组件共用信封。
-当前要求所需账号和密码非空，使用无认证 Redis/etcd 的部署不能直接开启此模式。
+Dashboard 要求所需账号和密码非空，使用无认证 Redis/etcd 的部署不能直接开启此模式。
 地址、端口、库名、TLS 文件路径和功能开关仍沿用原配置。
 
 Dashboard 当前通过 BKLog API 查询日志，不直接消费 `elasticsearch` 账号。
@@ -75,6 +78,39 @@ Dashboard 当前通过 BKLog API 查询日志，不直接消费 `elasticsearch` 
 已有 `SECRET_KEY` 继续生效；如果原本未配置它，仍沿用原代码默认取 `BK_APP_SECRET`
 的行为。其他原本默认使用 `BK_APP_SECRET` 的配置也会自然使用解密后的应用密钥。
 开发环境的 `local_settings.py` 仍是最后加载的显式覆盖文件。
+
+## Go 组件复用同一份信封
+
+`core-api`、`operator`、`mcp-proxy` 使用相同的 `ENABLE_KMS` 开关、私钥环境变量和
+信封文件路径。三者在 `config.Load()` 中解密，仅替换内存配置中的以下字段，
+不修改环境变量或 YAML 文件。每个组件只要求自己消费的字段，允许信封包含其他组件的字段。
+
+| 组件 | 信封路径 | 配置字段 |
+| --- | --- | --- |
+| Core API | `mysql.apigw.username/password` | `databases[id=apigateway].user/password`，随后生成 `DatabaseMap` |
+| Core API | `bkapp_id_secret.default.app_secret` | `auth.secret` |
+| MCP Proxy | `mysql.apigw.username/password` | `databases[id=apigateway].user/password`，随后生成 `DatabaseMap` |
+| MCP Proxy | `encryption.encryptKey` | `mcpServer.encryptKey`，优先于旧的 `ENCRYPT_KEY` 环境变量 |
+| Operator | `bkapp_id_secret.default.app_secret` | `auth.secret` |
+| Operator | `etcd.default.username/password` | `dashboard.etcd.username/password` |
+| Operator | `etcd.apisix.username/password` | `apisix.etcd.username/password` |
+
+Core API 和 MCP Proxy 如配置了其他数据库 ID，则从 `mysql.<数据库ID>` 读取账号密码；
+例如 `id=esb` 对应 `mysql.esb`。每个已配置数据库都必须提供凭证，不从其他实例回退。
+非凭证配置仍从原 YAML/环境变量读取，例如数据库地址、TLS、网关实例 ID 和 cryptoNonce。
+`auth.id` 是网关实例 ID，不是 `app_code`，不会被应用代码覆盖；三个 Go 组件没有需要新增
+`app_code` 映射的配置字段。Core API 和 Operator 的 `auth.secret` 在现有 Helm 中使用
+网关应用密钥，因此仍映射到同一个 `bkapp_id_secret.default.app_secret`。
+
+Operator 的控制面、数据面 etcd 可以使用不同账号；即使实际共用账号，也需要分别填写
+`etcd.default` 和 `etcd.apisix`。某一侧显式设置 `withoutAuth: true` 时，该侧保持原来的
+无认证行为，不要求该侧的信封字段。KMS 模式下不再打印 Operator 的完整 debug 配置，
+避免解密后的凭证进入标准输出。关闭 KMS 时保留原有 debug 行为。
+
+Go SDK 暂以相同源码快照保存在各组件的 `third_party/bk-kms-sdk` 中，通过相对路径
+`replace` 引用，现有 Docker 构建目录无需改变，也无需访问 SDK 私有仓库。
+来源版本和文件校验和见各目录的 `README.md`、`MANIFEST.sha256`。应用会将 SDK 的
+解密错误或畸形 CBC 输入引发的 panic 转换为不含凭证内容的启动错误。
 
 ## 生效范围与轮换
 
