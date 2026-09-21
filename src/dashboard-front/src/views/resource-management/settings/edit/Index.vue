@@ -83,7 +83,7 @@ const compMap: Record<string, Component> = {
 
 const childCompRef = ref<ChildCompInstance | null>(null);
 const submitLoading = ref(false);
-const hasNoRequestParams = ref(true);
+const hasNoRequestParams = ref(false);
 const resourceId = ref(0);
 const activeIndex = ref<string[]>(['baseInfo', 'frontConfig', 'backConfig']);
 const resourceDetail = ref<Record<string, any>>({});
@@ -108,19 +108,11 @@ const init = async () => {
 
 const getResourceDetails = async () => {
   const res = await getResourceDetail(gatewayId.value, resourceId.value);
-  const {
-    none_schema = false,
-    requestBody = {},
-    parameters = [],
-  } = ((res?.schema as unknown) as Record<string, any> | null) ?? {};
+  const { none_schema } = ((res?.schema as unknown) as Record<string, any> | null) ?? {};
 
   // 判断是否无请求参数
   if (none_schema) {
     hasNoRequestParams.value = true;
-  }
-  else {
-    const hasParams = parameters.length > 0 || Object.keys(requestBody).length > 0;
-    hasNoRequestParams.value = !hasParams;
   }
   resourceDetail.value = res;
 };
@@ -167,9 +159,9 @@ const handleSubmit = async () => {
     const baseFormData = baseInfoRef?.formData ?? {};
     const frontFormData = frontConfigRef?.frontConfigData ?? {};
     const backFormData = backConfigRef?.backConfigData ?? {};
-    const requestParamsData = !hasNoRequestParams.value
-      ? await requestParamsRef?.getValue()
-      : {};
+    const requestParamsData = hasNoRequestParams.value
+      ? {}
+      : await requestParamsRef?.getValue();
     const responseParamsData = await responseParamsRef?.getValue();
 
     const params = {

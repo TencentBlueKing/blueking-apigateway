@@ -215,7 +215,6 @@ import {
   cloneRequestParamsState,
   createEmptyRequestParamsState,
   createRequestBody,
-  createRequestParameter,
   flattenRequestFields,
   openApiSchemaToState,
   requestJsonToState,
@@ -271,13 +270,7 @@ watch(
   () => detail,
   () => {
     const operation = detail.schema ?? detail.openapi_schema;
-    const nextState = openApiSchemaToState(operation);
-
-    if (!operation) {
-      nextState.parameters.header.push(createRequestParameter('header'));
-    }
-
-    state.value = nextState;
+    state.value = openApiSchemaToState(operation);
     validationErrors.value = {};
   },
   {
