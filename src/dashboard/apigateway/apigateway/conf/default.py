@@ -28,9 +28,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.backends.mysql.features import DatabaseFeatures
 from django.utils.encoding import force_bytes
 
-from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
+from apigateway.conf.kms import get_env
 from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import (
     PatchFeatures,
@@ -50,7 +50,8 @@ pymysql.version_info = 1, 4, 6, "final", 0
 # 目前 Django 仅是对 5.7 做了软性的不兼容改动，在没有使用 8.0 特异的功能时，对 5.7 版本的使用无影响
 DatabaseFeatures.minimum_database_version = PatchFeatures.minimum_database_version
 
-env = Env()
+env = get_env()
+ENABLE_KMS = env.bool("ENABLE_KMS", False)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -441,14 +442,22 @@ RABBITMQ_USER = env.str("BK_APIGW_RABBITMQ_USER", "")
 RABBITMQ_PASSWORD = env.str("BK_APIGW_RABBITMQ_PASSWORD", "")
 if all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD]):
     # this section not support tls, both rabbitmq and redis
-    CELERY_BROKER_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}"
-    CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
+    # KMS credentials are literal strings and may contain URL delimiters.
+    # Keep the legacy URL construction unchanged when KMS is disabled.
+    _rabbitmq_user = quote(RABBITMQ_USER, safe="") if ENABLE_KMS else RABBITMQ_USER
+    _rabbitmq_password = quote(RABBITMQ_PASSWORD, safe="") if ENABLE_KMS else RABBITMQ_PASSWORD
+    _redis_password = quote(REDIS_PASSWORD, safe="") if ENABLE_KMS else REDIS_PASSWORD
+    CELERY_BROKER_URL = (
+        f"amqp://{_rabbitmq_user}:{_rabbitmq_password}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}"
+    )
+    CELERY_RESULT_BACKEND = f"redis://:{_redis_password}@{REDIS_HOST}:{REDIS_PORT}/0"
 else:
     # 如果没有使用 Redis 作为 Broker，请不要启用该配置，详见：
     # http://docs.celeryproject.org/en/latest/userguide/configuration.html#broker-transport-options
     CELERY_BROKER_TRANSPORT_OPTIONS = REDIS_CONNECTION_OPTIONS
-    CELERY_BROKER_URL = f"redis://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-    CELERY_RESULT_BACKEND = f"redis://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    _redis_password = quote(REDIS_PASSWORD, safe="" if ENABLE_KMS else "/")
+    CELERY_BROKER_URL = f"redis://:{_redis_password}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    CELERY_RESULT_BACKEND = f"redis://:{_redis_password}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
     CELERY_TASK_DEFAULT_QUEUE = env.str(
         "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
     )
@@ -464,7 +473,7 @@ else:
 
         import urllib.parse
 
-        broker_url = f"rediss://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}?{urllib.parse.urlencode(query_string_params)}"
+        broker_url = f"rediss://:{_redis_password}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}?{urllib.parse.urlencode(query_string_params)}"
         CELERY_BROKER_URL = broker_url
         CELERY_RESULT_BACKEND = broker_url
 

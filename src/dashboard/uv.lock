@@ -43,6 +43,7 @@ dependencies = [
     { name = "apigw-manager" },
     { name = "arrow" },
     { name = "bk-crypto-python-sdk", extra = ["gm"] },
+    { name = "bk-kms-sdk" },
     { name = "bk-notice-sdk" },
     { name = "bkapi-bk-apigateway" },
     { name = "bkapi-client-core" },
@@ -154,6 +155,7 @@ requires-dist = [
     { name = "apigw-manager", specifier = "==5.0.1" },
     { name = "arrow", specifier = "==1.4.0" },
     { name = "bk-crypto-python-sdk", extras = ["gm"], specifier = "==4.1.1" },
+    { name = "bk-kms-sdk", path = "vendor/bk_kms_sdk-1.0.0-py3-none-any.whl" },
     { name = "bk-notice-sdk", specifier = "==1.4.2" },
     { name = "bkapi-bk-apigateway", specifier = ">=1.0.12,<2" },
     { name = "bkapi-client-core", specifier = "==1.2.0" },
@@ -421,6 +423,28 @@ wheels = [
 gm = [
     { name = "tongsuopy-crayon" },
 ]
+
+[[package]]
+name = "bk-kms-sdk"
+version = "1.0.0"
+source = { path = "vendor/bk_kms_sdk-1.0.0-py3-none-any.whl" }
+dependencies = [
+    { name = "bk-crypto-python-sdk" },
+]
+wheels = [
+    { filename = "bk_kms_sdk-1.0.0-py3-none-any.whl", hash = "sha256:6e88e3e941154253a6f5490f8de42ed1642fa3d860ec9b4d8d7d511cb7a9d596" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bk-crypto-python-sdk", specifier = "==4.1.1" },
+    { name = "bk-crypto-python-sdk", extras = ["gm"], marker = "extra == 'gm'", specifier = "==4.1.1" },
+    { name = "build", marker = "extra == 'dev'", specifier = ">=1.2,<2" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.3.1,<3" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9,<1" },
+]
+provides-extras = ["gm", "dev"]
 
 [[package]]
 name = "bk-notice-sdk"

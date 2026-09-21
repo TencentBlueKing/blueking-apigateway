@@ -35,6 +35,7 @@ dependencies = [
     "bkpaas-auth==4.4.0",
     "blue-krill==3.1.1",
     "bk-crypto-python-sdk[gm]==4.1.1",
+    "bk-kms-sdk==1.0.0",
     "cryptography==50.0.1",
     "apigw-manager==5.0.1",
     "bkapi-client-generator==0.1.30",
@@ -123,6 +124,7 @@ url = "https://pypi.org/simple/"
 default = true
 
 [tool.uv.sources]
+bk-kms-sdk = { path = "vendor/bk_kms_sdk-1.0.0-py3-none-any.whl" }
 etcd3 = { git = "https://github.com/kragniz/python-etcd3.git", rev = "e58a899579ba416449c4e225b61f039457c8072a" }
 
 

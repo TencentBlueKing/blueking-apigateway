@@ -27,6 +27,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.14 /uv /uvx /bin/
 
 WORKDIR /app
 COPY build/pyproject.toml build/uv.lock /app/
+COPY build/vendor /app/vendor/
 RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked --no-dev && uv clean
 
 ADD build /app
