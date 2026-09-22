@@ -125,6 +125,12 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-my-perm:before {
 	content: "\e149";
 }
+.icon-ag-batch-edit:before {
+	content: "\e233";
+}
+.icon-ag-file:before {
+	content: "\e232";
+}
 .icon-ag-increase:before {
 	content: "\e111";
 }

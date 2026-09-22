@@ -1,23 +1,9 @@
 <template>
   <div class="tab-content quick-start">
-    <!-- 标题区 -->
-    <div class="quick-start-header">
-      <div class="quick-start-icon">
-        <AgIcon
-          name="lightning"
-          size="24"
-          color="#3A84FF"
-        />
-      </div>
-      <div class="quick-start-info">
-        <div class="quick-start-title">
-          {{ t('快速开始') }}
-        </div>
-        <div class="quick-start-desc">
-          {{ t('三步完成从安装到第一次 API 调用，Agent 即刻获得蓝鲸 API 能力。') }}
-        </div>
-      </div>
+    <div class="tab-description">
+      {{ t('三步完成从安装到第一次 API 调用，Agent 即刻获得蓝鲸 API 能力。') }}
     </div>
+    <div class="section-divider" />
 
     <div class="quick-start-content-wrapper">
       <!-- 1. 安装 CLI -->
@@ -27,24 +13,26 @@
           <span class="step-title">{{ t('安装 CLI') }}</span>
           <span class="step-subtitle">{{ t('选择适合你的安装方式') }}</span>
         </div>
-        <div class="install-columns">
-          <div class="install-column">
-            <div class="install-column-header">
-              <span class="install-column-title">{{ t('npm 安装') }}</span>
-              <BkTag
-                size="small"
-                theme="info"
-              >
-                {{ t('推荐') }}
-              </BkTag>
+        <div class="step-body">
+          <div class="install-columns">
+            <div class="install-column">
+              <div class="install-column-header">
+                <span class="install-column-title">{{ t('npm 安装') }}</span>
+                <BkTag
+                  size="small"
+                  theme="info"
+                >
+                  {{ t('推荐') }}
+                </BkTag>
+              </div>
+              <CodeBlock :code="installNpmCode" />
             </div>
-            <CodeBlock :code="installNpmCode" />
-          </div>
-          <div class="install-column">
-            <div class="install-column-header">
-              <span class="install-column-title">{{ t('从源码安装') }}</span>
+            <div class="install-column">
+              <div class="install-column-header">
+                <span class="install-column-title">{{ t('从源码安装') }}</span>
+              </div>
+              <CodeBlock :code="installSourceCode" />
             </div>
-            <CodeBlock :code="installSourceCode" />
           </div>
         </div>
       </div>
@@ -56,10 +44,12 @@
           <span class="step-title">{{ t('初始化上下文') }}</span>
           <span class="step-subtitle">{{ t('首次使用前必须初始化') }}</span>
         </div>
-        <div class="step-desc">
-          {{ t('初始化 default 上下文，配置蓝鲸网关 URL 模板') }}
+        <div class="step-body">
+          <div class="step-desc">
+            {{ t('初始化 default 上下文，配置蓝鲸网关 URL 模板') }}
+          </div>
+          <CodeBlock :code="initContextCode" />
         </div>
-        <CodeBlock :code="initContextCode" />
       </div>
 
       <!-- 3. 认证配置 -->
@@ -69,29 +59,33 @@
           <span class="step-title">{{ t('认证配置') }}</span>
           <span class="step-subtitle">{{ t('存储凭据到当前上下文') }}</span>
         </div>
-        <BkTab
-          v-model:active="authTab"
-          type="unborder-card"
-        >
-          <BkTabPanel
-            name="app_user"
-            :label="t('应用 + 用户令牌')"
+        <div class="step-body">
+          <BkTab
+            v-model:active="authTab"
+            class="auth-tabs"
+            type="unborder-card"
+            :label-height="36"
           >
-            <div class="step-desc">
-              {{ t('初始化 default 上下文，配置蓝鲸网关 URL 模板') }}
-            </div>
-            <CodeBlock :code="authAppUserCode" />
-          </BkTabPanel>
-          <BkTabPanel
-            name="accesstoken"
-            :label="t('访问令牌（access_token）')"
-          >
-            <div class="step-desc">
-              {{ t('仅使用访问令牌进行认证。') }}
-            </div>
-            <CodeBlock :code="authAccessTokenCode" />
-          </BkTabPanel>
-        </BkTab>
+            <BkTabPanel
+              name="app_user"
+              :label="t('应用 + 用户令牌')"
+            >
+              <div class="step-desc">
+                {{ t('初始化 default 上下文，配置蓝鲸网关 URL 模板') }}
+              </div>
+              <CodeBlock :code="authAppUserCode" />
+            </BkTabPanel>
+            <BkTabPanel
+              name="accesstoken"
+              :label="t('访问令牌（access_token）')"
+            >
+              <div class="step-desc">
+                {{ t('仅使用访问令牌进行认证。') }}
+              </div>
+              <CodeBlock :code="authAccessTokenCode" />
+            </BkTabPanel>
+          </BkTab>
+        </div>
       </div>
 
       <!-- 4. 发起 API 调用 -->
@@ -101,10 +95,12 @@
           <span class="step-title">{{ t('发起 API 调用') }}</span>
           <span class="step-subtitle">{{ t('调用任意蓝鲸网关 API') }}</span>
         </div>
-        <div class="step-desc">
-          {{ t('使用原始 API 命令调用任意网关 API，支持路径参数、查询参数和请求体。') }}
+        <div class="step-body">
+          <div class="step-desc">
+            {{ t('使用原始 API 命令调用任意网关 API，支持路径参数、查询参数和请求体。') }}
+          </div>
+          <CodeBlock :code="apiCallCode" />
         </div>
-        <CodeBlock :code="apiCallCode" />
       </div>
 
       <!-- 5. 使用系统子命令 -->
@@ -114,10 +110,12 @@
           <span class="step-title">{{ t('使用系统子命令') }}</span>
           <span class="step-subtitle">{{ t('高层语义命令') }}</span>
         </div>
-        <div class="step-desc">
-          {{ t('使用带命名参数的高层命令，更直观地调用 API。') }}
+        <div class="step-body">
+          <div class="step-desc">
+            {{ t('使用带命名参数的高层命令，更直观地调用 API。') }}
+          </div>
+          <CodeBlock :code="systemCommandCode" />
         </div>
-        <CodeBlock :code="systemCommandCode" />
       </div>
     </div>
   </div>
@@ -223,84 +221,64 @@ $ bk-cli apigateway retrieve_gateway_api_details --gateway_name bk-iam --api_nam
 </script>
 
 <style scoped lang="scss">
-
 .quick-start {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
-  .quick-start-header {
-    display: flex;
-    padding: 18px 24px;
-    background: #FAFBFD;
-    align-items: flex-start;
-    gap: 16px;
-    border-bottom: 1px solid #DCDEE5;
+  .tab-description {
+    font-size: 12px;
+    line-height: 20px;
+    color: #4d4f56;
+  }
 
-    .quick-start-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 48px;
-      height: 48px;
-      background: #fff;
-      border-radius: 4px;
-      flex-shrink: 0;
-      box-shadow: 0 0 8px 0 #374a641a;
-    }
-
-    .quick-start-info {
-
-      .quick-start-title {
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 22px;
-        color: #313238;
-      }
-
-      .quick-start-desc {
-        margin-top: 4px;
-        font-size: 12px;
-        line-height: 20px;
-        color: #979ba5;
-      }
-    }
+  .section-divider {
+    height: 1px;
+    background: #eaebf0;
   }
 
   .quick-start-content-wrapper {
-    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 
     .step-section {
-      padding-bottom: 24px;
-      margin-bottom: 24px;
+      position: relative;
       font-size: 12px;
-      border-bottom: 1px solid #EAEBF0;
 
-      &:last-child {
-        padding-bottom: 0;
-        margin-bottom: 0;
-        border-bottom: none;
+      &::before {
+        position: absolute;
+        top: 32px;
+        bottom: 8px;
+        left: 12px;
+        border-left: 1px solid #dcdee5;
+        content: '';
       }
 
       .step-header {
         display: flex;
         align-items: center;
+        height: 24px;
         gap: 8px;
-        margin-bottom: 16px;
 
         .step-number {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 20px;
-          height: 20px;
-          font-weight: 700;
-          color: #3A84FF;
-          background: #E1ECFF;
+          width: 24px;
+          height: 24px;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          line-height: 22px;
+          color: #1768ef;
+          background: #e1ecff;
           border-radius: 50%;
           flex-shrink: 0;
         }
 
         .step-title {
           font-weight: 700;
-          line-height: 22px;
+          line-height: 20px;
           color: #313238;
         }
 
@@ -310,10 +288,14 @@ $ bk-cli apigateway retrieve_gateway_api_details --gateway_name bk-iam --api_nam
         }
       }
 
+      .step-body {
+        padding: 8px 0 8px 32px;
+      }
+
       .step-desc {
-        margin-bottom: 12px;
+        margin-bottom: 16px;
         line-height: 20px;
-        color: #63656e;
+        color: #4d4f56;
       }
 
       .install-columns {
@@ -328,28 +310,49 @@ $ bk-cli apigateway retrieve_gateway_api_details --gateway_name bk-iam --api_nam
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 8px;
+            height: 20px;
+            margin-bottom: 16px;
 
             .install-column-title {
               font-size: 12px;
               line-height: 20px;
-              color: #4D4F56;
+              color: #4d4f56;
+            }
+
+            :deep(.bk-tag) {
+              height: 16px;
+              padding: 0 6px;
+              font-size: 10px;
+              line-height: 16px;
+              color: #1768ef;
+              background: #e1ecff;
+              border: 0;
             }
           }
         }
       }
 
-      :deep(.bk-tab-header) {
-        line-height: 36px !important;
+      .auth-tabs {
 
-        // background: transparent;
-      }
+        :deep(.bk-tab-header) {
+          padding: 0 24px;
+        }
 
-      :deep(.bk-tab-content) {
-        padding: 16px 0 0;
+        :deep(.bk-tab-header-item) {
+          padding: 0;
+          margin-right: 32px;
+          font-size: 12px;
+
+          &:last-child {
+            margin-right: 0;
+          }
+        }
+
+        :deep(.bk-tab-content) {
+          padding: 16px 0 0;
+        }
       }
     }
   }
 }
-
 </style>

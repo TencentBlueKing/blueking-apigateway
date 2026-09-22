@@ -8,7 +8,7 @@
       >
         <AgIcon
           name="copy-info"
-          size="14"
+          size="16"
         />
         <span class="copy-text">{{ copied ? t('已复制') : t('复制') }}</span>
       </span>
@@ -23,6 +23,7 @@
 import { useClipboard } from '@vueuse/core';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/vs2015.css';
+import { messageSuccess } from '@/utils/message';
 
 interface IProps {
   /** 代码内容 */
@@ -60,29 +61,30 @@ const highlightedCode = computed(() => {
   return hljs.highlightAuto(code).value;
 });
 
-const handleCopy = () => {
-  copy(code);
+const handleCopy = async () => {
+  await copy(code);
+  messageSuccess(t('复制成功'));
 };
 </script>
 
 <style scoped lang="scss">
 .code-block {
+  position: relative;
   overflow: hidden;
-  background: #2e2e2e;
-  border-radius: 4px;
+  background: #242424;
+  border-radius: 2px;
 
   .code-block-header {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 1;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 8px 16px;
-    background: #3a3a3a;
-    border-bottom: 1px solid #4a4a4a;
+    justify-content: flex-end;
 
     .code-lang {
-      font-size: 12px;
-      line-height: 20px;
-      color: #979ba5;
+      display: none;
     }
 
     .copy-btn {
@@ -91,23 +93,24 @@ const handleCopy = () => {
       gap: 4px;
       font-size: 12px;
       line-height: 20px;
-      color: #979ba5;
+      color: #8c8f99;
       cursor: pointer;
       transition: color 0.2s;
 
       &:hover {
-        color: #d4d4d4;
+        color: #c4c6cc;
       }
 
       .copy-text {
-        user-select: none;
+        display: none;
       }
     }
   }
 
   .code-block-body {
-    padding: 16px;
-    overflow-x: auto;
+    padding: 12px 48px 12px 16px;
+    overflow: auto;
+    box-sizing: border-box;
 
     pre {
       padding: 0;
@@ -115,10 +118,10 @@ const handleCopy = () => {
       background: transparent;
 
       code {
-        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        font-family: Menlo, Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
         font-size: 13px;
-        line-height: 22px;
-        color: #d4d4d4;
+        line-height: 20px;
+        color: #c4c6cc;
         word-break: normal;
         word-wrap: normal;
         white-space: pre;
