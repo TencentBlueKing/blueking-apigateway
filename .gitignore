@@ -19,6 +19,7 @@ bkcodeai.json
 .worktrees
 
 *.png
+!src/dashboard-front/src/images/bk-cli/*.png
 
 docs/superpowers
 specs/
