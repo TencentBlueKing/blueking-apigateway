@@ -48,7 +48,7 @@ func loadKMSCredentials() (map[string]any, error) {
 	if err != nil {
 		return nil, errors.New("unable to read KMS credential envelope")
 	}
-	plaintext, err := decryptKMSEnvelope(strings.TrimSpace(string(envelope)), privateKey)
+	plaintext, err := decrypt.Decrypt(strings.TrimSpace(string(envelope)), privateKey)
 	if err != nil {
 		return nil, errors.New("unable to decrypt KMS credential envelope")
 	}
@@ -58,18 +58,6 @@ func loadKMSCredentials() (map[string]any, error) {
 		return nil, errors.New("KMS plaintext must be a JSON object")
 	}
 	return credentials, nil
-}
-
-func decryptKMSEnvelope(envelope, privateKey string) (plaintext string, err error) {
-	// The temporary SDK can panic on malformed CBC ciphertext. Convert that
-	// boundary failure to a startup error without exposing the panic or input.
-	defer func() {
-		if recover() != nil {
-			plaintext = ""
-			err = errors.New("invalid KMS credential envelope")
-		}
-	}()
-	return decrypt.Decrypt(envelope, privateKey)
 }
 
 type kmsCredentialBinding struct {

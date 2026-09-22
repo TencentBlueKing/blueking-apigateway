@@ -108,9 +108,9 @@ Operator 的控制面、数据面 etcd 可以使用不同账号；即使实际�
 避免解密后的凭证进入标准输出。关闭 KMS 时保留原有 debug 行为。
 
 Go SDK 暂以相同源码快照保存在各组件的 `third_party/bk-kms-sdk` 中，通过相对路径
-`replace` 引用，现有 Docker 构建目录无需改变，也无需访问 SDK 私有仓库。
-来源版本和文件校验和见各目录的 `README.md`、`MANIFEST.sha256`。应用会将 SDK 的
-解密错误或畸形 CBC 输入引发的 panic 转换为不含凭证内容的启动错误。
+`replace` 引用，现有 Docker 构建目录无需改变，也无需在构建时拉取 SDK 仓库。
+来源版本和文件校验和见各目录的 `README.md`、`MANIFEST.sha256`。SDK 在 CBC 解密前
+拒绝长度不足或未按分组对齐的密文；应用直接调用 SDK，将返回的解密错误转换为不含凭证内容的启动错误。
 
 ## 生效范围与轮换
 

@@ -76,7 +76,7 @@ func SM4DecryptCBC(encodedText string, key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("base64 error(%+v)", err)
 	}
 
-	if len(encrypted) < sm4.BlockSize*2 {
+	if len(encrypted) < sm4.BlockSize*2 || (len(encrypted)-sm4.BlockSize)%sm4.BlockSize != 0 {
 		return nil, errors.New("invalid data length")
 	}
 

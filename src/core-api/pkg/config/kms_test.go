@@ -148,7 +148,10 @@ func TestLoadKMSRejectsMissingPrivateKey(t *testing.T) {
 }
 
 func TestLoadKMSInvalidInputs(t *testing.T) {
-	for _, kind := range []string{"missing-file", "bad-envelope", "wrong-key", "malformed-cbc", "bad-json", "bad-utf8", "non-object"} {
+	for _, kind := range []string{
+		"missing-file", "bad-envelope", "wrong-key", "malformed-aes-cbc",
+		"malformed-sm4-cbc", "bad-json", "bad-utf8", "non-object",
+	} {
 		t.Run(kind, func(t *testing.T) {
 			path := writeTestKMS(t, testKMSPayload())
 			switch kind {
@@ -168,7 +171,7 @@ func TestLoadKMSInvalidInputs(t *testing.T) {
 				writeTestKMSPlaintext(t, []byte{'{', '"', 'x', '"', ':', '"', 0xff, '"', '}'})
 			case "non-object":
 				writeTestKMS(t, []string{"sensitive-json-array"})
-			case "malformed-cbc":
+			case "malformed-aes-cbc", "malformed-sm4-cbc":
 				raw, err := os.ReadFile(path)
 				if err != nil {
 					t.Fatal(err)
@@ -182,7 +185,13 @@ func TestLoadKMSInvalidInputs(t *testing.T) {
 					t.Fatal(err)
 				}
 				payload["symmetric_mode"] = "CBC"
-				payload["ciphertext"] = base64.StdEncoding.EncodeToString(make([]byte, aes.BlockSize+1))
+				if kind == "malformed-sm4-cbc" {
+					payload["symmetric_type"] = "SM4"
+				}
+				// IV plus a full block and one byte: long enough, but not block-aligned.
+				payload["ciphertext"] = base64.StdEncoding.EncodeToString(
+					make([]byte, 2*aes.BlockSize+1),
+				)
 				encoded, err := json.Marshal(payload)
 				if err != nil {
 					t.Fatal(err)

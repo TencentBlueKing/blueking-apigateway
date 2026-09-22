@@ -75,7 +75,7 @@ func AESDecryptCBC(encodedText string, key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("base64 error(%+v)", err)
 	}
 
-	if len(encrypted) < aes.BlockSize {
+	if len(encrypted) < aes.BlockSize*2 || (len(encrypted)-aes.BlockSize)%aes.BlockSize != 0 {
 		return nil, errors.New("invalid data length")
 	}
 
