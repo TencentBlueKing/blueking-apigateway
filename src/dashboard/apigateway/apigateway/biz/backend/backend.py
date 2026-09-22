@@ -29,7 +29,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Stage
+from apigateway.core.models import Backend, BackendConfig, Proxy, Release
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,6 @@ class BackendHandler:
 
         backend_configs = []
         now = now_datetime()
-        resource_count = Proxy.objects.filter(backend_id=backend.id).count()
         config_type = BACKEND_CONFIG_TYPES[backend.kind]
 
         for config in data["configs"]:
@@ -95,8 +94,7 @@ class BackendHandler:
             config_model = config_type.model_validate(new_config)
             if config_model.to_config() == existing_config:
                 continue
-            if resource_count:
-                updated_stage_ids.append(config["stage_id"])
+            updated_stage_ids.append(config["stage_id"])
             backend_config.config = config_model.to_config()
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
@@ -104,12 +102,20 @@ class BackendHandler:
 
         BackendConfig.objects.bulk_update(backend_configs, fields=["_config", "updated_by", "updated_time"])
 
-        # 触发变更的stage的发布流程（网关启用+环境发布时才可触发）
-        active_stage_ids = Stage.objects.filter(
-            id__in=updated_stage_ids,
-            status=StageStatusEnum.ACTIVE.value,
+        # 草稿引用可能与已发布版本不同，只发布配置变化且已发布版本引用此后端的启用环境。
+        releases = Release.objects.filter(
+            gateway_id=backend.gateway_id,
+            stage_id__in=updated_stage_ids,
+            stage__status=StageStatusEnum.ACTIVE.value,
             gateway__status=GatewayStatusEnum.ACTIVE.value,
-        ).values_list("id", flat=True)
+        ).select_related("resource_version")
+        active_stage_ids = [
+            release.stage_id
+            for release in releases
+            if any(
+                resource.get("proxy", {}).get("backend_id") == backend.id for resource in release.resource_version.data
+            )
+        ]
 
         if not active_stage_ids:
             logger.info(
