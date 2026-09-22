@@ -1019,7 +1019,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
         categories_map = MCPServerHandler.build_categories_map(mcp_server_ids)
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(mcp_servers)
 
         for obj in mcp_servers:
             permission_status = mcp_server_permission_status.get(
@@ -1145,7 +1145,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         mcp_servers = [perm.mcp_server for perm in granted_permissions]
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(mcp_servers)
 
         # Build categories map
         categories_map = MCPServerHandler.build_categories_map([perm.mcp_server_id for perm in granted_permissions])
@@ -1251,7 +1251,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
         mcp_servers = [obj.mcp_server for obj in records]
-        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(mcp_servers)
 
         slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(
             mcp_server_permission_records,
@@ -1334,7 +1334,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         categories_map = MCPServerHandler.build_categories_map([instance.mcp_server_id])
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        least_privileges = MCPServerHandler.get_least_privileges([instance.mcp_server])
+        least_privileges = MCPServerHandler.get_least_privileges_by_server([instance.mcp_server])
 
         context = {
             **self.get_serializer_context(),

@@ -54,7 +54,7 @@ from apigateway.service.utils import get_resource_url
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
     least_privileges = context.get("least_privileges", {})
-    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    least_privilege = least_privileges.get(obj.id, "")
     return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
 
 
@@ -497,13 +497,13 @@ class UserMCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
     least_privilege = serializers.SerializerMethodField(help_text="最低权限")
 
     def get_application_url(self, obj) -> str:
-        least_privilege = self.context["least_privileges"].get((obj.gateway.id, obj.stage.id))
+        least_privilege = self.context["least_privileges"].get(obj.id)
         if least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value:
             return build_mcp_server_application_url(obj.name, obj.protocol_type)
         return ""
 
     def get_least_privilege(self, obj) -> str:
-        return self.context["least_privileges"].get((obj.gateway.id, obj.stage.id), "")
+        return self.context["least_privileges"].get(obj.id, "")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.UserMCPServerListOutputSLZ"
