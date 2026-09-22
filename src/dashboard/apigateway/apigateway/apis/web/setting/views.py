@@ -65,24 +65,20 @@ class FeatureFlagListApi(generics.ListAPIView):
         """获取特性开关列表"""
         feature_flags = copy.copy(settings.DEFAULT_FEATURE_FLAG)
 
-        # 多租户模式下，没有 esb 相关的页面：组件管理 + 组件 API 文档
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            feature_flags.update(
-                {
-                    "MENU_ITEM_ESB_API": False,
-                    "MENU_ITEM_ESB_API_DOC": False,
-                }
-            )
-        # 非多租户模式才会有 esb 相关的页面：组件管理 + 组件 API 文档
-        else:
-            feature_flags.update(
-                {
-                    "MENU_ITEM_ESB_API": feature_flags.get("MENU_ITEM_ESB_API", False) and request.user.is_superuser,
-                    # "MENU_ITEM_ESB_API_DOC": feature_flags.get("MENU_ITEM_ESB_API_DOC", False),
-                }
+        if settings.ESB_ENABLED:
+            feature_flags["MENU_ITEM_ESB_API"] = (
+                feature_flags.get("MENU_ITEM_ESB_API", False) and request.user.is_superuser
             )
 
         user_feature_flags = UserFeatureFlag.objects.get_feature_flags(request.user.username)
         feature_flags.update(user_feature_flags)
+
+        # 用户级开关不能重新启用未加载的 ESB 功能。
+        if not settings.ESB_ENABLED:
+            feature_flags.update(
+                MENU_ITEM_ESB_API=False,
+                MENU_ITEM_ESB_API_DOC=False,
+                SYNC_ESB_TO_APIGW_ENABLED=False,
+            )
 
         return OKJsonResponse(data=feature_flags)
