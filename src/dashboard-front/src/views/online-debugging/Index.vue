@@ -523,6 +523,10 @@ import {
 import AgIcon from '@/components/ag-icon/Index.vue';
 import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways.ts';
 
+interface IProps { gatewayId?: number }
+
+const { gatewayId = 0 } = defineProps<IProps>();
+
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const resourceDebuggingStore = useResourceDebugging();
@@ -780,7 +784,7 @@ onBeforeUnmount(() => {
   toolsResizeObserver?.disconnect();
 });
 
-const apigwId = computed(() => gatewayStore.apigwId);
+const apigwId = computed(() => Number(gatewayId));
 
 const isDefaultAppAuth = computed(() => formData.value.appAuth === 'use_test_app');
 
@@ -895,18 +899,24 @@ watch(
   },
 );
 
-watch(() => route, () => {
-  stage.value = 0;
-  const stageId = route.query?.stage_id;
-  stage.value = Number(stageId) || 0;
-  if (stage.value) {
-    handleStageChange(stage.value);
-  }
-}, { immediate: true });
-
-watch(() => gatewayStore.currentGateway, () => {
-  router.replace({ query: undefined });
-}, { deep: true });
+watch(
+  () => route.query?.stage_id,
+  (stageId) => {
+    if (!stageId || route.name !== 'OnlineDebugging') return;
+    stage.value = Number(stageId) || 0;
+    if (stage.value) {
+      handleStageChange(stage.value);
+      const restQuery = { ...route.query };
+      delete restQuery.stage_id;
+      router.replace({
+        path: route.path,
+        query: restQuery,
+        hash: route.hash,
+      });
+    }
+  },
+  { immediate: true },
+);
 
 watch(isShowDoc, () => {
   if (isShowDoc.value) {
