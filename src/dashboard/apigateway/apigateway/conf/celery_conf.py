@@ -16,9 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import os
-
 from celery.schedules import crontab
+
+from apigateway.common.env import Env
+from apigateway.conf.esb import is_esb_enabled
 
 # celery configuration
 CELERY_TIMEZONE = "Asia/Shanghai"
@@ -40,7 +41,7 @@ CELERY_IMPORTS = [
     "apigateway.controller.tasks",
 ]
 
-if os.getenv("ENABLE_MULTI_TENANT_MODE", "False").lower() not in ("true", "on", "ok", "y", "yes", "1"):
+if is_esb_enabled(Env()):
     CELERY_IMPORTS.append("apigateway.apps.esb.component.tasks")
 
 CELERY_BEAT_SCHEDULE = {

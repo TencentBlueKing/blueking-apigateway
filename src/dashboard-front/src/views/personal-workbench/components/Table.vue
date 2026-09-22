@@ -46,6 +46,7 @@
       :api-method="getTableData"
       :columns="tableColumns"
       :row-class-name="getRowClass"
+      :loading="tableLoading"
       :cache-identifier="cacheIdentifier"
       @row-click="handleRowClick"
       @filter-change="handleFilterChange"
@@ -167,6 +168,7 @@ const tableData = ref<IPersonalWorkbenchListResponse[]>([]);
 const selectedRows = ref<IPersonalWorkbenchUIState[]>([]);
 const selectedRowKeys = ref<(string | number)[]>([]);
 const settings = ref(null);
+const tableLoading = ref(false);
 const tableEmptyType = ref<ITableEmptyType>('empty');
 const applyActionDialogConf = ref({
   isShow: false,
@@ -564,12 +566,18 @@ const getAppliedBy = computed(() =>
 );
 const cacheIdentifier = computed(() => `personal-workbench-${applyStatus}-${activeTab}`);
 
-const getList = () => {
+const getList = async () => {
   const params = {
     ...filterData.value,
     applied_by: getAppliedBy.value,
   };
-  return tableRef.value?.fetchData(filterSimpleEmpty(params), { resetPage: true });
+  tableLoading.value = true;
+  try {
+    return await tableRef.value?.fetchData(filterSimpleEmpty(params), { resetPage: true });
+  }
+  finally {
+    tableLoading.value = false;
+  }
 };
 
 const getTableData = async (params: {
@@ -933,8 +941,8 @@ const getRowClass = ({ row }: { row: TableRowData }) => {
 };
 
 // 搜索McpServer列表
-const debounceSearch = debounce(() => {
-  getList();
+const debounceSearch = debounce(async () => {
+  await getList();
   // 处理非清除筛选条件后勾选数据回显
   if (lastExpandRow.value?.selection?.length) {
     setTimeout(() => {
@@ -945,6 +953,8 @@ const debounceSearch = debounce(() => {
 
 watch(() => filterData, () => {
   tableEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value))?.length > 0 ? 'searchEmpty' : 'empty';
+  // 防抖等待期间就进入加载态，避免空状态占位图闪现
+  tableLoading.value = true;
   debounceSearch();
 }, { deep: true });
 

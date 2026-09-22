@@ -1026,7 +1026,7 @@
     description_en: Limit the size of the request body, with a maximum of 33554432 (32 M).
     is_public: true
     scope: stage_and_resource
-    priority: 17690
+    priority: 18745
     _tags: "流量,Traffic,校验,Validation"
     schema:
     - bk-request-body-limit

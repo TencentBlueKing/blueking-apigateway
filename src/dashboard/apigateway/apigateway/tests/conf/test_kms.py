@@ -71,6 +71,10 @@ def envelope(monkeypatch, tmp_path, private_key):
     monkeypatch.setenv("BK_CRYPTO_TYPE", "APIGW_CUSTOM")
     for name in (
         "BK_APIGW_RABBITMQ_HOST",
+        "BK_APIGW_RABBITMQ_PORT",
+        "BK_APIGW_RABBITMQ_VHOST",
+        "BK_APIGW_RABBITMQ_USER",
+        "BK_APIGW_RABBITMQ_PASSWORD",
         "BKREPO_ENDPOINT_URL",
         "DEFAULT_PYPI_REPOSITORY_URL",
         "DEFAULT_PYPI_INDEX_URL",
@@ -177,7 +181,6 @@ def test_multi_tenant_does_not_require_esb(envelope, credentials, monkeypatch):
         ("BKREPO_ENDPOINT_URL", "bkrepo", "default", "BKREPO_USERNAME", "BKREPO_PASSWORD"),
         ("DEFAULT_PYPI_REPOSITORY_URL", "bkrepo", "pypi", "DEFAULT_PYPI_USERNAME", "DEFAULT_PYPI_PASSWORD"),
         ("DEFAULT_MAVEN_REPOSITORY_URL", "bkrepo", "maven", "DEFAULT_MAVEN_USERNAME", "DEFAULT_MAVEN_PASSWORD"),
-        ("BK_APIGW_RABBITMQ_HOST", "rabbitmq", "default", "BK_APIGW_RABBITMQ_USER", "BK_APIGW_RABBITMQ_PASSWORD"),
     ],
 )
 def test_configured_stores_require_their_own_account(
@@ -192,6 +195,54 @@ def test_configured_stores_require_their_own_account(
     envelope(credentials)
     with pytest.raises(ImproperlyConfigured, match=group):
         kms.get_env()
+
+
+@pytest.mark.parametrize("missing", [("HOST",), ("PORT",), ("VHOST",), ("PORT", "VHOST")])
+def test_incomplete_rabbitmq_config_uses_redis_without_credentials(monkeypatch, envelope, credentials, missing):
+    for name, value in {"HOST": "rabbit.example", "PORT": "5672", "VHOST": "apigw"}.items():
+        monkeypatch.setenv(f"BK_APIGW_RABBITMQ_{name}", "" if name in missing else value)
+    del credentials["rabbitmq"]
+    envelope(credentials)
+
+    settings = runpy.run_path(default.__file__)
+    assert urlsplit(settings["CELERY_BROKER_URL"]).scheme in {"redis", "rediss"}
+
+
+@pytest.mark.parametrize("missing", [None, "username", "password"])
+def test_complete_rabbitmq_config_requires_kms_credentials(monkeypatch, envelope, credentials, missing):
+    for name, value in {"HOST": "rabbit.example", "PORT": "5672", "VHOST": "apigw"}.items():
+        monkeypatch.setenv(f"BK_APIGW_RABBITMQ_{name}", value)
+    if missing:
+        del credentials["rabbitmq"]["default"][missing]
+        # Old credentials must not mask an incomplete KMS envelope.
+        monkeypatch.setenv("BK_APIGW_RABBITMQ_USER", "legacy-user")
+        monkeypatch.setenv("BK_APIGW_RABBITMQ_PASSWORD", "legacy-password")
+    envelope(credentials)
+
+    if missing:
+        with pytest.raises(ImproperlyConfigured, match=rf"rabbitmq.default.{missing}"):
+            runpy.run_path(default.__file__)
+    else:
+        # No legacy account is needed to enable RabbitMQ with KMS credentials.
+        settings = runpy.run_path(default.__file__)
+        broker = urlsplit(settings["CELERY_BROKER_URL"])
+        assert broker.scheme == "amqp"
+        assert broker.username == "rabbit-user"
+        assert broker.password == "rabbit-password"
+
+
+def test_pypi_download_index_needs_no_upload_credentials(monkeypatch, envelope, credentials):
+    monkeypatch.setenv("DEFAULT_PYPI_INDEX_URL", "https://pypi.example/simple/")
+    monkeypatch.setenv("DEFAULT_PYPI_USERNAME", "")
+    monkeypatch.setenv("DEFAULT_PYPI_PASSWORD", "")
+    del credentials["bkrepo"]["pypi"]
+    envelope(credentials)
+
+    settings = runpy.run_path(default.__file__)
+    repository = settings["PYPI_MIRRORS_CONFIG"]["default"]
+    assert repository["index_url"] == "https://pypi.example/simple/"
+    assert repository["repository_url"] == ""
+    assert repository["username"] == repository["password"] == ""
 
 
 @pytest.mark.parametrize("payload", ["not-json-sensitive-value", [], None, {}])

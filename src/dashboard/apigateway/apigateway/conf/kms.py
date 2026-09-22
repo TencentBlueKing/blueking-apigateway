@@ -70,7 +70,9 @@ def _credential_bindings(env: Env) -> dict[str, tuple[str, ...]]:
                 "BK_ESB_DATABASE_PASSWORD": ("mysql", "esb", "password"),
             }
         )
-    if env.str("BK_APIGW_RABBITMQ_HOST", ""):
+    # Match the broker's non-credential prerequisites. Once configured, KMS
+    # credentials are mandatory; missing credentials must not select Redis.
+    if all(env.str(f"BK_APIGW_RABBITMQ_{name}", "") for name in ("HOST", "PORT", "VHOST")):
         bindings.update(
             {
                 "BK_APIGW_RABBITMQ_USER": ("rabbitmq", "default", "username"),
@@ -84,7 +86,8 @@ def _credential_bindings(env: Env) -> dict[str, tuple[str, ...]]:
                 "BKREPO_PASSWORD": ("bkrepo", "default", "password"),
             }
         )
-    if env.str("DEFAULT_PYPI_REPOSITORY_URL", "") or env.str("DEFAULT_PYPI_INDEX_URL", ""):
+    # A download index alone does not enable uploads or require an account.
+    if env.str("DEFAULT_PYPI_REPOSITORY_URL", ""):
         bindings.update(
             {
                 "DEFAULT_PYPI_USERNAME": ("bkrepo", "pypi", "username"),

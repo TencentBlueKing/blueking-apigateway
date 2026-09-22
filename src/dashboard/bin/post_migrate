@@ -11,6 +11,14 @@ if [ -f "${envfile}" ]; then
     set +a
 fi
 
+# Multi-tenant deployments disable ESB; only EE honors ENABLE_ESB=false.
+esb_enabled=true
+if [ "${ENABLE_MULTI_TENANT_MODE}" = "true" ] || [ "${ENABLE_MULTI_TENANT_MODE}" = "True" ]; then
+    esb_enabled=false
+elif [ "${EDITION-ee}" = "ee" ] && { [ "${ENABLE_ESB}" = "false" ] || [ "${ENABLE_ESB}" = "False" ]; }; then
+    esb_enabled=false
+fi
+
 DASHBOARD_INNER_URL=${DASHBOARD_INNER_URL:-"http://apigw-dashboard.service.consul:6000"}
 APIGW_DEFINITIONS_DIR="./apigateway/data/apigw-definitions"
 
@@ -46,8 +54,8 @@ python manage.py sync_global_resources
 # 同步内置网关
 sync_bk_apigateway
 
-# only init esb when ENABLE_MULTI_TENANT_MODE != true/True
-if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
+# Initialize ESB only when enabled by the edition/tenant policy.
+if [ "${esb_enabled}" = "true" ]; then
     sync_bk_esb
 fi
 

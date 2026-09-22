@@ -62,14 +62,17 @@ Dashboard 启动失败，不回退到原有密码。错误只显示阶段或字�
 | `mysql.esb.username/password` | `BK_ESB_DATABASE_USER` / `BK_ESB_DATABASE_PASSWORD` | `ENABLE_MULTI_TENANT_MODE=false` |
 | `redis.default.password` | `BK_APIGW_REDIS_PASSWORD` | 总是 |
 | `etcd.default.username/password` | `BK_ETCD_USER` / `BK_ETCD_PASSWORD` | 总是 |
-| `rabbitmq.default.username/password` | `BK_APIGW_RABBITMQ_USER` / `BK_APIGW_RABBITMQ_PASSWORD` | `BK_APIGW_RABBITMQ_HOST` 非空 |
+| `rabbitmq.default.username/password` | `BK_APIGW_RABBITMQ_USER` / `BK_APIGW_RABBITMQ_PASSWORD` | `BK_APIGW_RABBITMQ_HOST`、`BK_APIGW_RABBITMQ_PORT`、`BK_APIGW_RABBITMQ_VHOST` 均非空 |
 | `bkrepo.default.username/password` | `BKREPO_USERNAME` / `BKREPO_PASSWORD` | `BKREPO_ENDPOINT_URL` 非空 |
-| `bkrepo.pypi.username/password` | `DEFAULT_PYPI_USERNAME` / `DEFAULT_PYPI_PASSWORD` | `DEFAULT_PYPI_REPOSITORY_URL` 或 `DEFAULT_PYPI_INDEX_URL` 非空 |
+| `bkrepo.pypi.username/password` | `DEFAULT_PYPI_USERNAME` / `DEFAULT_PYPI_PASSWORD` | `DEFAULT_PYPI_REPOSITORY_URL` 非空 |
 | `bkrepo.maven.username/password` | `DEFAULT_MAVEN_USERNAME` / `DEFAULT_MAVEN_PASSWORD` | `DEFAULT_MAVEN_REPOSITORY_URL` 非空 |
 | `encryption.encryptKey` | `ENCRYPT_KEY`，继续派生 `JWT_CRYPTO_KEY`、`LOG_LINK_SECRET` | 总是 |
 | `encryption.bkkrillEncryptSecretKey` | `BKKRILL_ENCRYPT_SECRET_KEY` | `BK_CRYPTO_TYPE` 为 `CLASSIC` 或 `SHANGMI` |
 
 条件不满足的实例可以省略；未消费的字段忽略，允许多个组件共用信封。
+RabbitMQ 的地址、端口或 vhost 缺失时，Celery 仍沿用 Redis；三项齐全时必须提供信封中的
+RabbitMQ 账号密码，缺失即阻止启动，不回退到旧凭证或 Redis。
+仅配置 `DEFAULT_PYPI_INDEX_URL` 下载索引时不要求上传凭证。
 Dashboard 要求所需账号和密码非空，使用无认证 Redis/etcd 的部署不能直接开启此模式。
 地址、端口、库名、TLS 文件路径和功能开关仍沿用原配置。
 

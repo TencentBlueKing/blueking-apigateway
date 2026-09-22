@@ -71,3 +71,27 @@ def test_resource_path_conflict_flag_rendering(monkeypatch, settings, request_fa
     request.user = mocker.MagicMock(username="tester", is_superuser=False)
     response = FeatureFlagListApi.as_view()(request)
     assert get_response_json(response)["data"]["ENABLE_RESOURCE_PATH_CONFLICT_CHECK"] is expected
+
+
+@pytest.mark.parametrize(
+    "user_flags", [{}, {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True, "SYNC_ESB_TO_APIGW_ENABLED": True}]
+)
+def test_disabled_esb_menu_flags_preserve_user_overrides(settings, request_factory, mocker, user_flags):
+    settings.ESB_ENABLED = False
+    settings.DEFAULT_FEATURE_FLAG = {
+        "MENU_ITEM_ESB_API": True,
+        "MENU_ITEM_ESB_API_DOC": True,
+        "SYNC_ESB_TO_APIGW_ENABLED": True,
+    }
+    mocker.patch(
+        "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags", return_value=user_flags
+    )
+    request = request_factory.get("")
+    request.user = mocker.MagicMock(username="tester", is_superuser=True)
+    response = FeatureFlagListApi.as_view()(request)
+    assert get_response_json(response)["data"] == {
+        "MENU_ITEM_ESB_API": False,
+        "MENU_ITEM_ESB_API_DOC": False,
+        "SYNC_ESB_TO_APIGW_ENABLED": True,
+        **user_flags,
+    }
