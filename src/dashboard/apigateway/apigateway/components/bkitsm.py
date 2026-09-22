@@ -295,7 +295,7 @@ def create_ticket(
     )
 
 
-def revoke_ticket(
+def cancel_ticket(
     system_id: str,
     ticket_id: str,
     system_token: str = "",

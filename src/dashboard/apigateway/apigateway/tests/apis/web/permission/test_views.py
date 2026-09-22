@@ -646,6 +646,7 @@ class TestAppPermissionApplyBatchViewSet:
             models.AppPermissionApply,
             gateway=fake_gateway,
             grant_dimension="api",
+            status=ApplyStatusEnum.PENDING.value,
         )
 
         apply_2 = G(
@@ -653,6 +654,7 @@ class TestAppPermissionApplyBatchViewSet:
             gateway=fake_gateway,
             _resource_ids="1,2,3",
             grant_dimension="resource",
+            status=ApplyStatusEnum.PENDING.value,
         )
 
         data = [
@@ -693,6 +695,41 @@ class TestAppPermissionApplyBatchViewSet:
         assert audit_log.username == "admin"
         assert json.loads(audit_log.data_after)["handled_by"] == "admin"
         assert json.loads(audit_log.data_after)["bk_app_code"] == "test-api"
+
+    def test_post_skips_non_pending_apply(self, mocker, fake_gateway, request_factory):
+        record = G(
+            models.AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-api",
+            status=ApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+        mock_handle = mocker.patch(
+            "apigateway.biz.permission.GatewayPermissionDimensionManager.handle_permission_apply",
+            return_value=record,
+        )
+        apply = G(
+            models.AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-api",
+            grant_dimension="api",
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+
+        request = request_factory.post(
+            f"/gateways/{fake_gateway.id}/permissions/app-permission-apply/approval/",
+            data={
+                "ids": [apply.id],
+                "status": ApplyStatusEnum.REJECTED.value,
+                "comment": "",
+            },
+        )
+
+        response = views.AppPermissionApplyApprovalApi.as_view()(request, gateway_id=fake_gateway.id)
+
+        assert response.status_code == 201
+        assert models.AppPermissionApply.objects.filter(id=apply.id).exists()
+        mock_handle.assert_not_called()
 
 
 class TestAppPermissionRecordViewSet(TestCase):

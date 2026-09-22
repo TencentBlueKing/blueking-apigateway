@@ -85,11 +85,11 @@ class TestItsmPermissionApplyHelper:
             is_registered=True,
         )
         helper = ItsmPermissionApplyHelper(system_code=config.system_code)
-        mock_revoke_ticket = mocker.patch("apigateway.service.bk_itsm.revoke_ticket", return_value=True)
+        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", return_value=True)
 
         helper.cancel_permission_apply_ticket("t-001")
 
-        mock_revoke_ticket.assert_called_once_with(
+        mock_cancel_ticket.assert_called_once_with(
             system_id="bk-apigateway",
             ticket_id="t-001",
             system_token="token-001",

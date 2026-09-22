@@ -729,7 +729,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+class AppPermissionRecordRetrieveDestroyApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2Permission]
     serializer_class = serializers.AppPermissionRecordRetrieveInputSLZ
     lookup_field = "id"
@@ -1334,7 +1334,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+class MCPServerAppPermissionRecordRetrieveDestroyApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2Permission]
     queryset = MCPServerAppPermissionApply.objects.all()
     serializer_class = serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ

@@ -39,6 +39,7 @@ from apigateway.common.tenant.query import (
 )
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.django import get_model_dict
+from apigateway.utils.time import now_datetime
 
 if TYPE_CHECKING:
     from django.db.models.query import QuerySet
@@ -210,7 +211,11 @@ class WorkbenchPermissionHandler:
             ItsmPermissionApplyHelper().cancel_permission_apply_ticket(apply.itsm_ticket_id)
 
         AppPermissionApplyStatus.objects.filter(apply=apply).delete()
-        AppPermissionRecord.objects.filter(id=apply.apply_record_id).update(status=ApplyStatusEnum.CANCELED.value)
+        AppPermissionRecord.objects.filter(id=apply.apply_record_id).update(
+            status=ApplyStatusEnum.CANCELED.value,
+            handled_by=operated_by,
+            handled_time=now_datetime(),
+        )
         apply.status = ApplyStatusEnum.CANCELED.value
         apply.save(update_fields=["status"])
         cls._record_gateway_apply_audit(
@@ -305,7 +310,9 @@ class WorkbenchPermissionHandler:
         if apply.itsm_ticket_id:
             ItsmPermissionApplyHelper().cancel_permission_apply_ticket(apply.itsm_ticket_id)
         apply.status = MCPServerAppPermissionApplyStatusEnum.CANCELED.value
-        apply.save(update_fields=["status"])
+        apply.handled_by = operated_by
+        apply.handled_time = now_datetime()
+        apply.save(update_fields=["status", "handled_by", "handled_time"])
         cls._record_mcp_apply_audit(
             op_type=OpTypeEnum.MODIFY,
             username=operated_by,

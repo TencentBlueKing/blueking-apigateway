@@ -1379,6 +1379,8 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         record.refresh_from_db()
         assert apply.status == ApplyStatusEnum.CANCELED.value
         assert record.status == ApplyStatusEnum.CANCELED.value
+        assert record.handled_by == FAKE_USERNAME
+        assert record.handled_time is not None
         assert not AppPermissionApplyStatus.objects.filter(apply_id=apply.id).exists()
         mocked_record.assert_called_once()
         assert mocked_record.call_args.kwargs["op_type"] == OpTypeEnum.MODIFY
@@ -1697,6 +1699,8 @@ class TestWorkbenchMyApplyMCPPermissionCancelApi:
         assert resp.status_code == 204
         apply.refresh_from_db()
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.CANCELED.value
+        assert apply.handled_by == FAKE_USERNAME
+        assert apply.handled_time is not None
         mocked_record.assert_called_once()
         assert mocked_record.call_args.kwargs["op_type"] == OpTypeEnum.MODIFY
         assert mocked_record.call_args.kwargs["username"] == FAKE_USERNAME
@@ -1728,6 +1732,9 @@ class TestWorkbenchMyApplyMCPPermissionCancelApi:
 
         assert resp.status_code == 204
         mock_cancel.assert_called_once_with("t-mcp-001")
+        apply.refresh_from_db()
+        assert apply.handled_by == FAKE_USERNAME
+        assert apply.handled_time is not None
 
 
 class TestWorkbenchMyApplyMCPPermissionDestroyApi:

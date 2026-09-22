@@ -1399,7 +1399,7 @@ class TestMCPServerAppPermissionRecordListApi:
         assert mcp_server_data["tool_names"] == ["tool_name_1", "tool_name_2"]
 
 
-class TestMCPServerAppPermissionRecordRetrieveApi:
+class TestMCPServerAppPermissionRecordRetrieveDestroyApi:
     @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
     @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
     def test_retrieve_converts_handled_by_to_display_name(

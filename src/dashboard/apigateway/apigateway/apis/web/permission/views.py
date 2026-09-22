@@ -869,7 +869,9 @@ class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.Cr
         data = slz.validated_data
         part_resource_ids = data.get("part_resource_ids", {})
 
-        queryset = self.get_queryset().filter(id__in=data["ids"])
+        queryset = (
+            self.get_queryset().select_for_update().filter(id__in=data["ids"], status=ApplyStatusEnum.PENDING.value)
+        )
 
         for apply in queryset:
             manager = PermissionDimensionManager.get_manager(apply.grant_dimension)

@@ -1739,6 +1739,35 @@ class TestMCPServerAppPermissionApplyUpdateStatusApi:
         apply.refresh_from_db()
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.REJECTED.value
 
+    def test_update_non_pending_apply_not_found(self, request_view, fake_gateway, fake_mcp_server):
+        apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="test-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="PATCH",
+            view_name="mcp_server.app-permission-apply.update_status",
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "mcp_server_id": fake_mcp_server.id,
+                "id": apply.id,
+            },
+            gateway=fake_gateway,
+            data={
+                "status": MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+                "comment": "rejected",
+            },
+        )
+
+        assert resp.status_code == 404
+        apply.refresh_from_db()
+        assert apply.status == MCPServerAppPermissionApplyStatusEnum.APPROVED.value
+
 
 class TestMCPServerRetrieveUpdateDestroyApiPartialUpdate:
     """测试 PATCH 部分更新"""

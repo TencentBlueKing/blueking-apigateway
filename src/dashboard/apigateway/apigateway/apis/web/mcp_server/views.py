@@ -968,6 +968,14 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
     serializer_class = MCPServerAppPermissionApplyUpdateInputSLZ
     lookup_url_kwarg = "id"
 
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_for_update()
+            .filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+        )
+
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
