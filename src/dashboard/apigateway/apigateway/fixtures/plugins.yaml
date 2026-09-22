@@ -975,7 +975,7 @@
     name_en: AccessToken Source
     description: '从请求 header 中获取 `Authorization: Bearer {access_token}` 或 `X-API-KEY: {access_token}` 转成 `X-Bkapi-Authorization: {"access_token": "{access_token}"}`。'
     description_en: 'Get `Authorization: Bearer {access_token}` or `X-API-KEY: {access_token}` from the request header and convert it into `X-Bkapi-Authorization: {"access_token": "{access_token}"}`.'
-    is_public: true
+    is_public: false
     scope: resource
     priority: 18735
     _tags: "转换,Transformation,认证,Authentication"
