@@ -18,6 +18,7 @@
 #
 import base64
 import builtins
+import errno
 import json
 import os
 import runpy
@@ -251,6 +252,65 @@ def test_invalid_plaintext_fails_without_leaking_values(envelope, payload):
     with pytest.raises(ImproperlyConfigured) as exc:
         kms.get_env()
     assert "not-json-sensitive-value" not in "".join(traceback.format_exception(exc.value))
+
+
+def test_invalid_plaintext_reports_json_location(envelope):
+    envelope('{\n  "secret": "sensitive-value"\n  "next": {}\n}')
+    with pytest.raises(ImproperlyConfigured, match="decrypted successfully but is not valid JSON") as exc:
+        kms.get_env()
+    assert "Expecting ',' delimiter" in str(exc.value)
+    assert "line 3, column 3" in str(exc.value)
+    assert "sensitive-value" not in "".join(traceback.format_exception(exc.value))
+
+
+@pytest.mark.parametrize("failure", ["missing", "directory", "permission", "io", "encoding"])
+def test_envelope_read_failure_reports_stage(monkeypatch, envelope, credentials, failure):
+    path = envelope(credentials)
+    if failure == "missing":
+        path.unlink()
+        expected = "FileNotFoundError"
+    elif failure == "directory":
+        path.unlink()
+        path.mkdir()
+        expected = "IsADirectoryError"
+    elif failure == "encoding":
+        path.write_bytes(b"\xffsensitive-value")
+        expected = "not valid UTF-8"
+    else:
+        error = PermissionError if failure == "permission" else OSError
+
+        def fail_read(*args, **kwargs):
+            raise error(errno.EACCES if failure == "permission" else errno.EIO, "sensitive-value")
+
+        monkeypatch.setattr(type(path), "read_text", fail_read)
+        expected = error.__name__
+    with pytest.raises(ImproperlyConfigured, match=expected) as exc:
+        kms.get_env()
+    assert str(path) in str(exc.value)
+    assert "sensitive-value" not in "".join(traceback.format_exception(exc.value))
+
+
+def test_invalid_envelope_reports_decryption_stage(envelope, credentials):
+    envelope(credentials).write_text("sensitive-value")
+    with pytest.raises(ImproperlyConfigured, match="Unable to decode or decrypt") as exc:
+        kms.get_env()
+    assert "sensitive-value" not in "".join(traceback.format_exception(exc.value))
+
+
+def test_sdk_encoding_failure_reports_stage(monkeypatch, envelope, credentials):
+    from bk_kms import EnvelopeDecodeError  # noqa: PLC0415
+
+    envelope(credentials)
+
+    def fail_decrypt(**kwargs):
+        raise EnvelopeDecodeError("sensitive-value") from UnicodeDecodeError(
+            "utf-8", b"\xffsensitive-value", 0, 1, "sensitive-value"
+        )
+
+    monkeypatch.setattr("bk_kms.decrypt", fail_decrypt)
+    with pytest.raises(ImproperlyConfigured, match="encoding error") as exc:
+        kms.get_env()
+    assert "sensitive-value" not in "".join(traceback.format_exception(exc.value))
 
 
 @pytest.mark.parametrize("failure", ["missing-key", "empty-key", "missing-file", "bad-envelope"])

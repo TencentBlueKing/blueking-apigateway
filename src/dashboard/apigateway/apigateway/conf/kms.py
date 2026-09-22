@@ -110,6 +110,61 @@ def is_kms_enabled() -> bool:
     return os.environ.get("ENABLE_KMS") in ("true", "True")
 
 
+def _load_kms_credentials(private_key: str) -> object:
+    """Read, decrypt and parse credentials with sanitized errors for each stage."""
+    try:
+        from bk_kms import CryptoBackendUnavailableError, CryptoError, decrypt  # noqa: PLC0415 -- lazy SDK import
+    except ImportError:
+        raise ImproperlyConfigured("KMS requires the bk-kms-sdk package") from None
+
+    try:
+        envelope = KMS_ENVELOPE_PATH.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise ImproperlyConfigured(
+            f"Unable to read KMS credential envelope file {KMS_ENVELOPE_PATH}: "
+            f"{type(exc).__name__} (errno={exc.errno}); check the file mount and read permissions"
+        ) from None
+    except UnicodeError:
+        raise ImproperlyConfigured(f"KMS credential envelope file {KMS_ENVELOPE_PATH} is not valid UTF-8") from None
+
+    try:
+        plaintext = decrypt(envelope=envelope, private_key=private_key)
+    except CryptoBackendUnavailableError:
+        raise ImproperlyConfigured(
+            "KMS SM2/SM4 crypto backend is unavailable; check the installed gm dependencies and native libraries"
+        ) from None
+    except UnicodeError:
+        raise ImproperlyConfigured(
+            "KMS credential envelope decoding or decryption failed with an encoding error"
+        ) from None
+    except (OSError, ValueError, CryptoError) as exc:
+        # The SDK wraps invalid UTF-8 in CryptoError; inspect the cause's type,
+        # never its message, which could contain credential values.
+        if isinstance(exc.__cause__, UnicodeError):
+            raise ImproperlyConfigured(
+                "KMS credential envelope decoding or decryption failed with an encoding error"
+            ) from None
+        raise ImproperlyConfigured(
+            "Unable to decode or decrypt the KMS credential envelope; "
+            "check the envelope format, private key format and whether the key matches the envelope"
+        ) from None
+
+    try:
+        return json.loads(plaintext)
+    except json.JSONDecodeError as exc:
+        # JSONDecodeError.msg describes syntax only; do not include .doc or
+        # propagate the exception chain containing the decrypted document.
+        raise ImproperlyConfigured(
+            f"KMS credential envelope decrypted successfully but is not valid JSON: "
+            f"{exc.msg} (line {exc.lineno}, column {exc.colno}, char {exc.pos})"
+        ) from None
+    except ValueError:
+        # For example, an integer exceeding Python's configured digit limit.
+        raise ImproperlyConfigured(
+            "KMS credential envelope decrypted successfully but contains an unsupported JSON value"
+        ) from None
+
+
 def get_env() -> Env:
     """Return the original env when disabled; fail closed for required KMS fields."""
     env = Env()
@@ -120,21 +175,7 @@ def get_env() -> Env:
     if not private_key:
         raise ImproperlyConfigured("KMS requires BK_APIGATEWAY_KMS_PRIVATE_KEY")
 
-    try:
-        from bk_kms import CryptoBackendUnavailableError, CryptoError, decrypt  # noqa: PLC0415 -- lazy SDK import
-    except ImportError:
-        raise ImproperlyConfigured("KMS requires the bk-kms-sdk package") from None
-
-    try:
-        envelope = KMS_ENVELOPE_PATH.read_text(encoding="utf-8").strip()
-        credentials = json.loads(decrypt(envelope=envelope, private_key=private_key))
-    except CryptoBackendUnavailableError:
-        raise ImproperlyConfigured(
-            "KMS SM2/SM4 crypto backend is unavailable; check the installed gm dependencies and native libraries"
-        ) from None
-    except OSError, UnicodeError, ValueError, CryptoError:
-        # Do not propagate SDK/JSON exceptions that could expose payload values.
-        raise ImproperlyConfigured("Unable to read or decrypt the KMS credential envelope") from None
+    credentials = _load_kms_credentials(private_key)
 
     values = {}
     for name, path in _credential_bindings(env).items():
