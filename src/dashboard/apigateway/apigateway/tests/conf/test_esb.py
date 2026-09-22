@@ -34,6 +34,8 @@ CASES = [
     ("ee", "False", "false", False),
     ("te", "false", "false", True),
     ("ee", "true", "true", False),
+    ("ee", "false", "True", False),
+    ("te", "False", "false", True),
     ("te", "false", "true", False),
 ]
 
@@ -46,8 +48,9 @@ def runtime_env(edition, enabled, multi_tenant):
     return env
 
 
+@pytest.mark.parametrize("flag_enabled", ["true", "false"])
 @pytest.mark.parametrize("edition, enabled, multi_tenant, expected", CASES)
-def test_esb_runtime_registration(edition, enabled, multi_tenant, expected):
+def test_esb_runtime_registration(edition, enabled, multi_tenant, expected, flag_enabled):
     # Run fresh Django startup so cached settings/URL imports cannot hide a broken guard.
     code = """
 import importlib
@@ -81,6 +84,8 @@ print(json.dumps({
 """
     env = runtime_env(edition, enabled, multi_tenant)
     env["DJANGO_SETTINGS_MODULE"] = "apigateway.settings"
+    for flag in ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"):
+        env[f"FEATURE_FLAG_{flag}"] = flag_enabled
     result = subprocess.run(
         [sys.executable, "-c", code], cwd=PROJECT, env=env, capture_output=True, text=True, check=False, timeout=60
     )
@@ -89,8 +94,9 @@ print(json.dumps({
     assert {key: state[key] for key in ("database", "app", "task", "routes")} == dict.fromkeys(
         ("database", "app", "task", "routes"), expected
     )
-    if not expected:
-        assert not any(state["flags"].values())
+    assert state["flags"] == dict.fromkeys(
+        ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"), flag_enabled == "true"
+    )
 
 
 @pytest.mark.parametrize(
@@ -118,7 +124,7 @@ def test_disabled_esb_does_not_read_database_configuration(esb_env):
 @pytest.mark.parametrize("script", ["on_migrate", "post_migrate"])
 @pytest.mark.parametrize("edition, enabled, multi_tenant, expected", CASES)
 def test_migration_scripts_dispatch_esb_commands(tmp_path, script, edition, enabled, multi_tenant, expected):
-    # Stub only manage.py side effects; configuration evaluation uses the real Python interpreter.
+    # Stub manage.py side effects; scripts must evaluate the ESB policy in Bash.
     command_log = tmp_path / "commands.jsonl"
     python = tmp_path / "python"
     python.write_text(
@@ -128,7 +134,7 @@ def test_migration_scripts_dispatch_esb_commands(tmp_path, script, edition, enab
         "    with open(os.environ['COMMAND_LOG'], 'a') as stream:\n"
         "        stream.write(json.dumps(sys.argv[2:]) + '\\n')\n"
         "else:\n"
-        f"    os.execv({str(sys.executable)!r}, [{str(sys.executable)!r}, *sys.argv[1:]])\n"
+        "    raise SystemExit('unexpected Python invocation outside manage.py')\n"
     )
     python.chmod(0o755)
     env = runtime_env(edition, enabled, multi_tenant)

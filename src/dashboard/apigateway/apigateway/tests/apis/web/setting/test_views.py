@@ -76,7 +76,7 @@ def test_resource_path_conflict_flag_rendering(monkeypatch, settings, request_fa
 @pytest.mark.parametrize(
     "user_flags", [{}, {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True, "SYNC_ESB_TO_APIGW_ENABLED": True}]
 )
-def test_disabled_esb_flags_cannot_be_enabled_by_user(settings, request_factory, mocker, user_flags):
+def test_disabled_esb_menu_flags_preserve_user_overrides(settings, request_factory, mocker, user_flags):
     settings.ESB_ENABLED = False
     settings.DEFAULT_FEATURE_FLAG = {
         "MENU_ITEM_ESB_API": True,
@@ -92,5 +92,6 @@ def test_disabled_esb_flags_cannot_be_enabled_by_user(settings, request_factory,
     assert get_response_json(response)["data"] == {
         "MENU_ITEM_ESB_API": False,
         "MENU_ITEM_ESB_API_DOC": False,
-        "SYNC_ESB_TO_APIGW_ENABLED": False,
+        "SYNC_ESB_TO_APIGW_ENABLED": True,
+        **user_flags,
     }

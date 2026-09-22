@@ -171,7 +171,6 @@ def get_default_feature_flags(
     enable_gateway_operation_status: bool,
     enable_run_data_metrics: bool,
     enable_itsm4_permission_apply: bool,
-    esb_enabled: bool = True,
 ) -> dict:
     return {
         # 是否展示"监控告警"子菜单
@@ -181,12 +180,12 @@ def get_default_feature_flags(
         # 是否展示 "运行数据" => 仪表盘 子菜单
         "ENABLE_RUN_DATA_METRICS": enable_run_data_metrics,
         # 是否展示"组件管理"菜单项，企业版展示，上云版不展示
-        "MENU_ITEM_ESB_API": esb_enabled and env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
+        "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
         # TODO: remove in the future, and remove in the helm-chart and te repo
         # 是否展示"组件 API 文档"菜单项
-        "MENU_ITEM_ESB_API_DOC": esb_enabled and env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
+        "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
         # 是否将 ESB 数据同步到网关。需要考虑这个是否还需要
-        "SYNC_ESB_TO_APIGW_ENABLED": esb_enabled and env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
+        "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
         # 网关编辑页，是否支持填写网关"绑定应用"
         "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
         # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?

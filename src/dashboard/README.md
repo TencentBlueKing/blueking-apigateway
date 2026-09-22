@@ -25,19 +25,6 @@ make edition-develop
 make edition-modules
 ```
 
-## ESB 依赖开关
-
-`ENABLE_ESB` 默认为 `true`，兼容尚未注入该变量的部署。EE（`EDITION=ee`）可设置
-`ENABLE_ESB=false`，跳过 ESB 数据库及 TLS 配置、Django 应用和接口、Celery 任务、
-组件菜单/文档/同步入口，以及 `bin/on_migrate`、`bin/post_migrate` 中的 ESB 初始化。
-两个脚本与 Django 使用同一份版本/租户判断。
-
-TE（`EDITION=te`）仍依赖独立部署的 ESB，不受 `ENABLE_ESB=false` 影响，必须保留有效的
-`BK_ESB_DATABASE_*` 配置。多租户模式保持原有不加载 ESB 的行为。
-
-关闭开关不会删除 ESB 数据库、历史数据或已注册的 `bk-esb` 网关，也不会切换用户认证或
-通知等外部服务的调用方式。Helm 的 ESB 资源保留策略由 Chart 单独控制。
-
 ## 本地开发
 
 准备数据库

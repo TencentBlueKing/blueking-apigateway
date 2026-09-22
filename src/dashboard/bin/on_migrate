@@ -17,11 +17,17 @@ if [ -f "${envfile}" ]; then
     set +a
 fi
 
-esb_enabled=$(python -m apigateway.conf.esb)
+# Multi-tenant deployments disable ESB; only EE honors ENABLE_ESB=false.
+esb_enabled=true
+if [ "${ENABLE_MULTI_TENANT_MODE}" = "true" ] || [ "${ENABLE_MULTI_TENANT_MODE}" = "True" ]; then
+    esb_enabled=false
+elif [ "${EDITION-ee}" = "ee" ] && { [ "${ENABLE_ESB}" = "false" ] || [ "${ENABLE_ESB}" = "False" ]; }; then
+    esb_enabled=false
+fi
 
 # 数据库
 python manage.py migrate
-# Initialize ESB only when enabled by the shared edition/tenant policy.
+# Initialize ESB only when enabled by the edition/tenant policy.
 if [ "${esb_enabled}" = "true" ]; then
     python manage.py migrate bkcore --database bkcore
 fi
@@ -37,7 +43,7 @@ python manage.py init_default_data_plane
 python manage.py bind_gateways_to_default_data_plane
 
 
-# Initialize ESB only when enabled by the shared edition/tenant policy.
+# Initialize ESB only when enabled by the edition/tenant policy.
 if [ "${esb_enabled}" = "true" ]; then
     # ESB 相关
     python manage.py create_esb_jwt_key

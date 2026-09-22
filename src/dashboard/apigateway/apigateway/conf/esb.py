@@ -16,10 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.common.env import Env
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from apigateway.common.env import Env
 
 
-def is_esb_enabled(env: Env) -> bool:
+def is_esb_enabled(env: "Env") -> bool:
     """TE keeps its external ESB dependency; only EE honors ENABLE_ESB.
 
     Preserve the existing multi-tenant behavior and default to enabled for
@@ -28,8 +31,3 @@ def is_esb_enabled(env: Env) -> bool:
     return not env.bool("ENABLE_MULTI_TENANT_MODE", False) and not (
         env.str("EDITION", "ee") == "ee" and not env.bool("ENABLE_ESB", True)
     )
-
-
-if __name__ == "__main__":
-    # Migration scripts use the same policy without loading Django or its databases.
-    print(str(is_esb_enabled(Env())).lower())

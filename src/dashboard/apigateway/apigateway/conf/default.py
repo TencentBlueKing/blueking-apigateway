@@ -866,7 +866,6 @@ ENABLE_GATEWAY_OPERATION_STATUS = env.bool("FEATURE_FLAG_ENABLE_GATEWAY_OPERATIO
 DEFAULT_FEATURE_FLAG = get_default_feature_flags(
     env,
     enable_bk_notice=ENABLE_BK_NOTICE,
-    esb_enabled=ESB_ENABLED,
     enable_multi_tenant_mode=ENABLE_MULTI_TENANT_MODE,
     ai_open_api_base_url=AI_OPEN_API_BASE_URL,
     enable_gateway_operation_status=ENABLE_GATEWAY_OPERATION_STATUS,
