@@ -28,3 +28,6 @@ BK_APIGW_REDIS_PASSWORD=""
 
 # add the frontend domain, will add to CORS_ORIGIN_REGEX_WHITELIST
 DASHBOARD_FE_URL="http://apigw.example.com"
+# EE 可设为 false 关闭 ESB 的数据库、接口、任务及初始化；未设置默认为 true。
+# TE 忽略此开关，保留外部 ESB 依赖；多租户模式沿用原有禁用 ESB 的行为。
+ENABLE_ESB=true

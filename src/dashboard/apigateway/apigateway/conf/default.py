@@ -31,6 +31,7 @@ from django.utils.encoding import force_bytes
 from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
+from apigateway.conf.esb import is_esb_enabled
 from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import (
     PatchFeatures,
@@ -78,6 +79,9 @@ EDITION = env.str("EDITION", "ee")
 
 # 是否开启多租户模式
 ENABLE_MULTI_TENANT_MODE = env.bool("ENABLE_MULTI_TENANT_MODE", default=False)
+
+# EE 可关闭 ESB；TE 保留独立部署的 ESB 依赖。
+ESB_ENABLED = is_esb_enabled(env)
 
 # for apigw-manager sdk and other blueking sdks
 BK_APP_TENANT_ID = ""
@@ -132,8 +136,8 @@ INSTALLED_APPS = [
     "bk_notice_sdk",
 ]
 
-# 非多租户模式才会有 esb 相关的模型
-if not ENABLE_MULTI_TENANT_MODE:
+# 仅启用 ESB 时加载其模型和数据库配置
+if ESB_ENABLED:
     INSTALLED_APPS += [
         "apigateway.apps.esb",
         "apigateway.apps.esb.bkcore",
@@ -305,8 +309,8 @@ DATABASES = {
     },
 }
 
-# 非多租户模式才会有 esb 相关的模型
-if not ENABLE_MULTI_TENANT_MODE:
+# 仅启用 ESB 时加载其模型和数据库配置
+if ESB_ENABLED:
     DATABASES["bkcore"] = {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
@@ -352,8 +356,8 @@ if BK_APIGW_DATABASE_TLS_ENABLED:
     DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
 
 
-BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
-if not ENABLE_MULTI_TENANT_MODE and BK_ESB_DATABASE_TLS_ENABLED:
+BK_ESB_DATABASE_TLS_ENABLED = ESB_ENABLED and env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
+if BK_ESB_DATABASE_TLS_ENABLED:
     bkcore_ssl_options = {
         "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
     }

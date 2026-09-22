@@ -65,15 +65,15 @@ class FeatureFlagListApi(generics.ListAPIView):
         """获取特性开关列表"""
         feature_flags = copy.copy(settings.DEFAULT_FEATURE_FLAG)
 
-        # 多租户模式下，没有 esb 相关的页面：组件管理 + 组件 API 文档
-        if settings.ENABLE_MULTI_TENANT_MODE:
+        # 未启用 ESB 时，没有 esb 相关的页面：组件管理 + 组件 API 文档
+        if not settings.ESB_ENABLED:
             feature_flags.update(
                 {
                     "MENU_ITEM_ESB_API": False,
                     "MENU_ITEM_ESB_API_DOC": False,
                 }
             )
-        # 非多租户模式才会有 esb 相关的页面：组件管理 + 组件 API 文档
+        # 启用 ESB 时才会有 esb 相关的页面：组件管理 + 组件 API 文档
         else:
             feature_flags.update(
                 {
