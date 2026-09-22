@@ -7,7 +7,7 @@ Dashboard 的 `ENABLE_KMS` 默认关闭，关闭时保持原有环境变量、`.
 
 ## 部署输入
 
-- `ENABLE_KMS=true`（也支持 `True`）。
+- `ENABLE_KMS` 仅接受字面值 `true` 或 `True`；未设置或其他值均关闭，不忽略大小写或首尾空白。
 - `BK_APIGATEWAY_KMS_PRIVATE_KEY`：Base64 编码的 PEM 私钥内容，不是路径。
 - `/etc/secrets/bk-apigateway-kms`：UTF-8 文件，内容为 SDK 格式的 Base64 信封。
 

@@ -30,7 +30,7 @@ from django.utils.encoding import force_bytes
 
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
-from apigateway.conf.kms import get_env
+from apigateway.conf.kms import get_env, is_kms_enabled
 from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import (
     PatchFeatures,
@@ -51,7 +51,7 @@ pymysql.version_info = 1, 4, 6, "final", 0
 DatabaseFeatures.minimum_database_version = PatchFeatures.minimum_database_version
 
 env = get_env()
-ENABLE_KMS = env.bool("ENABLE_KMS", False)
+ENABLE_KMS = is_kms_enabled()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

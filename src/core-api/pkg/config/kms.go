@@ -32,12 +32,8 @@ import (
 var kmsEnvelopePath = "/etc/secrets/bk-apigateway-kms"
 
 func kmsEnabled() bool {
-	switch strings.ToLower(os.Getenv("ENABLE_KMS")) {
-	case "true", "on", "ok", "y", "yes", "1":
-		return true
-	default:
-		return false
-	}
+	value := os.Getenv("ENABLE_KMS")
+	return value == "true" || value == "True"
 }
 
 func loadKMSCredentials() (map[string]any, error) {

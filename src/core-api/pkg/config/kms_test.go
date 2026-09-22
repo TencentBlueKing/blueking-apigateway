@@ -135,11 +135,15 @@ func writeTestKMSPlaintext(t *testing.T, plaintext []byte) string {
 }
 
 func TestLoadKMSRejectsMissingPrivateKey(t *testing.T) {
-	t.Setenv("ENABLE_KMS", "True")
-	t.Setenv("BK_APIGATEWAY_KMS_PRIVATE_KEY", "")
-	cfg, err := Load(testKMSConfig())
-	if err == nil || cfg != nil {
-		t.Fatal("KMS accepted legacy credentials without a private key")
+	for _, flag := range []string{"true", "True"} {
+		t.Run(flag, func(t *testing.T) {
+			t.Setenv("ENABLE_KMS", flag)
+			t.Setenv("BK_APIGATEWAY_KMS_PRIVATE_KEY", "")
+			cfg, err := Load(testKMSConfig())
+			if err == nil || cfg != nil {
+				t.Fatal("KMS accepted legacy credentials without a private key")
+			}
+		})
 	}
 }
 
@@ -203,7 +207,7 @@ func TestLoadKMSInvalidInputs(t *testing.T) {
 }
 
 func TestLoadKMSDisabled(t *testing.T) {
-	for _, flag := range []string{"", "false", "False", "0"} {
+	for _, flag := range []string{"", "false", "False", "0", "on", "ok", "y", "yes", "1", "2", "-1", "TRUE", "tRuE", " true", "True "} {
 		t.Run(flag, func(t *testing.T) {
 			t.Setenv("ENABLE_KMS", flag)
 			t.Setenv("BK_APIGATEWAY_KMS_PRIVATE_KEY", "")

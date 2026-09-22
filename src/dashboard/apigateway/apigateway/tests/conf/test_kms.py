@@ -103,7 +103,9 @@ def envelope(monkeypatch, tmp_path, private_key):
     return write
 
 
-@pytest.mark.parametrize("flag", [None, "false", "False", "0"])
+@pytest.mark.parametrize(
+    "flag", [None, "", "false", "False", "0", "on", "ok", "y", "yes", "1", "2", "-1", "TRUE", "tRuE", " true", "True "]
+)
 def test_disabled_keeps_original_env_without_loading_sdk(monkeypatch, flag):
     if flag is None:
         monkeypatch.delenv("ENABLE_KMS", raising=False)
@@ -121,10 +123,13 @@ def test_disabled_keeps_original_env_without_loading_sdk(monkeypatch, flag):
     env = kms.get_env()
     assert type(env) is Env
     assert env.str("BK_APP_SECRET") == "legacy-secret"
+    assert runpy.run_path(default.__file__)["ENABLE_KMS"] is False
 
 
-def test_real_envelope_overrides_settings_without_mutating_environment(monkeypatch, envelope, credentials):
+@pytest.mark.parametrize("flag", ["true", "True"])
+def test_real_envelope_overrides_settings_without_mutating_environment(monkeypatch, envelope, credentials, flag):
     envelope(credentials)
+    monkeypatch.setenv("ENABLE_KMS", flag)
     monkeypatch.setenv("BK_APP_SECRET", "legacy-app-secret")
     monkeypatch.setenv("SECRET_KEY", "legacy-django-secret")
     monkeypatch.setenv("AI_API_KEY", "legacy-ai-key")

@@ -99,10 +99,14 @@ def _credential_bindings(env: Env) -> dict[str, tuple[str, ...]]:
     return bindings
 
 
+def is_kms_enabled() -> bool:
+    return os.environ.get("ENABLE_KMS") in ("true", "True")
+
+
 def get_env() -> Env:
     """Return the original env when disabled; fail closed for required KMS fields."""
     env = Env()
-    if not env.bool("ENABLE_KMS", False):
+    if not is_kms_enabled():
         return env
 
     private_key = os.environ.get("BK_APIGATEWAY_KMS_PRIVATE_KEY", "").strip()
