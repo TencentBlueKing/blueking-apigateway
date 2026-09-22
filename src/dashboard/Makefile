@@ -123,6 +123,7 @@ _build_dir:
 	cp -r apigateway/* ./build/
 	cp uv.lock ./build/
 	cp pyproject.toml ./build/
+	cp -r vendor ./build/
 	cp -r bin/* ./build/bin/
 	rm -rf ./build/apigateway/editions
 	rm -rf ./build/apigateway/tests

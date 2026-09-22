@@ -3,6 +3,7 @@ module mcp_proxy
 go 1.25.5
 
 require (
+	github.com/TencentBlueKing/bk-kms-sdk/go v0.0.0
 	github.com/TencentBlueKing/gopkg v1.3.0
 	github.com/getkin/kin-openapi v0.140.0
 	github.com/getsentry/sentry-go v0.34.1
@@ -58,6 +59,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/emmansun/gmsm v0.41.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/gin-contrib/sse v1.1.1 // indirect
@@ -160,3 +162,5 @@ require (
 	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/hints v1.1.2 // indirect
 )
+
+replace github.com/TencentBlueKing/bk-kms-sdk/go => ./third_party/bk-kms-sdk

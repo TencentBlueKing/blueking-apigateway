@@ -137,6 +137,7 @@ formatters:
     generated: lax
     paths:
       - pkg/apis/mcp/resources/docs.go
+      - ^third_party/bk-kms-sdk/
   settings:
     gofmt:
       # Simplify code: gofmt with `-s` option.

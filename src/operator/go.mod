@@ -3,6 +3,7 @@ module operator
 go 1.25.5
 
 require (
+	github.com/TencentBlueKing/bk-kms-sdk/go v0.0.0
 	github.com/apache/apisix-ingress-controller v1.8.4
 	github.com/getsentry/sentry-go v0.37.0
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -34,6 +35,7 @@ require (
 )
 
 require (
+	github.com/emmansun/gmsm v0.41.1 // indirect
 	github.com/gin-contrib/pprof v1.5.3
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-playground/validator/v10 v10.28.0
@@ -178,3 +180,5 @@ replace (
 	github.com/prometheus/client_model v0.6.2 => github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.66.1 => github.com/prometheus/common v0.62.0
 )
+
+replace github.com/TencentBlueKing/bk-kms-sdk/go => ./third_party/bk-kms-sdk
