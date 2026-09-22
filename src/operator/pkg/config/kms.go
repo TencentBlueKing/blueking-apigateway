@@ -72,8 +72,14 @@ func decryptKMSEnvelope(envelope, privateKey string) (plaintext string, err erro
 	return decrypt.Decrypt(envelope, privateKey)
 }
 
-func bindKMSCredentials(credentials map[string]any, bindings map[*string][]string) error {
-	for target, path := range bindings {
+type kmsCredentialBinding struct {
+	target *string
+	path   []string
+}
+
+func bindKMSCredentials(credentials map[string]any, bindings []kmsCredentialBinding) error {
+	for _, binding := range bindings {
+		path := binding.path
 		var value any = credentials
 		for _, part := range path {
 			object, _ := value.(map[string]any)
@@ -83,7 +89,7 @@ func bindKMSCredentials(credentials map[string]any, bindings map[*string][]strin
 		if !ok || strings.TrimSpace(text) == "" {
 			return fmt.Errorf("KMS requires a non-empty string at %s", strings.Join(path, "."))
 		}
-		*target = text
+		*binding.target = text
 	}
 	return nil
 }
@@ -93,14 +99,34 @@ func (c *Config) applyKMS() error {
 	if err != nil || credentials == nil {
 		return err
 	}
-	bindings := map[*string][]string{&c.Auth.Secret: {"bkapp_id_secret", "default", "app_secret"}}
+	bindings := []kmsCredentialBinding{
+		{target: &c.Auth.Secret, path: []string{"bkapp_id_secret", "default", "app_secret"}},
+	}
 	if !c.Dashboard.Etcd.WithoutAuth {
-		bindings[&c.Dashboard.Etcd.Username] = []string{"etcd", "default", "username"}
-		bindings[&c.Dashboard.Etcd.Password] = []string{"etcd", "default", "password"}
+		bindings = append(
+			bindings,
+			kmsCredentialBinding{
+				target: &c.Dashboard.Etcd.Username,
+				path:   []string{"etcd", "default", "username"},
+			},
+			kmsCredentialBinding{
+				target: &c.Dashboard.Etcd.Password,
+				path:   []string{"etcd", "default", "password"},
+			},
+		)
 	}
 	if !c.Apisix.Etcd.WithoutAuth {
-		bindings[&c.Apisix.Etcd.Username] = []string{"etcd", "apisix", "username"}
-		bindings[&c.Apisix.Etcd.Password] = []string{"etcd", "apisix", "password"}
+		bindings = append(
+			bindings,
+			kmsCredentialBinding{
+				target: &c.Apisix.Etcd.Username,
+				path:   []string{"etcd", "apisix", "username"},
+			},
+			kmsCredentialBinding{
+				target: &c.Apisix.Etcd.Password,
+				path:   []string{"etcd", "apisix", "password"},
+			},
+		)
 	}
 	return bindKMSCredentials(credentials, bindings)
 }

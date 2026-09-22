@@ -30,6 +30,10 @@ KMS_ENVELOPE_PATH = Path("/etc/secrets/bk-apigateway-kms")
 
 
 class _KMSEnv(Env):
+    # These settings default to KMS app credentials in conf/default.py.
+    # Other defaults must retain django-environ's normal proxy/cast behavior.
+    _LITERAL_DEFAULT_KEYS = frozenset({"SECRET_KEY", "AI_APP_SECRET", "AI_APP_CODE", "BK_APIGW_DATABASE_NAME"})
+
     def __init__(self, credentials: dict[str, str]):
         super().__init__()
         self._credentials = credentials
@@ -39,7 +43,7 @@ class _KMSEnv(Env):
             # Credentials are literal strings, including leading '$'. Do not let
             # django-environ interpret them as references to other variables.
             return self.parse_value(self._credentials[var], cast)
-        if var not in self.ENVIRON and default is not self.NOTSET:
+        if var in self._LITERAL_DEFAULT_KEYS and var not in self.ENVIRON and default is not self.NOTSET:
             # Existing settings also pass decrypted values as defaults, e.g.
             # SECRET_KEY defaults to BK_APP_SECRET. These must stay literal too.
             return self.parse_value(default, cast) if parse_default and default is not None else default
@@ -114,13 +118,17 @@ def get_env() -> Env:
         raise ImproperlyConfigured("KMS requires BK_APIGATEWAY_KMS_PRIVATE_KEY")
 
     try:
-        from bk_kms import CryptoError, decrypt  # noqa: PLC0415 -- disabled KMS must not import the SDK
+        from bk_kms import CryptoBackendUnavailableError, CryptoError, decrypt  # noqa: PLC0415 -- lazy SDK import
     except ImportError:
         raise ImproperlyConfigured("KMS requires the bk-kms-sdk package") from None
 
     try:
         envelope = KMS_ENVELOPE_PATH.read_text(encoding="utf-8").strip()
         credentials = json.loads(decrypt(envelope=envelope, private_key=private_key))
+    except CryptoBackendUnavailableError:
+        raise ImproperlyConfigured(
+            "KMS SM2/SM4 crypto backend is unavailable; check the installed gm dependencies and native libraries"
+        ) from None
     except OSError, UnicodeError, ValueError, CryptoError:
         # Do not propagate SDK/JSON exceptions that could expose payload values.
         raise ImproperlyConfigured("Unable to read or decrypt the KMS credential envelope") from None

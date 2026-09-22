@@ -276,3 +276,18 @@ func TestLoadKMSCredentials(t *testing.T) {
 		t.Fatal("KMS mutated environment")
 	}
 }
+
+func TestLoadKMSMissingFieldsHaveStableOrder(t *testing.T) {
+	writeTestKMS(t, map[string]any{})
+	// Multiple required fields are missing. Repeated loads must report the
+	// same first field instead of depending on Go map iteration order.
+	for i := 0; i < 100; i++ {
+		cfg, err := Load(testKMSConfig())
+		if cfg != nil || err == nil {
+			t.Fatal("missing credentials must prevent startup")
+		}
+		if err.Error() != "KMS requires a non-empty string at encryption.encryptKey" {
+			t.Fatalf("unstable first missing field: %v", err)
+		}
+	}
+}

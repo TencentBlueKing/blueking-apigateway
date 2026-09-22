@@ -311,3 +311,18 @@ func TestLoadKMSDebugDoesNotDumpCredentials(t *testing.T) {
 		t.Fatal("KMS debug configuration must not be printed")
 	}
 }
+
+func TestLoadKMSMissingFieldsHaveStableOrder(t *testing.T) {
+	writeTestKMS(t, map[string]any{})
+	// Multiple required fields are missing. Repeated loads must report the
+	// same first field instead of depending on Go map iteration order.
+	for i := 0; i < 100; i++ {
+		cfg, err := Load(testKMSConfig())
+		if cfg != nil || err == nil {
+			t.Fatal("missing credentials must prevent startup")
+		}
+		if err.Error() != "KMS requires a non-empty string at bkapp_id_secret.default.app_secret" {
+			t.Fatalf("unstable first missing field: %v", err)
+		}
+	}
+}

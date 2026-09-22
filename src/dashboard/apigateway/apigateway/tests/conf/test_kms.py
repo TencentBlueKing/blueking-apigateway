@@ -263,3 +263,50 @@ def test_literal_app_secret_is_preserved_in_existing_defaults(envelope, credenti
     assert settings["BK_APP_SECRET"] == "$kms-literal-app-secret"
     assert settings["SECRET_KEY"] == "$kms-literal-app-secret"
     assert settings["AI_APP_SECRET"] == "$kms-literal-app-secret"
+
+
+@pytest.mark.parametrize(("method", "reference"), [("str", "resolved"), ("int", "42"), ("bool", "true")])
+def test_non_credential_default_proxies_keep_original_semantics(envelope, credentials, monkeypatch, method, reference):
+    envelope(credentials)
+    monkeypatch.delenv("KMS_TEST_NON_CREDENTIAL", raising=False)
+    monkeypatch.setenv("KMS_TEST_REFERENCE", reference)
+    expected = getattr(Env(), method)("KMS_TEST_NON_CREDENTIAL", default="$KMS_TEST_REFERENCE")
+    actual = getattr(kms.get_env(), method)("KMS_TEST_NON_CREDENTIAL", default="$KMS_TEST_REFERENCE")
+    assert actual == expected
+    assert type(actual) is type(expected)
+
+
+def test_literal_app_code_is_preserved_in_derived_defaults(envelope, credentials, monkeypatch):
+    credentials["bkapp_id_secret"]["default"]["app_code"] = "$kms-literal-app-code"
+    for name in ("BK_APIGW_DATABASE_NAME", "AI_APP_CODE"):
+        monkeypatch.delenv(name, raising=False)
+    envelope(credentials)
+    settings = runpy.run_path(default.__file__)
+    assert settings["DATABASES"]["default"]["NAME"] == "$kms-literal-app-code"
+    assert settings["AI_APP_CODE"] == "$kms-literal-app-code"
+
+
+def test_explicit_derived_default_setting_keeps_proxy_semantics(envelope, credentials, monkeypatch):
+    envelope(credentials)
+    monkeypatch.setenv("AI_APP_SECRET", "$KMS_TEST_REFERENCE")
+    monkeypatch.setenv("KMS_TEST_REFERENCE", "explicit-secret")
+    assert (
+        kms.get_env().str("AI_APP_SECRET", credentials["bkapp_id_secret"]["default"]["app_secret"])
+        == "explicit-secret"
+    )
+
+
+def test_unavailable_crypto_backend_has_specific_sanitized_error(envelope, credentials, monkeypatch):
+    from bk_kms import CryptoBackendUnavailableError  # noqa: PLC0415
+
+    envelope(credentials)
+
+    def fail_decrypt(**kwargs):
+        raise CryptoBackendUnavailableError(
+            backend="sensitive-backend", algorithms=["SM2", "SM4"], platform="sensitive-platform"
+        )
+
+    monkeypatch.setattr("bk_kms.decrypt", fail_decrypt)
+    with pytest.raises(ImproperlyConfigured, match="SM2/SM4 crypto backend is unavailable") as exc:
+        kms.get_env()
+    assert "sensitive-" not in "".join(traceback.format_exception(exc.value))

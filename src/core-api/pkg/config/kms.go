@@ -72,8 +72,14 @@ func decryptKMSEnvelope(envelope, privateKey string) (plaintext string, err erro
 	return decrypt.Decrypt(envelope, privateKey)
 }
 
-func bindKMSCredentials(credentials map[string]any, bindings map[*string][]string) error {
-	for target, path := range bindings {
+type kmsCredentialBinding struct {
+	target *string
+	path   []string
+}
+
+func bindKMSCredentials(credentials map[string]any, bindings []kmsCredentialBinding) error {
+	for _, binding := range bindings {
+		path := binding.path
 		var value any = credentials
 		for _, part := range path {
 			object, _ := value.(map[string]any)
@@ -83,7 +89,7 @@ func bindKMSCredentials(credentials map[string]any, bindings map[*string][]strin
 		if !ok || strings.TrimSpace(text) == "" {
 			return fmt.Errorf("KMS requires a non-empty string at %s", strings.Join(path, "."))
 		}
-		*target = text
+		*binding.target = text
 	}
 	return nil
 }
@@ -93,15 +99,19 @@ func (cfg *Config) applyKMS() error {
 	if err != nil || credentials == nil {
 		return err
 	}
-	bindings := map[*string][]string{&cfg.Auth.Secret: {"bkapp_id_secret", "default", "app_secret"}}
+	bindings := []kmsCredentialBinding{
+		{target: &cfg.Auth.Secret, path: []string{"bkapp_id_secret", "default", "app_secret"}},
+	}
 	for i := range cfg.Databases {
 		db := &cfg.Databases[i]
 		instance := db.ID
 		if instance == "apigateway" {
 			instance = "apigw"
 		}
-		bindings[&db.User] = []string{"mysql", instance, "username"}
-		bindings[&db.Password] = []string{"mysql", instance, "password"}
+		bindings = append(bindings,
+			kmsCredentialBinding{target: &db.User, path: []string{"mysql", instance, "username"}},
+			kmsCredentialBinding{target: &db.Password, path: []string{"mysql", instance, "password"}},
+		)
 	}
 	return bindKMSCredentials(credentials, bindings)
 }
