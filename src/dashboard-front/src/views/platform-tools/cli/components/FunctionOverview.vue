@@ -1,44 +1,26 @@
 <template>
   <div class="tab-content function-overview">
-    <!-- 功能概览标题区 -->
-    <div class="overview-header">
-      <div class="overview-icon">
-        <AgIcon
-          name="log-rizhi"
-          size="24"
-          color="#3A84FF"
-        />
-      </div>
-      <div class="overview-info">
-        <div class="overview-title">
-          {{ t('功能概览') }}
-        </div>
-        <div class="overview-desc">
-          {{ t('覆盖蓝鲸生态核心系统，一个 CLI 工具打通所有能力。') }}
-        </div>
-      </div>
+    <div class="tab-description">
+      {{ t('覆盖蓝鲸生态核心系统，一个 CLI 工具打通所有能力。') }}
     </div>
 
-    <!-- 功能表格 -->
-    <div class="overview-table-wrapper">
-      <table class="overview-table">
-        <thead>
-          <tr>
-            <th>{{ t('蓝鲸服务') }}</th>
-            <th>{{ t('能力描述') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="item in overviewList"
-            :key="item.service"
-          >
-            <td>{{ item.service }}</td>
-            <td>{{ item.title }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table class="overview-table">
+      <thead>
+        <tr>
+          <th>{{ t('蓝鲸服务') }}</th>
+          <th>{{ t('能力描述') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="item in overviewList"
+          :key="item.service"
+        >
+          <td>{{ item.service }}</td>
+          <td>{{ item.title }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -88,87 +70,52 @@ const overviewList = [
 </script>
 
 <style scoped lang="scss">
-
 .function-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
-  .overview-header {
-    display: flex;
-    padding: 18px 24px;
-    background: #FAFBFD;
-    align-items: flex-start;
-    gap: 16px;
-    border-bottom: 1px solid #DCDEE5;
-
-    .overview-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 48px;
-      height: 48px;
-      background: #fff;
-      border-radius: 4px;
-      flex-shrink: 0;
-      box-shadow: 0 0 8px 0 #374a641a;
-    }
-
-    .overview-info {
-
-      .overview-title {
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 22px;
-        color: #313238;
-      }
-
-      .overview-desc {
-        margin-top: 4px;
-        font-size: 12px;
-        line-height: 20px;
-        color: #979ba5;
-      }
-    }
+  .tab-description {
+    font-size: 12px;
+    line-height: 20px;
+    color: #4d4f56;
   }
 
-  .overview-table-wrapper {
-    padding: 24px;
+  .overview-table {
+    width: 100%;
+    border: 1px solid #dcdee5;
+    border-collapse: collapse;
 
-    .overview-table {
-      width: 100%;
-      border: 1px solid #dcdee5;
-      border-collapse: collapse;
+    th,
+    td {
+      padding: 12px 24px;
+      font-size: 12px;
+      line-height: 20px;
+      text-align: left;
+      border-bottom: 1px solid #dcdee5;
+    }
 
-      th,
-      td {
-        padding: 12px 24px;
-        font-size: 12px;
-        line-height: 20px;
-        text-align: left;
-        border-bottom: 1px solid #dcdee5;
-      }
+    th {
+      font-weight: 700;
+      color: #313238;
+      background: #fafbfd;
+    }
 
-      th {
-        font-weight: 700;
-        color: #313238;
-        background: #fafbfd;
-      }
+    td {
+      color: #63656e;
+    }
 
-      td {
-        color: #63656e;
-      }
+    td:first-child {
+      width: 200px;
+    }
 
-      td:first-child {
-        width: 200px;
-      }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
 
-      tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      tbody tr:hover {
-        background: #f5f7fa;
-      }
+    tbody tr:hover {
+      background: #f5f7fa;
     }
   }
 }
-
 </style>

@@ -1,23 +1,9 @@
 <template>
   <div class="tab-content advanced-usage">
-    <!-- 标题区 -->
-    <div class="advanced-usage-header">
-      <div class="advanced-usage-icon">
-        <AgIcon
-          name="star"
-          size="24"
-          color="#3A84FF"
-        />
-      </div>
-      <div class="advanced-usage-info">
-        <div class="advanced-usage-title">
-          {{ t('进阶用法') }}
-        </div>
-        <div class="advanced-usage-desc">
-          {{ t('掌握高级特性，提升 CLI 使用效率和安全性') }}
-        </div>
-      </div>
+    <div class="tab-description">
+      {{ t('掌握高级特性，提升 CLI 使用效率和安全性') }}
     </div>
+    <div class="section-divider" />
 
     <div class="advanced-usage-content-wrapper">
       <!-- 多上下文管理 -->
@@ -25,7 +11,8 @@
         <div class="step-header">
           <div class="header-icon-wrapper">
             <AgIcon
-              name="feedback-fankui"
+              class="step-icon"
+              name="file"
               size="16"
               color="#3A84FF"
             />
@@ -40,6 +27,7 @@
         <div class="step-header">
           <div class="header-icon-wrapper">
             <AgIcon
+              class="step-icon"
               name="insights"
               size="16"
               color="#3A84FF"
@@ -50,6 +38,7 @@
         <BkAlert
           theme="info"
           class="step-alert"
+          closable
         >
           <template #title>
             {{ t('建议对有副作用的命令（创建、更新、删除）使用 --dry-run 预览请求，避免误操作。') }}
@@ -61,13 +50,14 @@
       <!-- 更多用法 -->
       <div class="step-section">
         <div class="step-header">
-          <!--          <div class="header-icon-wrapper"> -->
-          <!--            <AgIcon -->
-          <!--              name="insights" -->
-          <!--              size="16" -->
-          <!--              color="#3A84FF" -->
-          <!--            /> -->
-          <!--          </div> -->
+          <div class="header-icon-wrapper">
+            <AgIcon
+              class="step-icon"
+              name="batch-edit"
+              size="16"
+              color="#3A84FF"
+            />
+          </div>
           <span class="step-title">{{ t('更多用法') }}</span>
           <span class="step-sub-title">{{ t('通过查看帮助信息探索所有支持的系统及操作') }}</span>
         </div>
@@ -167,90 +157,81 @@ Flags:
 
 <style scoped lang="scss">
 .advanced-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
-  .advanced-usage-header {
-    display: flex;
-    padding: 18px 24px;
-    background: #FAFBFD;
-    align-items: flex-start;
-    gap: 16px;
-    border-bottom: 1px solid #DCDEE5;
+  .tab-description {
+    font-size: 12px;
+    line-height: 20px;
+    color: #4d4f56;
+  }
 
-    .advanced-usage-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 48px;
-      height: 48px;
-      background: #fff;
-      border-radius: 4px;
-      flex-shrink: 0;
-      box-shadow: 0 0 8px 0 #374a641a;
-    }
-
-    .advanced-usage-info {
-
-      .advanced-usage-title {
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 22px;
-        color: #313238;
-      }
-
-      .advanced-usage-desc {
-        margin-top: 4px;
-        font-size: 12px;
-        line-height: 20px;
-        color: #979ba5;
-      }
-    }
+  .section-divider {
+    height: 1px;
+    background: #eaebf0;
   }
 
   .advanced-usage-content-wrapper {
-    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 
     .step-section {
-      padding-bottom: 24px;
-      margin-bottom: 24px;
       font-size: 12px;
-      border-bottom: 1px solid #EAEBF0;
-
-      &:last-child {
-        padding-bottom: 0;
-        margin-bottom: 0;
-        border-bottom: none;
-      }
 
       .step-header {
         display: flex;
         align-items: center;
+        height: 24px;
         gap: 8px;
         margin-bottom: 16px;
 
         .header-icon-wrapper {
           display: flex;
-          width: 20px;
-          height: 20px;
-          background: #E1ECFF;
-          border-radius: 2px;
           align-items: center;
           justify-content: center;
+          width: 24px;
+          height: 24px;
+          color: #3a84ff;
+          background: #e1ecff;
+          border-radius: 50%;
+          flex-shrink: 0;
+
+          .step-icon {
+            width: 16px;
+            height: 16px;
+          }
         }
 
         .step-title {
           font-weight: 700;
-          line-height: 22px;
+          line-height: 20px;
           color: #313238;
         }
 
         .step-sub-title {
-          line-height: 22px;
+          line-height: 20px;
           color: #979ba5;
         }
       }
 
       .step-alert {
-        margin-bottom: 12px;
+        height: 32px;
+        margin-bottom: 16px;
+        overflow: hidden;
+
+        :deep(.bk-alert-wraper) {
+          padding: 6px 8px;
+        }
+
+        :deep(.bk-alert-title) {
+          line-height: 18px;
+        }
+
+        :deep(.bk-alert-close) {
+          padding-top: 8px;
+        }
       }
     }
   }
