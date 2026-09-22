@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
                     ("approved", "通过"),
                     ("rejected", "驳回"),
                     ("pending", "待审批"),
-                    ("revoked", "已撤销"),
+                    ("canceled", "已取消"),
                 ],
                 max_length=16,
             ),

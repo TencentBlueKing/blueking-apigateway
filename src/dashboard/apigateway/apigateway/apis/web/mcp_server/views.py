@@ -744,7 +744,7 @@ class MCPServerAppPermissionApplyQuerySetMixin:
     def get_queryset(self):
         queryset = MCPServerAppPermissionApply.objects.filter(
             mcp_server__gateway=self.request.gateway,
-        ).exclude(status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value)
+        ).exclude(status=MCPServerAppPermissionApplyStatusEnum.CANCELED.value)
         mcp_server_id = self.kwargs.get("mcp_server_id")
         if mcp_server_id is not None:
             queryset = queryset.filter(mcp_server_id=mcp_server_id)

@@ -107,7 +107,7 @@ mcp_server 申请权限列表
 | 参数名称 | 参数类型 | 描述 |
 |---|---|---|
 | expires_in | int | 有效期 |
-| status | string | 权限状态 |
-| action | string | 权限操作 |
+| status | string | 权限状态：`owned` 表示已有实际权限，`approved` 表示申请已通过，`pending` 表示申请中，`rejected` 表示申请被驳回，`need_apply` 表示待申请；无实际权限且不存在未删除的申请记录，或最新申请已取消时，返回 `need_apply` |
+| action | string | 权限操作；`rejected`、`need_apply` 状态返回 `apply`，其他状态返回空字符串 |
 | handled_by | array[string] | 处理人 |
 | approval_url | string | 权限审批 URL；当存在 `itsm_ticket_id` 时返回 ITSM 单据中心链接，否则返回 MCPServer 权限审批页 URL |

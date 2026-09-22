@@ -24,12 +24,12 @@ from .views import (
     WorkbenchHandledMCPPermissionListApi,
     WorkbenchMCPGatewayFilterOptionListApi,
     WorkbenchMCPServerFilterOptionListApi,
+    WorkbenchMyApplyGatewayPermissionCancelApi,
     WorkbenchMyApplyGatewayPermissionDestroyApi,
     WorkbenchMyApplyGatewayPermissionListApi,
-    WorkbenchMyApplyGatewayPermissionRevokeApi,
+    WorkbenchMyApplyMCPPermissionCancelApi,
     WorkbenchMyApplyMCPPermissionDestroyApi,
     WorkbenchMyApplyMCPPermissionListApi,
-    WorkbenchMyApplyMCPPermissionRevokeApi,
     WorkbenchPendingGatewayPermissionListApi,
     WorkbenchPendingMCPPermissionListApi,
 )
@@ -43,9 +43,9 @@ gateway_permission_patterns = [
         name="workbench.permissions.gateway.applied.destroy",
     ),
     path(
-        "applied/<int:apply_id>/revoke/",
-        WorkbenchMyApplyGatewayPermissionRevokeApi.as_view(),
-        name="workbench.permissions.gateway.applied.revoke",
+        "applied/<int:apply_id>/cancel/",
+        WorkbenchMyApplyGatewayPermissionCancelApi.as_view(),
+        name="workbench.permissions.gateway.applied.cancel",
     ),
     path("handled/", WorkbenchHandledGatewayPermissionListApi.as_view(), name="workbench.permissions.gateway.handled"),
 ]
@@ -59,9 +59,9 @@ mcp_permission_patterns = [
         name="workbench.permissions.mcp.applied.destroy",
     ),
     path(
-        "applied/<int:apply_id>/revoke/",
-        WorkbenchMyApplyMCPPermissionRevokeApi.as_view(),
-        name="workbench.permissions.mcp.applied.revoke",
+        "applied/<int:apply_id>/cancel/",
+        WorkbenchMyApplyMCPPermissionCancelApi.as_view(),
+        name="workbench.permissions.mcp.applied.cancel",
     ),
     path("handled/", WorkbenchHandledMCPPermissionListApi.as_view(), name="workbench.permissions.mcp.handled"),
 ]

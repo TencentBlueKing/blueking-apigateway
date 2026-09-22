@@ -1423,10 +1423,10 @@ class TestMCPServerAppPermissionApplyListApi:
         G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
-            bk_app_code="revoked-app",
+            bk_app_code="canceled-app",
             applied_by="admin",
             applied_time=now_datetime(),
-            status=MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+            status=MCPServerAppPermissionApplyStatusEnum.CANCELED.value,
         )
 
         resp = request_view(
@@ -3020,7 +3020,7 @@ class TestMCPServerOAuth2Enabled:
         fake_mcp_server.refresh_from_db()
         assert fake_mcp_server.oauth2_public_client_enabled is False
 
-        # 关闭 OAuth2 时 sync_permissions 也被调用（内部会撤销 public 权限）
+        # 关闭 OAuth2 时 sync_permissions 也被调用（内部会取消 public 权限）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_update_full_with_oauth2_public_client_enabled(

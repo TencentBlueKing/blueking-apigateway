@@ -401,6 +401,14 @@ class AppPermissionRecordRetrieveInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordRetrieveInputSLZ"
 
 
+class PermissionApplyRecordOperateInputSLZ(serializers.Serializer):
+    target_app_code = serializers.CharField(validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    operated_by = serializers.CharField(help_text="操作人")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.PermissionApplyRecordOperateInputSLZ"
+
+
 class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     gateway_name = serializers.SerializerMethodField()
     apply_status = serializers.SerializerMethodField()

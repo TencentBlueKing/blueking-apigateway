@@ -580,8 +580,8 @@ class TestAppPermissionApplyViewSet:
         G(
             models.AppPermissionApply,
             gateway=fake_gateway,
-            bk_app_code="test-revoked",
-            status=ApplyStatusEnum.REVOKED.value,
+            bk_app_code="test-canceled",
+            status=ApplyStatusEnum.CANCELED.value,
         )
 
         data = [
@@ -738,7 +738,7 @@ class TestAppPermissionRecordViewSet(TestCase):
             self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"]["count"], test["expected"]["count"])
 
-    def test_list_excludes_revoked_apply(self):
+    def test_list_excludes_canceled_apply(self):
         G(
             models.AppPermissionRecord,
             gateway=self.gateway,
@@ -749,9 +749,9 @@ class TestAppPermissionRecordViewSet(TestCase):
         G(
             models.AppPermissionRecord,
             gateway=self.gateway,
-            bk_app_code="revoked-app",
+            bk_app_code="canceled-app",
             applied_time=now_datetime(),
-            status=ApplyStatusEnum.REVOKED.value,
+            status=ApplyStatusEnum.CANCELED.value,
         )
 
         request = self.factory.get(f"/gateways/{self.gateway.id}/permissions/app-permission-records/")

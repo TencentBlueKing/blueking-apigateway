@@ -57,6 +57,29 @@ class WorkbenchPermissionHandler:
         return apply
 
     @staticmethod
+    def _get_gateway_apply_by_record_for_update(
+        record_id: int, bk_app_code: str, tenant_id: str
+    ) -> AppPermissionApply:
+        apply = (
+            AppPermissionApply.objects.select_for_update()
+            .filter(
+                apply_record_id=record_id,
+                bk_app_code=bk_app_code,
+            )
+            .first()
+        )
+        if not apply:
+            raise error_codes.NOT_FOUND
+        if tenant_id:
+            queryset = gateway_related_filter_by_user_tenant_id(
+                AppPermissionApply.objects.filter(id=apply.id),
+                tenant_id,
+            )
+            if not queryset.exists():
+                raise error_codes.NOT_FOUND
+        return apply
+
+    @staticmethod
     def _get_mcp_apply_for_update(apply_id: int, username: str, tenant_id: str) -> MCPServerAppPermissionApply:
         apply = (
             MCPServerAppPermissionApply.objects.select_for_update()
@@ -79,6 +102,33 @@ class WorkbenchPermissionHandler:
         )
         if not queryset.exists():
             raise error_codes.NOT_FOUND
+        return apply
+
+    @staticmethod
+    def _get_mcp_apply_by_record_for_update(
+        record_id: int, bk_app_code: str, tenant_id: str
+    ) -> MCPServerAppPermissionApply:
+        apply = (
+            MCPServerAppPermissionApply.objects.select_for_update()
+            .filter(
+                id=record_id,
+                bk_app_code=bk_app_code,
+                is_deleted=False,
+            )
+            .first()
+        )
+        if not apply:
+            raise error_codes.NOT_FOUND
+        if tenant_id:
+            queryset = mcp_server_related_filter_by_user_tenant_id(
+                MCPServerAppPermissionApply.objects.filter(
+                    id=apply.id,
+                    is_deleted=False,
+                ),
+                tenant_id,
+            )
+            if not queryset.exists():
+                raise error_codes.NOT_FOUND
         return apply
 
     @staticmethod
@@ -127,34 +177,51 @@ class WorkbenchPermissionHandler:
 
     @classmethod
     @transaction.atomic
-    def revoke_gateway_permission_apply(
+    def cancel_gateway_permission_apply(
         cls,
         apply_id: int,
         username: str,
         tenant_id: str,
     ) -> None:
-        """撤销待审批 API 网关权限申请"""
+        """取消待审批 API 网关权限申请"""
         apply = cls._get_gateway_apply_for_update(apply_id, username, tenant_id)
+        cls._cancel_gateway_permission_apply(apply, username)
+
+    @classmethod
+    @transaction.atomic
+    def cancel_gateway_permission_apply_by_app(
+        cls,
+        record_id: int,
+        bk_app_code: str,
+        operated_by: str,
+        tenant_id: str,
+    ) -> None:
+        """按应用取消待审批 API 网关权限申请"""
+        apply = cls._get_gateway_apply_by_record_for_update(record_id, bk_app_code, tenant_id)
+        cls._cancel_gateway_permission_apply(apply, operated_by)
+
+    @classmethod
+    def _cancel_gateway_permission_apply(cls, apply: AppPermissionApply, operated_by: str) -> None:
         if apply.status != ApplyStatusEnum.PENDING.value:
-            raise error_codes.FAILED_PRECONDITION.format(_("仅待审批的申请可以撤销。"), replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(_("仅待审批的申请可以取消。"), replace=True)
 
         data_before = get_model_dict(apply)
         if apply.itsm_ticket_id:
-            ItsmPermissionApplyHelper().revoke_permission_apply_ticket(apply.itsm_ticket_id)
+            ItsmPermissionApplyHelper().cancel_permission_apply_ticket(apply.itsm_ticket_id)
 
         AppPermissionApplyStatus.objects.filter(apply=apply).delete()
-        AppPermissionRecord.objects.filter(id=apply.apply_record_id).update(status=ApplyStatusEnum.REVOKED.value)
-        apply.status = ApplyStatusEnum.REVOKED.value
+        AppPermissionRecord.objects.filter(id=apply.apply_record_id).update(status=ApplyStatusEnum.CANCELED.value)
+        apply.status = ApplyStatusEnum.CANCELED.value
         apply.save(update_fields=["status"])
         cls._record_gateway_apply_audit(
             op_type=OpTypeEnum.MODIFY,
-            username=username,
+            username=operated_by,
             gateway_id=apply.gateway_id,
             instance_id=apply.id,
             instance_name=apply.bk_app_code,
             data_before=data_before,
             data_after=get_model_dict(apply),
-            comment="撤销权限申请",
+            comment="取消权限申请",
         )
 
     @classmethod
@@ -165,10 +232,27 @@ class WorkbenchPermissionHandler:
         username: str,
         tenant_id: str,
     ) -> None:
-        """删除已撤销 API 网关权限申请"""
+        """删除已取消 API 网关权限申请"""
         apply = cls._get_gateway_apply_for_update(apply_id, username, tenant_id)
-        if apply.status != ApplyStatusEnum.REVOKED.value:
-            raise error_codes.FAILED_PRECONDITION.format(_("仅已撤销的申请可以删除。"), replace=True)
+        cls._delete_gateway_permission_apply(apply, username)
+
+    @classmethod
+    @transaction.atomic
+    def delete_gateway_permission_apply_by_app(
+        cls,
+        record_id: int,
+        bk_app_code: str,
+        operated_by: str,
+        tenant_id: str,
+    ) -> None:
+        """按应用删除已取消 API 网关权限申请"""
+        apply = cls._get_gateway_apply_by_record_for_update(record_id, bk_app_code, tenant_id)
+        cls._delete_gateway_permission_apply(apply, operated_by)
+
+    @classmethod
+    def _delete_gateway_permission_apply(cls, apply: AppPermissionApply, operated_by: str) -> None:
+        if apply.status != ApplyStatusEnum.CANCELED.value:
+            raise error_codes.FAILED_PRECONDITION.format(_("仅已取消的申请可以删除。"), replace=True)
 
         data_before = get_model_dict(apply)
         instance_id = apply.id
@@ -178,42 +262,59 @@ class WorkbenchPermissionHandler:
         apply.delete()
         cls._record_gateway_apply_audit(
             op_type=OpTypeEnum.DELETE,
-            username=username,
+            username=operated_by,
             gateway_id=gateway_id,
             instance_id=instance_id,
             instance_name=instance_name,
             data_before=data_before,
             data_after={},
-            comment="删除已撤销的权限申请",
+            comment="删除已取消的权限申请",
         )
 
     @classmethod
     @transaction.atomic
-    def revoke_mcp_permission_apply(
+    def cancel_mcp_permission_apply(
         cls,
         apply_id: int,
         username: str,
         tenant_id: str,
     ) -> None:
-        """撤销待审批 MCP Server 权限申请"""
+        """取消待审批 MCP Server 权限申请"""
         apply = cls._get_mcp_apply_for_update(apply_id, username, tenant_id)
+        cls._cancel_mcp_permission_apply(apply, username)
+
+    @classmethod
+    @transaction.atomic
+    def cancel_mcp_permission_apply_by_app(
+        cls,
+        record_id: int,
+        bk_app_code: str,
+        operated_by: str,
+        tenant_id: str,
+    ) -> None:
+        """按应用取消待审批 MCP Server 权限申请"""
+        apply = cls._get_mcp_apply_by_record_for_update(record_id, bk_app_code, tenant_id)
+        cls._cancel_mcp_permission_apply(apply, operated_by)
+
+    @classmethod
+    def _cancel_mcp_permission_apply(cls, apply: MCPServerAppPermissionApply, operated_by: str) -> None:
         if apply.status != MCPServerAppPermissionApplyStatusEnum.PENDING.value:
-            raise error_codes.FAILED_PRECONDITION.format(_("仅待审批的申请可以撤销。"), replace=True)
+            raise error_codes.FAILED_PRECONDITION.format(_("仅待审批的申请可以取消。"), replace=True)
 
         data_before = get_model_dict(apply)
         if apply.itsm_ticket_id:
-            ItsmPermissionApplyHelper().revoke_permission_apply_ticket(apply.itsm_ticket_id)
-        apply.status = MCPServerAppPermissionApplyStatusEnum.REVOKED.value
+            ItsmPermissionApplyHelper().cancel_permission_apply_ticket(apply.itsm_ticket_id)
+        apply.status = MCPServerAppPermissionApplyStatusEnum.CANCELED.value
         apply.save(update_fields=["status"])
         cls._record_mcp_apply_audit(
             op_type=OpTypeEnum.MODIFY,
-            username=username,
+            username=operated_by,
             gateway_id=apply.mcp_server.gateway_id,
             instance_id=apply.id,
             instance_name=apply.bk_app_code,
             data_before=data_before,
             data_after=get_model_dict(apply),
-            comment="撤销 MCP Server 权限申请",
+            comment="取消 MCP Server 权限申请",
         )
 
     @classmethod
@@ -224,10 +325,27 @@ class WorkbenchPermissionHandler:
         username: str,
         tenant_id: str,
     ) -> None:
-        """删除已撤销 MCP Server 权限申请"""
+        """删除已取消 MCP Server 权限申请"""
         apply = cls._get_mcp_apply_for_update(apply_id, username, tenant_id)
-        if apply.status != MCPServerAppPermissionApplyStatusEnum.REVOKED.value:
-            raise error_codes.FAILED_PRECONDITION.format(_("仅已撤销的申请可以删除。"), replace=True)
+        cls._delete_mcp_permission_apply(apply, username)
+
+    @classmethod
+    @transaction.atomic
+    def delete_mcp_permission_apply_by_app(
+        cls,
+        record_id: int,
+        bk_app_code: str,
+        operated_by: str,
+        tenant_id: str,
+    ) -> None:
+        """按应用删除已取消 MCP Server 权限申请"""
+        apply = cls._get_mcp_apply_by_record_for_update(record_id, bk_app_code, tenant_id)
+        cls._delete_mcp_permission_apply(apply, operated_by)
+
+    @classmethod
+    def _delete_mcp_permission_apply(cls, apply: MCPServerAppPermissionApply, operated_by: str) -> None:
+        if apply.status != MCPServerAppPermissionApplyStatusEnum.CANCELED.value:
+            raise error_codes.FAILED_PRECONDITION.format(_("仅已取消的申请可以删除。"), replace=True)
 
         data_before = get_model_dict(apply)
         instance_id = apply.id
@@ -236,13 +354,13 @@ class WorkbenchPermissionHandler:
         apply.delete()
         cls._record_mcp_apply_audit(
             op_type=OpTypeEnum.DELETE,
-            username=username,
+            username=operated_by,
             gateway_id=gateway_id,
             instance_id=instance_id,
             instance_name=instance_name,
             data_before=data_before,
             data_after={},
-            comment="删除已撤销的 MCP Server 权限申请",
+            comment="删除已取消的 MCP Server 权限申请",
         )
 
     @staticmethod
@@ -257,7 +375,7 @@ class WorkbenchPermissionHandler:
                 handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
                 gateway_id__in=cls._get_user_gateway_ids(username, tenant_id),
             )
-        ).exclude(status__in=[ApplyStatusEnum.PENDING.value, ApplyStatusEnum.REVOKED.value])
+        ).exclude(status__in=[ApplyStatusEnum.PENDING.value, ApplyStatusEnum.CANCELED.value])
         return gateway_related_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
     @classmethod
@@ -272,7 +390,7 @@ class WorkbenchPermissionHandler:
         ).exclude(
             status__in=[
                 MCPServerAppPermissionApplyStatusEnum.PENDING.value,
-                MCPServerAppPermissionApplyStatusEnum.REVOKED.value,
+                MCPServerAppPermissionApplyStatusEnum.CANCELED.value,
             ]
         )
         return mcp_server_related_filter_by_maintainer_tenant_id(queryset, tenant_id)

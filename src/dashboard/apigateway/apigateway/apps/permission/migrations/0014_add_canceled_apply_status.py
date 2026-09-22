@@ -5,7 +5,7 @@ APPLY_STATUS_CHOICES = [
     ("approved", "全部通过"),
     ("rejected", "全部驳回"),
     ("pending", "待审批"),
-    ("revoked", "已撤销"),
+    ("canceled", "已取消"),
 ]
 
 

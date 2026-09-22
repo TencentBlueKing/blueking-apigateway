@@ -169,18 +169,18 @@ class ItsmPermissionApplyHelper:
             options=options,
         )
 
-    def revoke_permission_apply_ticket(self, ticket_id: str) -> None:
-        """撤销权限申请关联的 ITSM 工单。"""
+    def cancel_permission_apply_ticket(self, ticket_id: str) -> None:
+        """取消权限申请关联的 ITSM 工单。"""
         normalized_ticket_id = str(ticket_id or "").strip()
         if not normalized_ticket_id:
             raise error_codes.INVALID_ARGUMENT.format("ITSM ticket_id is required.")
 
-        revoked = revoke_ticket(
+        canceled = revoke_ticket(
             system_id=self.config.itsm_system_id,
             ticket_id=normalized_ticket_id,
             system_token=self.config.system_token,
         )
-        if not revoked:
+        if not canceled:
             raise error_codes.REMOTE_REQUEST_ERROR.format(
                 f"failed to revoke ITSM ticket, ticket_id={normalized_ticket_id}"
             )

@@ -729,7 +729,7 @@ class AppPermissionApplyQuerySetMixin:
     def get_queryset(self):
         return (
             AppPermissionApply.objects.filter(gateway=self.request.gateway)
-            .exclude(status=ApplyStatusEnum.REVOKED.value)
+            .exclude(status=ApplyStatusEnum.CANCELED.value)
             .order_by("-id")
         )
 
@@ -801,7 +801,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
     def get_queryset(self):
         return (
             AppPermissionRecord.objects.filter(gateway=self.request.gateway)
-            .exclude(status__in=[ApplyStatusEnum.PENDING.value, ApplyStatusEnum.REVOKED.value])
+            .exclude(status__in=[ApplyStatusEnum.PENDING.value, ApplyStatusEnum.CANCELED.value])
             .order_by("-handled_time")
         )
 

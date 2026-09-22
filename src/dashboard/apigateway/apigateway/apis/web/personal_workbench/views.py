@@ -417,17 +417,17 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
 @method_decorator(
     name="post",
     decorator=extend_schema(
-        description="个人工作台 - 我的申请 - 撤销 API 网关权限申请",
+        description="个人工作台 - 我的申请 - 取消 API 网关权限申请",
         request=None,
         responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyGatewayPermissionRevokeApi(WorkbenchPermissionMixin, generics.GenericAPIView):
-    """撤销当前用户提交的待审批 API 网关权限申请"""
+class WorkbenchMyApplyGatewayPermissionCancelApi(WorkbenchPermissionMixin, generics.GenericAPIView):
+    """取消当前用户提交的待审批 API 网关权限申请"""
 
     def post(self, request, apply_id: int, *args, **kwargs):
-        WorkbenchPermissionHandler.revoke_gateway_permission_apply(
+        WorkbenchPermissionHandler.cancel_gateway_permission_apply(
             apply_id=apply_id,
             username=request.user.username,
             tenant_id=get_user_tenant_id(request),
@@ -438,13 +438,13 @@ class WorkbenchMyApplyGatewayPermissionRevokeApi(WorkbenchPermissionMixin, gener
 @method_decorator(
     name="delete",
     decorator=extend_schema(
-        description="个人工作台 - 我的申请 - 删除已撤销的 API 网关权限申请",
+        description="个人工作台 - 我的申请 - 删除已取消的 API 网关权限申请",
         responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
 class WorkbenchMyApplyGatewayPermissionDestroyApi(WorkbenchPermissionMixin, generics.GenericAPIView):
-    """删除当前用户已撤销的 API 网关权限申请"""
+    """删除当前用户已取消的 API 网关权限申请"""
 
     def delete(self, request, apply_id: int, *args, **kwargs):
         WorkbenchPermissionHandler.delete_gateway_permission_apply(
@@ -504,17 +504,17 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
 @method_decorator(
     name="post",
     decorator=extend_schema(
-        description="个人工作台 - 我的申请 - 撤销 MCP Server 权限申请",
+        description="个人工作台 - 我的申请 - 取消 MCP Server 权限申请",
         request=None,
         responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyMCPPermissionRevokeApi(WorkbenchPermissionMixin, generics.GenericAPIView):
-    """撤销当前用户提交的待审批 MCP Server 权限申请"""
+class WorkbenchMyApplyMCPPermissionCancelApi(WorkbenchPermissionMixin, generics.GenericAPIView):
+    """取消当前用户提交的待审批 MCP Server 权限申请"""
 
     def post(self, request, apply_id: int, *args, **kwargs):
-        WorkbenchPermissionHandler.revoke_mcp_permission_apply(
+        WorkbenchPermissionHandler.cancel_mcp_permission_apply(
             apply_id=apply_id,
             username=request.user.username,
             tenant_id=get_user_tenant_id(request),
@@ -525,13 +525,13 @@ class WorkbenchMyApplyMCPPermissionRevokeApi(WorkbenchPermissionMixin, generics.
 @method_decorator(
     name="delete",
     decorator=extend_schema(
-        description="个人工作台 - 我的申请 - 删除已撤销的 MCP Server 权限申请",
+        description="个人工作台 - 我的申请 - 删除已取消的 MCP Server 权限申请",
         responses={status.HTTP_204_NO_CONTENT: None},
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
 class WorkbenchMyApplyMCPPermissionDestroyApi(WorkbenchPermissionMixin, generics.GenericAPIView):
-    """删除当前用户已撤销的 MCP Server 权限申请"""
+    """删除当前用户已取消的 MCP Server 权限申请"""
 
     def delete(self, request, apply_id: int, *args, **kwargs):
         WorkbenchPermissionHandler.delete_mcp_permission_apply(
