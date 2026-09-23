@@ -455,6 +455,38 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
 
 
 @method_decorator(
+    name="delete",
+    decorator=extend_schema(
+        description="网关关联应用，回收应用访问网关 API 的权限",
+        request=serializers.GatewayAppPermissionRevokeInputSLZ,
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class GatewayAppPermissionRevokeApi(generics.DestroyAPIView):
+    """网关关联应用，回收应用访问网关 API 的权限"""
+
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+    serializer_class = serializers.GatewayAppPermissionRevokeInputSLZ
+    schema_delete_request_body = True
+
+    def delete(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
+        permission_model.objects.filter(
+            gateway=request.gateway,
+            bk_app_code__in=data["target_app_codes"],
+        ).delete()
+
+        # 不返回 204：SDK(bkapi-client-core) 会解析响应体，空响应体会导致调用失败
+        return OKJsonResponse()
+
+
+@method_decorator(
     name="get",
     decorator=extend_schema(
         description="获取网关资源版本列表",

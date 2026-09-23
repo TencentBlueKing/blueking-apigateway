@@ -42,6 +42,14 @@ def test_mutation_serializer_rejects_oauth2_builtin_app_code(serializer_class, a
 
 
 @pytest.mark.parametrize("app_code", ["public", "personal"])
+def test_sync_revoke_serializer_rejects_oauth2_builtin_app_code(app_code):
+    field = sync_serializers.GatewayAppPermissionRevokeInputSLZ().fields["target_app_codes"]
+
+    with pytest.raises(ValidationError):
+        field.run_validation(["exist-app", app_code])
+
+
+@pytest.mark.parametrize("app_code", ["public", "personal"])
 def test_mcp_permission_serializer_allows_oauth2_builtin_app_code(app_code):
     field = open_serializers.MCPServerAppPermissionApplyCreateInputSLZ().fields["bk_app_code"]
 

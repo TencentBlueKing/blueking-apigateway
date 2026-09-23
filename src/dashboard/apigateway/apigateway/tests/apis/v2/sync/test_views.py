@@ -2166,3 +2166,56 @@ class TestGatewayAppPermissionGrantApi:
             content_type="application/json",
         )
         assert resp.status_code == 400
+
+
+class TestGatewayAppPermissionRevokeApi:
+    """测试 v2_sync_revoke_permission 接口"""
+
+    def test_revoke_gateway_permission(self, request_view, fake_gateway, fake_resource, disable_app_permission):
+        for bk_app_code in ["app1", "app2", "app3"]:
+            G(AppGatewayPermission, gateway=fake_gateway, bk_app_code=bk_app_code)
+        another_gateway = G(Gateway)
+        G(AppGatewayPermission, gateway=another_gateway, bk_app_code="app1")
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=fake_resource.id)
+
+        resp = request_view(
+            method="DELETE",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.revoke",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"target_app_codes": ["app1", "app2"], "grant_dimension": "gateway"},
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {"data": None}
+        assert list(
+            AppGatewayPermission.objects.filter(gateway=fake_gateway).values_list("bk_app_code", flat=True)
+        ) == ["app3"]
+        # 仅回收当前网关的按网关授权，不影响其它网关及按资源授权
+        assert AppGatewayPermission.objects.filter(gateway=another_gateway, bk_app_code="app1").exists()
+        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"target_app_codes": [], "grant_dimension": "gateway"},
+            {"target_app_codes": ["app1"], "grant_dimension": "api"},
+            {"target_app_codes": ["app1"], "grant_dimension": "resource"},
+            {"target_app_codes": ["app1"]},
+        ],
+    )
+    def test_revoke_invalid_params(self, request_view, fake_gateway, disable_app_permission, data):
+        G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="app1")
+
+        resp = request_view(
+            method="DELETE",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.revoke",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 400
+        assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
