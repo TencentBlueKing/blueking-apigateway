@@ -22,6 +22,7 @@ import json
 import pytest
 from dateutil.tz import tzutc
 from django.http import Http404
+from django.utils import timezone
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.release import serializers
@@ -252,3 +253,12 @@ class TestPublishEventQueryOutputSLZ:
         )
 
         assert slz_data_json == expected_data_json
+
+
+@pytest.mark.parametrize("age_seconds, expected", [(0, "pending"), (600, "pending"), (601, "failure")])
+def test_history_without_events_expires(fake_release_history, mocker, age_seconds, expected):
+    now = timezone.now()
+    mocker.patch("django.utils.timezone.now", return_value=now)
+    fake_release_history.created_time = now - datetime.timedelta(seconds=age_seconds)
+    slz = ReleaseHistoryOutputSLZ(fake_release_history, context={"release_history_events_map": {}})
+    assert slz.data["status"] == expected

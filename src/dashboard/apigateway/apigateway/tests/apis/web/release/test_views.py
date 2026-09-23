@@ -18,6 +18,7 @@
 #
 import datetime
 import json
+from datetime import timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -386,3 +387,37 @@ class TestReleaseHistoryEventsRetrieveAPI:
         assert resp.status_code == 200
         assert result["data"]["stage"] == {"id": stage.id, "name": stage.name}
         assert result["data"]["resource_version_display"] == resource_version.object_display
+
+
+@pytest.mark.parametrize("age_seconds, allowed", [(60, False), (601, True)])
+def test_release_entry_after_missing_events_timeout(
+    request_view,
+    fake_admin_user,
+    fake_gateway,
+    fake_stage,
+    fake_resource_version,
+    fake_release_history,
+    mocker,
+    age_seconds,
+    allowed,
+):
+    ReleaseHistory.objects.filter(pk=fake_release_history.pk).update(
+        created_time=now_datetime() - timedelta(seconds=age_seconds)
+    )
+    mocker.patch("apigateway.apis.web.release.views.Lock", return_value=MagicMock())
+    # Only the actual distribution is replaced; the status query and API gate are real.
+    release = mocker.patch(
+        "apigateway.apis.web.release.views.release_biz.release_gateway", return_value=fake_release_history
+    )
+    response = request_view(
+        method="POST",
+        view_name="gateway.release.create",
+        gateway=fake_gateway,
+        path_params={"gateway_id": fake_gateway.id},
+        data={"stage_id": fake_stage.id, "resource_version_id": fake_resource_version.id},
+        user=fake_admin_user,
+    )
+    assert response.status_code == (200 if allowed else 400)
+    assert release.call_count == int(allowed)
+    if not allowed:
+        assert response.json()["error"]["code"] == "FAILED_PRECONDITION"
