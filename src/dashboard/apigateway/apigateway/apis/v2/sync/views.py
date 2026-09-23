@@ -30,7 +30,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
-from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
+from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
@@ -477,10 +477,20 @@ class GatewayAppPermissionRevokeApi(generics.DestroyAPIView):
         data = slz.validated_data
 
         permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
-        permission_model.objects.filter(
+        queryset = permission_model.objects.filter(
             gateway=request.gateway,
             bk_app_code__in=data["target_app_codes"],
-        ).delete()
+        )
+        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
+            # 与授权接口一致，忽略不存在的资源名称，重复回收时结果不变
+            resource_ids = list(
+                Resource.objects.filter(gateway=request.gateway, name__in=data["resource_names"]).values_list(
+                    "id", flat=True
+                )
+            )
+            queryset = queryset.filter(resource_id__in=resource_ids)
+
+        queryset.delete()
 
         # 不返回 204：SDK(bkapi-client-core) 会解析响应体，空响应体会导致调用失败
         return OKJsonResponse()

@@ -5701,7 +5701,11 @@ paths:
   /api/v2/sync/gateways/{gateway_name}/permissions/revoke/:
     delete:
       operationId: v2_sync_revoke_permission
-      description: 回收应用访问网关 API 的权限，目前仅支持按网关维度回收
+      description: |
+        回收应用访问网关 API 的权限，支持按网关维度或按资源维度回收。
+
+        - grant_dimension 为 gateway 时，回收应用在当前网关下按网关维度授予的权限，不影响按资源授予的权限。
+        - grant_dimension 为 resource 时，仅回收 resource_names 指定资源的权限，不存在的资源名称会被忽略。
       tags:
         - v2_sync
       parameters:
@@ -5730,13 +5734,29 @@ paths:
                   example: ["bk-sops"]
                 grant_dimension:
                   type: string
-                  description: 授权维度，可选值：gateway(按网关授权)
+                  description: 授权维度。gateway - 按网关回收；resource - 按资源回收
                   enum:
                     - gateway
+                    - resource
                   example: gateway
-            example:
-              target_app_codes: ["bk-sops"]
-              grant_dimension: gateway
+                resource_names:
+                  type: array
+                  items:
+                    type: string
+                  description: 资源名称列表，grant_dimension 为 resource 时必填
+                  example: ["get_user", "create_user"]
+            examples:
+              gateway_revoke:
+                summary: 按网关维度回收
+                value:
+                  target_app_codes: ["bk-sops"]
+                  grant_dimension: gateway
+              resource_revoke:
+                summary: 按资源维度回收
+                value:
+                  target_app_codes: ["bk-sops"]
+                  grant_dimension: resource
+                  resource_names: ["get_user", "create_user"]
       responses:
         '200':
           description: 成功回收

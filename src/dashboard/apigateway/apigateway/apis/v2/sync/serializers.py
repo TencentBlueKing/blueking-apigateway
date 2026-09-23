@@ -726,7 +726,12 @@ class GatewayAppPermissionRevokeInputSLZ(serializers.Serializer):
         allow_empty=False,
         validators=[UserManagedBKAppCodeListValidator()],
     )
-    grant_dimension = serializers.ChoiceField(choices=[FormattedGrantDimensionEnum.GATEWAY.value])
+    grant_dimension = serializers.ChoiceField(
+        choices=[FormattedGrantDimensionEnum.GATEWAY.value, FormattedGrantDimensionEnum.RESOURCE.value]
+    )
+    resource_names = serializers.ListField(
+        child=serializers.CharField(required=True), allow_empty=True, required=False
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAppPermissionRevokeInputSLZ"
@@ -736,6 +741,13 @@ class GatewayAppPermissionRevokeInputSLZ(serializers.Serializer):
         if value == FormattedGrantDimensionEnum.GATEWAY.value:
             return GrantDimensionEnum.API.value
         return value
+
+    def validate(self, data):
+        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value and not data.get("resource_names"):
+            raise serializers.ValidationError(
+                {"resource_names": _("按资源回收权限时，参数 resource_names 不能为空。")}
+            )
+        return data
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):

@@ -55,7 +55,7 @@ def test_sync_api_response_status_schema_matches_runtime(document):
 def test_sync_permission_revoke_schema_has_delete_request_body(document):
     path = "/api/v2/sync/gateways/{gateway_name}/permissions/revoke/"
     request = document["paths"][path]["delete"]["requestBody"]["content"]["application/json"]["schema"]
-    assert set(resolve(document, request)["properties"]) == {"target_app_codes", "grant_dimension"}
+    assert set(resolve(document, request)["properties"]) == {"target_app_codes", "grant_dimension", "resource_names"}
 
 
 def test_sdk_generate_schema_matches_runtime_payload(document):

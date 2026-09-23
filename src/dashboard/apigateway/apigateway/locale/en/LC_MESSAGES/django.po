@@ -167,6 +167,10 @@ msgstr "Only gateways whose names start with '{prefix}' can be operated on. Curr
 msgid "按资源申请权限时，参数 resource_names 不能为空。"
 msgstr "When applying for permission by resource, resource_names cannot be empty."
 
+#: apigateway/apis/v2/sync/serializers.py
+msgid "按资源回收权限时，参数 resource_names 不能为空。"
+msgstr "When revoking permission by resource, resource_names cannot be empty."
+
 #: apigateway/apis/v2/open/serializers.py:178
 #, fuzzy, python-brace-format
 #| msgid "资源不存在，id={ids}"

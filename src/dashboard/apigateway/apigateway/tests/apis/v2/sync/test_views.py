@@ -2196,17 +2196,75 @@ class TestGatewayAppPermissionRevokeApi:
         assert AppGatewayPermission.objects.filter(gateway=another_gateway, bk_app_code="app1").exists()
         assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
 
+    def test_revoke_resource_permission(self, request_view, fake_gateway, fake_resource, disable_app_permission):
+        another_resource = G(Resource, gateway=fake_gateway, name="another_resource")
+        for bk_app_code in ["app1", "app2", "app3"]:
+            G(AppResourcePermission, gateway=fake_gateway, bk_app_code=bk_app_code, resource_id=fake_resource.id)
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=another_resource.id)
+        G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="app1")
+        another_gateway = G(Gateway)
+        same_name_resource = G(Resource, gateway=another_gateway, name=fake_resource.name)
+        G(AppResourcePermission, gateway=another_gateway, bk_app_code="app1", resource_id=same_name_resource.id)
+
+        resp = request_view(
+            method="DELETE",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.revoke",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "target_app_codes": ["app1", "app2"],
+                "grant_dimension": "resource",
+                # 不存在的资源名称会被忽略
+                "resource_names": [fake_resource.name, "not_exist_resource"],
+            },
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {"data": None}
+        assert list(
+            AppResourcePermission.objects.filter(gateway=fake_gateway, resource_id=fake_resource.id).values_list(
+                "bk_app_code", flat=True
+            )
+        ) == ["app3"]
+        # 仅回收指定资源的权限，不影响其它资源、按网关授权及其它网关
+        assert AppResourcePermission.objects.filter(
+            gateway=fake_gateway, bk_app_code="app1", resource_id=another_resource.id
+        ).exists()
+        assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+        assert AppResourcePermission.objects.filter(gateway=another_gateway, bk_app_code="app1").exists()
+
+    def test_revoke_resource_permission_with_not_exist_resource_names(
+        self, request_view, fake_gateway, fake_resource, disable_app_permission
+    ):
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=fake_resource.id)
+
+        resp = request_view(
+            method="DELETE",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.revoke",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"target_app_codes": ["app1"], "grant_dimension": "resource", "resource_names": ["not_exist"]},
+            content_type="application/json",
+        )
+
+        # 资源名称均不存在时不回收任何权限，避免误删该应用的全部资源权限
+        assert resp.status_code == 200
+        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+
     @pytest.mark.parametrize(
         "data",
         [
             {"target_app_codes": [], "grant_dimension": "gateway"},
             {"target_app_codes": ["app1"], "grant_dimension": "api"},
             {"target_app_codes": ["app1"], "grant_dimension": "resource"},
+            {"target_app_codes": ["app1"], "grant_dimension": "resource", "resource_names": []},
             {"target_app_codes": ["app1"]},
         ],
     )
-    def test_revoke_invalid_params(self, request_view, fake_gateway, disable_app_permission, data):
+    def test_revoke_invalid_params(self, request_view, fake_gateway, fake_resource, disable_app_permission, data):
         G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="app1")
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=fake_resource.id)
 
         resp = request_view(
             method="DELETE",
@@ -2219,3 +2277,4 @@ class TestGatewayAppPermissionRevokeApi:
 
         assert resp.status_code == 400
         assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
