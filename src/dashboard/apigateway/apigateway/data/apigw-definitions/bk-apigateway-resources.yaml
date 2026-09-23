@@ -5252,12 +5252,8 @@ paths:
                   example: true
                 is_official:
                   type: boolean
-                  description: 是否为官方网关；与 api_type 同时传入时以此字段为准；新建时默认 false，更新时不传则保留原值
+                  description: 是否为官方网关；新建时默认 false，更新时不传则保留原值
                   example: false
-                api_type:
-                  type: integer
-                  enum: [1, 10]
-                  description: 旧版兼容字段；1 为官方网关，10 为普通网关
                 kind:
                   type: string
                   enum:
