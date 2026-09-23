@@ -20,7 +20,6 @@ from django.utils.decorators import method_decorator
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum
@@ -57,6 +56,7 @@ from .serializers import (
     WorkbenchMCPPermissionApplyOutputSLZ,
     WorkbenchMCPPermissionHandledOutputSLZ,
     WorkbenchMCPServerFilterOptionSLZ,
+    WorkbenchPermissionOperateInputSLZ,
 )
 
 
@@ -424,10 +424,12 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyGatewayPermissionCancelApi(WorkbenchPermissionMixin, APIView):
+class WorkbenchMyApplyGatewayPermissionCancelApi(WorkbenchPermissionMixin, generics.CreateAPIView):
     """取消当前用户提交的待审批 API 网关权限申请"""
 
-    def post(self, request, apply_id: int, *args, **kwargs):
+    serializer_class = WorkbenchPermissionOperateInputSLZ
+
+    def create(self, request, apply_id: int, *args, **kwargs):
         WorkbenchPermissionHandler.cancel_gateway_permission_apply(
             apply_id=apply_id,
             username=request.user.username,
@@ -511,10 +513,12 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyMCPPermissionCancelApi(WorkbenchPermissionMixin, APIView):
+class WorkbenchMyApplyMCPPermissionCancelApi(WorkbenchPermissionMixin, generics.CreateAPIView):
     """取消当前用户提交的待审批 MCP Server 权限申请"""
 
-    def post(self, request, apply_id: int, *args, **kwargs):
+    serializer_class = WorkbenchPermissionOperateInputSLZ
+
+    def create(self, request, apply_id: int, *args, **kwargs):
         WorkbenchPermissionHandler.cancel_mcp_permission_apply(
             apply_id=apply_id,
             username=request.user.username,

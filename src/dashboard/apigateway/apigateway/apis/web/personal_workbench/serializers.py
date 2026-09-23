@@ -33,6 +33,14 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 from .constants import WorkbenchFilterTypeEnum
 
+
+class WorkbenchPermissionOperateInputSLZ(serializers.Serializer):
+    """个人工作台权限申请操作无请求参数。"""
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchPermissionOperateInputSLZ"
+
+
 # ========== 下拉筛选项序列化器 ==========
 
 
