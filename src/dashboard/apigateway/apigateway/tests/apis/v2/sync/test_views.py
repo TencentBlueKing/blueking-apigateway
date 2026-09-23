@@ -34,7 +34,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, GatewayTypeEnum, ResourceKindEnum
 from apigateway.core.models import (
     Backend,
     BackendConfig,
@@ -541,6 +541,80 @@ class TestSyncApi:
         assert response.status_code == 200, response.json()
         assert response.json()["data"]["kind"] == "ai"
         assert Gateway.objects.get(name=gateway_name).kind == GatewayKindEnum.AI.value
+
+    @pytest.mark.parametrize(
+        ("data", "expected_is_official", "expected_api_type"),
+        [
+            ({"api_type": 1}, True, 1),
+            ({"is_official": True}, True, 1),
+            ({"is_official": False}, False, 10),
+            ({"api_type": 10, "is_official": True}, True, 1),
+            ({"api_type": 1, "is_official": False}, False, 10),
+        ],
+    )
+    def test_gateway_syncs_is_official_and_auth_api_type(
+        self,
+        mocker,
+        request_view,
+        unique_gateway_name,
+        disable_app_permission,
+        default_data_plane,
+        data,
+        expected_is_official,
+        expected_api_type,
+    ):
+        gateway_name = f"bk-{unique_gateway_name}" if expected_is_official else unique_gateway_name
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data=data,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        gateway = Gateway.objects.get(name=gateway_name)
+        assert gateway.is_official is expected_is_official
+        assert GatewayHandler.get_gateway_auth_config(gateway.id)["api_type"] == expected_api_type
+
+    @pytest.mark.parametrize(
+        ("data", "expected_is_official", "expected_api_type"),
+        [
+            ({"description": "updated"}, True, 0),
+            ({"is_official": False}, False, 10),
+        ],
+    )
+    def test_gateway_sync_preserves_super_official_type_without_new_field(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        disable_app_permission,
+        default_data_plane,
+        data,
+        expected_is_official,
+        expected_api_type,
+    ):
+        fake_gateway.name = "bk-test"
+        fake_gateway.is_official = True
+        fake_gateway.save(update_fields=["name", "is_official"])
+        GatewayHandler.save_auth_config(
+            fake_gateway.id, user_auth_type="default", api_type=GatewayTypeEnum.SUPER_OFFICIAL_API
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.is_official is expected_is_official
+        assert GatewayHandler.get_gateway_auth_config(fake_gateway.id)["api_type"] == expected_api_type
 
     def test_gateway_sync_ai_gateway_rejects_older_default_data_plane(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane

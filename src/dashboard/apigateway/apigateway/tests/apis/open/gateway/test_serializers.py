@@ -21,7 +21,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.gateway import serializers
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, GatewayTypeEnum
 from apigateway.service.contexts import GatewayAuthContext
 
 
@@ -144,6 +144,23 @@ class TestGatewayRetrieveV1OutputSLZ:
 
 
 class TestGatewaySyncInputSLZ:
+    @pytest.mark.parametrize(
+        ("data", "expected_gateway_type"),
+        [
+            ({"name": "bk-test", "is_official": True}, GatewayTypeEnum.OFFICIAL_API.value),
+            ({"name": "test", "is_official": False}, GatewayTypeEnum.CLOUDS_API.value),
+            ({"name": "bk-test", "api_type": 10, "is_official": True}, GatewayTypeEnum.OFFICIAL_API.value),
+            ({"name": "test", "api_type": 1, "is_official": False}, GatewayTypeEnum.CLOUDS_API.value),
+        ],
+    )
+    def test_is_official_takes_precedence_over_api_type(self, data, expected_gateway_type):
+        slz = serializers.GatewaySyncInputSLZ(data=data)
+
+        slz.is_valid(raise_exception=True)
+
+        assert slz.validated_data["gateway_type"] == expected_gateway_type
+        assert "is_official" not in slz.validated_data
+
     def test_maps_ai_kind(self):
         slz = serializers.GatewaySyncInputSLZ(data={"name": "bkai-gateway", "kind": "ai"})
 

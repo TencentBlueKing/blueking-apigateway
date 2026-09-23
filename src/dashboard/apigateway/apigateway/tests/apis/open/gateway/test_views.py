@@ -162,6 +162,41 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
+    @pytest.mark.parametrize(
+        ("data", "expected_is_official", "expected_api_type"),
+        [
+            ({"api_type": 1}, True, 1),
+            ({"is_official": True}, True, 1),
+            ({"is_official": False}, False, 10),
+            ({"api_type": 10, "is_official": True}, True, 1),
+            ({"api_type": 1, "is_official": False}, False, 10),
+        ],
+    )
+    def test_post_syncs_is_official_and_auth_api_type(
+        self,
+        mocker,
+        request_view,
+        unique_gateway_name,
+        disable_app_permission,
+        default_data_plane,
+        data,
+        expected_is_official,
+        expected_api_type,
+    ):
+        gateway_name = f"bk-{unique_gateway_name}" if expected_is_official else unique_gateway_name
+        response = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data=data,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        gateway = Gateway.objects.get(name=gateway_name)
+        assert gateway.is_official is expected_is_official
+        assert GatewayHandler.get_gateway_auth_config(gateway.id)["api_type"] == expected_api_type
+
     def test_post_creates_ai_gateway(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
     ):

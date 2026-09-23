@@ -96,6 +96,23 @@ def test_gateway_sync_input_maps_ai_kind():
 
 class TestGatewaySyncInputSLZ:
     @pytest.mark.parametrize(
+        ("data", "expected_gateway_type"),
+        [
+            ({"name": "bk-test", "is_official": True}, GatewayTypeEnum.OFFICIAL_API.value),
+            ({"name": "test", "is_official": False}, GatewayTypeEnum.CLOUDS_API.value),
+            ({"name": "bk-test", "api_type": 10, "is_official": True}, GatewayTypeEnum.OFFICIAL_API.value),
+            ({"name": "test", "api_type": 1, "is_official": False}, GatewayTypeEnum.CLOUDS_API.value),
+        ],
+    )
+    def test_is_official_takes_precedence_over_api_type(self, data, expected_gateway_type):
+        slz = GatewaySyncInputSLZ(data=data)
+
+        slz.is_valid(raise_exception=True)
+
+        assert slz.validated_data["gateway_type"] == expected_gateway_type
+        assert "is_official" not in slz.validated_data
+
+    @pytest.mark.parametrize(
         ("data", "is_valid"),
         [
             ({"name": "bkai-gateway", "kind": "ai"}, True),

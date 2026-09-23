@@ -131,6 +131,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     api_type = serializers.ChoiceField(
         choices=[GatewayTypeEnum.OFFICIAL_API.value, GatewayTypeEnum.CLOUDS_API.value], required=False
     )
+    is_official = serializers.BooleanField(required=False)
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
     kind = serializers.ChoiceField(
@@ -158,6 +159,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "status",
             "is_public",
             "api_type",
+            "is_official",
             "user_config",
             "allow_delete_sensitive_params",
             "data_planes",
@@ -173,14 +175,18 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     def validate(self, data):
         kind = convert_gateway_kind_name_to_value(data["kind"])
         effective_kind = self.instance.kind if self.instance else kind
-        self._validate_name(data["name"], data.get("api_type"), effective_kind)
+        is_official = data.pop("is_official", None)
+        api_type = data.pop("api_type", None)
+        if is_official is not None:
+            api_type = GatewayTypeEnum.OFFICIAL_API.value if is_official else GatewayTypeEnum.CLOUDS_API.value
+        self._validate_name(data["name"], api_type, effective_kind)
         if "maintainers" in data and not data["maintainers"]:
             raise serializers.ValidationError({"maintainers": _("网关至少需要保留一个管理员。")})
 
         if self.instance is None:
             validate_gateway_name_kind(data["name"], kind)
 
-        data["gateway_type"] = data.pop("api_type", None)
+        data["gateway_type"] = api_type
         data["kind"] = kind
 
         return data
