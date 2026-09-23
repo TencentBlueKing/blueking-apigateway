@@ -20,6 +20,7 @@ from django.utils.decorators import method_decorator
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum
@@ -423,7 +424,7 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyGatewayPermissionCancelApi(WorkbenchPermissionMixin, generics.GenericAPIView):
+class WorkbenchMyApplyGatewayPermissionCancelApi(WorkbenchPermissionMixin, APIView):
     """取消当前用户提交的待审批 API 网关权限申请"""
 
     def post(self, request, apply_id: int, *args, **kwargs):
@@ -443,10 +444,10 @@ class WorkbenchMyApplyGatewayPermissionCancelApi(WorkbenchPermissionMixin, gener
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyGatewayPermissionDestroyApi(WorkbenchPermissionMixin, generics.GenericAPIView):
+class WorkbenchMyApplyGatewayPermissionDestroyApi(WorkbenchPermissionMixin, generics.DestroyAPIView):
     """删除当前用户已取消的 API 网关权限申请"""
 
-    def delete(self, request, apply_id: int, *args, **kwargs):
+    def destroy(self, request, apply_id: int, *args, **kwargs):
         WorkbenchPermissionHandler.delete_gateway_permission_apply(
             apply_id=apply_id,
             username=request.user.username,
@@ -510,7 +511,7 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyMCPPermissionCancelApi(WorkbenchPermissionMixin, generics.GenericAPIView):
+class WorkbenchMyApplyMCPPermissionCancelApi(WorkbenchPermissionMixin, APIView):
     """取消当前用户提交的待审批 MCP Server 权限申请"""
 
     def post(self, request, apply_id: int, *args, **kwargs):
@@ -530,10 +531,10 @@ class WorkbenchMyApplyMCPPermissionCancelApi(WorkbenchPermissionMixin, generics.
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyMCPPermissionDestroyApi(WorkbenchPermissionMixin, generics.GenericAPIView):
+class WorkbenchMyApplyMCPPermissionDestroyApi(WorkbenchPermissionMixin, generics.DestroyAPIView):
     """删除当前用户已取消的 MCP Server 权限申请"""
 
-    def delete(self, request, apply_id: int, *args, **kwargs):
+    def destroy(self, request, apply_id: int, *args, **kwargs):
         WorkbenchPermissionHandler.delete_mcp_permission_apply(
             apply_id=apply_id,
             username=request.user.username,

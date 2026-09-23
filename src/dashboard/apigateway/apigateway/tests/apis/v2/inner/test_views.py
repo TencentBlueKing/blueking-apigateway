@@ -58,6 +58,30 @@ from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
+class TestPermissionApplyRecordOperateInputSLZ:
+    @pytest.mark.parametrize("operated_by", ["", " ", "a" * 33])
+    def test_rejects_invalid_operated_by(self, operated_by):
+        slz = inner_serializers.PermissionApplyRecordOperateInputSLZ(
+            data={
+                "target_app_code": "test-app",
+                "operated_by": operated_by,
+            }
+        )
+
+        assert not slz.is_valid()
+        assert "operated_by" in slz.errors
+
+    def test_accepts_operated_by_at_max_length(self):
+        slz = inner_serializers.PermissionApplyRecordOperateInputSLZ(
+            data={
+                "target_app_code": "test-app",
+                "operated_by": "a" * 32,
+            }
+        )
+
+        assert slz.is_valid(), slz.errors
+
+
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
         fake_gateway.kind = GatewayKindEnum.AI.value

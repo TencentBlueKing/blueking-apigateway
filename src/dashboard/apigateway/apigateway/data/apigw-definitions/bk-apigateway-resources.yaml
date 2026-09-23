@@ -7031,7 +7031,8 @@ paths:
           required: true
           schema:
             type: string
-          description: 操作人
+            maxLength: 32
+          description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
       responses:
         '204':
           description: 删除成功
@@ -7080,7 +7081,8 @@ paths:
                   description: 申请权限的应用
                 operated_by:
                   type: string
-                  description: 操作人
+                  maxLength: 32
+                  description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
       responses:
         '204':
           description: 取消成功
@@ -7994,7 +7996,8 @@ paths:
           required: true
           schema:
             type: string
-          description: 操作人
+            maxLength: 32
+          description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
       responses:
         '204':
           description: 删除成功
@@ -8043,7 +8046,8 @@ paths:
                   description: 申请权限的应用
                 operated_by:
                   type: string
-                  description: 操作人
+                  maxLength: 32
+                  description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
       responses:
         '204':
           description: 取消成功

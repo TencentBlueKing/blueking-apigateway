@@ -144,6 +144,7 @@ urlpatterns = [
                                 name="openapi.v2.inner.permission.apply-records",
                             ),
                             # GET /api/v2/inner/gateways/permissions/apply-records/{record_id}/
+                            # DELETE /api/v2/inner/gateways/permissions/apply-records/{record_id}/
                             path(
                                 "apply-records/<int:record_id>/",
                                 views.AppPermissionRecordRetrieveDestroyApi.as_view(),
@@ -207,6 +208,7 @@ urlpatterns = [
                     name="openapi.v2.inner.mcp_server.permission.apply-records",
                 ),
                 # GET /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+                # DELETE /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
                 path(
                     "apply-records/<int:record_id>/",
                     views.MCPServerAppPermissionRecordRetrieveDestroyApi.as_view(),
