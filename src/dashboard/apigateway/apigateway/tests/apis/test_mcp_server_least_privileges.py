@@ -140,6 +140,8 @@ def test_list_urls_do_not_depend_on_page_size(request_view, fake_gateway, mixed_
         assert resp.status_code == 200, resp.json()
         results.append({row["id"]: row["url"] for row in resp.json()["data"]["results"]})
     assert len(results[0]) == 2
+    assert len(results[1]) == len(results[2]) == 1
+    assert results[1].keys().isdisjoint(results[2])
     assert results[0] == results[1] | results[2]
 
 

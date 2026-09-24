@@ -1217,33 +1217,32 @@ class MCPServerHandler:
         if releases is None:
             releases = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
 
-        # 每个 Server 独立保存工具集合
-        server_tool_names: Dict[int, List[str]] = {}
-        for mcp_server in mcp_servers:
-            server_tool_names[mcp_server.id] = mcp_server.resource_names
+        # 每个 Release 只解析一次，供共享环境的 Server 复用资源认证信息
+        release_resource_auth: Dict[Tuple[int, int], Dict[str, bool]] = {}
+        for key, release in releases.items():
+            resource_auth: Dict[str, bool] = {}
+            for resource in release.resource_version.data:
+                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
+                resource_auth[resource["name"]] = not auth_config.get("skip_auth_verification", False) and bool(
+                    auth_config.get("auth_verified_required", False)
+                )
+            release_resource_auth[key] = resource_auth
 
         least_privileges: Dict[int, str] = {}
         # 共享 Release，但按 Server 独立计算最低权限
         for mcp_server in mcp_servers:
             gateway_stage_key = (mcp_server.gateway_id, mcp_server.stage_id)
-            release = releases.get(gateway_stage_key)
-            if not release:
+            server_resource_auth = release_resource_auth.get(gateway_stage_key)
+            if server_resource_auth is None:
                 least_privileges[mcp_server.id] = ""
                 continue
 
-            tool_names = server_tool_names.get(mcp_server.id, [])
-            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
-            for resource in release.resource_version.data:
-                if resource["name"] not in tool_names:
-                    continue
-                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
-                verified_user_required = not auth_config.get("skip_auth_verification", False) and bool(
-                    auth_config.get("auth_verified_required", False)
-                )
-                if verified_user_required:
-                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
-                    break
-            least_privileges[mcp_server.id] = least_privilege
+            verified_user_required = any(server_resource_auth.get(name, False) for name in mcp_server.resource_names)
+            least_privileges[mcp_server.id] = (
+                MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                if verified_user_required
+                else MCPServerLeastPrivilegeEnum.APPLICATION.value
+            )
 
         return least_privileges
 

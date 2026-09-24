@@ -1269,6 +1269,40 @@ class TestMCPServerHandler:
         key = mcp_server.id
         assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
 
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_get_least_privileges_by_server_parses_each_release_once(self, fake_gateway, fake_stage, mocker, reverse):
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": True},
+            ],
+        )
+        other_rv = self._make_resource_version_with_data(
+            fake_gateway, [{"name": "tool_a", "auth_verified_required": True}]
+        )
+        other_stage = G(Stage, gateway=fake_gateway)
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+        G(Release, gateway=fake_gateway, stage=other_stage, resource_version=other_rv)
+        app_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+        user_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_b")
+        other_server = G(MCPServer, gateway=fake_gateway, stage=other_stage, _resource_names="tool_a")
+        servers = [app_server, user_server, app_server, other_server]
+        if reverse:
+            servers.reverse()
+        releases = MCPServerHandler._get_releases_for_mcp_servers(servers)
+        loads = mocker.patch("apigateway.core.models.json.loads", wraps=json.loads)
+
+        result = MCPServerHandler.get_least_privileges_by_server(servers, releases=releases)
+
+        assert result == {
+            app_server.id: MCPServerLeastPrivilegeEnum.APPLICATION.value,
+            user_server.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+            other_server.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+        }
+        assert loads.call_args_list.count(mocker.call(rv._data)) == 1
+        assert loads.call_args_list.count(mocker.call(other_rv._data)) == 1
+
     def test_shared_releases_between_risks_and_privileges(self, fake_gateway, fake_stage):
         """验证同一份 releases 可同时传给 get_app_permission_risks 和 get_least_privileges_by_server"""
         rv = self._make_resource_version_with_data(
