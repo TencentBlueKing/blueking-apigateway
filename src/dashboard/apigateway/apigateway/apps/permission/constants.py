@@ -92,6 +92,13 @@ class FormattedGrantDimensionEnum(StructuredEnum):
     MCP_SERVER = EnumField("mcp_server", label=_("MCPServer"))
 
 
+# v2 api 对外的授权维度 -> db 中使用的授权维度
+FORMATTED_TO_DB_GRANT_DIMENSION = {
+    FormattedGrantDimensionEnum.GATEWAY.value: GrantDimensionEnum.API.value,
+    FormattedGrantDimensionEnum.RESOURCE.value: GrantDimensionEnum.RESOURCE.value,
+}
+
+
 # 默认的权限有效期天数
 DEFAULT_PERMISSION_EXPIRE_DAYS = 180
 # 可续期的过期天数，权限有效期小于此值，允许续期，否则，不允许

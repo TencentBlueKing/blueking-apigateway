@@ -31,7 +31,11 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
-from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
+from apigateway.apps.permission.constants import (
+    FORMATTED_TO_DB_GRANT_DIMENSION,
+    FormattedGrantDimensionEnum,
+    GrantDimensionEnum,
+)
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler, StageSyncHandler
@@ -44,6 +48,7 @@ from apigateway.biz.validators import (
     SchemeHostInputValidator,
     StageVarsValidator,
     UpstreamValidator,
+    UserManagedBKAppCodeListValidator,
     UserManagedBKAppCodeValidator,
 )
 from apigateway.common.constants import (
@@ -712,9 +717,36 @@ class GatewayAppPermissionGrantInputSLZ(serializers.Serializer):
 
     def validate_grant_dimension(self, value: str) -> str:
         """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
-        if value == FormattedGrantDimensionEnum.GATEWAY.value:
-            return GrantDimensionEnum.API.value
-        return value
+        return FORMATTED_TO_DB_GRANT_DIMENSION.get(value, value)
+
+
+class GatewayAppPermissionRevokeInputSLZ(serializers.Serializer):
+    """网关关联应用，回收应用访问网关 API 的权限"""
+
+    target_app_codes = serializers.ListField(
+        child=serializers.CharField(max_length=32),
+        allow_empty=False,
+        max_length=100,
+        validators=[UserManagedBKAppCodeListValidator()],
+    )
+    grant_dimension = serializers.ChoiceField(
+        choices=[FormattedGrantDimensionEnum.GATEWAY.value, FormattedGrantDimensionEnum.RESOURCE.value]
+    )
+    resource_names = serializers.ListField(child=serializers.CharField(), required=False, max_length=100)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.GatewayAppPermissionRevokeInputSLZ"
+
+    def validate_grant_dimension(self, value: str) -> str:
+        """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
+        return FORMATTED_TO_DB_GRANT_DIMENSION.get(value, value)
+
+    def validate(self, data):
+        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value and not data.get("resource_names"):
+            raise serializers.ValidationError(
+                {"resource_names": _("按资源回收权限时，参数 resource_names 不能为空。")}
+            )
+        return data
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):

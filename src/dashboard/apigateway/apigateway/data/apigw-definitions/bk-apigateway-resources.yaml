@@ -5698,6 +5698,99 @@ paths:
           resourcePermissionRequired: false
         descriptionEn: None
 
+  /api/v2/sync/gateways/{gateway_name}/permissions/revoke/:
+    delete:
+      operationId: v2_sync_revoke_permission
+      description: |
+        回收应用访问网关 API 的权限，支持按网关维度或按资源维度回收。
+
+        - grant_dimension 为 gateway 时，回收应用在当前网关下按网关维度授予的权限，以及由按网关权限同步生成的资源权限，不影响其它按资源授予的权限。
+        - grant_dimension 为 resource 时，仅回收 resource_names 指定资源的权限；资源名称会匹配当前资源及各环境已发布版本中的资源，不存在的资源名称会被忽略。
+        - OAuth2 内置应用 public、personal 的权限由系统管理，不支持回收。
+      tags:
+        - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_codes
+                - grant_dimension
+              properties:
+                target_app_codes:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                  description: 待回收权限的应用 bk_app_code 列表，最多 100 个；不支持 OAuth2 内置应用 public、personal
+                  example: ["bk-sops"]
+                grant_dimension:
+                  type: string
+                  description: 授权维度。gateway - 按网关回收；resource - 按资源回收
+                  enum:
+                    - gateway
+                    - resource
+                  example: gateway
+                resource_names:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                  description: 资源名称列表，最多 100 个，grant_dimension 为 resource 时必填
+                  example: ["get_user", "create_user"]
+            examples:
+              gateway_revoke:
+                summary: 按网关维度回收
+                value:
+                  target_app_codes: ["bk-sops"]
+                  grant_dimension: gateway
+              resource_revoke:
+                summary: 按资源维度回收
+                value:
+                  target_app_codes: ["bk-sops"]
+                  grant_dimension: resource
+                  resource_names: ["get_user", "create_user"]
+      responses:
+        '200':
+          description: 成功回收
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+              example:
+                data: null
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: delete
+          path: /backend/api/v2/sync/gateways/{gateway_name}/permissions/revoke/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: Revoke application gateway API access permission
+
   /api/v2/sync/gateways/{gateway_name}/resource_versions/:
     post:
       operationId: v2_sync_create_resource_version
