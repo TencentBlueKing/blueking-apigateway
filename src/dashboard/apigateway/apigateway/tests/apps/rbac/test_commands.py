@@ -433,6 +433,32 @@ def test_add_global_gateway_administrators_dry_run_only_plans_global_gateways(se
     assert f"gateway={single_gateway.id}:{single_gateway.name}" not in output.getvalue()
 
 
+@pytest.mark.parametrize("selector", ["id", "name"])
+def test_add_global_gateway_administrators_gateway_selector_limits_to_one_global_gateway(settings, mocker, selector):
+    _enable_iam(settings)
+    target_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    other_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    output = StringIO()
+
+    call_command(
+        "add_global_gateway_administrators",
+        username=["alice"],
+        gateway=str(target_gateway.id) if selector == "id" else target_gateway.name,
+        stdout=output,
+    )
+
+    assert f"gateway={target_gateway.id}:{target_gateway.name}" in output.getvalue()
+    assert f"gateway={other_gateway.id}:{other_gateway.name}" not in output.getvalue()
+
+
+def test_add_global_gateway_administrators_gateway_selector_rejects_non_global_gateway(settings):
+    _enable_iam(settings)
+    gateway = G(Gateway, tenant_mode="single", tenant_id="default")
+
+    with pytest.raises(CommandError, match=f"global 网关不存在: {gateway.id}"):
+        call_command("add_global_gateway_administrators", username=["alice"], gateway=str(gateway.id))
+
+
 def test_add_global_gateway_administrators_apply_processes_all_global_gateways(settings, mocker):
     _enable_iam(settings)
     active_gateway = G(Gateway, tenant_mode="global", tenant_id="", status=1)

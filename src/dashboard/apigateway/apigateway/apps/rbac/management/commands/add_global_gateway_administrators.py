@@ -42,6 +42,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
+            "--gateway",
+            help="指定网关 ID 或名称；不指定时处理全部 global 网关",
+        )
+        parser.add_argument(
             "--username",
             action="append",
             required=True,
@@ -58,7 +62,7 @@ class Command(BaseCommand):
         apply = options["apply"]
         iam_enabled = settings.BK_IAM_V4_ENABLED
         operator = self._resolve_operator(iam_enabled=iam_enabled) if apply else settings.GATEWAY_DEFAULT_CREATOR
-        gateways = self._list_gateways()
+        gateways = self._list_gateways(options["gateway"])
         if not gateways:
             self.stdout.write("no global gateways found; skipped")
             return
@@ -139,5 +143,21 @@ class Command(BaseCommand):
         except ValueError as err:
             raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员") from err
 
-    def _list_gateways(self) -> list[Gateway]:
-        return list(Gateway.objects.filter(tenant_mode=TenantModeEnum.GLOBAL.value).order_by("id"))
+    def _list_gateways(self, gateway_selector: str | None) -> list[Gateway]:
+        queryset = Gateway.objects.filter(tenant_mode=TenantModeEnum.GLOBAL.value).order_by("id")
+        if gateway_selector is None:
+            return list(queryset)
+
+        gateway_id = None
+        try:
+            parsed_gateway_id = int(gateway_selector)
+        except TypeError, ValueError:
+            pass
+        else:
+            gateway_id = queryset.filter(id=parsed_gateway_id).values_list("id", flat=True).first()
+        if gateway_id is None:
+            gateway_id = queryset.filter(name=gateway_selector).values_list("id", flat=True).first()
+        if gateway_id is None:
+            raise CommandError(f"global 网关不存在: {gateway_selector}")
+
+        return list(queryset.filter(id=gateway_id))
