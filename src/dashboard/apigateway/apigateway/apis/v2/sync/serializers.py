@@ -34,6 +34,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.biz.validators import (
     BKAppCodeListValidator,
@@ -123,6 +124,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     api_type = serializers.ChoiceField(
         choices=[GatewayTypeEnum.OFFICIAL_API.value, GatewayTypeEnum.CLOUDS_API.value], required=False
     )
+    is_official = serializers.BooleanField(required=False)
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
     kind = serializers.ChoiceField(
@@ -151,6 +153,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "status",
             "is_public",
             "api_type",
+            "is_official",
             "user_config",
             "allow_delete_sensitive_params",
             "data_planes",
@@ -165,12 +168,20 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     def validate(self, data):
         kind = convert_gateway_kind_name_to_value(data["kind"])
         effective_kind = self.instance.kind if self.instance else kind
-        self._validate_name(data["name"], data.get("api_type"), effective_kind)
+        is_official = data.pop("is_official", None)
+        api_type = data.pop("api_type", None)
+        if is_official is not None:
+            api_type = GatewayTypeEnum.OFFICIAL_API.value if is_official else GatewayTypeEnum.CLOUDS_API.value
+            if self.instance and GatewayHandler.get_gateway_auth_config(self.instance.id).get("api_type") == (
+                GatewayTypeEnum.SUPER_OFFICIAL_API.value
+            ):
+                api_type = GatewayTypeEnum.SUPER_OFFICIAL_API.value
+        self._validate_name(data["name"], api_type, effective_kind)
 
         if self.instance is None:
             validate_gateway_name_kind(data["name"], kind)
 
-        data["gateway_type"] = data.pop("api_type", None)
+        data["gateway_type"] = api_type
         data["kind"] = kind
 
         return data
@@ -192,9 +203,9 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
         raise serializers.ValidationError(
             {
-                "name": _("api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。").format(
-                    api_type=api_type, prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
-                )
+                "name": _("官方网关名 name 需以 {prefix} 开头。").format(
+                    prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
+                ),
             }
         )
 
@@ -203,6 +214,7 @@ class GatewaySyncOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
     kind = serializers.SerializerMethodField(help_text="网关类型")
+    is_official = serializers.BooleanField(read_only=True, help_text="是否为官方网关")
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)

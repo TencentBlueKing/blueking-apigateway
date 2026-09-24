@@ -21,7 +21,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.gateway import serializers
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, GatewayTypeEnum
 from apigateway.service.contexts import GatewayAuthContext
 
 
@@ -83,6 +83,7 @@ class TestGatewayListV1InputSLZ:
 
 class TestGatewayListV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
+        fake_gateway.is_official = True
         slz = serializers.GatewayListV1OutputSLZ(
             fake_gateway,
             context={
@@ -94,6 +95,7 @@ class TestGatewayListV1OutputSLZ:
         )
         assert slz.data
         assert isinstance(slz.data["api_type"], int)
+        assert slz.data["is_official"] is True
         assert isinstance(slz.data["user_auth_type"], str)
         assert slz.data["kind"] == "normal"
 
@@ -130,6 +132,7 @@ class TestGatewayListV1OutputSLZ:
 
 class TestGatewayRetrieveV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
+        fake_gateway.is_official = True
         slz = serializers.GatewayRetrieveV1OutputSLZ(
             fake_gateway,
             context={
@@ -140,10 +143,35 @@ class TestGatewayRetrieveV1OutputSLZ:
         )
         assert slz.data
         assert "api_type" not in slz.data
+        assert slz.data["is_official"] is True
         assert "user_auth_type" not in slz.data
 
 
 class TestGatewaySyncInputSLZ:
+    def test_official_name_error_uses_current_field(self):
+        slz = serializers.GatewaySyncInputSLZ(data={"name": "gateway", "is_official": True})
+
+        assert not slz.is_valid()
+        assert "官方网关" in str(slz.errors["name"][0])
+        assert "api_type" not in str(slz.errors["name"][0])
+
+    @pytest.mark.parametrize(
+        ("data", "expected_gateway_type"),
+        [
+            ({"name": "bk-test", "is_official": True}, GatewayTypeEnum.OFFICIAL_API.value),
+            ({"name": "test", "is_official": False}, GatewayTypeEnum.CLOUDS_API.value),
+            ({"name": "bk-test", "api_type": 10, "is_official": True}, GatewayTypeEnum.OFFICIAL_API.value),
+            ({"name": "test", "api_type": 1, "is_official": False}, GatewayTypeEnum.CLOUDS_API.value),
+        ],
+    )
+    def test_is_official_takes_precedence_over_api_type(self, data, expected_gateway_type):
+        slz = serializers.GatewaySyncInputSLZ(data=data)
+
+        slz.is_valid(raise_exception=True)
+
+        assert slz.validated_data["gateway_type"] == expected_gateway_type
+        assert "is_official" not in slz.validated_data
+
     def test_maps_ai_kind(self):
         slz = serializers.GatewaySyncInputSLZ(data={"name": "bkai-gateway", "kind": "ai"})
 

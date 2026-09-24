@@ -26,7 +26,7 @@ from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import GatewayKindEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.tests.utils.testing import get_response_json
@@ -56,6 +56,8 @@ class TestGatewayListApi:
         assert resp.status_code == 200
         assert result["code"] == 0
         assert len(result["data"]) >= 1
+        assert result["data"][0]["is_official"] is fake_gateway.is_official
+        assert isinstance(result["data"][0]["api_type"], int)
 
     def test_filter_list_queryset(self, fake_gateway):
         G(Release, gateway=fake_gateway)
@@ -133,6 +135,7 @@ class TestGatewayRetrieveApi:
         assert response.status_code == 200
         assert result["code"] == 0
         assert result["data"]
+        assert result["data"]["is_official"] is fake_gateway.is_official
 
 
 class TestGatewayPublicKeyRetrieveApi:
@@ -162,6 +165,75 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
+    @pytest.mark.parametrize("is_official", [True, False])
+    def test_post_preserves_super_official_type(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        disable_app_permission,
+        default_data_plane,
+        is_official,
+    ):
+        fake_gateway.name = "bk-test"
+        fake_gateway.is_official = True
+        fake_gateway.save(update_fields=["name", "is_official"])
+        GatewayHandler.save_auth_config(
+            fake_gateway.id, user_auth_type="default", api_type=GatewayTypeEnum.SUPER_OFFICIAL_API
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"is_official": is_official, "description": "updated"},
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["data"]["is_official"] is True
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.is_official is True
+        assert fake_gateway.description == "updated"
+        assert GatewayHandler.get_gateway_auth_config(fake_gateway.id)["api_type"] == 0
+
+    @pytest.mark.parametrize(
+        ("data", "expected_is_official", "expected_api_type"),
+        [
+            ({"api_type": 1}, True, 1),
+            ({"is_official": True}, True, 1),
+            ({"is_official": False}, False, 10),
+            ({"api_type": 10, "is_official": True}, True, 1),
+            ({"api_type": 1, "is_official": False}, False, 10),
+        ],
+    )
+    def test_post_syncs_is_official_and_auth_api_type(
+        self,
+        mocker,
+        request_view,
+        unique_gateway_name,
+        disable_app_permission,
+        default_data_plane,
+        data,
+        expected_is_official,
+        expected_api_type,
+    ):
+        gateway_name = f"bk-{unique_gateway_name}" if expected_is_official else unique_gateway_name
+        response = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data=data,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        gateway = Gateway.objects.get(name=gateway_name)
+        assert gateway.is_official is expected_is_official
+        assert response.json()["data"]["is_official"] is expected_is_official
+        assert GatewayHandler.get_gateway_auth_config(gateway.id)["api_type"] == expected_api_type
+
     def test_post_creates_ai_gateway(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
     ):

@@ -52,6 +52,10 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        is_official:
+                          type: boolean
+                          description: true 为官方网关，false 为普通网关
+                          example: true
                         description:
                           type: string
                           description: 网关描述
@@ -76,6 +80,7 @@ paths:
                 data:
                   - id: 1
                     name: bk-apigateway
+                    is_official: true
                     description: ""
                     maintainers: ["admin"]
                     kind: normal
@@ -2175,6 +2180,10 @@ paths:
                   type: boolean
                   description: 网关是否公开，默认公开
                   example: true
+                is_official:
+                  type: boolean
+                  description: true 为官方网关，false 为普通网关；新建时默认 false，更新时不传则保留原值
+                  example: false
                 kind:
                   type: string
                   enum:
@@ -2186,6 +2195,7 @@ paths:
               description: just for test
               maintainers: ["admin"]
               is_public: true
+              is_official: false
               kind: normal
       responses:
         '200':
@@ -2217,6 +2227,10 @@ paths:
                         enum: [normal, programmable, ai]
                         description: 网关类型
                         example: normal
+                      is_official:
+                        type: boolean
+                        description: 是否为官方网关
+                        example: false
               example:
                 code: 0
                 message: OK
@@ -2224,6 +2238,7 @@ paths:
                   id: 1
                   name: demo
                   kind: normal
+                  is_official: false
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: true
@@ -5241,6 +5256,10 @@ paths:
                   type: boolean
                   description: 网关是否公开，默认公开
                   example: true
+                is_official:
+                  type: boolean
+                  description: true 为官方网关，false 为普通网关；新建时默认 false，更新时不传则保留原值
+                  example: false
                 kind:
                   type: string
                   enum:
@@ -5252,6 +5271,7 @@ paths:
               description: just for test
               maintainers: ["admin"]
               is_public: true
+              is_official: false
               kind: normal
       responses:
         '200':
@@ -5277,6 +5297,10 @@ paths:
                         enum: [normal, programmable, ai]
                         description: 网关类型
                         example: normal
+                      is_official:
+                        type: boolean
+                        description: 是否为官方网关
+                        example: false
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false

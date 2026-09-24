@@ -18,6 +18,7 @@
 | description | string   | 否  | 网关描述               |
 | maintainers | array    | 否  | 网关管理员             |
 | is_public   | boolean  | 否  | 网关是否公开，默认公开 |
+| is_official | boolean  | 否  | `true` 为官方网关，`false` 为普通网关；新建时默认 `false`，更新时不传则保留原值 |
 | kind        | string   | 否  | 网关类型：`normal`（默认）或 `ai`；仅创建时生效 |
 
 ### 请求参数示例
@@ -27,6 +28,7 @@
     "description": "just for test",
     "maintainers": ["admin"],
     "is_public": true,
+    "is_official": false,
     "kind": "normal"
 }
 ```
@@ -42,6 +44,7 @@ result = client.api.sync_api(
         "description": "just for test",
         "maintainers": ["admin"],
         "is_public": True,
+        "is_official": False,
         "kind": "normal"
     },
     path_params={
@@ -61,7 +64,8 @@ result = client.api.sync_api(
     "data": {
         "id": 1,
         "name": "demo",
-        "kind": "normal"
+        "kind": "normal",
+        "is_official": false
     }
 }
 ```
@@ -76,8 +80,9 @@ result = client.api.sync_api(
 
 #### data
 
-| 参数名称 | 参数类型 | 描述     |
-| -------- | -------- | -------- |
-| id       | int      | 网关ID   |
-| name     | string   | 网关名称 |
-| kind     | string   | 网关类型：`normal`、`programmable` 或 `ai` |
+| 参数名称    | 参数类型 | 描述                                     |
+| ----------- | -------- | ---------------------------------------- |
+| id          | int      | 网关ID                                   |
+| name        | string   | 网关名称                                 |
+| kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
+| is_official | boolean  | 是否为官方网关                           |
