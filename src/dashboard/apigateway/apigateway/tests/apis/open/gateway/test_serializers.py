@@ -83,6 +83,7 @@ class TestGatewayListV1InputSLZ:
 
 class TestGatewayListV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
+        fake_gateway.is_official = True
         slz = serializers.GatewayListV1OutputSLZ(
             fake_gateway,
             context={
@@ -94,6 +95,7 @@ class TestGatewayListV1OutputSLZ:
         )
         assert slz.data
         assert isinstance(slz.data["api_type"], int)
+        assert slz.data["is_official"] is True
         assert isinstance(slz.data["user_auth_type"], str)
         assert slz.data["kind"] == "normal"
 
@@ -130,6 +132,7 @@ class TestGatewayListV1OutputSLZ:
 
 class TestGatewayRetrieveV1OutputSLZ:
     def test_to_representation(self, fake_gateway):
+        fake_gateway.is_official = True
         slz = serializers.GatewayRetrieveV1OutputSLZ(
             fake_gateway,
             context={
@@ -140,10 +143,18 @@ class TestGatewayRetrieveV1OutputSLZ:
         )
         assert slz.data
         assert "api_type" not in slz.data
+        assert slz.data["is_official"] is True
         assert "user_auth_type" not in slz.data
 
 
 class TestGatewaySyncInputSLZ:
+    def test_official_name_error_uses_current_field(self):
+        slz = serializers.GatewaySyncInputSLZ(data={"name": "gateway", "is_official": True})
+
+        assert not slz.is_valid()
+        assert "官方网关" in str(slz.errors["name"][0])
+        assert "api_type" not in str(slz.errors["name"][0])
+
     @pytest.mark.parametrize(
         ("data", "expected_gateway_type"),
         [

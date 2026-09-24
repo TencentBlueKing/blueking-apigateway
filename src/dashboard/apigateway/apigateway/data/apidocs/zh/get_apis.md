@@ -40,6 +40,8 @@ result = client.api.get_apis({"kind": "ai"})
             "id": 1,
             "name": "bk-apigateway",
             "kind": "normal",
+            "api_type": 1,
+            "is_official": true,
             "description": "",
             "maintainers": [
                 "admin"
@@ -64,5 +66,7 @@ result = client.api.get_apis({"kind": "ai"})
 | id          | int      | 网关ID     |
 | name        | string   | 网关名称   |
 | kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
+| api_type    | int      | 旧版兼容字段：`0` 为超级官方网关，`1` 为官方网关，`10` 为普通网关 |
+| is_official | boolean  | 是否为官方网关 |
 | description | string   | 网关描述   |
 | maintainers | array    | 网关管理员 |

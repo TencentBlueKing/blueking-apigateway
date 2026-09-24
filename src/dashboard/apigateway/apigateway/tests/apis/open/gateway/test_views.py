@@ -56,6 +56,8 @@ class TestGatewayListApi:
         assert resp.status_code == 200
         assert result["code"] == 0
         assert len(result["data"]) >= 1
+        assert result["data"][0]["is_official"] is fake_gateway.is_official
+        assert isinstance(result["data"][0]["api_type"], int)
 
     def test_filter_list_queryset(self, fake_gateway):
         G(Release, gateway=fake_gateway)
@@ -133,6 +135,7 @@ class TestGatewayRetrieveApi:
         assert response.status_code == 200
         assert result["code"] == 0
         assert result["data"]
+        assert result["data"]["is_official"] is fake_gateway.is_official
 
 
 class TestGatewayPublicKeyRetrieveApi:
@@ -195,6 +198,7 @@ class TestGatewaySyncApi:
         assert response.status_code == 200, response.json()
         gateway = Gateway.objects.get(name=gateway_name)
         assert gateway.is_official is expected_is_official
+        assert response.json()["data"]["is_official"] is expected_is_official
         assert GatewayHandler.get_gateway_auth_config(gateway.id)["api_type"] == expected_api_type
 
     def test_post_creates_ai_gateway(

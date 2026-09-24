@@ -272,6 +272,7 @@ class GatewaySyncApi(generics.CreateAPIView):
                 "id": gateway.id,
                 "name": gateway.name,
                 "kind": convert_gateway_kind_to_name(gateway.kind),
+                "is_official": gateway.is_official,
             },
         )
 

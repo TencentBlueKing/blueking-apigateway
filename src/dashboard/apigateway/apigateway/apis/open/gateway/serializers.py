@@ -55,6 +55,7 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
     api_type = serializers.SerializerMethodField()
+    is_official = serializers.BooleanField(read_only=True)
     user_auth_type = serializers.SerializerMethodField()
     tenant_mode = serializers.CharField(read_only=True)
     tenant_id = serializers.CharField(read_only=True)
@@ -208,9 +209,9 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
         raise serializers.ValidationError(
             {
-                "name": _("api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。").format(
-                    api_type=api_type, prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
-                )
+                "name": _("官方网关名 name 需以 {prefix} 开头。").format(
+                    prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
+                ),
             }
         )
 

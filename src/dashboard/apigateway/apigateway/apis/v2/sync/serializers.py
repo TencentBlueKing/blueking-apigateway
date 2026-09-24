@@ -198,9 +198,9 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
         raise serializers.ValidationError(
             {
-                "name": _("api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。").format(
-                    api_type=api_type, prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
-                )
+                "name": _("官方网关名 name 需以 {prefix} 开头。").format(
+                    prefix=", ".join(settings.OFFICIAL_GATEWAY_NAME_PREFIXES)
+                ),
             }
         )
 
@@ -209,6 +209,7 @@ class GatewaySyncOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
     kind = serializers.SerializerMethodField(help_text="网关类型")
+    is_official = serializers.BooleanField(read_only=True, help_text="是否为官方网关")
 
     def get_kind(self, obj):
         return convert_gateway_kind_to_name(obj.kind)

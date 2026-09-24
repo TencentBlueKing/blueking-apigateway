@@ -65,7 +65,8 @@ result = client.api.sync_api(
     "data": {
         "id": 1,
         "name": "demo",
-        "kind": "normal"
+        "kind": "normal",
+        "is_official": false
     }
 }
 ```
@@ -80,8 +81,9 @@ result = client.api.sync_api(
 
 #### data
 
-| 参数名称 | 参数类型 | 描述     |
-| -------- | -------- | -------- |
-| id       | int      | 网关ID   |
-| name     | string   | 网关名称 |
-| kind     | string   | 网关类型：`normal`、`programmable` 或 `ai` |
+| 参数名称    | 参数类型 | 描述                                     |
+| ----------- | -------- | ---------------------------------------- |
+| id          | int      | 网关ID                                   |
+| name        | string   | 网关名称                                 |
+| kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
+| is_official | boolean  | 是否为官方网关                           |

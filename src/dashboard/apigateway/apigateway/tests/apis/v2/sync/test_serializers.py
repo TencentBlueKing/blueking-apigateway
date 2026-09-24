@@ -95,6 +95,13 @@ def test_gateway_sync_input_maps_ai_kind():
 
 
 class TestGatewaySyncInputSLZ:
+    def test_official_name_error_uses_current_field(self):
+        slz = GatewaySyncInputSLZ(data={"name": "gateway", "is_official": True})
+
+        assert not slz.is_valid()
+        assert "官方网关" in str(slz.errors["name"][0])
+        assert "api_type" not in str(slz.errors["name"][0])
+
     @pytest.mark.parametrize(
         ("data", "expected_gateway_type"),
         [

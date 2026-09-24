@@ -575,6 +575,7 @@ class TestSyncApi:
         assert response.status_code == 200, response.json()
         gateway = Gateway.objects.get(name=gateway_name)
         assert gateway.is_official is expected_is_official
+        assert response.json()["data"]["is_official"] is expected_is_official
         assert GatewayHandler.get_gateway_auth_config(gateway.id)["api_type"] == expected_api_type
 
     @pytest.mark.parametrize(
@@ -614,6 +615,7 @@ class TestSyncApi:
         assert response.status_code == 200, response.json()
         fake_gateway.refresh_from_db()
         assert fake_gateway.is_official is expected_is_official
+        assert response.json()["data"]["is_official"] is expected_is_official
         assert GatewayHandler.get_gateway_auth_config(fake_gateway.id)["api_type"] == expected_api_type
 
     def test_gateway_sync_ai_gateway_rejects_older_default_data_plane(
