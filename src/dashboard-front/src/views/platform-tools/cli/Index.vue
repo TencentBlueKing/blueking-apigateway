@@ -169,7 +169,6 @@ const openDetailUrl = () => {
 
   &.is-top-level {
     width: 80%;
-    max-width: 1280px;
     min-width: 1200px;
     padding: 16px 0 32px;
     margin: 0 auto;
@@ -235,9 +234,9 @@ const openDetailUrl = () => {
       display: flex;
       flex: 1;
       flex-direction: column;
-      justify-content: center;
-      height: 152px;
+      justify-content: flex-start;
       min-width: 0;
+      min-height: 152px;
       padding: 24px;
       background: #fff;
       border-radius: 4px;
