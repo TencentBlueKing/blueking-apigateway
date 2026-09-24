@@ -42,8 +42,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
-            "--gateway",
-            help="指定网关 ID 或名称；不指定时处理全部 global 网关",
+            "--gateway-name",
+            action="append",
+            help="指定网关名称，支持逗号分隔，也可重复指定多个 --gateway-name；不指定时处理全部 global 网关",
         )
         parser.add_argument(
             "--username",
@@ -59,10 +60,11 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> None:
         usernames = self._normalize_usernames(options["username"])
+        gateway_names = self._normalize_csv_values(options["gateway_name"], option_name="--gateway-name")
         apply = options["apply"]
         iam_enabled = settings.BK_IAM_V4_ENABLED
         operator = self._resolve_operator(iam_enabled=iam_enabled) if apply else settings.GATEWAY_DEFAULT_CREATOR
-        gateways = self._list_gateways(options["gateway"])
+        gateways = self._list_gateways(gateway_names)
         if not gateways:
             self.stdout.write("no global gateways found; skipped")
             return
@@ -123,14 +125,20 @@ class Command(BaseCommand):
             raise CommandError(f"批量添加 global 网关管理员失败: {error_message}")
 
     def _normalize_usernames(self, usernames: list[str]) -> list[str]:
+        return self._normalize_csv_values(usernames, option_name="--username")
+
+    def _normalize_csv_values(self, values: list[str] | None, *, option_name: str) -> list[str]:
+        if values is None:
+            return []
+
         normalized = []
-        for value in usernames:
+        for value in values:
             for username in value.split(","):
                 candidate = username.strip()
                 if not candidate:
-                    raise CommandError("--username 不能为空")
-                if len(candidate) > MAX_USERNAME_LENGTH:
-                    raise CommandError(f"--username 长度不能超过 {MAX_USERNAME_LENGTH}")
+                    raise CommandError(f"{option_name} 不能为空")
+                if option_name == "--username" and len(candidate) > MAX_USERNAME_LENGTH:
+                    raise CommandError(f"{option_name} 长度不能超过 {MAX_USERNAME_LENGTH}")
                 normalized.append(candidate)
         return sorted(set(normalized))
 
@@ -143,21 +151,15 @@ class Command(BaseCommand):
         except ValueError as err:
             raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员") from err
 
-    def _list_gateways(self, gateway_selector: str | None) -> list[Gateway]:
+    def _list_gateways(self, gateway_names: list[str]) -> list[Gateway]:
         queryset = Gateway.objects.filter(tenant_mode=TenantModeEnum.GLOBAL.value).order_by("id")
-        if gateway_selector is None:
+        if not gateway_names:
             return list(queryset)
 
-        gateway_id = None
-        try:
-            parsed_gateway_id = int(gateway_selector)
-        except TypeError, ValueError:
-            pass
-        else:
-            gateway_id = queryset.filter(id=parsed_gateway_id).values_list("id", flat=True).first()
-        if gateway_id is None:
-            gateway_id = queryset.filter(name=gateway_selector).values_list("id", flat=True).first()
-        if gateway_id is None:
-            raise CommandError(f"global 网关不存在: {gateway_selector}")
+        gateways = list(queryset.filter(name__in=gateway_names))
+        existing_names = {gateway.name for gateway in gateways}
+        missing_names = [name for name in gateway_names if name not in existing_names]
+        if missing_names:
+            raise CommandError(f"global 网关不存在: {','.join(missing_names)}")
 
-        return list(queryset.filter(id=gateway_id))
+        return gateways
