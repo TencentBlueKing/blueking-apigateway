@@ -27,6 +27,7 @@ const APPROVAL_STATUS_MAP: Record<string, string> = {
   approved: t('通过'),
   rejected: t('驳回'),
   pending: t('未审批'),
+  canceled: t('已撤销'),
 };
 
 const APPROVAL_HISTORY_STATUS_MAP: Record<string, string> = {
@@ -34,6 +35,7 @@ const APPROVAL_HISTORY_STATUS_MAP: Record<string, string> = {
   partial_approved: t('部分通过'),
   rejected: t('全部驳回'),
   pending: t('未审批'),
+  canceled: t('已撤销'),
 };
 
 const METHOD_THEMES = {

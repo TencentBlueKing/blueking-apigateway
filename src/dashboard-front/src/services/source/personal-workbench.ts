@@ -66,6 +66,34 @@ export const getMcpHandledList = (params: IPersonalWorkbenchListQuery) =>
   http.get<ICountAndResults<IPersonalWorkbenchListResponse>>(`${path}/permissions/mcp/handled/`, params);
 
 /**
+ * 个人工作台 - 我的申请 - 撤销 API 网关权限申请（仅待审批的申请可撤销）
+ * @param id 申请单 ID
+ */
+export const cancelGatewayApplied = (id: number) =>
+  http.post(`${path}/permissions/gateway/applied/${id}/cancel/`);
+
+/**
+ * 个人工作台 - 我的申请 - 删除 API 网关权限申请（仅已撤销的申请可删除）
+ * @param id 申请单 ID
+ */
+export const deleteGatewayApplied = (id: number) =>
+  http.delete(`${path}/permissions/gateway/applied/${id}/`);
+
+/**
+ * 个人工作台 - 我的申请 - 撤销 MCP Server 权限申请（仅待审批的申请可撤销）
+ * @param id 申请单 ID
+ */
+export const cancelMcpApplied = (id: number) =>
+  http.post(`${path}/permissions/mcp/applied/${id}/cancel/`);
+
+/**
+ * 个人工作台 - 我的申请 - 删除 MCP Server 权限申请（仅已撤销的申请可删除）
+ * @param id 申请单 ID
+ */
+export const deleteMcpApplied = (id: number) =>
+  http.delete(`${path}/permissions/mcp/applied/${id}/`);
+
+/**
  * 个人工作台 - 网关下拉筛选选项列表
  * @param params 参数
  */

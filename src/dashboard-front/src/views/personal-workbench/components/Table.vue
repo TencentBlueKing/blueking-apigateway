@@ -127,6 +127,10 @@ import type {
 import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
 import {
+  cancelGatewayApplied,
+  cancelMcpApplied,
+  deleteGatewayApplied,
+  deleteMcpApplied,
   getGatewayFilterOptions,
   getMcpGatewayFilterOptions,
   getMcpServerFilterOptions,
@@ -134,7 +138,7 @@ import {
 import { updatePermissionStatus } from '@/services/source/permission.ts';
 import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
 import { useFeatureFlag } from '@/stores';
-import { usePersonalWorkbench } from '@/hooks';
+import { usePersonalWorkbench, usePopInfoBox } from '@/hooks';
 import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
@@ -236,7 +240,14 @@ const childrenColumns = shallowRef<PrimaryTableProps['columns']>([
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
 const isGateway = computed(() => ['gateway'].includes(activeTab));
 const isPending = computed(() => ['pending'].includes(applyStatus));
+const isApplied = computed(() => ['applied'].includes(applyStatus));
 const isShowSelection = computed(() => isGateway.value && isPending.value);
+// 操作列宽度：我的待办需展示审批按钮，我的申请需展示详情/撤销/删除
+const operateColumnWidth = computed(() => {
+  if (isPending.value) return 200;
+  if (isApplied.value) return 160;
+  return 80;
+});
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
   return t(
@@ -246,10 +257,17 @@ const batchApplyDialogConfTitle = computed(() => {
 const approvalStatusMap = computed(() => isGateway.value ? APPROVAL_HISTORY_STATUS_MAP : APPROVAL_STATUS_MAP);
 const approvalStatusList = computed(() =>
   Object.entries(approvalStatusMap.value)
+    .filter(([value]) => {
+      // 已撤销状态仅在"我的申请"中提供筛选
+      if (value === 'canceled') return applyStatus === 'applied';
+      // 我的已办不展示待审批筛选项
+      if (value === 'pending' && applyStatus === 'handled') return false;
+      return true;
+    })
     .map(([value, label]) => ({
       value,
       label,
-    })).filter(item => applyStatus !== 'handled' || item.value !== 'pending'),
+    })),
 );
 const tableColumns = computed(() => {
   const gatewayAppCodeColumn: PrimaryTableProps['columns'] = [
@@ -358,7 +376,7 @@ const tableColumns = computed(() => {
       title: t('操作'),
       colKey: 'operate',
       fixed: 'right' as const,
-      width: isPending.value ? 200 : 80,
+      width: operateColumnWidth.value,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         const isItsm = isITSMApproval(row);
 
@@ -451,28 +469,66 @@ const tableColumns = computed(() => {
             </div>
           );
         }
-        else {
+
+        if (isApplied.value) {
+          // 待审批的申请支持撤销，已撤销的申请支持删除
+          const canCancel = row.status === 'pending';
+          const isCanceled = row.status === 'canceled';
+          const detailText = isItsm && canCancel ? t('跳转到 ITSM') : t('详情');
+
           return (
-            <Button
-              text
-              theme="primary"
-              onClick={(e: MouseEvent) => {
-                e?.stopPropagation();
-                if (isItsm) {
-                  window.open(row?.itsm_ticket_url);
-                  return;
-                }
-                approvalSliderConf.value = {
-                  isShow: true,
-                  title: `${t('申请应用：')}${row.bk_app_code}`,
-                };
-                approvalSliderDetail.value = { ...row } as IPersonalWorkbenchUIState;
-              }}
-            >
-              {t('详情')}
-            </Button>
+            <div class="flex items-center">
+              <Button
+                text
+                theme="primary"
+                class="mr-8px"
+                onClick={(e: MouseEvent) => {
+                  e?.stopPropagation();
+                  handleShowDetail(row);
+                }}
+              >
+                {detailText}
+              </Button>
+              {canCancel && (
+                <Button
+                  text
+                  theme="primary"
+                  onClick={(e: MouseEvent) => {
+                    e?.stopPropagation();
+                    handleCancelApply(row);
+                  }}
+                >
+                  {t('撤销')}
+                </Button>
+              )}
+              {isCanceled && (
+                <Button
+                  text
+                  theme="primary"
+                  onClick={(e: MouseEvent) => {
+                    e?.stopPropagation();
+                    handleDeleteApply(row);
+                  }}
+                >
+                  {t('删除')}
+                </Button>
+              )}
+            </div>
           );
         }
+
+        return (
+          <Button
+            text
+            theme="primary"
+            onClick={(e: MouseEvent) => {
+              e?.stopPropagation();
+              handleShowDetail(row);
+            }}
+          >
+            {t('详情')}
+          </Button>
+        );
       },
     },
   ].filter((col) => {
@@ -625,6 +681,81 @@ fetchMcpServerFilterOptions();
 
 const isITSMApproval = (row: TableRowData) => {
   return isEnabledITSMApply.value && Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+};
+
+// 查看申请详情
+const handleShowDetail = (row: TableRowData) => {
+  if (isITSMApproval(row)) {
+    window.open(row?.itsm_ticket_url);
+    return;
+  }
+
+  approvalSliderConf.value = {
+    isShow: true,
+    title: `${t('申请应用：')}${row.bk_app_code}`,
+  };
+  approvalSliderDetail.value = { ...row } as IPersonalWorkbenchUIState;
+};
+
+// 撤销申请（仅待审批的申请支持撤销）
+const handleCancelApply = (row: TableRowData) => {
+  usePopInfoBox({
+    isShow: true,
+    type: 'warning',
+    title: t('确认撤销该申请？'),
+    subTitle: t('撤销后该申请将无法继续审批，请谨慎操作'),
+    confirmText: t('撤销'),
+    cancelText: t('取消'),
+    onConfirm: async () => {
+      try {
+        const request = isGateway.value ? cancelGatewayApplied : cancelMcpApplied;
+        await request(row.id as number);
+        Message({
+          message: t('撤销成功'),
+          theme: 'success',
+        });
+        getList();
+      }
+      catch (e: unknown) {
+        const err = e as { error?: { message?: string } };
+        Message({
+          message: err?.error?.message,
+          theme: 'error',
+        });
+      }
+    },
+  });
+};
+
+// 删除申请（仅已撤销的申请支持删除）
+const handleDeleteApply = (row: TableRowData) => {
+  usePopInfoBox({
+    isShow: true,
+    type: 'warning',
+    title: t('确认删除该申请？'),
+    subTitle: t('删除后该申请将无法恢复，请谨慎操作'),
+    confirmText: t('删除'),
+    cancelText: t('取消'),
+    confirmButtonTheme: 'danger',
+    onConfirm: async () => {
+      try {
+        const request = isGateway.value ? deleteGatewayApplied : deleteMcpApplied;
+        await request(row.id as number);
+        Message({
+          message: t('删除成功'),
+          theme: 'success',
+        });
+        getList();
+      }
+      catch (e: unknown) {
+        const err = e as { error?: { message?: string } };
+        Message({
+          message: err?.error?.message,
+          theme: 'error',
+        });
+      }
+    },
+  });
 };
 
 const disabledSelection = (row: TableRowData) => {
@@ -984,10 +1115,6 @@ defineExpose({
 
 :deep(.t-table__expanded-row) {
 
-  .t-table__row-full-element {
-    padding: 0;
-  }
-
   td,
   th {
     height: 42px !important;
@@ -1002,4 +1129,22 @@ defineExpose({
     display: none !important;
   }
 }
- </style>
+
+// 展开行出现后，固定列单元格会进入 position: sticky 模式（tdesign 的 t-table--column-fixed），
+// 单元格自身形成层叠上下文，其不透明的背景/遮罩会绘制在元素边框之上，把 1px 的底部边框盖住，
+// hover 或收起展开行时触发重绘才恢复正常，这里为固定列补画一条底部边框线
+
+:deep(.t-table__body > tr:not(.t-table__first-full-row, .t-table__last-full-row, :last-child)) {
+
+  > td.t-table__cell--fixed-left-last::before {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    z-index: 0;
+    height: 1px;
+    background-color: #dcdee5;
+    content: '';
+  }
+}
+</style>

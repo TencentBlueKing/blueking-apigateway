@@ -676,7 +676,7 @@ const handleRemovePermission = async () => {
   removeDialogConf.value.isShow = false;
   Message({
     theme: 'success',
-    message: t('删除成功！'),
+    message: t('删除成功'),
   });
   handleClearSelection();
   getList();
