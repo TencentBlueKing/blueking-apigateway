@@ -175,10 +175,6 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             if self.instance and GatewayHandler.get_gateway_auth_config(self.instance.id).get("api_type") == (
                 GatewayTypeEnum.SUPER_OFFICIAL_API.value
             ):
-                if not is_official:
-                    raise serializers.ValidationError(
-                        {"is_official": _("超级官方网关不支持设置 is_official 为 false。")}
-                    )
                 api_type = GatewayTypeEnum.SUPER_OFFICIAL_API.value
         self._validate_name(data["name"], api_type, effective_kind)
 
