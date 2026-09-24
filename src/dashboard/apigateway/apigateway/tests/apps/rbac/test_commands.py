@@ -433,6 +433,61 @@ def test_add_global_gateway_administrators_dry_run_only_plans_global_gateways(se
     assert f"gateway={single_gateway.id}:{single_gateway.name}" not in output.getvalue()
 
 
+def test_add_global_gateway_administrators_gateway_name_selector_limits_to_one_global_gateway(settings, mocker):
+    _enable_iam(settings)
+    target_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    other_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    output = StringIO()
+
+    call_command(
+        "add_global_gateway_administrators",
+        username=["alice"],
+        gateway_name=[target_gateway.name],
+        stdout=output,
+    )
+
+    assert f"gateway={target_gateway.id}:{target_gateway.name}" in output.getvalue()
+    assert f"gateway={other_gateway.id}:{other_gateway.name}" not in output.getvalue()
+
+
+def test_add_global_gateway_administrators_gateway_name_selector_accepts_comma_separated_values(settings):
+    _enable_iam(settings)
+    target_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    second_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    other_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    output = StringIO()
+
+    call_command(
+        "add_global_gateway_administrators",
+        "--username",
+        "alice",
+        "--gateway-name",
+        f"{target_gateway.name}, {second_gateway.name}",
+        "--gateway-name",
+        target_gateway.name,
+        stdout=output,
+    )
+
+    assert f"gateway={target_gateway.id}:{target_gateway.name}" in output.getvalue()
+    assert f"gateway={second_gateway.id}:{second_gateway.name}" in output.getvalue()
+    assert f"gateway={other_gateway.id}:{other_gateway.name}" not in output.getvalue()
+
+
+def test_add_global_gateway_administrators_gateway_name_selector_rejects_non_global_gateway(settings):
+    _enable_iam(settings)
+    gateway = G(Gateway, tenant_mode="single", tenant_id="default")
+
+    with pytest.raises(CommandError, match=f"global 网关不存在: {gateway.name}"):
+        call_command("add_global_gateway_administrators", username=["alice"], gateway_name=[gateway.name])
+
+
+def test_add_global_gateway_administrators_gateway_name_selector_rejects_empty_name(settings):
+    _enable_iam(settings)
+
+    with pytest.raises(CommandError, match="--gateway-name 不能为空"):
+        call_command("add_global_gateway_administrators", gateway_name=["one,,two"], username=["alice"])
+
+
 def test_add_global_gateway_administrators_apply_processes_all_global_gateways(settings, mocker):
     _enable_iam(settings)
     active_gateway = G(Gateway, tenant_mode="global", tenant_id="", status=1)
