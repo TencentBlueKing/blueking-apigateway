@@ -16,11 +16,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
 from django_dynamic_fixture import G
 
 from apigateway.biz.backend import BackendHandler
-from apigateway.core.constants import BackendKindEnum
-from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Resource, Stage
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendKindEnum, PublishSourceEnum
+from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Resource, ResourceVersion, Stage
+from apigateway.service.resource import delete_resources
 
 
 class TestBackendHandler:
@@ -57,7 +59,7 @@ class TestBackendHandler:
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
         }
 
-    def test_update(self, fake_stage):
+    def test_update(self, mocker, fake_stage):
         BackendHandler.create(
             {
                 "gateway": fake_stage.gateway,
@@ -85,6 +87,7 @@ class TestBackendHandler:
 
         assert backend
 
+        publish = mocker.patch("apigateway.biz.backend.backend.trigger_gateway_publish")
         backend, updated_stage_ids = BackendHandler.update(
             backend,
             {
@@ -105,7 +108,8 @@ class TestBackendHandler:
             "admin",
         )
 
-        assert updated_stage_ids != []
+        assert list(updated_stage_ids) == []
+        publish.assert_not_called()
         assert backend.name == "backend-update"
         assert backend.description == "update"
 
@@ -116,6 +120,126 @@ class TestBackendHandler:
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
         }
+
+    @pytest.mark.parametrize(
+        "draft_reference, released_reference, gateway_status, stage_status, changed, expected_publish",
+        [
+            (False, True, 1, 1, True, True),
+            (True, True, 1, 1, True, True),
+            (False, False, 1, 1, True, False),
+            (True, False, 1, 1, True, False),
+            (False, True, 0, 1, True, False),
+            (False, True, 1, 0, True, False),
+            (False, True, 1, 1, False, False),
+        ],
+        ids=[
+            "released-only",
+            "draft-and-released",
+            "unreferenced",
+            "draft-only",
+            "gateway-inactive",
+            "stage-inactive",
+            "unchanged",
+        ],
+    )
+    def test_update_publishes_changed_released_backend(
+        self,
+        mocker,
+        fake_backend,
+        fake_release_v2,
+        draft_reference,
+        released_reference,
+        gateway_status,
+        stage_status,
+        changed,
+        expected_publish,
+    ):
+        gateway = fake_backend.gateway
+        stage = fake_release_v2.stage
+        gateway.status = gateway_status
+        gateway.save(update_fields=["status"])
+        stage.status = stage_status
+        stage.save(update_fields=["status"])
+        if not draft_reference:
+            other_backend = G(Backend, gateway=gateway)
+            Proxy.objects.filter(backend=fake_backend).update(backend=other_backend)
+        if not released_reference:
+            resource_version = fake_release_v2.resource_version
+            resource_version.data = []
+            resource_version.save(update_fields=["_data"])
+
+        backend_config = BackendConfig.objects.get(backend=fake_backend, stage=stage)
+        config = backend_config.config
+        config["timeout"] = 60 if changed else 30
+        publish = mocker.patch("apigateway.biz.backend.backend.trigger_gateway_publish")
+        _, stage_ids = BackendHandler.update(
+            fake_backend,
+            {
+                "name": fake_backend.name,
+                "description": fake_backend.description,
+                "type": fake_backend.type,
+                "configs": [{**config, "stage_id": stage.id}],
+            },
+            "admin",
+        )
+
+        backend_config.refresh_from_db()
+        assert backend_config.config["timeout"] == (60 if changed else 30)
+        assert list(stage_ids) == ([stage.id] if expected_publish else [])
+        if expected_publish:
+            publish.assert_called_once_with(PublishSourceEnum.BACKEND_UPDATE, "admin", gateway.id, stage.id)
+        else:
+            publish.assert_not_called()
+
+    def test_update_default_backend_publishes_only_affected_stages(self, mocker, fake_backend, fake_release_v2):
+        fake_backend.name = DEFAULT_BACKEND_NAME
+        fake_backend.save(update_fields=["name"])
+        gateway = fake_backend.gateway
+        changed_stage = fake_release_v2.stage
+        unchanged_stage = G(Stage, gateway=gateway, status=1)
+        other_backend_stage = G(Stage, gateway=gateway, status=1)
+        unpublished_stage = G(Stage, gateway=gateway, status=1)
+        G(Release, gateway=gateway, stage=unchanged_stage, resource_version=fake_release_v2.resource_version)
+        other_backend = G(Backend, gateway=gateway)
+        other_version = G(
+            ResourceVersion, gateway=gateway, schema_version=fake_release_v2.resource_version.schema_version
+        )
+        resources = fake_release_v2.resource_version.data
+        for resource in resources:
+            resource["proxy"]["backend_id"] = other_backend.id
+        other_version.data = resources
+        other_version.save()
+        G(Release, gateway=gateway, stage=other_backend_stage, resource_version=other_version)
+        resource_ids = list(Proxy.objects.filter(backend=fake_backend).values_list("resource_id", flat=True))
+        delete_resources(resource_ids)
+        config = BackendConfig.objects.get(backend=fake_backend, stage=changed_stage).config
+        for stage in [unchanged_stage, other_backend_stage, unpublished_stage]:
+            G(BackendConfig, gateway=gateway, backend=fake_backend, stage=stage, _config=config)
+        publish = mocker.patch("apigateway.biz.backend.backend.trigger_gateway_publish")
+
+        _, stage_ids = BackendHandler.update(
+            fake_backend,
+            {
+                "name": fake_backend.name,
+                "description": fake_backend.description,
+                "type": fake_backend.type,
+                "configs": [
+                    {**config, "stage_id": stage.id, "timeout": timeout}
+                    for stage, timeout in [
+                        (changed_stage, 60),
+                        (unchanged_stage, 30),
+                        (other_backend_stage, 60),
+                        (unpublished_stage, 60),
+                    ]
+                ],
+            },
+            "admin",
+        )
+
+        assert list(stage_ids) == [changed_stage.id]
+        publish.assert_called_once_with(PublishSourceEnum.BACKEND_UPDATE, "admin", gateway.id, changed_stage.id)
+        assert BackendConfig.objects.get(backend=fake_backend, stage=other_backend_stage).config["timeout"] == 60
+        assert BackendConfig.objects.get(backend=fake_backend, stage=unpublished_stage).config["timeout"] == 60
 
     def test_update_ai_backend_ignores_unchanged_config(self, mocker, fake_stage):
         backend = BackendHandler.create(
