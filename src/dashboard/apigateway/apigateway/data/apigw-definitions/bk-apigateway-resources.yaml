@@ -5704,8 +5704,9 @@ paths:
       description: |
         回收应用访问网关 API 的权限，支持按网关维度或按资源维度回收。
 
-        - grant_dimension 为 gateway 时，回收应用在当前网关下按网关维度授予的权限，不影响按资源授予的权限。
-        - grant_dimension 为 resource 时，仅回收 resource_names 指定资源的权限，不存在的资源名称会被忽略。
+        - grant_dimension 为 gateway 时，回收应用在当前网关下按网关维度授予的权限，以及由按网关权限同步生成的资源权限，不影响其它按资源授予的权限。
+        - grant_dimension 为 resource 时，仅回收 resource_names 指定资源的权限；资源名称会匹配当前资源及各环境已发布版本中的资源，不存在的资源名称会被忽略。
+        - OAuth2 内置应用 public、personal 的权限由系统管理，不支持回收。
       tags:
         - v2_sync
       parameters:
@@ -5730,7 +5731,8 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: 待回收权限的应用 bk_app_code 列表
+                  maxItems: 100
+                  description: 待回收权限的应用 bk_app_code 列表，最多 100 个；不支持 OAuth2 内置应用 public、personal
                   example: ["bk-sops"]
                 grant_dimension:
                   type: string
@@ -5743,7 +5745,8 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: 资源名称列表，grant_dimension 为 resource 时必填
+                  maxItems: 100
+                  description: 资源名称列表，最多 100 个，grant_dimension 为 resource 时必填
                   example: ["get_user", "create_user"]
             examples:
               gateway_revoke:

@@ -18,7 +18,7 @@
 
 import itertools
 import operator
-from typing import List
+from typing import List, Optional, Tuple
 
 from django.conf import settings
 from django.utils.translation import gettext as _
@@ -27,6 +27,7 @@ from rest_framework import serializers
 from apigateway.apps.permission.constants import (
     OAUTH2_BUILTIN_APP_CODES,
     ApplyStatusEnum,
+    GrantDimensionEnum,
     GrantTypeEnum,
 )
 from apigateway.apps.permission.models import (
@@ -43,7 +44,7 @@ from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_i
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkauth import get_app_tenant_info_cached
 from apigateway.components.bkuser import query_display_names_cached, query_display_names_for_readonly
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.models import Gateway, Release, ReleasedResource, Resource
 
 
 class ResourcePermissionHandler:
@@ -198,6 +199,48 @@ class ResourcePermissionHandler:
         bk_app_codes = [perm.bk_app_code for perm in data_before]
 
         return data_before, data_after, bk_app_codes
+
+    @staticmethod
+    def revoke_permissions(
+        gateway: Gateway,
+        bk_app_codes: List[str],
+        grant_dimension: str,
+        resource_names: Optional[List[str]] = None,
+    ) -> Tuple[List[AppGatewayPermission], List[AppResourcePermission]]:
+        """
+        回收应用的权限，返回被回收的按网关权限、资源权限
+        - 按网关回收：回收按网关权限，及由按网关权限同步产生的资源权限
+        - 按资源回收：回收指定资源的权限，与授权接口一致，忽略不存在的资源名称
+        """
+        gateway_permissions: List[AppGatewayPermission] = []
+        resource_queryset = AppResourcePermission.objects.filter(gateway=gateway, bk_app_code__in=bk_app_codes)
+        if grant_dimension == GrantDimensionEnum.API.value:
+            gateway_permissions = list(
+                AppGatewayPermission.objects.filter(gateway=gateway, bk_app_code__in=bk_app_codes)
+            )
+            resource_queryset = resource_queryset.filter(grant_type=GrantTypeEnum.SYNC.value)
+        else:
+            # 资源名称对应的资源 ID，取当前编辑区资源与各环境已发布版本中资源的并集，
+            # 资源从编辑区删除后，已发布版本中仍可能包含该资源，其权限仍然生效
+            resource_names = resource_names or []
+            resource_ids = set(
+                Resource.objects.filter(gateway=gateway, name__in=resource_names).values_list("id", flat=True)
+            )
+            resource_ids.update(
+                ReleasedResource.objects.filter(
+                    gateway=gateway,
+                    resource_version_id__in=Release.objects.get_released_resource_version_ids(gateway.id),
+                    resource_name__in=resource_names,
+                ).values_list("resource_id", flat=True)
+            )
+            resource_queryset = resource_queryset.filter(resource_id__in=resource_ids)
+        resource_permissions = list(resource_queryset)
+
+        # 按 ID 删除，保证删除的权限与返回的权限一致
+        AppGatewayPermission.objects.filter(id__in=[perm.id for perm in gateway_permissions]).delete()
+        AppResourcePermission.objects.filter(id__in=[perm.id for perm in resource_permissions]).delete()
+
+        return gateway_permissions, resource_permissions
 
     @staticmethod
     def convert_applied_by_to_display_name(

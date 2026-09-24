@@ -31,6 +31,7 @@ from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import (
     OAUTH2_PERSONAL_CLIENT_APP_CODE,
     OAUTH2_PUBLIC_CLIENT_APP_CODE,
+    GrantTypeEnum,
 )
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.gateway import GatewayHandler
@@ -41,6 +42,8 @@ from apigateway.core.models import (
     Gateway,
     GatewayRelatedApp,
     Proxy,
+    Release,
+    ReleasedResource,
     Resource,
     ResourceVersion,
     Stage,
@@ -2172,11 +2175,27 @@ class TestGatewayAppPermissionRevokeApi:
     """测试 v2_sync_revoke_permission 接口"""
 
     def test_revoke_gateway_permission(self, request_view, fake_gateway, fake_resource, disable_app_permission):
-        for bk_app_code in ["app1", "app2", "app3"]:
-            G(AppGatewayPermission, gateway=fake_gateway, bk_app_code=bk_app_code)
+        gateway_permissions = {
+            bk_app_code: G(AppGatewayPermission, gateway=fake_gateway, bk_app_code=bk_app_code)
+            for bk_app_code in ["app1", "app2", "app3"]
+        }
         another_gateway = G(Gateway)
         G(AppGatewayPermission, gateway=another_gateway, bk_app_code="app1")
-        G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=fake_resource.id)
+        sync_permission = G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            resource_id=fake_resource.id,
+            grant_type=GrantTypeEnum.SYNC.value,
+        )
+        another_resource = G(Resource, gateway=fake_gateway, name="another_resource")
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            resource_id=another_resource.id,
+            grant_type=GrantTypeEnum.INITIALIZE.value,
+        )
 
         resp = request_view(
             method="DELETE",
@@ -2192,14 +2211,36 @@ class TestGatewayAppPermissionRevokeApi:
         assert list(
             AppGatewayPermission.objects.filter(gateway=fake_gateway).values_list("bk_app_code", flat=True)
         ) == ["app3"]
-        # 仅回收当前网关的按网关授权，不影响其它网关及按资源授权
+        # 仅回收当前网关的按网关授权及由其同步产生的资源权限，不影响其它网关及其它按资源授权
         assert AppGatewayPermission.objects.filter(gateway=another_gateway, bk_app_code="app1").exists()
-        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+        assert list(
+            AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").values_list(
+                "resource_id", flat=True
+            )
+        ) == [another_resource.id]
+
+        audit_logs = AuditEventLog.objects.filter(
+            op_object_group=str(fake_gateway.id),
+            op_object_type=OpObjectTypeEnum.PERMISSION.value,
+            op_type=OpTypeEnum.DELETE.value,
+        )
+        assert sorted((log.op_object_id, log.comment) for log in audit_logs) == sorted(
+            [
+                (str(gateway_permissions["app1"].id), "OpenAPI 回收权限，授权维度：网关"),
+                (str(gateway_permissions["app2"].id), "OpenAPI 回收权限，授权维度：网关"),
+                (str(sync_permission.id), "OpenAPI 回收权限，授权维度：资源"),
+            ]
+        )
+        assert {log.username for log in audit_logs} == {settings.GATEWAY_DEFAULT_CREATOR}
 
     def test_revoke_resource_permission(self, request_view, fake_gateway, fake_resource, disable_app_permission):
         another_resource = G(Resource, gateway=fake_gateway, name="another_resource")
-        for bk_app_code in ["app1", "app2", "app3"]:
-            G(AppResourcePermission, gateway=fake_gateway, bk_app_code=bk_app_code, resource_id=fake_resource.id)
+        resource_permissions = {
+            bk_app_code: G(
+                AppResourcePermission, gateway=fake_gateway, bk_app_code=bk_app_code, resource_id=fake_resource.id
+            )
+            for bk_app_code in ["app1", "app2", "app3"]
+        }
         G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=another_resource.id)
         G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="app1")
         another_gateway = G(Gateway)
@@ -2234,6 +2275,44 @@ class TestGatewayAppPermissionRevokeApi:
         assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
         assert AppResourcePermission.objects.filter(gateway=another_gateway, bk_app_code="app1").exists()
 
+        audit_logs = AuditEventLog.objects.filter(
+            op_object_group=str(fake_gateway.id),
+            op_object_type=OpObjectTypeEnum.PERMISSION.value,
+            op_type=OpTypeEnum.DELETE.value,
+        )
+        assert sorted((log.op_object_id, log.comment) for log in audit_logs) == sorted(
+            [
+                (str(resource_permissions["app1"].id), "OpenAPI 回收权限，授权维度：资源"),
+                (str(resource_permissions["app2"].id), "OpenAPI 回收权限，授权维度：资源"),
+            ]
+        )
+
+    def test_revoke_released_resource_permission(self, request_view, fake_gateway, disable_app_permission):
+        # 资源已从编辑区删除，但仍在已发布版本中生效
+        resource_version = G(ResourceVersion, gateway=fake_gateway, _data="[]")
+        G(Release, gateway=fake_gateway, stage=G(Stage, gateway=fake_gateway), resource_version=resource_version)
+        G(
+            ReleasedResource,
+            gateway=fake_gateway,
+            resource_version_id=resource_version.id,
+            resource_id=10001,
+            resource_name="deleted_resource",
+            data={},
+        )
+        G(AppResourcePermission, gateway=fake_gateway, bk_app_code="app1", resource_id=10001)
+
+        resp = request_view(
+            method="DELETE",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.revoke",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"target_app_codes": ["app1"], "grant_dimension": "resource", "resource_names": ["deleted_resource"]},
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 200
+        assert not AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+
     def test_revoke_resource_permission_with_not_exist_resource_names(
         self, request_view, fake_gateway, fake_resource, disable_app_permission
     ):
@@ -2260,6 +2339,16 @@ class TestGatewayAppPermissionRevokeApi:
             {"target_app_codes": ["app1"], "grant_dimension": "resource"},
             {"target_app_codes": ["app1"], "grant_dimension": "resource", "resource_names": []},
             {"target_app_codes": ["app1"]},
+            # OAuth2 内置应用的权限由系统管理，不允许回收
+            {"target_app_codes": ["app1", OAUTH2_PUBLIC_CLIENT_APP_CODE], "grant_dimension": "gateway"},
+            {"target_app_codes": ["app1", OAUTH2_PERSONAL_CLIENT_APP_CODE], "grant_dimension": "gateway"},
+            # 超过 100 个
+            {"target_app_codes": [f"app{i}" for i in range(101)], "grant_dimension": "gateway"},
+            {
+                "target_app_codes": ["app1"],
+                "grant_dimension": "resource",
+                "resource_names": [f"resource{i}" for i in range(101)],
+            },
         ],
     )
     def test_revoke_invalid_params(self, request_view, fake_gateway, fake_resource, disable_app_permission, data):

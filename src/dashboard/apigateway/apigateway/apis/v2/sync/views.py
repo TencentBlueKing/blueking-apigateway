@@ -30,7 +30,7 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
-from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum, GrantTypeEnum
+from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
@@ -39,7 +39,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
@@ -470,27 +470,36 @@ class GatewayAppPermissionRevokeApi(generics.DestroyAPIView):
     serializer_class = serializers.GatewayAppPermissionRevokeInputSLZ
     schema_delete_request_body = True
 
+    @transaction.atomic
     def delete(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
-        permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
-        queryset = permission_model.objects.filter(
+        gateway_permissions, resource_permissions = ResourcePermissionHandler.revoke_permissions(
             gateway=request.gateway,
-            bk_app_code__in=data["target_app_codes"],
+            bk_app_codes=data["target_app_codes"],
+            grant_dimension=data["grant_dimension"],
+            resource_names=data.get("resource_names"),
         )
-        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
-            # 与授权接口一致，忽略不存在的资源名称，重复回收时结果不变
-            resource_ids = list(
-                Resource.objects.filter(gateway=request.gateway, name__in=data["resource_names"]).values_list(
-                    "id", flat=True
-                )
-            )
-            queryset = queryset.filter(resource_id__in=resource_ids)
 
-        queryset.delete()
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        for permissions, comment in [
+            (gateway_permissions, "OpenAPI 回收权限，授权维度：网关"),
+            (resource_permissions, "OpenAPI 回收权限，授权维度：资源"),
+        ]:
+            for instance in permissions:
+                Auditor.record_permission_op_success(
+                    op_type=OpTypeEnum.DELETE,
+                    username=username,
+                    gateway_id=request.gateway.id,
+                    instance_id=instance.id,
+                    instance_name=str(instance),
+                    data_before=get_model_dict(instance),
+                    data_after={},
+                    comment=comment,
+                )
 
         # 不返回 204：SDK(bkapi-client-core) 会解析响应体，空响应体会导致调用失败
         return OKJsonResponse()
