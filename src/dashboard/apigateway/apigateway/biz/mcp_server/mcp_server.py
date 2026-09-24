@@ -586,52 +586,6 @@ class MCPServerHandler:
         return apply_record_map
 
     @staticmethod
-    def get_least_privileges(
-        mcp_servers,
-        releases: Optional[Dict[Tuple[int, int], Release]] = None,
-    ) -> Dict[Tuple[int, int], str]:
-        """批量计算 MCP Server 的最低权限级别
-
-        遍历每个 MCP Server 的 (gateway_id, stage_id) 对，检查 Release 中对应工具资源
-        是否需要用户认证。如果所有工具都不需要用户认证，则为 APPLICATION；
-        否则为 APPLICATION_AND_USER。
-
-        Args:
-            mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
-            releases: 可选，预查询的 Release 映射，避免重复查询
-
-        Returns:
-            {(gateway_id, stage_id): least_privilege} 映射
-        """
-        gateway_stage_tools: Dict[Tuple[int, int], List[str]] = {}
-        for mcp_server in mcp_servers:
-            gateway_stage_tools[(mcp_server.gateway_id, mcp_server.stage_id)] = mcp_server.resource_names
-
-        if not gateway_stage_tools:
-            return {}
-
-        if releases is None:
-            releases = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
-
-        least_privileges: Dict[Tuple[int, int], str] = {}
-        for gateway_stage_key, release in releases.items():
-            tool_names = gateway_stage_tools.get(gateway_stage_key, [])
-            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
-            for resource in release.resource_version.data:
-                if resource["name"] not in tool_names:
-                    continue
-                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
-                verified_user_required = not auth_config.get("skip_auth_verification", False) and bool(
-                    auth_config.get("auth_verified_required", False)
-                )
-                if verified_user_required:
-                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
-                    break
-            least_privileges[gateway_stage_key] = least_privilege
-
-        return least_privileges
-
-    @staticmethod
     def get_mcp_server_url(instance: MCPServer, least_privilege: str = "") -> str:
         """根据 MCP Server 的应用态条件返回合适的访问 URL
 
@@ -884,7 +838,9 @@ class MCPServerHandler:
             releases = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
 
         if include_least_privileges:
-            context["least_privileges"] = MCPServerHandler.get_least_privileges(mcp_servers, releases=releases)
+            context["least_privileges"] = MCPServerHandler.get_least_privileges_by_server(
+                mcp_servers, releases=releases
+            )
 
         if include_app_permission_risks:
             context["app_permission_risks"] = MCPServerHandler.get_app_permission_risks(mcp_servers, releases=releases)
@@ -913,8 +869,8 @@ class MCPServerHandler:
         """
         MCPServerHandler.validate_access(instance, check_public=check_public, username=username)
 
-        least_privileges = MCPServerHandler.get_least_privileges([instance])
-        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+        least_privileges = MCPServerHandler.get_least_privileges_by_server([instance])
+        least_privilege = least_privileges.get(instance.id, "")
 
         guideline = MCPServerHandler.build_guideline(
             instance, user_tenant_id=user_tenant_id, least_privilege=least_privilege
@@ -1245,7 +1201,7 @@ class MCPServerHandler:
     ) -> Dict[int, str]:
         """按 MCPServer ID 计算最低权限级别
 
-        与 get_least_privileges 不同，此方法以 mcp_server.id 为 key，
+        以 mcp_server.id 为 key，
         避免同 gateway+stage 下多个 server 的 least_privilege 互相覆盖。
 
         Args:
@@ -1261,33 +1217,32 @@ class MCPServerHandler:
         if releases is None:
             releases = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
 
-        # 先按 (gateway_id, stage_id) 计算每个 server 的 tool_names
-        server_tool_names: Dict[int, List[str]] = {}
-        for mcp_server in mcp_servers:
-            server_tool_names[mcp_server.id] = mcp_server.resource_names
+        # 每个 Release 只解析一次，供共享环境的 Server 复用资源认证信息
+        release_resource_auth: Dict[Tuple[int, int], Dict[str, bool]] = {}
+        for key, release in releases.items():
+            resource_auth: Dict[str, bool] = {}
+            for resource in release.resource_version.data:
+                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
+                resource_auth[resource["name"]] = not auth_config.get("skip_auth_verification", False) and bool(
+                    auth_config.get("auth_verified_required", False)
+                )
+            release_resource_auth[key] = resource_auth
 
         least_privileges: Dict[int, str] = {}
-        # 按 (gateway_id, stage_id) 分组计算，然后映射到每个 server
+        # 共享 Release，但按 Server 独立计算最低权限
         for mcp_server in mcp_servers:
             gateway_stage_key = (mcp_server.gateway_id, mcp_server.stage_id)
-            release = releases.get(gateway_stage_key)
-            if not release:
+            server_resource_auth = release_resource_auth.get(gateway_stage_key)
+            if server_resource_auth is None:
                 least_privileges[mcp_server.id] = ""
                 continue
 
-            tool_names = server_tool_names.get(mcp_server.id, [])
-            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
-            for resource in release.resource_version.data:
-                if resource["name"] not in tool_names:
-                    continue
-                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
-                verified_user_required = not auth_config.get("skip_auth_verification", False) and bool(
-                    auth_config.get("auth_verified_required", False)
-                )
-                if verified_user_required:
-                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
-                    break
-            least_privileges[mcp_server.id] = least_privilege
+            verified_user_required = any(server_resource_auth.get(name, False) for name in mcp_server.resource_names)
+            least_privileges[mcp_server.id] = (
+                MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                if verified_user_required
+                else MCPServerLeastPrivilegeEnum.APPLICATION.value
+            )
 
         return least_privileges
 
