@@ -52,13 +52,9 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
-                        api_type:
-                          type: integer
-                          description: 旧版兼容字段；0 为超级官方网关，1 为官方网关，10 为普通网关
-                          example: 1
                         is_official:
                           type: boolean
-                          description: 是否为官方网关
+                          description: true 为官方网关，false 为普通网关
                           example: true
                         description:
                           type: string
@@ -84,7 +80,6 @@ paths:
                 data:
                   - id: 1
                     name: bk-apigateway
-                    api_type: 1
                     is_official: true
                     description: ""
                     maintainers: ["admin"]
@@ -2187,12 +2182,8 @@ paths:
                   example: true
                 is_official:
                   type: boolean
-                  description: 是否为官方网关；与 api_type 同时传入时以此字段为准；新建时默认 false，更新时不传则保留原值；更新已有超级官方网关时，此字段不改变其类型和官方状态
+                  description: true 为官方网关，false 为普通网关；新建时默认 false，更新时不传则保留原值
                   example: false
-                api_type:
-                  type: integer
-                  enum: [1, 10]
-                  description: 旧版兼容字段；1 为官方网关，10 为普通网关
                 kind:
                   type: string
                   enum:
@@ -5267,7 +5258,7 @@ paths:
                   example: true
                 is_official:
                   type: boolean
-                  description: 是否为官方网关；新建时默认 false，更新时不传则保留原值；更新已有超级官方网关时，此字段不改变其类型和官方状态
+                  description: true 为官方网关，false 为普通网关；新建时默认 false，更新时不传则保留原值
                   example: false
                 kind:
                   type: string
