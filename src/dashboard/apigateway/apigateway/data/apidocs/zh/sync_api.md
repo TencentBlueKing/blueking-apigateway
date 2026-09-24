@@ -18,7 +18,7 @@
 | description | string   | 否  | 网关描述               |
 | maintainers | array    | 否  | 网关管理员             |
 | is_public   | boolean  | 否  | 网关是否公开，默认公开 |
-| is_official | boolean  | 否  | 是否为官方网关；与 `api_type` 同时传入时以此字段为准；新建时默认 `false`，更新时不传则保留原值 |
+| is_official | boolean  | 否  | 是否为官方网关；与 `api_type` 同时传入时以此字段为准；新建时默认 `false`，更新时不传则保留原值；已有超级官方网关传 `true` 保留原类型，传 `false` 返回校验错误 |
 | api_type    | integer  | 否  | 旧版兼容字段：`1` 为官方网关，`10` 为普通网关 |
 | kind        | string   | 否  | 网关类型：`normal`（默认）或 `ai`；仅创建时生效 |
 

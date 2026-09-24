@@ -26,7 +26,7 @@ from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import GatewayKindEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.tests.utils.testing import get_response_json
@@ -165,6 +165,42 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
+    @pytest.mark.parametrize(("is_official", "expected_status"), [(True, 200), (False, 400)])
+    def test_post_protects_super_official_type(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        disable_app_permission,
+        default_data_plane,
+        is_official,
+        expected_status,
+    ):
+        fake_gateway.name = "bk-test"
+        fake_gateway.is_official = True
+        fake_gateway.save(update_fields=["name", "is_official"])
+        GatewayHandler.save_auth_config(
+            fake_gateway.id, user_auth_type="default", api_type=GatewayTypeEnum.SUPER_OFFICIAL_API
+        )
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"is_official": is_official},
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == expected_status, response.json()
+        if is_official:
+            assert response.json()["data"]["is_official"] is True
+        else:
+            assert "is_official" in str(response.json())
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.is_official is True
+        assert GatewayHandler.get_gateway_auth_config(fake_gateway.id)["api_type"] == 0
+
     @pytest.mark.parametrize(
         ("data", "expected_is_official", "expected_api_type"),
         [

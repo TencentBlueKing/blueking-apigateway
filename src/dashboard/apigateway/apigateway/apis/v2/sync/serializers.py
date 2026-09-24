@@ -34,6 +34,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.biz.validators import (
     BKAppCodeListValidator,
@@ -171,6 +172,14 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         api_type = data.pop("api_type", None)
         if is_official is not None:
             api_type = GatewayTypeEnum.OFFICIAL_API.value if is_official else GatewayTypeEnum.CLOUDS_API.value
+            if self.instance and GatewayHandler.get_gateway_auth_config(self.instance.id).get("api_type") == (
+                GatewayTypeEnum.SUPER_OFFICIAL_API.value
+            ):
+                if not is_official:
+                    raise serializers.ValidationError(
+                        {"is_official": _("超级官方网关不支持设置 is_official 为 false。")}
+                    )
+                api_type = GatewayTypeEnum.SUPER_OFFICIAL_API.value
         self._validate_name(data["name"], api_type, effective_kind)
 
         if self.instance is None:

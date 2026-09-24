@@ -22,7 +22,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.biz.gateway import build_gateway_doc_maintainers
+from apigateway.biz.gateway import GatewayHandler, build_gateway_doc_maintainers
 from apigateway.biz.validators import BKAppCodeListValidator, GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
 from apigateway.common.django.validators import NameValidator
@@ -180,6 +180,14 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         api_type = data.pop("api_type", None)
         if is_official is not None:
             api_type = GatewayTypeEnum.OFFICIAL_API.value if is_official else GatewayTypeEnum.CLOUDS_API.value
+            if self.instance and GatewayHandler.get_gateway_auth_config(self.instance.id).get("api_type") == (
+                GatewayTypeEnum.SUPER_OFFICIAL_API.value
+            ):
+                if not is_official:
+                    raise serializers.ValidationError(
+                        {"is_official": _("超级官方网关不支持设置 is_official 为 false。")}
+                    )
+                api_type = GatewayTypeEnum.SUPER_OFFICIAL_API.value
         self._validate_name(data["name"], api_type, effective_kind)
         if "maintainers" in data and not data["maintainers"]:
             raise serializers.ValidationError({"maintainers": _("网关至少需要保留一个管理员。")})
