@@ -56,6 +56,7 @@ from apigateway.biz.permission import (
     ResourcePermissionBuilder,
     ResourcePermissionHandler,
 )
+from apigateway.biz.personal_workbench import WorkbenchPermissionHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.validators import BKAppCodeValidator
@@ -719,7 +720,16 @@ class AppPermissionRecordListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+@method_decorator(
+    name="delete",
+    decorator=extend_schema(
+        description="删除已取消的 API 网关权限申请记录",
+        parameters=[serializers.PermissionApplyRecordOperateInputSLZ],
+        responses={status.HTTP_204_NO_CONTENT: None},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppPermissionRecordRetrieveDestroyApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2Permission]
     serializer_class = serializers.AppPermissionRecordRetrieveInputSLZ
     lookup_field = "id"
@@ -753,6 +763,46 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             },
         )
         return OKJsonResponse(data=slz.data)
+
+    def delete(self, request, record_id: int, *args, **kwargs):
+        slz = serializers.PermissionApplyRecordOperateInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        WorkbenchPermissionHandler.delete_gateway_permission_apply_by_app(
+            record_id=record_id,
+            bk_app_code=data["target_app_code"],
+            operated_by=data["operated_by"],
+            tenant_id=get_request_tenant_id(request),
+        )
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="post",
+    decorator=extend_schema(
+        description="取消待审批的 API 网关权限申请",
+        request=serializers.PermissionApplyRecordOperateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppPermissionRecordCancelApi(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.PermissionApplyRecordOperateInputSLZ
+
+    def post(self, request, record_id: int, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        WorkbenchPermissionHandler.cancel_gateway_permission_apply_by_app(
+            record_id=record_id,
+            bk_app_code=data["target_app_code"],
+            operated_by=data["operated_by"],
+            tenant_id=get_request_tenant_id(request),
+        )
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
@@ -992,14 +1042,13 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         # 2. 查询 MCPServerAppPermissionApply（申请记录表），用于展示申请状态和处理人
         mcp_server_permission_status: Dict[int, str] = {}
-        mcp_server_permission_apply_status = (
-            MCPServerAppPermissionApply.objects.filter(
-                bk_app_code=target_app_code,
-                mcp_server_id__in=mcp_server_ids,
-                is_deleted=False,
-            )
-            .order_by("-applied_time")
-            .values("mcp_server_id", "status", "handled_by", "itsm_ticket_id")
+        mcp_server_permission_apply_status = MCPServerAppPermissionApply.objects.filter(
+            bk_app_code=target_app_code,
+            mcp_server_id__in=mcp_server_ids,
+            is_deleted=False,
+        )
+        mcp_server_permission_apply_status = mcp_server_permission_apply_status.order_by("-applied_time").values(
+            "mcp_server_id", "status", "handled_by", "itsm_ticket_id"
         )
 
         mcp_server_permission_handled_by: Dict[int, str] = {}
@@ -1025,6 +1074,8 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             permission_status = mcp_server_permission_status.get(
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
             )
+            if permission_status == MCPServerAppPermissionApplyStatusEnum.CANCELED.value:
+                permission_status = MCPServerPermissionStatusEnum.NEED_APPLY.value
             handled_by = mcp_server_permission_handled_by.get(obj.id)
             itsm_ticket_id = mcp_server_permission_itsm_ticket_id.get(obj.id, "")
 
@@ -1274,7 +1325,16 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+@method_decorator(
+    name="delete",
+    decorator=extend_schema(
+        description="删除已取消的 MCP Server 权限申请记录",
+        parameters=[serializers.PermissionApplyRecordOperateInputSLZ],
+        responses={status.HTTP_204_NO_CONTENT: None},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerAppPermissionRecordRetrieveDestroyApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2Permission]
     queryset = MCPServerAppPermissionApply.objects.all()
     serializer_class = serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ
@@ -1343,6 +1403,46 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         }
         slz = self.get_serializer(mcp_server_permission_record, context=context)
         return OKJsonResponse(data=slz.data)
+
+    def delete(self, request, record_id: int, *args, **kwargs):
+        slz = serializers.PermissionApplyRecordOperateInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        WorkbenchPermissionHandler.delete_mcp_permission_apply_by_app(
+            record_id=record_id,
+            bk_app_code=data["target_app_code"],
+            operated_by=data["operated_by"],
+            tenant_id=get_request_tenant_id(request),
+        )
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="post",
+    decorator=extend_schema(
+        description="取消待审批的 MCP Server 权限申请",
+        request=serializers.PermissionApplyRecordOperateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: None},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerAppPermissionRecordCancelApi(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.PermissionApplyRecordOperateInputSLZ
+
+    def post(self, request, record_id: int, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        WorkbenchPermissionHandler.cancel_mcp_permission_apply_by_app(
+            record_id=record_id,
+            bk_app_code=data["target_app_code"],
+            operated_by=data["operated_by"],
+            tenant_id=get_request_tenant_id(request),
+        )
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(

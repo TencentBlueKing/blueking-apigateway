@@ -1420,6 +1420,14 @@ class TestMCPServerAppPermissionApplyListApi:
             status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
             itsm_ticket_id="102025092210362600001802",
         )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="canceled-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.CANCELED.value,
+        )
 
         resp = request_view(
             method="GET",
@@ -1730,6 +1738,35 @@ class TestMCPServerAppPermissionApplyUpdateStatusApi:
 
         apply.refresh_from_db()
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.REJECTED.value
+
+    def test_update_non_pending_apply_not_found(self, request_view, fake_gateway, fake_mcp_server):
+        apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="test-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="PATCH",
+            view_name="mcp_server.app-permission-apply.update_status",
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "mcp_server_id": fake_mcp_server.id,
+                "id": apply.id,
+            },
+            gateway=fake_gateway,
+            data={
+                "status": MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+                "comment": "rejected",
+            },
+        )
+
+        assert resp.status_code == 404
+        apply.refresh_from_db()
+        assert apply.status == MCPServerAppPermissionApplyStatusEnum.APPROVED.value
 
 
 class TestMCPServerRetrieveUpdateDestroyApiPartialUpdate:
@@ -3012,7 +3049,7 @@ class TestMCPServerOAuth2Enabled:
         fake_mcp_server.refresh_from_db()
         assert fake_mcp_server.oauth2_public_client_enabled is False
 
-        # 关闭 OAuth2 时 sync_permissions 也被调用（内部会撤销 public 权限）
+        # 关闭 OAuth2 时 sync_permissions 也被调用（内部会取消 public 权限）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_update_full_with_oauth2_public_client_enabled(

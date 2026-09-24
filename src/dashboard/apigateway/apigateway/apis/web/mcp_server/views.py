@@ -744,7 +744,7 @@ class MCPServerAppPermissionApplyQuerySetMixin:
     def get_queryset(self):
         queryset = MCPServerAppPermissionApply.objects.filter(
             mcp_server__gateway=self.request.gateway,
-        )
+        ).exclude(status=MCPServerAppPermissionApplyStatusEnum.CANCELED.value)
         mcp_server_id = self.kwargs.get("mcp_server_id")
         if mcp_server_id is not None:
             queryset = queryset.filter(mcp_server_id=mcp_server_id)
@@ -967,6 +967,14 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
     schema_request_partial = False
     serializer_class = MCPServerAppPermissionApplyUpdateInputSLZ
     lookup_url_kwarg = "id"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_for_update()
+            .filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+        )
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):

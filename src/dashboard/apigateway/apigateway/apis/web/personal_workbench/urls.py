@@ -24,7 +24,11 @@ from .views import (
     WorkbenchHandledMCPPermissionListApi,
     WorkbenchMCPGatewayFilterOptionListApi,
     WorkbenchMCPServerFilterOptionListApi,
+    WorkbenchMyApplyGatewayPermissionCancelApi,
+    WorkbenchMyApplyGatewayPermissionDestroyApi,
     WorkbenchMyApplyGatewayPermissionListApi,
+    WorkbenchMyApplyMCPPermissionCancelApi,
+    WorkbenchMyApplyMCPPermissionDestroyApi,
     WorkbenchMyApplyMCPPermissionListApi,
     WorkbenchPendingGatewayPermissionListApi,
     WorkbenchPendingMCPPermissionListApi,
@@ -33,12 +37,32 @@ from .views import (
 gateway_permission_patterns = [
     path("pending/", WorkbenchPendingGatewayPermissionListApi.as_view(), name="workbench.permissions.gateway.pending"),
     path("applied/", WorkbenchMyApplyGatewayPermissionListApi.as_view(), name="workbench.permissions.gateway.applied"),
+    path(
+        "applied/<int:apply_id>/",
+        WorkbenchMyApplyGatewayPermissionDestroyApi.as_view(),
+        name="workbench.permissions.gateway.applied.destroy",
+    ),
+    path(
+        "applied/<int:apply_id>/cancel/",
+        WorkbenchMyApplyGatewayPermissionCancelApi.as_view(),
+        name="workbench.permissions.gateway.applied.cancel",
+    ),
     path("handled/", WorkbenchHandledGatewayPermissionListApi.as_view(), name="workbench.permissions.gateway.handled"),
 ]
 
 mcp_permission_patterns = [
     path("pending/", WorkbenchPendingMCPPermissionListApi.as_view(), name="workbench.permissions.mcp.pending"),
     path("applied/", WorkbenchMyApplyMCPPermissionListApi.as_view(), name="workbench.permissions.mcp.applied"),
+    path(
+        "applied/<int:apply_id>/",
+        WorkbenchMyApplyMCPPermissionDestroyApi.as_view(),
+        name="workbench.permissions.mcp.applied.destroy",
+    ),
+    path(
+        "applied/<int:apply_id>/cancel/",
+        WorkbenchMyApplyMCPPermissionCancelApi.as_view(),
+        name="workbench.permissions.mcp.applied.cancel",
+    ),
     path("handled/", WorkbenchHandledMCPPermissionListApi.as_view(), name="workbench.permissions.mcp.handled"),
 ]
 

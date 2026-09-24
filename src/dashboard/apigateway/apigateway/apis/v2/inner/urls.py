@@ -144,10 +144,17 @@ urlpatterns = [
                                 name="openapi.v2.inner.permission.apply-records",
                             ),
                             # GET /api/v2/inner/gateways/permissions/apply-records/{record_id}/
+                            # DELETE /api/v2/inner/gateways/permissions/apply-records/{record_id}/
                             path(
                                 "apply-records/<int:record_id>/",
-                                views.AppPermissionRecordRetrieveApi.as_view(),
+                                views.AppPermissionRecordRetrieveDestroyApi.as_view(),
                                 name="openapi.v2.inner.permission.apply-record-detail",
+                            ),
+                            # POST /api/v2/inner/gateways/permissions/apply-records/{record_id}/cancel/
+                            path(
+                                "apply-records/<int:record_id>/cancel/",
+                                views.AppPermissionRecordCancelApi.as_view(),
+                                name="openapi.v2.inner.permission.apply-record-cancel",
                             ),
                         ]
                     ),
@@ -201,10 +208,17 @@ urlpatterns = [
                     name="openapi.v2.inner.mcp_server.permission.apply-records",
                 ),
                 # GET /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+                # DELETE /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
                 path(
                     "apply-records/<int:record_id>/",
-                    views.MCPServerAppPermissionRecordRetrieveApi.as_view(),
+                    views.MCPServerAppPermissionRecordRetrieveDestroyApi.as_view(),
                     name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
+                ),
+                # POST /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/cancel/
+                path(
+                    "apply-records/<int:record_id>/cancel/",
+                    views.MCPServerAppPermissionRecordCancelApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.permission.apply-record-cancel",
                 ),
             ]
         ),

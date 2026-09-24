@@ -26,6 +26,7 @@ class ApplyStatusEnum(StructuredEnum):
     APPROVED = EnumField("approved", label=_("全部通过"))
     REJECTED = EnumField("rejected", label=_("全部驳回"))
     PENDING = EnumField("pending", label=_("待审批"))
+    CANCELED = EnumField("canceled", label=_("已取消"))
 
 
 # Restricted Enum subclassing

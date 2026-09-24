@@ -12,7 +12,7 @@ mcp_server 申请记录列表
 | applied_by | string | 否 | 申请人 |
 | applied_time_start | int | 否 | 申请开始时间 |
 | applied_time_end | int | 否 | 申请截止时间 |
-| apply_status | string | 否 | 申请状态，approved：全部通过，rejected：全部驳回，pending：待审批 |
+| apply_status | string | 否 | 申请状态，approved：全部通过，rejected：全部驳回，pending：待审批，canceled：已取消 |
 | query | string | 否 | 查询条件 |
 
 ### 响应示例
@@ -98,7 +98,7 @@ mcp_server 申请记录列表
 | applied_time | string | 申请时间 |
 | handled_by | array | 审批人 |
 | handled_time | int | 审批时间 |
-| apply_status | string | 审批状态（approved：通过，rejected：驳回，pending：待审批） |
+| apply_status | string | 审批状态（approved：通过，rejected：驳回，pending：待审批，canceled：已取消） |
 | apply_status_display | string | 审批状态描述 |
 | comment | string | 审批内容 |
 | reason | string | 申请理由 |

@@ -76,6 +76,25 @@ class TestItsmPermissionApplyHelper:
         assert "reason" not in kwargs["form_data"]
         assert "expire_days" not in kwargs["form_data"]
 
+    def test_cancel_permission_apply_ticket(self, mocker):
+        config = G(
+            ItsmSystemConfig,
+            system_code="bk-apigateway",
+            itsm_system_id="bk-apigateway",
+            system_token="token-001",
+            is_registered=True,
+        )
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", return_value=True)
+
+        helper.cancel_permission_apply_ticket("t-001")
+
+        mock_cancel_ticket.assert_called_once_with(
+            system_id="bk-apigateway",
+            ticket_id="t-001",
+            system_token="token-001",
+        )
+
     def test_create_permission_apply_ticket_normalizes_none_apply_reason(self, mocker):
         config = G(
             ItsmSystemConfig,

@@ -26,6 +26,7 @@ from django_dynamic_fixture import G
 from apigateway.apis.web.permission import views
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.permission import models
+from apigateway.apps.permission.constants import ApplyStatusEnum
 from apigateway.core.models import Resource
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, dummy_time, get_response_json
 from apigateway.utils.time import now_datetime
@@ -573,7 +574,14 @@ class TestAppPermissionApplyViewSet:
             models.AppPermissionApply,
             gateway=fake_gateway,
             bk_app_code="test",
+            status=ApplyStatusEnum.PENDING.value,
             itsm_ticket_id="102025092210362600001802",
+        )
+        G(
+            models.AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-canceled",
+            status=ApplyStatusEnum.CANCELED.value,
         )
 
         data = [
@@ -638,6 +646,7 @@ class TestAppPermissionApplyBatchViewSet:
             models.AppPermissionApply,
             gateway=fake_gateway,
             grant_dimension="api",
+            status=ApplyStatusEnum.PENDING.value,
         )
 
         apply_2 = G(
@@ -645,6 +654,7 @@ class TestAppPermissionApplyBatchViewSet:
             gateway=fake_gateway,
             _resource_ids="1,2,3",
             grant_dimension="resource",
+            status=ApplyStatusEnum.PENDING.value,
         )
 
         data = [
@@ -685,6 +695,41 @@ class TestAppPermissionApplyBatchViewSet:
         assert audit_log.username == "admin"
         assert json.loads(audit_log.data_after)["handled_by"] == "admin"
         assert json.loads(audit_log.data_after)["bk_app_code"] == "test-api"
+
+    def test_post_skips_non_pending_apply(self, mocker, fake_gateway, request_factory):
+        record = G(
+            models.AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-api",
+            status=ApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+        mock_handle = mocker.patch(
+            "apigateway.biz.permission.GatewayPermissionDimensionManager.handle_permission_apply",
+            return_value=record,
+        )
+        apply = G(
+            models.AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-api",
+            grant_dimension="api",
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+
+        request = request_factory.post(
+            f"/gateways/{fake_gateway.id}/permissions/app-permission-apply/approval/",
+            data={
+                "ids": [apply.id],
+                "status": ApplyStatusEnum.REJECTED.value,
+                "comment": "",
+            },
+        )
+
+        response = views.AppPermissionApplyApprovalApi.as_view()(request, gateway_id=fake_gateway.id)
+
+        assert response.status_code == 201
+        assert models.AppPermissionApply.objects.filter(id=apply.id).exists()
+        mock_handle.assert_not_called()
 
 
 class TestAppPermissionRecordViewSet(TestCase):
@@ -729,6 +774,31 @@ class TestAppPermissionRecordViewSet(TestCase):
             result = get_response_json(response)
             self.assertEqual(response.status_code, 200, result)
             self.assertEqual(result["data"]["count"], test["expected"]["count"])
+
+    def test_list_excludes_canceled_apply(self):
+        G(
+            models.AppPermissionRecord,
+            gateway=self.gateway,
+            bk_app_code="approved-app",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            models.AppPermissionRecord,
+            gateway=self.gateway,
+            bk_app_code="canceled-app",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.CANCELED.value,
+        )
+
+        request = self.factory.get(f"/gateways/{self.gateway.id}/permissions/app-permission-records/")
+        view = views.AppPermissionRecordListApi.as_view()
+        response = view(request, gateway_id=self.gateway.id)
+
+        result = get_response_json(response)
+        self.assertEqual(response.status_code, 200, result)
+        self.assertEqual(result["data"]["count"], 1)
+        self.assertEqual(result["data"]["results"][0]["bk_app_code"], "approved-app")
 
     def test_retrieve(self):
         resource = G(Resource, gateway=self.gateway)

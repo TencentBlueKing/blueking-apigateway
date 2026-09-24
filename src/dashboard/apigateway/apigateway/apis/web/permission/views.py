@@ -727,7 +727,11 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
 
 class AppPermissionApplyQuerySetMixin:
     def get_queryset(self):
-        return AppPermissionApply.objects.filter(gateway=self.request.gateway).order_by("-id")
+        return (
+            AppPermissionApply.objects.filter(gateway=self.request.gateway)
+            .exclude(status=ApplyStatusEnum.CANCELED.value)
+            .order_by("-id")
+        )
 
 
 @method_decorator(
@@ -797,7 +801,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
     def get_queryset(self):
         return (
             AppPermissionRecord.objects.filter(gateway=self.request.gateway)
-            .exclude(status=ApplyStatusEnum.PENDING.value)
+            .exclude(status__in=[ApplyStatusEnum.PENDING.value, ApplyStatusEnum.CANCELED.value])
             .order_by("-handled_time")
         )
 
@@ -865,7 +869,9 @@ class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.Cr
         data = slz.validated_data
         part_resource_ids = data.get("part_resource_ids", {})
 
-        queryset = self.get_queryset().filter(id__in=data["ids"])
+        queryset = (
+            self.get_queryset().select_for_update().filter(id__in=data["ids"], status=ApplyStatusEnum.PENDING.value)
+        )
 
         for apply in queryset:
             manager = PermissionDimensionManager.get_manager(apply.grant_dimension)

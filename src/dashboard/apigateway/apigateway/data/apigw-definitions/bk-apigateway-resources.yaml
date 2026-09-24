@@ -7008,6 +7008,101 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+    delete:
+      operationId: v2_inner_delete_resource_permission_apply_record
+      description: 删除已取消的 API 网关权限申请记录
+      tags:
+      - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 申请记录 ID
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用
+        - name: operated_by
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+          description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
+      responses:
+        '204':
+          description: 删除成功
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: delete
+          path: /backend/api/v2/inner/gateways/permissions/apply-records/{record_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/gateways/permissions/apply-records/{record_id}/cancel/:
+    post:
+      operationId: v2_inner_cancel_resource_permission_apply_record
+      description: 取消待审批的 API 网关权限申请
+      tags:
+      - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 申请记录 ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - operated_by
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用
+                operated_by:
+                  type: string
+                  maxLength: 32
+                  description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
+      responses:
+        '204':
+          description: 取消成功
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/inner/gateways/permissions/apply-records/{record_id}/cancel/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
   /api/v2/inner/esb/systems/:
     get:
       operationId: v2_inner_list_esb_systems
@@ -7616,7 +7711,7 @@ paths:
           in: query
           schema:
             type: string
-          description: 申请状态，approved：全部通过，rejected：全部驳回，pending：待审批
+          description: 申请状态，approved：全部通过，rejected：全部驳回，pending：待审批，canceled：已取消
           example: pending
         - name: query
           in: query
@@ -7689,7 +7784,7 @@ paths:
                               description: 审批时间
                             apply_status:
                               type: string
-                              description: 审批状态（approved：通过，rejected：驳回，pending：待审批）
+                              description: 审批状态（approved：通过，rejected：驳回，pending：待审批，canceled：已取消）
                               example: pending
                             apply_status_display:
                               type: string
@@ -7870,6 +7965,101 @@ paths:
           name: default
           method: get
           path: /backend/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+    delete:
+      operationId: v2_inner_delete_mcp_server_permission_apply_record
+      description: 删除已取消的 MCP Server 权限申请记录
+      tags:
+      - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 申请记录 ID
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用
+        - name: operated_by
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+          description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
+      responses:
+        '204':
+          description: 删除成功
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: delete
+          path: /backend/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/cancel/:
+    post:
+      operationId: v2_inner_cancel_mcp_server_permission_apply_record
+      description: 取消待审批的 MCP Server 权限申请
+      tags:
+      - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 申请记录 ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - operated_by
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用
+                operated_by:
+                  type: string
+                  maxLength: 32
+                  description: 受信调用方声明的操作人，仅用于展示和审计，不作为鉴权依据
+      responses:
+        '204':
+          description: 取消成功
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/cancel/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
