@@ -38,7 +38,8 @@
           class="mb-0! h-full markdown-guide-editor"
           required
         >
-          <mavon-editor
+          <LazyMavonEditor
+            v-if="isShow"
             ref="markdownRef"
             v-model="formData.content"
             :default-open="'preview'"
@@ -80,6 +81,7 @@
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
 import type MavonEditor from 'mavon-editor';
+import LazyMavonEditor from '@/components/LazyMavonEditor';
 import type { IFormMethod, IMavonEditorProps } from '@/types/common';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';

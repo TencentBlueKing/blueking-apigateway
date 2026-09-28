@@ -264,6 +264,7 @@ watch(
 );
 
 watch(locale, () => {
+  document.documentElement.lang = locale.value === 'en' ? 'en' : 'zh-CN';
   const docTitle = useTitle();
   docTitle.value = t('API Gateway | 腾讯蓝鲸智云');
 }, { immediate: true });
