@@ -1,226 +1,51 @@
-# Plugin System Guide (for AI Agents)
+# Web Plugin Guide
 
-This document describes how the plugin subsystem works in the dashboard backend and how to add a new APISIX plugin.
+Source paths below start at `apigateway/apigateway/`. This API module is the
+entrypoint for plugin catalog/configuration work across the owning lower layers.
 
-## Architecture Overview
+## Stored YAML and conversion
 
-### Data Flow (new plugins)
+Web CRUD stores YAML in `PluginConfig.yaml`. `PluginConfigYamlConvertor` in
+`apis/web/plugin/convertor.py` handles the existing `bk-rate-limit` and
+`bk-ip-restriction` compatibility formats; other Web payloads pass through.
+Keep that map limited to the two existing formats.
 
-```
-Frontend (raw YAML) ──POST──▶ PluginConfig.yaml (DB storage, as-is)
+`PluginConfigYamlValidator` (`service/plugin/validator.py`) runs the registered
+checker first, then, if a schema exists, validates the service-converted YAML.
+`PluginConvertorFactory` (`service/plugin/convertor.py`) has several existing
+converters, including `AIProxyConvertor`; unknown enum values are not a generic
+extension mechanism. Unregistered known plugin codes use identity conversion.
+For new plugins, store APISIX-native YAML and use identity conversion rather than
+adding another representation.
 
-PluginConfig.yaml (DB) ──GET──▶ Frontend (raw YAML, as-is)
+## Catalog and compatibility
 
-PluginConfig.yaml (DB) ──publish──▶ Service-layer convertor ──▶ APISIX config
-                                    (DefaultPluginConvertor = identity, no conversion)
-```
+- Add the code in `apps/plugin/constants.py` and metadata in
+  `fixtures/plugins.yaml`. Match the supported APISIX Lua schema and priority
+  from `blueking-apigateway-apisix/src/apisix/plugins/`.
+- Fixture records are `schema.schema` and `plugin.plugintype`; link a schema by
+  natural key `[plugin-code, plugin, '0']`, or use `schema: null` when absent.
+  Preserve name translations, `_tags`, scope and intended `is_public` visibility.
+- Add a `BaseChecker` and its registration in `service/plugin/checker.py` only
+  for semantic validation or clearer errors that the schema does not provide.
+  A missing registered checker is a no-op, not a reason to create an empty one.
+- `controller/release_data.py:PluginData` maps names when scope-specific APISIX
+  names differ, such as header rewrite. Generic CRUD/URL code needs no change
+  for a catalog-only addition.
+- Fixture visibility and resource compatibility are separate. Policy is in
+  `service/plugin/compatibility.py`: AI-only plugins require AI resources;
+  AI resources use the compatible set; controller-managed AI and OAuth2 codes
+  cannot be resource-bound. Reuse `is_plugin_compatible_with_resource_kind()`
+  at create, update and import boundaries.
+- Stage validation remains permissive; AI Service filtering at publication is
+  owned by the controller guide. Change compatibility sets only with an explicit
+  product classification and corresponding tests.
 
-### Data Flow (legacy plugins only: `bk-rate-limit`, `bk-ip-restriction`)
+## Coverage
 
-```
-Frontend (form) ──POST──▶ PluginConfigYamlConvertor.to_internal_value() ──▶ DB storage
-DB storage ──GET──▶ PluginConfigYamlConvertor.to_representation() ──▶ Frontend (form)
-DB storage ──publish──▶ PluginConvertorFactory convertor ──▶ APISIX config
-```
-
-**`PluginConfigYamlConvertor` is ONLY for these 2 legacy plugins. Do NOT add new entries to it.**
-
-### Key Components
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **PluginTypeCodeEnum** | `apps/plugin/constants.py` | Enum of all plugin type codes |
-| **Fixtures** | `fixtures/plugins.yaml` | Schema and PluginType definitions (loaded via `loaddata`) |
-| **Checker** | `service/plugin/checker.py` (`PluginConfigYamlChecker`) | Plugin-specific validation with human-readable error messages |
-| **Validator** | `service/plugin/validator.py` (`PluginConfigYamlValidator`) | Orchestrates checker + JSON Schema validation |
-| **Service-layer convertor** | `service/plugin/convertor.py` (`PluginConvertorFactory`) | Converts DB storage format to APISIX-native config for publishing. New plugins use `DefaultPluginConvertor` (identity) automatically |
-| **Compatibility policy** | `service/plugin/compatibility.py` | Defines AI-only, controller-managed, and AI-compatible plugin sets plus resource-kind compatibility |
-| **API-layer convertor (LEGACY)** | `apis/web/plugin/convertor.py` (`PluginConfigYamlConvertor`) | **Legacy only** — used by `bk-rate-limit` and `bk-ip-restriction`. Do NOT add new plugins here |
-| **Release mapping** | `controller/release_data.py` (`PluginData`) | Maps plugin type_code to APISIX plugin name (only needed when they differ) |
-
-### Validation Flow (on create/update)
-
-```
-PluginConfigYamlValidator.validate(type_code, yaml_payload, schema)
-  │
-  ├─1─▶ PluginConfigYamlChecker(type_code).check(payload)
-  │       └── Dispatches to plugin-specific BaseChecker subclass (if registered)
-  │           Raises ValueError with human-readable messages
-  │
-  └─2─▶ PluginConvertorFactory.get_convertor(type_code).convert(yaml_loads(payload))
-          └── jsonschema.validate(converted_config, schema)
-              Validates against the JSON Schema from fixtures/plugins.yaml
-```
-
-The checker runs **before** schema validation. Its errors are more readable than raw JSON Schema errors.
-
-### Two Convertor Systems
-
-There are two independent convertor layers.
-
-**1. API-layer convertor — LEGACY ONLY, do NOT use for new plugins** (`apis/web/plugin/convertor.py`):
-- `PluginConfigYamlConvertor` with `to_internal_value()` / `to_representation()`
-- **Only 2 legacy plugins use this: `bk-rate-limit` and `bk-ip-restriction`**
-- Do NOT add new entries to `type_code_to_convertor`
-- For all other plugins (including new ones), data passes through unchanged
-
-**2. Service-layer convertor** (`service/plugin/convertor.py`):
-- `PluginConvertorFactory` with `get_convertor()` returning a `PluginConvertor`
-- If no convertor registered, returns `DefaultPluginConvertor` (identity — returns config unchanged)
-- Also used in validation: schema validation runs against the **converted** output
-- New plugins should NOT register a service-layer convertor either — store data in APISIX-native format so `DefaultPluginConvertor` works
-
-### Rule for New Plugins
-
-> **New plugins must NOT have any convertor (neither API-layer nor service-layer).**
-> Store data in APISIX-native format directly.
-> The form data = DB storage = APISIX config. `DefaultPluginConvertor` (identity) handles it automatically.
->
-> `PluginConfigYamlConvertor` is frozen — it only serves 2 legacy plugins and must not be extended.
-
-### AI Gateway Compatibility Boundaries
-
-Plugin compatibility is not determined by fixture visibility alone. Keep these
-current boundaries aligned with `service/plugin/compatibility.py` and its tests:
-
-- `AI_ONLY_PLUGIN_CODES` are exposed only for AI resources.
-- `CONTROLLER_MANAGED_PLUGIN_CODES` such as `ai-proxy` and `ai-proxy-multi`
-  cannot be user-bound to Resources; the controller generates them when
-  compiling AI Services for publication.
-- An AI resource accepts only `AI_COMPATIBLE_PLUGIN_CODES`. Keep list filtering
-  aligned with those policy sets, and reuse
-  `is_plugin_compatible_with_resource_kind()` at create, update, and
-  resource-import validation boundaries so one entrypoint cannot bypass the
-  policy.
-- Stage plugin configuration remains permissive, including for
-  controller-managed plugin codes. When publishing an AI Service,
-  `ServiceConvertor` filters Stage plugins against `AI_COMPATIBLE_PLUGIN_CODES`,
-  the same policy set used by `is_plugin_compatible_with_resource_kind()` for
-  AI resources, and logs the skipped type codes without configs or credentials.
-
-When adding a plugin, decide explicitly whether it is AI-only, AI-compatible,
-or standard-only. Update the policy set and
-`tests/service/plugin/test_compatibility.py` only when that classification is
-part of the requested product contract.
-
-## How to Add a New Plugin
-
-### Files to Modify (typically 3 files)
-
-#### 1. `apps/plugin/constants.py` — Add enum
-
-Add a new member to `PluginTypeCodeEnum`:
-```python
-BK_MY_PLUGIN = EnumField("bk-my-plugin", label=_("插件中文名"))
-```
-
-#### 2. `fixtures/plugins.yaml` — Add fixture entries
-
-Append the schema and plugin type records at the end of the file:
-
-**a) `schema.schema`** — JSON Schema for validating the plugin config (matches the Lua plugin's schema):
-```yaml
-- model: schema.schema
-  fields:
-    created_time: 2025-01-01 00:00:00.000000+00:00
-    updated_time: 2025-01-01 00:00:00.000000+00:00
-    name: bk-my-plugin       # must match the plugin code
-    type: plugin
-    version: '0'
-    _schema: |-
-      { ... JSON Schema ... }
-    description: '-'
-    example: '-'
-```
-
-Set `schema: null` in the plugintype entry if no schema validation is needed.
-
-**b) `plugin.plugintype`** — Plugin type catalog entry:
-```yaml
-- model: plugin.plugintype
-  fields:
-    code: bk-my-plugin        # APISIX plugin name
-    name: 中文名
-    name_en: English Name
-    is_public: true            # false = hidden from normal users
-    scope: stage_and_resource  # or: stage, resource
-    priority: 17460            # match the Lua plugin's priority
-    _tags: "流量,Traffic"       # comma-separated zh,en tag pairs
-    schema:                    # FK to schema.schema (or null)
-    - bk-my-plugin
-    - plugin
-    - '0'
-```
-
-#### 3. `service/plugin/checker.py` — Add checker (optional but recommended)
-
-Create a `BaseChecker` subclass and register it:
-
-```python
-class MyPluginChecker(BaseChecker):
-    def check(self, payload: str):
-        loaded_data = yaml_loads(payload)
-        if not loaded_data:
-            raise ValueError("YAML cannot be empty")
-        # ... plugin-specific validation ...
-
-# Register in PluginConfigYamlChecker.type_code_to_checker:
-PluginTypeCodeEnum.BK_MY_PLUGIN.value: MyPluginChecker(),
-```
-
-The checker validates things that JSON Schema cannot express well (e.g., cross-field dependencies, semantic rules, better error messages).
-
-If no checker is registered, `PluginConfigYamlChecker.check()` is a no-op for that plugin type.
-
-### Files You Usually Do NOT Modify
-
-| File | Why not |
-|------|---------|
-| `apis/web/plugin/convertor.py` | **FROZEN.** `PluginConfigYamlConvertor` is legacy-only (serves `bk-rate-limit` and `bk-ip-restriction`). Never add new entries |
-| `service/plugin/convertor.py` | `DefaultPluginConvertor` (identity) is used automatically for new plugins. Do not register new convertors |
-| `controller/release_data.py` | Only needed if APISIX plugin name differs by scope (e.g., `bk-header-rewrite` → `bk-stage-header-rewrite` / `bk-resource-header-rewrite`) |
-| `apis/web/plugin/views.py` | Generic CRUD views handle all plugins |
-| `apis/web/plugin/serializers.py` | Generic serializers handle all plugins |
-| `apis/web/plugin/urls.py` | URL routing is plugin-agnostic |
-
-### Testing
-
-Add tests in `tests/service/plugin/test_checkers.py` following the existing pattern:
-
-```python
-class TestMyPluginChecker:
-    @pytest.mark.parametrize(
-        "data, ctx",
-        [
-            (valid_data, does_not_raise()),
-            (invalid_data, pytest.raises(ValueError)),
-        ],
-    )
-    def test_check(self, data, ctx):
-        checker = MyPluginChecker()
-        with ctx:
-            checker.check(yaml_dumps(data))
-```
-
-Run tests:
-```bash
-cd src/dashboard
-uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -x -q --tb=short apigateway/tests/service/plugin/test_checkers.py'
-```
-
-### Checklist
-
-- [ ] Add enum to `PluginTypeCodeEnum` in `apps/plugin/constants.py`
-- [ ] Add `schema.schema` entry in `fixtures/plugins.yaml` (derive from the Lua plugin's schema)
-- [ ] Add `plugin.plugintype` entry in `fixtures/plugins.yaml`
-- [ ] Add checker in `service/plugin/checker.py` and register in `type_code_to_checker`
-- [ ] Add tests for the checker in `tests/service/plugin/test_checkers.py`
-- [ ] Classify AI compatibility when the product contract requires it; update
-  `service/plugin/compatibility.py` and its tests together
-- [ ] Verify: no API-layer convertor needed (new plugin rule)
-- [ ] Verify: no service-layer convertor needed (store APISIX-native format)
-- [ ] Verify: no `release_data.py` mapping needed (plugin name = APISIX name)
-
-### Reference: Lua Plugin Schema
-
-The APISIX plugin Lua files live in the `blueking-apigateway-apisix` repo under `src/apisix/plugins/`. The `schema` table in the Lua file defines the JSON Schema that the dashboard's `_schema` fixture entry should match. The `priority` field in the Lua file should match the `priority` in the plugintype fixture.
+Relevant focused targets are `tests/apis/web/plugin/`,
+`tests/service/plugin/test_checkers.py`, `test_validators.py`, `test_convertors.py`,
+`test_compatibility.py` in that service test directory, and controller tests when
+publishing behavior changes. Inspect actual fixture records and their schema
+references for catalog-only edits; do not require a checker/test when no custom
+validation was added. Use the inherited Dashboard wrapper and gates.

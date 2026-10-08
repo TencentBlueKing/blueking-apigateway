@@ -1,111 +1,74 @@
-# BDD Test Suite - Business Context
+# BDD Test Suite
 
-> This file contains domain-specific knowledge for the BlueKing API Gateway BDD test suite.
-> It supplements the `bdd-test-gen` SKILL (`.agents/skills/bdd-test-gen/SKILL.md`) with
-> information that is too detailed or volatile to include in the SKILL itself.
+## Workflow and command roots
 
-## Workflow
+`cases/` contains Chinese acceptance cases; `scripts/` contains executable
+Playwright specs; `runtime/` owns environment preparation, login, setup,
+teardown, helpers, and runner configuration. Case/module counts change: inspect
+the actual files instead of relying on a fixed inventory.
 
-1. **BDD Cases** (`test-bdd/cases/`): ~87 curated Chinese Gherkin scenarios covering 26 functional modules
-2. **Script Generation**: Invoke the `bdd-test-gen` SKILL to convert BDD cases into Playwright scripts by exploring a live environment
-3. **Script Execution**: Run `make test-bdd URL=<url> USER=<user> PASSWORD=<pass>` — no agent needed, pure script execution
+Generate scripts through the skill named in the repository-root guide, exploring
+the target environment before choosing locators. Running existing scripts does
+not require generation.
 
-Read `.agents/skills/bdd-test-gen/SKILL.md` before executing any script generation commands.
-
-## Quick Commands
+From the **repository root**:
 
 ```bash
-# Run all BDD tests
-make test-bdd URL=https://example.com USER=admin PASSWORD=secret
-
-# Generate scripts from BDD cases (agent-assisted)
-# Invoke the bdd-test-gen SKILL with: --url <URL> --user <USER> --password <PASS> --all
+make test-bdd-init
+make test-bdd
 ```
 
-## Module Classification
+Before execution, configure ignored `test-bdd/runtime/.test-env.json` with
+`url` plus either `user`/`password` or `cookie`. The root Make target also accepts
+`URL`, `USER`, `PASSWORD`, and `COOKIE` overrides; `runtime/prepare-env.js` accepts
+`TEST_BDD_URL`, `TEST_BDD_USER`, `TEST_BDD_PASSWORD`, and `TEST_BDD_COOKIE` from the
+environment. Reuse available test credentials without committing them.
 
-The BDD test suite covers 26 functional modules organized under 5 top-level navigation sections:
+For a focused spec, run from **`test-bdd/runtime`** after configuration and init:
 
-### 我的网关 (Gateway Management)
+```bash
+npx playwright test --config=playwright.config.js ../scripts/<module>/<case>.spec.js
+```
 
-| # | Module | Page Path | Type | Notes |
-|---|--------|-----------|------|-------|
-| 01 | 网关管理 | `/` | Mutating | CRUD gateways — use test gateway for create/delete |
-| 02 | 资源配置 | `/:gatewayId/resources` | Mutating | CRUD resources, plugins, import/export |
-| 03 | 资源版本 | `/:gatewayId/resource/version` | Mutating | Version generation requires resource changes first |
-| 04 | SDK列表 | `/:gatewayId/sdk` | Read-only | View/filter SDK list |
-| 05 | 环境概览 | `/:gatewayId/stage/overview` | Mutating | Publish/unpublish resources to stages |
-| 06 | 环境资源信息 | `/:gatewayId/stage/resource` | Read-only | View resources by environment |
-| 07 | 环境插件管理 | `/:gatewayId/stage/plugin` | Mutating | CRUD environment-level plugins |
-| 08 | 环境变量管理 | `/:gatewayId/stage/variable` | Mutating | CRUD stage variables |
-| 09 | 发布记录 | `/:gatewayId/release/history` | Read-only | View release history |
-| 10 | 后端服务 | `/:gatewayId/backends` | Mutating | CRUD backend services — must configure before resource creation |
-| 11 | 权限审批 | `/:gatewayId/permission/applys` | Mutating | Approve/reject permission requests |
-| 12 | 应用权限 | `/:gatewayId/permission/apps` | Read-only | View app permission records |
-| 13 | 访问日志 | `/:gatewayId/access-log` | Read-only | View/search access logs |
-| 14 | 统计报表 | `/:gatewayId/statistics` | Read-only | View statistics charts |
-| 15 | 在线调试 | `/:gatewayId/online-debug` | Mutating | Send debug requests |
-| 16 | 调试历史 | `/:gatewayId/online-debug/history` | Read-only | View debug request history |
-| 17 | 基本信息 | `/:gatewayId/basic-info` | Mutating | View/edit gateway settings, deactivate/delete |
-| 18 | MCP服务 | `/:gatewayId/mcp` | Mutating | CRUD MCP Servers |
-| 19 | MCP权限审批 | `/:gatewayId/mcp/permission` | Mutating | Approve/reject MCP permissions |
-| 20 | 操作记录 | `/:gatewayId/audit` | Read-only | View operation audit logs |
+Use a real path from `scripts/`. The runner selects `*.spec.js`, uses one worker
+with no retries, and invokes global setup/teardown even for focused selections.
+It writes timestamped reports under `runtime/reports/`. A package-level bare
+`npm test` does not explicitly select this runtime config; use the commands above.
 
-### 组件管理 (Component Management)
+## State and test boundaries
 
-| # | Module | Page Path | Type |
-|---|--------|-----------|------|
-| 21 | 组件管理 | `/components/access` | Mutating |
-| 22 | 文档分类 | `/components/doc-category` | Mutating |
-| 23 | 实时运行数据 | `/components/realtime` | Read-only |
+- `runtime/setup.js` creates a test gateway, backend/resource/version state and
+  authenticated storage; teardown attempts to deactivate/delete that gateway.
+  Confirm cleanup from the result, since teardown catches errors. Do not point
+  destructive cases at an unrelated existing gateway.
+- Reuse `runtime/helpers.js` for login, state, API-assisted fixtures and cleanup.
+  Specs using `runtime/bdd-test.js` also enforce the shared hard-failure guard.
+- Cases sharing the gateway run sequentially. Keep setup prerequisites explicit:
+  configure a suitable backend, create resources, create a version, then publish
+  when the case needs released state. Put gateway deactivation/deletion last.
+- Classify the **actions** in a case: permission grant/revoke, marketplace
+  applications, online debugging and publish operations can mutate state even
+  on pages that also provide read-only views.
 
-### API 文档 (API Documentation)
+## Navigation and UI checks
 
-| # | Module | Page Path | Type |
-|---|--------|-----------|------|
-| 24 | API文档 | `/docs/api-docs` | Read-only |
+Routes are defined in `src/dashboard-front/src/router/index.ts` and each view's
+route module (paths below are relative to the site base, with `:id` a gateway ID):
 
-### 平台工具 (Platform Tools)
+| Area | Current route |
+| --- | --- |
+| Resource editing / versions | `/:id/resource/setting`, `/:id/resource/version` |
+| Environment overview / release history | `/:id/stage/overview`, `/:id/stage/release-record` |
+| Backends | `/:id/backend` |
+| Permission applications / grants | `/:id/permission/apply`, `/:id/permission/app` |
+| Access logs / statistics | `/:id/log`, `/:id/dashboard`, `/:id/report` |
+| Debug / basic information / audit | `/:id/online-debugging`, `/:id/basic-info`, `/:id/audit` |
+| MCP servers / approvals | `/:id/mcp/server`, `/:id/mcp/permission` |
+| Component categories / runtime data | `/components/category`, `/components/runtime-data` |
+| API docs / platform tools / MCP market | `/docs/api-docs`, `/platform-tools`, `/mcp-market` |
 
-| # | Module | Page Path | Type |
-|---|--------|-----------|------|
-| 25 | 平台工具 | `/tools` | Read-only |
-
-### MCP 市场 (MCP Market)
-
-| # | Module | Page Path | Type |
-|---|--------|-----------|------|
-| 26 | MCP市场 | `/mcp-market` | Read-only |
-
-## Recommended Execution Order
-
-1. **Setup**: Create test gateway, configure backend, create resource, publish
-2. **Read-only modules first**: 04, 06, 09, 12, 13, 14, 16, 20, 23, 24, 25, 26
-3. **Resource lifecycle**: 02 → 03 → 05
-4. **Environment config**: 07, 08
-5. **Backend services**: 10
-6. **Permission flows**: 11, 19
-7. **MCP Server**: 18
-8. **Online debug**: 15
-9. **Basic info**: 17 (last — may deactivate gateway)
-10. **Teardown**: Delete test gateway
-
-## Domain Gotchas
-
-### Login
-- Chinese form: `input[placeholder="请输入用户名"]` / `input[placeholder="请输入密码"]` / `立即登录`
-- Session expiry redirects to `/login/`
-
-### BkSelect Dropdowns
-- **NEVER use `Escape`** — causes toggle bug. Dismiss with `body.click({ position: { x: 10, y: 10 } })`
-
-### Gateway Operations
-- Name: lowercase letters, numbers, hyphens; starts with lowercase; 3-30 chars
-- Deletion: deactivate (停用) → delete (删除) → may require typing name
-
-### Resource Operations
-- Backend service **must be configured first** (error: "后端服务地址不允许为空")
-- Version generation disabled when no resource changes
-
-### Publish Flow
-- "生成版本" → "下一步" → "确定" → "立即发布" → select stage → "下一步" → "确认发布" → InfoBox confirm
+Environment resources/plugins/variables and debugging history may be tabs or
+panels; do not invent standalone URLs from case names. UI controls depend on
+edition, feature flags, role, and deployed version. Confirm login selectors,
+name constraints, dropdown dismissal and publish steps in the live page/helpers
+instead of treating old observations as universal rules.

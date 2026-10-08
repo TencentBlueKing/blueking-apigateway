@@ -1,92 +1,37 @@
 # API Layer Guide
 
-This guide applies under `apigateway/apigateway/apis/`. The dashboard and
-repository-root `AGENTS.md` files also apply. Read a deeper guide when present,
-including `apis/web/plugin/AGENTS.md` for plugin work.
+## Surface and boundary contracts
 
-## Surface Ownership
+`api-layers` in `pyproject.toml` enforces independence between `apis.web`,
+`apis.open`, `apis.v2.open`, `apis.v2.inner`, and `apis.v2.sync`. Web serves the
+frontend; legacy Open preserves compatibility formats; v2 Open serves public
+callers, Inner serves internal callers, and Sync serves automation/SDK clients.
 
-The API surfaces are intentionally independent and enforced by the
-`api-layers` import-linter contract in `pyproject.toml`:
-
-- `apis.web` serves `dashboard-front` and may use Web-specific DTOs.
-- `apis.open` is the legacy open API with compatibility response formats.
-- `apis.v2.open` is the public v2 open API.
-- `apis.v2.inner` serves BlueKing internal callers.
-- `apis.v2.sync` serves gateway automation and SDK sync clients.
-
-- Do not import views, serializers, or helpers from one API surface into
-  another.
-- Keep small surface-specific parameter shaping, response assembly, and
-  compatibility behavior in the owning surface, even when similar code exists
-  elsewhere.
-- Move behavior down only when it is genuinely shared workflow, domain,
-  service, or utility logic. Do not create a shared API helper that couples
-  otherwise independent surfaces.
-
-## Boundary Responsibilities
-
+- Do not import another surface's views, serializers or helpers. Keep local
+  shaping and compatibility in that surface; extract only shared lower-layer
+  behavior.
 - Serializers own transport validation and input/output definitions. Views own
-  request context, thin control flow, lower-layer calls, and response assembly.
-- Avoid per-row model lookups from serializer methods or response filters; use
-  query shaping, annotations, or lower-layer batching to prevent N+1 behavior.
-- Verify gateway/resource ownership, permission classes, tenant context, and
-  object scope before accepting identifiers from a request. Do not confuse an
-  input-validation gap with proof of an authorization bypass.
-- Web and v2 APIs normally use `OKJsonResponse` / `FailJsonResponse`. Preserve
-  `V1OKJsonResponse` / `V1FailJsonResponse` where the legacy open contract
-  requires them.
-- Keep client-visible security errors sanitized and log the original exception
-  with `logger.exception(...)`.
-- Preserve unique schema `Meta.ref_name` values (supported by drf-spectacular) when adding serializers.
+  request context, lower-layer calls and response assembly.
+- Shape queries or batch lower-layer reads instead of per-row serializer lookups.
+- Validate identifier ownership alongside permission classes and tenant scope.
+  An input gap alone does not establish an authorization bypass.
+- Preserve `OKJsonResponse` / `FailJsonResponse` and legacy
+  `V1OKJsonResponse` / `V1FailJsonResponse` contracts at their existing boundaries.
+- Keep client-visible security errors sanitized; record diagnostic exceptions
+  through the existing logger without credential material.
+- Keep serializer schema names unique. Existing `Meta.ref_name` overrides are
+  supported by drf-spectacular for compatibility.
 
-Open and v2 automation AI backend inputs use the normalized stored protocol.
-Masked-secret restoration is a Web update-boundary behavior; do not apply it to
-Open or Sync input, where submitted stored-protocol values are literal.
+Open and v2 Sync AI backend input uses normalized storage configuration; submitted
+secret values are literal. Web masked-secret restoration belongs only to
+`web/ai_backend/adapter.py`: it requires an existing matching mask and unchanged
+provider/destination origin and auth-header identity. Web represents one instance
+and at most one auth header; preserve nonrepresentable-config errors in
+`web/ai_backend/presentation.py` instead of silently dropping valid stored fields.
 
-## V2 List And Lookup Contracts
+## API consistency and coverage
 
-- Keep collection listing and exact batch lookup as separate APIs under
-  `apis.v2`. A list API serves discovery and filtering on the collection route;
-  when callers need exact batch retrieval by identifiers such as `ids` or
-  `names`, add a non-paginated `-/lookup/` route that returns `data: [...]`.
-  Do not add an identifier-list mode to a list API that changes its normal
-  visibility, filtering, or pagination semantics.
-- List APIs use the standard `limit`/`offset` pagination contract and return
-  `data: {"count": <int>, "results": [...]}`.
-- `apigateway.utils.paginator.LimitOffsetPaginator` is deprecated for
-  `apis.v2`; do not use it in new or modified v2 endpoints. Use the configured
-  `apigateway.common.pagination.StandardLimitOffsetPagination` (or a
-  surface-specific subclass) through `self.paginate_queryset(...)` and
-  `self.get_paginated_response(...)` instead. Do not hand-build the envelope
-  when the view owns an unpaginated queryset or list. When a downstream source
-  already applies `limit`/`offset` and supplies the total count, preserve the
-  same standard response envelope without paginating the page again.
-
-## OpenAPI Contract
-
-When changing an open API, keep these representations aligned:
-
-- Views and serializers under `apigateway/apigateway/apis/`.
-- Gateway YAML under `apigateway/apigateway/data/apigw-definitions/`.
-- Markdown docs under `apigateway/apigateway/data/apidocs/zh/`.
-
-Both dashboard lint targets run the consistency checker. For a focused rerun:
-
-```bash
-cd src/dashboard
-uv run make lint-openapi
-uv run make lint-openapi-help
-```
-
-The help target documents scope, API, JSON, and intentional fix options. Keep
-method, path, request, response, status, and error documentation synchronized.
-
-## Testing
-
-- Mirror tests under `apigateway/apigateway/tests/apis/<surface>/`.
-- API tests normally call URLs by `view_name` and assert through `resp.json()`.
-- When a contract exists on several surfaces, test every surface intended to
-  change and preserve tests for surfaces that intentionally differ.
-- Follow the dashboard guide for the exact pytest wrapper and final lint/test
-  gates.
+Open API changes that affect registrations or documentation also require
+`apigateway/apigateway/data/AGENTS.md`; it owns consistency paths and commands.
+Tests mirror `tests/apis/<surface>/`; URL tests normally use `view_name` and
+`resp.json()`. Cover every affected surface and retain intentional differences.

@@ -1,224 +1,87 @@
-# AGENTS.md
+# Dashboard Guide
 
-Guidance for coding agents working in `src/dashboard`. The repository-root
-`AGENTS.md` also applies. Read the nearest nested `AGENTS.md` before changing a
-directory that has one.
+Django control plane. Commands below run from `src/dashboard`; paths are
+relative to it unless marked repository-root. Runtime and dependency versions
+come from `pyproject.toml` and `uv.lock`. `apigateway/` is the Django project
+root; `apigateway/apigateway/` is the importable package.
 
-## Scope
+## Runtime and commands
 
-- Work from `src/dashboard` unless a command says otherwise.
-- Do not touch sibling projects for dashboard-only requests.
-- Start from the exact path, endpoint, traceback, SQL, commit, PR, or report
-  named by the user and verify it against the active checkout.
-- Before changing code, read the target file, its relevant caller or route, its
-  serializer or form, and the nearest tests.
-- Keep changes surgical. Do not reformat or refactor adjacent code unless the
-  requested change requires it.
-- During refactors, preserve useful comments and keep unchanged control flow in
-  contiguous blocks when that makes the diff easier to review.
-- This subproject is Python-only. Frontend code lives in
-  `src/dashboard-front`.
+Use `uv run` for Python-backed commands. Initialize the locked environment with
+`uv sync --locked --all-extras --dev`; optional `make init` also installs developer
+tools and Git hooks. After dependency changes, use `make uv.lock` and
+`uv lock --check`. Verify the Python version with `uv run python --version`.
 
-## Command Roots And Runtime
+`BKPAAS_ENVIRONMENT` selects `apigateway.conf.settings_<environment>` and
+defaults to `dev`; `ENABLE_MULTI_TENANT_MODE` controls tenancy. Local settings
+start from `apigateway/apigateway/conf/.env.tpl`.
 
-Follow the repository-root checkout and worktree rules before selecting a
-branch or PR. Derive paths from the active checkout:
+Edition code lives in `apigateway/apigateway/editions/`. CI activates EE before
+lint and tests; use other edition/reset targets only when the task requires them.
 
 ```bash
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-DASHBOARD_ROOT="$REPO_ROOT/src/dashboard"
-cd "$DASHBOARD_ROOT"
+uv run make edition-ee
+uv run make lint-check
 ```
 
-Run repository-level `git`, `gh`, and worktree commands from `REPO_ROOT`. Run
-dashboard `make`, `uv`, lint, test, and management commands from
-`DASHBOARD_ROOT`. Use `uv run` for Python-backed Make targets so a global pyenv
-or stale `.venv` is not mistaken for a code failure.
+`lint-check` runs Ruff checks, mypy, import-linter, and API consistency checks.
+It does not check Ruff formatting; use `uv run ruff format --check` on affected
+Python paths when formatting evidence is needed. `uv run make lint` formats and
+auto-fixes files, so use it only when those changes are intended.
 
-For direct Django pytest, use the wrapper in **Testing**. If a command reports a
-missing executable, wrong Python version, unconfigured Django settings, or an
-unrelated PR, re-check the worktree, command root, and runtime before treating
-it as a product failure.
+For focused Django tests, replace the final target in this wrapper:
 
-## Project Overview
+```bash
+uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
+```
 
-This subproject uses Django.
+The test environment and Django settings are required. `--nomigrations` avoids
+migration setup for focused tests. Test-fixture contracts are in
+`apigateway/apigateway/tests/AGENTS.md`.
 
-The current Python, Django, tooling, and dependency versions are defined by
-`pyproject.toml` and `uv.lock`. The Django project root is `apigateway/`; the
-importable package is `apigateway/apigateway/`.
+Code changes need affected tests and the EE lint gate. Broad/shared changes also
+need the full gate, which uses migrations and parallel workers:
 
-## Important Paths
+```bash
+uv run make edition-ee
+uv run make test
+```
 
-- `Makefile` - supported setup, lint, test, edition, fixture, and image targets.
-- `pyproject.toml` and `uv.lock` - dependencies, tool configuration, and lockfile.
-- `apigateway/apigateway/urls.py` - top-level URL routing.
-- `apigateway/apigateway/conf/` - settings and test environment.
-- `apigateway/apigateway/data/apigw-definitions/` - gateway resource YAML.
-- `apigateway/apigateway/data/apidocs/zh/` - OpenAPI markdown documentation.
-- `scripts/check_api_consistency.py` and `scripts/config.yaml` - deterministic
-  API/YAML/documentation consistency checks.
-- `apigateway/apigateway/tests/` - pytest suite, mirroring source structure.
-- `apigateway/apigateway/` layer guides: `apis/AGENTS.md`, `biz/AGENTS.md`,
-  `controller/AGENTS.md`, `service/AGENTS.md`, and `core/AGENTS.md`; read the
-  guide under the directory being changed.
-- `apigateway/apigateway/apis/web/plugin/AGENTS.md` - plugin fixtures,
-  conversion, compatibility, and focused verification.
-- Repository-root `docs/ai-gateway-models.md` - AI Gateway domain contract.
-- Repository-root
-  `docs/superpowers/specs/2026-07-21-ai-backend-web-protocol-decoupling-design.md`
-  - AI Backend Web/storage/publish protocol design.
+## Architecture and source map
 
-## Architecture
-
-`import-linter` enforces the main dependency direction:
+`pyproject.toml` defines import contracts and their explicit exceptions:
 
 ```text
 apis -> biz -> controller -> service -> components -> apps -> core -> common -> utils
 ```
 
-Higher layers may import lower layers only. Put shared logic in the lowest
-appropriate layer instead of adding an import exception.
+| Layer | Ownership |
+| --- | --- |
+| `apis/` | HTTP validation, DTOs, request and response shaping; independent API surfaces. |
+| `biz/` | Use-case decisions, transactions, audit and side-effect sequencing. |
+| `controller/` | Release input, APISIX compilation, distribution and publisher tasks. |
+| `service/` | Focused reusable queries, relation operations, snapshots and cleanup. |
+| `components/` | External BlueKing clients. |
+| `apps/` | App models, migrations, admin, commands and Celery entrypoints. |
+| `core/` | Central models, single-model managers and normalized configuration. |
+| `common/`, `utils/` | Middleware, permissions, fields, tenancy and low-level utilities. |
 
-Layer ownership:
+Place API shaping in its surface, workflows in their owning business domain,
+and reusable leaf operations in `service/`. Multi-model business queries do not
+belong in model managers. Read the guide in the layer/module being changed.
 
-- `apis/` owns HTTP surfaces, serializers, boundary validation, parameter
-  shaping, and response assembly. Read `apigateway/apigateway/apis/AGENTS.md`.
-- `biz/` owns use-case workflows, permission-aware decisions, lifecycle
-  branching, audit or side-effect orchestration, transactions, and sequencing.
-  Read `apigateway/apigateway/biz/AGENTS.md`.
-- `controller/` owns release compilation, APISIX conversion, distribution, and
-  publisher tasks. Read `apigateway/apigateway/controller/AGENTS.md`.
-- `service/` owns focused reusable leaf capabilities over domain data. It must
-  not absorb workflow decisions merely to bypass a `biz` import boundary. Read
-  `apigateway/apigateway/service/AGENTS.md` before changing it.
-- `components/` owns clients for external BlueKing systems.
-- `apps/` owns Django app models, admin, migrations, commands, and Celery tasks.
-- `core/` owns the central gateway domain models and normalized configuration.
-  Read `apigateway/apigateway/core/AGENTS.md` before changing it.
-- `common/` owns reusable middleware, permissions, fields, mixins, tenant
-  helpers, and factories. `utils/` owns low-level utilities.
+Useful paths:
 
-When placing a function:
+- `apigateway/apigateway/urls.py`: top-level routing.
+- `apigateway/apigateway/conf/`: runtime settings and test environment.
+- `apigateway/apigateway/tests/`: tests mirroring source ownership.
+- `apigateway/apigateway/data/apigw-definitions/` and `data/apidocs/zh/`:
+  gateway resource YAML and OpenAPI Markdown.
+- `scripts/check_api_consistency.py`, `scripts/config.yaml`: API contract checks.
 
-1. Keep module-local or single-domain behavior where it is.
-2. Keep API-surface shaping in the owning view or serializer.
-3. Put workflows and decisions in `biz/` or release compilation in
-   `controller/`.
-4. Put only the smallest focused, reusable relation, query, or data operation
-   in `service/`.
-5. Keep reusable single-model queryset logic in managers; do not put
-   multi-model business queries there.
+## Credential handling
 
-## AI Gateway And Backend Configuration
-
-Read both AI Gateway documents in **Important Paths** before changing AI
-models, APIs, connectivity checks, plugin compatibility, or publishing. Current
-code and tests take precedence over older plans or review reports.
-
-Follow the owning API, core, controller, and plugin guides when changing a
-representation or its transition. Do not repair one representation by leaking
-its surface-specific rules into another layer.
-
-## Runtime Setup
-
-`ENABLE_MULTI_TENANT_MODE` controls tenancy; `BKPAAS_ENVIRONMENT` selects the
-settings module and defaults to `dev`.
-
-Use `uv`, `pyproject.toml`, and `uv.lock` as the environment source of truth:
-
-```bash
-cd "$DASHBOARD_ROOT"
-make init
-uv sync --locked --all-extras --dev
-uv run python --version
-```
-
-Refresh a stale `.venv` with `uv sync` before trusting lint or test results.
-After dependency changes, run:
-
-```bash
-cd "$DASHBOARD_ROOT"
-make uv.lock
-uv lock --check
-```
-
-## Edition System
-
-Edition-specific code lives under `apigateway/apigateway/editions/`. CI uses
-the enterprise edition before lint and tests:
-
-```bash
-cd "$DASHBOARD_ROOT"
-uv run make edition-ee
-```
-
-Use the other edition targets in the Makefile only when the task explicitly
-requires another edition or an edition reset.
-
-## Linting
-
-`ruff`, `mypy`, `lint-imports`, and the API consistency checker are configured
-in `pyproject.toml` and the Makefile.
-
-```bash
-cd "$DASHBOARD_ROOT"
-uv run make lint-check
-uv run make lint
-```
-
-Use `uv run make lint-check` as the default non-mutating agent gate. Run the
-mutating `uv run make lint` only when formatting or fixes are intended, then
-inspect its diff. `lint-check` does not run `ruff format --check`; use an
-explicit non-mutating Ruff format check when formatting evidence is required.
-
-## Testing
-
-The full test gate is:
-
-```bash
-cd "$DASHBOARD_ROOT"
-uv run make edition-ee
-uv run make test
-```
-
-For a focused Django pytest target:
-
-```bash
-cd "$DASHBOARD_ROOT"
-uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
-```
-
-- Tests mirror source paths under `apigateway/apigateway/tests/`.
-- Direct pytest must load `apigateway/conf/unittest_env` and pass
-  `--ds apigateway.settings`.
-- Use `--nomigrations` for focused tests when branch migration conflicts block
-  database setup.
-- Reuse fixtures from `tests/conftest.py`; model setup commonly uses `G()` from
-  `django_dynamic_fixture`.
-
-## Security And Secrets
-
-- Do not commit `.env` values, app secrets, database credentials, tokens, or
-  generated certificates.
-- Copy local configuration from `apigateway/apigateway/conf/.env.tpl`.
-- Verify routes, serializers, permissions, tenant checks, and downstream
-  handlers before accepting or rejecting a security report.
-- API responses, logs, exceptions, audit events, and publish history must not
-  expose plaintext or encrypted credential payloads.
-
-## Post-Implementation Requirements
-
-For markdown-only documentation changes, do not run `make lint` or `make test`;
-verify the diff and referenced paths instead.
-
-For code changes:
-
-1. Add or update focused tests under `apigateway/apigateway/tests/`.
-2. Update API docs and gateway YAML when an API contract changes.
-3. Run the narrow relevant pytest target first.
-4. Run `uv run make edition-ee && uv run make lint-check` for the CI-style lint
-   gate. Use `uv run make lint` only when auto-fix changes are intended.
-5. Run `uv run make edition-ee && uv run make test` for broad or shared changes.
-
-If a required verification command is skipped, say exactly why.
+Responses, logs, exceptions, audit events and publish history must not expose
+plaintext secrets or encrypted credential payloads. Check the owning serializer,
+tenant/permission boundary and downstream handler when assessing a security
+report. Do not bypass model encryption or display masking in a new entrypoint.

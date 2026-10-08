@@ -1,89 +1,47 @@
 # AGENTS.md
 
-## Overview
+## Scope and shared language
 
-This is a multi-component API Gateway repository. The root guidance applies to
-the whole checkout; each component's nearest `AGENTS.md` defines its local
-runtime, architecture, and verification commands.
+This checkout contains independently built components. Apply this guide and each
+`AGENTS.md` along the path to the files being changed; a deeper guide adds local
+requirements. When starting at the repository root, read those descendant guides
+before working in their directories. Do not load sibling components' guides
+unless the task crosses their boundary.
 
-## Shared Domain Language
+Read [DDD ubiquitous language](docs/ddd-ubiquitous-language.md) once per task for
+shared terms, identity scopes, lifecycles, compatibility mappings, and component
+relationships. Maintain those definitions there; local guides describe development
+and module-specific constraints without copying the glossary.
 
-At the start of work in any component, read
-[DDD ubiquitous language (中文)](docs/ddd-ubiquitous-language.md) together with
-this file and the applicable component guides. It is the canonical source for
-shared terms, identity scopes, lifecycles, compatibility mappings, and their
-maintenance rules; component guides contain local development instructions.
+## Component entrypoints
 
-## Project Structure
+| Directory | Responsibility / guide |
+| --- | --- |
+| [src/dashboard](src/dashboard/AGENTS.md) | Django management APIs, database models, configuration publishing |
+| [src/dashboard-front](src/dashboard-front/AGENTS.md) | Vue dashboard |
+| [src/core-api](src/core-api/AGENTS.md) | Runtime permission/key queries and publish-event ingestion |
+| [src/operator](src/operator/AGENTS.md) | Control-plane to APISIX etcd synchronization |
+| [src/mcp-proxy](src/mcp-proxy/AGENTS.md) | MCP protocol serving and gateway tool calls |
+| [src/esb](src/esb/AGENTS.md) | Legacy ESB; outside normal development scope |
+| [test-bdd](test-bdd/AGENTS.md) | Playwright BDD cases, generated scripts, and runner |
+| `test/` | Existing API integration suite; see `test/README.md` |
 
-```
-.
-├── AGENTS.md
-├── README_EN.md
-├── README.md
-├── Makefile                # make test-bdd — run BDD test suite
-├── docs
-│   └── ddd-ubiquitous-language.md # Shared domain vocabulary for all components
-├── specs                   # SDD docs
-│   ├── 001-agent-test-suite
-│   └── 002-bdd-test-refactor
-├── src
-│   ├── core-api            # the core-api service, ref: src/core-api/AGENTS.md
-│   ├── dashboard           # the dashboard, ref: src/dashboard/AGENTS.md
-│   ├── dashboard-front     # the frontend of dashboard, ref: src/dashboard-front/AGENTS.md
-│   ├── esb                 # abandoned, not important, ignore it
-│   ├── mcp-proxy           # the mcp-proxy service, ref: src/mcp-proxy/AGENTS.md
-│   └── operator            # the operator service, ref: src/operator/AGENTS.md
-├── test                    # existing e2e test suite
-│   ├── bin
-│   ├── cases
-│   ├── Dockerfile
-│   ├── README.md
-│   └── sync
-└── test-bdd                # Playwright BDD test suite
-    ├── .gitignore          # Ignores runtime artifacts
-    ├── AGENTS.md           # Business context, module classification, domain gotchas
-    ├── cases/              # BDD test cases in Chinese markdown
-    ├── scripts/            # Generated Playwright test scripts
-    ├── runtime/            # Runner helpers, setup, teardown, and config
-    │   └── package-lock.json # Additional tracked runtime lockfile
-    ├── package.json
-    └── package-lock.json
-```
+## Working in this checkout
 
-## Working In This Repository
+- Before editing or running checks, verify `git rev-parse --show-toplevel`,
+  `git status --short --branch`, and `git rev-parse HEAD`. For a named PR or
+  worktree, match its head to `git worktree list --porcelain`.
+- Start from the named endpoint, log, path, or revision. Keep changes inside its
+  component unless a verified producer/consumer contract requires more.
+- Run component commands from the directory its guide specifies. Runtime and
+  checks are component-local; the root `.envrc` is not a shared activation script.
+- For review findings, distinguish issues present in the inspected code from
+  issues introduced by the selected diff.
+- For Markdown-only changes, check the diff, references, and executable examples;
+  do not run application lint/test/build suites. Code and configuration changes
+  use the affected component's gates. Report skipped checks and their limits.
 
-- Read this file and the nearest nested `AGENTS.md` for every target path. Run
-  commands from the component root documented there; do not assume one runtime
-  or top-level gate covers all projects.
-- Keep component-local work inside that component unless the request or a
-  verified producer/consumer path requires a cross-component change.
-- Start investigations from the exact log, path, URL, endpoint, commit, PR, or
-  report named by the user, then verify it against the current checkout before
-  generalizing.
-- Before editing, testing, reviewing, or publishing from a repository with
-  multiple worktrees, verify the active root, branch, and commit with
-  `git rev-parse --show-toplevel`, `git status --short --branch`, and
-  `git rev-parse HEAD`. When a PR or worktree is named, match its explicit head
-  to `git worktree list --porcelain`; do not let a helper infer a PR from an
-  unrelated checkout.
-- For review findings, answer two questions separately: whether the issue is
-  real in the inspected code and whether the selected diff introduced it.
-- Follow the target component's verification contract. Markdown-only changes
-  require diff and reference checks, not unrelated component lint or test runs.
+## BDD generation
 
-## Project Relationship
-
-See [project and database dependencies](docs/ddd-ubiquitous-language.md#project-relationship)
-for API management/publishing, event reporting, permission queries, and MCP.
-The shared document maintains these relationships together with the vocabulary.
-
-## SKILLs
-
-Agent skills are located in `.agents/skills/`. Before executing any agent task described below, **read the full skill file first** to get detailed instructions, templates, and patterns.
-
-These skills are designed to work with **any AI coding agent** (Claude Code, Codex, Cursor, Windsurf, Aider, etc.) that has access to Playwright MCP browser tools, file system operations, and shell commands.
-
-| Skill | File | Description |
-|-------|------|-------------|
-| bdd-test-gen | `.agents/skills/bdd-test-gen/SKILL.md` | Generate executable Playwright test scripts from BDD case files by exploring a live environment |
+Before generating Playwright scripts from cases, read
+[the bdd-test-gen skill](.agents/skills/bdd-test-gen/SKILL.md).
