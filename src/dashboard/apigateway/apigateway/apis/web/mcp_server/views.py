@@ -187,7 +187,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         app_permission_risks = MCPServerHandler.get_app_permission_risks(page, releases=releases)
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
-        least_privileges = MCPServerHandler.get_least_privileges(page, releases=releases)
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(page, releases=releases)
 
         slz = MCPServerListOutputSLZ(
             page,
@@ -294,7 +294,7 @@ class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.Retriev
 
         releases = MCPServerHandler._get_releases_for_mcp_servers([instance])
         app_permission_risks = MCPServerHandler.get_app_permission_risks([instance], releases=releases)
-        least_privileges = MCPServerHandler.get_least_privileges([instance], releases=releases)
+        least_privileges = MCPServerHandler.get_least_privileges_by_server([instance], releases=releases)
 
         serializer = self.get_serializer(
             instance,
@@ -455,8 +455,8 @@ class MCPServerGuidelineRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPI
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        least_privileges = MCPServerHandler.get_least_privileges([instance])
-        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+        least_privileges = MCPServerHandler.get_least_privileges_by_server([instance])
+        least_privilege = least_privileges.get(instance.id, "")
 
         user_tenant_id = get_user_tenant_id(request)
 
@@ -490,8 +490,8 @@ class MCPServerConfigListApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        least_privileges = MCPServerHandler.get_least_privileges([instance])
-        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+        least_privileges = MCPServerHandler.get_least_privileges_by_server([instance])
+        least_privilege = least_privileges.get(instance.id, "")
 
         user_tenant_id = get_user_tenant_id(request)
         configs = MCPServerHandler.build_agent_client_configs(instance, least_privilege, user_tenant_id=user_tenant_id)

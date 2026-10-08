@@ -1169,7 +1169,7 @@ class TestMCPServerHandler:
 
     # ========== 最低权限级别计算测试 ==========
 
-    def test_get_least_privileges_all_application(self, fake_gateway, fake_stage):
+    def test_get_least_privileges_by_server_all_application(self, fake_gateway, fake_stage):
         """所有工具都不需要用户认证时，应返回 APPLICATION"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
@@ -1182,12 +1182,12 @@ class TestMCPServerHandler:
 
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a;tool_b")
 
-        result = MCPServerHandler.get_least_privileges([mcp_server])
+        result = MCPServerHandler.get_least_privileges_by_server([mcp_server])
 
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION.value
 
-    def test_get_least_privileges_has_user_required(self, fake_gateway, fake_stage):
+    def test_get_least_privileges_by_server_has_user_required(self, fake_gateway, fake_stage):
         """存在需要用户认证的工具时，应返回 APPLICATION_AND_USER"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
@@ -1200,12 +1200,12 @@ class TestMCPServerHandler:
 
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a;tool_b")
 
-        result = MCPServerHandler.get_least_privileges([mcp_server])
+        result = MCPServerHandler.get_least_privileges_by_server([mcp_server])
 
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
 
-    def test_get_least_privileges_skip_auth_verification(self, fake_gateway, fake_stage):
+    def test_get_least_privileges_by_server_skip_auth_verification(self, fake_gateway, fake_stage):
         """skip_auth_verification=True 时即使 auth_verified_required=True 也视为不需要用户认证"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
@@ -1217,25 +1217,25 @@ class TestMCPServerHandler:
 
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
 
-        result = MCPServerHandler.get_least_privileges([mcp_server])
+        result = MCPServerHandler.get_least_privileges_by_server([mcp_server])
 
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION.value
 
-    def test_get_least_privileges_empty(self):
+    def test_get_least_privileges_by_server_empty(self):
         """空列表应返回空字典"""
-        result = MCPServerHandler.get_least_privileges([])
+        result = MCPServerHandler.get_least_privileges_by_server([])
         assert result == {}
 
-    def test_get_least_privileges_no_release(self, fake_gateway, fake_stage):
-        """无 Release 记录时返回空字典"""
+    def test_get_least_privileges_by_server_no_release(self, fake_gateway, fake_stage):
+        """无 Release 记录时返回空权限，URL 使用原有默认入口"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
 
-        result = MCPServerHandler.get_least_privileges([mcp_server])
+        result = MCPServerHandler.get_least_privileges_by_server([mcp_server])
 
-        assert result == {}
+        assert result == {mcp_server.id: ""}
 
-    def test_get_least_privileges_only_checks_relevant_tools(self, fake_gateway, fake_stage):
+    def test_get_least_privileges_by_server_only_checks_relevant_tools(self, fake_gateway, fake_stage):
         """仅检查 MCP Server 关联的工具，不受其他资源影响"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
@@ -1248,12 +1248,12 @@ class TestMCPServerHandler:
 
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
 
-        result = MCPServerHandler.get_least_privileges([mcp_server])
+        result = MCPServerHandler.get_least_privileges_by_server([mcp_server])
 
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION.value
 
-    def test_get_least_privileges_with_shared_releases(self, fake_gateway, fake_stage):
+    def test_get_least_privileges_by_server_with_shared_releases(self, fake_gateway, fake_stage):
         """传入预查询的 releases 参数，应复用而非重新查询"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
@@ -1264,13 +1264,47 @@ class TestMCPServerHandler:
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
 
         releases = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
-        result = MCPServerHandler.get_least_privileges([mcp_server], releases=releases)
+        result = MCPServerHandler.get_least_privileges_by_server([mcp_server], releases=releases)
 
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
 
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_get_least_privileges_by_server_parses_each_release_once(self, fake_gateway, fake_stage, mocker, reverse):
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": True},
+            ],
+        )
+        other_rv = self._make_resource_version_with_data(
+            fake_gateway, [{"name": "tool_a", "auth_verified_required": True}]
+        )
+        other_stage = G(Stage, gateway=fake_gateway)
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+        G(Release, gateway=fake_gateway, stage=other_stage, resource_version=other_rv)
+        app_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+        user_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_b")
+        other_server = G(MCPServer, gateway=fake_gateway, stage=other_stage, _resource_names="tool_a")
+        servers = [app_server, user_server, app_server, other_server]
+        if reverse:
+            servers.reverse()
+        releases = MCPServerHandler._get_releases_for_mcp_servers(servers)
+        loads = mocker.patch("apigateway.core.models.json.loads", wraps=json.loads)
+
+        result = MCPServerHandler.get_least_privileges_by_server(servers, releases=releases)
+
+        assert result == {
+            app_server.id: MCPServerLeastPrivilegeEnum.APPLICATION.value,
+            user_server.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+            other_server.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+        }
+        assert loads.call_args_list.count(mocker.call(rv._data)) == 1
+        assert loads.call_args_list.count(mocker.call(other_rv._data)) == 1
+
     def test_shared_releases_between_risks_and_privileges(self, fake_gateway, fake_stage):
-        """验证同一份 releases 可同时传给 get_app_permission_risks 和 get_least_privileges"""
+        """验证同一份 releases 可同时传给 get_app_permission_risks 和 get_least_privileges_by_server"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
             [
@@ -1290,11 +1324,11 @@ class TestMCPServerHandler:
 
         releases = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
         risks = MCPServerHandler.get_app_permission_risks([mcp_server], releases=releases)
-        privileges = MCPServerHandler.get_least_privileges([mcp_server], releases=releases)
+        privileges = MCPServerHandler.get_least_privileges_by_server([mcp_server], releases=releases)
 
         assert mcp_server.id in risks
         assert "tool_a" in risks[mcp_server.id]
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert privileges[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
 
     # ========== validate_access 测试 ==========
@@ -1945,7 +1979,7 @@ class TestMCPServerHandler:
         context = MCPServerHandler.build_list_context([mcp_server], include_least_privileges=True)
 
         assert "least_privileges" in context
-        key = (fake_gateway.id, fake_stage.id)
+        key = mcp_server.id
         assert key in context["least_privileges"]
 
     def test_build_list_context_empty(self, fake_gateway):

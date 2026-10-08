@@ -106,7 +106,7 @@ MCP_SERVER_LIST_FIELDS = frozenset(
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
     least_privileges = context.get("least_privileges", {})
-    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    least_privilege = least_privileges.get(obj.id, "")
     return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
 
 

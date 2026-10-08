@@ -431,7 +431,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     def get_url(self, obj) -> str:
         least_privileges = self.context.get("least_privileges", {})
-        least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+        least_privilege = least_privileges.get(obj.id, "")
         return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
 
     def get_categories(self, obj):

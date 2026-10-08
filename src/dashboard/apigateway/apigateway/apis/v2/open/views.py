@@ -638,7 +638,7 @@ class UserMCPServerListApi(generics.ListAPIView):
             for stage in Stage.objects.filter(id__in=stage_ids)
         }
 
-        least_privileges = MCPServerHandler.get_least_privileges(page)
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(page)
 
         # Add categories map
         categories_map = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
