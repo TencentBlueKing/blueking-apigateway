@@ -165,8 +165,7 @@
             closable
             @close="() => handleTagClose(item)"
           >
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-html="generateTagContent(item)" />
+            <span v-bk-xss-html="generateTagContent(item)" />
           </BkTag>
           <BkButton
             theme="primary"

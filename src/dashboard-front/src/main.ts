@@ -46,8 +46,6 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import IconButton from '@/components/icon-button/Index.vue';
 import CopyButton from '@/components/copy-button/Index.vue';
 import CardContainer from '@/components/card-container/Index.vue';
-import mavonEditor from 'mavon-editor';
-import 'mavon-editor/dist/css/index.css';
 //  highlight.js github代码高亮风格
 import 'highlight.js/styles/github.css';
 // 多租户组件样式
@@ -61,7 +59,6 @@ app.use(createPinia())
   .use(router)
   .use(bkui)
   .use(i18n)
-  .use(mavonEditor)
   .use(BkXssFilterDirective)
   .use(directive)
   // 全局组件
