@@ -42,11 +42,7 @@ it as a product failure.
 
 ## Project Overview
 
-BlueKing API Gateway Dashboard is the Django control plane for gateway
-definitions, stages, resources, releases, permissions, plugins, SDK generation,
-MCP servers, and data-plane publication. It stores and validates gateway state,
-then publishes controller configuration through
-`controller -> etcd -> operator -> APISIX`.
+This subproject uses Django.
 
 The current Python, Django, tooling, and dependency versions are defined by
 `pyproject.toml` and `uv.lock`. The Django project root is `apigateway/`; the
@@ -114,35 +110,20 @@ When placing a function:
 5. Keep reusable single-model queryset logic in managers; do not put
    multi-model business queries there.
 
-## Domain Notes
-
-- The main model chain is
-  `Gateway -> Stage -> Resource -> ResourceVersion -> Release -> ReleaseHistory`.
-- `Gateway` is the current domain name. Legacy DB columns and payloads may still
-  use `api`, `api_id`, or `api_name`; do not expand legacy naming.
-- Stage and resource plugins use `PluginBinding`.
-- Scoped authentication and configuration live in `Context` records.
-- Backends are gateway-scoped, with stage-specific `BackendConfig` records.
-- `ENABLE_MULTI_TENANT_MODE` controls tenancy; `BKPAAS_ENVIRONMENT` selects the
-  settings module and defaults to `dev`.
-
 ## AI Gateway And Backend Configuration
 
 Read both AI Gateway documents in **Important Paths** before changing AI
 models, APIs, connectivity checks, plugin compatibility, or publishing. Current
 code and tests take precedence over older plans or review reports.
 
-Keep these representations separate:
-
-1. The flat Web DTO and `AIBackendWebConfigAdapter`, owned by `apis/`.
-2. The normalized stored `AIBackendConfig` owned by `core/`.
-3. The APISIX plugin configuration compiled by `controller/`.
-
 Follow the owning API, core, controller, and plugin guides when changing a
 representation or its transition. Do not repair one representation by leaking
 its surface-specific rules into another layer.
 
 ## Runtime Setup
+
+`ENABLE_MULTI_TENANT_MODE` controls tenancy; `BKPAAS_ENVIRONMENT` selects the
+settings module and defaults to `dev`.
 
 Use `uv`, `pyproject.toml`, and `uv.lock` as the environment source of truth:
 

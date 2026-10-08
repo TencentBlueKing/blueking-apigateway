@@ -2,8 +2,7 @@
 
 ## 项目概述
 
-蓝鲸 API 网关管理前端（BlueKing API Gateway Dashboard Frontend）—— 基于 Vue 3 + TypeScript 的单页应用，用于管理 API
-网关、资源、环境、权限、插件、MCP 服务器等。位于 `blueking-apigateway` 仓库的 `src/dashboard-front/` 目录下。
+本指南适用于 `src/dashboard-front/` 的 Vue 3 + TypeScript 单页应用，根目录 `AGENTS.md` 同时适用。
 
 ## Rules（规则/约束）
 
@@ -149,7 +148,7 @@ src/dashboard-front/
 | `useEnv`             | 环境配置（BK_DASHBOARD_URL、站点路径）  |
 | `useUserInfo`        | 当前用户和租户信息                    |
 | `useFeatureFlag`     | 功能开关                         |
-| `useStage`           | 环境/阶段状态                      |
+| `useStage`           | 环境状态                      |
 | `usePermission`      | 权限相关状态                       |
 | `useAccessLog`       | 访问日志                         |
 | `useAuditLog`        | 审计日志                         |

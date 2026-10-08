@@ -4,8 +4,6 @@ This document describes how the plugin subsystem works in the dashboard backend 
 
 ## Architecture Overview
 
-Plugins are APISIX plugins managed through the dashboard. The dashboard stores plugin configs, validates them, and publishes them to APISIX during gateway release.
-
 ### Data Flow (new plugins)
 
 ```

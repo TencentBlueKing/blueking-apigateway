@@ -5,10 +5,8 @@ directory unless a command explicitly says otherwise.
 
 ## Project Overview
 
-BlueKing API Gateway Operator is a Go service that watches BlueKing API Gateway control-plane resources
-in etcd and keeps APISIX data-plane etcd in sync. It is called an operator, but it is not a Kubernetes CRD
-reconciliation loop. The hot path is etcd watch, release timer, committer, APISIX etcd diff/write, and
-publish event reporting.
+This Go service is not a Kubernetes CRD reconciliation loop. Its hot path is etcd watch, release timer,
+committer, APISIX etcd diff/write, and event reporting.
 
 Key technologies:
 
@@ -19,10 +17,6 @@ Key technologies:
 - Storage/watch: etcd v3
 - Tests: Ginkgo and Gomega
 - Logs/tracing/metrics: Zap, OpenTelemetry, Prometheus
-
-The current code reads APISIX-native resource JSON from control-plane etcd, validates it against APISIX
-schema, and writes APISIX-native resources to data-plane etcd. Do not describe the runtime path as a
-dashboard-model-to-APISIX conversion layer unless the code changes to add that layer.
 
 ## Environment
 
@@ -153,14 +147,14 @@ Watch details:
   supports `route`, `service`, `plugin_metadata`, and `_bk_release`.
 - Raw etcd DELETE events for non-global resources are skipped because their previous value can carry stale release info.
 - `plugin_metadata` is the current global resource. It has no stage label and uses the timer key `global_resource`.
-- A delete-stage release is represented by a `_bk_release` PUT whose publish id is `-2`, not by a raw etcd DELETE.
+- Stage deletion uses a `_bk_release` PUT with `constant.DeletePublishID`, not a raw etcd DELETE.
 
 Timer details:
 
 - `agent.Init()` sets the ticker interval from `operator.agentCommitTimeWindow`, default `5s`.
 - `timer.Init()` sets `eventsWaitingTimeWindow`, default `2s`, and `forceUpdateTimeWindow`, default `10s`.
-- `ReleaseTimer.Update()` stores the latest release info for a stage. Normal stage keys are
-  `bk.release.<gateway>.<stage>`. Global plugin metadata uses `global_resource`.
+- `ReleaseTimer.Update()` stores the latest release info per stage; global plugin metadata uses
+  `global_resource`.
 - `ListReleaseForCommit()` emits a release when the waiting window has expired or the force-update window is exceeded.
 - A `_bk_release` non-delete event calls `handleTicker()` immediately. It does not itself add a new timer entry.
 
@@ -196,7 +190,8 @@ Event reporting details:
 - `eventreporter.Start()` drains an event queue and reports to CoreAPI with bounded concurrency.
 - `ReportLoadConfigurationResultEvent()` waits `versionProbe.waitTime`, probes APISIX
   `/:gateway/:stage/__apigw_version`, and reports load success or failure.
-- Publish ids `""`, `-1`, and `-2` do not need report events.
+- Empty publish IDs also skip event reporting; keep the suppression logic in `pkg/eventreporter/reporter.go`
+  aligned with the shared reserved-ID contract.
 - `ReportLoadConfigurationResultEvent()` releases the gateway-stage channel token in all branches.
   Keep this ownership clear when editing commit or probe code.
 
@@ -223,14 +218,6 @@ Data-plane APISIX resources:
 /{apisix.etcd.keyPrefix}/plugin_metadata/{resourceID}
 ```
 
-Do not infer APISIX stage ownership from the data-plane key path. Data-plane resources are flat under their
-resource type, and stage ownership comes from labels:
-
-- `gateway.bk.tencent.com/gateway`
-- `gateway.bk.tencent.com/stage`
-- `gateway.bk.tencent.com/publish-id`
-- `gateway.bk.tencent.com/apisix-version`
-
 Supported runtime resources:
 
 - Watch-triggering resources: `route`, `service`, `plugin_metadata`, `_bk_release`.
@@ -240,7 +227,7 @@ Supported runtime resources:
 
 Key helpers:
 
-- `config.GenStagePrimaryKey(gateway, stage)`: `bk.release.<gateway>.<stage>`.
+- `config.GenStagePrimaryKey(gateway, stage)`: constructs the shared runtime environment identifier.
 - `biz.GenResourceIDKey(gateway, stage, id)`: `<gateway>.<stage>.<id>`.
 - `biz.GenApigwResourceNameKey(gateway, stage, name)`: `<gateway>.<stage>.<name>`, truncated at 100 chars.
 - `biz.GenApisixResourceNameKey(gateway, stage, name)`: lower dash-case, max 64 chars with hash suffix.

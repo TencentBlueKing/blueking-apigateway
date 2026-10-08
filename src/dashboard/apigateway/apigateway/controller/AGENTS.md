@@ -30,8 +30,7 @@ models, or general-purpose domain workflows.
 - Preserve existing standard Service and Route blocks, ordering, and useful
   comments when their behavior is unchanged. Add AI behavior through narrow,
   explicit branches rather than refactoring the standard path for symmetry.
-- Convert stored provider identity to APISIX provider configuration only here:
-  apply built-in endpoint overrides, remove storage-only fields, and convert
+- Apply built-in endpoint overrides, remove storage-only fields, and convert
   timeout seconds to milliseconds at the publish boundary.
 - `ai-proxy` and `ai-proxy-multi` are controller-managed plugins. Generate them
   here; never source them from user bindings.

@@ -9,21 +9,10 @@ runtime, architecture, and verification commands.
 ## Shared Domain Language
 
 At the start of work in any component, read
-[DDD ubiquitous language](docs/ddd-ubiquitous-language.md) together with this
-file and the applicable component guides. Use its canonical Chinese/English
-terms, identity scopes, lifecycle distinctions, and cross-component mappings
-in code, APIs, UI text, documentation, tests, and review discussions.
-
-- Use dashboard domain definitions as the starting point. Keep APISIX runtime
-  objects, operator synchronization objects, and MCP tools distinct from their
-  control-plane counterparts.
-- Preserve existing database columns, payload fields, enum values, and public
-  interfaces when they use legacy names; explain their canonical meaning at
-  the boundary instead of renaming them as incidental cleanup.
-- When a change adds or changes a shared concept, update the glossary and its
-  source references in the same change. If implementation and glossary differ,
-  verify the owning code and consumers, then reconcile the documentation;
-  do not infer new behavior from terminology alone.
+[DDD ubiquitous language (中文)](docs/ddd-ubiquitous-language.md) together with
+this file and the applicable component guides. It is the canonical source for
+shared terms, identity scopes, lifecycles, compatibility mappings, and their
+maintenance rules; component guides contain local development instructions.
 
 ## Project Structure
 
@@ -82,22 +71,6 @@ in code, APIs, UI text, documentation, tests, and review discussions.
   real in the inspected code and whether the selected diff introduced it.
 - Follow the target component's verification contract. Markdown-only changes
   require diff and reference checks, not unrelated component lint or test runs.
-
-## Project Relationship
-
-```
-apis create and publish:
-dashboard-front -> dashboard -> mysql -> dashboard(controller) -> etcd -> operator -> etcd -> blueking-apigateway-apisix
-
-publish event report:
-operator -> core-api -> mysql
-
-permission:
-blueking-apigateway-apisix -> core-api -> mysql
-
-mcp server:
-dashboard-front -> dashboard -> mysql -> mcp-proxy
-```
 
 ## SKILLs
 

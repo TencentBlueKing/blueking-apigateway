@@ -2,12 +2,9 @@
 
 ## Scope
 
-This file applies to `src/mcp-proxy`. It overrides the repository root guidance for this subproject.
+This file applies to `src/mcp-proxy`. The repository-root `AGENTS.md` also applies.
 
-`mcp-proxy` is the Go service that exposes BlueKing API Gateway resources as Model Context Protocol (MCP)
-servers. It reads MCP server definitions, gateway release data, JWT keys, app permissions, and prompt
-extensions from the API Gateway database, converts OpenAPI 3.0 operations into MCP tools, and serves both
-SSE and Streamable HTTP transports through `github.com/modelcontextprotocol/go-sdk`.
+The service uses Go and `github.com/modelcontextprotocol/go-sdk`.
 
 For Markdown-only edits in this directory, run document checks such as `git diff --check`; do not run
 `make lint` or `make test` just to change docs. For Go, config, Docker, or test changes, use the Makefile
@@ -85,8 +82,7 @@ fixtures, prefer `make integration` when Docker is available.
   permissions and prompt extensions live for 1m. Cache retrieval is trace-wrapped.
 - `pkg/biz/`: Thin query helpers over generated repo code for active MCP servers, releases, OpenAPI specs,
   gateway JWTs, and prompt extensions.
-- `pkg/entity/model/`: GORM models for API Gateway tables consumed by this service. MCP-owned tables include
-  `mcp_server`, `mcp_server_app_permission`, and `mcp_server_extend`.
+- `pkg/entity/model/`: GORM mappings of the dashboard tables consumed by this service.
 - `pkg/repo/`: GORM Gen output. Files ending in `.gen.go` are generated; update the model and regenerate
   instead of hand-editing DAO code.
 - `pkg/infra/database`, `pkg/infra/logging`, `pkg/infra/trace`, `pkg/infra/sentry`,
@@ -154,8 +150,7 @@ Streamable HTTP is stateless and uses the same handler for user and application 
    `raw_response_enabled` have not changed. Prompts are still refreshed on skipped servers.
 5. Build the OpenAPI server URL from `mcpServer.bkApiUrlTmpl` plus `/{stage}` by replacing `{api_name}` and
    `{stage}` from cached gateway/stage rows.
-6. Convert OpenAPI operations into MCP tools. `resource_names` filters operation IDs. Entries of the form
-   `resource_name@tool_name` rename the MCP tool while still loading the original resource.
+6. Apply the shared tool-selection and alias mapping through `pkg/infra/proxy/converter.go`.
 7. Create or update the MCP server:
    `protocol_type = sse` uses `mcp.NewSSEHandler`; `protocol_type = streamable_http` uses
    `mcp.NewStreamableHTTPHandler` with `Stateless: true`.
@@ -166,17 +161,13 @@ Streamable HTTP is stateless and uses the same handler for user and application 
 
 ## Data Contracts
 
-- `mcp_server.resource_names` is semicolon-separated by the custom `ArrayString` scanner. Tool rename syntax
-  is `resource_name@tool_name`.
+- `mcp_server.resource_names` is semicolon-separated by the custom `ArrayString` scanner.
 - `mcp_server.protocol_type` defaults to SSE when empty. Changing the protocol type recreates the server.
-- `mcp_server.raw_response_enabled` changes tool-call output shape. When enabled, tool calls return the raw
-  API response body instead of the normal envelope with request/trace metadata.
-- `mcp_server_app_permission` authorizes `bk_app_code + mcp_server_id`; expired permissions are rejected by
-  `MCPServerPermissionMiddleware`.
-- `mcp_server_extend` currently supports `type = prompts`, whose `content` is JSON for `[]Prompt`.
+- `MCPServerPermissionMiddleware` rejects expired permissions.
+- Prompt extension `content` is JSON for `[]Prompt`.
 - `core_jwt` stores the gateway JWT public/private keys. Encrypted private keys are decrypted with
   `ENCRYPT_KEY` and `BK_APIGW_CRYPTO_NONCE`.
-- Dashboard owns the API surfaces that create/sync these rows. When changing these contracts, also inspect
+- When changing these contracts, also inspect
   `src/dashboard/apigateway/apigateway/apps/mcp_server`,
   `src/dashboard/apigateway/apigateway/apis/v2/sync/serializers.py`, dashboard MCP documentation, and the
   gateway resource definitions under
@@ -186,8 +177,7 @@ Streamable HTTP is stateless and uses the same handler for user and application 
 
 - Incoming MCP requests must include `X-Bkapi-Jwt`. The middleware validates it using the official gateway
   public key and stores app/user claims for lazy inner-JWT signing.
-- Inner JWT signing happens only inside tool calls. The virtual app code format is
-  `v_mcp_{mcp_server_id}_{app_code}` and expiry defaults to 5 minutes.
+- Inner JWT signing happens only inside tool calls; expiry defaults to 5 minutes.
 - `MCPServerHeaderMiddleware` reads `X-Bkapi-Timeout`, `X-Bkapi-Allowed-Headers`, and
   `X-Bkapi-ItsmFlex`; malformed `X-Bkapi-ItsmFlex` is ignored.
 - Request ID behavior is documented in `docs/request_id_propagation.md`. Keep that file and this summary

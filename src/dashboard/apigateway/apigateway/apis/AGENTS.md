@@ -40,8 +40,7 @@ The API surfaces are intentionally independent and enforced by the
   with `logger.exception(...)`.
 - Preserve unique schema `Meta.ref_name` values (supported by drf-spectacular) when adding serializers.
 
-Web AI backend payloads use the flat `AIBackendWebConfigAdapter` contract.
-Open and v2 automation surfaces use the normalized stored protocol instead.
+Open and v2 automation AI backend inputs use the normalized stored protocol.
 Masked-secret restoration is a Web update-boundary behavior; do not apply it to
 Open or Sync input, where submitted stored-protocol values are literal.
 
