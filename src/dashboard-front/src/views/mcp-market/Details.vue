@@ -616,9 +616,21 @@ watch(
     box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 0 0 2px 2px;
 
-    :deep(.bk-tab-content) {
-      padding: 0;
-      background-color: #fff;
+    .mcp-tab {
+      height: 100%;
+
+      :deep(.bk-tab-content) {
+        padding: 0;
+        background-color: #ffffff;
+
+        .panel-content {
+          height: 100%;
+        }
+      }
+    }
+
+    :deep(.bk-resize-layout-left) {
+      height: 100%;
     }
 
     .bk-resize-layout-right {
