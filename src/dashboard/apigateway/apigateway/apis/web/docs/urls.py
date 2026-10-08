@@ -23,6 +23,10 @@ urlpatterns = [
     path("sdks/", include("apigateway.apis.web.docs.gateway.sdk.urls")),
     # 网关
     path("gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),
+    path(
+        "gateways/<slug:gateway_name>/permissions/",
+        include("apigateway.apis.web.docs.gateway.permission.urls"),
+    ),
     path("gateways/<slug:gateway_name>/resources/", include("apigateway.apis.web.docs.gateway.resource.urls")),
     path("gateways/<slug:gateway_name>/stages/", include("apigateway.apis.web.docs.gateway.stage.urls")),
     path("gateways/<slug:gateway_name>/sdks/", include("apigateway.apis.web.docs.gateway.gateway_sdk.urls")),

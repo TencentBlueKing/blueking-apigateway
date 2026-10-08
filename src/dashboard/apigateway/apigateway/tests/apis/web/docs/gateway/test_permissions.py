@@ -20,6 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from apigateway.apis.web.docs.gateway.gateway.views import GatewayRetrieveApi
 from apigateway.apis.web.docs.gateway.gateway_sdk.views import SDKListApi, SDKUsageExampleApi
+from apigateway.apis.web.docs.gateway.permission.views import GatewayPermissionApplyCreateApi
 from apigateway.apis.web.docs.gateway.permissions import GatewayDisplayablePermission
 from apigateway.apis.web.docs.gateway.resource.doc.views import DocRetrieveApi
 from apigateway.apis.web.docs.gateway.resource.views import ResourceListApi
@@ -30,6 +31,7 @@ class TestDocsGatewayPermissionClasses:
     def test_permission_classes_contains_authenticated(self):
         view_classes = [
             GatewayRetrieveApi,
+            GatewayPermissionApplyCreateApi,
             SDKListApi,
             SDKUsageExampleApi,
             DocRetrieveApi,
