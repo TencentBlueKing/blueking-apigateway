@@ -139,7 +139,8 @@ a {
 
   &.primary,
   &.releasing,
-  &.pending {
+  &.pending,
+  &.canceled {
     background-color: #f0f1f5;
     border: 1px solid #c9cad2;
   }

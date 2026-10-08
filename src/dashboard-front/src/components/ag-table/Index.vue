@@ -1080,6 +1080,17 @@ defineExpose({
     }
   }
 
+  .t-table__expanded-row {
+
+    .t-table__row-full-element {
+      padding: 0;
+    }
+
+    .primary-table-wrapper {
+      border: none;
+    }
+  }
+
   &.t-table--hoverable {
 
     .t-table__header th,
@@ -1122,7 +1133,6 @@ defineExpose({
       }
 
       th {
-
         border-top: none;
 
         &:not(:last-child):not([data-colkey="__col_setting__"]) {
@@ -1130,7 +1140,8 @@ defineExpose({
         }
 
         &[data-colkey="__col_setting__"] {
-          box-shadow: inset 1px 0 0 #dcdee5;
+          border-bottom: 0;
+          box-shadow: inset 1px -1px 0 #dcdee5;
         }
       }
     }
@@ -1144,6 +1155,14 @@ defineExpose({
 
     .t-table__pagination-wrap {
       display: none;
+    }
+  }
+
+  .t-table__header--fixed.t-table__header {
+
+    th {
+      border-bottom: 0;
+      box-shadow: inset 0 -1px 0 #dcdee5;
     }
   }
 
