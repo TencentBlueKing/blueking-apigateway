@@ -128,6 +128,12 @@ urlpatterns = [
                                 views.GatewayAppPermissionGrantApi.as_view(),
                                 name="openapi.v2.sync.gateway.permissions.grant",
                             ),
+                            # DELETE /api/v2/sync/gateways/{gateway_name}/permissions/revoke/
+                            path(
+                                "revoke/",
+                                views.GatewayAppPermissionRevokeApi.as_view(),
+                                name="openapi.v2.sync.gateway.permissions.revoke",
+                            ),
                         ]
                     ),
                 ),

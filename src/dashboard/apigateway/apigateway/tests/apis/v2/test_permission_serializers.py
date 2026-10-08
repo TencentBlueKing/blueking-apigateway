@@ -42,6 +42,35 @@ def test_mutation_serializer_rejects_oauth2_builtin_app_code(serializer_class, a
 
 
 @pytest.mark.parametrize("app_code", ["public", "personal"])
+def test_sync_revoke_serializer_rejects_oauth2_builtin_app_code(app_code):
+    field = sync_serializers.GatewayAppPermissionRevokeInputSLZ().fields["target_app_codes"]
+
+    with pytest.raises(ValidationError):
+        field.run_validation(["exist-app", app_code])
+
+
+@pytest.mark.parametrize(
+    "serializer_class",
+    [
+        open_serializers.GatewayAppPermissionApplyInputSLZ,
+        sync_serializers.GatewayAppPermissionGrantInputSLZ,
+        sync_serializers.GatewayAppPermissionRevokeInputSLZ,
+    ],
+)
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("gateway", "api"),
+        ("resource", "resource"),
+        # 兼容旧值 api
+        ("api", "api"),
+    ],
+)
+def test_grant_dimension_maps_formatted_value_to_db_value(serializer_class, value, expected):
+    assert serializer_class().validate_grant_dimension(value) == expected
+
+
+@pytest.mark.parametrize("app_code", ["public", "personal"])
 def test_mcp_permission_serializer_allows_oauth2_builtin_app_code(app_code):
     field = open_serializers.MCPServerAppPermissionApplyCreateInputSLZ().fields["bk_app_code"]
 

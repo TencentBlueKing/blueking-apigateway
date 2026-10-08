@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.permission.constants import (
+    FORMATTED_TO_DB_GRANT_DIMENSION,
     FormattedGrantDimensionEnum,
     GrantDimensionEnum,
     PermissionApplyExpireDaysEnum,
@@ -177,9 +178,7 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
 
     def validate_grant_dimension(self, value: str) -> str:
         """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
-        if value == FormattedGrantDimensionEnum.GATEWAY.value:
-            return GrantDimensionEnum.API.value
-        return value
+        return FORMATTED_TO_DB_GRANT_DIMENSION.get(value, value)
 
     def validate_target_app_code(self, value):
         request = self.context["request"]

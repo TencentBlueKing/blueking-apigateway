@@ -39,7 +39,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
@@ -452,6 +452,57 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+@method_decorator(
+    name="delete",
+    decorator=extend_schema(
+        description="网关关联应用，回收应用访问网关 API 的权限",
+        request=serializers.GatewayAppPermissionRevokeInputSLZ,
+        responses={status.HTTP_200_OK: {"type": "object", "additionalProperties": True}},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class GatewayAppPermissionRevokeApi(generics.DestroyAPIView):
+    """网关关联应用，回收应用访问网关 API 的权限"""
+
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+    serializer_class = serializers.GatewayAppPermissionRevokeInputSLZ
+    schema_delete_request_body = True
+
+    @transaction.atomic
+    def delete(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        gateway_permissions, resource_permissions = ResourcePermissionHandler.revoke_permissions(
+            gateway=request.gateway,
+            bk_app_codes=data["target_app_codes"],
+            grant_dimension=data["grant_dimension"],
+            resource_names=data.get("resource_names"),
+        )
+
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        for permissions, comment in [
+            (gateway_permissions, "OpenAPI 回收权限，授权维度：网关"),
+            (resource_permissions, "OpenAPI 回收权限，授权维度：资源"),
+        ]:
+            for instance in permissions:
+                Auditor.record_permission_op_success(
+                    op_type=OpTypeEnum.DELETE,
+                    username=username,
+                    gateway_id=request.gateway.id,
+                    instance_id=instance.id,
+                    instance_name=str(instance),
+                    data_before=get_model_dict(instance),
+                    data_after={},
+                    comment=comment,
+                )
+
+        # 不返回 204：SDK(bkapi-client-core) 会解析响应体，空响应体会导致调用失败
+        return OKJsonResponse()
 
 
 @method_decorator(
