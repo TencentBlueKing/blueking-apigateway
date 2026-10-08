@@ -1,12 +1,12 @@
 # BlueKing API Gateway DDD 统一概念词汇
 
 本文是全仓库共享的统一语言（Ubiquitous Language），以 dashboard 控制面定义为主，记录各组件的语义映射。
-它描述当前实现；具体行为须核对目标分支的源码与消费者，不把设计提案或名称推导当成已实现规则。
+本文区分当前实现、存量兼容与新增逻辑约定；具体行为须核对目标分支的源码与消费者，逐步下线是演进方向。
 
 ## 1. 使用约定
 
 - 首次出现使用“中文名（English / 代码名）”；注明对象的网关、环境、版本或数据面范围，ID 使用具体字段名。
-- 新代码、接口、文案、测试和评审使用下列规范词。历史数据库列、协议字段、枚举值和公开接口保持兼容，在边界解释映射。
+- 新代码、接口、文案、测试和评审使用下列规范词。新增逻辑统一使用 `gateway_id`、`gateway_name`；存量不可修改的数据库列、外键、数据和 Open API 字段保留 `api_id`、`api_name`，在边界映射。其他历史协议字段、枚举值和公开接口同样保持兼容。
 - 改变共享概念时，在同一 PR 更新定义、身份范围、生命周期、消费者映射和源码入口；发现差异先核对拥有者与消费者。
 - 本文不替代局部 `AGENTS.md` 的架构、运行与验证要求。纯文档改动检查差异、Markdown 和链接；代码改动按组件指南验证。
 
@@ -31,6 +31,24 @@ DDD 中，**限界上下文（Bounded Context）**指语义与规则的责任边
 | 产品交互 | dashboard-front | 通过控制面 API 展示编辑对象，适配 DTO；路由与 store 不重新定义领域概念。 |
 | 数据面执行 | APISIX（独立仓库 `blueking-apigateway-apisix`） | 加载配置，执行匹配、认证、鉴权、插件与转发。 |
 
+### Project Relationship
+
+以下箭头表示请求、配置传播或数据库访问方向。
+
+| 链路 | 项目与存储依赖 |
+| --- | --- |
+| API 管理与发布 | dashboard-front → dashboard ↔ MySQL；dashboard controller → 控制面 etcd → operator → 数据面 etcd → APISIX。 |
+| 发布事件上报 | operator → core-api → MySQL；dashboard 读取事件并推进发布状态。 |
+| API 调用权限 | dashboard → MySQL（申请/授权）；APISIX → core-api → MySQL（运行时权限查询，含缓存）。 |
+| MCP 服务 | dashboard-front → dashboard → MySQL；mcp-proxy 从 MySQL 读取 MCP 定义、权限、Release 与版本 OpenAPI 制品，工具调用经 APISIX 转发。 |
+
+dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模型与配置写入规则以 dashboard 为主，core-api 另负责发布事件落库。
+控制面 etcd 保存 dashboard 下发的配置，数据面 etcd 保存 operator 同步的 APISIX 配置；前端通过 dashboard API 访问控制面。
+
+核对：[dashboard 模型](../src/dashboard/apigateway/apigateway/core/models.py)、
+[core-api DAO](../src/core-api/pkg/database/dao/gateway.go)、
+[MCP 数据映射](../src/mcp-proxy/pkg/entity/model/gateway.go)；发布、权限与 MCP 的消费者入口见第 4–6 节。
+
 ## 3. 控制面核心词汇
 
 核对：[核心模型](../src/dashboard/apigateway/apigateway/core/models.py)、
@@ -52,8 +70,8 @@ DDD 中，**限界上下文（Bounded Context）**指语义与规则的责任边
 | 后端服务 / Backend | `Backend`；id；`(gateway, name)` 唯一 | 网关内可复用的后端身份；地址、超时等环境差异由 BackendConfig 表达。 |
 | 后端类别 / Backend Kind | `Backend.kind` | standard 或 ai；普通 API/模型代理 API 关联对应类别后端。kind 与传输 type 区分。 |
 | 后端环境配置 / Backend Configuration | `BackendConfig`；`(gateway, backend, stage)` 唯一 | 后端在环境中的配置：普通 hosts/timeout/loadbalance，或规范化 AI provider/instances 等。 |
-| 作用域配置 / Context | `Context`；`(scope_type, scope_id, type)` 唯一 | 经 schema 校验的网关、环境或资源配置，如认证；与请求上下文、Go context、限界上下文区分。 |
-| 环境资源禁用 / Stage Resource Disabled | `StageResourceDisabled`；`(stage, resource)` 唯一 | 指定环境禁用资源，环境名称进入版本快照，不改变资源归属。 |
+| 作用域配置 / Context | `Context`；`(scope_type, scope_id, type)` 唯一 | **存量兼容**：经 schema 校验的网关、环境或资源配置，如认证，逐步弱化及下架；新增对象直接在代码中用对应 JSON Schema 校验，不扩展 Context。与请求上下文、Go context、限界上下文区分。 |
+| 环境资源禁用 / Stage Resource Disabled | `StageResourceDisabled`；`(stage, resource)` 唯一 | **存量兼容**：仅存量网关使用，新产品已移除配置入口，逻辑将逐步弱化及移除；现有环境名称仍进入版本快照并参与路由过滤，不改变资源归属。 |
 | 数据面 / Data Plane | `DataPlane`；id；name 唯一 | 有独立 etcd 配置、命名空间、访问地址模板与 APISIX 版本的发布目标。 |
 | 网关数据面绑定 / Gateway–Data Plane Binding | `GatewayDataPlaneBinding` | 网关可绑定多个数据面；版本发布遍历绑定的活跃数据面。 |
 | 租户 / Tenant | `tenant_mode`、`tenant_id`；调用者租户信息 | 网关模式 single/global 影响访问与隔离；租户与网关、应用、环境及其授权分别表达。 |
@@ -157,7 +175,7 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | MCP 原始响应模式 / Raw Response Mode | raw_response_enabled | 工具结果返回原始 API 响应体，不改变身份、授权或版本选择。 |
 
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
-**当前候选校验不筛选 disabled_stages；APISIX Route 编译会跳过该环境禁用资源。候选合法不保证工具 API 在目标环境可调用。**
+**存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
 MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
 
@@ -195,8 +213,8 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 
 | 标识 | 规范含义与边界 |
 | --- | --- |
-| gateway_id；历史 api_id/core_api | Gateway 主键/网关表。“API”指接口时须明确 Resource，不能由 api_id 推断单个接口。 |
-| gateway_name；历史 api_name/{api_name} | Gateway.name，用于地址/模板，与 Resource.name 区分。 |
+| gateway_id；兼容 api_id/core_api | 新增逻辑使用 gateway_id 表达 Gateway 主键；api_id 与表名 core_api 仅为存量兼容。“API”指接口时须明确 Resource，不能由 api_id 推断单个接口。 |
+| gateway_name；兼容 api_name/{api_name} | 新增逻辑使用 gateway_name 表达 Gateway.name；api_name 及历史地址/模板占位符仅为存量兼容，与 Resource.name 区分。 |
 | 前端 apigwId/apiId | 相关网关接口的 Gateway.id；按 services/source 请求路径核对。 |
 | stage_id/stage_name | Stage 主键/网关内环境名；同名环境可属不同网关。 |
 | resource_id/resource_name | 资源主键/业务名；权限、版本、MCP 按所用快照映射，与 APISIX resourceID 区分。 |

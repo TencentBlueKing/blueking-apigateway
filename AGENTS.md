@@ -72,6 +72,12 @@ maintenance rules; component guides contain local development instructions.
 - Follow the target component's verification contract. Markdown-only changes
   require diff and reference checks, not unrelated component lint or test runs.
 
+## Project Relationship
+
+See [project and database dependencies](docs/ddd-ubiquitous-language.md#project-relationship)
+for API management/publishing, event reporting, permission queries, and MCP.
+The shared document maintains these relationships together with the vocabulary.
+
 ## SKILLs
 
 Agent skills are located in `.agents/skills/`. Before executing any agent task described below, **read the full skill file first** to get detailed instructions, templates, and patterns.
