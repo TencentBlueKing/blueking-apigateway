@@ -38,11 +38,11 @@ DDD 中，**限界上下文（Bounded Context）**指语义与规则的责任边
 | 链路 | 项目与存储依赖 |
 | --- | --- |
 | API 管理与发布 | dashboard-front → dashboard ↔ MySQL；dashboard controller → 控制面 etcd → operator → 数据面 etcd → APISIX。 |
-| 发布事件上报 | operator → core-api → MySQL；dashboard 读取事件并推进发布状态。 |
+| 发布事件上报 | dashboard → MySQL（前三步事件）；operator → core-api → MySQL（后三步事件）；dashboard 读取事件并推进发布状态。 |
 | API 调用权限 | dashboard → MySQL（申请/授权）；APISIX → core-api → MySQL（运行时权限查询，含缓存）。 |
 | MCP 服务 | dashboard-front → dashboard → MySQL；mcp-proxy 从 MySQL 读取 MCP 定义、权限、Release 与版本 OpenAPI 制品，工具调用经 APISIX 转发。 |
 
-dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模型与配置写入规则以 dashboard 为主，core-api 另负责发布事件落库。
+dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模型与配置写入规则以 dashboard 为主。
 控制面 etcd 保存 dashboard 下发的配置，数据面 etcd 保存 operator 同步的 APISIX 配置；前端通过 dashboard API 访问控制面。
 
 核对：[dashboard 模型](../src/dashboard/apigateway/apigateway/core/models.py)、
@@ -88,7 +88,7 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 | --- | --- | --- |
 | 资源版本 / Resource Version | `ResourceVersion` | 网关资源快照集合，含代理、资源 Context/插件、禁用环境等；可发布到多个环境。 |
 | 版本号 / Version Label | `ResourceVersion.version` | 网关内创建时校验唯一的展示字符串；与主键 id、schema_version、APISIX 软件版本区分。 |
-| 环境当前版本关联 / Release | `Release` | 每个 Stage 至多一条，引用 ResourceVersion；其主键不是每次发布流水号。 |
+| 环境当前版本关联 / Release | `Release` | 每个 Stage 至多一条，引用 ResourceVersion；其主键不是每次发布流水号，关联存在也不证明数据面已加载。 |
 | 已发布资源投影 / Released Resource | `ReleasedResource` | 按 `(gateway, resource_version_id, resource_id)` 保存的快照查询投影，不是草稿或数据面已加载的证明。 |
 | 发布历史 / Release History | `ReleaseHistory` | 一次面向环境和数据面的发布过程，含 source、版本与数据面；正常发布每个目标数据面独立记录，历史 data_plane 可为空。 |
 | 发布事件 / Publish Event | `PublishEvent` | 发布步骤、状态与详情；publish 外键指向 ReleaseHistory，持久化列为 publish_id。 |
@@ -112,18 +112,20 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 dashboard-front -> dashboard biz/release -> 每个目标数据面一条 ReleaseHistory
   -> dashboard controller -> 控制面 etcd -> operator -> 数据面 etcd -> APISIX
 operator 同步/加载探测事件 -> core-api -> MySQL PublishEvent
-  -> dashboard 成功回调更新 Release/已发布投影；前端展示进度
+  -> dashboard 发布成功回调；前端展示进度
 ```
 
-- 步骤依次为配置校验、生成任务、下发、解析、应用、加载配置。前三步由 dashboard 产生，后三步由 operator 上报、core-api 落库。
+- 步骤依次为配置校验、生成任务、下发、解析、应用、加载配置。前三步由 dashboard 产生并直接落库，后三步由 operator 上报、core-api 落库。
 - 事件状态 pending/doing/success/failure；历史展示状态由最新事件与超时推导。下发或应用成功不等于最终加载成功；事件缺失或超时也可显示失败。
 - 发布来源 `ReleaseHistory.source` / `PublishSourceEnum` 表达触发原因，与步骤、状态、版本类别区分。
 - Gateway/Stage 的 ACTIVE=1、INACTIVE=0 是启停状态。Release 无数据面维度：首次发布预建关联，已有关联在成功回调更新；一个数据面成功即可触发更新。
+- 每个数据面成功后，回调更新 Release/已发布投影、激活 Stage，并移除 MCP 中新版本标准资源集合已不包含的资源名；异步协调 MCP 权限，并尝试协调 OAuth2 内置应用权限。
 - 判断全部数据面结果须检查各自 ReleaseHistory、事件与运行态。MySQL、两个 etcd 与 APISIX 异步传播，不保证跨组件原子提交或即时一致性。
 
 核对：[快照制作](../src/dashboard/apigateway/apigateway/biz/resource_version/resource_version.py)、
 [发布输入与插件名映射](../src/dashboard/apigateway/apigateway/controller/release_data.py)、
 [发布编排](../src/dashboard/apigateway/apigateway/biz/release/gateway_releaser.py)、
+[dashboard 发布事件落库](../src/dashboard/apigateway/apigateway/service/event/event.py)、
 [配置重新下发](../src/dashboard/apigateway/apigateway/controller/publisher/publish.py)、
 [成功回调](../src/dashboard/apigateway/apigateway/controller/tasks/release.py)、
 [operator 同步](../src/operator/pkg/core/committer/committer.go)、
@@ -197,7 +199,7 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 
 | 中文 / English | 表示 | 约定 |
 | --- | --- | --- |
-| 模型厂商 / Provider | AIBackendConfig | 厂商产品身份，如 openai/deepseek，与 APISIX openai-compatible 适配值区分。 |
+| 模型厂商 / Provider | AIBackendConfig | 存储值为 openai、deepseek、openai-compatible；前两者发布时转为 openai-compatible 并使用注册表 endpoint，自定义 openai-compatible 要求并保留 override.endpoint。 |
 | 模型实例配置 / AI Backend Instance | AIBackendConfig.instances | provider/auth/options/override 等配置，不是独立数据库实体或进程实例。 |
 | 模型名 / Model Name | instance options.model 等 | 厂商模型标识，与 Backend.name、Resource.name、工具名区分。 |
 | Web 配置 / Web DTO | `AIBackendWebConfigAdapter` | 扁平前端表示，经边界适配；布局、掩码、输入限制不成为核心存储定义。 |
@@ -215,7 +217,7 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 | --- | --- |
 | gateway_id；兼容 api_id/core_api | 新增逻辑使用 gateway_id 表达 Gateway 主键；api_id 与表名 core_api 仅为存量兼容。“API”指接口时须明确 Resource，不能由 api_id 推断单个接口。 |
 | gateway_name；兼容 api_name/{api_name} | 新增逻辑使用 gateway_name 表达 Gateway.name；api_name 及历史地址/模板占位符仅为存量兼容，与 Resource.name 区分。 |
-| 前端 apigwId/apiId | 相关网关接口的 Gateway.id；按 services/source 请求路径核对。 |
+| 前端 apigwId | 相关网关接口的 Gateway.id；按 services/source 请求路径核对。 |
 | stage_id/stage_name | Stage 主键/网关内环境名；同名环境可属不同网关。 |
 | resource_id/resource_name | 资源主键/业务名；权限、版本、MCP 按所用快照映射，与 APISIX resourceID 区分。 |
 | resource_version_id | ResourceVersion.id，供 Release、OpenAPI、权限映射、MCP 引用。 |
@@ -223,10 +225,11 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 | dashboard release_id | Release.id，环境当前版本关联主键。 |
 | operator release_id / _bk_release.id | bk.release.{gateway}.{stage}，运行环境复合标识，与数值 Release.id 区分。 |
 | 正常 publish_id/PublishID/PublishId | ReleaseHistory.id，发布、标签、事件共同关联键，与 Release.id、版本 ID、事件 ID 区分。 |
-| publish_id=-1 / -2 | 无需上报同步 / 删除发布标记的保留值；dashboard 与 operator 各有常量定义。 |
+| publish_id=-1 / -2 | 分别为无需上报同步 / 删除发布标记；operator 对 -1、-2 和空 publish_id 均不上报发布事件。 |
 | publish_id=-3 | dashboard GLOBAL_PUBLISH_ID，全局资源下发保留值；不是 operator 定义的普通环境发布 ID。 |
 | validata_configuration | 持久化的“配置校验”事件历史拼写，生产者/消费者保持兼容。 |
-| scope_type=api、api_auth、api_feature_flag | 网关作用域/配置类型的历史枚举，与 Resource 作用域区分。 |
+| scope_type | ScopeTypeEnum/ContextScopeTypeEnum：api（网关历史值）、stage、resource。 |
+| Context.type | ContextTypeEnum：api_auth、resource_auth、stage_proxy_http、api_feature_flag；配置类型，与作用域字段区分。 |
 
 保留 publish_id 不是 ReleaseHistory 主键；其他空值/零值行为按所属路径核对。
 operator/APISIX 用 gateway.bk.tencent.com/{gateway,stage,publish-id,apisix-version} 标签传递归属与发布信息；
