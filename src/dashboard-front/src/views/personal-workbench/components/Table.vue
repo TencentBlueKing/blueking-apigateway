@@ -390,7 +390,7 @@ const tableColumns = computed(() => {
                   window.open(row?.itsm_ticket_url);
                 }}
               >
-                {t('跳转到 ITSM')}
+                {t('跳转到ITSM')}
               </Button>
             );
           }
@@ -474,7 +474,7 @@ const tableColumns = computed(() => {
           // 待审批的申请支持撤销，已撤销的申请支持删除
           const canCancel = row.status === 'pending';
           const isCanceled = row.status === 'canceled';
-          const detailText = isItsm && canCancel ? t('跳转到 ITSM') : t('详情');
+          const detailText = isItsm && canCancel ? t('跳转到ITSM') : t('详情');
 
           return (
             <div class="flex items-center">
