@@ -64,7 +64,7 @@ ESLint 另约束宏顺序及 `defineExpose` 位置。以目标文件和生效配
 
 样式使用 SCSS 和 UnoCSS；构建时 `VITE_*` 与运行时 `window.BK_*` 配置职责不同。
 `index.dev.html` / `index.prod.html` 经 `replace-index-html.js` 选择，部署运行变量还需
-检查 `bin/`。图标字体目录 `public/bk_icon_font` 不属于常规分析/修改范围。
+检查 `bin/`。图标字体目录 `src/assets/bk_icon_font` 不属于常规分析/修改范围。
 
 提交规范见 `.commitlintrc.cjs`。已安装的 simple-git-hooks 会在提交前运行
 lint-staged（可改写暂存代码）和类型检查；不要将钩子存在视为已经执行验证。

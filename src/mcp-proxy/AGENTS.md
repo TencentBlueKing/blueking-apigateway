@@ -58,8 +58,11 @@ from `mcpServer.maxConcurrentPrefetch` (default 20, capped at 100).
 
 - No active definitions: clean all servers and corresponding cache entries.
   Removed servers must also shut down active sessions.
-- Reload decisions include version, protocol, selected tools/aliases, and raw
-  response mode. Prompts are refreshed even when those inputs are unchanged.
+- `checkNeedLoad` loads new servers and reloads existing servers when the version,
+  protocol, or raw response mode changes, or a desired tool name is absent from
+  the current tool set. With those other inputs unchanged, removing tools or
+  swapping aliases within the same tool-name set skips reload and only refreshes
+  prompts; deselection alone does not remove an already loaded tool.
 - Protocol changes recreate the SDK server. Empty stored protocol defaults to
   SSE; Streamable HTTP uses a stateless handler. Keep cross-protocol rejection
   tests in `tests/integration/protocol_cross_test.go` aligned.

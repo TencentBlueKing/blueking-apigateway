@@ -74,7 +74,7 @@ processing path.
   the delete delay requires service deletes. Do not remove them as dead time.
 - Global sync writes plugin metadata and refreshes the virtual stage with its
   default 404, outer health-check, root HEAD, and configured extra resources.
-- The APISIX load probe targets `/:gateway/:stage/__apigw_version`. A completed
+- The APISIX load probe targets `/api/:gateway/:stage/__apigw_version`. A completed
   etcd write alone does not establish loading success.
 
 Tests for this path should cover watch recovery, timer coalescing, per-gateway

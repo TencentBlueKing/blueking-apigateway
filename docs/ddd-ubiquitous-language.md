@@ -53,7 +53,13 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 
 核对：[核心模型](../src/dashboard/apigateway/apigateway/core/models.py)、
 [枚举](../src/dashboard/apigateway/apigateway/core/constants.py)、
+[资源写入校验](../src/dashboard/apigateway/apigateway/apis/web/resource/serializers.py)、
+[名称归一校验](../src/dashboard/apigateway/apigateway/apis/web/resource/validators.py)、
 [数据面模型](../src/dashboard/apigateway/apigateway/apps/data_plane/models.py)、
+[etcd 下发](../src/dashboard/apigateway/apigateway/controller/distributor/etcd.py)、
+[operator etcd 配置](../src/operator/pkg/core/runner/common.go)、
+[资源文档列表](../src/dashboard/apigateway/apigateway/biz/resource_version/resource_version.py)、
+[文档环境推荐](../src/dashboard/apigateway/apigateway/biz/released_resource/released_resource.py)、
 [租户规则](../src/dashboard/apigateway/apigateway/common/tenant/validators.py)。
 
 | 中文 / English | 代码名与身份范围 | 定义与约束 |
@@ -64,15 +70,15 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 | 环境 / Stage | `Stage`；id；`(gateway, name)` 唯一 | 网关内的发布目标，如 prod、test，带变量、状态和环境配置；与 DataPlane 是不同维度。 |
 | 环境变量 / Stage Variable | `Stage.vars` | 环境级键值，用于受支持的路径或配置渲染；可引用范围由配置契约决定，与进程环境变量区分。 |
 | 资源 / Resource | `Resource`；id；归属 Gateway | 可编辑的 API 定义，含名称、方法、路径、类别与代理；不直接归属 Stage。 |
-| 资源名称 / Resource Name | `Resource.name` | 网关内业务标识，用于快照、OpenAPI、MCP 映射；与主键、METHOD path、工具别名区分。写入边界校验网关内 name 唯一及 `(gateway, method, path)` 唯一，不能都称为 ORM 唯一约束。 |
+| 资源名称 / Resource Name | `Resource.name` | 网关内业务标识，用于快照、OpenAPI、MCP 映射；与主键、METHOD path、工具别名区分。Web 写入校验网关内 name 及 `(gateway, method, path)` 唯一、lower-dash 归一撞名（getFoo/get_foo）、同路径 ANY 与其他方法互斥；不能都称为 ORM 唯一约束。 |
 | 资源类别 / Resource Kind | `Resource.kind` | `standard` 或 `ai`；缺少 kind 的历史快照按 standard 解释。 |
 | 资源代理配置 / Resource Proxy | `Proxy`；`(resource, type)` 唯一 | `Resource.proxy_id` 选择代理，`Proxy.backend` 引用 Backend；与 mcp-proxy 和 ai-proxy 插件区分。 |
 | 后端服务 / Backend | `Backend`；id；`(gateway, name)` 唯一 | 网关内可复用的后端身份；地址、超时等环境差异由 BackendConfig 表达。 |
 | 后端类别 / Backend Kind | `Backend.kind` | standard 或 ai；普通 API/模型代理 API 关联对应类别后端。kind 与传输 type 区分。 |
 | 后端环境配置 / Backend Configuration | `BackendConfig`；`(gateway, backend, stage)` 唯一 | 后端在环境中的配置：普通 hosts/timeout/loadbalance，或规范化 AI provider/instances 等。 |
 | 作用域配置 / Context | `Context`；`(scope_type, scope_id, type)` 唯一 | **存量兼容**：经 schema 校验的网关、环境或资源配置，如认证，逐步弱化及下架；新增对象直接在代码中用对应 JSON Schema 校验，不扩展 Context。与请求上下文、Go context、限界上下文区分。 |
-| 环境资源禁用 / Stage Resource Disabled | `StageResourceDisabled`；`(stage, resource)` 唯一 | **存量兼容**：仅存量网关使用，新产品已移除配置入口，逻辑将逐步弱化及移除；现有环境名称仍进入版本快照并参与路由过滤，不改变资源归属。 |
-| 数据面 / Data Plane | `DataPlane`；id；name 唯一 | 有独立 etcd 配置、命名空间、访问地址模板与 APISIX 版本的发布目标。 |
+| 环境资源禁用 / Stage Resource Disabled | `StageResourceDisabled`；`(stage, resource)` 唯一 | **存量兼容**：仅存量网关使用，新产品已移除配置入口；禁用环境仍进入快照，影响路由过滤、OAuth2 内置应用权限协调、资源文档列表与文档推荐环境，不改变资源归属。逐步下线需覆盖这些消费者；MCP 候选边界见第 6 节。 |
+| 数据面 / Data Plane | `DataPlane`；id；name 唯一 | 带访问地址模板与 APISIX 版本的发布目标；etcd_configs / etcd_namespace_prefix 供 dashboard 下发控制面配置，对应 operator 的 dashboard.etcd；APISIX 输出侧由 operator 的 apisix.etcd 配置。 |
 | 网关数据面绑定 / Gateway–Data Plane Binding | `GatewayDataPlaneBinding` | 网关可绑定多个数据面；版本发布遍历绑定的活跃数据面。 |
 | 租户 / Tenant | `tenant_mode`、`tenant_id`；调用者租户信息 | 网关模式 single/global 影响访问与隔离；租户与网关、应用、环境及其授权分别表达。 |
 
