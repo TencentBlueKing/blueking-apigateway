@@ -6,6 +6,25 @@ This is a multi-component API Gateway repository. The root guidance applies to
 the whole checkout; each component's nearest `AGENTS.md` defines its local
 runtime, architecture, and verification commands.
 
+## Shared Domain Language
+
+At the start of work in any component, read
+[DDD ubiquitous language](docs/ddd-ubiquitous-language.md) together with this
+file and the applicable component guides. Use its canonical Chinese/English
+terms, identity scopes, lifecycle distinctions, and cross-component mappings
+in code, APIs, UI text, documentation, tests, and review discussions.
+
+- Use dashboard domain definitions as the starting point. Keep APISIX runtime
+  objects, operator synchronization objects, and MCP tools distinct from their
+  control-plane counterparts.
+- Preserve existing database columns, payload fields, enum values, and public
+  interfaces when they use legacy names; explain their canonical meaning at
+  the boundary instead of renaming them as incidental cleanup.
+- When a change adds or changes a shared concept, update the glossary and its
+  source references in the same change. If implementation and glossary differ,
+  verify the owning code and consumers, then reconcile the documentation;
+  do not infer new behavior from terminology alone.
+
 ## Project Structure
 
 ```
@@ -14,6 +33,8 @@ runtime, architecture, and verification commands.
 ├── README_EN.md
 ├── README.md
 ├── Makefile                # make test-bdd — run BDD test suite
+├── docs
+│   └── ddd-ubiquitous-language.md # Shared domain vocabulary for all components
 ├── specs                   # SDD docs
 │   ├── 001-agent-test-suite
 │   └── 002-bdd-test-refactor
