@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/TencentBlueKing/bk-kms-sdk/go v0.0.0
+	github.com/TencentBlueKing/bk-kms-sdk/go v1.0.0
 	github.com/TencentBlueKing/gopkg v1.3.0
 	github.com/agiledragon/gomonkey/v2 v2.10.1
 	github.com/dlmiddlecote/sqlstats v1.0.2
@@ -119,5 +119,3 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/TencentBlueKing/bk-kms-sdk/go => ./third_party/bk-kms-sdk

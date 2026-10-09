@@ -110,10 +110,11 @@ Operator 的控制面、数据面 etcd 可以使用不同账号；即使实际�
 无认证行为，不要求该侧的信封字段。KMS 模式下不再打印 Operator 的完整 debug 配置，
 避免解密后的凭证进入标准输出。关闭 KMS 时保留原有 debug 行为。
 
-Go SDK 暂以相同源码快照保存在各组件的 `third_party/bk-kms-sdk` 中，通过相对路径
-`replace` 引用，现有 Docker 构建目录无需改变，也无需在构建时拉取 SDK 仓库。
-来源版本和文件校验和见各目录的 `README.md`、`MANIFEST.sha256`。SDK 在 CBC 解密前
-拒绝长度不足或未按分组对齐的密文；应用直接调用 SDK，将返回的解密错误转换为不含凭证内容的启动错误。
+三个 Go 组件均依赖开源模块 `github.com/TencentBlueKing/bk-kms-sdk/go v1.0.0`，
+由各组件的 `go.mod` 和 `go.sum` 锁定版本及校验和。发布信息见
+[Go SDK v1.0.0](https://github.com/TencentBlueKing/bk-kms-sdk/releases/tag/go%2Fv1.0.0)。
+SDK 在 CBC 解密前拒绝长度不足或未按分组对齐的密文；应用直接调用 SDK，
+将返回的解密错误转换为不含凭证内容的启动错误。
 
 ## 生效范围与轮换
 
@@ -129,9 +130,10 @@ fork 出的 worker 可以继承已加载的配置；不会为每个请求解密�
 
 ## SDK 包与验证
 
-暂使用仓库内的 [本地 wheel](../vendor/README.md)，由 `pyproject.toml` 和 `uv.lock`
-锁定。镜像构建会先复制 wheel 再执行 `uv sync --locked --no-dev`，不依赖开发机目录。
-SDK 正式发布后可移除本地 source、wheel 和相关打包步骤，重新生成锁文件。
+Dashboard 从 [PyPI](https://pypi.org/project/bk-kms-sdk/1.0.0/) 安装
+`bk-kms-sdk==1.0.0`，由 `pyproject.toml` 和 `uv.lock` 锁定版本及发布包校验和。
+镜像构建执行 `uv sync --locked --no-dev`，从包索引安装 SDK，无需复制本地 wheel。
+SM2/SM4 国密支持继续由现有依赖 `bk-crypto-python-sdk[gm]==4.1.1` 提供。
 
 从 `src/dashboard` 执行：
 

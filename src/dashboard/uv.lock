@@ -156,7 +156,7 @@ requires-dist = [
     { name = "apigw-manager", specifier = "==5.0.1" },
     { name = "arrow", specifier = "==1.4.0" },
     { name = "bk-crypto-python-sdk", extras = ["gm"], specifier = "==4.1.1" },
-    { name = "bk-kms-sdk", path = "vendor/bk_kms_sdk-1.0.0-py3-none-any.whl" },
+    { name = "bk-kms-sdk", specifier = "==1.0.0" },
     { name = "bk-notice-sdk", specifier = "==1.4.2" },
     { name = "bkapi-bk-apigateway", specifier = ">=1.0.12,<2" },
     { name = "bkapi-client-core", specifier = "==1.2.0" },
@@ -429,24 +429,14 @@ gm = [
 [[package]]
 name = "bk-kms-sdk"
 version = "1.0.0"
-source = { path = "vendor/bk_kms_sdk-1.0.0-py3-none-any.whl" }
+source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "bk-crypto-python-sdk" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/82/09/005d9c6a32574b78bcc1f7fa08b230ce73ed69eb75292fbfc02b6e03fe76/bk_kms_sdk-1.0.0.tar.gz", hash = "sha256:34962182f15f7e1c6b4edbde25ab43610d0d0344373b2977e9084808484a0fd4", size = 8516, upload-time = "2026-10-09T03:46:24.449Z" }
 wheels = [
-    { filename = "bk_kms_sdk-1.0.0-py3-none-any.whl", hash = "sha256:6e88e3e941154253a6f5490f8de42ed1642fa3d860ec9b4d8d7d511cb7a9d596" },
+    { url = "https://files.pythonhosted.org/packages/37/b8/9cc7810f14b2f7c81191f372598f4ee83ea76d300c8db04811df47ff6204/bk_kms_sdk-1.0.0-py3-none-any.whl", hash = "sha256:ba7357de1ec442e676a2e203ecd465fb7c79f0c5d0614a380d4629e85484107d", size = 11300, upload-time = "2026-10-09T03:46:23.248Z" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "bk-crypto-python-sdk", specifier = "==4.1.1" },
-    { name = "bk-crypto-python-sdk", extras = ["gm"], marker = "extra == 'gm'", specifier = "==4.1.1" },
-    { name = "build", marker = "extra == 'dev'", specifier = ">=1.2,<2" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.3.1,<3" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9,<1" },
-]
-provides-extras = ["gm", "dev"]
 
 [[package]]
 name = "bk-notice-sdk"

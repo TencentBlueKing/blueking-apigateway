@@ -10,5 +10,6 @@
 字段映射、完整共用信封模板和各组件差异见
 [共用 KMS 配置说明](../../dashboard/docs/kms.md#go-组件复用同一份信封)。
 
-本组件临时集成的 Go SDK 来源和校验和见
-[SDK 快照说明](../third_party/bk-kms-sdk/README.md)。
+本组件依赖开源 Go SDK `github.com/TencentBlueKing/bk-kms-sdk/go v1.0.0`，
+由 `go.mod` 和 `go.sum` 锁定版本及校验和。发布信息见
+[Go SDK v1.0.0](https://github.com/TencentBlueKing/bk-kms-sdk/releases/tag/go%2Fv1.0.0)。

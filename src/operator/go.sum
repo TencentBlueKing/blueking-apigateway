@@ -6,6 +6,8 @@ github.com/Joker/hpp v1.0.0/go.mod h1:8x5n+M1Hp5hC0g8okX3sR3vFQwynaX/UgSOM9MeBKz
 github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398/go.mod h1:a1uqRtAwp2Xwc6WNPJEufxJ7fx3npB4UV/JOLmbu5I0=
+github.com/TencentBlueKing/bk-kms-sdk/go v1.0.0 h1:IQ4TjcstagXxHRsiU/isdOmSi9gVt44IRsqbvkywu+8=
+github.com/TencentBlueKing/bk-kms-sdk/go v1.0.0/go.mod h1:KnMcaPsydcio/pzuazMSUNcYkctkBbbujpn6av8wHtY=
 github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
 github.com/apache/apisix-ingress-controller v1.8.4 h1:p5OOqJDv0AHW9dnMySjZAsWDyrXSotWb/J3QQxEpfGo=
 github.com/apache/apisix-ingress-controller v1.8.4/go.mod h1:8p7qhunmutH21gS3nTYIDNYn+78rg3quGsMTBjin3rc=
