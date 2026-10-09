@@ -37,6 +37,7 @@ from apigateway.biz.permission import (
     PermissionDimensionManager,
     ResourcePermissionDimensionManager,
 )
+from apigateway.common.error_codes import APIError
 from apigateway.core.models import Resource
 
 pytestmark = pytest.mark.django_db
@@ -53,6 +54,65 @@ class TestPermissionDimensionManager:
     def test_get_manager(self, grant_dimension, expected):
         manager = PermissionDimensionManager.get_manager(grant_dimension)
         assert isinstance(manager, expected)
+
+    def test_apply_permission_creates_record_and_schedules_mail(self, mocker, fake_gateway):
+        manager = ResourcePermissionDimensionManager()
+        mocker.patch.object(manager, "allow_apply_permission", return_value=(True, ""))
+        record = mock.Mock(id=1, itsm_ticket_id="")
+        create_apply_record = mocker.patch.object(manager, "create_apply_record", return_value=record)
+        apply_async_on_commit = mocker.patch("apigateway.biz.permission.manager.apply_async_on_commit")
+
+        result = manager.apply_permission(
+            bk_app_code="test-app",
+            gateway=fake_gateway,
+            resource_ids=[1],
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            reason="reason",
+            expire_days=180,
+            username="admin",
+        )
+
+        assert result is record
+        create_apply_record.assert_called_once()
+        apply_async_on_commit.assert_called_once()
+
+    def test_apply_permission_does_not_send_mail_when_itsm_ticket_exists(self, mocker, fake_gateway):
+        manager = ResourcePermissionDimensionManager()
+        mocker.patch.object(manager, "allow_apply_permission", return_value=(True, ""))
+        record = mock.Mock(id=1, itsm_ticket_id="ticket-1")
+        mocker.patch.object(manager, "create_apply_record", return_value=record)
+        apply_async_on_commit = mocker.patch("apigateway.biz.permission.manager.apply_async_on_commit")
+
+        result = manager.apply_permission(
+            bk_app_code="test-app",
+            gateway=fake_gateway,
+            resource_ids=[1],
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            reason="reason",
+            expire_days=180,
+            username="admin",
+        )
+
+        assert result is record
+        apply_async_on_commit.assert_not_called()
+
+    def test_apply_permission_rejects_conflict(self, mocker, fake_gateway):
+        manager = ResourcePermissionDimensionManager()
+        mocker.patch.object(manager, "allow_apply_permission", return_value=(False, "conflict"))
+        create_apply_record = mocker.patch.object(manager, "create_apply_record")
+
+        with pytest.raises(APIError):
+            manager.apply_permission(
+                bk_app_code="test-app",
+                gateway=fake_gateway,
+                resource_ids=[1],
+                grant_dimension=GrantDimensionEnum.RESOURCE.value,
+                reason="reason",
+                expire_days=180,
+                username="admin",
+            )
+
+        create_apply_record.assert_not_called()
 
 
 class TestGatewayPermissionDimensionManager:

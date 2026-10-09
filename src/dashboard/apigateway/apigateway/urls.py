@@ -93,6 +93,8 @@ urlpatterns = [
     ),
     # mcp server marketplace
     path("backend/mcp-marketplace/", include("apigateway.apis.web.mcp_marketplace.urls")),
+    # applications managed by the current user
+    path("backend/me/applications/", include("apigateway.apis.web.user_application.urls")),
     # personal workbench: /me/workbench/
     path("backend/me/workbench/", include("apigateway.apis.web.personal_workbench.urls")),
     path("backend/gateways/logs/query/<slug:request_id>/", LogDetailInfoApi.as_view(), name="access_log.logs.query"),
