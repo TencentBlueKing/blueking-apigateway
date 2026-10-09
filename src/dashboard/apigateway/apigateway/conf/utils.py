@@ -444,6 +444,47 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
     }
 
 
+def get_cli_function_overview(lang: str = "ZH") -> list[dict]:
+    if lang == "EN":
+        return [
+            {"service": "API Gateway", "title": "Discover All Gateways and Interfaces, Query Logs"},
+            {
+                "service": "CMDB",
+                "title": (
+                    "Host management, business topology, cluster modules, dynamic groups, "
+                    "attribute management, association queries"
+                ),
+            },
+            {
+                "service": "Job",
+                "title": (
+                    "Script execution, file distribution, job templates, scheduled tasks, execution history queries"
+                ),
+            },
+            {
+                "service": "SOPS",
+                "title": "Process templates, task execution, task queries, parameter filling, periodic tasks",
+            },
+            {
+                "service": "NodeMan",
+                "title": "Agent installation, Agent status, plugin management, task history, cloud area management",
+            },
+            {
+                "service": "Developer Center",
+                "title": "Create Application, Deploy Application, View Access Address",
+            },
+        ]
+
+    return [
+        {"service": "API 网关", "title": "发现所有网关及接口，查询日志"},
+        {"service": "配置平台", "title": "主机管理、业务拓扑、集群模块、动态分组、属性管理、关联查询"},
+        {"service": "作业平台", "title": "脚本执行、文件分发、作业模板、定时任务、执行历史查询"},
+        {"service": "标准运维", "title": "流程模板、任务执行、任务查询、参数填充、周期任务"},
+        {"service": "节点管理", "title": "Agent 安装、Agent 状态、插件管理、任务历史、云区域管理"},
+        {"service": "开发者中心", "title": "创建应用、部署应用、查看访问地址"},
+    ]
+
+
 def get_esb_board_configs(env: Env, *, bk_component_api_url: str) -> dict:
     # django translation, 避免循环引用
     gettext = lambda s: s  # noqa

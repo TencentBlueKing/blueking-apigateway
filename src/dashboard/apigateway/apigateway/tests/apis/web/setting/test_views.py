@@ -19,7 +19,7 @@
 import pytest
 from environ import Env
 
-from apigateway.apis.web.setting.views import FeatureFlagListApi
+from apigateway.apis.web.setting.views import EnvVarListApi, FeatureFlagListApi
 from apigateway.conf.utils import get_default_feature_flags
 from apigateway.tests.utils.testing import get_response_json
 
@@ -95,3 +95,25 @@ def test_disabled_esb_menu_flags_preserve_user_overrides(settings, request_facto
         "SYNC_ESB_TO_APIGW_ENABLED": True,
         **user_flags,
     }
+
+
+def test_env_var_list_adds_localized_cli_overview_without_mutating_settings(settings, request_factory, mocker):
+    settings.ENV_VARS_FOR_FRONTEND = {"CLI": {"DETAIL_URL": "https://cli.example.com"}}
+    settings.BK_APIGATEWAY_VERSION = "1.22.0"
+    settings.BK_DOCS_URL_PREFIX = "https://docs.example.com"
+    mocker.patch(
+        "apigateway.apis.web.setting.views.DataPlane.objects.get_active_data_planes",
+        return_value=[],
+    )
+    mocker.patch("apigateway.apis.web.setting.views.get_current_language_code", return_value="en")
+
+    request = request_factory.get("")
+    response = EnvVarListApi.as_view()(request)
+
+    cli = get_response_json(response)["data"]["CLI"]
+    assert cli["DETAIL_URL"] == "https://cli.example.com"
+    assert cli["OVERVIEW"][-1] == {
+        "service": "Developer Center",
+        "title": "Create Application, Deploy Application, View Access Address",
+    }
+    assert settings.ENV_VARS_FOR_FRONTEND == {"CLI": {"DETAIL_URL": "https://cli.example.com"}}
