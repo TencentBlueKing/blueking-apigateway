@@ -16,12 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import logging
 from typing import Any, Dict
 
-from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
-from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -29,7 +26,6 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
-from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -41,8 +37,6 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import GatewayPermissionApplyInputSLZ, GatewayPermissionApplyOutputSLZ
-
-logger = logging.getLogger(__name__)
 
 
 @method_decorator(
@@ -60,7 +54,6 @@ logger = logging.getLogger(__name__)
 class GatewayPermissionApplyCreateApi(GatewayDocsPermissionMixin, generics.CreateAPIView):
     serializer_class = GatewayPermissionApplyInputSLZ
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -86,15 +79,7 @@ class GatewayPermissionApplyCreateApi(GatewayDocsPermissionMixin, generics.Creat
 
         resource = self._get_applicable_resource(gateway.id, data["resource_name"])
         manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.RESOURCE.value)
-        allow, reason = manager.allow_apply_permission(
-            gateway.id,
-            bk_app_code,
-            resource_ids=[resource["id"]],
-        )
-        if not allow:
-            raise error_codes.CONFLICT.format(reason, replace=True)
-
-        record = manager.create_apply_record(
+        record = manager.apply_permission(
             bk_app_code=bk_app_code,
             gateway=gateway,
             resource_ids=[resource["id"]],
@@ -103,13 +88,6 @@ class GatewayPermissionApplyCreateApi(GatewayDocsPermissionMixin, generics.Creat
             expire_days=PermissionApplyExpireDaysEnum.FOREVER.value,
             username=request.user.username,
         )
-
-        # ITSM 单据创建成功后，不再发送邮件通知
-        if not record.itsm_ticket_id:
-            try:
-                apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
-            except Exception:  # pylint: disable=broad-except
-                logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
 
         output_slz = GatewayPermissionApplyOutputSLZ(
             {

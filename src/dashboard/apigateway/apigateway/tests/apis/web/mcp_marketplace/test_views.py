@@ -1371,37 +1371,3 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
             ).count()
             == 1
         )
-
-
-class TestMCPMarketplaceApplicableAppListApi:
-    def test_list_passes_user_tenant_id_to_paas_component(self, mocker, request_view, settings):
-        settings.ENABLE_MULTI_TENANT_MODE = True
-
-        user = mocker.MagicMock(username="alice", tenant_id="tenant-a")
-        mock_get_apps = mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
-            return_value=[
-                {
-                    "code": "app-001",
-                    "name": "App 001",
-                    "logo_url": "https://example.com/logo.png",
-                }
-            ],
-        )
-
-        resp = request_view(
-            method="GET",
-            view_name="mcp_marketplace.applicable_apps",
-            user=user,
-        )
-
-        result = resp.json()
-        assert resp.status_code == 200
-        assert result["data"] == [
-            {
-                "bk_app_code": "app-001",
-                "name": "App 001",
-                "logo_url": "https://example.com/logo.png",
-            }
-        ]
-        mock_get_apps.assert_called_once_with("alice", "tenant-a")

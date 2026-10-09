@@ -20,7 +20,9 @@ import logging
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 
+from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
+from django.db import transaction
 from django.utils.translation import gettext as _
 
 from apigateway.apps.permission.constants import (
@@ -132,6 +134,48 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         self, gateway_id: int, bk_app_code: str, resource_ids: Optional[List[int]] = None
     ) -> Tuple[bool, str]:
         """判断是否允许申请权限"""
+
+    @transaction.atomic
+    def apply_permission(
+        self,
+        bk_app_code: str,
+        gateway: Gateway,
+        resource_ids: List[int],
+        grant_dimension: str,
+        reason: str,
+        expire_days: int,
+        username: str,
+    ) -> AppPermissionRecord:
+        """校验并创建权限申请，按 ITSM 建单结果触发邮件通知。"""
+        allow, conflict_reason = self.allow_apply_permission(
+            gateway.id,
+            bk_app_code,
+            resource_ids=resource_ids,
+        )
+        if not allow:
+            raise error_codes.CONFLICT.format(conflict_reason, replace=True)
+
+        record = self.create_apply_record(
+            bk_app_code=bk_app_code,
+            gateway=gateway,
+            resource_ids=resource_ids,
+            grant_dimension=grant_dimension,
+            reason=reason,
+            expire_days=expire_days,
+            username=username,
+        )
+
+        # ITSM 单据创建成功后，不再发送邮件通知
+        if not record.itsm_ticket_id:
+            try:
+                # 延迟导入以避免 permission.tasks 与 biz.permission 的循环依赖
+                from apigateway.apps.permission.tasks import send_mail_for_perm_apply  # noqa: PLC0415
+
+                apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
+            except Exception:  # pylint: disable=broad-except
+                logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
+
+        return record
 
     def create_apply_record(
         self,

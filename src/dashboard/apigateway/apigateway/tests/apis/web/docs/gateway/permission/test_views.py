@@ -94,7 +94,7 @@ class TestGatewayPermissionApplyCreateApi:
             "apigateway.apis.web.docs.gateway.permission.views.get_paas_apps_by_username",
             return_value=[{"code": "test-app"}],
         )
-        apply_async_on_commit = mocker.patch("apigateway.apis.web.docs.gateway.permission.views.apply_async_on_commit")
+        apply_async_on_commit = mocker.patch("apigateway.biz.permission.manager.apply_async_on_commit")
         build_ticket_url = mocker.patch(
             "apigateway.apis.web.docs.gateway.permission.views.ItsmPermissionApplyHelper.build_ticket_url",
             return_value="https://example.com/tickets/1",
@@ -149,9 +149,8 @@ class TestGatewayPermissionApplyCreateApi:
         manager = mocker.patch(
             "apigateway.apis.web.docs.gateway.permission.views.PermissionDimensionManager.get_manager"
         ).return_value
-        manager.allow_apply_permission.return_value = (True, "")
-        manager.create_apply_record.return_value = mocker.Mock(id=1, itsm_ticket_id="ticket-1")
-        apply_async_on_commit = mocker.patch("apigateway.apis.web.docs.gateway.permission.views.apply_async_on_commit")
+        manager.apply_permission.return_value = mocker.Mock(id=1, itsm_ticket_id="ticket-1")
+        apply_async_on_commit = mocker.patch("apigateway.biz.permission.manager.apply_async_on_commit")
         build_ticket_url = mocker.patch(
             "apigateway.apis.web.docs.gateway.permission.views.ItsmPermissionApplyHelper.build_ticket_url",
             return_value="https://example.com/tickets/1",
@@ -328,7 +327,7 @@ class TestGatewayPermissionApplyCreateApi:
             "apigateway.apis.web.docs.gateway.permission.views.get_paas_apps_by_username",
             return_value=[{"code": "test-app"}],
         )
-        mocker.patch("apigateway.apis.web.docs.gateway.permission.views.apply_async_on_commit")
+        mocker.patch("apigateway.biz.permission.manager.apply_async_on_commit")
         request_data = {
             "bk_app_code": "test-app",
             "resource_name": fake_resource1.name,

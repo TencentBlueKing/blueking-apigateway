@@ -42,7 +42,6 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
-    MCPMarketplaceApplicableAppOutputSLZ,
     MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
     MCPServerBatchConfigInputSLZ,
     MCPServerBatchConfigOutputSLZ,
@@ -177,30 +176,6 @@ class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
 
         output_slz = MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
         return OKJsonResponse(status=status.HTTP_201_CREATED, data=output_slz.data)
-
-
-@method_decorator(
-    name="get",
-    decorator=extend_schema(
-        description="获取发起 MCPServer 权限申请时可选择的蓝鲸应用列表",
-        responses={status.HTTP_200_OK: MCPMarketplaceApplicableAppOutputSLZ(many=True)},
-        tags=["WebAPI.MCPMarketplace"],
-    ),
-)
-class MCPMarketplaceApplicableAppListApi(generics.ListAPIView):
-    def list(self, request, *args, **kwargs):
-        apps = get_paas_apps_by_username(request.user.username, get_user_tenant_id(request))
-        output_data = [
-            {
-                "bk_app_code": app.get("code", ""),
-                "name": app.get("name", ""),
-                "logo_url": app.get("logo_url", ""),
-            }
-            for app in apps
-        ]
-
-        slz = MCPMarketplaceApplicableAppOutputSLZ(output_data, many=True)
-        return OKJsonResponse(data=slz.data)
 
 
 @method_decorator(
