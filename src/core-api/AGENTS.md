@@ -48,10 +48,27 @@ its precise job/tool configuration is in `.github/workflows/core-api.yml`.
   must agree with its models/migrations. Public route changes may also require
   `src/dashboard/apigateway/apigateway/data/apigw-definitions/` updates.
 
+Typical read and event-write paths (cache hits stop at `cacheimpls`):
+
+```text
+pkg/api/{microgateway,open} → pkg/service
+  read       → pkg/cacheimpls → pkg/database/dao → pkg/database
+  event write                → pkg/database/dao → pkg/database
+```
+
 ## Request and cache contracts
 
-- Micro-gateway routes under `/api/v1/micro-gateway` expose permissions, public
-  keys, and publish-event reporting. Authentication checks both
+Business API routes in `pkg/server/router.go`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/v1/micro-gateway/:micro_gateway_instance_id/permissions/` | Query application permissions |
+| GET | `/api/v1/micro-gateway/:micro_gateway_instance_id/public_keys/` | Query gateway public keys |
+| POST | `/api/v1/micro-gateway/:micro_gateway_instance_id/release/:publish_id/events/` | Report publish events |
+| GET | `/api/v1/open/gateways/:gateway_name/public_key/` | Query a public key with the legacy v1 response |
+| GET | `/api/v2/open/gateways/:gateway_name/public_key/` | Query a public key with the v2 response |
+
+- Micro-gateway authentication checks both
   `X-Bk-Micro-Gateway-Instance-Id` and `X-Bk-Micro-Gateway-Instance-Secret` against
   configured credentials and matches the instance ID in the URL.
 - Open public-key routes under `/api/v1/open` and `/api/v2/open` require

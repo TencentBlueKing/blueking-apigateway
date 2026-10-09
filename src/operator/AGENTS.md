@@ -47,6 +47,25 @@ processing path.
 | `eventreporter` | Report events to CoreAPI and probe APISIX loading |
 | `entity`, `constant`, `biz` | Resource representations, key formats, ID/name helpers |
 
+## Watch and process flow
+
+The coalesced watch path branches by stage/global scope:
+
+```text
+control-plane etcd → APIGWEtcdRegistry.Watch → EventAgent.Run
+  → ReleaseTimer.Update / ListReleaseForCommit → commitChan → Committer.Run
+    stage  → ListStageResources → SyncRelease → AlterStage
+    global → ListGlobalResources → SyncGlobal → AlterGlobal
+                                             → AlterVirtualStage
+```
+
+Registry listing calls `ValidateApisixJsonSchema`; synchronizer methods call
+the store, whose `ConfigDiffer` compares cached state before APISIX etcd
+put/delete operations. Stage commits report parse/apply milestones and delegate
+the load probe to `eventreporter` after successful sync. Global commits update
+plugin metadata and the virtual stage without the stage event/probe lifecycle.
+Delete-release markers go directly to `commitChan`, bypassing the timer.
+
 ## Watch, concurrency, and write contracts
 
 - `APIGWEtcdRegistry.Watch` uses a trailing-slash prefix, previous values, leader

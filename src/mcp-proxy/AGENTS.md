@@ -50,11 +50,39 @@ The build/unit and integration CI jobs are in `.github/workflows/mcp-proxy.yml`.
   generated: update models and run `./bk-apigateway-mcp-proxy gen -c config.yaml`
   against a suitable database instead of hand-editing DAO output.
 
+## Startup and request flow
+
+```text
+main.main → cmd.Execute → cmd.Start
+  → initConfig → initLogger → initDatabase → initTracing → initBkAIDevTrace
+  → initSentry → initMetrics → server.Run → server.NewRouter
+
+HTTP request → Gin default logger/recovery
+  → RequestID → Metrics → Sentry recovery → optional OpenTelemetry
+  → /:name or /:name/application group
+  → APILogger → BkGatewayJWTAuthMiddleware → MCPServerPermissionMiddleware
+  → MCPServerHeaderMiddleware → optional BkAIDevTraceContextMiddleware
+  → GET/POST /sse or /mcp handler
+```
+
+The group middleware chain covers both user and application routes; operational
+routes are registered separately in `pkg/server/router.go`.
+
 ## Loading and protocol behavior
 
-`pkg/mcp.LoadMCPServer` queries active definitions, prefetches their release/spec
-inputs concurrently, then applies updates serially. Prefetch concurrency comes
-from `mcpServer.maxConcurrentPrefetch` (default 20, capped at 100).
+`pkg/mcp.LoadMCPServer` reconciles definitions in this order:
+
+1. Query active server definitions with `biz.GetAllActiveMCPServers`.
+2. Concurrently prefetch each Release and evaluate `checkNeedLoad`; fetch and
+   parse its version's OpenAPI spec only when loading is needed. Render the
+   gateway/stage endpoint from `BK_API_URL_TMPL` plus `/{stage}`.
+3. Apply server additions/updates serially; skipped servers refresh prompts
+   without fetching the spec or rebuilding tools.
+4. Clean up stale servers and their sessions/cache entries.
+5. Call `mcpProxy.Run`.
+
+Prefetch concurrency comes from `mcpServer.maxConcurrentPrefetch` (default 20,
+capped at 100).
 
 - No active definitions: clean all servers and corresponding cache entries.
   Removed servers must also shut down active sessions.
@@ -76,10 +104,9 @@ from `mcpServer.maxConcurrentPrefetch` (default 20, capped at 100).
 
 ## Authentication, calls, and telemetry
 
-- Route middleware orders API logging → gateway JWT validation → server app
-  permission → header extraction → optional BKAIDev context. Expired permission
-  is rejected. Incoming `X-Bkapi-Jwt` is verified against the official gateway's
-  key; inner JWTs are signed lazily inside tool calls (default expiry 5 minutes).
+- Expired permission is rejected. Incoming `X-Bkapi-Jwt` is verified against the
+  official gateway's key; inner JWTs are signed lazily inside tool calls (default
+  expiry 5 minutes).
 - Header extraction handles `X-Bkapi-Timeout`, `X-Bkapi-Allowed-Headers`, and
   `X-Bkapi-ItsmFlex`; malformed ITSM metadata is ignored.
 - [Request ID propagation](docs/request_id_propagation.md) owns the complete ID

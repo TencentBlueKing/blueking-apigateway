@@ -34,13 +34,33 @@ Web CRUD stores YAML in `PluginConfig.yaml`. `PluginConfigYamlConvertor` in
 `bk-ip-restriction` compatibility formats; other Web payloads pass through.
 Keep that map limited to the two existing formats.
 
-`PluginConfigYamlValidator` (`service/plugin/validator.py`) runs the registered
-checker first, then, if a schema exists, validates the service-converted YAML.
 `PluginConvertorFactory` (`service/plugin/convertor.py`) has several existing
 converters, including `AIProxyConvertor`; unknown enum values are not a generic
 extension mechanism. Unregistered known plugin codes use identity conversion.
 For new plugins, store APISIX-native YAML and use identity conversion rather than
 adding another representation.
+
+## Validation flow
+
+`PluginConfigYamlValidator.validate` checks the stored-format YAML:
+
+```text
+payload → PluginConfigYamlChecker.check
+  nonempty schema → yaml_loads → PluginConvertorFactory convertor → JSON Schema validation
+  no/empty schema → checker-only validation
+```
+
+## Key components
+
+| Component | Source | Role |
+| --- | --- | --- |
+| `PluginTypeCodeEnum` | `apps/plugin/constants.py` | Control-plane plugin codes |
+| Catalog/schema fixtures | `fixtures/plugins.yaml` | Metadata, scope, visibility, schema references |
+| `PluginConfigYamlChecker` | `service/plugin/checker.py` | Registered semantic checks |
+| `PluginConfigYamlValidator` | `service/plugin/validator.py` | Checker and conditional schema validation |
+| `PluginConfigYamlConvertor` | `apis/web/plugin/convertor.py` | Two legacy Web compatibility formats |
+| `PluginConvertorFactory` | `service/plugin/convertor.py` | Stored config to APISIX representation |
+| `PluginData` | `controller/release_data.py` | Scope-specific APISIX plugin-name mapping |
 
 ## Catalog and compatibility
 

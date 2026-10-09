@@ -29,6 +29,9 @@ not a precedent for moving new release workflows here.
 # others
 ```
 
+Group every export under its matching section. Put module re-exports or other
+uncategorized names under `# others`.
+
 - Keep public exports small and private helpers prefixed with `_`. Document
   non-trivial module ownership. Prefer stateless functions; classes need state,
   strategy, validation, factories or polymorphism.
