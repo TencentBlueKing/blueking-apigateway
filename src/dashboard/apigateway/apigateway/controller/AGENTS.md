@@ -1,19 +1,34 @@
 # Controller Layer Guide
 
-## Compilation and distribution
+## Publish Pipeline
 
-The normal publication path runs through `biz/release`, `controller/tasks`,
-`GatewayResourceDistributor` (`distributor/etcd.py`),
-`GatewayApisixResourceTransformer` (`transformer.py`), and `EtcdRegistry`.
+The normal gateway publication path is:
 
-- `release_data.py` supplies conversion input; `convertor/` builds native
-  Services, Routes and release markers. SSL/proto conversion remains unimplemented
-  in the gateway transformer; do not infer support from model/convertor names.
+```text
+biz/release -> controller/tasks -> GatewayResourceDistributor
+            -> GatewayApisixResourceTransformer
+            -> ServiceConvertor + RouteConvertor -> EtcdRegistry
+```
+
+- `release_data.py` materializes the release input consumed by conversion.
+- `transformer.py` coordinates APISIX resource conversion.
+- `convertor/` builds native Services, Routes and release markers. SSL/proto
+  conversion remains unimplemented in the gateway transformer; do not infer support
+  from model/convertor names.
+- `distributor/` owns registry selection and synchronization.
+- `tasks/` and `publisher/` own asynchronous publication, revoke, and lifecycle
+  entrypoints.
+
+Controller code consumes domain state and emits data-plane configuration. It
+does not own Web DTOs, API response compatibility, normalized persistence
+models, or general-purpose domain workflows.
+
+### Distribution and failure contracts
+
 - The transformer accumulates converted resources in memory. Distribution starts
   registry synchronization only after transformation succeeds. This ordering does
   not promise atomic etcd synchronization.
-- `tasks/` and `publisher/` coordinate publish, revoke and lifecycle entrypoints.
-  Preserve event transitions and existing tuple/exception failure contracts:
+- Preserve event transitions and existing tuple/exception failure contracts:
   distributor failures can return `(False, message)` for the task to handle.
 
 ## Conversion boundaries
