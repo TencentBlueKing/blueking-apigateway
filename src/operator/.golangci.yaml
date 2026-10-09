@@ -176,7 +176,6 @@ formatters:
     paths:
       - vendor$
       - third_party$
-      - ^third_party/bk-kms-sdk/
       - tests/integration/*.go
       - builtin$
       - examples$
