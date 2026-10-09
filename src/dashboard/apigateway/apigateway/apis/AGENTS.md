@@ -3,9 +3,15 @@
 ## Surface and boundary contracts
 
 `api-layers` in `pyproject.toml` enforces independence between `apis.web`,
-`apis.open`, `apis.v2.open`, `apis.v2.inner`, and `apis.v2.sync`. Web serves the
-frontend; legacy Open preserves compatibility formats; v2 Open serves public
-callers, Inner serves internal callers, and Sync serves automation/SDK clients.
+`apis.open`, `apis.v2.open`, `apis.v2.inner`, and `apis.v2.sync`.
+
+- `apis.web` serves `dashboard-front` and may use Web-specific DTOs.
+- `apis.open` is the legacy open API with compatibility response formats.
+- `apis.v2.open` is the public v2 open API.
+- `apis.v2.inner` serves BlueKing internal callers.
+- `apis.v2.sync` serves gateway automation and SDK sync clients.
+
+### Boundary rules
 
 - Do not import another surface's views, serializers or helpers. Keep local
   shaping and compatibility in that surface; extract only shared lower-layer
