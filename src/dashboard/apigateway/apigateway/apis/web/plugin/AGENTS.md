@@ -3,6 +3,30 @@
 Source paths below start at `apigateway/apigateway/`. This API module is the
 entrypoint for plugin catalog/configuration work across the owning lower layers.
 
+## Data flow
+
+These diagrams show payload storage, representation, and publishing. Validation
+and scope-specific plugin names follow the rules below.
+
+### Data Flow (new plugins)
+
+```text
+Frontend (raw YAML) ──POST──▶ PluginConfig.yaml (DB storage, as-is)
+
+PluginConfig.yaml (DB) ──GET──▶ Frontend (raw YAML, as-is)
+
+PluginConfig.yaml (DB) ──publish──▶ Service-layer convertor ──▶ APISIX config
+                                    (DefaultPluginConvertor = identity, no conversion)
+```
+
+### Data Flow (legacy plugins only: `bk-rate-limit`, `bk-ip-restriction`)
+
+```text
+Frontend (form) ──POST──▶ PluginConfigYamlConvertor.to_internal_value() ──▶ DB storage
+DB storage ──GET──▶ PluginConfigYamlConvertor.to_representation() ──▶ Frontend (form)
+DB storage ──publish──▶ PluginConvertorFactory convertor ──▶ APISIX config
+```
+
 ## Stored YAML and conversion
 
 Web CRUD stores YAML in `PluginConfig.yaml`. `PluginConfigYamlConvertor` in
