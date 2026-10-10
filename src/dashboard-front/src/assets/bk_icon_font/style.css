@@ -773,21 +773,75 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-user-token:before {
 	content: "\e231";
 }
-.icon-ag-api-ai:before {
-	content: "\e23c";
-}
-.icon-ag-api-biancheng:before {
-	content: "\e23b";
-}
-.icon-ag-api-wangguan:before {
-	content: "\e23a";
-}
-.icon-ag-api-ai-2:before {
-	content: "\e23d";
-}
 .icon-ag-api-biancheng-2:before {
 	content: "\e23f";
 }
 .icon-ag-api-wangguan-2:before {
 	content: "\e23e";
+}
+.icon-ag-api-ai:before {
+	content: "\e241";
+}
+.icon-ag-debugging:before {
+	content: "\e245";
+}
+.icon-ag-done:before {
+	content: "\e244";
+}
+.icon-ag-document-classification:before {
+	content: "\e247";
+}
+.icon-ag-gateway-settings:before {
+	content: "\e248";
+}
+.icon-ag-mcp:before {
+	content: "\e251";
+}
+.icon-ag-permission-2:before {
+	content: "\e24f";
+}
+.icon-ag-profile:before {
+	content: "\e246";
+}
+.icon-ag-programmable:before {
+	content: "\e24d";
+}
+.icon-ag-real-time-data:before {
+	content: "\e242";
+}
+.icon-ag-pending:before {
+	content: "\e24c";
+}
+.icon-ag-my-application:before {
+	content: "\e243";
+}
+.icon-ag-resources:before {
+	content: "\e24b";
+}
+.icon-ag-runtime-data​:before {
+	content: "\e250";
+}
+.icon-ag-setting:before {
+	content: "\e24e";
+}
+.icon-ag-system-management:before {
+	content: "\e249";
+}
+.icon-ag-toolbox:before {
+	content: "\e24a";
+}
+.icon-ag-warning:before {
+	content: "\e252";
+}
+.icon-ag-automate:before {
+	content: "\e254";
+}
+.icon-ag-backend:before {
+	content: "\e255";
+}
+.icon-ag-cli-tool:before {
+	content: "\e253";
+}
+.icon-ag-components-2:before {
+	content: "\e256";
 }

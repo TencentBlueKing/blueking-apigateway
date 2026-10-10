@@ -22,7 +22,7 @@
       <div class="header-icon-wrapper">
         <AgIcon
           class="icon"
-          name="zidongjieru"
+          name="automate"
           size="64"
         />
       </div>

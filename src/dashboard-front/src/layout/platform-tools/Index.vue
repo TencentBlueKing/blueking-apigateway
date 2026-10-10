@@ -89,25 +89,25 @@ const platformToolsMenu = computed<IMenu[]>(() => [
   {
     name: 'PlatformToolsToolbox',
     title: t('工具箱'),
-    icon: 'gongjuxiang',
+    icon: 'toolbox',
     enabled: true,
   },
   {
     name: 'PlatformToolsCLI',
     title: t('CLI 工具'),
-    icon: 'cli',
+    icon: 'cli-tool',
     enabled: featureFlagStore.flags.ENABLE_BK_CLI,
   },
   {
     name: 'PlatformToolsAutomatedGateway',
     title: t('自动化接入网关'),
-    icon: 'zidongjieru',
+    icon: 'automate',
     enabled: true,
   },
   {
     name: 'PlatformToolsProgrammableGateway',
     title: t('可编程网关'),
-    icon: 'square-program',
+    icon: 'programmable',
     enabled: true,
   },
   {

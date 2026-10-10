@@ -113,7 +113,7 @@ const personalWorkbenchMenu = computed<IMenu[]>(() => [
       {
         name: 'MyApply',
         title: t('我的申请'),
-        icon: 'wodeshenqing',
+        icon: 'my-application',
         enabled: true,
       },
     ],
@@ -127,13 +127,13 @@ const personalWorkbenchMenu = computed<IMenu[]>(() => [
       {
         name: 'MyPending',
         title: t('我的待办'),
-        icon: 'wodedaiban',
+        icon: 'pending',
         enabled: true,
       },
       {
         name: 'MyHandled',
         title: t('我的已办'),
-        icon: 'wodeyiban',
+        icon: 'done',
         enabled: true,
       },
     ],

@@ -112,27 +112,27 @@ const componentsMenu = shallowRef<IMenu>([
   {
     name: 'ComponentsIntro',
     title: t('简介'),
-    icon: 'component-intro',
+    icon: 'profile',
   },
   {
     name: 'ComponentsSystem',
     title: t('系统管理'),
-    icon: 'system-mgr',
+    icon: 'system-management',
   },
   {
     name: 'ComponentsManage',
     title: t('组件管理'),
-    icon: 'components',
+    icon: 'components-2',
   },
   {
     name: 'ComponentsCategory',
     title: t('文档分类'),
-    icon: 'document',
+    icon: 'document-classification',
   },
   {
     name: 'ComponentsRuntimeData',
     title: t('实时运行数据'),
-    icon: 'runtime',
+    icon: 'real-time-data',
   },
 ]);
 
