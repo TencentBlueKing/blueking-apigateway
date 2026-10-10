@@ -28,7 +28,10 @@
     :style="{ width: `${size}px`, height: `${size}px` }"
     class="icon svg-icon"
   >
-    <use :xlink:href="`#icon-ag-${name}`" />
+    <use
+      :xlink:href="`#icon-ag-${name}`"
+      :fill="color || undefined"
+    />
   </svg>
 </template>
 

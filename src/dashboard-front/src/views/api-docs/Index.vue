@@ -70,6 +70,7 @@
             ref="tableRef"
             show-settings
             resizable
+            default-row-size="large"
             :api-method="getTableData"
             :columns="columns"
             @clear-filter="handleClearFilterKey"
@@ -294,13 +295,36 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'name',
     title: t('网关名称'),
-    width: 200,
+    width: 240,
     cell: gatewayCell((row) => {
       if (!row?.name) {
         return '--';
       }
+      const gatewayIconConfig = row.kind === 2
+        ? { name: 'api-ai-2',
+          color: '#6228FF',
+          bgColor: 'rgba(98, 40, 255, 0.12)' }
+        : row.kind === 1
+          ? { name: 'api-biancheng-2',
+            color: '#0E3377',
+            bgColor: 'rgba(14, 51, 119, 0.12)' }
+          : { name: 'api-wangguan-2',
+            color: '#3A84FF',
+            bgColor: 'rgba(58, 132, 255, 0.12)' };
+
       return (
         <div class="flex-row items-center">
+          <div
+            class="flex items-center justify-center rounded-4px w-32px h-32px mr-8px"
+            style={{ backgroundColor: gatewayIconConfig.bgColor }}
+          >
+            <ag-icon
+              svg
+              name={gatewayIconConfig.name}
+              size="32"
+              color={gatewayIconConfig.color}
+            />
+          </div>
           <div
             v-bk-tooltips={{
               content: row.name ?? '',
@@ -308,7 +332,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
-            class="truncate color-#3a84ff cursor-pointer mr-4px"
+            class="truncate color-#3a84ff cursor-pointer mr-4px font-bold"
             onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
               e,
               row,
@@ -318,17 +342,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           >
             { row.name }
           </div>
-          {
-            row.kind === 2
-              ? (
-                <ag-icon
-                  name="AIwangguan"
-                  size="16"
-                  class="ml-4px color-#3a84ff"
-                />
-              )
-              : ''
-          }
           {
             row.is_official
               ? (
@@ -452,7 +465,9 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       );
     },
     cell: gatewayCell(row => (
-      row.is_plugin_gateway ? t('是') : t('否')
+      <span class={row.is_plugin_gateway ? undefined : 'color-#c4c6cc'}>
+        {row.is_plugin_gateway ? t('是') : t('否')}
+      </span>
     )),
   },
   {

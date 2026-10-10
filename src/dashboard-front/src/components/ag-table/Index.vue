@@ -30,7 +30,6 @@
           'primary-table-hide-pagination': !showPagination && localTableData.length > 0
         }
       ]"
-      :size="tableSettingSize"
       :data="localTableData"
       :columns="tableColumns"
       :pagination="showPagination ? pagination : null"
@@ -184,6 +183,8 @@ interface IProps {
   cacheSettingsInLocalStorage?: boolean
   cacheIdentifier?: string
   hover?: boolean
+  // 表格设置面板中「行高」的默认值，未缓存过（localStorage 中无该项）时生效；已存过用户偏好时不覆盖，避免破坏既有设置
+  defaultRowSize?: 'medium' | 'large' | 'small' | 'mini'
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -238,6 +239,8 @@ const {
   cacheIdentifier = undefined,
   // 是否鼠标hover每行出现底色
   hover = true,
+  // 行高默认值；不传时维持原默认 medium
+  defaultRowSize = 'medium',
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -559,7 +562,7 @@ const initTableSettings = () => {
 
   const baseConfig = {
     fontSize: 'medium',
-    rowSize: 'medium',
+    rowSize: defaultRowSize,
     disabled: [] as string[],
     checked: [...allColKeys],
     fields: visibleColumn.map(col => ({
@@ -601,8 +604,6 @@ const initTableSettings = () => {
 // 若把 null 直接透传给 tdesign/bkui，中间态会把内部 rowSize/fontSize 固化为默认值，
 // 导致刷新后设置面板（行高、字号）回显不正确，因此对外统一暴露一个非空的设置对象
 const innerTableSettings = computed<BkUiSettings>(() => tableSettings.value ?? initTableSettings());
-
-const tableSettingSize = computed(() => innerTableSettings.value?.rowSize ?? 'medium');
 
 // 同步初始化：表格设置必须在首次渲染前就绪，
 // 否则 tdesign-ui 会把内部 rowSize/fontSize 固化为默认值，导致设置面板回显错误
