@@ -18,11 +18,17 @@
 #
 
 import datetime
+import logging
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from rest_framework.fields import empty
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
+from apigateway.utils.crypto import decrypt_frontend_encrypted_value
 from apigateway.utils.time import timestamp, utctime
+
+logger = logging.getLogger(__name__)
 
 
 class CurrentGatewayDefault(GetGatewayFromContextMixin):
@@ -49,3 +55,44 @@ class TimestampField(serializers.IntegerField):
 
         assert isinstance(value, datetime.datetime), "Only accept datetime"
         return timestamp(value)
+
+
+class DecryptableCharField(serializers.CharField):
+    """可接收前端加密值的字符串字段，解密后按普通 CharField 校验
+
+    支持两种输入格式：
+    - 明文值：原始字符串，如 "the_value"
+    - 加密值：{"_encrypted": true, "_encrypted_value": "xxxxx"}，其中 _encrypted_value 为 Base64 编码的 SM2 密文
+    """
+
+    ENCRYPTED_FLAG_KEY = "_encrypted"
+    ENCRYPTED_VALUE_KEY = "_encrypted_value"
+
+    default_error_messages = {
+        "invalid_encrypted_value": _("无效的加密值格式。"),
+        "decrypt_failed": _("解密失败，请刷新页面后重试。"),
+    }
+
+    def run_validation(self, data=empty):
+        if isinstance(data, dict):
+            data = self._decrypt(data)
+        return super().run_validation(data)
+
+    def _decrypt(self, data: dict) -> str:
+        encrypted_value = data.get(self.ENCRYPTED_VALUE_KEY)
+        if (
+            data.get(self.ENCRYPTED_FLAG_KEY) is not True
+            or not isinstance(encrypted_value, str)
+            or not encrypted_value
+        ):
+            raise self._error("invalid_encrypted_value")
+
+        try:
+            return decrypt_frontend_encrypted_value(encrypted_value)
+        except Exception as err:  # pylint: disable=broad-except
+            # 异常信息与堆栈可能包含密文，仅记录异常类型
+            logger.warning("decrypt frontend encrypted value failed: %s", type(err).__name__)
+            raise self._error("decrypt_failed")
+
+    def _error(self, code: str) -> serializers.ValidationError:
+        return serializers.ValidationError(self.error_messages[code], code=code)

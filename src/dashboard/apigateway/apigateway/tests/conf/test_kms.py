@@ -358,6 +358,24 @@ def test_non_legacy_encryption_requires_its_key(monkeypatch, envelope, credentia
     assert kms.get_env().str("BKKRILL_ENCRYPT_SECRET_KEY") == "krill-key"
 
 
+@pytest.mark.parametrize("missing", ["frontendEncryptPublicKeyBase64", "frontendEncryptPrivateKeyBase64"])
+def test_frontend_encrypt_requires_its_key_pair(monkeypatch, envelope, credentials, missing):
+    monkeypatch.setenv("ENABLE_FRONTEND_ENCRYPT", "True")
+    key_pair = {
+        "frontendEncryptPublicKeyBase64": "public-key",
+        "frontendEncryptPrivateKeyBase64": "private-key",
+    }
+    credentials["encryption"].update({name: value for name, value in key_pair.items() if name != missing})
+    envelope(credentials)
+    with pytest.raises(ImproperlyConfigured, match=f"encryption.{missing}"):
+        kms.get_env()
+    credentials["encryption"].update(key_pair)
+    envelope(credentials)
+    env = kms.get_env()
+    assert env.str("FRONTEND_ENCRYPT_PUBLIC_KEY_BASE64") == "public-key"
+    assert env.str("FRONTEND_ENCRYPT_PRIVATE_KEY_BASE64") == "private-key"
+
+
 def test_disabled_stores_need_no_credentials(envelope, credentials):
     del credentials["rabbitmq"]
     del credentials["bkrepo"]

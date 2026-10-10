@@ -31,6 +31,7 @@ from apigateway.common.tenant.constants import (
 )
 from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_for_gateway_maintainers
 from apigateway.utils.local import local
+from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 from apigateway.utils.url import url_join
 
 from .bkauth import BkAuthAppNotFoundError
@@ -282,7 +283,7 @@ def create_paas_app(
             "paasv3",
             "http_get",
             url,
-            data,
+            SensitiveCleaner(["password"]).clean(data),
             local.request_id,
             resp_data["error"],
         )

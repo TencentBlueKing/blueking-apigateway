@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
 from environ import Env
 
 from apigateway.conf.utils import (
@@ -53,30 +54,55 @@ def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch
     assert flags["ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT"] is False
 
 
+FRONTEND_ENV_VARS_KWARGS = {
+    "edition": "ce",
+    "bk_app_code": "bk-apigateway",
+    "default_test_app_code": "demo-app",
+    "bk_api_url_tmpl": "https://bkapi.example.com/api/{api_name}",
+    "bk_component_api_url": "https://components.example.com",
+    "dashboard_fe_url": "https://dashboard-fe.example.com",
+    "dashboard_url": "https://dashboard.example.com",
+    "csrf_cookie_name": "csrftoken",
+    "csrf_cookie_domain": ".example.com",
+    "bk_apigateway_version": "1.22.0",
+    "bk_docs_url_prefix": "https://docs.example.com",
+    "bk_login_url": "https://login.example.com",
+    "bk_sdk_languages": ["python"],
+    "bk_paas3_url": "https://paas.example.com/",
+    "enable_frontend_encrypt": False,
+    "frontend_encrypt_public_key": "",
+    "frontend_encrypt_cipher_type": "SM2",
+}
+
+
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
     monkeypatch.setenv("BK_USER_URL", "https://user.example.com")
 
-    env_vars = get_frontend_env_vars(
-        env=Env(),
-        edition="ce",
-        bk_app_code="bk-apigateway",
-        default_test_app_code="demo-app",
-        bk_api_url_tmpl="https://bkapi.example.com/api/{api_name}",
-        bk_component_api_url="https://components.example.com",
-        dashboard_fe_url="https://dashboard-fe.example.com",
-        dashboard_url="https://dashboard.example.com",
-        csrf_cookie_name="csrftoken",
-        csrf_cookie_domain=".example.com",
-        bk_apigateway_version="1.22.0",
-        bk_docs_url_prefix="https://docs.example.com",
-        bk_login_url="https://login.example.com",
-        bk_sdk_languages=["python"],
-        bk_paas3_url="https://paas.example.com/",
-    )
+    env_vars = get_frontend_env_vars(env=Env(), **FRONTEND_ENV_VARS_KWARGS)
 
     assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center"
     assert env_vars["PAAS_APP_CREATE_LINK"] == "https://paas.example.com/developer-center/app/create"
     assert env_vars["BK_USER_PERSONAL_CENTER_LINK"] == "https://user.example.com/personal-center"
+
+
+@pytest.mark.parametrize(
+    "enabled, expected",
+    [
+        (False, {"enabled": False}),
+        (True, {"enabled": True, "public_key": "public-key", "cipher_type": "SM2"}),
+    ],
+)
+def test_get_frontend_env_vars_frontend_encrypt(enabled, expected):
+    env_vars = get_frontend_env_vars(
+        env=Env(),
+        **{
+            **FRONTEND_ENV_VARS_KWARGS,
+            "enable_frontend_encrypt": enabled,
+            "frontend_encrypt_public_key": "public-key",
+        },
+    )
+
+    assert env_vars["FRONTEND_ENCRYPT"] == expected
 
 
 def test_get_cli_function_overview_includes_developer_center():

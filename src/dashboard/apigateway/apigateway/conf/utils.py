@@ -248,8 +248,21 @@ def get_frontend_env_vars(
     bk_login_url: str,
     bk_sdk_languages: list,
     bk_paas3_url: str,
+    enable_frontend_encrypt: bool,
+    frontend_encrypt_public_key: str,
+    frontend_encrypt_cipher_type: str,
 ) -> dict:
     bk_paas3_url = bk_paas3_url.rstrip("/")
+
+    # 前端敏感字段加密配置，未启用时不下发公钥
+    frontend_encrypt: dict = {"enabled": enable_frontend_encrypt}
+    if enable_frontend_encrypt:
+        frontend_encrypt.update(
+            {
+                "public_key": frontend_encrypt_public_key,
+                "cipher_type": frontend_encrypt_cipher_type,
+            }
+        )
 
     return {
         "EDITION": edition,
@@ -283,6 +296,7 @@ def get_frontend_env_vars(
         },
         "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
         "BK_SDK_LANGUAGES": bk_sdk_languages,
+        "FRONTEND_ENCRYPT": frontend_encrypt,
         "CLI": {
             "DETAIL_URL": env.str("CLI_DETAIL_URL", default="https://github.com/TencentBlueKing/bk-cli"),
             "USER_KEY": env.str("CLI_USER_KEY", default="bk_token"),
