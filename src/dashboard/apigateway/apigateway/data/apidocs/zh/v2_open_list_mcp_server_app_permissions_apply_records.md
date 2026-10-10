@@ -6,13 +6,23 @@
 
 #### 请求参数
 
-| 参数名称          | 参数类型   | 必选 | 描述                    |
-|---------------|--------|----|-----------------------|
-| bk_app_code   | string | 是  | 蓝鲸应用编码                |
-| mcp_server_id | int    | 否  | mcp_server ID         |
-| record_id     | int    | 否  | 申请记录 ID               |
-| limit         | int    | 否  | 最大返回条目数量，默认为 10       |
-| offset        | int    | 否  | 相对于完整未分页数据的起始位置，默认为 0 |
+| 参数名称      | 参数类型 | 必选 | 描述                                     |
+|---------------|----------|------|------------------------------------------|
+| bk_app_code   | string   | 是   | 蓝鲸应用编码                             |
+| mcp_server_id | int      | 否   | mcp_server ID                            |
+| record_id     | int      | 否   | 申请记录 ID                              |
+| status        | string   | 否   | 审批状态，可选值见下面说明               |
+| limit         | int      | 否   | 最大返回条目数量，默认为 10              |
+| offset        | int      | 否   | 相对于完整未分页数据的起始位置，默认为 0 |
+
+#### status
+
+| 可选值   | 描述   |
+|----------|--------|
+| approved | 通过   |
+| rejected | 驳回   |
+| pending  | 待审批 |
+| canceled | 已取消 |
 
 
 ### 响应示例
@@ -53,44 +63,44 @@
 
 ### 响应参数说明
 
-| 字段    | 类型   | 描述                               |
-| ------- | ------ | ---------------------------------- |
-| data    | object | 分页结果，详细信息请见下面说明     |
+| 字段 | 类型   | 描述                           |
+|------|--------|--------------------------------|
+| data | object | 分页结果，详细信息请见下面说明 |
 
 
 #### data
 
-| 参数名称 | 参数类型 | 描述 |
-|---|---|---|
-| count | int | 按 MCPServer 去重后的申请记录数量 |
-| results | array | 本次查询结果数据 |
+| 参数名称 | 参数类型 | 描述                              |
+|----------|----------|-----------------------------------|
+| count    | int      | 按 MCPServer 去重后的申请记录数量 |
+| results  | array    | 本次查询结果数据                  |
 
 
 #### data.results
 
-| 参数名称           | 参数类型   | 描述            |
-|----------------|--------|---------------|
-| id             | int    | 申请记录 ID       |
-| bk_app_code    | string | 蓝鲸应用编码        |
-| applied_by     | string | 申请人           |
-| applied_time   | string | 申请时间          |
-| handled_by     | string | 审批人           |
-| handled_time   | string | 审批时间          |
-| status         | string | 审批状态          |
-| status_display | string | 审批状态描述        |
-| comment        | string | 审批内容          |
-| reason         | string | 申请理由          |
-| expire_days    | int    | 过期时间          |
-| approval_url   | string | 权限审批 URL      |
-| mcp_server     | object | mcp_server 信息 |
+| 参数名称       | 参数类型 | 描述            |
+|----------------|----------|-----------------|
+| id             | int      | 申请记录 ID     |
+| bk_app_code    | string   | 蓝鲸应用编码    |
+| applied_by     | string   | 申请人          |
+| applied_time   | string   | 申请时间        |
+| handled_by     | string   | 审批人          |
+| handled_time   | string   | 审批时间        |
+| status         | string   | 审批状态        |
+| status_display | string   | 审批状态描述    |
+| comment        | string   | 审批内容        |
+| reason         | string   | 申请理由        |
+| expire_days    | int      | 过期时间        |
+| approval_url   | string   | 权限审批 URL    |
+| mcp_server     | object   | mcp_server 信息 |
 
 
 #### data.results.mcp_server
 
-| 参数名称          | 参数类型    | 描述                   |
-|---------------|---------|----------------------|
-| id            | int     | mcp_server ID        |
-| name          | string  | mcp_server 名称        |
-| title         | string  | mcp_server 中文名/显示名称  |
-| description   | string  | mcp_server 描述        |
-| categories    | array   | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
+| 参数名称    | 参数类型 | 描述                                                                      |
+|-------------|----------|---------------------------------------------------------------------------|
+| id          | int      | mcp_server ID                                                             |
+| name        | string   | mcp_server 名称                                                           |
+| title       | string   | mcp_server 中文名/显示名称                                                |
+| description | string   | mcp_server 描述                                                           |
+| categories  | array    | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |

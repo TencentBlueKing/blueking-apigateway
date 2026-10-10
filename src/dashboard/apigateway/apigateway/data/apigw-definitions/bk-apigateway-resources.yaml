@@ -3821,6 +3821,14 @@ paths:
             type: integer
           description: 申请记录 ID
           example: 1
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [approved, rejected, pending, canceled]
+          description: 审批状态
+          example: pending
         - name: limit
           in: query
           schema:
