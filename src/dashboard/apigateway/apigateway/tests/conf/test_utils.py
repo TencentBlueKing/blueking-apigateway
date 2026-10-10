@@ -20,6 +20,7 @@
 from environ import Env
 
 from apigateway.conf.utils import (
+    get_cli_function_overview,
     get_default_feature_flags,
     get_doc_links,
     get_frontend_env_vars,
@@ -76,6 +77,30 @@ def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
     assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center"
     assert env_vars["PAAS_APP_CREATE_LINK"] == "https://paas.example.com/developer-center/app/create"
     assert env_vars["BK_USER_PERSONAL_CENTER_LINK"] == "https://user.example.com/personal-center"
+
+
+def test_get_cli_function_overview_includes_developer_center():
+    overview = get_cli_function_overview("ZH")
+
+    assert overview[-1] == {
+        "service": "开发者中心",
+        "title": "创建应用、部署应用、查看访问地址",
+    }
+    assert [item["service"] for item in overview] == [
+        "API 网关",
+        "配置平台",
+        "作业平台",
+        "标准运维",
+        "节点管理",
+        "开发者中心",
+    ]
+
+
+def test_get_cli_function_overview_english():
+    assert get_cli_function_overview("EN")[-1] == {
+        "service": "Developer Center",
+        "title": "Create Application, Deploy Application, View Access Address",
+    }
 
 
 def test_get_doc_links_includes_personal_token():
