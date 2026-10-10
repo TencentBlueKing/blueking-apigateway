@@ -301,7 +301,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         return '--';
       }
       const gatewayIconConfig = row.kind === 2
-        ? { name: 'api-ai-2',
+        ? { name: 'api-ai',
           color: '#6228FF',
           bgColor: 'rgba(98, 40, 255, 0.12)' }
         : row.kind === 1

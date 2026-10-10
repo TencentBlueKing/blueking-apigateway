@@ -16,14 +16,9 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import http from '@/services/http';
-import type { GatewayMemberRole } from '@/services/types/responses/gateway-members';
-import type { IUserApplicationOutput } from '@/services/types/responses/me';
-
-export function getUserGatewayRole(gatewayId: number) {
-  return http.get<{ role: GatewayMemberRole }>(`/gateways/${gatewayId}/me/role/`);
+// 当前登录用户可管理的蓝鲸应用，对应后端 `apis/web/user_application/serializers.UserApplicationOutputSLZ`。
+export interface IUserApplicationOutput {
+  bk_app_code: string
+  name: string
+  logo_url: string
 }
-
-// 获取当前用户可管理的蓝鲸应用列表
-export const getUserApplicationList = () =>
-  http.get<IUserApplicationOutput[]>('/me/applications/');

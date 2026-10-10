@@ -18,7 +18,6 @@
 
 import http from '../http';
 import type {
-  IApplicableAppOutput,
   IMCPServerCategoryOutput,
   IMCPServerConfigListOutput,
   IMCPServerListOutput,
@@ -301,12 +300,6 @@ export interface IMarketplacePermissionApplyInput {
   bk_app_code: string
   reason: string
 }
-
-/**
- *  获取可申请的蓝鲸应用列表
- */
-export const getApplicableApps = () =>
-  http.get<IApplicableAppOutput[]>('/mcp-marketplace/applicable-apps/');
 
 /**
  *  发起 MCPServer 权限申请

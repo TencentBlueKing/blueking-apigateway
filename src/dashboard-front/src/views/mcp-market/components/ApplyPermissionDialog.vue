@@ -85,13 +85,13 @@ import {
   InfoBox,
 } from 'bkui-vue';
 import {
-  getApplicableApps,
   marketplacePermissionApply,
 } from '@/services/source/mcp-market.ts';
+import { getUserApplicationList } from '@/services/source/me';
 import type {
-  IApplicableAppOutput,
   IMarketplacePermissionApplyOutput,
 } from '@/services/types/responses/mcp-marketplace.ts';
+import type { IUserApplicationOutput } from '@/services/types/responses/me';
 import { useEnv } from '@/stores';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
@@ -111,7 +111,7 @@ const { t } = useI18n();
 const envStore = useEnv();
 
 const formRef = ref<InstanceType<typeof Form>>();
-const applicableApps = ref<IApplicableAppOutput[]>([]);
+const applicableApps = ref<IUserApplicationOutput[]>([]);
 const itsmTicketUrl = ref('');
 const isSubmitting = ref(false);
 const permissionFormData = ref<{
@@ -136,7 +136,7 @@ const selectedAppName = computed(() => {
 
 const getApplicableAppList = async () => {
   try {
-    const res = await getApplicableApps();
+    const res = await getUserApplicationList();
     applicableApps.value = res ?? [];
   }
   catch {

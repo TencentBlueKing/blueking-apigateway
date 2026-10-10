@@ -103,13 +103,6 @@ export interface IServerConfig {
   url: string
 }
 
-// 获取可申请的蓝鲸应用列表
-export interface IApplicableAppOutput {
-  bk_app_code: string
-  name: string
-  logo_url: string
-}
-
 // 发起 MCPServer 权限申请
 export interface IMarketplacePermissionApplyOutput {
   record_id: number
