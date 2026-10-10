@@ -358,6 +358,16 @@ def test_non_legacy_encryption_requires_its_key(monkeypatch, envelope, credentia
     assert kms.get_env().str("BKKRILL_ENCRYPT_SECRET_KEY") == "krill-key"
 
 
+def test_frontend_encrypt_requires_its_private_key(monkeypatch, envelope, credentials):
+    monkeypatch.setenv("ENABLE_FRONTEND_ENCRYPT", "True")
+    envelope(credentials)
+    with pytest.raises(ImproperlyConfigured, match="encryption.frontendEncryptPrivateKeyBase64"):
+        kms.get_env()
+    credentials["encryption"]["frontendEncryptPrivateKeyBase64"] = "private-key"
+    envelope(credentials)
+    assert kms.get_env().str("FRONTEND_ENCRYPT_PRIVATE_KEY_BASE64") == "private-key"
+
+
 def test_disabled_stores_need_no_credentials(envelope, credentials):
     del credentials["rabbitmq"]
     del credentials["bkrepo"]
