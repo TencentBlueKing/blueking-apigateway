@@ -187,7 +187,7 @@
         </div>
         <div :class="routerViewWrapperClass">
           <RouterView
-            :key="route.params.id as string"
+            :key="(route.params.id as string)"
             :gateway-id="Number(route.params.id)"
           />
         </div>
@@ -255,7 +255,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'StageManagement',
     enabled: true,
     title: t('环境管理'),
-    icon: 'resource',
+    icon: 'setting',
     permission: 'stage',
     children: [
       {
@@ -276,7 +276,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'BackendService',
     enabled: true,
     title: t('后端服务'),
-    icon: 'fuwuguanli',
+    icon: 'backend',
     permission: 'backend',
   },
   {
@@ -290,7 +290,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
-    icon: 'ziyuanguanli',
+    icon: 'resources',
     permission: 'resource',
     children: [
       {
@@ -313,7 +313,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'PermissionManage',
     enabled: true,
     title: t('权限管理'),
-    icon: 'quanxianguanli',
+    icon: 'permission-2',
     permission: 'permission',
     children: [
       {
@@ -334,7 +334,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'apigwOperatingData',
     enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
     title: t('运行数据'),
-    icon: 'keguancexing',
+    icon: 'runtime-data',
     permission: 'runtime',
     children: [
       {
@@ -360,7 +360,7 @@ const menuList = computed<IMenu[]>(() => [
   {
     name: 'MonitorAlarm',
     title: t('监控告警'),
-    icon: 'gaojingjilu',
+    icon: 'warning',
     enabled: featureFlagStore.flags.ENABLE_MONITOR,
     children: [
       {
@@ -381,13 +381,13 @@ const menuList = computed<IMenu[]>(() => [
     name: 'OnlineDebugging',
     enabled: true,
     title: t('在线调试'),
-    icon: 'zaixiandiaoshi',
+    icon: 'debugging',
     permission: 'debug',
   },
   {
     name: 'MCP',
     title: 'MCP',
-    icon: 'mcp-server',
+    icon: 'mcp',
     enabled: true,
     children: [
       {
@@ -414,7 +414,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'GatewaySettings',
     enabled: true,
     title: t('网关设置'),
-    icon: 'jibenxinxi',
+    icon: 'gateway-settings',
     children: [
       {
         name: 'BasicInfo',
