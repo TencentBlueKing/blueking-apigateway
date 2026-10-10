@@ -773,3 +773,21 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-user-token:before {
 	content: "\e231";
 }
+.icon-ag-api-ai:before {
+	content: "\e23c";
+}
+.icon-ag-api-biancheng:before {
+	content: "\e23b";
+}
+.icon-ag-api-wangguan:before {
+	content: "\e23a";
+}
+.icon-ag-api-ai-2:before {
+	content: "\e23d";
+}
+.icon-ag-api-biancheng-2:before {
+	content: "\e23f";
+}
+.icon-ag-api-wangguan-2:before {
+	content: "\e23e";
+}
