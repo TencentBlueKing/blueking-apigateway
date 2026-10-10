@@ -506,6 +506,11 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             queryset.filter(mcp_server_id=OuterRef("mcp_server_id")).order_by("-applied_time", "-id").values("id")[:1]
         )
         queryset = queryset.filter(id=Subquery(latest_record_id)).order_by("-applied_time", "-id")
+
+        # 状态过滤在取最新记录之后，只返回当前申请状态匹配的 mcp_server
+        if data.get("status"):
+            queryset = queryset.filter(status=data["status"])
+
         # TODO: bk_aidev 切换分页协议后，删除此临时开关及下方旧版响应分支，恢复直接分页。
         use_legacy_response = request.app.app_code == "bk_aidev" and Env().bool(
             "ENABLE_BK_AIDEV_MCP_APPLY_RECORDS_COMPAT", default=False
