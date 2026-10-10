@@ -80,8 +80,8 @@
 <script lang="tsx" setup>
 import { type Form, InfoBox } from 'bkui-vue';
 import { applyDocsResourcePermission } from '@/services/source/docs';
-import { getApplicableApps } from '@/services/source/mcp-market';
-import type { IApplicableAppOutput } from '@/services/types/responses/mcp-marketplace.ts';
+import { getUserApplicationList } from '@/services/source/me';
+import type { IUserApplicationOutput } from '@/services/types/responses/me';
 import { useEnv } from '@/stores';
 
 interface IProps {
@@ -101,7 +101,7 @@ const envStore = useEnv();
 
 const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 const submitting = ref(false);
-const applicableApps = ref<IApplicableAppOutput[]>([]);
+const applicableApps = ref<IUserApplicationOutput[]>([]);
 const formData = ref({
   application: '',
 });
@@ -121,7 +121,7 @@ const selectedAppName = computed(() => {
 
 const loadApps = async () => {
   try {
-    applicableApps.value = await getApplicableApps() ?? [];
+    applicableApps.value = await getUserApplicationList() ?? [];
   }
   catch (error) {
     console.error(error);
@@ -158,7 +158,7 @@ const handleConfirm = async () => {
   try {
     const res = await applyDocsResourcePermission(gatewayName, {
       bk_app_code: formData.value.application,
-      reason: '',
+      reason: t('申请权限'),
       resource_name: resourceName,
     });
     const name = selectedAppName.value;

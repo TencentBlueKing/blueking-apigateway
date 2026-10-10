@@ -77,7 +77,6 @@ export interface IDocsPermissionApplyInput {
 }
 
 // 从文档页申请当前资源权限
-// TODO: 后端暂未提供此接口，待接口实现后根据最终契约调整请求路径及请求、响应类型。
 export const applyDocsResourcePermission = (
   gatewayName: string,
   data: IDocsPermissionApplyInput,

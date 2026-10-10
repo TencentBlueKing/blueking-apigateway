@@ -57,16 +57,14 @@
               />
               {{ curTab === 'gateway' ? t('网关详情') : t('组件详情') }}
             </BkButton>
-            <!-- TODO 待权限申请接口完成后再放开 -->
-            <template v-if="false">
-              <BkButton
-                v-if="showApplyPermission"
-                theme="primary"
-                @click="handleApplyClick"
-              >
-                {{ t('申请权限') }}
-              </BkButton>
-            </template>
+            <!-- 申请权限按钮，后端接口由 PR #3340 提供 -->
+            <BkButton
+              v-if="showApplyPermission"
+              theme="primary"
+              @click="handleApplyClick"
+            >
+              {{ t('申请权限') }}
+            </BkButton>
           </aside>
         </header>
         <p class="res-desc">
