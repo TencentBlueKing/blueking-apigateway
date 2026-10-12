@@ -490,14 +490,18 @@ class ResourceImportCheckApi(generics.CreateAPIView):
             )
 
         resource_data_list = openapi_manager.get_resource_list()
-        if slz.validated_data["include_change_type"]:
+        change_types = (
             classify_resource_import_changes(request.gateway, resource_data_list)
+            if slz.validated_data["include_change_type"]
+            else None
+        )
         resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
         slz = ResourceImportInfoSLZ(
             data=resource_data_list,
             many=True,
             context={
                 "docs": ResourceDocHandler.get_docs_by_resource_ids(resource_ids),
+                "change_types": change_types,
             },
         )
         slz.is_valid()

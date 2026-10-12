@@ -10,14 +10,12 @@
 #
 """Compare validated resource imports with editable configuration without saving them."""
 
-import json
 from copy import deepcopy
 from typing import Any, Dict, List
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.core.models import Gateway, Proxy
 from apigateway.service.contexts import ResourceAuthContext
@@ -28,23 +26,26 @@ from apigateway.utils.yaml import yaml_loads
 from .constants import ResourceImportChangeTypeEnum
 
 
-def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceData]) -> None:
-    """Add change_type to metadata; only existing resources need configuration reads.
+def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceData]) -> Dict[str, str]:
+    """Return change types by validated unique resource name without modifying imports.
 
     Comparison covers imported configuration, excluding Markdown documents and
-    operational metadata. Missing plugins retain user-created bindings, matching
-    PluginSynchronizer. Legacy migrations conservatively count as updates.
+    operational metadata, including Schema version metadata. Consumers that skip
+    imports must handle Schema version changes separately. Only existing resources
+    need configuration reads. Missing plugins retain user-created bindings,
+    matching PluginSynchronizer. Legacy migrations conservatively count as updates.
     """
+    change_types = {}
     existing_resources = []
     for resource_data in resources:
         if resource_data.resource is None:
-            resource_data.metadata["change_type"] = ResourceImportChangeTypeEnum.ADD.value
+            change_types[resource_data.name] = ResourceImportChangeTypeEnum.ADD.value
         else:
-            existing_resources.append(resource_data)
+            existing_resources.append((resource_data, resource_data.resource))
     if not existing_resources:
-        return
+        return change_types
 
-    resource_ids = [data.resource.id for data in existing_resources if data.resource]
+    resource_ids = [resource.id for _, resource in existing_resources]
     proxies = {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)}
     auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
     labels = get_resource_id_to_labels(resource_ids)
@@ -57,15 +58,13 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
         scope_ids=resource_ids,
     )
 
-    for resource_data in existing_resources:
-        resource = resource_data.resource
-        assert resource
+    for resource_data, resource in existing_resources:
         proxy = proxies.get(resource.id)
         current_plugins = {
             binding.config.type.code: binding.config.config for binding in bindings.get(resource.id, [])
         }
         imported_plugins = {
-            binding.config.type.code: binding.config.config
+            binding.config.type.code: current_plugins[binding.config.type.code]
             for binding in bindings.get(resource.id, [])
             if binding.source != PluginBindingSourceEnum.YAML_IMPORT.value
         }
@@ -92,15 +91,16 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
                 _normalize_schema(resource_data, schemas.get(resource.id, {})),
             )
         )
-        resource_data.metadata["change_type"] = (
+        change_types[resource_data.name] = (
             ResourceImportChangeTypeEnum.UNCHANGED.value if unchanged else ResourceImportChangeTypeEnum.UPDATE.value
         )
+    return change_types
 
 
 def _backend_config_unchanged(imported: ResourceBackendConfig | None, current: Dict[str, Any]) -> bool:
     if imported is None:
         return current == {}
-    if imported.legacy_upstreams or imported.legacy_transform_headers:
+    if imported.legacy_upstreams or imported.legacy_transform_headers is not None:
         return False
     return imported.model_dump() == ResourceBackendConfig.model_validate(current).model_dump()
 
@@ -108,7 +108,7 @@ def _backend_config_unchanged(imported: ResourceBackendConfig | None, current: D
 def _normalize_schema(resource: ResourceData, schema: Dict[str, Any]) -> dict:
     # Use the exporter's defaults on both sides so original exports compare equal,
     # including resources without a stored schema and Swagger 2.0 conversions.
-    content = OpenAPIExportManager(include_bk_apigateway_resource=False).export_openapi(
+    content = OpenAPIExportManager(include_bk_apigateway_resource=False).get_openapi_content(
         [
             {
                 "name": resource.name,
@@ -118,11 +118,10 @@ def _normalize_schema(resource: ResourceData, schema: Dict[str, Any]) -> dict:
                 "openapi_schema": deepcopy(schema),
             }
         ],
-        file_type=OpenAPIFormatEnum.JSON.value,
     )
     # The document's root version is selected from the first exported resource;
     # mixed-version exports must not make unchanged operation content differ.
-    return {"paths": json.loads(content)["paths"], "none_schema": schema.get("none_schema", False)}
+    return {"paths": content["paths"], "none_schema": schema.get("none_schema", False)}
 
 
 def _configuration_equal(source: Any, target: Any) -> bool:

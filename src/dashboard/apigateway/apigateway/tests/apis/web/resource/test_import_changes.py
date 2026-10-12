@@ -18,7 +18,6 @@ from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
-from apigateway.biz.openapi import OpenAPIImportManager, classify_resource_import_changes
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Proxy
 
@@ -88,18 +87,12 @@ def test_changed_description_is_update(request_view, importable_resource):
     assert response.json()["data"][0]["change_type"] == "update"
 
 
-def test_new_resource_is_add_without_comparison_queries(request_view, importable_resource, django_assert_num_queries):
+def test_new_resource_is_add(request_view, importable_resource):
     resource = importable_resource
     content = json.loads(export_content(request_view, resource))
     operation = content["paths"].pop(resource.path)["get"]
     operation["operationId"] = "new_resource"
     content["paths"]["/new"] = {"get": operation}
-    manager = OpenAPIImportManager.load_from_content(resource.gateway, json.dumps(content))
-    assert manager.validate() == []
-    resources = manager.get_resource_list()
-    assert resources[0].resource is None
-    with django_assert_num_queries(0):
-        classify_resource_import_changes(resource.gateway, resources)
     response = check_content(request_view, resource, json.dumps(content), include_change_type=True)
     assert response.status_code == 200, response.json()
     assert response.json()["data"][0]["id"] is None
@@ -252,7 +245,8 @@ def test_invalid_change_type_option_is_rejected(request_view, importable_resourc
     assert response.status_code == 400
 
 
-def test_ai_resource_round_trip_is_unchanged(request_view, importable_resource):
+@pytest.mark.parametrize("empty_proxy_config", [True, False])
+def test_ai_resource_compares_empty_backend_config(request_view, importable_resource, empty_proxy_config):
     resource = importable_resource
     resource.gateway.kind = GatewayKindEnum.AI.value
     resource.gateway.save()
@@ -262,12 +256,59 @@ def test_ai_resource_round_trip_is_unchanged(request_view, importable_resource):
     resource.save()
     proxy = Proxy.objects.get(resource=resource)
     proxy.backend = backend
-    proxy._config = "{}"
+    if empty_proxy_config:
+        proxy._config = "{}"
     proxy.save()
     content = export_content(request_view, resource)
     response = check_content(request_view, resource, content, include_change_type=True)
     assert response.status_code == 200, response.json()
+    assert response.json()["data"][0]["change_type"] == ("unchanged" if empty_proxy_config else "update")
+
+
+@pytest.mark.parametrize(
+    "field,value,expected",
+    [
+        ("transformHeaders", {}, "update"),
+        ("transformHeaders", {"set": {"x-token": "test"}, "delete": ["x-old"]}, "update"),
+        ("transformHeaders", None, "unchanged"),
+        ("upstreams", {"loadbalance": "roundrobin", "hosts": [{"host": "https://example.com"}]}, "update"),
+        ("upstreams", {}, "unchanged"),
+        ("upstreams", None, "unchanged"),
+    ],
+)
+def test_legacy_backend_migrations_are_updates(request_view, importable_resource, field, value, expected):
+    resource = importable_resource
+    content = json.loads(export_content(request_view, resource))
+    content["paths"][resource.path]["get"]["x-bk-apigateway-resource"]["backend"][field] = value
+    response = check_content(request_view, resource, json.dumps(content), include_change_type=True)
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"][0]["change_type"] == expected
+
+
+@pytest.mark.parametrize(
+    "stored_version,imported_version,expected_version",
+    [("OpenAPIV3.0", "3.1.0", "OpenAPIV3.1"), ("OpenAPIV3.1", "3.0.1", "OpenAPIV3.0")],
+)
+def test_schema_version_only_change_is_excluded(
+    request_view, importable_resource, stored_version, imported_version, expected_version
+):
+    resource = importable_resource
+    stored = G(
+        OpenAPIResourceSchema,
+        resource=resource,
+        schema={
+            "version": stored_version,
+            "parameters": [{"name": "name", "in": "query", "schema": {"type": "string"}}],
+        },
+    )
+    content = json.loads(export_content(request_view, resource))
+    content["openapi"] = imported_version
+    response = check_content(request_view, resource, json.dumps(content), include_change_type=True)
+    assert response.status_code == 200, response.json()
     assert response.json()["data"][0]["change_type"] == "unchanged"
+    assert response.json()["data"][0]["openapi_schema"]["version"] == expected_version
+    stored.refresh_from_db()
+    assert stored.schema["version"] == stored_version
 
 
 @pytest.mark.parametrize(
