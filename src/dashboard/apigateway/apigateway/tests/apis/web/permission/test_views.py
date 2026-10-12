@@ -583,6 +583,17 @@ class TestAppPermissionApplyViewSet:
             bk_app_code="test-canceled",
             status=ApplyStatusEnum.CANCELED.value,
         )
+        for status_value in [
+            ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
+        ]:
+            G(
+                models.AppPermissionApply,
+                gateway=fake_gateway,
+                bk_app_code=f"test-{status_value}",
+                status=status_value,
+            )
 
         data = [
             {
@@ -629,13 +640,26 @@ class TestAppPermissionApplyBatchViewSet:
             status="rejected",
             handled_by="admin",
         )
+
+        def handle_gateway_apply(*args, **kwargs):
+            apply = kwargs["apply"]
+            apply.status = kwargs["status"]
+            apply.save(update_fields=["status"])
+            return record_1
+
+        def handle_resource_apply(*args, **kwargs):
+            apply = kwargs["apply"]
+            apply.status = kwargs["status"]
+            apply.save(update_fields=["status"])
+            return record_2
+
         mocker.patch(
             "apigateway.biz.permission.GatewayPermissionDimensionManager.handle_permission_apply",
-            return_value=record_1,
+            side_effect=handle_gateway_apply,
         )
         mocker.patch(
             "apigateway.biz.permission.ResourcePermissionDimensionManager.handle_permission_apply",
-            return_value=record_2,
+            side_effect=handle_resource_apply,
         )
         mocker.patch(
             "apigateway.apis.web.permission.views.send_mail_for_perm_handle",
@@ -689,7 +713,10 @@ class TestAppPermissionApplyBatchViewSet:
 
             assert response.status_code == 201
 
-        assert models.AppPermissionApply.objects.filter(gateway=fake_gateway).count() == 0
+        apply_1.refresh_from_db()
+        apply_2.refresh_from_db()
+        assert apply_1.status == ApplyStatusEnum.APPROVED.value
+        assert apply_2.status == ApplyStatusEnum.REJECTED.value
         assert AuditEventLog.objects.filter(comment="权限申请审批").count() == 2
         audit_log = AuditEventLog.objects.get(op_object_id=str(record_1.id), comment="权限申请审批")
         assert audit_log.username == "admin"

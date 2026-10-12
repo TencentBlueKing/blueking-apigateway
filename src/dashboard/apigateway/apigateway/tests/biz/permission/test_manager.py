@@ -150,6 +150,8 @@ class TestGatewayPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.APPROVED.value
         permission = AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
         assert permission.grant_type == GrantTypeEnum.APPLY.value
         assert permission.handled_by == "admin"
@@ -169,6 +171,8 @@ class TestGatewayPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.REJECTED.value
         assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
@@ -264,6 +268,17 @@ class TestGatewayPermissionDimensionManager:
         result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code)
         assert result is True
 
+        # 仅保留已驳回的申请单，不影响再次申请
+        G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code=target_app_code,
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.REJECTED.value,
+        )
+        result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code)
+        assert result is True
+
         # 已拥有权限，权限永久有效
         G(AppGatewayPermission, gateway=fake_gateway, bk_app_code=target_app_code, expires=None)
         result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code)
@@ -351,6 +366,8 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.APPROVED.value
         permissions = AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
         assert permissions.count() == 2
         assert {permission.handled_by for permission in permissions} == {"admin"}
@@ -372,6 +389,8 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.REJECTED.value
         assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
         assert (
             AppPermissionApplyStatus.objects.filter(
@@ -425,6 +444,8 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=apply.resource_ids[:1],
         )
         assert record.id
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.PARTIAL_APPROVED.value
         assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
         assert (
             AppPermissionApplyStatus.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
@@ -503,6 +524,28 @@ class TestResourcePermissionDimensionManager:
         # 无权限申请
         result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code, [resource.id])
         assert result is True
+
+        # 仅保留已驳回的申请单和拒绝状态，不影响再次申请
+        rejected_apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code=target_app_code,
+            _resource_ids=str(resource.id),
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.REJECTED.value,
+        )
+        G(
+            AppPermissionApplyStatus,
+            apply=None,
+            gateway=fake_gateway,
+            bk_app_code=target_app_code,
+            resource=resource,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.REJECTED.value,
+        )
+        result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code, [resource.id])
+        assert result is True
+        assert rejected_apply.status == ApplyStatusEnum.REJECTED.value
 
         # 已拥有权限，权限永久有效
         G(

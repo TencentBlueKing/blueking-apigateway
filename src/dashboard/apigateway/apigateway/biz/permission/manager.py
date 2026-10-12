@@ -330,7 +330,7 @@ class GatewayPermissionDimensionManager(PermissionDimensionManager):
         self._handle_apply_status(apply, status)
 
         # 添加到已审批单据记录
-        return AppPermissionRecord.objects.save_record(
+        record = AppPermissionRecord.objects.save_record(
             record_id=apply.apply_record_id,
             gateway=gateway,
             bk_app_code=apply.bk_app_code,
@@ -345,6 +345,9 @@ class GatewayPermissionDimensionManager(PermissionDimensionManager):
             expire_days=apply.expire_days,
             grant_dimension=apply.grant_dimension,
         )
+        apply.status = status
+        apply.save(update_fields=["status"])
+        return record
 
     def save_permission_apply_status(
         self,
@@ -437,7 +440,7 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
         self._handle_apply_status(apply, rejected_resource_ids)
 
         # 添加到已审批单据记录
-        return AppPermissionRecord.objects.save_record(
+        record = AppPermissionRecord.objects.save_record(
             record_id=apply.apply_record_id,
             gateway=gateway,
             bk_app_code=apply.bk_app_code,
@@ -455,6 +458,9 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
             expire_days=apply.expire_days,
             grant_dimension=apply.grant_dimension,
         )
+        apply.status = status
+        apply.save(update_fields=["status"])
+        return record
 
     def save_permission_apply_status(
         self,

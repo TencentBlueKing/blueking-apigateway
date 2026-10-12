@@ -146,7 +146,7 @@ class AppResourcePermission(TimestampedModelMixin):
 
 class AppPermissionApply(TimestampedModelMixin):
     """
-    应用访问资源权限申请单，申请中的申请单
+    所有应用访问资源权限申请单，包括待审批、已撤销、已驳回和审批完成状态
     """
 
     bk_app_code = models.CharField(max_length=32, db_index=True)

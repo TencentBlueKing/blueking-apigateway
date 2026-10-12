@@ -727,11 +727,10 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
 
 class AppPermissionApplyQuerySetMixin:
     def get_queryset(self):
-        return (
-            AppPermissionApply.objects.filter(gateway=self.request.gateway)
-            .exclude(status=ApplyStatusEnum.CANCELED.value)
-            .order_by("-id")
-        )
+        return AppPermissionApply.objects.filter(
+            gateway=self.request.gateway,
+            status=ApplyStatusEnum.PENDING.value,
+        ).order_by("-id")
 
 
 @method_decorator(
@@ -898,8 +897,5 @@ class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.Cr
                 apply_async_on_commit(send_mail_for_perm_handle, args=[record.id])
             except Exception:  # pylint: disable=broad-except
                 logger.exception("send mail to applicant fail. record_id=%s", record.id)
-
-        # 删除申请单
-        queryset.delete()
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)

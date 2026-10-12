@@ -161,7 +161,10 @@ class TestItsmCallbackResultHandler:
 
         permission = AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
         assert permission.grant_type == GrantTypeEnum.APPLY.value
-        assert not AppPermissionApply.objects.filter(id=apply.id).exists()
+        apply.refresh_from_db()
+        record.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.APPROVED.value
+        assert record.status == ApplyStatusEnum.APPROVED.value
         mock_apply_async.assert_called_once_with(
             kwargs={
                 "grant_dimension": GrantDimensionEnum.API.value,
@@ -170,6 +173,48 @@ class TestItsmCallbackResultHandler:
             },
             ignore_result=True,
         )
+
+    def test_handle_gateway_callback_rejected_keeps_terminal_apply(self, fake_gateway):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            _resource_ids="",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            _resource_ids="",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
+            itsm_ticket_id="itsm-ticket-rejected",
+            itsm_callback_token="cb-token-rejected",
+        )
+
+        ItsmCallbackResultHandler().handle(
+            ticket={
+                "id": "itsm-ticket-rejected",
+                "approve_result": False,
+                "form_data": {
+                    "apply_record_id": record.id,
+                    "grant_dimension": "gateway",
+                },
+            },
+            callback_token="cb-token-rejected",
+        )
+
+        apply.refresh_from_db()
+        record.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.REJECTED.value
+        assert record.status == ApplyStatusEnum.REJECTED.value
+        assert not AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).exists()
 
     def test_handle_mcp_callback_approved_updates_apply_and_sync_permissions(self, mocker, fake_gateway, fake_stage):
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)

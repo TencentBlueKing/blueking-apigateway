@@ -816,14 +816,20 @@ class TestWorkbenchPendingGatewayPermissionListApi:
         assert result["data"]["count"] == 0
 
     def test_list_excludes_non_pending(self, request_view, fake_gateway):
-        """测试我的待办 - 不返回已审批或已驳回的申请"""
-        G(
-            AppPermissionApply,
-            gateway=fake_gateway,
-            bk_app_code="app3",
-            applied_by="applicant3",
-            status=ApplyStatusEnum.APPROVED.value,
-        )
+        """测试我的待办 - 不返回已结束的申请"""
+        for status_value in [
+            ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
+            ApplyStatusEnum.CANCELED.value,
+        ]:
+            G(
+                AppPermissionApply,
+                gateway=fake_gateway,
+                bk_app_code=status_value,
+                applied_by="applicant3",
+                status=status_value,
+            )
 
         resp = request_view(
             method="GET",
@@ -1213,6 +1219,8 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         for status_val in [
             ApplyStatusEnum.PENDING.value,
             ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
             ApplyStatusEnum.CANCELED.value,
         ]:
             G(
@@ -1230,11 +1238,24 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 3
+        assert result["data"]["count"] == 5
 
-    def test_list_filter_by_status(self, request_view, fake_gateway):
+    @pytest.mark.parametrize(
+        "filter_status",
+        [
+            ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
+        ],
+    )
+    def test_list_filter_by_status(self, request_view, fake_gateway, filter_status):
         """测试我的申请 - API 网关按状态筛选"""
-        for status_val in [ApplyStatusEnum.PENDING.value, ApplyStatusEnum.APPROVED.value]:
+        for status_val in [
+            ApplyStatusEnum.PENDING.value,
+            ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
+        ]:
             G(
                 AppPermissionApply,
                 gateway=fake_gateway,
@@ -1246,13 +1267,13 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         resp = request_view(
             method="GET",
             view_name="workbench.permissions.gateway.applied",
-            data={"status": ApplyStatusEnum.APPROVED.value},
+            data={"status": filter_status},
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
-        assert result["data"]["results"][0]["status"] == ApplyStatusEnum.APPROVED.value
+        assert result["data"]["results"][0]["status"] == filter_status
 
     def test_list_filter_by_applied_time_range(self, request_view, fake_gateway):
         """测试我的申请 - API 网关按申请时间范围筛选"""

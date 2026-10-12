@@ -186,7 +186,6 @@ class ItsmCallbackResultHandler:
                     "ticket_id": ticket_id,
                 },
             )
-            apply.delete()
 
         logger.info(
             "ITSM gateway approval result handled: record_id=%s, approve_result=%s, ticket_id=%s",
