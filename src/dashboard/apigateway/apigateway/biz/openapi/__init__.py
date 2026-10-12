@@ -15,7 +15,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum, OpenAPIVersionKeyEnum
+from .constants import (
+    VALID_METHOD_IN_SWAGGER_PATHITEM,
+    OpenAPIExtensionEnum,
+    OpenAPIVersionKeyEnum,
+    ResourceImportChangeTypeEnum,
+)
+from .diff import classify_resource_import_changes
 from .openapi import OpenAPIImportManager
 from .parser import BaseParser, OpenAPIV3Parser, ResourceDataConvertor
 from .schema import SchemaValidateErr, convert_operation_v3_to_v2
@@ -27,6 +33,7 @@ __all__ = [
     # Enum
     "OpenAPIExtensionEnum",
     "OpenAPIVersionKeyEnum",
+    "ResourceImportChangeTypeEnum",
     # class
     "BaseParser",
     "OpenAPIImportManager",
@@ -35,6 +42,7 @@ __all__ = [
     "ResourceImportValidator",
     "SchemaValidateErr",
     # functions
+    "classify_resource_import_changes",
     "convert_operation_v3_to_v2",
     # others
 ]
