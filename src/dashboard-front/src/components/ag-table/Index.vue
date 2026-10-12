@@ -276,6 +276,8 @@ const slots = useSlots();
 const { maxTableLimit, clientHeight } = useMaxTableLimit({
   ...(maxLimitConfig ?? {}),
   className: maxLimitConfig?.className ?? cacheIdentifier,
+  // 行高缓存缺失时以组件默认行高兜底，避免按 tdesign 默认 medium 计算导致可展示条数偏多
+  defaultRowSize: maxLimitConfig?.defaultRowSize ?? defaultRowSize,
 });
 
 const {

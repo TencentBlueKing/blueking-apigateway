@@ -26,14 +26,17 @@ type ITableLimit = {
   mode?: string | undefined
   className: string
   hasPagination: boolean
+  defaultRowSize?: string
 };
 
 /**
  * @description 根据表格设置大小获取表格行高
  * @param {String} className  获取缓存中每个table单独的class
+ * @param {String} mode  表格模式，默认 bkui
+ * @param {String} defaultRowSize  缓存中无行高设置时的兜底行高，需与表格 defaultRowSize 一致
  * @returns lineH行高  topHead 表头高度
  */
-function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string, number> {
+function getTableSizeLineHeight(className: string, mode = 'bkui', defaultRowSize?: string): Record<string, number> {
   // 后续其他表格也可以适配，默认先以bkui-vue表格为例
   const sizeMap: ReturnRecordType<string, Record<string, number>> = {
     mini: () => {
@@ -107,7 +110,9 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
   // 行高设置由 use-table-setting 写入，读这里必须使用同一个 key，否则永远读不到
   const curSetting = localStorage.getItem(getTableSettingsCacheKey(className));
   const isTDesign = ['tdesign'].includes(mode);
-  const defaultSize = isTDesign ? 'medium' : 'small';
+  // 缓存缺失或字段不完整时，优先使用调用方传入的默认行高，
+  // 保证计算行高与表格实际 defaultRowSize 一致，否则可展示条数会偏多导致分页器被挤出可视区
+  const defaultSize = defaultRowSize || (isTDesign ? 'medium' : 'small');
 
   let storageSettings: Record<string, any> | null = null;
   try {
@@ -120,7 +125,7 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
 
   // 缓存存在但缺少对应字段时也要回退到默认值，避免落到 sizeMap 之外的尺寸
   const tableSize = (isTDesign ? storageSettings?.rowSize : storageSettings?.size) || defaultSize;
-  return sizeMap[tableSize]?.() ?? sizeMap[defaultSize]();
+  return sizeMap[tableSize]?.() ?? sizeMap[defaultSize]?.() ?? sizeMap.medium();
 }
 
 /**
@@ -149,7 +154,7 @@ export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   // 与 use-table-setting 使用同一套标识解析规则（cacheIdentifier -> 路由 name -> matched -> fullPath）
   const name = resolveTableCacheIdentifier(payload?.className);
   // topHead是指vxe-table根据不同表格大小动态设置了距离表头top
-  const { lineH, topHead } = getTableSizeLineHeight(name, payload?.mode);
+  const { lineH, topHead } = getTableSizeLineHeight(name, payload?.mode, payload?.defaultRowSize);
   // 优先获取自定义传入行高，默认设置不同大小表格的固定行高
   const rowHeight = payload?.customLineHeight ?? lineH;
   // 为了防止body区域出现滚动条，需要减去表头和分页器的高度

@@ -73,6 +73,7 @@
             default-row-size="large"
             :api-method="getTableData"
             :columns="columns"
+            :max-limit-config="tableMaxLimitConfig"
             @clear-filter="handleClearFilterKey"
           />
         </main>
@@ -268,6 +269,12 @@ const filterData = ref({
 });
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
+
+// 传入该项后每页条数会随视口高度与行高自适应，避免行高较大时表格连同分页器超出可视区而被遮挡
+const tableMaxLimitConfig = computed(() => ({
+  allocatedHeight: featureFlagStore.isTenantMode ? 212 : 264,
+  mode: 'tdesign',
+}));
 
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
