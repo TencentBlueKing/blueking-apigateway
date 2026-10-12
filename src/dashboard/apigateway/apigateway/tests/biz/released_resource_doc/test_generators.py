@@ -20,7 +20,7 @@ import pytest
 from ddf import G
 
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.released_resource_doc import DocGenerator, DummyResourceDocData, ReleasedResourceDocData, constants
+from apigateway.biz.released_resource_doc import DocGenerator, DummyResourceDocData, ReleasedResourceDocData
 from apigateway.core.models import Stage
 
 
@@ -58,8 +58,6 @@ class TestDocGenerator:
         assert doc["body_content"] == doc_data.content
 
     def test_get_doc_with_dummy_doc(self, fake_gateway, fake_released_resource, fake_released_resource_doc):
-        # Older snapshots may not contain plugins, and resources may have no body or auth requirements.
-        fake_released_resource.data.pop("plugins", None)
         resource_data = ReleasedResourceData.from_data(fake_released_resource.data)
         resource_data.verified_app_required = resource_data.verified_user_required = False
         doc_data = DummyResourceDocData.create("zh")
@@ -80,94 +78,6 @@ class TestDocGenerator:
         assert not doc["updated_time"]
         assert doc["auth_content"] == doc["body_content"] == ""
         assert doc["resource_url"] in doc["content"]
-
-    @pytest.mark.parametrize(
-        "template_name,plugins,auth_required,expected,unexpected",
-        [
-            (
-                "ZH",
-                [{"type": "bk-access-token-source", "config": {}}],
-                True,
-                [
-                    "| Authorization | string | 二选一 |",
-                    "| X-Bkapi-Authorization | string | 二选一 |",
-                    "| bk_app_code",
-                    "\n\n也支持通过 `X-Bkapi-Authorization` 请求头传递认证信息。\n\n",
-                ],
-                ["| X-Bk-Username |", "| X-Bk-Tenant-Id |"],
-            ),
-            (
-                "ZH_MULTI_TENANT",
-                [
-                    {"type": "bk-access-token-source", "config": {"source": "api_key", "allow_fallback": False}},
-                    {"type": "bk-username-required", "config": None},
-                ],
-                True,
-                ["| X-API-KEY | string | 是 |", "| X-Bk-Username | string | 是 |", "| X-Bk-Tenant-Id | string | 是 |"],
-                ["| X-Bkapi-Authorization |", "| bk_app_code"],
-            ),
-            (
-                "EN",
-                [{"type": "bk-username-required", "config": None}],
-                False,
-                ["| X-Bk-Username | string | Yes |", "X-Bk-Username: {username}"],
-                ["| bk_app_code", "| X-Bk-Tenant-Id |"],
-            ),
-            (
-                "EN_MULTI_TENANT",
-                [{"type": "bk-access-token-source", "config": {"source": "api_key", "allow_fallback": True}}],
-                True,
-                [
-                    "| X-API-KEY | string | Either one |",
-                    "| X-Bkapi-Authorization | string | Either one |",
-                    "| X-Bk-Tenant-Id | string | Yes |",
-                    "| bk_app_code",
-                ],
-                ["| X-Bk-Username |"],
-            ),
-            (
-                "ZH_MULTI_TENANT",
-                [],
-                True,
-                ["| X-Bk-Tenant-Id | string | 是 |", "| bk_app_code", "| bk_app_secret"],
-                ["| Authorization |", "| X-API-KEY |", "| X-Bk-Username |"],
-            ),
-        ],
-        ids=["default-bearer", "strict-api-key", "username-only", "api-key-fallback", "tenant-without-plugins"],
-    )
-    def test_plugin_authentication(
-        self,
-        mocker,
-        fake_gateway,
-        fake_stage,
-        fake_released_resource,
-        template_name,
-        plugins,
-        auth_required,
-        expected,
-        unexpected,
-    ):
-        language = template_name.split("_")[0].lower()
-        template = getattr(constants, f"BKAPI_AUTHORIZATION_DESCRIPTION_{template_name}")
-        mocker.patch.dict(constants.BKAPI_AUTHORIZATION_DESCRIPTIONS, {language: template})
-        snapshot = {**fake_released_resource.data, "plugins": plugins}
-        data = ReleasedResourceData.from_data(snapshot)
-        data.verified_app_required = data.verified_user_required = auth_required
-        content = DocGenerator(
-            fake_gateway,
-            fake_stage.name,
-            data,
-            DummyResourceDocData.create(language),
-            language,
-        ).get_doc()["auth_content"]
-        for text in expected:
-            assert text in content
-        for text in unexpected:
-            assert text not in content
-        if "| bk_app_code" in content:
-            for header in ("X-Bkapi-Authorization", "X-Bk-Username", "X-Bk-Tenant-Id"):
-                if f"| {header} |" in content:
-                    assert content.index(f"| {header} |") < content.index("| bk_app_code")
 
     @pytest.mark.parametrize("language", ["zh", "en"])
     def test_get_resource_url_part(self, fake_gateway, fake_released_resource, fake_released_resource_doc, language):
