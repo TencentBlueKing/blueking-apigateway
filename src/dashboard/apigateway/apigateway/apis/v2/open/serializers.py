@@ -420,6 +420,12 @@ class MCPServerAppPermissionRecordListInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     mcp_server_id = serializers.IntegerField(required=False, allow_null=True, help_text="MCPServer ID")
     record_id = serializers.IntegerField(required=False, allow_null=True, help_text="申请记录 ID")
+    status = serializers.ChoiceField(
+        choices=MCPServerAppPermissionApplyStatusEnum.get_choices(),
+        allow_blank=True,
+        required=False,
+        help_text="审批状态",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionRecordListInputSLZ"

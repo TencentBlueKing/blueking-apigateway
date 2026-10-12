@@ -379,6 +379,64 @@ class TestMCPServerAppPermissionRecordListApi:
         assert result["data"]["results"][0]["id"] == second_record.id
         assert latest_first_record.id != second_record.id
 
+    def test_list_filters_by_status_of_latest_record(self, request_view, fake_gateway, settings):
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
+        )
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        reapplied_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
+        pending_mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage)
+        # 先被驳回，重新申请后通过：当前状态为 approved
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=reapplied_mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+            applied_time=datetime(2025, 1, 1, tzinfo=ZoneInfo("UTC")),
+        )
+        approved_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=reapplied_mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            applied_time=datetime(2025, 1, 3, tzinfo=ZoneInfo("UTC")),
+        )
+        pending_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=pending_mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_time=datetime(2025, 1, 2, tzinfo=ZoneInfo("UTC")),
+        )
+
+        def list_record_ids(status):
+            resp = request_view(
+                method="GET",
+                view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
+                app=mock.MagicMock(app_code="test"),
+                data={"bk_app_code": "test_app", "status": status},
+            )
+            assert resp.status_code == 200
+            data = resp.json()["data"]
+            assert data["count"] == len(data["results"])
+            return [item["id"] for item in data["results"]]
+
+        assert list_record_ids("approved") == [approved_record.id]
+        assert list_record_ids("pending") == [pending_record.id]
+        # 历史的驳回记录不是最新记录，不返回
+        assert list_record_ids("rejected") == []
+        assert list_record_ids("") == [approved_record.id, pending_record.id]
+
+    def test_list_rejects_invalid_status(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"bk_app_code": "test_app", "status": "invalid"},
+        )
+
+        assert resp.status_code == 400
+
 
 class TestMCPServerAppPermissionRecordLookupApi:
     def test_lookup_by_ids_and_app_code(self, request_view, fake_gateway):
