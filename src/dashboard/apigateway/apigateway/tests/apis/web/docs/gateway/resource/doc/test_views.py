@@ -43,6 +43,12 @@ class TestDocListApi:
         fake_released_resource,
         fake_released_resource_doc,
     ):
+        # The endpoint must carry the published plugin configuration through to the document.
+        fake_released_resource.data = {
+            **fake_released_resource.data,
+            "plugins": [{"type": "bk-access-token-source", "config": {"source": "api_key", "allow_fallback": False}}],
+        }
+        fake_released_resource.save(update_fields=["data"])
         resp = request_view(
             method="GET",
             view_name="docs.gateway.resource.doc.retrieve",
@@ -57,6 +63,13 @@ class TestDocListApi:
         assert resp.status_code == 200
         assert result["data"]["content"]
         assert result["data"]["updated_time"]
+        data = result["data"]
+        assert "X-API-KEY: {access_token}" in data["auth_content"]
+        assert "| X-Bkapi-Authorization |" not in data["auth_content"]
+        assert data["auth_content"] in data["content"]
+        assert "body_content" in data
+        assert data["method"] == fake_released_resource.data["method"]
+        assert data["resource_url"] in data["content"]
 
         mocker.patch(
             "apigateway.apis.web.docs.gateway.resource.doc.views.ReleasedResourceDocHandler.get_released_resource_doc_data",
