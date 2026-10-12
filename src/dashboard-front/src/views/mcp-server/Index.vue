@@ -274,7 +274,7 @@ const {
   mcpConfigList,
   fetchMcpBatchCopyConfigList,
 } = useMcpBatchCopyConfig({
-  fetchApi: getMcpBatchCopyConfigList as any,
+  fetchApi: getMcpBatchCopyConfigList,
   gatewayId,
 });
 

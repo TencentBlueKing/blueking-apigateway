@@ -490,5 +490,5 @@ export const getMcpAIConfigList = (apigwId: number, mcp_server_id: number): Prom
 export const getMcpBatchCopyConfigList = (
   apigwId: number,
   data: IMcpBatchConfigQuery,
-): Promise<{ data: IMcpClientConfig }> =>
+): Promise<IMcpClientConfig> =>
   http.post(`${path}/${apigwId}/mcp-servers/-/batch-configs/`, data);

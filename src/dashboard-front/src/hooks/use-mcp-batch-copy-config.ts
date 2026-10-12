@@ -36,8 +36,8 @@ type IMcpBatchConfigQuery = {
   mcp_server_ids: number[]
 };
 
-// 定义动态接口函数类型
-type FetchConfigFunc = (
+// 定义动态接口函数类型（兼容 网关列表页带 apigwId / 市场页不带 两种调用形态）
+export type FetchConfigFunc = (
   apigwIdOrData?: number | IMcpBatchConfigQuery,
   data?: IMcpBatchConfigQuery,
 ) => Promise<IMcpClientConfig>;
@@ -52,8 +52,9 @@ export const useMcpBatchCopyConfig = ({
   fetchApi,
 }: {
   gatewayId?: number
-  fetchApi: FetchConfigFunc
+  fetchApi: (...args: any[]) => Promise<IMcpClientConfig>
 }) => {
+  const api = fetchApi as FetchConfigFunc;
   // 复制配置加载状态
   const copyConfigLoading = ref(false);
   // 复制配置列表
@@ -95,10 +96,10 @@ export const useMcpBatchCopyConfig = ({
         };
 
         if (gatewayId) {
-          return fetchApi(gatewayId, params);
+          return api(gatewayId, params);
         }
         else {
-          return fetchApi(params);
+          return api(params);
         }
       });
 
