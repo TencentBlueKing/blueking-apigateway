@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.core.utils import get_path_display
 from apigateway.service.resource import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
@@ -56,21 +57,18 @@ class DocGenerator:
         self.with_common_request_params_part = with_common_request_params_part
 
     def get_doc(self) -> dict:
+        resource_url_content = self._get_resource_url_part() if self.with_resource_url_part else ""
+        auth_content = self._get_common_request_params_part() if self.with_common_request_params_part else ""
+        body_content = self._replace_bkapi_authorization_description(self.doc_data.content)
         return {
             "type": APIDocTypeEnum.MARKDOWN.value,
-            "content": self._get_doc_content(),
+            "content": "\n\n".join(filter(None, [resource_url_content, auth_content, body_content])),
+            "method": self.resource_data.method,
+            "resource_url": self._get_resource_url(),
+            "auth_content": auth_content,
+            "body_content": body_content,
             "updated_time": self.doc_data.updated_time,
         }
-
-    def _get_doc_content(self) -> str:
-        parts = []
-        if self.with_resource_url_part:
-            parts.append(self._get_resource_url_part())
-        if self.with_common_request_params_part:
-            parts.append(self._get_common_request_params_part())
-        parts.append(self._replace_bkapi_authorization_description(self.doc_data.content))
-
-        return "\n\n".join(filter(None, parts))
 
     def _get_resource_url_part(self) -> str:
         part = RESOURCE_URL_PARTS.get(self.language, "")
@@ -84,10 +82,27 @@ class DocGenerator:
 
     def _get_common_request_params_part(self) -> str:
         """公共请求参数"""
+        plugins = {plugin["type"]: plugin.get("config") or {} for plugin in self.resource_data.plugins}
+        access_token_source_config = plugins.get(PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value)
+
+        if access_token_source_config is None:
+            access_token_header, access_token_example = "", ""
+        elif access_token_source_config.get("source", "bearer") == "api_key":
+            access_token_header, access_token_example = "X-API-KEY", "{access_token}"
+        else:
+            access_token_header, access_token_example = "Authorization", "Bearer {access_token}"
+
+        allow_fallback = (
+            access_token_source_config.get("allow_fallback", True) if access_token_source_config is not None else False
+        )
         description = render_to_string(
             BKAPI_AUTHORIZATION_DESCRIPTIONS.get(self.language, ""),
             verified_app_required=self.resource_data.verified_app_required,
             verified_user_required=self.resource_data.verified_user_required,
+            access_token_header=access_token_header,
+            access_token_example=access_token_example,
+            allow_fallback=allow_fallback,
+            username_header_required=PluginTypeCodeEnum.BK_USERNAME_REQUIRED.value in plugins,
             docs_urls=getattr(settings, "DOCS_URLS", {}),
             settings=settings,
         )

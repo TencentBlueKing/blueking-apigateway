@@ -46,6 +46,7 @@ class ReleasedResourceData:
     oauth2_public_client_enabled: bool = field(init=False)
     oauth2_personal_client_enabled: bool = field(init=False)
     gateway_labels: List[int] = field(default_factory=list)
+    plugins: List[Dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self):
         resource_auth_config = json.loads(self.contexts["resource_auth"]["config"])
@@ -72,6 +73,7 @@ class ReleasedResourceData:
             disabled_stages=released_resource_data.get("disabled_stages") or [],
             contexts=released_resource_data["contexts"],
             gateway_labels=released_resource_data["api_labels"],
+            plugins=released_resource_data.get("plugins") or [],
         )
 
     @property
