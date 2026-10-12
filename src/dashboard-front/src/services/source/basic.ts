@@ -107,6 +107,10 @@ export function getEnv() {
       GIT_REPO_URL: string
       NPM_INSTALL_CMD: string
       SKILL_NPM_INSTALL_CMD: string
+      OVERVIEW: {
+        service: string
+        title: string
+      }[]
     }
     HELPER: {
       name: string
@@ -135,6 +139,7 @@ export function getEnv() {
       UPGRADE_TO_113_TIP: string
       MCP_SERVER_PERMISSION_APPLY: string
       PERSONAL_TOKEN: string
+      LOADBALANCE: string
       PLUGIN_AI_PROXY: string
       PLUGIN_AI_RATE_LIMITING: string
       PLUGIN_API_BREAKER: string

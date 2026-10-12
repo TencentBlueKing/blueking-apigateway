@@ -18,8 +18,10 @@
 import { defineStore } from 'pinia';
 import { getEnv } from '@/services/source/basic';
 
+type EnvType = Awaited<ReturnType<typeof getEnv>>;
+
 export const useEnv = defineStore('useEnv', {
-  state: () => ({
+  state: (): { env: EnvType } => ({
     env: {
       BK_ANALYSIS_SCRIPT_SRC: '',
       BK_APIGATEWAY_VERSION: '',
@@ -43,7 +45,7 @@ export const useEnv = defineStore('useEnv', {
       BK_USER_WEB_API_URL: '',
       CREATE_CHAT_API: '',
       EDITION: '',
-      BK_SDK_LANGUAGES: [] as string[],
+      BK_SDK_LANGUAGES: [],
       SEND_CHAT_API: '',
       BK_USER_PERSONAL_CENTER_LINK: '',
       CLI: {
@@ -55,6 +57,7 @@ export const useEnv = defineStore('useEnv', {
         GIT_REPO_URL: '',
         NPM_INSTALL_CMD: '',
         SKILL_NPM_INSTALL_CMD: '',
+        OVERVIEW: [],
       },
       HELPER: {
         name: '',
