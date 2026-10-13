@@ -20,7 +20,9 @@
 import datetime
 import logging
 
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.fields import empty
 
@@ -57,12 +59,24 @@ class TimestampField(serializers.IntegerField):
         return timestamp(value)
 
 
+@extend_schema_field(
+    {
+        "oneOf": [
+            {"type": "string"},
+            {
+                "type": "object",
+                "properties": {"_encrypted": {"type": "boolean"}, "_encrypted_value": {"type": "string"}},
+                "required": ["_encrypted", "_encrypted_value"],
+            },
+        ]
+    }
+)
 class DecryptableCharField(serializers.CharField):
     """可接收前端加密值的字符串字段，解密后按普通 CharField 校验
 
     支持两种输入格式：
     - 明文值：原始字符串，如 "the_value"
-    - 加密值：{"_encrypted": true, "_encrypted_value": "xxxxx"}，其中 _encrypted_value 为 Base64 编码的 SM2 密文
+    - 加密值：{"_encrypted": true, "_encrypted_value": "xxxxx"}，其中 _encrypted_value 为 Base64 编码的 RSA-OAEP(SHA-256) 密文
     """
 
     ENCRYPTED_FLAG_KEY = "_encrypted"
@@ -86,6 +100,11 @@ class DecryptableCharField(serializers.CharField):
             or not encrypted_value
         ):
             raise self._error("invalid_encrypted_value")
+
+        if not settings.ENABLE_FRONTEND_ENCRYPT:
+            # 页面加载后开关被关闭，刷新页面即可改为提交明文
+            logger.warning("frontend encrypt is disabled, but received an encrypted value")
+            raise self._error("decrypt_failed")
 
         try:
             return decrypt_frontend_encrypted_value(encrypted_value)

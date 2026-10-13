@@ -276,7 +276,7 @@ def create_paas_app(
         },
         "bkapp_spec": {"build_config": {"build_method": build_method}},
     }
-    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT, sensitive_keys=["password"])
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
