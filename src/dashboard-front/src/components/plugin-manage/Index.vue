@@ -31,9 +31,9 @@
           <BkButton
             v-bk-tooltips="{
               content: t('当前有版本正在发布，请稍后再操作'),
-              disabled: getStageStatus(stageData) !== 'doing'
+              disabled: !isStageReleasing
             }"
-            :disabled="getStageStatus(stageData) === 'doing'"
+            :disabled="isStageReleasing"
             text
             theme="primary"
             @click="handlePluginAdd"
@@ -61,9 +61,9 @@
           v-if="gatewayStore.currentGateway?.kind !== 1"
           v-bk-tooltips="{
             content: t('当前有版本正在发布，请稍后再操作'),
-            disabled: getStageStatus(stageData) !== 'doing'
+            disabled: !isStageReleasing
           }"
-          :disabled="getStageStatus(stageData) === 'doing'"
+          :disabled="isStageReleasing"
           class="add-plugin-btn"
           theme="primary"
           @click="handlePluginAdd"
@@ -87,7 +87,7 @@
                 <AgIcon
                   v-bk-tooltips="{
                     content: t('当前有版本正在发布，请稍后再操作'),
-                    disabled: getStageStatus(stageData) !== 'doing'
+                    disabled: !isStageReleasing
                   }"
                   class="mx-5px"
                   name="edit-line"
@@ -97,7 +97,7 @@
                 <AgIcon
                   v-bk-tooltips="{
                     content: t('当前有版本正在发布，请稍后再操作'),
-                    disabled: getStageStatus(stageData) !== 'doing'
+                    disabled: !isStageReleasing
                   }"
                   class="mx-5px"
                   name="delet"
@@ -446,16 +446,16 @@ import {
 
 interface IProps {
   resourceId?: number
-  stageId: number
+  stageId?: number
 }
 
 const {
   resourceId = 0,
-  stageId,
+  stageId = 0,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
-  'on-jump': [id: any]
+  'on-jump': [id: number]
   'on-update-plugin': [void]
 }>();
 
@@ -539,6 +539,10 @@ const stageData = computed(() => {
     publish_validate_msg: '',
   };
 });
+
+// 仅"环境配置插件"需要校验是否存在正在发布中的版本；资源配置插件不做该校验
+// 注意：stageData 来源于全局 store，可能残留其他网关/页面的环境数据，因此必须限定 scope 类型
+const isStageReleasing = computed(() => scopeType.value === 'stage' && getStageStatus(stageData.value) === 'doing');
 
 const pluginCodeFirst = computed(() => {
   return function (code: string) {
@@ -667,7 +671,7 @@ const handleClearFilterKey = () => {
 
 // 编辑插件
 const handleEditPlugin = async (item: any) => {
-  if (getStageStatus(stageData.value) === 'doing') {
+  if (isStageReleasing.value) {
     return;
   }
   curType.value = 'edit';
@@ -688,7 +692,7 @@ const handleEditPlugin = async (item: any) => {
 
 // 删除插件
 const handleDeletePlugin = (item: any) => {
-  if (getStageStatus(stageData.value) === 'doing') {
+  if (isStageReleasing.value) {
     return;
   }
   const { code, config_id } = item;
