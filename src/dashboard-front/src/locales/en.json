@@ -2400,6 +2400,7 @@
   "是否检查证书": "Verify SSL",
   "超时时间(s)": "Timeouts(s)",
   "并行数量": "Concurrency",
+  "健康检查": "Health Check",
   "健康检查.请求路径": "HTTP Path",
   "间隔时间(s)": "Interval(s)",
   "HTTP 状态码": "HTTP Status Code",
