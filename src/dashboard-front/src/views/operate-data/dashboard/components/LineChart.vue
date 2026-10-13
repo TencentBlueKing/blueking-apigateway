@@ -202,7 +202,8 @@ const getSeriesName = (item: ISeriesItemType) => {
 
 const getChartOption = () => {
   const baseOption: Record<string, any> = {
-    grid: { right: '8%' },
+    grid: { right: '8%',
+      bottom: '8%' },
     xAxis: {
       type: 'time',
       scale: true, // 设置成 true 后坐标刻度不会强制包含零刻度
@@ -401,6 +402,7 @@ const getChartOption = () => {
 
   if (miniList.includes(instanceId)) {
     chartOption.grid.left = '18%';
+    chartOption.grid.bottom = '12%';
     if (document.body.clientWidth < 1550) {
       chartOption.xAxis.axisLabel = { rotate: 35 };
     }
@@ -487,10 +489,15 @@ const generateChartColor = (chartData: ISeriesItemType[]) => {
   return finalColors;
 };
 
+// 业务上为 Top N 类的图表：series 数可能为 1，但仍需展示底部 label
+const MULTI_SERIES_INSTANCES = ['app_requests', 'resource_requests', 'ingress', 'egress'];
+
 const generateChartLegend = () => {
   const option = myChart.value?.getOption() as any;
-  // 只有一个系列不需要图例
-  if (option.series.length > 1) {
+  // 固定单系列图表保持原行为（> 1 才显示）；Top N 类（多系列）图表：>= 1 即显示
+  const showLegend = option.series.length > 1
+    || (MULTI_SERIES_INSTANCES.includes(instanceId) && option.series.length > 0);
+  if (showLegend) {
     chartLegend.value[instanceId] = option?.series?.map((serie: any, index: number) => ({
       color: (option.color as string[])[index],
       name: serie.name,
@@ -588,8 +595,13 @@ defineExpose({ syncParams });
 
   .chart-legend {
     display: flex;
-    height: 90px;
+    height: auto;
+    min-height: 22px;
     margin: 0 40px;
+
+    &:not(.side-legend) {
+      margin: 16px 40px;
+    }
 
     // max-height: 110px;
     overflow-y: auto;
