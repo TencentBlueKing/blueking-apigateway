@@ -17,7 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Dict, List, Optional, Text, Tuple, Union
+from copy import deepcopy
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from unittest.mock import patch
 
 import pytest
@@ -47,6 +48,35 @@ class User(BaseModel, DiffMixin):
 
 
 class TestDiffMixin:
+    @pytest.mark.parametrize(
+        "source,target",
+        [
+            (False, 0),
+            (True, 1),
+            (None, ""),
+            ("", None),
+            (None, {}),
+            ({}, None),
+            (None, []),
+            ({"flags": [False, True]}, {"flags": [0, 1]}),
+        ],
+    )
+    def test_diff_detects_falsy_and_boolean_number_changes(self, source, target):
+        class Configuration(BaseModel, DiffMixin):
+            value: Any
+
+        assert Configuration(value=source).diff(Configuration(value=target)) == (
+            {"value": source},
+            {"value": target},
+        )
+
+    @pytest.mark.parametrize("value", [None, False, 0, "", {}, [], {"flags": [False, True]}])
+    def test_equal_configuration_has_no_diff(self, value):
+        class Configuration(BaseModel, DiffMixin):
+            value: Any
+
+        assert Configuration(value=value).diff(Configuration(value=deepcopy(value))) == ({}, {})
+
     @pytest.mark.parametrize(
         "source, target, expected",
         [
@@ -533,6 +563,58 @@ class ResourceProxyHTTPConfig:
         target_differ = ResourceProxyHTTPConfig(**target)
         result = source_differ.diff(target_differ)
         assert result == expected
+
+
+@pytest.fixture
+def version_resource_data():
+    return {
+        "id": 1,
+        "name": "get_users",
+        "method": "GET",
+        "path": "/users",
+        "proxy": {"type": "http", "config": json.dumps({"method": "GET", "path": "/users", "timeout": 30})},
+        "contexts": {
+            "resource_auth": {
+                "config": json.dumps(
+                    {
+                        "auth_verified_required": True,
+                        "app_verified_required": True,
+                        "resource_perm_required": True,
+                    }
+                )
+            }
+        },
+    }
+
+
+@pytest.mark.parametrize("source_description,target_description", [(None, ""), ("", None)])
+def test_version_diff_detects_empty_description_changes(version_resource_data, source_description, target_description):
+    source = {**version_resource_data, "description": source_description}
+    target = {**deepcopy(version_resource_data), "description": target_description}
+    result = ResourceDifferHandler.diff_resource_version_data([source], [target], {}, {})
+    assert result["add"] == result["delete"] == []
+    assert len(result["update"]) == 1
+    assert result["update"][0]["source"]["diff"] == {"description": source_description}
+    assert result["update"][0]["target"]["diff"] == {"description": target_description}
+
+
+@pytest.mark.parametrize("boolean_value", [False, True])
+@pytest.mark.parametrize("field", ["plugins", "openapi_schema"])
+def test_version_diff_detects_boolean_to_number(version_resource_data, boolean_value, field):
+    if field == "plugins":
+        version_resource_data["plugins"] = [
+            {"id": 1, "name": "test_plugin", "type": "test-plugin", "config": {"flags": [boolean_value]}}
+        ]
+        target = deepcopy(version_resource_data)
+        target["plugins"][0]["config"]["flags"][0] = int(boolean_value)
+    else:
+        version_resource_data["openapi_schema"] = {"example": {"flags": [boolean_value]}}
+        target = deepcopy(version_resource_data)
+        target["openapi_schema"]["example"]["flags"][0] = int(boolean_value)
+    result = ResourceDifferHandler.diff_resource_version_data([version_resource_data], [target], {}, {})
+    assert len(result["update"]) == 1
+    assert field in result["update"][0]["source"]["diff"]
+    assert field in result["update"][0]["target"]["diff"]
 
 
 class TestResourceDifferHandler:

@@ -17,6 +17,7 @@ from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.biz.resource_version import ResourceConfigurationDiffer
 from apigateway.core.models import Gateway, Proxy
 from apigateway.service.contexts import ResourceAuthContext
 from apigateway.service.resource import get_resource_id_to_labels
@@ -60,6 +61,13 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
 
     for resource_data, resource in existing_resources:
         proxy = proxies.get(resource.id)
+        backend_config = resource_data.backend_config
+        if proxy is None or (
+            backend_config is not None
+            and (backend_config.legacy_upstreams or backend_config.legacy_transform_headers is not None)
+        ):
+            change_types[resource_data.name] = ResourceImportChangeTypeEnum.UPDATE.value
+            continue
         current_plugins = {
             binding.config.type.code: binding.config.config for binding in bindings.get(resource.id, [])
         }
@@ -74,35 +82,39 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
                 for plugin in resource_data.plugin_configs or []
             }
         )
-        unchanged = (
-            proxy is not None
-            and resource_data.basic_data
-            == {name: getattr(resource, name) for name in ResourceData.basic_field_names()}
-            and resource_data.auth_config.model_dump()
-            == ResourceAuthConfig.model_validate(auth_configs[resource.id]).model_dump()
-            and resource_data.backend is not None
-            and resource_data.backend.id == proxy.backend_id
-            and _backend_config_unchanged(resource_data.backend_config, proxy.config)
-            and set(resource_data.metadata.get("labels", []))
-            == {label["name"] for label in labels.get(resource.id, [])}
-            and _configuration_equal(imported_plugins, current_plugins)
-            and _configuration_equal(
-                _normalize_schema(resource_data, resource_data.openapi_schema),
-                _normalize_schema(resource_data, schemas.get(resource.id, {})),
-            )
+        current = ResourceConfigurationDiffer.model_validate(
+            {
+                **{name: getattr(resource, name) for name in ResourceData.basic_field_names()},
+                "auth_config": ResourceAuthConfig.model_validate(auth_configs[resource.id]).model_dump(),
+                "backend_id": proxy.backend_id,
+                "backend_config": (
+                    ResourceBackendConfig.model_validate(proxy.config).model_dump()
+                    if backend_config is not None
+                    else proxy.config
+                ),
+                "labels": {label["name"] for label in labels.get(resource.id, [])},
+                "plugins": current_plugins,
+                "openapi_schema": _normalize_schema(resource_data, schemas.get(resource.id, {})),
+            }
         )
+        imported = ResourceConfigurationDiffer.model_validate(
+            {
+                **resource_data.basic_data,
+                "auth_config": resource_data.auth_config.model_dump(),
+                "backend_id": resource_data.backend.id if resource_data.backend else None,
+                "backend_config": backend_config.model_dump() if backend_config is not None else {},
+                "labels": set(resource_data.metadata.get("labels", [])),
+                "plugins": imported_plugins,
+                "openapi_schema": _normalize_schema(resource_data, resource_data.openapi_schema),
+            }
+        )
+        source_diff, target_diff = current.diff(imported)
         change_types[resource_data.name] = (
-            ResourceImportChangeTypeEnum.UNCHANGED.value if unchanged else ResourceImportChangeTypeEnum.UPDATE.value
+            ResourceImportChangeTypeEnum.UPDATE.value
+            if source_diff or target_diff
+            else ResourceImportChangeTypeEnum.UNCHANGED.value
         )
     return change_types
-
-
-def _backend_config_unchanged(imported: ResourceBackendConfig | None, current: Dict[str, Any]) -> bool:
-    if imported is None:
-        return current == {}
-    if imported.legacy_upstreams or imported.legacy_transform_headers is not None:
-        return False
-    return imported.model_dump() == ResourceBackendConfig.model_validate(current).model_dump()
 
 
 def _normalize_schema(resource: ResourceData, schema: Dict[str, Any]) -> dict:
@@ -122,18 +134,3 @@ def _normalize_schema(resource: ResourceData, schema: Dict[str, Any]) -> dict:
     # The document's root version is selected from the first exported resource;
     # mixed-version exports must not make unchanged operation content differ.
     return {"paths": content["paths"], "none_schema": schema.get("none_schema", False)}
-
-
-def _configuration_equal(source: Any, target: Any) -> bool:
-    # JSON booleans and numbers are distinct even though Python True == 1.
-    if isinstance(source, bool) or isinstance(target, bool):
-        return type(source) is type(target) and source == target
-    if isinstance(source, dict) and isinstance(target, dict):
-        return source.keys() == target.keys() and all(
-            _configuration_equal(value, target[key]) for key, value in source.items()
-        )
-    if isinstance(source, list) and isinstance(target, list):
-        return len(source) == len(target) and all(
-            _configuration_equal(left, right) for left, right in zip(source, target)
-        )
-    return source == target

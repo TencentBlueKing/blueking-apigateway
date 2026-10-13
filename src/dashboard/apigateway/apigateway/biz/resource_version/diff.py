@@ -16,11 +16,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List, Literal, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Text, Tuple, Union
 
 from pydantic import BaseModel, Field, Json, ValidationInfo, field_validator
 
 from apigateway.core.constants import ResourceKindEnum
+
+
+def _values_equal(source: Any, target: Any) -> bool:
+    # JSON booleans and numbers are distinct even though Python True == 1.
+    if isinstance(source, bool) or isinstance(target, bool):
+        return type(source) is type(target) and source == target
+    if isinstance(source, dict) and isinstance(target, dict):
+        return source.keys() == target.keys() and all(
+            _values_equal(value, target[key]) for key, value in source.items()
+        )
+    if isinstance(source, list) and isinstance(target, list):
+        return len(source) == len(target) and all(_values_equal(left, right) for left, right in zip(source, target))
+    return source == target
 
 
 class DiffMixin:
@@ -28,14 +41,18 @@ class DiffMixin:
         source_diff_data = {}
         target_diff_data = {}
 
-        for key in getattr(self, "__fields__", {}):
+        for key in getattr(type(self), "model_fields", {}):
             diff_method = getattr(self, f"diff_{key}", None)
             if diff_method is not None:
                 source_diff_value, target_diff_value = diff_method(target)
+                # Nested diff methods return empty dictionaries when unchanged.
+                changed = bool(source_diff_value or target_diff_value)
             else:
                 source_diff_value, target_diff_value = self._diff_with_field_value(target, key)
+                # Values such as False, 0 and "" are valid differences, not absence.
+                changed = source_diff_value is not None or target_diff_value is not None
 
-            if source_diff_value or target_diff_value:
+            if changed:
                 source_diff_data[key] = source_diff_value
                 target_diff_data[key] = target_diff_value
 
@@ -51,7 +68,7 @@ class DiffMixin:
         if isinstance(target_field_value, BaseModel):
             target_field_value = target_field_value.model_dump()
 
-        if source_field_value != target_field_value:
+        if not _values_equal(source_field_value, target_field_value):
             return source_field_value, target_field_value
 
         return None, None
@@ -136,8 +153,9 @@ class ResourcePluginConfig(BaseModel, DiffMixin):
     config: Dict[Text, Any] = Field(default_factory=dict)
 
 
-class ResourceDifferHandler(BaseModel, DiffMixin):
-    id: int
+class _ResourceBasicDiffer(BaseModel, DiffMixin):
+    """Editable resource attributes shared by version and import comparisons."""
+
     kind: Literal["standard", "ai"] = ResourceKindEnum.STANDARD.value
     name: Text
     description: Optional[Text] = ""
@@ -147,6 +165,27 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     enable_websocket: bool = False
     is_public: bool = True
     allow_apply_permission: bool = True
+
+
+class ResourceConfigurationDiffer(_ResourceBasicDiffer):
+    """Compare normalized import configuration without version-only snapshot metadata.
+
+    Callers apply import retention/migration rules and normalize Schema content
+    before comparison. Labels use names because imported labels may not have IDs.
+    Plugin configuration excludes binding IDs, names and source metadata.
+    """
+
+    description_en: Optional[Text] = None
+    auth_config: ResourceAuthConfig
+    backend_id: Optional[int]
+    backend_config: Dict[str, Any]
+    labels: Set[str]
+    plugins: Dict[str, Any]
+    openapi_schema: Dict[str, Any]
+
+
+class ResourceDifferHandler(_ResourceBasicDiffer):
+    id: int
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy, ResourceAIProxy]
     api_labels: List[int] = Field(default_factory=list)
     contexts: ResourceContexts
