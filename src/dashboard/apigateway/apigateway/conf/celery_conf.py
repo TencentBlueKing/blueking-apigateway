@@ -50,6 +50,9 @@ CELERY_BEAT_SCHEDULE = {
     "delete_old_publish_events": {
         "task": "apigateway.controller.tasks.clean_task.delete_old_publish_events",
         "schedule": crontab(day_of_week="*", hour=1, minute=0),
+        # Publish events still determine historical status and duration.
+        # Revisit cleanup after release results are stored independently of events.
+        "enabled": False,
     },
     "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon": {
         "task": "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon",
