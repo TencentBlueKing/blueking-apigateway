@@ -272,11 +272,11 @@ def test_ai_resource_compares_empty_backend_config(request_view, importable_reso
         ("transformHeaders", {"set": {"x-token": "test"}, "delete": ["x-old"]}, "update"),
         ("transformHeaders", None, "unchanged"),
         ("upstreams", {"loadbalance": "roundrobin", "hosts": [{"host": "https://example.com"}]}, "update"),
-        ("upstreams", {}, "unchanged"),
+        ("upstreams", {}, "update"),
         ("upstreams", None, "unchanged"),
     ],
 )
-def test_legacy_backend_migrations_are_updates(request_view, importable_resource, field, value, expected):
+def test_legacy_backend_config_is_update(request_view, importable_resource, field, value, expected):
     resource = importable_resource
     content = json.loads(export_content(request_view, resource))
     content["paths"][resource.path]["get"]["x-bk-apigateway-resource"]["backend"][field] = value

@@ -32,15 +32,20 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
 
     Comparison covers imported configuration, excluding Markdown documents and
     operational metadata, including Schema version metadata. Consumers that skip
-    imports must handle Schema version changes separately. Only existing resources
-    need configuration reads. Missing plugins retain user-created bindings,
-    matching PluginSynchronizer. Legacy migrations conservatively count as updates.
+    imports must handle Schema version changes separately. Legacy configuration
+    on existing resources is always an update and skips comparison reads.
+    Missing plugins retain user-created bindings, matching PluginSynchronizer.
     """
     change_types = {}
     existing_resources = []
     for resource_data in resources:
+        backend_config = resource_data.backend_config
         if resource_data.resource is None:
             change_types[resource_data.name] = ResourceImportChangeTypeEnum.ADD.value
+        elif backend_config is not None and (
+            backend_config.legacy_upstreams is not None or backend_config.legacy_transform_headers is not None
+        ):
+            change_types[resource_data.name] = ResourceImportChangeTypeEnum.UPDATE.value
         else:
             existing_resources.append((resource_data, resource_data.resource))
     if not existing_resources:
@@ -62,10 +67,7 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
     for resource_data, resource in existing_resources:
         proxy = proxies.get(resource.id)
         backend_config = resource_data.backend_config
-        if proxy is None or (
-            backend_config is not None
-            and (backend_config.legacy_upstreams or backend_config.legacy_transform_headers is not None)
-        ):
+        if proxy is None:
             change_types[resource_data.name] = ResourceImportChangeTypeEnum.UPDATE.value
             continue
         current_plugins = {

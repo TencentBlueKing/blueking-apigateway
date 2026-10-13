@@ -23,6 +23,30 @@ def test_new_resource_is_add_without_comparison_queries(fake_gateway, fake_resou
 
 
 @pytest.mark.parametrize("existing", [False, True])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("legacy_upstreams", {}),
+        ("legacy_upstreams", {"loadbalance": "roundrobin", "hosts": [{"host": "https://example.com"}]}),
+        ("legacy_transform_headers", {}),
+        ("legacy_transform_headers", {"set": {"x-token": "test"}, "delete": ["x-old"]}),
+    ],
+)
+def test_legacy_config_skips_comparison(
+    fake_gateway, fake_resource, fake_resource_data, django_assert_num_queries, existing, field, value
+):
+    if existing:
+        fake_resource_data.resource = fake_resource
+    assert fake_resource_data.backend_config is not None
+    setattr(fake_resource_data.backend_config, field, value)
+
+    with django_assert_num_queries(0):
+        changes = classify_resource_import_changes(fake_gateway, [fake_resource_data])
+
+    assert changes == {fake_resource_data.name: "update" if existing else "add"}
+
+
+@pytest.mark.parametrize("existing", [False, True])
 def test_classification_does_not_modify_import_data(fake_gateway, fake_resource, fake_resource_data, existing):
     if existing:
         fake_resource_data.resource = fake_resource
