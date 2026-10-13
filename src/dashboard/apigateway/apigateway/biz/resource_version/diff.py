@@ -24,16 +24,25 @@ from apigateway.core.constants import ResourceKindEnum
 
 
 def _values_equal(source: Any, target: Any) -> bool:
-    # JSON booleans and numbers are distinct even though Python True == 1.
-    if isinstance(source, bool) or isinstance(target, bool):
-        return type(source) is type(target) and source == target
-    if isinstance(source, dict) and isinstance(target, dict):
-        return source.keys() == target.keys() and all(
-            _values_equal(value, target[key]) for key, value in source.items()
-        )
-    if isinstance(source, list) and isinstance(target, list):
-        return len(source) == len(target) and all(_values_equal(left, right) for left, right in zip(source, target))
-    return source == target
+    # Use a work stack so deeply nested JSON does not exhaust Python's call stack.
+    pending = [(source, target)]
+    while pending:
+        source_value, target_value = pending.pop()
+        # JSON booleans and numbers are distinct even though Python True == 1.
+        if isinstance(source_value, bool) or isinstance(target_value, bool):
+            if type(source_value) is not type(target_value) or source_value != target_value:
+                return False
+        elif isinstance(source_value, dict) and isinstance(target_value, dict):
+            if source_value.keys() != target_value.keys():
+                return False
+            pending.extend((value, target_value[key]) for key, value in source_value.items())
+        elif isinstance(source_value, list) and isinstance(target_value, list):
+            if len(source_value) != len(target_value):
+                return False
+            pending.extend(zip(source_value, target_value))
+        elif source_value != target_value:
+            return False
+    return True
 
 
 class DiffMixin:

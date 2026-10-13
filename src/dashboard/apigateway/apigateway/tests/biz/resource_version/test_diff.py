@@ -48,6 +48,23 @@ class User(BaseModel, DiffMixin):
 
 
 class TestDiffMixin:
+    @pytest.mark.parametrize("container", [dict, list])
+    @pytest.mark.parametrize("target_leaf", [False, 0])
+    def test_deep_configuration(self, container, target_leaf):
+        class Configuration(BaseModel, DiffMixin):
+            value: Any
+
+        source, target = False, target_leaf
+        for _ in range(500):
+            source = {"value": source} if container is dict else [source]
+            target = {"value": target} if container is dict else [target]
+
+        source_diff, target_diff = Configuration(value=source).diff(Configuration(value=target))
+        if target_leaf is False:
+            assert source_diff == target_diff == {}
+        else:
+            assert set(source_diff) == set(target_diff) == {"value"}
+
     @pytest.mark.parametrize(
         "source,target",
         [
