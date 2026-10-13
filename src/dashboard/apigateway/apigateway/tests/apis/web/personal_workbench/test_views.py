@@ -187,10 +187,11 @@ class TestWorkbenchGatewayFilterOptionListApi:
     def test_applied_returns_gateways_from_my_applies(self, request_view, fake_gateway, fake_other_gateway):
         """applied 类型：返回当前用户申请过的网关（即使不是 maintainer）"""
         G(
-            AppPermissionApply,
+            AppPermissionRecord,
             gateway=fake_other_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
             status=ApplyStatusEnum.PENDING.value,
         )
 
@@ -307,10 +308,11 @@ class TestWorkbenchGatewayFilterOptionListApi:
         """applied 类型：同一网关多条申请记录应去重"""
         for _ in range(3):
             G(
-                AppPermissionApply,
+                AppPermissionRecord,
                 gateway=fake_other_gateway,
                 bk_app_code="app1",
                 applied_by=FAKE_USERNAME,
+                applied_time=now_datetime(),
                 status=ApplyStatusEnum.PENDING.value,
             )
 
@@ -1159,21 +1161,29 @@ class TestWorkbenchPendingMCPPermissionListApi:
 
 
 class TestWorkbenchMyApplyGatewayPermissionListApi:
-    def test_list(self, request_view, fake_gateway):
+    def test_list(self, request_view, fake_gateway, mocker):
         """测试我的申请 - API 网关：返回当前用户提交的申请"""
+        mocker.patch(
+            "apigateway.service.bk_itsm.ItsmPermissionApplyHelper.build_ticket_url",
+            return_value="https://itsm.example.com/ticket-1",
+        )
         G(
             GatewayMember,
             gateway=fake_gateway,
             username="operator",
             role=GatewayRoleEnum.OPERATOR.value,
         )
-        G(
-            AppPermissionApply,
+        applied_time = now_datetime()
+        record = G(
+            AppPermissionRecord,
+            id=1001,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
+            applied_time=applied_time,
             status=ApplyStatusEnum.PENDING.value,
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            itsm_ticket_id="ticket-1",
         )
 
         resp = request_view(
@@ -1184,18 +1194,25 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
-        assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
-        assert result["data"]["results"][0]["approvers"] == ["operator"]
-        assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
-        assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
+        item = result["data"]["results"][0]
+        assert item["id"] == record.id
+        assert item["applied_by"] == FAKE_USERNAME
+        assert item["approvers"] == ["operator"]
+        assert item["gateway_id"] == fake_gateway.id
+        assert item["gateway_name"] == fake_gateway.name
+        assert item["applied_time"] == item["created_time"]
+        assert item["itsm_ticket_id"] == "ticket-1"
+        assert item["itsm_ticket_url"] == "https://itsm.example.com/ticket-1"
+        assert "handled_by" not in item
 
     def test_list_excludes_other_user_apply(self, request_view, fake_gateway):
         """测试我的申请 - 不返回其他用户提交的申请"""
         G(
-            AppPermissionApply,
+            AppPermissionRecord,
             gateway=fake_gateway,
             bk_app_code="app2",
             applied_by="other_user",
+            applied_time=now_datetime(),
             status=ApplyStatusEnum.PENDING.value,
         )
 
@@ -1213,13 +1230,16 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         for status_val in [
             ApplyStatusEnum.PENDING.value,
             ApplyStatusEnum.APPROVED.value,
+            ApplyStatusEnum.PARTIAL_APPROVED.value,
+            ApplyStatusEnum.REJECTED.value,
             ApplyStatusEnum.CANCELED.value,
         ]:
             G(
-                AppPermissionApply,
+                AppPermissionRecord,
                 gateway=fake_gateway,
                 bk_app_code="app",
                 applied_by=FAKE_USERNAME,
+                applied_time=now_datetime(),
                 status=status_val,
             )
 
@@ -1230,16 +1250,18 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 3
+        assert result["data"]["count"] == 5
+        assert not AppPermissionApply.objects.filter(applied_by=FAKE_USERNAME).exists()
 
     def test_list_filter_by_status(self, request_view, fake_gateway):
         """测试我的申请 - API 网关按状态筛选"""
         for status_val in [ApplyStatusEnum.PENDING.value, ApplyStatusEnum.APPROVED.value]:
             G(
-                AppPermissionApply,
+                AppPermissionRecord,
                 gateway=fake_gateway,
                 bk_app_code=status_val,
                 applied_by=FAKE_USERNAME,
+                applied_time=now_datetime(),
                 status=status_val,
             )
 
@@ -1258,22 +1280,22 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         """测试我的申请 - API 网关按申请时间范围筛选"""
         current_time = now_datetime()
         old_time = current_time - datetime.timedelta(days=2)
-        old_apply = G(
-            AppPermissionApply,
+        G(
+            AppPermissionRecord,
             gateway=fake_gateway,
             bk_app_code="old_app",
             applied_by=FAKE_USERNAME,
+            applied_time=old_time,
             status=ApplyStatusEnum.PENDING.value,
         )
-        AppPermissionApply.objects.filter(id=old_apply.id).update(created_time=old_time)
-        current_apply = G(
-            AppPermissionApply,
+        G(
+            AppPermissionRecord,
             gateway=fake_gateway,
             bk_app_code="current_app",
             applied_by=FAKE_USERNAME,
+            applied_time=current_time,
             status=ApplyStatusEnum.PENDING.value,
         )
-        AppPermissionApply.objects.filter(id=current_apply.id).update(created_time=current_time)
 
         resp = request_view(
             method="GET",
@@ -1292,16 +1314,17 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
     def test_list_with_resource_dimension_returns_resources(self, request_view, fake_gateway):
         """测试我的申请 - 资源维度应返回资源详情列表"""
         resource = G(Resource, gateway=fake_gateway, name="get_apps", path="/api/v1/apps/", method="GET")
-        apply_obj = G(
-            AppPermissionApply,
+        record = G(
+            AppPermissionRecord,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
             status=ApplyStatusEnum.PENDING.value,
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
         )
-        apply_obj.resource_ids = [resource.id]
-        apply_obj.save()
+        record.resource_ids = [resource.id]
+        record.save()
 
         resp = request_view(
             method="GET",
@@ -1320,10 +1343,11 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
     def test_list_with_gateway_dimension_returns_empty_resources(self, request_view, fake_gateway):
         """测试我的申请 - 网关维度应返回空资源列表"""
         G(
-            AppPermissionApply,
+            AppPermissionRecord,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
             status=ApplyStatusEnum.PENDING.value,
             grant_dimension=GrantDimensionEnum.API.value,
         )
@@ -1343,6 +1367,7 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
     def test_cancel_pending_apply(self, request_view, fake_gateway, mocker):
         record = G(
             AppPermissionRecord,
+            id=1001,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
@@ -1351,6 +1376,7 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         )
         apply = G(
             AppPermissionApply,
+            id=2001,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
@@ -1371,7 +1397,7 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         resp = request_view(
             method="POST",
             view_name="workbench.permissions.gateway.applied.cancel",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
         assert resp.status_code == 204
@@ -1391,12 +1417,24 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         assert mocked_record.call_args.kwargs["comment"] == "取消权限申请"
 
     def test_cancel_itsm_apply(self, request_view, fake_gateway, mocker):
+        record = G(
+            AppPermissionRecord,
+            id=1002,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="t-001",
+        )
         apply = G(
             AppPermissionApply,
+            id=2002,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
             status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
             itsm_ticket_id="t-001",
         )
         mock_cancel = mocker.patch(
@@ -1406,37 +1444,60 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         resp = request_view(
             method="POST",
             view_name="workbench.permissions.gateway.applied.cancel",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
         assert resp.status_code == 204
         mock_cancel.assert_called_once_with("t-001")
 
     def test_cancel_other_user_apply_returns_not_found(self, request_view, fake_gateway):
+        record = G(
+            AppPermissionRecord,
+            id=1003,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="other-user",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+        )
         apply = G(
             AppPermissionApply,
+            id=2003,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by="other-user",
             status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
         )
 
         resp = request_view(
             method="POST",
             view_name="workbench.permissions.gateway.applied.cancel",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
         assert resp.status_code == 404
         assert AppPermissionApply.objects.filter(id=apply.id).exists()
 
     def test_cancel_itsm_failure_keeps_local_apply(self, request_view, fake_gateway, mocker):
+        record = G(
+            AppPermissionRecord,
+            id=1004,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="t-001",
+        )
         apply = G(
             AppPermissionApply,
+            id=2004,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
             status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
             itsm_ticket_id="t-001",
         )
         mocker.patch(
@@ -1447,7 +1508,7 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         resp = request_view(
             method="POST",
             view_name="workbench.permissions.gateway.applied.cancel",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
         assert resp.status_code == 500
@@ -1456,28 +1517,31 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         assert AppPermissionApply.objects.filter(id=apply.id).exists()
 
     def test_cancel_processed_apply_is_rejected(self, request_view, fake_gateway):
-        apply = G(
-            AppPermissionApply,
+        record = G(
+            AppPermissionRecord,
+            id=1005,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
             status=ApplyStatusEnum.APPROVED.value,
         )
 
         resp = request_view(
             method="POST",
             view_name="workbench.permissions.gateway.applied.cancel",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
-        assert resp.status_code == 400
-        assert AppPermissionApply.objects.filter(id=apply.id).exists()
+        assert resp.status_code == 404
+        assert AppPermissionRecord.objects.filter(id=record.id).exists()
 
 
 class TestWorkbenchMyApplyGatewayPermissionDestroyApi:
     def test_delete_canceled_apply(self, request_view, fake_gateway, mocker):
         record = G(
             AppPermissionRecord,
+            id=1006,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
@@ -1486,6 +1550,7 @@ class TestWorkbenchMyApplyGatewayPermissionDestroyApi:
         )
         apply = G(
             AppPermissionApply,
+            id=2006,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
@@ -1499,7 +1564,7 @@ class TestWorkbenchMyApplyGatewayPermissionDestroyApi:
         resp = request_view(
             method="DELETE",
             view_name="workbench.permissions.gateway.applied.destroy",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
         assert resp.status_code == 204
@@ -1515,18 +1580,29 @@ class TestWorkbenchMyApplyGatewayPermissionDestroyApi:
         assert mocked_record.call_args.kwargs["comment"] == "删除已取消的权限申请"
 
     def test_delete_pending_apply_is_rejected(self, request_view, fake_gateway):
+        record = G(
+            AppPermissionRecord,
+            id=1007,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+        )
         apply = G(
             AppPermissionApply,
+            id=2007,
             gateway=fake_gateway,
             bk_app_code="app1",
             applied_by=FAKE_USERNAME,
             status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
         )
 
         resp = request_view(
             method="DELETE",
             view_name="workbench.permissions.gateway.applied.destroy",
-            path_params={"apply_id": apply.id},
+            path_params={"record_id": record.id},
         )
 
         assert resp.status_code == 400

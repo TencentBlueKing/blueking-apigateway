@@ -47,8 +47,12 @@ if TYPE_CHECKING:
 
 class WorkbenchPermissionHandler:
     @staticmethod
-    def _get_gateway_apply_for_update(apply_id: int, username: str, tenant_id: str) -> AppPermissionApply:
-        apply = AppPermissionApply.objects.select_for_update().filter(id=apply_id, applied_by=username).first()
+    def _get_gateway_apply_for_update(record_id: int, username: str, tenant_id: str) -> AppPermissionApply:
+        apply = (
+            AppPermissionApply.objects.select_for_update()
+            .filter(apply_record_id=record_id, applied_by=username)
+            .first()
+        )
         if not apply:
             raise error_codes.NOT_FOUND
         # 租户校验使用普通查询，避免 FOR UPDATE 锁定关联的网关记录。
@@ -180,12 +184,12 @@ class WorkbenchPermissionHandler:
     @transaction.atomic
     def cancel_gateway_permission_apply(
         cls,
-        apply_id: int,
+        record_id: int,
         username: str,
         tenant_id: str,
     ) -> None:
         """取消待审批 API 网关权限申请"""
-        apply = cls._get_gateway_apply_for_update(apply_id, username, tenant_id)
+        apply = cls._get_gateway_apply_for_update(record_id, username, tenant_id)
         cls._cancel_gateway_permission_apply(apply, username)
 
     @classmethod
@@ -233,12 +237,12 @@ class WorkbenchPermissionHandler:
     @transaction.atomic
     def delete_gateway_permission_apply(
         cls,
-        apply_id: int,
+        record_id: int,
         username: str,
         tenant_id: str,
     ) -> None:
         """删除已取消 API 网关权限申请"""
-        apply = cls._get_gateway_apply_for_update(apply_id, username, tenant_id)
+        apply = cls._get_gateway_apply_for_update(record_id, username, tenant_id)
         cls._delete_gateway_permission_apply(apply, username)
 
     @classmethod

@@ -23,8 +23,9 @@ import pytest
 from ddf import G
 
 from apigateway.apis.web.personal_workbench.serializers import (
-    WorkbenchGatewayPermissionApplyOutputSLZ,
-    WorkbenchGatewayPermissionRecordOutputSLZ,
+    WorkbenchGatewayPermissionHandledOutputSLZ,
+    WorkbenchGatewayPermissionMyApplyOutputSLZ,
+    WorkbenchGatewayPermissionPendingOutputSLZ,
     WorkbenchMCPPermissionApplyOutputSLZ,
     WorkbenchMCPPermissionHandledOutputSLZ,
 )
@@ -38,7 +39,7 @@ from apigateway.utils.time import now_datetime
 pytestmark = pytest.mark.django_db
 
 
-class TestWorkbenchGatewayPermissionApplyOutputSLZ:
+class TestWorkbenchGatewayPermissionPendingOutputSLZ:
     def test_serialization(self, fake_gateway):
         """测试 API 网关申请单序列化器输出格式正确"""
         apply_record = G(
@@ -53,7 +54,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             itsm_ticket_id="12345",
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+        slz = WorkbenchGatewayPermissionPendingOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
         )
@@ -82,7 +83,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             grant_dimension=GrantDimensionEnum.API.value,
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+        slz = WorkbenchGatewayPermissionPendingOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["operator"]}},
         )
@@ -103,7 +104,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             itsm_ticket_id="123",
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+        slz = WorkbenchGatewayPermissionPendingOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
         )
@@ -112,7 +113,45 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
         assert data["itsm_ticket_url"] == "https://itsm/ticket/123"
 
 
-class TestWorkbenchGatewayPermissionRecordOutputSLZ:
+class TestWorkbenchGatewayPermissionMyApplyOutputSLZ:
+    @patch(
+        "apigateway.service.bk_itsm.ItsmPermissionApplyHelper.build_ticket_url",
+        return_value="https://itsm/ticket/123",
+    )
+    def test_serialization_keeps_my_apply_contract(self, mock_build_url, fake_gateway):
+        applied_time = now_datetime()
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test_app",
+            applied_by="test_user",
+            applied_time=applied_time,
+            handled_by="handler",
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.PARTIAL_APPROVED.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            expire_days=180,
+            reason="need access to resources",
+            itsm_ticket_id="123",
+        )
+
+        slz = WorkbenchGatewayPermissionMyApplyOutputSLZ(
+            record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        )
+        data = slz.data
+
+        assert data["id"] == record.id
+        assert data["applied_by"] == "test_user"
+        assert data["approvers"] == ["admin"]
+        assert data["status"] == ApplyStatusEnum.PARTIAL_APPROVED.value
+        assert data["applied_time"] == data["created_time"]
+        assert data["itsm_ticket_url"] == "https://itsm/ticket/123"
+        assert "handled_by" not in data
+        assert "handled_time" not in data
+
+
+class TestWorkbenchGatewayPermissionHandledOutputSLZ:
     def test_serialization(self, fake_gateway):
         """测试 API 网关已办记录序列化器输出格式正确"""
         record = G(
@@ -131,7 +170,7 @@ class TestWorkbenchGatewayPermissionRecordOutputSLZ:
             itsm_ticket_id="67890",
         )
 
-        slz = WorkbenchGatewayPermissionRecordOutputSLZ(record)
+        slz = WorkbenchGatewayPermissionHandledOutputSLZ(record)
         data = slz.data
 
         assert data["id"] == record.id

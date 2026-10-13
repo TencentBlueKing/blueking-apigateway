@@ -121,8 +121,8 @@ class ResourceDetailMixin:
         return list(Resource.objects.filter(id__in=resource_ids).values("id", "name", "path", "method").order_by("id"))
 
 
-class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
-    """个人工作台 - API 网关待办/我的申请 输出序列化器"""
+class WorkbenchGatewayPermissionPendingOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
+    """个人工作台 - API 网关待办 输出序列化器"""
 
     gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
@@ -134,7 +134,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
 
     class Meta:
-        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionApplyOutputSLZ"
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionPendingOutputSLZ"
         model = AppPermissionApply
         fields = [
             "id",
@@ -180,7 +180,68 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
-class WorkbenchGatewayPermissionRecordOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
+class WorkbenchGatewayPermissionMyApplyOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
+    """个人工作台 - API 网关我的申请 输出序列化器"""
+
+    gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
+    gateway_name = serializers.SerializerMethodField(help_text="网关名称")
+    expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
+    grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
+    applied_by = serializers.SerializerMethodField(help_text="申请人")
+    approvers = serializers.SerializerMethodField(help_text="当前审批责任人列表（非历史实际审批人）")
+    created_time = serializers.DateTimeField(source="applied_time", read_only=True, help_text="申请时间")
+    itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
+    resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionMyApplyOutputSLZ"
+        model = AppPermissionRecord
+        fields = [
+            "id",
+            "bk_app_code",
+            "gateway_id",
+            "gateway_name",
+            "grant_dimension",
+            "grant_dimension_display",
+            "expire_days",
+            "expire_days_display",
+            "resources",
+            "reason",
+            "applied_by",
+            "approvers",
+            "applied_time",
+            "created_time",
+            "status",
+            "itsm_ticket_id",
+            "itsm_ticket_url",
+        ]
+        read_only_fields = fields
+
+    def get_gateway_name(self, obj) -> str:
+        return obj.gateway.name
+
+    def get_expire_days_display(self, obj) -> str:
+        return PermissionApplyExpireDaysEnum.get_choice_label(obj.expire_days)
+
+    def get_grant_dimension_display(self, obj) -> str:
+        return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
+
+    def get_applied_by(self, obj) -> str:
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.bk_app_code,
+            obj.applied_by,
+            obj.gateway.tenant_mode,
+            obj.gateway.tenant_id,
+        )
+
+    def get_approvers(self, obj) -> list[str]:
+        return self.context["gateway_approvers"].get(obj.gateway_id, [])
+
+    def get_itsm_ticket_url(self, obj) -> str:
+        return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
+
+
+class WorkbenchGatewayPermissionHandledOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
     """个人工作台 - API 网关已办 输出序列化器"""
 
     gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
@@ -192,7 +253,7 @@ class WorkbenchGatewayPermissionRecordOutputSLZ(ResourceDetailMixin, serializers
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
 
     class Meta:
-        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionRecordOutputSLZ"
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionHandledOutputSLZ"
         model = AppPermissionRecord
         fields = [
             "id",

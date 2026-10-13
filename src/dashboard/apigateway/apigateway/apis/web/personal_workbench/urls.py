@@ -38,12 +38,12 @@ gateway_permission_patterns = [
     path("pending/", WorkbenchPendingGatewayPermissionListApi.as_view(), name="workbench.permissions.gateway.pending"),
     path("applied/", WorkbenchMyApplyGatewayPermissionListApi.as_view(), name="workbench.permissions.gateway.applied"),
     path(
-        "applied/<int:apply_id>/",
+        "applied/<int:record_id>/",
         WorkbenchMyApplyGatewayPermissionDestroyApi.as_view(),
         name="workbench.permissions.gateway.applied.destroy",
     ),
     path(
-        "applied/<int:apply_id>/cancel/",
+        "applied/<int:record_id>/cancel/",
         WorkbenchMyApplyGatewayPermissionCancelApi.as_view(),
         name="workbench.permissions.gateway.applied.cancel",
     ),
