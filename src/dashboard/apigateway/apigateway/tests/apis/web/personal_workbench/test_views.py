@@ -1185,7 +1185,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
-        assert result["data"]["results"][0]["approvers"] == ["operator"]
+        assert result["data"]["results"][0]["approvers"] == ["admin", "operator"]
         assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
 
@@ -1564,7 +1564,7 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
-        assert result["data"]["results"][0]["approvers"] == ["operator"]
+        assert result["data"]["results"][0]["approvers"] == ["admin", "operator"]
         assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
 

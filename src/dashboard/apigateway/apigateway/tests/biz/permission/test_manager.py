@@ -583,7 +583,7 @@ class TestPermissionDimensionManagerItsmIntegration:
         assert helper.create_permission_apply_ticket.call_args.kwargs["callback_token"] == "cb-token-001"
         assert helper.create_permission_apply_ticket.call_args.kwargs["apply_reason"] == "reason"
 
-    def test_create_apply_record_with_itsm_ticket_prefers_operators(
+    def test_create_apply_record_with_itsm_ticket_includes_permission_approvers(
         self, settings, mocker, fake_gateway, fake_resource
     ):
         settings.ENABLE_ITSM4_PERMISSION_APPLY = True
@@ -610,7 +610,7 @@ class TestPermissionDimensionManagerItsmIntegration:
             "admin",
         )
 
-        assert helper.create_permission_apply_ticket.call_args.kwargs["approvers"] == ["operator"]
+        assert helper.create_permission_apply_ticket.call_args.kwargs["approvers"] == ["admin", "operator"]
 
     def test_create_apply_record_with_itsm_ticket_fallback_applicant(
         self, settings, mocker, fake_gateway, fake_resource
