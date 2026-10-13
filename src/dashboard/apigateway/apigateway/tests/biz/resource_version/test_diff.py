@@ -49,6 +49,50 @@ class User(BaseModel, DiffMixin):
 
 class TestDiffMixin:
     @pytest.mark.parametrize("container", [dict, list])
+    @pytest.mark.parametrize("shared_between_inputs", [False, True])
+    def test_shared_configuration_nodes_are_not_repeatedly_expanded(self, container, shared_between_inputs):
+        class Configuration(BaseModel, DiffMixin):
+            value: Any
+
+        visits = []
+
+        class CountedDict(dict):
+            def items(self):
+                visits.append(self)
+                return super().items()
+
+        class CountedList(list):
+            def __iter__(self):
+                visits.append(self)
+                return super().__iter__()
+
+        value = CountedDict(leaf=False)
+        depth = 12
+        for _ in range(depth):
+            value = CountedDict(first=value, second=value) if container is dict else CountedList((value, value))
+        target = value if shared_between_inputs else deepcopy(value)
+        visits.clear()
+
+        assert Configuration(value=value).diff(Configuration(value=target)) == ({}, {})
+        # Aliases form a graph with depth + 1 unique nodes, not 2 ** depth copies.
+        assert len(visits) <= 2 * (depth + 1)
+
+    @pytest.mark.parametrize("changed_side", ["source", "target"])
+    def test_shared_node_compared_with_distinct_nodes_detects_changes(self, changed_side):
+        class Configuration(BaseModel, DiffMixin):
+            value: Any
+
+        node = {"leaf": False}
+        shared = {"first": node, "second": node}
+        changed = {"first": {"leaf": 0}, "second": {"leaf": False}}
+        source, target = (changed, shared) if changed_side == "source" else (shared, changed)
+
+        assert Configuration(value=source).diff(Configuration(value=target)) == (
+            {"value": source},
+            {"value": target},
+        )
+
+    @pytest.mark.parametrize("container", [dict, list])
     @pytest.mark.parametrize("target_leaf", [False, 0])
     def test_deep_configuration(self, container, target_leaf):
         class Configuration(BaseModel, DiffMixin):

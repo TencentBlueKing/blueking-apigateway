@@ -26,19 +26,31 @@ from apigateway.core.constants import ResourceKindEnum
 def _values_equal(source: Any, target: Any) -> bool:
     # Use a work stack so deeply nested JSON does not exhaust Python's call stack.
     pending = [(source, target)]
+    compared_containers = set()
     while pending:
         source_value, target_value = pending.pop()
+        if source_value is target_value and isinstance(source_value, (dict, list)):
+            continue
         # JSON booleans and numbers are distinct even though Python True == 1.
         if isinstance(source_value, bool) or isinstance(target_value, bool):
             if type(source_value) is not type(target_value) or source_value != target_value:
                 return False
         elif isinstance(source_value, dict) and isinstance(target_value, dict):
+            pair = (id(source_value), id(target_value))
+            if pair in compared_containers:
+                continue
             if source_value.keys() != target_value.keys():
                 return False
+            # YAML aliases can share nodes on either side; compare each pair once.
+            compared_containers.add(pair)
             pending.extend((value, target_value[key]) for key, value in source_value.items())
         elif isinstance(source_value, list) and isinstance(target_value, list):
+            pair = (id(source_value), id(target_value))
+            if pair in compared_containers:
+                continue
             if len(source_value) != len(target_value):
                 return False
+            compared_containers.add(pair)
             pending.extend(zip(source_value, target_value))
         elif source_value != target_value:
             return False

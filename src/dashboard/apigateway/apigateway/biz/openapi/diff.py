@@ -63,6 +63,7 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
         scope_type=PluginBindingScopeEnum.RESOURCE,
         scope_ids=resource_ids,
     )
+    exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
 
     for resource_data, resource in existing_resources:
         proxy = proxies.get(resource.id)
@@ -96,7 +97,7 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
                 ),
                 "labels": {label["name"] for label in labels.get(resource.id, [])},
                 "plugins": current_plugins,
-                "openapi_schema": _normalize_schema(resource_data, schemas.get(resource.id, {})),
+                "openapi_schema": _normalize_schema(exporter, resource_data, schemas.get(resource.id, {})),
             }
         )
         imported = ResourceConfigurationDiffer.model_validate(
@@ -107,7 +108,7 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
                 "backend_config": backend_config.model_dump() if backend_config is not None else {},
                 "labels": set(resource_data.metadata.get("labels", [])),
                 "plugins": imported_plugins,
-                "openapi_schema": _normalize_schema(resource_data, resource_data.openapi_schema),
+                "openapi_schema": _normalize_schema(exporter, resource_data, resource_data.openapi_schema),
             }
         )
         source_diff, target_diff = current.diff(imported)
@@ -119,10 +120,10 @@ def classify_resource_import_changes(gateway: Gateway, resources: List[ResourceD
     return change_types
 
 
-def _normalize_schema(resource: ResourceData, schema: Dict[str, Any]) -> dict:
+def _normalize_schema(exporter: OpenAPIExportManager, resource: ResourceData, schema: Dict[str, Any]) -> dict:
     # Use the exporter's defaults on both sides so original exports compare equal,
     # including resources without a stored schema and Swagger 2.0 conversions.
-    content = OpenAPIExportManager(include_bk_apigateway_resource=False).get_openapi_content(
+    content = exporter.get_openapi_content(
         [
             {
                 "name": resource.name,

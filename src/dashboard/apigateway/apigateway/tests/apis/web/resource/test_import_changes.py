@@ -239,6 +239,32 @@ def test_missing_plugins_follow_import_retention_rules(
     assert PluginBinding.objects.filter(id=resource_plugin.id).exists()
 
 
+@pytest.mark.parametrize("plugin_action", ["retain", "reimport", "change"])
+def test_plugin_yaml_alias_graph(request_view, importable_resource, resource_plugin, plugin_action):
+    resource = importable_resource
+    lines = ["n0: &n0 {leaf: false}"]
+    lines.extend(f"n{level}: &n{level} [*n{level - 1}, *n{level - 1}]" for level in range(1, 17))
+    plugin_yaml = "\n".join(lines) + "\n"
+    resource_plugin.config.yaml = plugin_yaml
+    resource_plugin.config.save()
+    resource_plugin.source = PluginBindingSourceEnum.USER_CREATE.value
+    resource_plugin.save()
+    content = json.loads(export_content(request_view, resource))
+    extension = content["paths"][resource.path]["get"]["x-bk-apigateway-resource"]
+    if plugin_action == "retain":
+        extension.pop("pluginConfigs")
+    elif plugin_action == "change":
+        extension["pluginConfigs"][0]["yaml"] = plugin_yaml.replace("leaf: false", "leaf: 0")
+
+    response = check_content(request_view, resource, json.dumps(content), include_change_type=True)
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"][0]["change_type"] == ("update" if plugin_action == "change" else "unchanged")
+    resource_plugin.config.refresh_from_db()
+    assert resource_plugin.config.yaml == plugin_yaml
+    resource_plugin.refresh_from_db()
+    assert resource_plugin.source == PluginBindingSourceEnum.USER_CREATE.value
+
+
 def test_invalid_change_type_option_is_rejected(request_view, importable_resource):
     content = export_content(request_view, importable_resource)
     response = check_content(request_view, importable_resource, content, include_change_type="invalid")
