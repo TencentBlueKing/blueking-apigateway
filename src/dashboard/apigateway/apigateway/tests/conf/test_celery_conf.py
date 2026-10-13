@@ -18,7 +18,7 @@
 #
 
 import pytest
-from celery import Celery
+from celery import Celery, current_app
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
 from django_celery_beat.schedulers import DatabaseScheduler, ModelEntry
@@ -29,7 +29,8 @@ from django_celery_beat.schedulers import DatabaseScheduler, ModelEntry
 def test_publish_event_cleanup_is_disabled_on_scheduler_startup(existing_task):
     task_name = "delete_old_publish_events"
     task_config = settings.CELERY_BEAT_SCHEDULE[task_name]
-    with Celery("test_publish_event_cleanup") as app:
+    original_app = current_app._get_current_object()
+    with Celery("test_publish_event_cleanup", set_as_current=False) as app:
         app.conf.update(
             beat_schedule={task_name: task_config},
             timezone=settings.CELERY_TIMEZONE,
@@ -45,3 +46,5 @@ def test_publish_event_cleanup_is_disabled_on_scheduler_startup(existing_task):
                 assert task_name not in scheduler.schedule
             finally:
                 scheduler.close()
+
+    assert current_app._get_current_object() is original_app
