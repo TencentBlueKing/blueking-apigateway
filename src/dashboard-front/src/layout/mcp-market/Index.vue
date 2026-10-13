@@ -18,14 +18,25 @@
 
 <template>
   <div class="mcp-market-wrapper">
-    <img
-      ref="bannerRef"
-      :src="bannerImg"
-      alt="banner"
-      class="banner"
-      loading="lazy"
-      @error="bannerLoaded = true"
+    <div
+      v-if="isBannerVisible"
+      class="banner-wrapper"
     >
+      <img
+        ref="bannerRef"
+        :src="bannerImg"
+        alt="banner"
+        class="banner"
+        loading="lazy"
+        @error="bannerLoaded = true"
+      >
+      <AgIcon
+        name="icon-close"
+        class="banner-close"
+        size="20"
+        @click="handleCloseBanner"
+      />
+    </div>
     <div class="flex gap-16px main">
       <div
         ref="mcpCategorizeRef"
@@ -201,7 +212,6 @@
 </template>
 
 <script lang="ts" setup>
-// @ts-nocheck
 import { debounce } from 'lodash-es';
 import {
   type IMCPMarketCategory,
@@ -210,7 +220,7 @@ import {
   getMcpMarketplace,
   getMcpMarketplaceCategories,
 } from '@/services/source/mcp-market';
-import { type IPagination } from '@/types/common';
+import { type IPagination, type ITableEmptyType } from '@/types/common';
 import { vIntersectionObserver } from '@vueuse/components';
 import { useFeatureFlag } from '@/stores';
 import { useMcpBatchCopyConfig } from '@/hooks';
@@ -234,10 +244,12 @@ const {
   fetchApi: getMcpBatchCopyConfigList,
 });
 
-const bannerRef = ref<HTMLImageElement>(null);
-const mcpCategorizeRef = ref<HTMLDivElement>(null);
+const bannerRef = ref<HTMLImageElement | null>(null);
+const mcpCategorizeRef = ref<HTMLDivElement | null>(null);
 const isLoading = ref(false);
 const bannerLoaded = ref(false);
+// 标记 banner 是否展示（支持关闭）
+const isBannerVisible = ref(true);
 // 标记首次数据加载是否完成
 const isFirstLoad = ref(true);
 // 标记Banner加载完成后是否已初始化过分页
@@ -250,14 +262,14 @@ const mcpCategorizeWidth = ref(0);
 const cachedViewportHeight = ref(0);
 const activeStatusTab = ref('all');
 const activeCategoryName = ref('all');
-const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error'>('');
+const cardEmptyType = ref<ITableEmptyType>('empty');
 const filterData = ref({
   order_by: '-updated_time',
   keyword: '',
 });
 const mcpMarketList = ref<IMarketplaceItemWithUIState[]>([]);
 const categoriesList = ref<IMCPMarketCategory[]>([]);
-const pagination = ref<Omit<IPagination, 'hasNoMore'>>({
+const pagination = ref<IPagination & { hasNoMore?: boolean }>({
   current: 1,
   limit: 0,
   count: 0,
@@ -283,7 +295,7 @@ const categoriesCount = computed(() => {
   }
 
   return categoriesList.value?.reduce((accumulator: number, current: IMCPMarketCategory) => {
-    return accumulator + current.mcp_server_count;
+    return accumulator + (current.mcp_server_count ?? 0);
   }, 0) ?? 0;
 });
 const mcpTabList = computed(() => [
@@ -323,6 +335,14 @@ const handleBannerLoad = () => {
     isBannerLoadedInit.value = true;
     resetPagination();
   }
+};
+
+const handleCloseBanner = () => {
+  isBannerVisible.value = false;
+  // banner 关闭后高度变化，重新计算可视区域卡片数
+  nextTick(() => {
+    resetPagination();
+  });
 };
 
 // 获取banner高度的方法，增加图片加载监听
@@ -371,7 +391,7 @@ const calculateMaxVisibleCards = () => {
 };
 
 const getList = async () => {
-  const { hasNoMore, current, limit } = pagination.value;
+  const { hasNoMore = false, current = 1, limit = 0 } = pagination.value;
   isLoading.value = true;
   cardEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value)).length > 0 ? 'searchEmpty' : 'empty';
 
@@ -388,7 +408,8 @@ const getList = async () => {
     };
     const res = await getMcpMarketplace(params);
     const { results = [], count = 0 } = res ?? {};
-    mcpMarketList.value = current === 1 ? results : [...mcpMarketList.value, ...results];
+    const list = results as unknown as IMarketplaceItemWithUIState[];
+    mcpMarketList.value = current === 1 ? list : [...mcpMarketList.value, ...list];
     pagination.value = {
       ...pagination.value,
       count,
@@ -418,7 +439,7 @@ const fetchCategoryList = async () => {
   const extraCategories = ['Official', 'Featured'] as const;
   // 如果右侧选择了全部，分类接口的categories不需要传
   const params = { ...getFilterParams.value };
-  if (extraCategories.includes(activeStatusTab.value)) {
+  if ((extraCategories as readonly string[]).includes(activeStatusTab.value)) {
     params.categories = activeStatusTab.value;
   }
   else {
@@ -426,7 +447,7 @@ const fetchCategoryList = async () => {
   }
   const res = await getMcpMarketplaceCategories(params);
   categoriesList.value = (res ?? []).filter(cg => !['Official', 'Featured'].includes(cg.name));
-  mcpCategorizeWidth.value = mcpCategorizeRef.value?.offsetWidth;
+  mcpCategorizeWidth.value = mcpCategorizeRef.value?.offsetWidth ?? 0;
 };
 
 const resetPagination = async () => {
@@ -473,17 +494,14 @@ const handleSortChange = (sort: string) => {
   resetPagination();
 };
 
-const handleMouseenter = (
-  e: MouseEvent & { target: HTMLElement },
-  row: IMarketplaceItem & { isOverflow?: boolean },
-) => {
-  const cell = e.target.closest('.truncate') as HTMLElement | null;
+const handleMouseenter = (e: MouseEvent, row: IMCPMarketCategory) => {
+  const cell = (e.target as HTMLElement)?.closest('.truncate') as HTMLElement | null;
   if (cell) {
     row.isOverflow = cell.scrollWidth > cell.offsetWidth;
   }
 };
 
-const handleMouseleave = (_: MouseEvent, row: IMarketplaceItem & { isOverflow?: boolean }) => {
+const handleMouseleave = (_: MouseEvent, row: IMCPMarketCategory) => {
   row.isOverflow = false;
 };
 
@@ -532,7 +550,7 @@ const handleBatchCopy = () => {
   fetchMcpBatchCopyConfigList({ selections: selections.value });
 };
 
-const handleSelectionChange = (selection: IMarketplaceItemWithUIState) => {
+const handleSelectionChange = (selection: IMarketplaceItemWithUIState[]) => {
   selections.value.clear();
   selection.forEach(item => selections.value.set(item.id, item));
 };
@@ -574,18 +592,42 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .mcp-market-wrapper {
+  width: 80%;
+  min-width: 1200px;
+  margin: 0 auto;
   box-sizing: border-box;
 
-  .banner {
-    width: 100%;
-    min-width: 1280px;
+  .banner-wrapper {
+    position: relative;
+    margin-top: 24px;
+
+    .banner {
+      display: block;
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
+    }
+
+    .banner-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      color: #979ba5;
+      background-color: #f0f1f5;
+      border-radius: 50%;
+
+      &:hover {
+        background-color: #dcdee5;
+        cursor: pointer;
+      }
+    }
   }
 
   .main {
-    width: 80%;
-    min-width: 1200px;
+    width: 100%;
     padding: 24px 0;
-    margin: 0 auto;
 
     .mcp-categorize {
       position: sticky;

@@ -56,21 +56,18 @@ class DocGenerator:
         self.with_common_request_params_part = with_common_request_params_part
 
     def get_doc(self) -> dict:
+        resource_url_content = self._get_resource_url_part() if self.with_resource_url_part else ""
+        auth_content = self._get_common_request_params_part() if self.with_common_request_params_part else ""
+        body_content = self._replace_bkapi_authorization_description(self.doc_data.content)
         return {
             "type": APIDocTypeEnum.MARKDOWN.value,
-            "content": self._get_doc_content(),
+            "content": "\n\n".join(filter(None, [resource_url_content, auth_content, body_content])),
+            "method": self.resource_data.method,
+            "resource_url": self._get_resource_url(),
+            "auth_content": auth_content,
+            "body_content": body_content,
             "updated_time": self.doc_data.updated_time,
         }
-
-    def _get_doc_content(self) -> str:
-        parts = []
-        if self.with_resource_url_part:
-            parts.append(self._get_resource_url_part())
-        if self.with_common_request_params_part:
-            parts.append(self._get_common_request_params_part())
-        parts.append(self._replace_bkapi_authorization_description(self.doc_data.content))
-
-        return "\n\n".join(filter(None, parts))
 
     def _get_resource_url_part(self) -> str:
         part = RESOURCE_URL_PARTS.get(self.language, "")

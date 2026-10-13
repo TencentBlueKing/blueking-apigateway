@@ -28,6 +28,7 @@ class TestDocGenerator:
     def test_get_doc_with_release_doc(self, fake_gateway, fake_released_resource, fake_released_resource_doc):
         resource_data = ReleasedResourceData.from_data(fake_released_resource.data)
         doc_data = ReleasedResourceDocData.from_data(fake_released_resource_doc.data)
+        doc_data.content = "### 请求参数\n正文内容"
 
         stage_name = "prod"
         # fake a stage with name => for get_resource_url_tmpl
@@ -43,9 +44,22 @@ class TestDocGenerator:
         doc = generator.get_doc()
         assert doc["content"]
         assert doc["updated_time"]
+        assert doc["method"] == resource_data.method
+        assert doc["resource_url"] in doc["content"]
+        assert doc["auth_content"] in doc["content"]
+        assert doc["body_content"] == doc_data.content
+        assert doc_data.content in doc["content"]
+
+        # MCP callers intentionally omit the common authentication section.
+        generator.with_common_request_params_part = False
+        doc = generator.get_doc()
+        assert doc["auth_content"] == ""
+        assert "X-Bkapi-Authorization" not in doc["content"]
+        assert doc["body_content"] == doc_data.content
 
     def test_get_doc_with_dummy_doc(self, fake_gateway, fake_released_resource, fake_released_resource_doc):
         resource_data = ReleasedResourceData.from_data(fake_released_resource.data)
+        resource_data.verified_app_required = resource_data.verified_user_required = False
         doc_data = DummyResourceDocData.create("zh")
 
         stage_name = "prod"
@@ -62,6 +76,8 @@ class TestDocGenerator:
         doc = generator.get_doc()
         assert doc["content"]
         assert not doc["updated_time"]
+        assert doc["auth_content"] == doc["body_content"] == ""
+        assert doc["resource_url"] in doc["content"]
 
     @pytest.mark.parametrize("language", ["zh", "en"])
     def test_get_resource_url_part(self, fake_gateway, fake_released_resource, fake_released_resource_doc, language):

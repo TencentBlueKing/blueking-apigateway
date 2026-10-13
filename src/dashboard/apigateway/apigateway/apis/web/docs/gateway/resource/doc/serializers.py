@@ -29,6 +29,10 @@ class DocInputSLZ(serializers.Serializer):
 class DocOutputSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="文档类型，如 markdown")
     content = serializers.CharField(help_text="文档内容")
+    method = serializers.CharField(help_text="请求方法")
+    resource_url = serializers.CharField(help_text="完整调用地址")
+    auth_content = serializers.CharField(allow_blank=True, help_text="认证说明，Markdown 格式")
+    body_content = serializers.CharField(allow_blank=True, help_text="文档正文，Markdown 格式")
     updated_time = serializers.DateTimeField(help_text="文档更新时间")
 
     class Meta:

@@ -119,6 +119,7 @@ export interface IMCPMarketCategory {
   id: number
   sort_order?: number
   mcp_server_count?: number
+  isOverflow?: boolean
 }
 
 // MCP配置
@@ -292,7 +293,7 @@ export const getMcpAIConfigList = (mcp_server_id: number) =>
  * @param {String} data.client_type 客户端类型
  * @param {Number[]} data.mcp_server_ids  McpServerID组
  */
-export const getMcpBatchCopyConfigList = (data: IMcpBatchConfigQuery): Promise<{ data: IMcpClientConfig }> =>
+export const getMcpBatchCopyConfigList = (data: IMcpBatchConfigQuery): Promise<IMcpClientConfig> =>
   http.post('/mcp-marketplace/batch-configs/', data);
 
 /** MCP 市场权限申请请求体 */

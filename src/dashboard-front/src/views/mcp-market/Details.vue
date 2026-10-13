@@ -613,7 +613,6 @@ watch(
   }
 
   .tab-wrapper {
-    box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 0 0 2px 2px;
 
     .mcp-tab {
@@ -648,6 +647,7 @@ watch(
 
         :deep(>.bk-resize-layout-aside) {
           display: block;
+          box-shadow: 0 2px 4px 0 #1919290d;
 
           .bk-resize-trigger {
             background-color: #fff;
@@ -656,6 +656,7 @@ watch(
 
         :deep(>.bk-resize-layout-main) {
           width: 62.5% !important;
+          box-shadow: 0 2px 4px 0 #1919290d;
         }
       }
     }
