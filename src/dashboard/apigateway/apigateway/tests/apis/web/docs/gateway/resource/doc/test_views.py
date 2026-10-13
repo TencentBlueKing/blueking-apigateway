@@ -57,6 +57,12 @@ class TestDocListApi:
         assert resp.status_code == 200
         assert result["data"]["content"]
         assert result["data"]["updated_time"]
+        data = result["data"]
+        assert "X-Bkapi-Authorization" in data["auth_content"]
+        assert data["auth_content"] in data["content"]
+        assert "body_content" in data
+        assert data["method"] == fake_released_resource.data["method"]
+        assert data["resource_url"] in data["content"]
 
         mocker.patch(
             "apigateway.apis.web.docs.gateway.resource.doc.views.ReleasedResourceDocHandler.get_released_resource_doc_data",
