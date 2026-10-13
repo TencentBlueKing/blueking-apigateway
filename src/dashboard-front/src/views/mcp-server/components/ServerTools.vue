@@ -28,94 +28,96 @@
     >
       <!--  左栏，API 列表  -->
       <template #aside>
-        <div :class="`${toolCollapseMargin} left-aside-wrap`">
-          <!--  筛选器  -->
-          <header class="left-aside-header">
-            <header class="title">
-              {{ t('可用工具') }}
+        <BkLoading :loading="serverToolLoading">
+          <div :class="`${toolCollapseMargin} left-aside-wrap`">
+            <!--  筛选器  -->
+            <header class="left-aside-header">
+              <header class="title">
+                {{ t('可用工具') }}
+              </header>
+              <main class="nav-filters">
+                <BkInput
+                  v-model="keyword"
+                  :placeholder="t('请输入工具名称，描述搜索')"
+                  clearable
+                  type="search"
+                />
+              </main>
             </header>
-            <main class="nav-filters">
-              <BkInput
-                v-model="keyword"
-                :placeholder="t('请输入工具名称，描述搜索')"
-                clearable
-                type="search"
-              />
-            </main>
-          </header>
-          <!--  API 列表  -->
-          <main class="tool-list custom-scroll-bar h-full">
-            <template v-if="filteredToolList.length">
-              <BkCollapse
-                v-model="activeGroupPanelNames"
-                class="tool-group-collapse"
-              >
-                <BkCollapsePanel
-                  v-for="group of toolGroupList"
-                  :key="group.id"
-                  :name="group.name"
+            <!--  API 列表  -->
+            <main class="tool-list custom-scroll-bar h-full">
+              <template v-if="filteredToolList.length">
+                <BkCollapse
+                  v-model="activeGroupPanelNames"
+                  class="tool-group-collapse"
                 >
-                  <template #header>
-                    <div class="tool-group-collapse-header">
-                      <AngleUpFill
-                        :class="{ fold: !activeGroupPanelNames.includes(group.name) }"
-                        class="menu-header-icon"
-                      />
-                      <div class="tool-group-collapse-title">
-                        {{ group.name }}
+                  <BkCollapsePanel
+                    v-for="group of toolGroupList"
+                    :key="group.id"
+                    :name="group.name"
+                  >
+                    <template #header>
+                      <div class="tool-group-collapse-header">
+                        <AngleUpFill
+                          :class="{ fold: !activeGroupPanelNames.includes(group.name) }"
+                          class="menu-header-icon"
+                        />
+                        <div class="tool-group-collapse-title">
+                          {{ group.name }}
+                        </div>
                       </div>
-                    </div>
-                  </template>
-                  <template #content>
-                    <article
-                      v-for="tool in group.toolList"
-                      :key="tool.id"
-                      :class="{ active: tool.id === selectedTool?.id }"
-                      class="tool-item"
-                      @click="handleToolClick(tool.id, tool.name)"
-                    >
-                      <header
-                        v-bk-xss-html="getHighlightedHtml(tool.tool_name || tool.name)"
-                        v-bk-tooltips="{
-                          placement:'top',
-                          content: `${t('名称')}: ${tool.tool_name || tool.name}
+                    </template>
+                    <template #content>
+                      <article
+                        v-for="tool in group.toolList"
+                        :key="tool.id"
+                        :class="{ active: tool.id === selectedTool?.id }"
+                        class="tool-item"
+                        @click="handleToolClick(tool.id, tool.name)"
+                      >
+                        <header
+                          v-bk-xss-html="getHighlightedHtml(tool.tool_name || tool.name)"
+                          v-bk-tooltips="{
+                            placement:'top',
+                            content: `${t('名称')}: ${tool.tool_name || tool.name}
                             ${t('描述')}: ${tool.description}`,
-                          disabled: !tool.isOverflow,
-                          extCls: 'max-w-480px',
-                          delay: 0
-                        }"
-                        class="truncate color-#4d4f56 tool-item-name"
-                        @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
-                        @mouseleave="() => handleToolMouseleave(tool)"
-                      />
-                      <main
-                        v-bk-xss-html="getHighlightedHtml(tool.description)"
-                        v-bk-tooltips="{
-                          placement:'top',
-                          content: `${t('名称')}: ${tool.tool_name || tool.name}
+                            disabled: !tool.isOverflow,
+                            extCls: 'max-w-480px',
+                            delay: 0
+                          }"
+                          class="truncate color-#4d4f56 tool-item-name"
+                          @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
+                          @mouseleave="() => handleToolMouseleave(tool)"
+                        />
+                        <main
+                          v-bk-xss-html="getHighlightedHtml(tool.description)"
+                          v-bk-tooltips="{
+                            placement:'top',
+                            content: `${t('名称')}: ${tool.tool_name || tool.name}
                           ${t('描述')}: ${tool.description}`,
-                          disabled: !tool.isOverflow,
-                          extCls: 'max-w-480px',
-                          delay: 0
-                        }"
-                        class="truncate color-#979ba5 tool-item-desc"
-                        @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
-                        @mouseleave="() => handleToolMouseleave(tool)"
-                      />
-                    </article>
-                  </template>
-                </BkCollapsePanel>
-              </BkCollapse>
-            </template>
-            <template v-else-if="keyword">
-              <TableEmpty
-                empty-type="searchEmpty"
-                @clear-filter="keyword = ''"
-              />
-            </template>
-            <TableEmpty v-else />
-          </main>
-        </div>
+                            disabled: !tool.isOverflow,
+                            extCls: 'max-w-480px',
+                            delay: 0
+                          }"
+                          class="truncate color-#979ba5 tool-item-desc"
+                          @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
+                          @mouseleave="() => handleToolMouseleave(tool)"
+                        />
+                      </article>
+                    </template>
+                  </BkCollapsePanel>
+                </BkCollapse>
+              </template>
+              <template v-else>
+                <TableEmpty
+                  v-if="!serverToolLoading"
+                  :empty-type="keyword ? 'searchEmpty' : 'empty'"
+                  @clear-filter="keyword = ''"
+                />
+              </template>
+            </main>
+          </div>
+        </BkLoading>
       </template>
       <!--  中间栏，当前 API 文档内容  -->
       <template #main>
@@ -319,6 +321,7 @@ const selectedToolMarkdownHtml = ref('');
 const selectedToolSchema = ref();
 const updatedTime = ref<string | null>(null);
 const isLoading = ref(false);
+const serverToolLoading = ref(true);
 const toolCollapseMargin = ref('');
 
 const filteredToolList = computed(() => {
@@ -387,9 +390,11 @@ watch(toolList, () => {
 
 const fetchToolList = async () => {
   if (!server?.id) {
+    serverToolLoading.value = false;
     return;
   }
   try {
+    serverToolLoading.value = true;
     if (page === 'market') {
       toolList.value = server?.tools ?? [];
     }
@@ -413,6 +418,9 @@ const fetchToolList = async () => {
   }
   catch {
     toolList.value = [];
+  }
+  finally {
+    serverToolLoading.value = false;
   }
 };
 

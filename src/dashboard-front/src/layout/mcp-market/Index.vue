@@ -330,18 +330,18 @@ const getFilterParams = computed(() => {
 
 const handleBannerLoad = () => {
   bannerLoaded.value = true;
-  // 图片加载完成后重新计算分页limit
+  // 图片加载完成后重新计算分页limit（列表内容不变，保留已选中的 MCP Server）
   if (!isBannerLoadedInit.value) {
     isBannerLoadedInit.value = true;
-    resetPagination();
+    resetPagination(true);
   }
 };
 
 const handleCloseBanner = () => {
   isBannerVisible.value = false;
-  // banner 关闭后高度变化，重新计算可视区域卡片数
+  // banner 关闭后高度变化，重新计算可视区域卡片数（列表内容不变，保留已选中的 MCP Server）
   nextTick(() => {
-    resetPagination();
+    resetPagination(true);
   });
 };
 
@@ -450,7 +450,12 @@ const fetchCategoryList = async () => {
   mcpCategorizeWidth.value = mcpCategorizeRef.value?.offsetWidth ?? 0;
 };
 
-const resetPagination = async () => {
+/**
+ * 重置分页并重新拉取列表
+ * @param keepSelections 是否保留已勾选的 MCP Server：默认保留并回填，
+ *                       仅切换分类（以及列表为空展示 TableEmpty 时）清空
+ */
+const resetPagination = async (keepSelections = true) => {
   // 重置分页后，滚动距离重置
   const mcpEl = document.querySelector('.McpMarket-navigation-content .container-content') as HTMLElement | null;
   if (mcpEl && mcpEl.scrollTop > 0) {
@@ -461,8 +466,35 @@ const resetPagination = async () => {
     limit: calculateMaxVisibleCards(),
     hasNoMore: false,
   });
-  selections.value.clear();
+  // getList 会用接口返回的新对象整体替换列表，重新渲染时卡片 is_checked 由 true 变 false，
+  // BkCheckbox 会因此 emit change(false) 把 selections 删空，且该 flush 发生在 await 之后的同步代码之前，
+  // 所以必须在请求前先快照选中项，请求完成后再回填
+  const selectionsSnapshot = keepSelections ? new Map(selections.value) : null;
+  if (!keepSelections) {
+    selections.value.clear();
+  }
   await getList();
+  // 保留选中时，刷新后的列表需要同步卡片勾选态
+  if (selectionsSnapshot) {
+    // 列表为空（展示 TableEmpty）时没有卡片可回显，不清空选中，
+    // 否则搜索无结果会把已勾选项清掉，导致后续搜索无法回显
+    if (mcpMarketList.value.length < 1) {
+      return;
+    }
+    selections.value.clear();
+    mcpMarketList.value.forEach((item) => {
+      item.is_checked = selectionsSnapshot.has(item.id);
+      if (item.is_checked) {
+        selections.value.set(item.id, item);
+      }
+    });
+    // 不在当前列表中的已选项（翻页未加载、搜索未命中等）继续保留
+    selectionsSnapshot.forEach((item, id) => {
+      if (!selections.value.has(id)) {
+        selections.value.set(id, item);
+      }
+    });
+  }
 };
 
 const fetchInitData = () => {
@@ -476,7 +508,8 @@ const handleCategoryChange = async (value: string) => {
   activeCategoryName.value = value;
 
   try {
-    await resetPagination();
+    // 切换分类会更换列表内容，清空已勾选的 MCP Server
+    await resetPagination(false);
   }
   finally {
     isSwitchingCategory.value = false;
@@ -517,6 +550,7 @@ const handleClearFilter = () => {
     order_by: '-updated_time',
     keyword: '',
   };
+  selections.value.clear();
 };
 
 const handleRefresh = () => {
@@ -563,11 +597,12 @@ const handleResize = debounce(() => {
     const newLimit = calculateMaxVisibleCards();
     if (pagination.value.limit !== newLimit) {
       pagination.value.limit = newLimit || 3;
-      resetPagination();
+      resetPagination(true);
     }
   }
 }, 500);
 
+// 搜索只过滤展示，保留已勾选项并回填当前列表中命中的数据
 const handleSearch = debounce(() => fetchInitData(), 300);
 
 watch(
