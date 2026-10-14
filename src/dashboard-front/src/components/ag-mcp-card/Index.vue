@@ -273,7 +273,7 @@
               v-bk-tooltips="{
                 content: `${t('工具数量')}: ${String(server?.tools_count)}`,
               }"
-              class="flex items-baseline gap-8px"
+              class="flex items-baseline gap-4px"
             >
               <i class="apigateway-icon icon-ag-manual-shoudongchuli color-#979ba5 text-14px" />
               <div class="truncate max-w-60px">
@@ -286,7 +286,7 @@
                 content: `${t('Prompt数量')}: ${String(server?.prompts_count)}`,
                 disabled: !isEnablePrompt,
               }"
-              class="flex items-baseline gap-8px ml-24px"
+              class="flex items-baseline gap-4px ml-24px"
             >
               <i class="apigateway-icon icon-ag-tishici color-#979ba5 text-14px" />
               <div class="truncate max-w-60px">
