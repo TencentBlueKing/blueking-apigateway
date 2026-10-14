@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/21-组件管理/01-组件管理.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { waitForPageReady, reAuth, getToastMessage, BASE_URL } = require("../../runtime/helpers");
 
 
@@ -61,56 +61,12 @@ test.describe('功能: 组件管理 - 组件管理综合功能', () => {
     }
   });
 
-  test('场景: 创建组件 (read-only verification)', async ({ page }) => {
-    await page.goto(`${BASE_URL}/components/access`);
-    await waitForPageReady(page);
-    if (page.url().includes('/login/')) {
-      await reAuth(page);
-      await page.goto(`${BASE_URL}/components/access`);
-      await waitForPageReady(page);
-    }
-
-    // 进入组件管理页面
-    const manageMenu = page.locator('a, .nav-item, .menu-item, .bk-tab-label').filter({ hasText: /组件管理/ }).first();
-    if (await manageMenu.isVisible().catch(() => false)) {
-      await manageMenu.click();
-      await waitForPageReady(page);
-    }
-
-    // 验证"新建组件"按钮存在
-    const createBtn = page.locator('button, .bk-button').filter({ hasText: /新建|创建/ }).first();
-    if (await createBtn.isVisible().catch(() => false)) {
-      await expect(createBtn).toBeVisible();
-    }
+  test('场景: 创建组件 (read-only verification)', async () => {
+    test.skip(true, '缺少隔离的组件所属系统和后端组件服务，未执行组件创建');
   });
 
-  test('场景: 编辑组件 (read-only verification)', async ({ page }) => {
-    await page.goto(`${BASE_URL}/components/access`);
-    await waitForPageReady(page);
-    if (page.url().includes('/login/')) {
-      await reAuth(page);
-      await page.goto(`${BASE_URL}/components/access`);
-      await waitForPageReady(page);
-    }
-
-    // 进入组件管理页面
-    const manageMenu = page.locator('a, .nav-item, .menu-item, .bk-tab-label').filter({ hasText: /组件管理/ }).first();
-    if (await manageMenu.isVisible().catch(() => false)) {
-      await manageMenu.click();
-      await waitForPageReady(page);
-    }
-
-    // 验证编辑按钮存在
-    const editBtn = page.locator('.bk-table button, .bk-table .bk-button, .bk-table a').filter({ hasText: /编辑/ }).first();
-    if (await editBtn.isVisible().catch(() => false)) {
-      await expect(editBtn).toBeVisible();
-    }
-
-    // 支持通过组件名称搜索
-    const searchInput = page.locator('.bk-search-select, .bk-input input, input[placeholder*="搜索"]').first();
-    if (await searchInput.isVisible().catch(() => false)) {
-      await expect(searchInput).toBeVisible();
-    }
+  test('场景: 编辑组件 (read-only verification)', async () => {
+    test.skip(true, '没有本次创建的组件，不编辑共享组件');
   });
 
   test('场景: 查看组件同步历史和版本', async ({ page }) => {

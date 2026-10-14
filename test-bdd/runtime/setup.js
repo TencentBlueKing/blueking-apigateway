@@ -2,12 +2,12 @@
 // Global setup: authenticate, create test gateway, configure backend, create resource, publish
 // This runs once before all tests via Playwright's globalSetup.
 
-const { chromium } = require('@playwright/test');
+const { chromium, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
 const { BASE_URL, PASSWORD, COOKIE } = require('./test-env');
-const { createTestName, login, writeRuntimeState, STORAGE_STATE_FILE } = require('./helpers');
+const { createTestName, login, writeRuntimeState, STORAGE_STATE_FILE, pageApiGet, unwrapApiResults } = require('./helpers');
 
 module.exports = async () => {
   if (!BASE_URL) {
@@ -18,7 +18,10 @@ module.exports = async () => {
   }
 
   const browser = await chromium.launch();
-  const context = await browser.newContext();
+  // Reuse a previously authenticated session when available. login() verifies
+  // it against the server and falls back to the normal login flow if expired.
+  const context = await browser.newContext(fs.existsSync(STORAGE_STATE_FILE)
+    ? { storageState: STORAGE_STATE_FILE } : {});
   const page = await context.newPage();
 
   try {
@@ -93,6 +96,9 @@ module.exports = async () => {
     }
 
     console.log(`[setup] Created test gateway: ${testName} (ID: ${gatewayId})`);
+    // Persist ownership immediately, including when a later prerequisite fails.
+    writeRuntimeState({ TEST_GATEWAY_ID: gatewayId, TEST_GATEWAY_NAME: testName });
+    await context.storageState({ path: STORAGE_STATE_FILE });
 
     // === Step 3: Configure backend service via API ===
     // First, navigate to the gateway page to get cookies/context
@@ -161,7 +167,7 @@ module.exports = async () => {
     console.log(`[setup] Backend service result: ${JSON.stringify(backendResult).substring(0, 800)}`);
 
     if (!backendResult.ok) {
-      console.error(`[setup] CRITICAL: Backend update failed — resource edit will show 'please configure backend address'`);
+      throw new Error(`Setup backend failed: ${JSON.stringify(backendResult)}`);
     }
 
     // === Step 4: Create a test resource via API ===
@@ -219,7 +225,7 @@ module.exports = async () => {
     console.log(`[setup] Test resource created: ${JSON.stringify(resourceResult).substring(0, 200)}`);
 
     if (!resourceResult.ok) {
-      console.error(`[setup] WARNING: Resource creation failed: ${JSON.stringify(resourceResult).substring(0, 500)}`);
+      throw new Error(`Setup resource failed: ${JSON.stringify(resourceResult)}`);
     }
 
     // === Step 5: Generate resource version via API ===
@@ -259,7 +265,7 @@ module.exports = async () => {
     console.log(`[setup] Resource version generated: ${JSON.stringify(versionResult).substring(0, 200)}`);
 
     if (!versionResult.ok) {
-      console.error(`[setup] WARNING: Version generation failed: ${JSON.stringify(versionResult).substring(0, 500)}`);
+      throw new Error(`Setup version failed: ${JSON.stringify(versionResult)}`);
     }
 
     // Get version ID for publishing — the create API returns no data,
@@ -280,6 +286,7 @@ module.exports = async () => {
       }
       console.log(`[setup] Version ID resolved: ${versionId}`);
     }
+    if (!versionId) throw new Error('Setup: generated resource version could not be found');
 
     // === Step 6: Get stage ID and publish ===
     if (versionId) {
@@ -317,6 +324,16 @@ module.exports = async () => {
       }, { gwId: gatewayId, versnId: versionId });
 
       console.log(`[setup] Resource version published: ${JSON.stringify(publishResult).substring(0, 200)}`);
+      if (!publishResult.ok) throw new Error(`Setup publish failed: ${JSON.stringify(publishResult)}`);
+      const stageId = publishResult.data?.data?.stage?.id;
+      expect(stageId, 'Setup publish response must identify the stage').toBeTruthy();
+      // Acceptance is asynchronous. A focused lifecycle test must not try to
+      // publish again while setup's first release is still running.
+      await expect.poll(async () => {
+        const stages = unwrapApiResults(await pageApiGet(page, `/gateways/${gatewayId}/stages/`));
+        const current = stages.find(stage => stage.id === stageId);
+        return { status: current?.release?.status, version: current?.resource_version?.id };
+      }, { timeout: 30000 }).toEqual({ status: 'success', version: versionId });
     }
 
     console.log('[setup] Resource version generated and published');

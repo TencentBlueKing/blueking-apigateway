@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/06-环境资源信息/01-环境资源信息.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { waitForPageReady, reAuth, selectDropdown, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
 

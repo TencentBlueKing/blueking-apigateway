@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/07-环境插件管理/01-环境插件管理.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   clickConfirm,
   getActionButton,

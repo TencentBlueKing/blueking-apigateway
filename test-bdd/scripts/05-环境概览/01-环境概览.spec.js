@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/05-环境概览/01-环境概览.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { clickConfirm, getActionButton, getActiveDialog, getActiveSideslider, getToastMessage, navigateToGatewayPage, getGatewayId, selectDropdownOption } = require("../../runtime/helpers");
 
 

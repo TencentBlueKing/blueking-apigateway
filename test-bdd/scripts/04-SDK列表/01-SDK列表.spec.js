@@ -1,77 +1,41 @@
 // @generated from: test-bdd/cases/04-SDK列表/01-SDK列表.md
-// @generated-date: 2026-03-31
-
-const { test, expect } = require('@playwright/test');
-const { clickConfirm, getActiveSideslider, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId, selectDropdownOption } = require("../../runtime/helpers");
-
+// @generated-date: 2026-10-14
+const { test, expect } = require('../../runtime/bdd-test');
+const { BASE_URL, getGatewayId, waitForBackendRequests } = require('../../runtime/helpers');
 
 test.describe('功能: SDK列表 - SDK列表', () => {
-  test('场景: 查看SDK列表', async ({ page }) => {
-    // Mutating: generate SDK uses TEST_GATEWAY_ID
-    // SDK is a sub-page of 资源版本, navigate via sidebar first
-    await navigateToGatewayPage(page, getGatewayId(), '资源版本', '/resource/version');
-
-    // Now navigate to SDK sub-page
-    const baseUrl = BASE_URL.replace(/\/$/, '');
-    await page.goto(`${baseUrl}/${getGatewayId()}/resource-versions/sdks`);
-    await page.waitForTimeout(3000);
-
-    // 点击生成SDK
-    const genSDKBtn = page.locator('button').filter({ hasText: /生成SDK|生成/ });
-    if (await genSDKBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await genSDKBtn.click();
-      await page.waitForTimeout(800);
-
-      const sdkSlider = getActiveSideslider(page);
-
-      // 选择资源版本
-      await selectDropdownOption(page, sdkSlider.locator('.bk-select').filter({ hasText: /版本|version/i }).first()).catch(() => false);
-
-      // 输入SDK版本号
-      const sdkVersionInput = sdkSlider.locator('input[placeholder*="版本"], input[name*="version"]').first();
-      if (await sdkVersionInput.isVisible().catch(() => false)) {
-        await sdkVersionInput.fill(`1.0.${Date.now().toString().slice(-4)}`);
-      }
-
-      // 选择语言（Python）
-      await selectDropdownOption(page, sdkSlider.locator('.bk-select').filter({ hasText: /语言|language/i }).first(), /Python/).catch(() => false);
-
-      // 点击确定
-      if (await clickConfirm(page, /确定|确认/, sdkSlider).catch(() => false)) {
-        await page.waitForTimeout(2000);
-      }
-    }
+  test.beforeEach(async ({ page }) => {
+    await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/version`);
+    await page.getByText('SDK 列表', { exact: true }).click();
+    await expect(page.getByPlaceholder('请输入 SDK 版本号，资源版本或语言')).toBeVisible();
+    await waitForBackendRequests(page);
   });
-
+  test('场景: 查看SDK列表', async ({ page }) => {
+    await expect(page.locator('.content-view table')).toBeVisible();
+    await expect(page.locator('.content-view')).toContainText('SDK 名称');
+    await page.getByRole('button', { name: '生成 SDK', exact: true }).click();
+    const dialog = page.locator('.dialog-scroll-y');
+    await expect(dialog.getByPlaceholder('请输入 SDK 版本号')).toBeVisible();
+    await dialog.getByRole('button', { name: '确定', exact: true }).click();
+    await expect(dialog.locator('.bk-form-error').first()).toContainText('必填项');
+    await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  });
   test('场景: SDK筛选', async ({ page }) => {
-    // Read-only: SDK list filtering uses gateway ID 6
-    await navigateToGatewayPage(page, getGatewayId(), '资源版本', '/resource/version');
-
-    // Now navigate to SDK sub-page
-    const baseUrl = BASE_URL.replace(/\/$/, '');
-    await page.goto(`${baseUrl}/6/resource-versions/sdks`);
-    await page.waitForTimeout(3000);
-
-    // 通过SDK版本号搜索
-    const searchInput = page.locator('input[placeholder*="搜索"], input[placeholder*="版本"]').first();
-    if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await searchInput.fill('1.0');
-      await page.waitForTimeout(800);
-
-      const rows = await getTableRowCount(page);
-      expect(rows).toBeGreaterThanOrEqual(0);
-
-      // 清空搜索
-      await searchInput.clear();
-      await page.waitForTimeout(800);
-
-      // 搜索不存在的版本号
-      await searchInput.fill('nonexistent-version-xyz');
-      await page.waitForTimeout(800);
-
-      // 验证展示空结果
-      const emptyOrZero = await getTableRowCount(page);
-      expect(emptyOrZero).toBeLessThanOrEqual(1); // 0 rows or empty state row
-    }
+    const keyword = `bdd-no-such-sdk-${Date.now()}`;
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname.endsWith(`/gateways/${getGatewayId()}/sdks/`)
+        && new URL(r.url()).searchParams.get('keyword') === keyword),
+      (async () => {
+        const input = page.getByPlaceholder('请输入 SDK 版本号，资源版本或语言');
+        await input.fill(keyword);
+        await input.blur();
+      })(),
+    ]);
+    expect(response.status()).toBe(200);
+    expect((await response.json()).data.results).toEqual([]);
+    await expect(page.locator('.content-view')).toContainText(/搜索结果为空|暂无数据/);
+  });
+  test('场景: SDK生成与下载', async () => {
+    test.skip(true, '生成操作会上传到PyPI或制品库；本次未配置可回收的SDK测试仓库，未验证生成和下载');
   });
 });

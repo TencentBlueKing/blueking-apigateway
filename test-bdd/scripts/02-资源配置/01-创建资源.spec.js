@@ -1,103 +1,51 @@
 // @generated from: test-bdd/cases/02-资源配置/01-创建资源.md
-// @generated-date: 2026-03-31
-
-const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, selectDropdown, fillForm, getToastMessage, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
-
+// @generated-date: 2026-10-14
+const { test, expect } = require('../../runtime/bdd-test');
+const { BASE_URL, getGatewayId, createTestIdentifier, pageApiGet, unwrapApiResults, selectDropdownOption } = require('../../runtime/helpers');
 
 test.describe('功能: 资源配置 - 创建资源', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, getGatewayId(), '资源配置', '/resource/setting');
+    await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/create`);
+    await expect(page.getByRole('button', { name: '提交', exact: true })).toBeVisible();
   });
 
   test('场景: 创建资源并配置后端', async ({ page }) => {
-    // 点击新建按钮 — navigates to the create resource page
-    await page.locator('button').filter({ hasText: '新建' }).click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
-
-    // 输入资源名称（必填）
-    // Actual placeholder: "由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符"
-    const resourceName = `test_res_${Date.now().toString(36)}`;
-    const nameInput = page.locator('input[placeholder*="字母"]').first();
-    await nameInput.waitFor({ timeout: 10000 });
-    await nameInput.fill(resourceName);
-    await page.waitForTimeout(300);
-
-    // 选填描述
-    // Actual placeholder: "请输入描述"
-    const descInput = page.locator('input[placeholder="请输入描述"], textarea[placeholder*="描述"]').first();
-    if (await descInput.isVisible().catch(() => false)) {
-      await descInput.fill('自动化测试创建的资源');
-    }
-
-    // 配置请求路径（必填）
-    // Actual placeholder: "斜线(/)开头的合法URL路径，不包含http(s)开头的域名"
-    const pathInput = page.locator('input[placeholder*="斜线"]').first();
-    if (await pathInput.isVisible().catch(() => false)) {
-      await pathInput.fill(`/test/${resourceName}/`);
-    }
-
-    // 配置后端请求路径 — second path input (under "后端配置" section)
-    const backendPathInput = page.locator('input[placeholder*="斜线"]').last();
-    if (await backendPathInput.isVisible().catch(() => false)) {
-      await backendPathInput.fill(`/backend/${resourceName}/`);
-    }
-
-    // 点击提交
-    await page.locator('button').filter({ hasText: '提交' }).click();
-    await page.waitForTimeout(2000);
-
-    // 验证资源创建成功
-    const toast = await getToastMessage(page);
-    // Page should redirect back to list or show success
+    const name = createTestIdentifier('bdd_create');
+    await page.locator('input[placeholder*="字母"]').first().fill(name);
+    await page.getByPlaceholder('请输入描述', { exact: true }).first().fill('BDD create persistence');
+    const paths = page.locator('input[placeholder*="斜线"]');
+    await expect(paths).toHaveCount(2);
+    await paths.first().fill(`/bdd/${name}/`);
+    await paths.last().fill('/get');
+    expect(await selectDropdownOption(page, page.getByPlaceholder('请选择服务', { exact: true }), 'default')).toBe(true);
+    const responsePromise = page.waitForResponse(r => r.url().endsWith(`/gateways/${getGatewayId()}/resources/`) && r.request().method() === 'POST');
+    await page.getByRole('button', { name: '提交', exact: true }).click();
+    const response = await responsePromise;
+    expect(response.status(), await response.text()).toBe(201);
+    await expect(page).toHaveURL(new RegExp(`/${getGatewayId()}/resource/setting$`));
+    const rows = unwrapApiResults(await pageApiGet(page, `/gateways/${getGatewayId()}/resources/`, { name, limit: 100 }));
+    const created = rows.find(r => r.name === name);
+    expect(created, 'UI submission must persist the resource').toBeTruthy();
+    expect(created.path).toBe(`/bdd/${name}/`);
   });
 
   test('场景: 名称校验', async ({ page }) => {
-    // 点击新建按钮
-    await page.locator('button').filter({ hasText: '新建' }).click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
-
-    // 不填写名称直接提交
-    await page.locator('button').filter({ hasText: '提交' }).click();
-    await page.waitForTimeout(800);
-
-    // 验证提示"请填写名称" or any form error
-    const nameError = page.locator('.bk-form-error, .form-error, [class*="error"]').first();
-    await expect(nameError).toBeVisible({ timeout: 10000 });
-
-    // 输入不合法的资源名称（含特殊字符）
-    const nameInput = page.locator('input[placeholder*="字母"]').first();
-    await nameInput.fill('invalid-name-#$%');
-    await page.waitForTimeout(300);
-    await page.locator('button').filter({ hasText: '提交' }).click();
-    await page.waitForTimeout(800);
-
-    // 验证名称格式提示
-    const formatError = page.locator('.bk-form-error, .form-error, [class*="error"]').first();
-    await expect(formatError).toBeVisible({ timeout: 10000 });
+    const form = page.locator('.content-view');
+    await page.getByRole('button', { name: '提交', exact: true }).click();
+    await expect(form.locator('.bk-form-error').filter({ hasText: /名称/ })).toBeVisible();
+    await page.locator('input[placeholder*="字母"]').first().fill('invalid-name-#$%');
+    await page.getByRole('button', { name: '提交', exact: true }).click();
+    await expect(form.locator('.bk-form-error').filter({ hasText: /字母|名称/ }).first()).toBeVisible();
+    await expect(page).toHaveURL(new RegExp('/resource/create$'));
   });
 
   test('场景: 请求配置', async ({ page }) => {
-    // 点击新建按钮
-    await page.locator('button').filter({ hasText: '新建' }).click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
-
-    // Wait for form to render
-    const nameInput = page.locator('input[placeholder*="字母"]').first();
-    await nameInput.waitFor({ timeout: 10000 });
-
-    // 输入请求路径
-    // Actual placeholder: "斜线(/)开头的合法URL路径，不包含http(s)开头的域名"
-    const pathInput = page.locator('input[placeholder*="斜线"]').first();
-    if (await pathInput.isVisible().catch(() => false)) {
-      await pathInput.fill('/test/request-config/');
-    }
-
-    // 验证请求配置区域可见 — "请求配置" section header is visible
-    const configHeader = page.locator('text=请求配置').first();
-    await expect(configHeader).toBeVisible({ timeout: 10000 });
+    await page.locator('input[placeholder*="字母"]').first().fill(createTestIdentifier('bdd_invalid_path'));
+    const paths = page.locator('input[placeholder*="斜线"]');
+    await paths.first().fill('https://example.com/not-a-path');
+    await paths.last().fill('/get');
+    await page.getByRole('button', { name: '提交', exact: true }).click();
+    await expect(page.locator('.content-view .bk-form-error').filter({ hasText: /路径|斜线|URL/ }).first()).toBeVisible();
+    await expect(page).toHaveURL(new RegExp('/resource/create$'));
   });
 });

@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/02-资源配置/03-资源列表操作.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { clickConfirm, getActiveDialog, getTableRowByText, selectDropdownOption, selectVisibleTableRowCheckboxes, getTableRowCount, getToastMessage, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 async function createBatchResources(page, count = 2) {

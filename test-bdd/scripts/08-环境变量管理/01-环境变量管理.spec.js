@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/08-环境变量管理/01-环境变量管理.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { clickConfirm, getActionButton, getActiveSideslider, getToastMessage, navigateToStageOverviewTab, getGatewayId } = require("../../runtime/helpers");
 
 

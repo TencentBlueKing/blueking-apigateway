@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/29-AI网关/01-AI网关模型服务.md
 // @generated-date: 2026-07-23
 
-const { test, expect, chromium } = require('@playwright/test');
+const { test, expect, chromium } = require('../../runtime/bdd-test');
 const {
   login,
   pageApiGet,
@@ -125,6 +125,7 @@ function expectNo500(resp, context) {
 }
 
 test.describe('功能: AI 网关 - 模型服务全链路', () => {
+  test.skip(!DEEPSEEK_API_KEY, '需要 TEST_BDD_DEEPSEEK_API_KEY；无凭证时不声称真实模型全链路通过');
   test.beforeAll(async () => {
     const browser = await chromium.launch();
     const context = await browser.newContext();
@@ -134,7 +135,7 @@ test.describe('功能: AI 网关 - 模型服务全链路', () => {
       await page.goto(BASE_URL);
       await page.waitForTimeout(2000);
 
-      aiGatewayName = createTestName('aigw');
+      aiGatewayName = createTestName('bkai-bdd');
       const createResp = await apiPost(page, '/gateways/', {
         name: aiGatewayName,
         description: 'AI Gateway BDD test',
@@ -211,6 +212,7 @@ test.describe('功能: AI 网关 - 模型服务全链路', () => {
     const listResp = await apiGet(page, `/gateways/${aiGatewayId}/backends/`);
     const backends = unwrapApiResults(listResp);
     const created = backends.find((b) => b.name === name);
+    expect(created, 'Created OpenAI-compatible service must be persisted').toBeTruthy();
     expect(created, `backend ${name} not in list`).toBeTruthy();
     expect(created.kind).toBe('ai');
     deepseekBackendId = created.id;
@@ -283,6 +285,7 @@ test.describe('功能: AI 网关 - 模型服务全链路', () => {
       config: deepseekConfig(prodStageId, { api_key: getDeepseekApiKey() }),
     });
     expectNo500(resp, 'test-connection');
+    expectOk(resp, 'test-connection with a valid provider credential');
     if (resp.ok) {
       const data = unwrapApiData(resp);
       expect(data.models).toBeDefined();
@@ -539,6 +542,7 @@ test.describe('功能: AI 网关 - 模型服务全链路', () => {
       comment: 'AI gateway BDD publish',
     });
     expectNo500(resp, 'publish to prod');
+    expectOk(resp, 'publish to prod');
 
     if (resp.ok) {
       // Publish is async (status "doing") — wait briefly then check release history

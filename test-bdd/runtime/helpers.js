@@ -276,7 +276,7 @@ async function login(page) {
   }
 
   await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(1000);
 }
 
@@ -293,17 +293,18 @@ async function reAuth(page) {
 }
 
 /**
- * Wait for page to be fully ready (network idle + main content visible).
+ * Wait for document readiness; callers assert their own functional content.
  */
 async function waitForPageReady(page) {
-  await page.waitForLoadState('networkidle').catch(() => {});
+  // Polling/telemetry can keep the network busy indefinitely. Callers must wait
+  // for their target control or response, rather than swallowing a 30s timeout.
+  await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(800);
 }
 
-const FATAL_PAGE_TEXT_PATTERN = /(?:^|\b)(?:500|502|503|504)(?:\b|$)|Server Error|Internal Server Error|OperationalError|Traceback|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|系统出现异常|努力恢复中|请稍后再试|页面找不到|404页|404 page|page not found/i;
+const FATAL_PAGE_TEXT_PATTERN = /Server Error|Internal Server Error|OperationalError|Traceback|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|系统出现异常|努力恢复中|请稍后再试|页面找不到|404页|404 page|page not found/i;
 const FATAL_EXCEPTION_TEXT_PATTERN = /500|502|503|504|Server Error|Internal Server Error|OperationalError|Traceback|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|系统出现异常|努力恢复中|请稍后再试|页面找不到|404页|404 page|page not found/i;
 const IGNORED_FAILURE_URL_PATTERN = /(?:sockjs-node|webpack|vite|hot-update|favicon\.ico|\.map(?:\?|$))/i;
-const NON_FATAL_PAGE_ERROR_PATTERN = /请求方法\+请求路径在网关下唯一|请至少调整其中一项/i;
 
 function isFatalNetworkResponse(response) {
   const url = response.url();
@@ -327,15 +328,33 @@ function attachHardFailureGuard(page, options = {}) {
 
   const state = {
     failures: [],
+    diagnostics: [],
+    pendingBackendRequests: new Set(),
+    lastBackendActivity: Date.now(),
     options,
   };
   page.__bddHardFailureGuardAttached = true;
   page.__bddHardFailureState = state;
 
   page.on('pageerror', (error) => {
-    if (NON_FATAL_PAGE_ERROR_PATTERN.test(error.message || '')) return;
-    state.failures.push(`pageerror: ${error.message}`);
+    // Known validation is opt-in per scenario, with an exact message match.
+    // Keep it in the report; business assertions must still prove the outcome.
+    const target = (state.options.expectedPageErrors || []).includes(error.message)
+      ? state.diagnostics : state.failures;
+    target.push(`pageerror: ${error.message}`);
   });
+
+  page.on('request', (request) => {
+    if (!['xhr', 'fetch'].includes(request.resourceType())) return;
+    if (!new URL(request.url()).pathname.startsWith('/backend/')) return;
+    state.pendingBackendRequests.add(request);
+    state.lastBackendActivity = Date.now();
+  });
+  const requestFinished = (request) => {
+    if (state.pendingBackendRequests.delete(request)) state.lastBackendActivity = Date.now();
+  };
+  page.on('requestfinished', requestFinished);
+  page.on('requestfailed', requestFinished);
 
   page.on('requestfailed', (request) => {
     const url = request.url();
@@ -354,6 +373,17 @@ function attachHardFailureGuard(page, options = {}) {
   });
 
   return state;
+}
+
+async function waitForBackendRequests(page, timeout = 15000) {
+  const state = attachHardFailureGuard(page);
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (state.pendingBackendRequests.size === 0 && Date.now() - state.lastBackendActivity >= 300) return;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  const pending = [...state.pendingBackendRequests].map(request => `${request.method()} ${request.url()}`);
+  throw new Error(`BDD backend requests did not settle within ${timeout}ms:\n${pending.join('\n')}`);
 }
 
 function clearHardFailureGuard(page) {
@@ -414,20 +444,6 @@ async function waitForGatewayHomeReady(page) {
   await page.locator(`${GATEWAY_LIST_SELECTOR}, .bk-exception`).first().waitFor({ timeout: 15000 }).catch(() => {});
 }
 
-/**
- * Known parent-menu → sub-menu mappings for collapsed sidebar groups.
- * When a target menuText is a sub-item, we must first expand its parent group.
- */
-const SUB_MENU_PARENTS = {
-  '权限审批': '权限管理',
-  '应用权限': '权限管理',
-  '流水日志': '运行数据',
-  '统计报表': '运行数据',
-  '发布记录': '发布',
-  '操作记录': '审计信息',
-  'MCP权限审批': '权限管理',
-};
-
 async function isTransientUnavailablePage(page) {
   const bodyText = await page.locator('body').textContent({ timeout: 1000 }).catch(() => '');
   return /OperationalError|Can't connect to MySQL server|Name or service not known|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|503|系统出现异常|努力恢复中|请稍后再试/i
@@ -446,7 +462,7 @@ async function gotoWithTransientWait(page, url, options = {}) {
       lastNavigationError = error;
       return null;
     });
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     lastStatus = response ? response.status() : 0;
     const transientUnavailable = lastNavigationError
@@ -471,73 +487,40 @@ async function gotoWithTransientWait(page, url, options = {}) {
   );
 }
 
-/**
- * Navigate to a gateway sub-page by first loading the overview (to initialize Vue SPA context),
- * then navigating to the target page. The SPA requires the overview to be loaded first for
- * many pages — direct URL navigation often results in empty content.
- *
- * Strategy: Load overview → wait for sidebar → navigate via sidebar click or direct URL.
- *
- * @param {Page} page - Playwright page
- * @param {string} gatewayId - Gateway ID (e.g., process.env.TEST_GATEWAY_ID)
- * @param {string} menuText - Sidebar menu item text (e.g., '资源配置', '后端服务')
- * @param {string} [fallbackPath] - Direct URL path as fallback (e.g., '/resource/setting')
- */
+/** Navigate directly: a warm-up navigation must not hide broken deep links. */
 async function navigateToGatewayPage(page, gatewayId, menuText, fallbackPath) {
-  const baseUrl = BASE_URL.replace(/\/$/, '');
-  const overviewUrl = `${baseUrl}/${gatewayId}/stage/overview`;
-
-  // Step 1: Load gateway overview to initialize SPA context.
-  // Retry while the shared dev dashboard is publishing or temporarily unavailable.
-  let sidebarVisible = false;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    await gotoWithTransientWait(page, overviewUrl);
-
-    // Handle auth redirect
-    if (page.url().includes('/login/')) {
-      await reAuth(page);
-      await gotoWithTransientWait(page, overviewUrl);
-    }
-
-    // Wait for sidebar to appear — check for gateway selector or menu items
-    sidebarVisible = await page.locator('textbox[value], .bk-menu-item, [class*="menu-item"]').first()
-      .waitFor({ timeout: 10000 })
-      .then(() => true)
-      .catch(() => false);
-
-    if (sidebarVisible) break;
-    await page.waitForTimeout(3000);
+  const paths = {
+    '环境概览': '/stage/overview',
+    '发布记录': '/stage/release-record',
+    '资源配置': '/resource/setting',
+    '资源版本': '/resource/version',
+    '后端服务': '/backend',
+    '模型服务': '/model-services',
+    '权限审批': '/permission/apply',
+    '审批历史': '/permission/record',
+    '应用权限': '/permission/app',
+    '流水日志': '/log',
+    '统计报表': '/report',
+    '仪表盘': '/dashboard',
+    '在线调试': '/online-debugging',
+    '基本信息': '/basic-info',
+    '成员管理': '/members',
+    '操作记录': '/audit',
+  };
+  const target = paths[menuText] || fallbackPath;
+  if (!target) throw new Error(`No route configured for ${menuText}`);
+  const url = `${BASE_URL.replace(/\/$/, '')}/${gatewayId}${target}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await waitForPageReady(page);
+  if (page.url().includes('/login/')) {
+    await reAuth(page);
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
   }
-
-  if (!sidebarVisible && fallbackPath) {
-    // Last resort: try direct navigation
-    await gotoWithTransientWait(page, `${baseUrl}/${gatewayId}${fallbackPath}`);
-    await assertNoHardFailure(page, `${gatewayId}${fallbackPath}`);
-    return;
+  await page.locator('.content-view').waitFor({ timeout: 15000 });
+  if (new URL(page.url()).pathname !== new URL(url).pathname) {
+    throw new Error(`Unexpected route after navigation: ${page.url()} (expected ${url})`);
   }
-
-  // Step 2: Navigate to target page
-  if (fallbackPath) {
-    // Use direct URL navigation after SPA is initialized — more reliable than sidebar clicks
-    await gotoWithTransientWait(page, `${baseUrl}/${gatewayId}${fallbackPath}`);
-    await assertNoHardFailure(page, `${gatewayId}${fallbackPath}`);
-  } else {
-    // No fallbackPath — use sidebar navigation
-    const parentMenu = SUB_MENU_PARENTS[menuText];
-    if (parentMenu) {
-      const parentItem = page.locator('.bk-menu-item, .bk-submenu, [class*="submenu"], [class*="menu-group"]').filter({ hasText: parentMenu }).first();
-      if (await parentItem.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await parentItem.click();
-        await page.waitForTimeout(800);
-      }
-    }
-
-    const menuItem = page.locator('.bk-menu-item').filter({ hasText: menuText }).first();
-    if (await menuItem.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await menuItem.click();
-      await page.waitForTimeout(3000);
-    }
-  }
+  await assertNoHardFailure(page, `${menuText}: ${target}`);
 }
 
 async function openStageOverviewTab(page, tabText) {
@@ -606,24 +589,23 @@ async function selectDropdownOption(page, trigger, optionText = null, optionSele
 
   await dismissFloatingLayers(page);
 
-  if (!await triggerLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
+  if (!await triggerLocator.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
     return false;
   }
 
-  await triggerLocator.click({ force: true });
-  await page.waitForTimeout(300);
+  await triggerLocator.click();
 
-  const options = page.locator(optionSelector);
+  const options = page.locator(optionSelector).filter({ visible: true });
   const option = optionText
     ? options.filter({ hasText: optionText }).first()
     : options.first();
 
-  if (!await option.isVisible({ timeout: 3000 }).catch(() => false)) {
+  if (!await option.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
     await dismissFloatingLayers(page);
     return false;
   }
 
-  await option.click({ force: true });
+  await option.click();
   await page.waitForTimeout(300);
   await dismissFloatingLayers(page);
   return true;
@@ -642,13 +624,14 @@ async function getActiveOverlay(page) {
  * Close a sideslider, handling confirmation dialogs if present.
  */
 async function closeSlider(page) {
-  const closeBtn = page.locator('.bk-sideslider .bk-sideslider-closer, .bk-sideslider-closer');
-  if (await closeBtn.isVisible().catch(() => false)) {
-    await closeBtn.click({ force: true });
+  const slider = getActiveSideslider(page);
+  if (await slider.isVisible()) {
+    const closeBtn = slider.locator('.bk-sideslider-close, .bk-sideslider-closer').first();
+    await closeBtn.click();
     await page.waitForTimeout(500);
 
     // Handle confirmation dialog
-    const confirmBtn = page.locator('.bk-dialog .bk-dialog-footer button').filter({ hasText: /确定|确认/ }).first();
+    const confirmBtn = getActiveDialog(page).locator('button').filter({ hasText: /确定|确认/ }).first();
     if (await confirmBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
       await confirmBtn.click({ force: true });
       await page.waitForTimeout(500);
@@ -710,11 +693,11 @@ async function selectVisibleTableRowCheckboxes(page, limit = 1, selector = TABLE
 }
 
 function getActiveSideslider(page) {
-  return page.locator('.bk-sideslider:visible').last();
+  return page.locator('.bk-sideslider .bk-modal-wrapper:visible').last();
 }
 
 function getActiveDialog(page) {
-  return page.locator('.bk-dialog:visible, .bk-infobox:visible, .bk-modal-wrapper:visible, .bk-modal:visible, [role="dialog"]:visible').last();
+  return page.locator('.bk-modal-wrapper:visible, [role="dialog"]:visible').last();
 }
 
 function getActionButton(scope, textPattern, selector = 'button, a, .bk-button') {
@@ -723,12 +706,12 @@ function getActionButton(scope, textPattern, selector = 'button, a, .bk-button')
 
 function getFirstResourcePluginCountLink(page) {
   return getVisibleTableRows(page).first()
-    .locator('a, .link, [class*="link"]').filter({ hasText: /^\d+$/ }).first();
+    .locator('button, a, .link, [class*="link"]').filter({ hasText: /^\s*\d+(?:\s|$)/ }).first();
 }
 
 async function openFirstResourcePluginPanel(page) {
   const pluginCount = getFirstResourcePluginCountLink(page);
-  if (await pluginCount.isVisible({ timeout: 5000 }).catch(() => false)) {
+  if (await pluginCount.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     await pluginCount.click();
     await page.waitForTimeout(800);
     return true;
@@ -745,26 +728,27 @@ function getPluginBindingItemByText(page, text) {
 }
 
 function getPluginSelectionOptions(page) {
-  return page.locator(PLUGIN_SELECTION_SELECTOR);
+  return page.locator(PLUGIN_SELECTION_SELECTOR).filter({ visible: true });
 }
 
 function getPluginSelectionOptionByText(page, text) {
-  return getPluginSelectionOptions(page).filter({ hasText: text }).first();
+  return getPluginSelectionOptions(page).filter({ has: page.locator('.plugin-name').filter({ hasText: text }) }).first();
 }
 
 function getAvailablePluginSelectionOption(page, preferredText = null) {
-  const options = getPluginSelectionOptions(page);
+  // Every tile contains an "已添加" label, hidden when it is available.
+  const options = getPluginSelectionOptions(page).filter({ hasNot: page.locator('.bindding-text:visible') });
   if (preferredText) {
-    return options.filter({ hasText: preferredText, hasNotText: '已添加' }).first();
+    return options.filter({ has: page.locator('.plugin-name').filter({ hasText: preferredText }) }).first();
   }
-  return options.filter({ hasNotText: '已添加' }).first();
+  return options.first();
 }
 
 async function clickConfirm(page, textPattern = /确定|确认/, scope = null) {
   const actionScope = scope || getActiveDialog(page);
   const confirmBtn = getActionButton(actionScope, textPattern);
 
-  if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+  if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     await confirmBtn.click({ force: true });
     await page.waitForTimeout(500);
     return true;
@@ -799,7 +783,10 @@ function normalizeApiPath(requestPath) {
 
 async function apiRequest(page, method, requestPath, data = undefined, options = {}) {
   const csrfToken = await getCsrfToken(page);
-  const maxAttempts = options.retryHtml500 === false ? 1 : 6;
+  // Never replay writes after an ambiguous server failure. Reauthentication is
+  // the only automatic retry; HTML error retries require an explicit read opt-in.
+  const retryHtml = method === 'GET' && options.retryHtml500 === true;
+  const maxAttempts = retryHtml ? 6 : options.retryAuth === false ? 1 : 2;
   let response;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -864,7 +851,7 @@ async function apiRequest(page, method, requestPath, data = undefined, options =
         && isHtmlResponse
         && /页面找不到|404页|404 page|page not found/i.test(responseText)
       );
-    if (!isRetryableServerError || attempt === maxAttempts) {
+    if (!retryHtml || !isRetryableServerError || attempt === maxAttempts) {
       const isUnauthenticated = response.status === 401
         && JSON.stringify(response.data || '').includes('UNAUTHENTICATED');
       if (isUnauthenticated && options.retryAuth !== false && attempt === 1) {
@@ -1189,6 +1176,20 @@ async function createTestMcpServer(page, gatewayId, options = {}) {
       resource_version_id: version.id,
       comment: `BDD MCP publish ${name}`,
     });
+    // Publication is asynchronous: an accepted release is not yet the stage's
+    // active resource set. Do not create an MCP server against the old version.
+    const deadline = Date.now() + 30000;
+    let published = false;
+    while (Date.now() < deadline) {
+      const current = (await listStages(page, gatewayId)).find(item => item.id === stage.id);
+      if (current?.release?.status === 'failure') throw new Error(`MCP prerequisite release failed for stage ${stage.id}`);
+      if (current?.release?.status === 'success' && current.resource_version?.id === version.id) {
+        published = true;
+        break;
+      }
+      await page.waitForTimeout(500);
+    }
+    if (!published) throw new Error(`MCP prerequisite version ${version.id} was not published within 30s`);
   }
 
   const resources = await listResources(page, gatewayId);
@@ -1320,6 +1321,7 @@ module.exports = {
   createTestName,
   createTestIdentifier,
   attachHardFailureGuard,
+  waitForBackendRequests,
   clearHardFailureGuard,
   assertNoHardFailure,
   waitForPageReadyAndAssert,

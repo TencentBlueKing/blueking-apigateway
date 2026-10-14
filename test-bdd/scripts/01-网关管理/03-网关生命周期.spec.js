@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/01-网关管理/03-网关生命周期.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   clickConfirm,
   createTestName,

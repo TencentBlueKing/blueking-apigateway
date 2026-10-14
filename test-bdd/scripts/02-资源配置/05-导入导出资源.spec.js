@@ -1,101 +1,113 @@
 // @generated from: test-bdd/cases/02-资源配置/05-导入导出资源.md
-// @generated-date: 2026-03-31
+// @generated-date: 2026-10-14
+const { test, expect } = require('../../runtime/bdd-test');
+const { BASE_URL, getGatewayId, createTestIdentifier, pageApiGet, pageApiDelete, unwrapApiResults, getTableRowByText } = require('../../runtime/helpers');
+const { createOwnedResource } = require('../../runtime/test-data');
+const template = require('../../fixtures/resource-openapi.json');
 
-const { test, expect } = require('@playwright/test');
-const { clickConfirm, getActionButton, getActiveOverlay, navigateToGatewayPage, getGatewayId, selectDropdownOption } = require("../../runtime/helpers");
-
+async function importPage(page) {
+  await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/import`);
+  await expect(page.locator('input[type=file]')).toBeAttached();
+}
+async function downloadText(download) {
+  expect(await download.failure(), 'Download must complete successfully').toBeNull();
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  return Buffer.concat(chunks).toString('utf8');
+}
 
 test.describe('功能: 资源配置 - 导入导出资源', () => {
-  test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, getGatewayId(), '资源配置', '/resource/setting');
-  });
-
   test('场景: 导入资源', async ({ page }) => {
-    // 点击导入按钮 — this opens a dropdown menu with "资源配置" and "资源文档"
-    const importBtn = page.locator('button').filter({ hasText: '导入' }).first();
-    await expect(importBtn).toBeVisible({ timeout: 10000 });
-    await importBtn.click();
-    await page.waitForTimeout(800);
-
-    // Select "资源配置" from the dropdown list
-    const importOption = page.locator('li, [class*="dropdown-item"], [class*="popover-item"]').filter({ hasText: '资源配置' }).first();
-    if (await selectDropdownOption(page, importBtn, '资源配置', 'li, [class*="dropdown-item"], [class*="popover-item"]').catch(() => false)
-      || await importOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      if (await importOption.isVisible({ timeout: 300 }).catch(() => false)) {
-        await importOption.click();
-      }
-      await page.waitForTimeout(1500);
-
-      // Now the import dialog/sideslider should appear
-      const dialogContent = page.locator('.bk-sideslider, .bk-dialog, [class*="import"]').first();
-      const dialogVisible = await dialogContent.isVisible({ timeout: 5000 }).catch(() => false);
-
-      if (dialogVisible) {
-        const importOverlay = await getActiveOverlay(page);
-
-        // 选择文档语言（中文）
-        const langOption = importOverlay.locator('label, .bk-radio, .bk-radio-button').filter({ hasText: /中文/ }).first();
-        if (await langOption.isVisible().catch(() => false)) {
-          await langOption.click();
-          await page.waitForTimeout(300);
-        }
-
-        // 验证上传区域或下一步按钮存在
-        const nextBtn = getActionButton(importOverlay, /下一步|确认/);
-        if (await nextBtn.isVisible().catch(() => false)) {
-          await expect(nextBtn).toBeVisible();
-        }
-      }
-    }
-
-    // Verify we're at least on the right page
-    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
+    const name = createTestIdentifier('bdd_import');
+    const document = structuredClone(template);
+    const operation = document.paths['/bdd_import/'].get;
+    operation.operationId = name;
+    document.paths = { [`/bdd/${name}/`]: { get: operation } };
+    await importPage(page);
+    await page.locator('input[type=file]').setInputFiles({ name: 'bdd-openapi.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+    await expect(page.getByRole('button', { name: '下一步', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: '下一步', exact: true }).click();
+    await expect(page.locator('.imported-resources-wrap')).toContainText(name);
+    await page.getByRole('button', { name: '确定导入', exact: true }).click();
+    const result = page.waitForResponse(r => r.url().endsWith('/resources/import/') && r.request().method() === 'POST');
+    await page.locator('.custom-main-dialog .dialog-footer').getByRole('button', { name: '确定导入', exact: true }).click();
+    const response = await result;
+    expect(response.ok(), await response.text()).toBe(true);
+    await expect(page.locator('body')).toContainText(/成功导入\s*1\s*个资源/);
+    const resources = unwrapApiResults(await pageApiGet(page, `/gateways/${getGatewayId()}/resources/`, { name, limit: 100 }));
+    const created = resources.find(r => r.name === name);
+    expect(created).toBeTruthy();
+    expect(created.path).toBe(`/bdd/${name}/`);
+    expect(created.method).toBe('GET');
+    const docs = unwrapApiResults(await pageApiGet(page, `/gateways/${getGatewayId()}/resources/${created.id}/docs/`));
+    expect(docs.length, 'Generate resource documentation is enabled by default').toBeGreaterThan(0);
   });
 
-  test('场景: 导出资源', async ({ page }) => {
-    // 点击导出按钮
-    const exportBtn = page.locator('button').filter({ hasText: '导出' }).first();
-    await expect(exportBtn).toBeVisible({ timeout: 10000 });
-    await exportBtn.click();
-    await page.waitForTimeout(800);
-
-    // The export button might also have a dropdown
-    const exportOptionSelected = await selectDropdownOption(page, exportBtn, '资源配置', 'li, [class*="dropdown-item"], [class*="popover-item"]').catch(() => false);
-    const exportOption = page.locator('li, [class*="dropdown-item"], [class*="popover-item"]').filter({ hasText: '资源配置' }).first();
-    if (!exportOptionSelected && await exportOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await exportOption.click();
-      await page.waitForTimeout(800);
-    }
-
-    const exportOverlay = await getActiveOverlay(page);
-
-    // 选择全部资源
-    const allResource = exportOverlay.locator('label, .bk-radio, .bk-radio-button').filter({ hasText: /全部/ }).first();
-    if (await allResource.isVisible().catch(() => false)) {
-      await allResource.click();
-      await page.waitForTimeout(300);
-    }
-
-    // 选择导出格式为YAML
-    const yamlOption = exportOverlay.locator('label, .bk-radio, .bk-radio-button').filter({ hasText: /YAML/ }).first();
-    if (await yamlOption.isVisible().catch(() => false)) {
-      await yamlOption.click();
-      await page.waitForTimeout(300);
-    }
-
-    // 点击确定导出
-    const confirmBtn = getActionButton(exportOverlay, /确定|确认|导出/);
-    if (await confirmBtn.isVisible().catch(() => false)) {
-      const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
-      if (!await clickConfirm(page, /确定|确认|导出/, exportOverlay)) {
-        await confirmBtn.click();
-      }
-      await page.waitForTimeout(2000);
-
-      const download = await downloadPromise;
-      if (download) {
-        expect(download).toBeTruthy();
-      }
-    }
+  test('场景: 无效OpenAPI文件阻止导入', async ({ page }) => {
+    await importPage(page);
+    await page.locator('input[type=file]').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{"openapi":"3.0.1"}') });
+    await expect(page.getByRole('button', { name: '下一步', exact: true })).toBeDisabled();
+    await expect(page.locator('.editor-message').first()).toBeVisible();
+    await expect(page.locator('.editor-message').first()).not.toHaveText('');
+    await expect(page.getByRole('button', { name: '确定导入', exact: true })).toHaveCount(0);
   });
+
+  for (const format of ['JSON', 'YAML']) {
+    test(`场景: 导出全部资源 - ${format}`, async ({ page }) => {
+      await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/setting`);
+      const resources = unwrapApiResults(await pageApiGet(page, `/gateways/${getGatewayId()}/resources/`, { limit: 10000 }));
+      expect(resources.length).toBeGreaterThan(0);
+      await page.locator('button').filter({ hasText: /^导出/ }).first().click();
+      await page.getByText('全部资源', { exact: true }).click();
+      const dialog = page.locator('.export-resource-dialog');
+      await dialog.getByText(`${format}格式`, { exact: true }).click();
+      const pending = page.waitForEvent('download');
+      await dialog.getByRole('button', { name: '确定', exact: true }).click();
+      const download = await pending;
+      const content = await downloadText(download);
+      expect(content.length).toBeGreaterThan(0);
+      for (const resource of resources) expect(content).toContain(resource.name);
+      if (format === 'JSON') {
+        const exported = JSON.parse(content);
+        expect(exported.openapi || exported.swagger).toBeTruthy();
+        const names = Object.values(exported.paths).flatMap(methods => Object.values(methods)
+          .filter(operation => operation && typeof operation === 'object' && operation.operationId)
+          .map(operation => operation.operationId));
+        expect(names.sort()).toEqual(resources.map(r => r.name).sort());
+      }
+    });
+  }
+
+  for (const format of ['JSON', 'YAML']) {
+    test(`场景: 仅导出已选资源 - ${format}`, async ({ page }) => {
+      const resources = [];
+      await page.goto(BASE_URL);
+      try {
+        for (let i = 0; i < 2; i++) resources.push(await createOwnedResource(page, getGatewayId()));
+        await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/setting`);
+        await page.getByRole('button', { name: '批量操作', exact: true }).click();
+        for (const resource of resources) {
+          const row = getTableRowByText(page, resource.name);
+          await row.locator('.bk-checkbox-input').click();
+          await expect(row.locator('input[type=checkbox]')).toBeChecked();
+        }
+        await page.locator('button:visible').filter({ hasText: /^导出/ }).click();
+        await page.getByText('已选资源', { exact: true }).click();
+        const dialog = page.locator('.export-resource-dialog');
+        await expect(dialog).toContainText('已选择2个资源');
+        await dialog.getByText(`${format}格式`, { exact: true }).click();
+        const pending = page.waitForEvent('download');
+        await dialog.getByRole('button', { name: '确定', exact: true }).click();
+        const content = await downloadText(await pending);
+        const names = format === 'JSON'
+          ? Object.values(JSON.parse(content).paths).flatMap(methods => Object.values(methods)
+            .filter(operation => operation?.operationId).map(operation => operation.operationId))
+          : [...content.matchAll(/^\s*operationId:\s*['"]?([a-zA-Z0-9_]+)['"]?\s*$/gm)].map(match => match[1]);
+        expect(names.sort()).toEqual(resources.map(resource => resource.name).sort());
+      } finally {
+        for (const resource of resources) await pageApiDelete(page, `/gateways/${getGatewayId()}/resources/${resource.id}/`);
+      }
+    });
+  }
 });

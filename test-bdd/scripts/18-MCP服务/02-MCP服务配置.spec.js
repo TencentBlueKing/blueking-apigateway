@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/18-MCP服务/02-MCP服务配置.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   BASE_URL,
   cleanupMcpServersByName,

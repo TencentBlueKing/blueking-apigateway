@@ -4,8 +4,10 @@
   "private": true,
   "description": "BlueKing API Gateway BDD test scripts",
   "scripts": {
-    "test": "playwright test",
-    "test:report": "playwright show-report"
+    "test": "playwright test --config=runtime/playwright.config.js",
+    "test:report": "playwright show-report",
+    "test:guard": "node --test runtime/tests/hard-failure-guard.test.js && node runtime/tests/verify-guard.js && playwright test --config=runtime/tests/control-integration.config.js",
+    "test:coverage": "node runtime/audit-coverage.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0"
