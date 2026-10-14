@@ -81,3 +81,16 @@ class TestJinja2ToMarkdownGenerator:
             write_to_file("{% include '_common.md.j2' %}, get_user", filepath)
             with pytest.raises(ResourceDocJinja2TemplateError):
                 generator._render_jinja2_template()
+
+    def test_render_jinja2_template_with_same_named_fragment_in_nested_dirs(self):
+        with TemporaryDirectory() as output_dir:
+            for category, fragment_content in [("v1", "v1 user"), ("v2", "v2 user")]:
+                category_dir = os.path.join(output_dir, "zh", category)
+                os.makedirs(category_dir)
+
+                filepath = os.path.join(category_dir, "get_user.md.j2")
+                write_to_file("{% include '_common.md.j2' %}", filepath)
+                write_to_file(fragment_content, os.path.join(category_dir, "_common.md.j2"))
+
+                generator = Jinja2ToMarkdownGenerator(f"zh/{category}/get_user.md.j2", filepath)
+                assert generator._render_jinja2_template() == fragment_content
