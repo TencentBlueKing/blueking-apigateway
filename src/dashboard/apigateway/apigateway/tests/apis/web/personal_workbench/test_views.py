@@ -1197,7 +1197,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         item = result["data"]["results"][0]
         assert item["id"] == record.id
         assert item["applied_by"] == FAKE_USERNAME
-        assert item["approvers"] == ["operator"]
+        assert item["approvers"] == ["admin", "operator"]
         assert item["gateway_id"] == fake_gateway.id
         assert item["gateway_name"] == fake_gateway.name
         assert item["applied_time"] == item["created_time"]
@@ -1640,7 +1640,7 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
-        assert result["data"]["results"][0]["approvers"] == ["operator"]
+        assert result["data"]["results"][0]["approvers"] == ["admin", "operator"]
         assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
 

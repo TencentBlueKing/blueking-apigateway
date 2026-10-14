@@ -22,11 +22,15 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Iterable, Protocol
 
 from django.db import models, transaction
-from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from apigateway.apps.rbac.constants import GATEWAY_MEMBER_EXPIRE_DAYS, GatewayRoleEnum
+from apigateway.apps.rbac.constants import (
+    GATEWAY_MEMBER_EXPIRE_DAYS,
+    GATEWAY_ROLE_ACTIONS,
+    GatewayActionEnum,
+    GatewayRoleEnum,
+)
 from apigateway.common.error_codes import error_codes
 
 if TYPE_CHECKING:
@@ -36,6 +40,10 @@ if TYPE_CHECKING:
 class _GatewayMemberInput(Protocol):
     username: str
     role: GatewayRoleEnum
+
+
+def _roles_with_gateway_action(action: str) -> tuple[str, ...]:
+    return tuple(role for role, actions in GATEWAY_ROLE_ACTIONS.items() if action in actions)
 
 
 class GatewayMemberManager(models.Manager):
@@ -59,17 +67,20 @@ class GatewayMemberManager(models.Manager):
         )
 
     def list_gateway_approvers(self, gateway_id: int) -> list[str]:
-        operators = list(
+        """返回网关审批人。
+
+        当前按 action 在本地数据库查人，管理员和运营者都带有 approve_gateway_permission，
+        两类成员均会纳入名单。未来若支持个人保留角色但关闭审批权限，此处需改为根据
+        「网关 + approve_gateway_permission」动态查询 bkiam，不再依赖全量角色。
+        """
+        return list(
             self.filter(
                 gateway_id=gateway_id,
-                role=GatewayRoleEnum.OPERATOR.value,
+                role__in=_roles_with_gateway_action(GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value),
             )
             .order_by("username")
             .values_list("username", flat=True)
         )
-        if operators:
-            return operators
-        return self.list_gateway_administrators(gateway_id)
 
     def build_gateway_administrators_map(self, gateway_ids: Iterable[int]) -> dict[int, list[str]]:
         result: dict[int, list[str]] = defaultdict(list)
@@ -86,26 +97,18 @@ class GatewayMemberManager(models.Manager):
         return dict(result)
 
     def build_gateway_approvers_map(self, gateway_ids: Iterable[int]) -> dict[int, list[str]]:
-        administrators: dict[int, list[str]] = defaultdict(list)
-        operators: dict[int, list[str]] = defaultdict(list)
+        result: dict[int, list[str]] = defaultdict(list)
         members = (
             self.filter(
                 gateway_id__in=set(gateway_ids),
-                role__in=(GatewayRoleEnum.ADMINISTRATOR.value, GatewayRoleEnum.OPERATOR.value),
+                role__in=_roles_with_gateway_action(GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value),
             )
             .order_by("gateway_id", "username")
-            .values_list("gateway_id", "username", "role")
+            .values_list("gateway_id", "username")
         )
-        for gateway_id, username, role in members:
-            if role == GatewayRoleEnum.OPERATOR.value:
-                operators[gateway_id].append(username)
-            else:
-                administrators[gateway_id].append(username)
-
-        return {
-            gateway_id: operators.get(gateway_id) or administrators[gateway_id]
-            for gateway_id in administrators.keys() | operators.keys()
-        }
+        for gateway_id, username in members:
+            result[gateway_id].append(username)
+        return dict(result)
 
     def is_gateway_administrator(self, gateway_id: int, username: str) -> bool:
         return self.filter(
@@ -123,25 +126,9 @@ class GatewayMemberManager(models.Manager):
         )
 
     def list_gateway_ids_by_approver(self, username: str) -> list[int]:
-        operator_members = self.model._default_manager.filter(
-            gateway_id=OuterRef("gateway_id"),
-            role=GatewayRoleEnum.OPERATOR.value,
-        )
-        return list(
-            self.get_queryset()
-            .annotate(_gateway_has_operator=Exists(operator_members))
-            .filter(
-                Q(
-                    username=username,
-                    role=GatewayRoleEnum.OPERATOR.value,
-                )
-                | Q(
-                    username=username,
-                    role=GatewayRoleEnum.ADMINISTRATOR.value,
-                    _gateway_has_operator=False,
-                )
-            )
-            .values_list("gateway_id", flat=True)
+        return self.list_gateway_ids_by_username(
+            username,
+            _roles_with_gateway_action(GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value),
         )
 
     def replace_gateway_administrators(

@@ -545,7 +545,6 @@ const updateCount = (count?: number, panelName?: string) => {
   padding: 20px;
 
   .tab-wrapper {
-    box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 0 0 2px 2px;
 
     :deep(.bk-tab-header) {
@@ -568,6 +567,11 @@ const updateCount = (count?: number, panelName?: string) => {
       :deep(>.bk-resize-layout-aside) {
         display: none;
       }
+
+      :deep(.bk-resize-layout-main) {
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px 0 #1919290d;
+      }
     }
 
     &.mcp-detail-guide {
@@ -576,6 +580,7 @@ const updateCount = (count?: number, panelName?: string) => {
 
         :deep(>.bk-resize-layout-aside) {
           display: block;
+          box-shadow: 0 2px 4px 0 #1919290d;
 
           .bk-resize-trigger {
             background-color: #fff;
