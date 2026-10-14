@@ -18,6 +18,7 @@
 
 type TRequestMethod = 'ANY' | 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
 type ActionType = 'add' | 'update';
+type ResourceChangeType = ActionType | 'unchanged';
 
 interface IAuthConfig {
   auth_verified_required: boolean
@@ -77,6 +78,10 @@ interface IImportedResource {
   enable_websocket: boolean
 }
 
+interface IResourceImportCheckResult extends IImportedResource {
+  change_type?: ResourceChangeType
+}
+
 interface ILocalImportedResource extends Partial<IImportedResource> {
   _localId: number
   _unchecked: boolean
@@ -113,6 +118,8 @@ export type {
   IPluginConfig,
   IPublicConfig,
   IImportedResource,
+  IResourceImportCheckResult,
   ILocalImportedResource,
+  ResourceChangeType,
   ResourcesItem,
 };

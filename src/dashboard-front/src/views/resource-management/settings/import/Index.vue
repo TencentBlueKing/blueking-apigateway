@@ -312,9 +312,11 @@
           />
           <span>{{ t('共') }}<span class="font-bold px-5px">{{ tableData.length }}</span>{{ t('个资源，新增') }}<span
             class="font-bold color-#34d97b px-5px"
-          >{{ tableDataToAdd.length }}</span>{{ t('个，更新') }}<span
+          >{{ resourcesToAdd.length }}</span>{{ t('个，更新') }}<span
             class="font-bold color-#ffb400 px-5px"
-          >{{ tableDataToUpdate.length }}</span>{{ t('个，取消导入') }}<span class="font-bold color-#ff5656 px-5px">{{
+          >{{ resourcesToUpdate.length }}</span>{{ t('个，配置未变化') }}<span
+            class="font-bold color-#63656e px-5px"
+          >{{ tableDataUnchanged.length }}</span>{{ t('个，取消导入') }}<span class="font-bold color-#ff5656 px-5px">{{
             tableDataUnchecked.length
           }}</span>{{ t('个') }}</span>
         </main>
@@ -352,7 +354,7 @@
                   />
                   <div class="title">
                     {{ t('新增的资源（共') }}
-                    <span class="color-#34b97b">{{ tableDataToAdd.length }}</span>
+                    <span class="color-#34b97b">{{ resourcesToAdd.length }}</span>
                     {{ t('个）') }}
                   </div>
                 </main>
@@ -413,7 +415,7 @@
                   />
                   <div class="title">
                     {{ t('更新的资源（共') }}
-                    <span class="color-#ffb400">{{ tableDataToUpdate.length }}</span>
+                    <span class="color-#ffb400">{{ resourcesToUpdate.length }}</span>
                     {{ t('个）') }}
                   </div>
                 </main>
@@ -455,6 +457,39 @@
                   @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
                   @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
                   @clear-filter="clearFilterInput"
+                />
+              </div>
+            </template>
+          </BkCollapsePanel>
+          <!--  配置未变化的资源仅展示，不参与导入  -->
+          <BkCollapsePanel
+            name="unchanged"
+            class="unchanged-resources-panel"
+          >
+            <template #header>
+              <div
+                ref="panelHeadUnchangedRef"
+                class="panel-header"
+              >
+                <main class="flex items-center">
+                  <AngleUpFill
+                    :class="[panelNamesList.includes('unchanged') ? 'panel-header-show' : 'panel-header-hide']"
+                  />
+                  <div class="title">
+                    {{ t('配置未变化（共') }}
+                    <span class="color-#63656e">{{ tableDataUnchanged.length }}</span>
+                    {{ t('个）') }}
+                  </div>
+                </main>
+              </div>
+            </template>
+            <template #content>
+              <div class="pb-24px">
+                <TableResToUncheck
+                  :table-data="tableDataUnchanged"
+                  :is-ai-gateway="isAIGateway"
+                  :show-doc="docConfig.showDoc"
+                  readonly
                 />
               </div>
             </template>
@@ -511,13 +546,13 @@
           v-if="curView === 'resources'"
           v-bk-tooltips="{
             content: t('请确认导入的资源'),
-            disabled: (tableDataToAdd.length < 1) && (tableDataToUpdate.length < 1),
+            disabled: (resourcesToAdd.length < 1) && (resourcesToUpdate.length < 1),
           }"
         >
           <BkButton
             theme="primary"
             type="button"
-            :disabled="(tableDataToAdd.length < 1) && (tableDataToUpdate.length < 1)"
+            :disabled="(resourcesToAdd.length < 1) && (resourcesToUpdate.length < 1)"
             :loading="isImportLoading"
             @click="showImportConfirmDialog"
           >
@@ -553,9 +588,9 @@
           </header>
           <main class="import-tips">
             {{ t('将新增') }}
-            <span class="font-bold color-#34b97b">{{ tableDataToAdd.length }}</span>
+            <span class="font-bold color-#34b97b">{{ resourcesToAdd.length }}</span>
             {{ t('条资源，更新覆盖') }}
-            <span class="font-bold color-#ffb400-c">{{ tableDataToUpdate.length }}</span>
+            <span class="font-bold color-#ffb400-c">{{ resourcesToUpdate.length }}</span>
             {{ t('条资源') }}
           </main>
         </div>
@@ -611,7 +646,7 @@
         </BkLoading>
         <section class="title">
           {{ t('正在导入') }}
-          <span class="font-bold">{{ tableDataToAdd.length + tableDataToUpdate.length }}</span>
+          <span class="font-bold">{{ resourcesToAdd.length + resourcesToUpdate.length }}</span>
           {{ t('个资源，请稍等...') }}
         </section>
       </main>
@@ -619,10 +654,10 @@
         <span>{{ t('新增了') }}
           <span
             class="font-bold color-#34d97b px-5px"
-          >{{ tableDataToAdd.length }}</span>{{ t('个，更新') }}
+          >{{ resourcesToAdd.length }}</span>{{ t('个，更新') }}
           <span
             class="font-bold color-#ffb400 px-5px"
-          >{{ tableDataToUpdate.length }}</span>{{ t('个资源') }}
+          >{{ resourcesToUpdate.length }}</span>{{ t('个资源') }}
         </span>
       </footer>
     </article>
@@ -639,7 +674,7 @@
         />
         <section class="title">
           {{ t('成功导入') }}
-          <span class="font-bold">{{ tableDataToAdd.length + tableDataToUpdate.length }}</span>
+          <span class="font-bold">{{ resourcesToAdd.length + resourcesToUpdate.length }}</span>
           {{ t('个资源') }}
         </section>
       </main>
@@ -647,10 +682,10 @@
         <span>{{ t('新增了') }}
           <span
             class="font-bold color-#34d97b px-5px"
-          >{{ tableDataToAdd.length }}</span>{{ t('个，更新') }}
+          >{{ resourcesToAdd.length }}</span>{{ t('个，更新') }}
           <span
             class="font-bold color-#ffb400 px-5px"
-          >{{ tableDataToUpdate.length }}</span>{{ t('个资源，为了后续导入方便，请及时下载最新的资源文件') }}
+          >{{ resourcesToUpdate.length }}</span>{{ t('个资源，为了后续导入方便，请及时下载最新的资源文件') }}
         </span>
         <span
           class="download-btn"
@@ -742,6 +777,7 @@ import EditorMonaco from '@/components/ag-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { getStrFromFile, messageError } from '@/utils';
 import { checkResourceImport, importResource } from '@/services/source/resource';
+import type { IResourceImportCheckInputSLZ } from '@/services/types/body/post/gateways';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
 import {
   AngleUpFill,
@@ -761,8 +797,8 @@ import PluginPreviewSideSlider from './components/PluginPreviewSideSlider.vue';
 import ResourceDocSlider from '../../components/ResourceDocSlider.vue';
 import {
   type ActionType,
-  type IImportedResource,
   type ILocalImportedResource,
+  type ResourceChangeType,
 } from '@/types/resource';
 import TableResToAction from './components/TableResToAction.vue';
 import TableResToUncheck from './components/TableResToUncheck.vue';
@@ -815,6 +851,8 @@ const isImportResultVisible = ref(false);
 const isImportSucceeded = ref(false);
 const curView = ref<'import' | 'resources'>('import'); // 当前页面
 const tableData = ref<ILocalImportedResource[]>([]);
+// 变更类型仅用于当前页分区，不附加到后续预览、编辑或提交的资源数据中。
+const resourceChangeTypes = ref<Record<number, ResourceChangeType>>({});
 
 // 选中的代码错误提示 Tab，默认展示 all 即全部类型的错误提示
 const activeCodeMsgType = ref<CodeErrorMsgType>('All');
@@ -822,10 +860,11 @@ const activeCodeMsgType = ref<CodeErrorMsgType>('All');
 const errorReasons = ref<ErrorReasonType[]>([]);
 const isFindPanelVisible = ref(false);
 // 资源确认页的 collapse 面板列表
-const panelNamesList = ref(['add', 'update', 'uncheck']);
+const panelNamesList = ref(['add', 'update', 'unchanged', 'uncheck']);
 // 资源确认页的 collapse 面板标题，稍后添加样式要用
 const panelHeadAddRef = ref<HTMLDivElement | null>(null);
 const panelHeadUpdateRef = ref<HTMLDivElement | null>(null);
+const panelHeadUnchangedRef = ref<HTMLDivElement | null>(null);
 const panelHeadUncheckRef = ref<HTMLDivElement | null>(null);
 
 const isImportConfirmDialogVisible = ref(false);
@@ -870,27 +909,36 @@ const filterInputUpdateClone = ref('');
 
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
+// 提交与统计使用完整的待导入集合，不受表格搜索条件影响。
+const resourcesToImport = computed(() => tableData.value.filter(data =>
+  !data._unchecked && resourceChangeTypes.value[data._localId] !== 'unchanged'));
+
+const resourcesToAdd = computed(() => resourcesToImport.value.filter(data =>
+  resourceChangeTypes.value[data._localId] === 'add'));
+
+const resourcesToUpdate = computed(() => resourcesToImport.value.filter(data =>
+  resourceChangeTypes.value[data._localId] === 'update'));
+
 // 展示在“新增的资源”一栏的资源
 const tableDataToAdd = computed(() => {
-  return tableData.value.filter((data: any) => {
-    return !data.id
-      && !data._unchecked
-      && (data.name.includes(filterInputAdd.value) || data.path.includes(filterInputAdd.value));
+  return resourcesToAdd.value.filter((data) => {
+    return data.name?.includes(filterInputAdd.value) || data.path?.includes(filterInputAdd.value);
   });
 });
 
 // 展示在“更新的资源”一栏的资源
 const tableDataToUpdate = computed(() => {
-  return tableData.value.filter((data: any) => {
-    return data.id
-      && !data._unchecked
-      && (data.name.includes(filterInputUpdate.value) || data.path.includes(filterInputUpdate.value));
+  return resourcesToUpdate.value.filter((data) => {
+    return data.name?.includes(filterInputUpdate.value) || data.path?.includes(filterInputUpdate.value);
   });
 });
 
+const tableDataUnchanged = computed(() => tableData.value.filter(data =>
+  resourceChangeTypes.value[data._localId] === 'unchanged'));
+
 // 被取消导入的资源
 const tableDataUnchecked = computed(() => {
-  return tableData.value.filter((data: any) => data._unchecked);
+  return tableData.value.filter(data => data._unchecked && resourceChangeTypes.value[data._localId] !== 'unchanged');
 });
 
 // 可视的错误消息，实际要渲染到编辑器视图的数据
@@ -941,6 +989,7 @@ watch(curView, async (newCurView: any, oldCurView: any) => {
       [
         useParentElement(panelHeadAddRef),
         useParentElement(panelHeadUpdateRef),
+        useParentElement(panelHeadUnchangedRef),
         useParentElement(panelHeadUncheckRef),
       ].forEach((parentEl) => {
         parentEl.value?.classList.add('panel-head-sticky-top');
@@ -1049,22 +1098,29 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     errorReasons.value = [];
     // 重置可视错误消息类型
     activeCodeMsgType.value = 'All';
-    const params: any = {
+    const params: IResourceImportCheckInputSLZ = {
       content: editorText.value,
       allow_overwrite: true,
     };
+    if (_changeView) {
+      params.include_change_type = true;
+    }
     // 如果勾选了资源文档
     if (docConfig.value.showDoc) {
       params.doc_language = docConfig.value.language;
     }
     // 配置是否显示错误 Message，只校验代码时不显示，改为展示在编辑器的错误消息栏中
     const interceptorConfig = _changeView ? {} : { catchError: true };
-    const res = await checkResourceImport(gatewayId, params, interceptorConfig) as IImportedResource[];
-    tableData.value = res.map((data, index: number) => ({
-      ...data,
-      _unchecked: false, // 标记是否不导入
-      _localId: index, // 给一个本地id以识别修改了哪一条数据
-    }));
+    const res = await checkResourceImport(gatewayId, params, interceptorConfig);
+    resourceChangeTypes.value = {};
+    tableData.value = res.map(({ change_type, ...data }, index) => {
+      resourceChangeTypes.value[index] = change_type ?? (data.id === null ? 'add' : 'update');
+      return {
+        ...data,
+        _unchecked: false, // 标记是否不导入
+        _localId: index, // 给一个本地id以识别修改了哪一条数据
+      };
+    });
     isCodeValid.value = true;
     isValidBannerVisible.value = true;
     // 折叠错误消息栏
@@ -1192,16 +1248,22 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
 
 // 唤出确认导入Dialog
 const showImportConfirmDialog = () => {
+  if (!resourcesToImport.value.length) {
+    return;
+  }
   isImportConfirmDialogVisible.value = true;
 };
 
 // 确认导入
 const handleImportResource = async () => {
   isImportConfirmDialogVisible.value = false;
+  if (!resourcesToImport.value.length) {
+    return;
+  }
   try {
     isImportLoading.value = true;
     isImportResultVisible.value = true;
-    const import_resources = tableData.value.filter((e: any) => e._unchecked === false)
+    const import_resources = resourcesToImport.value
       .map((e: any) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { _unchecked, _localId, backend, ...restOfResource } = e; // 去掉_unchecked 和 _localId 属性，不要发到后端
@@ -1441,13 +1503,18 @@ const handleFontSizeClick = () => {
 
 // 切换资源是否导入
 const toggleRowUnchecked = (row: ILocalImportedResource) => {
+  if (resourceChangeTypes.value[row._localId] === 'unchanged') {
+    return;
+  }
   const data = tableData.value.find((d: any) => d._localId === row._localId);
-  if (data) data._unchecked = !data._unchecked;
+  if (data) {
+    data._unchecked = !data._unchecked;
+  }
 };
 
 // 还原所有不导入的资源
 const handleRecoverAllRes = () => {
-  tableData.value.forEach((d: any) => d._unchecked = false);
+  tableDataUnchecked.value.forEach(data => data._unchecked = false);
 };
 
 const tempAuthConfig = ref({
@@ -1459,9 +1526,9 @@ const tempAuthConfig = ref({
 // 批量修改认证方式确认后
 const handleConfirmAuthConfigPopConfirm = (action: ActionType) => {
   if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
-  tableData.value.filter((item: any) => !item._unchecked)
-    .forEach((data: any) => {
-      if ((action === 'add' && !data.id) || (action === 'update' && data.id)) {
+  resourcesToImport.value
+    .forEach((data) => {
+      if (resourceChangeTypes.value[data._localId] === action) {
         data.auth_config = { ...tempAuthConfig.value };
       }
     });
@@ -1477,9 +1544,9 @@ const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
   const isPublic = tempPublicConfig.value.is_public;
   const allowApplyPermission = tempPublicConfig.value.allow_apply_permission && isPublic;
 
-  tableData.value.filter((item: any) => !item._unchecked)
-    .forEach((item: any) => {
-      if ((action === 'add' && !item.id) || (action === 'update' && item.id)) {
+  resourcesToImport.value
+    .forEach((item) => {
+      if (resourceChangeTypes.value[item._localId] === action) {
         item.is_public = isPublic;
         item.allow_apply_permission = allowApplyPermission;
       }
@@ -1913,6 +1980,19 @@ const handleReturnClick = () => {
         top: 0;
         z-index: 3;
         background-color: #fff;
+      }
+
+      // 吸顶标题会遮住表格原有上边框，在标题下沿补画同一条线。
+
+      .unchanged-resources-panel.bk-collapse-item-active > .panel-head-sticky-top::after {
+        position: absolute;
+        right: 24px;
+        bottom: -1px;
+        left: 24px;
+        height: 1px;
+        pointer-events: none;
+        background-color: #dcdee5;
+        content: '';
       }
     }
 
