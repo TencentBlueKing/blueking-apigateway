@@ -74,6 +74,7 @@ class TestArchiveParser:
                     "zh/get_user.md": "/path/to/zh/get_user.md",
                     "en/get_user.md": "/path/to/en/get_user.md",
                     "zh/create_user.md.j2": "/path/to/zh/create_user.md.j2",
+                    "zh/v4/delete_user.md": "/path/to/zh/v4/delete_user.md",
                     "zz/get_user.md": "/path/to/zz/get_user.md",
                     "zh/get_user.txt": "/path/to/zh/get_user.txt",
                 },
@@ -94,6 +95,12 @@ class TestArchiveParser:
                         language=DocLanguageEnum("zh"),
                         resource_name="create_user",
                         filename="zh/create_user.md.j2",
+                        content="",
+                    ),
+                    ArchiveDoc(
+                        language=DocLanguageEnum("zh"),
+                        resource_name="delete_user",
+                        filename="zh/v4/delete_user.md",
                         content="",
                     ),
                 ],
@@ -117,12 +124,17 @@ class TestArchiveParser:
             "get_user.md": "",
             "en/get_user.md": "",
             "docs/en/get_user.md": "",
+            "en/user/get_user.md": "",
+            "docs/en/user/get_user.md": "",
             "other/docs/en/get_user.md": "",
+            "other/docs/en/user/get_user.md": "",
         }
         result = ArchiveParser(1)._filter_files(files)
         assert result == {
             "en/get_user.md": "",
             "docs/en/get_user.md": "",
+            "en/user/get_user.md": "",
+            "docs/en/user/get_user.md": "",
         }
 
     @pytest.mark.parametrize(
@@ -134,6 +146,8 @@ class TestArchiveParser:
             ("zz/get_user.md", None),
             ("docs/zh/get_user.md", "zh"),
             ("other/docs/zh/get_user.md", "zh"),
+            ("zh/user/get_user.md", "zh"),
+            ("docs/zh/user/get_user.md", "zh"),
         ],
     )
     def test_extract_language(self, filename, expected):
@@ -149,6 +163,8 @@ class TestArchiveParser:
             ("zz/get_user.txt", None),
             ("docs/zh/get_user.md", "get_user"),
             ("other/docs/zh/get_user.md", "get_user"),
+            ("zh/user/get_user.md", "get_user"),
+            ("docs/zh/user/get_user.md", "get_user"),
         ],
     )
     def test_extract_resource_name(self, filename, expected):
