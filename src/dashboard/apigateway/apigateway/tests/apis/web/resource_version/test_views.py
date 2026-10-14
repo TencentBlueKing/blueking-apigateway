@@ -25,7 +25,8 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
-from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import BackendConfig, Proxy, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 from apigateway.utils.yaml import yaml_loads
@@ -464,6 +465,35 @@ class TestResourceVersionNeedNewVersionRetrieveApi:
 
 
 class TestResourceVersionDiffApi:
+    def test_resource_version_diff_with_deep_plugin_config(
+        self, request_view, fake_gateway, fake_resource, echo_plugin_resource_binding
+    ):
+        plugin = echo_plugin_resource_binding.config
+        # Shallow YAML with aliases can produce deeply nested configuration.
+        plugin.yaml = "body: test\nn0: &n0 {leaf: false}\n" + "".join(
+            f"n{i}: &n{i} {{value: *n{i - 1}}}\n" for i in range(1, 501)
+        )
+        plugin.save(update_fields=["yaml"])
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            version="1.0.0",
+            schema_version=ResourceVersionSchemaEnum.V2.value,
+        )
+        resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
+        resource_version.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.diff",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"source_resource_version_id": resource_version.id, "target_resource_version_id": ""},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {"add": [], "delete": [], "update": []}
+
     def test_resource_version_diff_without_resource_version(
         self,
         request_view,

@@ -30,6 +30,12 @@ class OpenAPIVersionKeyEnum(StructuredEnum):
     OpenAPI = EnumField("openapi")
 
 
+class ResourceImportChangeTypeEnum(StructuredEnum):
+    ADD = EnumField("add", label="新增")
+    UPDATE = EnumField("update", label="更新")
+    UNCHANGED = EnumField("unchanged", label="未变化")
+
+
 VALID_METHOD_IN_SWAGGER_PATHITEM = [
     "get",
     "put",

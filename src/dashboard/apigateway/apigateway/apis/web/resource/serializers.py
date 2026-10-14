@@ -35,6 +35,7 @@ from apigateway.apis.web.resource.validators import (
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayLabelHandler
+from apigateway.biz.openapi import ResourceImportChangeTypeEnum
 from apigateway.biz.resource import ResourceAuthConfig, ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
@@ -785,6 +786,9 @@ class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
 
 class ResourceImportCheckInputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
+    include_change_type = serializers.BooleanField(
+        default=False, help_text="是否返回资源配置变化类型，不包含 Markdown 文档和 Schema 版本变化，默认不返回"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceImportCheckInputSLZ"
@@ -800,6 +804,11 @@ class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
 
 class ResourceImportInfoSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField(help_text="资源 ID")
+    change_type = serializers.ChoiceField(
+        choices=ResourceImportChangeTypeEnum.get_choices(),
+        required=False,
+        help_text="仅 include_change_type=true 时返回：add 新增，update 更新，unchanged 配置未变化；不比较 Markdown 文档和 Schema 版本，跳过导入时需单独处理版本变化",
+    )
     name = serializers.CharField(read_only=True, help_text="资源名称")
     kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), help_text="资源类型")
     description = serializers.CharField(read_only=True, help_text="资源描述")
@@ -827,6 +836,13 @@ class ResourceImportInfoSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceImportInfoSLZ"
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        change_types = self.context.get("change_types")
+        if change_types is not None:
+            data["change_type"] = change_types[instance.name]
+        return data
 
     def get_id(self, obj):
         return obj.resource and obj.resource.id

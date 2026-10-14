@@ -643,7 +643,7 @@ const findAllDiff = (value: any, prePath = 'localData') => {
       diffMap.value[prePath] = '[]';
     }
   }
-  else if (typeof value === 'object') {
+  else if (value !== null && typeof value === 'object') {
     if (JSON.stringify(value) === '{}') {
       diffMap.value[prePath] = '{}';
     }

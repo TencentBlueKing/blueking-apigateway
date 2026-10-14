@@ -19,6 +19,7 @@
 from .artifacts import ResourceVersionArtifactHandler
 from .diff import (
     DiffMixin,
+    ResourceConfigurationDiffer,
     ResourceContexts,
     ResourceDifferHandler,
     ResourceHTTPProxy,
@@ -33,6 +34,7 @@ __all__ = [
     # Enum
     # class
     "DiffMixin",
+    "ResourceConfigurationDiffer",
     "ResourceContexts",
     "ResourceDifferHandler",
     "ResourceDocVersionHandler",

@@ -337,6 +337,10 @@ class OpenAPIExportManager:
         """
         return self._exporter.to_openapi(resources, file_type)
 
+    def get_openapi_content(self, resources: list) -> Dict[str, Any]:
+        """Build the OpenAPI document without serializing it, adapting input schemas in place."""
+        return self._exporter._get_openapi_content(resources)
+
     def get_swagger_by_paths(
         self,
         paths: Dict[str, Any],
