@@ -83,9 +83,17 @@ class ArchiveParser(BaseParser):
     def _filter_files(self, files: Dict[str, str]) -> Dict[str, str]:
         """
         过滤文件
-        - 只保留 1 ~ 2 级目录的文件，如 en/get_users.md, docs/en/get_users.md
+        - 只保留 1 ~ 3 级目录的文件，如 en/get_users.md, docs/en/get_users.md,
+          docs/en/user/get_users.md
         """
-        return {filename: filepath for filename, filepath in files.items() if len(filename.split("/")) in [2, 3]}
+        available_languages = DocLanguageEnum.get_values()
+        filtered_files = {}
+        for filename, filepath in files.items():
+            parts = filename.split("/")
+            if len(parts) in [2, 3] or (len(parts) == 4 and parts[1] in available_languages):
+                filtered_files[filename] = filepath
+
+        return filtered_files
 
     def _parse(self, files: Dict[str, str]) -> List[ArchiveDoc]:
         """
@@ -119,19 +127,25 @@ class ArchiveParser(BaseParser):
         """
         根据文件名提取语言
 
-        :param filename: 形如：en/get_user.md, docs/en/get_users.md
+        :param filename: 形如：en/get_user.md, docs/en/get_users.md, docs/en/user/get_users.md
         """
-        parts = filename.rsplit("/", 2)
+        parts = filename.rsplit("/", 3)
         if len(parts) < 2:
             return None
 
-        language = parts[-2]
-
         available_languages = DocLanguageEnum.get_values()
-        if language not in available_languages:
-            return None
+        # 优先兼容原有的「语言/资源文档」目录结构
+        language = parts[-2]
+        if language in available_languages:
+            return language
 
-        return language
+        # 支持在语言目录下增加一层分类目录
+        if len(parts) >= 3:
+            language = parts[-3]
+            if language in available_languages:
+                return language
+
+        return None
 
     def _extract_resource_name(self, filename: str) -> Optional[str]:
         """

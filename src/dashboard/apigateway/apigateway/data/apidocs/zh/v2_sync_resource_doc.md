@@ -4,6 +4,15 @@
 
 资源文档 tar/zip 归档文件的准备，请参考网关使用指南：网关 API -> 操作指南 -> 导入网关 API 文档。
 
+归档内支持以下文档路径，其中语言目录为 `zh` 或 `en`，分类目录和归档根目录均为可选的一层目录：
+
+```text
+zh/get_user.md
+docs/zh/get_user.md
+zh/user/get_user.md
+docs/zh/user/get_user.md
+```
+
 ### 输入参数
 
 #### 路径参数
