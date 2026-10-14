@@ -345,6 +345,7 @@ var _ = Describe("Config", func() {
 
 		It("should load valid config", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -384,6 +385,7 @@ var _ = Describe("Config", func() {
 
 		It("should set global config", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -397,8 +399,96 @@ var _ = Describe("Config", func() {
 			Expect(config.G).To(Equal(cfg))
 		})
 
+		Context("crypto nonce validation", func() {
+			var v *viper.Viper
+
+			BeforeEach(func() {
+				v = viper.New()
+				v.Set("mcpServer.cryptoNonce", "123456789012")
+				v.Set("databases", []map[string]any{
+					{
+						"id": "default", "host": "localhost", "port": 3306,
+						"user": "root", "password": "password", "name": "testdb",
+					},
+				})
+				for _, name := range []string{"BK_APIGW_CRYPTO_NONCE", "ENABLE_KMS"} {
+					value, exists := os.LookupEnv(name)
+					Expect(os.Unsetenv(name)).To(Succeed())
+					DeferCleanup(func() {
+						if exists {
+							_ = os.Setenv(name, value)
+							return
+						}
+						_ = os.Unsetenv(name)
+					})
+				}
+			})
+
+			DescribeTable(
+				"should reject an invalid byte length",
+				func(setNonce bool, nonce string) {
+					if setNonce {
+						v.Set("mcpServer.cryptoNonce", nonce)
+					} else {
+						v.Set("mcpServer.cryptoNonce", nil)
+					}
+
+					cfg, err := config.Load(v)
+
+					Expect(cfg).To(BeNil())
+					Expect(err).To(MatchError("mcpServer.cryptoNonce must be 12 bytes"))
+				},
+				Entry("when missing", false, ""),
+				Entry("when empty", true, ""),
+				Entry("when 11 bytes", true, "12345678901"),
+				Entry("when 13 bytes", true, "1234567890123"),
+				Entry("when 12 characters but 14 bytes", true, "12345678901界"),
+			)
+
+			It("should preserve a valid YAML value without trimming", func() {
+				v.Set("mcpServer.cryptoNonce", " 12345678901")
+
+				cfg, err := config.Load(v)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.McpServer.CryptoNonce).To(Equal(" 12345678901"))
+			})
+
+			It("should apply a valid environment override", func() {
+				v.Set("mcpServer.cryptoNonce", "yaml12345678")
+				Expect(os.Setenv("BK_APIGW_CRYPTO_NONCE", "env-12345678")).To(Succeed())
+
+				cfg, err := config.Load(v)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.McpServer.CryptoNonce).To(Equal("env-12345678"))
+			})
+
+			It("should reject an invalid environment override without exposing it", func() {
+				v.Set("mcpServer.cryptoNonce", "yaml12345678")
+				Expect(os.Setenv("BK_APIGW_CRYPTO_NONCE", "sensitive-env")).To(Succeed())
+
+				cfg, err := config.Load(v)
+
+				Expect(cfg).To(BeNil())
+				Expect(err).To(MatchError("mcpServer.cryptoNonce must be 12 bytes"))
+				Expect(err.Error()).NotTo(ContainSubstring("sensitive-env"))
+			})
+
+			It("should not override YAML with an empty environment value", func() {
+				v.Set("mcpServer.cryptoNonce", "yaml12345678")
+				Expect(os.Setenv("BK_APIGW_CRYPTO_NONCE", "")).To(Succeed())
+
+				cfg, err := config.Load(v)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.McpServer.CryptoNonce).To(Equal("yaml12345678"))
+			})
+		})
+
 		It("should create database map", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "primary", "host": "localhost", "port": 3306,
@@ -590,6 +680,7 @@ var _ = Describe("Config", func() {
 	Describe("Load defaults", func() {
 		It("should load bkAIDevTrace config from env when values are empty", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -618,6 +709,7 @@ var _ = Describe("Config", func() {
 
 		It("should override config file values with env vars for bkAIDevTrace", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -650,6 +742,7 @@ var _ = Describe("Config", func() {
 
 		It("should set Transport defaults", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -667,6 +760,7 @@ var _ = Describe("Config", func() {
 
 		It("should set LogTruncate defaults", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -687,6 +781,7 @@ var _ = Describe("Config", func() {
 
 		It("should leave pprof credentials empty when config and env are empty", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -710,6 +805,7 @@ var _ = Describe("Config", func() {
 
 		It("should override pprof config file values with env vars", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -735,6 +831,7 @@ var _ = Describe("Config", func() {
 
 		It("should set MaxConcurrentPrefetch default", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -750,6 +847,7 @@ var _ = Describe("Config", func() {
 
 		It("should preserve custom Transport values", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
@@ -770,6 +868,7 @@ var _ = Describe("Config", func() {
 
 		It("should preserve custom LogTruncate values", func() {
 			v := viper.New()
+			v.Set("mcpServer.cryptoNonce", "123456789012")
 			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,

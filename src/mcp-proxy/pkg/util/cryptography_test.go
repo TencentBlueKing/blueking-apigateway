@@ -19,15 +19,12 @@
 package util_test
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/pem"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -38,30 +35,15 @@ import (
 
 var _ = Describe("Cryptography", func() {
 	Describe("AESGCMDecrypt", func() {
-		It("should decrypt correctly", func() {
-			keyBytes := make([]byte, 32) // AES-256
-			_, err := rand.Read(keyBytes)
-			Expect(err).NotTo(HaveOccurred())
-			key := base64.StdEncoding.EncodeToString(keyBytes)
+		const (
+			fixedKey        = "AAAAAAAAAAAAAAAAAAAAAA=="
+			fixedCiphertext = "58e2fccefa7e3061367f1d57a4e7455a"
+		)
 
-			nonceBytes := make([]byte, 12)
-			_, err = rand.Read(nonceBytes)
+		It("should decrypt a fixed AES-GCM test vector", func() {
+			result, err := util.AESGCMDecrypt(fixedKey, string(make([]byte, 12)), fixedCiphertext)
 			Expect(err).NotTo(HaveOccurred())
-			nonce := string(nonceBytes)
-
-			plaintext := "Hello, World!"
-			block, err := aes.NewCipher(keyBytes)
-			Expect(err).NotTo(HaveOccurred())
-
-			aead, err := cipher.NewGCM(block)
-			Expect(err).NotTo(HaveOccurred())
-
-			ciphertext := aead.Seal(nil, nonceBytes, []byte(plaintext), nil)
-			encryptedText := hex.EncodeToString(ciphertext)
-
-			result, err := util.AESGCMDecrypt(key, nonce, encryptedText)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(plaintext))
+			Expect(result).To(BeEmpty())
 		})
 
 		It("should fail with invalid key", func() {
@@ -82,6 +64,34 @@ var _ = Describe("Cryptography", func() {
 
 			_, err := util.AESGCMDecrypt(key, "123456789012", "invalid-hex")
 			Expect(err).To(HaveOccurred())
+		})
+
+		DescribeTable(
+			"should return an error instead of panicking for an invalid nonce length",
+			func(nonce string) {
+				var err error
+				Expect(func() {
+					_, err = util.AESGCMDecrypt(fixedKey, nonce, fixedCiphertext)
+				}).NotTo(Panic())
+				Expect(err).To(MatchError("nonce must be 12 bytes"))
+				Expect(err.Error()).NotTo(ContainSubstring(fixedKey))
+				Expect(err.Error()).NotTo(ContainSubstring(fixedCiphertext))
+				if nonce != "" {
+					Expect(err.Error()).NotTo(ContainSubstring(nonce))
+				}
+			},
+			Entry("when empty", ""),
+			Entry("when 11 bytes", "12345678901"),
+			Entry("when 13 bytes", "1234567890123"),
+			Entry("when 12 characters but 14 bytes", "12345678901界"),
+		)
+
+		It("should return an authentication error for a wrong nonce of the valid length", func() {
+			wrongNonce := append(make([]byte, 11), 1)
+
+			_, err := util.AESGCMDecrypt(fixedKey, string(wrongNonce), fixedCiphertext)
+
+			Expect(err).To(MatchError("cipher: message authentication failed"))
 		})
 	})
 
