@@ -417,7 +417,9 @@ export interface IResourceImportInputSLZ {
 // POST /gateways/{gateway_id}/resources/import/check/ - 导入资源检查，导入资源前，检查资源配置是否正确
 export interface IResourceImportCheckInputSLZ {
   content: string
-  doc_language: string
+  doc_language?: string
+  allow_overwrite?: boolean
+  include_change_type?: boolean
 }
 
 // POST /gateways/{gateway_id}/resources/import/doc/preview/ - 导入文档预览

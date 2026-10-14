@@ -18,6 +18,7 @@
 
 import http from '../http';
 import { blobDownLoad } from '@/utils';
+import type { IResourceImportCheckResult } from '@/types/resource';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IBackendPathCheckOutput,
@@ -164,7 +165,7 @@ export const checkResourceImport = (
   data: IResourceImportCheckInputSLZ,
   config: Record<string, unknown> = {},
 ) =>
-  http.post(`${path}/${apigwId}/resources/import/check/`, data, config);
+  http.post<IResourceImportCheckResult[]>(`${path}/${apigwId}/resources/import/check/`, data, config);
 
 /**
  * 导出资源

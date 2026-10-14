@@ -40,12 +40,14 @@ interface IProps {
   tableData?: ILocalImportedResource[]
   showDoc?: boolean
   isAiGateway?: boolean
+  readonly?: boolean
 }
 
 const {
   tableData = [],
   showDoc = true,
   isAiGateway = false,
+  readonly = false,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -185,7 +187,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
       showDoc
         ? (
-          <bk-button text theme="primary" onClick={() => handleShowResourceDoc(row)}>
+          <bk-button text theme="primary" disabled={readonly} onClick={() => handleShowResourceDoc(row)}>
             <ag-icon name="doc-2" class="mr-4px color-#3A84FF" />
             {t('详情')}
           </bk-button>
@@ -199,25 +201,33 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     width: 85,
     ellipsis: true,
     cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
-      <bk-button theme="primary" text class="text-12px!" onClick={() => handleShowPluginsSlider(row)}>
+      <bk-button
+        theme="primary"
+        text
+        class="text-12px!"
+        disabled={readonly}
+        onClick={() => handleShowPluginsSlider(row)}
+      >
         <span v-bk-tooltips={{ content: `${row.plugin_configs?.map(c => c.name || c.type).join('，') || t('无插件')}` }}>
           {row.plugin_configs?.length ?? 0}
         </span>
       </bk-button>
     ),
   },
-  {
-    title: t('操作'),
-    colKey: 'act',
-    fixed: 'right',
-    width: 100,
-    ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
-      <bk-button text theme="primary" onClick={() => toggleRowUnchecked(row)}>
-        {t('恢复导入')}
-      </bk-button>
-    ),
-  },
+  ...(!readonly
+    ? [{
+      title: t('操作'),
+      colKey: 'act',
+      fixed: 'right' as const,
+      width: 100,
+      ellipsis: true,
+      cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+        <bk-button text theme="primary" onClick={() => toggleRowUnchecked(row)}>
+          {t('恢复导入')}
+        </bk-button>
+      ),
+    }]
+    : []),
 ]);
 
 // 恢复导入后，保持原表格在页码越界时回到第一页的行为。
