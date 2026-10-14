@@ -13,6 +13,8 @@ zh/user/get_user.md
 docs/zh/user/get_user.md
 ```
 
+分类目录中的 Jinja2 模板优先引用同目录的公共片段；同目录不存在时，查找上一级语言目录。
+
 ### 输入参数
 
 #### 路径参数

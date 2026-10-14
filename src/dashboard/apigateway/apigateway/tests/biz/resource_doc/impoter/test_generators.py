@@ -92,5 +92,25 @@ class TestJinja2ToMarkdownGenerator:
                 write_to_file("{% include '_common.md.j2' %}", filepath)
                 write_to_file(fragment_content, os.path.join(category_dir, "_common.md.j2"))
 
-                generator = Jinja2ToMarkdownGenerator(f"zh/{category}/get_user.md.j2", filepath)
+                generator = Jinja2ToMarkdownGenerator(
+                    f"zh/{category}/get_user.md.j2",
+                    filepath,
+                    language="zh",
+                )
                 assert generator._render_jinja2_template() == fragment_content
+
+    def test_render_jinja2_template_uses_language_dir_as_fallback(self):
+        with TemporaryDirectory() as output_dir:
+            language_dir = os.path.join(output_dir, "zh")
+            category_dir = os.path.join(language_dir, "v1")
+            os.makedirs(category_dir)
+
+            filepath = os.path.join(category_dir, "get_user.md.j2")
+            write_to_file("{% include '_common.md.j2' %}", filepath)
+            write_to_file("language common", os.path.join(language_dir, "_common.md.j2"))
+
+            generator = Jinja2ToMarkdownGenerator("zh/v1/get_user.md.j2", filepath, language="zh")
+            assert generator._render_jinja2_template() == "language common"
+
+            write_to_file("category common", os.path.join(category_dir, "_common.md.j2"))
+            assert generator._render_jinja2_template() == "category common"

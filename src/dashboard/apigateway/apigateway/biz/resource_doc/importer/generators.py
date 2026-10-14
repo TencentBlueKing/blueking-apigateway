@@ -41,9 +41,10 @@ logger = logging.getLogger(__name__)
 class Jinja2ToMarkdownGenerator:
     """根据 Jinja2 模版文件，生成 markdown 格式文档"""
 
-    def __init__(self, filename: str, filepath: str):
+    def __init__(self, filename: str, filepath: str, language: str = ""):
         self.filename = filename
         self.filepath = filepath
+        self.language = language
 
     def generate_doc_content(self) -> str:
         if self._is_jinja2_template():
@@ -69,7 +70,7 @@ class Jinja2ToMarkdownGenerator:
         return self.filepath.endswith(".md.j2")
 
     def _render_jinja2_template(self) -> str:
-        env = SandboxedEnvironment(loader=FileSystemLoader(os.path.dirname(self.filepath)))
+        env = SandboxedEnvironment(loader=FileSystemLoader(self._get_template_search_paths()))
         try:
             template = env.get_template(os.path.basename(self.filepath))
             return template.render()
@@ -82,6 +83,16 @@ class Jinja2ToMarkdownGenerator:
         except Exception as err:  # pylint: disable=broad-except
             logger.exception("Unexpected error for _render_jinja2_template %s", self.filepath)
             raise ResourceDocJinja2TemplateError(self.filename, err)
+
+    def _get_template_search_paths(self) -> list[str]:
+        template_dir = os.path.dirname(self.filepath)
+        search_paths = [template_dir]
+
+        parts = self.filename.rsplit("/", 3)
+        if self.language and len(parts) >= 3 and parts[-3] == self.language:
+            search_paths.append(os.path.dirname(template_dir))
+
+        return search_paths
 
     @property
     def _base_path(self) -> str:

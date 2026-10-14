@@ -113,7 +113,7 @@ class ArchiveParser(BaseParser):
                 ArchiveDoc(
                     resource_name=resource_name,
                     language=DocLanguageEnum(language),
-                    content=Jinja2ToMarkdownGenerator(filename, filepath).generate_doc_content(),
+                    content=Jinja2ToMarkdownGenerator(filename, filepath, language=language).generate_doc_content(),
                     filename=filename,
                 )
             )
