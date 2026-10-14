@@ -283,7 +283,7 @@
             <div
               v-if="isEnablePrompt"
               v-bk-tooltips="{
-                content: `${t('Prompt数量')}: ${String(server?.prompts_count)}`,
+                content: `${t('Prompt 数量')}: ${String(server?.prompts_count)}`,
                 disabled: !isEnablePrompt,
               }"
               class="flex items-baseline gap-4px ml-24px"
@@ -432,8 +432,8 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .ag-mcp-card-wrapper {
   position: relative;
+  isolation: isolate;
   background-color: #ffffff;
-  border: 1px solid transparent;
   border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
   box-sizing: border-box;
@@ -530,10 +530,6 @@ onUnmounted(() => {
     }
   }
 
-  &:hover {
-    border-left-color: #d7e8ff;
-  }
-
   &:hover,
   &.is-checked {
     background: linear-gradient(149deg, #d7e8ff 0%, #ffffff 57.14%);
@@ -553,7 +549,18 @@ onUnmounted(() => {
   }
 
   &.is-checked {
-    border-color: #3a84ff;
+    box-shadow: 0 4px 6px 0 #1919291f;
+
+    // 选中态描边需要盖在右上角状态标签之上，否则标签会遮住 border
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 1px solid #3a84ff;
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 20;
+    }
   }
 }
 </style>

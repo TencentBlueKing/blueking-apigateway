@@ -2136,7 +2136,7 @@
   "编辑 {n}": "Edit {n}",
   "结果预览": "Preview",
   "工具数量": "Tools",
-  "Prompt数量": "Prompts",
+  "Prompt 数量": "Prompts",
   "创建 MCP Server": "Create MCP Server",
   "请填写信息": "Please fill in the information",
   "不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权": "False means the server will not be displayed in the MCP market, and the application cannot apply for permission actively. Only the gateway administrator can apply for permission.",

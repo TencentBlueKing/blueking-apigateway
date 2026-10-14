@@ -97,38 +97,40 @@
         class="right"
         :style="{ width: `calc(100% - ${mcpCategorizeWidth}px)` }"
       >
-        <AgMcpTopBar
-          v-model:publish-time="filterData.order_by"
-          class="mb-16px"
-          :selections="selections"
-          @batch-copy="handleBatchCopy"
-          @sort-change="handleSortChange"
-        >
-          <template #mcpServerTab>
-            <div class="flex mcp-server-tab">
-              <div
-                v-for="tab of mcpTabList"
-                :key="tab.id"
-                class="flex items-center mcp-server-tab-item min-w-48px!"
-                :class="[
-                  {
-                    'is-active': tab.id === activeStatusTab,
-                  },
-                ]"
-                @click.stop="handleTopTabChange(tab.id)"
-              >
-                <div>{{ tab.name }}</div>
+        <!-- 顶部操作栏：吸顶固定，不随卡片列表滚动 -->
+        <div class="mcp-market-top-bar">
+          <AgMcpTopBar
+            v-model:publish-time="filterData.order_by"
+            :selections="selections"
+            @batch-copy="handleBatchCopy"
+            @sort-change="handleSortChange"
+          >
+            <template #mcpServerTab>
+              <div class="flex mcp-server-tab">
+                <div
+                  v-for="tab of mcpTabList"
+                  :key="tab.id"
+                  class="flex items-center mcp-server-tab-item min-w-48px!"
+                  :class="[
+                    {
+                      'is-active': tab.id === activeStatusTab,
+                    },
+                  ]"
+                  @click.stop="handleTopTabChange(tab.id)"
+                >
+                  <div>{{ tab.name }}</div>
+                </div>
               </div>
-            </div>
-          </template>
-          <template #customSearch>
-            <BkInput
-              v-model="filterData.keyword"
-              :placeholder="t('搜索 MCP 名称、展示名、描述')"
-              clearable
-            />
-          </template>
-        </AgMcpTopBar>
+            </template>
+            <template #customSearch>
+              <BkInput
+                v-model="filterData.keyword"
+                :placeholder="t('搜索 MCP 名称、展示名、描述')"
+                clearable
+              />
+            </template>
+          </AgMcpTopBar>
+        </div>
         <!-- 卡片区域内容 -->
         <BkLoading
           :loading="isLoading"
@@ -180,12 +182,12 @@
                 <template #mcpCopyConfig>
                   <BkButton
                     text
-                    class="mr-24px color-#979ba5!"
+                    class="mr-24px color-#979ba5! hover-color-#3a84ff!"
                     @click.stop="handleCopyConfig(server)"
                   >
                     <AgIcon
                       name="copy"
-                      class="mr-8px"
+                      class="mr-4px"
                       size="16"
                     />
                     {{ t("复制配置") }}
@@ -714,7 +716,7 @@ onUnmounted(() => {
         }
 
         &.active {
-          color: #3a84Ff;
+          color: #3a84ff;
           background-color: #e1ecff;
         }
 
@@ -732,7 +734,16 @@ onUnmounted(() => {
       position: relative;
       box-sizing: border-box;
 
-      :deep(.mcp-market-list) {
+      .mcp-market-top-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        padding: 24px 0 16px;
+        margin-top: -24px;
+        background-color: #f5f7fb;
+      }
+
+      .mcp-market-list {
         display: flex;
         flex-wrap: wrap;
         gap: 16px;

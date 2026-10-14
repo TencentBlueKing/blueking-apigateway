@@ -146,22 +146,18 @@ a {
   }
 
   &.success,
-  &.partial_approved,
   &.approved {
     background-color: #e6f6eb;
     border: 1px solid #43c472;
+  }
+
+  &.partial_approved {
+    background-color: #ffe8c3;
+    border: 1px solid #ff9c01;
   }
 
   &.rejected {
     background-color: #ffe6e6;
     border: 1px solid #ea3636;
   }
-}
-
-.mr8 {
-  margin-right: 8px !important;
-}
-
-.ml10 {
-  margin-left: 10px !important;
 }

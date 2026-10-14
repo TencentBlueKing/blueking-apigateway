@@ -176,6 +176,8 @@ interface IProps {
   tableEmptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'error'
   maxLimitConfig?: Record<string, any> | null
   hiddenColumn?: string[]
+  // 设置面板中默认不勾选的列（仍会展示在面板列表中，可手动勾选展示）
+  uncheckedColumn?: string[]
   noSearchFields?: string[]
   resizable?: boolean
   showCellEmptyContent?: boolean
@@ -225,6 +227,8 @@ const {
   isExistUniqueKey = true,
   // 默认不显示的表格列
   hiddenColumn = [],
+  // 设置面板中默认不勾选的列（仍会展示在面板列表中，可手动勾选展示）
+  uncheckedColumn = [],
   // 不需要处理成搜索状态的字段
   noSearchFields = [],
   // 默认tableFixed启用resizable
@@ -561,12 +565,14 @@ const initTableSettings = () => {
   const columns = tableColumns.value || [];
   const visibleColumn = columns.filter(tc => !hiddenColumn.includes(tc.colKey));
   const allColKeys = visibleColumn.map(col => col.colKey);
+  // 默认不勾选的列仍在设置面板的列清单中，仅初始不展示
+  const defaultChecked = allColKeys.filter(colKey => !uncheckedColumn.includes(colKey));
 
   const baseConfig = {
     fontSize: 'medium',
     rowSize: defaultRowSize,
     disabled: [] as string[],
-    checked: [...allColKeys],
+    checked: [...defaultChecked],
     fields: visibleColumn.map(col => ({
       label: col.displayTitle ?? col.title,
       field: col.colKey,
@@ -698,12 +704,15 @@ watch([selections, selectedRowKeys], () => {
   }
 }, { deep: true });
 
-// hiddenColumn 只影响表格设置的列清单与默认勾选，
+// hiddenColumn/uncheckedColumn 只影响表格设置的列清单与默认勾选，
 // 变化时按新的列集合重算设置即可，无需销毁表格实例
 watch(
-  () => hiddenColumn,
-  (newVal: string[], oldVal: string[]) => {
-    if (!showSettings || isEqual(newVal, oldVal)) return;
+  () => [hiddenColumn, uncheckedColumn],
+  (
+    [newHidden, newUnchecked]: string[][],
+    [oldHidden, oldUnchecked]: string[][],
+  ) => {
+    if (!showSettings || (isEqual(newHidden, oldHidden) && isEqual(newUnchecked, oldUnchecked))) return;
     tableSettings.value = initTableSettings();
   },
   { deep: true },
