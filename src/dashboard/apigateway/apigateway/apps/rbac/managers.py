@@ -67,6 +67,12 @@ class GatewayMemberManager(models.Manager):
         )
 
     def list_gateway_approvers(self, gateway_id: int) -> list[str]:
+        """返回网关审批人。
+
+        当前按 action 在本地数据库查人，管理员和运营者都带有 approve_gateway_permission，
+        两类成员均会纳入名单。未来若支持个人保留角色但关闭审批权限，此处需改为根据
+        「网关 + approve_gateway_permission」动态查询 bkiam，不再依赖全量角色。
+        """
         return list(
             self.filter(
                 gateway_id=gateway_id,
