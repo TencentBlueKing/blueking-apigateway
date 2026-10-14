@@ -55,7 +55,7 @@ func testKMSConfig() *viper.Viper {
 	v.Set("apisix.etcd.username", "old-apisix")
 	v.Set("apisix.etcd.password", "old-apisix-password")
 	v.Set("mcpServer.encryptKey", "old-key")
-	v.Set("mcpServer.cryptoNonce", "existing-nonce")
+	v.Set("mcpServer.cryptoNonce", "existing-123")
 	v.Set("pprof.password", "untouched-pprof")
 	return v
 }
@@ -277,12 +277,29 @@ func TestLoadKMSCredentials(t *testing.T) {
 	if cfg.DatabaseMap["apigateway"].Host != "mysql.example" || cfg.DatabaseMap["apigateway"].Name != "gateway" {
 		t.Fatal("KMS changed non-credential database fields")
 	}
-	if cfg.McpServer.EncryptKey != "$new-encryption-key" || cfg.McpServer.CryptoNonce != "existing-nonce" ||
+	if cfg.McpServer.EncryptKey != "$new-encryption-key" || cfg.McpServer.CryptoNonce != "existing-123" ||
 		cfg.PProf.Password != "untouched-pprof" {
 		t.Fatal("KMS must override encryption env but preserve unrelated config")
 	}
 	if os.Getenv("ENCRYPT_KEY") != "old-env-key" || os.Getenv("BK_APP_SECRET") != "old-env-secret" {
 		t.Fatal("KMS mutated environment")
+	}
+}
+
+func TestLoadKMSRejectsInvalidCryptoNonce(t *testing.T) {
+	writeTestKMS(t, testKMSPayload())
+	t.Setenv("BK_APIGW_CRYPTO_NONCE", "sensitive-kms")
+
+	cfg, err := Load(testKMSConfig())
+
+	if cfg != nil || err == nil {
+		t.Fatal("KMS-enabled config accepted an invalid crypto nonce")
+	}
+	if err.Error() != "mcpServer.cryptoNonce must be 12 bytes" {
+		t.Fatalf("unexpected crypto nonce error: %v", err)
+	}
+	if strings.Contains(err.Error(), "sensitive-kms") {
+		t.Fatal("crypto nonce error exposed input")
 	}
 }
 

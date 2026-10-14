@@ -48,6 +48,9 @@ func AESGCMDecrypt(key, nonce, encryptedText string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if len(nonce) != 12 {
+		return "", errors.New("nonce must be 12 bytes")
+	}
 	plaintext, err := aead.Open(nil, []byte(nonce), toHex, nil)
 	if err != nil {
 		return "", err

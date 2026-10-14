@@ -351,6 +351,9 @@ func Load(v *viper.Viper) (*Config, error) {
 	if err := initAndValidateDatabases(cfg); err != nil {
 		return nil, err
 	}
+	if len(cfg.McpServer.CryptoNonce) != 12 {
+		return nil, errors.New("mcpServer.cryptoNonce must be 12 bytes")
+	}
 
 	applyBkAIDevTraceDefaults(v, cfg)
 	applyMetricDefaults(cfg)
