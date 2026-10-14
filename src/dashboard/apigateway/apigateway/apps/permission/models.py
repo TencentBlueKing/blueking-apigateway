@@ -224,6 +224,9 @@ class AppPermissionRecord(models.Model):
         verbose_name = _("蓝鲸应用访问资源权限申请单")
         verbose_name_plural = _("蓝鲸应用访问资源权限申请单")
         db_table = "permission_app_record"
+        indexes = [
+            models.Index(fields=["applied_by", "id"], name="perm_record_applied_by_id_idx"),
+        ]
 
     @property
     def resource_ids(self) -> List[int]:
