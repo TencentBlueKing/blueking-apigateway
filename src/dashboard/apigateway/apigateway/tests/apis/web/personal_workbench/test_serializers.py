@@ -23,10 +23,12 @@ import pytest
 from ddf import G
 
 from apigateway.apis.web.personal_workbench.serializers import (
-    WorkbenchGatewayPermissionApplyOutputSLZ,
-    WorkbenchGatewayPermissionRecordOutputSLZ,
-    WorkbenchMCPPermissionApplyOutputSLZ,
+    WorkbenchGatewayPermissionHandledOutputSLZ,
+    WorkbenchGatewayPermissionMyApplyOutputSLZ,
+    WorkbenchGatewayPermissionPendingOutputSLZ,
     WorkbenchMCPPermissionHandledOutputSLZ,
+    WorkbenchMCPPermissionMyApplyOutputSLZ,
+    WorkbenchMCPPermissionPendingOutputSLZ,
 )
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
@@ -38,9 +40,9 @@ from apigateway.utils.time import now_datetime
 pytestmark = pytest.mark.django_db
 
 
-class TestWorkbenchGatewayPermissionApplyOutputSLZ:
-    def test_serialization(self, fake_gateway):
-        """测试 API 网关申请单序列化器输出格式正确"""
+class TestWorkbenchGatewayPermissionPendingOutputSLZ:
+    def test_pending_apply(self, fake_gateway):
+        """待办序列化申请单，返回当前审批责任人，不返回处理字段。"""
         apply_record = G(
             AppPermissionApply,
             gateway=fake_gateway,
@@ -53,7 +55,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             itsm_ticket_id="12345",
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+        slz = WorkbenchGatewayPermissionPendingOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
         )
@@ -71,8 +73,13 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
         assert "expire_days_display" in data
         assert data["reason"] == "need access to resources"
         assert data["itsm_ticket_id"] == "12345"
+        assert data["created_time"] is not None
+        assert "applied_time" not in data
+        assert "handled_by" not in data
+        assert "handled_time" not in data
+        assert "comment" not in data
 
-    def test_serialization_prefers_operator_approvers(self, fake_gateway):
+    def test_pending_apply_prefers_operator_approvers(self, fake_gateway):
         apply_record = G(
             AppPermissionApply,
             gateway=fake_gateway,
@@ -82,7 +89,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             grant_dimension=GrantDimensionEnum.API.value,
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+        slz = WorkbenchGatewayPermissionPendingOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["operator"]}},
         )
@@ -92,8 +99,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
     @patch(
         "apigateway.service.bk_itsm.ItsmPermissionApplyHelper.build_ticket_url", return_value="https://itsm/ticket/123"
     )
-    def test_itsm_ticket_url(self, mock_build_url, fake_gateway):
-        """测试 ITSM 单据 URL 生成"""
+    def test_pending_apply_itsm_ticket_url(self, mock_build_url, fake_gateway):
         apply_record = G(
             AppPermissionApply,
             gateway=fake_gateway,
@@ -103,18 +109,17 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
             itsm_ticket_id="123",
         )
 
-        slz = WorkbenchGatewayPermissionApplyOutputSLZ(
+        slz = WorkbenchGatewayPermissionPendingOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
         )
-        data = slz.data
 
-        assert data["itsm_ticket_url"] == "https://itsm/ticket/123"
+        assert slz.data["itsm_ticket_url"] == "https://itsm/ticket/123"
 
 
-class TestWorkbenchGatewayPermissionRecordOutputSLZ:
-    def test_serialization(self, fake_gateway):
-        """测试 API 网关已办记录序列化器输出格式正确"""
+class TestWorkbenchGatewayPermissionHandledOutputSLZ:
+    def test_handled_record(self, fake_gateway):
+        """已办序列化申请记录，不返回当前审批责任人。"""
         record = G(
             AppPermissionRecord,
             gateway=fake_gateway,
@@ -131,7 +136,7 @@ class TestWorkbenchGatewayPermissionRecordOutputSLZ:
             itsm_ticket_id="67890",
         )
 
-        slz = WorkbenchGatewayPermissionRecordOutputSLZ(record)
+        slz = WorkbenchGatewayPermissionHandledOutputSLZ(record)
         data = slz.data
 
         assert data["id"] == record.id
@@ -142,13 +147,54 @@ class TestWorkbenchGatewayPermissionRecordOutputSLZ:
         assert data["gateway_name"] == fake_gateway.name
         assert data["status"] == ApplyStatusEnum.APPROVED.value
         assert data["comment"] == "approved"
+        assert "approvers" not in data
+        assert "created_time" not in data
+        assert data["applied_time"] is not None
         assert "grant_dimension_display" in data
         assert "expire_days_display" in data
 
 
-class TestWorkbenchMCPPermissionApplyOutputSLZ:
+class TestWorkbenchGatewayPermissionMyApplyOutputSLZ:
+    @patch(
+        "apigateway.service.bk_itsm.ItsmPermissionApplyHelper.build_ticket_url",
+        return_value="https://itsm/ticket/123",
+    )
+    def test_serialization_keeps_my_apply_contract(self, mock_build_url, fake_gateway):
+        applied_time = now_datetime()
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test_app",
+            applied_by="test_user",
+            applied_time=applied_time,
+            handled_by="handler",
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.PARTIAL_APPROVED.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            expire_days=180,
+            reason="need access to resources",
+            itsm_ticket_id="123",
+        )
+
+        slz = WorkbenchGatewayPermissionMyApplyOutputSLZ(
+            record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        )
+        data = slz.data
+
+        assert data["id"] == record.id
+        assert data["applied_by"] == "test_user"
+        assert data["approvers"] == ["admin"]
+        assert data["status"] == ApplyStatusEnum.PARTIAL_APPROVED.value
+        assert data["applied_time"] == data["created_time"]
+        assert data["itsm_ticket_url"] == "https://itsm/ticket/123"
+        assert "handled_by" not in data
+        assert "handled_time" not in data
+
+
+class TestWorkbenchMCPPermissionMyApplyOutputSLZ:
     def test_serialization(self, fake_gateway, fake_stage):
-        """测试 MCP Server 申请单序列化器输出格式正确"""
+        """我的申请不返回处理字段。"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
         fake_stage.status = StageStatusEnum.ACTIVE.value
@@ -176,7 +222,7 @@ class TestWorkbenchMCPPermissionApplyOutputSLZ:
             is_deleted=False,
         )
 
-        slz = WorkbenchMCPPermissionApplyOutputSLZ(
+        slz = WorkbenchMCPPermissionMyApplyOutputSLZ(
             apply_record,
             context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
         )
@@ -194,11 +240,53 @@ class TestWorkbenchMCPPermissionApplyOutputSLZ:
         assert data["status"] == MCPServerAppPermissionApplyStatusEnum.PENDING.value
         assert "status_display" in data
         assert data["reason"] == "need mcp access"
+        assert "handled_by" not in data
+        assert "handled_time" not in data
+        assert "comment" not in data
+
+
+class TestWorkbenchMCPPermissionPendingOutputSLZ:
+    def test_pending_apply(self, fake_gateway, fake_stage):
+        """待办返回当前审批责任人，不返回处理字段。"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            name="test-mcp",
+            title="Test MCP Server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="r1;r2",
+        )
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="test_app",
+            applied_by="test_user",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        slz = WorkbenchMCPPermissionPendingOutputSLZ(
+            apply_record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        )
+        data = slz.data
+
+        assert data["approvers"] == ["admin"]
+        assert "handled_by" not in data
+        assert "handled_time" not in data
+        assert "comment" not in data
 
 
 class TestWorkbenchMCPPermissionHandledOutputSLZ:
-    def test_serialization(self, fake_gateway, fake_stage):
-        """测试 MCP Server 已办记录序列化器输出格式正确"""
+    def test_handled_record(self, fake_gateway, fake_stage):
+        """已办返回处理结果，不查询当前审批责任人。"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
         fake_stage.status = StageStatusEnum.ACTIVE.value
@@ -234,6 +322,7 @@ class TestWorkbenchMCPPermissionHandledOutputSLZ:
         assert data["id"] == apply_record.id
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "applicant"
+        assert "approvers" not in data
         assert data["handled_by"] == "handler"
         assert data["mcp_server"]["id"] == mcp_server.id
         assert data["mcp_server"]["gateway_id"] == fake_gateway.id
