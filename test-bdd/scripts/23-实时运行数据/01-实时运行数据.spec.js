@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/23-实时运行数据/01-实时运行数据.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { reAuth, BASE_URL } = require("../../runtime/helpers");
 
 const PAGE_PATH = 'components/realtime';

@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/14-统计报表/01-统计报表.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { dismissFloatingLayers, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 

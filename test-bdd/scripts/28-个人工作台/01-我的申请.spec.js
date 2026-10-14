@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/28-个人工作台/01-我的申请.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { BASE_URL, pageApiGet, unwrapApiResults, waitForPageReady } = require('../../runtime/helpers');
 
 test.describe('功能: 个人工作台 - 我的申请', () => {

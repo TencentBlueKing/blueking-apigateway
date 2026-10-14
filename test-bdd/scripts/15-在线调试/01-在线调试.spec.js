@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/15-在线调试/01-在线调试.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
 

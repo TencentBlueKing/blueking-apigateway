@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/10-后端服务/01-后端服务管理.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { clickConfirm, getFirstVisibleTableRow, getTableRowActionButton, getToastMessage, getTableRowCount, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 

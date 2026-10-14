@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/05-环境概览/02-环境生命周期.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   createTestIdentifier,
   createTestStage,

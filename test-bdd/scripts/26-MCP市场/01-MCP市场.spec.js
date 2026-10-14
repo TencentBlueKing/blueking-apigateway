@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/26-MCP市场/01-MCP市场.md
 // @generated-date: 2026-03-31
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { reAuth, BASE_URL } = require("../../runtime/helpers");
 
 const PAGE_PATH = 'mcp-market';

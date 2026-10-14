@@ -1,80 +1,43 @@
 // @generated from: test-bdd/cases/02-资源配置/02-编辑资源.md
-// @generated-date: 2026-03-31
-
-const { test, expect } = require('@playwright/test');
-const { getFirstVisibleTableRow, getTableRowActionButton, getToastMessage, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
-
+// @generated-date: 2026-10-14
+const { test, expect } = require('../../runtime/bdd-test');
+const { BASE_URL, getGatewayId, pageApiGet, pageApiDelete, unwrapApiData } = require('../../runtime/helpers');
+const { createOwnedResource } = require('../../runtime/test-data');
 
 test.describe('功能: 资源配置 - 编辑资源', () => {
+  let resource;
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, getGatewayId(), '资源配置', '/resource/setting');
+    await page.goto(BASE_URL);
+    resource = await createOwnedResource(page, getGatewayId());
+    await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/edit/${resource.id}`);
+    await expect(page.locator('input[placeholder*="字母"]').first()).toHaveValue(resource.name);
+  });
+  test.afterEach(async ({ page }) => {
+    if (resource) await pageApiDelete(page, `/gateways/${getGatewayId()}/resources/${resource.id}/`);
+    resource = undefined;
   });
 
   test('场景: 编辑基础信息', async ({ page }) => {
-    // Wait for table data to load (not the "暂无数据" row)
-    const dataRow = getFirstVisibleTableRow(page);
-    const hasData = await dataRow.isVisible({ timeout: 15000 }).catch(() => false);
-
-    if (!hasData) {
-      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
-      return;
-    }
-
-    // Click the "编辑" button in the row actions column
-    const editBtn = getTableRowActionButton(dataRow, '编辑', 'button');
-    await editBtn.click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
-
-    // 修改描述信息
-    const descInput = page.locator('input[placeholder="请输入描述"], textarea[placeholder*="描述"], input[placeholder*="描述"]').first();
-    if (await descInput.isVisible().catch(() => false)) {
-      await descInput.clear();
-      await descInput.fill(`自动化测试编辑 - ${Date.now()}`);
-    }
-
-    // 点击提交
-    await page.locator('button').filter({ hasText: '提交' }).click();
-    await page.waitForTimeout(2000);
-
-    // 验证更新成功
-    const toast = await getToastMessage(page);
-    // May get "请先配置后端服务地址" if backend setup failed — that's still a valid test
-    if (toast) {
-      expect(toast).toBeTruthy();
-    }
+    const description = `BDD edited ${resource.name}`;
+    await page.getByPlaceholder('请输入描述', { exact: true }).first().fill(description);
+    const saved = page.waitForResponse(r => r.url().endsWith(`/resources/${resource.id}/`) && r.request().method() === 'PUT');
+    await page.getByRole('button', { name: '提交', exact: true }).click();
+    const response = await saved;
+    expect(response.ok(), await response.text()).toBe(true);
+    const detail = unwrapApiData(await pageApiGet(page, `/gateways/${getGatewayId()}/resources/${resource.id}/`));
+    expect(detail.description).toBe(description);
+    await page.goto(`${BASE_URL.replace(/\/$/, '')}/${getGatewayId()}/resource/edit/${resource.id}`);
+    await expect(page.getByPlaceholder('请输入描述', { exact: true }).first()).toHaveValue(description);
   });
 
   test('场景: 编辑后端配置', async ({ page }) => {
-    const dataRow = getFirstVisibleTableRow(page);
-    const hasData = await dataRow.isVisible({ timeout: 15000 }).catch(() => false);
-
-    if (!hasData) {
-      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
-      return;
-    }
-
-    // Click the "编辑" button in the row actions column
-    const editBtn = getTableRowActionButton(dataRow, '编辑', 'button');
-    await editBtn.click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
-
-    // 修改后端请求路径
-    const backendPathInput = page.locator('input[placeholder*="斜线"]').last();
-    if (await backendPathInput.isVisible().catch(() => false)) {
-      await backendPathInput.clear();
-      await backendPathInput.fill(`/backend/updated-${Date.now()}/`);
-    }
-
-    // 点击提交
-    await page.locator('button').filter({ hasText: '提交' }).click();
-    await page.waitForTimeout(2000);
-
-    // 验证更新成功
-    const toast2 = await getToastMessage(page);
-    if (toast2) {
-      expect(toast2).toBeTruthy();
-    }
+    const backendPath = `/bdd_updated/${resource.name}/`;
+    await page.locator('input[placeholder*="斜线"]').last().fill(backendPath);
+    const saved = page.waitForResponse(r => r.url().endsWith(`/resources/${resource.id}/`) && r.request().method() === 'PUT');
+    await page.getByRole('button', { name: '提交', exact: true }).click();
+    const response = await saved;
+    expect(response.ok(), await response.text()).toBe(true);
+    const detail = unwrapApiData(await pageApiGet(page, `/gateways/${getGatewayId()}/resources/${resource.id}/`));
+    expect(detail.backend.config.path).toBe(backendPath);
   });
 });

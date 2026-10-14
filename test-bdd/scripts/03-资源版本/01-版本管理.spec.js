@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/03-资源版本/01-版本管理.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   cleanupResourceDocs,
   cleanupResourcesByName,

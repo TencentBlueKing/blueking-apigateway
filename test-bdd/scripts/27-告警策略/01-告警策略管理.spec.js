@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/27-告警策略/01-告警策略管理.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   createAlarmStrategy,
   cleanupAlarmStrategiesByName,

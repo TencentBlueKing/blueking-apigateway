@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/12-应用权限/01-应用权限.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   cleanupPermissionsByAppCode,
   cleanupResourcesByName,

@@ -1,6 +1,5 @@
 // @ts-check
 const { defineConfig } = require('@playwright/test');
-const fs = require('fs');
 const path = require('path');
 
 const { BASE_URL, USERNAME, PASSWORD, COOKIE } = require('./test-env');
@@ -22,7 +21,9 @@ const timestamp = [
   String(now.getMinutes()).padStart(2, '0'),
   String(now.getSeconds()).padStart(2, '0'),
 ].join('');
-const reportDir = path.join(__dirname, 'reports', timestamp);
+// Workers load this module again. Inherit one directory for the entire run.
+const reportDir = process.env.TEST_BDD_REPORT_DIR || path.join(__dirname, 'reports', timestamp);
+process.env.TEST_BDD_REPORT_DIR = reportDir;
 
 module.exports = defineConfig({
   testDir: '../scripts',
@@ -36,7 +37,7 @@ module.exports = defineConfig({
   retries: 0,
 
   // Timeouts
-  timeout: 120_000,         // 120s per test; dev dashboard can be briefly unavailable while publishing
+  timeout: 60_000,          // Longer lifecycle tests set their own explicit timeout.
   globalTimeout: 2_700_000, // 45 minutes for the expanded BDD suite on the shared dev environment
 
   // Global setup/teardown — test gateway lifecycle
@@ -46,7 +47,7 @@ module.exports = defineConfig({
   // Reporters — output to timestamped directory
   reporter: [
     ['json', { outputFile: path.join(reportDir, 'results.json') }],
-    ['html', { outputFolder: path.join(reportDir, 'html') }],
+    ['html', { outputFolder: path.join(reportDir, 'html'), open: 'never' }],
     ['line'],
   ],
 
@@ -57,7 +58,9 @@ module.exports = defineConfig({
   use: {
     baseURL: BASE_URL,
     screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
+    // On this live site, retaining a failed trace can itself time out and leave
+    // a truncated zip. Keep screenshots/errors by default; trace is diagnostic.
+    trace: process.env.TEST_BDD_TRACE === '1' ? 'retain-on-failure' : 'off',
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
   },
@@ -68,9 +71,7 @@ module.exports = defineConfig({
       use: {
         browserName: 'chromium',
         // Reuse storage state from setup for authenticated sessions
-        storageState: fs.existsSync(path.join(__dirname, 'storage-state.json'))
-          ? path.join(__dirname, 'storage-state.json')
-          : undefined,
+        storageState: path.join(__dirname, 'storage-state.json'),
       },
     },
   ],

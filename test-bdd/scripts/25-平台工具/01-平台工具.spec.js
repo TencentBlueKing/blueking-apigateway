@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/25-平台工具/01-平台工具.md
 // @generated-date: 2026-06-04
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const { BASE_URL, reAuth, waitForPageReady } = require('../../runtime/helpers');
 
 async function gotoPlatformTool(page, path) {

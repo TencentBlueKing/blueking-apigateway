@@ -1,0 +1,19 @@
+{
+  "openapi": "3.0.1",
+  "info": { "title": "BDD resource import", "version": "1.0.0" },
+  "paths": {
+    "/bdd_import/": {
+      "get": {
+        "operationId": "bdd_import_resource",
+        "description": "BDD import round trip",
+        "responses": { "200": { "description": "ok" } },
+        "x-bk-apigateway-resource": {
+          "isPublic": true,
+          "allowApplyPermission": true,
+          "backend": { "name": "default", "method": "get", "path": "/get", "timeout": 30 },
+          "authConfig": { "userVerifiedRequired": false, "appVerifiedRequired": true, "resourcePermissionRequired": false }
+        }
+      }
+    }
+  }
+}

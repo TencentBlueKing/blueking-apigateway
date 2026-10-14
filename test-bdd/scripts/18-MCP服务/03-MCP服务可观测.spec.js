@@ -1,7 +1,7 @@
 // @generated from: test-bdd/cases/18-MCP服务/03-MCP服务可观测.md
 // @generated-date: 2026-07-07
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../runtime/bdd-test');
 const {
   getGatewayId,
   navigateToGatewayPage,
