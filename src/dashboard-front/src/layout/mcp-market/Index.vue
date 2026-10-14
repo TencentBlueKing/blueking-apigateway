@@ -639,8 +639,6 @@ onUnmounted(() => {
     .banner {
       display: block;
       width: 100%;
-      height: 160px;
-      object-fit: cover;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
     }

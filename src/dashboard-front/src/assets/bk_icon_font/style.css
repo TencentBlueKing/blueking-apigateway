@@ -818,7 +818,7 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-resources:before {
 	content: "\e24b";
 }
-.icon-ag-runtime-data​:before {
+.icon-ag-runtime-data:before {
 	content: "\e250";
 }
 .icon-ag-setting:before {
