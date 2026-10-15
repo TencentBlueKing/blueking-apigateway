@@ -255,6 +255,7 @@
                 show-settings
                 :api-method="getTableData"
                 :columns="columns"
+                :unchecked-column="['oauth2_personal_client_enabled']"
                 :max-height="tableMaxHeight"
                 :hidden-column="hiddenColumns"
                 :show-selection="isShowSelection"
@@ -908,7 +909,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'label_ids',
       title: t('标签'),
-      width: 300,
+      width: 160,
       filter: {
         type: 'multiple',
         showConfirmAndReset: true,
@@ -926,11 +927,9 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 {
                   row.labels?.length
                     ? (
-                      <div class="w-260px">
-                        <RenderTagOverflow
-                          data={row.labels.map((label: any) => label.name)}
-                        />
-                      </div>
+                      <RenderTagOverflow
+                        data={row.labels.map((label: any) => label.name)}
+                      />
                     )
                     : <span>--</span>
                 }

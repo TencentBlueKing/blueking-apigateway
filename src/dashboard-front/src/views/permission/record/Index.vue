@@ -274,7 +274,7 @@ const historyExpandColumn = shallowRef<any[]>([
       if (['rejected'].includes(row['apply_status'])) {
         return (
           <div class="perm-record-dot">
-            <span class="ag-dot default mr-4px" />
+            <span class="ag-dot rejected mr-6px" />
             <span>{ t('驳回') }</span>
           </div>
         );
@@ -282,7 +282,7 @@ const historyExpandColumn = shallowRef<any[]>([
       else {
         return (
           <div class="perm-record-dot">
-            <span class="ag-dot success mr-4px" />
+            <span class="ag-dot success mr-6px" />
             <span>{ t('通过') }</span>
           </div>
         );
@@ -446,22 +446,12 @@ const getTableColumns = computed((): any[] => {
       colKey: 'status',
       ellipsis: true,
       cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
-        if (['rejected'].includes(row.status!)) {
-          return (
-            <div class="perm-record-dot">
-              <div class="ag-dot default m-r-5px" />
-              {APPROVAL_HISTORY_STATUS_MAP[row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
-            </div>
-          );
-        }
-        else {
-          return (
-            <div class="perm-record-dot">
-              <span class="ag-dot success m-r-5px" />
-              {APPROVAL_HISTORY_STATUS_MAP[row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
-            </div>
-          );
-        }
+        return (
+          <div class="perm-record-dot">
+            <span class={['ag-dot mr-6px', { [row.status!]: row.status }]} />
+            {APPROVAL_HISTORY_STATUS_MAP[row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
+          </div>
+        );
       },
     },
     {

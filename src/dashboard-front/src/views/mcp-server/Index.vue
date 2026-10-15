@@ -248,6 +248,8 @@ const activeStatusTab = ref('all');
 const activeViewTab = ref('card');
 const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error' | undefined>(undefined);
 const isLoading = ref(true);
+// 触底加载更多中（不显示全屏 loading，避免滚动闪屏）
+const isLoadMore = ref(false);
 const isShowConfig = ref(false);
 const pagination = ref({
   current: 1,
@@ -411,12 +413,18 @@ const calculateMaxVisibleCards = (): number => {
 // 获取MCPServer列表
 const fetchMcpServerList = async () => {
   const { hasNoMore, current, limit } = pagination.value;
-  isLoading.value = true;
 
-  if (hasNoMore) {
-    isLoading.value = false;
+  if (hasNoMore || isLoadMore.value) {
     return;
   };
+
+  // 统一加载锁：防止 IntersectionObserver 在加载期间重复触发导致并发请求
+  isLoadMore.value = true;
+
+  // 首屏加载显示 loading 遮罩；加载更多时不显示，避免滚动闪屏
+  if (current === 1) {
+    isLoading.value = true;
+  }
 
   try {
     const params = {
@@ -439,12 +447,20 @@ const fetchMcpServerList = async () => {
     };
   }
   catch {
-    cardEmptyType.value = 'error';
+    if (current === 1) {
+      cardEmptyType.value = 'error';
+    }
   }
   finally {
-    setTimeout(() => {
-      isLoading.value = false;
-    }, 100);
+    if (current === 1) {
+      setTimeout(() => {
+        isLoading.value = false;
+        isLoadMore.value = false;
+      }, 100);
+    }
+    else {
+      isLoadMore.value = false;
+    }
   }
 };
 
@@ -620,8 +636,8 @@ const handleResize = debounce(() => {
 }, 300);
 
 const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
-  // 表格视图时，禁用滚动加载
-  if (isTableView.value) return;
+  // 表格视图时，禁用滚动加载；请求进行中时跳过，防止重复请求
+  if (isTableView.value || isLoadMore.value) return;
 
   if (entry?.isIntersecting) {
     fetchMcpServerList();

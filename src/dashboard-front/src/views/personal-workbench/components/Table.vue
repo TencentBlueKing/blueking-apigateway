@@ -1133,7 +1133,6 @@ defineExpose({
 // 展开行出现后，固定列单元格会进入 position: sticky 模式（tdesign 的 t-table--column-fixed），
 // 单元格自身形成层叠上下文，其不透明的背景/遮罩会绘制在元素边框之上，把 1px 的底部边框盖住，
 // hover 或收起展开行时触发重绘才恢复正常，这里为固定列补画一条底部边框线
-
 :deep(.t-table__body > tr:not(.t-table__first-full-row, .t-table__last-full-row, :last-child)) {
 
   > td.t-table__cell--fixed-left-last::before {

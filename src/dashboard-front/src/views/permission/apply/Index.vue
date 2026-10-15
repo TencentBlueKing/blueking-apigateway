@@ -376,7 +376,7 @@ const getTableColumns = computed((): any[] => {
         if (['pending'].includes(row.status!)) {
           return (
             <div class="perm-apply-dot">
-              <Loading class="mr-4px" loading size="mini" mode="spin" theme="primary" />
+              <Loading class="mr-6px" loading size="mini" mode="spin" theme="primary" />
               {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
             </div>
           );
@@ -384,7 +384,7 @@ const getTableColumns = computed((): any[] => {
         else {
           return (
             <div class="perm-apply-dot">
-              <span class={['dot', { [row.status!]: row.status }]} />
+              <span class={['ag-dot mr-6px', { [row.status!]: row.status }]} />
               {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
             </div>
           );
@@ -760,27 +760,6 @@ const handleClearSelection = () => {
     height: 42px !important;
     padding: 0 !important;
     cursor: default !important;
-  }
-}
-
-:deep(.perm-apply-dot) {
-
-  .dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: 3px;
-    border-radius: 50%;
-
-    &.approved {
-      background-color: #e6f6eb;
-      border: 1px solid #43c472;
-    }
-
-    &.rejected {
-      background-color: #ffe6e6;
-      border: 1px solid #ea3636;
-    }
   }
 }
 </style>
