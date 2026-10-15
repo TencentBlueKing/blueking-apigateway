@@ -257,13 +257,12 @@ import type {
 import type { INavItem } from '../components/DocDetailSideNav.vue';
 import type { ISdkItem } from '../components/DocSdkSection.vue';
 import { type DocTab, docTabKey } from '../utils/doc-context';
-import MarkdownIt from 'markdown-it';
+import { createMarkdownRenderer } from '@/utils/markdown';
 import DocDetailMainContent, { type IDocApi, type IDocContent } from '../components/DocDetailMainContent.vue';
 import DocDetailSideContent, { type IDocBasics } from '../components/DocDetailSideContent.vue';
 import ApplyPermissionDialog from '../components/ApplyPermissionDialog.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
-import hljs from 'highlight.js';
 import { useEnv } from '@/stores';
 import { buildResourceUrl } from '../utils/compose-doc';
 
@@ -271,15 +270,6 @@ interface IApiGroup {
   id: number
   name: string
   apiList: IDocApi[]
-}
-
-interface IMarkdownRenderEnv {
-  headings: INavItem[]
-}
-
-interface IRenderedMarkdown {
-  html: string
-  headings: INavItem[]
 }
 
 type TemplateElement = Element | ComponentPublicInstance | null;
@@ -546,57 +536,8 @@ const handleApiClick = (resId: number, apiName: string) => {
   });
 };
 
-const md = new MarkdownIt({
-  linkify: false,
-  html: true,
-  breaks: true,
-  highlight(str: string, lang: string) {
-    try {
-      if (lang && hljs.getLanguage(lang)) {
-        return hljs.highlight(str, {
-          language: lang,
-          ignoreIllegals: true,
-        }).value;
-      }
-    }
-    catch {
-      return str;
-    }
-    return str;
-  },
-});
-
-// markdown 解析器自定义规则，用于给 ### 标题添加 id，导航要用
-md.renderer.rules.heading_open = function (tokens, idx, options, env, self) {
-  const curToken = tokens[idx];
-  const nextToken = tokens[idx + 1];
-  const renderEnv = env as IMarkdownRenderEnv;
-  // 找到 ### 标题，并且只包含一行文本的 token
-  if (curToken.markup === '###' && nextToken?.type === 'inline') {
-    const headingText = nextToken.content;
-    const duplicateCount = renderEnv.headings.filter(item => item.name === headingText).length;
-    const headingIdText = duplicateCount ? `${headingText}${duplicateCount + 1}` : headingText;
-    // 给标题元素ID一个前缀，便于导航目录识别
-    const idPrefix = 'doc-heading-';
-    curToken.attrPush([
-      'id',
-      `${idPrefix}${headingIdText}`,
-    ]);
-    renderEnv.headings.push({
-      id: `${idPrefix}${headingIdText}`,
-      name: headingText,
-    });
-  }
-  return self.renderToken(tokens, idx, options);
-};
-
-const renderMarkdown = (content = ''): IRenderedMarkdown => {
-  const renderEnv: IMarkdownRenderEnv = { headings: [] };
-  return {
-    html: md.render(content, renderEnv),
-    headings: renderEnv.headings,
-  };
-};
+// 统一 Markdown 渲染：代码块带复制按钮、链接新窗口打开、### 标题收集导航
+const { renderMarkdown } = createMarkdownRenderer({ withHeadingIds: true });
 
 const getApigwResourceDoc = async () => {
   try {

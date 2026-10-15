@@ -18,7 +18,10 @@
 
 <template>
   <div class="component-doc">
-    <div class="component-content">
+    <div
+      ref="componentContentRef"
+      class="component-content"
+    >
       <div class="component-mate mb-12px">
         <div class="min-w-0 truncate">
           <strong
@@ -143,8 +146,7 @@
 <script setup lang="ts">
 import { useGateway } from '@/stores';
 import { copy } from '@/utils';
-import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import { createMarkdownRenderer } from '@/utils/markdown';
 import {
   getApigwResourceDocDocs,
   getApigwResourceSDKDocs,
@@ -211,96 +213,29 @@ const curApigw = ref<Partial<IGatewayDocsDetail>>({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
+const componentContentRef = ref<HTMLElement | null>(null);
 
 // 请求方法统一大写，用于调用地址徽标展示
 const curMethod = computed(() => (curComponent.value.method || '').toUpperCase());
 
-const md = new MarkdownIt({
-  linkify: false,
-  html: true,
-  breaks: true,
-  highlight(str: string, lang: string) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str, true).value;
-      }
-      catch (err) {
-        console.error(err);
-      }
-    }
+// 统一 Markdown 渲染：代码块带复制按钮、链接新窗口打开
+const { md } = createMarkdownRenderer();
 
-    return '';
-  },
+// 事件委托：点击复制按钮时复制对应 pre 内的文本
+const handleCopyClick = (e: MouseEvent) => {
+  const btn = (e.target as HTMLElement).closest('.ag-copy-btn');
+  if (!btn) return;
+  const pre = btn.closest('.pre-wrapper')?.querySelector('pre');
+  if (pre) copy(pre.innerText);
+};
+
+onMounted(() => {
+  componentContentRef.value?.addEventListener('click', handleCopyClick);
 });
 
-const initMarkdownHtml = (box: string) => {
-  nextTick(() => {
-    const markdownDom = document.getElementById(box);
-    // 右侧导航
-    // const titles = markdownDom?.querySelectorAll('h3');
-    if (box === 'sdk-markdown') {
-      // sdkNavList.value = [];
-      // const sdkNavArr = [];
-      // titles?.forEach((item) => {
-      //   const name = String(item?.firstChild?.nodeValue).trim();
-      //   const id = slugify(name);
-      //   item.id = `${curComponentName.value}?${id}`;
-      //   sdkNavArr.push({
-      //     id: `${curComponentName.value}?${id}`,
-      //     name,
-      //   });
-      // });
-      // sdkNavList.value = sdkNavArr;
-    }
-    else {
-      // componentNavList.value = [];
-      // const componentNavArr = [];
-      // titles?.forEach((item) => {
-      //   const name = String(item?.innerText).trim();
-      //   const id = slugify(name);
-      //   item.id = `${curComponentName.value}?${id}`;
-      //   componentNavArr.push({
-      //     id: `${curComponentName.value}?${id}`,
-      //     name,
-      //   });
-      // });
-      // componentNavList.value = componentNavArr;
-    }
-
-    // 复制代码
-    markdownDom?.querySelectorAll('a')?.forEach((item) => {
-      item.target = '_blank';
-    });
-    markdownDom?.querySelectorAll('pre')?.forEach((item) => {
-      const parentDiv = document.createElement('div');
-      const btn = document.createElement('button');
-      const codeBox = document.createElement('div');
-      const code = item?.querySelector('code')?.innerText;
-      parentDiv.className = 'pre-wrapper';
-      btn.className = 'ag-copy-btn';
-      codeBox.className = 'code-box';
-      btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
-      btn.setAttribute('data-copy', code as string);
-      parentDiv?.appendChild(btn);
-      codeBox?.appendChild(item?.querySelector('code') as Node);
-      item?.appendChild(codeBox);
-      item?.parentNode?.replaceChild(parentDiv, item);
-      parentDiv?.appendChild(item);
-    });
-
-    setTimeout(() => {
-      const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
-
-      const handleCopy = function (this: HTMLElement) {
-        copy(this.dataset?.copy ?? '');
-      };
-
-      copyDoms.forEach((dom) => {
-        (dom as HTMLElement).onclick = handleCopy as any;
-      });
-    }, 1000);
-  });
-};
+onUnmounted(() => {
+  componentContentRef.value?.removeEventListener('click', handleCopyClick);
+});
 
 const getApigwAPIDetail = async () => {
   curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name ?? '', { source: 'api_debug' });
@@ -346,8 +281,6 @@ const getApigwResourceDoc = async () => {
   curComponent.value.markdownHtml = md.render(isSplitDoc ? (body_content || '') : (content || ''));
   renderHtmlIndex.value += 1;
   curDocUpdated.value = res.updated_time;
-
-  initMarkdownHtml('markdown');
 };
 
 const getApigwResourceSDK = async () => {
@@ -360,7 +293,6 @@ const getApigwResourceSDK = async () => {
   const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name ?? '', query);
   const { content } = res;
   sdkMarkdownHtml.value = md.render(content);
-  initMarkdownHtml('sdk-markdown');
 };
 
 // const getApigwSDK = async (language: string) => {

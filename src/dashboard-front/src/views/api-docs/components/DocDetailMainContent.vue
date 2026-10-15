@@ -218,11 +218,7 @@ import type {
 import type { IDocBasics } from './DocDetailSideContent.vue';
 import { docTabKey } from '../utils/doc-context';
 import { copy } from '@/utils';
-import {
-  useElementBounding,
-  useScroll,
-} from '@vueuse/core';
-import { minBy } from 'lodash-es';
+import { useScroll } from '@vueuse/core';
 
 // 两类 API 的公共字段必填，网关资源或 ESB 组件特有的字段按需提供。
 export interface IDocApi extends Pick<IDocsGatewaysResourcesListResponse,
@@ -278,15 +274,42 @@ const detailWrapRef = ref<HTMLElement | null>(null);
 const docHeadingElements = ref<HTMLElement[]>([]);
 // 当前应该高亮右侧导航的文档标题ID
 const activeDocHeadingId = ref('');
+
+// 点击导航后会触发平滑滚动，滚动结束前先停掉滚动联动，避免把点击的高亮覆盖掉
+let suppressScrollSpyUntil = 0;
+let isScrollSpyUpdate = false;
+
+const setActiveByScrollSpy = (id: string) => {
+  isScrollSpyUpdate = true;
+  activeDocHeadingId.value = id;
+  // 本次变更刷入 watcher 后还原标记
+  nextTick(() => {
+    isScrollSpyUpdate = false;
+  });
+};
+
+// 非滚动来源（点击右侧导航）导致的高亮变化：短时间内停止滚动联动
+watch(activeDocHeadingId, () => {
+  if (isScrollSpyUpdate) return;
+  suppressScrollSpyUntil = Date.now() + 800;
+});
+
 const { y } = useScroll(detailWrapRef, {
-  // 监听 API 文档容器的滚动结束事件，获取距离容器最上方且可见的标题元素
+  // 监听 API 文档容器的滚动结束事件，获取容器视口顶部以下最近的标题元素
   onStop: () => {
-    const topVisibleHeading = minBy(docHeadingElements.value, (el: HTMLElement) => {
-      const { top } = useElementBounding(el);
-      const offsetTop = top.value - 100;
-      return offsetTop > 0 ? offsetTop : Infinity;
+    if (Date.now() < suppressScrollSpyUntil) return;
+    const container = detailWrapRef.value;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const threshold = 100;
+    // 选中最后一个顶部位于容器顶部 + threshold 之内的标题
+    const active = [...docHeadingElements.value].reverse().find((el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      // 折叠中的认证方式等隐藏标题，rect 尺寸为 0，不参与计算
+      if (rect.height === 0) return false;
+      return rect.top <= containerRect.top + threshold;
     });
-    activeDocHeadingId.value = topVisibleHeading?.id || '';
+    setActiveByScrollSpy(active?.id || '');
   },
 });
 
@@ -307,10 +330,11 @@ const userVerifiedTooltips = computed(() => {
   return '--';
 });
 
+// 文档内容变化后重新收集标题（用于右侧导航高亮）
 watch(
   () => [markdownHtml, authMarkdownHtml],
   () => {
-    initMarkdownHtml('resMarkdown');
+    collectDocHeadings();
   },
 );
 
@@ -325,41 +349,31 @@ watch(
   },
 );
 
-const initMarkdownHtml = (box: string) => {
+const collectDocHeadings = () => {
   docHeadingElements.value = [];
   nextTick(() => {
-    const markdownDom = document.getElementById(box);
-    // 复制代码
-    markdownDom?.querySelectorAll('a')?.forEach((item) => {
-      item.target = '_blank';
-    });
-    markdownDom?.querySelectorAll('pre')?.forEach((item) => {
-      const parentDiv = document.createElement('div');
-      const btn = document.createElement('button');
-      const codeBox = document.createElement('div');
-      const code = item?.querySelector('code')?.innerText;
-      parentDiv.className = 'pre-wrapper';
-      btn.className = 'ag-copy-btn';
-      codeBox.className = 'code-box';
-      btn.title = t('复制');
-      btn.innerHTML = '<span><i class="apigateway-icon icon-ag-copy-info"></i></span>';
-      btn.setAttribute('data-copy', code ?? '');
-      parentDiv?.appendChild(btn);
-      const codeEl = item?.querySelector('code');
-      if (codeEl) codeBox?.appendChild(codeEl);
-      item?.appendChild(codeBox);
-      item?.parentNode?.replaceChild(parentDiv, item);
-      parentDiv?.appendChild(item);
-    });
     // 获取文档中的标题元素，它们的 id 以 doc-heading- 开头
     docHeadingElements.value = Array.from(
       detailWrapRef.value?.querySelectorAll<HTMLElement>('[id^=doc-heading-]') || [],
     );
-    markdownDom?.querySelectorAll<HTMLElement>('.ag-copy-btn').forEach((dom) => {
-      dom.onclick = () => copy(dom.dataset.copy ?? '');
-    });
   });
 };
+
+// 事件委托：点击复制按钮时复制对应 pre 内的文本
+const handleCopyClick = (e: MouseEvent) => {
+  const btn = (e.target as HTMLElement).closest('.ag-copy-btn');
+  if (!btn) return;
+  const pre = btn.closest('.pre-wrapper')?.querySelector('pre');
+  if (pre) copy(pre.innerText);
+};
+
+onMounted(() => {
+  detailWrapRef.value?.addEventListener('click', handleCopyClick);
+});
+
+onUnmounted(() => {
+  detailWrapRef.value?.removeEventListener('click', handleCopyClick);
+});
 
 const handleGatewayDetailClick = () => {
   emit('show-gateway-detail');
