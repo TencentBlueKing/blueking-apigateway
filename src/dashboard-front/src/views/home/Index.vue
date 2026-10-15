@@ -33,7 +33,7 @@
       <div class="guide-opt">
         <BkButton
           theme="primary"
-          class="mr8"
+          class="mr-8px"
           @click="toCreate"
         >
           {{ t('新建网关') }}

@@ -32,6 +32,7 @@
       :api-method="getTableData"
       :columns="tableColumns"
       :hidden-column="hiddenColumn"
+      :unchecked-column="uncheckedColumn"
       :row-class-name="handleSetRowClass"
       @clear-filter="handleClearFilter"
       @filter-change="handleFilterChange"
@@ -114,6 +115,9 @@ const router = useRouter();
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableData = ref<IMCPServer[]>([]);
 
+// 设置面板中默认不勾选的列
+const uncheckedColumn = ['label'];
+
 const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
@@ -124,7 +128,7 @@ const hiddenColumn = computed(() => {
   const hidePersonalClient = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT;
   const hideOAuthClient = !isEnabledOAuth.value;
 
-  const hiddenColumns = [];
+  const hiddenColumns: string[] = [];
   if (hidePromptsCount) hiddenColumns.push('prompts_count');
   if (hideOAuthClient) hiddenColumns.push('oauth2_public_client_enabled');
   if (hidePersonalClient) hiddenColumns.push('oauth2_personal_client_enabled');
@@ -316,7 +320,7 @@ const tableColumns = computed(() => {
       ellipsis: true,
     },
     {
-      title: t('Prompt数量'),
+      title: t('Prompt 数量'),
       colKey: 'prompts_count',
       width: 80,
       ellipsis: true,
@@ -388,7 +392,7 @@ const tableColumns = computed(() => {
       title: t('操作'),
       colKey: 'operate',
       fixed: 'right',
-      width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 102 : 80,
+      width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 92 : 60,
       cell: (_: unknown, { row }: { row: IMCPServer }) => (
         <div class="flex">
           <Button

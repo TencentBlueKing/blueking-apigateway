@@ -357,7 +357,7 @@ const tableColumns = computed(() => {
         if (['pending'].includes(row.status)) {
           return (
             <div class="perm-apply-dot">
-              <Loading class="mr-4px" loading size="mini" mode="spin" theme="primary" />
+              <Loading class="mr-6px" loading size="mini" mode="spin" theme="primary" />
               {status}
             </div>
           );

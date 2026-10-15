@@ -139,7 +139,7 @@
               {{ t('查询') }}
             </BkButton>
             <BkButton
-              class="ml10"
+              class="ml-10px"
               @click="handleClearFilterKey"
             >
               {{ t('重置') }}
