@@ -192,9 +192,9 @@
               :basics="curTargetBasics"
               :nav-list="navList"
               :markdown-html="curApiMarkdownHtml"
-              :extra-markdown-html="extraMarkdownHtml"
+              :auth-markdown-html="authMarkdownHtml"
               :updated-time="updatedTime"
-              :doc="curDoc"
+              :method="curMethod"
               :resource-url="resourceUrl"
               @show-gateway-detail="handleShowGatewayDetail"
               @show-apply-permission="handleShowApplyPermission"
@@ -264,16 +264,8 @@ import ApplyPermissionDialog from '../components/ApplyPermissionDialog.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
-import { useEnv, useFeatureFlag } from '@/stores';
-import {
-  buildResourceUrl,
-  getContentSchema,
-  isStructuredDoc,
-  mergeGatewayConfigIntoSchema,
-  needsAuthSection,
-  shouldRenderSchemaParams,
-  stripOverlappingMarkdown,
-} from '../utils/compose-doc';
+import { useEnv } from '@/stores';
+import { buildResourceUrl } from '../utils/compose-doc';
 
 interface IApiGroup {
   id: number
@@ -296,7 +288,6 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const envStore = useEnv();
-const featureFlagStore = useFeatureFlag();
 
 const curTab = ref<DocTab>('gateway');
 const board = ref('default');
@@ -315,7 +306,7 @@ const curComponentApiName = ref(''); // 当前组件api名称，路由用
 const curApi = ref<IDocApi | null>(null); // 当前选中的 api
 const curDoc = ref<IDocContent | null>(null);
 const curApiMarkdownHtml = ref('');
-const extraMarkdownHtml = ref('');
+const authMarkdownHtml = ref('');
 const updatedTime = ref<string | null>(null);
 const sdks = ref<ISdkItem[]>([]);
 const isGatewayDetailSliderShow = ref(false);
@@ -393,9 +384,16 @@ const allSystemList = computed(() => {
   return systems;
 });
 
+// 请求方法，优先取接口返回，兜底用资源自身的方法
+const curMethod = computed(() => (curDoc.value?.method || curApi.value?.method || '').toUpperCase());
+
+// 调用地址，优先取接口返回的完整地址，兜底用环境模板拼接
 const resourceUrl = computed(() => {
   if (!curApi.value || curTab.value !== 'gateway') {
     return '';
+  }
+  if (curDoc.value?.resource_url) {
+    return curDoc.value.resource_url;
   }
   const urlTemplate = envStore.env.BK_API_RESOURCE_URL_TMPL;
   if (!urlTemplate) {
@@ -615,25 +613,43 @@ const getApigwResourceDoc = async () => {
     else if (curTab.value === 'component') {
       res = await getSystemComponentDoc(board.value, curTargetName.value, api.name);
     }
-    const { content, updated_time } = res || {};
+    const {
+      content,
+      updated_time,
+      auth_content,
+      body_content,
+      resource_url,
+    } = res || {};
     curDoc.value = res ?? null;
     updatedTime.value = updated_time ?? null;
     navList.value = [];
 
-    if (curTab.value === 'gateway' && res && isStructuredDoc(res) && curApi.value) {
-      const extra = stripOverlappingMarkdown(content || '', shouldRenderSchemaParams(res));
-      const renderedExtra = renderMarkdown(extra);
-      const structuredNav = buildStructuredNav(res, curApi.value, extra);
-      extraMarkdownHtml.value = renderedExtra.html;
-      curApiMarkdownHtml.value = '';
+    if (curTab.value === 'gateway' && (auth_content || body_content || resource_url)) {
+      // 拆分后的资源文档：调用地址、认证方式、正文分别展示，不再渲染完整 content
+      const renderedAuth = renderMarkdown(auth_content || '');
+      const renderedBody = renderMarkdown(body_content || '');
+      authMarkdownHtml.value = renderedAuth.html;
+      curApiMarkdownHtml.value = renderedBody.html;
       navList.value = [
-        ...structuredNav,
-        ...renderedExtra.headings.filter(item => !structuredNav.some(nav => nav.id === item.id)),
+        {
+          id: 'doc-heading-调用地址',
+          name: t('调用地址'),
+        },
+        ...(auth_content
+          ? [
+            {
+              id: 'doc-heading-认证方式',
+              name: t('认证方式'),
+            },
+          ]
+          : []),
+        ...renderedBody.headings,
       ];
     }
     else {
+      // 组件文档或后端未升级时，仍按完整文档渲染
       const renderedMarkdown = renderMarkdown(content || '');
-      extraMarkdownHtml.value = '';
+      authMarkdownHtml.value = '';
       curApiMarkdownHtml.value = renderedMarkdown.html;
       navList.value = renderedMarkdown.headings;
     }
@@ -641,58 +657,6 @@ const getApigwResourceDoc = async () => {
   finally {
     isLoading.value = false;
   }
-};
-
-const buildStructuredNav = (
-  doc: IDocContent,
-  api: IDocApi,
-  extraMarkdown = '',
-): INavItem[] => {
-  const nav: INavItem[] = [
-    {
-      id: 'doc-heading-调用地址',
-      name: t('调用地址'),
-    },
-  ];
-  if (needsAuthSection({
-    plugins: doc.plugins,
-    verifiedAppRequired: api.verified_app_required,
-    verifiedUserRequired: api.verified_user_required,
-    isTenantMode: featureFlagStore.isTenantMode,
-  })) {
-    nav.push({
-      id: 'doc-heading-认证方式',
-      name: t('认证方式'),
-    });
-  }
-  if (shouldRenderSchemaParams(doc)) {
-    const schema = mergeGatewayConfigIntoSchema(doc.openapi_schema, {
-      path: api.path,
-      plugins: doc.plugins,
-    });
-    if (schema.parameters?.length || getContentSchema(schema.requestBody?.content)) {
-      nav.push({
-        id: 'doc-heading-请求参数',
-        name: t('请求参数'),
-      });
-    }
-    const hasResponseContent = Object.values(schema.responses || {}).some((response) => {
-      return Boolean(response.description || getContentSchema(response.content));
-    });
-    if (hasResponseContent) {
-      nav.push({
-        id: 'doc-heading-响应参数',
-        name: t('响应参数'),
-      });
-    }
-  }
-  if (extraMarkdown && !/^#{1,6}\s+/m.test(extraMarkdown)) {
-    nav.push({
-      id: 'doc-heading-补充说明',
-      name: t('补充说明'),
-    });
-  }
-  return nav;
 };
 
 const handleStageChange = () => {
