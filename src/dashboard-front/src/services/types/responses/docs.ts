@@ -166,6 +166,14 @@ export interface IDocsGatewaysResourcesDocReadResponse {
   render_mode?: DocsDocRenderMode
   plugins?: IDocsResourceDocPlugin[]
   openapi_schema?: IDocsOpenAPISchema
+  // 请求方法，如 GET
+  method?: string
+  // 完整调用地址
+  resource_url?: string
+  // 认证说明（Markdown）
+  auth_content?: string
+  // 文档正文（Markdown）
+  body_content?: string
 }
 
 // POST /docs/gateways/{gateway_name}/permissions/apply/

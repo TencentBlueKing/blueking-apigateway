@@ -19,12 +19,12 @@
 <template>
   <div>
     <article
-      v-if="showSection"
+      v-if="markdownHtml"
       class="doc-auth-section ag-markdown-view"
     >
       <header
         class="auth-header"
-        @click="isExpanded = !isExpanded"
+        @click="handleToggle"
       >
         <AgIcon
           name="down-shape"
@@ -34,279 +34,55 @@
         <h3 id="doc-heading-认证方式">
           {{ t('认证方式') }}
         </h3>
+        <BkLink
+          v-if="authDocUrl"
+          class="auth-doc-link"
+          theme="primary"
+          :href="authDocUrl"
+          target="_blank"
+          @click.stop
+        >
+          {{ t('查看文档') }}
+          <AgIcon
+            name="jump"
+            size="12"
+            class="auth-doc-link-icon"
+          />
+        </BkLink>
       </header>
       <div
         v-show="isExpanded"
+        v-bk-xss-html="markdownHtml"
         class="auth-body"
-      >
-        <p>
-          {{ introText }}
-          <BkLink
-            class="auth-doc-link"
-            :disabled="!authDocUrl"
-            theme="primary"
-            :href="authDocUrl"
-            target="_blank"
-          >
-            {{ t('查看文档') }}
-            <AgIcon
-              name="jump"
-              size="12"
-              class="auth-doc-link-icon"
-            />
-          </BkLink>
-        </p>
-
-        <table>
-          <thead>
-            <tr>
-              <th>{{ t('请求头') }}</th>
-              <th>{{ t('示例') }}</th>
-              <th>{{ t('必选') }}</th>
-              <th>{{ t('描述') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="header in headerRows"
-              :key="header.name"
-            >
-              <td>{{ header.name }}</td>
-              <td>{{ header.example }}</td>
-              <td>{{ header.required ? t('是') : t('否') }}</td>
-              <td>
-                {{ header.description }}
-                <BkTag
-                  v-if="header.tag"
-                  class="ml-8px"
-                  size="small"
-                  theme="success"
-                >
-                  {{ t('推荐') }}
-                </BkTag>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h4>{{ t('请求示例') }}</h4>
-        <BkTab
-          v-model:active="exampleTab"
-          type="unborder-card"
-          class="example-tab"
-        >
-          <BkTabPanel
-            name="curl"
-            label="cURL"
-          >
-            <div class="pre-wrapper">
-              <CopyButton
-                :source="recommendedCurl"
-                class="example-copy"
-              />
-              <pre><code>{{ recommendedCurl }}</code></pre>
-            </div>
-          </BkTabPanel>
-          <BkTabPanel
-            name="python"
-            label="Python"
-          >
-            <div class="pre-wrapper">
-              <CopyButton
-                :source="pythonExample"
-                class="example-copy"
-              />
-              <pre><code>{{ pythonExample }}</code></pre>
-            </div>
-          </BkTabPanel>
-        </BkTab>
-      </div>
+      />
     </article>
   </div>
 </template>
 
 <script lang="ts" setup>
-import {
-  HEADER_API_KEY,
-  HEADER_AUTHORIZATION,
-  HEADER_BKAPI_AUTHORIZATION,
-  HEADER_BK_TENANT_ID,
-  HEADER_BK_USERNAME,
-  buildCurlCommand,
-  getAccessTokenSource,
-  isUsernameHeaderRequired,
-  needsAuthSection,
-} from '../utils/compose-doc';
-import type { IDocsResourceDocPlugin } from '@/services/types/responses/docs.ts';
-import { useEnv, useFeatureFlag } from '@/stores';
-
-interface IHeaderRow {
-  name: string
-  example: string
-  required: boolean
-  description: string
-  tag?: 'recommended'
-}
+import { useEnv } from '@/stores';
 
 interface IProps {
-  plugins?: IDocsResourceDocPlugin[]
-  verifiedAppRequired?: boolean
-  verifiedUserRequired?: boolean
-  resourceUrl?: string
-  method?: string
+  // 认证说明 markdown 渲染后的 html
+  markdownHtml?: string
 }
 
-const {
-  plugins = [],
-  verifiedAppRequired = false,
-  verifiedUserRequired = false,
-  resourceUrl = 'http://example.com/api',
-  method = 'GET',
-} = defineProps<IProps>();
+const { markdownHtml = '' } = defineProps<IProps>();
 
 const { t } = useI18n();
-const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 
-const exampleTab = ref('curl');
 const isExpanded = ref(false);
 
-const loginTicketKey = 'bk_token';
+// 认证方式查看详情入口
+const authDocUrl = computed(() => envStore.env?.DOC_LINKS?.AUTH);
 
-const requestMethod = computed(() => (method || 'GET').toUpperCase());
-const pythonRequestMethod = computed(() => {
-  const name = requestMethod.value.toLowerCase();
-  return ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(name) ? name : 'request';
-});
+const handleToggle = () => {
+  isExpanded.value = !isExpanded.value;
+};
 
-const tokenSource = computed(() => getAccessTokenSource(plugins));
-const usernameRequired = computed(() => isUsernameHeaderRequired(plugins));
-const isTenantMode = computed(() => featureFlagStore.isTenantMode);
-const authDocUrl = computed(() => envStore.env.DOC_LINKS.AUTH);
-const showSection = computed(() => needsAuthSection({
-  plugins,
-  verifiedAppRequired,
-  verifiedUserRequired,
-  isTenantMode: isTenantMode.value,
-}));
-
-const introText = computed(() => {
-  if (tokenSource.value === 'bearer') {
-    return t('请求须在 Header 中传递 {header}。', { header: 'Authorization: Bearer {access_token}' });
-  }
-  if (tokenSource.value === 'api_key') {
-    return t('请求须在 Header 中传递 {header}。', { header: 'X-API-KEY: {access_token}' });
-  }
-  if (verifiedAppRequired || verifiedUserRequired) {
-    return t('请求须在 Header 中传递应用及用户认证信息。');
-  }
-  if (usernameRequired.value) {
-    return t('请求须在 Header 中传递 {header}。', { header: HEADER_BK_USERNAME + ': {username}' });
-  }
-  return t('请求须在 Header 中传递 {header}。', { header: HEADER_BK_TENANT_ID + ': {tenant_id}' });
-});
-
-const headerRows = computed<IHeaderRow[]>(() => {
-  const rows: IHeaderRow[] = [];
-  if (tokenSource.value === 'bearer') {
-    rows.push({
-      name: HEADER_AUTHORIZATION,
-      example: 'Bearer {access_token}',
-      required: true,
-      description: t('应用 / 用户 access_token，Bearer 格式'),
-      tag: 'recommended',
-    });
-  }
-  else if (tokenSource.value === 'api_key') {
-    rows.push({
-      name: HEADER_API_KEY,
-      example: '{access_token}',
-      required: true,
-      description: t('应用 / 用户 access_token'),
-      tag: 'recommended',
-    });
-  }
-  if (!tokenSource.value && (verifiedAppRequired || verifiedUserRequired)) {
-    rows.push({
-      name: HEADER_BKAPI_AUTHORIZATION,
-      example: '{"bk_app_code":"x","bk_app_secret":"y"}',
-      required: true,
-      description: t('值为 JSON 格式字符串，用于传递应用和用户认证信息'),
-    });
-  }
-  if (usernameRequired.value) {
-    rows.push({
-      name: HEADER_BK_USERNAME,
-      example: '{username}',
-      required: true,
-      description: t('当前用户名，须在请求头中传递'),
-    });
-  }
-  if (isTenantMode.value) {
-    rows.push({
-      name: HEADER_BK_TENANT_ID,
-      example: '{tenant_id}',
-      required: true,
-      description: t('租户 ID。单租户应用使用所属租户，全租户应用必须指定租户'),
-    });
-  }
-  return rows;
-});
-
-const curlOptions = computed(() => ({
-  method,
-  resourceUrl,
-  plugins,
-  verifiedAppRequired,
-  verifiedUserRequired,
-  isTenantMode: isTenantMode.value,
-  loginTicketKey,
-}));
-const recommendedCurl = computed(() => buildCurlCommand(curlOptions.value));
-
-const pythonExample = computed(() => {
-  const headers: string[] = [];
-  const usesBkapiAuthorization = !tokenSource.value && (verifiedAppRequired || verifiedUserRequired);
-  if (tokenSource.value === 'bearer') {
-    headers.push(`        "${HEADER_AUTHORIZATION}": "Bearer {access_token}",`);
-  }
-  else if (tokenSource.value === 'api_key') {
-    headers.push(`        "${HEADER_API_KEY}": "{access_token}",`);
-  }
-  else if (usesBkapiAuthorization) {
-    const payload: Record<string, string> = {};
-    if (verifiedAppRequired) {
-      payload.bk_app_code = 'x';
-      payload.bk_app_secret = 'y';
-    }
-    if (verifiedUserRequired) {
-      payload[loginTicketKey] = 'z';
-    }
-    headers.push(`        "${HEADER_BKAPI_AUTHORIZATION}": json.dumps(${JSON.stringify(payload)}),`);
-  }
-  if (usernameRequired.value) {
-    headers.push(`        "${HEADER_BK_USERNAME}": "{username}",`);
-  }
-  if (isTenantMode.value) {
-    headers.push(`        "${HEADER_BK_TENANT_ID}": "{tenant_id}",`);
-  }
-  const call = pythonRequestMethod.value === 'request'
-    ? `requests.request("${requestMethod.value}",`
-    : `requests.${pythonRequestMethod.value}(`;
-  return [
-    ...(usesBkapiAuthorization ? ['import json'] : []),
-    'import requests',
-    '',
-    call,
-    `    "${resourceUrl}",`,
-    '    headers={',
-    ...headers,
-    '    },',
-    ')',
-  ].join('\n');
-});
-
-watch(() => resourceUrl, () => {
+// 切换资源、环境后重新折叠
+watch(() => markdownHtml, () => {
   isExpanded.value = false;
 });
 </script>
@@ -341,53 +117,20 @@ watch(() => resourceUrl, () => {
     }
   }
 
-  .auth-body {
-    margin-top: 12px;
-  }
-
   .auth-doc-link {
     display: inline-flex;
     align-items: center;
     margin-left: 8px;
     font-size: 14px;
-    vertical-align: baseline;
+    line-height: 22px;
   }
 
   .auth-doc-link-icon {
     margin-left: 4px;
   }
 
-  table {
-
-    td:first-child,
-    th:first-child {
-      white-space: nowrap;
-    }
-  }
-
-  .example-tab {
-    margin-top: 8px;
-  }
-
-  .pre-wrapper {
-    position: relative;
-
-    .example-copy {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 1;
-    }
-
-    pre {
-      padding: 10px;
-      margin: 14px 0;
-      overflow: auto;
-      font-size: 14px;
-      line-height: 24px;
-      background: #f5f7fa;
-      border-radius: 2px;
-    }
+  .auth-body {
+    margin-top: 12px;
   }
 }
 </style>

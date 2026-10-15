@@ -101,6 +101,33 @@
               </div>
             </div>
           </div>
+          <!--  调用地址：请求方法 + 完整调用地址  -->
+          <section class="call-guide">
+            <h3>{{ t('调用地址') }}</h3>
+            <div class="url-hero">
+              <span
+                class="method-badge"
+                :class="curMethod"
+              >
+                {{ curMethod || '--' }}
+              </span>
+              <code
+                class="url-text"
+                :title="curComponent.resource_url || '--'"
+              >
+                {{ curComponent.resource_url || '--' }}
+              </code>
+              <CopyButton
+                v-if="curComponent.resource_url"
+                v-bk-tooltips="t('复制')"
+                class="url-copy"
+                :source="curComponent.resource_url"
+              />
+            </div>
+          </section>
+          <!--  认证方式：默认折叠，内容由后端接口的 auth_content 动态返回  -->
+          <DocAuthSection :markdown-html="curComponent.authMarkdownHtml" />
+          <!--  文档正文：请求参数、接口说明等，由后端接口的 body_content 返回  -->
           <div
             id="markdown"
             :key="renderHtmlIndex"
@@ -124,6 +151,7 @@ import {
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
 import { getResourcesOnline } from '@/services/source/online-debugging';
+import DocAuthSection from '@/views/api-docs/components/DocAuthSection.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
 import type { IDocsGatewaysResourcesListResponse } from '@/services/types/responses/docs.ts';
@@ -149,6 +177,12 @@ type IDocCom = IDocsGatewaysResourcesListResponse & {
   content: string
   innerHtml: string
   markdownHtml: string
+  // 后端拆分后的资源文档字段
+  resource_url?: string
+  auth_content?: string
+  body_content?: string
+  // 认证说明渲染结果
+  authMarkdownHtml: string
   kind?: string
 };
 
@@ -167,6 +201,8 @@ const curComponent = ref<IDocCom>({
   content: '',
   innerHtml: '',
   markdownHtml: '',
+  authMarkdownHtml: '',
+  resource_url: '',
 });
 const curApigw = ref<Partial<IGatewayDocsDetail>>({
   name: '',
@@ -175,6 +211,9 @@ const curApigw = ref<Partial<IGatewayDocsDetail>>({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
+
+// 请求方法统一大写，用于调用地址徽标展示
+const curMethod = computed(() => (curComponent.value.method || '').toUpperCase());
 
 const md = new MarkdownIt({
   linkify: false,
@@ -291,9 +330,20 @@ const getApigwResourceDoc = async () => {
     source: 'api_debug',
   };
   const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name ?? '', resourceName, query);
-  const { content } = res;
+  const {
+    content,
+    method,
+    resource_url,
+    auth_content,
+    body_content,
+  } = res;
+  // 拆分后的资源文档：调用地址、认证方式、正文分别展示，不再渲染完整 content
+  const isSplitDoc = Boolean(resource_url || auth_content || body_content);
   curComponent.value.content = content;
-  curComponent.value.markdownHtml = md.render(content);
+  curComponent.value.method = method || curComponent.value.method;
+  curComponent.value.resource_url = resource_url || '';
+  curComponent.value.authMarkdownHtml = md.render(auth_content || '');
+  curComponent.value.markdownHtml = md.render(isSplitDoc ? (body_content || '') : (content || ''));
   renderHtmlIndex.value += 1;
   curDocUpdated.value = res.updated_time;
 
@@ -839,5 +889,80 @@ h3 {
 .component-content {
   width: 100%;
   max-height: 100%;
+}
+
+.call-guide {
+  margin-bottom: 24px;
+
+  h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #313238;
+  }
+}
+
+.url-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 40px;
+  padding: 9px 12px;
+  background: #f5f7fa;
+  border: 1px solid #dcdee5;
+  border-radius: 2px;
+}
+
+.method-badge {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 2px 8px;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  color: #3a84ff;
+  text-align: center;
+  background: #e1ecff;
+  border-radius: 2px;
+
+  &.GET {
+    color: #14a568;
+    background: #e4f5e9;
+  }
+
+  &.POST {
+    color: #3a84ff;
+    background: #e1ecff;
+  }
+
+  &.PUT,
+  &.PATCH {
+    color: #e38b02;
+    background: #fff3e0;
+  }
+
+  &.DELETE {
+    color: #ea3636;
+    background: #feebea;
+  }
+}
+
+.url-text {
+  flex: 1;
+  min-width: 0;
+  font-family: "Lucida Console", "Courier New", Monaco, monospace;
+  font-size: 13px;
+  line-height: 22px;
+  color: #313238;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  white-space: normal;
+}
+
+.url-copy {
+  flex-shrink: 0;
+  margin-top: 3px;
 }
 </style>

@@ -150,91 +150,46 @@
           </section>
         </article>
         <article
-          v-if="curTab === 'gateway' || showStructured || markdownHtml"
+          v-if="curTab === 'gateway' || markdownHtml"
           class="res-detail-content"
         >
-          <!-- TODO 先隐藏，等后端改好 -->
-          <!--          <section -->
-          <!--            v-if="curTab === 'gateway'" -->
-          <!--            class="call-guide" -->
-          <!--          > -->
-          <!--            <h3 id="doc-heading-调用地址"> -->
-          <!--              {{ t('调用地址') }} -->
-          <!--            </h3> -->
-          <!--            <div class="url-hero"> -->
-          <!--              <span -->
-          <!--                class="method-badge" -->
-          <!--                :class="api.method" -->
-          <!--              >{{ api.method || '&#45;&#45;' }}</span> -->
-          <!--              <code -->
-          <!--                class="url-text" -->
-          <!--                :title="resourceUrl || '&#45;&#45;'" -->
-          <!--              >{{ resourceUrl || '&#45;&#45;' }}</code> -->
-          <!--              <CopyButton -->
-          <!--                v-if="resourceUrl" -->
-          <!--                v-bk-tooltips="t('复制')" -->
-          <!--                class="url-copy" -->
-          <!--                :source="resourceUrl" -->
-          <!--              /> -->
-          <!--            </div> -->
-          <!--          </section> -->
+          <!--  调用地址：请求方法 + 完整调用地址  -->
+          <section
+            v-if="curTab === 'gateway'"
+            class="call-guide"
+          >
+            <h3 id="doc-heading-调用地址">
+              {{ t('调用地址') }}
+            </h3>
+            <div class="url-hero">
+              <span
+                class="method-badge"
+                :class="method"
+              >
+                {{ method || '--' }}
+              </span>
+              <code
+                class="url-text"
+                :title="resourceUrl || '--'"
+              >
+                {{ resourceUrl || '--' }}
+              </code>
+              <CopyButton
+                v-if="resourceUrl"
+                v-bk-tooltips="t('复制')"
+                class="url-copy"
+                :source="resourceUrl"
+              />
+            </div>
+          </section>
+          <!--  认证方式：默认折叠，内容由后端接口的 auth_content 动态返回  -->
           <DocAuthSection
-            v-if="showStructured"
-            :plugins="doc?.plugins || []"
-            :verified-app-required="api.verified_app_required"
-            :verified-user-required="api.verified_user_required"
-            :resource-url="resourceUrl"
-            :method="api.method"
+            v-if="curTab === 'gateway'"
+            :markdown-html="authMarkdownHtml"
           />
-          <section
-            v-if="showRequestParams"
-            class="params-section"
-          >
-            <h3
-              id="doc-heading-请求参数"
-              class="params-title"
-            >
-              {{ t('请求参数') }}
-            </h3>
-            <DocSchemaParams
-              :schema="mergedSchema"
-              mode="request"
-            />
-          </section>
-          <section
-            v-if="showResponseParams"
-            class="params-section"
-          >
-            <h3
-              id="doc-heading-响应参数"
-              class="params-title"
-            >
-              {{ t('响应参数') }}
-            </h3>
-            <DocSchemaParams
-              :schema="mergedSchema"
-              mode="response"
-            />
-          </section>
-          <section
-            v-if="showStructured && extraMarkdownHtml"
-            class="extra-markdown"
-          >
-            <h3
-              v-if="!hasExtraHeading"
-              id="doc-heading-补充说明"
-              class="params-title"
-            >
-              {{ t('补充说明') }}
-            </h3>
-            <div
-              id="resMarkdownExtra"
-              v-bk-xss-html="extraMarkdownHtml"
-              class="ag-markdown-view"
-            />
-          </section>
+          <!--  文档正文：请求参数、接口说明等，由后端接口的 body_content 返回  -->
           <div
-            v-if="!showStructured && markdownHtml"
+            v-if="markdownHtml"
             id="resMarkdown"
             v-bk-xss-html="markdownHtml"
             class="ag-markdown-view"
@@ -255,7 +210,6 @@
 <script setup lang="ts">
 import DocDetailSideNav, { type INavItem } from './DocDetailSideNav.vue';
 import DocAuthSection from './DocAuthSection.vue';
-import DocSchemaParams from './DocSchemaParams.vue';
 import type {
   IDocsEsbBoardsSystemsComponentsListResponse,
   IDocsGatewaysResourcesDocReadResponse,
@@ -269,12 +223,6 @@ import {
   useScroll,
 } from '@vueuse/core';
 import { minBy } from 'lodash-es';
-import {
-  getContentSchema,
-  isStructuredDoc,
-  mergeGatewayConfigIntoSchema,
-  shouldRenderSchemaParams,
-} from '../utils/compose-doc';
 
 // 两类 API 的公共字段必填，网关资源或 ESB 组件特有的字段按需提供。
 export interface IDocApi extends Pick<IDocsGatewaysResourcesListResponse,
@@ -291,10 +239,14 @@ interface IProps {
   api?: IDocApi | null
   basics?: IDocBasics | null
   navList?: INavItem[]
+  // 文档正文（后端 body_content）渲染后的 html
   markdownHtml?: string
-  extraMarkdownHtml?: string
+  // 认证说明（后端 auth_content）渲染后的 html，为空时整块不展示
+  authMarkdownHtml?: string
   updatedTime?: string | null
-  doc?: IDocContent | null
+  // 调用地址：请求方法
+  method?: string
+  // 调用地址：完整调用地址
   resourceUrl?: string
 }
 
@@ -308,9 +260,9 @@ const {
   basics = null,
   navList = [],
   markdownHtml = '',
-  extraMarkdownHtml = '',
+  authMarkdownHtml = '',
   updatedTime = null,
-  doc = null,
+  method = '',
   resourceUrl = '',
 } = defineProps<IProps>();
 
@@ -338,33 +290,10 @@ const { y } = useScroll(detailWrapRef, {
   },
 });
 
-const showStructured = computed(() => isStructuredDoc(doc));
-const mergedSchema = computed(() => mergeGatewayConfigIntoSchema(doc?.openapi_schema, {
-  path: api?.path,
-  plugins: doc?.plugins,
-}));
-const showRequestParams = computed(() => {
-  if (!doc || !showStructured.value || !shouldRenderSchemaParams(doc)) {
-    return false;
-  }
-  return Boolean(
-    mergedSchema.value.parameters?.length
-    || getContentSchema(mergedSchema.value.requestBody?.content),
-  );
-});
-const showResponseParams = computed(() => {
-  if (!doc || !showStructured.value || !shouldRenderSchemaParams(doc)) {
-    return false;
-  }
-  return Object.values(mergedSchema.value.responses || {}).some((response) => {
-    return Boolean(response.description || getContentSchema(response.content));
-  });
-});
 const showApplyPermission = computed(() => {
   return curTab?.value === 'gateway'
     && Boolean(api?.verified_app_required && api?.resource_perm_required && api?.allow_apply_permission);
 });
-const hasExtraHeading = computed(() => /<h[1-6][\s>]/i.test(extraMarkdownHtml));
 
 const appVerifiedTooltips = computed(() => {
   if (curTab?.value === 'gateway') return t('应用访问该网关API时，是否需提供应用认证信息');
@@ -379,9 +308,9 @@ const userVerifiedTooltips = computed(() => {
 });
 
 watch(
-  () => [markdownHtml, extraMarkdownHtml, showStructured.value],
+  () => [markdownHtml, authMarkdownHtml],
   () => {
-    initMarkdownHtml(showStructured.value ? 'resMarkdownExtra' : 'resMarkdown');
+    initMarkdownHtml('resMarkdown');
   },
 );
 
@@ -630,22 +559,6 @@ $code-color: #63656e;
       .url-copy {
         flex-shrink: 0;
         margin-top: 3px;
-      }
-
-      .params-title {
-        margin: 0 0 12px;
-        font-size: 16px;
-        font-weight: bold;
-        line-height: 22px;
-        color: #313238;
-      }
-
-      .params-section {
-        margin-top: 24px;
-      }
-
-      .extra-markdown {
-        margin-top: 24px;
       }
     }
 
