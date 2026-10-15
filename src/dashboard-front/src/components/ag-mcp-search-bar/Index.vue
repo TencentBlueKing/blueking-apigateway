@@ -22,7 +22,7 @@
     <slot name="mcpServerBtn" />
     <BkPopover
       placement="top"
-      :content="t('请先在下方卡片左上角 勾选 至少1个MCP Server, 然后即可点击此按钮进行批量复制。')"
+      :content="t('请先在下方卡片左上角 勾选 至少1个 MCP Server, 然后即可点击此按钮进行批量复制。')"
       :popover-delay="0"
       :disabled="selections?.size > 0"
     >

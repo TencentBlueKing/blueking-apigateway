@@ -129,6 +129,17 @@
                   }"
                 >
                   <BkDropdownItem
+                    v-if="!server.status"
+                    @click.stop="handleEditClick"
+                  >
+                    <BkButton
+                      size="small"
+                      text
+                    >
+                      {{ t("编辑") }}
+                    </BkButton>
+                  </BkDropdownItem>
+                  <BkDropdownItem
                     v-if="Boolean(server.status)"
                     @click.stop="handleSuspendClick"
                   >

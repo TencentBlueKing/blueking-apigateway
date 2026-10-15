@@ -229,6 +229,7 @@ defineExpose({
         width: auto;
         white-space: nowrap;
         text-align: right;
+        padding-right: 8px;
       }
 
       .bk-form-content {
