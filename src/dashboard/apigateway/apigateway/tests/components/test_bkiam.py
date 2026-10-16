@@ -32,7 +32,7 @@ def _bkiam_settings(settings):
 def mock_headers(mocker):
     return mocker.patch(
         "apigateway.components.bkiam.gen_gateway_headers",
-        side_effect=lambda: {"X-Bkapi-Authorization": "credentials"},
+        side_effect=lambda **_kwargs: {"X-Bkapi-Authorization": "credentials"},
     )
 
 
@@ -59,6 +59,10 @@ def test_direct_auth_returns_explicit_decision_and_uses_gateway_contract(mocker,
 
     assert bkiam.direct_auth(payload) is True
     assert bkiam.direct_auth(payload) is False
+    assert mock_headers.call_args_list == [
+        call(with_operation_tenant_headers=True),
+        call(with_operation_tenant_headers=True),
+    ]
     assert mock_post.call_args_list == [
         call(
             url=("https://bkiam.example.com/prod/api/v1/open/rbac/authorization/systems/bk_apigateway/auth/"),
