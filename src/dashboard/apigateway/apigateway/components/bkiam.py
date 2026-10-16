@@ -161,7 +161,7 @@ def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs
     """
     统一调用权限中心 V4 网关 API。
     """
-    headers = gen_gateway_headers()
+    headers = gen_gateway_headers(with_operation_tenant_headers=True)
     if more_headers:
         headers.update(more_headers)
 
