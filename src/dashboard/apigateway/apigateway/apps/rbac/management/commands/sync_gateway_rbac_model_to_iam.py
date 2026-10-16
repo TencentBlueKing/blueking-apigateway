@@ -29,7 +29,6 @@ class Command(BaseCommand):
             self.stdout.write("BK_IAM_V4_ENABLED=false; skipped")
             return
 
-        self._validate_settings()
         try:
             result = GatewayIAMModelSyncer().sync()
         except Exception as err:
@@ -42,7 +41,3 @@ class Command(BaseCommand):
                 unchanged=result.unchanged,
             )
         )
-
-    def _validate_settings(self) -> None:
-        if not settings.BK_IAM_V4_MANAGERS:
-            raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员")

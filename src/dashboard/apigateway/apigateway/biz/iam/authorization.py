@@ -20,7 +20,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Mapping
 
-from django.conf import settings
 from django.utils import timezone
 
 from apigateway.apps.rbac.constants import GatewayResourceTypeEnum
@@ -40,14 +39,6 @@ if TYPE_CHECKING:
     from apigateway.apps.rbac.models import GatewayMember
 
 logger = logging.getLogger(__name__)
-
-
-def get_gateway_iam_system_operator() -> str:
-    """Return the configured IAM system operator for background writes."""
-    managers = settings.BK_IAM_V4_MANAGERS
-    if not managers:
-        raise ValueError("BK_IAM_V4_MANAGERS must contain at least one non-empty manager")
-    return managers[0]
 
 
 @dataclass(frozen=True)

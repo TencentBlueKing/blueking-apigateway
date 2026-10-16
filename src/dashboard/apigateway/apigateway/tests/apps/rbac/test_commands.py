@@ -28,6 +28,7 @@ from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.iam import GatewayIAMModelSyncResult, GatewayIAMSyncItem, GatewayIAMSyncResult
+from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -95,7 +96,6 @@ def test_sync_gateway_rbac_model_to_iam_skips_when_disabled(settings, mocker):
 
 def test_sync_gateway_rbac_model_to_iam_reports_deterministic_counts(settings, mocker):
     settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_MANAGERS = ["admin"]
     sync = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_model_to_iam.GatewayIAMModelSyncer"
     ).return_value.sync
@@ -113,7 +113,6 @@ def test_sync_gateway_rbac_model_to_iam_reports_deterministic_counts(settings, m
 
 def test_sync_gateway_rbac_model_to_iam_converts_failure_to_command_error(settings, mocker):
     settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_MANAGERS = ["admin"]
     mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_model_to_iam.GatewayIAMModelSyncer"
     ).return_value.sync.side_effect = RuntimeError("IAM unavailable")
@@ -124,7 +123,6 @@ def test_sync_gateway_rbac_model_to_iam_converts_failure_to_command_error(settin
 
 def _enable_iam(settings):
     settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_MANAGERS = ["admin"]
 
 
 def _sync_result(gateway, *, applied=False, grant_count=0):
@@ -226,7 +224,7 @@ def test_sync_gateway_rbac_auth_to_iam_accepts_gateway_id_or_name(
     reconcile.assert_called_once_with(
         fake_gateway.id,
         apply=False,
-        operator="admin",
+        operator=BK_IAM_V4_SYSTEM_ID,
         username=None,
     )
 
@@ -395,7 +393,6 @@ def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, 
 
 def test_add_global_gateway_administrators_apply_succeeds_when_iam_disabled(settings, mocker):
     settings.BK_IAM_V4_ENABLED = False
-    settings.BK_IAM_V4_MANAGERS = []
     gateway = G(Gateway, tenant_mode="global", tenant_id="")
     apply_iam = mocker.patch("apigateway.biz.gateway.members.apply_gateway_member_snapshots_to_iam")
     synchronizer = mocker.patch(
@@ -553,7 +550,7 @@ def test_add_global_gateway_administrators_reconciles_existing_local_member(sett
     reconcile.assert_called_once_with(
         gateway.id,
         apply=True,
-        operator="admin",
+        operator=BK_IAM_V4_SYSTEM_ID,
         username="alice",
     )
     assert "summary gateways=1 planned=0 applied=1 unchanged=1 failed=0\n" in output.getvalue()
@@ -594,19 +591,3 @@ def test_add_global_gateway_administrators_rejects_empty_comma_separated_usernam
 
     with pytest.raises(CommandError, match="--username 不能为空"):
         call_command("add_global_gateway_administrators", username=["alice,,bob"])
-
-
-def test_add_global_gateway_administrators_rejects_when_iam_enabled_but_managers_empty(settings):
-    settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_MANAGERS = []
-
-    with pytest.raises(CommandError, match="BK_IAM_V4_MANAGERS"):
-        call_command("add_global_gateway_administrators", username=["alice"], apply=True)
-
-
-def test_add_global_gateway_administrators_dry_run_ignores_empty_managers(settings):
-    settings.BK_IAM_V4_ENABLED = True
-    settings.BK_IAM_V4_MANAGERS = []
-    G(Gateway, tenant_mode="global", tenant_id="")
-
-    call_command("add_global_gateway_administrators", username=["alice"])
