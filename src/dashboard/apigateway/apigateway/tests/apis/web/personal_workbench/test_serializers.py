@@ -35,6 +35,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Resource
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -190,6 +191,51 @@ class TestWorkbenchGatewayPermissionMyApplyOutputSLZ:
         assert data["itsm_ticket_url"] == "https://itsm/ticket/123"
         assert "handled_by" not in data
         assert "handled_time" not in data
+
+    def test_partial_approved_returns_only_approved_resources(self, fake_gateway):
+        """部分通过只返回已通过资源，待审批仍返回申请时的全部资源。"""
+        approved = G(Resource, gateway=fake_gateway, name="approved_api", path="/approved/", method="GET")
+        rejected = G(Resource, gateway=fake_gateway, name="rejected_api", path="/rejected/", method="POST")
+
+        partial_record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test_app",
+            applied_by="test_user",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PARTIAL_APPROVED.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        )
+        partial_record.resource_ids = [approved.id, rejected.id]
+        partial_record.handled_resource_ids = {
+            ApplyStatusEnum.APPROVED.value: [approved.id],
+            ApplyStatusEnum.REJECTED.value: [rejected.id],
+        }
+        partial_record.save(update_fields=["_resource_ids", "_handled_resource_ids"])
+
+        pending_record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test_app",
+            applied_by="test_user",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        )
+        pending_record.resource_ids = [approved.id, rejected.id]
+        pending_record.save(update_fields=["_resource_ids"])
+
+        partial_data = WorkbenchGatewayPermissionMyApplyOutputSLZ(
+            partial_record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        ).data
+        pending_data = WorkbenchGatewayPermissionMyApplyOutputSLZ(
+            pending_record,
+            context={"gateway_approvers": {fake_gateway.id: ["admin"]}},
+        ).data
+
+        assert [item["id"] for item in partial_data["resources"]] == [approved.id]
+        assert {item["id"] for item in pending_data["resources"]} == {approved.id, rejected.id}
 
 
 class TestWorkbenchMCPPermissionMyApplyOutputSLZ:

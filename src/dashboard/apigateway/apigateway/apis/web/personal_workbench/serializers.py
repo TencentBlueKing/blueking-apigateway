@@ -21,6 +21,7 @@ from rest_framework import serializers
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import (
+    ApplyStatusEnum,
     GrantDimensionEnum,
     PermissionApplyExpireDaysEnum,
 )
@@ -218,7 +219,12 @@ class WorkbenchGatewayPermissionMyApplyOutputSLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
     def get_resources(self, obj) -> list:
-        return _get_resources(self, obj)
+        resources = _get_resources(self, obj)
+        if obj.status != ApplyStatusEnum.PARTIAL_APPROVED.value:
+            return resources
+
+        approved_ids = set(obj.handled_resource_ids.get(ApplyStatusEnum.APPROVED.value) or [])
+        return [resource for resource in resources if resource["id"] in approved_ids]
 
     def get_applied_by(self, obj) -> str:
         return ResourcePermissionHandler.convert_applied_by_to_display_name(
