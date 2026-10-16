@@ -1128,6 +1128,7 @@ defineExpose({
 
   > td.t-table__cell--fixed-left-last::before {
     position: absolute;
+    top: auto;
     right: 0;
     bottom: -1px;
     left: 0;

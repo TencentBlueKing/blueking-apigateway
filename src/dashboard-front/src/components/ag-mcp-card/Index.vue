@@ -263,7 +263,7 @@
               content: `${t('发布于')} ${getUtcTimeAgo(server?.updated_time as string)}`,
               disabled: !isOverflow,
             }"
-            class="flex items-baseline gap-8px min-w-100px item-label"
+            class="flex items-baseline gap-4px min-w-100px item-label"
             :style="{ maxWidth: `calc(100% - ${operateIconWidth}px)` }"
           >
             <i class="apigateway-icon icon-ag-time-circle color-#979ba5 text-14px" />
@@ -297,7 +297,7 @@
                 content: `${t('Prompt 数量')}: ${String(server?.prompts_count)}`,
                 disabled: !isEnablePrompt,
               }"
-              class="flex items-baseline gap-4px ml-24px"
+              class="flex items-baseline gap-4px ml-16px"
             >
               <i class="apigateway-icon icon-ag-tishici color-#979ba5 text-14px" />
               <div class="truncate max-w-60px">
