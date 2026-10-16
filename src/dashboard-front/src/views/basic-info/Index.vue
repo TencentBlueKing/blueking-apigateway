@@ -312,7 +312,7 @@
                   <EditRelatedAppCodes
                     field="related_app_codes"
                     width="100%"
-                    :placeholder="t('请输入应用ID，以回车键确认')"
+                    :placeholder="t('请输入应用 ID，以回车键确认')"
                     :content="basicInfoData.related_app_codes ?? []"
                     :mode="canEditBasicInfo ? 'edit' : 'detail'"
                     @on-submit="(e: Record<string, string[]>) => handleRelatedAppCodesChange(e)"

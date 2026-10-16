@@ -23,12 +23,12 @@
         label-width="120"
       >
         <BkFormItem
-          :label="t('蓝鲸应用ID')"
+          :label="t('蓝鲸应用 ID')"
           label-width="98"
         >
           <BkInput
             v-model="filterData.bk_app_code"
-            :placeholder="t('请输入应用ID，按Enter搜索')"
+            :placeholder="t('请输入应用 ID，按 Enter 搜索')"
             clearable
             class="w-282px"
           />
@@ -112,7 +112,7 @@
           <div class="ag-kv-list">
             <div class="item">
               <div class="key">
-                {{ t("蓝鲸应用ID：") }}
+                {{ t("蓝鲸应用 ID：") }}
               </div>
               <div class="value">
                 {{ curRecord.bk_app_code }}
@@ -376,7 +376,7 @@ const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_
 const getTableColumns = computed((): any[] => {
   return [
     {
-      title: t('蓝鲸应用ID'),
+      title: t('蓝鲸应用 ID'),
       colKey: 'bk_app_code',
       ellipsis: true,
     },

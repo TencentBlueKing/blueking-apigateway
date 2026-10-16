@@ -30,7 +30,7 @@
         label-position="right"
         label-width="100"
       >
-        <BkFormItem :label="t('蓝鲸应用ID')">
+        <BkFormItem :label="t('蓝鲸应用 ID')">
           <div>{{ curSelections?.[0]?.bk_app_code || "--" }}</div>
         </BkFormItem>
         <BkFormItem :label="t('资源名称')">

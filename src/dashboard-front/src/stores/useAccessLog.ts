@@ -26,7 +26,7 @@ export const useAccessLog = defineStore('useAccessLog', {
     // 日期选择快捷方式
     baseDatepickerShortcuts: [
       {
-        text: t('最近5分钟'),
+        text: t('最近 5 分钟'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -35,7 +35,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近1小时'),
+        text: t('最近 1 小时'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -44,7 +44,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近6小时'),
+        text: t('最近 6 小时'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -53,7 +53,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近12小时'),
+        text: t('最近 12 小时'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -62,7 +62,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近1天'),
+        text: t('最近 1 天'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -71,7 +71,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近7天'),
+        text: t('最近 7 天'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -170,7 +170,7 @@ export const useAccessLog = defineStore('useAccessLog', {
     // 一天内的快捷方式
     shortcutsInDay: [
       {
-        text: t('最近5分钟'),
+        text: t('最近 5 分钟'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -179,7 +179,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近1小时'),
+        text: t('最近 1 小时'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -188,7 +188,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近6小时'),
+        text: t('最近 6 小时'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -197,7 +197,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近12小时'),
+        text: t('最近 12 小时'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -206,7 +206,7 @@ export const useAccessLog = defineStore('useAccessLog', {
         },
       },
       {
-        text: t('最近1天'),
+        text: t('最近 1 天'),
         value() {
           const end = new Date();
           const start = new Date();
@@ -225,7 +225,7 @@ export const useAccessLog = defineStore('useAccessLog', {
       ],
       alarmSubType: [
         {
-          name: t('后端响应状态码5xx'),
+          name: t('后端响应状态码 5xx'),
           value: 'status_code_5xx',
         },
         {
@@ -233,26 +233,26 @@ export const useAccessLog = defineStore('useAccessLog', {
           value: 'gateway_timeout',
         },
         {
-          name: t('请求后端502错误'),
+          name: t('请求后端 502 错误'),
           value: 'bad_gateway',
         },
       ],
       detectConfig: {
         duration: [
           {
-            name: t('5分钟'),
+            name: t('5 分钟'),
             value: 5 * 60,
           },
           {
-            name: t('10分钟'),
+            name: t('10 分钟'),
             value: 10 * 60,
           },
           {
-            name: t('30分钟'),
+            name: t('30 分钟'),
             value: 30 * 60,
           },
           {
-            name: t('60分钟'),
+            name: t('60 分钟'),
             value: 60 * 60,
           },
         ],
@@ -282,35 +282,35 @@ export const useAccessLog = defineStore('useAccessLog', {
       convergeConfig: {
         duration: [
           {
-            name: t('24小时'),
+            name: t('24 小时'),
             value: 1440 * 60,
           },
           {
-            name: t('12小时'),
+            name: t('12 小时'),
             value: 720 * 60,
           },
           {
-            name: t('6小时'),
+            name: t('6 小时'),
             value: 360 * 60,
           },
           {
-            name: t('1小时'),
+            name: t('1 小时'),
             value: 60 * 60,
           },
           {
-            name: t('30分钟'),
+            name: t('30 分钟'),
             value: 30 * 60,
           },
           {
-            name: t('15分钟'),
+            name: t('15 分钟'),
             value: 15 * 60,
           },
           {
-            name: t('5分钟'),
+            name: t('5 分钟'),
             value: 5 * 60,
           },
           {
-            name: t('0分钟'),
+            name: t('0 分钟'),
             value: 0,
           },
         ],

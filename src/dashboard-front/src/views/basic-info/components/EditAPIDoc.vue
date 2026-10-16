@@ -20,7 +20,7 @@
   <BkDialog
     width="640"
     :is-show="modelValue"
-    :title="t('编辑API文档')"
+    :title="t('编辑 API 文档')"
     @update:is-show="handleUpdateIsShow"
   >
     <div class="doc-form">
@@ -103,12 +103,12 @@
           />
         </BkFormItem>
 
-        <BkFormItem
+        <!-- <BkFormItem
           :label="t('文档地址')"
           class="virtual-required"
-        >
+          >
           <span class="link">{{ data?.docs_url || '--' }}</span>
-        </BkFormItem>
+          </BkFormItem> -->
       </BkForm>
     </div>
     <template #footer>
@@ -320,6 +320,11 @@ watch(
     if (modelValue) {
       const { doc_maintainers } = data as any;
       docForm.value = cloneDeep(doc_maintainers);
+      nextTick(() => {
+        if (selectorRef.value) {
+          selectorRef.value.isEditable = true;
+        }
+      });
     }
   },
 );
@@ -381,7 +386,9 @@ const handleUpdateIsShow = (value: boolean) => {
     formRef.value?.clearValidate();
     if (selectorRef.value) {
       selectorRef.value.isShowError = false;
-      selectorRef.value.isEditable = false;
+      if (!value) {
+        selectorRef.value.isEditable = false;
+      }
     }
   });
   emit('update:modelValue', value);

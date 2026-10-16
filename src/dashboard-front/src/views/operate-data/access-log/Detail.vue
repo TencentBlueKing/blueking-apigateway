@@ -106,7 +106,7 @@ const hasLlmSummary = computed(() => Boolean(details.value.result?.llm_summary))
 const currentApigwName = computed(() => details.value.result?.gateway_name || '--');
 
 const titleInfo = computed(() => t(
-  '蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情',
+  '蓝鲸应用 ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情',
   {
     detailsAppCode: details.value?.result?.app_code || '--',
     currentApigwName: currentApigwName.value,

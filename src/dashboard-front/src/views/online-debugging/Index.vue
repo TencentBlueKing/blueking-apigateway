@@ -283,7 +283,7 @@
                             v-model="appAuthorization.bk_app_code"
                             class="auth-value"
                             prefix="bk_app_code"
-                            :placeholder="t('请输入蓝鲸应用ID')"
+                            :placeholder="t('请输入蓝鲸应用 ID')"
                           />
                           <BkInput
                             v-model="appAuthorization.bk_app_secret"
@@ -1400,7 +1400,7 @@ const checkFormData = (data: any) => {
     Message({
       theme: 'error',
       delay: 5000,
-      message: t('应用ID格式不正确，只能包含：小写字母、数字、连字符(-)、下划线(_)，首字母必须是字母'),
+      message: t('应用 ID 格式不正确，只能包含：小写字母、数字、连字符(-)、下划线(_)，首字母必须是字母'),
     });
     return false;
   }

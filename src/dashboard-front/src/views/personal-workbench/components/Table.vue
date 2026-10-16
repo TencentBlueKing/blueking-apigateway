@@ -291,7 +291,7 @@ const tableColumns = computed(() => {
       },
     },
     {
-      title: t('蓝鲸应用ID'),
+      title: t('蓝鲸应用 ID'),
       colKey: 'bk_app_code',
       ellipsis: true,
     },

@@ -77,14 +77,14 @@
               </BkSelect>
             </BkFormItem>
             <BkFormItem
-              :label="t('蓝鲸应用ID')"
-              :label-width="locale.indexOf('zh-cn') > -1 ? 80 : 56"
+              :label="t('蓝鲸应用 ID')"
+              :label-width="locale.indexOf('zh-cn') > -1 ? 85 : 56"
             >
               <BkInput
                 v-model="filterData.bk_app_code"
                 clearable
                 type="search"
-                :placeholder="t('请输入应用ID')"
+                :placeholder="t('请输入应用 ID')"
               />
             </BkFormItem>
             <BkFormItem
@@ -422,7 +422,7 @@ const tableColumns = computed(() => {
       },
     },
     {
-      title: t('蓝鲸应用ID'),
+      title: t('蓝鲸应用 ID'),
       colKey: 'bk_app_code',
       ellipsis: true,
     },

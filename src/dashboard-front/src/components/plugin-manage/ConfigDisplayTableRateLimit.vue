@@ -87,7 +87,7 @@ const tableCols = ref<IColumn[]>([
     field: 'period',
   },
   {
-    label: t('蓝鲸应用ID'),
+    label: t('蓝鲸应用 ID'),
     field: 'appId',
   },
 ]);
