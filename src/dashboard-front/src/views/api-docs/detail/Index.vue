@@ -322,13 +322,7 @@ const debouncedKeyword = refDebounced(keyword, 500);
 const activeGroupPanelNames = ref<string[]>([]); // API分类 collapse 展开的 panel
 
 const searchPlaceholder = computed(() => {
-  return t(
-    '在{resourceLength}个{type}中搜索...',
-    {
-      resourceLength: apiList.value.length,
-      type: curTab.value === 'gateway' ? t('资源') : 'API',
-    },
-  );
+  return curTab.value === 'gateway' ? t('搜索资源名称、资源描述') : t('搜索 API 名称、API 描述');
 });
 
 const filteredApiList = computed(() => {

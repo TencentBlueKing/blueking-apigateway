@@ -170,7 +170,10 @@
             {{ t('操作') }}
           </div>
         </div>
-        <div class="table-list">
+        <div
+          ref="tableListRef"
+          class="table-list"
+        >
           <template
             v-if="['searchEmpty', 'error'].includes(emptyType ?? '') && !gatewaysList.length && !loading"
           >
@@ -260,7 +263,8 @@
                       display:
                         index < (visibleTagCountMap[item.id] ?? DEFAULT_VISIBLE)
                           ? 'inline-block'
-                          : 'none'
+                          : 'none',
+                      'flex-shrink': '0',
                     }"
                   >
                     <BkTag
@@ -469,6 +473,8 @@ const gatewaysList = ref<ConvertedGatewayType[]>([]);
 // 是否已初始化过网关列表数据
 const hasInitialized = ref(false);
 const loading = ref(false);
+// 无筛选条件下的网关总数量（用于判断是否需要展示创建引导页）
+const totalGatewayCount = ref(0);
 
 const pagination = ref({
   current: 1,
@@ -512,6 +518,26 @@ let filterTimer: number | null = null;
 
 // 防抖处理窗口大小变化
 let resizeTimer: number | null = null;
+
+// 列表容器：观测其宽度变化。
+// 拖动窗口高度时滚动条出现/消失会改变可用宽度，window.resize 之后布局可能尚未稳定，
+// 用 ResizeObserver 直接观测容器宽度最可靠
+const tableListRef = ref<HTMLElement | null>(null);
+let envResizeObserver: ResizeObserver | null = null;
+let lastObservedWidth = 0;
+
+const setupEnvResizeObserver = () => {
+  if (typeof ResizeObserver === 'undefined' || !tableListRef.value) return;
+  envResizeObserver?.disconnect();
+  envResizeObserver = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect?.width ?? 0;
+    // 仅宽度真正变化时才重算，避免无意义的重复计算
+    if (Math.abs(width - lastObservedWidth) < 1) return;
+    lastObservedWidth = width;
+    calculateVisibleTags();
+  });
+  envResizeObserver.observe(tableListRef.value);
+};
 
 const gatewayTypes = [
   {
@@ -620,7 +646,7 @@ const enableGatewayOperationStatus = computed(() => {
 
 const shouldShowGuide = computed(() => {
   const hasNoFilters = Object.values(filterData.value).filter(item => (item !== '' && item !== 'all')).length === 0;
-  return hasNoFilters && hasInitialized.value && !gatewaysList.value.length;
+  return hasNoFilters && hasInitialized.value && totalGatewayCount.value === 0;
 });
 
 watch(gatewaysList, () => {
@@ -702,6 +728,11 @@ const fetchGatewayList = async () => {
     gatewaysList.value = current === 1 ? convertedData : [...gatewaysList.value, ...convertedData];
 
     const count = response.count || 0;
+    // 无筛选条件时记录网关总数量，仅在“用户从未创建过网关”时展示创建引导页
+    const hasNoFilters = !filterData.value.keyword && filterData.value.kind === 'all';
+    if (hasNoFilters) {
+      totalGatewayCount.value = count;
+    }
     pagination.value = {
       ...pagination.value,
       count,
@@ -839,23 +870,59 @@ const handleResize = () => {
   }, 100);
 };
 
+// 原地测量元素宽度：元素保持在 DOM 原位置，确保 scoped 样式（.table-item 作用域）生效；
+// 早期 clone 到 document.body 会丢失作用域样式，导致隐藏标签测量偏小
 const measureElementWidth = (el?: HTMLElement | null) => {
   if (!el) return 0;
+  if (el.offsetWidth > 0) return el.offsetWidth;
   try {
-    if (el.offsetWidth && el.offsetWidth > 0) return el.offsetWidth;
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.style.visibility = 'hidden';
-    clone.style.position = 'absolute';
-    clone.style.display = 'inline-block';
-    clone.style.left = '-9999px';
-    clone.style.top = '-9999px';
-    document.body.appendChild(clone);
-    const w = clone.offsetWidth;
-    document.body.removeChild(clone);
+    const prev = {
+      display: el.style.display,
+      visibility: el.style.visibility,
+      position: el.style.position,
+      left: el.style.left,
+      top: el.style.top,
+    };
+    el.style.visibility = 'hidden';
+    el.style.position = 'absolute';
+    el.style.display = 'inline-block';
+    el.style.left = '-9999px';
+    el.style.top = '-9999px';
+    const w = el.offsetWidth;
+    el.style.display = prev.display;
+    el.style.visibility = prev.visibility;
+    el.style.position = prev.position;
+    el.style.left = prev.left;
+    el.style.top = prev.top;
     return w || 0;
   }
   catch {
     return el.offsetWidth || 0;
+  }
+};
+
+// 测量 "+X" 宽度：按「最坏情况」（只展示 1 个标签时数字最大）预留。
+// 使预留宽度恒定，切断「+X 数字变化 → 宽度变化 → 可见数量变化」的自反馈，
+// 否则同一宽度会因上一次状态不同而落到不同结果（表现为时好时坏）
+const measureMoreTagWidth = (el: HTMLElement | null | undefined, total: number) => {
+  if (!el) return 30;
+  const fallback = el.offsetWidth || 30;
+  try {
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.innerText = `+${Math.max(total - 1, 0)}`;
+    clone.style.visibility = 'hidden';
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '-9999px';
+    const parent = el.parentNode;
+    if (!parent) return fallback;
+    parent.appendChild(clone);
+    const w = clone.offsetWidth;
+    parent.removeChild(clone);
+    return w || fallback;
+  }
+  catch {
+    return fallback;
   }
 };
 
@@ -874,13 +941,15 @@ const calculateVisibleTags = () => {
       return;
     }
 
-    const containerWidth = container.offsetWidth;
+    const containerStyle = window.getComputedStyle(container);
+    // 内容区宽度：扣除 padding，再预留 8px 缓冲，避免标签贴到下一列
+    const containerWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft || '0') - parseFloat(containerStyle.paddingRight || '0') - 8;
 
     // 测量每个标签的真实宽度（包含 margin 估算）
     const rawMeasuredWidths = tagEls.map((el: HTMLElement | undefined) => el ? measureElementWidth(el) : 0);
     const measuredWidths = rawMeasuredWidths.slice(0, MAX_VISIBLE_TAGS);
-    // 估计 +X 的宽度
-    const measuredMoreWidth = moreEl ? measureElementWidth(moreEl) : 30;
+    // 按最坏情况预留 "+X" 的宽度（恒定，不随当前显示的数字变化）
+    const measuredMoreWidth = measureMoreTagWidth(moreEl, tagEls.length);
 
     let totalTagWidth = 0;
     let fitNoPlus = 0;
@@ -930,6 +999,7 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize);
   nextTick(() => {
     calculateVisibleTags();
+    setupEnvResizeObserver();
     setTimeout(() => calculateVisibleTags(), 100);
     setTimeout(() => calculateVisibleTags(), 300);
   });
@@ -937,6 +1007,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  envResizeObserver?.disconnect();
+  envResizeObserver = null;
   if (resizeTimer) {
     window.clearTimeout(resizeTimer);
     resizeTimer = null;
@@ -1059,6 +1131,7 @@ onBeforeUnmount(() => {
 
         .name-logo {
           position: relative;
+          flex-shrink: 0;
           width: 48px;
           height: 48px;
           margin-right: 10px;
@@ -1097,11 +1170,21 @@ onBeforeUnmount(() => {
         }
 
         .env {
+          padding-right: 8px;
           overflow: hidden;
+        }
+
+        .environment-tag,
+        .tag-cls {
+          flex-shrink: 0;
         }
 
         .environment-tag {
           margin-right: 8px;
+        }
+
+        .tag-cls {
+          min-width: 40px;
         }
       }
 

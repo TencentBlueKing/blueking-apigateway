@@ -23,7 +23,7 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.gateway import add_gateway_administrators
-from apigateway.biz.iam import GatewayIAMAuthorizationSynchronizer, get_gateway_iam_system_operator
+from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, GatewayIAMAuthorizationSynchronizer
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.models import Gateway
 
@@ -63,7 +63,7 @@ class Command(BaseCommand):
         gateway_names = self._normalize_csv_values(options["gateway_name"], option_name="--gateway-name")
         apply = options["apply"]
         iam_enabled = settings.BK_IAM_V4_ENABLED
-        operator = self._resolve_operator(iam_enabled=iam_enabled) if apply else settings.GATEWAY_DEFAULT_CREATOR
+        operator = settings.GATEWAY_DEFAULT_CREATOR
         gateways = self._list_gateways(gateway_names)
         if not gateways:
             self.stdout.write("no global gateways found; skipped")
@@ -99,7 +99,7 @@ class Command(BaseCommand):
                         result = synchronizer.reconcile_gateway(
                             gateway.id,
                             apply=True,
-                            operator=operator,
+                            operator=BK_IAM_V4_SYSTEM_ID,
                             username=username,
                         )
                         iam_changes += result.change_count
@@ -141,15 +141,6 @@ class Command(BaseCommand):
                     raise CommandError(f"{option_name} 长度不能超过 {MAX_USERNAME_LENGTH}")
                 normalized.append(candidate)
         return sorted(set(normalized))
-
-    def _resolve_operator(self, *, iam_enabled: bool) -> str:
-        if not iam_enabled:
-            return settings.GATEWAY_DEFAULT_CREATOR
-
-        try:
-            return get_gateway_iam_system_operator()
-        except ValueError as err:
-            raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员") from err
 
     def _list_gateways(self, gateway_names: list[str]) -> list[Gateway]:
         queryset = Gateway.objects.filter(tenant_mode=TenantModeEnum.GLOBAL.value).order_by("id")

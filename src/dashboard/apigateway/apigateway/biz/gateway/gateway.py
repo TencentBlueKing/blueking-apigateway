@@ -37,8 +37,8 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.iam import (
     apply_gateway_member_snapshots_to_iam,
     build_gateway_member_snapshot,
-    get_gateway_iam_system_operator,
 )
+from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
@@ -368,7 +368,7 @@ class GatewayHandler:
         iam_operator = None
         iam_tenant_id = None
         if settings.BK_IAM_V4_ENABLED:
-            iam_operator = operated_by if operated_by is not None else get_gateway_iam_system_operator()
+            iam_operator = operated_by or BK_IAM_V4_SYSTEM_ID
             iam_tenant_id = get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
             apply_gateway_member_snapshots_to_iam(gateway_id, member_snapshot, {}, iam_operator, iam_tenant_id)
 

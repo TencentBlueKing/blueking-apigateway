@@ -144,7 +144,7 @@ const featureFlagStore = useFeatureFlag();
 const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const approvalColumns = shallowRef([
   {
-    title: t('蓝鲸应用ID'),
+    title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
     ellipsis: true,
   },

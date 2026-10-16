@@ -32,6 +32,7 @@ from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
+from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -456,7 +457,6 @@ class TestGatewayHandler:
 
     def test_delete_gateway_rolls_back_local_deletions_when_iam_fails(self, settings, mocker, fake_gateway):
         settings.BK_IAM_V4_ENABLED = True
-        settings.BK_IAM_V4_MANAGERS = ["admin"]
         GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
         context = Context.objects.get(
             scope_type=ContextScopeTypeEnum.GATEWAY.value,
@@ -511,9 +511,8 @@ class TestGatewayHandler:
         assert restore_call.args[4] == "default"
         assert Gateway.objects.filter(id=fake_gateway.id).exists()
 
-    def test_delete_gateway_uses_system_operator_when_omitted(self, settings, mocker, fake_gateway):
+    def test_delete_gateway_revokes_iam_when_operated_by_is_omitted(self, settings, mocker, fake_gateway):
         settings.BK_IAM_V4_ENABLED = True
-        settings.BK_IAM_V4_MANAGERS = ["iam-admin", "other"]
         apply_snapshots = mocker.patch(
             "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
         )
@@ -521,7 +520,7 @@ class TestGatewayHandler:
         GatewayHandler.delete_gateway(fake_gateway.id)
 
         apply_snapshots.assert_called_once()
-        assert apply_snapshots.call_args.args[3] == "iam-admin"
+        assert apply_snapshots.call_args.args[3] == BK_IAM_V4_SYSTEM_ID
 
     def test_get_docs_url(self, settings, fake_gateway, fake_stage, fake_resource_version):
         settings.API_DOCS_URL_TMPL = "http://apigw.example.com/docs/{api_name}"

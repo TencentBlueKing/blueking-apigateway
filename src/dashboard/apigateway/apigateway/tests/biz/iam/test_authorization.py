@@ -25,7 +25,6 @@ from apigateway.biz.iam.authorization import (
     apply_gateway_member_snapshots_to_iam,
     build_gateway_authorization,
     build_gateway_revoke_authorization,
-    get_gateway_iam_system_operator,
 )
 
 
@@ -153,16 +152,3 @@ def test_apply_gateway_member_snapshots_logs_compensation_failure(mocker, caplog
         apply_gateway_member_snapshots_to_iam(7, before, after, "admin", "tenant-a")
 
     assert "failed to compensate gateway IAM authorizations" in caplog.text
-
-
-def test_get_gateway_iam_system_operator_uses_first_manager(settings):
-    settings.BK_IAM_V4_MANAGERS = ["admin", "maintainer"]
-
-    assert get_gateway_iam_system_operator() == "admin"
-
-
-def test_get_gateway_iam_system_operator_rejects_empty_managers(settings):
-    settings.BK_IAM_V4_MANAGERS = []
-
-    with pytest.raises(ValueError, match="BK_IAM_V4_MANAGERS"):
-        get_gateway_iam_system_operator()

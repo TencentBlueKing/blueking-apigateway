@@ -28,7 +28,7 @@
         <div class="approval-detail-slider">
           <div class="item">
             <div class="key">
-              {{ t("蓝鲸应用ID：") }}
+              {{ t("蓝鲸应用 ID：") }}
             </div>
             <div class="value">
               {{ approvalDetail?.bk_app_code }}

@@ -32,7 +32,6 @@ from apigateway.components import bkiam
 @pytest.fixture(autouse=True)
 def _iam_settings(settings):
     settings.BK_APP_CODE = "bk-apigateway"
-    settings.BK_IAM_V4_MANAGERS = ["admin", "maintainer"]
 
 
 @pytest.fixture
@@ -50,7 +49,6 @@ def _desired_system():
         "id": BK_IAM_V4_SYSTEM_ID,
         "name": SYSTEM_NAME,
         "description": SYSTEM_DESCRIPTION,
-        "managers": ["admin", "maintainer"],
         "clients": ["bk-apigateway"],
         "callback_url": "",
     }
