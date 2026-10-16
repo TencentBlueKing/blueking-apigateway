@@ -19,24 +19,24 @@
 <template>
   <BkSideslider
     v-model:is-show="isShow"
-    :title="t('变更角色')"
     :width="720"
     quick-close
     render-directive="if"
     :before-close="handleBeforeClose"
   >
+    <template #header>
+      <span class="slider-title">{{ t('变更角色') }}</span>
+    </template>
     <div class="member-change-slider">
+      <div class="member-info">
+        <span>{{ t('人员') }}：</span>
+        <span v-if="!featureFlagStore.isEnableDisplayName">{{ formData.username }}</span>
+        <span v-else><bk-user-display-name :user-id="formData.username" /></span>
+      </div>
       <BkForm
         form-type="vertical"
         :model="formData"
       >
-        <BkFormItem
-          :label="t('用户名')"
-          property="username"
-        >
-          <span v-if="!featureFlagStore.isEnableDisplayName">{{ formData.username }}</span>
-          <span v-else><bk-user-display-name :user-id="formData.username" /></span>
-        </BkFormItem>
         <BkFormItem
           :label="t('角色')"
           property="role"
@@ -234,14 +234,33 @@ const handleConfirm = async () => {
 </script>
 
 <style lang="scss" scoped>
+.slider-title {
+  font-size: 14px;
+}
+
 .member-change-slider {
   padding: 20px 24px 8px;
+  font-size: 14px;
+
+  :deep(.permission-matrix) {
+    font-size: inherit;
+  }
+}
+
+.member-info {
+  display: flex;
+  padding: 8px 16px;
+  margin-bottom: 24px;
+  line-height: 22px;
+  color: #63656e;
+  overflow-wrap: anywhere;
+  background: #f5f7fa;
 }
 
 .permission-summary {
   padding: 12px 16px;
   margin: 8px 0 16px;
-  font-size: 12px;
+  font-size: inherit;
   line-height: 20px;
   color: #63656e;
   background: #f5f7fa;
