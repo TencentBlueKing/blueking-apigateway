@@ -144,7 +144,7 @@ const visibleItems = computed(() => {
   }
 
   th {
-    font-weight: 700;
+    font-weight: normal;
     background: #fafbfd;
   }
 

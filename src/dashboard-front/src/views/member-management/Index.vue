@@ -27,18 +27,27 @@
         >
           {{ t('新增成员') }}
         </BkButton>
-        <BkRadioGroup v-model="activeRole">
-          <BkRadioButton
+        <div
+          class="role-tabs"
+          role="group"
+          :aria-label="t('角色')"
+        >
+          <button
             v-for="tab in roleTabs"
             :key="tab.key"
-            :label="tab.key"
+            type="button"
+            class="role-tab"
+            :class="{ active: activeRole === tab.key }"
+            :aria-pressed="activeRole === tab.key"
+            @click="() => activeRole = tab.key"
           >
             {{ tab.label }} ({{ tab.count }})
-          </BkRadioButton>
-        </BkRadioGroup>
+          </button>
+        </div>
         <BkButton
           text
           theme="primary"
+          class="text-12px!"
           @click="handleViewPermissionModel"
         >
           {{ t('查看权限模型') }}
@@ -361,6 +370,41 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   min-width: 0;
+}
+
+.role-tabs {
+  display: flex;
+  height: 32px;
+  padding: 4px;
+  color: #63656e;
+  background: #f0f1f5;
+  border-radius: 2px;
+  box-sizing: border-box;
+  align-items: center;
+  flex-shrink: 0;
+
+  .role-tab {
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 24px;
+    color: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 2px;
+
+    &:focus-visible {
+      outline: 2px solid #3a84ff;
+      outline-offset: 2px;
+    }
+
+    &.active {
+      color: #3a84ff;
+      background: #fff;
+    }
+  }
 }
 
 .search-input {

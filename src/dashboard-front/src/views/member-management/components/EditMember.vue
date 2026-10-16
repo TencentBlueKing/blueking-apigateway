@@ -23,6 +23,7 @@
     :width="720"
     quick-close
     render-directive="if"
+    :before-close="handleBeforeClose"
   >
     <div class="member-change-slider">
       <BkForm
@@ -90,7 +91,7 @@
 
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
-import { usePopInfoBox } from '@/hooks';
+import { usePopInfoBox, useSidebar } from '@/hooks';
 import { updateGatewayMember } from '@/services/source/gateway-member.ts';
 import { useFeatureFlag, useGateway, useUserInfo } from '@/stores';
 import PermissionModel from './PermissionModel.vue';
@@ -122,6 +123,7 @@ const route = useRoute();
 const gatewayStore = useGateway();
 const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const submitting = ref(false);
 const formData = ref<{
@@ -137,6 +139,9 @@ const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const currentUsername = computed(() => userStore.info.username);
 
 const summaryText = computed(() => {
+  if (formData.value.role === 'administrator') {
+    return t('拥有全部权限');
+  }
   return getRolePermissions(formData.value.role, isAIGateway.value)
     .map(item => item.label)
     .join(', ');
@@ -145,6 +150,7 @@ const summaryText = computed(() => {
 watch(isShow, () => {
   if (isShow.value) {
     resetForm();
+    initSidebarFormData(formData.value);
   }
 });
 
@@ -155,8 +161,15 @@ const resetForm = () => {
   };
 };
 
-const handleCancel = () => {
-  isShow.value = false;
+const handleBeforeClose = () => {
+  return isSidebarClosed(JSON.stringify(formData.value));
+};
+
+const handleCancel = async () => {
+  const canClose = await handleBeforeClose();
+  if (canClose) {
+    isShow.value = false;
+  }
 };
 
 const persist = async (memberId: number, role: MemberRole) => {

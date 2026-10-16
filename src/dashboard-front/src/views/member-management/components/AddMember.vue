@@ -23,10 +23,13 @@
     :width="720"
     quick-close
     render-directive="if"
+    :before-close="handleBeforeClose"
   >
     <div class="member-add-slider">
+      <!-- 人员选择器内部 input 不支持 autocomplete 配置，在 form 上统一关闭，避免浏览器输入记忆遮挡候选浮层 -->
       <BkForm
         form-type="vertical"
+        autocomplete="off"
         :model="formData"
       >
         <BkFormItem
@@ -105,6 +108,7 @@
 
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
+import { useSidebar } from '@/hooks';
 import MemberSelector from '@/components/member-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
 import { createGatewayMembers } from '@/services/source/gateway-member.ts';
@@ -128,6 +132,7 @@ const gatewayStore = useGateway();
 const userStore = useUserInfo();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const submitting = ref(false);
 const formData = ref<{
@@ -142,6 +147,9 @@ const apigwId = computed(() => Number(route.params.id));
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
 const summaryText = computed(() => {
+  if (formData.value.role === 'administrator') {
+    return t('拥有全部权限');
+  }
   return getRolePermissions(formData.value.role, isAIGateway.value)
     .map(item => item.label)
     .join(', ');
@@ -150,6 +158,7 @@ const summaryText = computed(() => {
 watch(isShow, () => {
   if (isShow.value) {
     resetForm();
+    initSidebarFormData(formData.value);
   }
 });
 
@@ -170,8 +179,15 @@ const handleTenantUserChange = (members: { id: string } | { id: string }[] | nul
   formData.value.usernames = list.map(member => member.id);
 };
 
-const handleCancel = () => {
-  isShow.value = false;
+const handleBeforeClose = () => {
+  return isSidebarClosed(JSON.stringify(formData.value));
+};
+
+const handleCancel = async () => {
+  const canClose = await handleBeforeClose();
+  if (canClose) {
+    isShow.value = false;
+  }
 };
 
 const handleConfirm = async () => {
@@ -222,7 +238,8 @@ const handleConfirm = async () => {
 
 .permission-summary {
   padding: 12px 16px;
-  margin: 8px 0 16px;
+  margin-top: -18px;
+  margin-bottom: 16px;
   font-size: 12px;
   line-height: 20px;
   color: #63656e;
