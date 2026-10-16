@@ -105,12 +105,12 @@
           <div>{{ t('新增') }}</div>
         </div>
         <div class="legend-group">
-          <div class="tag danger" />
-          <div>{{ t('删除') }}</div>
-        </div>
-        <div class="legend-group">
           <div class="tag warning" />
           <div>{{ t('更新') }}</div>
+        </div>
+        <div class="legend-group">
+          <div class="tag danger" />
+          <div>{{ t('删除') }}</div>
         </div>
       </div>
     </div>

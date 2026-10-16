@@ -32,11 +32,11 @@
         class="perm-approval-form"
         label-width="auto"
       >
-        <BkFormItem :label="t('蓝鲸应用ID')">
+        <BkFormItem :label="t('蓝鲸应用 ID')">
           <BkInput
             v-model="filterData.bk_app_code"
             clearable
-            :placeholder="t('请输入应用ID')"
+            :placeholder="t('请输入应用 ID')"
           />
         </BkFormItem>
         <BkFormItem :label="t('授权维度')">
@@ -301,7 +301,7 @@ const getTableColumns = computed((): any[] => {
   return [
     {
       colKey: 'bk_app_code',
-      title: t('蓝鲸应用ID'),
+      title: t('蓝鲸应用 ID'),
       ellipsis: true,
     },
     {

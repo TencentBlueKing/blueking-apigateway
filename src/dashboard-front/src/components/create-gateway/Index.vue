@@ -162,7 +162,7 @@
       >
         <BkTagInput
           v-model="formData.bk_app_codes"
-          :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+          :placeholder="t('请输入蓝鲸应用 ID，并按 enter 确认')"
           allow-create
           has-delete-icon
           collapse-tags
@@ -177,7 +177,7 @@
       >
         <BkTagInput
           v-model="formData.related_app_codes"
-          :placeholder="t('请输入应用ID，以回车键确认')"
+          :placeholder="t('请输入应用 ID，以回车键确认')"
           allow-create
           has-delete-icon
           :copyable="false"

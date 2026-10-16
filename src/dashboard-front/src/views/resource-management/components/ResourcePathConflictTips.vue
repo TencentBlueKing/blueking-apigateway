@@ -416,6 +416,7 @@ defineExpose({ refresh: fetchConflicts });
   .conflict-desc {
     margin-top: 4px;
     line-height: 20px;
+    color: #63656e;
   }
 
   .tips-link {

@@ -80,7 +80,7 @@
           :rules="rules"
         >
           <BkFormItem
-            :label="t('蓝鲸应用ID')"
+            :label="t('蓝鲸应用 ID')"
             property="bk_app_code"
             required
           >
@@ -157,7 +157,7 @@ const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
-    title: t('蓝鲸应用ID'),
+    title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
     ellipsis: true,
   },

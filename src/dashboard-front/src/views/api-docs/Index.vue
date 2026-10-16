@@ -308,14 +308,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         return '--';
       }
       const gatewayIconConfig = row.kind === 2
-        ? { name: 'api-ai',
+        ? { name: 'apiwendang-ai',
           color: '#6228FF',
           bgColor: 'rgba(98, 40, 255, 0.12)' }
         : row.kind === 1
-          ? { name: 'api-biancheng-2',
+          ? { name: 'apiwendang-biancheng',
             color: '#0E3377',
             bgColor: 'rgba(14, 51, 119, 0.12)' }
-          : { name: 'api-wangguan-2',
+          : { name: 'apiwendang-wangguan',
             color: '#3A84FF',
             bgColor: 'rgba(58, 132, 255, 0.12)' };
 

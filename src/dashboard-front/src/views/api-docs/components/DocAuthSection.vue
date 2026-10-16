@@ -34,21 +34,21 @@
         <h3 id="doc-heading-认证方式">
           {{ t('认证方式') }}
         </h3>
-        <BkLink
+        <!-- <BkLink
           v-if="authDocUrl"
           class="auth-doc-link"
           theme="primary"
           :href="authDocUrl"
           target="_blank"
           @click.stop
-        >
+          >
           {{ t('查看文档') }}
           <AgIcon
-            name="jump"
-            size="12"
-            class="auth-doc-link-icon"
+          name="jump"
+          size="12"
+          class="auth-doc-link-icon"
           />
-        </BkLink>
+          </BkLink> -->
       </header>
       <div
         v-show="isExpanded"
@@ -60,7 +60,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useEnv } from '@/stores';
 
 interface IProps {
   // 认证说明 markdown 渲染后的 html
@@ -70,12 +69,11 @@ interface IProps {
 const { markdownHtml = '' } = defineProps<IProps>();
 
 const { t } = useI18n();
-const envStore = useEnv();
 
 const isExpanded = ref(false);
 
 // 认证方式查看详情入口
-const authDocUrl = computed(() => envStore.env?.DOC_LINKS?.AUTH);
+// const authDocUrl = computed(() => envStore.env?.DOC_LINKS?.AUTH);
 
 const handleToggle = () => {
   isExpanded.value = !isExpanded.value;

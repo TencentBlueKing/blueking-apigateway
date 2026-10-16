@@ -37,7 +37,7 @@
           :model="curAuthData"
         >
           <BkFormItem
-            :label="t('蓝鲸应用ID')"
+            :label="t('蓝鲸应用 ID')"
             :rules="rules.bk_app_code"
             property="bk_app_code"
             class="m-l-15px"
@@ -47,7 +47,7 @@
               ref="appCodeRef"
               v-model="curAuthData.bk_app_code"
               class="code-input"
-              :placeholder="t('请输入应用ID')"
+              :placeholder="t('请输入应用 ID')"
             />
           </BkFormItem>
           <BkFormItem
@@ -245,7 +245,7 @@ const rules = reactive({
   bk_app_code: [
     {
       required: true,
-      message: t('请输入蓝鲸应用ID'),
+      message: t('请输入蓝鲸应用 ID'),
       trigger: 'blur',
     },
     {
@@ -256,7 +256,7 @@ const rules = reactive({
         }
         return true;
       },
-      message: t('蓝鲸应用ID格式不正确，只能包含：小写字母、数字、连字符(-)、下划线(_)，首字母必须是字母'),
+      message: t('蓝鲸应用 ID 格式不正确，只能包含：小写字母、数字、连字符(-)、下划线(_)，首字母必须是字母'),
       trigger: 'blur',
     },
   ],

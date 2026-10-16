@@ -355,7 +355,7 @@
                   >
                     <BkCheckboxGroup v-model="noticeConfig.notice_role">
                       <BkCheckbox label="maintainer">
-                        {{ t('网关维护者') }}
+                        {{ t('网关管理员') }}
                       </BkCheckbox>
                       <BkCheckbox label="custom">
                         {{ t('自定义') }}
