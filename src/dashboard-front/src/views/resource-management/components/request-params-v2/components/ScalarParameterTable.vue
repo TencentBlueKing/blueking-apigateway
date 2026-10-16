@@ -489,6 +489,13 @@ const removeRow = (id: string) => {
       height: 100%;
     }
 
+    :deep(.bk-select-trigger .angle-down) {
+      // 固定箭头的旋转区域，避免末行旋转时产生纵向溢出。
+      top: calc(50% - 10px);
+      width: 20px;
+      height: 20px;
+    }
+
     :deep(.bk-input) {
       font-size: 12px;
       border: 0;

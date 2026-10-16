@@ -23,7 +23,7 @@
     :class="{ 'show-diff': onlyShowDiff }"
   >
     <p
-      class="title"
+      class="title always-visible"
       :class="{
         'ag-diff':
           checkDiff('localData.name') ||
@@ -51,7 +51,10 @@
       :col="15"
       :margin="6"
     >
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.name') }">
+      <BkRow
+        class="always-visible"
+        :class="{ 'ag-diff': checkDiff('localData.name') }"
+      >
         <BkCol :span="5">
           <label class="ag-key">{{ t('资源名称') }}:</label>
         </BkCol>
@@ -922,7 +925,8 @@ initLocalData();
     .title {
       display: none;
 
-      &.ag-diff {
+      &.ag-diff,
+      &.always-visible {
         display: block;
       }
     }
@@ -930,7 +934,8 @@ initLocalData();
     .bk-grid-row {
       display: none;
 
-      &.ag-diff {
+      &.ag-diff,
+      &.always-visible {
         display: block;
       }
     }

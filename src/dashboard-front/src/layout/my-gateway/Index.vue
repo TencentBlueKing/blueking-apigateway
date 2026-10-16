@@ -214,7 +214,7 @@ import { getStageList } from '@/services/source/stage';
 import { getPermissionApplyList } from '@/services/source/permission';
 import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
 import { useGatewayRole } from '@/hooks';
-import type { GatewayPermissionKey } from '@/constants/gateway-permission';
+import { canAccessByRole } from '@/utils/gateway-permission';
 import { isGatewayNavigationPending } from '@/router/gateway-role-guard';
 import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
 
@@ -250,6 +250,12 @@ const version113UpdateNoticeRef = ref();
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
+// 只稳定当前网关的菜单展示；请求完成、身份变化或角色失效后立即采用新状态。
+// 页面访问与操作权限仍使用 currentRole，由守卫等待最新角色后决定是否放行。
+const menuRole = computed(() => {
+  const state = roleStore.roles[Number(route.params.id)];
+  return state?.status === 'loading' ? state.previousRole ?? '' : currentRole.value;
+});
 const menuList = computed<IMenu[]>(() => [
   {
     name: 'StageManagement',
@@ -454,16 +460,6 @@ const visibleMenuList = computed(() => menuList.value
     }
     return isMenuVisible(menu);
   }));
-
-const firstVisibleRouteName = computed(() => {
-  for (const menu of visibleMenuList.value) {
-    if (menu.children?.length) {
-      return menu.children[0].name;
-    }
-    return menu.name;
-  }
-  return 'BasicInfo';
-});
 
 // 表格需要兼容的页面模块
 const needBkuiTablePage = computed(() => {
@@ -686,22 +682,7 @@ const isMenuVisible = (menu: IMenu) => {
   if (menu.hideInProgrammable && isProgrammableGateway.value) {
     return false;
   }
-  return canAccess(menu.permission);
-};
-
-const findMenuPermission = (menus: IMenu[], routeName: string): GatewayPermissionKey | undefined => {
-  for (const menu of menus) {
-    if (menu.name === routeName) {
-      return menu.permission;
-    }
-    if (menu.children?.length) {
-      const childPermission = findMenuPermission(menu.children, routeName);
-      if (childPermission) {
-        return childPermission;
-      }
-    }
-  }
-  return undefined;
+  return canAccessByRole(menuRole.value, menu.permission);
 };
 
 // 根据网关不同状态展示文案最大宽度
@@ -775,9 +756,9 @@ const handleGoPage = async (routeName: string) => {
     }
     return;
   }
-  const permission = findMenuPermission(menuList.value, nextRouteName);
+  // 刷新期间仍可选择菜单；保留点击目标，由守卫等待角色结果，避免用暂时为空的角色误回退。
   await router.push({
-    name: canAccess(permission) ? nextRouteName : firstVisibleRouteName.value,
+    name: nextRouteName,
     params: { id: gatewayId.value },
   });
   getGatewayIconDistance(gatewayData?.name ?? '');
