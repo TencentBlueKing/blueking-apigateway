@@ -76,18 +76,17 @@ a {
 
 .ag-tag {
   display: inline-block;
-  background: #f0f1f5;
+  background-color: #f0f1f5;
   color: #63656e;
   font-size: 12px;
   vertical-align: middle;
-  box-sizing: border-box;
   overflow: hidden;
-  border-radius: 2px;
   white-space: nowrap;
-  padding: 0 4px;
-  height: 20px;
-  line-height: 20px;
-  font-weight: 400;
+  border-radius: 2px;
+  padding: 0 8px;
+  height: 22px;
+  line-height: 22px;
+  box-sizing: border-box;
 
   &.danger,
   &.delete {
@@ -121,6 +120,31 @@ a {
   &.patch {
     background-color: #dad6fd;
     color: #5949e1;
+  }
+
+  &.approved {
+    background-color: #2acf5e;
+    color: #ffffff;
+  }
+
+  &.partial_approved {
+    background-color: #daf6e5;
+    color: #299e56;
+  }
+
+  &.rejected {
+    background-color: #ffebeb;
+    color: #e71818;
+  }
+
+  &.pending {
+    background-color: #e1ecff;
+    color: #1768ef;
+  }
+
+  &.canceled {
+    background-color: #f0f1f5;
+    color: #4d4f56;
   }
 }
 

@@ -228,55 +228,6 @@
   }
 }
 
-.ag-tag {
-  display: inline-block;
-  height: 20px;
-  padding: 0 4px;
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 20px;
-  color: #c3cdd7;
-  white-space: nowrap;
-  vertical-align: middle;
-  background-color: #fafafa;
-  border-radius: 2px;
-  box-sizing: border-box;
-
-  &.danger,
-  &.delete {
-    color: #ea3536;
-    background-color: #fedddc;
-  }
-
-  &.primary,
-  &.post {
-    color: #3a84ff;
-    background-color: #e1ecff;
-  }
-
-  &.success,
-  &.any {
-    color: #2dcb56;
-    background-color: #dcffe2;
-  }
-
-  &.warning,
-  &.put {
-    color: #fe9c00;
-    background-color: #ffe8c3;
-  }
-
-  &.get {
-    color: #25a9ad;
-    background-color: #d7feff;
-  }
-
-  &.patch {
-    color: #5949e1;
-    background-color: #dad6fd;
-  }
-}
-
 .ag-link,
 .ag-doc-icon.doc-qw {
   color: #3a84ff !important;
