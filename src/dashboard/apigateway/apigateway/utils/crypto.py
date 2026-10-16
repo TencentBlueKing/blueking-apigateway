@@ -20,8 +20,11 @@ import base64
 import hashlib
 from typing import Tuple, Union
 
+from bkcrypto import constants as bkcrypto_constants
+from bkcrypto.asymmetric import options as bkcrypto_options
+from bkcrypto.contrib.basic.ciphers import get_asymmetric_cipher
 from blue_krill.encrypt.handler import EncryptHandler
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
 from django.utils.encoding import force_bytes
@@ -123,3 +126,25 @@ def get_crypto():
         return BkCrypto()
 
     raise ValueError(f"Unknown encrypt cipher type: {settings.BK_CRYPTO_TYPE}")
+
+
+def decrypt_frontend_encrypted_value(encrypted_value: str) -> str:
+    """
+    :param encrypted_value: Base64 编码的 RSA 密文，填充方式为 OAEP，哈希算法（含 MGF1）为 SHA-256
+    """
+    cipher_type = bkcrypto_constants.AsymmetricCipherType.RSA.value
+    cipher = get_asymmetric_cipher(
+        cipher_type=cipher_type,
+        cipher_options={
+            cipher_type: bkcrypto_options.RSAAsymmetricOptions(
+                public_key_string=settings.FRONTEND_ENCRYPT_PUBLIC_KEY,
+                private_key_string=settings.FRONTEND_ENCRYPT_PRIVATE_KEY,
+                padding=bkcrypto_constants.RSACipherPadding.PKCS1_OAEP,
+                oaep_hash=hashes.SHA256(),
+                mgf1_hash=hashes.SHA256(),
+                # 密文只能是单个 RSA 块，超长明文由前端直接报错
+                enable_segmented_encryption=False,
+            ),
+        },
+    )
+    return cipher.decrypt(encrypted_value)

@@ -16,13 +16,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import logging
+from contextlib import nullcontext
+
 import pytest
+import requests
 
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkauth import BkAuthAppNotFoundError
 from apigateway.components.bkpaas import (
     REQ_PAAS_API_TIMEOUT,
+    create_paas_app,
     get_app_maintainers,
     get_paas_apps_by_username,
     get_paas_deploy_phases_framework,
@@ -226,3 +231,39 @@ def test_paas_api_failure_falls_back_to_transport_error(mocker):
         paas_app_module_offline("demo", "default", "prod")
 
     assert transport_error in str(exc_info.value.code.message)
+
+
+@pytest.mark.parametrize("outcome", [200, 500, "timeout"])
+def test_create_paas_app__log_without_password(mocker, caplog, outcome):
+    mocker.patch("apigateway.components.bkpaas.get_paas3_url_prefix", return_value="https://paas.example.com/prod")
+    mocker.patch("apigateway.components.bkpaas.gen_gateway_headers", return_value={})
+    mock_post = mocker.patch("apigateway.components.http.session.post")
+    if outcome == "timeout":
+        mock_post.side_effect = requests.exceptions.Timeout("create timed out")
+    else:
+        response = requests.Response()
+        response.status_code = outcome
+        response._content = b'{"message": "create result"}'
+        mock_post.return_value = response
+
+    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.DEBUG, logger="component")
+    expected_error = pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__) if outcome != 200 else nullcontext()
+    with expected_error:
+        create_paas_app(
+            app_code="demo",
+            language="python",
+            git_info={
+                "repository": "https://git.example.com/demo.git",
+                "account": "demo-user",
+                "password": "secret-password",
+            },
+        )
+
+    assert (
+        mock_post.call_args.kwargs["json"]["source_config"]["source_repo_auth_info"]["password"] == "secret-password"
+    )
+    assert "sensitive_keys" not in mock_post.call_args.kwargs
+    assert "***" in caplog.text
+    assert "http request" in caplog.text
+    assert "secret-password" not in caplog.text

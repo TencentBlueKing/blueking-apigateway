@@ -31,6 +31,7 @@ from apigateway.common.tenant.constants import (
 )
 from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_for_gateway_maintainers
 from apigateway.utils.local import local
+from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 from apigateway.utils.url import url_join
 
 from .bkauth import BkAuthAppNotFoundError
@@ -275,14 +276,14 @@ def create_paas_app(
         },
         "bkapp_spec": {"build_config": {"build_method": build_method}},
     }
-    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT, sensitive_keys=["password"])
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
             "paasv3",
             "http_get",
             url,
-            data,
+            SensitiveCleaner(["password"]).clean(data),
             local.request_id,
             resp_data["error"],
         )

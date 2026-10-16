@@ -27,6 +27,7 @@ from apigateway.biz.gateway import GatewayHandler, build_gateway_doc_maintainers
 from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
+from apigateway.common.fields import DecryptableCharField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     GatewayKindEnum,
@@ -139,7 +140,7 @@ class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
         ],
     )
     account = serializers.CharField(allow_blank=True, required=True, help_text="账号")
-    password = serializers.CharField(allow_blank=True, required=True, help_text="密码")
+    password = DecryptableCharField(allow_blank=True, required=True, help_text="密码")
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.ProgrammableGatewayGitInfoSLZ"

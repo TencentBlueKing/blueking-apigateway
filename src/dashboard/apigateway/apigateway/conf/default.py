@@ -39,6 +39,7 @@ from apigateway.conf.utils import (
     get_default_feature_flags,
     get_default_keepalive_options,
     get_esb_board_configs,
+    get_frontend_encrypt_key_pair,
     get_frontend_env_vars,
     get_gateway_quota_config,
     get_plugin_metadata_config,
@@ -543,6 +544,10 @@ if BK_CRYPTO_TYPE != CRYPTO_TYPE_APIGW_CUSTOM and BKKRILL_ENCRYPT_SECRET_KEY == 
 # use the same nonce, should not be changed at all!!!!!!
 CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 
+# frontend encrypt, the cipher is RSA-OAEP with SHA-256
+ENABLE_FRONTEND_ENCRYPT = env.bool("ENABLE_FRONTEND_ENCRYPT", False)
+FRONTEND_ENCRYPT_PUBLIC_KEY, FRONTEND_ENCRYPT_PRIVATE_KEY = get_frontend_encrypt_key_pair(env, ENABLE_FRONTEND_ENCRYPT)
+
 # ==============================================================================
 # 模板变量
 # ==============================================================================
@@ -939,6 +944,8 @@ ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     bk_login_url=BK_LOGIN_URL,
     bk_sdk_languages=BK_SDK_LANGUAGES,
     bk_paas3_url=BK_PAAS3_URL,
+    enable_frontend_encrypt=ENABLE_FRONTEND_ENCRYPT,
+    frontend_encrypt_public_key=FRONTEND_ENCRYPT_PUBLIC_KEY,
 )
 
 

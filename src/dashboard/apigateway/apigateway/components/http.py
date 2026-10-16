@@ -26,6 +26,8 @@ from urllib.parse import urlparse
 import requests
 from django.conf import settings
 
+from apigateway.utils.sensitive_cleaner import SensitiveCleaner
+
 logger = logging.getLogger("component")
 
 
@@ -72,6 +74,7 @@ def _http_request(
     cert=None,
     cookies=None,
     request_session=None,
+    sensitive_keys=None,
     **kwargs,
 ):
     if request_session is None:
@@ -79,6 +82,7 @@ def _http_request(
 
     headers = _enrich_header(headers)
     request_id = headers.get("X-Request-Id")
+    log_data = SensitiveCleaner(sensitive_keys).clean(data) if sensitive_keys and data is not None else data
 
     logger.debug(
         (
@@ -88,7 +92,7 @@ def _http_request(
         method,
         url,
         headers,
-        data,
+        log_data,
         timeout,
         verify,
         cert,
@@ -158,7 +162,7 @@ def _http_request(
         else:
             return False, {"error": "method not supported"}
     except requests.exceptions.RequestException as e:
-        logger.exception("http request error! %s %s, data: %s, request_id: %s", method, url, data, request_id)
+        logger.exception("http request error! %s %s, data: %s, request_id: %s", method, url, log_data, request_id)
         return False, {"error": str(e)}
     else:
         # record for /metrics
@@ -180,7 +184,7 @@ def _http_request(
                 "http request fail! %s %s, data: %s, request_id: %s, response.status_code: %s, response.body: %s",
                 method,
                 url,
-                str(data),
+                str(log_data),
                 request_id,
                 resp.status_code,
                 content,
@@ -199,7 +203,7 @@ def _http_request(
             "http request success! %s %s, data: %s, request_id: %s, response: %s",
             method,
             url,
-            str(data),
+            str(log_data),
             request_id,
             resp.text,
         )
