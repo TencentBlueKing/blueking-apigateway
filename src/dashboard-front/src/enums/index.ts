@@ -26,7 +26,7 @@ const TENANT_MODE_TEXT_MAP: Record<string, string> = {
 const APPROVAL_STATUS_MAP: Record<string, string> = {
   approved: t('通过'),
   rejected: t('驳回'),
-  pending: t('未审批'),
+  pending: t('待审批'),
   canceled: t('已撤销'),
 };
 
@@ -34,7 +34,7 @@ const APPROVAL_HISTORY_STATUS_MAP: Record<string, string> = {
   approved: t('全部通过'),
   partial_approved: t('部分通过'),
   rejected: t('全部驳回'),
-  pending: t('未审批'),
+  pending: t('待审批'),
   canceled: t('已撤销'),
 };
 

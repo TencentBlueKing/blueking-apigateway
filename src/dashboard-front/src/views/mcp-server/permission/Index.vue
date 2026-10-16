@@ -195,7 +195,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { Button, Form, Loading, Message, PopConfirm } from 'bkui-vue';
+import { Button, Form, Message, PopConfirm } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
 import type { FilterValue, PrimaryTableProps, SortInfo, TableRowData } from '@blueking/tdesign-ui';
 import type { IDropList, IFormMethod, ITableEmptyType, ITableMethod } from '@/types/common';
@@ -270,7 +270,7 @@ const panels = ref([
 const statusMap = reactive({
   approved: t('通过'),
   rejected: t('驳回'),
-  pending: t('未审批'),
+  pending: t('待审批'),
 });
 const mcpList = ref<IMCPServerListOutput[]>([]);
 const applicantList = ref<string[]>([]);
@@ -373,28 +373,10 @@ const tableColumns = computed(() => {
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         const statusLabel = statusMap[row?.status as keyof typeof statusMap];
 
-        if (row.status === 'pending') {
-          return (
-            <div
-              class="perm-apply-dot"
-            >
-              <Loading
-                class="mr-4px"
-                loading
-                size="mini"
-                mode="spin"
-                theme="primary"
-              />
-              { statusLabel }
-            </div>
-          );
-        }
-
         return (
-          <div class="perm-apply-dot">
-            <span class={['dot', row?.status]} />
+          <span class={['ag-tag', { [row.status]: row.status }]}>
             {statusLabel}
-          </div>
+          </span>
         );
       },
     }]
@@ -852,27 +834,6 @@ watch(
     &.off {
       color: #979ba5;
       background-color: #f0f1f5;
-    }
-  }
-}
-
-:deep(.perm-apply-dot) {
-
-  .dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: 3px;
-    border-radius: 50%;
-
-    &.approved {
-      background: #e6f6eb;
-      border: 1px solid #43c472;
-    }
-
-    &.rejected {
-      background: #FFE6E6;
-      border: 1px solid #EA3636;
     }
   }
 }

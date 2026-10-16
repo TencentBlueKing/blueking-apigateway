@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="tsx">
-import { Button, Loading, Message, Popover } from 'bkui-vue';
+import { Button, Message, Popover } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
 import { t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
@@ -293,6 +293,7 @@ const tableColumns = computed(() => {
     {
       title: t('蓝鲸应用ID'),
       colKey: 'bk_app_code',
+      width: 180,
       ellipsis: true,
     },
   ];
@@ -302,7 +303,7 @@ const tableColumns = computed(() => {
       colKey: 'applied_by',
       title: t('申请人'),
       ellipsis: true,
-      width: 160,
+      width: 120,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (!row?.applied_by) return '--';
 
@@ -324,6 +325,7 @@ const tableColumns = computed(() => {
       colKey: 'approvers',
       title: t('审批人'),
       ellipsis: true,
+      width: 160,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (!row?.approvers?.length && !row?.handled_by) return '--';
 
@@ -341,6 +343,7 @@ const tableColumns = computed(() => {
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
+      width: 160,
       filter: {
         type: 'single' as const,
         showConfirmAndReset: true,
@@ -353,23 +356,11 @@ const tableColumns = computed(() => {
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         const statusKey = row?.status as keyof typeof approvalStatusMap.value;
         const status = approvalStatusMap.value[statusKey] ?? '--';
-
-        if (['pending'].includes(row.status)) {
-          return (
-            <div class="perm-apply-dot">
-              <Loading class="mr-6px" loading size="mini" mode="spin" theme="primary" />
-              {status}
-            </div>
-          );
-        }
-        else {
-          return (
-            <div class="perm-apply-dot">
-              <span class={['mr-4px ag-dot', { [row.status]: row.status }]} />
-              {status}
-            </div>
-          );
-        }
+        return (
+          <span class={['ag-tag', { [row.status]: row.status }]}>
+            {status}
+          </span>
+        );
       },
     },
     {

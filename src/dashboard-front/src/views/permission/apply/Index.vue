@@ -135,7 +135,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Button, Form, Loading, Message, Popover } from 'bkui-vue';
+import { Button, Form, Message, Popover } from 'bkui-vue';
 import type { TableRowData } from '@blueking/tdesign-ui';
 import {
   getApigwResources,
@@ -373,22 +373,11 @@ const getTableColumns = computed((): any[] => {
       title: t('审批状态'),
       ellipsis: true,
       cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
-        if (['pending'].includes(row.status!)) {
-          return (
-            <div class="perm-apply-dot">
-              <Loading class="mr-6px" loading size="mini" mode="spin" theme="primary" />
-              {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
-            </div>
-          );
-        }
-        else {
-          return (
-            <div class="perm-apply-dot">
-              <span class={['ag-dot mr-6px', { [row.status!]: row.status }]} />
-              {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
-            </div>
-          );
-        }
+        return (
+          <span class={['ag-tag', { [row.status!]: row.status }]}>
+            {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
+          </span>
+        );
       },
     },
     {
