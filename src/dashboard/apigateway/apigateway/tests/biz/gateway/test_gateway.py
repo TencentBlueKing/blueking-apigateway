@@ -442,6 +442,7 @@ class TestGatewayHandler:
                 },
             ],
             "request-user",
+            tenant_id="default",
         )
 
     def test_delete_gateway_does_not_call_iam_when_disabled(self, settings, mocker, fake_gateway):
@@ -502,10 +503,12 @@ class TestGatewayHandler:
         assert revoke_call.args[1]["alice"].role == GatewayRoleEnum.ADMINISTRATOR.value
         assert revoke_call.args[2] == {}
         assert revoke_call.args[3] == "request-user"
+        assert revoke_call.args[4] == "default"
         assert restore_call.args[0] == fake_gateway.id
         assert restore_call.args[1] == {}
         assert restore_call.args[2]["alice"].role == GatewayRoleEnum.ADMINISTRATOR.value
         assert restore_call.args[3] == "request-user"
+        assert restore_call.args[4] == "default"
         assert Gateway.objects.filter(id=fake_gateway.id).exists()
 
     def test_delete_gateway_revokes_iam_when_operated_by_is_omitted(self, settings, mocker, fake_gateway):

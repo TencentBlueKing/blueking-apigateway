@@ -28,6 +28,7 @@ from django.utils import timezone
 from apigateway.apps.rbac.constants import GATEWAY_MEMBER_EXPIRE_DAYS
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, build_gateway_authorization
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkiam import add_authorization, chunked
 from apigateway.core.models import Gateway
 from apigateway.utils.redis_utils import get_default_redis_client
@@ -60,6 +61,7 @@ def _renew_gateway_member_iam_authorizations(
         return 0
 
     operator = BK_IAM_V4_SYSTEM_ID
+    tenant_id = get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
     members = _due_members(gateway.id, due_before)
     failed_batches = 0
     for batch_members in chunked(members):
@@ -74,7 +76,7 @@ def _renew_gateway_member_iam_authorizations(
             for member in batch_members
         ]
         try:
-            add_authorization(authorizations, operator)
+            add_authorization(authorizations, operator, tenant_id=tenant_id)
         except Exception:
             failed_batches += 1
             logger.exception(

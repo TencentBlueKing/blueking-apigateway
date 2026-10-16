@@ -41,7 +41,7 @@ class GatewayActionPermission(permissions.BasePermission):
             return self._is_locally_allowed(member, required_action)
 
         try:
-            return is_iam_gateway_action_allowed(request.user.username, gateway.id, required_action)
+            return is_iam_gateway_action_allowed(request.user.username, gateway, required_action)
         except APIError as exc:
             logger.warning(
                 "gateway IAM authorization failed, fallback to local, error=%s gateway_id=%s username=%s action_id=%s",

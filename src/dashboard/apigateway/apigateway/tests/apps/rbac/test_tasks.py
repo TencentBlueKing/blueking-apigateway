@@ -101,8 +101,9 @@ def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
     )
     mocker.patch("apigateway.apps.rbac.tasks.timezone.now", return_value=NOW)
 
-    def assert_local_expiry_not_updated(_authorizations, operator):
+    def assert_local_expiry_not_updated(_authorizations, operator, *, tenant_id):
         assert operator == BK_IAM_V4_SYSTEM_ID
+        assert tenant_id == "default"
         due.refresh_from_db()
         no_expiry.refresh_from_db()
         assert due.expires == NOW + timedelta(days=30)
@@ -122,6 +123,7 @@ def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
         int((NOW + timedelta(days=365)).timestamp())
     }
     assert operator == BK_IAM_V4_SYSTEM_ID
+    assert add_authorization.call_args.kwargs == {"tenant_id": "default"}
 
     due.refresh_from_db()
     no_expiry.refresh_from_db()
@@ -141,6 +143,7 @@ def test_batches_authorizations_at_twenty(mocker):
 
     assert [len(item.args[0]) for item in add_authorization.call_args_list] == [20, 1]
     assert all(item.args[1] == BK_IAM_V4_SYSTEM_ID for item in add_authorization.call_args_list)
+    assert all(item.kwargs == {"tenant_id": "default"} for item in add_authorization.call_args_list)
 
 
 def test_failed_batch_is_unchanged_and_later_batch_continues(mocker):
@@ -201,8 +204,9 @@ def test_gateway_row_is_locked_before_members_are_read_and_iam_is_written(mocker
             events.append("member-read")
         return original_filter(*args, **kwargs)
 
-    def add_authorization(_authorizations, operator):
+    def add_authorization(_authorizations, operator, *, tenant_id):
         assert operator == BK_IAM_V4_SYSTEM_ID
+        assert tenant_id == "default"
         events.append("iam-write")
 
     mocker.patch.object(Gateway.objects, "select_for_update", side_effect=select_for_update)
