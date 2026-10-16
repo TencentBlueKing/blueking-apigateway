@@ -8,7 +8,6 @@ BK_LOGIN_URL="http://paas.example.com/login"
 BK_API_URL_TMPL="https://bkapi.example.com/api/{api_name}"
 
 BK_IAM_V4_ENABLED="false"
-BK_IAM_V4_MANAGERS="admin"
 
 BK_APIGW_DATABASE_HOST="localhost"
 

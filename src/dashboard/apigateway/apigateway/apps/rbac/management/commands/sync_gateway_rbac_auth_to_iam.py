@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
-from apigateway.biz.iam import GatewayIAMAuthorizationSynchronizer, get_gateway_iam_system_operator
+from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, GatewayIAMAuthorizationSynchronizer
 from apigateway.core.models import Gateway
 
 DEFAULT_MAX_CHANGES = 1000
@@ -99,15 +99,13 @@ class Command(BaseCommand):
             self.stdout.write("gateway RBAC initial sync already completed; skipped")
             return
 
-        operator = self._validate_settings()
-
         try:
             gateway_ids = self._get_gateway_ids(options)
             if options["apply"]:
                 preflight = self._reconcile_gateways(
                     gateway_ids,
                     apply=False,
-                    operator=operator,
+                    operator=BK_IAM_V4_SYSTEM_ID,
                     username=options["username"],
                     page_size=options["page_size"],
                     gateway_delay=options["gateway_delay"],
@@ -125,7 +123,7 @@ class Command(BaseCommand):
             summary = self._reconcile_gateways(
                 gateway_ids,
                 apply=options["apply"],
-                operator=operator,
+                operator=BK_IAM_V4_SYSTEM_ID,
                 username=options["username"],
                 page_size=options["page_size"],
                 gateway_delay=options["gateway_delay"],
@@ -160,12 +158,6 @@ class Command(BaseCommand):
             raise CommandError("--gateway-delay 不能小于 0")
         if options["username"] is not None and not options["username"].strip():
             raise CommandError("--username 不能为空")
-
-    def _validate_settings(self) -> str:
-        try:
-            return get_gateway_iam_system_operator()
-        except ValueError as exc:
-            raise CommandError("BK_IAM_V4_MANAGERS 必须至少配置一个非空管理员") from exc
 
     def _get_gateway_ids(self, options: dict[str, Any]) -> list[int]:
         gateway_selector = options["gateway"]
