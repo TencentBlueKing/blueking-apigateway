@@ -228,6 +228,34 @@ def test_all_member_writes_apply_iam_deltas(settings, fake_gateway, mocker):
     assert apply_iam.call_count == 5
     assert all(call.args[0] == fake_gateway.id for call in apply_iam.call_args_list)
     assert all(call.args[3] == "operator-user" for call in apply_iam.call_args_list)
+    assert all(call.args[4] == "default" for call in apply_iam.call_args_list)
+
+
+@pytest.mark.parametrize(
+    ("tenant_mode", "gateway_tenant_id", "expected_tenant_id"),
+    [
+        ("global", "", "system"),
+        ("single", "tenant-a", "tenant-a"),
+    ],
+)
+def test_member_write_uses_gateway_maintainer_tenant(
+    settings,
+    fake_gateway,
+    mocker,
+    tenant_mode,
+    gateway_tenant_id,
+    expected_tenant_id,
+):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    fake_gateway.tenant_mode = tenant_mode
+    fake_gateway.tenant_id = gateway_tenant_id
+    fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
+    apply_iam = mocker.patch("apigateway.biz.gateway.members.apply_gateway_member_snapshots_to_iam")
+
+    add_gateway_administrators(fake_gateway, ["new-admin"], "operator-user")
+
+    assert apply_iam.call_args.args[4] == expected_tenant_id
 
 
 def test_member_write_does_not_call_iam_when_disabled(settings, fake_gateway, mocker):

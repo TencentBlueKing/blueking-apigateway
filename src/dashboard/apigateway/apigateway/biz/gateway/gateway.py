@@ -42,6 +42,7 @@ from apigateway.biz.iam import (
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     GatewayKindEnum,
@@ -365,16 +366,18 @@ class GatewayHandler:
 
         # 10. revoke IAM authorizations and delete gateway
         iam_operator = None
+        iam_tenant_id = None
         if settings.BK_IAM_V4_ENABLED:
             iam_operator = operated_by if operated_by is not None else get_gateway_iam_system_operator()
-            apply_gateway_member_snapshots_to_iam(gateway_id, member_snapshot, {}, iam_operator)
+            iam_tenant_id = get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
+            apply_gateway_member_snapshots_to_iam(gateway_id, member_snapshot, {}, iam_operator, iam_tenant_id)
 
         try:
             gateway.delete()
         except Exception:
-            if iam_operator is not None:
+            if iam_operator is not None and iam_tenant_id is not None:
                 try:
-                    apply_gateway_member_snapshots_to_iam(gateway_id, {}, member_snapshot, iam_operator)
+                    apply_gateway_member_snapshots_to_iam(gateway_id, {}, member_snapshot, iam_operator, iam_tenant_id)
                 except Exception:
                     logger.critical(
                         "failed to restore gateway IAM authorizations after gateway deletion failed, gateway_id=%s",

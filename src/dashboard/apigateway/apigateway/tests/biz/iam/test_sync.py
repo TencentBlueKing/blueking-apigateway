@@ -36,7 +36,7 @@ def _iam_result(username: str, expired_at: int) -> dict:
 
 
 def _mock_iam(mocker, authorizations_by_role):
-    def iter_authorizations(payload):
+    def iter_authorizations(payload, *, tenant_id):
         yield from authorizations_by_role.get(payload["role_id"], [])
 
     return mocker.patch(
@@ -109,7 +109,7 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(fake_gateway
         "operator": [_iam_result("c", 1_900_000_000), _iam_result("d", 1_900_000_000)],
     }
 
-    def iter_authorizations(payload):
+    def iter_authorizations(payload, *, tenant_id):
         yield from authorizations_by_role.get(payload["role_id"], [])
 
     iterator = mocker.patch(
@@ -128,6 +128,7 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(fake_gateway
         ("administrator", 1),
         ("operator", 1),
     ]
+    assert all(call.kwargs == {"tenant_id": "default"} for call in iterator.call_args_list)
 
 
 def test_reconcile_dry_run_does_not_write_iam(fake_gateway, mocker):
@@ -176,6 +177,7 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(fake_gateway, mocker)
     select_for_update.assert_called_once_with()
     assert [len(call.args[0]) for call in add.call_args_list] == [20, 5]
     assert all(call.args[1] == "admin" for call in add.call_args_list)
+    assert all(call.kwargs == {"tenant_id": "default"} for call in add.call_args_list)
     assert result.applied is True
 
 
@@ -195,7 +197,7 @@ def test_reconcile_apply_failure_leaves_local_member_unchanged(fake_gateway, moc
     calls = []
     mocker.patch(
         "apigateway.biz.iam.sync.revoke_authorization",
-        side_effect=lambda payloads, operator: calls.append("revoke"),
+        side_effect=lambda payloads, operator, *, tenant_id: calls.append("revoke"),
     )
     mocker.patch(
         "apigateway.biz.iam.sync.add_authorization",

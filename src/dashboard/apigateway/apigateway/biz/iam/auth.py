@@ -15,15 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from __future__ import annotations
+
 from threading import RLock
+from typing import TYPE_CHECKING
 
 from cachetools import TTLCache
 from django.conf import settings
 
 from apigateway.common.constants import CACHE_MAXSIZE
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkiam import direct_auth
 
 from .constants import ALLOW_CACHE_TTL
+
+if TYPE_CHECKING:
+    from apigateway.core.models import Gateway
 
 _allow_cache: TTLCache[tuple[str, int, str], bool] = TTLCache(maxsize=CACHE_MAXSIZE, ttl=ALLOW_CACHE_TTL)
 _allow_cache_lock = RLock()
@@ -38,18 +45,20 @@ def clear_gateway_iam_auth_cache() -> None:
         _allow_cache.clear()
 
 
-def is_iam_gateway_action_allowed(username: str, gateway_id: int, action: str) -> bool:
-    cache_key = (username, gateway_id, action)
+def is_iam_gateway_action_allowed(username: str, gateway: Gateway, action: str) -> bool:
+    cache_key = (username, gateway.id, action)
     with _allow_cache_lock:
         if cache_key in _allow_cache:
             return True
 
+    tenant_id = get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
     allowed = direct_auth(
         {
             "subject": {"type": "user", "id": username},
             "action_id": action,
-            "resource": {"id": str(gateway_id)},
-        }
+            "resource": {"id": str(gateway.id)},
+        },
+        tenant_id=tenant_id,
     )
     if allowed:
         with _allow_cache_lock:

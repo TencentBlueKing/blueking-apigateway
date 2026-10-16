@@ -16,12 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from django_dynamic_fixture import G
 
 from apigateway.biz.iam.auth import (
     clear_gateway_iam_auth_cache,
     is_iam_auth_active,
     is_iam_gateway_action_allowed,
 )
+from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
 
@@ -41,16 +43,18 @@ def test_is_iam_auth_active_follows_setting(settings):
     assert is_iam_auth_active()
 
 
-def test_is_iam_gateway_action_allowed_caches_only_allowed_results(mocker):
+def test_is_iam_gateway_action_allowed_caches_only_allowed_results(mocker, settings):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    gateway = G(Gateway, id=7, tenant_mode="single", tenant_id="tenant-a")
     direct_auth = mocker.patch(
         "apigateway.biz.iam.auth.direct_auth",
         side_effect=[True, False, False],
     )
 
-    assert is_iam_gateway_action_allowed("alice", 7, "manage_gateway")
-    assert is_iam_gateway_action_allowed("alice", 7, "manage_gateway")
-    assert not is_iam_gateway_action_allowed("bob", 7, "manage_gateway")
-    assert not is_iam_gateway_action_allowed("bob", 7, "manage_gateway")
+    assert is_iam_gateway_action_allowed("alice", gateway, "manage_gateway")
+    assert is_iam_gateway_action_allowed("alice", gateway, "manage_gateway")
+    assert not is_iam_gateway_action_allowed("bob", gateway, "manage_gateway")
+    assert not is_iam_gateway_action_allowed("bob", gateway, "manage_gateway")
 
     assert direct_auth.call_count == 3
     direct_auth.assert_any_call(
@@ -58,5 +62,6 @@ def test_is_iam_gateway_action_allowed_caches_only_allowed_results(mocker):
             "subject": {"type": "user", "id": "alice"},
             "action_id": "manage_gateway",
             "resource": {"id": "7"},
-        }
+        },
+        tenant_id="tenant-a",
     )

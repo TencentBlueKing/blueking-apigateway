@@ -100,12 +100,13 @@ def _revoke(
     gateway_id: int,
     authorizations: Iterable[tuple[str, str]],
     operated_by: str,
+    tenant_id: str,
 ) -> None:
     payloads = [
         build_gateway_revoke_authorization(username, role, gateway_id) for username, role in sorted(authorizations)
     ]
     for payload_chunk in chunked(payloads):
-        revoke_authorization(payload_chunk, operated_by)
+        revoke_authorization(payload_chunk, operated_by, tenant_id=tenant_id)
 
 
 def _grant(
@@ -113,6 +114,7 @@ def _grant(
     snapshot: GatewayMemberSnapshot,
     usernames: Iterable[str],
     operated_by: str,
+    tenant_id: str,
 ) -> None:
     now = timezone.now()
     payloads = [
@@ -126,7 +128,7 @@ def _grant(
         for username in sorted(usernames)
     ]
     for payload_chunk in chunked(payloads):
-        add_authorization(payload_chunk, operated_by)
+        add_authorization(payload_chunk, operated_by, tenant_id=tenant_id)
 
 
 def _restore_gateway_member_snapshot(
@@ -134,6 +136,7 @@ def _restore_gateway_member_snapshot(
     before: GatewayMemberSnapshot,
     after: GatewayMemberSnapshot,
     operated_by: str,
+    tenant_id: str,
 ) -> None:
     changed_usernames = {
         username for username in before.keys() | after.keys() if before.get(username) != after.get(username)
@@ -144,8 +147,8 @@ def _restore_gateway_member_snapshot(
         for username in changed_usernames
         if username in snapshot
     }
-    _revoke(gateway_id, authorizations_to_clear, operated_by)
-    _grant(gateway_id, before, changed_usernames & before.keys(), operated_by)
+    _revoke(gateway_id, authorizations_to_clear, operated_by, tenant_id)
+    _grant(gateway_id, before, changed_usernames & before.keys(), operated_by, tenant_id)
 
 
 def apply_gateway_member_snapshots_to_iam(
@@ -153,6 +156,7 @@ def apply_gateway_member_snapshots_to_iam(
     before: GatewayMemberSnapshot,
     after: GatewayMemberSnapshot,
     operated_by: str,
+    tenant_id: str,
 ) -> None:
     """Apply a local member delta and compensate IAM back to ``before`` on failure."""
     usernames = before.keys() | after.keys()
@@ -171,11 +175,11 @@ def apply_gateway_member_snapshots_to_iam(
         return
 
     try:
-        _revoke(gateway_id, authorizations_to_revoke, operated_by)
-        _grant(gateway_id, after, usernames_to_grant, operated_by)
+        _revoke(gateway_id, authorizations_to_revoke, operated_by, tenant_id)
+        _grant(gateway_id, after, usernames_to_grant, operated_by, tenant_id)
     except Exception:
         try:
-            _restore_gateway_member_snapshot(gateway_id, before, after, operated_by)
+            _restore_gateway_member_snapshot(gateway_id, before, after, operated_by, tenant_id)
         except Exception:
             logger.critical(
                 "failed to compensate gateway IAM authorizations, gateway_id=%s",
