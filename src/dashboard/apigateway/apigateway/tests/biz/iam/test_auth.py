@@ -64,10 +64,10 @@ def test_is_iam_gateway_action_allowed_caches_only_allowed_results(
         side_effect=[True, False, False],
     )
 
-    assert is_iam_gateway_action_allowed("alice", gateway, "manage_gateway")
-    assert is_iam_gateway_action_allowed("alice", gateway, "manage_gateway")
-    assert not is_iam_gateway_action_allowed("bob", gateway, "manage_gateway")
-    assert not is_iam_gateway_action_allowed("bob", gateway, "manage_gateway")
+    assert is_iam_gateway_action_allowed(gateway, "alice", "manage_gateway")
+    assert is_iam_gateway_action_allowed(gateway, "alice", "manage_gateway")
+    assert not is_iam_gateway_action_allowed(gateway, "bob", "manage_gateway")
+    assert not is_iam_gateway_action_allowed(gateway, "bob", "manage_gateway")
 
     assert direct_auth.call_count == 3
     direct_auth.assert_any_call(

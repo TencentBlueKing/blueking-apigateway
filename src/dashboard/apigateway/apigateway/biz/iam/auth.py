@@ -29,7 +29,7 @@ from .constants import ALLOW_CACHE_TTL
 if TYPE_CHECKING:
     from apigateway.core.models import Gateway
 
-_allow_cache: TTLCache[tuple[str, int, str], bool] = TTLCache(maxsize=CACHE_MAXSIZE, ttl=ALLOW_CACHE_TTL)
+_allow_cache: TTLCache[tuple[int, str, str], bool] = TTLCache(maxsize=CACHE_MAXSIZE, ttl=ALLOW_CACHE_TTL)
 _allow_cache_lock = RLock()
 
 
@@ -42,8 +42,8 @@ def clear_gateway_iam_auth_cache() -> None:
         _allow_cache.clear()
 
 
-def is_iam_gateway_action_allowed(username: str, gateway: Gateway, action: str) -> bool:
-    cache_key = (username, gateway.id, action)
+def is_iam_gateway_action_allowed(gateway: Gateway, username: str, action: str) -> bool:
+    cache_key = (gateway.id, username, action)
     with _allow_cache_lock:
         if cache_key in _allow_cache:
             return True

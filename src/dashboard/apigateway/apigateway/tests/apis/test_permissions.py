@@ -146,7 +146,7 @@ def test_active_iam_allow_sets_local_member(mocker, fake_request, fake_gateway):
         _view(fake_gateway.id, gateway_action=GatewayActionEnum.MANAGE_GATEWAY.value),
     )
 
-    is_allowed.assert_called_once_with("admin", fake_gateway, GatewayActionEnum.MANAGE_GATEWAY.value)
+    is_allowed.assert_called_once_with(fake_gateway, "admin", GatewayActionEnum.MANAGE_GATEWAY.value)
     assert fake_request.gateway_member.username == "admin"
 
 
@@ -176,7 +176,7 @@ def test_active_iam_allow_does_not_require_local_permission(mocker, fake_request
         fake_request,
         _view(fake_gateway.id, gateway_action=GatewayActionEnum.OPERATE_GATEWAY.value),
     )
-    is_allowed.assert_called_once_with("guest", fake_gateway, GatewayActionEnum.OPERATE_GATEWAY.value)
+    is_allowed.assert_called_once_with(fake_gateway, "guest", GatewayActionEnum.OPERATE_GATEWAY.value)
     assert fake_request.gateway_member is None
 
 
@@ -216,7 +216,7 @@ def test_unavailable_iam_rejects_without_local_permission(mocker, fake_request, 
             _view(fake_gateway.id, gateway_action=GatewayActionEnum.OPERATE_GATEWAY.value),
         )
 
-    is_allowed.assert_called_once_with("guest", fake_gateway, GatewayActionEnum.OPERATE_GATEWAY.value)
+    is_allowed.assert_called_once_with(fake_gateway, "guest", GatewayActionEnum.OPERATE_GATEWAY.value)
     assert "fallback to local" in caplog.text
 
 

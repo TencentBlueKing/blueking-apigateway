@@ -380,7 +380,7 @@ def batch_delete_role_action(role_id: str, action_ids: list[str]) -> None:
     _call_bkiam_api(http_delete, path, None, params={"ids": ",".join(_batch(action_ids))})
 
 
-def direct_auth(payload: DirectAuthPayload, *, tenant_id: str) -> bool:
+def direct_auth(payload: DirectAuthPayload, tenant_id: str) -> bool:
     """
     鉴权：判断主体是否拥有指定操作。
 
