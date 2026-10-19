@@ -121,7 +121,7 @@
             class="response-card__toolbar"
           >
             <div class="response-card__media-type">
-              <span>Content-Type</span>
+              <span>Content-Type: </span>
               <span class="response-card__media-type-value">
                 application/json
               </span>
