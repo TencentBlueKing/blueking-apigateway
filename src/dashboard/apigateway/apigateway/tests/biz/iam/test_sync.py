@@ -279,6 +279,12 @@ def test_reconcile_skips_admin_when_multi_tenant_enabled(fake_gateway, mocker, s
             ),
             GatewayMember(
                 gateway=fake_gateway,
+                username="bk_admin",
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+                expires=_expires(1_900_000_000),
+            ),
+            GatewayMember(
+                gateway=fake_gateway,
                 username="alice",
                 role=GatewayRoleEnum.OPERATOR.value,
                 expires=_expires(1_900_000_100),
@@ -290,12 +296,13 @@ def test_reconcile_skips_admin_when_multi_tenant_enabled(fake_gateway, mocker, s
         {
             GatewayRoleEnum.ADMINISTRATOR.value: [
                 _iam_result("admin", 1_800_000_000),
+                _iam_result("bk_admin", 1_800_000_000),
                 _iam_result("extra", 1_900_000_200),
             ],
         },
     )
-    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
-    revoke = mocker.patch("apigateway.biz.iam.sync.revoke_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -312,11 +319,21 @@ def test_reconcile_skips_admin_when_multi_tenant_enabled(fake_gateway, mocker, s
 def test_reconcile_syncs_admin_when_multi_tenant_disabled(fake_gateway, mocker, settings):
     settings.ENABLE_MULTI_TENANT_MODE = False
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
-    GatewayMember.objects.create(
-        gateway=fake_gateway,
-        username="admin",
-        role=GatewayRoleEnum.ADMINISTRATOR.value,
-        expires=_expires(1_900_000_000),
+    GatewayMember.objects.bulk_create(
+        [
+            GatewayMember(
+                gateway=fake_gateway,
+                username="admin",
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+                expires=_expires(1_900_000_000),
+            ),
+            GatewayMember(
+                gateway=fake_gateway,
+                username="bk_admin",
+                role=GatewayRoleEnum.ADMINISTRATOR.value,
+                expires=_expires(1_900_000_000),
+            ),
+        ]
     )
     _mock_iam(mocker, {})
 
@@ -326,7 +343,7 @@ def test_reconcile_syncs_admin_when_multi_tenant_disabled(fake_gateway, mocker, 
         operator="bk_apigateway",
     )
 
-    assert [item.username for item in result.grants] == ["admin"]
+    assert [item.username for item in result.grants] == ["admin", "bk_admin"]
 
 
 def test_reconcile_ignores_small_expiry_difference(fake_gateway, mocker):
