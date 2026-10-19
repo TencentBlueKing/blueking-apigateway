@@ -527,7 +527,7 @@ const getKindInfo = (kind?: number | null) => {
   return {
     icon: 'wangguanleixing-wangguan',
     name: t('API 网关'),
-    color: 'color-#1768ef',
+    color: 'color-#3a84ff',
     bgColor: 'bg-#cddffe',
   };
 };
@@ -1067,9 +1067,17 @@ onMounted(() => {
     &.is-hover {
       background-color: #f0f1f5;
     }
+
+    &.is-selected {
+
+      .icon-ag-wangguanleixing-wangguan {
+        background-color: #a3c5fd;
+        color: #1768ef;
+      }
+    }
   }
 
-  .bk-select-extension  {
+  .bk-select-extension {
     height: 48px;
   }
 }
