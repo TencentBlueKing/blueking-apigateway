@@ -36,7 +36,7 @@ def _iam_result(username: str, expired_at: int) -> dict:
 
 
 def _mock_iam(mocker, authorizations_by_role):
-    def iter_authorizations(payload, *, tenant_id):
+    def iter_authorizations(payload, tenant_id):
         yield from authorizations_by_role.get(payload["role_id"], [])
 
     return mocker.patch(
@@ -128,7 +128,7 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(
         "operator": [_iam_result("c", 1_900_000_000), _iam_result("d", 1_900_000_000)],
     }
 
-    def iter_authorizations(payload, *, tenant_id):
+    def iter_authorizations(payload, tenant_id):
         yield from authorizations_by_role.get(payload["role_id"], [])
 
     iterator = mocker.patch(

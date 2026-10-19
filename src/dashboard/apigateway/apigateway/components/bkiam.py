@@ -392,7 +392,7 @@ def direct_auth(payload: DirectAuthPayload, tenant_id: str) -> bool:
     return data["allowed"]
 
 
-def add_authorization(authorizations: list[AuthorizationPayload], operator: str, *, tenant_id: str) -> None:
+def add_authorization(authorizations: list[AuthorizationPayload], operator: str, tenant_id: str) -> None:
     """
     批量授予角色授权。
 
@@ -411,7 +411,7 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str,
     )
 
 
-def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, *, tenant_id: str) -> None:
+def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:
     """
     批量回收角色授权。
 
@@ -432,7 +432,6 @@ def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], opera
 
 def list_authorization_subject(
     payload: AuthorizationSubjectQueryPayload,
-    *,
     tenant_id: str,
 ) -> AuthorizationSubjectPage:
     """
@@ -451,7 +450,6 @@ def list_authorization_subject(
 
 def iter_authorization_subjects(
     payload: AuthorizationSubjectQueryPayload,
-    *,
     tenant_id: str,
 ) -> Iterator[AuthorizationSubjectItem]:
     """按页迭代已授权主体，分页循环由本组件封装。
