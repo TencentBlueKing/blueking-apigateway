@@ -27,6 +27,7 @@ from apigateway.apps.rbac.tasks import (
     _renew_gateway_member_iam_authorizations,
     renew_gateway_member_iam_authorizations,
 )
+from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE, CELERY_IMPORTS
 from apigateway.core.models import Gateway
 
@@ -39,7 +40,6 @@ NOW = datetime(2026, 9, 10, 8, 0, tzinfo=UTC)
 def iam_v4_enabled(settings):
     settings.BK_IAM_V4_ENABLED = True
     settings.BK_APP_CODE = "bk-apigateway"
-    settings.BK_IAM_V4_MANAGERS = ["admin"]
 
 
 @pytest.fixture(autouse=True)
@@ -101,7 +101,8 @@ def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
     )
     mocker.patch("apigateway.apps.rbac.tasks.timezone.now", return_value=NOW)
 
-    def assert_local_expiry_not_updated(_authorizations, _operator):
+    def assert_local_expiry_not_updated(_authorizations, operator):
+        assert operator == BK_IAM_V4_SYSTEM_ID
         due.refresh_from_db()
         no_expiry.refresh_from_db()
         assert due.expires == NOW + timedelta(days=30)
@@ -120,7 +121,7 @@ def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
     assert {authorization["expired_at"] for authorization in authorizations} == {
         int((NOW + timedelta(days=365)).timestamp())
     }
-    assert operator == "admin"
+    assert operator == BK_IAM_V4_SYSTEM_ID
 
     due.refresh_from_db()
     no_expiry.refresh_from_db()
@@ -139,7 +140,7 @@ def test_batches_authorizations_at_twenty(mocker):
     renew_gateway_member_iam_authorizations()
 
     assert [len(item.args[0]) for item in add_authorization.call_args_list] == [20, 1]
-    assert all(item.args[1] == "admin" for item in add_authorization.call_args_list)
+    assert all(item.args[1] == BK_IAM_V4_SYSTEM_ID for item in add_authorization.call_args_list)
 
 
 def test_failed_batch_is_unchanged_and_later_batch_continues(mocker):
@@ -200,7 +201,8 @@ def test_gateway_row_is_locked_before_members_are_read_and_iam_is_written(mocker
             events.append("member-read")
         return original_filter(*args, **kwargs)
 
-    def add_authorization(_authorizations, _operator):
+    def add_authorization(_authorizations, operator):
+        assert operator == BK_IAM_V4_SYSTEM_ID
         events.append("iam-write")
 
     mocker.patch.object(Gateway.objects, "select_for_update", side_effect=select_for_update)

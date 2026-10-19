@@ -182,7 +182,7 @@
                 <template #mcpCopyConfig>
                   <BkButton
                     text
-                    class="mr-24px color-#979ba5! hover-color-#3a84ff!"
+                    class="mr-16px color-#979ba5! copy-config-btn"
                     @click.stop="handleCopyConfig(server)"
                   >
                     <AgIcon
@@ -786,6 +786,13 @@ onUnmounted(() => {
 
         .ag-mcp-card-wrapper {
           width: calc(33.3333% - 10.6667px);
+
+          &:hover {
+
+            .copy-config-btn {
+              color: #1768ef !important;
+            }
+          }
         }
       }
 

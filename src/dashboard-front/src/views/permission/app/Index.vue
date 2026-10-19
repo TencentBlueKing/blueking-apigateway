@@ -178,7 +178,7 @@ const featureFlagStore = useFeatureFlag();
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableColumns = shallowRef<any[]>([
   {
-    title: t('蓝鲸应用ID'),
+    title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
     ellipsis: true,
     width: 200,
@@ -395,7 +395,7 @@ const filterConditions = ref<ISearchItem[]>([
     noValidate: true,
   },
   {
-    name: t('蓝鲸应用ID'),
+    name: t('蓝鲸应用 ID'),
     id: 'bk_app_code',
     children: [],
     onlyRecommendChildren: true,

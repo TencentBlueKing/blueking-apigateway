@@ -365,7 +365,7 @@ export interface IGatewaysPermissionsAppPermissionsListQuery {
   limit?: number
   /** The initial index from which to return the results. */
   offset?: number
-  /** 应用ID */
+  /** 应用 ID */
   bk_app_code?: string
   /** 查询关键字 */
   keyword?: string

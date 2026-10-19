@@ -30,6 +30,8 @@ interface IGatewayRoleState {
   // 空字符串表示当前没有可信角色，权限判断应拒绝放行。
   role: MemberRole | ''
   status: Exclude<GatewayRoleStatus, 'idle'>
+  // 仅供刷新期间保持菜单展示，不能作为页面或操作的授权依据。
+  previousRole?: MemberRole | ''
   expiresAt?: number
   error?: unknown
 }
@@ -88,6 +90,7 @@ export const useGatewayRoleStore = defineStore('useGatewayRole', () => {
     roles.value[gatewayId] = {
       role: '',
       status: 'loading',
+      previousRole: cached?.status === 'ready' ? cached.role : undefined,
     };
     const request: Promise<MemberRole | ''> = getUserGatewayRole(gatewayId)
       .then((data) => {

@@ -105,7 +105,10 @@
       </template>
     </BkAlert>
 
-    <div class="tab-wrapper">
+    <div
+      ref="tabWrapperRef"
+      class="tab-wrapper"
+    >
       <BkTab
         v-model:active="activeTab"
         class="main-tabs"
@@ -149,6 +152,8 @@ const { t } = useI18n();
 const route = useRoute();
 const envStore = useEnv();
 
+const tabWrapperRef = useTemplateRef<HTMLElement>('tabWrapperRef');
+
 const activeTab = ref('overview');
 
 const isTopLevel = computed(() => route.name === 'BkCli');
@@ -156,6 +161,38 @@ const isTopLevel = computed(() => route.name === 'BkCli');
 const openDetailUrl = () => {
   window.open(envStore.env.CLI.DETAIL_URL, '_blank');
 };
+
+// 查找最近的可滚动祖先元素（页面在不同入口下的滚动容器不同）
+const getScrollContainer = (el: HTMLElement) => {
+  let parent = el.parentElement;
+  while (parent) {
+    const { overflowY } = window.getComputedStyle(parent);
+    if (['auto', 'scroll', 'overlay'].includes(overflowY) && parent.scrollHeight > parent.clientHeight) {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
+};
+
+// tab 头已吸顶时，切换 tab 后滚回 tab 区域起点，保证新内容从头开始展示
+const scrollToTabTop = () => {
+  const wrapper = tabWrapperRef.value;
+  if (!wrapper) {
+    return;
+  }
+  const container = getScrollContainer(wrapper);
+  if (!container) {
+    return;
+  }
+  const offset = wrapper.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  if (offset < 0) {
+    container.scrollTop += offset;
+  }
+};
+
+watch(activeTab, scrollToTabTop, { flush: 'post' });
+
 </script>
 
 <style lang="scss" scoped>
@@ -331,13 +368,17 @@ const openDetailUrl = () => {
   }
 
   .tab-wrapper {
-    overflow: hidden;
     background: #fff;
     border-radius: 4px;
     box-shadow: 0 2px 2px 0 #1919290d;
 
     :deep(.main-tabs > .bk-tab-header) {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       padding: 0 24px;
+      background: #fff;
+      border-radius: 4px 4px 0 0;
     }
 
     :deep(.main-tabs > .bk-tab-header .bk-tab-header-item) {

@@ -773,15 +773,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-user-token:before {
 	content: "\e231";
 }
-.icon-ag-api-biancheng-2:before {
-	content: "\e23f";
-}
-.icon-ag-api-wangguan-2:before {
-	content: "\e23e";
-}
-.icon-ag-api-ai:before {
-	content: "\e241";
-}
 .icon-ag-debugging:before {
 	content: "\e245";
 }
@@ -818,7 +809,7 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-resources:before {
 	content: "\e24b";
 }
-.icon-ag-runtime-data:before {
+.icon-ag-runtime-data​:before {
 	content: "\e250";
 }
 .icon-ag-setting:before {
@@ -844,4 +835,13 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-components-2:before {
 	content: "\e256";
+}
+.icon-ag-apiwendang-ai:before {
+	content: "\e258";
+}
+.icon-ag-apiwendang-biancheng:before {
+	content: "\e257";
+}
+.icon-ag-apiwendang-wangguan:before {
+	content: "\e259";
 }

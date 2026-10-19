@@ -54,13 +54,13 @@
         />
       </BkFormItem>
       <BkFormItem
-        :label="t('蓝鲸应用ID')"
+        :label="t('蓝鲸应用 ID')"
         class="form-item"
       >
         <BkInput
           v-model="formData.bk_app_code"
           clearable
-          :placeholder="t('请输入应用ID')"
+          :placeholder="t('请输入应用 ID')"
         />
       </BkFormItem>
       <template v-if="isShowApplicant">

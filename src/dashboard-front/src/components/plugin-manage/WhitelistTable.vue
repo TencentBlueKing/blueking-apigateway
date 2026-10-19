@@ -30,7 +30,7 @@
     >
       {{ t('添加') }}
     </BkButton>
-    <!-- 按蓝鲸应用ID 资源名称搜索 -->
+    <!-- 按蓝鲸应用 ID 资源名称搜索 -->
     <BkSearchSelect
       v-model="searchFilters"
       class="float-right w-500px"
@@ -79,7 +79,7 @@
           align="center"
         />
         <BkTableColumn
-          :label="t('蓝鲸应用ID')"
+          :label="t('蓝鲸应用 ID')"
           prop="bk_app_code"
         />
         <BkTableColumn
@@ -220,7 +220,7 @@
               </p>
             </BkFormItem>
             <BkFormItem
-              :label="t('蓝鲸应用ID')"
+              :label="t('蓝鲸应用 ID')"
               required
               :label-width="150"
               :property="'bkAppCode'"
@@ -229,7 +229,7 @@
             >
               <BkInput
                 v-model="curResource.bkAppCode"
-                :placeholder="t('请输入应用ID')"
+                :placeholder="t('请输入应用 ID')"
                 :disabled="resourceSliderConf.type === 'edit'"
               />
             </BkFormItem>
@@ -373,7 +373,7 @@ const isTableLoading = ref(false);
 const confirmLoading = ref(false);
 const searchResourceCondition = reactive<any>([
   {
-    name: t('蓝鲸应用ID'),
+    name: t('蓝鲸应用 ID'),
     id: 'bk_app_code',
     children: [],
   },
@@ -865,7 +865,7 @@ const handleAddResource = () => {
       const filterArr = dataList.value.filter((item: any) => item.bk_app_code === value);
       return !filterArr.length;
     },
-    message: t('该蓝鲸应用ID白名单已存在'),
+    message: t('该蓝鲸应用 ID 白名单已存在'),
     trigger: 'blur',
   });
   handleResourceScroll();

@@ -72,7 +72,7 @@ const emits = defineEmits<IEmits>();
 
 const tableColumns = shallowRef([
   {
-    label: t('蓝鲸应用ID'),
+    label: t('蓝鲸应用 ID'),
     field: 'bk_app_code',
   },
   {

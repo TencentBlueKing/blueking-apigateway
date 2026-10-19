@@ -23,12 +23,12 @@
         label-width="120"
       >
         <BkFormItem
-          :label="t('蓝鲸应用ID')"
+          :label="t('蓝鲸应用 ID')"
           label-width="98"
         >
           <BkInput
             v-model="filterData.bk_app_code"
-            :placeholder="t('请输入应用ID，按Enter搜索')"
+            :placeholder="t('请输入应用 ID，按 Enter 搜索')"
             clearable
             class="w-282px"
           />
@@ -112,7 +112,7 @@
           <div class="ag-kv-list">
             <div class="item">
               <div class="key">
-                {{ t("蓝鲸应用ID：") }}
+                {{ t("蓝鲸应用 ID：") }}
               </div>
               <div class="value">
                 {{ curRecord.bk_app_code }}
@@ -271,22 +271,11 @@ const historyExpandColumn = shallowRef<any[]>([
     colKey: 'status',
     ellipsis: true,
     cell: (h: any, { row }: { row: any }) => {
-      if (['rejected'].includes(row['apply_status'])) {
-        return (
-          <div class="perm-record-dot">
-            <span class="ag-dot rejected mr-6px" />
-            <span>{ t('驳回') }</span>
-          </div>
-        );
-      }
-      else {
-        return (
-          <div class="perm-record-dot">
-            <span class="ag-dot success mr-6px" />
-            <span>{ t('通过') }</span>
-          </div>
-        );
-      }
+      return (
+        <span class={['ag-tag', { [row.apply_status]: row.apply_status }]}>
+          { row.apply_status === 'rejected' ? t('驳回') : t('通过') }
+        </span>
+      );
     },
   },
 ]);
@@ -301,22 +290,11 @@ const resourceInfoColumn = shallowRef<any[]>([
     colKey: 'status',
     ellipsis: true,
     cell: (h: any, { row }: { row: any }) => {
-      if (['rejected'].includes(row['apply_status'])) {
-        return (
-          <div>
-            <span class="ag-dot default mr-4px" />
-            <span>{ t('驳回') }</span>
-          </div>
-        );
-      }
-      else {
-        return (
-          <div>
-            <span class="ag-dot success mr-4px" />
-            <span>{ t('通过') }</span>
-          </div>
-        );
-      }
+      return (
+        <span class={['ag-tag', { [row.apply_status]: row.apply_status }]}>
+          { row.apply_status === 'rejected' ? t('驳回') : t('通过') }
+        </span>
+      );
     },
   },
 ]);
@@ -376,7 +354,7 @@ const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_
 const getTableColumns = computed((): any[] => {
   return [
     {
-      title: t('蓝鲸应用ID'),
+      title: t('蓝鲸应用 ID'),
       colKey: 'bk_app_code',
       ellipsis: true,
     },
@@ -446,11 +424,12 @@ const getTableColumns = computed((): any[] => {
       colKey: 'status',
       ellipsis: true,
       cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        const status = row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP | undefined;
+        if (!status) return <span>--</span>;
         return (
-          <div class="perm-record-dot">
-            <span class={['ag-dot mr-6px', { [row.status!]: row.status }]} />
-            {APPROVAL_HISTORY_STATUS_MAP[row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
-          </div>
+          <span class={['ag-tag', status]}>
+            {APPROVAL_HISTORY_STATUS_MAP[status]}
+          </span>
         );
       },
     },

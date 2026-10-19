@@ -119,7 +119,6 @@ class GatewayIAMModelSyncer:
             "id": BK_IAM_V4_SYSTEM_ID,
             "name": SYSTEM_NAME,
             "description": SYSTEM_DESCRIPTION,
-            "managers": list(settings.BK_IAM_V4_MANAGERS),
             "clients": [settings.BK_APP_CODE],
             "callback_url": "",
         }
@@ -131,7 +130,7 @@ class GatewayIAMModelSyncer:
             self._log_sync("system", desired["id"], "created")
             return
 
-        changes = _changed_fields(existing, desired, ("description", "managers", "clients", "callback_url"))
+        changes = _changed_fields(existing, desired, ("description", "clients", "callback_url"))
         if changes:
             bkiam.update_system(cast("bkiam.SystemUpdatePayload", changes))
             counts["updated"] += 1

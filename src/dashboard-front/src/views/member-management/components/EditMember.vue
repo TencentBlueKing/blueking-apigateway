@@ -19,23 +19,24 @@
 <template>
   <BkSideslider
     v-model:is-show="isShow"
-    :title="t('变更角色')"
     :width="720"
     quick-close
     render-directive="if"
+    :before-close="handleBeforeClose"
   >
+    <template #header>
+      <span class="slider-title">{{ t('变更角色') }}</span>
+    </template>
     <div class="member-change-slider">
+      <div class="member-info">
+        <span>{{ t('人员') }}：</span>
+        <span v-if="!featureFlagStore.isEnableDisplayName">{{ formData.username }}</span>
+        <span v-else><bk-user-display-name :user-id="formData.username" /></span>
+      </div>
       <BkForm
         form-type="vertical"
         :model="formData"
       >
-        <BkFormItem
-          :label="t('用户名')"
-          property="username"
-        >
-          <span v-if="!featureFlagStore.isEnableDisplayName">{{ formData.username }}</span>
-          <span v-else><bk-user-display-name :user-id="formData.username" /></span>
-        </BkFormItem>
         <BkFormItem
           :label="t('角色')"
           property="role"
@@ -90,7 +91,7 @@
 
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
-import { usePopInfoBox } from '@/hooks';
+import { usePopInfoBox, useSidebar } from '@/hooks';
 import { updateGatewayMember } from '@/services/source/gateway-member.ts';
 import { useFeatureFlag, useGateway, useUserInfo } from '@/stores';
 import PermissionModel from './PermissionModel.vue';
@@ -122,6 +123,7 @@ const route = useRoute();
 const gatewayStore = useGateway();
 const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const submitting = ref(false);
 const formData = ref<{
@@ -137,6 +139,9 @@ const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const currentUsername = computed(() => userStore.info.username);
 
 const summaryText = computed(() => {
+  if (formData.value.role === 'administrator') {
+    return t('拥有全部权限');
+  }
   return getRolePermissions(formData.value.role, isAIGateway.value)
     .map(item => item.label)
     .join(', ');
@@ -145,6 +150,7 @@ const summaryText = computed(() => {
 watch(isShow, () => {
   if (isShow.value) {
     resetForm();
+    initSidebarFormData(formData.value);
   }
 });
 
@@ -155,8 +161,15 @@ const resetForm = () => {
   };
 };
 
-const handleCancel = () => {
-  isShow.value = false;
+const handleBeforeClose = () => {
+  return isSidebarClosed(JSON.stringify(formData.value));
+};
+
+const handleCancel = async () => {
+  const canClose = await handleBeforeClose();
+  if (canClose) {
+    isShow.value = false;
+  }
 };
 
 const persist = async (memberId: number, role: MemberRole) => {
@@ -221,14 +234,33 @@ const handleConfirm = async () => {
 </script>
 
 <style lang="scss" scoped>
+.slider-title {
+  font-size: 14px;
+}
+
 .member-change-slider {
   padding: 20px 24px 8px;
+  font-size: 14px;
+
+  :deep(.permission-matrix) {
+    font-size: inherit;
+  }
+}
+
+.member-info {
+  display: flex;
+  padding: 8px 16px;
+  margin-bottom: 24px;
+  line-height: 22px;
+  color: #63656e;
+  overflow-wrap: anywhere;
+  background: #f5f7fa;
 }
 
 .permission-summary {
   padding: 12px 16px;
   margin: 8px 0 16px;
-  font-size: 12px;
+  font-size: inherit;
   line-height: 20px;
   color: #63656e;
   background: #f5f7fa;

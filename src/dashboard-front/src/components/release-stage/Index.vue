@@ -116,6 +116,7 @@
                       v-model="formData.resource_version_id"
                       :clearable="false"
                       :input-search="false"
+                      :loading="versionListLoading"
                       :popover-options="{
                         extCls: 'custom-version-list'
                       }"
@@ -357,6 +358,8 @@ const chooseVersionComment = ref('');
 
 const isShow = ref(false);
 const versionList = ref<VersionType[]>([]);
+const versionListLoading = ref(false);
+const diffLoading = ref(false);
 const formRef = ref();
 const logDetailsRef = ref();
 const selectVersionRef = ref();
@@ -426,6 +429,10 @@ const resourceVersion = computed(() => {
 
 // 当版本过旧时“下一步”按钮不能点击
 const isNextBtnDisabled = computed(() => {
+  if (versionListLoading.value || diffLoading.value) {
+    return true;
+  }
+
   if (!formData.stage_id) {
     return true;
   }
@@ -622,15 +629,21 @@ const showReleaseSideslider = () => {
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  const response = await getVersionList(apigwId.value, {
-    offset: 0,
-    limit: 1000,
-  });
-  // @ts-ignore
-  response.results.forEach((item: VersionType, index: number) => {
-    item.isLatestVersion = index === 0;
-  });
-  versionList.value = response.results;
+  versionListLoading.value = true;
+  try {
+    const response = await getVersionList(apigwId.value, {
+      offset: 0,
+      limit: 1000,
+    });
+    // @ts-ignore
+    response.results.forEach((item: VersionType, index: number) => {
+      item.isLatestVersion = index === 0;
+    });
+    versionList.value = response.results;
+  }
+  finally {
+    versionListLoading.value = false;
+  }
 };
 
 const getMcpServersDel = async () => {
@@ -667,7 +680,13 @@ const handleVersionChange = async (payload: any) => {
     source_resource_version_id: chooseAssets.value.resource_version?.id,
     target_resource_version_id: payload.id,
   };
-  diffData.value = await getVersionDiff(apigwId.value, query);
+  diffLoading.value = true;
+  try {
+    diffData.value = await getVersionDiff(apigwId.value, query);
+  }
+  finally {
+    diffLoading.value = false;
+  }
   formData.resource_version_id = payload?.id;
   selectVersionRef.value?.hidePopover();
   getMcpServersDel();
