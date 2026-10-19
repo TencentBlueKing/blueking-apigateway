@@ -312,7 +312,7 @@ watch(
       }
 
       .default-header-view {
-        height: calc(100vh - 105px);
+        height: calc(100vh - 100px);
         overflow-y: auto;
 
         &.custom-header-view {
@@ -322,7 +322,7 @@ watch(
         }
 
         &.show-notice {
-          height: calc(100vh - 145px);
+          height: calc(100vh - 140px);
         }
       }
     }

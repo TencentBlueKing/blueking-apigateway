@@ -28,66 +28,78 @@
     >
       <!-- 左上角的网关选择器 -->
       <template #side-header>
-        <div class="h-34px">
+        <div>
           <BkSelect
             v-show="!isMenuCollapsed"
             v-model="gatewayId"
-            :clearable="false"
-            class="header-select h-full"
+            class="gateway-select"
             filterable
+            :clearable="false"
+            :search-placeholder="t('请搜索网关')"
+            :popover-options="{
+              extCls: 'gateway-select-popover',
+            }"
             @change="() => handleGoPage(activeMenuKey)"
           >
             <template #prefix>
               <div
-                v-if="isProgrammableGateway || isAIGateway"
-                class="gateway-selector-prefix"
-                :style="{ left: `${iconLeft}px` }"
+                class="gateway-selector-prefix ml-8px my-4px"
+                :class="[getGatewayKind.color, getGatewayKind.bgColor]"
               >
                 <AgIcon
                   v-bk-tooltips="{
-                    content: isAIGateway ? t('AI 网关') : t('可编程网关'),
+                    content: getGatewayKind.name,
                     placement: 'right',
                   }"
-                  :name="isAIGateway ? 'AIwangguan' : 'square-program'"
-                  size="16"
+                  size="22"
+                  :name="getGatewayKind.icon"
+                  :class="[getGatewayKind.color, getGatewayKind.bgColor]"
                 />
               </div>
             </template>
+            <template #extension>
+              <div class="m-auto cursor-pointer">
+                <div
+                  class="flex items-center color-#979ba5"
+                  @click.stop="handleCreateGateway"
+                >
+                  <AgIcon
+                    class="mr-8px color-#979ba5 b-rounded-2px"
+                    name="plus-circle"
+                    size="16"
+                  />
+                  <span class="text-12px color-#4d4f56">
+                    {{ t('创建应用') }}
+                  </span>
+                </div>
+              </div>
+            </template>
             <BkOption
-              v-for="item in gatewayList"
+              v-for="item of gatewayList"
               :id="item.id"
               :key="item.id"
               :name="item.name"
             >
               <div class="w-full flex items-center justify-between">
                 <div class="flex items-center justify-center">
-                  <span
-                    class="text-ov"
-                    :style="{ maxWidth: getOptionTextWidth(item) }"
-                  >
-                    {{ item.name }}
-                  </span>
                   <BkPopover
-                    v-if="[1, 2].includes(item.kind)"
                     placement="right"
-                    :content="item.kind === 1 ? t('可编程网关') : t('AI 网关')"
+                    :content="getKindInfo(item.kind).name"
                     :popover-delay="0"
                   >
                     <AgIcon
-                      :name="item.kind === 1 ? 'square-program' : 'AIwangguan'"
-                      size="16"
-                      class="ml-6px color-#3a84ff"
-                      :class="[
-                        {
-                          'mr-4px': !item.status
-                        }
-                      ]"
+                      :name="getKindInfo(item.kind).icon"
+                      size="20"
+                      class="mr-8px b-rounded-2px"
+                      :class="[getKindInfo(item.kind).color, getKindInfo(item.kind).bgColor]"
                     />
                   </BkPopover>
+                  <span class="max-w-180px color-#4d4f56 text-ov">
+                    {{ item.name }}
+                  </span>
                 </div>
                 <BkTag
-                  v-if="!item.status
-                    || gatewayStore?.currentGateway?.status === 0 && gatewayId === item.id"
+                  v-if="!item.status || gatewayStore?.currentGateway?.status === 0 && gatewayId === item.id"
                 >
                   {{ t('已停用') }}
                 </BkTag>
@@ -240,7 +252,6 @@ const needMenu = ref(true);
 const pageName = ref('');
 // 当前网关Id
 const gatewayId = ref(0);
-const iconLeft = ref(6);
 // 页面header名
 const headerTitle = ref('');
 
@@ -494,6 +505,36 @@ const routerViewWrapperClass = computed(() => {
   return `${initClass} ${displayBkuiTable}`;
 });
 
+const getKindInfo = (kind?: number | null) => {
+  if (kind === 1) {
+    return {
+      icon: 'wangguanleixing-biancheng',
+      name: t('可编程网关'),
+      color: 'color-#0e3377',
+      bgColor: 'bg-#bdc2ce',
+    };
+  }
+
+  if (kind === 2) {
+    return {
+      icon: 'wangguanleixing-ai',
+      name: t('AI 网关'),
+      color: 'color-#6228ff',
+      bgColor: 'bg-#ece5ff',
+    };
+  }
+
+  return {
+    icon: 'wangguanleixing-wangguan',
+    name: t('API 网关'),
+    color: 'color-#1768ef',
+    bgColor: 'bg-#cddffe',
+  };
+};
+
+// 左上角前缀图标跟随当前选中网关的类型
+const getGatewayKind = computed(() => getKindInfo(gatewayStore.currentGateway?.kind));
+
 const setBreadcrumbTitle = (payload: typeof route) => {
   const { title, aiTitle = '', standardTitle = '' } = payload?.meta ?? {};
   if (isAIGateway.value && aiTitle) {
@@ -548,9 +589,6 @@ watch(
     // 仅当网关数据存在，并且和当前页面网关id一致，才刷新标题
     if (newGateway && newGateway?.id === gatewayId.value) {
       setBreadcrumbTitle(route);
-      nextTick(() => {
-        getGatewayIconDistance(newGateway?.name ?? '');
-      });
     }
   },
   { flush: 'post' },
@@ -634,8 +672,6 @@ watch(
 const getGatewayData = async () => {
   const response = await getGatewayList({ limit: 10000 });
   gatewayList.value = response.results || [];
-  const name = gatewayList.value.find(gw => gw.id === gatewayId.value)?.name ?? '';
-  getGatewayIconDistance(name);
 };
 
 // 获取权限审批的数量
@@ -685,47 +721,6 @@ const isMenuVisible = (menu: IMenu) => {
   return canAccessByRole(menuRole.value, menu.permission);
 };
 
-// 根据网关不同状态展示文案最大宽度
-const getOptionTextWidth = (gateway: GatewayItemType) => {
-  // 如果当前网关既是编辑网关且已停用
-  if (gateway.kind === 1) {
-    if (!gateway.status) {
-      return '100px';
-    }
-    return '180px';
-  }
-
-  // 如果当前网关既已停用
-  if (!gateway.status) {
-    return '120px';
-  }
-
-  return '200px';
-};
-
-const getGatewayTextWidth = (text: string) => {
-  const ctx = document.createElement('canvas').getContext('2d');
-  if (!ctx) return 0;
-  const platform = window.navigator.platform.toLowerCase();
-  const realFontFamily = platform.indexOf('win') === 0
-    ? 'Microsoft Yahei,Helvetica,Aria'
-    : getComputedStyle(document.body).fontFamily;
-  // 14px 和页面select输入框字号保持一致
-  ctx.font = `14px ${realFontFamily}`;
-  return ctx.measureText(text).width;
-};
-
-// 动态获取网关icon的边距
-const getGatewayIconDistance = (name: string) => {
-  if (name) {
-    const calcValue = getGatewayTextWidth(name) + 20;
-    // 最小不能小于 24px，防止canvas测不准得到很小的值，图标盖住文字
-    iconLeft.value = Math.max(calcValue, 24);
-    // 防止图标跑到输入框外面
-    iconLeft.value = Math.min(iconLeft.value, 176);
-  }
-};
-
 const handleCollapse = (collapsed: boolean) => {
   isMenuCollapsed.value = !collapsed;
 };
@@ -761,7 +756,11 @@ const handleGoPage = async (routeName: string) => {
     name: nextRouteName,
     params: { id: gatewayId.value },
   });
-  getGatewayIconDistance(gatewayData?.name ?? '');
+};
+
+const handleCreateGateway = () => {
+  const routeData = router.resolve({ name: 'CreateGateway' });
+  window.open(routeData.href, '_blank');
 };
 
 const handleBack = () => {
@@ -944,10 +943,10 @@ onMounted(() => {
         font-size: 16px;
         color: #313238;
         background: #fff;
+        flex-basis: 52px;
         border-bottom: 1px solid #dcdee5;
         box-shadow: 0 3px 4px 0 #0000000a;
         box-sizing: border-box;
-        flex-basis: 52px;
 
         .icon-ag-return-small {
           font-size: 32px;
@@ -1015,46 +1014,66 @@ onMounted(() => {
   }
 }
 
-:deep(.header-select) {
+:deep(.gateway-select) {
   width: 224px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  box-sizing: border-box;
+
+  .bk-select-trigger {
+    display: flex;
+    height: 100%;
+  }
 
   .bk-input {
-    position: relative;
-    display: flex;
+    height: 100%;
     background-color: #f5f7fa;
     border: none;
     border-radius: 2px;
     box-shadow: none;
-    align-items: center;
+    box-sizing: border-box;
 
     .bk-input--text {
-      max-width: fit-content;
-      padding-right: 24px;
-      margin-left: 6px;
       font-size: 14px;
-      color: #63656e;
+      color: #4d4f56;
       background-color: transparent;
       order: 1;
     }
 
     .gateway-selector-prefix {
-      position: absolute;
-      top: 50%;
-      width: 16px;
-      color: #3a84ff;
-      transform: translateY(-50%);
-      flex-shrink: 0;
-      order: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+    }
+
+    &:hover {
+      background-color: #eaebf0;
     }
   }
 
   &.is-focus {
-    border: 1px solid #3a84ff;
+    border-color: #699df4;
   }
 }
 </style>
 
 <style lang="scss">
+.bk-popover.bk-pop2-content.gateway-select-popover .bk-select-content-wrapper {
+
+  .bk-select-option {
+
+    &.is-hover {
+      background-color: #f0f1f5;
+    }
+  }
+
+  .bk-select-extension  {
+    height: 48px;
+  }
+}
+
 .custom-height-navigation {
 
   .content-header {
