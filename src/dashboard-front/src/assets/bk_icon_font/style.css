@@ -809,7 +809,7 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-resources:before {
 	content: "\e24b";
 }
-.icon-ag-runtime-data​:before {
+.icon-ag-runtime-data:before {
 	content: "\e250";
 }
 .icon-ag-setting:before {
@@ -844,4 +844,13 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-apiwendang-wangguan:before {
 	content: "\e259";
+}
+.icon-ag-wangguanleixing-ai:before {
+	content: "\e25d";
+}
+.icon-ag-wangguanleixing-biancheng:before {
+	content: "\e25e";
+}
+.icon-ag-wangguanleixing-wangguan:before {
+	content: "\e25f";
 }

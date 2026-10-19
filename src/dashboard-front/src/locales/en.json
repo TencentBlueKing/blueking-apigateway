@@ -2784,5 +2784,7 @@
   "Header、Query、Path 仅支持 string、number、integer、boolean 类型。": "Header, Query and Path only support string, number, integer and boolean types.",
   "请求片段不支持引用或组合 Schema，请展开引用并使用明确的类型定义。": "References and composed schemas are not supported in request fragments. Expand references and use explicit type definitions.",
   "requestBody 必须且只能包含 application/json，并提供 schema。": "requestBody must contain only application/json and provide a schema.",
-  "description 必须是字符串，required 必须是布尔值。": "description must be a string and required must be a boolean."
+  "description 必须是字符串，required 必须是布尔值。": "description must be a string and required must be a boolean.",
+  "创建应用": "Create App",
+  "请搜索网关": "Please Search Gateway"
 }

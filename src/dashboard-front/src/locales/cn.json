@@ -2784,5 +2784,7 @@
   "Header、Query、Path 仅支持 string、number、integer、boolean 类型。": "Header、Query、Path 仅支持 string、number、integer、boolean 类型。",
   "请求片段不支持引用或组合 Schema，请展开引用并使用明确的类型定义。": "请求片段不支持引用或组合 Schema，请展开引用并使用明确的类型定义。",
   "requestBody 必须且只能包含 application/json，并提供 schema。": "requestBody 必须且只能包含 application/json，并提供 schema。",
-  "description 必须是字符串，required 必须是布尔值。": "description 必须是字符串，required 必须是布尔值。"
+  "description 必须是字符串，required 必须是布尔值。": "description 必须是字符串，required 必须是布尔值。",
+  "创建应用": "创建应用",
+  "请搜索网关": "请搜索网关"
 }
