@@ -404,6 +404,7 @@ defineExpose({ refresh: fetchConflicts });
 
   .version-tips {
     line-height: 20px;
+    color: #63656e;
   }
 
   .conflict-title {
