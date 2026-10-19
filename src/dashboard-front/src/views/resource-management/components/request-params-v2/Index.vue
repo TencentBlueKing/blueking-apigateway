@@ -18,7 +18,7 @@
 
 <template>
   <div class="request-params-v2">
-    <!-- 编辑态工具栏：控制“无请求参数”状态，并提供 JSON 批量生成入口。 -->
+    <!-- 两种导入入口分别处理 OpenAPI 请求定义和 Body 示例。 -->
     <div
       v-if="!readonly"
       class="request-params-v2__toolbar"
@@ -30,13 +30,13 @@
         {{ t('该资源无请求参数') }}
       </BkCheckbox>
 
-      <IconButton
+      <AgDropdown
         v-if="!disabled"
+        :text="t('导入参数')"
+        :dropdown-list="importOptions"
         theme="primary"
-        @click="handleOpenJsonEditor"
-      >
-        {{ t('通过 JSON 生成') }}
-      </IconButton>
+        @on-change="({ value }) => handleOpenJsonEditor(value as RequestParamsImportMode)"
+      />
     </div>
 
     <!--
@@ -154,7 +154,7 @@
           >
             <div class="body-editor__toolbar">
               <div class="body-editor__media-type">
-                <span>Content-Type</span>
+                <span>Content-Type: </span>
                 <span class="body-editor__media-type-value">
                   application/json
                 </span>
@@ -200,24 +200,27 @@
     </div>
   </div>
 
-  <!-- JSON 侧栏独立于主区域渲染，用于批量导入并回填四类参数。 -->
+  <!-- 共用编辑侧栏，输入语义由入口决定。 -->
   <RequestParamsJsonSlider
     v-model="jsonEditorVisible"
     v-model:source="jsonSource"
+    :mode="importMode"
+    :error="importError"
     @confirm="handleJsonConfirm"
+    @clear-error="importError = ''"
   />
 </template>
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
+import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import BodyParameterTable from './components/BodyParameterTable.vue';
+import { RequestParamsImportError, jsonExampleToBody, openApiJsonToState } from './import-utils';
 import {
-  cloneRequestParamsState,
   createEmptyRequestParamsState,
   createRequestBody,
   flattenRequestFields,
   openApiSchemaToState,
-  requestJsonToState,
   requestParamsStateToEditorJson,
   requestParamsStateToValue,
 } from './utils';
@@ -230,6 +233,7 @@ import {
   type IRequestParamsState,
   PARAMETER_LOCATIONS,
   type ParameterLocation,
+  type RequestParamsImportMode,
 } from './types';
 
 interface IProps {
@@ -251,8 +255,21 @@ const { t } = useI18n();
 const activeTab = ref<RequestParamsTab>('header');
 const jsonEditorVisible = ref(false);
 const jsonSource = ref('{}');
+const importMode = ref<RequestParamsImportMode>('openapi');
+const importError = ref('');
 const state = ref<IRequestParamsState>(createEmptyRequestParamsState());
 const validationErrors = ref<Record<string, string>>({});
+
+const importOptions = computed(() => [
+  {
+    label: t('导入 OpenAPI 请求参数'),
+    value: 'openapi',
+  },
+  {
+    label: t('从 JSON 示例生成 Body'),
+    value: 'json-example',
+  },
+]);
 
 const bodyState = computed<IRequestBodyState>({
   get: () => state.value.body ?? createRequestBody(),
@@ -321,13 +338,13 @@ const removeBody = () => {
   delete state.value.body;
 };
 
-/** 将当前请求参数序列化后打开 JSON 编辑侧栏。 */
-const handleOpenJsonEditor = () => {
-  jsonSource.value = JSON.stringify(
-    requestParamsStateToEditorJson(state.value),
-    null,
-    2,
-  );
+/** OpenAPI 展示当前请求定义；普通 JSON 从空对象示例开始。 */
+const handleOpenJsonEditor = (mode: RequestParamsImportMode) => {
+  importMode.value = mode;
+  importError.value = '';
+  jsonSource.value = mode === 'openapi'
+    ? JSON.stringify(requestParamsStateToEditorJson(state.value), null, 2)
+    : '{}';
   jsonEditorVisible.value = true;
 };
 
@@ -344,20 +361,47 @@ const getFirstPopulatedTab = (nextState: IRequestParamsState): RequestParamsTab 
   return nextState.body ? 'body' : 'header';
 };
 
-/** 将 JSON 编辑器确认的数据解析并回填到四类请求参数中。 */
+/** 解析成功后再更新表格，普通 JSON 仅替换 Body。 */
 const handleJsonConfirm = (json: unknown) => {
   try {
-    const nextState = requestJsonToState(json);
-    state.value = cloneRequestParamsState(nextState);
-    validationErrors.value = {};
+    if (importMode.value === 'openapi') {
+      const nextState = openApiJsonToState(json);
+      state.value = nextState;
+      validationErrors.value = {};
+      activeTab.value = getFirstPopulatedTab(nextState);
+    }
+    else {
+      const { body, uncertainPaths } = jsonExampleToBody(json);
+      removeBody();
+      state.value.body = body;
+      activeTab.value = 'body';
+      if (uncertainPaths.length) {
+        Message({
+          message: t('以下字段无法从示例确定类型，暂按 string 生成，请在表格中调整：{paths}', {
+            paths: uncertainPaths.join('、'),
+          }),
+          theme: 'warning',
+        });
+      }
+    }
     disabled.value = false;
-    activeTab.value = getFirstPopulatedTab(nextState);
+    importError.value = '';
+    jsonEditorVisible.value = false;
   }
-  catch {
-    Message({
-      message: t('生成 JSON Schema 失败'),
-      theme: 'error',
-    });
+  catch (error) {
+    const messages = {
+      operation: t('请输入包含 parameters 或 requestBody 的 OpenAPI Operation 请求片段，不支持完整文档或包装结构。'),
+      parameters: t('parameters 必须是数组，参数名不能为空，同一位置不能重名。'),
+      location: t('仅支持 Header、Query、Path 参数，Body 请使用 requestBody 定义。'),
+      schema: t('Schema 结构无效或包含表格不支持的类型，请使用明确的基础类型、对象或同类型数组。'),
+      scalar: t('Header、Query、Path 仅支持 string、number、integer、boolean 类型。'),
+      reference: t('请求片段不支持引用或组合 Schema，请展开引用并使用明确的类型定义。'),
+      body: t('requestBody 必须且只能包含 application/json，并提供 schema。'),
+      metadata: t('description 必须是字符串，required 必须是布尔值。'),
+    };
+    importError.value = error instanceof RequestParamsImportError
+      ? `${error.path}: ${messages[error.code]}`
+      : t('生成 JSON Schema 失败');
   }
 };
 
