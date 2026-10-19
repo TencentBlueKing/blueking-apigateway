@@ -99,7 +99,7 @@ def _sync_external_member_state(
 
     try:
         if settings.BK_IAM_V4_ENABLED:
-            apply_gateway_member_snapshots_to_iam(gateway.id, before, after, operated_by)
+            apply_gateway_member_snapshots_to_iam(gateway, before, after, operated_by)
     except Exception:
         if paas_synced:
             try:

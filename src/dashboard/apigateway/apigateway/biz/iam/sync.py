@@ -27,14 +27,17 @@ from apigateway.apps.rbac.models import GatewayMember
 from apigateway.components.bkiam import (
     DEFAULT_PAGE_SIZE,
     AuthorizationSubjectQueryPayload,
-    add_authorization,
     chunked,
-    iter_authorization_subjects,
-    revoke_authorization,
 )
 from apigateway.core.models import Gateway
 
-from .authorization import build_gateway_authorization, build_gateway_revoke_authorization
+from .authorization import (
+    build_gateway_authorization,
+    build_gateway_revoke_authorization,
+    grant_gateway_authorizations,
+    iter_gateway_authorization_subjects,
+    revoke_gateway_authorizations,
+)
 from .constants import (
     DEFAULT_MEMBER_EXPIRY,
     EXPIRY_TOLERANCE,
@@ -120,13 +123,13 @@ class GatewayIAMAuthorizationSynchronizer:
             # member writes take the same lock before reading GatewayMember.
             gateway = Gateway.objects.select_for_update().get(pk=gateway_id)
             plan = self._build_reconciliation_plan(gateway, username=username)
-            self._apply_plan(plan, operator)
+            self._apply_plan(gateway, plan, operator)
             return replace(plan, applied=True)
 
     def _build_reconciliation_plan(self, gateway: Gateway, *, username: str | None) -> GatewayIAMSyncResult:
         now = timezone.now()
         desired = self._get_desired_authorizations(gateway.id, now=now)
-        actual = self._get_iam_authorizations(gateway.id)
+        actual = self._get_iam_authorizations(gateway)
         if username is not None:
             desired = {key: item for key, item in desired.items() if item.username == username}
             actual = {key: item for key, item in actual.items() if item.username == username}
@@ -153,20 +156,20 @@ class GatewayIAMAuthorizationSynchronizer:
             desired[(item.username, item.role)] = item
         return desired
 
-    def _get_iam_authorizations(self, gateway_id: int) -> dict[tuple[str, str], GatewayIAMAuthorization]:
+    def _get_iam_authorizations(self, gateway: Gateway) -> dict[tuple[str, str], GatewayIAMAuthorization]:
         authorizations: dict[tuple[str, str], GatewayIAMAuthorization] = {}
         for role in sorted(GatewayRoleEnum.get_values()):
-            for item in self._list_role_authorizations(gateway_id, role):
+            for item in self._list_role_authorizations(gateway, role):
                 authorizations[(item.username, item.role)] = item
         return authorizations
 
-    def _list_role_authorizations(self, gateway_id: int, role: str) -> list[GatewayIAMAuthorization]:
+    def _list_role_authorizations(self, gateway: Gateway, role: str) -> list[GatewayIAMAuthorization]:
         payload: AuthorizationSubjectQueryPayload = {
             "role_id": role,
             "related_resource_type_id": GatewayResourceTypeEnum.GATEWAY.value,
             "resource": {
                 "type": GatewayResourceTypeEnum.GATEWAY.value,
-                "id": str(gateway_id),
+                "id": str(gateway.id),
             },
             "page_size": self._page_size,
         }
@@ -176,7 +179,7 @@ class GatewayIAMAuthorizationSynchronizer:
                 role=role,
                 expired_at=item["expired_at"],
             )
-            for item in iter_authorization_subjects(payload)
+            for item in iter_gateway_authorization_subjects(gateway, payload)
         ]
 
     def _build_result(
@@ -244,7 +247,7 @@ class GatewayIAMAuthorizationSynchronizer:
             unchanged=unchanged,
         )
 
-    def _apply_plan(self, plan: GatewayIAMSyncResult, operator: str) -> None:
+    def _apply_plan(self, gateway: Gateway, plan: GatewayIAMSyncResult, operator: str) -> None:
         revoke_payloads = [
             build_gateway_revoke_authorization(item.username, item.role, plan.gateway_id) for item in plan.revokes
         ]
@@ -259,6 +262,6 @@ class GatewayIAMAuthorizationSynchronizer:
         ]
 
         for revoke_batch in chunked(revoke_payloads):
-            revoke_authorization(revoke_batch, operator)
+            revoke_gateway_authorizations(gateway, revoke_batch, operator)
         for grant_batch in chunked(grant_payloads):
-            add_authorization(grant_batch, operator)
+            grant_gateway_authorizations(gateway, grant_batch, operator)

@@ -367,14 +367,14 @@ class GatewayHandler:
         iam_operator = None
         if settings.BK_IAM_V4_ENABLED:
             iam_operator = operated_by or BK_IAM_V4_SYSTEM_ID
-            apply_gateway_member_snapshots_to_iam(gateway_id, member_snapshot, {}, iam_operator)
+            apply_gateway_member_snapshots_to_iam(gateway, member_snapshot, {}, iam_operator)
 
         try:
             gateway.delete()
         except Exception:
             if iam_operator is not None:
                 try:
-                    apply_gateway_member_snapshots_to_iam(gateway_id, {}, member_snapshot, iam_operator)
+                    apply_gateway_member_snapshots_to_iam(gateway, {}, member_snapshot, iam_operator)
                 except Exception:
                     logger.critical(
                         "failed to restore gateway IAM authorizations after gateway deletion failed, gateway_id=%s",

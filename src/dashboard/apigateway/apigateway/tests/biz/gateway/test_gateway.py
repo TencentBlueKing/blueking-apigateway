@@ -442,6 +442,7 @@ class TestGatewayHandler:
                 },
             ],
             "request-user",
+            tenant_id="default",
         )
 
     def test_delete_gateway_does_not_call_iam_when_disabled(self, settings, mocker, fake_gateway):
@@ -482,30 +483,27 @@ class TestGatewayHandler:
 
     def test_delete_gateway_restores_iam_when_final_delete_fails(self, settings, mocker, fake_gateway):
         settings.BK_IAM_V4_ENABLED = True
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
         G(
             GatewayMember,
             gateway=fake_gateway,
             username="alice",
             role=GatewayRoleEnum.ADMINISTRATOR.value,
         )
-        apply_snapshots = mocker.patch(
-            "apigateway.biz.gateway.gateway.apply_gateway_member_snapshots_to_iam",
-        )
+        revoke_authorization = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
+        add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
         mocker.patch.object(Gateway, "delete", side_effect=RuntimeError("delete failed"))
 
         with pytest.raises(RuntimeError, match="delete failed"):
             GatewayHandler.delete_gateway(fake_gateway.id, operated_by="request-user")
 
-        assert apply_snapshots.call_count == 2
-        revoke_call, restore_call = apply_snapshots.call_args_list
-        assert revoke_call.args[0] == fake_gateway.id
-        assert revoke_call.args[1]["alice"].role == GatewayRoleEnum.ADMINISTRATOR.value
-        assert revoke_call.args[2] == {}
-        assert revoke_call.args[3] == "request-user"
-        assert restore_call.args[0] == fake_gateway.id
-        assert restore_call.args[1] == {}
-        assert restore_call.args[2]["alice"].role == GatewayRoleEnum.ADMINISTRATOR.value
-        assert restore_call.args[3] == "request-user"
+        revoke_authorization.assert_called_once()
+        add_authorization.assert_called_once()
+        assert revoke_authorization.call_args.kwargs == {"tenant_id": "system"}
+        assert add_authorization.call_args.kwargs == {"tenant_id": "system"}
         assert Gateway.objects.filter(id=fake_gateway.id).exists()
 
     def test_delete_gateway_revokes_iam_when_operated_by_is_omitted(self, settings, mocker, fake_gateway):

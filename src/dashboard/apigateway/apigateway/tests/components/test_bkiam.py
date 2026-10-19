@@ -57,24 +57,21 @@ def test_direct_auth_returns_explicit_decision_and_uses_gateway_contract(mocker,
         "resource": {"id": "42"},
     }
 
-    assert bkiam.direct_auth(payload) is True
-    assert bkiam.direct_auth(payload) is False
-    assert mock_headers.call_args_list == [
-        call(with_operation_tenant_headers=True),
-        call(with_operation_tenant_headers=True),
-    ]
+    assert bkiam.direct_auth(payload, tenant_id="tenant-a") is True
+    assert bkiam.direct_auth(payload, tenant_id="tenant-a") is False
+    assert mock_headers.call_args_list == [call(), call()]
     assert mock_post.call_args_list == [
         call(
             url=("https://bkiam.example.com/prod/api/v1/open/rbac/authorization/systems/bk_apigateway/auth/"),
             data=payload,
-            headers={"X-Bkapi-Authorization": "credentials"},
+            headers={"X-Bkapi-Authorization": "credentials", "X-Bk-Tenant-Id": "tenant-a"},
             timeout=bkiam.REQUEST_TIMEOUT,
             request_session=None,
         ),
         call(
             url=("https://bkiam.example.com/prod/api/v1/open/rbac/authorization/systems/bk_apigateway/auth/"),
             data=payload,
-            headers={"X-Bkapi-Authorization": "credentials"},
+            headers={"X-Bkapi-Authorization": "credentials", "X-Bk-Tenant-Id": "tenant-a"},
             timeout=bkiam.REQUEST_TIMEOUT,
             request_session=None,
         ),
@@ -101,7 +98,8 @@ def test_http_error_raises_remote_request_error(mocker, mock_headers):
                 "subject": {"type": "user", "id": "alice"},
                 "action_id": "manage_gateway",
                 "resource": {"id": "42"},
-            }
+            },
+            tenant_id="tenant-a",
         )
 
 
@@ -131,7 +129,8 @@ def test_direct_auth_transport_response_is_unavailable(mocker, mock_headers):
                 "subject": {"type": "user", "id": "alice"},
                 "action_id": "manage_gateway",
                 "resource": {"id": "42"},
-            }
+            },
+            tenant_id="tenant-a",
         )
 
 
@@ -144,7 +143,8 @@ def test_direct_auth_malformed_success_json_raises(mocker, mock_headers):
                 "subject": {"type": "user", "id": "alice"},
                 "action_id": "manage_gateway",
                 "resource": {"id": "42"},
-            }
+            },
+            tenant_id="tenant-a",
         )
 
 
@@ -160,13 +160,14 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
     }
     revoke = {key: value for key, value in authorization.items() if key != "expired_at"}
 
-    bkiam.add_authorization([authorization], operator="admin")
-    bkiam.revoke_authorization([revoke], operator="admin")
+    bkiam.add_authorization([authorization], operator="admin", tenant_id="tenant-a")
+    bkiam.revoke_authorization([revoke], operator="admin", tenant_id="tenant-a")
 
     common = {
         "url": ("https://bkiam.example.com/prod/api/v1/open/rbac/mgmt/systems/bk_apigateway/authorizations/"),
         "headers": {
             "X-Bkapi-Authorization": "credentials",
+            "X-Bk-Tenant-Id": "tenant-a",
             "X-Bkiam-Operator": "admin",
         },
         "timeout": bkiam.REQUEST_TIMEOUT,
@@ -176,12 +177,12 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
     mock_delete.assert_called_once_with(data=[revoke], **common)
 
     with pytest.raises(bkiam.BkIamParameterError, match="at most 20"):
-        bkiam.add_authorization([authorization] * 21, operator="admin")
+        bkiam.add_authorization([authorization] * 21, operator="admin", tenant_id="tenant-a")
 
     oversized_resources = dict(authorization)
     oversized_resources["resources"] = [{"type": "gateway", "id": str(index)} for index in range(21)]
     with pytest.raises(bkiam.BkIamParameterError, match="resources per authorization"):
-        bkiam.add_authorization([oversized_resources], operator="admin")
+        bkiam.add_authorization([oversized_resources], operator="admin", tenant_id="tenant-a")
 
 
 def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
@@ -251,6 +252,7 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
     ]
     assert mock_post.call_count == 5
     assert mock_put.call_count == 4
+    assert mock_headers.call_args_list == [call()] * 13
 
 
 @pytest.mark.parametrize(
@@ -275,8 +277,8 @@ def test_write_endpoints_ignore_success_data(mocker, mock_headers, response):
     revoke = {key: value for key, value in authorization.items() if key != "expired_at"}
 
     assert bkiam.update_system({"managers": ["admin"]}) is None
-    assert bkiam.add_authorization([authorization], operator="admin") is None
-    assert bkiam.revoke_authorization([revoke], operator="admin") is None
+    assert bkiam.add_authorization([authorization], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.revoke_authorization([revoke], operator="admin", tenant_id="tenant-a") is None
 
 
 def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
@@ -289,7 +291,7 @@ def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
             "https://bkiam.example.com/prod/api/v1/open/rbac/model/systems/bk_apigateway/roles/administrator/actions/"
         ),
         data=None,
-        headers={"X-Bkapi-Authorization": "credentials"},
+        headers={"X-Bkapi-Authorization": "credentials", "X-Bk-Tenant-Id": "system"},
         timeout=bkiam.REQUEST_TIMEOUT,
         request_session=None,
         params={"ids": "manage_gateway,operate_gateway"},
@@ -322,7 +324,7 @@ def test_list_authorization_subject_returns_page(mocker, mock_headers):
         "page_size": 100,
     }
 
-    assert bkiam.list_authorization_subject(payload) == {
+    assert bkiam.list_authorization_subject(payload, tenant_id="tenant-a") == {
         "count": 1,
         "results": [{"id": "alice", "expired_at": 1_800_000_000}],
     }
@@ -331,7 +333,7 @@ def test_list_authorization_subject_returns_page(mocker, mock_headers):
             "https://bkiam.example.com/prod/api/v1/open/rbac/mgmt/systems/bk_apigateway/authorizations/query-subject/"
         ),
         data=payload,
-        headers={"X-Bkapi-Authorization": "credentials"},
+        headers={"X-Bkapi-Authorization": "credentials", "X-Bk-Tenant-Id": "tenant-a"},
         timeout=bkiam.REQUEST_TIMEOUT,
         request_session=None,
     )
@@ -364,7 +366,8 @@ def test_list_authorization_subject_rejects_non_user_subject(mocker, mock_header
                 "resource": {"type": "gateway", "id": "42"},
                 "page": 1,
                 "page_size": 100,
-            }
+            },
+            tenant_id="tenant-a",
         )
 
 
@@ -395,12 +398,13 @@ def test_iter_authorization_subjects_pages_until_count(mocker, mock_headers):
         "page_size": 2,
     }
 
-    assert list(bkiam.iter_authorization_subjects(payload)) == [
+    assert list(bkiam.iter_authorization_subjects(payload, tenant_id="tenant-a")) == [
         {"id": "a", "expired_at": 1_800_000_000},
         {"id": "b", "expired_at": 1_800_000_000},
         {"id": "c", "expired_at": 1_800_000_000},
     ]
     assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
+    assert all(call.kwargs["headers"]["X-Bk-Tenant-Id"] == "tenant-a" for call in mock_post.call_args_list)
 
 
 def test_iter_authorization_subjects_stops_on_empty_page_when_count_shrinks(mocker, mock_headers):
@@ -419,7 +423,7 @@ def test_iter_authorization_subjects_stops_on_empty_page_when_count_shrinks(mock
         "page_size": 1,
     }
 
-    assert list(bkiam.iter_authorization_subjects(payload)) == [
+    assert list(bkiam.iter_authorization_subjects(payload, tenant_id="tenant-a")) == [
         {"id": "a", "expired_at": 1_800_000_000},
     ]
     assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
@@ -444,7 +448,7 @@ def test_iter_authorization_subjects_uses_first_count_as_upper_bound(mocker, moc
         "page_size": 1,
     }
 
-    assert list(bkiam.iter_authorization_subjects(payload)) == [
+    assert list(bkiam.iter_authorization_subjects(payload, tenant_id="tenant-a")) == [
         {"id": "a", "expired_at": 1_800_000_000},
         {"id": "b", "expired_at": 1_800_000_000},
     ]

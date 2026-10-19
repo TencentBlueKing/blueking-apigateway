@@ -28,6 +28,14 @@ from apigateway.biz.iam.authorization import (
 )
 
 
+@pytest.fixture
+def tenant_gateway(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    fake_gateway.tenant_mode = "single"
+    fake_gateway.tenant_id = "tenant-a"
+    return fake_gateway
+
+
 def test_build_gateway_authorization_uses_default_expiry_for_null():
     now = timezone.now()
 
@@ -48,15 +56,15 @@ def test_build_gateway_authorization_uses_default_expiry_for_null():
     }
 
 
-def test_apply_gateway_member_snapshots_revokes_before_granting(mocker):
+def test_apply_gateway_member_snapshots_revokes_before_granting(mocker, tenant_gateway):
     calls = []
     revoke = mocker.patch(
         "apigateway.biz.iam.authorization.revoke_authorization",
-        side_effect=lambda payload, operator: calls.append(("revoke", payload, operator)),
+        side_effect=lambda payload, operator, *, tenant_id: calls.append(("revoke", payload, operator, tenant_id)),
     )
     grant = mocker.patch(
         "apigateway.biz.iam.authorization.add_authorization",
-        side_effect=lambda payload, operator: calls.append(("grant", payload, operator)),
+        side_effect=lambda payload, operator, *, tenant_id: calls.append(("grant", payload, operator, tenant_id)),
     )
     expires = timezone.now() + timedelta(days=100)
     before = {
@@ -70,7 +78,7 @@ def test_apply_gateway_member_snapshots_revokes_before_granting(mocker):
         "added": GatewayMemberAuthorization("operator", expires),
     }
 
-    apply_gateway_member_snapshots_to_iam(7, before, after, "admin")
+    apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "admin")
 
     assert [call[0] for call in calls] == ["revoke", "grant"]
     assert {(item["subject"]["id"], item["role_id"]) for item in revoke.call_args.args[0]} == {
@@ -81,20 +89,22 @@ def test_apply_gateway_member_snapshots_revokes_before_granting(mocker):
         ("added", "operator"),
         ("changed", "administrator"),
     }
+    assert revoke.call_args.kwargs == {"tenant_id": "tenant-a"}
+    assert grant.call_args.kwargs == {"tenant_id": "tenant-a"}
 
 
-def test_apply_gateway_member_snapshots_chunks_to_twenty(mocker):
+def test_apply_gateway_member_snapshots_chunks_to_twenty(mocker, tenant_gateway):
     grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
     mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
     expires = timezone.now() + timedelta(days=100)
     after = {f"user-{index:02d}": GatewayMemberAuthorization("operator", expires) for index in range(45)}
 
-    apply_gateway_member_snapshots_to_iam(7, {}, after, "admin")
+    apply_gateway_member_snapshots_to_iam(tenant_gateway, {}, after, "admin")
 
     assert [len(call.args[0]) for call in grant.call_args_list] == [20, 20, 5]
 
 
-def test_apply_gateway_member_snapshots_refreshes_changed_expiry_without_revoking(mocker):
+def test_apply_gateway_member_snapshots_refreshes_changed_expiry_without_revoking(mocker, tenant_gateway):
     now = timezone.now()
     new_expires = now + timedelta(days=365)
     before = {"alice": GatewayMemberAuthorization("operator", now + timedelta(days=30))}
@@ -102,13 +112,13 @@ def test_apply_gateway_member_snapshots_refreshes_changed_expiry_without_revokin
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
     grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
 
-    apply_gateway_member_snapshots_to_iam(7, before, after, "admin")
+    apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "admin")
 
     revoke.assert_not_called()
     assert grant.call_args.args[0][0]["expired_at"] == int(new_expires.timestamp())
 
 
-def test_apply_gateway_member_snapshots_restores_before_and_reraises(mocker):
+def test_apply_gateway_member_snapshots_restores_before_and_reraises(mocker, tenant_gateway):
     expires = timezone.now() + timedelta(days=100)
     before = {
         "alice": GatewayMemberAuthorization("operator", expires),
@@ -125,7 +135,7 @@ def test_apply_gateway_member_snapshots_restores_before_and_reraises(mocker):
     )
 
     with pytest.raises(RuntimeError, match="grant failed"):
-        apply_gateway_member_snapshots_to_iam(7, before, after, "admin")
+        apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "admin")
 
     assert revoke.call_count == 2
     assert grant.call_count == 2
@@ -133,7 +143,7 @@ def test_apply_gateway_member_snapshots_restores_before_and_reraises(mocker):
     assert {item["subject"]["id"] for item in revoke.call_args_list[-1].args[0]} == {"alice"}
 
 
-def test_apply_gateway_member_snapshots_logs_compensation_failure(mocker, caplog):
+def test_apply_gateway_member_snapshots_logs_compensation_failure(mocker, caplog, tenant_gateway):
     expires = timezone.now() + timedelta(days=100)
     before = {"alice": GatewayMemberAuthorization("operator", expires)}
     after = {"alice": GatewayMemberAuthorization("administrator", expires)}
@@ -147,6 +157,6 @@ def test_apply_gateway_member_snapshots_logs_compensation_failure(mocker, caplog
     )
 
     with caplog.at_level("CRITICAL"), pytest.raises(RuntimeError, match="grant failed"):
-        apply_gateway_member_snapshots_to_iam(7, before, after, "admin")
+        apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "admin")
 
     assert "failed to compensate gateway IAM authorizations" in caplog.text

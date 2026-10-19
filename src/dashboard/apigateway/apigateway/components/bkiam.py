@@ -21,6 +21,8 @@ from typing import Any, Iterator, NotRequired, TypedDict, TypeVar
 
 from django.conf import settings
 
+from apigateway.common.tenant.constants import TENANT_ID_OPERATION
+from apigateway.common.tenant.request import gen_tenant_header
 from apigateway.utils.url import url_join
 
 from .http import http_delete, http_get, http_post, http_put
@@ -157,11 +159,19 @@ class BkIamParameterError(Exception):
     """本地请求参数不合法。"""
 
 
-def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, **kwargs):
+def _call_bkiam_api(
+    http_func,
+    path: str,
+    data=None,
+    more_headers=None,
+    tenant_id: str = TENANT_ID_OPERATION,
+    **kwargs,
+):
     """
     统一调用权限中心 V4 网关 API。
     """
-    headers = gen_gateway_headers(with_operation_tenant_headers=True)
+    headers = gen_gateway_headers()
+    headers.update(gen_tenant_header(tenant_id))
     if more_headers:
         headers.update(more_headers)
 
@@ -370,7 +380,7 @@ def batch_delete_role_action(role_id: str, action_ids: list[str]) -> None:
     _call_bkiam_api(http_delete, path, None, params={"ids": ",".join(_batch(action_ids))})
 
 
-def direct_auth(payload: DirectAuthPayload) -> bool:
+def direct_auth(payload: DirectAuthPayload, tenant_id: str) -> bool:
     """
     鉴权：判断主体是否拥有指定操作。
 
@@ -378,11 +388,11 @@ def direct_auth(payload: DirectAuthPayload) -> bool:
     路径: /api/v1/open/rbac/authorization/systems/{system_id}/auth/
     """
     path = f"/api/v1/open/rbac/authorization/systems/{BK_IAM_V4_SYSTEM_ID}/auth/"
-    data = _call_bkiam_api(http_post, path, payload)
+    data = _call_bkiam_api(http_post, path, payload, tenant_id=tenant_id)
     return data["allowed"]
 
 
-def add_authorization(authorizations: list[AuthorizationPayload], operator: str) -> None:
+def add_authorization(authorizations: list[AuthorizationPayload], operator: str, tenant_id: str) -> None:
     """
     批量授予角色授权。
 
@@ -392,10 +402,16 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str)
     payload = _batch(authorizations)
     _validate_authorization_resources(payload)
     path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/"
-    _call_bkiam_api(http_post, path, payload, more_headers={"X-Bkiam-Operator": operator})
+    _call_bkiam_api(
+        http_post,
+        path,
+        payload,
+        more_headers={"X-Bkiam-Operator": operator},
+        tenant_id=tenant_id,
+    )
 
 
-def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str) -> None:
+def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:
     """
     批量回收角色授权。
 
@@ -405,10 +421,19 @@ def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], opera
     payload = _batch(authorizations)
     _validate_authorization_resources(payload)
     path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/"
-    _call_bkiam_api(http_delete, path, payload, more_headers={"X-Bkiam-Operator": operator})
+    _call_bkiam_api(
+        http_delete,
+        path,
+        payload,
+        more_headers={"X-Bkiam-Operator": operator},
+        tenant_id=tenant_id,
+    )
 
 
-def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> AuthorizationSubjectPage:
+def list_authorization_subject(
+    payload: AuthorizationSubjectQueryPayload,
+    tenant_id: str,
+) -> AuthorizationSubjectPage:
     """
     按角色和资源查询已授权主体。
 
@@ -416,14 +441,17 @@ def list_authorization_subject(payload: AuthorizationSubjectQueryPayload) -> Aut
     路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/query-subject/
     """
     path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/query-subject/"
-    data = _call_bkiam_api(http_post, path, payload)
+    data = _call_bkiam_api(http_post, path, payload, tenant_id=tenant_id)
     return {
         "count": data["count"],
         "results": [_authorization_subject_item(item) for item in data["results"]],
     }
 
 
-def iter_authorization_subjects(payload: AuthorizationSubjectQueryPayload) -> Iterator[AuthorizationSubjectItem]:
+def iter_authorization_subjects(
+    payload: AuthorizationSubjectQueryPayload,
+    tenant_id: str,
+) -> Iterator[AuthorizationSubjectItem]:
     """按页迭代已授权主体，分页循环由本组件封装。
 
     调用方只需传入查询条件（page/page_size 会被覆盖）。以第一页的 count 作为本次
@@ -443,7 +471,7 @@ def iter_authorization_subjects(payload: AuthorizationSubjectQueryPayload) -> It
             query_payload["related_resource_type_id"] = payload["related_resource_type_id"]
         if "resource" in payload:
             query_payload["resource"] = payload["resource"]
-        data = list_authorization_subject(query_payload)
+        data = list_authorization_subject(query_payload, tenant_id=tenant_id)
         if page == 1:
             snapshot_count = data["count"]
 
