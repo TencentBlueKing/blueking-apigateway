@@ -17,7 +17,6 @@
  */
 
 import { cloneDeep, uniqueId } from 'lodash-es';
-import toJsonSchema from 'to-json-schema';
 
 import {
   type BodyParameterType,
@@ -45,28 +44,7 @@ const STRUCTURAL_SCHEMA_KEYS = [
   'type',
 ];
 
-const SCHEMA_HINT_KEYS = [
-  '$ref',
-  'allOf',
-  'anyOf',
-  'enum',
-  'format',
-  'items',
-  'oneOf',
-  'properties',
-  'type',
-];
-
-const JSON_SCHEMA_TYPE_NAMES = [
-  'array',
-  'boolean',
-  'integer',
-  'null',
-  'number',
-  'object',
-  'string',
-];
-
+/** 判断输入是否为非数组的普通对象。 */
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
@@ -79,18 +57,7 @@ const isParameterLocation = (value: unknown): value is ParameterLocation => {
   return PARAMETER_LOCATIONS.includes(value as ParameterLocation);
 };
 
-const inferScalarType = (value: unknown): ScalarParameterType => {
-  if (typeof value === 'boolean') {
-    return 'boolean';
-  }
-
-  if (typeof value === 'number') {
-    return 'number';
-  }
-
-  return 'string';
-};
-
+/** 解析 Schema 类型，并将 integer 统一映射为编辑器使用的 number。 */
 const getSchemaType = (schema: IJsonSchemaObject): BodyParameterType => {
   const rawType = Array.isArray(schema.type)
     ? schema.type.find(type => type !== 'null')
@@ -125,6 +92,10 @@ const getSchemaOptions = (schema: IJsonSchemaObject) => {
   STRUCTURAL_SCHEMA_KEYS.forEach((key) => {
     delete options[key];
   });
+  // 表格将 integer 展示为 number，保留原始约束供保存时还原。
+  if (schema.type === 'integer') {
+    options.type = 'integer';
+  }
   return options;
 };
 
@@ -150,7 +121,7 @@ const normalizeScalarSchema = (schema: IJsonSchemaObject) => {
   delete normalizedSchema.items;
   delete normalizedSchema.properties;
   delete normalizedSchema.required;
-  normalizedSchema.type = scalarType;
+  normalizedSchema.type = schema.type === 'integer' ? 'integer' : scalarType;
 
   return normalizedSchema;
 };
@@ -244,7 +215,7 @@ export const schemaToFieldRow = (
 
 export const fieldRowToSchema = (row: IRequestFieldRow): IJsonSchemaObject => {
   const schema = cloneDeep(row.options);
-  schema.type = row.type;
+  schema.type = row.type === 'number' && schema.type === 'integer' ? 'integer' : row.type;
 
   if (row.description) {
     schema.description = row.description;
@@ -310,6 +281,7 @@ const parameterToRow = (parameter: IOpenApiParameter): IRequestParameterRow | un
     name: parameter.name ?? '',
     options: getSchemaOptions(schema),
     required: parameter.in === 'path' ? true : Boolean(parameter.required),
+    source: cloneDeep(parameter),
     type,
   };
 };
@@ -340,6 +312,7 @@ const getRequestBodyState = (
     mediaType: 'application/json',
     required: Boolean(requestBody.required),
     root,
+    source: cloneDeep(requestBody),
   };
 };
 
@@ -378,13 +351,14 @@ export const openApiSchemaToState = (
 
 const parameterRowToOpenApi = (row: IRequestParameterRow): IOpenApiParameter => {
   const schema = cloneDeep(row.options);
-  schema.type = row.type;
+  schema.type = row.type === 'number' && schema.type === 'integer' ? 'integer' : row.type;
 
   return {
+    ...cloneDeep(row.source),
     description: row.description,
     in: row.in,
     name: row.name,
-    ...(row.required || row.in === 'path' ? { required: true } : {}),
+    required: row.required || row.in === 'path',
     schema,
   };
 };
@@ -393,11 +367,24 @@ export const requestParamsStateToValue = (state: IRequestParamsState): IRequestP
   const parameters = PARAMETER_LOCATIONS.flatMap((location) => {
     return state.parameters[location].map(parameterRowToOpenApi);
   });
+  const bodySchema = state.body ? fieldRowToSchema(state.body.root) : undefined;
+  // 根行展示请求体说明时，保留独立的 Schema 说明，避免导入后相互覆盖。
+  if (bodySchema && state.body?.source?.description) {
+    const sourceSchema = state.body.source.content['application/json']?.schema;
+    if (isJsonSchemaObject(sourceSchema) && typeof sourceSchema.description === 'string') {
+      bodySchema.description = sourceSchema.description;
+    }
+    else {
+      delete bodySchema.description;
+    }
+  }
   const requestBody: IOpenApiRequestBody | null = state.body
     ? {
+      ...cloneDeep(state.body.source),
       content: {
         'application/json': {
-          schema: fieldRowToSchema(state.body.root),
+          ...cloneDeep(state.body.source?.content['application/json']),
+          schema: bodySchema,
         },
       },
       description: state.body.root.description,
@@ -411,246 +398,7 @@ export const requestParamsStateToValue = (state: IRequestParamsState): IRequestP
   };
 };
 
-const sampleToSchema = (value: unknown): IJsonSchemaObject => {
-  try {
-    return normalizeSchema(toJsonSchema(value));
-  }
-  catch {
-    return {
-      type: inferScalarType(value),
-    };
-  }
-};
-
-const isSchemaLike = (value: unknown): value is IJsonSchemaObject => {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  if ('type' in value) {
-    const types = Array.isArray(value.type) ? value.type : [value.type];
-    const hasValidType = types.length > 0 && types.every((type) => {
-      return JSON_SCHEMA_TYPE_NAMES.includes(String(type));
-    });
-
-    if (hasValidType) {
-      return true;
-    }
-  }
-
-  return SCHEMA_HINT_KEYS
-    .filter(key => key !== 'type')
-    .some(key => key in value);
-};
-
-const groupedParameterToOpenApi = (
-  name: string,
-  value: unknown,
-  location: ParameterLocation,
-): IOpenApiParameter => {
-  if (isRecord(value)) {
-    const description = typeof value.description === 'string' ? value.description : '';
-    const required = location === 'path' || Boolean(value.required);
-
-    if (isRecord(value.schema)) {
-      return {
-        description,
-        in: location,
-        name,
-        required,
-        schema: normalizeScalarSchema(value.schema),
-      };
-    }
-
-    if (isSchemaLike(value)) {
-      const schema = cloneDeep(value);
-      [
-        'description',
-        'in',
-        'name',
-        'required',
-        'value',
-      ].forEach((key) => {
-        delete schema[key];
-      });
-
-      if (schema.default === undefined && 'value' in value) {
-        schema.default = value.value;
-      }
-
-      return {
-        description,
-        in: location,
-        name,
-        required,
-        schema: normalizeScalarSchema(schema),
-      };
-    }
-
-    if ('value' in value) {
-      const sampleValue = value.value;
-
-      return {
-        description,
-        in: location,
-        name,
-        required,
-        schema: {
-          ...(sampleValue === undefined ? {} : { default: sampleValue }),
-          type: inferScalarType(sampleValue),
-        },
-      };
-    }
-  }
-
-  const scalarValue = isRecord(value) || Array.isArray(value)
-    ? JSON.stringify(value)
-    : value;
-  const type = inferScalarType(scalarValue);
-
-  return {
-    in: location,
-    name,
-    required: location === 'path',
-    schema: {
-      ...(scalarValue === undefined ? {} : { default: scalarValue }),
-      type,
-    },
-  };
-};
-
-const parseGroupedParameters = (
-  value: unknown,
-  location: ParameterLocation,
-): IOpenApiParameter[] => {
-  if (Array.isArray(value)) {
-    return value
-      .filter(isRecord)
-      .map((item) => {
-        return groupedParameterToOpenApi(
-          typeof item.name === 'string' ? item.name : '',
-          item,
-          location,
-        );
-      });
-  }
-
-  if (!isRecord(value)) {
-    return [];
-  }
-
-  return Object.entries(value).map(([name, item]) => {
-    return groupedParameterToOpenApi(name, item, location);
-  });
-};
-
-const groupedBodyToRequestBody = (value: unknown): IOpenApiRequestBody | undefined => {
-  if (isRecord(value) && isRecord(value.content)) {
-    return value as unknown as IOpenApiRequestBody;
-  }
-
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (
-    isRecord(value)
-    && (typeof value.schema === 'boolean' || isRecord(value.schema))
-  ) {
-    return {
-      content: {
-        'application/json': { schema: value.schema as JsonSchema },
-      },
-      description: typeof value.description === 'string' ? value.description : '',
-      required: Boolean(value.required),
-    };
-  }
-
-  return {
-    content: {
-      'application/json': { schema: sampleToSchema(value) },
-    },
-    required: false,
-  };
-};
-
-const isOpenApiOperation = (value: Record<string, unknown>) => {
-  return Array.isArray(value.parameters)
-    || isRecord(value.parameters)
-    || isRecord(value.requestBody);
-};
-
-const isGroupedRequest = (value: Record<string, unknown>) => {
-  const locations = PARAMETER_LOCATIONS.filter(location => location in value);
-
-  if (!locations.length) {
-    return false;
-  }
-
-  const hasValidLocationValues = locations.every((location) => {
-    return isRecord(value[location]) || Array.isArray(value[location]);
-  });
-  const onlyContainsRequestGroups = Object.keys(value).every((key) => {
-    return key === 'body' || PARAMETER_LOCATIONS.includes(key as ParameterLocation);
-  });
-
-  return hasValidLocationValues
-    && (locations.length > 1 || onlyContainsRequestGroups);
-};
-
-export const requestJsonToState = (input: unknown): IRequestParamsState => {
-  if (!isRecord(input)) {
-    const state = createEmptyRequestParamsState();
-    state.body = {
-      mediaType: 'application/json',
-      required: false,
-      root: schemaToFieldRow(sampleToSchema(input)),
-    };
-    return state;
-  }
-
-  if (isRecord(input.openapi_schema)) {
-    return requestJsonToState(input.openapi_schema);
-  }
-
-  if (isRecord(input.schema) && isOpenApiOperation(input.schema)) {
-    return requestJsonToState(input.schema);
-  }
-
-  if (isOpenApiOperation(input)) {
-    const operation = cloneDeep(input) as IOpenApiOperationSchema;
-    const parameterGroups = input.parameters;
-
-    if (isRecord(parameterGroups)) {
-      operation.parameters = PARAMETER_LOCATIONS.flatMap((location) => {
-        return parseGroupedParameters(parameterGroups[location], location);
-      });
-      operation.requestBody = operation.requestBody
-        ?? groupedBodyToRequestBody(parameterGroups.body);
-    }
-
-    return openApiSchemaToState(operation);
-  }
-
-  if (isGroupedRequest(input)) {
-    const operation: IOpenApiOperationSchema = {
-      parameters: PARAMETER_LOCATIONS.flatMap((location) => {
-        return parseGroupedParameters(input[location], location);
-      }),
-      requestBody: groupedBodyToRequestBody(input.body),
-    };
-    return openApiSchemaToState(operation);
-  }
-
-  const state = createEmptyRequestParamsState();
-  state.body = {
-    mediaType: 'application/json',
-    required: false,
-    root: schemaToFieldRow(sampleToSchema(input)),
-  };
-  return state;
-};
-
+/** 生成 JSON 编辑器需要展示的 OpenAPI 请求参数结构。 */
 export const requestParamsStateToEditorJson = (state: IRequestParamsState) => {
   const value = requestParamsStateToValue(state);
 
@@ -707,6 +455,7 @@ export const resetFieldForType = (
   }
 
   const nextOptions = cloneDeep(row.options);
+  delete nextOptions.type;
   const incompatibleKeys: Record<BodyParameterType, string[]> = {
     array: [
       'format',
@@ -772,8 +521,4 @@ export const resetFieldForType = (
   delete nextOptions.enum;
   delete nextOptions.examples;
   row.options = nextOptions;
-};
-
-export const cloneRequestParamsState = (state: IRequestParamsState) => {
-  return cloneDeep(state);
 };

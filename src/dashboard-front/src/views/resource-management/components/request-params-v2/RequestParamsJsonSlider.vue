@@ -20,7 +20,7 @@
   <AgSideSlider
     v-model="visible"
     :scrollbar="false"
-    :title="t('通过 JSON 生成')"
+    :title="title"
     render-directive="if"
   >
     <div class="request-params-json-slider">
@@ -32,12 +32,32 @@
         >
           {{ t('导入 JSON') }}
         </IconButton>
+        <BkButton
+          text
+          theme="primary"
+          @click="handleLoadExample"
+        >
+          {{ t('填入示例') }}
+        </BkButton>
       </div>
 
       <BkAlert
         class="request-params-json-slider__alert"
         theme="info"
-        :title="t('支持 OpenAPI Operation，或按 header、query、path、body 分组的请求 JSON；普通 JSON 将作为 Body 生成。')"
+        :title="description"
+      />
+
+      <div class="request-params-json-slider__overwrite-tip">
+        {{ mode === 'openapi'
+          ? t('将替换全部请求参数，片段中未定义的位置将被清空。')
+          : t('仅替换 Body，保留已有 Header、Query、Path 参数。') }}
+      </div>
+
+      <BkAlert
+        v-if="error || syntaxError"
+        class="request-params-json-slider__alert"
+        theme="error"
+        :title="error || syntaxError"
       />
 
       <div class="editor-layout">
@@ -60,6 +80,7 @@
             :minimap="false"
             :model-value="source"
             language="json"
+            @change="handleEditorChange"
           />
         </main>
       </div>
@@ -68,11 +89,11 @@
     <template #footer>
       <div class="request-params-json-slider__footer">
         <BkButton
-          class="w-88px mr-8px"
+          class="mr-8px"
           theme="primary"
           @click="handleEditorConfirm"
         >
-          {{ t('确定') }}
+          {{ mode === 'openapi' ? t('导入请求参数') : t('生成 Body') }}
         </BkButton>
         <BkButton
           class="w-88px"
@@ -90,18 +111,29 @@ import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import { useFileSystemAccess } from '@vueuse/core';
 import { Message } from 'bkui-vue';
+import type { RequestParamsImportMode } from './types';
+
+interface IProps {
+  mode: RequestParamsImportMode
+  error?: string
+}
 
 interface IEmits {
-  confirm: [json: unknown]
+  'confirm': [json: unknown]
+  'clear-error': []
 }
 
 const visible = defineModel<boolean>({ default: false });
 
 const source = defineModel<string>('source', { default: '{}' });
 
+const { mode, error = '' } = defineProps<IProps>();
+
 const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
+
+const syntaxError = ref('');
 
 const editorRef = useTemplateRef<InstanceType<typeof EditorMonaco>>('editorRef');
 
@@ -120,17 +152,32 @@ const {
   }],
 });
 
+const title = computed(() => mode === 'openapi' ? t('导入 OpenAPI 请求参数') : t('从 JSON 示例生成 Body'));
+
+const description = computed(() => mode === 'openapi'
+  ? t('仅支持单个 Operation 的 parameters 和 requestBody 请求定义；不支持完整 OpenAPI 文档、引用及非 JSON 请求体。')
+  : t('整个 JSON 将作为 Body 示例推断字段类型，不推断必填、默认值或格式约束。'));
+
 watch(visible, async (value) => {
   if (!value) {
     return;
   }
 
+  syntaxError.value = '';
   await nextTick();
   editorRef.value?.setValue(source.value);
 });
 
 const handleImportJSON = async () => {
-  await open();
+  try {
+    await open();
+  }
+  catch (error) {
+    if (!(error instanceof Error) || error.name !== 'AbortError') {
+      syntaxError.value = t('读取文件失败，请重试或直接粘贴 JSON。');
+    }
+    return;
+  }
 
   if (fileSize.value > 10 * 1024) {
     Message({
@@ -152,18 +199,80 @@ const handleImportJSON = async () => {
   editorRef.value?.setValue(importedJsonText.value);
 };
 
+/** 编辑后清除上一次确认的错误，协议解析成功后由父组件关闭侧栏。 */
+const handleEditorChange = () => {
+  syntaxError.value = '';
+  emit('clear-error');
+};
+
+/** 仅负责 JSON 语法解析，输入类型由入口决定。 */
 const handleEditorConfirm = () => {
+  handleEditorChange();
+  let json: unknown;
   try {
-    source.value = editorRef.value?.getValue() ?? source.value;
-    emit('confirm', JSON.parse(source.value));
-    visible.value = false;
+    const editorValue = editorRef.value?.getValue() ?? source.value;
+    source.value = editorValue;
+    json = JSON.parse(editorValue);
   }
   catch {
-    Message({
-      message: t('请输入合法的 JSON'),
-      theme: 'warning',
-    });
+    syntaxError.value = t('请输入合法的 JSON');
+    return;
   }
+  emit('confirm', json);
+};
+
+/** 按入口提供可直接编辑的请求定义或真实请求体示例。 */
+const handleLoadExample = () => {
+  const example = mode === 'openapi'
+    ? {
+      parameters: [
+        {
+          in: 'header',
+          name: 'X-Request-Id',
+          schema: { type: 'string' },
+        },
+        {
+          in: 'query',
+          name: 'page',
+          schema: {
+            type: 'integer',
+            minimum: 1,
+          },
+        },
+        {
+          in: 'path',
+          name: 'id',
+          required: true,
+          schema: { type: 'string' },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                tags: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+              },
+              required: ['name'],
+            },
+          },
+        },
+      },
+    }
+    : {
+      name: 'demo',
+      enabled: true,
+      tags: ['example'],
+    };
+  const text = JSON.stringify(example, null, 2);
+  source.value = text;
+  editorRef.value?.setValue(text);
 };
 
 const handleFormat = () => {
@@ -177,6 +286,9 @@ const handleFormat = () => {
   font-size: 12px;
 
   &__actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     margin-bottom: 16px;
   }
 
@@ -186,6 +298,12 @@ const handleFormat = () => {
 
   &__footer {
     padding-left: 40px;
+  }
+
+  &__overwrite-tip {
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #63656E;
   }
 }
 
