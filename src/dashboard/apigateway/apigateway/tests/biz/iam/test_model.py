@@ -107,6 +107,16 @@ def test_sync_is_idempotent_when_model_matches(iam_client):
     _assert_no_writes(iam_client)
 
 
+def test_sync_does_not_update_existing_system_name(iam_client):
+    _configure_existing_model(iam_client)
+    iam_client.retrieve_system.return_value["name"] = "旧系统"
+
+    result = GatewayIAMModelSyncer().sync()
+
+    assert result == GatewayIAMModelSyncResult(unchanged=7)
+    _assert_no_writes(iam_client)
+
+
 def test_sync_creates_missing_model_in_dependency_order(iam_client):
     iam_client.retrieve_system.side_effect = bkiam.BkIamNotFoundError("missing")
     iam_client.list_resource_type.return_value = _page([])
@@ -135,7 +145,7 @@ def test_sync_creates_missing_model_in_dependency_order(iam_client):
 
 def test_sync_updates_mutable_fields_and_role_action_diff(iam_client):
     _configure_existing_model(iam_client)
-    iam_client.retrieve_system.return_value["name"] = "旧系统"
+    iam_client.retrieve_system.return_value["description"] = "旧描述"
     iam_client.list_resource_type.return_value["results"][0]["ancestors"] = ["legacy"]
     iam_client.list_action.return_value["results"][0]["name"] = "旧操作"
     administrator = iam_client.list_role.return_value["results"][0]
@@ -156,7 +166,7 @@ def test_sync_updates_mutable_fields_and_role_action_diff(iam_client):
         updated=4,
         unchanged=3,
     )
-    iam_client.update_system.assert_called_once_with({"name": "蓝鲸 API 网关"})
+    iam_client.update_system.assert_called_once_with({"description": "蓝鲸 API 网关 RBAC 权限管理"})
     iam_client.update_resource_type.assert_called_once_with("gateway", {"ancestors": []})
     iam_client.update_action.assert_called_once_with("manage_gateway", {"name": "管理网关"})
     iam_client.update_role.assert_called_once_with(
