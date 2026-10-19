@@ -21,6 +21,7 @@ from typing import Any, Iterator, NotRequired, TypedDict, TypeVar
 
 from django.conf import settings
 
+from apigateway.common.tenant.constants import TENANT_ID_OPERATION
 from apigateway.common.tenant.request import gen_tenant_header
 from apigateway.utils.url import url_join
 
@@ -158,15 +159,19 @@ class BkIamParameterError(Exception):
     """本地请求参数不合法。"""
 
 
-def _call_bkiam_api(http_func, path: str, data=None, more_headers=None, tenant_id: str | None = None, **kwargs):
+def _call_bkiam_api(
+    http_func,
+    path: str,
+    data=None,
+    more_headers=None,
+    tenant_id: str = TENANT_ID_OPERATION,
+    **kwargs,
+):
     """
     统一调用权限中心 V4 网关 API。
     """
-    if tenant_id is None:
-        headers = gen_gateway_headers(with_operation_tenant_headers=True)
-    else:
-        headers = gen_gateway_headers()
-        headers.update(gen_tenant_header(tenant_id))
+    headers = gen_gateway_headers()
+    headers.update(gen_tenant_header(tenant_id))
     if more_headers:
         headers.update(more_headers)
 

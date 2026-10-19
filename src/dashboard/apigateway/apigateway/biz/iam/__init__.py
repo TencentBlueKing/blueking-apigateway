@@ -27,6 +27,7 @@ from .authorization import (
     build_gateway_authorization,
     build_gateway_member_snapshot,
     build_gateway_revoke_authorization,
+    grant_gateway_authorizations,
 )
 from .constants import BK_IAM_V4_SYSTEM_ID
 from .model import GatewayIAMModelSyncer, GatewayIAMModelSyncResult
@@ -55,6 +56,7 @@ __all__ = [
     "build_gateway_member_snapshot",
     "build_gateway_revoke_authorization",
     "clear_gateway_iam_auth_cache",
+    "grant_gateway_authorizations",
     "is_iam_auth_active",
     "is_iam_gateway_action_allowed",
     # others

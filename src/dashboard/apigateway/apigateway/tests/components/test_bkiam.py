@@ -252,7 +252,7 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
     ]
     assert mock_post.call_count == 5
     assert mock_put.call_count == 4
-    assert mock_headers.call_args_list == [call(with_operation_tenant_headers=True)] * 13
+    assert mock_headers.call_args_list == [call()] * 13
 
 
 @pytest.mark.parametrize(
@@ -291,7 +291,7 @@ def test_delete_role_actions_uses_ids_query_parameter(mocker, mock_headers):
             "https://bkiam.example.com/prod/api/v1/open/rbac/model/systems/bk_apigateway/roles/administrator/actions/"
         ),
         data=None,
-        headers={"X-Bkapi-Authorization": "credentials"},
+        headers={"X-Bkapi-Authorization": "credentials", "X-Bk-Tenant-Id": "system"},
         timeout=bkiam.REQUEST_TIMEOUT,
         request_session=None,
         params={"ids": "manage_gateway,operate_gateway"},
@@ -404,6 +404,7 @@ def test_iter_authorization_subjects_pages_until_count(mocker, mock_headers):
         {"id": "c", "expired_at": 1_800_000_000},
     ]
     assert [call.kwargs["data"]["page"] for call in mock_post.call_args_list] == [1, 2]
+    assert all(call.kwargs["headers"]["X-Bk-Tenant-Id"] == "tenant-a" for call in mock_post.call_args_list)
 
 
 def test_iter_authorization_subjects_stops_on_empty_page_when_count_shrinks(mocker, mock_headers):

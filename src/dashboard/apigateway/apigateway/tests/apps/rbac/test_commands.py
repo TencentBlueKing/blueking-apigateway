@@ -282,11 +282,11 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejects_before_apply(settings, 
 def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
-        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        "apigateway.biz.iam.authorization.iter_authorization_subjects",
         return_value=iter([]),
     )
-    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
-    revoke = mocker.patch("apigateway.biz.iam.sync.revoke_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     with pytest.raises(CommandError, match="超过 --max-changes=0"):
         call_command(
@@ -303,10 +303,10 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(s
 def test_sync_gateway_rbac_auth_to_iam_force_applies_over_threshold(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
-        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        "apigateway.biz.iam.authorization.iter_authorization_subjects",
         return_value=iter([]),
     )
-    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
 
     call_command(
         "sync_gateway_rbac_auth_to_iam",

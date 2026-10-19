@@ -34,7 +34,6 @@ from apigateway.biz.iam import (
     build_gateway_member_snapshot,
 )
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkpaas import update_app_maintainers
 from apigateway.core.models import Gateway
 
@@ -100,8 +99,7 @@ def _sync_external_member_state(
 
     try:
         if settings.BK_IAM_V4_ENABLED:
-            tenant_id = get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
-            apply_gateway_member_snapshots_to_iam(gateway.id, before, after, operated_by, tenant_id)
+            apply_gateway_member_snapshots_to_iam(gateway, before, after, operated_by)
     except Exception:
         if paas_synced:
             try:

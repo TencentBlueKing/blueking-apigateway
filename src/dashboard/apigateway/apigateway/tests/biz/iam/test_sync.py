@@ -40,7 +40,7 @@ def _mock_iam(mocker, authorizations_by_role):
         yield from authorizations_by_role.get(payload["role_id"], [])
 
     return mocker.patch(
-        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        "apigateway.biz.iam.authorization.iter_authorization_subjects",
         side_effect=iter_authorizations,
     )
 
@@ -101,7 +101,26 @@ def test_reconcile_plan_adds_fixes_revokes_and_refreshes_expiry(fake_gateway, mo
     assert result.applied is False
 
 
-def test_reconcile_consumes_all_authorizations_for_every_known_role(fake_gateway, mocker):
+@pytest.mark.parametrize(
+    ("multi_tenant_enabled", "tenant_mode", "tenant_id", "expected_tenant_id"),
+    [
+        (False, "single", "tenant-a", "default"),
+        (True, "global", "", "system"),
+    ],
+)
+def test_reconcile_consumes_all_authorizations_for_every_known_role(
+    settings,
+    fake_gateway,
+    mocker,
+    multi_tenant_enabled,
+    tenant_mode,
+    tenant_id,
+    expected_tenant_id,
+):
+    settings.ENABLE_MULTI_TENANT_MODE = multi_tenant_enabled
+    fake_gateway.tenant_mode = tenant_mode
+    fake_gateway.tenant_id = tenant_id
+    fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
 
     authorizations_by_role = {
@@ -113,7 +132,7 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(fake_gateway
         yield from authorizations_by_role.get(payload["role_id"], [])
 
     iterator = mocker.patch(
-        "apigateway.biz.iam.sync.iter_authorization_subjects",
+        "apigateway.biz.iam.authorization.iter_authorization_subjects",
         side_effect=iter_authorizations,
     )
 
@@ -128,13 +147,13 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(fake_gateway
         ("administrator", 1),
         ("operator", 1),
     ]
-    assert all(call.kwargs == {"tenant_id": "default"} for call in iterator.call_args_list)
+    assert all(call.kwargs == {"tenant_id": expected_tenant_id} for call in iterator.call_args_list)
 
 
 def test_reconcile_dry_run_does_not_write_iam(fake_gateway, mocker):
     _mock_iam(mocker, {})
-    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
-    revoke = mocker.patch("apigateway.biz.iam.sync.revoke_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -147,7 +166,11 @@ def test_reconcile_dry_run_does_not_write_iam(fake_gateway, mocker):
     revoke.assert_not_called()
 
 
-def test_reconcile_apply_locks_gateway_and_batches_changes(fake_gateway, mocker):
+def test_reconcile_apply_locks_gateway_and_batches_changes(settings, fake_gateway, mocker):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    fake_gateway.tenant_mode = "global"
+    fake_gateway.tenant_id = ""
+    fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
     GatewayMember.objects.bulk_create(
         [
@@ -166,7 +189,7 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(fake_gateway, mocker)
         "select_for_update",
         wraps=Gateway.objects.select_for_update,
     )
-    add = mocker.patch("apigateway.biz.iam.sync.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -177,7 +200,7 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(fake_gateway, mocker)
     select_for_update.assert_called_once_with()
     assert [len(call.args[0]) for call in add.call_args_list] == [20, 5]
     assert all(call.args[1] == "admin" for call in add.call_args_list)
-    assert all(call.kwargs == {"tenant_id": "default"} for call in add.call_args_list)
+    assert all(call.kwargs == {"tenant_id": "system"} for call in add.call_args_list)
     assert result.applied is True
 
 
@@ -196,11 +219,11 @@ def test_reconcile_apply_failure_leaves_local_member_unchanged(fake_gateway, moc
     )
     calls = []
     mocker.patch(
-        "apigateway.biz.iam.sync.revoke_authorization",
+        "apigateway.biz.iam.authorization.revoke_authorization",
         side_effect=lambda payloads, operator, *, tenant_id: calls.append("revoke"),
     )
     mocker.patch(
-        "apigateway.biz.iam.sync.add_authorization",
+        "apigateway.biz.iam.authorization.add_authorization",
         side_effect=RuntimeError("grant failed"),
     )
 

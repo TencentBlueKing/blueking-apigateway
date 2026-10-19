@@ -18,16 +18,22 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING, Iterator, Mapping
 
 from django.utils import timezone
 
 from apigateway.apps.rbac.constants import GatewayResourceTypeEnum
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkiam import (
     AuthorizationPayload,
+    AuthorizationSubjectItem,
+    AuthorizationSubjectQueryPayload,
+    DirectAuthPayload,
     RevokeAuthorizationPayload,
     add_authorization,
     chunked,
+    direct_auth,
+    iter_authorization_subjects,
     revoke_authorization,
 )
 
@@ -37,6 +43,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from apigateway.apps.rbac.models import GatewayMember
+    from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +55,37 @@ class GatewayMemberAuthorization:
 
 
 GatewayMemberSnapshot = Mapping[str, GatewayMemberAuthorization]
+
+
+def _get_gateway_iam_tenant_id(gateway: Gateway) -> str:
+    return get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
+
+
+def check_gateway_authorization(gateway: Gateway, payload: DirectAuthPayload) -> bool:
+    return direct_auth(payload, tenant_id=_get_gateway_iam_tenant_id(gateway))
+
+
+def grant_gateway_authorizations(
+    gateway: Gateway,
+    authorizations: list[AuthorizationPayload],
+    operated_by: str,
+) -> None:
+    add_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
+
+
+def revoke_gateway_authorizations(
+    gateway: Gateway,
+    authorizations: list[RevokeAuthorizationPayload],
+    operated_by: str,
+) -> None:
+    revoke_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
+
+
+def iter_gateway_authorization_subjects(
+    gateway: Gateway,
+    payload: AuthorizationSubjectQueryPayload,
+) -> Iterator[AuthorizationSubjectItem]:
+    return iter_authorization_subjects(payload, tenant_id=_get_gateway_iam_tenant_id(gateway))
 
 
 def build_gateway_authorization(
@@ -88,46 +126,43 @@ def build_gateway_member_snapshot(members: Iterable[GatewayMember]) -> dict[str,
 
 
 def _revoke(
-    gateway_id: int,
+    gateway: Gateway,
     authorizations: Iterable[tuple[str, str]],
     operated_by: str,
-    tenant_id: str,
 ) -> None:
     payloads = [
-        build_gateway_revoke_authorization(username, role, gateway_id) for username, role in sorted(authorizations)
+        build_gateway_revoke_authorization(username, role, gateway.id) for username, role in sorted(authorizations)
     ]
     for payload_chunk in chunked(payloads):
-        revoke_authorization(payload_chunk, operated_by, tenant_id=tenant_id)
+        revoke_gateway_authorizations(gateway, payload_chunk, operated_by)
 
 
 def _grant(
-    gateway_id: int,
+    gateway: Gateway,
     snapshot: GatewayMemberSnapshot,
     usernames: Iterable[str],
     operated_by: str,
-    tenant_id: str,
 ) -> None:
     now = timezone.now()
     payloads = [
         build_gateway_authorization(
             username,
             snapshot[username].role,
-            gateway_id,
+            gateway.id,
             snapshot[username].expires,
             now=now,
         )
         for username in sorted(usernames)
     ]
     for payload_chunk in chunked(payloads):
-        add_authorization(payload_chunk, operated_by, tenant_id=tenant_id)
+        grant_gateway_authorizations(gateway, payload_chunk, operated_by)
 
 
 def _restore_gateway_member_snapshot(
-    gateway_id: int,
+    gateway: Gateway,
     before: GatewayMemberSnapshot,
     after: GatewayMemberSnapshot,
     operated_by: str,
-    tenant_id: str,
 ) -> None:
     changed_usernames = {
         username for username in before.keys() | after.keys() if before.get(username) != after.get(username)
@@ -138,16 +173,15 @@ def _restore_gateway_member_snapshot(
         for username in changed_usernames
         if username in snapshot
     }
-    _revoke(gateway_id, authorizations_to_clear, operated_by, tenant_id)
-    _grant(gateway_id, before, changed_usernames & before.keys(), operated_by, tenant_id)
+    _revoke(gateway, authorizations_to_clear, operated_by)
+    _grant(gateway, before, changed_usernames & before.keys(), operated_by)
 
 
 def apply_gateway_member_snapshots_to_iam(
-    gateway_id: int,
+    gateway: Gateway,
     before: GatewayMemberSnapshot,
     after: GatewayMemberSnapshot,
     operated_by: str,
-    tenant_id: str,
 ) -> None:
     """Apply a local member delta and compensate IAM back to ``before`` on failure."""
     usernames = before.keys() | after.keys()
@@ -166,15 +200,15 @@ def apply_gateway_member_snapshots_to_iam(
         return
 
     try:
-        _revoke(gateway_id, authorizations_to_revoke, operated_by, tenant_id)
-        _grant(gateway_id, after, usernames_to_grant, operated_by, tenant_id)
+        _revoke(gateway, authorizations_to_revoke, operated_by)
+        _grant(gateway, after, usernames_to_grant, operated_by)
     except Exception:
         try:
-            _restore_gateway_member_snapshot(gateway_id, before, after, operated_by, tenant_id)
+            _restore_gateway_member_snapshot(gateway, before, after, operated_by)
         except Exception:
             logger.critical(
                 "failed to compensate gateway IAM authorizations, gateway_id=%s",
-                gateway_id,
+                gateway.id,
                 exc_info=True,
             )
         raise

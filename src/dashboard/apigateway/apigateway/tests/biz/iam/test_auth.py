@@ -43,11 +43,24 @@ def test_is_iam_auth_active_follows_setting(settings):
     assert is_iam_auth_active()
 
 
-def test_is_iam_gateway_action_allowed_caches_only_allowed_results(mocker, settings):
+@pytest.mark.parametrize(
+    ("tenant_mode", "tenant_id", "expected_tenant_id"),
+    [
+        ("single", "tenant-a", "tenant-a"),
+        ("global", "", "system"),
+    ],
+)
+def test_is_iam_gateway_action_allowed_caches_only_allowed_results(
+    mocker,
+    settings,
+    tenant_mode,
+    tenant_id,
+    expected_tenant_id,
+):
     settings.ENABLE_MULTI_TENANT_MODE = True
-    gateway = G(Gateway, id=7, tenant_mode="single", tenant_id="tenant-a")
+    gateway = G(Gateway, id=7, tenant_mode=tenant_mode, tenant_id=tenant_id)
     direct_auth = mocker.patch(
-        "apigateway.biz.iam.auth.direct_auth",
+        "apigateway.biz.iam.authorization.direct_auth",
         side_effect=[True, False, False],
     )
 
@@ -63,5 +76,5 @@ def test_is_iam_gateway_action_allowed_caches_only_allowed_results(mocker, setti
             "action_id": "manage_gateway",
             "resource": {"id": "7"},
         },
-        tenant_id="tenant-a",
+        tenant_id=expected_tenant_id,
     )

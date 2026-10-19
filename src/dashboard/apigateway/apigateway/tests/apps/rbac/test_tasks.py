@@ -67,13 +67,13 @@ def _gateway_members(gateway, count, *, expires):
 def test_disabled_task_makes_no_external_or_lock_calls(settings, renewal_lock, mocker):
     settings.BK_IAM_V4_ENABLED = False
     lock, constructor = renewal_lock
-    add_authorization = mocker.patch("apigateway.apps.rbac.tasks.add_authorization")
+    grant_authorizations = mocker.patch("apigateway.apps.rbac.tasks.grant_gateway_authorizations")
 
     renew_gateway_member_iam_authorizations()
 
     constructor.assert_not_called()
     lock.acquire.assert_not_called()
-    add_authorization.assert_not_called()
+    grant_authorizations.assert_not_called()
 
 
 def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
@@ -101,29 +101,29 @@ def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
     )
     mocker.patch("apigateway.apps.rbac.tasks.timezone.now", return_value=NOW)
 
-    def assert_local_expiry_not_updated(_authorizations, operator, *, tenant_id):
+    def assert_local_expiry_not_updated(called_gateway, _authorizations, operator):
+        assert called_gateway == gateway
         assert operator == BK_IAM_V4_SYSTEM_ID
-        assert tenant_id == "default"
         due.refresh_from_db()
         no_expiry.refresh_from_db()
         assert due.expires == NOW + timedelta(days=30)
         assert no_expiry.expires is None
 
-    add_authorization = mocker.patch(
-        "apigateway.apps.rbac.tasks.add_authorization",
+    grant_authorizations = mocker.patch(
+        "apigateway.apps.rbac.tasks.grant_gateway_authorizations",
         side_effect=assert_local_expiry_not_updated,
     )
 
     renew_gateway_member_iam_authorizations()
 
-    add_authorization.assert_called_once()
-    authorizations, operator = add_authorization.call_args.args
+    grant_authorizations.assert_called_once()
+    called_gateway, authorizations, operator = grant_authorizations.call_args.args
+    assert called_gateway == gateway
     assert [authorization["subject"]["id"] for authorization in authorizations] == ["due", "no-expiry"]
     assert {authorization["expired_at"] for authorization in authorizations} == {
         int((NOW + timedelta(days=365)).timestamp())
     }
     assert operator == BK_IAM_V4_SYSTEM_ID
-    assert add_authorization.call_args.kwargs == {"tenant_id": "default"}
 
     due.refresh_from_db()
     no_expiry.refresh_from_db()
@@ -137,28 +137,28 @@ def test_batches_authorizations_at_twenty(mocker):
     gateway = G(Gateway)
     _gateway_members(gateway, 21, expires=NOW)
     mocker.patch("apigateway.apps.rbac.tasks.timezone.now", return_value=NOW)
-    add_authorization = mocker.patch("apigateway.apps.rbac.tasks.add_authorization")
+    grant_authorizations = mocker.patch("apigateway.apps.rbac.tasks.grant_gateway_authorizations")
 
     renew_gateway_member_iam_authorizations()
 
-    assert [len(item.args[0]) for item in add_authorization.call_args_list] == [20, 1]
-    assert all(item.args[1] == BK_IAM_V4_SYSTEM_ID for item in add_authorization.call_args_list)
-    assert all(item.kwargs == {"tenant_id": "default"} for item in add_authorization.call_args_list)
+    assert [len(item.args[1]) for item in grant_authorizations.call_args_list] == [20, 1]
+    assert all(item.args[0] == gateway for item in grant_authorizations.call_args_list)
+    assert all(item.args[2] == BK_IAM_V4_SYSTEM_ID for item in grant_authorizations.call_args_list)
 
 
 def test_failed_batch_is_unchanged_and_later_batch_continues(mocker):
     gateway = G(Gateway)
     _gateway_members(gateway, 41, expires=NOW)
     mocker.patch("apigateway.apps.rbac.tasks.timezone.now", return_value=NOW)
-    add_authorization = mocker.patch(
-        "apigateway.apps.rbac.tasks.add_authorization",
+    grant_authorizations = mocker.patch(
+        "apigateway.apps.rbac.tasks.grant_gateway_authorizations",
         side_effect=[None, RuntimeError("IAM unavailable"), None],
     )
 
     with pytest.raises(RuntimeError, match="failed to renew 1"):
         renew_gateway_member_iam_authorizations()
 
-    assert len(add_authorization.call_args_list) == 3
+    assert len(grant_authorizations.call_args_list) == 3
     expiries = dict(
         GatewayMember.objects.filter(gateway=gateway).order_by("username").values_list("username", "expires")
     )
@@ -172,14 +172,14 @@ def test_lock_held_skips_cleanly(renewal_lock, mocker):
     lock, _constructor = renewal_lock
     lock.acquire.return_value = False
     member_filter = mocker.patch("apigateway.apps.rbac.tasks.GatewayMember.objects.filter")
-    add_authorization = mocker.patch("apigateway.apps.rbac.tasks.add_authorization")
+    grant_authorizations = mocker.patch("apigateway.apps.rbac.tasks.grant_gateway_authorizations")
 
     renew_gateway_member_iam_authorizations()
 
     lock.acquire.assert_called_once_with(blocking=False)
     lock.release.assert_not_called()
     member_filter.assert_not_called()
-    add_authorization.assert_not_called()
+    grant_authorizations.assert_not_called()
 
 
 def test_gateway_row_is_locked_before_members_are_read_and_iam_is_written(mocker):
@@ -204,14 +204,17 @@ def test_gateway_row_is_locked_before_members_are_read_and_iam_is_written(mocker
             events.append("member-read")
         return original_filter(*args, **kwargs)
 
-    def add_authorization(_authorizations, operator, *, tenant_id):
+    def grant_authorizations(called_gateway, _authorizations, operator):
+        assert called_gateway == gateway
         assert operator == BK_IAM_V4_SYSTEM_ID
-        assert tenant_id == "default"
         events.append("iam-write")
 
     mocker.patch.object(Gateway.objects, "select_for_update", side_effect=select_for_update)
     mocker.patch.object(GatewayMember.objects, "filter", side_effect=member_filter)
-    mocker.patch("apigateway.apps.rbac.tasks.add_authorization", side_effect=add_authorization)
+    mocker.patch(
+        "apigateway.apps.rbac.tasks.grant_gateway_authorizations",
+        side_effect=grant_authorizations,
+    )
 
     failed_batches = _renew_gateway_member_iam_authorizations(
         gateway.id,
