@@ -98,6 +98,7 @@ export type JsonSchemaType = typeof JSON_SCHEMA_TYPES[number];
 export type ParameterLocation = typeof PARAMETER_LOCATIONS[number];
 export type ScalarParameterType = typeof SCALAR_PARAMETER_TYPES[number];
 export type BodyParameterType = typeof BODY_PARAMETER_TYPES[number];
+export type RequestParamsImportMode = 'openapi' | 'json-example';
 
 export interface IRequestFieldRow {
   children?: IRequestFieldRow[]
@@ -117,12 +118,14 @@ export interface IRequestParameterRow {
   options: IJsonSchemaObject
   required: boolean
   type: ScalarParameterType
+  source?: IOpenApiParameter
 }
 
 export interface IRequestBodyState {
   mediaType: string
   required: boolean
   root: IRequestFieldRow
+  source?: IOpenApiRequestBody
 }
 
 export interface IRequestParamsState {
