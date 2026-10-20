@@ -219,7 +219,11 @@ const tableColumns = computed(() => {
               <div class="flex items-center">
                 <div
                   v-bk-tooltips={getCellTooltip(row)}
-                  class="mcp-server-title color-#979ba5 min-w-0 truncate"
+                  class={[
+                    'mcp-server-title min-w-0 truncate',
+                    { 'color-#979ba5': Boolean(row.status) },
+                    { 'color-#c4c6cc': !row.status },
+                  ]}
                   style={{ maxWidth: getTitleMaxWidth(row) }}
                   onMouseenter={(e: MouseEvent) => handleCellMouseEnter(e, row)}
                   onMouseleave={() => handleCellMouseLeave(row)}
@@ -230,7 +234,7 @@ const tableColumns = computed(() => {
                   && (
                     <Tag
                       theme="danger"
-                      class="bg-transparent! pr-0 border-0 shrink-0 hover-cursor-pointer"
+                      class="bg-transparent! p-0! ml-8px border-0 shrink-0 hover-cursor-pointer"
                       v-slots={{
                         icon: () => (
                           <ag-icon name="zhiming" size="16" />

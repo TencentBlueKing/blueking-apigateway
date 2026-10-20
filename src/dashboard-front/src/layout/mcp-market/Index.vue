@@ -28,6 +28,7 @@
         alt="banner"
         class="banner"
         loading="lazy"
+        @load="handleBannerLoad"
         @error="bannerLoaded = true"
       >
       <AgIcon
@@ -41,6 +42,7 @@
       <div
         ref="mcpCategorizeRef"
         class="bg-white min-w-200px h-100% mcp-categorize"
+        :style="{ maxHeight: categorizeMaxHeight }"
       >
         <div
           class="mcp-categorize-item mcp-categorize-all"
@@ -141,7 +143,10 @@
             { 'min-h-200px': isLoading }
           ]"
         >
-          <div class="mcp-market-list">
+          <div
+            ref="mcpMarketListRef"
+            class="mcp-market-list"
+          >
             <template v-if="mcpMarketList.length < 1 && !isLoading">
               <TableEmpty
                 background="#f5f7fa"
@@ -203,8 +208,9 @@
           :loading="copyConfigLoading"
           :list="mcpConfigList"
         />
-        <!-- 触底翻页触发器 -->
+        <!-- 触底翻页触发器（已无更多数据时不再占位，避免底部留白却仍出现滚动条） -->
         <div
+          v-if="!pagination.hasNoMore"
           ref="bottomTriggerRef"
           v-intersection-observer="onIntersectionObserver"
           class="h-40px"
@@ -225,7 +231,6 @@ import {
 } from '@/services/source/mcp-market';
 import { type IPagination, type ITableEmptyType } from '@/types/common';
 import { vIntersectionObserver } from '@vueuse/components';
-import { useFeatureFlag } from '@/stores';
 import { useMcpBatchCopyConfig } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import mcpBanner from '@/images/mcp-banner.jpg';
@@ -237,7 +242,6 @@ import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfi
 
 const { t, locale } = useI18n();
 const router = useRouter();
-const featureFlagStore = useFeatureFlag();
 // 批量复制配置hooks
 const {
   copyConfigLoading,
@@ -247,10 +251,22 @@ const {
   fetchApi: getMcpBatchCopyConfigList,
 });
 
+// 顶部导航高度（bk-navigation-header 为 52px）
+const NAV_HEADER_HEIGHT = 52;
+// 卡片列表底部固定占位（main 的底部内边距），滚动到底时与视口底部保留 16px 间距
+const LIST_BOTTOM_RESERVE = 16;
+// 单个卡片高度、卡片间距、每行卡片数
+const CARD_HEIGHT = 238;
+const CARD_GAP = 16;
+const CARDS_PER_ROW = 3;
+
 const bannerRef = ref<HTMLImageElement | null>(null);
 const mcpCategorizeRef = ref<HTMLDivElement | null>(null);
+const mcpMarketListRef = ref<HTMLDivElement | null>(null);
 const isLoading = ref(false);
 const bannerLoaded = ref(false);
+// banner 渲染高度（随图片加载/关闭/窗口缩放变化）
+const bannerHeight = ref(0);
 // 标记 banner 是否展示（支持关闭）
 const isBannerVisible = ref(true);
 // 标记首次数据加载是否完成
@@ -288,7 +304,12 @@ const pagination = ref<IPagination & { hasNoMore?: boolean }>({
 // 批量复制内容
 const selections = ref<Map<number, IMarketplaceItemWithUIState>>(new Map());
 
-const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+// 分类面板最大高度：分类过多时自身滚动，避免把整页撑高后列表明明没溢出却出现滚动条
+// 156px = 通知栏占位 40 + 导航头部 52 + banner 上边距 24 + main 上内边距 24 + 底部预留 16
+const categorizeMaxHeight = computed(() => {
+  const currentBannerHeight = isBannerVisible.value ? bannerHeight.value : 0;
+  return `calc(100vh - ${156 + currentBannerHeight}px)`;
+});
 const bannerImg = computed(() => {
   if (locale.value === 'zh-cn') {
     return mcpBanner;
@@ -340,6 +361,7 @@ const getFilterParams = computed(() => {
 
 const handleBannerLoad = () => {
   bannerLoaded.value = true;
+  bannerHeight.value = bannerRef.value?.offsetHeight ?? 0;
   // 图片加载完成后重新计算分页limit（列表内容不变，保留已选中的 MCP Server）
   if (!isBannerLoadedInit.value) {
     isBannerLoadedInit.value = true;
@@ -349,55 +371,69 @@ const handleBannerLoad = () => {
 
 const handleCloseBanner = () => {
   isBannerVisible.value = false;
+  bannerHeight.value = 0;
   // banner 关闭后高度变化，重新计算可视区域卡片数（列表内容不变，保留已选中的 MCP Server）
   nextTick(() => {
     resetPagination(true);
   });
 };
 
-// 获取banner高度的方法，增加图片加载监听
-const getBannerHeight = () => {
-  if (!bannerRef.value) return 0;
+// 获取页面滚动容器（bk-navigation 的内容区）
+const getScrollContainer = () => document.querySelector<HTMLElement>(
+  '.McpMarket-navigation-content .container-content',
+);
 
-  // 若图片已加载，直接返回高度
-  if (bannerLoaded.value) {
-    return bannerRef.value.offsetHeight;
-  }
+/**
+ * 量取卡片列表可用的可视高度
+ * @returns {number} 卡片列表可视高度
+ * @description 直接量取滚动容器与列表的真实位置，而不是用「视口高度 - 导航 - banner - 边距」估算：
+ *              估算值漏算了顶部操作栏、main 的上下内边距、触底触发器等占位，
+ *              会多渲染出一截内容，表现为「卡片已经全部可见，滚动条却还在」
+ */
+const getListViewportHeight = () => {
+  const container = getScrollContainer();
+  const containerTop = container?.getBoundingClientRect().top ?? NAV_HEADER_HEIGHT;
+  // 容器可视高度（92 = 通知栏占位 40 + 导航头部 52）
+  const containerHeight = container?.clientHeight || window.innerHeight - 92;
+  // 容器被通知栏等元素挤压时，以窗口下边界为准，避免把看不见的区域算进来
+  const visibleHeight = Math.min(containerHeight, window.innerHeight - containerTop);
+  const listEl = mcpMarketListRef.value;
 
-  // 监听图片加载事件
-  bannerRef.value.addEventListener('load', handleBannerLoad, { once: true });
+  if (!listEl) return visibleHeight;
 
-  // 加载中先返回默认高度（或图片的固有高度）
-  return bannerRef.value.naturalHeight || 0;
+  // 列表顶部到滚动容器顶部的距离（只由 banner、顶部操作栏、内边距决定，与列表内容无关，空列表时同样可量取）
+  const listOffsetTop = listEl.getBoundingClientRect().top - containerTop + (container?.scrollTop ?? 0);
+
+  // 扣掉列表下方的固定占位（main 的底部内边距）；向下取整，避免小数像素导致内容恰好高出容器 1px 出现滚动条
+  return Math.floor(visibleHeight - listOffsetTop - LIST_BOTTOM_RESERVE);
+};
+
+/**
+ * 量取单个卡片的真实渲染高度
+ * @returns {number} 卡片高度
+ * @description 卡片高度由内容决定（标题行数、标签等），写死常量会和真实渲染高度有偏差，
+ *              导致行数被多算、列表被撑出滚动条
+ */
+const getCardHeight = () => {
+  const firstCard = mcpMarketListRef.value?.querySelector<HTMLElement>('.ag-mcp-card-wrapper');
+  return firstCard?.offsetHeight || CARD_HEIGHT;
 };
 
 /**
  * 计算可视区域可展示的最大卡片数量
- * @returns {number} 最大卡片数（预留一行用于加载更多）
- * @description 计算逻辑：页面可用高度 = 视口高度 - 页面边距 - 导航栏高度 - banner高度 - 通知栏高度
- *              最大行数 = 页面可用高度 / 单卡片高度（含间距）
+ * @returns {number} 最大卡片数（预留一行用于触发加载更多）
+ * @description 计算逻辑：可视高度 = 滚动容器可视高度 - 列表顶部偏移 - 底部固定占位
+ *              最大行数 = (可视高度 + 卡片间距) / (单卡片高度 + 卡片间距)
  *              最大卡片数 = 行数 * 每行卡片数 + 预留行卡片数
  */
 const calculateMaxVisibleCards = () => {
-  // 通知栏高度40px
-  const noticeH = isShowNoticeAlert.value ? 40 : 0;
-  // banner图高度
-  const bannerH = getBannerHeight();
-  // 获取页面可用高度（排除顶部导航/内边距）, 40px=页面边距(24+16)，52px=导航栏高度
-  const pageH = window.innerHeight - 40 - 52 - bannerH - noticeH;
+  const viewportHeight = getListViewportHeight();
+  const cardHeight = getCardHeight();
+  // r 行卡片高度 = r * 单卡片高度 + (r - 1) * 卡片间距，至少渲染一行
+  const maxRows = Math.max(Math.floor((viewportHeight + CARD_GAP) / (cardHeight + CARD_GAP)), 1);
 
-  // 获取单卡片最小高度和每行卡片数
-  const singleCardHeight = 238 + 16;
-  const cardsPerRow = 3;
-
-  // 计算可展示行数
-  const maxRows = Math.floor(pageH / singleCardHeight);
-
-  // 计算最大可展示卡片数
-  const maxCards = Math.max(maxRows * cardsPerRow, 3);
-
-  // 预留一行空间用于触发加载更多
-  return maxCards + cardsPerRow;
+  // 预留一行，保证触底触发器落在首屏之外，滚动时才能触发加载更多
+  return maxRows * CARDS_PER_ROW + CARDS_PER_ROW;
 };
 
 const getList = async () => {
@@ -426,10 +462,13 @@ const getList = async () => {
       : (results as unknown as IMarketplaceItemWithUIState[])
         .filter(item => !mcpMarketList.value.some(exist => exist.id === item.id));
     mcpMarketList.value = current === 1 ? list : [...mcpMarketList.value, ...list];
+    // 翻页没有返回任何新数据时（count 与实际可返回条数不一致），视为已全部加载，
+    // 避免触底触发器一直占位并反复补发请求
+    const noMoreItems = current > 1 && list.length === 0;
     pagination.value = {
       ...pagination.value,
       count,
-      hasNoMore: mcpMarketList.value.length >= count,
+      hasNoMore: noMoreItems || mcpMarketList.value.length >= count,
       current: current + 1,
     };
     // 处理每个分类下官方/精选筛选结果
@@ -471,8 +510,10 @@ const fetchCategoryList = async () => {
  * 重新校准触底触发器的就绪状态
  */
 const syncBottomTriggerArmedState = () => {
-  const rect = bottomTriggerRef.value?.getBoundingClientRect();
-  if (!rect) return;
+  // 无更多数据时触发器已卸载，无需校准
+  if (!bottomTriggerRef.value) return;
+
+  const rect = bottomTriggerRef.value.getBoundingClientRect();
 
   // getBoundingClientRect 会强制刷新布局，此处读到的即为列表渲染后的最终位置
   const viewportHeight = document.documentElement.clientHeight || window.innerHeight || 0;
@@ -486,7 +527,7 @@ const syncBottomTriggerArmedState = () => {
  */
 const resetPagination = async (keepSelections = true) => {
   // 重置分页后，滚动距离重置
-  const mcpEl = document.querySelector('.McpMarket-navigation-content .container-content') as HTMLElement | null;
+  const mcpEl = getScrollContainer();
   if (mcpEl && mcpEl.scrollTop > 0) {
     mcpEl.scrollTop = 0;
   }
@@ -637,6 +678,8 @@ const handleResize = debounce(() => {
   // 仅当视口高度变化超过 30px 时才重新计算
   if (Math.abs(newViewportHeight - (cachedViewportHeight.value || 0)) > 30) {
     cachedViewportHeight.value = newViewportHeight;
+    // 窗口变化会改变 banner 渲染高度，先同步再计算
+    bannerHeight.value = bannerRef.value?.offsetHeight ?? 0;
     const newLimit = calculateMaxVisibleCards();
     if (pagination.value.limit !== newLimit) {
       pagination.value.limit = newLimit || 3;
@@ -657,13 +700,16 @@ watch(
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
+  // 图片命中缓存时不会触发 load 事件，需手动同步一次 banner 高度
+  if (bannerRef.value?.complete && bannerRef.value.naturalHeight > 0) {
+    handleBannerLoad();
+  }
   fetchInitData();
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   handleResize?.cancel();
-  bannerRef.value?.removeEventListener('load', handleBannerLoad);
   bannerRef.value = null;
 });
 </script>
@@ -673,11 +719,11 @@ onUnmounted(() => {
   width: 80%;
   min-width: 1200px;
   margin: 0 auto;
+  padding-top: 24px;
   box-sizing: border-box;
 
   .banner-wrapper {
     position: relative;
-    margin-top: 24px;
 
     .banner {
       display: block;
@@ -703,26 +749,26 @@ onUnmounted(() => {
 
   .main {
     width: 100%;
-    padding: 24px 0;
+    padding: 24px 0 16px;
 
     .mcp-categorize {
       position: sticky;
       top: 24px;
       align-self: flex-start;
-      background-color: #fff;
+      overflow: hidden auto;
+      background-color: #ffffff;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
-      overflow: hidden;
 
       .mcp-categorize-item {
         display: flex;
-        height: 36px;
-        padding: 0 12px;
-        cursor: pointer;
-        box-sizing: border-box;
-        transition: background-color 0.2s;
         align-items: center;
         justify-content: space-between;
+        height: 36px;
+        padding: 0 12px;
+        box-sizing: border-box;
+        transition: background-color 0.2s;
+        cursor: pointer;
 
         .mcp-categorize-content {
           display: flex;
