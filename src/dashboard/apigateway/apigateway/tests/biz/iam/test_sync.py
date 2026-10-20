@@ -266,8 +266,9 @@ def test_reconcile_username_filters_operations_after_full_iam_query(fake_gateway
     ]
 
 
-def test_reconcile_skips_admin_when_multi_tenant_enabled(fake_gateway, mocker, settings):
+def test_reconcile_skips_configured_users_when_multi_tenant_enabled(fake_gateway, mocker, settings):
     settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
     GatewayMember.objects.bulk_create(
         [
@@ -316,8 +317,38 @@ def test_reconcile_skips_admin_when_multi_tenant_enabled(fake_gateway, mocker, s
     assert [payload["subject"]["id"] for payload in revoke.call_args.args[0]] == ["extra"]
 
 
+def test_reconcile_uses_custom_exclusions_for_desired_and_actual(fake_gateway, mocker, settings):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"desired-excluded", "actual-excluded"})
+    GatewayMember.objects.filter(gateway=fake_gateway).delete()
+    GatewayMember.objects.create(
+        gateway=fake_gateway,
+        username="desired-excluded",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+        expires=_expires(1_900_000_000),
+    )
+    _mock_iam(
+        mocker,
+        {
+            GatewayRoleEnum.ADMINISTRATOR.value: [
+                _iam_result("actual-excluded", 1_900_000_000),
+            ],
+        },
+    )
+
+    result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
+        fake_gateway.id,
+        apply=False,
+        operator="bk_apigateway",
+    )
+
+    assert result.grants == ()
+    assert result.revokes == ()
+
+
 def test_reconcile_syncs_admin_when_multi_tenant_disabled(fake_gateway, mocker, settings):
     settings.ENABLE_MULTI_TENANT_MODE = False
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
     GatewayMember.objects.bulk_create(
         [

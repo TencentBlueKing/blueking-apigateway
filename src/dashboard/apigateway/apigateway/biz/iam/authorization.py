@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Iterator, Mapping
 
+from django.conf import settings
 from django.utils import timezone
 
 from apigateway.apps.rbac.constants import GatewayResourceTypeEnum
@@ -65,11 +66,22 @@ def check_gateway_authorization(gateway: Gateway, payload: DirectAuthPayload) ->
     return direct_auth(payload, tenant_id=_get_gateway_iam_tenant_id(gateway))
 
 
+def is_gateway_iam_authorization_excluded(username: str) -> bool:
+    return settings.ENABLE_MULTI_TENANT_MODE and username in settings.BK_IAM_V4_EXCLUDED_USERNAMES
+
+
 def grant_gateway_authorizations(
     gateway: Gateway,
     authorizations: list[AuthorizationPayload],
     operated_by: str,
 ) -> None:
+    authorizations = [
+        authorization
+        for authorization in authorizations
+        if not is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
+    ]
+    if not authorizations:
+        return
     add_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
 
 
@@ -78,6 +90,13 @@ def revoke_gateway_authorizations(
     authorizations: list[RevokeAuthorizationPayload],
     operated_by: str,
 ) -> None:
+    authorizations = [
+        authorization
+        for authorization in authorizations
+        if not is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
+    ]
+    if not authorizations:
+        return
     revoke_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
 
 
