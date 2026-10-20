@@ -5351,7 +5351,7 @@ paths:
               properties:
                 content:
                   type: string
-                  description: 网关资源 OpenAPI 描述，可为 yaml 格式文本；AI 资源通过 x-bk-apigateway-resource.kind=ai 声明；tags 标签允许分隔符不同的名称共存，仅大小写不同仍视为冲突
+                  description: 网关资源 OpenAPI 描述，可为 yaml 格式文本；AI 资源通过 x-bk-apigateway-resource.kind=ai 声明
                   example: "xxx"
                 delete:
                   type: boolean
