@@ -372,7 +372,7 @@ const selectionColumns = computed(() => [{
   type: 'custom-checkbox',
   align: 'center',
   fixed: 'left',
-  width: 60,
+  width: 42,
   title: () => {
     const isDisabled = disabledSelected.value || tableData.value.every(item => disabledCheckSelection?.(item));
     return (
