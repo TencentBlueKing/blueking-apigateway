@@ -205,6 +205,7 @@
         />
         <!-- 触底翻页触发器 -->
         <div
+          ref="bottomTriggerRef"
           v-intersection-observer="onIntersectionObserver"
           class="h-40px"
         />
@@ -258,8 +259,11 @@ const isFirstLoad = ref(true);
 const isBannerLoadedInit = ref(false);
 // 标记是否正在切换分类（用于冻结计数显示）
 const isSwitchingCategory = ref(false);
-// 标记是否正在重置分页（重置期间屏蔽触底加载，避免列表渲染后的补发回调触发多余请求）
-const isResettingPagination = ref(false);
+// 触底触发器元素，重置分页后需要按真实位置重新校准就绪状态
+const bottomTriggerRef = ref<HTMLDivElement | null>(null);
+// 触底触发器是否已就绪：只有触发器离开过视口，再次进入视口才认为是用户滚动到底，
+// 用于忽略重置分页后因列表高度塌陷而补发的触底回调
+const isBottomTriggerArmed = ref(true);
 // 显示复制 MCP Server 接入配置
 const isShowConfig = ref(false);
 const mcpCategorizeWidth = ref(0);
@@ -283,9 +287,6 @@ const pagination = ref<IPagination & { hasNoMore?: boolean }>({
 });
 // 批量复制内容
 const selections = ref<Map<number, IMarketplaceItemWithUIState>>(new Map());
-
-// 重置分页的序号，用于连续重置时判断哪一次重置可以解除触底加载的屏蔽
-let resetLockId = 0;
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const bannerImg = computed(() => {
@@ -416,8 +417,14 @@ const getList = async () => {
     };
     const res = await getMcpMarketplace(params);
     const { results = [], count = 0 } = res ?? {};
-    const list = (results as unknown as IMarketplaceItemWithUIState[])
-      .filter(item => !mcpMarketList.value.some(exist => exist.id === item.id));
+    // 只有翻页追加时才需要按 id 去重（避免分页交界处重复渲染）；
+    // 重置分页（第一页）必须直接用接口返回的列表整体替换，否则切换分类时
+    // 新分类里已在旧列表中展示过的项会被过滤掉，列表高度骤变、触底触发器被带进视口，
+    // 进而又补发一次第二页请求（表现为切换分类调用两次接口）
+    const list = current === 1
+      ? results as unknown as IMarketplaceItemWithUIState[]
+      : (results as unknown as IMarketplaceItemWithUIState[])
+        .filter(item => !mcpMarketList.value.some(exist => exist.id === item.id));
     mcpMarketList.value = current === 1 ? list : [...mcpMarketList.value, ...list];
     pagination.value = {
       ...pagination.value,
@@ -461,20 +468,15 @@ const fetchCategoryList = async () => {
 };
 
 /**
- * 解除「重置分页屏蔽触底加载」的标记
- * IntersectionObserver 的回调在浏览器渲染步骤中投递（晚于 rAF、早于渲染后的宏任务），
- * 因此需要等当前这一帧的观察步骤执行完再放行，否则列表渲染后的补发回调仍会触发一次多余请求。
- * 连续重置（快速切换分类）时仅最后一次重置可以解除屏蔽
- * @param lockId 本次重置的标记，与最新一次重置不一致时不解除
+ * 重新校准触底触发器的就绪状态
  */
-const releaseResetLock = (lockId: number) => {
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      if (lockId === resetLockId) {
-        isResettingPagination.value = false;
-      }
-    }, 0);
-  });
+const syncBottomTriggerArmedState = () => {
+  const rect = bottomTriggerRef.value?.getBoundingClientRect();
+  if (!rect) return;
+
+  // getBoundingClientRect 会强制刷新布局，此处读到的即为列表渲染后的最终位置
+  const viewportHeight = document.documentElement.clientHeight || window.innerHeight || 0;
+  isBottomTriggerArmed.value = rect.top >= viewportHeight || rect.bottom <= 0;
 };
 
 /**
@@ -500,14 +502,12 @@ const resetPagination = async (keepSelections = true) => {
   if (!keepSelections) {
     selections.value.clear();
   }
-  // 重置过程中及列表渲染后的补发回调都要屏蔽触底加载，避免多余的列表请求
-  isResettingPagination.value = true;
-  const lockId = ++resetLockId;
   try {
     await getList();
   }
   finally {
-    releaseResetLock(lockId);
+    // 列表渲染完成后重新校准触底触发器，避免列表塌陷补发的回调再发一次请求
+    nextTick(syncBottomTriggerArmedState);
   }
   // 保留选中时，刷新后的列表需要同步卡片勾选态
   if (selectionsSnapshot) {
@@ -593,12 +593,18 @@ const handleRefresh = () => {
 };
 
 const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
-  // 首次加载未完成、正在加载中或正在重置分页（切换分类/刷新等）→ 不触发；仅空闲时加载更多。
-  // 重置分页会用新列表替换 DOM，触底区域位置变化会补发一次回调，
-  // 若不做屏蔽会带着新筛选条件再请求一次（表现为切换分类调用两次接口）
-  if (entry?.isIntersecting && !isFirstLoad.value && !isLoading.value && !isResettingPagination.value) {
-    getList();
+  if (!entry?.isIntersecting) {
+    // 触发器离开视口
+    isBottomTriggerArmed.value = true;
+    return;
   }
+
+  // 首屏未完成、正在加载中，或触发器未就绪（列表高度塌陷补发的回调）→ 不触发；
+  // 仅用户滚动到底部时才加载更多
+  if (isFirstLoad.value || isLoading.value || !isBottomTriggerArmed.value) return;
+
+  isBottomTriggerArmed.value = false;
+  getList();
 };
 
 const handleChecked = (isChecked: boolean, row: IMarketplaceItemWithUIState) => {

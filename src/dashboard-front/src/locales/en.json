@@ -2428,7 +2428,7 @@
   "受影响的工具：": "Affected tools:",
   "已知晓风险并提交": "I acknowledge the risk and submit",
   "该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。": "This tool is called using the public app identity, and all OAuth2 authorized users can access it.",
-  "此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。": "This MCP Server has enabled OAuth2 public client mode and contains {count} app-level authentication tools ({content}).",
+  "此 MCP Server 已开启 OAuth2公开客户端模式，且包含{count}个应用态鉴权工具({content})": "This MCP Server has enabled OAuth2 public client mode and contains {count} app-level authentication tools ({content})",
   "开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。": "After enabling OAuth2 public client mode, these tools will be called using the public app identity. All users authorized via OAuth2 can call them, and the original app-level permission isolation will no longer be effective.",
   "开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。": "Once enabled, users can use these tools via browser OAuth2 authorization without manually configuring API credentials. Tokens will be issued as the public app identity.",
   "当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。": "All currently selected tools use user-level authentication. Enabling OAuth2 public client mode will not introduce additional security risks. Each user must still be authenticated via OAuth2 before calling.",
@@ -2785,6 +2785,6 @@
   "请求片段不支持引用或组合 Schema，请展开引用并使用明确的类型定义。": "References and composed schemas are not supported in request fragments. Expand references and use explicit type definitions.",
   "requestBody 必须且只能包含 application/json，并提供 schema。": "requestBody must contain only application/json and provide a schema.",
   "description 必须是字符串，required 必须是布尔值。": "description must be a string and required must be a boolean.",
-  "创建应用": "Create App",
+  "新增任务": "Add New Task",
   "请搜索网关": "Please Search Gateway"
 }

@@ -118,6 +118,9 @@ const tableData = ref<IMCPServer[]>([]);
 // 设置面板中默认不勾选的列
 const uncheckedColumn = ['label'];
 
+// 风险标签占位宽度（含内边距），存在风险标签时 title 需要为其让出空间
+const RISK_TAG_SPACE = 24;
+
 const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
@@ -138,101 +141,129 @@ const hiddenColumn = computed(() => {
 
 const isExistLabel = computed(() => tableData.value.find(item => item?.labels?.length > 0));
 
+// name / title 任一溢出时统一展示 tooltip，内容为完整的名称与描述
+// 存在风险标签时 title 让出标签占位宽度，否则铺满剩余空间
+const getTitleMaxWidth = (row: IMCPServer) => {
+  const hasRiskTag = isEnabledOAuth.value && Boolean(row?.app_permission_risk?.has_risk);
+  return hasRiskTag ? `calc(100% - ${RISK_TAG_SPACE}px)` : '100%';
+};
+
+const getCellTooltip = (row: IMCPServer) => ({
+  placement: 'top',
+  content: () => (
+    <div class="break-all">
+      <div class="font-700">{row.name}</div>
+      {row.title ? <div class="mt-4px">{row.title}</div> : null}
+    </div>
+  ),
+  extCls: 'max-w-288px',
+  allowHtml: true,
+  disabled: !row.isOverflow,
+});
+
+const checkIsOverflow = (el: HTMLElement | null) => Boolean(el && el.scrollWidth > el.clientWidth);
+
+const handleCellMouseEnter = (e: MouseEvent, row: IMCPServer) => {
+  const wrapper = (e.currentTarget as HTMLElement)?.closest('.mcp-server-cell-content');
+  const nameEl = wrapper?.querySelector('.mcp-server-name') as HTMLElement | null;
+  const titleEl = wrapper?.querySelector('.mcp-server-title') as HTMLElement | null;
+  const isOverflow = checkIsOverflow(nameEl) || checkIsOverflow(titleEl);
+  if (row.isOverflow !== isOverflow) {
+    row.isOverflow = isOverflow;
+  }
+};
+
+const handleCellMouseLeave = (row: IMCPServer) => {
+  if (row.isOverflow) {
+    delete row.isOverflow;
+  }
+};
+
 const tableColumns = computed(() => {
   const columns: PrimaryTableProps['columns'] = [
     {
       title: t('名称'),
       colKey: 'name',
-      width: 360,
-      ellipsis: true,
+      width: 264,
+      ellipsis: false,
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        const hasRiskTag = isEnabledOAuth.value && Boolean(row?.app_permission_risk?.has_risk);
         return (
-          <div class="flex items-baseline">
+          <div class="flex items-center">
             <div
               class={[
-                'mr-8px ag-dot',
+                'ag-dot mr-8px shrink-0',
                 { 'border-#2caf5e bg-#daf6e5': Boolean(row.status) },
                 { 'border-#c4c6cc bg-#f5f7fa': !row.status },
               ]}
             />
-            <div
-              v-bk-tooltips={{
-                placement: 'top',
-                content: row.name ?? '',
-                extCls: 'max-w-480px',
-                disabled: !row.isOverflow,
-              }}
-              class={[
-                'hover-cursor-pointer truncate',
-                { 'color-#3a84ff': Boolean(row.status) },
-                { 'color-#c4c6cc hover:color-#3a84ff': !row.status },
-              ]}
-              onClick={(e: MouseEvent) => {
-                e?.stopPropagation();
-                handleView(row.id);
-              }}
-              onMouseenter={(e: MouseEvent) =>
-                tableRef.value?.handleCellEnter({
-                  e,
-                  row,
-                } as {
-                  e: MouseEvent
-                  row: IMCPServer
-                })}
-              onMouseleave={(e: MouseEvent) =>
-                tableRef.value?.handleCellLeave({
-                  e,
-                  row,
-                } as {
-                  e: MouseEvent
-                  row: IMCPServer
-                })}
-            >
-              {row.name}
-            </div>
-            { isEnabledOAuth.value && row?.app_permission_risk?.has_risk
-              && (
-                <Tag
-                  theme="danger"
-                  class="ml-4px hover-cursor-pointer"
-                  v-slots={{
-                    icon: () => (
-                      <ag-icon name="zhiming" />
-                    ),
+            <div class="mcp-server-cell-content min-w-0 flex-1">
+              <div class="flex items-baseline">
+                <div
+                  v-bk-tooltips={getCellTooltip(row)}
+                  class={[
+                    'mcp-server-name font-700 hover-cursor-pointer min-w-0 truncate',
+                    { 'color-#3a84ff': Boolean(row.status) },
+                    { 'color-#c4c6cc hover:color-#3a84ff': !row.status },
+                  ]}
+                  onClick={(e: MouseEvent) => {
+                    e?.stopPropagation();
+                    handleView(row.id);
                   }}
-                  v-bk-tooltips={{
-                    content: () => (
-                      <div class="break-all">
-                        { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
-                          {
-                            count: row?.app_permission_risk?.risk_tools?.length,
-                            content: row?.app_permission_risk?.risk_tools?.join('、'),
-                          })}
-                        <div class="h-24px" />
-                        { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
-                      </div>
-                    ),
-                    extCls: 'max-w-300px',
-                    allowHtml: true,
-                  }}
+                  onMouseenter={(e: MouseEvent) => handleCellMouseEnter(e, row)}
+                  onMouseleave={() => handleCellMouseLeave(row)}
                 >
-                  { t('应用态风险') }
-                </Tag>
-              )}
+                  {row.name}
+                </div>
+              </div>
+              <div class="flex items-center">
+                <div
+                  v-bk-tooltips={getCellTooltip(row)}
+                  class="mcp-server-title color-#979ba5 min-w-0 truncate"
+                  style={{ maxWidth: getTitleMaxWidth(row) }}
+                  onMouseenter={(e: MouseEvent) => handleCellMouseEnter(e, row)}
+                  onMouseleave={() => handleCellMouseLeave(row)}
+                >
+                  {row.title}
+                </div>
+                { hasRiskTag
+                  && (
+                    <Tag
+                      theme="danger"
+                      class="bg-transparent! pr-0 border-0 shrink-0 hover-cursor-pointer"
+                      v-slots={{
+                        icon: () => (
+                          <ag-icon name="zhiming" size="16" />
+                        ),
+                      }}
+                      v-bk-tooltips={{
+                        content: () => (
+                          <div class="break-all">
+                            { t('此 MCP Server 已开启 OAuth2公开客户端模式，且包含{count}个应用态鉴权工具({content})',
+                              {
+                                count: row?.app_permission_risk?.risk_tools?.length,
+                                content: row?.app_permission_risk?.risk_tools?.join('、'),
+                              })}
+                            <div>
+                              { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
+                            </div>
+                          </div>
+                        ),
+                        extCls: 'max-w-288px',
+                        allowHtml: true,
+                      }}
+                    />
+                  )}
+              </div>
+            </div>
           </div>
         );
       },
     },
     {
-      title: t('展示名'),
-      colKey: 'title',
-      width: 200,
-      ellipsis: true,
-    },
-    {
       title: t('环境'),
       colKey: 'stage_id',
-      width: 100,
+      width: 84,
       ellipsis: true,
       filter: {
         type: 'single',
@@ -261,7 +292,7 @@ const tableColumns = computed(() => {
     {
       title: t('分类'),
       colKey: 'categories',
-      width: 100,
+      width: 106,
       filter: {
         type: 'multiple',
         showConfirmAndReset: true,
@@ -322,14 +353,14 @@ const tableColumns = computed(() => {
     {
       title: t('Prompt 数量'),
       colKey: 'prompts_count',
-      width: 80,
+      width: 102,
       ellipsis: true,
     },
     {
       title: t('是否公开'),
       colKey: 'is_public',
+      width: 82,
       ellipsis: true,
-      width: 100,
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
         return (
           <Tag
@@ -345,7 +376,7 @@ const tableColumns = computed(() => {
       title: t('OAuth2 公开客户端'),
       colKey: 'oauth2_public_client_enabled',
       ellipsis: true,
-      width: 100,
+      width: 140,
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
         return (
           <Tag
@@ -364,8 +395,8 @@ const tableColumns = computed(() => {
     {
       title: t('个人令牌'),
       colKey: 'oauth2_personal_client_enabled',
+      width: 86,
       ellipsis: true,
-      width: 100,
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
         return (
           <Tag
@@ -384,15 +415,15 @@ const tableColumns = computed(() => {
     {
       title: t('发布时间'),
       colKey: 'updated_time',
+      width: 196,
       ellipsis: true,
       sorter: true,
-      width: 220,
     },
     {
       title: t('操作'),
       colKey: 'operate',
       fixed: 'right',
-      width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 92 : 60,
+      width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 92 : 64,
       cell: (_: unknown, { row }: { row: IMCPServer }) => (
         <div class="flex">
           <Button

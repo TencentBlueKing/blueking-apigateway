@@ -354,13 +354,14 @@ const renderRiskToolToolTip = (row: IMCPServerWithUIState & { app_permission_ris
   return {
     content: () => (
       <div class="break-all">
-        { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
+        { t('此 MCP Server 已开启 OAuth2公开客户端模式，且包含{count}个应用态鉴权工具({content})',
           {
             count: row?.app_permission_risk?.risk_tools?.length,
             content: row?.app_permission_risk?.risk_tools?.join('、'),
           })}
-        <div class="h-24px" />
-        { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
+        <div>
+          { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
+        </div>
       </div>
     ),
     extCls: 'max-w-300px',

@@ -43,8 +43,9 @@
           >
             <template #prefix>
               <div
-                class="gateway-selector-prefix ml-8px my-4px"
+                class="gateway-selector-prefix gateway-kind-icon ml-8px my-4px"
                 :class="[getGatewayKind.color, getGatewayKind.bgColor]"
+                :style="{ '--gateway-kind-bg-hover': getGatewayKind.hoverBgColor }"
               >
                 <AgIcon
                   v-bk-tooltips="{
@@ -52,8 +53,10 @@
                     placement: 'right',
                   }"
                   size="22"
+                  class="gateway-kind-icon"
                   :name="getGatewayKind.icon"
                   :class="[getGatewayKind.color, getGatewayKind.bgColor]"
+                  :style="{ '--gateway-kind-bg-hover': getGatewayKind.hoverBgColor }"
                 />
               </div>
             </template>
@@ -69,7 +72,7 @@
                     size="16"
                   />
                   <span class="text-12px color-#4d4f56">
-                    {{ t('创建应用') }}
+                    {{ t('新增任务') }}
                   </span>
                 </div>
               </div>
@@ -90,8 +93,9 @@
                     <AgIcon
                       :name="getKindInfo(item.kind).icon"
                       size="20"
-                      class="mr-8px b-rounded-2px"
+                      class="mr-8px b-rounded-2px gateway-kind-icon"
                       :class="[getKindInfo(item.kind).color, getKindInfo(item.kind).bgColor]"
+                      :style="{ '--gateway-kind-bg-hover': getKindInfo(item.kind).hoverBgColor }"
                     />
                   </BkPopover>
                   <span class="max-w-180px color-#4d4f56 text-ov">
@@ -511,7 +515,8 @@ const getKindInfo = (kind?: number | null) => {
       icon: 'wangguanleixing-biancheng',
       name: t('可编程网关'),
       color: 'color-#0e3377',
-      bgColor: 'bg-#bdc2ce',
+      bgColor: 'bg-#e2e6ee',
+      hoverBgColor: '#bdc2ce',
     };
   }
 
@@ -521,6 +526,7 @@ const getKindInfo = (kind?: number | null) => {
       name: t('AI 网关'),
       color: 'color-#6228ff',
       bgColor: 'bg-#ece5ff',
+      hoverBgColor: '#d6c7ff',
     };
   }
 
@@ -529,6 +535,7 @@ const getKindInfo = (kind?: number | null) => {
     name: t('API 网关'),
     color: 'color-#3a84ff',
     bgColor: 'bg-#cddffe',
+    hoverBgColor: '#a3c5fd',
   };
 };
 
@@ -1053,6 +1060,13 @@ onMounted(() => {
     }
   }
 
+  &:hover {
+
+    .gateway-kind-icon {
+      background-color: var(--gateway-kind-bg-hover);
+    }
+  }
+
   &.is-focus {
     border-color: #699df4;
   }
@@ -1064,21 +1078,19 @@ onMounted(() => {
 
   .bk-select-option {
 
-    &.is-hover {
+    &.is-hover,
+    &.is-selected,
+    &:hover {
       background-color: #f0f1f5;
-    }
 
-    &.is-selected {
-
-      .icon-ag-wangguanleixing-wangguan {
-        background-color: #a3c5fd;
-        color: #1768ef;
+      .gateway-kind-icon {
+        background-color: var(--gateway-kind-bg-hover);
       }
     }
   }
 
   .bk-select-extension {
-    height: 48px;
+    height: 32px;
   }
 }
 
