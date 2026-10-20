@@ -31,6 +31,7 @@ from apigateway.biz.iam.authorization import (
 @pytest.fixture
 def tenant_gateway(settings, fake_gateway):
     settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
     fake_gateway.tenant_mode = "single"
     fake_gateway.tenant_id = "tenant-a"
     return fake_gateway
@@ -54,6 +55,82 @@ def test_build_gateway_authorization_uses_default_expiry_for_null():
         "related_resource_type_id": "gateway",
         "resources": [{"type": "gateway", "id": "42"}],
     }
+
+
+def test_apply_gateway_member_snapshots_filters_excluded_authorizations(mocker, caplog, tenant_gateway):
+    expires = timezone.now() + timedelta(days=100)
+    before = {
+        "admin": GatewayMemberAuthorization("administrator", expires),
+        "removed": GatewayMemberAuthorization("operator", expires),
+    }
+    after = {
+        "bk_admin": GatewayMemberAuthorization("administrator", expires),
+        "added": GatewayMemberAuthorization("operator", expires),
+    }
+    revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
+    grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+
+    with caplog.at_level("WARNING"):
+        apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "operator")
+
+    assert [item["subject"]["id"] for item in revoke.call_args.args[0]] == ["removed"]
+    assert [item["subject"]["id"] for item in grant.call_args.args[0]] == ["added"]
+    assert "operation=revoke" in caplog.text
+    assert "usernames=['admin']" in caplog.text
+    assert "operation=grant" in caplog.text
+    assert "usernames=['bk_admin']" in caplog.text
+
+
+def test_apply_gateway_member_snapshots_skips_empty_filtered_batch(mocker, caplog, tenant_gateway):
+    expires = timezone.now() + timedelta(days=100)
+    after = {"admin": GatewayMemberAuthorization("administrator", expires)}
+    grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+
+    with caplog.at_level("WARNING"):
+        apply_gateway_member_snapshots_to_iam(tenant_gateway, {}, after, "operator")
+
+    grant.assert_not_called()
+    assert "operation=grant" in caplog.text
+    assert "usernames=['admin']" in caplog.text
+
+
+def test_apply_gateway_member_snapshots_uses_configured_exclusions(settings, mocker, tenant_gateway):
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"service-user"})
+    expires = timezone.now() + timedelta(days=100)
+    after = {
+        "admin": GatewayMemberAuthorization("administrator", expires),
+        "service-user": GatewayMemberAuthorization("administrator", expires),
+    }
+    grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+
+    apply_gateway_member_snapshots_to_iam(tenant_gateway, {}, after, "operator")
+
+    assert [item["subject"]["id"] for item in grant.call_args.args[0]] == ["admin"]
+
+
+@pytest.mark.parametrize(
+    ("multi_tenant_enabled", "excluded_usernames"),
+    [
+        (True, frozenset()),
+        (False, frozenset({"admin"})),
+    ],
+)
+def test_apply_gateway_member_snapshots_can_sync_admin(
+    settings,
+    mocker,
+    tenant_gateway,
+    multi_tenant_enabled,
+    excluded_usernames,
+):
+    settings.ENABLE_MULTI_TENANT_MODE = multi_tenant_enabled
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = excluded_usernames
+    expires = timezone.now() + timedelta(days=100)
+    after = {"admin": GatewayMemberAuthorization("administrator", expires)}
+    grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+
+    apply_gateway_member_snapshots_to_iam(tenant_gateway, {}, after, "operator")
+
+    assert [item["subject"]["id"] for item in grant.call_args.args[0]] == ["admin"]
 
 
 def test_apply_gateway_member_snapshots_revokes_before_granting(mocker, tenant_gateway):

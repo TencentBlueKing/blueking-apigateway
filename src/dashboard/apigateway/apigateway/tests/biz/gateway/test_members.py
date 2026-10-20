@@ -257,6 +257,19 @@ def test_member_write_uses_gateway_maintainer_tenant(
     assert add_authorization.call_args.kwargs == {"tenant_id": expected_tenant_id}
 
 
+def test_member_write_keeps_excluded_user_locally_without_iam_authorization(settings, fake_gateway, mocker):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    GatewayMember.objects.filter(gateway=fake_gateway).delete()
+    add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+
+    add_gateway_administrators(fake_gateway, ["admin"], "operator-user")
+
+    assert GatewayMember.objects.filter(gateway=fake_gateway, username="admin").exists()
+    add_authorization.assert_not_called()
+
+
 def test_member_write_does_not_call_iam_when_disabled(settings, fake_gateway, mocker):
     settings.BK_IAM_V4_ENABLED = False
     apply_iam = mocker.patch("apigateway.biz.gateway.members.apply_gateway_member_snapshots_to_iam")

@@ -18,7 +18,6 @@
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
-from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -133,9 +132,6 @@ class GatewayIAMAuthorizationSynchronizer:
         if username is not None:
             desired = {key: item for key, item in desired.items() if item.username == username}
             actual = {key: item for key, item in actual.items() if item.username == username}
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            desired = {key: item for key, item in desired.items() if item.username not in {"admin", "bk_admin"}}
-            actual = {key: item for key, item in actual.items() if item.username not in {"admin", "bk_admin"}}
         return self._build_result(gateway, desired, actual)
 
     def _get_desired_authorizations(

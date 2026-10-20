@@ -562,6 +562,14 @@ BK_AUTH_SERVER_URL = env.str("BK_AUTH_SERVER_URL", "")
 
 # IAM V4 RBAC
 BK_IAM_V4_ENABLED = env.bool("BK_IAM_V4_ENABLED", False)
+BK_IAM_V4_EXCLUDED_USERNAMES = frozenset(
+    username.strip()
+    for username in env.list(
+        "BK_IAM_V4_EXCLUDED_USERNAMES",
+        default=["admin", "bk_admin"],
+    )
+    if username.strip()
+)
 
 BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
     env.str("DASHBOARD_FE_URL", "").rstrip("/") + "/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
