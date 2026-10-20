@@ -18,7 +18,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Iterator, Mapping
+from typing import TYPE_CHECKING, Iterator, Mapping, TypeVar
 
 from django.conf import settings
 from django.utils import timezone
@@ -56,6 +56,7 @@ class GatewayMemberAuthorization:
 
 
 GatewayMemberSnapshot = Mapping[str, GatewayMemberAuthorization]
+AuthorizationPayloadT = TypeVar("AuthorizationPayloadT", AuthorizationPayload, RevokeAuthorizationPayload)
 
 
 def _get_gateway_iam_tenant_id(gateway: Gateway) -> str:
@@ -70,16 +71,38 @@ def is_gateway_iam_authorization_excluded(username: str) -> bool:
     return settings.ENABLE_MULTI_TENANT_MODE and username in settings.BK_IAM_V4_EXCLUDED_USERNAMES
 
 
+def _filter_excluded_gateway_authorizations(
+    gateway: Gateway,
+    authorizations: list[AuthorizationPayloadT],
+    operation: str,
+) -> list[AuthorizationPayloadT]:
+    excluded_usernames = sorted(
+        {
+            authorization["subject"]["id"]
+            for authorization in authorizations
+            if is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
+        }
+    )
+    if excluded_usernames:
+        logger.warning(
+            "skip excluded gateway IAM authorizations, operation=%s gateway_id=%s usernames=%s",
+            operation,
+            gateway.id,
+            excluded_usernames,
+        )
+    return [
+        authorization
+        for authorization in authorizations
+        if not is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
+    ]
+
+
 def grant_gateway_authorizations(
     gateway: Gateway,
     authorizations: list[AuthorizationPayload],
     operated_by: str,
 ) -> None:
-    authorizations = [
-        authorization
-        for authorization in authorizations
-        if not is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
-    ]
+    authorizations = _filter_excluded_gateway_authorizations(gateway, authorizations, "grant")
     if not authorizations:
         return
     add_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
@@ -90,11 +113,7 @@ def revoke_gateway_authorizations(
     authorizations: list[RevokeAuthorizationPayload],
     operated_by: str,
 ) -> None:
-    authorizations = [
-        authorization
-        for authorization in authorizations
-        if not is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
-    ]
+    authorizations = _filter_excluded_gateway_authorizations(gateway, authorizations, "revoke")
     if not authorizations:
         return
     revoke_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))

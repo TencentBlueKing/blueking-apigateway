@@ -57,7 +57,7 @@ def test_build_gateway_authorization_uses_default_expiry_for_null():
     }
 
 
-def test_apply_gateway_member_snapshots_filters_excluded_authorizations(mocker, tenant_gateway):
+def test_apply_gateway_member_snapshots_filters_excluded_authorizations(mocker, caplog, tenant_gateway):
     expires = timezone.now() + timedelta(days=100)
     before = {
         "admin": GatewayMemberAuthorization("administrator", expires),
@@ -70,20 +70,28 @@ def test_apply_gateway_member_snapshots_filters_excluded_authorizations(mocker, 
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
     grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
 
-    apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "operator")
+    with caplog.at_level("WARNING"):
+        apply_gateway_member_snapshots_to_iam(tenant_gateway, before, after, "operator")
 
     assert [item["subject"]["id"] for item in revoke.call_args.args[0]] == ["removed"]
     assert [item["subject"]["id"] for item in grant.call_args.args[0]] == ["added"]
+    assert "operation=revoke" in caplog.text
+    assert "usernames=['admin']" in caplog.text
+    assert "operation=grant" in caplog.text
+    assert "usernames=['bk_admin']" in caplog.text
 
 
-def test_apply_gateway_member_snapshots_skips_empty_filtered_batch(mocker, tenant_gateway):
+def test_apply_gateway_member_snapshots_skips_empty_filtered_batch(mocker, caplog, tenant_gateway):
     expires = timezone.now() + timedelta(days=100)
     after = {"admin": GatewayMemberAuthorization("administrator", expires)}
     grant = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
 
-    apply_gateway_member_snapshots_to_iam(tenant_gateway, {}, after, "operator")
+    with caplog.at_level("WARNING"):
+        apply_gateway_member_snapshots_to_iam(tenant_gateway, {}, after, "operator")
 
     grant.assert_not_called()
+    assert "operation=grant" in caplog.text
+    assert "usernames=['admin']" in caplog.text
 
 
 def test_apply_gateway_member_snapshots_uses_configured_exclusions(settings, mocker, tenant_gateway):

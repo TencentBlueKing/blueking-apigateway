@@ -34,7 +34,6 @@ from .authorization import (
     build_gateway_authorization,
     build_gateway_revoke_authorization,
     grant_gateway_authorizations,
-    is_gateway_iam_authorization_excluded,
     iter_gateway_authorization_subjects,
     revoke_gateway_authorizations,
 )
@@ -133,12 +132,6 @@ class GatewayIAMAuthorizationSynchronizer:
         if username is not None:
             desired = {key: item for key, item in desired.items() if item.username == username}
             actual = {key: item for key, item in actual.items() if item.username == username}
-        desired = {
-            key: item for key, item in desired.items() if not is_gateway_iam_authorization_excluded(item.username)
-        }
-        actual = {
-            key: item for key, item in actual.items() if not is_gateway_iam_authorization_excluded(item.username)
-        }
         return self._build_result(gateway, desired, actual)
 
     def _get_desired_authorizations(
