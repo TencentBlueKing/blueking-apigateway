@@ -360,6 +360,31 @@ class TestResourceImportValidator:
         "resources, labels, expected",
         [
             (
+                [{"labels": ["a_bc"]}],
+                ["a-bc"],
+                None,
+            ),
+            (
+                [{"labels": ["a-bc", "a_bc"]}],
+                [],
+                None,
+            ),
+            (
+                [{"labels": ["a-bc"]}, {"labels": ["a_bc"]}],
+                [],
+                None,
+            ),
+            (
+                [{"labels": ["a_bc"]}],
+                ["A_BC"],
+                ValueError,
+            ),
+            (
+                [{"labels": ["a_bc", "A_BC"]}],
+                [],
+                ValueError,
+            ),
+            (
                 [{"labels": ["foo", "bar"]}],
                 ["Foo"],
                 ValueError,

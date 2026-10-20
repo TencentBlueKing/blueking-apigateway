@@ -26,6 +26,7 @@ from django.conf import settings
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import DataPlane
+from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import (
@@ -78,6 +79,52 @@ def _model_backend(name="openai-primary"):
 
 
 class TestSyncApi:
+    @pytest.mark.parametrize("tags", [["a_bc"], ["a-bc", "a_bc"]])
+    def test_resource_sync_preserves_unused_label_with_different_separator(
+        self, request_view, fake_gateway, disable_app_permission, tags
+    ):
+        G(Backend, gateway=fake_gateway, name="default")
+        old_label = G(APILabel, gateway=fake_gateway, name="a-bc")
+        old_resource = G(Resource, gateway=fake_gateway)
+        G(ResourceLabel, resource=old_resource, api_label=old_label)
+        old_resource.delete()
+        assert APILabel.objects.filter(id=old_label.id).exists()
+        assert not ResourceLabel.objects.filter(api_label=old_label).exists()
+
+        openapi = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.2", "title": "API Gateway Swagger"},
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "get_users",
+                        "tags": tags,
+                        "x-bk-apigateway-resource": {
+                            "backend": {"name": "default", "type": "HTTP", "method": "get", "path": "/users"}
+                        },
+                    }
+                }
+            },
+        }
+
+        response = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.resources.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"content": json.dumps(openapi), "delete": True},
+        )
+
+        assert response.status_code == 200, response.json()
+        resource = Resource.objects.get(gateway=fake_gateway, name="get_users")
+        assert response.json()["data"]["added"] == [{"id": resource.id}]
+        assert set(APILabel.objects.filter(gateway=fake_gateway).values_list("name", flat=True)) == {"a-bc", "a_bc"}
+        assert APILabel.objects.get(gateway=fake_gateway, name="a-bc").id == old_label.id
+        assert set(ResourceLabel.objects.filter(resource=resource).values_list("api_label__name", flat=True)) == set(
+            tags
+        )
+
     def test_resource_sync_updates_and_resets_oauth2_client_settings(
         self, request_view, fake_gateway, disable_app_permission
     ):
