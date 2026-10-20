@@ -91,9 +91,7 @@ def _filter_excluded_gateway_authorizations(
             excluded_usernames,
         )
     return [
-        authorization
-        for authorization in authorizations
-        if not is_gateway_iam_authorization_excluded(authorization["subject"]["id"])
+        authorization for authorization in authorizations if authorization["subject"]["id"] not in excluded_usernames
     ]
 
 
