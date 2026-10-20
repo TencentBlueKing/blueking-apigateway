@@ -136,6 +136,23 @@ var _ = Describe("toolResponsePayload", func() {
 	})
 
 	Describe("marshalEnvelope", func() {
+		It("preserves compact JSON text, escaping, and field order without a trailing newline", func() {
+			payload := newToolResponsePayload(
+				200,
+				"req\"\\\n<>&",
+				"application/json",
+				[]byte(" \n{\"text\": \"<>&\\n\\\"\\\\中文\u2028\u2029\", \"n\": 1e+09} \t"),
+			)
+			data, err := payload.marshalEnvelope("trace\t", "x\r")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data).To(Equal(
+				`{"status_code":200,"request_id":"req\"\\\n\u003c\u003e\u0026",` +
+					`"trace_id":"trace\t","x_request_id":"x\r",` +
+					`"response_body":{"text":"\u003c\u003e\u0026\n\"\\中文\u2028\u2029","n":1e+09}}`,
+			))
+		})
+
 		It("marshals JSON response into the envelope without changing response semantics", func() {
 			payload := newToolResponsePayload(
 				200,
@@ -146,7 +163,7 @@ var _ = Describe("toolResponsePayload", func() {
 			data, err := payload.marshalEnvelope("trace-1", "x-req-1")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(data)).To(MatchJSON(`{
+			Expect(data).To(MatchJSON(`{
 				"status_code": 200,
 				"request_id": "req-1",
 				"trace_id": "trace-1",
@@ -160,7 +177,7 @@ var _ = Describe("toolResponsePayload", func() {
 			data, err := payload.marshalEnvelope("", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(data)).To(MatchJSON(`{
+			Expect(data).To(MatchJSON(`{
 				"status_code": 200,
 				"request_id": "req-1",
 				"trace_id": "",
@@ -174,7 +191,7 @@ var _ = Describe("toolResponsePayload", func() {
 			data, err := payload.marshalEnvelope("", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(data)).To(MatchJSON(`{
+			Expect(data).To(MatchJSON(`{
 				"status_code": 200,
 				"request_id": "req-1",
 				"trace_id": "",
@@ -189,7 +206,7 @@ var _ = Describe("toolResponsePayload", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("invalid JSON response body"))
-			Expect(data).To(BeNil())
+			Expect(data).To(BeEmpty())
 		})
 
 		It("keeps empty bodies declared as JSON as null for no-content responses", func() {
@@ -197,7 +214,7 @@ var _ = Describe("toolResponsePayload", func() {
 			data, err := payload.marshalEnvelope("", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(data)).To(MatchJSON(`{
+			Expect(data).To(MatchJSON(`{
 				"status_code": 204,
 				"request_id": "req-1",
 				"trace_id": "",
@@ -212,7 +229,7 @@ var _ = Describe("toolResponsePayload", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("invalid JSON response body"))
-			Expect(data).To(BeNil())
+			Expect(data).To(BeEmpty())
 		})
 	})
 

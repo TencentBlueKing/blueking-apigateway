@@ -32,7 +32,7 @@ const truncatedSuffix = "...(truncated)"
 // a Go object graph, so this type stays O(rawBody) in memory regardless of payload shape.
 //
 // Two presentation methods are layered on top:
-//   - marshalEnvelope / marshalRawResponse: produce the wire bytes returned to MCP clients.
+//   - marshalEnvelope / marshalRawResponse: produce the JSON text returned to MCP clients.
 //   - EnvelopePreview: produces a bounded, JSON-safe preview used by audit and API logs.
 type toolResponsePayload struct {
 	statusCode        int
@@ -193,32 +193,44 @@ func (p *toolResponsePayload) EnvelopePreview(traceID, xRequestID string, limit 
 	return string(out)
 }
 
-func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byte, error) {
+type toolResponseEnvelope struct {
+	StatusCode   int             `json:"status_code"`
+	RequestID    string          `json:"request_id"`
+	TraceID      string          `json:"trace_id"`
+	XRequestID   string          `json:"x_request_id"`
+	ResponseBody json.RawMessage `json:"response_body"`
+}
+
+func (p *toolResponsePayload) envelopeValue(traceID, xRequestID string) (toolResponseEnvelope, error) {
 	responseBody, err := p.bodyAsJSONValue()
 	if err != nil {
-		return nil, err
+		return toolResponseEnvelope{}, err
 	}
-	envelope := struct {
-		StatusCode   int             `json:"status_code"`
-		RequestID    string          `json:"request_id"`
-		TraceID      string          `json:"trace_id"`
-		XRequestID   string          `json:"x_request_id"`
-		ResponseBody json.RawMessage `json:"response_body"`
-	}{
+	return toolResponseEnvelope{
 		StatusCode:   p.statusCode,
 		RequestID:    p.upstreamRequestID,
 		TraceID:      traceID,
 		XRequestID:   xRequestID,
 		ResponseBody: responseBody,
-	}
-	out, err := json.Marshal(envelope)
+	}, nil
+}
+
+func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) (string, error) {
+	envelope, err := p.envelopeValue(traceID, xRequestID)
 	if err != nil {
-		if p != nil && len(p.rawBody) > 0 && p.isDeclaredJSON {
-			return nil, p.invalidDeclaredJSONBodyError(err)
-		}
-		return nil, err
+		return "", err
 	}
-	return out, nil
+	// Encode directly into the string retained by TextContent, avoiding a full
+	// []byte-to-string copy. Encoder still buffers the complete JSON internally.
+	var out strings.Builder
+	if err := json.NewEncoder(&out).Encode(envelope); err != nil {
+		if p != nil && len(p.rawBody) > 0 && p.isDeclaredJSON {
+			return "", p.invalidDeclaredJSONBodyError(err)
+		}
+		return "", err
+	}
+	// Encoder appends a newline; keep the previous json.Marshal output unchanged.
+	return strings.TrimSuffix(out.String(), "\n"), nil
 }
 
 // marshalRawResponse returns the complete MCP tool response for raw_response_enabled mode.

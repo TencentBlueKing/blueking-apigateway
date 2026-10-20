@@ -55,6 +55,28 @@ var (
 	benchmarkMetricsInitOnce sync.Once
 )
 
+// BenchmarkEnvelopeToolResult measures envelope construction through the final TextContent,
+// including the conversion to string, without upstream I/O or SDK transport encoding.
+func BenchmarkEnvelopeToolResult(b *testing.B) {
+	for _, size := range []int{1 << 20, 60 << 20} {
+		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
+			body := buildBenchmarkJSONBody(size)
+			payload := newToolResponsePayload(200, "bench-upstream", "application/json", body)
+
+			b.ReportAllocs()
+			b.SetBytes(int64(len(body)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				output, err := payload.marshalEnvelope("bench-trace", "bench-x-request")
+				if err != nil {
+					b.Fatal(err)
+				}
+				benchmarkToolResult = buildToolResultFromJSONText(output)
+			}
+		})
+	}
+}
+
 func BenchmarkGenToolHandlerLargeJSONResponse(b *testing.B) {
 	initBenchmarkRuntime(b)
 
@@ -249,11 +271,13 @@ func BenchmarkMCPToolResultWireEncode(b *testing.B) {
 				}
 
 				b.Run(mode, func(b *testing.B) {
-					var resultBytes []byte
+					var resultText string
 					if rawResponseEnabled {
+						var resultBytes []byte
 						resultBytes, err = payload.marshalRawResponse()
+						resultText = string(resultBytes)
 					} else {
-						resultBytes, err = payload.marshalEnvelope(
+						resultText, err = payload.marshalEnvelope(
 							"bench-trace",
 							"bench-x-request",
 						)
@@ -261,7 +285,7 @@ func BenchmarkMCPToolResultWireEncode(b *testing.B) {
 					if err != nil {
 						b.Fatalf("build tool result: %v", err)
 					}
-					result := buildToolResultFromJSONBytes(resultBytes)
+					result := buildToolResultFromJSONText(resultText)
 
 					b.ReportAllocs()
 					b.SetBytes(int64(len(body)))
