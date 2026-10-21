@@ -339,10 +339,12 @@ class ResourceImportValidator:
         if not label_names:
             return
 
+        # 仅忽略大小写判重，保留分隔符差异。资源删除后网关标签仍会保留，
+        # 若使用 to_lower_dash_case，旧标签 a-bc 会阻止新版本导入 a_bc。
         conflict_names = set()
         label_name_map = defaultdict(list)
         for name in label_names:
-            lower_name = shortcuts.to_lower_dash_case(name)
+            lower_name = name.lower()
             label_name_map[lower_name].append(name)
 
             if len(label_name_map[lower_name]) > 1:
@@ -361,13 +363,13 @@ class ResourceImportValidator:
 
         exist_label_name_map = {}
         for name in APILabel.objects.filter(gateway=self.gateway).values_list("name", flat=True):
-            exist_label_name_map[shortcuts.to_lower_dash_case(name)] = name
+            exist_label_name_map[name.lower()] = name
 
         if not exist_label_name_map:
             return
 
         for name in label_names:
-            lower_name = shortcuts.to_lower_dash_case(name)
+            lower_name = name.lower()
 
             # 检查是否与数据库中的标签存在大小写冲突
             exist_label_name = exist_label_name_map.get(lower_name)
