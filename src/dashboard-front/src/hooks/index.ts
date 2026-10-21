@@ -60,3 +60,5 @@ export * from './use-mcp-permission';
 export * from './use-json-transformer';
 // 当前网关角色
 export * from './use-gateway-role';
+// Mcp 应用态鉴权风险展示
+export * from './use-mcp-auth-risk';

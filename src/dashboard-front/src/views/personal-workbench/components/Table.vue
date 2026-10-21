@@ -246,7 +246,7 @@ const isShowSelection = computed(() => isGateway.value && isPending.value);
 const operateColumnWidth = computed(() => {
   if (isPending.value) return 200;
   if (isApplied.value) return 160;
-  return 80;
+  return 84;
 });
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
@@ -269,6 +269,27 @@ const approvalStatusList = computed(() =>
       label,
     })),
 );
+
+// 授权维度：资源维度需要带上资源数量
+const getGrantDimensionText = (row: TableRowData) =>
+  `${row.grant_dimension_display} (${row.resources?.length || 0})`;
+
+const checkTextOverflow = (el: HTMLElement | null) => Boolean(el && el.scrollWidth > el.clientWidth);
+
+// 文本溢出时才展示 tooltip，避免完整可见时重复提示
+const handleDimensionMouseEnter = (e: MouseEvent, row: TableRowData) => {
+  const isOverflow = checkTextOverflow(e.currentTarget as HTMLElement);
+  if (row.isGrantDimensionOverflow !== isOverflow) {
+    row.isGrantDimensionOverflow = isOverflow;
+  }
+};
+
+const handleDimensionMouseLeave = (row: TableRowData) => {
+  if (row.isGrantDimensionOverflow) {
+    delete row.isGrantDimensionOverflow;
+  }
+};
+
 const tableColumns = computed(() => {
   const gatewayAppCodeColumn: PrimaryTableProps['columns'] = [
     {
@@ -550,13 +571,23 @@ const tableColumns = computed(() => {
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (['resource'].includes(row.grant_dimension)) {
           return (
-            <div class="flex items-center">
+            <div class="flex items-center min-w-0">
               <ag-icon
                 name={expandableConfig.value.expandedRowKeys.includes(Number(row.id)) ? 'down-shape' : 'right-shape'}
                 size="10"
-                class="mr-4px"
+                class="mr-4px shrink-0"
               />
-              {`${row.grant_dimension_display} (${row.resources?.length || 0})`}
+              <span
+                v-bk-tooltips={{
+                  content: getGrantDimensionText(row),
+                  disabled: !row.isGrantDimensionOverflow,
+                }}
+                class="truncate"
+                onMouseenter={(e: MouseEvent) => handleDimensionMouseEnter(e, row)}
+                onMouseleave={() => handleDimensionMouseLeave(row)}
+              >
+                {getGrantDimensionText(row)}
+              </span>
             </div>
           );
         }
