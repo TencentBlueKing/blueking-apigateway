@@ -975,8 +975,14 @@ class TestMCPServerHandler:
 
         assert result == {}
 
-    def test_get_app_permission_risks_with_risky_tools(self, fake_gateway, fake_stage):
-        """oauth2 开启且工具需要应用认证时，返回风险工具"""
+    @pytest.mark.parametrize(
+        "public_enabled, personal_enabled, has_risk",
+        [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
+    )
+    def test_get_app_permission_risks_with_risky_tools(
+        self, fake_gateway, fake_stage, public_enabled, personal_enabled, has_risk
+    ):
+        """公开客户端或个人令牌开启时，返回需要应用认证的工具。"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
             [
@@ -990,15 +996,14 @@ class TestMCPServerHandler:
             MCPServer,
             gateway=fake_gateway,
             stage=fake_stage,
-            oauth2_public_client_enabled=True,
+            oauth2_public_client_enabled=public_enabled,
+            oauth2_personal_client_enabled=personal_enabled,
             _resource_names="tool_a;tool_b",
         )
 
         result = MCPServerHandler.get_app_permission_risks([mcp_server])
 
-        assert mcp_server.id in result
-        assert "tool_a" in result[mcp_server.id]
-        assert "tool_b" not in result[mcp_server.id]
+        assert result == ({mcp_server.id: ["tool_a"]} if has_risk else {})
 
     def test_get_app_permission_risks_no_risk_when_all_tools_skip_app_auth(self, fake_gateway, fake_stage):
         """oauth2 开启但所有工具都不需要应用认证时无风险"""
