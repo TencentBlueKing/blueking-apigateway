@@ -52,11 +52,16 @@ var (
 	benchmarkCallToolParams  mcp.CallToolParamsRaw
 	benchmarkWireBytes       []byte
 	benchmarkResponseBody    []byte
+	benchmarkResponseText    string
+	benchmarkResponseError   error
 	benchmarkMetricsInitOnce sync.Once
 )
 
 // BenchmarkEnvelopeToolResult measures envelope construction through the final TextContent,
 // including the conversion to string, without upstream I/O or SDK transport encoding.
+// B/op includes allocations made by encoding/json during timed iterations. Its encodeState
+// buffers can be reused via sync.Pool, so B/op does not measure retained buffer capacity or
+// peak/live heap usage, especially under concurrent calls.
 func BenchmarkEnvelopeToolResult(b *testing.B) {
 	for _, size := range []int{1 << 20, 60 << 20} {
 		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
@@ -72,6 +77,41 @@ func BenchmarkEnvelopeToolResult(b *testing.B) {
 					b.Fatal(err)
 				}
 				benchmarkToolResult = buildToolResultFromJSONText(output)
+			}
+		})
+	}
+}
+
+// BenchmarkMarshalToolResponse compares the string success path and byte APIError path.
+// Like BenchmarkEnvelopeToolResult, it measures timed allocations, not retained or peak memory.
+func BenchmarkMarshalToolResponse(b *testing.B) {
+	for _, size := range []int{1 << 20, 60 << 20} {
+		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
+			body := buildBenchmarkJSONBody(size)
+			for _, statusCode := range []int{200, 500} {
+				b.Run(strconv.Itoa(statusCode), func(b *testing.B) {
+					payload := newToolResponsePayload(
+						statusCode,
+						"bench-upstream",
+						"application/json",
+						body,
+					)
+					b.ReportAllocs()
+					b.SetBytes(int64(len(body)))
+					b.ResetTimer()
+					for i := 0; i < b.N; i++ {
+						text, err := marshalToolResponse(
+							payload,
+							"bench-trace",
+							"bench-x-request",
+							false,
+						)
+						if (err != nil) != (statusCode == 500) {
+							b.Fatalf("unexpected response error: %v", err)
+						}
+						benchmarkResponseText, benchmarkResponseError = text, err
+					}
+				})
 			}
 		})
 	}

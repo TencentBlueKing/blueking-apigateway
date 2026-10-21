@@ -196,11 +196,7 @@ func marshalToolResponse(
 		// Raw mode omits envelope metadata for both success and non-2xx response bodies.
 		responseBytes, err = payload.marshalRawResponse()
 	} else {
-		var envelope toolResponseEnvelope
-		envelope, err = payload.envelopeValue(traceID, xRequestID)
-		if err == nil {
-			responseBytes, err = json.Marshal(envelope)
-		}
+		responseBytes, err = payload.marshalEnvelopeBytes(traceID, xRequestID)
 	}
 	if err != nil {
 		return "", err
