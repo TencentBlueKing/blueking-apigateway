@@ -591,7 +591,7 @@ class MCPServerHandler:
     def get_mcp_server_url(instance: MCPServer, least_privilege: str = "") -> str:
         """根据 MCP Server 的应用态条件返回合适的访问 URL
 
-        当未开启公共客户端模式且所有工具都是应用态时，返回应用态 URL。
+        当未开启公共客户端模式和个人令牌模式且所有工具都是应用态时，返回应用态 URL。
 
         Args:
             instance: MCPServer 实例
@@ -602,6 +602,7 @@ class MCPServerHandler:
         """
         if (
             not instance.oauth2_public_client_enabled
+            and not instance.oauth2_personal_client_enabled
             and least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value
         ):
             return build_mcp_server_application_url(instance.name, instance.protocol_type)
