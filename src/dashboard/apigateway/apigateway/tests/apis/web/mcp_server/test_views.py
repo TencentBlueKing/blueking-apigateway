@@ -3221,8 +3221,15 @@ class TestMCPServerListAppPermissionRisk:
         assert mcp_server_data["app_permission_risk"]["has_risk"] is False
         assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
 
-    def test_list_has_risk_with_app_verified_tools(self, request_view, fake_gateway, fake_stage):
-        """oauth2_public_client_enabled=True 且部分工具需要应用认证时，返回存在风险的工具"""
+    @pytest.mark.parametrize("view_name", ["mcp_server.list_create", "mcp_server.retrieve_update_destroy"])
+    @pytest.mark.parametrize(
+        "public_enabled, personal_enabled, has_risk",
+        [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
+    )
+    def test_app_permission_risk_with_app_verified_tools(
+        self, request_view, fake_gateway, fake_stage, view_name, public_enabled, personal_enabled, has_risk
+    ):
+        """列表和详情均按公开客户端、个人令牌开关返回应用态风险。"""
         rv = G(ResourceVersion, gateway=fake_gateway)
         rv._data = json.dumps(
             self._make_resource_version_data(
@@ -3241,27 +3248,31 @@ class TestMCPServerListAppPermissionRisk:
             gateway=fake_gateway,
             stage=fake_stage,
             status=MCPServerStatusEnum.ACTIVE.value,
-            oauth2_public_client_enabled=True,
+            oauth2_public_client_enabled=public_enabled,
+            oauth2_personal_client_enabled=personal_enabled,
             _resource_names="tool_a;tool_b",
         )
 
+        path_params = {"gateway_id": fake_gateway.id}
+        if view_name == "mcp_server.retrieve_update_destroy":
+            path_params["mcp_server_id"] = mcp_server.id
         resp = request_view(
             method="GET",
-            view_name="mcp_server.list_create",
-            path_params={"gateway_id": fake_gateway.id},
+            view_name=view_name,
+            path_params=path_params,
             gateway=fake_gateway,
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        mcp_server_data = next(
-            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
-            None,
-        )
-        assert mcp_server_data is not None
-        assert mcp_server_data["app_permission_risk"]["has_risk"] is True
-        assert "tool_a" in mcp_server_data["app_permission_risk"]["risk_tools"]
-        assert "tool_b" not in mcp_server_data["app_permission_risk"]["risk_tools"]
+        if view_name == "mcp_server.list_create":
+            mcp_server_data = next(item for item in result["data"]["results"] if item["id"] == mcp_server.id)
+        else:
+            mcp_server_data = result["data"]
+        assert mcp_server_data["app_permission_risk"] == {
+            "has_risk": has_risk,
+            "risk_tools": ["tool_a"] if has_risk else [],
+        }
 
     def test_list_no_risk_when_all_tools_skip_app_auth(self, request_view, fake_gateway, fake_stage):
         """oauth2_public_client_enabled=True 但所有工具都不需要应用认证时无安全风险"""

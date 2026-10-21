@@ -514,9 +514,9 @@ class MCPServerHandler:
         mcp_servers: Sequence,
         releases: Optional[Dict[Tuple[int, int], Release]] = None,
     ) -> Dict[int, List[str]]:
-        """检测开启了 oauth2_public_client_enabled 的 MCPServer 是否存在应用态权限安全风险。
+        """检测开启了 OAuth2 公开客户端或个人令牌的 MCPServer 是否存在应用态权限安全风险。
 
-        当 oauth2_public_client_enabled=True 时，public 应用被自动授权；
+        开启公开客户端或个人令牌时，public 或 personal 应用被自动授权；
         如果工具对应的 API 要求应用认证(verified_app_required)，则存在权限失效的安全风险。
 
         Args:
@@ -526,7 +526,9 @@ class MCPServerHandler:
         Returns:
             {mcp_server_id: [risk_tool_name, ...]} 映射，仅包含存在风险的 MCPServer
         """
-        risk_mcp_servers = [m for m in mcp_servers if m.oauth2_public_client_enabled]
+        risk_mcp_servers = [
+            m for m in mcp_servers if m.oauth2_public_client_enabled or m.oauth2_personal_client_enabled
+        ]
         if not risk_mcp_servers:
             return {}
 
