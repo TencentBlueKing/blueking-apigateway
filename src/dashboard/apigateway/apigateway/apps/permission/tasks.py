@@ -230,8 +230,8 @@ def _update_gateway_or_resource_permission_record_handled_by(
 def _get_itsm_approver_for_backfill(ticket_id: str) -> str:
     try:
         approval_tasks = list_approval_tasks(ticket_id)
-    except Exception:
-        logger.warning("query or parse itsm approval tasks failed, ticket_id=%s", ticket_id, exc_info=True)
+    except Exception as err:
+        logger.warning("query or parse itsm approval tasks failed, ticket_id=%s, error=%s", ticket_id, err)
         return ""
 
     approver = approval_tasks.get_actual_approver()

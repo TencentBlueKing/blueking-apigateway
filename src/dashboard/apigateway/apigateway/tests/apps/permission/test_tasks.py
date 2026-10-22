@@ -116,8 +116,14 @@ class TestAsyncFillItsmApprover:
 
     def test_get_itsm_approver_returns_empty_when_query_failed(self, mocker):
         mocker.patch("apigateway.apps.permission.tasks.list_approval_tasks", side_effect=Exception("remote error"))
+        mock_warning = mocker.patch("apigateway.apps.permission.tasks.logger.warning")
 
         assert _get_itsm_approver_for_backfill("ticket-001") == ""
+        mock_warning.assert_called_once_with(
+            "query or parse itsm approval tasks failed, ticket_id=%s, error=%s",
+            "ticket-001",
+            mocker.ANY,
+        )
 
     def test_fill_gateway_permission_approver(self, mocker, fake_gateway, unique_id):
         record = G(
