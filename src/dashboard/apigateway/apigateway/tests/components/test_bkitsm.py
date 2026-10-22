@@ -225,6 +225,43 @@ def test_itsm_approval_task_list_returns_empty_when_operator_blank():
     assert result.get_actual_approver() == ""
 
 
+def test_itsm_approval_task_list_returns_empty_when_ticket_revoked():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "id": "task-001",
+                    "type": "APPROVE_TASK",
+                    "status": "revoke",
+                    "status_display": "撤销",
+                    "operator": None,
+                    "operator_type": None,
+                    "operator_at": None,
+                    "current_processors": [],
+                }
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == ""
+
+
+def test_itsm_approval_task_list_returns_empty_when_operator_null():
+    result = ItsmApprovalTaskList.from_response(
+        {
+            "items": [
+                {
+                    "status": "approve",
+                    "operator": None,
+                    "operator_type": "user",
+                }
+            ]
+        }
+    )
+
+    assert result.get_actual_approver() == ""
+
+
 def test_itsm_approval_task_list_ignores_non_approve_after_user_approve():
     result = ItsmApprovalTaskList.from_response(
         {
