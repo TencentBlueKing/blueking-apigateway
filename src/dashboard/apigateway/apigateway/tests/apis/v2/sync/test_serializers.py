@@ -95,6 +95,29 @@ def test_gateway_sync_input_maps_ai_kind():
 
 
 class TestGatewaySyncInputSLZ:
+    @pytest.mark.parametrize(
+        "official_config", [{"is_official": True}, {"api_type": GatewayTypeEnum.OFFICIAL_API.value}]
+    )
+    @pytest.mark.parametrize(
+        ("name", "is_valid"),
+        [
+            ("bkiam", True),
+            ("bkpaas3", True),
+            ("paasv3", True),
+            ("bk-test", True),
+            ("bkiam-test", False),
+            ("bkiamx", False),
+        ],
+    )
+    def test_official_gateway_name_exceptions_are_exact(self, official_config, name, is_valid):
+        slz = GatewaySyncInputSLZ(data={"name": name, **official_config})
+
+        assert slz.is_valid() is is_valid
+        if is_valid:
+            assert slz.validated_data["gateway_type"] == GatewayTypeEnum.OFFICIAL_API.value
+        else:
+            assert "name" in slz.errors
+
     def test_official_name_error_uses_current_field(self):
         slz = GatewaySyncInputSLZ(data={"name": "gateway", "is_official": True})
 
