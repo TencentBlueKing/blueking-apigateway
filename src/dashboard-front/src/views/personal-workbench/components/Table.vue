@@ -1152,20 +1152,28 @@ defineExpose({
   }
 }
 
-// 展开行出现后，固定列单元格会进入 position: sticky 模式（tdesign 的 t-table--column-fixed），
-// 单元格自身形成层叠上下文，其不透明的背景/遮罩会绘制在元素边框之上，把 1px 的底部边框盖住，
-// hover 或收起展开行时触发重绘才恢复正常，这里为固定列补画一条底部边框线
-:deep(.t-table__body > tr:not(.t-table__first-full-row, .t-table__last-full-row, :last-child)) {
+:deep(.t-table__body > tr:not(.t-table__expanded-row):not(.t-table__row--full):not(:last-child) > td) {
+  border-bottom-color: transparent;
+  box-shadow: inset 0 -1px 0 #dcdee5;
+}
 
-  > td.t-table__cell--fixed-left-last::before {
+:deep(.t-table__cell--fixed-left-last::before),
+:deep(.t-table__cell--fixed-right-first::before) {
+  inset: 0 0 1px 0 !important;
+}
+
+:deep(.t-table__expanded-row > td) {
+  position: relative;
+  border-bottom-color: transparent;
+
+  &::after {
     position: absolute;
-    top: auto;
     right: 0;
-    bottom: -1px;
+    bottom: 0;
     left: 0;
-    z-index: 0;
     height: 1px;
     background-color: #dcdee5;
+    pointer-events: none;
     content: '';
   }
 }
