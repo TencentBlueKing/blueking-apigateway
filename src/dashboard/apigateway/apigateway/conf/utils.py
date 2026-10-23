@@ -16,9 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import base64
 import socket
 from typing import Optional
 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
 
 from apigateway.common.env import Env
@@ -232,6 +234,27 @@ def get_default_feature_flags(
     }
 
 
+def get_frontend_encrypt_key_pair(env: Env, enabled: bool) -> tuple[str, str]:
+    """获取前端加密的 RSA 密钥对 (public_key, private_key)，环境变量值为 Base64 编码的 PEM
+
+    未启用时不读取，避免遗留的无效配置影响启动
+    """
+    if not enabled:
+        return "", ""
+
+    keys = []
+    for name in ("FRONTEND_ENCRYPT_PUBLIC_KEY_BASE64", "FRONTEND_ENCRYPT_PRIVATE_KEY_BASE64"):
+        try:
+            key = base64.b64decode(env.str(name, ""), validate=True).decode()
+        except ValueError:
+            # 异常信息可能包含密钥内容，不做关联
+            raise ImproperlyConfigured(f"{name} should be a base64 encoded PEM") from None
+        if not key:
+            raise ImproperlyConfigured(f"ENABLE_FRONTEND_ENCRYPT is true, so the {name} can not be empty")
+        keys.append(key)
+    return keys[0], keys[1]
+
+
 def get_frontend_env_vars(
     env: Env,
     edition: str,
@@ -248,8 +271,15 @@ def get_frontend_env_vars(
     bk_login_url: str,
     bk_sdk_languages: list,
     bk_paas3_url: str,
+    enable_frontend_encrypt: bool,
+    frontend_encrypt_public_key: str,
 ) -> dict:
     bk_paas3_url = bk_paas3_url.rstrip("/")
+
+    # 前端敏感字段加密配置，未启用时不下发公钥
+    frontend_encrypt: dict = {"enabled": enable_frontend_encrypt}
+    if enable_frontend_encrypt:
+        frontend_encrypt["public_key"] = frontend_encrypt_public_key
 
     return {
         "EDITION": edition,
@@ -283,6 +313,7 @@ def get_frontend_env_vars(
         },
         "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
         "BK_SDK_LANGUAGES": bk_sdk_languages,
+        "FRONTEND_ENCRYPT": frontend_encrypt,
         "CLI": {
             "DETAIL_URL": env.str("CLI_DETAIL_URL", default="https://github.com/TencentBlueKing/bk-cli"),
             "USER_KEY": env.str("CLI_USER_KEY", default="bk_token"),

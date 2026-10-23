@@ -18,11 +18,19 @@
 #
 
 import datetime
+import logging
 
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+from rest_framework.fields import empty
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
+from apigateway.utils.crypto import decrypt_frontend_encrypted_value
 from apigateway.utils.time import timestamp, utctime
+
+logger = logging.getLogger(__name__)
 
 
 class CurrentGatewayDefault(GetGatewayFromContextMixin):
@@ -49,3 +57,61 @@ class TimestampField(serializers.IntegerField):
 
         assert isinstance(value, datetime.datetime), "Only accept datetime"
         return timestamp(value)
+
+
+@extend_schema_field(
+    {
+        "oneOf": [
+            {"type": "string"},
+            {
+                "type": "object",
+                "properties": {"_encrypted": {"type": "boolean"}, "_encrypted_value": {"type": "string"}},
+                "required": ["_encrypted", "_encrypted_value"],
+            },
+        ]
+    }
+)
+class DecryptableCharField(serializers.CharField):
+    """可接收前端加密值的字符串字段，解密后按普通 CharField 校验
+
+    支持两种输入格式：
+    - 明文值：原始字符串，如 "the_value"
+    - 加密值：{"_encrypted": true, "_encrypted_value": "xxxxx"}，其中 _encrypted_value 为 Base64 编码的 RSA-OAEP(SHA-256) 密文
+    """
+
+    ENCRYPTED_FLAG_KEY = "_encrypted"
+    ENCRYPTED_VALUE_KEY = "_encrypted_value"
+
+    default_error_messages = {
+        "invalid_encrypted_value": _("无效的加密值格式。"),
+        "decrypt_failed": _("解密失败，请刷新页面后重试。"),
+    }
+
+    def run_validation(self, data=empty):
+        if isinstance(data, dict):
+            data = self._decrypt(data)
+        return super().run_validation(data)
+
+    def _decrypt(self, data: dict) -> str:
+        encrypted_value = data.get(self.ENCRYPTED_VALUE_KEY)
+        if (
+            data.get(self.ENCRYPTED_FLAG_KEY) is not True
+            or not isinstance(encrypted_value, str)
+            or not encrypted_value
+        ):
+            raise self._error("invalid_encrypted_value")
+
+        if not settings.ENABLE_FRONTEND_ENCRYPT:
+            # 页面加载后开关被关闭，刷新页面即可改为提交明文
+            logger.warning("frontend encrypt is disabled, but received an encrypted value")
+            raise self._error("decrypt_failed")
+
+        try:
+            return decrypt_frontend_encrypted_value(encrypted_value)
+        except Exception as err:  # pylint: disable=broad-except
+            # 异常信息与堆栈可能包含密文，仅记录异常类型
+            logger.warning("decrypt frontend encrypted value failed: %s", type(err).__name__)
+            raise self._error("decrypt_failed")
+
+    def _error(self, code: str) -> serializers.ValidationError:
+        return serializers.ValidationError(self.error_messages[code], code=code)
