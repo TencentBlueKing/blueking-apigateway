@@ -83,6 +83,38 @@ python manage.py runserver
    - 对于插件表单，注意提供中文（`language=""`）和英文（`language="en"`）两个版本的记录；
 3. 确认数据库数据正确之后，执行 `make dump_fixtures` 命令自动更新 apigateway/fixtures/plugins.yaml 文件，确认写入内容是否符合预期。
 
+## 修复缺失的发布事件
+
+历史发布事件被清理后，可用 `recover_stage_publish` 为符合条件的环境补一条失败事件。
+命令只处理每个环境 ID 最大的发布历史（不按数据面分别选择），且要求该记录超过 10 分钟、
+创建时间已知、完全没有发布事件。已有任何状态事件的环境都会跳过，也不会回补较旧的发布历史。
+失败事件表示原始部署结果未知；命令不会重新发布配置，修复后可在版本列表页重新发布。
+
+进入 Dashboard 容器，在 `manage.py` 所在目录执行。默认只预览：
+
+```shell
+python manage.py recover_stage_publish --gateway_name example --stage_name prod
+```
+
+确认输出的网关、环境及 `publish_id` 后，加上 `--apply` 写入，并记录操作者及原因：
+
+```shell
+python manage.py recover_stage_publish --gateway_name example --stage_name prod \
+  --apply --operator your_username --reason 'historical publish events missing'
+```
+
+省略 `--stage_name` 可扫描该网关全部环境；正常、未超时及无发布历史的环境会跳过：
+
+```shell
+python manage.py recover_stage_publish --gateway_name example \
+  --apply --operator your_username --reason 'historical publish events missing'
+```
+
+`--gateway_name` 也接受 `--gateawy_name` 别名；原有 `--gateway-id`、`--stage` 参数仍可使用。
+网关 ID 与名称必须二选一，名称按完整值匹配；显式传入空环境名会报错，不会扩大为全部环境。
+写入时使用发布锁和数据库事务，重新检查最新记录、超时及事件是否存在，重复执行不会重复补事件。
+修复前应确认旧发布任务已结束；发布锁不能阻止外部组件迟到的事件上报。
+
 ## 注意概念转换: API -> Gateway
 
 最早网关的概念叫 `API`, 后来重构转换为 `Gateway`
