@@ -128,6 +128,7 @@
                 {{ t('网关详情') }}
               </div>
               <div
+                v-if="isShowChatEntry"
                 v-bk-tooltips="{
                   content: docForm.type === 'user' ? docForm.contacts?.join(',') : t('联系服务号'),
                   theme: 'light',
@@ -235,7 +236,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useFeatureFlag } from '@/stores';
+import { useEnv, useFeatureFlag } from '@/stores';
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
 import { getGatewayDetail, patchGateway } from '@/services/source/gateway';
@@ -271,6 +272,7 @@ const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
+const envStore = useEnv();
 
 const InitForm = (): IForm => {
   return {
@@ -288,6 +290,16 @@ const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelect
   isEditable: boolean }>();
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());
+
+// 外发环境（ee）不展示
+const isChatEntryEnabled = computed(() => (
+  envStore.env.EDITION === 'te' && featureFlagStore.flags.ALLOW_CREATE_APPCHAT
+));
+
+// 服务号类型仍需展示服务号名称，用户类型在外发环境不展示
+const isShowChatEntry = computed(() => (
+  docForm.value.type === 'service_account' || isChatEntryEnabled.value
+));
 
 const rules = {
   'service_account.link': [
@@ -320,6 +332,20 @@ watch(
     if (modelValue) {
       const { doc_maintainers } = data as any;
       docForm.value = cloneDeep(doc_maintainers);
+      nextTick(() => {
+        if (selectorRef.value) {
+          selectorRef.value.isEditable = true;
+        }
+      });
+    }
+  },
+);
+
+// 重新挂载后置回编辑态，保证弹窗内联系人字段始终可编辑
+watch(
+  () => docForm.value.type,
+  (type) => {
+    if (type === 'user') {
       nextTick(() => {
         if (selectorRef.value) {
           selectorRef.value.isEditable = true;
