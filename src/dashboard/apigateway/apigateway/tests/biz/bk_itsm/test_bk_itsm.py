@@ -224,6 +224,133 @@ class TestItsmCallbackResultHandler:
             ignore_result=True,
         )
 
+    def test_handle_gateway_cancel_callback_marks_canceled(self, mocker, fake_gateway):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
+            itsm_ticket_id="itsm-ticket-005",
+            itsm_callback_token="cb-token-005",
+        )
+        mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.ItsmPermissionApplyHelper.get_canceling_operator", return_value="operator"
+        )
+        mock_audit = mocker.patch("apigateway.biz.permission.manager.Auditor.record_permission_op_success")
+        mock_get_manager = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.PermissionDimensionManager.get_manager")
+
+        ItsmCallbackResultHandler().handle(
+            ticket={
+                "id": "itsm-ticket-005",
+                "approve_result": False,
+                "form_data": {"apply_record_id": record.id, "grant_dimension": "gateway"},
+            },
+            callback_token="cb-token-005",
+        )
+
+        apply.refresh_from_db()
+        record.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.CANCELED.value
+        assert record.status == ApplyStatusEnum.CANCELED.value
+        assert record.handled_by == "operator"
+        assert mock_audit.call_args.kwargs["username"] == "operator"
+        mock_get_manager.assert_not_called()
+
+    def test_handle_gateway_reject_callback_without_canceling_marker(self, mocker, fake_gateway):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            _resource_ids="",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            _resource_ids="",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
+            itsm_ticket_id="itsm-ticket-006",
+            itsm_callback_token="cb-token-006",
+        )
+        mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.ItsmPermissionApplyHelper.get_canceling_operator", return_value=""
+        )
+        mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit")
+
+        ItsmCallbackResultHandler().handle(
+            ticket={
+                "id": "itsm-ticket-006",
+                "approve_result": False,
+                "form_data": {"apply_record_id": record.id, "grant_dimension": "gateway"},
+            },
+            callback_token="cb-token-006",
+        )
+
+        record.refresh_from_db()
+        assert record.status == ApplyStatusEnum.REJECTED.value
+        assert not AppPermissionApply.objects.filter(id=apply.id).exists()
+
+    def test_handle_mcp_cancel_callback_marks_canceled(self, mocker, fake_gateway, fake_stage):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        apply = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="admin",
+            applied_time=now_datetime(),
+            itsm_ticket_id="itsm-mcp-002",
+            itsm_callback_token="cb-mcp-002",
+        )
+        mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.ItsmPermissionApplyHelper.get_canceling_operator", return_value="operator"
+        )
+        mock_audit = mocker.patch(
+            "apigateway.biz.mcp_server.permission.Auditor.record_mcp_server_permission_op_success"
+        )
+        mock_sync_permissions = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.MCPServerHandler.sync_permissions")
+
+        ItsmCallbackResultHandler().handle(
+            ticket={
+                "id": "itsm-mcp-002",
+                "approve_result": False,
+                "form_data": {"apply_record_id": apply.id, "grant_dimension": "mcp_server"},
+            },
+            callback_token="cb-mcp-002",
+        )
+
+        apply.refresh_from_db()
+        assert apply.status == MCPServerAppPermissionApplyStatusEnum.CANCELED.value
+        assert apply.handled_by == "operator"
+        assert mock_audit.call_args.kwargs["username"] == "operator"
+        mock_sync_permissions.assert_not_called()
+
+    def test_get_canceled_by_skips_marker_when_approved(self, mocker):
+        mock_get_operator = mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.ItsmPermissionApplyHelper.get_canceling_operator"
+        )
+
+        assert ItsmCallbackResultHandler._get_canceled_by(True, "itsm-ticket-007") == ""
+        mock_get_operator.assert_not_called()
+
     def test_enqueue_approver_backfill_task_skips_when_ticket_id_empty(self, mocker):
         mock_on_commit = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.transaction.on_commit")
         celery_task = mocker.Mock()
