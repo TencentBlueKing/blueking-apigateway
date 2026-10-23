@@ -173,43 +173,36 @@ const menuList = ref<IHeaderNav[]>([
     link: '',
   },
   {
-    name: t('组件管理'),
-    id: 2,
-    url: 'ComponentsMain',
-    enabled: false,
-    link: '',
-  },
-  {
     name: t('API 文档'),
-    id: 3,
+    id: 2,
     url: 'Docs',
     enabled: true,
     link: '',
   },
   {
     name: t('MCP 市场'),
-    id: 4,
+    id: 3,
     url: 'McpMarket',
     enabled: true,
     link: '',
   },
   {
     name: 'BK-CLI',
-    id: 5,
+    id: 4,
     url: 'BkCli',
     enabled: false,
     link: '',
   },
   {
     name: t('平台工具'),
-    id: 6,
+    id: 5,
     url: 'PlatformTools',
     enabled: true,
     link: '',
   },
   {
     name: t('个人工作台'),
-    id: 7,
+    id: 6,
     url: 'PersonalWorkbench',
     enabled: true,
     link: '',
@@ -274,16 +267,7 @@ async function getFlagList() {
   try {
     await featureFlagStore.fetchFlags();
     enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
-    const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
-      && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
-
     featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
-    featureFlagStore.setDisplayComManagement(isEnabledComManagement);
-
-    const comNav = menuList.value.find(item => ['ComponentsMain'].includes(item.url));
-    if (comNav) {
-      comNav.enabled = isEnabledComManagement;
-    }
 
     // 如果开启了bk-cli菜单，则需要将bk-cli菜单显示出来
     const isBkCliEnabled = featureFlagStore.flags?.ENABLE_BK_CLI;
