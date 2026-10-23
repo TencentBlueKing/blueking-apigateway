@@ -24,7 +24,6 @@ type FlagType = Awaited<ReturnType<typeof getFeatureFlags>>;
 interface IState {
   flags: FlagType
   showNoticeAlert: boolean
-  showComManagement: boolean
 }
 
 export const useFeatureFlag = defineStore('useFeatureFlag', {
@@ -50,12 +49,8 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ENABLE_MCP_SERVER_OBSERVABILITY: false,
       ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT: false,
       GATEWAY_APP_BINDING_ENABLED: false,
-      MENU_ITEM_ESB_API: false,
-      MENU_ITEM_ESB_API_DOC: false,
-      SYNC_ESB_TO_APIGW_ENABLED: false,
     },
     showNoticeAlert: false,
-    showComManagement: false,
   }),
   getters: {
     apiBaseUrl: () => import.meta.env.VITE_BK_USER_WEB_API_URL || '',
@@ -67,8 +62,6 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     isAIEnabled: state => state.flags?.ENABLE_AI_COMPLETION,
     // 是否开启了通知组件展示
     isEnabledNotice: state => state.showNoticeAlert,
-    // 是否显示组件管理
-    isEnableComManagement: state => state.showComManagement,
     // 是否开启资源路由冲突检测
     isEnablePathConflictCheck: state => !!state.flags?.ENABLE_RESOURCE_PATH_CONFLICT_CHECK,
   },
@@ -81,9 +74,6 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     },
     setNoticeAlert(isShow: boolean) {
       this.showNoticeAlert = isShow;
-    },
-    setDisplayComManagement(isShow: boolean) {
-      this.showComManagement = isShow;
     },
   },
 });
