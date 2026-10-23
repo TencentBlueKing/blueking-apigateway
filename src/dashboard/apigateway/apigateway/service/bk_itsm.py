@@ -18,7 +18,7 @@
 #
 import logging
 import secrets
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from django.conf import settings
 
@@ -27,10 +27,17 @@ from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import cancel_ticket, create_ticket
+from apigateway.utils.redis_utils import get_default_redis_client
 from apigateway.utils.string import strip_template_ref_prefix
 from apigateway.utils.url import url_join
 
+if TYPE_CHECKING:
+    import redis
+
 logger = logging.getLogger(__name__)
+
+# ITSM 取消工单时会同步回调审批结果，回调据此标记识别取消及其操作人
+ITSM_TICKET_CANCELING_KEY = "itsm_ticket_canceling:{ticket_id}"
 
 
 class ItsmPermissionApplyHelper:
@@ -169,15 +176,29 @@ class ItsmPermissionApplyHelper:
             options=options,
         )
 
-    def cancel_permission_apply_ticket(self, ticket_id: str) -> None:
-        """取消权限申请关联的 ITSM 工单。"""
-        canceled = cancel_ticket(
-            system_id=self.config.itsm_system_id,
-            ticket_id=ticket_id,
-            system_token=self.config.system_token,
+    def cancel_permission_apply_ticket(self, ticket_id: str, operated_by: str) -> None:
+        """取消权限申请关联的 ITSM 工单，取消期间记录取消标记供回调识别"""
+        # 标记需覆盖整个取消请求，过期时间不能短于 ITSM 接口超时
+        _access_canceling_marker(
+            ticket_id, lambda client, key: client.set(key, operated_by, ex=settings.BK_ITSM4_API_TIMEOUT + 30)
         )
-        if not canceled:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(f"failed to revoke ITSM ticket, ticket_id={ticket_id}")
+        try:
+            canceled = cancel_ticket(
+                system_id=self.config.itsm_system_id,
+                ticket_id=ticket_id,
+                system_token=self.config.system_token,
+            )
+            if not canceled:
+                raise error_codes.REMOTE_REQUEST_ERROR.format(f"failed to revoke ITSM ticket, ticket_id={ticket_id}")
+        except Exception:
+            _access_canceling_marker(ticket_id, lambda client, key: client.delete(key))
+            raise
+
+    @staticmethod
+    def get_canceling_operator(ticket_id: str) -> str:
+        """获取正在取消该工单的操作人，未在取消中返回空字符串"""
+        operator = _access_canceling_marker(ticket_id, lambda client, key: client.get(key))
+        return operator.decode() if operator else ""
 
     def _get_workflow_key(self, grant_dimension: str) -> str:
         workflow_key_map = self.config.workflow_key_map or {}
@@ -243,3 +264,15 @@ class ItsmPermissionApplyHelper:
         """构建 ITSM 回调 URL"""
         bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
         return url_join(bk_apigateway_url, settings.BK_ITSM4_CALLBACK_PATH)
+
+
+def _access_canceling_marker(ticket_id: str, command: Callable[[redis.Redis, str], Any]) -> Any:
+    """取消标记仅用于修正回调状态，Redis 不可用时按无标记处理，不阻断取消"""
+    try:
+        client = get_default_redis_client()
+        if client is None:
+            raise ConnectionError("redis client is unavailable")
+        return command(client, ITSM_TICKET_CANCELING_KEY.format(ticket_id=ticket_id))
+    except Exception:
+        logger.warning("access itsm ticket canceling marker failed, ticket_id=%s", ticket_id, exc_info=True)
+        return None
