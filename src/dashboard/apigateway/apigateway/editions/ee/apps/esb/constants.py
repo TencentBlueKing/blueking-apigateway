@@ -20,8 +20,6 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
-DEFAULT_DOC_CATEGORY = "默认分类"
-
 
 def get_esb_board_config(board: str):
     board_configs = {
