@@ -1,5 +1,5 @@
 # npm part
-FROM node:24.15.0-bookworm AS builder
+FROM node:24.22.1-bookworm AS builder
 
 WORKDIR /app
 COPY package.json package-lock.json /app/
