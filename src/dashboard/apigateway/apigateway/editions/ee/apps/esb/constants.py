@@ -16,13 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
-
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
-
-DEFAULT_DOC_CATEGORY = "默认分类"
 
 
 def get_esb_board_config(board: str):
@@ -51,24 +47,9 @@ class LanguageEnum(StructuredEnum):
     ZH_HANS = EnumField("zh-hans", label=gettext_lazy("简体中文"))
 
 
-class MethodEnum(StructuredEnum):
-    GET_POST = EnumField("", label="GET/POST")
-    GET = EnumField("GET", label="GET")
-    POST = EnumField("POST", label="POST")
-    PUT = EnumField("PUT", label="PUT")
-    PATCH = EnumField("PATCH", label="PATCH")
-    DELETE = EnumField("DELETE", label="DELETE")
-
-
 class FunctionControllerCodeEnum(StructuredEnum):
     SKIP_USER_AUTH = EnumField("user_auth::skip_user_auth", label=_("是否跳过用户身份验证"))
     JWT_KEY = EnumField("jwt::private_public_key", label=_("JWT私钥公钥"))
-
-
-SYSTEM_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-CHANNEL_PATH_PATTERN = re.compile(r"^/[\w{}/.-]*$")
-COMPONENT_CODENAME_PATTERN = re.compile(r"^[a-z][a-z0-9._]+[a-z0-9_]$")
-COMPONENT_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
 
 
 class ComponentDocTypeEnum(StructuredEnum):

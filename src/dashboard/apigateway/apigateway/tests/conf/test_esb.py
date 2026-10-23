@@ -57,18 +57,22 @@ import importlib
 import json
 import django
 from django.conf import settings
-from django.urls import get_resolver
-from django.urls.resolvers import URLResolver
+from django.core.management import get_commands, load_command_class
+from django.urls import Resolver404, resolve
 
 django.setup()
 
-def routes(patterns):
-    result = []
-    for pattern in patterns:
-        result.append(str(pattern.pattern))
-        if isinstance(pattern, URLResolver):
-            result.extend(routes(pattern.url_patterns))
-    return result
+def is_registered(path):
+    try:
+        resolve(path)
+    except Resolver404:
+        return False
+    return True
+
+commands = get_commands()
+sync_command = "sync_to_gateway_and_release"
+if sync_command in commands:
+    load_command_class(commands[sync_command], sync_command)
 
 for task_module in settings.CELERY_IMPORTS:
     importlib.import_module(task_module)
@@ -76,8 +80,26 @@ print(json.dumps({
     "database": "bkcore" in settings.DATABASES,
     "app": "apigateway.apps.esb.bkcore" in settings.INSTALLED_APPS,
     "task": "apigateway.apps.esb.component.tasks" in settings.CELERY_IMPORTS,
-    "routes": any("esb/" in route for route in routes(get_resolver().url_patterns)),
-    "flags": {key: settings.DEFAULT_FEATURE_FLAG[key] for key in (
+    "sync_command": sync_command in commands,
+    "management_routes": {
+        path: is_registered(path) for path in (
+            "/backend/esb/systems/",
+            "/backend/esb/components/",
+            "/backend/esb/components/sync/release/",
+            "/backend/esb/components/sync/release/histories/",
+            "/backend/esb/doc-categories/",
+            "/backend/esb/status/systems/summary/",
+        )
+    },
+    "public_routes": {
+        path: is_registered(path) for path in (
+            "/backend/api/v1/esb/systems/",
+            "/backend/api/v2/inner/esb/systems/",
+            "/backend/docs/esb/boards/default/systems/",
+            "/backend/docs/esb/boards/default/sdks/",
+        )
+    },
+    "flags": {key: key in settings.DEFAULT_FEATURE_FLAG for key in (
         "MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"
     )},
 }))
@@ -91,11 +113,13 @@ print(json.dumps({
     )
     assert result.returncode == 0, result.stderr
     state = json.loads(result.stdout.strip().splitlines()[-1])
-    assert {key: state[key] for key in ("database", "app", "task", "routes")} == dict.fromkeys(
-        ("database", "app", "task", "routes"), expected
+    assert {key: state[key] for key in ("database", "app", "task", "sync_command")} == dict.fromkeys(
+        ("database", "app", "task", "sync_command"), expected
     )
+    assert state["management_routes"] == dict.fromkeys(state["management_routes"], False)
+    assert state["public_routes"] == dict.fromkeys(state["public_routes"], expected)
     assert state["flags"] == dict.fromkeys(
-        ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"), flag_enabled == "true"
+        ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"), False
     )
 
 
