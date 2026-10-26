@@ -169,13 +169,14 @@ def test_failed_batch_is_unchanged_and_later_batch_continues(mocker):
 
 
 def test_lock_held_skips_cleanly(renewal_lock, mocker):
-    lock, _constructor = renewal_lock
+    lock, constructor = renewal_lock
     lock.acquire.return_value = False
     member_filter = mocker.patch("apigateway.apps.rbac.tasks.GatewayMember.objects.filter")
     grant_authorizations = mocker.patch("apigateway.apps.rbac.tasks.grant_gateway_authorizations")
 
     renew_gateway_member_iam_authorizations()
 
+    assert constructor.call_args.args[1] == "bk_apigw:renew_gateway_member_iam_authorizations"
     lock.acquire.assert_called_once_with(blocking=False)
     lock.release.assert_not_called()
     member_filter.assert_not_called()
