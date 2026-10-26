@@ -6477,7 +6477,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 待删除的网关维护人，多个以逗号分隔，去重后最多 50 个，单个用户名最长 64 个字符；不存在的用户将被忽略
+          description: 待删除的网关维护人，多个以逗号分隔，去重后最多 50 个；不存在的用户将被忽略
           example: user-a,user-b
       responses:
         '200':
