@@ -28,6 +28,7 @@ from ddf import G
 from apigateway.apps.bk_itsm.management.commands.register_to_itsm import Command as RegisterToItsmCommand
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
+from apigateway.common.error_codes import APIError
 from apigateway.components.bkitsm import ItsmFormModelUpdateResult, ItsmWorkflowList
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
@@ -118,7 +119,7 @@ class TestItsmPermissionApplyHelper:
             {"side_effect": Exception("ITSM unavailable")},
         ],
     )
-    def test_cancel_permission_apply_ticket_failed_clears_canceling_marker(
+    def test_cancel_permission_apply_ticket_failed_keeps_canceling_marker(
         self, mocker, fake_redis, cancel_ticket_kwargs
     ):
         config = G(ItsmSystemConfig, system_code="bk-apigateway", is_registered=True)
@@ -128,7 +129,8 @@ class TestItsmPermissionApplyHelper:
         with pytest.raises(Exception):
             helper.cancel_permission_apply_ticket("t-001", "admin")
 
-        assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == ""
+        assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == "admin"
+        assert fake_redis.ttl("itsm_ticket_canceling:t-001") > 0
 
     def test_cancel_permission_apply_ticket_when_redis_unavailable(self, mocker):
         config = G(ItsmSystemConfig, system_code="bk-apigateway", is_registered=True)
@@ -140,6 +142,19 @@ class TestItsmPermissionApplyHelper:
 
         mock_cancel_ticket.assert_called_once()
         assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == ""
+
+    def test_cancel_permission_apply_ticket_when_canceling_marker_exists(self, mocker, fake_redis):
+        config = G(ItsmSystemConfig, system_code="bk-apigateway", is_registered=True)
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+        fake_redis.set("itsm_ticket_canceling:t-001", "first-operator", ex=60)
+        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", return_value=False)
+
+        with pytest.raises(APIError) as exc_info:
+            helper.cancel_permission_apply_ticket("t-001", "second-operator")
+
+        assert exc_info.value.code.code_name == "FAILED_PRECONDITION"
+        mock_cancel_ticket.assert_not_called()
+        assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == "first-operator"
 
     def test_create_permission_apply_ticket_normalizes_none_apply_reason(self, mocker):
         config = G(

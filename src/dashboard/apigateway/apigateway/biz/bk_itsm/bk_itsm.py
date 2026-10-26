@@ -113,7 +113,8 @@ class ItsmCallbackResultHandler:
     @staticmethod
     def _get_canceled_by(approve_result: bool, ticket_id: str) -> str:
         # ITSM 取消工单时以 approve_result=false 回调，需借助取消标记与审批驳回区分。
-        # 已知限制：取消期间恰好被审批驳回会落库为已取消；Redis 不可用且回调先到时仍落库为驳回
+        # 已知限制：标记存在时，审批驳回会落库为已取消；取消请求超时或失败后标记仍保留至 TTL。
+        # Redis 不可用且回调先到时仍落库为驳回。
         if approve_result:
             return ""
         return ItsmPermissionApplyHelper.get_canceling_operator(ticket_id)
