@@ -25,30 +25,21 @@ from apigateway.tests.utils.testing import get_response_json
 
 
 class TestFeatureFlagListApi:
-    @pytest.mark.parametrize(
-        "is_superuser, expected",
-        [
-            (True, True),
-            (False, False),
-        ],
-    )
-    def test_list(self, settings, request_factory, mocker, faker, is_superuser, expected):
-        settings.DEFAULT_FEATURE_FLAG = {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
+    def test_list(self, settings, request_factory, mocker):
+        settings.DEFAULT_FEATURE_FLAG = {"ENABLE_MONITOR": True, "ENABLE_RUN_DATA": False}
         mocker.patch(
             "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags",
-            return_value={faker.color_name(): False},
+            return_value={"ENABLE_MONITOR": False, "CUSTOM_FLAG": True},
         )
 
-        # user is not suerperuser
-        request = request_factory.get("")
-        request.user = mocker.MagicMock(username=faker.color_name(), is_superuser=is_superuser)
-        view = FeatureFlagListApi.as_view()
-        response = view(request)
-        result = get_response_json(response)
-        assert len(result["data"]) == 3
-        assert settings.DEFAULT_FEATURE_FLAG == {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True}
-        assert result["data"]["MENU_ITEM_ESB_API"] == expected
-        assert result["data"]["MENU_ITEM_ESB_API_DOC"] is True
+        response = FeatureFlagListApi.as_view()(request_factory.get(""))
+
+        assert get_response_json(response)["data"] == {
+            "ENABLE_MONITOR": False,
+            "ENABLE_RUN_DATA": False,
+            "CUSTOM_FLAG": True,
+        }
+        assert settings.DEFAULT_FEATURE_FLAG == {"ENABLE_MONITOR": True, "ENABLE_RUN_DATA": False}
 
 
 @pytest.mark.parametrize("env_value, expected", [(None, False), ("false", False), ("true", True)])
@@ -71,30 +62,6 @@ def test_resource_path_conflict_flag_rendering(monkeypatch, settings, request_fa
     request.user = mocker.MagicMock(username="tester", is_superuser=False)
     response = FeatureFlagListApi.as_view()(request)
     assert get_response_json(response)["data"]["ENABLE_RESOURCE_PATH_CONFLICT_CHECK"] is expected
-
-
-@pytest.mark.parametrize(
-    "user_flags", [{}, {"MENU_ITEM_ESB_API": True, "MENU_ITEM_ESB_API_DOC": True, "SYNC_ESB_TO_APIGW_ENABLED": True}]
-)
-def test_disabled_esb_menu_flags_preserve_user_overrides(settings, request_factory, mocker, user_flags):
-    settings.ESB_ENABLED = False
-    settings.DEFAULT_FEATURE_FLAG = {
-        "MENU_ITEM_ESB_API": True,
-        "MENU_ITEM_ESB_API_DOC": True,
-        "SYNC_ESB_TO_APIGW_ENABLED": True,
-    }
-    mocker.patch(
-        "apigateway.apis.web.setting.views.UserFeatureFlag.objects.get_feature_flags", return_value=user_flags
-    )
-    request = request_factory.get("")
-    request.user = mocker.MagicMock(username="tester", is_superuser=True)
-    response = FeatureFlagListApi.as_view()(request)
-    assert get_response_json(response)["data"] == {
-        "MENU_ITEM_ESB_API": False,
-        "MENU_ITEM_ESB_API_DOC": False,
-        "SYNC_ESB_TO_APIGW_ENABLED": True,
-        **user_flags,
-    }
 
 
 def test_env_var_list_adds_localized_cli_overview_without_mutating_settings(settings, request_factory, mocker):

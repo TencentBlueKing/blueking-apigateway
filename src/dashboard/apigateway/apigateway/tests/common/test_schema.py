@@ -279,7 +279,6 @@ def test_permission_filters_are_documented_without_request_context(client, docum
 @pytest.mark.parametrize(
     "path, fields",
     [
-        ("/esb/components/batch/", {"ids"}),
         (
             "/gateways/{gateway_id}/permissions/app-permissions/batch/",
             {"gateway_dimension_ids", "resource_dimension_ids"},
@@ -400,7 +399,6 @@ def test_operation_tags_keep_api_families_and_http_methods_together(client, docu
     expected_groups = {
         "/accounts/userinfo/": "WebAPI.Account",
         "/version-log/": "WebAPI.VersionLog",
-        "/esb/status/": "ESB.Status",
         "/api/v1/apis/": "OpenAPI.V1",
         "/api/v1/esb/systems/permissions/": "OpenAPI.ESB.Permission",
         "/api/v2/inner/": "OpenAPI.V2.Inner",
@@ -421,7 +419,7 @@ def test_operation_tags_keep_api_families_and_http_methods_together(client, docu
         assert len(tags) == 1, (path, tags)
         for method, operation in operations.items():
             assert len(operation["tags"]) == 1, (method, path)
-            assert operation["tags"][0].startswith(("WebAPI.", "OpenAPI.", "ESB.")), (method, path)
+            assert operation["tags"][0].startswith(("WebAPI.", "OpenAPI.")), (method, path)
             for prefix, expected in expected_groups.items():
                 if path.startswith(prefix):
                     assert operation["tags"] == [expected], (method, path)

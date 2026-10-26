@@ -339,7 +339,6 @@ ignore_imports = [
     "apigateway.apps.esb.*.* -> apigateway.biz.*",
     "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
     "apigateway.apps.esb.component.convertor -> apigateway.components.esb_components",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
     # 需要重构的依赖
 ]
 
@@ -492,7 +491,6 @@ ignore_imports = [
     "apigateway.apps.esb.*.* -> apigateway.biz.*",
     "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
     "apigateway.apps.esb.*.* -> apigateway.components.*",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
 ]
 
 [[tool.importlinter.contracts]]
