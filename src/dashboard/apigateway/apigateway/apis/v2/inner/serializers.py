@@ -936,11 +936,18 @@ class GatewayUpdateStatusInputSLZ(serializers.Serializer):
 
 
 class GatewayMaintainerDeleteInputSLZ(serializers.Serializer):
-    maintainers = serializers.ListField(
-        child=serializers.CharField(max_length=64),
-        allow_empty=False,
-        help_text="待删除的网关维护人",
-    )
+    maintainers = serializers.CharField(help_text="待删除的网关维护人，多个以逗号分隔")
+
+    def validate_maintainers(self, value) -> list[str]:
+        usernames = validate_comma_separated_names(
+            value,
+            required=True,
+            required_error=_("maintainers 不能为空"),
+            max_count_error=_("maintainers 最多支持 {max_count} 个"),
+        )
+        if any(len(username) > 64 for username in usernames):
+            raise serializers.ValidationError(_("用户名最长 64 个字符"))
+        return usernames
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayMaintainerDeleteInputSLZ"

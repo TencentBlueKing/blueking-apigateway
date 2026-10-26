@@ -226,6 +226,11 @@ class GatewayMemberManager(models.Manager):
         gateway_id: int,
         usernames: Iterable[str],
     ) -> list[GatewayMember]:
+        """Delete existing members by username.
+
+        Usernames that are not current members are ignored. The deletion fails when it would
+        leave the gateway without an administrator.
+        """
         target_usernames = set(usernames)
         members = self._lock_gateway_members(gateway_id)
         members_to_delete = [member for username, member in members.items() if username in target_usernames]

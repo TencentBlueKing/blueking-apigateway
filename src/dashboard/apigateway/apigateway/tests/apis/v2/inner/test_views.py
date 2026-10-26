@@ -165,10 +165,7 @@ class TestGatewayRetrieveApi:
 class TestGatewayMaintainerDeleteApi:
     def test_delete_maintainers(self, request_to_view, request_factory, fake_gateway):
         GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["second-admin"], "operator-user")
-        request = request_factory.delete(
-            "",
-            data={"maintainers": ["second-admin", "missing", "second-admin"]},
-        )
+        request = request_factory.delete("/?maintainers=second-admin,missing,second-admin")
         request.app = mock.MagicMock(app_code="test")
 
         response = request_to_view(
@@ -185,12 +182,19 @@ class TestGatewayMaintainerDeleteApi:
             op_object_type=OpObjectTypeEnum.GATEWAY.value,
             op_object_id=fake_gateway.id,
         )
-        assert audit_log.comment == "移除网关维护人"
-        assert json.loads(audit_log.data_before) == {"maintainers": ["admin", "second-admin"]}
-        assert json.loads(audit_log.data_after) == {"maintainers": ["admin"]}
+        assert audit_log.comment == "移除网关维护人(test)"
+        assert json.loads(audit_log.data_before) == {
+            "maintainers": [
+                {"username": "admin", "role": GatewayRoleEnum.ADMINISTRATOR.value},
+                {"username": "second-admin", "role": GatewayRoleEnum.ADMINISTRATOR.value},
+            ]
+        }
+        assert json.loads(audit_log.data_after) == {
+            "maintainers": [{"username": "admin", "role": GatewayRoleEnum.ADMINISTRATOR.value}]
+        }
 
     def test_delete_maintainers_rejects_empty_list(self, request_to_view, request_factory, fake_gateway):
-        request = request_factory.delete("", data={"maintainers": []})
+        request = request_factory.delete("/?maintainers=")
         request.app = mock.MagicMock(app_code="test")
 
         response = request_to_view(
@@ -202,7 +206,7 @@ class TestGatewayMaintainerDeleteApi:
         assert response.status_code == 400
 
     def test_delete_maintainers_rejects_last_administrator(self, request_to_view, request_factory, fake_gateway):
-        request = request_factory.delete("", data={"maintainers": ["admin"]})
+        request = request_factory.delete("/?maintainers=admin")
         request.app = mock.MagicMock(app_code="test")
 
         response = request_to_view(

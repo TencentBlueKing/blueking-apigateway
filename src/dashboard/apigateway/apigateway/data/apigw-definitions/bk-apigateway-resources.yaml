@@ -6461,7 +6461,7 @@ paths:
   /api/v2/inner/gateways/{gateway_name}/maintainers/:
     delete:
       operationId: v2_inner_delete_gateway_maintainers
-      description: 按用户名批量删除网关维护人
+      description: 按用户名批量删除网关维护人，用户名通过查询参数传入
       tags:
       - v2_inner
       parameters:
@@ -6472,23 +6472,13 @@ paths:
             type: string
           description: 网关名称
           example: bk-apigateway
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - maintainers
-              properties:
-                maintainers:
-                  type: array
-                  minItems: 1
-                  items:
-                    type: string
-                    maxLength: 64
-                  description: 待删除的网关维护人；不存在的用户将被忽略
-                  example: ["user-a", "user-b"]
+        - name: maintainers
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 待删除的网关维护人，多个以逗号分隔，去重后最多 50 个，单个用户名最长 64 个字符；不存在的用户将被忽略
+          example: user-a,user-b
       responses:
         '200':
           description: 成功删除网关维护人
