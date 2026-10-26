@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 def _stage_mcp_server_permission_sync_lock(stage_id: int) -> Iterator[None]:
     lock = redis_lock.Lock(
         get_default_redis_client(),
-        f"mcp_server_permission_sync:{stage_id}",
+        f"bk_apigw:mcp_server_permission_sync:{stage_id}",
         expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
         auto_renewal=True,
         strict=False,

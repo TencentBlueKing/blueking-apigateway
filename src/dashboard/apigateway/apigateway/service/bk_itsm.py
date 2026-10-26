@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # ITSM 取消工单时会同步回调审批结果，回调据此标记识别取消及其操作人
-ITSM_TICKET_CANCELING_KEY = "itsm_ticket_canceling:{ticket_id}"
+ITSM_TICKET_CANCELING_KEY = "bk_apigw:itsm_ticket_canceling:{ticket_id}"
 
 
 class ItsmPermissionApplyHelper:

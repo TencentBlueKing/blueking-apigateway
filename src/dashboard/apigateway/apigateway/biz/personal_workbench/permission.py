@@ -137,50 +137,6 @@ class WorkbenchPermissionHandler:
                 raise error_codes.NOT_FOUND
         return apply
 
-    @staticmethod
-    def _record_gateway_apply_audit(
-        op_type: OpTypeEnum,
-        username: str,
-        gateway_id: int,
-        instance_id: int,
-        instance_name: str,
-        data_before: dict,
-        data_after: dict,
-        comment: str,
-    ) -> None:
-        Auditor.record_permission_op_success(
-            op_type=op_type,
-            username=username,
-            gateway_id=gateway_id,
-            instance_id=instance_id,
-            instance_name=instance_name,
-            data_before=data_before,
-            data_after=data_after,
-            comment=comment,
-        )
-
-    @staticmethod
-    def _record_mcp_apply_audit(
-        op_type: OpTypeEnum,
-        username: str,
-        gateway_id: int,
-        instance_id: int,
-        instance_name: str,
-        data_before: dict,
-        data_after: dict,
-        comment: str,
-    ) -> None:
-        Auditor.record_mcp_server_permission_op_success(
-            op_type=op_type,
-            username=username,
-            gateway_id=gateway_id,
-            instance_id=instance_id,
-            instance_name=instance_name,
-            data_before=data_before,
-            data_after=data_after,
-            comment=comment,
-        )
-
     @classmethod
     def cancel_gateway_permission_apply(
         cls,
@@ -263,7 +219,7 @@ class WorkbenchPermissionHandler:
         instance_name = apply.bk_app_code
         AppPermissionRecord.objects.filter(id=apply.apply_record_id).delete()
         apply.delete()
-        cls._record_gateway_apply_audit(
+        Auditor.record_permission_op_success(
             op_type=OpTypeEnum.DELETE,
             username=operated_by,
             gateway_id=gateway_id,
@@ -357,7 +313,7 @@ class WorkbenchPermissionHandler:
         gateway_id = apply.mcp_server.gateway_id
         instance_name = apply.bk_app_code
         apply.delete()
-        cls._record_mcp_apply_audit(
+        Auditor.record_mcp_server_permission_op_success(
             op_type=OpTypeEnum.DELETE,
             username=operated_by,
             gateway_id=gateway_id,

@@ -155,7 +155,7 @@ class OAuth2BuiltinPermissionReconciler:
     ) -> OAuth2BuiltinPermissionResult:
         lock = redis_lock.Lock(
             get_default_redis_client(),
-            f"oauth2_builtin_permission:{gateway.id}",
+            f"bk_apigw:oauth2_builtin_permission:{gateway.id}",
             expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
             auto_renewal=True,
             strict=False,
