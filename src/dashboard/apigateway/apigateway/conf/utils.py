@@ -282,11 +282,9 @@ def get_frontend_env_vars(
             "USER_KEY_EXPIRE_DAYS": env.int("CLI_USER_KEY_EXPIRE_DAYS", default=1),
             "ACCESS_TOKEN_EXPIRE_DAYS": env.int("CLI_ACCESS_TOKEN_EXPIRE_DAYS", default=1),
             "BK_API_URL_TMPL": bk_api_url_tmpl.replace("{api_name}", "{gateway_name}"),
-            "GIT_REPO_URL": env.str("CLI_GIT_REPO_URL", default="https://github.com/TencentBlueKing/bk-cli.git"),
-            "NPM_INSTALL_CMD": env.str("CLI_NPM_INSTALL_CMD", default="npm install -g @blueking/bk-cli"),
-            "SKILL_NPM_INSTALL_CMD": env.str(
-                "CLI_SKILL_NPM_INSTALL_CMD", default="npx skills add TencentBlueKing/bk-cli -y -g"
-            ),
+            "GIT_REPO_URL": "https://github.com/TencentBlueKing/bk-cli",
+            "NPM_INSTALL_CMD": "npm i -g @blueking/bk-cli",
+            "SKILL_NPM_INSTALL_CMD": "npx skills add https://github.com/TencentBlueKing/bk-cli",
         },
     }
 
