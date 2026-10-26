@@ -6458,6 +6458,71 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: Delete gateway, only supports gateways starting with bp-
+  /api/v2/inner/gateways/{gateway_name}/maintainers/:
+    delete:
+      operationId: v2_inner_delete_gateway_maintainers
+      description: 按用户名批量删除网关维护人
+      tags:
+      - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - maintainers
+              properties:
+                maintainers:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    maxLength: 64
+                  description: 待删除的网关维护人；不存在的用户将被忽略
+                  example: ["user-a", "user-b"]
+      responses:
+        '200':
+          description: 成功删除网关维护人
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: array
+                        items:
+                          type: string
+                        description: 实际删除的网关维护人
+                        example: ["user-a"]
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: delete
+          path: /backend/api/v2/inner/gateways/{gateway_name}/maintainers/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Delete gateway maintainers by username
   /api/v2/inner/gateways/{gateway_name}/status/:
     put:
       operationId: v2_inner_update_gateway_status

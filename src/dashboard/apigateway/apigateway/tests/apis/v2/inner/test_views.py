@@ -162,6 +162,57 @@ class TestGatewayRetrieveApi:
         assert result["data"]["kind"] == "ai"
 
 
+class TestGatewayMaintainerDeleteApi:
+    def test_delete_maintainers(self, request_to_view, request_factory, fake_gateway):
+        GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["second-admin"], "operator-user")
+        request = request_factory.delete(
+            "",
+            data={"maintainers": ["second-admin", "missing", "second-admin"]},
+        )
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.maintainer.delete",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"] == {"deleted": ["second-admin"]}
+        assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.GATEWAY.value,
+            op_object_id=fake_gateway.id,
+        )
+        assert audit_log.comment == "移除网关维护人"
+
+    def test_delete_maintainers_rejects_empty_list(self, request_to_view, request_factory, fake_gateway):
+        request = request_factory.delete("", data={"maintainers": []})
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.maintainer.delete",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 400
+
+    def test_delete_maintainers_rejects_last_administrator(self, request_to_view, request_factory, fake_gateway):
+        request = request_factory.delete("", data={"maintainers": ["admin"]})
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.maintainer.delete",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 400
+        assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
+
+
 class TestGatewayOutputSLZ:
     @pytest.mark.parametrize(
         "output_slz_cls",

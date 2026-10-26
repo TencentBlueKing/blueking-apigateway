@@ -220,6 +220,31 @@ class GatewayMemberManager(models.Manager):
         self.filter(id=member.id).delete()
         return member
 
+    @transaction.atomic
+    def delete_gateway_members_by_usernames(
+        self,
+        gateway_id: int,
+        usernames: Iterable[str],
+    ) -> list[GatewayMember]:
+        target_usernames = set(usernames)
+        members = self._lock_gateway_members(gateway_id)
+        members_to_delete = [member for username, member in members.items() if username in target_usernames]
+
+        deleting_administrator = any(
+            member.role == GatewayRoleEnum.ADMINISTRATOR.value for member in members_to_delete
+        )
+        remaining_administrator = any(
+            member.role == GatewayRoleEnum.ADMINISTRATOR.value and member.username not in target_usernames
+            for member in members.values()
+        )
+        if deleting_administrator and not remaining_administrator:
+            raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
+
+        if members_to_delete:
+            self.filter(id__in=[member.id for member in members_to_delete]).delete()
+
+        return sorted(members_to_delete, key=lambda member: member.username)
+
     def _lock_gateway_member(self, gateway_id: int, member_id: int) -> GatewayMember:
         try:
             return self.select_for_update().get(gateway_id=gateway_id, id=member_id)

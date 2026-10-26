@@ -34,6 +34,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apis.v2.tenant import get_request_tenant_id
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerPermissionActionEnum,
@@ -48,7 +49,8 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.access_log import LogSearchClient
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.audit import Auditor
+from apigateway.biz.gateway import GatewayHandler, delete_gateway_members
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import (
     AppPermissionBuilder,
@@ -469,6 +471,47 @@ class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
         GatewayHandler.delete_gateway(instance_id, operated_by=request.user.username)
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="delete",
+    decorator=extend_schema(
+        description="按用户名批量删除网关维护人",
+        request=serializers.GatewayMaintainerDeleteInputSLZ,
+        responses={status.HTTP_200_OK: serializers.GatewayMaintainerDeleteOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayMaintainerDeleteApi(generics.GenericAPIView):
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = serializers.GatewayMaintainerDeleteInputSLZ
+    schema_delete_request_body = True
+
+    def delete(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        deleted_members = delete_gateway_members(
+            request.gateway,
+            slz.validated_data["maintainers"],
+            username,
+        )
+        deleted_usernames = [member.username for member in deleted_members]
+        if deleted_usernames:
+            Auditor.record_gateway_op_success(
+                op_type=OpTypeEnum.DELETE,
+                username=username,
+                gateway_id=request.gateway.id,
+                instance_id=request.gateway.id,
+                instance_name=request.gateway.name,
+                data_before={"maintainers": deleted_usernames},
+                data_after={},
+                comment="移除网关维护人",
+            )
+
+        output_slz = serializers.GatewayMaintainerDeleteOutputSLZ({"deleted": deleted_usernames})
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(
