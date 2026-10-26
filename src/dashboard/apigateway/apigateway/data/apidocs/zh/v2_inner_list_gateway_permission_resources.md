@@ -35,7 +35,8 @@
       "permission_level": "normal",
       "permission_status": "pending",
       "permission_action": "",
-      "doc_link": "http://test.com/"
+      "doc_link": "http://test.com/",
+      "approval_url": "https://dashboard.example.com/6/permission/apply"
     }
   ]
 }
@@ -61,3 +62,4 @@
 | permission_status | string | 权限状态 |
 | permission_action | string | 权限操作 |
 | doc_link          | string | 文档地址 |
+| approval_url      | string | 权限审批 URL；优先返回 ITSM 工单地址，否则返回 `{DASHBOARD_FE_URL}/{gateway_id}/permission/apply` |

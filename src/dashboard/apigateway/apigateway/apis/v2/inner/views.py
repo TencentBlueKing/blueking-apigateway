@@ -523,7 +523,7 @@ class GatewayMaintainerDeleteApi(generics.GenericAPIView):
     name="get",
     decorator=extend_schema(
         parameters=[serializers.AppResourcePermissionListInputSLZ],
-        responses={status.HTTP_200_OK: serializers.AppResourcePermissionListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.GatewayPermissionResourceListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -547,7 +547,7 @@ class GatewayPermissionResourceListApi(generics.ListAPIView):
             slz.validated_data["target_app_code"],
         ).build(resources)
 
-        slz = serializers.AppResourcePermissionListOutputSLZ(
+        slz = serializers.GatewayPermissionResourceListOutputSLZ(
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
