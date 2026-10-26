@@ -219,7 +219,7 @@ def get_default_feature_flags(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", True
         ),
         # 是否开启 BK CLI 展示
-        "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
+        "ENABLE_BK_CLI": True,
         # 是否开启 ITSM 权限申请
         "ENABLE_ITSM4_PERMISSION_APPLY": enable_itsm4_permission_apply,
     }
