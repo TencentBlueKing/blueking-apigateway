@@ -27,6 +27,7 @@ from apigateway.biz.gateway import (
     add_gateway_members,
     build_gateway_doc_maintainers,
     delete_gateway_member,
+    delete_gateway_members,
     replace_gateway_administrators,
     update_gateway_member_role,
 )
@@ -188,6 +189,19 @@ def test_delete_gateway_member_rolls_back_when_paas_sync_fails(fake_gateway, moc
     assert GatewayMember.objects.filter(id=member.id).exists()
 
 
+def test_delete_gateway_members_does_not_sync_back_to_paas(fake_gateway, mocker):
+    GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["second-admin"], "operator-user")
+    fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+    fake_gateway.save(update_fields=["kind"])
+    update_app_maintainers = mocker.patch("apigateway.biz.gateway.members.update_app_maintainers")
+
+    deleted = delete_gateway_members(fake_gateway, ["second-admin", "missing"], "operator-user")
+
+    assert [member.username for member in deleted] == ["second-admin"]
+    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
+    update_app_maintainers.assert_not_called()
+
+
 def test_member_write_locks_gateway_before_reading_snapshot(fake_gateway, mocker):
     events = []
     original_lock = gateway_members._lock_gateway
@@ -224,8 +238,9 @@ def test_all_member_writes_apply_iam_deltas(settings, fake_gateway, mocker):
         "operator-user",
     )
     delete_gateway_member(fake_gateway, result.created[0].id, "operator-user")
+    delete_gateway_members(fake_gateway, ["third-admin"], "operator-user")
 
-    assert apply_iam.call_count == 5
+    assert apply_iam.call_count == 6
     assert all(call.args[0] == fake_gateway for call in apply_iam.call_args_list)
     assert all(call.args[3] == "operator-user" for call in apply_iam.call_args_list)
 

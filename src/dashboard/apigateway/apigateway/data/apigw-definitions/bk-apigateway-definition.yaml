@@ -89,6 +89,7 @@ grant_permissions:
       # gateway related
       - v2_inner_list_gateways
       - v2_inner_get_gateway
+      - v2_inner_delete_gateway_maintainers
       - v2_inner_list_gateway_permission_resources
       - v2_inner_check_is_allowed_apply_by_gateway
       - v2_inner_apply_gateway_resource_permission

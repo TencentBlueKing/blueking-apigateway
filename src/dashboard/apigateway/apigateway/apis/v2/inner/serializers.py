@@ -935,6 +935,32 @@ class GatewayUpdateStatusInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayUpdateStatusInputSLZ"
 
 
+class GatewayMaintainerDeleteInputSLZ(serializers.Serializer):
+    maintainers = serializers.CharField(help_text="待删除的网关维护人，多个以逗号分隔")
+
+    def validate_maintainers(self, value) -> list[str]:
+        return validate_comma_separated_names(
+            value,
+            required=True,
+            required_error=_("maintainers 不能为空"),
+            max_count_error=_("maintainers 最多支持 {max_count} 个"),
+        )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayMaintainerDeleteInputSLZ"
+
+
+class GatewayMaintainerDeleteOutputSLZ(serializers.Serializer):
+    deleted = serializers.ListField(
+        child=serializers.CharField(),
+        read_only=True,
+        help_text="实际删除的网关维护人",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayMaintainerDeleteOutputSLZ"
+
+
 class MonitorCallbackInputSLZ(serializers.Serializer):
     """监控告警回调参数校验（query params 中的 token）"""
 
