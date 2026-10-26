@@ -34,6 +34,7 @@ from apigateway.apps.permission.constants import (
     FORMATTED_TO_DB_GRANT_DIMENSION,
     FormattedGrantDimensionEnum,
     GrantDimensionEnum,
+    GrantTypeEnum,
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.biz.constants import BK_USERNAME_PATTERN
@@ -241,6 +242,48 @@ class GatewayAppPermissionApplyOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyOutputSLZ"
+
+
+class CurrentAppPermissionListInputSLZ(serializers.Serializer):
+    GRANT_DIMENSION_CHOICES = [
+        (FormattedGrantDimensionEnum.GATEWAY.value, "网关"),
+        (FormattedGrantDimensionEnum.RESOURCE.value, "资源"),
+    ]
+
+    grant_dimension = serializers.ChoiceField(choices=GRANT_DIMENSION_CHOICES, help_text="授权维度")
+    gateway_name = serializers.CharField(required=False, allow_blank=True, help_text="网关名称，精确匹配")
+    resource_name = serializers.CharField(
+        required=False, allow_blank=True, help_text="资源名称，精确匹配，仅按资源维度查询时生效"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.CurrentAppPermissionListInputSLZ"
+
+    def validate_grant_dimension(self, value: str) -> str:
+        """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
+        return FORMATTED_TO_DB_GRANT_DIMENSION[value]
+
+
+class GatewayAppPermissionListInputSLZ(CurrentAppPermissionListInputSLZ):
+    target_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionListInputSLZ"
+
+
+class AppPermissionListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
+    gateway_name = serializers.CharField(source="gateway.name", read_only=True, help_text="网关名称")
+    resource_name = serializers.SerializerMethodField(help_text="资源名称，按网关维度查询时为空")
+    expires = serializers.DateTimeField(read_only=True, help_text="过期时间")
+    grant_type = serializers.ChoiceField(read_only=True, choices=GrantTypeEnum.get_choices(), help_text="授权类型")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.AppPermissionListOutputSLZ"
+
+    def get_resource_name(self, obj) -> str:
+        return self.context.get("resource_names", {}).get(getattr(obj, "resource_id", None), "")
 
 
 class MCPServerListInputSLZ(serializers.Serializer):
