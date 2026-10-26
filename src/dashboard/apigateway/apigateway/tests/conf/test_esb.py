@@ -55,6 +55,7 @@ def test_esb_runtime_registration(edition, enabled, multi_tenant, expected, flag
     code = """
 import importlib
 import json
+import sys
 import django
 from django.conf import settings
 from django.core.management import get_commands, load_command_class
@@ -70,7 +71,7 @@ def is_registered(path):
     return True
 
 commands = get_commands()
-sync_command = "sync_to_gateway_and_release"
+sync_command = sys.argv[1]
 if sync_command in commands:
     load_command_class(commands[sync_command], sync_command)
 
@@ -104,12 +105,24 @@ print(json.dumps({
     )},
 }))
 """
+    # The environment matrix changes settings, not the files activated by editionctl.
+    active_edition = json.loads((PROJECT / "apigateway/edition-metadata.json").read_text())["edition_name"]
+    sync_command = {
+        "EE": "sync_to_gateway_and_release",
+        "TE": "sync_legacy_esb_reusable_data",
+    }[active_edition]
     env = runtime_env(edition, enabled, multi_tenant)
     env["DJANGO_SETTINGS_MODULE"] = "apigateway.settings"
     for flag in ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"):
         env[f"FEATURE_FLAG_{flag}"] = flag_enabled
     result = subprocess.run(
-        [sys.executable, "-c", code], cwd=PROJECT, env=env, capture_output=True, text=True, check=False, timeout=60
+        [sys.executable, "-c", code, sync_command],
+        cwd=PROJECT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
     )
     assert result.returncode == 0, result.stderr
     state = json.loads(result.stdout.strip().splitlines()[-1])
