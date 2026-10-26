@@ -492,6 +492,9 @@ class GatewayMaintainerDeleteApi(generics.GenericAPIView):
         slz.is_valid(raise_exception=True)
 
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        maintainers_before = [
+            member.username for member in GatewayMember.objects.list_gateway_members(request.gateway.id)
+        ]
         deleted_members = delete_gateway_members(
             request.gateway,
             slz.validated_data["maintainers"],
@@ -499,14 +502,17 @@ class GatewayMaintainerDeleteApi(generics.GenericAPIView):
         )
         deleted_usernames = [member.username for member in deleted_members]
         if deleted_usernames:
+            maintainers_after = [
+                member.username for member in GatewayMember.objects.list_gateway_members(request.gateway.id)
+            ]
             Auditor.record_gateway_op_success(
                 op_type=OpTypeEnum.DELETE,
                 username=username,
                 gateway_id=request.gateway.id,
                 instance_id=request.gateway.id,
                 instance_name=request.gateway.name,
-                data_before={"maintainers": deleted_usernames},
-                data_after={},
+                data_before={"maintainers": maintainers_before},
+                data_after={"maintainers": maintainers_after},
                 comment="移除网关维护人",
             )
 

@@ -186,6 +186,8 @@ class TestGatewayMaintainerDeleteApi:
             op_object_id=fake_gateway.id,
         )
         assert audit_log.comment == "移除网关维护人"
+        assert json.loads(audit_log.data_before) == {"maintainers": ["admin", "second-admin"]}
+        assert json.loads(audit_log.data_after) == {"maintainers": ["admin"]}
 
     def test_delete_maintainers_rejects_empty_list(self, request_to_view, request_factory, fake_gateway):
         request = request_factory.delete("", data={"maintainers": []})
