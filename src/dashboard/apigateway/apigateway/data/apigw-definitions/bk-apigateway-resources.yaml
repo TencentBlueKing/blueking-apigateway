@@ -7033,6 +7033,10 @@ paths:
                           type: string
                           description: 文档地址
                           example: "http://test.com/"
+                        approval_url:
+                          type: string
+                          description: 权限审批 URL，优先返回 ITSM 工单地址，否则返回网关权限审批页
+                          example: "https://dashboard.example.com/6/permission/apply"
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false

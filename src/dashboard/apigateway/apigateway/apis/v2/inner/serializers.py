@@ -306,7 +306,7 @@ class GatewayAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateInputSLZ"
 
 
-class AppResourcePermissionListOutputSLZ(serializers.Serializer):
+class AppResourcePermissionListOutputBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     gateway_name = serializers.CharField()
@@ -320,7 +320,7 @@ class AppResourcePermissionListOutputSLZ(serializers.Serializer):
     doc_link = serializers.CharField()
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppResourcePermissionListOutputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppResourcePermissionListOutputBaseSLZ"
 
     def get_expires_in(self, obj):
         if math.isinf(obj["expires_in"]):
@@ -353,6 +353,24 @@ class AppResourcePermissionListOutputSLZ(serializers.Serializer):
             return True
 
         return False
+
+
+class AppResourcePermissionListOutputSLZ(AppResourcePermissionListOutputBaseSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppResourcePermissionListOutputSLZ"
+
+
+class GatewayPermissionResourceListOutputSLZ(AppResourcePermissionListOutputBaseSLZ):
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayPermissionResourceListOutputSLZ"
+
+    def get_approval_url(self, obj) -> str:
+        gateway_id = obj.get("gateway_id")
+        if not gateway_id:
+            return ""
+        return build_gateway_permission_approval_url(gateway_id, obj.get("itsm_ticket_id") or "")
 
 
 class AppPermissionRenewInputSLZ(serializers.Serializer):
