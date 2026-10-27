@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
-from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.apis.backend_config import pydantic_to_drf_validation_error, validate_ai_backend_config
 from apigateway.core.ai_backend import get_ai_backend_provider_config
 from apigateway.core.backend_config import (
     AI_BACKUP_PRIORITY,
@@ -52,9 +52,13 @@ class AIBackendWebConfigAdapter:
         try:
             old_instances = cls._existing_instances(existing_config)
             instance = cls._instance_to_internal(data, old_instances.get(data["name"]))
-            return AIBackendInstance.model_validate(instance).model_dump(exclude_unset=True, exclude_none=True)
         except PydanticValidationError, AIBackendWebConfigNotRepresentable:
             raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
+
+        try:
+            return AIBackendInstance.model_validate(instance).model_dump(exclude_unset=True, exclude_none=True)
+        except PydanticValidationError as err:
+            raise pydantic_to_drf_validation_error(err) from err
 
     @staticmethod
     def _existing_instances(config: dict | None) -> dict:
@@ -91,7 +95,6 @@ class AIBackendWebConfigAdapter:
     @classmethod
     def to_web(cls, config: dict) -> dict:
         normalized = AIBackendConfig.model_validate(config).to_config()
-        balancer = normalized.get("balancer")
         if message := get_ai_pool_routing_error(normalized):
             raise AIBackendWebConfigNotRepresentable(message)
         result: dict = {"timeout": normalized["timeout"], "instances": []}

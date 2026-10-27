@@ -10,9 +10,13 @@ def validate_ai_backend_config(data: Any) -> dict[str, Any]:
     try:
         return AIBackendConfig.normalize_for_write(data)
     except PydanticValidationError as err:
-        errors: dict[str, list[str]] = {}
-        for error in err.errors():
-            location = error["loc"]
-            field = str(location[0]) if location else "non_field_errors"
-            errors.setdefault(field, []).append(error["msg"])
-        raise serializers.ValidationError(errors) from err
+        raise pydantic_to_drf_validation_error(err) from err
+
+
+def pydantic_to_drf_validation_error(err: PydanticValidationError) -> serializers.ValidationError:
+    errors: dict[str, list[str]] = {}
+    for error in err.errors():
+        location = error["loc"]
+        field = str(location[0]) if location else "non_field_errors"
+        errors.setdefault(field, []).append(error["msg"])
+    return serializers.ValidationError(errors)

@@ -252,3 +252,30 @@ def test_pool_reduced_to_only_backup_still_requires_a_primary():
     form["instances"] = [form["instances"][1]]
     with pytest.raises(APIError, match="至少需要一个主实例"):
         AIBackendWebConfigAdapter.to_internal(form, existing_config=existing)
+
+
+@pytest.mark.parametrize("invalid, field", [("header", "auth"), ("stage_var", "non_field_errors")])
+def test_probe_reports_new_instance_validation_like_save(invalid, field):
+    instance = {
+        "name": "pending",
+        "priority": 10,
+        "provider": "openai-compatible",
+        "endpoint": "https://llm.example.com/v1/chat/completions",
+        "auth_header": {"name": "X-Key", "value": "probe-key"},
+        "model_options": {},
+    }
+    if invalid == "header":
+        instance["auth_header"]["name"] = "Host"
+    else:
+        instance["model_options"] = {"region": "{env.region}"}
+    with pytest.raises(ValidationError) as saved:
+        AIBackendWebConfigAdapter.to_internal({"instances": [instance]})
+    with pytest.raises(ValidationError) as probed:
+        AIBackendWebConfigAdapter.to_connectivity(instance)
+    assert probed.value.detail == {field: saved.value.detail["instances"]}
+    assert "已有" not in str(probed.value.detail)
+
+
+def test_probe_keeps_existing_configuration_parse_error_separate():
+    with pytest.raises(ValidationError, match="已有模型服务配置无法通过 Web 接口编辑"):
+        AIBackendWebConfigAdapter.to_connectivity(_single_form()["instances"][0], existing_config={"instances": []})

@@ -324,3 +324,47 @@ def test_pool_reduced_to_single_primary_saves_without_pool_fields(request_view, 
     assert "balancer" not in config and "fallback_strategy" not in config
     if route.startswith("stage."):
         publish_stage.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "patch, expected",
+    [
+        ({"auth_header": {"name": "Host", "value": "probe-key"}}, "header is forbidden: Host"),
+        ({"auth_header": {"name": "Connection", "value": "probe-key"}}, "header is forbidden: Connection"),
+        ({"auth_header": {"name": "Content-Length", "value": "probe-key"}}, "header is forbidden: Content-Length"),
+        (
+            {"auth_header": {"name": "Transfer-Encoding", "value": "probe-key"}},
+            "header is forbidden: Transfer-Encoding",
+        ),
+        ({"name": "{env.name}"}, "must not contain environment variables"),
+        ({"endpoint": "https://llm.example.com/{env.path}"}, "must not contain environment variables"),
+        ({"auth_header": {"name": "X-Key", "value": "{env.key}"}}, "must not contain environment variables"),
+        ({"model_options": {"region": "{env.region}"}}, "must not contain environment variables"),
+    ],
+)
+def test_unsaved_instance_validation_is_reported_without_probing(request_view, mocker, fake_stage, patch, expected):
+    fake_stage.gateway.kind = GatewayKindEnum.AI.value
+    fake_stage.gateway.save()
+    fetch_models = mocker.patch("apigateway.apis.web.backend.views.get_ai_backend_model_ids")
+    instance = {
+        "name": "pending",
+        "provider": "openai-compatible",
+        "endpoint": "https://llm.example.com/v1/chat/completions",
+        "auth_header": {"name": "X-Key", "value": "probe-key"},
+        **patch,
+    }
+    before = BackendConfig.objects.filter(gateway=fake_stage.gateway).count()
+    response = request_view(
+        "POST",
+        "backend.test-connection",
+        path_params={"gateway_id": fake_stage.gateway_id},
+        gateway=fake_stage.gateway,
+        data={"config": {"stage_id": fake_stage.id, "instance": instance}},
+    )
+    assert response.status_code == 400, response.json()
+    assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+    assert expected in response.json()["error"]["message"]
+    assert "已有" not in response.json()["error"]["message"]
+    assert "probe-key" not in response.json()["error"]["message"]
+    assert BackendConfig.objects.filter(gateway=fake_stage.gateway).count() == before
+    fetch_models.assert_not_called()
