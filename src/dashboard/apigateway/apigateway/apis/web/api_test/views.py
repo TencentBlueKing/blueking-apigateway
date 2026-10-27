@@ -41,7 +41,7 @@ from apigateway.utils.time import convert_second_to_epoch_millisecond
 from .data_models import ApiDebugHistoryRequest, ApiDebugHistoryResponse
 from .filters import APIDebugHistoryRecordFilter
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
-from .sensitive import DebugDataSanitizer, remove_sensitive_headers
+from .sensitive import DebugDataSanitizer
 from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
 TEST_PERMISSION_EXPIRE_DAYS = 1
@@ -90,6 +90,7 @@ class APITestApi(generics.CreateAPIView):
         sanitizer.add_authorization(authorization)
         sanitizer.add_authorization(authorization_from_cookies)
         sanitizer.add_headers(data["headers"])
+        sanitizer.add_headers(prepared_request_headers.headers)
 
         prepared_request_url = PreparedRequestURL(
             resource_path=released_resource.path,
@@ -112,13 +113,13 @@ class APITestApi(generics.CreateAPIView):
             "path_params": data.get("path_params", {}),
             "query_params": data.get("query_params", {}),
             "body": body,
-            "headers": remove_sensitive_headers(data["headers"]),
+            "headers": data["headers"],
             "subpath": data.get("subpath", ""),
             "use_test_app": data.get("use_test_app", True),
             "use_user_from_cookies": data.get("use_user_from_cookies", False),
             "spec_version": SPEC_VERSION,
         }
-        validated_request = ApiDebugHistoryRequest(**sanitizer.clean(history_request))
+        validated_request = ApiDebugHistoryRequest(**sanitizer.clean_request(history_request))
         try:
             response = requests.request(
                 method=data["method"],

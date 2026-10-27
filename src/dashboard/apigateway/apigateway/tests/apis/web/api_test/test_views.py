@@ -32,7 +32,7 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
-    @pytest.mark.parametrize("mode", ["cookie", "ticket", "access_token", "bearer"])
+    @pytest.mark.parametrize("mode", ["cookie", "ticket", "access_token", "bearer", "legacy_headers"])
     @responses.activate
     def test_authentication_and_sensitive_history(
         self, mode, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource, mocker
@@ -43,28 +43,32 @@ class TestAPITestAPIView:
         grant = mocker.patch(
             "apigateway.apis.web.api_test.views.ResourcePermissionHandler.grant_or_renewal_expire_soon"
         )
-        headers = {"X-Trace": "trace"}
-        authorization = {}
-        if mode == "ticket":
-            authorization = {"bk_ticket": "login-ticket"}
-        elif mode == "access_token":
-            headers["x-bkapi-authorization"] = json.dumps({"access_token": "access-token"})
-        elif mode == "bearer":
-            headers["authorization"] = "Bearer personal-token"
+        headers = {"X-Trace": "trace"} | {
+            "access_token": {"x-bkapi-authorization": json.dumps({"access_token": "access-token"})},
+            "bearer": {"authorization": "Bearer personal-token"},
+            "legacy_headers": {"X-Bkapi-Authorization": json.dumps({"uin": "12345", "skey": "legacy-skey"})},
+        }.get(mode, {})
+        authorization = {"bk_ticket": "login-ticket"} if mode == "ticket" else {}
 
         def respond(req):
-            auth = json.loads(req.headers["X-Bkapi-Authorization"])
+            if mode == "bearer":
+                assert "X-Bkapi-Authorization" not in req.headers
+                assert req.headers["Authorization"] == "Bearer personal-token"
+                auth = {}
+            else:
+                auth = json.loads(req.headers["X-Bkapi-Authorization"])
             if mode == "access_token":
                 assert auth == {"access_token": "access-token"}
-            else:
+            elif mode != "bearer":
                 assert auth["bk_app_code"] == "debug-app"
                 assert auth["bk_app_secret"] == "test-app-secret"
                 if mode == "ticket":
                     assert auth["bk_ticket"] == "login-ticket"
                 elif mode == "cookie":
-                    assert auth["bk_token"]
-                else:
-                    assert req.headers["Authorization"] == "Bearer personal-token"
+                    assert auth[settings.BK_LOGIN_TICKET_KEY]
+                elif mode == "legacy_headers":
+                    assert auth["uin"] == "12345"
+                    assert auth["skey"] == "legacy-skey"
             body = json.dumps(dict(req.headers))
             return (
                 200,
@@ -97,16 +101,87 @@ class TestAPITestAPIView:
             },
         )
         assert response.status_code == 200, response.json()
-        if mode == "access_token":
+        if mode in {"access_token", "bearer"}:
             grant.assert_not_called()
         else:
             grant.assert_called_once()
         history = APIDebugHistory.objects.get()
         assert history.request["headers"] == {"X-Trace": "trace"}
-        for secret in ["test-app-secret", "login-ticket", "access-token", "personal-token"]:
+        for secret in ["test-app-secret", "login-ticket", "access-token", "personal-token", "legacy-skey"]:
             assert secret not in json.dumps(history.request)
             assert secret not in json.dumps(history.response)
             assert secret not in response.content.decode()
+        assert len(responses.calls) == 1
+
+    @pytest.mark.parametrize("secret", ['app"secret', "app\\secret", 'app"secret\\with-both'])
+    @responses.activate
+    def test_json_encoded_auth_header_echo_is_not_returned_or_stored(
+        self, secret, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+
+        def respond(req):
+            assert json.loads(req.headers["X-Bkapi-Authorization"])["bk_app_secret"] == secret
+            body = json.dumps({"echoed_headers": dict(req.headers)})
+            return 200, {"Content-Type": "application/json", "Content-Length": str(len(body))}, body
+
+        responses.add_callback("GET", url, callback=respond)
+        response = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": "GET",
+                "headers": {},
+                "path_params": {},
+                "query_params": {},
+                "body": "",
+                "use_test_app": False,
+                "authorization": {"bk_app_code": "demo", "bk_app_secret": secret},
+            },
+        )
+        assert response.status_code == 200, response.json()
+        history = APIDebugHistory.objects.get()
+        for data in [response.json()["data"], history.response["data"]]:
+            assert json.loads(data["body"])["echoed_headers"]["X-Bkapi-Authorization"] == "***"
+        assert len(responses.calls) == 1
+
+    @pytest.mark.parametrize("cookie", ["preferred_method=GET", "foo=1; blueking_language=zh-cn; theme=dark"])
+    @responses.activate
+    def test_ordinary_cookies_preserve_request_metadata_and_response(
+        self, cookie, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        body = {"method": "GET", "number": 123, "language": "zh-cn", "message": "dark theme enabled"}
+        responses.add("GET", url, json=body)
+        response = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": "GET",
+                "headers": {"Cookie": cookie},
+                "path_params": {},
+                "query_params": {},
+                "body": "",
+                "use_test_app": False,
+            },
+        )
+        assert response.status_code == 200, response.json()
+        assert json.loads(response.json()["data"]["body"]) == body
+        history = APIDebugHistory.objects.get()
+        assert history.request["request_method"] == "GET"
+        assert history.request["type"] == "HTTP"
+        assert history.request["headers"] == {}
+        assert json.loads(history.response["data"]["body"]) == body
         assert len(responses.calls) == 1
 
     @responses.activate

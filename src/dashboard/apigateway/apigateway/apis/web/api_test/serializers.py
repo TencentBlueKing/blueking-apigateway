@@ -60,7 +60,7 @@ class APITestInputSLZ(serializers.Serializer):
 
     def validate_headers(self, headers):
         try:
-            PreparedRequestHeaders(headers)._get_bkapi_authorization_from_headers()
+            PreparedRequestHeaders(headers).get_bkapi_authorization()
         except ValueError as err:
             raise serializers.ValidationError(str(err))
         return headers

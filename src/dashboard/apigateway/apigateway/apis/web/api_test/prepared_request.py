@@ -28,7 +28,7 @@ from apigateway.service.resource import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
 from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 
-from .sensitive import SENSITIVE_HEADERS
+from .sensitive import SENSITIVE_HEADER_NAMES, SENSITIVE_KEYS
 
 
 def render_path(path, path_params):
@@ -42,9 +42,7 @@ def render_path(path, path_params):
 class PreparedRequestHeaders:
     def __init__(self, headers=None):
         self._headers = CaseInsensitiveDict(headers or {})
-        self._sensitive_cleaner = SensitiveCleaner(
-            ["bk_app_secret", "app_secret", "bk_token", "bk_ticket", "skey", "access_token"]
-        )
+        self._sensitive_cleaner = SensitiveCleaner(list(SENSITIVE_KEYS))
 
     def prepare_headers(
         self,
@@ -54,6 +52,11 @@ class PreparedRequestHeaders:
     ):
         self._headers = CaseInsensitiveDict(headers or {})
 
+        if self.bearer_token:
+            # bk-access-token-source gives Bearer precedence over the bkapi header.
+            self._headers.pop(HEADER_BKAPI_AUTHORIZATION, None)
+            return
+
         authorization = self._prepare_bkapi_authorization(authorization or {}, authorization_from_cookies or {})
         if authorization:
             self._headers[HEADER_BKAPI_AUTHORIZATION] = json.dumps(authorization)
@@ -61,14 +64,14 @@ class PreparedRequestHeaders:
     def _prepare_bkapi_authorization(self, authorization, authorization_from_cookies) -> Dict[str, Any]:
         authorization = copy.deepcopy(authorization)
         authorization.update(authorization_from_cookies)
-        authorization.update(self._get_bkapi_authorization_from_headers())
+        authorization.update(self.get_bkapi_authorization())
 
         if authorization.get("access_token"):
             return {"access_token": authorization["access_token"]}
 
         return authorization
 
-    def _get_bkapi_authorization_from_headers(self) -> Dict[str, Any]:
+    def get_bkapi_authorization(self) -> Dict[str, Any]:
         authorization = self._headers.get(HEADER_BKAPI_AUTHORIZATION)
         if not authorization:
             return {}
@@ -83,7 +86,14 @@ class PreparedRequestHeaders:
 
     @property
     def uses_access_token(self) -> bool:
-        return bool(self._get_bkapi_authorization_from_headers().get("access_token"))
+        return bool(self.bearer_token or self.get_bkapi_authorization().get("access_token"))
+
+    @property
+    def bearer_token(self) -> str:
+        authorization = self._headers.get("Authorization", "")
+        if authorization.startswith(("Bearer ", "bearer ")):
+            return authorization[7:]
+        return ""
 
     @property
     def headers(self):
@@ -93,10 +103,13 @@ class PreparedRequestHeaders:
     def headers_without_sensitive(self) -> CaseInsensitiveDict:
         headers = copy.deepcopy(self._headers)
         for key in headers:
-            if key.lower() in SENSITIVE_HEADERS and key.lower() != HEADER_BKAPI_AUTHORIZATION.lower():
+            if (
+                key.lower() in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS
+                and key.lower() != HEADER_BKAPI_AUTHORIZATION.lower()
+            ):
                 headers[key] = "***"
 
-        authorization = self._get_bkapi_authorization_from_headers()
+        authorization = self.get_bkapi_authorization()
         if authorization:
             headers[HEADER_BKAPI_AUTHORIZATION] = json.dumps(self._sensitive_cleaner.clean(authorization))
 

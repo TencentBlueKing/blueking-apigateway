@@ -69,6 +69,30 @@ def test_render_path(params, expected):
 
 
 class TestPreparedRequestHeaders:
+    @pytest.mark.parametrize("scheme", ["Bearer", "bearer"])
+    def test_bearer_token_replaces_application_and_other_token(self, scheme):
+        request_headers = PreparedRequestHeaders()
+        request_headers.prepare_headers(
+            headers={
+                "Authorization": f"{scheme} personal-token",
+                "X-Bkapi-Authorization": '{"access_token": "other"}',
+            },
+            authorization={"bk_app_code": "app", "bk_app_secret": "secret"},
+            authorization_from_cookies={"bk_token": "cookie-token"},
+        )
+        assert dict(request_headers.headers) == {"Authorization": f"{scheme} personal-token"}
+        assert request_headers.uses_access_token
+
+    @pytest.mark.parametrize("authorization", ["Basic abc", "Bearer "])
+    def test_non_bearer_authorization_preserves_application(self, authorization):
+        request_headers = PreparedRequestHeaders()
+        request_headers.prepare_headers(
+            headers={"Authorization": authorization},
+            authorization={"bk_app_code": "app", "bk_app_secret": "secret"},
+        )
+        assert json.loads(request_headers.headers[HEADER_BKAPI_AUTHORIZATION])["bk_app_code"] == "app"
+        assert not request_headers.uses_access_token
+
     def test_access_token_replaces_other_credentials(self):
         request_headers = PreparedRequestHeaders()
         headers = {"x-bkapi-authorization": json.dumps({"access_token": "access-token", "bk_app_code": "override"})}
@@ -146,14 +170,14 @@ class TestPreparedRequestHeaders:
             ),
         ],
     )
-    def test_get_bkapi_authorization_from_headers(self, params, expected):
+    def test_get_bkapi_authorization(self, params, expected):
         request_headers = PreparedRequestHeaders(**params)
-        assert request_headers._get_bkapi_authorization_from_headers() == expected
+        assert request_headers.get_bkapi_authorization() == expected
 
-    def test_get_bkapi_authorization_from_headers__error(self, mocker):
+    def test_get_bkapi_authorization__error(self, mocker):
         request_headers = PreparedRequestHeaders(headers={"x-bkapi-authorization": "invalid-json"})
         with pytest.raises(ValueError):
-            request_headers._get_bkapi_authorization_from_headers()
+            request_headers.get_bkapi_authorization()
 
     @pytest.mark.parametrize(
         "params, expected",

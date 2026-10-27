@@ -47,7 +47,7 @@ def test_cookie_values_and_json_escaped_echoes():
             "headers": {"Set-Cookie": "bk_token=cookie-token", "X-Trace": "trace"},
         }
     )
-    assert json.loads(clean["body"]) == {"echo": "***", "cookies": "***/***"}
+    assert json.loads(clean["body"]) == {"echo": "***", "cookies": "***/session-token"}
     assert clean["headers"] == {"Set-Cookie": "***", "X-Trace": "trace"}
 
 
@@ -100,3 +100,40 @@ def test_history_curl_without_request_headers():
 def test_malformed_historical_curl_is_not_returned():
     _, response = sanitize_history({}, {"data": {"curl": "curl -H 'Authorization: Bearer token"}})
     assert response["data"]["curl"] == ""
+
+
+def test_history_metadata_and_ordinary_cookies_are_preserved():
+    request, response = sanitize_history(
+        {"request_method": "GET", "type": "HTTP", "headers": {"Cookie": "bk_token=GET; foo=1"}},
+        {"data": {"body": '{"value": 123, "echo": "GET"}'}},
+    )
+    assert request["request_method"] == "GET"
+    assert request["type"] == "HTTP"
+    assert json.loads(response["data"]["body"]) == {"value": 123, "echo": "***"}
+
+
+def test_json_body_semantics_and_format_are_preserved_without_credentials():
+    body = '{"foo":  1, "language": "zh-cn"}'
+    sanitizer = DebugDataSanitizer()
+    sanitizer.add_headers({"Cookie": "foo=1; blueking_language=zh-cn"})
+    assert sanitizer.clean(body) == body
+
+
+def test_custom_login_cookie_name_is_sensitive(settings):
+    settings.BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {"bk_ticket": "custom_login_ticket"}
+    sanitizer = DebugDataSanitizer()
+    sanitizer.add_headers({"Cookie": "custom_login_ticket=custom-ticket; theme=dark"})
+    assert sanitizer.clean("custom-ticket and dark") == "*** and dark"
+
+
+def test_response_authentication_headers_are_always_masked():
+    sanitizer = DebugDataSanitizer()
+    assert sanitizer.clean(
+        {
+            "headers": {
+                "Set-Cookie": "session=newly-issued-session",
+                "Authorization": "Bearer new-token",
+                "X-Trace": "trace",
+            }
+        }
+    ) == {"headers": {"Set-Cookie": "***", "Authorization": "***", "X-Trace": "trace"}}
