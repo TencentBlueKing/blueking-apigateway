@@ -22,6 +22,7 @@ import type { IResourceImportCheckResult } from '@/types/resource';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IBackendPathCheckOutput,
+  IDocArchiveParseOutput,
   IDocListOutput,
   IResourceListPageOutput,
   IResourcePathConflictOutput,
@@ -174,6 +175,14 @@ export const checkResourceImport = (
  */
 export const exportResources = async (apigwId: number, data: IResourceExportInputSLZ) =>
   http.post(`${path}/${apigwId}/resources/export/`, data, { responseType: 'blob' });
+
+/**
+ * 解析资源文档压缩包
+ * @param apigwId 网关id
+ * @param data 文档压缩包
+ */
+export const parseResourceDocArchive = (apigwId: number, data: FormData) =>
+  http.post<IDocArchiveParseOutput[]>(`${path}/${apigwId}/docs/archive/parse/`, data);
 
 /**
  * 导入资源文档

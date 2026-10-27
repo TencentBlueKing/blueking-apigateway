@@ -141,14 +141,10 @@
         <BkUpload
           v-else
           theme="button"
-          with-credentials
-          :url="`${envStore.env.BK_DASHBOARD_URL}/gateways/${gatewayId}/docs/archive/parse/`"
+          :custom-request="handleArchiveUpload"
           class="upload-cls"
-          name="file"
-          :header="{ name: 'X-CSRFToken', value: CSRFToken }"
           :size="uploadMaxSize"
-          @done="handleUploadDone"
-          @progress="handleUploadSuccess"
+          @success="handleArchiveUploadSuccess"
           @error="handleUploadError"
         >
           <template #default>
@@ -334,21 +330,18 @@ import {
   checkResourceImport,
   importResourceDoc,
   importResourceDocSwagger,
+  parseResourceDocArchive,
 } from '@/services/source/resource';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { useSelection } from '@/hooks';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
-import type { UploadFile } from 'bkui-vue/lib/upload/upload.type';
-import Cookie from 'js-cookie';
+import type { UploadRequestOptions } from 'bkui-vue/lib/upload/upload.type';
+import type { IDocArchiveParseOutput } from '@/services/types/responses/gateways';
 import { useEnv } from '@/stores';
 
-interface IFile extends UploadFile {
-  response?: {
-    data: {
-      resource: object
-      resource_doc: object
-    }[]
-  }
+interface IArchiveUploadResponse {
+  code: number
+  data: IDocArchiveParseOutput[]
 }
 
 interface IProps { gatewayId?: number }
@@ -373,16 +366,11 @@ const language = ref('zh');
 const isDataLoading = ref(false);
 const isImportLoading = ref(false);
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
-const zipFile = ref<any>('');
+const zipFile = ref<File | string>('');
 const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 
 // 上传文件大小限制，单位 mb
 const uploadMaxSize = 10;
-
-const CSRFToken = computed(() => {
-  const CSRF_TOKEN_KEY = envStore.env?.BK_DASHBOARD_CSRF_COOKIE_NAME || 'bk_apigw_dashboard_csrftoken';
-  return Cookie.get(CSRF_TOKEN_KEY);
-});
 
 // 资源新建条数
 const createNum = computed(() => {
@@ -421,22 +409,21 @@ const setEditValue = () => {
   });
 };
 
-// 拿不到上传成功的success的事件先用progress代替
-const handleUploadSuccess = async (e: any, file: any) => {
-  zipFile.value = file;
+// 通过统一请求层上传，每次请求时读取最新的 CSRF Token
+const handleArchiveUpload = async ({ file }: UploadRequestOptions): Promise<IArchiveUploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const data = await parseResourceDocArchive(gatewayId, formData);
+  return {
+    code: 0,
+    data,
+  };
 };
 
-// 上传完成的方法
-const handleUploadDone = async (fileList: IFile[]) => {
-  const file = fileList[fileList.length - 1];
-  if (!file.response) {
-    return Message({
-      theme: 'error',
-      message: t('上传失败'),
-    });
-  }
-  const res = file.response.data;
-  const data = res.map(e => ({
+// 仅在解析成功后保存原始文件并展示预览
+const handleArchiveUploadSuccess = (response: IArchiveUploadResponse, file: File) => {
+  zipFile.value = file;
+  const data = response.data.map(e => ({
     ...e,
     ...e.resource,
     ...e.resource_doc,
