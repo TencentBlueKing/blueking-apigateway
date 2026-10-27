@@ -17,8 +17,8 @@ def pool_backend(fake_stage):
         {
             "timeout": 60,
             "instances": [
-                {"name": "a", "provider": "openai", "api_key": "alpha-secret"},
-                {"name": "b", "provider": "openai", "api_key": "beta-secret"},
+                {"name": "a", "priority": 10, "provider": "openai", "api_key": "alpha-secret"},
+                {"name": "b", "priority": 10, "provider": "openai", "api_key": "beta-secret"},
                 {"name": "backup", "priority": 0, "provider": "openai", "api_key": "backup-secret"},
             ],
         }
@@ -43,7 +43,7 @@ def test_create_pool_and_read_explicit_array(request_view, fake_stage):
                     "stage_id": fake_stage.id,
                     "balancer": {"algorithm": "chash"},
                     "instances": [
-                        {"name": "a", "provider": "openai", "api_key": "alpha-secret"},
+                        {"name": "a", "priority": 10, "provider": "openai", "api_key": "alpha-secret"},
                         {"name": "b", "priority": 0, "provider": "openai", "api_key": "beta-secret"},
                     ],
                 }
@@ -158,11 +158,9 @@ def test_stage_create_with_pool_and_connectivity_remains_single_instance(request
         gateway=pool_backend.gateway,
         data={"name": "new-stage", "description": "", "backends": [{"id": pool_backend.backend_id, "config": data}]},
     )
-    # Masks are not portable to a different Stage: no existing credentials are restored.
-    assert response.status_code == 201, response.json()
-    new_stage = Stage.objects.get(gateway=pool_backend.gateway, name="new-stage")
-    stored = BackendConfig.objects.get(stage=new_stage, backend_id=pool_backend.backend_id)
-    assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer al****et"
+    assert response.status_code == 400, response.json()
+    assert "重新输入" in str(response.json())
+    assert not Stage.objects.filter(gateway=pool_backend.gateway, name="new-stage").exists()
     fetch_models = mocker.patch("apigateway.apis.web.backend.views.get_ai_backend_model_ids")
     response = request_view(
         "POST",
@@ -250,3 +248,31 @@ def test_existing_backup_is_probed_by_name_without_changing_pool(request_view, m
     assert http_get.call_args.kwargs["headers"] == {"Authorization": "Bearer backup-secret"}
     pool_backend.refresh_from_db()
     assert pool_backend.config == before
+
+
+@pytest.mark.parametrize("route", ["backend.retrieve-update-destroy", "stage.backend-retrieve-update"])
+def test_renamed_masked_instance_is_rejected_without_saving_or_publishing(request_view, mocker, pool_backend, route):
+    publish_stage = mocker.patch("apigateway.apis.web.stage.views.trigger_gateway_publish")
+    publish_backend = mocker.patch("apigateway.biz.backend.backend.trigger_gateway_publish")
+    before = deepcopy(pool_backend.config)
+    data = AIBackendWebConfigAdapter.to_web(before)
+    data["instances"][0]["name"] = "renamed"
+    params = {
+        "gateway_id": pool_backend.gateway_id,
+        "id": pool_backend.stage_id,
+        "backend_id": pool_backend.backend_id,
+    }
+    if route.startswith("backend."):
+        params = {"gateway_id": pool_backend.gateway_id, "id": pool_backend.backend_id}
+        data = {
+            "name": pool_backend.backend.name,
+            "type": "http",
+            "configs": [{"stage_id": pool_backend.stage_id, **data}],
+        }
+    response = request_view("PUT", route, path_params=params, gateway=pool_backend.gateway, data=data)
+    assert response.status_code == 400, response.json()
+    assert "重新输入" in str(response.json())
+    pool_backend.refresh_from_db()
+    assert pool_backend.config == before
+    publish_stage.assert_not_called()
+    publish_backend.assert_not_called()

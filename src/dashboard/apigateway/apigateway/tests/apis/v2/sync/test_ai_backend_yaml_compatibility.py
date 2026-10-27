@@ -111,3 +111,35 @@ def test_registered_sync_schema_accepts_main_pool_and_backup(operation_id, algor
     properties = schema["properties"]["ai_backends"]["items"]["properties"]["config"]["properties"]
     assert "priority" in properties["instances"]["items"]["properties"]
     assert {"balancer", "fallback_strategy"} <= properties.keys()
+
+
+@pytest.mark.parametrize("route", ["openapi.stage.sync", "openapi.v2.sync.gateway.stages.sync"])
+@pytest.mark.parametrize("credential", ["****", "ab****cd", "literal*key"])
+def test_automation_keeps_mask_shaped_credentials_literal(request_view, fake_gateway, mocker, route, credential):
+    mocker.patch(
+        "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    mocker.patch(
+        "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    fake_gateway.kind = GatewayKindEnum.AI.value
+    fake_gateway.save()
+    config = {
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "auth": {"header": {"Authorization": f"Bearer {credential}"}},
+            }
+        ]
+    }
+    response = request_view(
+        "POST",
+        route,
+        gateway=fake_gateway,
+        path_params={"gateway_name": fake_gateway.name},
+        data={"name": "prod", "ai_backends": [{"name": "model", "config": config}]},
+    )
+    assert response.status_code == 200, response.json()
+    stored = BackendConfig.objects.get(gateway=fake_gateway, backend__name="model", stage__name="prod")
+    assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == f"Bearer {credential}"

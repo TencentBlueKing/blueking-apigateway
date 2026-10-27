@@ -9,13 +9,12 @@ from apigateway.apis.backend_config import validate_ai_backend_config
 from apigateway.core.ai_backend import get_ai_backend_provider_config
 from apigateway.core.backend_config import (
     AI_BACKUP_PRIORITY,
-    AI_CHASH_HASH_ON,
-    AI_CHASH_KEY,
-    AI_FALLBACK_STRATEGIES,
     AI_INSTANCE_WEIGHT,
     AI_PRIMARY_PRIORITY,
     AIBackendConfig,
+    AIBackendConfigRuleError,
     mask_header_value,
+    validate_ai_pool_routing,
 )
 
 _NOT_RESTORED = object()
@@ -35,7 +34,7 @@ class AIBackendWebConfigAdapter:
                 instance = cls._instance_to_internal(item, old_instances.get(item["name"]))
                 instance.update(
                     name=item["name"],
-                    priority=item.get("priority", AI_PRIMARY_PRIORITY),
+                    priority=item["priority"],
                     weight=AI_INSTANCE_WEIGHT,
                 )
                 instances.append(instance)
@@ -71,6 +70,11 @@ class AIBackendWebConfigAdapter:
     @classmethod
     def _instance_to_internal(cls, data: dict, existing: dict | None) -> dict:
         restored_auth = cls._restore_masked_auth(data, existing)
+        if restored_auth is _NOT_RESTORED and (credential := cls._credential(data)):
+            value = credential[2]
+            # Only the exact display-mask shapes are reserved in the Web protocol.
+            if value == "****" or (len(value) == 8 and value == mask_header_value(value)):
+                raise serializers.ValidationError({credential[0]: _("认证凭据掩码无法恢复，请重新输入认证凭据。")})
         options = dict(data.get("model_options", {}))
         if data.get("model") is not None:
             options["model"] = data["model"]
@@ -92,16 +96,12 @@ class AIBackendWebConfigAdapter:
     def to_web(cls, config: dict) -> dict:
         normalized = AIBackendConfig.model_validate(config).to_config()
         balancer = normalized.get("balancer")
-        if (
-            balancer
-            and balancer.get("algorithm") == "chash"
-            and (balancer.get("hash_on") != AI_CHASH_HASH_ON or balancer.get("key") != AI_CHASH_KEY)
-        ):
-            raise AIBackendWebConfigNotRepresentable("Web protocol cannot represent a custom hash key")
-        strategy = normalized.get("fallback_strategy", [])
-        if not isinstance(strategy, list) or any(value not in AI_FALLBACK_STRATEGIES for value in strategy):
-            raise AIBackendWebConfigNotRepresentable("Web protocol cannot represent this fallback strategy")
+        try:
+            validate_ai_pool_routing(normalized)
+        except AIBackendConfigRuleError as err:
+            raise AIBackendWebConfigNotRepresentable(err.message) from err
         result: dict = {"timeout": normalized["timeout"], "instances": []}
+        # Historical reads preserve priorities/weights instead of applying write defaults.
         for item in normalized["instances"]:
             priority = item.get("priority", AI_PRIMARY_PRIORITY)
             if priority not in (AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY) or (

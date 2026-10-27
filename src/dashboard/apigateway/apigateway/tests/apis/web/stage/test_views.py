@@ -40,6 +40,7 @@ def _ai_config():
         "instances": [
             {
                 "name": "primary",
+                "priority": 10,
                 "provider": "openai",
                 "api_key": "secret",
                 "model": "gpt-4o",

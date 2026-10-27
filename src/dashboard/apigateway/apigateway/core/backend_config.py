@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Any, Literal, Self
 from urllib.parse import urlsplit
 
+from django.utils.translation import gettext_noop
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from apigateway.common.security import is_forbidden_host
@@ -18,6 +19,13 @@ AI_INSTANCE_WEIGHT = 1
 AI_CHASH_HASH_ON = "vars_combinations"
 AI_CHASH_KEY = "$bk_app_code"
 AI_FALLBACK_STRATEGIES = ("http_429", "http_5xx")
+
+
+class AIBackendConfigRuleError(ValueError):
+    def __init__(self, field: str, message: str):
+        self.field = field
+        self.message = message
+        super().__init__(message)
 
 
 def mask_header_value(value: str) -> str:
@@ -224,20 +232,24 @@ class AIBackendConfig(BaseModel):
         config = model.to_config()
         names = [item.name for item in model.instances]
         if len(set(names)) != len(names):
-            raise ValueError("instances: instance names must be unique")
+            raise AIBackendConfigRuleError("instances", gettext_noop("模型实例名称不能重复。"))
         priorities = [item.priority for item in model.instances]
         if any(value not in (AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY) for value in priorities):
-            raise ValueError("instances: priority must be 10 (primary) or 0 (backup)")
+            raise AIBackendConfigRuleError(
+                "instances", gettext_noop("模型实例优先级只能为 10（主实例）或 0（备用实例）。")
+            )
         if AI_PRIMARY_PRIORITY not in priorities or priorities.count(AI_BACKUP_PRIORITY) > 1:
-            raise ValueError("instances: at least one primary and at most one backup are required")
+            raise AIBackendConfigRuleError(
+                "instances", gettext_noop("至少需要一个主实例，且最多只能配置一个备用实例。")
+            )
         if len(model.instances) == 1:
             return config
 
         if "fallback_strategy" in model.model_fields_set and model.fallback_strategy is None:
-            raise ValueError("fallback_strategy: an array is required")
+            raise AIBackendConfigRuleError("fallback_strategy", gettext_noop("故障重试策略必须为数组。"))
         for item, output in zip(model.instances, config["instances"], strict=True):
             if "weight" in item.model_fields_set and item.weight != AI_INSTANCE_WEIGHT:
-                raise ValueError("instances: multi-instance weight must be 1")
+                raise AIBackendConfigRuleError("instances", gettext_noop("多实例配置的权重必须为 1。"))
             output.update(priority=item.priority, weight=AI_INSTANCE_WEIGHT)
         config["instances"].sort(key=lambda item: (-item["priority"], item["name"]))
 
@@ -268,20 +280,36 @@ class AIBackendConfig(BaseModel):
 def _normalize_ai_pool_routing(config: dict[str, Any], *, has_backup: bool) -> None:
     balancer = config.get("balancer", {})
     balancer.setdefault("algorithm", "roundrobin")
-    if balancer["algorithm"] == "chash":
-        if balancer.get("hash_on") != AI_CHASH_HASH_ON or balancer.get("key") != AI_CHASH_KEY:
-            raise ValueError("balancer: chash must use vars_combinations and $bk_app_code")
-    elif "hash_on" in balancer or "key" in balancer:
-        raise ValueError("balancer: roundrobin does not accept hash_on or key")
+    if balancer["algorithm"] != "chash" and ("hash_on" in balancer or "key" in balancer):
+        raise AIBackendConfigRuleError("balancer", gettext_noop("轮询算法不支持配置 hash_on 和 key。"))
     config["balancer"] = balancer
 
-    strategy = config.get("fallback_strategy", list(AI_FALLBACK_STRATEGIES))
-    if not isinstance(strategy, list) or any(item not in AI_FALLBACK_STRATEGIES for item in strategy):
-        raise ValueError("fallback_strategy: only an array of http_429 and http_5xx is supported")
+    strategy = config.setdefault("fallback_strategy", list(AI_FALLBACK_STRATEGIES))
+    validate_ai_pool_routing(config)
     strategy = [item for item in AI_FALLBACK_STRATEGIES if item in strategy]
     if has_backup and not strategy:
-        raise ValueError("fallback_strategy: a backup requires at least one retry condition")
+        raise AIBackendConfigRuleError(
+            "fallback_strategy", gettext_noop("配置备用实例时，至少需要启用一项故障重试条件。")
+        )
     config["fallback_strategy"] = strategy
+
+
+def validate_ai_pool_routing(config: dict[str, Any]) -> None:
+    """Check shared write/Web routing restrictions without changing stored configuration."""
+    balancer = config.get("balancer")
+    if (
+        balancer
+        and balancer.get("algorithm") == "chash"
+        and (balancer.get("hash_on") != AI_CHASH_HASH_ON or balancer.get("key") != AI_CHASH_KEY)
+    ):
+        raise AIBackendConfigRuleError(
+            "balancer", gettext_noop("一致性哈希仅支持 vars_combinations 和 $bk_app_code。")
+        )
+    strategy = config.get("fallback_strategy", [])
+    if not isinstance(strategy, list) or any(item not in AI_FALLBACK_STRATEGIES for item in strategy):
+        raise AIBackendConfigRuleError(
+            "fallback_strategy", gettext_noop("故障重试策略仅支持 http_429 和 http_5xx 数组。")
+        )
 
 
 type BackendConfigType = type[StandardBackendConfig] | type[AIBackendConfig]

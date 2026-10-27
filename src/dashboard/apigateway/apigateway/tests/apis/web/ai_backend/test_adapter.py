@@ -7,7 +7,10 @@ from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter, AIBackendW
 
 
 def _single_form(**fields):
-    return {"timeout": 300, "instances": [{"name": "primary", "provider": "openai", "api_key": "secret", **fields}]}
+    return {
+        "timeout": 300,
+        "instances": [{"name": "primary", "priority": 10, "provider": "openai", "api_key": "secret", **fields}],
+    }
 
 
 def _pool_form():
@@ -15,7 +18,7 @@ def _pool_form():
         "timeout": 60,
         "balancer": {"algorithm": "chash"},
         "instances": [
-            {"name": "a", "provider": "openai", "api_key": "alpha-secret"},
+            {"name": "a", "priority": 10, "provider": "openai", "api_key": "alpha-secret"},
             {
                 "name": "b",
                 "priority": 0,
@@ -66,6 +69,7 @@ def test_adapter_maps_optional_custom_instance_to_storage_and_back():
             "instances": [
                 {
                     "name": "primary",
+                    "priority": 10,
                     "provider": "openai-compatible",
                     "endpoint": "https://llm.example.com/v1/chat/completions",
                 }
@@ -123,13 +127,49 @@ def test_adapter_fails_closed_when_storage_has_multiple_headers():
         AIBackendWebConfigAdapter.to_web(config)
 
 
-def test_new_name_does_not_restore_another_instances_secret():
+@pytest.mark.parametrize("index, field", [(0, "api_key"), (1, "auth_header")])
+@pytest.mark.parametrize("change", ["rename", "new_config", "replace_mask"])
+@pytest.mark.parametrize("operation", ["save", "probe"])
+def test_unrestorable_mask_is_rejected(index, field, change, operation):
     existing = AIBackendWebConfigAdapter.to_internal(_pool_form())
     masked = AIBackendWebConfigAdapter.to_web(existing)
-    masked["instances"][0]["name"] = "new"
-    updated = AIBackendWebConfigAdapter.to_internal(masked, existing_config=existing)
+    instance = masked["instances"][index]
+    if change == "rename":
+        instance["name"] = "new"
+    elif change == "new_config":
+        existing = None
+        masked["instances"][1 - index] = _pool_form()["instances"][1 - index]
+    elif field == "api_key":
+        instance[field] = "xy****zz"
+    else:
+        instance[field]["value"] = "xy****zz"
+    with pytest.raises(ValidationError, match="重新输入") as err:
+        if operation == "save":
+            AIBackendWebConfigAdapter.to_internal(masked, existing_config=existing)
+        else:
+            AIBackendWebConfigAdapter.to_connectivity(instance, existing_config=existing)
+    assert field in err.value.detail
+
+
+@pytest.mark.parametrize("credential", ["****", "ab****cd", "********"])
+def test_new_instance_rejects_mask_placeholders(credential):
+    with pytest.raises(ValidationError, match="重新输入"):
+        AIBackendWebConfigAdapter.to_internal(_single_form(api_key=credential))
+
+
+@pytest.mark.parametrize("credential", ["key*with*stars", "abc****xyz", "***", "a***b"])
+def test_new_instance_accepts_literal_credentials_with_stars(credential):
+    stored = AIBackendWebConfigAdapter.to_internal(_single_form(api_key=credential))
+    assert stored["instances"][0]["auth"]["header"]["Authorization"] == f"Bearer {credential}"
+
+
+def test_renamed_instance_accepts_reentered_credential():
+    existing = AIBackendWebConfigAdapter.to_internal(_pool_form())
+    form = AIBackendWebConfigAdapter.to_web(existing)
+    form["instances"][0].update(name="new", api_key="replacement-secret")
+    updated = AIBackendWebConfigAdapter.to_internal(form, existing_config=existing)
     renamed = next(item for item in updated["instances"] if item["name"] == "new")
-    assert renamed["auth"]["header"]["Authorization"] != "Bearer alpha-secret"
+    assert renamed["auth"]["header"]["Authorization"] == "Bearer replacement-secret"
 
 
 def test_historical_single_instance_is_read_as_array_without_modifying_storage():
@@ -162,3 +202,19 @@ def test_connectivity_can_probe_backup_independently_and_restore_its_own_credent
     assert probe["instances"][0]["name"] == "b"
     assert probe["instances"][0]["auth"]["header"] == {"X-Key": "beta-secret"}
     assert "balancer" not in probe and "fallback_strategy" not in probe
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"balancer": {"algorithm": "chash", "hash_on": "header", "key": "X-App"}},
+        {"fallback_strategy": ["rate_limiting"]},
+    ],
+)
+def test_web_rejects_unrepresentable_routing_without_modifying_storage(patch):
+    config = AIBackendWebConfigAdapter.to_internal(_pool_form())
+    config.update(patch)
+    before = deepcopy(config)
+    with pytest.raises(AIBackendWebConfigNotRepresentable):
+        AIBackendWebConfigAdapter.to_web(config)
+    assert config == before
