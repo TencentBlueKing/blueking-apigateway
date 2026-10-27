@@ -69,6 +69,24 @@ def test_render_path(params, expected):
 
 
 class TestPreparedRequestHeaders:
+    def test_access_token_replaces_other_credentials(self):
+        request_headers = PreparedRequestHeaders()
+        headers = {"x-bkapi-authorization": json.dumps({"access_token": "access-token", "bk_app_code": "override"})}
+        request_headers.prepare_headers(
+            headers=headers,
+            authorization={"bk_app_code": "app", "bk_app_secret": "secret", "bk_ticket": "ticket"},
+            authorization_from_cookies={"bk_token": "cookie-token"},
+        )
+        assert json.loads(request_headers.headers[HEADER_BKAPI_AUTHORIZATION]) == {"access_token": "access-token"}
+        assert json.loads(headers["x-bkapi-authorization"])["bk_app_code"] == "override"
+
+    @pytest.mark.parametrize("name", ["Authorization", "authorization", "COOKIE", "Proxy-Authorization"])
+    def test_curl_headers_hide_credentials(self, name):
+        request_headers = PreparedRequestHeaders(headers={name: "Bearer personal-token", "X-Trace": "trace"})
+        assert "personal-token" not in json.dumps(dict(request_headers.headers_without_sensitive))
+        assert request_headers.headers_without_sensitive["X-Trace"] == "trace"
+        assert request_headers.headers[name] == "Bearer personal-token"
+
     @pytest.mark.parametrize(
         "params, expected",
         [

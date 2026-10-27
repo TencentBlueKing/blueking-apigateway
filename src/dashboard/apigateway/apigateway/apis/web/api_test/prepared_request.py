@@ -28,6 +28,8 @@ from apigateway.service.resource import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
 from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 
+from .sensitive import SENSITIVE_HEADERS
+
 
 def render_path(path, path_params):
     for key, value in path_params.items():
@@ -61,6 +63,9 @@ class PreparedRequestHeaders:
         authorization.update(authorization_from_cookies)
         authorization.update(self._get_bkapi_authorization_from_headers())
 
+        if authorization.get("access_token"):
+            return {"access_token": authorization["access_token"]}
+
         return authorization
 
     def _get_bkapi_authorization_from_headers(self) -> Dict[str, Any]:
@@ -69,9 +74,16 @@ class PreparedRequestHeaders:
             return {}
 
         try:
-            return json.loads(authorization)
-        except Exception:  # pylint: disable=broad-except
+            data = json.loads(authorization)
+            if not isinstance(data, dict):
+                raise TypeError
+            return data
+        except ValueError, TypeError:
             raise ValueError(_("Header X-Bkapi-Authorization 不是一个有效的 Json 格式字符串。"))
+
+    @property
+    def uses_access_token(self) -> bool:
+        return bool(self._get_bkapi_authorization_from_headers().get("access_token"))
 
     @property
     def headers(self):
@@ -80,6 +92,9 @@ class PreparedRequestHeaders:
     @property
     def headers_without_sensitive(self) -> CaseInsensitiveDict:
         headers = copy.deepcopy(self._headers)
+        for key in headers:
+            if key.lower() in SENSITIVE_HEADERS and key.lower() != HEADER_BKAPI_AUTHORIZATION.lower():
+                headers[key] = "***"
 
         authorization = self._get_bkapi_authorization_from_headers()
         if authorization:

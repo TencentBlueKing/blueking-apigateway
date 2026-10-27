@@ -19,7 +19,10 @@
 
 
 import datetime
+import json
 
+import pytest
+import requests
 import responses
 from ddf import G
 
@@ -29,6 +32,113 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
+    @pytest.mark.parametrize("mode", ["cookie", "ticket", "access_token", "bearer"])
+    @responses.activate
+    def test_authentication_and_sensitive_history(
+        self, mode, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource, mocker
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
+        fake_resource1.method = "GET"
+        settings.DEFAULT_TEST_APP = {"bk_app_code": "debug-app", "bk_app_secret": "test-app-secret"}
+        grant = mocker.patch(
+            "apigateway.apis.web.api_test.views.ResourcePermissionHandler.grant_or_renewal_expire_soon"
+        )
+        headers = {"X-Trace": "trace"}
+        authorization = {}
+        if mode == "ticket":
+            authorization = {"bk_ticket": "login-ticket"}
+        elif mode == "access_token":
+            headers["x-bkapi-authorization"] = json.dumps({"access_token": "access-token"})
+        elif mode == "bearer":
+            headers["authorization"] = "Bearer personal-token"
+
+        def respond(req):
+            auth = json.loads(req.headers["X-Bkapi-Authorization"])
+            if mode == "access_token":
+                assert auth == {"access_token": "access-token"}
+            else:
+                assert auth["bk_app_code"] == "debug-app"
+                assert auth["bk_app_secret"] == "test-app-secret"
+                if mode == "ticket":
+                    assert auth["bk_ticket"] == "login-ticket"
+                elif mode == "cookie":
+                    assert auth["bk_token"]
+                else:
+                    assert req.headers["Authorization"] == "Bearer personal-token"
+            body = json.dumps(dict(req.headers))
+            return (
+                200,
+                {
+                    "Content-Type": "application/json",
+                    "Content-Length": str(len(body)),
+                    "X-Echo": req.headers.get("Authorization", ""),
+                },
+                body,
+            )
+
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        responses.add_callback(fake_resource1.method, url, callback=respond)
+        response = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": fake_resource1.method,
+                "headers": headers,
+                "path_params": {},
+                "query_params": {},
+                "body": "",
+                "use_test_app": True,
+                "use_user_from_cookies": mode == "cookie",
+                "authorization": authorization,
+            },
+        )
+        assert response.status_code == 200, response.json()
+        if mode == "access_token":
+            grant.assert_not_called()
+        else:
+            grant.assert_called_once()
+        history = APIDebugHistory.objects.get()
+        assert history.request["headers"] == {"X-Trace": "trace"}
+        for secret in ["test-app-secret", "login-ticket", "access-token", "personal-token"]:
+            assert secret not in json.dumps(history.request)
+            assert secret not in json.dumps(history.response)
+            assert secret not in response.content.decode()
+        assert len(responses.calls) == 1
+
+    @responses.activate
+    def test_request_failure_does_not_expose_credentials(
+        self, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
+        fake_resource1.method = "GET"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        responses.add(fake_resource1.method, url, body=requests.ConnectionError("failed with personal-token"))
+        response = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": fake_resource1.method,
+                "headers": {"Authorization": "Bearer personal-token"},
+                "path_params": {},
+                "query_params": {},
+                "body": "",
+                "use_test_app": False,
+            },
+        )
+        assert response.status_code == 500
+        assert "personal-token" not in response.content.decode()
+        history = APIDebugHistory.objects.get()
+        assert history.request["headers"] == {}
+        assert "personal-token" not in json.dumps(history.response)
+
     @responses.activate
     def test_post(self, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource):
         settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
@@ -79,6 +189,33 @@ class TestAPITestAPIView:
 
 
 class TestAPIDebugHistoryApi:
+    @pytest.mark.parametrize("detail", [False, True])
+    def test_old_history_credentials_are_hidden(self, detail, request_view, fake_gateway, fake_resource):
+        history = G(
+            APIDebugHistory,
+            resource_name=fake_resource.name,
+            gateway=fake_gateway,
+            request={"headers": {"AUTHORIZATION": "Bearer old-personal-token", "X-Trace": "trace"}},
+            response={
+                "data": {
+                    "curl": "curl -H 'Authorization: Bearer old-personal-token' http://example.com",
+                    "body": "old-personal-token",
+                }
+            },
+        )
+        params = {"gateway_id": fake_gateway.id}
+        if detail:
+            params["id"] = history.id
+        response = request_view(
+            "GET", "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list", path_params=params
+        )
+        assert response.status_code == 200
+        assert "old-personal-token" not in response.content.decode()
+        item = response.json()["data"] if detail else response.json()["data"][0]
+        assert item["request"]["headers"] == {"X-Trace": "trace"}
+        history.refresh_from_db()
+        assert history.request["headers"]["AUTHORIZATION"] == "Bearer old-personal-token"
+
     def test_list(self, request_view, fake_resource, fake_gateway):
         G(APIDebugHistory, resource_name="aa", gateway=fake_gateway, created_time=dummy_time.time)
         G(APIDebugHistory, resource_name="aaa", gateway=fake_gateway, created_time=dummy_time.time)
