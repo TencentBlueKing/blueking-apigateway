@@ -22,6 +22,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.gateway_name import gateway_name_validation_errors, validate_sync_gateway_names
 from apigateway.biz.gateway import GatewayHandler, build_gateway_doc_maintainers
 from apigateway.biz.validators import BKAppCodeListValidator, GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
@@ -49,6 +50,7 @@ class GatewayListV1InputSLZ(serializers.Serializer):
 
 
 class GatewayListV1OutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
@@ -119,6 +121,8 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
+    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+    display_name_en = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
@@ -153,6 +157,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         model = Gateway
         fields = [
             "name",
+            "display_name",
+            "display_name_en",
             "description",
             "description_en",
             "maintainers",
@@ -190,6 +196,9 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
         if self.instance is None:
             validate_gateway_name_kind(data["name"], kind)
+
+        with gateway_name_validation_errors():
+            validate_sync_gateway_names(data, self.instance)
 
         data["gateway_type"] = api_type
         data["kind"] = kind

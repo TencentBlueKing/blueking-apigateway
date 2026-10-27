@@ -19,13 +19,17 @@ import logging
 from typing import List, Optional
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
+from apigateway.apis.gateway_name import gateway_name_validation_errors
+from apigateway.apis.permissions import GatewayActionPermission
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
@@ -45,6 +49,7 @@ from apigateway.common.tenant.constants import (
 )
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
+from apigateway.common.tenant.validators import check_user_can_access_gateway
 from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
 from apigateway.components.bkpaas import create_paas_app, get_paas_repo_authorization, update_app_maintainers
 from apigateway.components.bkuser import list_tenants
@@ -56,6 +61,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
 )
+from apigateway.core.gateway_name import validate_gateway_names
 from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
@@ -64,6 +70,8 @@ from apigateway.utils.local import local
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    GatewayCheckDisplayNameAvailableInputSLZ,
+    GatewayCheckDisplayNameAvailableOutputSLZ,
     GatewayCheckNameAvailableInputSLZ,
     GatewayCheckNameAvailableOutputSLZ,
     GatewayCreateInputSLZ,
@@ -158,7 +166,9 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         queryset = Gateway.objects.filter(id__in=gateway_ids)
 
         if keyword:
-            queryset = queryset.filter(name__icontains=keyword)
+            queryset = queryset.filter(
+                Q(name__icontains=keyword) | Q(display_name__icontains=keyword) | Q(display_name_en__icontains=keyword)
+            )
 
         return queryset.order_by(order_by)
 
@@ -339,10 +349,13 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
         )
         return OKJsonResponse(data=slz.data)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
+        if "display_name" in request.data and settings.ENABLE_MULTI_TENANT_MODE:
+            check_user_can_access_gateway(instance.tenant_mode, instance.tenant_id, get_user_tenant_id(request))
         data_before = get_model_dict(instance)
 
         slz = GatewayUpdateInputSLZ(instance=instance, data=request.data, partial=partial)
@@ -608,12 +621,77 @@ class GatewayCheckNameAvailableApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         name = slz.validated_data.get("name")
 
-        is_available = True
-        if Gateway.objects.filter(name=name).exists():
-            is_available = False
+        is_available = not Gateway.objects.filter(name=name).exists()
+        if is_available:
+            try:
+                validate_gateway_names(
+                    name=name, display_name=name, display_name_en=None, gateways=Gateway.objects.all()
+                )
+            except DjangoValidationError:
+                is_available = False
 
         slz = self.get_serializer({"is_available": is_available})
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=extend_schema(
+        description="检查网关展示名是否可用",
+        request=GatewayCheckDisplayNameAvailableInputSLZ,
+        responses={status.HTTP_200_OK: GatewayCheckDisplayNameAvailableOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
+    serializer_class = GatewayCheckDisplayNameAvailableOutputSLZ
+    gateway_action = GatewayActionEnum.MANAGE_GATEWAY.value
+
+    def post(self, request, *args, **kwargs):
+        slz = GatewayCheckDisplayNameAvailableInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+        gateway = None
+        if "gateway_id" in data:
+            # The normal permission pass has no URL gateway_id for this endpoint.
+            self.kwargs["gateway_id"] = data["gateway_id"]
+            permission = GatewayActionPermission()
+            if not permission.has_permission(request, self):
+                self.permission_denied(request, message=permission.message)
+            gateway = request.gateway
+            if settings.ENABLE_MULTI_TENANT_MODE:
+                check_user_can_access_gateway(gateway.tenant_mode, gateway.tenant_id, get_user_tenant_id(request))
+
+        name = gateway.name if gateway is not None else data["name"]
+        default = data.get("display_name", gateway.display_name if gateway is not None else None)
+        english = data.get("display_name_en", gateway.display_name_en if gateway is not None else None)
+        conflicts = []
+        try:
+            validate_gateway_names(
+                name=name,
+                display_name=default,
+                display_name_en=english,
+                gateways=Gateway.objects.exclude(pk=gateway.pk if gateway is not None else None),
+            )
+        except DjangoValidationError as exc:
+            conflict_codes = {"unique", "effective_en_conflict", "technical_name_conflict", "display_name_conflict"}
+            if any(error.code not in conflict_codes for errors in exc.error_dict.values() for error in errors):
+                with gateway_name_validation_errors():
+                    raise
+            for field, errors in exc.error_dict.items():
+                conflicts.extend(
+                    {
+                        "field": field,
+                        "language": "en"
+                        if field == "display_name_en" or error.code == "effective_en_conflict"
+                        else "default",
+                        "reason": "english_fallback_conflict" if error.code == "effective_en_conflict" else error.code,
+                    }
+                    for error in errors
+                )
+        if gateway is None and Gateway.objects.filter(name=name).exists():
+            conflicts.append({"field": "name", "language": "default", "reason": "unique"})
+        return OKJsonResponse(data={"is_available": not conflicts, "conflicts": conflicts})
 
 
 @method_decorator(

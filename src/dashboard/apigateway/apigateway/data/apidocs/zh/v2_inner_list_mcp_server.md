@@ -5,6 +5,8 @@
 按 MCPServer ID 或名称精确查询时，请使用 MCPServer lookup 接口。
 
 
+网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
+
 ### 输入参数
 
 #### 请求参数
@@ -48,6 +50,7 @@
         },
         "gateway": {
           "id": 1,
+          "display_name": "蓝鲸 API 网关",
           "name": "bk-apigateway",
           "maintainers": ["admin"],
           "is_official": true
@@ -120,5 +123,6 @@
 |-------------|--------|----------|
 | id          | int    | 网关 ID    |
 | name        | string | 网关名称     |
+| display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
 | maintainers | array  | 网关维护者列表  |
 | is_official | bool   | 是否为官方网关  |

@@ -22,6 +22,7 @@ from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.apis.gateway_name import gateway_name_validation_errors, validate_web_gateway_names
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler, build_gateway_doc_maintainers, replace_gateway_administrators
 from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
@@ -64,6 +65,7 @@ class GatewayListInputSLZ(serializers.Serializer):
 
 
 class GatewayListOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
     description = SerializerTranslatedField(
@@ -146,6 +148,7 @@ class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
 
 
 class GatewayCreateInputSLZ(serializers.ModelSerializer):
+    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
@@ -172,6 +175,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         model = Gateway
         fields = (
             "name",
+            "display_name",
             "description",
             "maintainers",
             "developers",
@@ -219,18 +223,22 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
 
     def validate(self, data):
         validate_gateway_name_kind(data["name"], data.get("kind", GatewayKindEnum.NORMAL.value))
+        with gateway_name_validation_errors():
+            validate_web_gateway_names(data)
         return data
 
     @transaction.atomic
     def create(self, validated_data):
         validated_data.pop("programmable_gateway_git_info", None)
         maintainers = validated_data.pop("maintainers")
-        instance = super().create(validated_data)
+        with gateway_name_validation_errors():
+            instance = super().create(validated_data)
         replace_gateway_administrators(instance, maintainers, validated_data.get("created_by") or "")
         return instance
 
 
 class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     maintainers = serializers.SerializerMethodField(help_text="网关维护人员")
     doc_maintainers = serializers.SerializerMethodField(help_text="网关文档维护人员")
     developers = serializers.ListField(
@@ -263,6 +271,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "display_name",
             "description",
             "maintainers",
             "doc_maintainers",
@@ -371,6 +380,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
+    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
     maintainers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, required=False, help_text="网关维护人员"
     )
@@ -397,6 +407,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayUpdateInputSLZ"
         model = Gateway
         fields = (
+            "display_name",
             "description",
             "maintainers",
             "doc_maintainers",
@@ -420,6 +431,8 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         }
 
     def validate(self, data):
+        with gateway_name_validation_errors():
+            validate_web_gateway_names(data, self.instance)
         # Backward compatibility: treat an empty maintainers payload as omitted.
         if "maintainers" in data and not data["maintainers"]:
             data.pop("maintainers")
@@ -428,7 +441,11 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         maintainers = validated_data.pop("maintainers", None)
-        instance = super().update(instance, validated_data)
+        if "display_name" in validated_data:
+            # Explicit input must stay an update even if a stale instance held that value.
+            instance.refresh_from_db(fields=["name", "display_name", "display_name_en"])
+        with gateway_name_validation_errors():
+            instance = super().update(instance, validated_data)
         if maintainers is not None:
             replace_gateway_administrators(instance, maintainers, validated_data.get("updated_by") or "")
         return instance
@@ -494,6 +511,35 @@ class GatewayCheckNameAvailableInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckNameAvailableInputSLZ"
+
+
+class GatewayCheckDisplayNameAvailableInputSLZ(serializers.Serializer):
+    gateway_id = serializers.IntegerField(required=False, min_value=1)
+    name = serializers.CharField(required=False, max_length=64)
+    display_name = serializers.CharField(required=False, max_length=64, allow_blank=True, allow_null=True)
+    display_name_en = serializers.CharField(required=False, max_length=64, allow_blank=True, allow_null=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckDisplayNameAvailableInputSLZ"
+
+    def validate(self, data):
+        if "gateway_id" not in data and "name" not in data:
+            raise serializers.ValidationError({"name": "This field is required when creating a gateway."})
+        return data
+
+
+class GatewayNameConflictSLZ(serializers.Serializer):
+    field = serializers.CharField(read_only=True)
+    language = serializers.CharField(read_only=True)
+    reason = serializers.CharField(read_only=True)
+
+
+class GatewayCheckDisplayNameAvailableOutputSLZ(serializers.Serializer):
+    is_available = serializers.BooleanField(read_only=True)
+    conflicts = GatewayNameConflictSLZ(many=True, read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckDisplayNameAvailableOutputSLZ"
 
 
 class GatewayCheckNameAvailableOutputSLZ(serializers.Serializer):

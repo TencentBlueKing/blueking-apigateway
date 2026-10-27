@@ -49,7 +49,7 @@ class TestAuditFieldsDisplayAdminMixin(TestCase):
         )
         self.assertEqual(
             model_admin.get_readonly_fields(self.request),
-            ["created_time", "updated_time"],
+            ["display_name_en", "created_time", "updated_time"],
         )
 
     def test_mcp_server_admin_appends_audit_fieldset(self):

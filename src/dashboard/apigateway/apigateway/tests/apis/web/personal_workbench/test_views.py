@@ -21,6 +21,9 @@ import datetime
 
 import pytest
 from ddf import G
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+from django.utils.translation import override
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum, MCPServerStatusEnum
@@ -2329,3 +2332,135 @@ class TestWorkbenchHandledMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
+
+
+@pytest.mark.parametrize(
+    "view_name",
+    [
+        "workbench.permissions.gateway.pending",
+        "workbench.permissions.gateway.applied",
+        "workbench.permissions.gateway.handled",
+        "workbench.permissions.mcp.pending",
+        "workbench.permissions.mcp.applied",
+        "workbench.permissions.mcp.handled",
+        "workbench.filter_options.gateways",
+        "workbench.filter_options.mcp_gateways",
+        "workbench.filter_options.mcp_servers",
+    ],
+)
+@pytest.mark.parametrize(
+    "language,english,expected", [("zh-cn", "English", "默认名"), ("en", "English", "English"), ("en", None, "默认名")]
+)
+def test_workbench_all_gateway_projection_routes(
+    request_view, fake_gateway, fake_mcp_server, view_name, language, english, expected
+):
+    fake_gateway.display_name = "默认名"
+    fake_gateway.display_name_en = english
+    fake_gateway.save(update_fields=["display_name", "display_name_en"])
+    G(
+        AppPermissionApply,
+        gateway=fake_gateway,
+        bk_app_code="app1",
+        applied_by="admin",
+        status=ApplyStatusEnum.PENDING.value,
+        grant_dimension=GrantDimensionEnum.API.value,
+    )
+    for status in [ApplyStatusEnum.PENDING.value, ApplyStatusEnum.APPROVED.value]:
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="admin",
+            handled_by="admin",
+            handled_time=now_datetime(),
+            status=status,
+            grant_dimension=GrantDimensionEnum.API.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="admin",
+            handled_by="admin",
+            handled_time=now_datetime(),
+            applied_time=now_datetime(),
+            status=status,
+            is_deleted=False,
+        )
+    with override(language):
+        response = request_view(method="GET", view_name=view_name)
+    assert response.status_code == 200, response.json()
+    data = response.json()["data"]
+    items = data["results"] if isinstance(data, dict) else data
+    assert items
+    for row in items:
+        item = row["mcp_server"] if ".permissions.mcp." in view_name else row
+        field = (
+            "display_name"
+            if view_name in ["workbench.filter_options.gateways", "workbench.filter_options.mcp_gateways"]
+            else "gateway_display_name"
+        )
+        assert item[field] == expected
+
+
+@pytest.mark.parametrize("kind", ["pending", "applied", "handled"])
+@pytest.mark.parametrize("keyword", ["默认", "English"])
+def test_workbench_gateway_record_keyword_search(request_view, fake_gateway, kind, keyword):
+    fake_gateway.display_name = "默认名"
+    fake_gateway.display_name_en = "English"
+    fake_gateway.save(update_fields=["display_name", "display_name_en"])
+    G(
+        AppPermissionApply,
+        gateway=fake_gateway,
+        applied_by="admin",
+        status=ApplyStatusEnum.PENDING.value,
+        grant_dimension=GrantDimensionEnum.API.value,
+    )
+    G(
+        AppPermissionRecord,
+        gateway=fake_gateway,
+        applied_by="admin",
+        handled_by="admin",
+        handled_time=now_datetime(),
+        status=ApplyStatusEnum.APPROVED.value,
+        grant_dimension=GrantDimensionEnum.API.value,
+    )
+    response = request_view(method="GET", view_name=f"workbench.permissions.gateway.{kind}", data={"keyword": keyword})
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"]["count"] == 1
+
+
+@pytest.mark.parametrize("kind", ["gateway", "mcp"])
+def test_workbench_localized_projection_has_no_per_row_queries(request_view, fake_gateway, fake_mcp_server, kind):
+    fake_gateway.display_name_en = "English"
+    fake_gateway.save(update_fields=["display_name_en"])
+
+    def create_record():
+        if kind == "gateway":
+            return G(
+                AppPermissionRecord,
+                gateway=fake_gateway,
+                applied_by="admin",
+                status=ApplyStatusEnum.PENDING.value,
+                grant_dimension=GrantDimensionEnum.API.value,
+            )
+        return G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            applied_by="admin",
+            status=ApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+    create_record()
+    route = f"workbench.permissions.{kind}.applied"
+    with override("en"), CaptureQueriesContext(connection) as first:
+        response = request_view(method="GET", view_name=route)
+    assert response.status_code == 200, response.json()
+    for _ in range(5):
+        create_record()
+    with override("en"), CaptureQueriesContext(connection) as larger:
+        response = request_view(method="GET", view_name=route)
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"]["count"] == 6
+    assert len(larger) == len(first)

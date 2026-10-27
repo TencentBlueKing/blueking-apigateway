@@ -2,6 +2,8 @@
 
 获取 mcp_server 列表
 
+网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
+
 ### 输入参数
 
 #### 请求参数
@@ -43,6 +45,7 @@
         },
         "gateway": {
           "id": 2,
+          "display_name": "蓝鲸 API 网关",
           "name": "bk-esb",
           "maintainers": [
             "admin"
@@ -106,6 +109,7 @@
 |---------------|---------|--------------|
 | id            | int     | 网关 ID        |
 | name          | string  | 网关名称         |
+| display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
 | maintainers   | array   | 网关管理员        |
 | is_official   | boolean | 是否为官方网关      |
 

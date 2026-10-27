@@ -23,6 +23,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
+from django.utils.translation import get_language
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from apigateway.apps.permission.constants import (
@@ -42,6 +43,7 @@ def build_resource_permission_display(
     resource_name: str,
     gateway_id: int,
     gateway_name: str,
+    gateway_display_name: str = "",
     description: str,
     description_en: str | None,
     resource_perm_required: bool,
@@ -56,6 +58,7 @@ def build_resource_permission_display(
         "name": resource_name,
         "gateway_id": gateway_id,
         "gateway_name": gateway_name,
+        "gateway_display_name": gateway_display_name,
         "description": description,
         "description_en": description_en,
         "resource_perm_required": resource_perm_required,
@@ -73,6 +76,7 @@ class ResourcePermission(BaseModel):
     id: int
     name: str
     gateway_name: str
+    gateway_display_name: str = ""
     gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
@@ -91,6 +95,7 @@ class ResourcePermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "gateway_name": gateway_name,
+            "gateway_display_name": self.gateway_display_name,
             "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
@@ -180,6 +185,7 @@ class ResourcePermissionBuilder:
                 resource_name=resource["name"],
                 gateway_id=self.gateway.id,
                 gateway_name=self.gateway.name,
+                gateway_display_name=self.gateway.display_name_i18n,
                 description=resource["description"],
                 description_en=resource.get("description_en"),
                 resource_perm_required=resource["resource_perm_required"],
@@ -264,7 +270,7 @@ class AppPermissionBuilder:
         resource_id_to_fields = {
             item["id"]: item
             for item in Resource.objects.filter(id__in=list(resource_map.keys())).values(
-                "id", "gateway_id", "gateway__name"
+                "id", "gateway_id", "gateway__name", "gateway__display_name", "gateway__display_name_en"
             )
         }
 
@@ -274,6 +280,11 @@ class AppPermissionBuilder:
             resource_fields = resource_id_to_fields.get(resource_id, {})
             gateway_name = resource_fields.get("gateway__name", "")
             resource["gateway_name"] = gateway_name
+            resource["gateway_display_name"] = (
+                resource_fields["gateway__display_name_en"]
+                if get_language() == "en" and resource_fields.get("gateway__display_name_en") is not None
+                else resource_fields.get("gateway__display_name", "")
+            )
             resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
 

@@ -25,6 +25,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
+from apigateway.apis.gateway_name import gateway_name_validation_errors, validate_sync_gateway_names
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
@@ -116,6 +117,8 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
+    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+    display_name_en = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
@@ -151,6 +154,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         model = Gateway
         fields = [
             "name",
+            "display_name",
+            "display_name_en",
             "description",
             "description_en",
             "maintainers",
@@ -186,6 +191,9 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         if self.instance is None:
             validate_gateway_name_kind(data["name"], kind)
 
+        with gateway_name_validation_errors():
+            validate_sync_gateway_names(data, self.instance)
+
         data["gateway_type"] = api_type
         data["kind"] = kind
 
@@ -216,6 +224,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
 
 class GatewaySyncOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True, help_text="网关ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
     kind = serializers.SerializerMethodField(help_text="网关类型")

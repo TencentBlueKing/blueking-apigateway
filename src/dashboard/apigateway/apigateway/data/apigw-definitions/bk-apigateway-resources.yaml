@@ -13,6 +13,24 @@ paths:
       tags:
       - v1
       parameters:
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 网关技术名；fuzzy=true 时包含匹配技术名和两个原始展示名，否则仅精确匹配技术名
+        - name: fuzzy
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: 是否启用模糊匹配
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+          description: fuzzy=true 时模糊匹配技术名、描述和两个原始展示名
         - name: kind
           in: query
           required: false
@@ -48,6 +66,11 @@ paths:
                           type: integer
                           description: 网关ID
                           example: 1
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                          example: 蓝鲸 API 网关
                         name:
                           type: string
                           description: 网关名称
@@ -2166,6 +2189,19 @@ paths:
             schema:
               type: object
               properties:
+                display_name:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  description: 原始默认展示名；去首尾空白；创建时省略或传空取技术名，更新时省略保留当前值，显式空值恢复技术名
+                  example: 示例网关
+                display_name_en:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  pattern: '^\s*(?:[A-Za-z][A-Za-z0-9 -]*)?\s*$'
+                  description: 原始英文展示名；仅自动化同步可写；省略、null、空字符串或纯空白均清为NULL；非空值以ASCII字母开头，仅含ASCII字母、数字、空格和横杠
+                  example: Example Gateway
                 description:
                   type: string
                   description: 网关描述
@@ -2192,6 +2228,8 @@ paths:
                   default: normal
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
             example:
+              display_name: 示例网关
+              display_name_en: Example Gateway
               description: just for test
               maintainers: ["admin"]
               is_public: true
@@ -2218,6 +2256,11 @@ paths:
                         type: integer
                         description: 网关ID
                         example: 1
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                        example: 蓝鲸 API 网关
                       name:
                         type: string
                         description: 网关名称
@@ -2273,13 +2316,13 @@ paths:
           in: query
           schema:
             type: boolean
-          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          description: 是否模糊匹配；true 包含匹配技术名和两个原始展示名，false 仅精确匹配技术名
           example: true
         - name: keyword
           in: query
           schema:
             type: string
-          description: 搜索关键字，模糊匹配 name 或 description
+          description: 搜索关键字，模糊匹配 name、description、display_name 或 display_name_en
           example: apigateway
         - name: kind
           in: query
@@ -2306,6 +2349,11 @@ paths:
                           type: integer
                           description: 网关 ID
                           example: 1
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                          example: 蓝鲸 API 网关
                         name:
                           type: string
                           description: 网关名称
@@ -2393,6 +2441,11 @@ paths:
                         id:
                           type: integer
                           description: 网关 ID
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                          example: 蓝鲸 API 网关
                         name:
                           type: string
                           description: 网关名称
@@ -2457,6 +2510,11 @@ paths:
                         type: integer
                         description: 网关 ID
                         example: 1
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                        example: 蓝鲸 API 网关
                       name:
                         type: string
                         description: 网关名称
@@ -3164,6 +3222,11 @@ paths:
                                 id:
                                   type: integer
                                   description: 网关 ID
+                                display_name:
+                                  type: string
+                                  maxLength: 64
+                                  description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                                  example: 蓝鲸 API 网关
                                 name:
                                   type: string
                                   description: 网关名称
@@ -4104,6 +4167,11 @@ paths:
                               properties:
                                 id:
                                   type: integer
+                                display_name:
+                                  type: string
+                                  maxLength: 64
+                                  description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                                  example: 蓝鲸 API 网关
                                 name:
                                   type: string
                                 maintainers:
@@ -5250,6 +5318,19 @@ paths:
             schema:
               type: object
               properties:
+                display_name:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  description: 原始默认展示名；去首尾空白；创建时省略或传空取技术名，更新时省略保留当前值，显式空值恢复技术名
+                  example: 示例网关
+                display_name_en:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  pattern: '^\s*(?:[A-Za-z][A-Za-z0-9 -]*)?\s*$'
+                  description: 原始英文展示名；仅自动化同步可写；省略、null、空字符串或纯空白均清为NULL；非空值以ASCII字母开头，仅含ASCII字母、数字、空格和横杠
+                  example: Example Gateway
                 description:
                   type: string
                   description: 网关描述
@@ -5276,6 +5357,8 @@ paths:
                   default: normal
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
             example:
+              display_name: 示例网关
+              display_name_en: Example Gateway
               description: just for test
               maintainers: ["admin"]
               is_public: true
@@ -5296,6 +5379,11 @@ paths:
                         type: integer
                         description: 网关ID
                         example: 1
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                        example: 蓝鲸 API 网关
                       name:
                         type: string
                         description: 网关名称
@@ -6180,7 +6268,7 @@ paths:
           in: query
           schema:
             type: boolean
-          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          description: 是否模糊匹配；true 包含匹配技术名和两个原始展示名，false 仅精确匹配技术名
           example: true
         - name: kind
           in: query
@@ -6207,6 +6295,11 @@ paths:
                           type: integer
                           description: 网关ID
                           example: 1
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                          example: 蓝鲸 API 网关
                         name:
                           type: string
                           description: 网关名称
@@ -6284,7 +6377,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、display_name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
           example: id,name
       responses:
         '200':
@@ -6302,6 +6395,11 @@ paths:
                         id:
                           type: integer
                           description: 网关 ID
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                          example: 蓝鲸 API 网关
                         name:
                           type: string
                           description: 网关名称
@@ -6369,6 +6467,11 @@ paths:
                         type: integer
                         description: 网关ID
                         example: 1
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                        example: 蓝鲸 API 网关
                       name:
                         type: string
                         description: 网关名称
@@ -6712,6 +6815,11 @@ paths:
                           type: string
                           description: 资源名称
                           example: test
+                        gateway_display_name:
+                          type: string
+                          maxLength: 64
+                          description: 所属网关的本地化展示名；英文名未配置时回退默认名
+                          example: 蓝鲸 API 网关
                         gateway_name:
                           type: string
                           description: 网关名称
@@ -6951,6 +7059,11 @@ paths:
                           type: string
                           description: 资源名称
                           example: test
+                        gateway_display_name:
+                          type: string
+                          maxLength: 64
+                          description: 所属网关的本地化展示名；英文名未配置时回退默认名
+                          example: 蓝鲸 API 网关
                         gateway_name:
                           type: string
                           description: 网关名称
@@ -7011,7 +7124,26 @@ paths:
           description: ''
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                          properties:
+                            gateway_name:
+                              type: string
+                            gateway_display_name:
+                              type: string
+                              maxLength: 64
+                              description: 所属网关的本地化展示名
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -7112,6 +7244,11 @@ paths:
                         type: integer
                         description: 过期时间
                         example: 180
+                      gateway_display_name:
+                        type: string
+                        maxLength: 64
+                        description: 所属网关的本地化展示名；英文名未配置时回退默认名
+                        example: 蓝鲸 API 网关
                       gateway_name:
                         type: string
                         description: 网关名称
@@ -8241,7 +8378,32 @@ paths:
           description: ''
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                          properties:
+                            gateway:
+                              type: object
+                              additionalProperties: true
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+                                display_name:
+                                  type: string
+                                  maxLength: 64
+                                  description: 本地化网关展示名；英文名未配置时回退默认名
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -8299,6 +8461,19 @@ paths:
                     type: array
                     items:
                       type: object
+                      properties:
+                        gateway:
+                          type: object
+                          additionalProperties: true
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            display_name:
+                              type: string
+                              maxLength: 64
+                              description: 本地化网关展示名；英文名未配置时回退默认名
                       additionalProperties: true
       x-bk-apigateway-resource:
         isPublic: false
@@ -8387,6 +8562,11 @@ paths:
                             id:
                               type: integer
                               description: 网关 ID
+                            display_name:
+                              type: string
+                              maxLength: 64
+                              description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                              example: 蓝鲸 API 网关
                             name:
                               type: string
                               description: 网关名称
@@ -8498,6 +8678,11 @@ paths:
                             id:
                               type: integer
                               description: 网关 ID
+                            display_name:
+                              type: string
+                              maxLength: 64
+                              description: 本地化网关展示名；英文请求优先使用英文名，未配置时回退默认名；不用于技术定位
+                              example: 蓝鲸 API 网关
                             name:
                               type: string
                               description: 网关名称

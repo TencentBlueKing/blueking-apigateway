@@ -102,6 +102,7 @@ class GatewayLookupInputSLZ(serializers.Serializer):
 
 
 class GatewayListOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
@@ -123,6 +124,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
 
 class GatewayRetrieveOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)

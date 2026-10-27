@@ -2,6 +2,8 @@
 
 查询网关列表
 
+网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
+
 ### 输入参数
 
 ### 路径参数
@@ -17,6 +19,7 @@
 {
     "data": {
         "id": 1,
+        "display_name": "蓝鲸 API 网关",
         "name": "bk-apigateway",
         "kind": "normal",
         "description": "",
@@ -39,6 +42,7 @@ data
 | ----------- | -------- | ---------- |
 | id          | int      | 网关 ID     |
 | name        | string   | 网关名称   |
+| display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
 | kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | description | string   | 网关描述   |
 | maintainers | array    | 网关管理员 |

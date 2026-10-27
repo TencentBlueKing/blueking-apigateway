@@ -124,6 +124,7 @@ class GatewayListInputSLZ(serializers.Serializer):
 
 
 class GatewayBaseOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
@@ -307,6 +308,7 @@ class GatewayAppPermissionApplyCreateInputSLZ(serializers.Serializer):
 
 
 class AppResourcePermissionListOutputSLZ(serializers.Serializer):
+    gateway_display_name = serializers.CharField(read_only=True)
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     gateway_name = serializers.CharField()
@@ -414,6 +416,7 @@ class PermissionApplyRecordOperateInputSLZ(serializers.Serializer):
 
 
 class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
+    gateway_display_name = serializers.CharField(source="gateway.display_name_i18n", read_only=True)
     gateway_name = serializers.SerializerMethodField()
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
@@ -442,6 +445,7 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
             "itsm_ticket_url",
             "approval_url",
             "gateway_name",
+            "gateway_display_name",
         ]
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordBaseSLZ"
 
@@ -1110,6 +1114,7 @@ class OAuth2ResourceScopeOutputSLZ(serializers.Serializer):
 
 
 class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     is_official = serializers.BooleanField(read_only=True)
@@ -1125,6 +1130,7 @@ class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
 
 
 class OAuth2ResourceScopeGatewayOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     is_official = serializers.BooleanField(read_only=True)

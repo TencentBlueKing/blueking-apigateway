@@ -22,6 +22,11 @@ from . import views
 urlpatterns = [
     path("", views.GatewayListCreateApi.as_view(), name="gateways.list_create"),
     path("check-name-available/", views.GatewayCheckNameAvailableApi.as_view(), name="gateways.check_name_available"),
+    path(
+        "check-display-name-available/",
+        views.GatewayCheckDisplayNameAvailableApi.as_view(),
+        name="gateways.check_display_name_available",
+    ),
     path("repo-authorization/", views.GatewayRepoAuthorizationApi.as_view(), name="gateways.repo_authorization"),
     path(
         # 使用 gateway_id，复用 GatewayActionPermission 的权限校验

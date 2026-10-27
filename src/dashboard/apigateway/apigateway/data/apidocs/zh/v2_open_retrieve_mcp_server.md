@@ -2,6 +2,8 @@
 
 获取 mcp_server 详情
 
+本接口返回现有 MCP Server 自身字段，不包含所属网关对象，也不新增 `gateway.display_name`。MCP Server 的 `name`、`title` 与网关展示名不同。
+
 ### 输入参数
 
 #### 路径参数

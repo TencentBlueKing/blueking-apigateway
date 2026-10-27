@@ -3,6 +3,8 @@
 资源权限申请记录详情
 
 
+网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
+
 ### 输入参数
 
 #### 路径参数
@@ -40,6 +42,7 @@
       "expire_days": 180,
       "itsm_ticket_id": "102025051310362600001802",
       "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001802",
+      "gateway_display_name": "蓝鲸 API 网关",
       "gateway_name": "test",
       "resources": [
         {
@@ -76,6 +79,7 @@
 | itsm_ticket_id       | string | 关联的 ITSM 工单 ID，未关联时为空字符串 |
 | approval_url | string | 权限审批 URL；优先返回 ITSM 工单地址，否则返回 `{DASHBOARD_FE_URL}/{gateway_id}/permission/apply` |
 | gateway_name         | string | 网关名称                      |
+| gateway_display_name | string | 所属网关的本地化展示名，最长 64 字符；英文名未配置时回退默认名 |
 | resources            | array  | 申请的资源列表，按网关维度申请时为空数组     |
 
 #### resources[]

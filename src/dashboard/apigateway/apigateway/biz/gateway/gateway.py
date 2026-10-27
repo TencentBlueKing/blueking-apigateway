@@ -84,6 +84,8 @@ def _is_official_gateway_type(gateway_type: Optional[GatewayTypeEnum]) -> bool:
 
 class GatewayData(BaseModel):
     name: str = Field(...)
+    display_name: Optional[str] = Field(default=None, max_length=64)
+    display_name_en: Optional[str] = Field(default=None, max_length=64)
     description: str = Field(default="")
     description_en: Optional[str] = Field(default=None)
     maintainers: List[str] = Field(default_factory=list)
@@ -99,6 +101,10 @@ class GatewayData(BaseModel):
 
     tenant_mode: Optional[str] = Field(default=None)
     tenant_id: Optional[str] = Field(default=None)
+
+    @field_validator("display_name", "display_name_en", mode="before")
+    def trim_display_names(cls, value):  # noqa: N805
+        return (value.strip() or None) if isinstance(value, str) else value
 
     @field_validator("gateway_type")
     def validate_gateway_type(cls, v):  # noqa: N805
@@ -592,6 +598,8 @@ class GatewaySaver:
         validate_gateway_name_kind(self._gateway_data.name, self._gateway_data.kind)
         self._gateway = gateway = Gateway(
             name=self._gateway_data.name,
+            display_name=self._gateway_data.display_name,
+            display_name_en=self._gateway_data.display_name_en,
             description=self._gateway_data.description,
             description_en=self._gateway_data.description_en,
             status=self._gateway_data.status,
@@ -667,6 +675,12 @@ class GatewaySaver:
     def _update_gateway(self):
         gateway = self._gateway
 
+        # Read the current raw name: the saver may have been constructed earlier.
+        gateway.refresh_from_db(fields=["name", "display_name", "display_name_en"])
+        if "display_name" in self._gateway_data.model_fields_set:
+            gateway.display_name = self._gateway_data.display_name
+        gateway.display_name_en = self._gateway_data.display_name_en
+
         # 1. update gateway
         gateway.description = self._gateway_data.description
         gateway.description_en = self._gateway_data.description_en
@@ -674,7 +688,12 @@ class GatewaySaver:
         if self._gateway_data.gateway_type is not None:
             gateway.is_official = _is_official_gateway_type(self._gateway_data.gateway_type)
         gateway.updated_by = self.username
-        gateway.save()
+        update_fields = ["description", "description_en", "is_public", "updated_by", "updated_time", "display_name_en"]
+        if "display_name" in self._gateway_data.model_fields_set:
+            update_fields.append("display_name")
+        if self._gateway_data.gateway_type is not None:
+            update_fields.append("is_official")
+        gateway.save(update_fields=update_fields)
         # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据
         if self._gateway_data.maintainers:
             add_gateway_administrators(gateway, self._gateway_data.maintainers, self.username)

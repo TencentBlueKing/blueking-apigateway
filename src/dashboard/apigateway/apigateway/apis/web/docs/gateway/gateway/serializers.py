@@ -38,6 +38,7 @@ class GatewayQueryInputSLZ(serializers.Serializer):
 
 
 class GatewayOutputSLZ(serializers.Serializer):
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(help_text="网关 ID")
     name = serializers.CharField(help_text="网关名称")
     kind = serializers.ChoiceField(choices=GatewayKindEnum.get_choices(), read_only=True, help_text="网关类型")

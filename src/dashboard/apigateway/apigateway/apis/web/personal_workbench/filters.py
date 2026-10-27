@@ -55,7 +55,12 @@ class AppliedTimeRangeFilterMixin(TimeRangeFilterMixin):
 
 class KeywordFilterMixin:
     def keyword_filter(self, queryset, name, value):
-        return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))
+        return queryset.filter(
+            Q(bk_app_code__icontains=value)
+            | Q(gateway__name__icontains=value)
+            | Q(gateway__display_name__icontains=value)
+            | Q(gateway__display_name_en__icontains=value)
+        )
 
 
 class MCPKeywordFilterMixin:

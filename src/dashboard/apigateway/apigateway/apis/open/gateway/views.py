@@ -27,6 +27,7 @@ from django.utils.decorators import method_decorator
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers, status
 
+from apigateway.apis.gateway_name import gateway_name_validation_errors
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayIdPermission,
     OpenAPIGatewayNamePermission,
@@ -145,10 +146,21 @@ class GatewayListApi(generics.ListAPIView):
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
-            queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
+            queryset = (
+                queryset.filter(
+                    Q(name__contains=name) | Q(display_name__contains=name) | Q(display_name_en__contains=name)
+                )
+                if fuzzy
+                else queryset.filter(name=name)
+            )
 
         if query and fuzzy:
-            queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
+            queryset = queryset.filter(
+                Q(name__icontains=query)
+                | Q(description__icontains=query)
+                | Q(display_name__icontains=query)
+                | Q(display_name_en__icontains=query)
+            )
 
         if kind:
             kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
@@ -246,14 +258,15 @@ class GatewaySyncApi(generics.CreateAPIView):
             data_plane_names=data.get("data_planes"),
         )
 
-        gateway = GatewayHandler.sync_gateway(
-            gateway,
-            data,
-            request.app.app_code,
-            username,
-            CallSourceTypeEnum.OpenAPI,
-            data_plane_ids,
-        )
+        with gateway_name_validation_errors():
+            gateway = GatewayHandler.sync_gateway(
+                gateway,
+                data,
+                request.app.app_code,
+                username,
+                CallSourceTypeEnum.OpenAPI,
+                data_plane_ids,
+            )
 
         # record audit log
         Auditor.record_gateway_op_success(
@@ -271,6 +284,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             data={
                 "id": gateway.id,
                 "name": gateway.name,
+                "display_name": gateway.display_name_i18n,
                 "kind": convert_gateway_kind_to_name(gateway.kind),
                 "is_official": gateway.is_official,
             },

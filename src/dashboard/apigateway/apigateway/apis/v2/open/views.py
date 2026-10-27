@@ -150,10 +150,21 @@ class GatewayListApi(generics.ListAPIView):
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
-            queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
+            queryset = (
+                queryset.filter(
+                    Q(name__contains=name) | Q(display_name__contains=name) | Q(display_name_en__contains=name)
+                )
+                if fuzzy
+                else queryset.filter(name=name)
+            )
 
         if keyword:
-            queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+            queryset = queryset.filter(
+                Q(name__icontains=keyword)
+                | Q(description__icontains=keyword)
+                | Q(display_name__icontains=keyword)
+                | Q(display_name_en__icontains=keyword)
+            )
 
         if kind:
             kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
@@ -628,6 +639,7 @@ class UserMCPServerListApi(generics.ListAPIView):
             gateway.id: {
                 "id": gateway.id,
                 "name": gateway.name,
+                "display_name": gateway.display_name_i18n,
                 "maintainers": gateway_administrators_map.get(gateway.id, []),
                 "is_official": gateway.is_official,
             }

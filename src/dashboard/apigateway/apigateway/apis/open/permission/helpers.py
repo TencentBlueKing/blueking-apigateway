@@ -22,6 +22,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
+from django.utils.translation import get_language
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from apigateway.apps.permission.constants import (
@@ -41,6 +42,7 @@ class ResourcePermission(BaseModel):
     id: int
     name: str
     api_name: str
+    gateway_display_name: str = ""
     gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
@@ -56,6 +58,7 @@ class ResourcePermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "api_name": self.api_name,
+            "gateway_display_name": self.gateway_display_name,
             "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
@@ -141,6 +144,7 @@ class ResourcePermissionBuilder:
 
         for resource in resources:
             resource["api_name"] = self.gateway.name
+            resource["gateway_display_name"] = self.gateway.display_name_i18n
             resource["gateway_id"] = self.gateway.id
             resource["doc_link"] = doc_links.get(resource["id"], "")
             resource["api_permission"] = self.api_permission
@@ -219,7 +223,7 @@ class AppPermissionBuilder:
         resource_id_to_fields = {
             item["id"]: item
             for item in Resource.objects.filter(id__in=list(resource_map.keys())).values(
-                "id", "gateway_id", "gateway__name"
+                "id", "gateway_id", "gateway__name", "gateway__display_name", "gateway__display_name_en"
             )
         }
 
@@ -228,6 +232,11 @@ class AppPermissionBuilder:
         for resource_id, resource in resource_map.items():
             resource_fields = resource_id_to_fields.get(resource_id, {})
             resource["api_name"] = resource_fields.get("gateway__name", "")
+            resource["gateway_display_name"] = (
+                resource_fields["gateway__display_name_en"]
+                if get_language() == "en" and resource_fields.get("gateway__display_name_en") is not None
+                else resource_fields.get("gateway__display_name", "")
+            )
             resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
             resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
