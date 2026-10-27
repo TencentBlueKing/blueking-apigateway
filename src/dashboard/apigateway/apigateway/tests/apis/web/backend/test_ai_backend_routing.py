@@ -127,11 +127,15 @@ def test_remove_and_reorder_instances_preserves_credentials_and_publication(requ
         publish_backend.assert_not_called()  # No published resource references this backend.
 
 
-def test_invalid_update_does_not_change_storage_or_publish(request_view, mocker, pool_backend):
+@pytest.mark.parametrize("invalid", ["empty_strategy", "duplicate_name"])
+def test_invalid_update_does_not_change_storage_or_publish(request_view, mocker, pool_backend, invalid):
     publish = mocker.patch("apigateway.apis.web.stage.views.trigger_gateway_publish")
     original = deepcopy(pool_backend.config)
     data = AIBackendWebConfigAdapter.to_web(original)
-    data["fallback_strategy"] = []
+    if invalid == "empty_strategy":
+        data["fallback_strategy"] = []
+    else:
+        data["instances"][1].update(name=data["instances"][0]["name"], api_key="new-key")
     response = request_view(
         "PUT",
         "stage.backend-retrieve-update",
@@ -144,6 +148,9 @@ def test_invalid_update_does_not_change_storage_or_publish(request_view, mocker,
         data=data,
     )
     assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+    if invalid == "duplicate_name":
+        assert "模型实例名称不能重复" in response.json()["error"]["message"]
     pool_backend.refresh_from_db()
     assert pool_backend.config == original
     publish.assert_not_called()

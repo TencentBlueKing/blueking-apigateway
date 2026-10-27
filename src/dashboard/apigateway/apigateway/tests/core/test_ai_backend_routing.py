@@ -1,9 +1,9 @@
 from copy import deepcopy
 
 import pytest
-from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.common.error_codes import APIError
 from apigateway.core.backend_config import AIBackendConfig
 
 
@@ -76,8 +76,10 @@ def test_write_backup_and_retry_normalization():
     ],
 )
 def test_write_rejects_unsupported_pool(patch):
-    with pytest.raises(ValidationError):
+    with pytest.raises(APIError) as err:
         validate_ai_backend_config({"instances": [instance("a"), instance("b")], **patch})
+    assert err.value.code.code_name == "INVALID_ARGUMENT"
+    assert err.value.code.status_code == 400
 
 
 def test_historical_parse_does_not_enable_retries_or_rewrite_weights():

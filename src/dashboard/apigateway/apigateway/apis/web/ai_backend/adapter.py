@@ -6,13 +6,13 @@ from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
 from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.common.error_codes import APIError
 from apigateway.core.ai_backend import get_ai_backend_provider_config
 from apigateway.core.backend_config import (
     AI_BACKUP_PRIORITY,
     AI_INSTANCE_WEIGHT,
     AI_PRIMARY_PRIORITY,
     AIBackendConfig,
-    AIBackendConfigRuleError,
     mask_header_value,
     validate_ai_pool_routing,
 )
@@ -62,10 +62,7 @@ class AIBackendWebConfigAdapter:
         if not config:
             return {}
         existing = AIBackendConfig.model_validate(config).to_config()["instances"]
-        instances = {item["name"]: item for item in existing}
-        if len(instances) != len(existing):
-            raise AIBackendWebConfigNotRepresentable("Existing instance names are not unique")
-        return instances
+        return {item["name"]: item for item in existing}
 
     @classmethod
     def _instance_to_internal(cls, data: dict, existing: dict | None) -> dict:
@@ -98,8 +95,8 @@ class AIBackendWebConfigAdapter:
         balancer = normalized.get("balancer")
         try:
             validate_ai_pool_routing(normalized)
-        except AIBackendConfigRuleError as err:
-            raise AIBackendWebConfigNotRepresentable(err.message) from err
+        except APIError as err:
+            raise AIBackendWebConfigNotRepresentable(str(err.code.message)) from err
         result: dict = {"timeout": normalized["timeout"], "instances": []}
         # Historical reads preserve priorities/weights instead of applying write defaults.
         for item in normalized["instances"]:

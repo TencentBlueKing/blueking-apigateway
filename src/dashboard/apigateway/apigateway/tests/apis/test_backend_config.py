@@ -2,27 +2,27 @@ from copy import deepcopy
 
 import pytest
 from django.utils.translation import override
-from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.common.error_codes import APIError
 
 
 @pytest.mark.parametrize(
-    "change, field, message",
+    "change, message",
     [
-        ("duplicate_name", "instances", "模型实例名称不能重复。"),
-        ("priority", "instances", "模型实例优先级只能为 10（主实例）或 0（备用实例）。"),
-        ("no_primary", "instances", "至少需要一个主实例，且最多只能配置一个备用实例。"),
-        ("two_backups", "instances", "至少需要一个主实例，且最多只能配置一个备用实例。"),
-        ("weight", "instances", "多实例配置的权重必须为 1。"),
-        ("null_strategy", "fallback_strategy", "故障重试策略必须为数组。"),
-        ("empty_strategy", "fallback_strategy", "配置备用实例时，至少需要启用一项故障重试条件。"),
-        ("unsupported_strategy", "fallback_strategy", "故障重试策略仅支持 http_429 和 http_5xx 数组。"),
-        ("custom_hash", "balancer", "一致性哈希仅支持 vars_combinations 和 $bk_app_code。"),
-        ("roundrobin_hash", "balancer", "轮询算法不支持配置 hash_on 和 key。"),
+        ("duplicate_name", "模型实例名称不能重复。"),
+        ("priority", "模型实例优先级只能为 10（主实例）或 0（备用实例）。"),
+        ("no_primary", "至少需要一个主实例，且最多只能配置一个备用实例。"),
+        ("two_backups", "至少需要一个主实例，且最多只能配置一个备用实例。"),
+        ("weight", "多实例配置的权重必须为 1。"),
+        ("null_strategy", "故障重试策略必须为数组。"),
+        ("empty_strategy", "配置备用实例时，至少需要启用一项故障重试条件。"),
+        ("unsupported_strategy", "故障重试策略仅支持 http_429 和 http_5xx 数组。"),
+        ("custom_hash", "一致性哈希仅支持 vars_combinations 和 $bk_app_code。"),
+        ("roundrobin_hash", "轮询算法不支持配置 hash_on 和 key。"),
     ],
 )
-def test_ai_pool_rule_errors_keep_field_and_translatable_message(change, field, message):
+def test_ai_pool_rule_errors_use_standard_error_code(change, message):
     config = {
         "instances": [
             {"name": "primary", "provider": "openai", "auth": {"header": {"Authorization": "Bearer key"}}},
@@ -57,13 +57,15 @@ def test_ai_pool_rule_errors_keep_field_and_translatable_message(change, field, 
     elif change == "roundrobin_hash":
         config["balancer"] = {"algorithm": "roundrobin", "hash_on": "vars", "key": "other"}
 
-    with override("zh-cn"), pytest.raises(ValidationError) as err:
+    with override("zh-cn"), pytest.raises(APIError) as err:
         validate_ai_backend_config(config)
-    assert err.value.detail == {field: [message]}
+    assert err.value.code.code_name == "INVALID_ARGUMENT"
+    assert err.value.code.status_code == 400
+    assert str(err.value.code.message).endswith(message)
 
 
 def test_ai_pool_rule_error_uses_request_language():
     instance = {"name": "same", "provider": "openai", "auth": {"header": {"Authorization": "Bearer key"}}}
-    with override("en"), pytest.raises(ValidationError) as err:
+    with override("en"), pytest.raises(APIError) as err:
         validate_ai_backend_config({"instances": [instance, deepcopy(instance)]})
-    assert err.value.detail == {"instances": ["Model instance names must be unique."]}
+    assert str(err.value.code.message).endswith("Model instance names must be unique.")

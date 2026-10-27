@@ -7,8 +7,12 @@ from rest_framework import serializers
 
 from apigateway.common.security import is_forbidden_host
 from apigateway.core.ai_backend import get_ai_backend_provider_config
-from apigateway.core.backend_config import AI_BACKUP_PRIORITY, AI_FALLBACK_STRATEGIES, AI_PRIMARY_PRIORITY
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, AIBackendProviderEnum
+from apigateway.core.backend_config import AI_BACKUP_PRIORITY, AI_PRIMARY_PRIORITY
+from apigateway.core.constants import (
+    HOST_WITHOUT_SCHEME_PATTERN,
+    AIBackendFallbackStrategyEnum,
+    AIBackendProviderEnum,
+)
 
 
 class AIBackendEndpointField(serializers.CharField):
@@ -68,6 +72,8 @@ class AIBackendAuthHeaderSLZ(_StrictSerializer):
 
 
 class AIBackendWebInstanceInputSLZ(_StrictSerializer):
+    name = serializers.CharField(min_length=1, max_length=100, trim_whitespace=False)
+    priority = serializers.ChoiceField(choices=[AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY], default=AI_PRIMARY_PRIORITY)
     provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     endpoint = AIBackendEndpointField(required=False)
     model_endpoint = AIBackendEndpointField(required=False, allow_null=True)
@@ -98,13 +104,8 @@ class AIBackendWebInstanceInputSLZ(_StrictSerializer):
         return attrs
 
 
-class AIBackendWebPoolInstanceInputSLZ(AIBackendWebInstanceInputSLZ):
-    name = serializers.CharField(min_length=1, max_length=100, trim_whitespace=False)
-    priority = serializers.ChoiceField(choices=[AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY], default=AI_PRIMARY_PRIORITY)
-
-
 class AIBackendWebConnectivityInputSLZ(_StrictSerializer):
-    instance = AIBackendWebPoolInstanceInputSLZ()
+    instance = AIBackendWebInstanceInputSLZ()
 
 
 class AIBackendWebBalancerSLZ(_StrictSerializer):
@@ -113,14 +114,18 @@ class AIBackendWebBalancerSLZ(_StrictSerializer):
 
 class AIBackendWebInputSLZ(_StrictSerializer):
     timeout = serializers.IntegerField(required=False, default=300, min_value=1, max_value=300)
-    instances = AIBackendWebPoolInstanceInputSLZ(many=True, allow_empty=False)
+    instances = AIBackendWebInstanceInputSLZ(many=True, allow_empty=False)
     balancer = AIBackendWebBalancerSLZ(required=False)
     fallback_strategy = serializers.ListField(
-        child=serializers.ChoiceField(choices=AI_FALLBACK_STRATEGIES), required=False, allow_empty=True
+        child=serializers.ChoiceField(choices=AIBackendFallbackStrategyEnum.get_choices()),
+        required=False,
+        allow_empty=True,
     )
 
 
 class AIBackendWebInstanceOutputSLZ(serializers.Serializer):
+    name = serializers.CharField()
+    priority = serializers.IntegerField()
     provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     endpoint = serializers.URLField()
     model_endpoint = serializers.URLField(allow_null=True)
@@ -130,13 +135,10 @@ class AIBackendWebInstanceOutputSLZ(serializers.Serializer):
     model_options = serializers.DictField()
 
 
-class AIBackendWebPoolInstanceOutputSLZ(AIBackendWebInstanceOutputSLZ):
-    name = serializers.CharField()
-    priority = serializers.IntegerField()
-
-
 class AIBackendWebOutputSLZ(serializers.Serializer):
     timeout = serializers.IntegerField()
-    instances = AIBackendWebPoolInstanceOutputSLZ(many=True)
+    instances = AIBackendWebInstanceOutputSLZ(many=True)
     balancer = AIBackendWebBalancerSLZ(required=False)
-    fallback_strategy = serializers.ListField(child=serializers.CharField(), required=False)
+    fallback_strategy = serializers.ListField(
+        child=serializers.ChoiceField(choices=AIBackendFallbackStrategyEnum.get_choices()), required=False
+    )

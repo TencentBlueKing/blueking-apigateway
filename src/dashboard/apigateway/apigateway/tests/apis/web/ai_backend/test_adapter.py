@@ -218,3 +218,11 @@ def test_web_rejects_unrepresentable_routing_without_modifying_storage(patch):
     with pytest.raises(AIBackendWebConfigNotRepresentable):
         AIBackendWebConfigAdapter.to_web(config)
     assert config == before
+
+
+def test_update_checks_submitted_names_instead_of_rejecting_existing_duplicates():
+    existing = AIBackendWebConfigAdapter.to_internal(_pool_form())
+    existing["instances"].append(deepcopy(existing["instances"][0]))
+    updated = AIBackendWebConfigAdapter.to_internal(_single_form(), existing_config=existing)
+    assert [instance["name"] for instance in updated["instances"]] == ["primary"]
+    assert updated["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"

@@ -1,10 +1,9 @@
 from typing import Any
 
-from django.utils.translation import gettext as _
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
-from apigateway.core.backend_config import AIBackendConfig, AIBackendConfigRuleError
+from apigateway.core.backend_config import AIBackendConfig
 
 
 def validate_ai_backend_config(data: Any) -> dict[str, Any]:
@@ -17,5 +16,3 @@ def validate_ai_backend_config(data: Any) -> dict[str, Any]:
             field = str(location[0]) if location else "non_field_errors"
             errors.setdefault(field, []).append(error["msg"])
         raise serializers.ValidationError(errors) from err
-    except AIBackendConfigRuleError as err:
-        raise serializers.ValidationError({err.field: [_(err.message)]}) from err
