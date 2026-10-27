@@ -198,10 +198,9 @@ def test_connectivity_can_probe_backup_independently_and_restore_its_own_credent
     existing = AIBackendWebConfigAdapter.to_internal(_pool_form())
     backup = AIBackendWebConfigAdapter.to_web(existing)["instances"][1]
     probe = AIBackendWebConfigAdapter.to_connectivity(backup, existing_config=existing)
-    assert len(probe["instances"]) == 1
-    assert probe["instances"][0]["name"] == "b"
-    assert probe["instances"][0]["auth"]["header"] == {"X-Key": "beta-secret"}
-    assert "balancer" not in probe and "fallback_strategy" not in probe
+    assert probe["name"] == "b"
+    assert probe["auth"]["header"] == {"X-Key": "beta-secret"}
+    assert not {"instances", "timeout", "weight", "balancer", "fallback_strategy"} & probe.keys()
 
 
 @pytest.mark.parametrize(

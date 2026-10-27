@@ -153,6 +153,13 @@ class AIBackendInstance(BaseModel):
     override: AIBackendOverride | None = None
     model_endpoint: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def reject_stage_vars(cls, data: Any) -> Any:
+        if _contains_stage_var(data):
+            raise ValueError("AI backend config must not contain environment variables")
+        return data
+
     @field_validator("options")
     @classmethod
     def validate_options(cls, options: dict[str, Any]) -> dict[str, Any]:
@@ -249,7 +256,10 @@ class AIBackendConfig(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def reject_stage_vars(cls, data: Any) -> Any:
-        if _contains_stage_var(data):
+        global_config = (
+            {key: value for key, value in data.items() if key != "instances"} if isinstance(data, dict) else data
+        )
+        if _contains_stage_var(global_config):
             raise ValueError("AI backend config must not contain environment variables")
         return data
 
@@ -275,27 +285,30 @@ def _normalize_ai_pool_routing(config: dict[str, Any], *, has_backup: bool) -> N
     config["balancer"] = balancer
 
     strategy = config.setdefault("fallback_strategy", AIBackendFallbackStrategyEnum.get_values())
-    validate_ai_pool_routing(config)
+    if message := get_ai_pool_routing_error(config):
+        raise error_codes.INVALID_ARGUMENT.format(message)
     strategy = [item for item in AIBackendFallbackStrategyEnum.get_values() if item in strategy]
     if has_backup and not strategy:
         raise error_codes.INVALID_ARGUMENT.format(_("配置备用实例时，至少需要启用一项故障重试条件。"))
     config["fallback_strategy"] = strategy
 
 
-def validate_ai_pool_routing(config: dict[str, Any]) -> None:
-    """Check shared write/Web routing restrictions without changing stored configuration."""
+def get_ai_pool_routing_error(config: dict[str, Any]) -> str | None:
+    """Return a shared write/Web routing error without changing configuration or raising an API error."""
     balancer = config.get("balancer")
     if (
         balancer
         and balancer.get("algorithm") == "chash"
         and (balancer.get("hash_on") != AI_CHASH_HASH_ON or balancer.get("key") != AI_CHASH_KEY)
     ):
-        raise error_codes.INVALID_ARGUMENT.format(_("一致性哈希仅支持 vars_combinations 和 $bk_app_code。"))
+        return _("一致性哈希仅支持 vars_combinations 和 $bk_app_code。")
     strategy = config.get("fallback_strategy", [])
     if not isinstance(strategy, list) or any(
         item not in AIBackendFallbackStrategyEnum.get_values() for item in strategy
     ):
-        raise error_codes.INVALID_ARGUMENT.format(_("故障重试策略仅支持 http_429 和 http_5xx 数组。"))
+        return _("故障重试策略仅支持 http_429 和 http_5xx 数组。")
+
+    return None
 
 
 type BackendConfigType = type[StandardBackendConfig] | type[AIBackendConfig]

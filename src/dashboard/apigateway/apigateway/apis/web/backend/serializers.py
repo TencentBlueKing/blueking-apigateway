@@ -53,22 +53,16 @@ class AIBackendConfigSLZ(AIBackendWebInputSLZ):
         ref_name = "apigateway.apis.web.backend.serializers.AIBackendConfigSLZ"
 
 
-class AIBackendConnectivityConfigSLZ(AIBackendWebConnectivityInputSLZ):
-    stage_id = serializers.IntegerField()
-
-
 class AIBackendConnectivityInputSLZ(serializers.Serializer):
     backend_id = serializers.IntegerField(required=False, min_value=1)
-    config = serializers.DictField()
+    config = AIBackendWebConnectivityInputSLZ()
 
     class Meta:
         ref_name = "apigateway.apis.web.backend.serializers.AIBackendConnectivityInputSLZ"
 
     def validate(self, attrs):
-        config_slz = AIBackendConnectivityConfigSLZ(data=attrs["config"])
-        config_slz.is_valid(raise_exception=True)
-        web_config = dict(config_slz.validated_data)
-        stage_id = web_config.pop("stage_id")
+        config = attrs["config"]
+        stage_id = config["stage_id"]
         existing_value = None
         if backend_id := attrs.get("backend_id"):
             existing = (
@@ -92,8 +86,8 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
                     existing.stage_id,
                 )
                 raise serializers.ValidationError({"config": _("已有后端配置无法读取，请联系管理员。")}) from None
-        attrs["config"] = AIBackendWebConfigAdapter.to_connectivity(
-            web_config["instance"], existing_config=existing_value
+        config["instance"] = AIBackendWebConfigAdapter.to_connectivity(
+            config["instance"], existing_config=existing_value
         )
         return attrs
 

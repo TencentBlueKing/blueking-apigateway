@@ -6,15 +6,15 @@ from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
 from apigateway.apis.backend_config import validate_ai_backend_config
-from apigateway.common.error_codes import APIError
 from apigateway.core.ai_backend import get_ai_backend_provider_config
 from apigateway.core.backend_config import (
     AI_BACKUP_PRIORITY,
     AI_INSTANCE_WEIGHT,
     AI_PRIMARY_PRIORITY,
     AIBackendConfig,
+    AIBackendInstance,
+    get_ai_pool_routing_error,
     mask_header_value,
-    validate_ai_pool_routing,
 )
 
 _NOT_RESTORED = object()
@@ -33,7 +33,6 @@ class AIBackendWebConfigAdapter:
             for item in data["instances"]:
                 instance = cls._instance_to_internal(item, old_instances.get(item["name"]))
                 instance.update(
-                    name=item["name"],
                     priority=item["priority"],
                     weight=AI_INSTANCE_WEIGHT,
                 )
@@ -52,8 +51,7 @@ class AIBackendWebConfigAdapter:
         try:
             old_instances = cls._existing_instances(existing_config)
             instance = cls._instance_to_internal(data, old_instances.get(data["name"]))
-            instance["name"] = data["name"]
-            return AIBackendConfig.model_validate({"instances": [instance]}).to_config()
+            return AIBackendInstance.model_validate(instance).model_dump(exclude_unset=True, exclude_none=True)
         except PydanticValidationError, AIBackendWebConfigNotRepresentable:
             raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
 
@@ -75,7 +73,7 @@ class AIBackendWebConfigAdapter:
         options = dict(data.get("model_options", {}))
         if data.get("model") is not None:
             options["model"] = data["model"]
-        instance = {"provider": data["provider"], "options": options}
+        instance = {"name": data["name"], "provider": data["provider"], "options": options}
         provider_config = get_ai_backend_provider_config(data["provider"])
         if restored_auth is not _NOT_RESTORED:
             instance["auth"] = restored_auth
@@ -93,10 +91,8 @@ class AIBackendWebConfigAdapter:
     def to_web(cls, config: dict) -> dict:
         normalized = AIBackendConfig.model_validate(config).to_config()
         balancer = normalized.get("balancer")
-        try:
-            validate_ai_pool_routing(normalized)
-        except APIError as err:
-            raise AIBackendWebConfigNotRepresentable(str(err.code.message)) from err
+        if message := get_ai_pool_routing_error(normalized):
+            raise AIBackendWebConfigNotRepresentable(message)
         result: dict = {"timeout": normalized["timeout"], "instances": []}
         # Historical reads preserve priorities/weights instead of applying write defaults.
         for item in normalized["instances"]:

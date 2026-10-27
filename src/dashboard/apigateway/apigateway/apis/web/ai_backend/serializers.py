@@ -105,6 +105,7 @@ class AIBackendWebInstanceInputSLZ(_StrictSerializer):
 
 
 class AIBackendWebConnectivityInputSLZ(_StrictSerializer):
+    stage_id = serializers.IntegerField()
     instance = AIBackendWebInstanceInputSLZ()
 
 
