@@ -21,8 +21,6 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.ai_backend import get_ai_backend_config_format_context
-from apigateway.apis.web.ai_backend.presentation import AI_BACKEND_CONFIG_FORMAT_PARAMETER
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.apps.rbac.constants import GatewayActionEnum
@@ -339,7 +337,6 @@ class BackendConfigQuerySetMixin:
     name="get",
     decorator=extend_schema(
         description="获取环境的后端服务列表",
-        parameters=[AI_BACKEND_CONFIG_FORMAT_PARAMETER],
         responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
         tags=["WebAPI.Stage"],
     ),
@@ -349,7 +346,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = StageBackendOutputSLZ(queryset, many=True, context=get_ai_backend_config_format_context(request))
+        serializer = StageBackendOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=serializer.data)
 
 
@@ -357,7 +354,6 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
     name="get",
     decorator=extend_schema(
         description="获取环境的后端服务详情",
-        parameters=[AI_BACKEND_CONFIG_FORMAT_PARAMETER],
         responses={status.HTTP_200_OK: StageBackendOutputSLZ()},
         tags=["WebAPI.Stage"],
     ),
@@ -385,7 +381,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
     def retrieve(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 
-        serializer = StageBackendOutputSLZ(instance, context=get_ai_backend_config_format_context(request))
+        serializer = StageBackendOutputSLZ(instance)
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):

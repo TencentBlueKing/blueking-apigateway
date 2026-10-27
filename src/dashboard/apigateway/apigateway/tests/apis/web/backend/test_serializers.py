@@ -40,10 +40,7 @@ def test_ai_backend_connectivity_rejects_zero_backend_id():
             "backend_id": 0,
             "config": {
                 "stage_id": 1,
-                "provider": "openai",
-                "api_key": "secret",
-                "model_options": {},
-                "timeout": 300,
+                "instance": {"name": "primary", "provider": "openai", "api_key": "secret", "model_options": {}},
             },
         },
         context={"gateway": None},
@@ -78,11 +75,13 @@ def test_ai_backend_connectivity_reports_unrepresentable_existing_config(fake_ba
             "backend_id": fake_backend.id,
             "config": {
                 "stage_id": fake_stage.id,
-                "provider": "openai-compatible",
-                "endpoint": "https://llm.example.com/v1/chat/completions",
-                "auth_header": {"name": "X-Api-Key", "value": "se****et"},
-                "model_options": {},
-                "timeout": 300,
+                "instance": {
+                    "name": "primary",
+                    "provider": "openai-compatible",
+                    "endpoint": "https://llm.example.com/v1/chat/completions",
+                    "auth_header": {"name": "X-Api-Key", "value": "se****et"},
+                    "model_options": {},
+                },
             },
         },
         context={"gateway": fake_stage.gateway},
@@ -380,10 +379,10 @@ class TestBackendInputSLZ:
                 "configs": [
                     {
                         "stage_id": fake_stage.id,
-                        "provider": "openai",
-                        "api_key": "secret",
-                        "model_options": {},
                         "timeout": 300,
+                        "instances": [
+                            {"name": "primary", "provider": "openai", "api_key": "secret", "model_options": {}}
+                        ],
                     }
                 ],
             },

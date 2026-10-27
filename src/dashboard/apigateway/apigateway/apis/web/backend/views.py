@@ -22,8 +22,6 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.ai_backend import get_ai_backend_config_format_context
-from apigateway.apis.web.ai_backend.presentation import AI_BACKEND_CONFIG_FORMAT_PARAMETER
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.biz.audit import Auditor
@@ -160,7 +158,6 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
     name="get",
     decorator=extend_schema(
         description="获取后端服务详情",
-        parameters=[AI_BACKEND_CONFIG_FORMAT_PARAMETER],
         responses={status.HTTP_200_OK: BackendRetrieveOutputSLZ()},
         tags=["WebAPI.Backend"],
     ),
@@ -191,7 +188,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = BackendRetrieveOutputSLZ(instance, context=get_ai_backend_config_format_context(request))
+        serializer = BackendRetrieveOutputSLZ(instance)
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):

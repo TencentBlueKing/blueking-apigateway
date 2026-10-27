@@ -29,37 +29,44 @@ class AIBackendWebConfigAdapter:
     @classmethod
     def to_internal(cls, data: dict, *, existing_config: dict | None = None) -> dict:
         try:
-            existing = AIBackendConfig.model_validate(existing_config).to_config() if existing_config else None
-            if "instances" not in data:
-                if existing and len(existing["instances"]) != 1:
-                    raise AIBackendWebConfigNotRepresentable("Legacy input cannot replace multiple instances")
-                old = existing["instances"][0] if existing else None
-                instance = cls._instance_to_internal(data, old)
-                instance["name"] = old["name"] if old else "primary"
-                instance["weight"] = old.get("weight", 0) if old else 0
-                if old and "priority" in old:
-                    instance["priority"] = old["priority"]
-                config = {"timeout": data.get("timeout", 300), "instances": [instance]}
-            else:
-                old_instances = {item["name"]: item for item in existing["instances"]} if existing else {}
-                if existing and len(old_instances) != len(existing["instances"]):
-                    raise AIBackendWebConfigNotRepresentable("Existing instance names are not unique")
-                instances = []
-                for item in data["instances"]:
-                    instance = cls._instance_to_internal(item, old_instances.get(item["name"]))
-                    instance.update(
-                        name=item["name"],
-                        priority=item.get("priority", AI_PRIMARY_PRIORITY),
-                        weight=AI_INSTANCE_WEIGHT,
-                    )
-                    instances.append(instance)
-                config = {"timeout": data.get("timeout", 300), "instances": instances}
-                for key in ("balancer", "fallback_strategy"):
-                    if key in data:
-                        config[key] = data[key]
+            old_instances = cls._existing_instances(existing_config)
+            instances = []
+            for item in data["instances"]:
+                instance = cls._instance_to_internal(item, old_instances.get(item["name"]))
+                instance.update(
+                    name=item["name"],
+                    priority=item.get("priority", AI_PRIMARY_PRIORITY),
+                    weight=AI_INSTANCE_WEIGHT,
+                )
+                instances.append(instance)
+            config = {"timeout": data.get("timeout", 300), "instances": instances}
+            for key in ("balancer", "fallback_strategy"):
+                if key in data:
+                    config[key] = data[key]
             return validate_ai_backend_config(config)
         except PydanticValidationError, AIBackendWebConfigNotRepresentable:
             raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
+
+    @classmethod
+    def to_connectivity(cls, data: dict, *, existing_config: dict | None = None) -> dict:
+        """Probe an instance independently; its primary/backup role is irrelevant."""
+        try:
+            old_instances = cls._existing_instances(existing_config)
+            instance = cls._instance_to_internal(data, old_instances.get(data["name"]))
+            instance["name"] = data["name"]
+            return AIBackendConfig.model_validate({"instances": [instance]}).to_config()
+        except PydanticValidationError, AIBackendWebConfigNotRepresentable:
+            raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
+
+    @staticmethod
+    def _existing_instances(config: dict | None) -> dict:
+        if not config:
+            return {}
+        existing = AIBackendConfig.model_validate(config).to_config()["instances"]
+        instances = {item["name"]: item for item in existing}
+        if len(instances) != len(existing):
+            raise AIBackendWebConfigNotRepresentable("Existing instance names are not unique")
+        return instances
 
     @classmethod
     def _instance_to_internal(cls, data: dict, existing: dict | None) -> dict:
@@ -82,12 +89,8 @@ class AIBackendWebConfigAdapter:
         return instance
 
     @classmethod
-    def to_web(cls, config: dict, *, config_format: str = "legacy") -> dict:
+    def to_web(cls, config: dict) -> dict:
         normalized = AIBackendConfig.model_validate(config).to_config()
-        if config_format == "legacy":
-            if len(normalized["instances"]) != 1:
-                raise AIBackendWebConfigNotRepresentable("Web protocol requires exactly one instance")
-            return {**cls._instance_to_web(normalized["instances"][0]), "timeout": normalized["timeout"]}
         balancer = normalized.get("balancer")
         if (
             balancer

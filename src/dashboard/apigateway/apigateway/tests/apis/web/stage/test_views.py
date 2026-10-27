@@ -36,11 +36,16 @@ from apigateway.core.models import Backend, BackendConfig, Stage
 
 def _ai_config():
     return {
-        "provider": "openai",
-        "api_key": "secret",
-        "model": "gpt-4o",
-        "model_options": {"temperature": 0.7},
         "timeout": 300,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "api_key": "secret",
+                "model": "gpt-4o",
+                "model_options": {"temperature": 0.7},
+            }
+        ],
     }
 
 
@@ -264,7 +269,7 @@ class TestStageApi:
             config=AIBackendWebConfigAdapter.to_internal(_ai_config()),
         )
         ai_config = _ai_config()
-        ai_config["api_key"] = "se****et"
+        ai_config["instances"][0]["api_key"] = "se****et"
 
         response = request_view(
             "PUT",
@@ -391,9 +396,9 @@ class TestStageBackendApi:
         assert response.status_code == 200
         item = next(item for item in response.json()["data"] if item["id"] == ai_backend.id)
         assert item["kind"] == BackendKindEnum.AI.value
-        assert item["config"]["api_key"] == "se****et"
-        assert item["config"]["model"] == "gpt-4o"
-        assert "instances" not in item["config"]
+        assert item["config"]["instances"][0]["api_key"] == "se****et"
+        assert item["config"]["instances"][0]["model"] == "gpt-4o"
+        assert len(item["config"]["instances"]) == 1
 
     def test_update_ai_backend_preserves_masked_secret_and_masks_audit(self, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -411,7 +416,7 @@ class TestStageBackendApi:
             config=AIBackendWebConfigAdapter.to_internal(_ai_config()),
         )
         data = _ai_config()
-        data["api_key"] = "se****et"
+        data["instances"][0]["api_key"] = "se****et"
 
         response = request_view(
             "PUT",

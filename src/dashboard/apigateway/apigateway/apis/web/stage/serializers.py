@@ -27,7 +27,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.ai_backend import (
     AIBackendWebConfigAdapter,
-    AIBackendWebConfigInputSLZ,
+    AIBackendWebInputSLZ,
     serialize_ai_backend_config_for_web,
 )
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
@@ -177,7 +177,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
         return ""
 
 
-class AIBackendConfigSLZ(AIBackendWebConfigInputSLZ):
+class AIBackendConfigSLZ(AIBackendWebInputSLZ):
     class Meta:
         ref_name = "apigateway.apis.web.stage.serializers.AIBackendConfigSLZ"
 
@@ -326,7 +326,7 @@ class StageBackendOutputSLZ(serializers.Serializer):
     def get_config(self, obj):
         if not obj.backend.is_ai:
             return obj.get_config_for_display()
-        return serialize_ai_backend_config_for_web(obj, config_format=self.context.get("config_format", "legacy"))
+        return serialize_ai_backend_config_for_web(obj)
 
 
 class StandardBackendConfigInputSLZ(BaseBackendConfigSLZ):

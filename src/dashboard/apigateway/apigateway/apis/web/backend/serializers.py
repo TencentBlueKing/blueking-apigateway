@@ -24,7 +24,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.ai_backend import (
     AIBackendWebConfigAdapter,
-    AIBackendWebConfigInputSLZ,
+    AIBackendWebConnectivityInputSLZ,
     AIBackendWebInputSLZ,
     serialize_ai_backend_config_for_web,
 )
@@ -46,14 +46,14 @@ class BackendConfigSLZ(BaseBackendConfigSLZ):
     stage_id = serializers.IntegerField()
 
 
-class AIBackendConfigSLZ(AIBackendWebConfigInputSLZ):
+class AIBackendConfigSLZ(AIBackendWebInputSLZ):
     stage_id = serializers.IntegerField()
 
     class Meta:
         ref_name = "apigateway.apis.web.backend.serializers.AIBackendConfigSLZ"
 
 
-class AIBackendConnectivityConfigSLZ(AIBackendWebInputSLZ):
+class AIBackendConnectivityConfigSLZ(AIBackendWebConnectivityInputSLZ):
     stage_id = serializers.IntegerField()
 
 
@@ -92,7 +92,9 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
                     existing.stage_id,
                 )
                 raise serializers.ValidationError({"config": _("已有后端配置无法读取，请联系管理员。")}) from None
-        attrs["config"] = AIBackendWebConfigAdapter.to_internal(web_config, existing_config=existing_value)
+        attrs["config"] = AIBackendWebConfigAdapter.to_connectivity(
+            web_config["instance"], existing_config=existing_value
+        )
         return attrs
 
 
@@ -261,9 +263,7 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
         data = []
         for backend_config in backend_configs:
             if obj.kind == BackendKindEnum.AI.value:
-                config = serialize_ai_backend_config_for_web(
-                    backend_config, error_field="configs", config_format=self.context.get("config_format", "legacy")
-                )
+                config = serialize_ai_backend_config_for_web(backend_config, error_field="configs")
             else:
                 config = backend_config.get_config_for_display()
             config["stage"] = {
