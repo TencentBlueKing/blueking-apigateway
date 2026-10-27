@@ -123,11 +123,11 @@
                       class="request-header-table"
                       size="small"
                       max-height="400px"
-                      table-row-key="value"
-                      local-page
+                      table-row-key="name"
+                      :immediate="false"
                       :show-pagination="false"
                       :show-settings="false"
-                      :table-data="getRequestHeader(row)"
+                      :table-data="row?.requestHeaderList ?? []"
                       :columns="requestHeaderCols"
                     />
                   </div>
@@ -172,11 +172,11 @@
                       class="request-header-table"
                       size="small"
                       max-height="400px"
-                      table-row-key="value"
-                      local-page
+                      table-row-key="name"
+                      :immediate="false"
                       :show-pagination="false"
                       :show-settings="false"
-                      :table-data="getResponseHeader(row)"
+                      :table-data="row?.responseHeaderList ?? []"
                       :columns="requestHeaderCols"
                     />
                   </div>
@@ -360,40 +360,25 @@ const handleCopyDetails = (row: Record<string, any>) => {
   copy(copyValue);
 };
 
+const formatHeaders = (headers?: Record<string, any>) => {
+  const keys = Object.keys(headers ?? {});
+
+  return keys.map(key => ({
+    name: key,
+    value: headers?.[key],
+  }));
+};
+
 const getRequestHeader = (row: Record<string, any>) => {
   if (!row) return [];
 
-  const { headers } = row.request;
-  const keys = Object.keys(headers);
-
-  if (!keys?.length) {
-    return [];
-  }
-
-  return keys.map((key) => {
-    return {
-      name: key,
-      value: headers[key],
-    };
-  });
+  return formatHeaders(row.request?.headers);
 };
 
 const getResponseHeader = (row: Record<string, any>) => {
   if (!row) return [];
 
-  const { headers } = row.response.data;
-  const keys = Object.keys(headers);
-
-  if (!keys?.length) {
-    return [];
-  }
-
-  return keys.map((key) => {
-    return {
-      name: key,
-      value: headers[key],
-    };
-  });
+  return formatHeaders(row.response?.data?.headers);
 };
 
 const handlePickClear = () => {
@@ -434,6 +419,8 @@ const getList = async () => {
     item.requestBody = '';
     item.responseBody = '';
     item.activeIndex = 'code';
+    item.requestHeaderList = getRequestHeader(item);
+    item.responseHeaderList = getResponseHeader(item);
   });
 
   tableData.value = results || [];
