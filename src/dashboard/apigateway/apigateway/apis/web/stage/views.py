@@ -21,7 +21,8 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
+from apigateway.apis.web.ai_backend import get_ai_backend_config_format_context
+from apigateway.apis.web.ai_backend.presentation import AI_BACKEND_CONFIG_FORMAT_PARAMETER
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.apps.rbac.constants import GatewayActionEnum
@@ -56,10 +57,7 @@ from .serializers import (
 def _get_backend_config_dict(instance: BackendConfig) -> dict:
     data = get_model_dict(instance)
     data.pop("_config")
-    if instance.backend.is_ai:
-        data["config"] = serialize_ai_backend_config_for_web(instance)
-    else:
-        data["config"] = instance.get_config_for_display()
+    data["config"] = instance.get_config_for_display()
     return data
 
 
@@ -341,6 +339,7 @@ class BackendConfigQuerySetMixin:
     name="get",
     decorator=extend_schema(
         description="获取环境的后端服务列表",
+        parameters=[AI_BACKEND_CONFIG_FORMAT_PARAMETER],
         responses={status.HTTP_200_OK: StageBackendOutputSLZ(many=True)},
         tags=["WebAPI.Stage"],
     ),
@@ -350,7 +349,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = StageBackendOutputSLZ(queryset, many=True)
+        serializer = StageBackendOutputSLZ(queryset, many=True, context=get_ai_backend_config_format_context(request))
         return OKJsonResponse(data=serializer.data)
 
 
@@ -358,6 +357,7 @@ class StageBackendListApi(BackendConfigQuerySetMixin, generics.ListAPIView):
     name="get",
     decorator=extend_schema(
         description="获取环境的后端服务详情",
+        parameters=[AI_BACKEND_CONFIG_FORMAT_PARAMETER],
         responses={status.HTTP_200_OK: StageBackendOutputSLZ()},
         tags=["WebAPI.Stage"],
     ),
@@ -385,7 +385,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
     def retrieve(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
 
-        serializer = StageBackendOutputSLZ(instance)
+        serializer = StageBackendOutputSLZ(instance, context=get_ai_backend_config_format_context(request))
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -399,8 +399,10 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        instance.config = data
-        instance.save()
+        unchanged = instance.backend.is_ai and data == instance.config
+        if not unchanged:
+            instance.config = data
+            instance.save()
 
         Auditor.record_stage_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -414,7 +416,8 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
         username = request.user.username
         # 触发环境发布
-        trigger_gateway_publish(PublishSourceEnum.BACKEND_UPDATE, username, instance.gateway_id, instance.stage_id)
+        if not unchanged:
+            trigger_gateway_publish(PublishSourceEnum.BACKEND_UPDATE, username, instance.gateway_id, instance.stage_id)
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 

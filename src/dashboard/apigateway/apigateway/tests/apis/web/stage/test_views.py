@@ -432,8 +432,8 @@ class TestStageBackendApi:
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             op_object_id=backend_config.id,
         )
-        assert "se****et" in audit_log.data_before
-        assert "se****et" in audit_log.data_after
+        assert "Be****et" in audit_log.data_before
+        assert "Be****et" in audit_log.data_after
         assert "Bearer secret" not in audit_log.data_before
         assert "Bearer secret" not in audit_log.data_after
 

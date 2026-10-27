@@ -208,7 +208,7 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 | 模型厂商 / Provider | AIBackendConfig | 存储值为 openai、deepseek、openai-compatible；前两者发布时转为 openai-compatible 并使用注册表 endpoint，自定义 openai-compatible 要求并保留 override.endpoint。 |
 | 模型实例配置 / AI Backend Instance | AIBackendConfig.instances | provider/auth/options/override 等配置，不是独立数据库实体或进程实例。 |
 | 模型名 / Model Name | instance options.model 等 | 厂商模型标识，与 Backend.name、Resource.name、工具名区分。 |
-| Web 配置 / Web DTO | `AIBackendWebConfigAdapter` | 扁平前端表示，经边界适配；布局、掩码、输入限制不成为核心存储定义。 |
+| Web 配置 / Web DTO | `AIBackendWebConfigAdapter` | 兼容扁平单实例与 instances 数组，经边界适配；数组查询使用 config_format=instances，凭据按稳定实例 name 匹配；布局与掩码不成为核心存储定义。 |
 | 规范化存储配置 / Stored Configuration | `core.backend_config.AIBackendConfig`、BackendConfig | 类型化存储契约；AI 配置在 ORM 持久化边界加密，不以 DTO 或发布结构绕过写入。 |
 | 运行插件配置 / Published Plugin Configuration | controller AI Service 转换 | 编译 ai-proxy/ai-proxy-multi，适配 provider/endpoint/timeout 等。 |
 

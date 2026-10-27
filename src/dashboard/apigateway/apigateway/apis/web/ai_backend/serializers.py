@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from apigateway.common.security import is_forbidden_host
 from apigateway.core.ai_backend import get_ai_backend_provider_config
+from apigateway.core.backend_config import AI_BACKUP_PRIORITY, AI_FALLBACK_STRATEGIES, AI_PRIMARY_PRIORITY
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, AIBackendProviderEnum
 
 
@@ -66,7 +67,7 @@ class AIBackendAuthHeaderSLZ(_StrictSerializer):
     value = serializers.CharField(allow_blank=False, trim_whitespace=False)
 
 
-class AIBackendWebInputSLZ(_StrictSerializer):
+class AIBackendWebInstanceInputSLZ(_StrictSerializer):
     provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     endpoint = AIBackendEndpointField(required=False)
     model_endpoint = AIBackendEndpointField(required=False, allow_null=True)
@@ -74,7 +75,6 @@ class AIBackendWebInputSLZ(_StrictSerializer):
     auth_header = AIBackendAuthHeaderSLZ(required=False, allow_null=True)
     model = serializers.CharField(required=False, allow_null=True, allow_blank=False)
     model_options = serializers.DictField(required=False, default=dict)
-    timeout = serializers.IntegerField(required=False, default=300, min_value=1, max_value=300)
 
     def validate(self, attrs):
         provider_config = get_ai_backend_provider_config(attrs["provider"])
@@ -98,7 +98,47 @@ class AIBackendWebInputSLZ(_StrictSerializer):
         return attrs
 
 
-class AIBackendWebOutputSLZ(serializers.Serializer):
+class AIBackendWebInputSLZ(AIBackendWebInstanceInputSLZ):
+    """Legacy flat configuration; also the single-instance connectivity contract."""
+
+    timeout = serializers.IntegerField(required=False, default=300, min_value=1, max_value=300)
+
+
+class AIBackendWebPoolInstanceInputSLZ(AIBackendWebInstanceInputSLZ):
+    name = serializers.CharField(min_length=1, max_length=100, trim_whitespace=False)
+    priority = serializers.ChoiceField(choices=[AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY], default=AI_PRIMARY_PRIORITY)
+
+
+class AIBackendWebBalancerSLZ(_StrictSerializer):
+    algorithm = serializers.ChoiceField(choices=["roundrobin", "chash"])
+
+
+class AIBackendWebPoolInputSLZ(_StrictSerializer):
+    timeout = serializers.IntegerField(required=False, default=300, min_value=1, max_value=300)
+    instances = AIBackendWebPoolInstanceInputSLZ(many=True, allow_empty=False)
+    balancer = AIBackendWebBalancerSLZ(required=False)
+    fallback_strategy = serializers.ListField(
+        child=serializers.ChoiceField(choices=AI_FALLBACK_STRATEGIES), required=False, allow_empty=True
+    )
+
+
+class AIBackendWebConfigInputSLZ(serializers.Serializer):
+    """Accept either legacy fields or an instances array, never a mixture.
+
+    Subclasses may declare envelope fields such as stage_id; those are validated
+    here before dispatching the configuration to its strict serializer.
+    """
+
+    def to_internal_value(self, data):
+        envelope = super().to_internal_value(data)
+        config = {key: value for key, value in data.items() if key not in self.fields}
+        serializer_class = AIBackendWebPoolInputSLZ if "instances" in config else AIBackendWebInputSLZ
+        serializer = serializer_class(data=config)
+        serializer.is_valid(raise_exception=True)
+        return {**envelope, **serializer.validated_data}
+
+
+class AIBackendWebInstanceOutputSLZ(serializers.Serializer):
     provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     endpoint = serializers.URLField()
     model_endpoint = serializers.URLField(allow_null=True)
@@ -106,4 +146,19 @@ class AIBackendWebOutputSLZ(serializers.Serializer):
     auth_header = AIBackendAuthHeaderSLZ(allow_null=True)
     model = serializers.CharField(allow_null=True)
     model_options = serializers.DictField()
+
+
+class AIBackendWebOutputSLZ(AIBackendWebInstanceOutputSLZ):
     timeout = serializers.IntegerField()
+
+
+class AIBackendWebPoolInstanceOutputSLZ(AIBackendWebInstanceOutputSLZ):
+    name = serializers.CharField()
+    priority = serializers.IntegerField()
+
+
+class AIBackendWebPoolOutputSLZ(serializers.Serializer):
+    timeout = serializers.IntegerField()
+    instances = AIBackendWebPoolInstanceOutputSLZ(many=True)
+    balancer = AIBackendWebBalancerSLZ(required=False)
+    fallback_strategy = serializers.ListField(child=serializers.CharField(), required=False)

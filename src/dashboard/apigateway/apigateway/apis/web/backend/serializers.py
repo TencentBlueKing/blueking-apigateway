@@ -24,6 +24,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.ai_backend import (
     AIBackendWebConfigAdapter,
+    AIBackendWebConfigInputSLZ,
     AIBackendWebInputSLZ,
     serialize_ai_backend_config_for_web,
 )
@@ -45,11 +46,15 @@ class BackendConfigSLZ(BaseBackendConfigSLZ):
     stage_id = serializers.IntegerField()
 
 
-class AIBackendConfigSLZ(AIBackendWebInputSLZ):
+class AIBackendConfigSLZ(AIBackendWebConfigInputSLZ):
     stage_id = serializers.IntegerField()
 
     class Meta:
         ref_name = "apigateway.apis.web.backend.serializers.AIBackendConfigSLZ"
+
+
+class AIBackendConnectivityConfigSLZ(AIBackendWebInputSLZ):
+    stage_id = serializers.IntegerField()
 
 
 class AIBackendConnectivityInputSLZ(serializers.Serializer):
@@ -60,7 +65,7 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.backend.serializers.AIBackendConnectivityInputSLZ"
 
     def validate(self, attrs):
-        config_slz = AIBackendConfigSLZ(data=attrs["config"])
+        config_slz = AIBackendConnectivityConfigSLZ(data=attrs["config"])
         config_slz.is_valid(raise_exception=True)
         web_config = dict(config_slz.validated_data)
         stage_id = web_config.pop("stage_id")
@@ -256,7 +261,9 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
         data = []
         for backend_config in backend_configs:
             if obj.kind == BackendKindEnum.AI.value:
-                config = serialize_ai_backend_config_for_web(backend_config, error_field="configs")
+                config = serialize_ai_backend_config_for_web(
+                    backend_config, error_field="configs", config_format=self.context.get("config_format", "legacy")
+                )
             else:
                 config = backend_config.get_config_for_display()
             config["stage"] = {

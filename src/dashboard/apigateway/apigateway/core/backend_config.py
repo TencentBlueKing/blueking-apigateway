@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Literal, Self
 from urllib.parse import urlsplit
 
@@ -11,6 +12,12 @@ from apigateway.core.constants import (
 )
 
 _FORBIDDEN_AI_BACKEND_HEADERS = frozenset({"host", "content-length", "transfer-encoding", "connection"})
+AI_PRIMARY_PRIORITY = 10
+AI_BACKUP_PRIORITY = 0
+AI_INSTANCE_WEIGHT = 1
+AI_CHASH_HASH_ON = "vars_combinations"
+AI_CHASH_KEY = "$bk_app_code"
+AI_FALLBACK_STRATEGIES = ("http_429", "http_5xx")
 
 
 def mask_header_value(value: str) -> str:
@@ -137,6 +144,7 @@ class AIBackendInstance(BaseModel):
 
     name: str = Field(min_length=1, max_length=100)
     provider: AIBackendProvider
+    priority: int = AI_PRIMARY_PRIORITY
     weight: int = Field(default=0, ge=0)
     auth: AIBackendAuth | None = None
     options: dict[str, Any] = Field(default_factory=dict)
@@ -195,6 +203,47 @@ class AIBackendConfig(BaseModel):
     balancer: AIBackendBalancer | None = None
     fallback_strategy: AIBackendFallbackStrategy | None = None
 
+    @classmethod
+    def normalize_for_write(cls, data: Any) -> dict[str, Any]:
+        # Keep write defaults out of model_validate: reading or republishing old
+        # configurations must not enable retries that were never configured.
+        if isinstance(data, dict):
+            data = deepcopy(data)
+            if (
+                isinstance(data.get("instances"), list)
+                and len(data["instances"]) == 1
+                and data.get("fallback_strategy") == []
+            ):
+                data.pop("fallback_strategy")
+            balancer = data.get("balancer")
+            if isinstance(balancer, dict) and balancer.get("algorithm") == "chash":
+                balancer.setdefault("hash_on", AI_CHASH_HASH_ON)
+                balancer.setdefault("key", AI_CHASH_KEY)
+
+        model = cls.model_validate(data)
+        config = model.to_config()
+        names = [item.name for item in model.instances]
+        if len(set(names)) != len(names):
+            raise ValueError("instances: instance names must be unique")
+        priorities = [item.priority for item in model.instances]
+        if any(value not in (AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY) for value in priorities):
+            raise ValueError("instances: priority must be 10 (primary) or 0 (backup)")
+        if AI_PRIMARY_PRIORITY not in priorities or priorities.count(AI_BACKUP_PRIORITY) > 1:
+            raise ValueError("instances: at least one primary and at most one backup are required")
+        if len(model.instances) == 1:
+            return config
+
+        if "fallback_strategy" in model.model_fields_set and model.fallback_strategy is None:
+            raise ValueError("fallback_strategy: an array is required")
+        for item, output in zip(model.instances, config["instances"], strict=True):
+            if "weight" in item.model_fields_set and item.weight != AI_INSTANCE_WEIGHT:
+                raise ValueError("instances: multi-instance weight must be 1")
+            output.update(priority=item.priority, weight=AI_INSTANCE_WEIGHT)
+        config["instances"].sort(key=lambda item: (-item["priority"], item["name"]))
+
+        _normalize_ai_pool_routing(config, has_backup=AI_BACKUP_PRIORITY in priorities)
+        return config
+
     @model_validator(mode="before")
     @classmethod
     def reject_stage_vars(cls, data: Any) -> Any:
@@ -214,6 +263,25 @@ class AIBackendConfig(BaseModel):
         for output, instance in zip(data["instances"], self.instances, strict=True):
             output["weight"] = instance.weight
         return data
+
+
+def _normalize_ai_pool_routing(config: dict[str, Any], *, has_backup: bool) -> None:
+    balancer = config.get("balancer", {})
+    balancer.setdefault("algorithm", "roundrobin")
+    if balancer["algorithm"] == "chash":
+        if balancer.get("hash_on") != AI_CHASH_HASH_ON or balancer.get("key") != AI_CHASH_KEY:
+            raise ValueError("balancer: chash must use vars_combinations and $bk_app_code")
+    elif "hash_on" in balancer or "key" in balancer:
+        raise ValueError("balancer: roundrobin does not accept hash_on or key")
+    config["balancer"] = balancer
+
+    strategy = config.get("fallback_strategy", list(AI_FALLBACK_STRATEGIES))
+    if not isinstance(strategy, list) or any(item not in AI_FALLBACK_STRATEGIES for item in strategy):
+        raise ValueError("fallback_strategy: only an array of http_429 and http_5xx is supported")
+    strategy = [item for item in AI_FALLBACK_STRATEGIES if item in strategy]
+    if has_backup and not strategy:
+        raise ValueError("fallback_strategy: a backup requires at least one retry condition")
+    config["fallback_strategy"] = strategy
 
 
 type BackendConfigType = type[StandardBackendConfig] | type[AIBackendConfig]

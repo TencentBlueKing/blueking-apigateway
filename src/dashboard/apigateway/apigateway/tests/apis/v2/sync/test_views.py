@@ -347,25 +347,53 @@ class TestSyncApi:
         assert response.status_code == 400
         assert not Resource.objects.filter(gateway=fake_gateway, name="chat").exists()
 
-    def test_stage_sync_ai_gateway_with_ai_backends_only(self, request_view, fake_gateway, disable_app_permission):
+    @pytest.mark.parametrize("with_backup", [False, True])
+    def test_stage_sync_ai_gateway_with_ai_backends_only(
+        self, request_view, fake_gateway, disable_app_permission, with_backup
+    ):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
 
+        model_backend = _model_backend()
+        if with_backup:
+            model_backend["config"]["instances"].append(
+                {
+                    "name": "backup",
+                    "priority": 0,
+                    "provider": "openai",
+                    "auth": {"header": {"Authorization": "Bearer backup-secret"}},
+                }
+            )
         resp = request_view(
             method="POST",
             gateway=fake_gateway,
             view_name="openapi.v2.sync.gateway.stages.sync",
             path_params={"gateway_name": fake_gateway.name},
-            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [_model_backend()]},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [model_backend]},
         )
 
         assert resp.status_code == 200, resp.json()
         backend = Backend.objects.get(gateway=fake_gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
-        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
-        assert backend_config.config["instances"][0]["weight"] == 0
+        primary = next(item for item in backend_config.config["instances"] if item["name"] == "primary")
+        assert primary["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert primary["weight"] == (1 if with_backup else 0)
         assert "options" not in backend_config.config["instances"][0]
+
+        if with_backup:
+            assert backend_config.config["fallback_strategy"] == ["http_429", "http_5xx"]
+            model_backend["config"]["instances"].pop()
+            updated = request_view(
+                method="POST",
+                gateway=fake_gateway,
+                view_name="openapi.v2.sync.gateway.stages.sync",
+                path_params={"gateway_name": fake_gateway.name},
+                data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [model_backend]},
+            )
+            assert updated.status_code == 200, updated.json()
+            backend_config.refresh_from_db()
+            assert len(backend_config.config["instances"]) == 1
 
     def test_stage_sync_normal_gateway_rejects_ai_backends(self, request_view, fake_gateway, disable_app_permission):
         resp = request_view(
