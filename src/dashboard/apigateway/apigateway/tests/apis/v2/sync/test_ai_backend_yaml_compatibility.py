@@ -143,3 +143,36 @@ def test_automation_keeps_mask_shaped_credentials_literal(request_view, fake_gat
     assert response.status_code == 200, response.json()
     stored = BackendConfig.objects.get(gateway=fake_gateway, backend__name="model", stage__name="prod")
     assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == f"Bearer {credential}"
+
+
+@pytest.mark.parametrize("route", ["openapi.stage.sync", "openapi.v2.sync.gateway.stages.sync"])
+@pytest.mark.parametrize("routing", [{"balancer": {"algorithm": "roundrobin"}}, {"fallback_strategy": ["http_429"]}])
+def test_single_instance_automation_still_rejects_nonempty_pool_fields(
+    request_view, fake_gateway, mocker, route, routing
+):
+    mocker.patch(
+        "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    mocker.patch(
+        "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    fake_gateway.kind = GatewayKindEnum.AI.value
+    fake_gateway.save()
+    config = {
+        "instances": [{"name": "primary", "provider": "openai", "auth": {"header": {"Authorization": "Bearer key"}}}],
+        **routing,
+    }
+    response = request_view(
+        "POST",
+        route,
+        gateway=fake_gateway,
+        path_params={"gateway_name": fake_gateway.name},
+        data={"name": "prod", "ai_backends": [{"name": "model", "config": config}]},
+    )
+    assert response.status_code == 400, response.json()
+    if route == "openapi.stage.sync":
+        assert response.json()["result"] is False
+        assert response.json()["code"] == 40002
+    else:
+        assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+    assert not BackendConfig.objects.filter(gateway=fake_gateway, backend__name="model").exists()

@@ -38,9 +38,10 @@ class AIBackendWebConfigAdapter:
                 )
                 instances.append(instance)
             config = {"timeout": data.get("timeout", 300), "instances": instances}
-            for key in ("balancer", "fallback_strategy"):
-                if key in data:
-                    config[key] = data[key]
+            if len(instances) > 1:
+                for key in ("balancer", "fallback_strategy"):
+                    if key in data:
+                        config[key] = data[key]
             return validate_ai_backend_config(config)
         except PydanticValidationError, AIBackendWebConfigNotRepresentable:
             raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None

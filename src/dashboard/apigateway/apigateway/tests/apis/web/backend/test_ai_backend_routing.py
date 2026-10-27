@@ -283,3 +283,44 @@ def test_renamed_masked_instance_is_rejected_without_saving_or_publishing(reques
     assert pool_backend.config == before
     publish_stage.assert_not_called()
     publish_backend.assert_not_called()
+
+
+@pytest.mark.parametrize("route", ["backend.retrieve-update-destroy", "stage.backend-retrieve-update"])
+def test_pool_reduced_to_single_primary_saves_without_pool_fields(request_view, mocker, pool_backend, route):
+    publish_stage = mocker.patch("apigateway.apis.web.stage.views.trigger_gateway_publish")
+    data = AIBackendWebConfigAdapter.to_web(pool_backend.config)
+    data["instances"] = [data["instances"][0]]
+    params = {
+        "gateway_id": pool_backend.gateway_id,
+        "id": pool_backend.stage_id,
+        "backend_id": pool_backend.backend_id,
+    }
+    if route.startswith("backend."):
+        params = {"gateway_id": pool_backend.gateway_id, "id": pool_backend.backend_id}
+        data = {
+            "name": pool_backend.backend.name,
+            "type": "http",
+            "configs": [{"stage_id": pool_backend.stage_id, **data}],
+        }
+    response = request_view("PUT", route, path_params=params, gateway=pool_backend.gateway, data=data)
+    assert response.status_code in (200, 204), response.json()
+    pool_backend.refresh_from_db()
+    assert len(pool_backend.config["instances"]) == 1
+    assert pool_backend.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer alpha-secret"
+    assert "balancer" not in pool_backend.config and "fallback_strategy" not in pool_backend.config
+    output = request_view(
+        "GET",
+        "stage.backend-retrieve-update",
+        gateway=pool_backend.gateway,
+        path_params={
+            "gateway_id": pool_backend.gateway_id,
+            "id": pool_backend.stage_id,
+            "backend_id": pool_backend.backend_id,
+        },
+    )
+    assert output.status_code == 200, output.json()
+    config = output.json()["data"]["config"]
+    assert len(config["instances"]) == 1
+    assert "balancer" not in config and "fallback_strategy" not in config
+    if route.startswith("stage."):
+        publish_stage.assert_called_once()

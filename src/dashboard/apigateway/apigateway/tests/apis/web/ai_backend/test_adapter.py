@@ -4,6 +4,7 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter, AIBackendWebConfigNotRepresentable
+from apigateway.common.error_codes import APIError
 
 
 def _single_form(**fields):
@@ -225,3 +226,29 @@ def test_update_checks_submitted_names_instead_of_rejecting_existing_duplicates(
     updated = AIBackendWebConfigAdapter.to_internal(_single_form(), existing_config=existing)
     assert [instance["name"] for instance in updated["instances"]] == ["primary"]
     assert updated["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+
+
+@pytest.mark.parametrize("algorithm", ["roundrobin", "chash"])
+def test_pool_reduced_to_single_primary_discards_routing_and_preserves_credentials(algorithm):
+    form = _pool_form()
+    form["balancer"] = {"algorithm": algorithm}
+    existing = AIBackendWebConfigAdapter.to_internal(form)
+    form = AIBackendWebConfigAdapter.to_web(existing)
+    form["instances"] = [form["instances"][0]]
+    before = deepcopy(form)
+
+    updated = AIBackendWebConfigAdapter.to_internal(form, existing_config=existing)
+
+    assert len(updated["instances"]) == 1
+    assert updated["instances"][0]["auth"]["header"]["Authorization"] == "Bearer alpha-secret"
+    assert updated["timeout"] == 60
+    assert "balancer" not in updated and "fallback_strategy" not in updated
+    assert form == before
+
+
+def test_pool_reduced_to_only_backup_still_requires_a_primary():
+    existing = AIBackendWebConfigAdapter.to_internal(_pool_form())
+    form = AIBackendWebConfigAdapter.to_web(existing)
+    form["instances"] = [form["instances"][1]]
+    with pytest.raises(APIError, match="至少需要一个主实例"):
+        AIBackendWebConfigAdapter.to_internal(form, existing_config=existing)
