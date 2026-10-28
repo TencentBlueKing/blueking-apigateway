@@ -28,8 +28,6 @@ import getResourceManagementRoutes from '@/views/resource-management/route';
 import getBasicInfoRoutes from '@/views/basic-info/routes';
 // 成员管理
 import getMemberManagementRoutes from '@/views/member-management/routes';
-// 组件管理
-import getComponentManagementRoutes from '@/views/component-management/route';
 // 后端服务
 import getBackendServicesRoutes from '@/views/backend-services/routes';
 // 模型服务
@@ -163,14 +161,6 @@ const routes: RouteRecordRaw[] = [
       matchRoute: 'BkCli',
       topMenu: 'BkCli',
     },
-  },
-  {
-    path: '/components',
-    name: 'ComponentsMain',
-    component: () => import('@/layout/component-management/Index.vue'),
-    props,
-    redirect: '/components/access',
-    children: [...getComponentManagementRoutes()],
   },
   {
     path: '/docs',

@@ -117,13 +117,6 @@ urlpatterns = [
     path("backend/notice/", include(("apigateway.notice.urls", "notice"), namespace="notice")),
 ]
 
-# 仅启用 ESB 时注册相关接口
-if settings.ESB_ENABLED:
-    urlpatterns += [
-        # esb
-        path("backend/esb/", include("apigateway.apps.esb.urls")),
-    ]
-
 if settings.DEBUG:
     # backend/docs/
     urlpatterns += [
