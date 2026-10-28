@@ -23,7 +23,8 @@ import pytest
 from django_dynamic_fixture import G
 from rest_framework import serializers
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.core.models import Gateway
 
@@ -195,3 +196,11 @@ def test_sync_stage_plugin_configs_clears_when_plugin_configs_none(mocker):
     assert kwargs["gateway_id"] == 1
     assert kwargs["scope_type"] == PluginBindingScopeEnum.STAGE
     assert kwargs["scope_id_to_plugin_configs"] == {2: []}
+
+
+@pytest.mark.django_db
+def test_validate_stage_plugin_configs_rejects_resource_user_rate_limit():
+    plugin_code = PluginTypeCodeEnum.BK_RESOURCE_USER_RATE_LIMIT.value
+    G(PluginType, code=plugin_code, scope="resource", is_public=True, schema=None)
+    with pytest.raises(serializers.ValidationError, match=plugin_code):
+        StageSyncHandler.validate_plugin_configs([{"type": plugin_code, "yaml": "{}"}])

@@ -23,7 +23,7 @@ from pydantic import TypeAdapter
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.audit import Auditor
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
@@ -164,6 +164,10 @@ class StageSyncHandler:
 
         for plugin_config in plugin_configs:
             plugin_type = plugin_types[plugin_config["type"]]
+            if plugin_type.code == PluginTypeCodeEnum.BK_RESOURCE_USER_RATE_LIMIT.value:
+                raise serializers.ValidationError(
+                    _("插件 {plugin_type_code} 仅支持绑定到资源。").format(plugin_type_code=plugin_type.code)
+                )
             try:
                 yaml_validator.validate(
                     plugin_type.code,
