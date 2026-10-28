@@ -89,10 +89,10 @@
 // @ts-nocheck
 import { cloneDeep } from 'lodash-es';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
-import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
-import InputComponent from '@/components/plugin-manage/components/InputComponent.vue';
-import InputNumberComponent from '@/components/plugin-manage/components/InputNumberComponent.vue';
-import SelectComponent from '@/components/plugin-manage/components/SelectComponent.vue';
+import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-form/types';
+import InputComponent from '@/components/plugin-manage/schema-form/components/InputComponent.vue';
+import InputNumberComponent from '@/components/plugin-manage/schema-form/components/InputNumberComponent.vue';
+import SelectComponent from '@/components/plugin-manage/schema-form/components/SelectComponent.vue';
 
 interface IProps {
   schema?: ISchema

@@ -30,13 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import ConfigDisplayTableHeaderRewrite from './ConfigDisplayTableHeaderRewrite.vue';
-import ConfigDisplayTableRateLimit from './ConfigDisplayTableRateLimit.vue';
-import ConfigDisplayTableIpRestriction from './ConfigDisplayTableIpRestriction.vue';
-import ConfigDisplayTableStatusRewrite from './ConfigDisplayTableStatusRewrite.vue';
-import ConfigDisplayTableGeneric from './ConfigDisplayTableGeneric.vue';
-import ConfigDisplayTableBkTrafficLabel from './ConfigDisplayTableBkTrafficLabel.vue';
-import ConfigDisplayTableBkQueryStringRewrite from './ConfigDisplayTableBkQueryStringRewrite.vue';
+import HeaderRewriteTable from './components/HeaderRewriteTable.vue';
+import RateLimitTable from './components/RateLimitTable.vue';
+import IpRestrictionTable from './components/IpRestrictionTable.vue';
+import EnabledTable from './components/EnabledTable.vue';
+import GenericTable from './components/GenericTable.vue';
+import TrafficLabelTable from './components/TrafficLabelTable.vue';
+import QueryStringRewriteTable from './components/QueryStringRewriteTable.vue';
 import type {
   IBaseTableRow,
   IColumn,
@@ -78,21 +78,22 @@ const {
 
 // 需要另外的组件来展示的插件配置
 const tableComponentMap: { [key: string]: Component } = {
-  'bk-header-rewrite': ConfigDisplayTableHeaderRewrite,
-  'bk-rate-limit': ConfigDisplayTableRateLimit,
-  'bk-ip-restriction': ConfigDisplayTableIpRestriction,
-  'bk-status-rewrite': ConfigDisplayTableStatusRewrite,
-  'bk-username-required': ConfigDisplayTableStatusRewrite,
-  'bk-oauth2-verify': ConfigDisplayTableStatusRewrite,
-  'bk-oauth2-protected-resource': ConfigDisplayTableStatusRewrite,
-  'bk-oauth2-audience-validate': ConfigDisplayTableStatusRewrite,
-  'bk-traffic-label': ConfigDisplayTableBkTrafficLabel,
-  'bk-query-string-rewrite': ConfigDisplayTableBkQueryStringRewrite,
+  'bk-header-rewrite': HeaderRewriteTable,
+  'bk-rate-limit': RateLimitTable,
+  'bk-resource-user-rate-limit': RateLimitTable,
+  'bk-ip-restriction': IpRestrictionTable,
+  'bk-status-rewrite': EnabledTable,
+  'bk-username-required': EnabledTable,
+  'bk-oauth2-verify': EnabledTable,
+  'bk-oauth2-protected-resource': EnabledTable,
+  'bk-oauth2-audience-validate': EnabledTable,
+  'bk-traffic-label': TrafficLabelTable,
+  'bk-query-string-rewrite': QueryStringRewriteTable,
 };
 
 // 根据 code 或 type 动态获取表格组件
 const tableComponent = computed(() => {
-  return tableComponentMap[plugin.code || plugin.type || ''] || ConfigDisplayTableGeneric;
+  return tableComponentMap[plugin.code || plugin.type || ''] || GenericTable;
 });
 
 // 给表格最左列一个背景色

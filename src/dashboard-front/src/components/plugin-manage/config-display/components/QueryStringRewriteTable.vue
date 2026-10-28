@@ -19,7 +19,7 @@
 <template>
   <!--  插件配置展示态组件  -->
   <!--  bk-query-string-rewrite 插件  -->
-  <CustomTable
+  <BaseTable
     :columns="tableCols"
     :data="tableData"
   />
@@ -30,8 +30,8 @@ import type {
   IBaseTableRow,
   IColumn,
   IPlugin,
-} from '@/components/plugin-manage/types';
-import CustomTable from './CustomTable.vue';
+} from '../types';
+import BaseTable from './BaseTable.vue';
 
 interface IQueryStringRewriteConfig {
   add?: Record<string, string | number>

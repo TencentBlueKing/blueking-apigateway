@@ -39,8 +39,8 @@
 import { cloneDeep, isEmpty, isObject } from 'lodash-es';
 import { Form } from 'bkui-vue';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
-import type { ICorsFormData, ISchema } from '@/components/plugin-manage/schema-type';
-import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
+import type { ICorsFormData, ISchema } from '@/components/plugin-manage/schema-form/types';
+import SchemaField from '@/components/plugin-manage/schema-form/Index.vue';
 
 interface IProps {
   schema?: ISchema
