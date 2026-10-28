@@ -1449,9 +1449,6 @@
         alice:
         - period: 1
           tokens: 10
-        - period: 60
-          tokens: 300
-        bob: []
       allow_degradation: true
       show_limit_quota_header: true
 - model: plugin.plugintype
