@@ -262,3 +262,34 @@ def test_delete_gateway_member_rejects_member_from_another_gateway(fake_gateway)
 
     with pytest.raises(APIError):
         GatewayMember.objects.delete_gateway_member(fake_gateway.id, member.id)
+
+
+def test_delete_gateway_members_by_usernames_deletes_matches_and_skips_missing(fake_gateway):
+    GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["second-admin"], "operator-user")
+    operator = G(
+        GatewayMember,
+        gateway=fake_gateway,
+        username="operator",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+
+    deleted = GatewayMember.objects.delete_gateway_members_by_usernames(
+        fake_gateway.id,
+        ["second-admin", "operator", "missing", "operator"],
+    )
+
+    assert [member.username for member in deleted] == ["operator", "second-admin"]
+    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
+    assert not GatewayMember.objects.filter(id=operator.id).exists()
+
+
+def test_delete_gateway_members_by_usernames_rejects_deleting_all_administrators(fake_gateway):
+    GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["second-admin"], "operator-user")
+
+    with pytest.raises(APIError):
+        GatewayMember.objects.delete_gateway_members_by_usernames(
+            fake_gateway.id,
+            ["admin", "second-admin"],
+        )
+
+    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin", "second-admin"]

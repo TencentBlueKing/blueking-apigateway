@@ -17,7 +17,7 @@
 #
 import pytest
 from ddf import G
-from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from pydantic import TypeAdapter
 from rest_framework.exceptions import ValidationError
 
@@ -449,10 +449,10 @@ def test_saver_same_field_conflict_rolls_back_metadata_and_members(fake_gateway,
     saver = GatewaySaver(
         fake_gateway.pk,
         GatewayData(
-            name=fake_gateway.name, display_name="TAKEN", status=1, description="changed", maintainers=["new"]
+            name=fake_gateway.name, display_name="Taken", status=1, description="changed", maintainers=["new"]
         ),
     )
-    with pytest.raises(DjangoValidationError):
+    with pytest.raises(IntegrityError):
         saver.save()
     fake_gateway.refresh_from_db()
     assert fake_gateway.display_name_en == "Before English"

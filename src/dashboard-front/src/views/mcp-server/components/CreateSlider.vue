@@ -174,6 +174,7 @@
                             <AgTable
                               ref="toolTableRef"
                               v-model:table-data="filteredToolList"
+                              cache-identifier="mcp-create-tool-table"
                               class="mb-16px!"
                               show-selection
                               local-page
@@ -241,6 +242,7 @@
                                   <AgTable
                                     ref="promptTableRef"
                                     v-model:table-data="filteredPromptList"
+                                    cache-identifier="mcp-create-prompt-table"
                                     resizable
                                     local-page
                                     show-selection

@@ -611,7 +611,7 @@ BK_ITSM4_URL_PREFIX = (
 )
 BK_ITSM4_API_TIMEOUT = env.int("BK_ITSM4_API_TIMEOUT", 30)
 BK_ITSM4_SYSTEM_TOKEN = env.str("BK_ITSM4_SYSTEM_TOKEN", default="")
-BK_ITSM4_QUERY_OPERATOR = env.str("BK_ITSM4_QUERY_OPERATOR", default="admin")
+# BK_ITSM4_QUERY_OPERATOR = env.str("BK_ITSM4_QUERY_OPERATOR", default="admin")
 BK_ITSM4_CALLBACK_APP_CODE = env.str(
     "BK_ITSM4_CALLBACK_APP_CODE",
     default="bk-itsm4" if EDITION == "te" else "cw_aitsm",
@@ -658,7 +658,9 @@ RESERVED_GATEWAY_NAME_PREFIXES = ["bk-", "bp-"]
 # 官方网关命名前缀，仅做标记
 OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
 # 网关名校验白名单
-IGNORE_GATEWAY_NAME_CHECK_WHITELIST = env.list("IGNORE_GATEWAY_NAME_CHECK_WHITELIST", default=["bkpaas3", "paasv3"])
+IGNORE_GATEWAY_NAME_CHECK_WHITELIST = env.list(
+    "IGNORE_GATEWAY_NAME_CHECK_WHITELIST", default=["bkpaas3", "paasv3", "bkiam"]
+)
 
 # 允许管理端更新网关认证信息
 DEFAULT_ALLOW_UPDATE_API_AUTH = True
@@ -708,13 +710,11 @@ REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
 # API 使用指南文档地址
 # ==============================================================================
 # 可编程网关开发文档链接地址
-PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = env.str(
-    "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL",
-    "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/python.md",
+PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = (
+    "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/python.md"
 )
-PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = env.str(
-    "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL",
-    "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/golang.md",
+PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = (
+    "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/golang.md"
 )
 
 # access token 文档链接地址
@@ -761,8 +761,8 @@ else:
 BK_LOGIN_URL = env.str("BK_LOGIN_URL", default="/")
 # 登录小窗相关
 BK_LOGIN_PLAIN_URL = env.str("BK_LOGIN_PLAIN_URL", default=BK_LOGIN_URL.rstrip("/") + "/plain/")
-BK_LOGIN_PLAIN_WINDOW_WIDTH = env.int("BK_LOGIN_PLAIN_WINDOW_WIDTH", default=700)
-BK_LOGIN_PLAIN_WINDOW_HEIGHT = env.int("BK_LOGIN_PLAIN_WINDOW_HEIGHT", default=550)
+BK_LOGIN_PLAIN_WINDOW_WIDTH = 700
+BK_LOGIN_PLAIN_WINDOW_HEIGHT = 550
 
 # ==============================================================================
 # bkrepo 配置

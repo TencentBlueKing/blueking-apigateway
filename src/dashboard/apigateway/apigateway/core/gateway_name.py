@@ -8,7 +8,6 @@ import re
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-NAMING_FIELDS = frozenset({"name", "display_name", "display_name_en"})
 GATEWAY_DISPLAY_NAME_MAX_LENGTH = 64
 GATEWAY_DISPLAY_NAME_EN_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9 -]*")
 

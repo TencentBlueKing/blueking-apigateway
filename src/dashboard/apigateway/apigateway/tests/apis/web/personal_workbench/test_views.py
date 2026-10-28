@@ -19,6 +19,7 @@
 
 import datetime
 
+import fakeredis
 import pytest
 from ddf import G
 from django.db import connection
@@ -26,13 +27,15 @@ from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.bk_itsm.constants import DEFAULT_ITSM_SYSTEM_CODE
+from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionApplyStatus, AppPermissionRecord
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
+from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER, ItsmCallbackResultHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Resource, Stage
@@ -1451,7 +1454,60 @@ class TestWorkbenchMyApplyGatewayPermissionCancelApi:
         )
 
         assert resp.status_code == 204
-        mock_cancel.assert_called_once_with("t-001")
+        mock_cancel.assert_called_once_with("t-001", FAKE_USERNAME)
+        apply.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.CANCELED.value
+
+    def test_cancel_itsm_apply_handled_by_sync_cancel_callback(self, request_view, fake_gateway, mocker):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=ApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="t-002",
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
+            itsm_ticket_id="t-002",
+            itsm_callback_token="cb-token-002",
+        )
+        G(ItsmSystemConfig, system_code=DEFAULT_ITSM_SYSTEM_CODE, is_registered=True)
+        mocker.patch("apigateway.service.bk_itsm.get_default_redis_client", return_value=fakeredis.FakeRedis())
+        mocked_record = mocker.patch("apigateway.biz.permission.manager.Auditor.record_permission_op_success")
+
+        def cancel_with_sync_callback(**kwargs):
+            ItsmCallbackResultHandler().handle(
+                ticket={
+                    "id": kwargs["ticket_id"],
+                    "approve_result": False,
+                    "form_data": {"apply_record_id": record.id, "grant_dimension": "gateway"},
+                },
+                callback_token="cb-token-002",
+            )
+            return True
+
+        mocker.patch("apigateway.service.bk_itsm.cancel_ticket", side_effect=cancel_with_sync_callback)
+
+        resp = request_view(
+            method="POST",
+            view_name="workbench.permissions.gateway.applied.cancel",
+            path_params={"record_id": record.id},
+        )
+
+        assert resp.status_code == 204
+        apply.refresh_from_db()
+        record.refresh_from_db()
+        assert apply.status == ApplyStatusEnum.CANCELED.value
+        assert record.status == ApplyStatusEnum.CANCELED.value
+        assert record.handled_by == FAKE_USERNAME
+        mocked_record.assert_called_once()
 
     def test_cancel_other_user_apply_returns_not_found(self, request_view, fake_gateway):
         record = G(
@@ -1810,7 +1866,7 @@ class TestWorkbenchMyApplyMCPPermissionCancelApi:
         )
 
         assert resp.status_code == 204
-        mock_cancel.assert_called_once_with("t-mcp-001")
+        mock_cancel.assert_called_once_with("t-mcp-001", FAKE_USERNAME)
         apply.refresh_from_db()
         assert apply.handled_by == FAKE_USERNAME
         assert apply.handled_time is not None

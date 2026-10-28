@@ -83,8 +83,8 @@ class ItsmApprovalTask(BaseModel):
     USER_OPERATOR_TYPE: ClassVar[str] = "user"
 
     status: str = ""
-    operator: str = ""
-    operator_type: str = ""
+    operator: Optional[str] = None
+    operator_type: Optional[str] = None
 
 
 class ItsmApprovalTaskList(BaseModel):
@@ -104,7 +104,7 @@ class ItsmApprovalTaskList(BaseModel):
         if last_approved.operator_type != ItsmApprovalTask.USER_OPERATOR_TYPE:
             return ""
 
-        return last_approved.operator.strip()
+        return (last_approved.operator or "").strip()
 
 
 def _call_bkitsm_api(

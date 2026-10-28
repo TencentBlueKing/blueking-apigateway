@@ -357,10 +357,10 @@
 - model: plugin.plugintype
   fields:
     code: bk-rate-limit
-    name: 频率控制
-    name_en: Rate Limit
-    description: "限制每个应用调用的请求频率。默认应用频率限制对所有应用生效，特殊应用频率限制对指定应用单独生效。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。"
-    description_en: rate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application; special application rate limit, which sets a separate rate limit for a specified application. If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.
+    name: 应用频率控制
+    name_en: Application Rate Limit
+    description: "前置条件：资源需要开启应用认证；绑定在环境上时，请确保需要限流的资源已开启应用认证。\n限制每个应用调用的请求频率。默认应用频率限制对所有应用生效，特殊应用频率限制对指定应用单独生效。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。"
+    description_en: "Prerequisite: resources must have application authentication enabled. When bound to a stage, ensure that resources requiring rate limiting have application authentication enabled.\nRate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application; special application rate limit, which sets a separate rate limit for a specified application. If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage."
     is_public: true
     scope: stage_and_resource
     priority: 17652
@@ -1411,5 +1411,58 @@
     _tags: "转换,Transformation"
     schema:
     - bk-query-string-rewrite
+    - plugin
+    - '0'
+- model: schema.schema
+  fields:
+    name: bk-resource-user-rate-limit
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "type": "object",
+        "properties": {
+          "rates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "period": {"type": "integer", "minimum": 1},
+                  "tokens": {"type": "integer", "minimum": 1}
+                },
+                "required": ["period", "tokens"]
+              }
+            }
+          },
+          "allow_degradation": {"type": "boolean", "default": true},
+          "show_limit_quota_header": {"type": "boolean", "default": true}
+        }
+      }
+    description: Rate limit verified users on resources requiring user authentication, across applications.
+    example: |-
+      rates:
+        __default:
+        - period: 60
+          tokens: 100
+        alice:
+        - period: 1
+          tokens: 10
+      allow_degradation: true
+      show_limit_quota_header: true
+- model: plugin.plugintype
+  fields:
+    code: bk-resource-user-rate-limit
+    name: 资源用户限流
+    name_en: Resource User Rate Limit
+    description: 仅对开启用户认证的资源中的已认证用户生效，按用户名、网关、环境和资源名分别计数，同一用户跨应用共享配额。用户专属规则覆盖默认规则，空数组表示不限流；缺少 rates 或 __default 时跳过限流。
+    description_en: Limit verified users on resources requiring user authentication, per username, gateway, stage and resource name. A user shares quotas across applications. User rules override default rules; an empty list exempts the user. Missing rates or __default skips rate limiting.
+    is_public: true
+    scope: resource
+    priority: 17654
+    _tags: "流量,Traffic"
+    schema:
+    - bk-resource-user-rate-limit
     - plugin
     - '0'

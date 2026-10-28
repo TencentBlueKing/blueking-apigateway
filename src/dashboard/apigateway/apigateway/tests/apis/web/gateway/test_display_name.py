@@ -4,7 +4,8 @@ from django.db import IntegrityError
 from django.utils.translation import override
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.gateway.serializers import GatewayUpdateInputSLZ
+from apigateway.apis.open.gateway.serializers import GatewayUpdateStatusInputSLZ as OpenGatewayUpdateStatusInputSLZ
+from apigateway.apis.web.gateway.serializers import GatewayUpdateInputSLZ, GatewayUpdateStatusInputSLZ
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.core.models import Gateway
@@ -121,7 +122,7 @@ def test_preview_checks_actual_manage_permission_before_excluding_self(request_v
         user=_user(),
         data={"gateway_id": gateway.pk, "display_name": "Own"},
     )
-    assert response.status_code == expected, response.json()
+    assert response.status_code == expected, response.content
     if expected == 200:
         assert response.json()["data"] == {"is_available": True, "conflicts": []}
 
@@ -224,11 +225,11 @@ def test_edit_preview_uses_persisted_name_instead_of_supplied_name(request_view)
     assert response.json()["data"] == {"is_available": True, "conflicts": []}
 
 
-def test_name_update_tenant_check_does_not_expand_to_metadata_updates(request_view, settings):
+def test_all_gateway_updates_check_tenant(request_view, settings):
     settings.ENABLE_MULTI_TENANT_MODE = True
     gateway = G(Gateway, tenant_mode="single", tenant_id="other")
     user = _member(gateway)
-    for payload, expected in [({"display_name": "Change"}, 403), ({"description": "Metadata"}, 204)]:
+    for payload, expected in [({"display_name": "Change"}, 403), ({"description": "Metadata"}, 403)]:
         response = request_view(
             method="PATCH",
             view_name="gateways.retrieve_update_destroy",
@@ -236,7 +237,7 @@ def test_name_update_tenant_check_does_not_expand_to_metadata_updates(request_vi
             data=payload,
             user=user,
         )
-        assert response.status_code == expected, response.json()
+        assert response.status_code == expected, response.content
 
 
 def test_name_conflict_precedes_programmable_paas_creation(request_view, mocker):
@@ -381,3 +382,31 @@ def test_display_name_preview_does_not_check_technical_name_availability(request
     )
     assert response.status_code == 200, response.json()
     assert response.json()["data"] == {"is_available": True, "conflicts": []}
+
+
+def test_create_fallback_conflict_requires_explicit_available_display_name(request_view, default_data_plane):
+    G(Gateway, name="existing-gateway", display_name="foo-gateway")
+    payload = {"name": "foo-gateway", "tenant_mode": "single", "tenant_id": "default"}
+    response = request_view(method="POST", view_name="gateways.list_create", data=payload)
+    assert response.status_code == 400, response.json()
+    assert not Gateway.objects.filter(name="foo-gateway").exists()
+    response = request_view(
+        method="POST", view_name="gateways.list_create", data={**payload, "display_name": "Other Display"}
+    )
+    assert response.status_code == 201, response.json()
+    assert Gateway.objects.get(name="foo-gateway").display_name == "Other Display"
+
+
+@pytest.mark.parametrize("serializer", [GatewayUpdateStatusInputSLZ, OpenGatewayUpdateStatusInputSLZ])
+def test_status_update_preserves_current_names(serializer):
+    gateway = G(Gateway, display_name="Original", display_name_en="Original English")
+    stale = Gateway.objects.get(pk=gateway.pk)
+    Gateway.objects.filter(pk=gateway.pk).update(display_name="Current", display_name_en="Current English")
+    slz = serializer(stale, data={"status": 0})
+    assert slz.is_valid(), slz.errors
+    slz.save(updated_by="ordinary")
+    gateway.refresh_from_db()
+    assert gateway.display_name == "Current"
+    assert gateway.display_name_en == "Current English"
+    assert gateway.status == 0
+    assert gateway.updated_by == "ordinary"

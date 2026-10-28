@@ -39,7 +39,12 @@ export const usePermission = defineStore('usePermission', {
       if (today.isAfter(expireDate)) {
         return t('已过期');
       }
-      return `${expireDate.diff(today, 'day')}${t('天')}`;
+      const daysLeft = expireDate.diff(today, 'day');
+      // 有效期不足 24 小时但尚未过期时，以小时为单位展示
+      if (daysLeft < 1) {
+        return `${expireDate.diff(today, 'hour')}${t('小时')}`;
+      }
+      return `${daysLeft}${t('天')}`;
     },
     // 获取有效期时间对应样式
     getDurationTextColor(expireAt: string | null) {

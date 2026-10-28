@@ -676,8 +676,6 @@ class GatewaySaver:
     def _update_gateway(self):
         gateway = self._gateway
 
-        # Read the current raw name: the saver may have been constructed earlier.
-        gateway.refresh_from_db(fields=["name", "display_name", "display_name_en"])
         if "display_name" in self._gateway_data.model_fields_set:
             gateway.display_name = self._gateway_data.display_name
         gateway.display_name_en = self._gateway_data.display_name_en
@@ -695,6 +693,9 @@ class GatewaySaver:
         if self._gateway_data.gateway_type is not None:
             update_fields.append("is_official")
         gateway.save(update_fields=update_fields)
+        if "display_name" not in self._gateway_data.model_fields_set:
+            # 返回最新默认名；省略字段的写保护由上面的 update_fields 保证。
+            gateway.refresh_from_db(fields=["display_name"])
         # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据
         if self._gateway_data.maintainers:
             add_gateway_administrators(gateway, self._gateway_data.maintainers, self.username)

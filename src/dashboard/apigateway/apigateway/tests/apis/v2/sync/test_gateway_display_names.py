@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils.translation import override, trans_real
 from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
@@ -200,3 +200,31 @@ def test_unrelated_database_errors_propagate(error):
     with pytest.raises(IntegrityError) as exc, gateway_name_validation_errors():
         raise error
     assert exc.value is error
+
+
+def test_sync_fallback_conflict_requires_explicit_available_display_name(request_view, sync_view, default_data_plane):
+    G(Gateway, name="existing-gateway", display_name="foo-gateway")
+    response = call_sync(request_view, sync_view, "foo-gateway", {})
+    assert response.status_code == 400, response.json()
+    assert not Gateway.objects.filter(name="foo-gateway").exists()
+    response = call_sync(request_view, sync_view, "foo-gateway", {"display_name": "Other Display"})
+    assert response.status_code == 200, response.json()
+    assert Gateway.objects.get(name="foo-gateway").display_name == "Other Display"
+
+
+@pytest.mark.parametrize("field", ["display_name", "display_name_en"])
+def test_real_display_name_index_error_is_sanitized(field):
+    G(Gateway, **{field: "Taken"})
+    data = {
+        "name": "index-race",
+        "display_name": "Other",
+        field: "Taken",
+        "status": 1,
+        "tenant_mode": "single",
+        "tenant_id": "default",
+    }
+    with pytest.raises(ValidationError) as exc, gateway_name_validation_errors(), transaction.atomic():
+        Gateway.objects.create(**data)
+    assert field in exc.value.detail
+    assert "Taken" not in str(exc.value)
+    assert "already in use" in str(exc.value)

@@ -27,9 +27,8 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.gateway_name import gateway_name_validation_errors
-from apigateway.apis.permissions import GatewayActionPermission
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
@@ -354,7 +353,7 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
         partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
-        if "display_name" in request.data and settings.ENABLE_MULTI_TENANT_MODE:
+        if settings.ENABLE_MULTI_TENANT_MODE:
             check_user_can_access_gateway(instance.tenant_mode, instance.tenant_id, get_user_tenant_id(request))
         data_before = get_model_dict(instance)
 
@@ -648,9 +647,7 @@ class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
         if "gateway_id" in data:
             # The normal permission pass has no URL gateway_id for this endpoint.
             self.kwargs["gateway_id"] = data["gateway_id"]
-            permission = GatewayActionPermission()
-            if not permission.has_permission(request, self):
-                self.permission_denied(request, message=permission.message)
+            self.check_permissions(request)
             gateway = request.gateway
             if settings.ENABLE_MULTI_TENANT_MODE:
                 check_user_can_access_gateway(gateway.tenant_mode, gateway.tenant_id, get_user_tenant_id(request))
@@ -668,8 +665,7 @@ class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
             )
         except DjangoValidationError as exc:
             if any(error.code != "unique" for errors in exc.error_dict.values() for error in errors):
-                with gateway_name_validation_errors():
-                    raise
+                raise ValidationError(exc.message_dict) from exc
             for field, errors in exc.error_dict.items():
                 conflicts.extend(
                     {

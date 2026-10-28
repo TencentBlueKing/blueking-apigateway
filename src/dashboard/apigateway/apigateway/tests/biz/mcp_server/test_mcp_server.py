@@ -975,8 +975,14 @@ class TestMCPServerHandler:
 
         assert result == {}
 
-    def test_get_app_permission_risks_with_risky_tools(self, fake_gateway, fake_stage):
-        """oauth2 开启且工具需要应用认证时，返回风险工具"""
+    @pytest.mark.parametrize(
+        "public_enabled, personal_enabled, has_risk",
+        [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
+    )
+    def test_get_app_permission_risks_with_risky_tools(
+        self, fake_gateway, fake_stage, public_enabled, personal_enabled, has_risk
+    ):
+        """公开客户端或个人令牌开启时，返回需要应用认证的工具。"""
         rv = self._make_resource_version_with_data(
             fake_gateway,
             [
@@ -990,15 +996,14 @@ class TestMCPServerHandler:
             MCPServer,
             gateway=fake_gateway,
             stage=fake_stage,
-            oauth2_public_client_enabled=True,
+            oauth2_public_client_enabled=public_enabled,
+            oauth2_personal_client_enabled=personal_enabled,
             _resource_names="tool_a;tool_b",
         )
 
         result = MCPServerHandler.get_app_permission_risks([mcp_server])
 
-        assert mcp_server.id in result
-        assert "tool_a" in result[mcp_server.id]
-        assert "tool_b" not in result[mcp_server.id]
+        assert result == ({mcp_server.id: ["tool_a"]} if has_risk else {})
 
     def test_get_app_permission_risks_no_risk_when_all_tools_skip_app_auth(self, fake_gateway, fake_stage):
         """oauth2 开启但所有工具都不需要应用认证时无风险"""
@@ -1476,6 +1481,30 @@ class TestMCPServerHandler:
 
         with pytest.raises(Exception):
             MCPServerHandler.validate_access(mcp_server, check_public=True)
+
+    @pytest.mark.parametrize(("protocol_type", "url_suffix"), [("sse", "sse/"), ("streamable_http", "mcp/")])
+    @pytest.mark.parametrize(
+        ("public_enabled", "personal_enabled"), [(False, False), (False, True), (True, False), (True, True)]
+    )
+    @pytest.mark.parametrize("least_privilege", ["application", "application_and_user", ""])
+    def test_get_mcp_server_url(
+        self, settings, protocol_type, url_suffix, public_enabled, personal_enabled, least_privilege
+    ):
+        """OAuth2-enabled servers must use an endpoint that supports their authentication mode."""
+        settings.BK_API_URL_TMPL = "http://example.com/{api_name}"
+        server = MCPServer(
+            name="test-mcp",
+            protocol_type=protocol_type,
+            oauth2_public_client_enabled=public_enabled,
+            oauth2_personal_client_enabled=personal_enabled,
+        )
+        suffix = url_suffix
+        if not public_enabled and not personal_enabled and least_privilege == "application":
+            suffix = f"application/{url_suffix}"
+
+        assert MCPServerHandler.get_mcp_server_url(server, least_privilege) == (
+            f"http://example.com/bk-apigateway/prod/api/v2/mcp-servers/test-mcp/{suffix}"
+        )
 
     # ========== build_guideline 测试 ==========
 

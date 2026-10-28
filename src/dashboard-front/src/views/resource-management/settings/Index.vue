@@ -1965,11 +1965,10 @@ onMounted(() => {
 }
 
 .resource-detail {
-  max-height: calc(100vh - 165px);
-  overflow-y: auto;
+  height: calc(100vh - 165px);
 
   &.show-notice {
-    max-height: calc(100vh - 205px);
+    height: calc(100vh - 205px);
   }
 }
 </style>

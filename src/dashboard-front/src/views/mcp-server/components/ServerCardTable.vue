@@ -58,6 +58,7 @@ import {
 import type { IGatewaysMcpServersListQuery } from '@/services/types/query/gateways.ts';
 import type { IMCPServerFilterOptionsOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
+import { useMcpAuthRisk } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
@@ -108,6 +109,7 @@ const {
 const emit = defineEmits<IEmits>();
 
 const { handleTableFilterChange } = useTableFilterChange();
+const { hasAppPermissionRisk, getAppPermissionRiskTips } = useMcpAuthRisk();
 const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
 const router = useRouter();
@@ -125,6 +127,7 @@ const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
 );
+
 // 需要隐藏的列
 const hiddenColumn = computed(() => {
   const hidePromptsCount = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT;
@@ -144,7 +147,7 @@ const isExistLabel = computed(() => tableData.value.find(item => item?.labels?.l
 // name / title 任一溢出时统一展示 tooltip，内容为完整的名称与描述
 // 存在风险标签时 title 让出标签占位宽度，否则铺满剩余空间
 const getTitleMaxWidth = (row: IMCPServer) => {
-  const hasRiskTag = isEnabledOAuth.value && Boolean(row?.app_permission_risk?.has_risk);
+  const hasRiskTag = hasAppPermissionRisk(row as IMCPServerWithUIState);
   return hasRiskTag ? `calc(100% - ${RISK_TAG_SPACE}px)` : '100%';
 };
 
@@ -187,7 +190,7 @@ const tableColumns = computed(() => {
       width: 264,
       ellipsis: false,
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
-        const hasRiskTag = isEnabledOAuth.value && Boolean(row?.app_permission_risk?.has_risk);
+        const hasRiskTag = hasAppPermissionRisk(row as IMCPServerWithUIState);
         return (
           <div class="flex items-center">
             <div
@@ -243,14 +246,7 @@ const tableColumns = computed(() => {
                       v-bk-tooltips={{
                         content: () => (
                           <div class="break-all">
-                            { t('此 MCP Server 已开启 OAuth2公开客户端模式，且包含{count}个应用态鉴权工具({content})',
-                              {
-                                count: row?.app_permission_risk?.risk_tools?.length,
-                                content: row?.app_permission_risk?.risk_tools?.join('、'),
-                              })}
-                            <div>
-                              { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
-                            </div>
+                            { getAppPermissionRiskTips(row as IMCPServerWithUIState).map(tip => <div>{tip}</div>) }
                           </div>
                         ),
                         extCls: 'max-w-288px',

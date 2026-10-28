@@ -244,6 +244,12 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         ]
         ref_name = "apigateway.apis.open.gateway.serializers.GatewayUpdateStatusInputSLZ"
 
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save(update_fields=[*validated_data, "updated_time"])
+        return instance
+
 
 class GatewayRelatedAppsAddInputSLZ(serializers.Serializer):
     target_app_codes = serializers.ListField(

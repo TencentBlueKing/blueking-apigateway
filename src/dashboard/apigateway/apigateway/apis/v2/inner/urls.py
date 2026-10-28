@@ -75,6 +75,12 @@ urlpatterns = [
                             path(
                                 "", views.GatewayRetrieveDestroyApi.as_view(), name="openapi.v2.inner.gateway.retrieve"
                             ),
+                            # DELETE /api/v2/inner/gateways/{gateway_name}/maintainers/
+                            path(
+                                "maintainers/",
+                                views.GatewayMaintainerDeleteApi.as_view(),
+                                name="openapi.v2.inner.gateway.maintainer.delete",
+                            ),
                             # PUT /api/v2/inner/gateways/{gateway_name}/status/
                             path(
                                 "status/",

@@ -25,7 +25,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Exists, OuterRef, Q, Subquery
 from django.http import Http404, JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -41,7 +41,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerAppPermissionApply,
     MCPServerCategory,
 )
-from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
+from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.access_log import LogHandler
@@ -58,6 +58,7 @@ from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import (
     gateway_filter_by_app_tenant_id,
     gateway_mcp_server_filter_by_user_tenant_id,
+    gateway_related_filter_by_user_tenant_id,
     mcp_server_related_filter_by_user_tenant_id,
 )
 from apigateway.components.bkauth import get_app_tenant_info
@@ -324,6 +325,96 @@ class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
         )
 
         return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=extend_schema(
+        description="获取当前应用的网关 API 权限列表",
+        parameters=[serializers.CurrentAppPermissionListInputSLZ],
+        responses={status.HTTP_200_OK: serializers.AppPermissionListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class CurrentAppPermissionListApi(generics.ListAPIView):
+    serializer_class = serializers.AppPermissionListOutputSLZ
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        """获取当前应用的网关 API 权限列表"""
+        slz = serializers.CurrentAppPermissionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
+        queryset = model.objects.filter(bk_app_code=request.app.app_code)
+
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
+
+        if data.get("gateway_name"):
+            queryset = queryset.filter(gateway__name=data["gateway_name"])
+
+        if data.get("resource_name") and data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
+            queryset = queryset.filter(
+                Exists(Resource.objects.filter(id=OuterRef("resource_id"), name=data["resource_name"]))
+            )
+
+        page = self.paginate_queryset(queryset.select_related("gateway").order_by("id"))
+
+        resource_names = {}
+        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
+            resource_ids = [perm.resource_id for perm in page]
+            resource_names = dict(Resource.objects.filter(id__in=resource_ids).values_list("id", "name"))
+
+        output_slz = self.get_serializer(page, many=True, context={"resource_names": resource_names})
+        return self.get_paginated_response(output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=extend_schema(
+        description="获取指定应用的网关 API 权限列表",
+        parameters=[serializers.GatewayAppPermissionListInputSLZ],
+        responses={status.HTTP_200_OK: serializers.AppPermissionListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayAppPermissionListApi(generics.ListAPIView):
+    serializer_class = serializers.AppPermissionListOutputSLZ
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        """获取指定应用的网关 API 权限列表"""
+        slz = serializers.GatewayAppPermissionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
+        queryset = model.objects.filter(bk_app_code=data["target_app_code"])
+
+        tenant_id = get_request_tenant_id(request)
+        if tenant_id:
+            queryset = gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
+
+        if data.get("gateway_name"):
+            queryset = queryset.filter(gateway__name=data["gateway_name"])
+
+        if data.get("resource_name") and data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
+            queryset = queryset.filter(
+                Exists(Resource.objects.filter(id=OuterRef("resource_id"), name=data["resource_name"]))
+            )
+
+        page = self.paginate_queryset(queryset.select_related("gateway").order_by("id"))
+
+        resource_names = {}
+        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
+            resource_ids = [perm.resource_id for perm in page]
+            resource_names = dict(Resource.objects.filter(id__in=resource_ids).values_list("id", "name"))
+
+        output_slz = self.get_serializer(page, many=True, context={"resource_names": resource_names})
+        return self.get_paginated_response(output_slz.data)
 
 
 @method_decorator(

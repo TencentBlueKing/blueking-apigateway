@@ -38,14 +38,21 @@ def test_length_boundaries(field):
     gateway = G(Gateway, **{field: "A" * 64})
     setattr(gateway, field, "A" * 65)
     with pytest.raises(ValidationError) as exc:
-        gateway.save(update_fields=[field])
+        validate_gateway_names(
+            name=gateway.name,
+            display_name=gateway.display_name,
+            display_name_en=gateway.display_name_en,
+            gateways=Gateway.objects.exclude(pk=gateway.pk),
+        )
     assert field in exc.value.message_dict
 
 
 @pytest.mark.parametrize("value", ["中文", "Name_1", "1Name", "Name!", "Name\nOther"])
 def test_english_characters(value):
     with pytest.raises(ValidationError) as exc:
-        N(Gateway, display_name_en=value).save()
+        validate_gateway_names(
+            name="candidate", display_name=None, display_name_en=value, gateways=Gateway.objects.all()
+        )
     assert "display_name_en" in exc.value.message_dict
 
 
@@ -63,7 +70,12 @@ def test_english_allowed_characters():
 def test_same_field_conflicts_are_global(existing, candidate, field):
     G(Gateway, tenant_id="other-tenant", status=0, is_public=False, is_deprecated=True, **existing)
     with pytest.raises(ValidationError) as exc:
-        N(Gateway, **candidate).save()
+        validate_gateway_names(
+            name="candidate",
+            display_name=candidate.get("display_name"),
+            display_name_en=candidate.get("display_name_en"),
+            gateways=Gateway.objects.all(),
+        )
     assert field in exc.value.message_dict
 
 
@@ -107,15 +119,14 @@ def test_self_name_reuse_and_duplicate_english_fallback_are_allowed():
         assert gateway.display_name_i18n == "own-name-two"
 
 
-@pytest.mark.parametrize("fields", [None, ["description"]])
-def test_stale_metadata_save_preserves_names(fields, django_assert_num_queries):
+def test_explicit_metadata_save_preserves_names(django_assert_num_queries):
     gateway = G(Gateway, display_name="Before", display_name_en="Before English")
     stale = Gateway.objects.get(pk=gateway.pk)
     gateway.display_name = "After"
     gateway.save(update_fields=["display_name"])
     stale.description = "metadata"
     with django_assert_num_queries(1):
-        stale.save(update_fields=fields)
+        stale.save(update_fields=["description"])
     gateway.refresh_from_db()
     assert gateway.display_name == "After"
     assert gateway.description == "metadata"
@@ -268,3 +279,19 @@ def test_updates_store_trimmed_display_names(field):
     gateway.save(update_fields=[field])
     gateway.refresh_from_db()
     assert getattr(gateway, field) == "New  Name"
+
+
+def test_model_save_normalizes_without_uniqueness_queries(django_assert_num_queries):
+    gateway = N(Gateway, name="model-only", display_name=" Trimmed ", display_name_en=" English ")
+    with django_assert_num_queries(1):
+        gateway.save()
+    assert gateway.display_name == "Trimmed"
+    assert gateway.display_name_en == "English"
+
+
+def test_implicit_model_save_keeps_django_insert_fallback():
+    gateway = G(Gateway, name="recreated")
+    Gateway.objects.filter(pk=gateway.pk).delete()
+    gateway.description = "recreated after deletion"
+    gateway.save()
+    assert Gateway.objects.get(pk=gateway.pk).description == gateway.description

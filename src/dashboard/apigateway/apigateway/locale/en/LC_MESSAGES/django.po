@@ -2258,8 +2258,8 @@ msgid "蓝鲸应用访问资源权限申请状态"
 msgstr "App permission approval status for resources"
 
 #: apigateway/apps/plugin/constants.py:25
-msgid "频率控制"
-msgstr "Rate Limit"
+msgid "应用频率控制"
+msgstr "Application Rate Limit"
 
 #: apigateway/apps/plugin/constants.py:27
 msgid "Header 转换"

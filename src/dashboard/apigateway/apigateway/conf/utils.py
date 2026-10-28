@@ -23,6 +23,8 @@ from django.utils.functional import cached_property
 
 from apigateway.common.env import Env
 
+BK_CLI_REPO_URL = "https://github.com/TencentBlueKing/bk-cli"
+
 
 def get_default_keepalive_options() -> Optional[dict]:
     """Mac OS's socket module does not has below attrs, return empty options instead"""
@@ -219,7 +221,7 @@ def get_default_feature_flags(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", True
         ),
         # 是否开启 BK CLI 展示
-        "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
+        "ENABLE_BK_CLI": True,
         # 是否开启 ITSM 权限申请
         "ENABLE_ITSM4_PERMISSION_APPLY": enable_itsm4_permission_apply,
     }
@@ -277,16 +279,14 @@ def get_frontend_env_vars(
         "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
         "BK_SDK_LANGUAGES": bk_sdk_languages,
         "CLI": {
-            "DETAIL_URL": env.str("CLI_DETAIL_URL", default="https://github.com/TencentBlueKing/bk-cli"),
+            "DETAIL_URL": BK_CLI_REPO_URL,
             "USER_KEY": env.str("CLI_USER_KEY", default="bk_token"),
             "USER_KEY_EXPIRE_DAYS": env.int("CLI_USER_KEY_EXPIRE_DAYS", default=1),
             "ACCESS_TOKEN_EXPIRE_DAYS": env.int("CLI_ACCESS_TOKEN_EXPIRE_DAYS", default=1),
             "BK_API_URL_TMPL": bk_api_url_tmpl.replace("{api_name}", "{gateway_name}"),
-            "GIT_REPO_URL": env.str("CLI_GIT_REPO_URL", default="https://github.com/TencentBlueKing/bk-cli.git"),
-            "NPM_INSTALL_CMD": env.str("CLI_NPM_INSTALL_CMD", default="npm install -g @blueking/bk-cli"),
-            "SKILL_NPM_INSTALL_CMD": env.str(
-                "CLI_SKILL_NPM_INSTALL_CMD", default="npx skills add TencentBlueKing/bk-cli -y -g"
-            ),
+            "GIT_REPO_URL": BK_CLI_REPO_URL,
+            "NPM_INSTALL_CMD": "npm i -g @blueking/bk-cli",
+            "SKILL_NPM_INSTALL_CMD": f"npx skills add {BK_CLI_REPO_URL}",
         },
     }
 

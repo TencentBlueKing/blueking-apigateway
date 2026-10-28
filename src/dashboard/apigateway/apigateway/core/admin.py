@@ -45,6 +45,7 @@ from apigateway.core.models import (
 class GatewayAdminForm(forms.ModelForm):
     class Meta:
         model = Gateway
+        # 即使独立使用此表单，英文名也不能被写入；Admin 的 readonly_fields 负责只读展示。
         exclude = ("display_name_en",)
 
     def clean(self):
@@ -54,16 +55,37 @@ class GatewayAdminForm(forms.ModelForm):
         default, _ = validate_gateway_names(
             name=data["name"],
             display_name=data["display_name"],
-            display_name_en=self.instance.display_name_en,
+            display_name_en=None,
             gateways=Gateway.objects.exclude(pk=self.instance.pk),
         )
         data["display_name"] = default
         return data
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            if instance._state.adding:
+                instance.save()
+            else:
+                # 只读英文名可能已被同步更新，保存旧表单不能把它覆盖回去。
+                instance.save(
+                    update_fields=[
+                        field.name
+                        for field in instance._meta.concrete_fields
+                        if not field.primary_key and field.name != "display_name_en"
+                    ]
+                )
+            self._save_m2m()
+        return instance
+
 
 class GatewayAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     form = GatewayAdminForm
     readonly_fields = ("display_name_en",)
+
+    def save_model(self, request, obj, form, change):
+        form.save()
+
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",

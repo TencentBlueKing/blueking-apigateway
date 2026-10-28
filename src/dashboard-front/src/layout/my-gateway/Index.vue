@@ -98,9 +98,17 @@
                       :style="{ '--gateway-kind-bg-hover': getKindInfo(item.kind).hoverBgColor }"
                     />
                   </BkPopover>
-                  <span class="max-w-180px color-#4d4f56 text-ov">
+                  <div
+                    v-bk-tooltips="{
+                      placement: 'right',
+                      content: item.name,
+                      disabled: !nameOverflowMap.get(item.id),
+                    }"
+                    class="max-w-180px color-#4d4f56 truncate"
+                    @mouseenter="handleNameMouseEnter($event, item)"
+                  >
                     {{ item.name }}
-                  </span>
+                  </div>
                 </div>
                 <BkTag
                   v-if="!item.status || gatewayStore?.currentGateway?.status === 0 && gatewayId === item.id"
@@ -251,6 +259,8 @@ const { currentRole, roleStatus, roleError, canAccess } = useGatewayRole();
 // 选中的菜单
 const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
+// 网关名称是否溢出（用于决定是否显示 tooltip）
+const nameOverflowMap = ref(new Map<number, boolean>());
 const openedKeys = ref<string[]>(['StageManagement', 'ResourceManagement']);
 const needMenu = ref(true);
 const pageName = ref('');
@@ -550,6 +560,12 @@ const setBreadcrumbTitle = (payload: typeof route) => {
   else {
     headerTitle.value = (title as string) ?? '';
   }
+};
+
+const handleNameMouseEnter = (e: MouseEvent, item: GatewayItemType) => {
+  const el = e.currentTarget as HTMLElement;
+  nameOverflowMap.value.clear();
+  nameOverflowMap.value.set(item.id, el.scrollWidth > el.clientWidth);
 };
 
 // 检查网关下的环境 schema 版本

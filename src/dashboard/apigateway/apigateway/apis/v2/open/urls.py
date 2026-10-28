@@ -37,6 +37,12 @@ urlpatterns = [
                 path("", views.GatewayListApi.as_view(), name="openapi.v2.open.gateway.list"),
                 # GET /api/v2/open/gateways/-/lookup/
                 path("-/lookup/", views.GatewayLookupApi.as_view(), name="openapi.v2.open.gateway.lookup"),
+                # GET /api/v2/open/gateways/-/permissions/
+                path(
+                    "-/permissions/",
+                    views.GatewayAppPermissionListApi.as_view(),
+                    name="openapi.v2.open.gateway.app.permissions.list",
+                ),
                 path(
                     "<slug:gateway_name>/",
                     include(
@@ -151,6 +157,12 @@ urlpatterns = [
                 ),
             ]
         ),
+    ),
+    # GET /api/v2/open/app/permissions/
+    path(
+        "app/permissions/",
+        views.CurrentAppPermissionListApi.as_view(),
+        name="openapi.v2.open.app.permissions.list",
     ),
     # GET /api/v2/open/user/mcp-servers/
     path(

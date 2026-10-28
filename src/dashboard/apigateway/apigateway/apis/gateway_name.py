@@ -1,4 +1,4 @@
-"""Shared naming validation and transport errors for gateway write APIs."""
+"""Web/Sync 输入语义及 HTTP 错误转换；core 负责展示名规则，service 负责 AI 技术名前缀。"""
 
 import re
 from contextlib import contextmanager
@@ -32,11 +32,11 @@ def validate_web_gateway_names(data, instance=None):
     """Web writes modify the default field and preserve the stored English field."""
     if instance is not None and "display_name" not in data:
         return
-    current = Gateway.objects.values("name", "display_name_en").get(pk=instance.pk) if instance is not None else {}
-    default, _ = validate_gateway_names(
+    current = Gateway.objects.values("name").get(pk=instance.pk) if instance is not None else {}
+    default, _english = validate_gateway_names(
         name=current.get("name", data.get("name")),
         display_name=data.get("display_name"),
-        display_name_en=current.get("display_name_en"),
+        display_name_en=None,
         gateways=Gateway.objects.exclude(pk=instance.pk if instance is not None else None),
     )
     data["display_name"] = default

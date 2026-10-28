@@ -22,7 +22,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import ClassVar, Dict, List
 
-from django.db import models, router
+from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
@@ -54,7 +54,7 @@ from apigateway.core.constants import (
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
-from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH, NAMING_FIELDS, validate_gateway_names
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
 from apigateway.utils.crypto import get_crypto
@@ -127,55 +127,19 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         verbose_name_plural = "Gateway"
         db_table = "core_api"
 
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._loaded_names = {field: instance.__dict__[field] for field in NAMING_FIELDS if field in field_names}
-        return instance
-
-    def refresh_from_db(self, using=None, fields=None, from_queryset=None):
-        super().refresh_from_db(using=using, fields=fields, from_queryset=from_queryset)
-        refreshed = NAMING_FIELDS if fields is None else NAMING_FIELDS.intersection(fields)
-        loaded = getattr(self, "_loaded_names", {}).copy()
-        loaded.update({field: self.__dict__[field] for field in refreshed if field in self.__dict__})
-        self._loaded_names = loaded
-
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        # 仅规范化本次要写入的展示字段；格式/查重由入口校验，最终唯一性由数据库保证。
+        # 不读取 deferred 字段、不追踪旧值，也不改变 Django 的隐式 save 语义。
         if update_fields is not None:
             update_fields = set(update_fields)
-            if not update_fields:
-                return
-        elif not self._state.adding and self.pk is not None and not force_insert:
-            # An unchanged, possibly stale naming value is not an instruction to rename.
-            loaded = getattr(self, "_loaded_names", {})
-            unchanged = {
-                field for field in NAMING_FIELDS if field in loaded and self.__dict__.get(field) == loaded[field]
-            }
-            update_fields = {
-                field.attname
-                for field in self._meta.concrete_fields
-                if not field.primary_key and field.attname in self.__dict__ and field.attname not in unchanged
-            }
-
-        using = using or router.db_for_write(type(self), instance=self)
-        naming_writes = NAMING_FIELDS if update_fields is None else NAMING_FIELDS.intersection(update_fields)
-        if naming_writes:
-            names = {field: getattr(self, field) for field in naming_writes}
-            if not self._state.adding and naming_writes != NAMING_FIELDS:
-                persisted = type(self)._base_manager.using(using).values(*NAMING_FIELDS).get(pk=self.pk)
-                names = {**persisted, **names}
-            display_name, display_name_en = validate_gateway_names(
-                **names, gateways=type(self)._base_manager.using(using).exclude(pk=self.pk)
-            )
-            if "display_name" in naming_writes:
-                self.display_name = display_name
-            if "display_name_en" in naming_writes:
-                self.display_name_en = display_name_en
-
+            fields_to_normalize = update_fields
+        else:
+            fields_to_normalize = self.__dict__.keys()
+        if "display_name" in fields_to_normalize:
+            self.display_name = (self.display_name or "").strip() or self.name.strip()
+        if "display_name_en" in fields_to_normalize:
+            self.display_name_en = (self.display_name_en or "").strip() or None
         super().save(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
-        loaded = getattr(self, "_loaded_names", {}).copy()
-        loaded.update({field: self.__dict__[field] for field in naming_writes})
-        self._loaded_names = loaded
 
     @property
     def doc_maintainers(self) -> Dict:

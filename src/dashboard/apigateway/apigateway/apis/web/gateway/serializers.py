@@ -446,11 +446,21 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         maintainers = validated_data.pop("maintainers", None)
-        if "display_name" in validated_data:
-            # Explicit input must stay an update even if a stale instance held that value.
-            instance.refresh_from_db(fields=["name", "display_name", "display_name_en"])
+        # 只写入表单提交的字段；省略展示名时不覆盖其他请求刚保存的名称。
+        property_fields = {
+            "developers": "_developers",
+            "doc_maintainers": "_doc_maintainers",
+            "extra_info": "_extra_info",
+        }
+        model_fields = {field.name for field in instance._meta.concrete_fields}
+        update_fields = {"updated_time"}
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+            model_field = property_fields.get(attr, attr)
+            if model_field in model_fields:
+                update_fields.add(model_field)
         with gateway_name_validation_errors():
-            instance = super().update(instance, validated_data)
+            instance.save(update_fields=update_fields)
         if maintainers is not None:
             replace_gateway_administrators(instance, maintainers, validated_data.get("updated_by") or "")
         return instance
@@ -468,6 +478,12 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：停用，1：启用",
             },
         }
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save(update_fields=[*validated_data, "updated_time"])
+        return instance
 
 
 class GatewayTenantAppInfoTenant(serializers.Serializer):
