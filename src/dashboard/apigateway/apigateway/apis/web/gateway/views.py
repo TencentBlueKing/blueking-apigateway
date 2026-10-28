@@ -60,7 +60,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
 )
-from apigateway.core.gateway_name import validate_gateway_names
+from apigateway.core.gateway_name import validate_display_name, validate_display_name_en
 from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
@@ -654,24 +654,32 @@ class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
         default = data.get("display_name", gateway.display_name if gateway is not None else None)
         english = data.get("display_name_en", gateway.display_name_en if gateway is not None else None)
         conflicts = []
-        try:
-            validate_gateway_names(
-                name=name,
-                display_name=default,
-                display_name_en=english,
-                gateways=Gateway.objects.exclude(pk=gateway.pk if gateway is not None else None),
-            )
-        except DjangoValidationError as exc:
-            if any(error.code != "unique" for errors in exc.error_dict.values() for error in errors):
-                raise ValidationError(exc.message_dict) from exc
-            for field, errors in exc.error_dict.items():
+        errors = {}
+        gateways = Gateway.objects.exclude(pk=gateway.pk if gateway is not None else None)
+        for field, value in (("display_name", default), ("display_name_en", english)):
+            try:
+                if field == "display_name":
+                    validate_display_name(value, name=name, gateways=gateways)
+                else:
+                    validate_display_name_en(value, gateways=gateways)
+            except DjangoValidationError as exc:
+                errors.update(exc.error_dict)
+        if errors:
+            validation_error = DjangoValidationError(errors)
+            if any(
+                error.code != "unique"
+                for field_errors in validation_error.error_dict.values()
+                for error in field_errors
+            ):
+                raise ValidationError(validation_error.message_dict) from validation_error
+            for field, field_errors in validation_error.error_dict.items():
                 conflicts.extend(
                     {
                         "field": field,
                         "language": "en" if field == "display_name_en" else "default",
                         "reason": error.code,
                     }
-                    for error in errors
+                    for error in field_errors
                 )
         return OKJsonResponse(data={"is_available": not conflicts, "conflicts": conflicts})
 

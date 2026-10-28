@@ -4,6 +4,7 @@ from django.db import IntegrityError
 from django.utils.translation import override
 from django_dynamic_fixture import G
 
+from apigateway.apis.gateway_name import validate_web_gateway_names
 from apigateway.apis.open.gateway.serializers import GatewayUpdateStatusInputSLZ as OpenGatewayUpdateStatusInputSLZ
 from apigateway.apis.web.gateway.serializers import GatewayUpdateInputSLZ, GatewayUpdateStatusInputSLZ
 from apigateway.apps.rbac.constants import GatewayRoleEnum
@@ -288,7 +289,7 @@ def test_omitted_default_preserves_current_database_value():
 
 
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])
-def test_web_known_index_race_is_sanitized(request_view, mocker, column):
+def test_web_database_error_uses_general_error_handler(request_view, mocker, column):
     gateway = G(Gateway)
     user = _member(gateway)
     mocker.patch(
@@ -302,8 +303,8 @@ def test_web_known_index_race_is_sanitized(request_view, mocker, column):
         data={"display_name": "New"},
         user=user,
     )
-    assert response.status_code == 400, response.json()
-    assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+    assert response.status_code == 500, response.json()
+    assert response.json()["error"]["code"] == "UNKNOWN"
     assert "UNIQUE constraint" not in str(response.json())
 
 
@@ -412,3 +413,47 @@ def test_status_update_preserves_current_names(serializer):
     assert gateway.display_name_en == "Current English"
     assert gateway.status == 0
     assert gateway.updated_by == "ordinary"
+
+
+def test_web_queryset_conflict_precedes_save(request_view, mocker):
+    gateway = G(Gateway, display_name="Original")
+    user = _member(gateway)
+    G(Gateway, display_name="Taken")
+    save = mocker.patch("apigateway.core.models.Gateway.save")
+    response = request_view(
+        method="PATCH",
+        view_name="gateways.retrieve_update_destroy",
+        path_params={"gateway_id": gateway.pk},
+        data={"display_name": "Taken"},
+        user=user,
+    )
+    assert response.status_code == 400, response.json()
+    save.assert_not_called()
+    gateway.refresh_from_db()
+    assert gateway.display_name == "Original"
+
+
+def test_web_display_name_update_only_queries_its_uniqueness(django_assert_num_queries):
+    gateway = G(Gateway, display_name="Current", display_name_en="English")
+    data = {"display_name": " New Display "}
+    with django_assert_num_queries(1):
+        validate_web_gateway_names(data, gateway)
+    assert data == {"display_name": "New Display"}
+
+
+def test_preview_reports_both_independent_conflicts(request_view):
+    G(Gateway, display_name="Taken Display", display_name_en="Taken English")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_user(),
+        data={"name": "candidate", "display_name": "Taken Display", "display_name_en": "Taken English"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {
+        "is_available": False,
+        "conflicts": [
+            {"field": "display_name", "language": "default", "reason": "unique"},
+            {"field": "display_name_en", "language": "en", "reason": "unique"},
+        ],
+    }

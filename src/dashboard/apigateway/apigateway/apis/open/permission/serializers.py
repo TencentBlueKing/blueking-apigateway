@@ -50,10 +50,10 @@ class AppGatewayPermissionInputSLZ(serializers.Serializer):
 
 
 class AppResourcePermissionOutputSLZ(serializers.Serializer):
-    gateway_display_name = serializers.CharField(read_only=True)
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     api_name = serializers.CharField()
+    gateway_display_name = serializers.CharField(read_only=True)
     gateway_id = serializers.IntegerField(required=False, allow_null=True)
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -237,8 +237,8 @@ class AppPermissionRecordInputSLZ(serializers.Serializer):
 
 
 class AppPermissionRecordSLZ(serializers.ModelSerializer):
-    gateway_display_name = serializers.CharField(source="gateway.display_name_i18n", read_only=True)
     api_name = serializers.SerializerMethodField()
+    gateway_display_name = serializers.CharField(source="gateway.display_name_i18n", read_only=True)
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
     handled_by = serializers.SerializerMethodField()

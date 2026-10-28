@@ -27,8 +27,8 @@
     {
       "id": 2321,
       "name": "test",
-      "gateway_display_name": "蓝鲸 API 网关",
       "gateway_name": "test-gateway",
+      "gateway_display_name": "蓝鲸 API 网关",
       "gateway_id": 6,
       "description": "",
       "description_en": null,

@@ -1,64 +1,51 @@
 """Web/Sync 输入语义及 HTTP 错误转换；core 负责展示名规则，service 负责 AI 技术名前缀。"""
 
-import re
+import logging
 from contextlib import contextmanager
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
-from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apigateway.core.gateway_name import validate_gateway_names
+from apigateway.common.error_codes import error_codes
+from apigateway.core.gateway_name import validate_display_name, validate_display_name_en
 from apigateway.core.models import Gateway
+
+logger = logging.getLogger(__name__)
 
 
 def validate_sync_gateway_names(data, instance=None):
-    # Do not turn an omitted default name into an explicit update.
-    current = Gateway.objects.values("name", "display_name").get(pk=instance.pk) if instance is not None else {}
-    current_default = current.get("display_name")
-    default, english = validate_gateway_names(
-        name=current.get("name", data["name"]),
-        display_name=data.get("display_name", current_default),
-        display_name_en=data.get("display_name_en"),
-        gateways=Gateway.objects.exclude(pk=instance.pk if instance is not None else None),
-    )
-    if "display_name" in data:
-        data["display_name"] = default
-    if "display_name_en" in data:
-        data["display_name_en"] = english
+    gateways = Gateway.objects.exclude(pk=instance.pk if instance is not None else None)
+    values = {}
+    errors = {}
+    for field in ("display_name", "display_name_en"):
+        if field not in data and (instance is not None or field == "display_name_en"):
+            continue
+        try:
+            if field == "display_name":
+                value = validate_display_name(
+                    data.get(field),
+                    name=instance.name if instance is not None else data["name"],
+                    gateways=gateways,
+                )
+            else:
+                value = validate_display_name_en(data[field], gateways=gateways)
+            if field in data:
+                values[field] = value
+        except DjangoValidationError as exc:
+            errors.update(exc.error_dict)
+    if errors:
+        raise DjangoValidationError(errors)
+    data.update(values)
 
 
 def validate_web_gateway_names(data, instance=None):
-    """Web writes modify the default field and preserve the stored English field."""
-    if instance is not None and "display_name" not in data:
-        return
-    current = Gateway.objects.values("name").get(pk=instance.pk) if instance is not None else {}
-    default, _english = validate_gateway_names(
-        name=current.get("name", data.get("name")),
-        display_name=data.get("display_name"),
-        display_name_en=None,
-        gateways=Gateway.objects.exclude(pk=instance.pk if instance is not None else None),
-    )
-    data["display_name"] = default
-
-
-def _display_name_unique_field(exc):
-    message = str(exc)
-    for field in ("display_name", "display_name_en"):
-        if message == f"UNIQUE constraint failed: core_api.{field}":
-            return field
-    cause = exc.__cause__ or exc
-    if not cause.args or cause.args[0] != 1062 or len(cause.args) < 2:
-        return None
-    match = re.search(r"for key ['`]([^'`]+)['`]$", str(cause.args[1]))
-    if not match:
-        return None
-    key = match[1]
-    if key in ("core_api.display_name", "core_api.display_name_en"):
-        return key.removeprefix("core_api.")
-    key = key.removeprefix("core_api.")
-    match = re.fullmatch(r"core_api_(display_name_en|display_name)_[0-9a-f]{8}_uniq", key)
-    return match[1] if match else None
+    if instance is None or "display_name" in data:
+        data["display_name"] = validate_display_name(
+            data.get("display_name"),
+            name=instance.name if instance is not None else data["name"],
+            gateways=Gateway.objects.exclude(pk=instance.pk if instance is not None else None),
+        )
 
 
 @contextmanager
@@ -68,7 +55,5 @@ def gateway_name_validation_errors():
     except DjangoValidationError as exc:
         raise serializers.ValidationError(exc.message_dict) from exc
     except IntegrityError as exc:
-        field = _display_name_unique_field(exc)
-        if field is None:
-            raise
-        raise serializers.ValidationError({field: _("This display name is already in use.")}) from exc
+        logger.exception("Failed to save gateway information")
+        raise error_codes.UNKNOWN from exc

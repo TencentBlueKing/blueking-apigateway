@@ -22,7 +22,7 @@ from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 from apigateway.core.constants import ContextScopeTypeEnum
-from apigateway.core.gateway_name import validate_gateway_names
+from apigateway.core.gateway_name import validate_display_name
 from apigateway.core.models import (
     JWT,
     Backend,
@@ -52,13 +52,11 @@ class GatewayAdminForm(forms.ModelForm):
         data = super().clean()
         if "name" not in data or "display_name" not in data:
             return data
-        default, _ = validate_gateway_names(
+        data["display_name"] = validate_display_name(
+            data["display_name"],
             name=data["name"],
-            display_name=data["display_name"],
-            display_name_en=None,
             gateways=Gateway.objects.exclude(pk=self.instance.pk),
         )
-        data["display_name"] = default
         return data
 
     def save(self, commit=True):

@@ -40,8 +40,8 @@
       "expire_days": 180,
       "itsm_ticket_id": "102025051310362600001802",
       "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001802",
-      "gateway_display_name": "蓝鲸 API 网关",
       "gateway_name": "test",
+      "gateway_display_name": "蓝鲸 API 网关",
       "resources": [
         {
           "apply_status": "pending",

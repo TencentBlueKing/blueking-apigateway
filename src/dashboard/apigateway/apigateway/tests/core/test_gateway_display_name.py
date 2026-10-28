@@ -5,7 +5,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 from django_dynamic_fixture import G, N
 
-from apigateway.core.gateway_name import normalize_gateway_names, validate_gateway_names
+from apigateway.core.gateway_name import validate_display_name, validate_display_name_en
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -13,7 +13,8 @@ pytestmark = pytest.mark.django_db
 
 @pytest.mark.parametrize("value", [None, "", "  "])
 def test_creation_defaults(value):
-    assert normalize_gateway_names("gateway-name", value, value) == ("gateway-name", None)
+    assert validate_display_name(value, name="gateway-name") == "gateway-name"
+    assert validate_display_name_en(value) is None
 
 
 def test_fixture_and_localization():
@@ -35,21 +36,19 @@ def test_length_boundaries(field):
     gateway = G(Gateway, **{field: "A" * 64})
     setattr(gateway, field, "A" * 65)
     with pytest.raises(ValidationError) as exc:
-        validate_gateway_names(
-            name=gateway.name,
-            display_name=gateway.display_name,
-            display_name_en=gateway.display_name_en,
-            gateways=Gateway.objects.exclude(pk=gateway.pk),
-        )
+        if field == "display_name":
+            validate_display_name(
+                gateway.display_name, name=gateway.name, gateways=Gateway.objects.exclude(pk=gateway.pk)
+            )
+        else:
+            validate_display_name_en(gateway.display_name_en, gateways=Gateway.objects.exclude(pk=gateway.pk))
     assert field in exc.value.message_dict
 
 
 @pytest.mark.parametrize("value", ["中文", "Name_1", "1Name", "Name!", "Name\nOther"])
 def test_english_characters(value):
     with pytest.raises(ValidationError) as exc:
-        validate_gateway_names(
-            name="candidate", display_name=None, display_name_en=value, gateways=Gateway.objects.all()
-        )
+        validate_display_name_en(value, gateways=Gateway.objects.all())
     assert "display_name_en" in exc.value.message_dict
 
 
@@ -67,12 +66,10 @@ def test_english_allowed_characters():
 def test_same_field_conflicts_are_global(existing, candidate, field):
     G(Gateway, tenant_id="other-tenant", status=0, is_public=False, is_deprecated=True, **existing)
     with pytest.raises(ValidationError) as exc:
-        validate_gateway_names(
-            name="candidate",
-            display_name=candidate.get("display_name"),
-            display_name_en=candidate.get("display_name_en"),
-            gateways=Gateway.objects.all(),
-        )
+        if field == "display_name":
+            validate_display_name(candidate[field], name="candidate", gateways=Gateway.objects.all())
+        else:
+            validate_display_name_en(candidate[field], gateways=Gateway.objects.all())
     assert field in exc.value.message_dict
 
 
@@ -210,7 +207,7 @@ def test_named_fields_omitted_by_update_fields_are_not_written():
 
 
 def test_blank_display_name_uses_name():
-    assert normalize_gateway_names("gateway-name", " ", "English") == ("gateway-name", "English")
+    assert validate_display_name(" ", name="gateway-name") == "gateway-name"
 
 
 def test_manually_constructed_primary_key_can_insert():
@@ -231,9 +228,7 @@ def test_positional_save_arguments_preserve_explicit_update_fields():
 
 def test_lower_comparison_does_not_expand_german_sharp_s():
     G(Gateway, name="existing", display_name="Straße")
-    assert validate_gateway_names(
-        name="candidate", display_name="STRASSE", display_name_en=None, gateways=Gateway.objects.all()
-    ) == ("STRASSE", None)
+    assert validate_display_name("STRASSE", name="candidate", gateways=Gateway.objects.all()) == "STRASSE"
 
 
 @pytest.mark.parametrize("display_name,expected_rows", [("TAKEN", 1), ("Unrelated %", 0), ("Unrelated _", 0)])
@@ -244,9 +239,7 @@ def test_display_name_lookup_reads_at_most_one_row(display_name, expected_rows):
     G(Gateway, name="taken-gateway", display_name="Taken")
     with CaptureQueriesContext(connection) as queries:
         try:
-            validate_gateway_names(
-                name="candidate", display_name=display_name, display_name_en=None, gateways=Gateway.objects.all()
-            )
+            validate_display_name(display_name, name="candidate", gateways=Gateway.objects.all())
         except ValidationError:
             assert expected_rows == 1
         else:
@@ -259,8 +252,9 @@ def test_display_name_lookup_reads_at_most_one_row(display_name, expected_rows):
 
 
 def test_display_names_are_trimmed():
-    assert normalize_gateway_names("\t gateway-name \u3000", " ", None) == ("gateway-name", None)
-    assert normalize_gateway_names("gateway-name", "\t New  Name \u3000", " English ") == ("New  Name", "English")
+    assert validate_display_name(" ", name="\t gateway-name \u3000") == "gateway-name"
+    assert validate_display_name("\t New  Name \u3000", name="gateway-name") == "New  Name"
+    assert validate_display_name_en(" English ") == "English"
 
 
 def test_implicit_model_save_keeps_django_insert_fallback():

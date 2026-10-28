@@ -66,9 +66,9 @@ class GatewayListInputSLZ(serializers.Serializer):
 
 
 class GatewayListOutputSLZ(serializers.Serializer):
-    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     description = SerializerTranslatedField(
         allow_blank=True, default_field="description_i18n", read_only=True, help_text="网关描述"
     )
@@ -149,15 +149,15 @@ class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
 
 
 class GatewayCreateInputSLZ(serializers.ModelSerializer):
-    display_name = serializers.CharField(
-        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
-    )
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
         max_length=64,
         validators=[ReservedGatewayNameValidator(), NameValidator()],
         help_text="网关名称",
+    )
+    display_name = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
     )
     maintainers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, required=False, default=list, help_text="网关维护人员"

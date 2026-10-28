@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock
 
 import pytest
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.utils.translation import override, trans_real
 from django_dynamic_fixture import G
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 
-from apigateway.apis.gateway_name import gateway_name_validation_errors
+from apigateway.apis.gateway_name import gateway_name_validation_errors, validate_sync_gateway_names
 from apigateway.apis.open.gateway.serializers import GatewaySyncInputSLZ as V1GatewaySyncInputSLZ
 from apigateway.apis.v2.sync.serializers import GatewaySyncInputSLZ as V2GatewaySyncInputSLZ
 from apigateway.common.error_codes import error_codes
@@ -112,14 +112,14 @@ def test_sync_clear_english_allows_duplicate_fallback(request_view, sync_view, d
 
 
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])
-def test_sync_known_index_race_maps_to_parameter_error(request_view, sync_view, default_data_plane, mocker, column):
+def test_sync_database_error_uses_general_error_handler(request_view, sync_view, default_data_plane, mocker, column):
     gateway = G(Gateway, name="sync-gateway")
     mocker.patch(
         "apigateway.biz.gateway.gateway.GatewaySaver.save",
         side_effect=IntegrityError(f"UNIQUE constraint failed: core_api.{column}"),
     )
     response = call_sync(request_view, sync_view, gateway.name, {}, gateway)
-    assert response.status_code == 400, response.json()
+    assert response.status_code == 500, response.json()
     assert "UNIQUE constraint" not in str(response.json())
 
 
@@ -160,30 +160,15 @@ def test_sync_serializer_preserves_default_omission(serializer):
     assert "display_name_en" not in slz.validated_data
 
 
-@pytest.mark.parametrize(
-    "key",
-    [
-        "core_api.display_name",
-        "core_api.display_name_en",
-        "core_api_display_name_1234abcd_uniq",
-        "core_api.core_api_display_name_en_1234abcd_uniq",
-    ],
-)
-def test_mysql_display_name_unique_error_is_sanitized(key):
-    with pytest.raises(ValidationError) as exc, gateway_name_validation_errors():
-        raise IntegrityError(1062, f"Duplicate entry 'private-value' for key '{key}'")
-    assert "private-value" not in str(exc.value)
-    assert "already in use" in str(exc.value)
-
-
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])
-def test_index_conflict_uses_active_translation(monkeypatch, column):
+def test_queryset_conflict_uses_active_translation(monkeypatch, column):
     catalog = trans_real.DjangoTranslation("zh-cn")
     catalog._catalog["This display name is already in use."] = "展示名已被使用。"
     monkeypatch.setitem(trans_real._translations, "zh-cn", catalog)
+    G(Gateway, **{column: "Taken"})
     with override("zh-cn"), pytest.raises(ValidationError) as exc, gateway_name_validation_errors():
-        raise IntegrityError(f"UNIQUE constraint failed: core_api.{column}")
-    assert str(exc.value.detail[column]) == "展示名已被使用。"
+        validate_sync_gateway_names({"name": "candidate", column: "Taken"})
+    assert str(exc.value.detail[column][0]) == "展示名已被使用。"
 
 
 @pytest.mark.parametrize(
@@ -196,10 +181,11 @@ def test_index_conflict_uses_active_translation(monkeypatch, column):
         IntegrityError(1062, "Duplicate entry 'value' for key 'core_api.name'"),
     ],
 )
-def test_unrelated_database_errors_propagate(error):
-    with pytest.raises(IntegrityError) as exc, gateway_name_validation_errors():
+def test_database_errors_return_general_error(error):
+    with pytest.raises(APIException) as exc, gateway_name_validation_errors():
         raise error
-    assert exc.value is error
+    assert exc.value.status_code == 500
+    assert str(error) not in str(exc.value)
 
 
 def test_sync_fallback_conflict_requires_explicit_available_display_name(request_view, sync_view, default_data_plane):
@@ -213,18 +199,36 @@ def test_sync_fallback_conflict_requires_explicit_available_display_name(request
 
 
 @pytest.mark.parametrize("field", ["display_name", "display_name_en"])
-def test_real_display_name_index_error_is_sanitized(field):
+def test_sync_queryset_conflict_precedes_save(request_view, sync_view, default_data_plane, mocker, field):
+    gateway = G(Gateway, name="sync-gateway", display_name="Original")
     G(Gateway, **{field: "Taken"})
-    data = {
-        "name": "index-race",
-        "display_name": "Other",
-        field: "Taken",
-        "status": 1,
-        "tenant_mode": "single",
-        "tenant_id": "default",
-    }
-    with pytest.raises(ValidationError) as exc, gateway_name_validation_errors(), transaction.atomic():
-        Gateway.objects.create(**data)
-    assert field in exc.value.detail
-    assert "Taken" not in str(exc.value)
-    assert "already in use" in str(exc.value)
+    save = mocker.patch("apigateway.biz.gateway.gateway.GatewaySaver.save")
+    response = call_sync(request_view, sync_view, gateway.name, {field: "Taken"}, gateway)
+    assert response.status_code == 400, response.json()
+    save.assert_not_called()
+    gateway.refresh_from_db()
+    assert gateway.display_name == "Original"
+
+
+def test_sync_omitted_display_names_need_no_validation_queries(django_assert_num_queries):
+    gateway = G(Gateway, display_name="Current", display_name_en="English")
+    data = {"name": gateway.name}
+    with django_assert_num_queries(0):
+        validate_sync_gateway_names(data, gateway)
+    assert data == {"name": gateway.name}
+
+
+def test_sync_english_update_only_queries_english(django_assert_num_queries):
+    gateway = G(Gateway, display_name="Current")
+    data = {"name": gateway.name, "display_name_en": " New English "}
+    with django_assert_num_queries(1):
+        validate_sync_gateway_names(data, gateway)
+    assert data == {"name": gateway.name, "display_name_en": "New English"}
+
+
+def test_sync_reports_both_independent_conflicts():
+    G(Gateway, display_name="Taken Display", display_name_en="Taken English")
+    data = {"name": "candidate", "display_name": "Taken Display", "display_name_en": "Taken English"}
+    with pytest.raises(ValidationError) as exc, gateway_name_validation_errors():
+        validate_sync_gateway_names(data)
+    assert set(exc.value.detail) == {"display_name", "display_name_en"}

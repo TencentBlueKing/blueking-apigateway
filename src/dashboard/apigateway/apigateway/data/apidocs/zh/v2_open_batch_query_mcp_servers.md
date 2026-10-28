@@ -4,8 +4,6 @@
 
 供 BKAuth 等第三方系统根据 ResourceID 中的 mcp_name 批量解析 MCPServer 展示信息。
 
-本接口返回现有 MCP Server 自身字段，不包含所属网关对象，也不新增 `gateway.display_name`。MCP Server 的 `name`、`title` 与网关展示名不同。
-
 ### 输入参数
 
 #### 请求体参数（JSON）

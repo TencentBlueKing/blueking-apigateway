@@ -51,9 +51,9 @@ class GatewayListV1InputSLZ(serializers.Serializer):
 
 
 class GatewayListV1OutputSLZ(serializers.Serializer):
-    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
@@ -122,17 +122,17 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
-    display_name = serializers.CharField(
-        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
-    )
-    display_name_en = serializers.CharField(
-        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
-    )
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
         max_length=64,
         validators=[NameValidator()],
+    )
+    display_name = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
+    display_name_en = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False)
