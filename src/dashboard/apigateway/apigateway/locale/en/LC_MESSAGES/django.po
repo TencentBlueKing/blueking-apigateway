@@ -3171,6 +3171,14 @@ msgstr "Request Failed"
 msgid "Schema 不存在。"
 msgstr "Schema does not exist."
 
+#: apigateway/common/fields.py:72
+msgid "无效的加密值格式。"
+msgstr "Invalid encrypted value format."
+
+#: apigateway/common/fields.py:73
+msgid "解密失败，请刷新页面后重试。"
+msgstr "Decryption failed. Please refresh the page and try again."
+
 #: apigateway/common/pagination.py:97
 msgid "limit 必须为整数。"
 msgstr "limit must be an integer."

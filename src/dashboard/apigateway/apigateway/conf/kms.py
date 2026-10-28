@@ -103,6 +103,13 @@ def _credential_bindings(env: Env) -> dict[str, tuple[str, ...]]:
         )
     if env.str("BK_CRYPTO_TYPE", "APIGW_CUSTOM") != "APIGW_CUSTOM":
         bindings["BKKRILL_ENCRYPT_SECRET_KEY"] = ("encryption", "bkkrillEncryptSecretKey")
+    if env.bool("ENABLE_FRONTEND_ENCRYPT", False):
+        bindings.update(
+            {
+                "FRONTEND_ENCRYPT_PUBLIC_KEY_BASE64": ("encryption", "frontendEncryptPublicKeyBase64"),
+                "FRONTEND_ENCRYPT_PRIVATE_KEY_BASE64": ("encryption", "frontendEncryptPrivateKeyBase64"),
+            }
+        )
     return bindings
 
 

@@ -17,12 +17,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import base64
+
+import pytest
+from django.core.exceptions import ImproperlyConfigured
 from environ import Env
 
 from apigateway.conf.utils import (
     get_cli_function_overview,
     get_default_feature_flags,
     get_doc_links,
+    get_frontend_encrypt_key_pair,
     get_frontend_env_vars,
     get_plugin_metadata_config,
 )
@@ -53,30 +58,80 @@ def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch
     assert flags["ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT"] is False
 
 
+FRONTEND_ENV_VARS_KWARGS = {
+    "edition": "ce",
+    "bk_app_code": "bk-apigateway",
+    "default_test_app_code": "demo-app",
+    "bk_api_url_tmpl": "https://bkapi.example.com/api/{api_name}",
+    "bk_component_api_url": "https://components.example.com",
+    "dashboard_fe_url": "https://dashboard-fe.example.com",
+    "dashboard_url": "https://dashboard.example.com",
+    "csrf_cookie_name": "csrftoken",
+    "csrf_cookie_domain": ".example.com",
+    "bk_apigateway_version": "1.22.0",
+    "bk_docs_url_prefix": "https://docs.example.com",
+    "bk_login_url": "https://login.example.com",
+    "bk_sdk_languages": ["python"],
+    "bk_paas3_url": "https://paas.example.com/",
+    "enable_frontend_encrypt": False,
+    "frontend_encrypt_public_key": "",
+}
+
+
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
     monkeypatch.setenv("BK_USER_URL", "https://user.example.com")
 
-    env_vars = get_frontend_env_vars(
-        env=Env(),
-        edition="ce",
-        bk_app_code="bk-apigateway",
-        default_test_app_code="demo-app",
-        bk_api_url_tmpl="https://bkapi.example.com/api/{api_name}",
-        bk_component_api_url="https://components.example.com",
-        dashboard_fe_url="https://dashboard-fe.example.com",
-        dashboard_url="https://dashboard.example.com",
-        csrf_cookie_name="csrftoken",
-        csrf_cookie_domain=".example.com",
-        bk_apigateway_version="1.22.0",
-        bk_docs_url_prefix="https://docs.example.com",
-        bk_login_url="https://login.example.com",
-        bk_sdk_languages=["python"],
-        bk_paas3_url="https://paas.example.com/",
-    )
+    env_vars = get_frontend_env_vars(env=Env(), **FRONTEND_ENV_VARS_KWARGS)
 
     assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center"
     assert env_vars["PAAS_APP_CREATE_LINK"] == "https://paas.example.com/developer-center/app/create"
     assert env_vars["BK_USER_PERSONAL_CENTER_LINK"] == "https://user.example.com/personal-center"
+
+
+@pytest.mark.parametrize(
+    "enabled, expected",
+    [
+        (False, {"enabled": False}),
+        (True, {"enabled": True, "public_key": "public-key"}),
+    ],
+)
+def test_get_frontend_env_vars_frontend_encrypt(enabled, expected):
+    env_vars = get_frontend_env_vars(
+        env=Env(),
+        **{
+            **FRONTEND_ENV_VARS_KWARGS,
+            "enable_frontend_encrypt": enabled,
+            "frontend_encrypt_public_key": "public-key",
+        },
+    )
+
+    assert env_vars["FRONTEND_ENCRYPT"] == expected
+
+
+def _b64(value: bytes) -> str:
+    return base64.b64encode(value).decode()
+
+
+def test_get_frontend_encrypt_key_pair(monkeypatch):
+    monkeypatch.setenv("FRONTEND_ENCRYPT_PUBLIC_KEY_BASE64", _b64(b"public-pem"))
+    monkeypatch.setenv("FRONTEND_ENCRYPT_PRIVATE_KEY_BASE64", _b64(b"private-pem"))
+
+    assert get_frontend_encrypt_key_pair(Env(), enabled=True) == ("public-pem", "private-pem")
+
+
+@pytest.mark.parametrize("key", ["PUBLIC", "PRIVATE"])
+@pytest.mark.parametrize("value", ["", "not-base64!", _b64(b"\xff")])
+def test_get_frontend_encrypt_key_pair_invalid(monkeypatch, key, value):
+    monkeypatch.setenv("FRONTEND_ENCRYPT_PUBLIC_KEY_BASE64", _b64(b"public-pem"))
+    monkeypatch.setenv("FRONTEND_ENCRYPT_PRIVATE_KEY_BASE64", _b64(b"private-pem"))
+    monkeypatch.setenv(f"FRONTEND_ENCRYPT_{key}_KEY_BASE64", value)
+
+    # 未启用时不读取，遗留的无效配置不影响启动
+    assert get_frontend_encrypt_key_pair(Env(), enabled=False) == ("", "")
+
+    with pytest.raises(ImproperlyConfigured, match=f"FRONTEND_ENCRYPT_{key}_KEY_BASE64") as exc_info:
+        get_frontend_encrypt_key_pair(Env(), enabled=True)
+    assert exc_info.value.__cause__ is None
 
 
 def test_get_cli_function_overview_includes_developer_center():
