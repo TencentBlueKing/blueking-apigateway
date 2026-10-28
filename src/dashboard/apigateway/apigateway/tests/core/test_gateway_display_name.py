@@ -1,9 +1,11 @@
 import pytest
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 from django_dynamic_fixture import G, N
 
+from apigateway.core.gateway_name import validate_gateway_names
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -54,7 +56,7 @@ def test_english_allowed_characters():
 @pytest.mark.parametrize(
     "existing,candidate,field",
     [
-        ({"display_name": "Straße"}, {"display_name": " STRASSE "}, "display_name"),
+        ({"display_name": "Asset Hub"}, {"display_name": " ASSET HUB "}, "display_name"),
         ({"display_name_en": "English"}, {"display_name_en": "english"}, "display_name_en"),
         ({"display_name": "English"}, {"display_name_en": "English"}, "display_name_en"),
         ({"display_name_en": "English"}, {"display_name": "English"}, "display_name"),
@@ -206,3 +208,47 @@ def test_positional_save_arguments_preserve_explicit_update_fields():
     gateway.refresh_from_db()
     assert gateway.display_name == "After"
     assert gateway.description != "Must not be written"
+
+
+def test_lower_comparison_does_not_expand_german_sharp_s():
+    G(Gateway, name="existing", display_name="Straße")
+    assert validate_gateway_names(
+        name="candidate", display_name="STRASSE", display_name_en=None, gateways=Gateway.objects.all()
+    ) == ("STRASSE", None)
+
+
+@pytest.mark.parametrize("display_name,expected_rows", [("TAKEN", 1), ("Unrelated %", 0), ("Unrelated _", 0)])
+def test_database_returns_only_candidate_conflicts(display_name, expected_rows):
+    Gateway.objects.bulk_create(
+        [Gateway(name=f"unrelated-{i}", display_name=f"Unrelated {i}", status=1) for i in range(100)]
+    )
+    G(Gateway, name="taken-gateway", display_name="Taken")
+    with CaptureQueriesContext(connection) as queries:
+        try:
+            validate_gateway_names(
+                name="candidate", display_name=display_name, display_name_en=None, gateways=Gateway.objects.all()
+            )
+        except ValidationError:
+            assert expected_rows == 1
+        else:
+            assert expected_rows == 0
+    assert len(queries) == 1
+    # Verify the DB result size, not just the number of SQL statements.
+    with connection.cursor() as cursor:
+        cursor.execute(queries[0]["sql"])
+        assert len(cursor.fetchall()) == expected_rows
+
+
+def test_blank_default_trims_technical_name_fallback():
+    gateway = G(Gateway, name="\t legacy-name \u3000", display_name=" ")
+    gateway.refresh_from_db()
+    assert gateway.display_name == "legacy-name"
+
+
+@pytest.mark.parametrize("field", ["display_name", "display_name_en"])
+def test_updates_store_trimmed_display_names(field):
+    gateway = G(Gateway)
+    setattr(gateway, field, "\t New  Name \u3000")
+    gateway.save(update_fields=[field])
+    gateway.refresh_from_db()
+    assert getattr(gateway, field) == "New  Name"

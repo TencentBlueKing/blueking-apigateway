@@ -17,7 +17,7 @@ def test_display_names_migration_backfills_and_indexes():
         old_gateway = executor.loader.project_state(MIGRATE_FROM).apps.get_model("core", "Gateway")
         ids = [
             old_gateway.objects.using(alias).create(name=name, status=1, tenant_mode="single", tenant_id="").pk
-            for name in ("legacy-one", "legacy-two")
+            for name in ("legacy-one", "legacy-two", "\t legacy-three \u3000")
         ]
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_TO)
@@ -26,6 +26,7 @@ def test_display_names_migration_backfills_and_indexes():
         assert list(rows.values_list("display_name", "display_name_en")) == [
             ("legacy-one", None),
             ("legacy-two", None),
+            ("legacy-three", None),
         ]
         with connection.cursor() as cursor:
             constraints = connection.introspection.get_constraints(cursor, gateway._meta.db_table)

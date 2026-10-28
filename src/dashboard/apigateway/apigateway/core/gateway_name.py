@@ -8,6 +8,7 @@ import re
 from enum import StrEnum
 
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 NAMING_FIELDS = frozenset({"name", "display_name", "display_name_en"})
@@ -23,7 +24,7 @@ class GatewayNameConflictCode(StrEnum):
 
 
 def normalize_gateway_names(name, display_name, display_name_en):
-    display_name = (display_name or "").strip() or name
+    display_name = (display_name or "").strip() or (name or "").strip()
     display_name_en = (display_name_en or "").strip() or None
     errors = {}
     if not display_name:
@@ -51,17 +52,31 @@ def validate_gateway_names(*, name, display_name, display_name_en, gateways):
     pass all gateways, regardless of tenant, status, kind or visibility.
     """
     display_name, display_name_en = normalize_gateway_names(name, display_name, display_name_en)
-    default = display_name.strip().casefold()
-    english = (display_name_en if display_name_en is not None else display_name).strip().casefold()
-    technical = name.strip().casefold()
+    default = display_name.lower()
+    english = (display_name_en if display_name_en is not None else display_name).lower()
+    technical = name.lower()
     english_field = "display_name_en" if display_name_en is not None else "display_name"
+    # Display names are trimmed on write. Fetch possible conflicts in SQL,
+    # then distinguish actual same-language/fallback conflicts below. Keep the
+    # raw fields separate so cross-language reuse remains allowed.
+    # MySQL uses the project's case-insensitive column collation for iexact;
+    # avoid LOWER(column), which would prevent ordinary index lookups.
+    matches = Q()
+    for field, values in (
+        ("name", {default, english}),
+        ("display_name", {technical, default, english}),
+        ("display_name_en", {technical, english}),
+    ):
+        for value in sorted(values):
+            matches |= Q(**{f"{field}__iexact": value})
+    candidates = gateways.filter(matches)
     errors = {}
-    for other_name, other_display, other_en in gateways.values_list(
+    for other_name, other_display, other_en in candidates.values_list(
         "name", "display_name", "display_name_en"
     ).iterator():
-        other_technical = other_name.strip().casefold()
-        other_default = other_display.strip().casefold()
-        other_english = other_en.strip().casefold() if other_en is not None else other_default
+        other_technical = other_name.lower()
+        other_default = other_display.lower()
+        other_english = other_en.lower() if other_en is not None else other_default
         if default == other_default:
             errors["display_name"] = ValidationError(
                 _("This display name is already in use."), code=GatewayNameConflictCode.UNIQUE

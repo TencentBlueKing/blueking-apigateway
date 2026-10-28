@@ -8,13 +8,16 @@ def initialize_display_names(apps, schema_editor):
     gateways.filter(Q(display_name__isnull=True) | Q(display_name="")).update(display_name=F("name"))
     seen = {}
     for pk, value in gateways.values_list("pk", "display_name").iterator():
-        normalized = value.strip().casefold()
-        if not normalized or len(value) > 64 or normalized in seen:
+        trimmed = value.strip()
+        normalized = trimmed.lower()
+        if not normalized or len(trimmed) > 64 or normalized in seen:
             raise RuntimeError(
                 f"Gateway display-name initialization conflict: gateway id={pk}, name={value!r}, "
                 f"conflicting gateway id={seen.get(normalized)!r}"
             )
         seen[normalized] = pk
+        if value != trimmed:
+            gateways.filter(pk=pk).update(display_name=trimmed)
 
 
 class Migration(migrations.Migration):
