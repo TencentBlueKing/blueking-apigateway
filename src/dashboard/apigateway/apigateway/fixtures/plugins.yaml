@@ -1454,10 +1454,10 @@
 - model: plugin.plugintype
   fields:
     code: bk-resource-user-rate-limit
-    name: 资源用户限流
-    name_en: Resource User Rate Limit
-    description: 仅对开启用户认证的资源中的已认证用户生效，按用户名、网关、环境和资源名分别计数，同一用户跨应用共享配额。用户专属规则覆盖默认规则，空数组表示不限流；缺少 rates 或 __default 时跳过限流。
-    description_en: Limit verified users on resources requiring user authentication, per username, gateway, stage and resource name. A user shares quotas across applications. User rules override default rules; an empty list exempts the user. Missing rates or __default skips rate limiting.
+    name: 用户频率限制
+    name_en: User Rate Limit
+    description: "前置条件：资源需要开启用户认证，仅对已认证用户生效。\n限制每个用户调用资源的请求频率。默认用户频率限制对所有用户生效，特殊用户频率限制对指定用户单独生效，并覆盖默认规则。\n仅支持绑定在资源上，按用户名、网关、环境和资源名分别计数，同一用户通过不同应用访问同一资源时共享配额。频率规则为空数组表示不限制频率；未配置 rates 或 __default 时不生效。"
+    description_en: "Prerequisite: resources must have user authentication enabled. Only verified users are subject to rate limiting.\nLimit the request rate of each user accessing a resource. The default user rate limit applies to all users; a special user rate limit applies to a specified user and overrides the default rule.\nOnly resource bindings are supported. Requests are counted separately by username, gateway, stage and resource name. A user shares the quota across applications when accessing the same resource. An empty rate list means no rate limit; rate limiting does not take effect if rates or __default is missing."
     is_public: true
     scope: resource
     priority: 17654
