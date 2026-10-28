@@ -42,34 +42,6 @@ def resource_user_rate_limit_type():
     return PluginType.objects.get(code=PLUGIN_CODE)
 
 
-@pytest.mark.parametrize("method", ["POST", "PUT"])
-def test_reject_stage_binding(request_view, fake_gateway, fake_stage, method):
-    plugin_type = G(PluginType, code=PLUGIN_CODE, scope="resource", is_public=True, schema=None)
-    plugin_config = G(PluginConfig, gateway=fake_gateway, type=plugin_type, yaml="{}")
-    path_params = {
-        "gateway_id": fake_gateway.id,
-        "scope_type": "stage",
-        "scope_id": fake_stage.id,
-        "code": PLUGIN_CODE,
-    }
-    if method == "PUT":
-        G(PluginBinding, gateway=fake_gateway, scope_type="stage", scope_id=fake_stage.id, config=plugin_config)
-        path_params["id"] = plugin_config.id
-
-    response = request_view(
-        method,
-        "plugins.config.create" if method == "POST" else "plugins.config.details",
-        gateway=fake_gateway,
-        path_params=path_params,
-        data={"type_id": plugin_type.id, "name": "user quota", "yaml": "rates: {}"},
-    )
-
-    assert response.status_code == 400
-    plugin_config.refresh_from_db()
-    assert plugin_config.yaml == "{}"
-    assert PluginConfig.objects.filter(type=plugin_type).count() == 1
-
-
 @pytest.mark.parametrize("scope_type", ["stage", "resource"])
 def test_catalog_scope(request_view, fake_gateway, fake_resource, resource_user_rate_limit_type, scope_type):
     response = request_view(

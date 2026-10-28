@@ -31,7 +31,6 @@ from apigateway.apps.plugin.constants import (
     PLUGIN_TYPE_TAGS_EN,
     PluginBindingScopeEnum,
     PluginBindingSourceEnum,
-    PluginTypeCodeEnum,
     PluginTypeScopeEnum,
 )
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
@@ -203,15 +202,11 @@ class PluginTypeCodeValidationMixin:
 
     def validate_plugin_binding(self):
         scope_type = self.kwargs["scope_type"]
-        plugin_type_code = self.kwargs["code"]
         if scope_type != PluginBindingScopeEnum.RESOURCE.value:
-            if plugin_type_code == PluginTypeCodeEnum.BK_RESOURCE_USER_RATE_LIMIT.value:
-                raise error_codes.INVALID_ARGUMENT.format(
-                    _("插件 {plugin_type_code} 仅支持绑定到资源。").format(plugin_type_code=plugin_type_code)
-                )
             return
 
         scope_id = self.kwargs["scope_id"]
+        plugin_type_code = self.kwargs["code"]
         resource_kind = Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind
 
         if not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind):
