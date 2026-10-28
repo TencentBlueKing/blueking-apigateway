@@ -22,7 +22,7 @@ from apigateway.core.constants import ScopeTypeEnum
 
 
 class PluginTypeCodeEnum(StructuredEnum):
-    BK_RATE_LIMIT = EnumField("bk-rate-limit", label=_("频率控制"))
+    BK_RATE_LIMIT = EnumField("bk-rate-limit", label=_("应用频率控制"))
     BK_CORS = EnumField("bk-cors", label="CORS")
     BK_HEADER_REWRITE = EnumField("bk-header-rewrite", label=_("Header 转换"))
     BK_QUERY_STRING_REWRITE = EnumField("bk-query-string-rewrite", label=_("Query 参数转换"))
