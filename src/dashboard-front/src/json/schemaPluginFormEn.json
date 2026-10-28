@@ -156,13 +156,13 @@
   "bk-rate-limit": {
     "id": 8,
     "language": "en",
-    "notes": "rate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application; special application rate limit, which sets a separate rate limit for a specified application. If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.",
+    "notes": "Prerequisite: resources must have application authentication enabled. When bound to a stage, ensure that resources requiring rate limiting have application authentication enabled.\nRate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application; special application rate limit, which sets a separate rate limit for a specified application. If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.",
     "example": "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\n\nDefault frequency limit: Times: 100 Time range: seconds\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo",
     "style": "dynamic",
     "default_value": "",
     "config": {
       "schema": {
-        "title": "Rate Limit",
+        "title": "Application Rate Limit",
         "type": "object",
         "properties": {
           "rates": {
@@ -368,7 +368,7 @@
     },
     "type_id": 4,
     "type_code": "bk-rate-limit",
-    "type_name": "Rate Limit"
+    "type_name": "Application Rate Limit"
   },
   "bk-header-rewrite": {
     "id": 4,
