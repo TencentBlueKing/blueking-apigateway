@@ -64,7 +64,6 @@ route module (paths below are relative to the site base, with `:id` a gateway ID
 | Access logs / statistics | `/:id/log`, `/:id/dashboard`, `/:id/report` |
 | Debug / basic information / audit | `/:id/online-debugging`, `/:id/basic-info`, `/:id/audit` |
 | MCP servers / approvals | `/:id/mcp/server`, `/:id/mcp/permission` |
-| Component categories / runtime data | `/components/category`, `/components/runtime-data` |
 | API docs / platform tools / MCP market | `/docs/api-docs`, `/platform-tools`, `/mcp-market` |
 
 Environment resources/plugins/variables and debugging history may be tabs or

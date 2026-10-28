@@ -19,17 +19,16 @@
 import itertools
 import json
 import operator
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.utils.encoding import smart_str
 from django.utils.translation import gettext as _
 
-from apigateway.apps.esb.constants import DEFAULT_DOC_CATEGORY, DataTypeEnum, FunctionControllerCodeEnum
+from apigateway.apps.esb.constants import DataTypeEnum, FunctionControllerCodeEnum
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.time import calculate_expires
-from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import to_datetime_from_now
 
 if TYPE_CHECKING:
@@ -41,14 +40,6 @@ class ComponentSystemManager(models.Manager):
         if self.filter(id__in=ids).exclude(data_type=DataTypeEnum.CUSTOM.value).exists():
             return False, _("官方系统，不能删除。")
         return True, ""
-
-    def delete_custom_systems(self, ids: List[int]):
-        from apigateway.apps.esb.bkcore.models import ESBChannel, SystemDocCategory  # noqa
-
-        custom_ids = list(self.filter(id__in=ids, data_type=DataTypeEnum.CUSTOM.value).values_list("id", flat=True))
-        ESBChannel.objects.filter(system_id__in=custom_ids).delete()
-        SystemDocCategory.objects.filter(system_id__in=custom_ids).delete()
-        self.filter(id__in=custom_ids).delete()
 
     def get_by_name(self, board: str, system_name: str):
         return self.filter(board=board, name=system_name).first()
@@ -64,13 +55,6 @@ class ESBChannelManager(models.Manager):
         if self.filter(id__in=ids).exclude(data_type=DataTypeEnum.CUSTOM.value).exists():
             return False, _("官方组件，不能删除。")
         return True, ""
-
-    def delete_custom_channels(self, ids: List[int]):
-        self.filter(id__in=ids, data_type=DataTypeEnum.CUSTOM.value).delete()
-
-    def calculate_channel_count_per_system(self):
-        counts = self.values("system_id").annotate(count=Count("system_id"))
-        return {i["system_id"]: i["count"] for i in counts}
 
     def filter_active_and_public_system_ids(
         self,
@@ -168,9 +152,6 @@ class ESBChannelManager(models.Manager):
     def filter_valid_ids(self, board: str, ids: List[int]) -> List[int]:
         return list(self.filter(board=board, id__in=ids).values_list("id", flat=True))
 
-    def get_latest_updated_time(self) -> Optional[datetime.datetime]:
-        return self.order_by("-updated_time").values_list("updated_time", flat=True).first()
-
     def get_public_component(self, board: str, system_name: str, component_name: str):
         return self.filter(
             board=board,
@@ -182,11 +163,7 @@ class ESBChannelManager(models.Manager):
 
 
 class ESBChannelExtendManager(models.Manager):
-    def get_config_fields(self, component_id: int):
-        try:
-            return self.get(component_id=component_id).config_fields
-        except self.model.DoesNotExist:
-            return None
+    pass
 
 
 class ComponentResourceBindingManager(models.Manager):
@@ -195,47 +172,7 @@ class ComponentResourceBindingManager(models.Manager):
 
 
 class ComponentReleaseHistoryManager(models.Manager):
-    def get_histories(self, time_start=None, time_end=None, order_by=None) -> List[Dict[str, Any]]:
-        queryset = self.all()
-
-        if time_start and time_end:
-            queryset = queryset.filter(created_time__range=(time_start, time_end))
-
-        if order_by:
-            queryset = queryset.order_by(order_by)
-
-        return list(
-            queryset.values("id", "resource_version_id", "comment", "status", "message", "created_time", "created_by")
-        )
-
-    def need_new_release(self) -> bool:
-        """是否需要同步并发布到网关"""
-        from apigateway.apps.esb.bkcore.models import ESBChannel  # noqa
-
-        latest_release_time = self.get_latest_release_time()
-        latest_component_updated_time = ESBChannel.objects.get_latest_updated_time()
-        if not (latest_release_time or latest_component_updated_time):
-            return False
-
-        if not latest_release_time:
-            return True
-
-        if latest_component_updated_time and latest_component_updated_time > latest_release_time:
-            return True
-
-        # 删除组件，不需要同步到网关，此种情况，即使网关请求通过检验，组件后端也会处理此组件不可访问
-        return False
-
-    def get_latest_release_time(self) -> Optional[datetime.datetime]:
-        """获取最新的发布时间
-
-        - 忽略发布失败的记录，因发布失败时，需要继续同步组件到网关
-        """
-        return (
-            self.filter(status__in=[ReleaseStatusEnum.SUCCESS.value, ReleaseStatusEnum.PENDING.value])
-            .values_list("created_time", flat=True)
-            .last()
-        )
+    pass
 
 
 class DocCategoryManager(models.Manager):
@@ -250,24 +187,6 @@ class DocCategoryManager(models.Manager):
 
         return True, ""
 
-    def delete_custom_doc_category(self, id: int):
-        self.filter(id=id, data_type=DataTypeEnum.CUSTOM.value).delete()
-
-    def get_default_doc_category(self, board: str) -> Dict[str, Any]:
-        instance, _ = self.get_or_create(
-            board=board,
-            name=DEFAULT_DOC_CATEGORY,
-            defaults={
-                "data_type": DataTypeEnum.OFFICIAL_PUBLIC.value,
-                "name_en": "Default",
-            },
-        )
-        return {
-            "id": instance.id,
-            "name": instance.name,
-            "name_en": instance.name_en,
-        }
-
     def get_id_to_fields_map(self) -> Dict[int, dict]:
         fields = ["id", "name", "priority", "name_en"]
 
@@ -275,21 +194,6 @@ class DocCategoryManager(models.Manager):
 
 
 class SystemDocCategoryManager(models.Manager):
-    def get_system_id_to_doc_category_map(self, system_ids: Optional[List[int]] = None) -> Dict[int, dict]:
-        qs = self.all()
-
-        if system_ids is not None:
-            qs = self.filter(system_id__in=system_ids)
-
-        return {
-            item["system_id"]: {
-                "id": item["doc_category_id"],
-                "name": item["doc_category__name"],
-                "name_en": item["doc_category__name_en"],
-            }
-            for item in qs.values("system_id", "doc_category_id", "doc_category__name", "doc_category__name_en")
-        }
-
     def group_category_id_by_board(self):
         data = self.values("doc_category_id", "board").distinct().order_by("board")
         return {

@@ -2,7 +2,7 @@
 // @generated-date: 2026-10-14
 const { test, expect } = require('../../runtime/bdd-test');
 const {
-  BASE_URL, getGatewayId, pageApiGet, pageApiDelete, pageApiPatch, unwrapApiResults,
+  BASE_URL, getGatewayId, pageApiDelete, pageApiPatch,
   createTestMcpServer, createTestName,
 } = require('../../runtime/helpers');
 const { createOwnedResource } = require('../../runtime/test-data');
@@ -28,26 +28,5 @@ test.describe('功能: 全站路由冒烟 - 动态详情', () => {
       }
       await pageApiDelete(page, `/gateways/${getGatewayId()}/resources/${resource.id}/`);
     }
-  });
-
-  test('场景: 组件同步版本深链接', async ({ page }) => {
-    await page.goto(BASE_URL);
-    const histories = unwrapApiResults(await pageApiGet(page, '/esb/components/sync/release/histories/', { limit: 1 }));
-    test.skip(!histories.length, '共享环境没有组件同步历史，缺少只读详情数据');
-    expect(histories[0].id).toBeTruthy();
-    await page.goto(`${base}/components/version?id=${histories[0].id}`);
-    await expect(page.locator('body')).toContainText(/版本|同步/);
-    await expect(page.locator('table')).toBeVisible();
-  });
-
-  test('场景: 系统实时概况深链接', async ({ page }) => {
-    await page.goto(BASE_URL);
-    const systems = unwrapApiResults(await pageApiGet(page, '/esb/status/systems/summary/', { time_since: '1h' }));
-    test.skip(!systems.length, '共享环境没有运行数据，缺少只读详情数据');
-    const name = systems[0].name || systems[0].system_name || systems[0].system;
-    expect(name).toBeTruthy();
-    await page.goto(`${base}/components/system/${encodeURIComponent(name)}/detail`);
-    await expect(page.locator('body')).toContainText(name);
-    await expect(page.locator('body')).toContainText(/请求|响应|耗时/);
   });
 });

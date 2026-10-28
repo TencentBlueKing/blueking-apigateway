@@ -92,10 +92,6 @@ export const useEnv = defineStore('useEnv', {
         USER_TYPE: '',
         // API网关错误码
         ERROR_CODE: '',
-        // 组件频率控制
-        COMPONENT_RATE_LIMIT: '',
-        // 如何开发和发布组件
-        COMPONENT_CREATE_API: '',
         // 文档导入详情
         IMPORT_RESOURCE_DOCS: '',
         // 实例类型

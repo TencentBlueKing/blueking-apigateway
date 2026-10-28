@@ -23,6 +23,8 @@ from django.utils.functional import cached_property
 
 from apigateway.common.env import Env
 
+BK_CLI_REPO_URL = "https://github.com/TencentBlueKing/bk-cli"
+
 
 def get_default_keepalive_options() -> Optional[dict]:
     """Mac OS's socket module does not has below attrs, return empty options instead"""
@@ -179,13 +181,6 @@ def get_default_feature_flags(
         "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", False),
         # 是否展示 "运行数据" => 仪表盘 子菜单
         "ENABLE_RUN_DATA_METRICS": enable_run_data_metrics,
-        # 是否展示"组件管理"菜单项，企业版展示，上云版不展示
-        "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
-        # TODO: remove in the future, and remove in the helm-chart and te repo
-        # 是否展示"组件 API 文档"菜单项
-        "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
-        # 是否将 ESB 数据同步到网关。需要考虑这个是否还需要
-        "SYNC_ESB_TO_APIGW_ENABLED": env.bool("FEATURE_FLAG_SYNC_ESB_TO_APIGW_ENABLED", True),
         # 网关编辑页，是否支持填写网关"绑定应用"
         "GATEWAY_APP_BINDING_ENABLED": env.bool("FEATURE_FLAG_GATEWAY_APP_BINDING_ENABLED", False),
         # FIXME: 为什么有两个 SDK 特性变量，并且容器化版本有 bkrepo 配置的话，默认应该都是 true?
@@ -226,7 +221,7 @@ def get_default_feature_flags(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT", True
         ),
         # 是否开启 BK CLI 展示
-        "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
+        "ENABLE_BK_CLI": True,
         # 是否开启 ITSM 权限申请
         "ENABLE_ITSM4_PERMISSION_APPLY": enable_itsm4_permission_apply,
     }
@@ -284,16 +279,14 @@ def get_frontend_env_vars(
         "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
         "BK_SDK_LANGUAGES": bk_sdk_languages,
         "CLI": {
-            "DETAIL_URL": env.str("CLI_DETAIL_URL", default="https://github.com/TencentBlueKing/bk-cli"),
+            "DETAIL_URL": BK_CLI_REPO_URL,
             "USER_KEY": env.str("CLI_USER_KEY", default="bk_token"),
             "USER_KEY_EXPIRE_DAYS": env.int("CLI_USER_KEY_EXPIRE_DAYS", default=1),
             "ACCESS_TOKEN_EXPIRE_DAYS": env.int("CLI_ACCESS_TOKEN_EXPIRE_DAYS", default=1),
             "BK_API_URL_TMPL": bk_api_url_tmpl.replace("{api_name}", "{gateway_name}"),
-            "GIT_REPO_URL": env.str("CLI_GIT_REPO_URL", default="https://github.com/TencentBlueKing/bk-cli.git"),
-            "NPM_INSTALL_CMD": env.str("CLI_NPM_INSTALL_CMD", default="npm install -g @blueking/bk-cli"),
-            "SKILL_NPM_INSTALL_CMD": env.str(
-                "CLI_SKILL_NPM_INSTALL_CMD", default="npx skills add TencentBlueKing/bk-cli -y -g"
-            ),
+            "GIT_REPO_URL": BK_CLI_REPO_URL,
+            "NPM_INSTALL_CMD": "npm i -g @blueking/bk-cli",
+            "SKILL_NPM_INSTALL_CMD": f"npx skills add {BK_CLI_REPO_URL}",
         },
     }
 
@@ -371,14 +364,6 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "JWT": env.str("DOC_LINK_JWT", default=f"{doc_link_prefix}/UserGuide/Explanation/jwt.md"),
         # API 网关错误码
         "ERROR_CODE": env.str("DOC_LINK_ERROR_CODE", default=f"{doc_link_prefix}/UserGuide/FAQ/error-response.md"),
-        # 组件频率控制
-        "COMPONENT_RATE_LIMIT": env.str(
-            "DOC_LINK_COMPONENT_RATE_LIMIT", default=f"{doc_link_prefix}/component/reference/rate-limit.md"
-        ),
-        # 如何开发和发布组件
-        "COMPONENT_CREATE_API": env.str(
-            "DOC_LINK_COMPONENT_CREATE_API", default=f"{doc_link_prefix}/component/quickstart/create-api.md"
-        ),
         # 文档导入详情
         "IMPORT_RESOURCE_DOCS": env.str(
             "DOC_LINK_IMPORT_RESOURCE_DOCS", default=f"{doc_link_prefix}/UserGuide/HowTo/Connect/manage-document.md"

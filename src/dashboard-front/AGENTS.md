@@ -134,7 +134,6 @@ src/dashboard-front/
 | `/:id/mcp-server`          | MCP 服务器                          |
 | `/platform-tools`          | 平台工具                             |
 | `/mcp-market`              | MCP 市场                           |
-| `/components`              | 组件管理                             |
 | `/docs`                    | API 文档                           |
 
 路由使用 `createWebHistory(window.BK_SITE_PATH)` 模式，支持自定义基础路径。
