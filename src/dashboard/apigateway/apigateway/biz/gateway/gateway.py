@@ -51,6 +51,7 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
 )
 from apigateway.core.gateway_auth import GatewayAuthConfig
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
@@ -84,8 +85,8 @@ def _is_official_gateway_type(gateway_type: Optional[GatewayTypeEnum]) -> bool:
 
 class GatewayData(BaseModel):
     name: str = Field(...)
-    display_name: Optional[str] = Field(default=None, max_length=64)
-    display_name_en: Optional[str] = Field(default=None, max_length=64)
+    display_name: Optional[str] = Field(default=None, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH)
+    display_name_en: Optional[str] = Field(default=None, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH)
     description: str = Field(default="")
     description_en: Optional[str] = Field(default=None)
     maintainers: List[str] = Field(default_factory=list)

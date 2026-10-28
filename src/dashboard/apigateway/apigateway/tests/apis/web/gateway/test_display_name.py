@@ -199,6 +199,30 @@ def test_preview_format_errors_are_parameter_errors(request_view, data):
     assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
 
 
+@pytest.mark.parametrize("name", ["Uppercase", "under_score", "中文网关", "1gateway", "ab", "a" * 31])
+def test_creation_preview_rejects_invalid_technical_names(request_view, name):
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_user(),
+        data={"name": name, "display_name": "Available Display"},
+    )
+    assert response.status_code == 400, response.json()
+    assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+
+
+def test_edit_preview_uses_persisted_name_instead_of_supplied_name(request_view):
+    gateway = G(Gateway, name="existing-gateway", display_name="Own Display")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_member(gateway),
+        data={"gateway_id": gateway.pk, "name": "Ignored_Invalid", "display_name": "Own Display"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": True, "conflicts": []}
+
+
 def test_name_update_tenant_check_does_not_expand_to_metadata_updates(request_view, settings):
     settings.ENABLE_MULTI_TENANT_MODE = True
     gateway = G(Gateway, tenant_mode="single", tenant_id="other")

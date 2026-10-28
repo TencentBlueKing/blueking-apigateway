@@ -34,6 +34,7 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
 )
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH
 from apigateway.core.models import Gateway
 from apigateway.service.gateway_name import validate_gateway_name_kind
 from apigateway.service.paas import gen_programmable_gateway_links
@@ -148,7 +149,9 @@ class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
 
 
 class GatewayCreateInputSLZ(serializers.ModelSerializer):
-    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+    display_name = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
@@ -380,7 +383,9 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
-    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+    display_name = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
     maintainers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, required=False, help_text="网关维护人员"
     )
@@ -516,15 +521,26 @@ class GatewayCheckNameAvailableInputSLZ(serializers.Serializer):
 class GatewayCheckDisplayNameAvailableInputSLZ(serializers.Serializer):
     gateway_id = serializers.IntegerField(required=False, min_value=1)
     name = serializers.CharField(required=False, max_length=64)
-    display_name = serializers.CharField(required=False, max_length=64, allow_blank=True, allow_null=True)
-    display_name_en = serializers.CharField(required=False, max_length=64, allow_blank=True, allow_null=True)
+    display_name = serializers.CharField(
+        required=False, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, allow_blank=True, allow_null=True
+    )
+    display_name_en = serializers.CharField(
+        required=False, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, allow_blank=True, allow_null=True
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckDisplayNameAvailableInputSLZ"
 
     def validate(self, data):
-        if "gateway_id" not in data and "name" not in data:
-            raise serializers.ValidationError({"name": "This field is required when creating a gateway."})
+        if "gateway_id" not in data:
+            if "name" not in data:
+                raise serializers.ValidationError({"name": "This field is required when creating a gateway."})
+            # Creation previews use the same technical-name rules as creation.
+            # Edit previews use the persisted name instead of this optional input.
+            try:
+                data["name"] = GatewayCreateInputSLZ().fields["name"].run_validation(data["name"])
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError({"name": exc.detail}) from exc
         return data
 
 

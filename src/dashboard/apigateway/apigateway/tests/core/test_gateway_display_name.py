@@ -190,3 +190,19 @@ def test_blank_default_name_resets_to_technical_name():
     gateway.refresh_from_db()
     assert gateway.display_name == "own-technical"
     assert gateway.display_name_en == "English"
+
+
+def test_manually_constructed_primary_key_can_insert():
+    gateway = N(Gateway, id=987654, name="manual-primary-key")
+    gateway.save()
+    assert Gateway.objects.get(pk=987654).display_name == "manual-primary-key"
+
+
+def test_positional_save_arguments_preserve_explicit_update_fields():
+    gateway = G(Gateway, display_name="Before")
+    gateway.display_name = "After"
+    gateway.description = "Must not be written"
+    gateway.save(False, False, None, ["display_name"])
+    gateway.refresh_from_db()
+    assert gateway.display_name == "After"
+    assert gateway.description != "Must not be written"

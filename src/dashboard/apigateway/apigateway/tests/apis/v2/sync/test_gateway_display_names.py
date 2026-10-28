@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from django.db import IntegrityError
-from django.utils.translation import override
+from django.utils.translation import override, trans_real
 from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
 
@@ -174,6 +174,16 @@ def test_mysql_display_name_unique_error_is_sanitized(key):
         raise IntegrityError(1062, f"Duplicate entry 'private-value' for key '{key}'")
     assert "private-value" not in str(exc.value)
     assert "already in use" in str(exc.value)
+
+
+@pytest.mark.parametrize("column", ["display_name", "display_name_en"])
+def test_index_conflict_uses_active_translation(monkeypatch, column):
+    catalog = trans_real.DjangoTranslation("zh-cn")
+    catalog._catalog["This display name is already in use."] = "展示名已被使用。"
+    monkeypatch.setitem(trans_real._translations, "zh-cn", catalog)
+    with override("zh-cn"), pytest.raises(ValidationError) as exc, gateway_name_validation_errors():
+        raise IntegrityError(f"UNIQUE constraint failed: core_api.{column}")
+    assert str(exc.value.detail[column]) == "展示名已被使用。"
 
 
 @pytest.mark.parametrize(

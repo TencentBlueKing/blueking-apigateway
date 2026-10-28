@@ -61,7 +61,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
 )
-from apigateway.core.gateway_name import validate_gateway_names
+from apigateway.core.gateway_name import GatewayNameConflictCode, validate_gateway_names
 from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
@@ -674,7 +674,7 @@ class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
                 gateways=Gateway.objects.exclude(pk=gateway.pk if gateway is not None else None),
             )
         except DjangoValidationError as exc:
-            conflict_codes = {"unique", "effective_en_conflict", "technical_name_conflict", "display_name_conflict"}
+            conflict_codes = {code.value for code in GatewayNameConflictCode}
             if any(error.code not in conflict_codes for errors in exc.error_dict.values() for error in errors):
                 with gateway_name_validation_errors():
                     raise
@@ -683,14 +683,16 @@ class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
                     {
                         "field": field,
                         "language": "en"
-                        if field == "display_name_en" or error.code == "effective_en_conflict"
+                        if field == "display_name_en" or error.code == GatewayNameConflictCode.EFFECTIVE_EN_CONFLICT
                         else "default",
-                        "reason": "english_fallback_conflict" if error.code == "effective_en_conflict" else error.code,
+                        "reason": "english_fallback_conflict"
+                        if error.code == GatewayNameConflictCode.EFFECTIVE_EN_CONFLICT
+                        else error.code,
                     }
                     for error in errors
                 )
         if gateway is None and Gateway.objects.filter(name=name).exists():
-            conflicts.append({"field": "name", "language": "default", "reason": "unique"})
+            conflicts.append({"field": "name", "language": "default", "reason": GatewayNameConflictCode.UNIQUE})
         return OKJsonResponse(data={"is_available": not conflicts, "conflicts": conflicts})
 
 

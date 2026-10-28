@@ -54,7 +54,7 @@ from apigateway.core.constants import (
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
-from apigateway.core.gateway_name import NAMING_FIELDS, validate_gateway_names
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH, NAMING_FIELDS, validate_gateway_names
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
 from apigateway.utils.crypto import get_crypto
@@ -76,7 +76,9 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
 
     name = models.CharField(max_length=64, unique=True)
-    display_name_i18n = I18nProperty(models.CharField(max_length=64, unique=True, blank=True))
+    display_name_i18n = I18nProperty(
+        models.CharField(max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, unique=True, blank=True)
+    )
     display_name = display_name_i18n.default_field(default="")
     display_name_en = display_name_i18n.field("en", null=True, default=None)
     description_i18n = I18nProperty(models.CharField(max_length=512, blank=True, null=True, default=None))
@@ -138,17 +140,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         loaded.update({field: self.__dict__[field] for field in refreshed if field in self.__dict__})
         self._loaded_names = loaded
 
-    def save(self, *args, force_insert=False, force_update=False, using=None, update_fields=None):
-        # Match Django's positional save arguments without losing update_fields semantics.
-        if args:
-            force_insert, force_update, using, update_fields = self._parse_save_params(
-                *args,
-                method_name="save",
-                force_insert=force_insert,
-                force_update=force_update,
-                using=using,
-                update_fields=update_fields,
-            )
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if update_fields is not None:
             update_fields = set(update_fields)
             if not update_fields:

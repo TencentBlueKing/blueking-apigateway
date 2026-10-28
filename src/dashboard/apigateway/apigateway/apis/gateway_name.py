@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apigateway.core.gateway_name import validate_gateway_names
@@ -70,4 +71,4 @@ def gateway_name_validation_errors():
         field = _display_name_unique_field(exc)
         if field is None:
             raise
-        raise serializers.ValidationError({field: "This display name is already in use."}) from exc
+        raise serializers.ValidationError({field: _("This display name is already in use.")}) from exc

@@ -77,6 +77,7 @@ from apigateway.core.constants import (
     convert_gateway_kind_name_to_value,
     convert_gateway_kind_to_name,
 )
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH
 from apigateway.core.models import Backend, Gateway, ResourceVersion, Stage
 from apigateway.service.gateway_name import validate_gateway_name_kind
 from apigateway.utils.time import NeverExpiresTime
@@ -117,8 +118,12 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
-    display_name = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
-    display_name_en = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+    display_name = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
+    display_name_en = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
         label="网关名称",
