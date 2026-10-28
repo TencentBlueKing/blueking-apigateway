@@ -894,6 +894,7 @@ init();
 
 <style lang="scss" scoped>
 .plugin-container {
+  overflow-y: auto;
 
   :deep(.bk-exception-page) {
     height: 420px;

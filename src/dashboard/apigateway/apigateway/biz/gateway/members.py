@@ -210,6 +210,16 @@ def delete_gateway_member(gateway: Gateway, member_id: int, operated_by: str) ->
     return result
 
 
+@transaction.atomic
+def delete_gateway_members(gateway: Gateway, usernames: Iterable[str], operated_by: str) -> list[GatewayMember]:
+    """Delete members by username without syncing the result back to PaaS."""
+    locked_gateway = _lock_gateway(gateway)
+    before = _get_gateway_member_snapshot(locked_gateway.id)
+    result = GatewayMember.objects.delete_gateway_members_by_usernames(locked_gateway.id, usernames)
+    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
+    return result
+
+
 def _sync_programmable_gateway_administrators(gateway: Gateway) -> None:
     update_app_maintainers(
         gateway.name,

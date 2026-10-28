@@ -15,15 +15,64 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from pathlib import Path
+
 import pytest
 from ddf import G
+from django.conf import settings
+from django.utils import translation
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.web.plugin.serializers import PluginConfigCreateInputSLZ, PluginConfigRetrieveUpdateInputSLZ
+from apigateway.apis.web.plugin.serializers import (
+    PluginConfigCreateInputSLZ,
+    PluginConfigRetrieveUpdateInputSLZ,
+    PluginTypeOutputSLZ,
+)
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginType
-from apigateway.utils.yaml import yaml_dumps
+from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 pytestmark = pytest.mark.django_db
+
+
+class TestPluginTypeOutputSLZ:
+    @pytest.mark.parametrize(
+        ("language", "name", "prerequisite"),
+        [
+            (
+                "zh-cn",
+                "应用频率控制",
+                "前置条件：资源需要开启应用认证；绑定在环境上时，请确保需要限流的资源已开启应用认证。",
+            ),
+            (
+                "en",
+                "Application Rate Limit",
+                "Prerequisite: resources must have application authentication enabled. "
+                "When bound to a stage, ensure that resources requiring rate limiting have "
+                "application authentication enabled.",
+            ),
+        ],
+    )
+    def test_rate_limit_fixture_display(self, language, name, prerequisite):
+        fixture_path = Path(settings.BASE_DIR) / "fixtures/plugins.yaml"
+        records = yaml_loads(fixture_path.read_text(encoding="utf-8"))
+        fields = next(
+            record["fields"]
+            for record in records
+            if record["model"] == "plugin.plugintype" and record["fields"]["code"] == "bk-rate-limit"
+        )
+        plugin_type = PluginType(**{**fields, "schema": None})
+
+        with translation.override(language):
+            result = PluginTypeOutputSLZ(plugin_type).data
+            assert str(PluginTypeCodeEnum.get_choice_label("bk-rate-limit")) == name
+
+        assert result["code"] == "bk-rate-limit"
+        assert result["name"] == name
+        assert result["description"].splitlines()[0] == prerequisite
+        assert result["notes"] == result["description"]
+        if language == "en":
+            assert result["description"].splitlines()[1].startswith("Rate limit")
 
 
 class TestPluginConfigCreateInputSLZ:

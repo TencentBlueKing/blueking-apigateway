@@ -31,11 +31,24 @@
       form-type="vertical"
     >
       <BkFormItem
-        :label="t('选择应用')"
         property="application"
         class="relative"
-        required
       >
+        <template #label>
+          <span class="flex align-items-center">
+            {{ t('选择应用') }}
+            <span class="color-#ea3636 pl-4px">*</span>
+            <AgIcon
+              v-bk-tooltips="t('刷新')"
+              name="refresh-line"
+              size="16"
+              color="#3A84FF"
+              class="refresh-apps cursor-pointer ml-8px"
+              :class="{ 'is-loading': isRefreshingApps }"
+              @click.stop="handleRefreshApps"
+            />
+          </span>
+        </template>
         <BkSelect
           v-model="permissionFormData.application"
           clearable
@@ -144,6 +157,20 @@ const getApplicableAppList = async () => {
   }
 };
 
+const isRefreshingApps = ref(false);
+
+// 手动刷新应用列表：新建应用后无需关闭弹窗即可拉取最新列表
+const handleRefreshApps = async () => {
+  if (isRefreshingApps.value) return;
+  isRefreshingApps.value = true;
+  try {
+    await getApplicableAppList();
+  }
+  finally {
+    isRefreshingApps.value = false;
+  }
+};
+
 const handleCreateNewApp = () => {
   const url = envStore.env.PAAS_APP_CREATE_LINK;
   if (url) {
@@ -220,6 +247,27 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+.refresh-apps {
+  display: inline-flex;
+  vertical-align: middle;
+
+  &.is-loading {
+    cursor: not-allowed;
+    opacity: 0.7;
+    animation: refresh-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .new-application {
   position: absolute;
   top: -32px;

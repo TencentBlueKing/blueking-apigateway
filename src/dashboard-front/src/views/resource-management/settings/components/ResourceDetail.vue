@@ -18,13 +18,7 @@
 
 <template>
   <div class="detail-container">
-    <div
-      class="detail-container-content"
-      :class="[
-        { 'has-notice': stageStore.getNotUpdatedStages?.length },
-        { 'pb-52px': isStickyFixed }
-      ]"
-    >
+    <div class="detail-container-content">
       <div class="mb-30px">
         <div class="title">
           {{ t('基本信息') }}
@@ -921,10 +915,7 @@
       </div>
     </div>
 
-    <div
-      class="footer-btn-wrapper"
-      :class="{ 'fixed-footer-btn-wrapper': isStickyFixed }"
-    >
+    <div class="footer-btn-wrapper">
       <BkButton
         theme="primary"
         class="min-w-88px"
@@ -968,8 +959,7 @@ import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
 import RequestParams from '../../components/request-params-v2/Index.vue';
 import ResponseParams from '../../components/response-params-v2/Index.vue';
-import { useGateway, useStage } from '@/stores';
-import { useStickyBottom } from '@/hooks';
+import { useGateway } from '@/stores';
 import SelectCheckBox from './SelectCheckBox.vue';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
@@ -997,16 +987,8 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
-const stageStore = useStage();
-const { controlStickyToggle, observerNodeScroll, destroyEvent } = useStickyBottom({
-  offsetBottom: 52,
-  footerNodeClass: '.footer-btn-wrapper',
-  scrollNodeClass: '.detail-container-content',
-  parentNodeClass: '.resource-container',
-});
 
 const labelsData = ref<IGatewayLabelItem[]>([]);
-const isStickyFixed = ref(false);
 const nameEdit = ref(false);
 const descEdit = ref(false);
 const labelsEdit = ref(false);
@@ -1140,16 +1122,6 @@ const initLabels = async () => {
   labelsData.value = await getGatewayLabels(gatewayId);
 };
 initLabels();
-
-// 初始化判断按钮组是否吸附
-const getStickyBottom = () => {
-  const { isStickyBottom } = controlStickyToggle();
-  isStickyFixed.value = isStickyBottom;
-  nextTick(() => {
-    observerNodeScroll();
-  });
-};
-getStickyBottom();
 
 // 更新成功
 const handleUpdateLabelSuccess = () => {
@@ -1450,23 +1422,18 @@ const handleServiceNameClick = (service: { name: string }) => {
     query: { name: service.name },
   });
 };
-
-onUnmounted(() => {
-  destroyEvent();
-});
 </script>
 
 <style lang="scss" scoped>
 .detail-container {
+  display: flex;
+  flex-direction: column;
 
   .detail-container-content {
-    max-height: calc(100vh - 175px);
-    padding-inline: 14px;
+    flex: 1;
+    min-height: 0;
+    padding: 0 14px 16px;
     overflow-y: auto;
-
-    &.has-notice {
-      max-height: calc(100vh - 217px);
-    }
 
     .title {
       margin-bottom: 12px;
@@ -1599,23 +1566,16 @@ onUnmounted(() => {
   }
 
   .footer-btn-wrapper {
-    bottom: 0;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
     height: 52px;
-    padding-left: 170px;
-    line-height: 52px
-  }
-
-  .fixed-footer-btn-wrapper {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 9;
-    width: 100%;
     padding-left: 24px;
     background-color: #fff;
+
+    // 抵消 bkui .bk-tab-content 的 10px 内边距，使顶部分隔线贯通到详情面板左右边界
+    margin-inline: -10px;
     box-shadow: 0 -1px 0 0 #dcdee5;
-    transition: .3s;
   }
 }
 

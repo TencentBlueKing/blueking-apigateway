@@ -32,9 +32,10 @@ from apigateway.apps.permission.tasks import (
     async_fill_gateway_or_resource_itsm_approver,
     async_fill_mcp_server_itsm_approver,
 )
-from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.error_codes import error_codes
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,15 @@ class ItsmCallbackResultHandler:
             raise error_codes.INVALID_ARGUMENT.format("ticket id mismatch")
 
     @staticmethod
+    def _get_canceled_by(approve_result: bool, ticket_id: str) -> str:
+        # ITSM 取消工单时以 approve_result=false 回调，需借助取消标记与审批驳回区分。
+        # 已知限制：标记存在时，审批驳回会落库为已取消；取消请求超时或失败后标记仍保留至 TTL。
+        # Redis 不可用且回调先到时仍落库为驳回。
+        if approve_result:
+            return ""
+        return ItsmPermissionApplyHelper.get_canceling_operator(ticket_id)
+
+    @staticmethod
     def _enqueue_approver_backfill_task(celery_task, task_kwargs: Dict[str, Any]):
         # ticket_id 为空时跳过入队
         if not task_kwargs.get("ticket_id"):
@@ -134,6 +144,7 @@ class ItsmCallbackResultHandler:
     def _handle_gateway_approval(
         self, apply_record_id: int, approve_result: bool, ticket_id: str, callback_token: str
     ):
+        canceled_by = self._get_canceled_by(approve_result, ticket_id)
         with transaction.atomic():
             apply = (
                 AppPermissionApply.objects.select_for_update()
@@ -164,6 +175,13 @@ class ItsmCallbackResultHandler:
                     "Ignore repeated gateway callback, record_id=%s, current_status=%s",
                     apply_record_id,
                     apply.status,
+                )
+                return
+
+            if canceled_by:
+                PermissionDimensionManager.cancel_permission_apply(apply, canceled_by)
+                logger.info(
+                    "ITSM gateway cancel callback handled: record_id=%s, ticket_id=%s", apply_record_id, ticket_id
                 )
                 return
 
@@ -198,6 +216,7 @@ class ItsmCallbackResultHandler:
     def _handle_mcp_server_approval(
         self, apply_record_id: int, approve_result: bool, ticket_id: str, callback_token: str
     ):
+        canceled_by = self._get_canceled_by(approve_result, ticket_id)
         with transaction.atomic():
             apply = (
                 MCPServerAppPermissionApply.objects.select_for_update()
@@ -225,6 +244,11 @@ class ItsmCallbackResultHandler:
                     apply_record_id,
                     apply.status,
                 )
+                return
+
+            if canceled_by:
+                MCPServerPermissionHandler.cancel_apply(apply, canceled_by)
+                logger.info("ITSM mcp cancel callback handled: apply_id=%s, ticket_id=%s", apply_record_id, ticket_id)
                 return
 
             status_value = (

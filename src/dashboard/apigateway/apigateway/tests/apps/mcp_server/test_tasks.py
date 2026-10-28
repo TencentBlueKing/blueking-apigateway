@@ -95,7 +95,9 @@ class TestStageMcpServerPermissionSync:
         mock_permission_sync_lock.assert_not_called()
         mock_filter.assert_not_called()
 
-    def test_adds_permissions_from_explicit_resource_version(self, fake_gateway, fake_stage):
+    def test_adds_permissions_from_explicit_resource_version(
+        self, fake_gateway, fake_stage, mock_permission_sync_lock
+    ):
         resource_version = G(ResourceVersion, gateway=fake_gateway)
         mcp_servers = [
             G(MCPServer, gateway=fake_gateway, stage=fake_stage),
@@ -108,6 +110,7 @@ class TestStageMcpServerPermissionSync:
                 resource_version_id=resource_version.id,
             )
 
+        assert mock_permission_sync_lock.call_args.args[1] == f"bk_apigw:mcp_server_permission_sync:{fake_stage.id}"
         mock_sync.assert_has_calls(
             [
                 call(mcp_servers[0].id, resource_version=resource_version, delete_stale=False),

@@ -35,7 +35,7 @@ from apigateway.utils.redis_utils import get_default_redis_client
 logger = logging.getLogger(__name__)
 
 RENEWAL_WINDOW_DAYS = 30
-RENEWAL_LOCK_NAME = "renew_gateway_member_iam_authorizations"
+RENEWAL_LOCK_NAME = "bk_apigw:renew_gateway_member_iam_authorizations"
 
 
 def _due_members(gateway_id: int, due_before: datetime) -> list[GatewayMember]:

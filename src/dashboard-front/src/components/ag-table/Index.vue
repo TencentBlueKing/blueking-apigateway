@@ -1119,10 +1119,10 @@ defineExpose({
     .t-table__header {
 
       th {
-        padding-top: 10.5px;
+        padding-top: 11px;
 
         &.t-table__th-row-select {
-          padding-top: 9.5px;
+          padding-top: 10px;
         }
       }
     }
