@@ -439,15 +439,18 @@ def test_saver_default_omission_preserves_latest_database_value(fake_gateway):
     assert gateway.display_name == "Changed After Construction"
 
 
-def test_saver_fallback_conflict_rolls_back_metadata_and_members(fake_gateway, mocker):
+def test_saver_same_field_conflict_rolls_back_metadata_and_members(fake_gateway, mocker):
     fake_gateway.display_name = "Shared"
     fake_gateway.display_name_en = "Before English"
     fake_gateway.save(update_fields=["display_name", "display_name_en"])
-    G(Gateway, display_name="Other", display_name_en="Shared")
+    G(Gateway, display_name="Taken")
     members = mocker.patch("apigateway.biz.gateway.gateway.add_gateway_administrators")
     auth = mocker.patch("apigateway.biz.gateway.gateway.GatewayHandler.save_auth_config")
     saver = GatewaySaver(
-        fake_gateway.pk, GatewayData(name=fake_gateway.name, status=1, description="changed", maintainers=["new"])
+        fake_gateway.pk,
+        GatewayData(
+            name=fake_gateway.name, display_name="TAKEN", status=1, description="changed", maintainers=["new"]
+        ),
     )
     with pytest.raises(DjangoValidationError):
         saver.save()

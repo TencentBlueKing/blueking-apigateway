@@ -58,19 +58,32 @@ def test_english_allowed_characters():
     [
         ({"display_name": "Asset Hub"}, {"display_name": " ASSET HUB "}, "display_name"),
         ({"display_name_en": "English"}, {"display_name_en": "english"}, "display_name_en"),
-        ({"display_name": "English"}, {"display_name_en": "English"}, "display_name_en"),
-        ({"display_name_en": "English"}, {"display_name": "English"}, "display_name"),
-        ({"name": "technical"}, {"display_name": "TECHNICAL"}, "display_name"),
-        ({"name": "technical"}, {"display_name_en": "TECHNICAL"}, "display_name_en"),
-        ({"display_name": "Technical"}, {"name": "technical"}, "name"),
-        ({"display_name_en": "Technical"}, {"name": "technical"}, "name"),
     ],
 )
-def test_global_conflicts(existing, candidate, field):
+def test_same_field_conflicts_are_global(existing, candidate, field):
     G(Gateway, tenant_id="other-tenant", status=0, is_public=False, is_deprecated=True, **existing)
     with pytest.raises(ValidationError) as exc:
         N(Gateway, **candidate).save()
     assert field in exc.value.message_dict
+
+
+@pytest.mark.parametrize(
+    "existing,candidate",
+    [
+        ({"display_name": "Shared"}, {"display_name_en": "Shared"}),
+        ({"display_name_en": "Shared"}, {"display_name": "Shared"}),
+        ({"name": "shared", "display_name": "Other"}, {"display_name": "SHARED"}),
+        ({"name": "shared", "display_name": "Other"}, {"display_name_en": "SHARED"}),
+        ({"display_name": "Shared"}, {"name": "shared", "display_name": "New Default"}),
+        ({"display_name_en": "Shared"}, {"name": "shared", "display_name": "New Default"}),
+    ],
+)
+def test_names_in_different_fields_are_independent(existing, candidate):
+    G(Gateway, **existing)
+    gateway = G(Gateway, **candidate)
+    gateway.refresh_from_db()
+    for field, value in candidate.items():
+        assert getattr(gateway, field) == value
 
 
 def test_cross_language_overlap_allowed_when_effective_names_differ():
@@ -80,17 +93,18 @@ def test_cross_language_overlap_allowed_when_effective_names_differ():
     assert gateway.display_name == "English One"
 
 
-def test_self_name_reuse_and_english_fallback_conflict():
+def test_self_name_reuse_and_duplicate_english_fallback_are_allowed():
     gateway = G(Gateway, name="own-name", display_name="own-name", display_name_en="own-name")
     gateway.save()
     G(Gateway, display_name="Other Default", display_name_en="own-name-two")
     gateway.display_name = "own-name-two"
     gateway.save(update_fields=["display_name"])
     gateway.display_name_en = None
-    with pytest.raises(ValidationError):
-        gateway.save(update_fields=["display_name_en"])
+    gateway.save(update_fields=["display_name_en"])
     gateway.refresh_from_db()
-    assert gateway.display_name_en == "own-name"
+    assert gateway.display_name_en is None
+    with override("en"):
+        assert gateway.display_name_i18n == "own-name-two"
 
 
 @pytest.mark.parametrize("fields", [None, ["description"]])
@@ -114,8 +128,10 @@ def test_partial_name_save_uses_current_sibling_values():
     gateway.save(update_fields=["display_name"])
     G(Gateway, display_name="Other", display_name_en="Current")
     stale.display_name_en = None
-    with pytest.raises(ValidationError):
-        stale.save(update_fields=["display_name_en"])
+    stale.save(update_fields=["display_name_en"])
+    gateway.refresh_from_db()
+    assert gateway.display_name == "Current"
+    assert gateway.display_name_en is None
 
 
 def test_deferred_metadata_save_and_empty_update_fields(django_assert_num_queries):
@@ -218,7 +234,7 @@ def test_lower_comparison_does_not_expand_german_sharp_s():
 
 
 @pytest.mark.parametrize("display_name,expected_rows", [("TAKEN", 1), ("Unrelated %", 0), ("Unrelated _", 0)])
-def test_database_returns_only_candidate_conflicts(display_name, expected_rows):
+def test_display_name_lookup_reads_at_most_one_row(display_name, expected_rows):
     Gateway.objects.bulk_create(
         [Gateway(name=f"unrelated-{i}", display_name=f"Unrelated {i}", status=1) for i in range(100)]
     )

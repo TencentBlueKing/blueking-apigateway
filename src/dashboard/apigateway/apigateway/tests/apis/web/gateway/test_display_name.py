@@ -101,11 +101,11 @@ def test_keyword_matches_both_raw_names(request_view, keyword):
 
 
 @pytest.mark.parametrize("field,value", [("display_name", "Taken"), ("display_name_en", "Taken")])
-def test_technical_name_precheck_reserves_display_names(request_view, field, value):
+def test_technical_name_precheck_ignores_display_names(request_view, field, value):
     G(Gateway, **{field: value})
     response = request_view(method="GET", view_name="gateways.check_name_available", data={"name": "taken"})
     assert response.status_code == 200
-    assert response.json()["data"] == {"is_available": False}
+    assert response.json()["data"] == {"is_available": True}
 
 
 @pytest.mark.parametrize(
@@ -139,18 +139,19 @@ def test_preview_rejects_cross_tenant_even_for_member(request_view, settings):
     assert response.status_code == 403, response.json()
 
 
-def test_preview_fallback_conflict_has_no_private_details(request_view):
-    private = G(Gateway, name="private-technical", display_name="Other", display_name_en="Shared", tenant_id="other")
+@pytest.mark.parametrize("field,language", [("display_name", "default"), ("display_name_en", "en")])
+def test_preview_same_field_conflict_has_no_private_details(request_view, field, language):
+    private = G(Gateway, name="private-technical", **{field: "Shared"}, tenant_id="other")
     response = request_view(
         method="POST",
         view_name="gateways.check_display_name_available",
         user=_user(),
-        data={"name": "new-technical", "display_name": "Shared"},
+        data={"name": "new-technical", field: "Shared"},
     )
     assert response.status_code == 200, response.json()
     data = response.json()["data"]
     assert data["is_available"] is False
-    assert {"field": "display_name", "language": "en", "reason": "english_fallback_conflict"} in data["conflicts"]
+    assert data["conflicts"] == [{"field": field, "language": language, "reason": "unique"}]
     assert private.name not in str(data)
 
 
@@ -177,7 +178,7 @@ def test_preview_preserves_english_unless_explicitly_cleared(request_view):
     gateway = G(Gateway, display_name="Shared", display_name_en="Own English")
     user = _member(gateway)
     G(Gateway, display_name="Other", display_name_en="Shared")
-    for extra, expected in [({}, True), ({"display_name_en": None}, False)]:
+    for extra, expected in [({}, True), ({"display_name_en": None}, True), ({"display_name_en": "Shared"}, False)]:
         response = request_view(
             method="POST",
             view_name="gateways.check_display_name_available",
@@ -354,7 +355,7 @@ def test_name_update_requires_real_management_role(request_view, role):
     assert gateway.display_name == "Before"
 
 
-def test_default_change_checks_english_fallback_globally(request_view):
+def test_default_change_may_match_another_english_name(request_view):
     gateway = G(Gateway, display_name="Before")
     G(Gateway, display_name="Other", display_name_en="Taken", tenant_id="other", status=0, is_public=False)
     response = request_view(
@@ -364,7 +365,19 @@ def test_default_change_checks_english_fallback_globally(request_view):
         data={"display_name": "Taken", "description": "changed"},
         user=_member(gateway),
     )
-    assert response.status_code == 400, response.json()
+    assert response.status_code == 204, response.json()
     gateway.refresh_from_db()
-    assert gateway.display_name == "Before"
-    assert gateway.description != "changed"
+    assert gateway.display_name == "Taken"
+    assert gateway.description == "changed"
+
+
+def test_display_name_preview_does_not_check_technical_name_availability(request_view):
+    G(Gateway, name="existing-name", display_name="Other")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_user(),
+        data={"name": "existing-name", "display_name": "Available"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": True, "conflicts": []}

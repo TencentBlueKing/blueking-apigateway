@@ -95,7 +95,7 @@ def test_sync_english_validation(request_view, sync_view, default_data_plane, va
     assert gateway.description != "changed"
 
 
-def test_sync_fallback_conflict_rolls_back_before_side_effects(request_view, sync_view, default_data_plane, mocker):
+def test_sync_clear_english_allows_duplicate_fallback(request_view, sync_view, default_data_plane, mocker):
     gateway = G(
         Gateway, name="sync-gateway", display_name="Shared", display_name_en="Own English", description="before"
     )
@@ -104,11 +104,11 @@ def test_sync_fallback_conflict_rolls_back_before_side_effects(request_view, syn
     response = call_sync(
         request_view, sync_view, gateway.name, {"description": "changed", "maintainers": ["new-admin"]}, gateway
     )
-    assert response.status_code == 400, response.json()
+    assert response.status_code == 200, response.json()
     gateway.refresh_from_db()
-    assert gateway.display_name_en == "Own English"
-    assert gateway.description == "before"
-    auth.assert_not_called()
+    assert gateway.display_name_en is None
+    assert gateway.description == "changed"
+    auth.assert_called_once()
 
 
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])

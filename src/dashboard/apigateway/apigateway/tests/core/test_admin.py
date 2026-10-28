@@ -129,9 +129,11 @@ def test_gateway_admin_ignores_english_write():
     assert gateway.display_name_en == "English"
 
 
-def test_gateway_admin_technical_name_conflict_is_a_form_error():
+def test_gateway_admin_name_may_match_another_display_name():
     G(Gateway, display_name="Taken Technical")
     gateway = G(Gateway)
     form = _gateway_form(gateway, name="taken technical")
-    assert not form.is_valid()
-    assert "name" in form.errors
+    assert form.is_valid(), form.errors
+    form.save()
+    gateway.refresh_from_db()
+    assert gateway.name == "taken technical"
