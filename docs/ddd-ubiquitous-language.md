@@ -64,9 +64,9 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 
 | 中文 / English | 代码名与身份范围 | 定义与约束 |
 | --- | --- | --- |
-| 网关 / Gateway | `Gateway`；数值主键 id；技术名 name 全局唯一 | 一组 API 的管理与发布归属，拥有环境、资源、后端等。 |
-| 网关展示名 / Gateway Display Name | `Gateway.display_name`；最长 64 字符；非空；独立唯一索引 | 默认语言的人类可读名称，不改变技术名、数值 ID、URL、SDK 或发布身份。创建省略/清空取 name，更新省略保留、显式清空恢复 name。 |
-| 网关英文展示名 / Gateway English Display Name | `Gateway.display_name_en`；最长 64 字符；nullable；独立唯一索引 | 仅 Sync V1/V2 可写，省略/清空均置 NULL；非空须匹配 `[A-Za-z][A-Za-z0-9 -]*`。英文请求取此字段，NULL 时回退默认名，其他语言取默认名。 |
+| 网关 / Gateway | `Gateway`；id；name 全局唯一 | 一组 API 的管理与发布归属，拥有环境、资源、后端等。 |
+| 网关展示名 / Gateway Display Name | `Gateway.display_name`；最长 64 字符；全局唯一 | 用于展示的网关名称，不填时为 name。 |
+| 网关英文展示名 / Gateway English Display Name | `Gateway.display_name_en`；最长 64 字符；非空时全局唯一 | 网关的英文展示名，仅支持自动化同步配置。 |
 | 网关类别 / Gateway Kind | `Gateway.kind` | `normal`、`programmable`、`ai`；ORM 分别存 `0`、`1`、`2`，API 按 GatewayKindEnum/GatewayKindNameEnum 转换。与认证配置的网关类型区分。 |
 | 网关弃用 / Gateway Deprecation | `is_deprecated`、`deprecated_note` | 弃用标记及原因，与启停、公开、官方、删除分别表达。 |
 | 环境 / Stage | `Stage`；id；`(gateway, name)` 唯一 | 网关内的发布目标，如 prod、test，带变量、状态和环境配置；与 DataPlane 是不同维度。 |
@@ -89,14 +89,6 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 - Gateway 拥有 Stage、Resource、Backend、BackendConfig、ResourceVersion；Resource 经 Proxy 引用 Backend。
 - BackendConfig 同时引用 Gateway、Backend、Stage；Release 关联 Stage 与 ResourceVersion。
 - Gateway 经 GatewayDataPlaneBinding 关联 DataPlane。不能使用 `Gateway -> Stage -> Resource` 作为模型归属链。
-
-### 网关名称的写入与显示边界
-
-两个展示字段去除首尾空白，保留内部空格和原始大小写。`display_name` 仅与其他网关的 `display_name` 查重，非 NULL 的 `display_name_en` 仅与其他网关的 `display_name_en` 查重；查询覆盖全部租户、类别和状态，并使用数据库大小写不敏感查询（MySQL 使用项目约定的 `_ci` 列排序规则）。两个展示字段之间、展示字段与技术名 `name` 之间均允许重名，英文回退后的展示值不参与唯一性检查。自身名称可复用；两个唯一索引分别保证单列唯一，多个英文 NULL 可共存，不新增占用表或全局名称锁。迁移将存量默认名初始化为去除首尾空白后的技术名、英文名初始化为 NULL。
-
-默认名为空时回填技术名，回填值同样受默认名唯一索引约束；冲突时需显式配置其他可用默认名。发布顺序与停写要求见 [网关展示名升级](gateway-display-name-upgrade.md)。
-
-通用响应中的 `display_name` 按请求语言选择。Web POST/PUT/PATCH 的同名输入始终修改原始默认名；Web 和 Admin 不写英文名，普通配置保存保留英文名。Sync V1/V2 的英文名省略即清空。无额外原始默认名别名、写入标记或独立名称配置接口。已有扁平网关投影增加 `gateway_display_name`；嵌套网关对象增加 `display_name`。MCP 自身字段、审计及调用日志中的技术名继续保持原义。
 
 ## 4. 版本、发布与运行态
 
@@ -233,7 +225,7 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 | --- | --- |
 | gateway_id；兼容 api_id/core_api | 新增逻辑使用 gateway_id 表达 Gateway 主键；api_id 与表名 core_api 仅为存量兼容。“API”指接口时须明确 Resource，不能由 api_id 推断单个接口。 |
 | gateway_name；兼容 api_name/{api_name} | 新增逻辑使用 gateway_name 表达 Gateway.name；api_name 及历史地址/模板占位符仅为存量兼容，与 Resource.name 区分。 |
-| display_name / gateway_display_name | 本地化人类展示值；不能替代 gateway_id 或 gateway_name 做精确定位。Web display_name 输入指默认名，响应指当前请求语言选中的展示值。 |
+| display_name / gateway_display_name | 网关展示名。 |
 | 前端 apigwId | 相关网关接口的 Gateway.id；按 services/source 请求路径核对。 |
 | stage_id/stage_name | Stage 主键/网关内环境名；同名环境可属不同网关。 |
 | resource_id/resource_name | 资源主键/业务名；权限、版本、MCP 按所用快照映射，与 APISIX resourceID 区分。 |

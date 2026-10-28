@@ -24,7 +24,7 @@ from functools import partial
 
 import pytest
 from celery import shared_task
-from ddf import G
+from ddf import C, G, teach
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
@@ -88,6 +88,9 @@ def pytest_sessionstart(session):
     #   Add 'bkcore' to pytest_django.fixtures._django_db_helper.<locals>.PytestDjangoTestCase.databases
     #   to ensure proper test isolation and silence this failure
     from django.test import TestCase  # noqa
+
+    # DDF 负责生成完整的测试数据，展示名默认值由业务入口处理。
+    teach(Gateway, display_name=C("name"))
 
     TestCase.multi_db = True
     TestCase.databases = "__all__"

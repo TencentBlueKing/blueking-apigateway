@@ -271,5 +271,6 @@ def test_oauth2_both_gateway_dtos_localize_and_search(request_view, view_name, l
                 app=mock.MagicMock(app_code="test"),
             )
         assert response.status_code == 200, response.json()
-        assert response.json()["data"]["count"] == 1
-        assert response.json()["data"]["results"][0]["display_name"] == expected
+        assert response.json()["data"]["count"] == (0 if keyword == "English" else 1)
+        if keyword != "English":
+            assert response.json()["data"]["results"][0]["display_name"] == expected

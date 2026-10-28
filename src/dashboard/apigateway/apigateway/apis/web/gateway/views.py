@@ -165,9 +165,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         queryset = Gateway.objects.filter(id__in=gateway_ids)
 
         if keyword:
-            queryset = queryset.filter(
-                Q(name__icontains=keyword) | Q(display_name__icontains=keyword) | Q(display_name_en__icontains=keyword)
-            )
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(display_name__icontains=keyword))
 
         return queryset.order_by(order_by)
 

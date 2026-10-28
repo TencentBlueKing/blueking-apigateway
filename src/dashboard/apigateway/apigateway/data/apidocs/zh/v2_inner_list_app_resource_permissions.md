@@ -3,8 +3,6 @@
 已申请权限列表
 
 
-网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
-
 ### 输入参数
 
 #### 请求参数
@@ -51,7 +49,7 @@
 | id                | int    | 资源ID |
 | name              | string | 资源名称 |
 | gateway_name      | string | 网关名称 |
-| gateway_display_name | string | 所属网关的本地化展示名，最长 64 字符；英文名未配置时回退默认名 |
+| gateway_display_name | string | 所属网关的展示名 |
 | gateway_id        | int    | 网关ID |
 | description       | string | 资源描述 |
 | expires_in        | int    | 有效期  |

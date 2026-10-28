@@ -127,20 +127,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         verbose_name_plural = "Gateway"
         db_table = "core_api"
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        # 仅规范化本次要写入的展示字段；格式/查重由入口校验，最终唯一性由数据库保证。
-        # 不读取 deferred 字段、不追踪旧值，也不改变 Django 的隐式 save 语义。
-        if update_fields is not None:
-            update_fields = set(update_fields)
-            fields_to_normalize = update_fields
-        else:
-            fields_to_normalize = self.__dict__.keys()
-        if "display_name" in fields_to_normalize:
-            self.display_name = (self.display_name or "").strip() or self.name.strip()
-        if "display_name_en" in fields_to_normalize:
-            self.display_name_en = (self.display_name_en or "").strip() or None
-        super().save(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
-
     @property
     def doc_maintainers(self) -> Dict:
         return self._doc_maintainers or {}

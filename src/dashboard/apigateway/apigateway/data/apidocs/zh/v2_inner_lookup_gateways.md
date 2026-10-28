@@ -4,7 +4,6 @@
 
 多租户模式下必须通过 `X-Bk-Tenant-Id` 请求头传入当前租户 ID，否则返回 `400`。接口只返回全租户网关及当前租户的单租户网关。
 
-网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
 
 ### 输入参数
 
@@ -37,8 +36,8 @@
 |---|---|---|
 | data | array | 按 `name`、`id` 排序的网关列表 |
 | data[].id | int | 网关 ID |
-| data[].name | string | 网关技术名 |
-| data[].display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
+| data[].name | string | 网关名称 |
+| data[].display_name | string | 网关展示名 |
 | data[].description | string | 网关描述 |
 | data[].maintainers | array | 网关管理员 display_name 列表 |
 | data[].doc_maintainers | object | 网关文档维护人员 |

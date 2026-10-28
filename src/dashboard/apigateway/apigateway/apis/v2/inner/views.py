@@ -378,9 +378,7 @@ class GatewayListApi(generics.ListAPIView):
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = (
-                queryset.filter(
-                    Q(name__contains=name) | Q(display_name__contains=name) | Q(display_name_en__contains=name)
-                )
+                queryset.filter(Q(name__contains=name) | Q(display_name__contains=name))
                 if fuzzy
                 else queryset.filter(name=name)
             )

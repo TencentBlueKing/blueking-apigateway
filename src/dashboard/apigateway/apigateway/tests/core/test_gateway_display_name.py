@@ -5,7 +5,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 from django_dynamic_fixture import G, N
 
-from apigateway.core.gateway_name import validate_gateway_names
+from apigateway.core.gateway_name import normalize_gateway_names, validate_gateway_names
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -13,16 +13,13 @@ pytestmark = pytest.mark.django_db
 
 @pytest.mark.parametrize("value", [None, "", "  "])
 def test_creation_defaults(value):
-    gateway = G(Gateway, name="fixture_technical_name", display_name=value, display_name_en=value)
-    gateway.refresh_from_db()
-    assert gateway.display_name == gateway.name
-    assert gateway.display_name_en is None
+    assert normalize_gateway_names("gateway-name", value, value) == ("gateway-name", None)
 
 
 def test_fixture_and_localization():
     fixture = G(Gateway)
     assert fixture.display_name == fixture.name
-    gateway = G(Gateway, display_name="  默认  名称  ", display_name_en=" English  Name ")
+    gateway = G(Gateway, display_name="默认  名称", display_name_en="English  Name")
     assert gateway.display_name == "默认  名称"
     assert gateway.display_name_en == "English  Name"
     with override("en"):
@@ -212,13 +209,8 @@ def test_named_fields_omitted_by_update_fields_are_not_written():
     assert gateway.display_name == "Pending"
 
 
-def test_blank_default_name_resets_to_technical_name():
-    gateway = G(Gateway, name="own-technical", display_name="Original", display_name_en="English")
-    gateway.display_name = " "
-    gateway.save(update_fields=["display_name"])
-    gateway.refresh_from_db()
-    assert gateway.display_name == "own-technical"
-    assert gateway.display_name_en == "English"
+def test_blank_display_name_uses_name():
+    assert normalize_gateway_names("gateway-name", " ", "English") == ("gateway-name", "English")
 
 
 def test_manually_constructed_primary_key_can_insert():
@@ -266,27 +258,9 @@ def test_display_name_lookup_reads_at_most_one_row(display_name, expected_rows):
         assert len(cursor.fetchall()) == expected_rows
 
 
-def test_blank_default_trims_technical_name_fallback():
-    gateway = G(Gateway, name="\t legacy-name \u3000", display_name=" ")
-    gateway.refresh_from_db()
-    assert gateway.display_name == "legacy-name"
-
-
-@pytest.mark.parametrize("field", ["display_name", "display_name_en"])
-def test_updates_store_trimmed_display_names(field):
-    gateway = G(Gateway)
-    setattr(gateway, field, "\t New  Name \u3000")
-    gateway.save(update_fields=[field])
-    gateway.refresh_from_db()
-    assert getattr(gateway, field) == "New  Name"
-
-
-def test_model_save_normalizes_without_uniqueness_queries(django_assert_num_queries):
-    gateway = N(Gateway, name="model-only", display_name=" Trimmed ", display_name_en=" English ")
-    with django_assert_num_queries(1):
-        gateway.save()
-    assert gateway.display_name == "Trimmed"
-    assert gateway.display_name_en == "English"
+def test_display_names_are_trimmed():
+    assert normalize_gateway_names("\t gateway-name \u3000", " ", None) == ("gateway-name", None)
+    assert normalize_gateway_names("gateway-name", "\t New  Name \u3000", " English ") == ("New  Name", "English")
 
 
 def test_implicit_model_save_keeps_django_insert_fallback():

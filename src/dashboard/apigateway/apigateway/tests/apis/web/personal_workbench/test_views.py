@@ -2483,7 +2483,7 @@ def test_workbench_gateway_record_keyword_search(request_view, fake_gateway, kin
     )
     response = request_view(method="GET", view_name=f"workbench.permissions.gateway.{kind}", data={"keyword": keyword})
     assert response.status_code == 200, response.json()
-    assert response.json()["data"]["count"] == 1
+    assert response.json()["data"]["count"] == (0 if keyword == "English" else 1)
 
 
 @pytest.mark.parametrize("kind", ["gateway", "mcp"])

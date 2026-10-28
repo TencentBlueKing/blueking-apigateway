@@ -3,8 +3,6 @@
 按 ID 或名称批量查询活跃的 MCPServer（应用态接口）。接口不分页，只返回 MCPServer、所属网关和环境均为启用状态的记录；未匹配的 ID 或名称不会出现在结果中。同时传入 ID 和名称时，返回两组条件的交集。
 
 
-网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
-
 ### 输入参数
 
 #### 请求参数
@@ -52,7 +50,7 @@
 | data[].categories | array | MCPServer 分类列表 |
 | data[].stage | object | MCPServer 环境信息 |
 | data[].gateway | object | MCPServer 网关信息 |
-| data[].gateway.display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
+| data[].gateway.display_name | string | 网关展示名 |
 | data[].tools_count | int | MCPServer 工具数量 |
 | data[].prompts_count | int | MCPServer Prompts 数量 |
 | data[].url | string | MCPServer 访问 URL |

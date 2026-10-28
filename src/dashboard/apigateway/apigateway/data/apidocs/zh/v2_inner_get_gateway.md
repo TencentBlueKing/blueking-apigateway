@@ -3,8 +3,6 @@
 查询网关详情
 
 
-网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
-
 ### 输入参数
 
 #### 路径参数
@@ -12,7 +10,6 @@
 | 参数名称         | 参数类型   | 必选 | 描述   |
 |--------------|--------|----|------|
 | gateway_name | string | 是  | 网关名称 |
-
 
 
 ### 响应示例
@@ -54,7 +51,7 @@
 |-----------------|----------|----------|
 | id              | int      | 网关ID     |
 | name            | string   | 网关名称     |
-| display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
+| display_name | string | 网关展示名 |
 | kind            | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | description     | string   | 网关描述     |
 | maintainers     | array    | 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表 |

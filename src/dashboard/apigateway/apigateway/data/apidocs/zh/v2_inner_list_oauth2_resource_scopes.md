@@ -6,7 +6,6 @@
 
 该接口不按 Stage 过滤，也不使用 `disabled_stages`。多租户模式下只返回全租户网关和请求租户所属的单租户网关。
 
-网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
 
 ### 输入参数
 
@@ -15,7 +14,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
 | oauth_client_type | string | 是 | OAuth2 客户端类型：`personal` 或 `public` |
-| gateway_name | string | 否 | 技术名或两个原始展示名，包含匹配，最长 64 个字符 |
+| gateway_name | string | 否 | 网关名称，包含匹配，最长 64 个字符 |
 | resource_name | string | 否 | 资源名称，包含匹配，最长 256 个字符 |
 | limit | int | 否 | 每页网关数量，范围 1～1000，默认 10 |
 | offset | int | 否 | 网关分页偏移量，必须大于或等于 0，默认 0 |
@@ -55,8 +54,8 @@
 | data.count | int | 过滤后的网关总数，用于网关维度分页 |
 | data.results | array | 当前页网关列表，按网关名称、网关 ID 稳定排序 |
 | data.results[].id | int | 网关 ID |
-| data.results[].name | string | 网关技术名 |
-| data.results[].display_name | string | 网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。 |
+| data.results[].name | string | 网关名称 |
+| data.results[].display_name | string | 网关展示名 |
 | data.results[].is_official | bool | 是否为官方网关 |
 | data.results[].resource_count | int | 当前过滤条件下该网关包含的去重资源数量 |
 | data.results[].resources | array | 当前过滤条件下该网关包含的资源列表 |

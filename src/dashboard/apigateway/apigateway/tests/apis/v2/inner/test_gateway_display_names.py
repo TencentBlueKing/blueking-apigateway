@@ -61,7 +61,7 @@ def test_gateway_exact_vs_fuzzy_display_search(request_view, fake_gateway, surfa
     fake_gateway.display_name_en = "English"
     fake_gateway.save(update_fields=["display_name", "display_name_en"])
     G(Release, gateway=fake_gateway)
-    for fuzzy, expected in [(False, []), (True, [fake_gateway.pk])]:
+    for fuzzy, expected in [(False, []), (True, [] if keyword == "English" else [fake_gateway.pk])]:
         response = request_view(
             method="GET",
             view_name=f"{surface}.list",
@@ -127,15 +127,17 @@ def test_permission_record_list_and_detail_projection(
 
 
 @pytest.mark.parametrize("keyword", ["默认", "English"])
-def test_docs_keyword_matches_both_raw_names(request_view, fake_gateway, keyword):
+def test_docs_keyword_search_excludes_english_display_name(request_view, fake_gateway, keyword):
     fake_gateway.display_name = "默认名"
     fake_gateway.display_name_en = "English"
     fake_gateway.save(update_fields=["display_name", "display_name_en"])
     G(Release, gateway=fake_gateway)
     response = request_view(method="GET", view_name="docs.gateway.list", data={"keyword": keyword, "limit": 1})
     assert response.status_code == 200, response.json()
-    assert response.json()["data"]["count"] == 1
-    assert response.json()["data"]["results"][0]["id"] == fake_gateway.pk
+    assert response.json()["data"]["count"] == (0 if keyword == "English" else 1)
+    assert [row["id"] for row in response.json()["data"]["results"]] == (
+        [] if keyword == "English" else [fake_gateway.pk]
+    )
 
 
 @pytest.mark.parametrize(
@@ -198,7 +200,7 @@ def test_permission_record_existing_query_matches_display_names(request_view, fa
         app=MagicMock(app_code="test"),
     )
     assert response.status_code == 200, response.json()
-    assert response.json()["data"]["count"] == 1
+    assert response.json()["data"]["count"] == (0 if keyword == "English" else 1)
 
 
 @pytest.mark.parametrize("view_name", ["openapi.gateway.list", "openapi.v2.open.gateway.list"])
@@ -211,4 +213,4 @@ def test_public_gateway_existing_keyword_filters(request_view, fake_gateway, vie
     query = {"query": keyword, "fuzzy": True} if view_name == "openapi.gateway.list" else {"keyword": keyword}
     response = request_view(method="GET", view_name=view_name, data=query, app=MagicMock(app_code="test"))
     assert response.status_code == 200, response.json()
-    assert [item["id"] for item in response.json()["data"]] == [fake_gateway.pk]
+    assert [item["id"] for item in response.json()["data"]] == ([] if keyword == "English" else [fake_gateway.pk])

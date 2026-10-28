@@ -93,12 +93,14 @@ def test_list_and_detail_localized(request_view, language, expected):
 
 
 @pytest.mark.parametrize("keyword", ["默认", "English"])
-def test_keyword_matches_both_raw_names(request_view, keyword):
+def test_keyword_search_excludes_english_display_name(request_view, keyword):
     gateway = G(Gateway, display_name="默认名", display_name_en="English", tenant_mode="single", tenant_id="default")
     user = _member(gateway)
     response = request_view(method="GET", view_name="gateways.list_create", data={"keyword": keyword}, user=user)
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()["data"]["results"]] == [gateway.pk]
+    assert [item["id"] for item in response.json()["data"]["results"]] == (
+        [] if keyword == "English" else [gateway.pk]
+    )
 
 
 @pytest.mark.parametrize("field,value", [("display_name", "Taken"), ("display_name_en", "Taken")])

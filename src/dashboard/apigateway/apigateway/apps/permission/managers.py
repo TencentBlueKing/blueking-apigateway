@@ -219,11 +219,7 @@ class AppPermissionRecordManager(models.Manager):
             queryset = queryset.filter(status=status)
 
         if query:
-            queryset = queryset.filter(
-                Q(gateway__name__icontains=query)
-                | Q(gateway__display_name__icontains=query)
-                | Q(gateway__display_name_en__icontains=query)
-            )
+            queryset = queryset.filter(Q(gateway__name__icontains=query) | Q(gateway__display_name__icontains=query))
 
         if order_by:
             queryset = queryset.order_by(order_by)

@@ -62,10 +62,7 @@ class GatewayListApi(generics.ListAPIView):
         keyword = slz.validated_data.get("keyword")
         if keyword:
             queryset = queryset.filter(
-                Q(name__icontains=keyword)
-                | Q(description__icontains=keyword)
-                | Q(display_name__icontains=keyword)
-                | Q(display_name_en__icontains=keyword)
+                Q(name__icontains=keyword) | Q(description__icontains=keyword) | Q(display_name__icontains=keyword)
             )
 
         show_plugin_gateway = slz.validated_data["show_plugin_gateway"]

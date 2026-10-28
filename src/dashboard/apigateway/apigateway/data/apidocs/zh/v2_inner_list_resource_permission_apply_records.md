@@ -3,8 +3,6 @@
 资源权限申请记录列表
 
 
-网关本地化展示名，最长 64 字符；英文请求取英文名，未配置英文名时回退默认名；定位仍使用技术名或数值 ID。
-
 ### 输入参数
 
 #### 请求参数
@@ -16,7 +14,7 @@
 | applied_time_start | int    | 否  | 申请开始时间                                                             |
 | applied_time_end   | int    | 否  | 申请截止时间                                                             |
 | apply_status       | string | 否  | 申请状态，partial_approved：部分通过，approved：全部通过，rejected：全部驳回，pending：待审批，canceled：已取消 |
-| query              | string | 否  | 按网关技术名及两个原始展示名模糊匹配；查询条件                                                               |
+| query              | string | 否  | 查询条件                                                               |
 
 
 ### 响应示例
@@ -78,4 +76,4 @@
 | itsm_ticket_id       | string | 关联的 ITSM 工单 ID，未关联时为空字符串                    |
 | approval_url | string | 权限审批 URL；优先返回 ITSM 工单地址，否则返回 `{DASHBOARD_FE_URL}/{gateway_id}/permission/apply` |
 | gateway_name         | string | 网关名称                                        |
-| gateway_display_name | string | 所属网关的本地化展示名，最长 64 字符；英文名未配置时回退默认名 |
+| gateway_display_name | string | 所属网关的展示名 |
