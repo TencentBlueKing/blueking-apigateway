@@ -79,7 +79,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     display_name_i18n = I18nProperty(
         models.CharField(max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, unique=True, blank=True)
     )
-    display_name = display_name_i18n.default_field(default="")
+    display_name = display_name_i18n.default_field(null=True, default=None)
     display_name_en = display_name_i18n.field("en", null=True, default=None)
     description_i18n = I18nProperty(models.CharField(max_length=512, blank=True, null=True, default=None))
     description = description_i18n.default_field(default="")

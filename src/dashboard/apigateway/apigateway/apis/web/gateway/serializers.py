@@ -446,21 +446,20 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         maintainers = validated_data.pop("maintainers", None)
-        # 只写入表单提交的字段；省略展示名时不覆盖其他请求刚保存的名称。
-        property_fields = {
-            "developers": "_developers",
-            "doc_maintainers": "_doc_maintainers",
-            "extra_info": "_extra_info",
-        }
-        model_fields = {field.name for field in instance._meta.concrete_fields}
-        update_fields = {"updated_time"}
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-            model_field = property_fields.get(attr, attr)
-            if model_field in model_fields:
-                update_fields.add(model_field)
+        # Web 不写英文展示名，省略的展示名也不随其他配置写回。
+        excluded_fields = {"display_name_en"}
+        if "display_name" not in validated_data:
+            excluded_fields.add("display_name")
         with gateway_name_validation_errors():
-            instance.save(update_fields=update_fields)
+            instance.save(
+                update_fields=[
+                    field.name
+                    for field in instance._meta.concrete_fields
+                    if not field.primary_key and field.name not in excluded_fields
+                ]
+            )
         if maintainers is not None:
             replace_gateway_administrators(instance, maintainers, validated_data.get("updated_by") or "")
         return instance
@@ -480,8 +479,8 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        instance.status = validated_data.get("status", instance.status)
+        instance.updated_by = validated_data.get("updated_by", instance.updated_by)
         instance.save(update_fields=[*validated_data, "updated_time"])
         return instance
 

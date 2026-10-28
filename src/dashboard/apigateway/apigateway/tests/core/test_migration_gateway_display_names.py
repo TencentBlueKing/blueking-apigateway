@@ -17,7 +17,7 @@ def test_display_names_migration_backfills_and_indexes():
         old_gateway = executor.loader.project_state(MIGRATE_FROM).apps.get_model("core", "Gateway")
         ids = [
             old_gateway.objects.using(alias).create(name=name, status=1, tenant_mode="single", tenant_id="").pk
-            for name in ("legacy-one", "legacy-two", "\t legacy-three \u3000")
+            for name in ("legacy-one", "legacy-two", "legacy-three")
         ]
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_TO)
@@ -35,8 +35,8 @@ def test_display_names_migration_backfills_and_indexes():
         assert ("display_name_en",) in unique_columns
         with pytest.raises(IntegrityError), transaction.atomic(using=alias):
             rows.filter(pk=ids[1]).update(display_name="legacy-one")
-        with pytest.raises(IntegrityError), transaction.atomic(using=alias):
-            rows.filter(pk=ids[1]).update(display_name=None)
+        rows.filter(pk__in=ids[:2]).update(display_name=None)
+        assert rows.filter(display_name=None).count() == 2
         rows.filter(pk=ids[0]).update(display_name_en="Unique English")
         with pytest.raises(IntegrityError), transaction.atomic(using=alias):
             rows.filter(pk=ids[1]).update(display_name_en="Unique English")

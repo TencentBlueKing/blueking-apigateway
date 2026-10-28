@@ -280,15 +280,17 @@ def test_explicit_stale_default_input_is_not_suppressed():
 
 
 def test_omitted_default_preserves_current_database_value():
-    gateway = G(Gateway, display_name="Original")
+    gateway = G(Gateway, display_name="Original", display_name_en="Before English")
     stale = Gateway.objects.get(pk=gateway.pk)
     gateway.display_name = "Current"
-    gateway.save(update_fields=["display_name"])
+    gateway.display_name_en = "Current English"
+    gateway.save(update_fields=["display_name", "display_name_en"])
     slz = GatewayUpdateInputSLZ(stale, data={"description": "Metadata"}, partial=True)
     assert slz.is_valid(), slz.errors
     slz.save()
     gateway.refresh_from_db()
     assert gateway.display_name == "Current"
+    assert gateway.display_name_en == "Current English"
 
 
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])
@@ -471,3 +473,22 @@ def test_preview_does_not_validate_stored_english_name(request_view):
     )
     assert response.status_code == 200, response.json()
     assert response.json()["data"] == {"is_available": True, "conflicts": []}
+
+
+def test_update_saves_property_fields_without_touching_display_names():
+    gateway = G(Gateway, name="property-gateway", kind=1, display_name="Display", display_name_en="English")
+    data = {
+        "developers": ["developer"],
+        "doc_maintainers": {"type": "user", "contacts": ["alice"], "service_account": {"name": "", "link": ""}},
+        "extra_info": {"language": "python", "repository": "https://example.com/repo.git"},
+    }
+    slz = GatewayUpdateInputSLZ(gateway, data=data, partial=True)
+    assert slz.is_valid(), slz.errors
+    slz.save(updated_by="ordinary")
+    gateway.refresh_from_db()
+    assert gateway.developers == data["developers"]
+    assert gateway.doc_maintainers == data["doc_maintainers"]
+    assert gateway.extra_info == data["extra_info"]
+    assert gateway.display_name == "Display"
+    assert gateway.display_name_en == "English"
+    assert gateway.updated_by == "ordinary"
