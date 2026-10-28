@@ -143,19 +143,18 @@ def test_preview_rejects_cross_tenant_even_for_member(request_view, settings):
     assert response.status_code == 403, response.json()
 
 
-@pytest.mark.parametrize("field,language", [("display_name", "default"), ("display_name_en", "en")])
-def test_preview_same_field_conflict_has_no_private_details(request_view, field, language):
-    private = G(Gateway, name="private-technical", **{field: "Shared"}, tenant_id="other")
+def test_preview_display_name_conflict_has_no_private_details(request_view):
+    private = G(Gateway, name="private-technical", display_name="Shared", tenant_id="other")
     response = request_view(
         method="POST",
         view_name="gateways.check_display_name_available",
         user=_user(),
-        data={"name": "new-technical", field: "Shared"},
+        data={"name": "new-technical", "display_name": "Shared"},
     )
     assert response.status_code == 200, response.json()
     data = response.json()["data"]
     assert data["is_available"] is False
-    assert data["conflicts"] == [{"field": field, "language": language, "reason": "unique"}]
+    assert data["conflicts"] == [{"field": "display_name", "language": "default", "reason": "unique"}]
     assert private.name not in str(data)
 
 
@@ -178,11 +177,17 @@ def test_default_name_length_on_create_and_update(request_view, default_data_pla
     assert response.status_code == (204 if length == 64 else 400), response.json()
 
 
-def test_preview_preserves_english_unless_explicitly_cleared(request_view):
+def test_preview_ignores_submitted_english_name(request_view):
     gateway = G(Gateway, display_name="Shared", display_name_en="Own English")
     user = _member(gateway)
     G(Gateway, display_name="Other", display_name_en="Shared")
-    for extra, expected in [({}, True), ({"display_name_en": None}, True), ({"display_name_en": "Shared"}, False)]:
+    for extra in [
+        {},
+        {"display_name_en": None},
+        {"display_name_en": "Shared"},
+        {"display_name_en": "Bad_English"},
+        {"display_name_en": "A" * 65},
+    ]:
         response = request_view(
             method="POST",
             view_name="gateways.check_display_name_available",
@@ -190,14 +195,12 @@ def test_preview_preserves_english_unless_explicitly_cleared(request_view):
             data={"gateway_id": gateway.pk, "name": "ignored-rename", "display_name": "Shared", **extra},
         )
         assert response.status_code == 200, response.json()
-        assert response.json()["data"]["is_available"] is expected
+        assert response.json()["data"] == {"is_available": True, "conflicts": []}
     gateway.refresh_from_db()
     assert gateway.display_name_en == "Own English"
 
 
-@pytest.mark.parametrize(
-    "data", [{"name": "candidate", "display_name_en": "Bad_English"}, {"name": "candidate", "display_name": "A" * 65}]
-)
+@pytest.mark.parametrize("data", [{"name": "candidate", "display_name": "A" * 65}])
 def test_preview_format_errors_are_parameter_errors(request_view, data):
     response = request_view(method="POST", view_name="gateways.check_display_name_available", user=_user(), data=data)
     assert response.status_code == 400, response.json()
@@ -441,7 +444,7 @@ def test_web_display_name_update_only_queries_its_uniqueness(django_assert_num_q
     assert data == {"display_name": "New Display"}
 
 
-def test_preview_reports_both_independent_conflicts(request_view):
+def test_preview_reports_only_display_name_conflict(request_view):
     G(Gateway, display_name="Taken Display", display_name_en="Taken English")
     response = request_view(
         method="POST",
@@ -454,6 +457,17 @@ def test_preview_reports_both_independent_conflicts(request_view):
         "is_available": False,
         "conflicts": [
             {"field": "display_name", "language": "default", "reason": "unique"},
-            {"field": "display_name_en", "language": "en", "reason": "unique"},
         ],
     }
+
+
+def test_preview_does_not_validate_stored_english_name(request_view):
+    gateway = G(Gateway, display_name="Own Display", display_name_en="Legacy_English")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_member(gateway),
+        data={"gateway_id": gateway.pk, "display_name": "Own Display"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": True, "conflicts": []}

@@ -540,9 +540,6 @@ class GatewayCheckDisplayNameAvailableInputSLZ(serializers.Serializer):
     display_name = serializers.CharField(
         required=False, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, allow_blank=True, allow_null=True
     )
-    display_name_en = serializers.CharField(
-        required=False, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, allow_blank=True, allow_null=True
-    )
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckDisplayNameAvailableInputSLZ"
