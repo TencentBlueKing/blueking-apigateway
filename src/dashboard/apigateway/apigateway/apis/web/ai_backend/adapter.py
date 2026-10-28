@@ -94,7 +94,8 @@ class AIBackendWebConfigAdapter:
 
     @classmethod
     def to_web(cls, config: dict) -> dict:
-        normalized = AIBackendConfig.model_validate(config).to_config()
+        model = AIBackendConfig.model_validate(config)
+        normalized = model.to_config()
         if message := get_ai_pool_routing_error(normalized):
             raise AIBackendWebConfigNotRepresentable(message)
         result: dict = {"timeout": normalized["timeout"], "instances": []}
@@ -106,8 +107,8 @@ class AIBackendWebConfigAdapter:
             ):
                 raise AIBackendWebConfigNotRepresentable("Web protocol cannot represent custom weights or priorities")
             result["instances"].append({"name": item["name"], "priority": priority, **cls._instance_to_web(item)})
-        if "balancer" in normalized:
-            result["balancer"] = {"algorithm": normalized["balancer"]["algorithm"]}
+        if model.balancer is not None:
+            result["balancer"] = {"algorithm": model.balancer.algorithm}
         if "fallback_strategy" in normalized:
             result["fallback_strategy"] = normalized["fallback_strategy"]
         return result

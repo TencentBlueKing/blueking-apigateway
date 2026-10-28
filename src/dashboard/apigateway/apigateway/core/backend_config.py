@@ -280,8 +280,6 @@ class AIBackendConfig(BaseModel):
 def _normalize_ai_pool_routing(config: dict[str, Any], *, has_backup: bool) -> None:
     balancer = config.get("balancer", {})
     balancer.setdefault("algorithm", "roundrobin")
-    if balancer["algorithm"] != "chash" and ("hash_on" in balancer or "key" in balancer):
-        raise error_codes.INVALID_ARGUMENT.format(_("轮询算法不支持配置 hash_on 和 key。"))
     config["balancer"] = balancer
 
     strategy = config.setdefault("fallback_strategy", AIBackendFallbackStrategyEnum.get_values())
@@ -296,6 +294,12 @@ def _normalize_ai_pool_routing(config: dict[str, Any], *, has_backup: bool) -> N
 def get_ai_pool_routing_error(config: dict[str, Any]) -> str | None:
     """Return a shared write/Web routing error without changing configuration or raising an API error."""
     balancer = config.get("balancer")
+    if (
+        balancer
+        and balancer.get("algorithm", "roundrobin") != "chash"
+        and ("hash_on" in balancer or "key" in balancer)
+    ):
+        return _("轮询算法不支持配置 hash_on 和 key。")
     if (
         balancer
         and balancer.get("algorithm") == "chash"

@@ -1,10 +1,28 @@
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 from copy import deepcopy
 
 import pytest
 
 from apigateway.apis.backend_config import validate_ai_backend_config
 from apigateway.common.error_codes import APIError
-from apigateway.core.backend_config import AIBackendConfig
+from apigateway.core.backend_config import AIBackendConfig, get_ai_pool_routing_error
 
 
 def instance(name, **kwargs):
@@ -95,3 +113,23 @@ def test_single_instance_accepts_empty_strategy_without_enabling_routing():
 def test_empty_balancer_uses_roundrobin_default():
     config = validate_ai_backend_config({"instances": [instance("a"), instance("b")], "balancer": {}})
     assert config["balancer"] == {"algorithm": "roundrobin"}
+
+
+@pytest.mark.parametrize(
+    "balancer",
+    [
+        {"algorithm": "roundrobin", "hash_on": "vars_combinations"},
+        {"algorithm": "roundrobin", "key": "$bk_app_code"},
+        {"algorithm": "roundrobin", "hash_on": "vars_combinations", "key": "$bk_app_code"},
+        {"key": "$bk_app_code"},
+    ],
+)
+def test_roundrobin_hash_fields_are_rejected_by_shared_read_check_and_write_validation(balancer):
+    config = {"instances": [instance("a"), instance("b")], "balancer": balancer}
+    before = deepcopy(config)
+
+    assert get_ai_pool_routing_error(AIBackendConfig.model_validate(config).to_config()) is not None
+    with pytest.raises(APIError) as err:
+        validate_ai_backend_config(config)
+    assert err.value.code.code_name == "INVALID_ARGUMENT"
+    assert config == before

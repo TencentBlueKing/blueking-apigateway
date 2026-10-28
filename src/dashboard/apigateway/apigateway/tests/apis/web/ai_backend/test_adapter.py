@@ -1,9 +1,11 @@
 from copy import deepcopy
+from types import SimpleNamespace
 
 import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter, AIBackendWebConfigNotRepresentable
+from apigateway.apis.web.ai_backend.presentation import serialize_ai_backend_config_for_web
 from apigateway.common.error_codes import APIError
 
 
@@ -208,6 +210,9 @@ def test_connectivity_can_probe_backup_independently_and_restore_its_own_credent
     "patch",
     [
         {"balancer": {"algorithm": "chash", "hash_on": "header", "key": "X-App"}},
+        {"balancer": {"algorithm": "roundrobin", "hash_on": "vars_combinations"}},
+        {"balancer": {"algorithm": "roundrobin", "key": "$bk_app_code"}},
+        {"balancer": {"key": "$bk_app_code"}},
         {"fallback_strategy": ["rate_limiting"]},
     ],
 )
@@ -217,6 +222,28 @@ def test_web_rejects_unrepresentable_routing_without_modifying_storage(patch):
     before = deepcopy(config)
     with pytest.raises(AIBackendWebConfigNotRepresentable):
         AIBackendWebConfigAdapter.to_web(config)
+    assert config == before
+
+
+@pytest.mark.parametrize("routing", [{}, {"fallback_strategy": []}, {"fallback_strategy": ["http_429"]}])
+def test_web_reads_empty_balancer_as_roundrobin_without_mutating_storage_or_retry_strategy(routing):
+    config = {
+        "instances": [
+            {"name": name, "provider": "openai", "weight": 1, "auth": {"header": {"Authorization": "Bearer secret"}}}
+            for name in ("a", "b")
+        ],
+        "balancer": {},
+        **routing,
+    }
+    before = deepcopy(config)
+
+    result = serialize_ai_backend_config_for_web(SimpleNamespace(id=0, config=config))
+
+    assert result["balancer"] == {"algorithm": "roundrobin"}
+    if "fallback_strategy" in routing:
+        assert result["fallback_strategy"] == routing["fallback_strategy"]
+    else:
+        assert "fallback_strategy" not in result
     assert config == before
 
 
