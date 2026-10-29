@@ -64,6 +64,7 @@ class TestGatewayListOutputSLZ:
             {
                 "id": gateway_1.id,
                 "name": gateway_1.name,
+                "display_name": gateway_1.display_name_i18n,
                 "description": gateway_1.description,
                 "created_by": gateway_1.created_by,
                 "stages": [
@@ -97,6 +98,7 @@ class TestGatewayListOutputSLZ:
             {
                 "id": gateway_2.id,
                 "name": gateway_2.name,
+                "display_name": gateway_2.display_name_i18n,
                 "description": gateway_2.description,
                 "created_by": gateway_2.created_by,
                 "stages": [],
@@ -304,7 +306,7 @@ class TestGatewayCreateInputSLZ:
             assert slz.errors
             return
 
-        assert slz.validated_data == expected
+        assert slz.validated_data == {**expected, "display_name": expected["name"]}
 
 
 class TestGatewayRetrieveOutputSLZ:
@@ -336,6 +338,7 @@ class TestGatewayRetrieveOutputSLZ:
         expected = {
             "id": fake_gateway.id,
             "name": fake_gateway.name,
+            "display_name": fake_gateway.display_name_i18n,
             "description": fake_gateway.description,
             "maintainers": gateway_administrators,
             "doc_maintainers": {

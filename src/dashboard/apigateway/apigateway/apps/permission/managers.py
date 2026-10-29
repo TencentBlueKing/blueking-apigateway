@@ -19,6 +19,7 @@
 from typing import TYPE_CHECKING, List, Optional
 
 from django.db import models
+from django.db.models import Q
 
 from apigateway.apps.permission.constants import (
     DEFAULT_PERMISSION_EXPIRE_DAYS,
@@ -218,7 +219,7 @@ class AppPermissionRecordManager(models.Manager):
             queryset = queryset.filter(status=status)
 
         if query:
-            queryset = queryset.filter(gateway__name__icontains=query)
+            queryset = queryset.filter(Q(gateway__name__icontains=query) | Q(gateway__display_name__icontains=query))
 
         if order_by:
             queryset = queryset.order_by(order_by)

@@ -145,10 +145,16 @@ class GatewayListApi(generics.ListAPIView):
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
-            queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
+            queryset = (
+                queryset.filter(Q(name__contains=name) | Q(display_name__contains=name))
+                if fuzzy
+                else queryset.filter(name=name)
+            )
 
         if query and fuzzy:
-            queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
+            queryset = queryset.filter(
+                Q(name__icontains=query) | Q(description__icontains=query) | Q(display_name__icontains=query)
+            )
 
         if kind:
             kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
@@ -271,6 +277,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             data={
                 "id": gateway.id,
                 "name": gateway.name,
+                "display_name": gateway.display_name_or_name,
                 "kind": convert_gateway_kind_to_name(gateway.kind),
                 "is_official": gateway.is_official,
             },

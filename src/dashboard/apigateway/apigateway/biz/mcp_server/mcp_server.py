@@ -814,6 +814,7 @@ class MCPServerHandler:
             gw.id: {
                 "id": gw.id,
                 "name": gw.name,
+                "display_name": gw.display_name_or_name,
                 "maintainers": gateway_administrators.get(gw.id, []),
                 "is_official": gw.is_official,
             }
@@ -910,6 +911,7 @@ class MCPServerHandler:
             instance.gateway.id: {
                 "id": instance.gateway.id,
                 "name": instance.gateway.name,
+                "display_name": instance.gateway.display_name_or_name,
                 "maintainers": gateway_administrators,
                 "is_official": instance.gateway.is_official,
             }

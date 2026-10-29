@@ -53,6 +53,7 @@ class AppResourcePermissionOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     api_name = serializers.CharField()
+    gateway_display_name = serializers.CharField(read_only=True)
     gateway_id = serializers.IntegerField(required=False, allow_null=True)
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -237,6 +238,7 @@ class AppPermissionRecordInputSLZ(serializers.Serializer):
 
 class AppPermissionRecordSLZ(serializers.ModelSerializer):
     api_name = serializers.SerializerMethodField()
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
     handled_by = serializers.SerializerMethodField()
@@ -259,6 +261,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
             "reason",
             "expire_days",
             "api_name",
+            "gateway_display_name",
         ]
 
     def get_api_name(self, obj):
@@ -306,6 +309,7 @@ class AppPermissionRecordOutputSLZ(AppPermissionRecordSLZ):
             "reason",
             "expire_days",
             "api_name",
+            "gateway_display_name",
             "resources",
         ]
 

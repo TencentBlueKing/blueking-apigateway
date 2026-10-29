@@ -13,6 +13,24 @@ paths:
       tags:
       - v1
       parameters:
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 网关名称
+        - name: fuzzy
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: 是否启用模糊匹配
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 查询条件
         - name: kind
           in: query
           required: false
@@ -52,6 +70,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 网关展示名
+                          example: 蓝鲸 API 网关
                         is_official:
                           type: boolean
                           description: true 为官方网关，false 为普通网关
@@ -2166,6 +2189,19 @@ paths:
             schema:
               type: object
               properties:
+                display_name:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  description: 网关展示名；不区分大小写且不能重复；创建时不填或为空默认为name，更新时不填保持不变，传空值恢复为name
+                  example: 示例网关
+                display_name_en:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  pattern: '^\s*(?:[A-Za-z][A-Za-z0-9 -]*)?\s*$'
+                  description: 英文展示名；以英文字母开头，仅支持英文字母、数字、空格和横杠；不区分大小写且不能重复；不填或为空表示清空
+                  example: Example Gateway
                 description:
                   type: string
                   description: 网关描述
@@ -2192,6 +2228,8 @@ paths:
                   default: normal
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
             example:
+              display_name: 示例网关
+              display_name_en: Example Gateway
               description: just for test
               maintainers: ["admin"]
               is_public: true
@@ -2222,6 +2260,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: demo
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 网关展示名
+                        example: 蓝鲸 API 网关
                       kind:
                         type: string
                         enum: [normal, programmable, ai]
@@ -2273,13 +2316,13 @@ paths:
           in: query
           schema:
             type: boolean
-          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          description: 是否模糊匹配
           example: true
         - name: keyword
           in: query
           schema:
             type: string
-          description: 搜索关键字，模糊匹配 name 或 description
+          description: 搜索关键字
           example: apigateway
         - name: kind
           in: query
@@ -2310,6 +2353,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 网关展示名
+                          example: 蓝鲸 API 网关
                         kind:
                           type: string
                           enum: [normal, programmable, ai]
@@ -2396,6 +2444,11 @@ paths:
                         name:
                           type: string
                           description: 网关名称
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 网关展示名
+                          example: 蓝鲸 API 网关
                         description:
                           type: string
                           description: 网关描述
@@ -2461,6 +2514,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: bk-apigateway
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 网关展示名
+                        example: 蓝鲸 API 网关
                       kind:
                         type: string
                         enum: [normal, programmable, ai]
@@ -3398,6 +3456,11 @@ paths:
                                 name:
                                   type: string
                                   description: 网关名称
+                                display_name:
+                                  type: string
+                                  maxLength: 64
+                                  description: 网关展示名
+                                  example: 蓝鲸 API 网关
                                 maintainers:
                                   type: array
                                   items:
@@ -4337,6 +4400,11 @@ paths:
                                   type: integer
                                 name:
                                   type: string
+                                display_name:
+                                  type: string
+                                  maxLength: 64
+                                  description: 网关展示名
+                                  example: 蓝鲸 API 网关
                                 maintainers:
                                   type: array
                                   items:
@@ -5481,6 +5549,19 @@ paths:
             schema:
               type: object
               properties:
+                display_name:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  description: 网关展示名；不区分大小写且不能重复；创建时不填或为空默认为name，更新时不填保持不变，传空值恢复为name
+                  example: 示例网关
+                display_name_en:
+                  type: string
+                  nullable: true
+                  maxLength: 64
+                  pattern: '^\s*(?:[A-Za-z][A-Za-z0-9 -]*)?\s*$'
+                  description: 英文展示名；以英文字母开头，仅支持英文字母、数字、空格和横杠；不区分大小写且不能重复；不填或为空表示清空
+                  example: Example Gateway
                 description:
                   type: string
                   description: 网关描述
@@ -5507,6 +5588,8 @@ paths:
                   default: normal
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
             example:
+              display_name: 示例网关
+              display_name_en: Example Gateway
               description: just for test
               maintainers: ["admin"]
               is_public: true
@@ -5531,6 +5614,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: demo
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 网关展示名
+                        example: 蓝鲸 API 网关
                       kind:
                         type: string
                         enum: [normal, programmable, ai]
@@ -6411,7 +6499,7 @@ paths:
           in: query
           schema:
             type: boolean
-          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          description: 是否模糊匹配
           example: true
         - name: kind
           in: query
@@ -6442,6 +6530,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 网关展示名
+                          example: 蓝鲸 API 网关
                         kind:
                           type: string
                           enum: [normal, programmable, ai]
@@ -6515,7 +6608,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、display_name、description、maintainers、doc_maintainers、kind、is_official；不传时默认返回除 maintainers 外的全部字段，maintainers 需显式指定
           example: id,name
       responses:
         '200':
@@ -6536,6 +6629,11 @@ paths:
                         name:
                           type: string
                           description: 网关名称
+                        display_name:
+                          type: string
+                          maxLength: 64
+                          description: 网关展示名
+                          example: 蓝鲸 API 网关
                         description:
                           type: string
                           description: 网关描述
@@ -6604,6 +6702,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: bk-apigateway
+                      display_name:
+                        type: string
+                        maxLength: 64
+                        description: 网关展示名
+                        example: 蓝鲸 API 网关
                       kind:
                         type: string
                         enum: [normal, programmable, ai]
@@ -7002,6 +7105,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: test-gateway
+                        gateway_display_name:
+                          type: string
+                          maxLength: 64
+                          description: 所属网关的展示名
+                          example: 蓝鲸 API 网关
                         gateway_id:
                           type: integer
                           description: 网关ID
@@ -7245,6 +7353,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: test
+                        gateway_display_name:
+                          type: string
+                          maxLength: 64
+                          description: 所属网关的展示名
+                          example: 蓝鲸 API 网关
                         gateway_id:
                           type: integer
                           description: 网关ID
@@ -7301,7 +7414,26 @@ paths:
           description: ''
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                          properties:
+                            gateway_name:
+                              type: string
+                            gateway_display_name:
+                              type: string
+                              maxLength: 64
+                              description: 所属网关的展示名
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -7406,6 +7538,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: test
+                      gateway_display_name:
+                        type: string
+                        maxLength: 64
+                        description: 所属网关的展示名
+                        example: 蓝鲸 API 网关
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -8531,7 +8668,32 @@ paths:
           description: ''
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                          properties:
+                            gateway:
+                              type: object
+                              additionalProperties: true
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+                                display_name:
+                                  type: string
+                                  maxLength: 64
+                                  description: 网关展示名
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -8589,6 +8751,19 @@ paths:
                     type: array
                     items:
                       type: object
+                      properties:
+                        gateway:
+                          type: object
+                          additionalProperties: true
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            display_name:
+                              type: string
+                              maxLength: 64
+                              description: 网关展示名
                       additionalProperties: true
       x-bk-apigateway-resource:
         isPublic: false
@@ -8680,6 +8855,11 @@ paths:
                             name:
                               type: string
                               description: 网关名称
+                            display_name:
+                              type: string
+                              maxLength: 64
+                              description: 网关展示名
+                              example: 蓝鲸 API 网关
                             is_official:
                               type: boolean
                               description: 是否为官方网关
@@ -8791,6 +8971,11 @@ paths:
                             name:
                               type: string
                               description: 网关名称
+                            display_name:
+                              type: string
+                              maxLength: 64
+                              description: 网关展示名
+                              example: 蓝鲸 API 网关
                             is_official:
                               type: boolean
                               description: 是否为官方网关
