@@ -17,58 +17,60 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from apigateway.apis.web.serializers import (
-    ActiveCheckSLZ,
-    ActiveHealthySLZ,
-    ActiveUnhealthySLZ,
-    CheckSLZ,
-    PassiveCheckSLZ,
-    PassiveHealthySLZ,
-    PassiveUnhealthySLZ,
-)
+import pytest
+
+from apigateway.apis.v2.sync import serializers as sync_serializers
+from apigateway.apis.web import serializers as web_serializers
+
+pytestmark = pytest.mark.no_meta_schema
+
+
+@pytest.fixture(params=[web_serializers, sync_serializers], ids=["web", "v2-sync"])
+def serializers(request):
+    return request.param
 
 
 class TestActiveHealthySLZ:
-    def test_valid_active_healthy(self):
+    def test_valid_active_healthy(self, serializers):
         data = {"interval": 10, "successes": 2, "http_statuses": [200, 201]}
-        slz = ActiveHealthySLZ(data=data)
+        slz = serializers.ActiveHealthySLZ(data=data)
         assert slz.is_valid()
         assert slz.validated_data["interval"] == 10
         assert slz.validated_data["successes"] == 2
         assert slz.validated_data["http_statuses"] == [200, 201]
 
-    def test_optional_fields(self):
+    def test_optional_fields(self, serializers):
         data = {}
-        slz = ActiveHealthySLZ(data=data)
+        slz = serializers.ActiveHealthySLZ(data=data)
         assert slz.is_valid()
 
-    def test_invalid_interval(self):
+    def test_invalid_interval(self, serializers):
         data = {"interval": 0}
-        slz = ActiveHealthySLZ(data=data)
+        slz = serializers.ActiveHealthySLZ(data=data)
         assert not slz.is_valid()
 
-    def test_invalid_successes_range(self):
+    def test_invalid_successes_range(self, serializers):
         data = {"successes": 300}
-        slz = ActiveHealthySLZ(data=data)
+        slz = serializers.ActiveHealthySLZ(data=data)
         assert not slz.is_valid()
 
 
 class TestPassiveHealthySLZ:
-    def test_valid_passive_healthy(self):
+    def test_valid_passive_healthy(self, serializers):
         data = {"successes": 2, "http_statuses": [200]}
-        slz = PassiveHealthySLZ(data=data)
+        slz = serializers.PassiveHealthySLZ(data=data)
         assert slz.is_valid()
 
-    def test_no_interval_field(self):
+    def test_no_interval_field(self, serializers):
         """Passive healthy should not have interval field"""
         data = {"successes": 2}
-        slz = PassiveHealthySLZ(data=data)
+        slz = serializers.PassiveHealthySLZ(data=data)
         assert slz.is_valid()
         assert "interval" not in slz.validated_data
 
 
 class TestActiveUnhealthySLZ:
-    def test_valid_active_unhealthy(self):
+    def test_valid_active_unhealthy(self, serializers):
         data = {
             "interval": 5,
             "http_failures": 3,
@@ -76,128 +78,128 @@ class TestActiveUnhealthySLZ:
             "timeouts": 1,
             "http_statuses": [500, 502, 503],
         }
-        slz = ActiveUnhealthySLZ(data=data)
+        slz = serializers.ActiveUnhealthySLZ(data=data)
         assert slz.is_valid()
 
-    def test_optional_fields(self):
+    def test_optional_fields(self, serializers):
         data = {"http_failures": 3}
-        slz = ActiveUnhealthySLZ(data=data)
+        slz = serializers.ActiveUnhealthySLZ(data=data)
         assert slz.is_valid()
 
 
 class TestPassiveUnhealthySLZ:
-    def test_valid_passive_unhealthy(self):
+    def test_valid_passive_unhealthy(self, serializers):
         data = {"http_failures": 3, "http_statuses": [500]}
-        slz = PassiveUnhealthySLZ(data=data)
+        slz = serializers.PassiveUnhealthySLZ(data=data)
         assert slz.is_valid()
 
 
 class TestActiveCheckSLZ:
-    def test_valid_active_check(self):
+    def test_valid_active_check(self, serializers):
         data = {
             "type": "http",
             "timeout": 5,
             "http_path": "/health",
             "healthy": {"interval": 10, "successes": 2, "http_statuses": [200, 201]},
         }
-        slz = ActiveCheckSLZ(data=data)
+        slz = serializers.ActiveCheckSLZ(data=data)
         assert slz.is_valid()
         assert slz.validated_data["type"] == "http"
         assert slz.validated_data["timeout"] == 5
         assert slz.validated_data["http_path"] == "/health"
 
-    def test_default_type(self):
+    def test_default_type(self, serializers):
         data = {"http_path": "/health"}
-        slz = ActiveCheckSLZ(data=data)
+        slz = serializers.ActiveCheckSLZ(data=data)
         assert slz.is_valid()
         assert slz.validated_data["type"] == "http"
 
-    def test_with_unhealthy(self):
+    def test_with_unhealthy(self, serializers):
         data = {
             "type": "http",
             "unhealthy": {"interval": 5, "http_failures": 3, "http_statuses": [500, 502]},
         }
-        slz = ActiveCheckSLZ(data=data)
+        slz = serializers.ActiveCheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_with_both_healthy_and_unhealthy(self):
+    def test_with_both_healthy_and_unhealthy(self, serializers):
         data = {
             "type": "http",
             "http_path": "/health",
             "healthy": {"interval": 10, "successes": 2},
             "unhealthy": {"interval": 5, "http_failures": 3},
         }
-        slz = ActiveCheckSLZ(data=data)
+        slz = serializers.ActiveCheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_https_type(self):
+    def test_https_type(self, serializers):
         data = {"type": "https", "http_path": "/health", "https_verify_certificate": True}
-        slz = ActiveCheckSLZ(data=data)
+        slz = serializers.ActiveCheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_tcp_type(self):
+    def test_tcp_type(self, serializers):
         data = {"type": "tcp", "port": 8080}
-        slz = ActiveCheckSLZ(data=data)
+        slz = serializers.ActiveCheckSLZ(data=data)
         assert slz.is_valid()
 
 
 class TestPassiveCheckSLZ:
-    def test_valid_passive_check(self):
+    def test_valid_passive_check(self, serializers):
         data = {"type": "http", "unhealthy": {"http_failures": 3, "http_statuses": [500, 502]}}
-        slz = PassiveCheckSLZ(data=data)
+        slz = serializers.PassiveCheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_default_type(self):
+    def test_default_type(self, serializers):
         data = {"unhealthy": {"http_failures": 3}}
-        slz = PassiveCheckSLZ(data=data)
+        slz = serializers.PassiveCheckSLZ(data=data)
         assert slz.is_valid()
         assert slz.validated_data["type"] == "http"
 
-    def test_with_healthy(self):
+    def test_with_healthy(self, serializers):
         data = {"type": "http", "healthy": {"successes": 2, "http_statuses": [200]}}
-        slz = PassiveCheckSLZ(data=data)
+        slz = serializers.PassiveCheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_with_both_healthy_and_unhealthy(self):
+    def test_with_both_healthy_and_unhealthy(self, serializers):
         data = {
             "type": "http",
             "healthy": {"successes": 2, "http_statuses": [200]},
             "unhealthy": {"http_failures": 3, "http_statuses": [500]},
         }
-        slz = PassiveCheckSLZ(data=data)
+        slz = serializers.PassiveCheckSLZ(data=data)
         assert slz.is_valid()
 
 
 class TestCheckSLZ:
-    def test_active_only(self):
+    def test_active_only(self, serializers):
         data = {"active": {"type": "http", "http_path": "/health"}}
-        slz = CheckSLZ(data=data)
+        slz = serializers.CheckSLZ(data=data)
         assert slz.is_valid()
         assert slz.validated_data["active"] is not None
         assert slz.validated_data.get("passive") is None
 
-    def test_passive_only_invalid(self):
+    def test_passive_only_invalid(self, serializers):
         data = {"passive": {"type": "http", "unhealthy": {"http_failures": 3}}}
-        slz = CheckSLZ(data=data)
+        slz = serializers.CheckSLZ(data=data)
         assert not slz.is_valid()
         assert "active" in slz.errors
 
-    def test_null_active_with_passive_invalid(self):
+    def test_null_active_with_passive_invalid(self, serializers):
         data = {
             "active": None,
             "passive": {"type": "http", "unhealthy": {"http_failures": 3}},
         }
-        slz = CheckSLZ(data=data)
+        slz = serializers.CheckSLZ(data=data)
         assert not slz.is_valid()
         assert "active" in slz.errors
 
-    def test_neither_active_nor_passive(self):
+    def test_neither_active_nor_passive(self, serializers):
         data = {}
-        slz = CheckSLZ(data=data)
+        slz = serializers.CheckSLZ(data=data)
         assert not slz.is_valid()
         assert "active" in slz.errors
 
-    def test_active_with_full_config(self):
+    def test_active_with_full_config(self, serializers):
         data = {
             "active": {
                 "type": "http",
@@ -208,10 +210,10 @@ class TestCheckSLZ:
                 "unhealthy": {"interval": 5, "http_failures": 3, "http_statuses": [500, 502, 503]},
             }
         }
-        slz = CheckSLZ(data=data)
+        slz = serializers.CheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_active_with_passive_full_config(self):
+    def test_active_with_passive_full_config(self, serializers):
         data = {
             "active": {
                 "type": "http",
@@ -225,5 +227,5 @@ class TestCheckSLZ:
                 "unhealthy": {"http_failures": 3, "tcp_failures": 2, "http_statuses": [500, 502]},
             },
         }
-        slz = CheckSLZ(data=data)
+        slz = serializers.CheckSLZ(data=data)
         assert slz.is_valid()
