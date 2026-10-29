@@ -122,13 +122,11 @@ dependencies = [
 dev = [
     { name = "coverage" },
     { name = "django-dynamic-fixture" },
-    { name = "django-nose" },
     { name = "faker" },
     { name = "fakeredis" },
     { name = "import-linter" },
     { name = "ipython" },
     { name = "mypy" },
-    { name = "nose" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -140,7 +138,6 @@ dev = [
     { name = "responses" },
     { name = "rope" },
     { name = "ruff" },
-    { name = "tox" },
     { name = "types-cachetools" },
     { name = "types-docutils" },
     { name = "types-pymysql" },
@@ -235,13 +232,11 @@ requires-dist = [
 dev = [
     { name = "coverage", specifier = "==7.16.1" },
     { name = "django-dynamic-fixture", specifier = "==4.0.1" },
-    { name = "django-nose", specifier = "==1.4.7" },
     { name = "faker", specifier = "==40.39.0" },
     { name = "fakeredis", specifier = "==2.38.0" },
     { name = "import-linter", specifier = "==2.15" },
     { name = "ipython", specifier = "==9.17.1" },
     { name = "mypy", specifier = "==2.3.1" },
-    { name = "nose", specifier = "==1.3.7" },
     { name = "pre-commit", specifier = "==4.6.2" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-benchmark", specifier = "==5.3.0" },
@@ -253,7 +248,6 @@ dev = [
     { name = "responses", specifier = "==0.26.3" },
     { name = "rope", specifier = "==1.14.0" },
     { name = "ruff", specifier = "==0.16.7" },
-    { name = "tox", specifier = "==4.61.4" },
     { name = "types-cachetools", specifier = "==7.0.0.20260713" },
     { name = "types-docutils", specifier = "==0.23.0.20260911" },
     { name = "types-pymysql", specifier = "==1.2.0.20260807" },
@@ -967,18 +961,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cb/3e/563965173d4cbb5fc308087e7b3d11a115b7b67273d093622480b1e31f78/django_filter-26.1.tar.gz", hash = "sha256:66ea04031b068c77c86e1ac26ced7a3f8f13ce797f5795751707e3deefc58054", size = 144299, upload-time = "2026-07-11T09:27:02.767Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1f/01/afffed1e3c4540fb75bf550a18b6176a9f6371b5f3e52b69a28995b6480c/django_filter-26.1-py3-none-any.whl", hash = "sha256:7d98ef2899218e6242619b532cb1b95af14e09dfcf74844aecb550ad27b59ff2", size = 94069, upload-time = "2026-07-11T09:27:01.012Z" },
-]
-
-[[package]]
-name = "django-nose"
-version = "1.4.7"
-source = { registry = "https://pypi.org/simple/" }
-dependencies = [
-    { name = "nose" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/d6/a340da9854cf0a2b54e23cf9147911b1e15a831911428983dd0158572ce9/django-nose-1.4.7.tar.gz", hash = "sha256:a4885cd002d65fd2de96e2bb2563ef477c3fbe207009360c015fca5c3b5561b7", size = 45041, upload-time = "2020-08-20T02:49:43.355Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/5e/804eda7b128162d215de14c0572717f16508cbdb899d4e839f51cef5481e/django_nose-1.4.7-py2.py3-none-any.whl", hash = "sha256:304adc447ee35b889b733d7106004f98aa401d8387ddcada5d4f2239d86790a9", size = 26470, upload-time = "2020-08-20T02:49:13.44Z" },
 ]
 
 [[package]]
@@ -1858,15 +1840,6 @@ wheels = [
 ]
 
 [[package]]
-name = "nose"
-version = "1.3.7"
-source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/58/a5/0dc93c3ec33f4e281849523a5a913fa1eea9a3068acfa754d44d88107a44/nose-1.3.7.tar.gz", hash = "sha256:f1bffef9cbc82628f6e7d7b40d7e255aefaa1adb6a1b1d26c69a8b79e6208a98", size = 280488, upload-time = "2015-06-02T09:12:32.961Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/d8/dd071918c040f50fa1cf80da16423af51ff8ce4a0f2399b7bf8de45ac3d9/nose-1.3.7-py3-none-any.whl", hash = "sha256:9ff7c6cc443f8c51994b34a667bbcf45afd6d945be7477b52e97516fd17c53ac", size = 154731, upload-time = "2015-06-02T09:12:40.57Z" },
-]
-
-[[package]]
 name = "openai"
 version = "3.14.0"
 source = { registry = "https://pypi.org/simple/" }
@@ -2537,18 +2510,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyproject-api"
-version = "1.11.0"
-source = { registry = "https://pypi.org/simple/" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/bd/2f985c12bf33fdd8637e3a8f9418d6806f177601dee7c4924d0b2bb28650/pyproject_api-1.11.0.tar.gz", hash = "sha256:b8807d85a293e6c9f133e6575946fed45f1d42b22d58c780b33aa2421a799549", size = 23787, upload-time = "2026-07-21T13:09:33.744Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/6a/2822ee12bafe87af8f6cc620f7d1f126e77f82ce56ba888b94a9af5a979c/pyproject_api-1.11.0-py3-none-any.whl", hash = "sha256:860060c8832dce983b5eec6f41c4c43eb3ec06ff7332387a63acdf5ca27b68d8", size = 13275, upload-time = "2026-07-21T13:09:32.559Z" },
-]
-
-[[package]]
 name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple/" }
@@ -3059,15 +3020,6 @@ wheels = [
 ]
 
 [[package]]
-name = "tomli-w"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/19/75/241269d1da26b624c0d5e110e8149093c759b7a286138f4efd61a60e75fe/tomli_w-1.2.0.tar.gz", hash = "sha256:2dd14fac5a47c27be9cd4c976af5a12d87fb1f0b4512f81d69cce3b35ae25021", size = 7184, upload-time = "2025-01-15T12:07:24.262Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/18/c86eb8e0202e32dd3df50d43d7ff9854f8e0603945ff398974c1d91ac1ef/tomli_w-1.2.0-py3-none-any.whl", hash = "sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90", size = 6675, upload-time = "2025-01-15T12:07:22.074Z" },
-]
-
-[[package]]
 name = "tongsuopy-crayon"
 version = "1.0.2b6"
 source = { registry = "https://pypi.org/simple/" }
@@ -3087,27 +3039,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/e6/6f9fa36b108b6049b0d39adf61bfdc020820281c67e07be0662e466507e1/tongsuopy_crayon-1.0.2b6-cp36-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:ed9aaac16b3f04483ed241b90a8569ff0602b9788ffa3d3d0d822d54a8ca1d7f", size = 2615789, upload-time = "2023-06-10T14:32:33.095Z" },
     { url = "https://files.pythonhosted.org/packages/95/96/598ed9914fba6ad948115c3bda348872cc00cb4206ac849c190b94e4e1a1/tongsuopy_crayon-1.0.2b6-cp36-abi3-win32.whl", hash = "sha256:33353365a7e33cec32cc6516ebe5994132c54a60826b49e2c6af69bbea66480e", size = 1183967, upload-time = "2023-06-10T14:42:23.301Z" },
     { url = "https://files.pythonhosted.org/packages/c3/7f/69ad9442d30dc8eb28f85ee2703675ad357c52563283ca09a1146d89f377/tongsuopy_crayon-1.0.2b6-cp36-abi3-win_amd64.whl", hash = "sha256:8aa57bd5c7df7a9c658b1b1ef585b80f7d7a39ee23465db69f0d5222ac4aa339", size = 1427082, upload-time = "2023-06-10T14:35:37.967Z" },
-]
-
-[[package]]
-name = "tox"
-version = "4.61.4"
-source = { registry = "https://pypi.org/simple/" }
-dependencies = [
-    { name = "cachetools" },
-    { name = "colorama" },
-    { name = "filelock" },
-    { name = "packaging" },
-    { name = "platformdirs" },
-    { name = "pluggy" },
-    { name = "pyproject-api" },
-    { name = "python-discovery" },
-    { name = "tomli-w" },
-    { name = "virtualenv" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/33/57/5a24f6f81ee81a25d34773045db61ddef3a76ed43e6fbd0fca2657678ad6/tox-4.61.4.tar.gz", hash = "sha256:d3fa82dc2fe847fe45b576ed0614e850a674aadec3a664f409e2bf295c473e20", size = 308140, upload-time = "2026-09-09T01:37:12.183Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/ca/1c3c0e8c21caa393648ec6d62ee14aa802ea0d94553ceb2dd71f50b85a10/tox-4.61.4-py3-none-any.whl", hash = "sha256:1ec27a26f485c408a3f128722959086099894955d1eb74ab973e233bd362e99e", size = 228143, upload-time = "2026-09-09T01:37:10.621Z" },
 ]
 
 [[package]]

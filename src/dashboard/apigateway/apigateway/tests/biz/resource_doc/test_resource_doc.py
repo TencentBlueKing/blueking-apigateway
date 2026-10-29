@@ -32,42 +32,24 @@ class TestResourceDocHandler:
         result = ResourceDocHandler.get_resource_doc_tmpl("bk-user", "unknown")
         assert result == ""
 
-    def test_get_docs(self, fake_resource):
-        result = ResourceDocHandler.get_docs([])
-        assert result == {}
+    def test_get_docs_by_resource_ids_empty(self):
+        assert ResourceDocHandler.get_docs_by_resource_ids([]) == {}
 
+    def test_get_docs_by_resource_ids(self, fake_resource, fake_resource1, fake_resource2):
         zh_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="zh")
-        result = ResourceDocHandler.get_docs([fake_resource.id])
-        assert result == {
-            fake_resource.id: [
-                {
-                    "id": zh_doc.id,
-                    "language": "zh",
-                }
-            ]
-        }
-
         en_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="en")
-        result = ResourceDocHandler.get_docs([fake_resource.id])
-        assert result == {
+        other_doc = G(ResourceDoc, resource_id=fake_resource1.id, gateway=fake_resource1.gateway, language="zh")
+        G(ResourceDoc, resource_id=fake_resource2.id, gateway=fake_resource2.gateway, language="zh")
+
+        result = ResourceDocHandler.get_docs_by_resource_ids([fake_resource.id, fake_resource1.id])
+
+        expected = {
             fake_resource.id: [
-                {
-                    "id": zh_doc.id,
-                    "language": "zh",
-                },
-                {
-                    "id": en_doc.id,
-                    "language": "en",
-                },
-            ]
+                {"id": zh_doc.id, "language": "zh"},
+                {"id": en_doc.id, "language": "en"},
+            ],
+            fake_resource1.id: [{"id": other_doc.id, "language": "zh"}],
         }
-
-    def test_get_docs_by_resource(self, fake_resource):
-        G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="zh")
-        G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="en")
-
-        result = ResourceDocHandler.get_docs_by_resource_ids([])
-        assert result == {}
-
-        result = ResourceDocHandler.get_docs_by_resource_ids([fake_resource.id])
-        assert len(result[fake_resource.id]) == 2
+        assert {resource_id: sorted(docs, key=lambda doc: doc["id"]) for resource_id, docs in result.items()} == {
+            resource_id: sorted(docs, key=lambda doc: doc["id"]) for resource_id, docs in expected.items()
+        }

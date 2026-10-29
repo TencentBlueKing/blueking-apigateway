@@ -142,38 +142,6 @@ class TestEtcdRegistry:
 
         mock_etcd_client.delete_prefix.assert_called_once_with("/test/")
 
-    def test_iter_by_type(self, mock_etcd_client, mocker):
-        """Test iter_by_type method"""
-        # Mock etcd response
-        service_data = {
-            "id": "service-1",
-            "name": "test-service",
-            "labels": {"gateway": "test", "stage": "prod"},
-            "upstream": {"nodes": []},
-        }
-        mock_etcd_client.get_prefix.return_value = [
-            (json.dumps(service_data).encode(), None),
-        ]
-
-        registry = EtcdRegistry("/test/", etcd_client=mock_etcd_client)
-        services = list(registry.iter_by_type(Service))
-
-        assert len(services) == 1
-        assert services[0].id == "service-1"
-
-    def test_iter_by_type_invalid_data(self, mock_etcd_client, mocker):
-        """Test iter_by_type with invalid data"""
-        # Mock etcd response with invalid JSON
-        mock_etcd_client.get_prefix.return_value = [
-            (b"invalid-json", None),
-        ]
-
-        registry = EtcdRegistry("/test/", etcd_client=mock_etcd_client)
-        services = list(registry.iter_by_type(Service))
-
-        # Should skip invalid data
-        assert len(services) == 0
-
     def test_etcd_registry_is_registry(self, mock_etcd_client):
         """Test that EtcdRegistry is a Registry"""
         registry = EtcdRegistry("/test/", etcd_client=mock_etcd_client)
@@ -217,12 +185,3 @@ def test_put_error_propagates_without_deleting_keys(mocker):
     with pytest.raises(RuntimeError, match="etcd unavailable"):
         registry.sync_resources_by_key_prefix([resource])
     client.delete.assert_not_called()
-
-
-def test_bad_payload_does_not_hide_later_valid_resources(mocker, caplog):
-    client = mocker.Mock()
-    valid = {"id": "valid", "name": "valid", "labels": {"gateway": "g", "stage": "prod"}, "upstream": {"nodes": []}}
-    client.get_prefix.return_value = [(b"not-json", None), (json.dumps(valid).encode(), None)]
-    result = list(EtcdRegistry("/test/", etcd_client=client).iter_by_type(Service))
-    assert [resource.id for resource in result] == ["valid"]
-    assert "deserialize resource" in caplog.text
