@@ -172,7 +172,6 @@ exclude = [
     ".pytype",
     ".ruff_cache",
     ".svn",
-    ".tox",
     ".venv",
     "__pypackages__",
     "_build",

@@ -43,12 +43,10 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
-.tox/
 .nox/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
@@ -134,7 +132,6 @@ tmp
 
 # End of https://www.gitignore.io/api/python
 *.db
-apigateway/apigateway/.noseids
 .vscode/
 .envrc
 apigateway/apigateway/.gitignore
