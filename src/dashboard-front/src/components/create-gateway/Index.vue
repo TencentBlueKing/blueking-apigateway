@@ -31,7 +31,8 @@
       :rules="rules"
     >
       <BkFormItem
-        :label="t('名称')"
+        :label="t('网关 ID')"
+        class="form-item-with-tips"
         property="name"
         required
       >
@@ -41,10 +42,27 @@
           clearable
           show-word-limit
         />
+        <p class="common-form-tips">
+          {{ t('网关的唯一标识，创建后不可更改') }}
+        </p>
       </BkFormItem>
-      <span class="common-form-tips form-item-name-tips">
-        {{ t('网关的唯一标识，创建后不可更改') }}
-      </span>
+      <BkFormItem
+        :label="t('网关展示名')"
+        class="form-item-with-tips"
+        property="display_name"
+        required
+      >
+        <BkInput
+          v-model.trim="formData.display_name"
+          :maxlength="64"
+          :placeholder="t('请输入网关展示名')"
+          clearable
+          show-word-limit
+        />
+        <p class="common-form-tips">
+          {{ t('用于页面展示，可随时修改') }}
+        </p>
+      </BkFormItem>
       <BkFormItem
         v-if="formData.kind === 1"
         :label="t('开发语言')"
@@ -198,6 +216,7 @@ import {
   checkRepoAuthorization,
   patchGateway,
 } from '@/services/source/gateway.ts';
+import { useGatewayDisplayNameCheck } from '@/hooks';
 
 export type ParamType = IGatewayCreateInputSLZ & {
   id?: number
@@ -229,6 +248,7 @@ const envStore = useEnv();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const formData = ref<ParamType>({
   name: '',
+  display_name: '',
   description: '',
   is_public: true,
   kind: 0,
@@ -253,6 +273,7 @@ let authPollingTimer: ReturnType<typeof setInterval> | null = null;
 
 const defaultFormData = ref({
   name: '',
+  display_name: '',
   description: '',
   is_public: true,
   kind: 0,
@@ -269,11 +290,30 @@ const defaultFormData = ref({
 });
 
 const isNameAvailable = ref(true);
+
+const { checkDisplayName } = useGatewayDisplayNameCheck({
+  gatewayId: () => formData.value.id,
+  gatewayName: () => formData.value.name,
+  displayName: () => formData.value.display_name,
+});
+
 const rules = {
+  'display_name': [
+    {
+      required: true,
+      message: t('请输入网关展示名'),
+      trigger: 'blur',
+    },
+    {
+      validator: () => checkDisplayName(),
+      message: t('展示名已被使用'),
+      trigger: 'blur',
+    },
+  ],
   'name': [
     {
       required: true,
-      message: t('请填写名称'),
+      message: t('请填写网关 ID'),
       trigger: 'blur',
     },
     {
@@ -438,6 +478,10 @@ const handleConfirmCreate = async () => {
 
     submitLoading.value = true;
     const payload = cloneDeep(formData.value);
+    // 展示名有独立编辑入口；未实际修改时不提交该字段，避免用按当前语言返回的展示名覆盖后端默认（中文）展示名
+    if (payload.display_name === defaultFormData.value.display_name) {
+      delete (payload as Record<string, any>).display_name;
+    }
     if (payload.kind !== 1) {
       payload.extra_info = undefined;
     }
@@ -475,6 +519,14 @@ const handleCancel = () => {
 .form-item-name-tips {
   position: relative;
   top: -20px;
+}
+
+.form-item-with-tips {
+
+  .common-form-tips {
+    margin: 4px 0 0;
+    line-height: 18px;
+  }
 }
 
 .common-form-tips {

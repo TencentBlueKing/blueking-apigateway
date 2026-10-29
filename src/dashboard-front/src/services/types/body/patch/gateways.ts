@@ -2,6 +2,7 @@ import type { IAuthConfig } from '@/types/resource';
 
 // PATCH /gateways/{gateway_id}/ - 更新网关部分信息
 export interface IGatewayUpdateInputSLZ {
+  display_name?: string // 网关展示名
   description?: string // 网关描述
   maintainers: string[] // 网关维护人员
   doc_maintainers?: {

@@ -20,7 +20,7 @@
   <div class="detail-field">
     <div
       class="detail-field-label"
-      :style="{ width: `${labelWidth}px` }"
+      :style="{ width: `${resolvedLabelWidth}px` }"
     >
       {{ label }}：
     </div>
@@ -40,10 +40,18 @@ interface IProps {
 const {
   label = '',
   value = '',
-  labelWidth = 132,
+  // 0 表示未显式指定，按语言使用默认宽度
+  labelWidth = 0,
 } = defineProps<IProps>();
 
+const { locale } = useI18n();
+
 const displayValue = computed(() => value || '--');
+// 英文标签明显长于中文，默认给更宽的一列，避免标签溢出压到取值上
+const resolvedLabelWidth = computed(() => {
+  if (labelWidth > 0) return labelWidth;
+  return locale.value.startsWith('en') ? 168 : 132;
+});
 </script>
 
 <style lang="scss" scoped>
@@ -63,7 +71,9 @@ const displayValue = computed(() => value || '--');
   padding-right: 16px;
   color: #63656e;
   text-align: right;
-  white-space: nowrap;
+  // 标签超出列宽时换行，而不是溢出后与取值重叠
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .detail-field-value {

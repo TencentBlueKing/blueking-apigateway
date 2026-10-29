@@ -17,6 +17,7 @@
  */
 import http from '../http';
 import type {
+  IDisplayNameCheckResult,
   IGatewayCheckNameAvailableOutput,
   IGatewayCheckRepoAuthOutput,
   IGatewayDevGuidelineOutput,
@@ -64,6 +65,14 @@ export const putGatewayBasics = (id: number, data: IGatewayUpdateInputSLZ) =>
 
 export const checkNameAvailable = (param: IGatewaysCheckNameAvailableReadQuery) =>
   http.get<IGatewayCheckNameAvailableOutput>(`${path}/check-name-available/`, param);
+
+// 新建网关时检查展示名是否可用
+export const checkDisplayNameAvailable = (displayName: string) =>
+  http.post<IDisplayNameCheckResult>(`${path}/check-display-name-available/`, { display_name: displayName });
+
+// 编辑网关时检查展示名是否可用，网关 ID 仅放在 URL 中，用于排除自身
+export const checkDisplayNameAvailableForUpdate = (id: number, displayName: string) =>
+  http.post<IDisplayNameCheckResult>(`${path}/${id}/check-display-name-available/`, { display_name: displayName });
 
 export const checkRepoAuthorization = () =>
   http.get<IGatewayCheckRepoAuthOutput>(`${path}/repo-authorization/`);

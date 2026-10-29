@@ -51,7 +51,7 @@
           v-model="filterData.keyword"
           class="flex-grow-1"
           type="search"
-          :placeholder="t('请输入网关名称或描述')"
+          :placeholder="t('请输入网关展示名、ID 或描述')"
           clearable
         />
         <div class="plugin-filter">
@@ -247,6 +247,7 @@ import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useFeatureFlag } from '@/stores';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import AgTable from '@/components/ag-table/Index.vue';
+import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 interface ICategory extends ISystemCategorySLZ { _navId: string }
 
@@ -301,8 +302,8 @@ const gatewayCell = (render: (row: GatewayRow) => ReturnType<TableCell>): TableC
 const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'name',
-    title: t('网关名称'),
-    width: 240,
+    title: t('网关'),
+    width: 280,
     cell: gatewayCell((row) => {
       if (!row?.name) {
         return '--';
@@ -334,12 +335,12 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           </div>
           <div
             v-bk-tooltips={{
-              content: row.name ?? '',
+              content: getGatewayFullName(row),
               placement: 'top',
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
-            class="truncate color-#3a84ff cursor-pointer mr-4px font-bold"
+            class="min-w-0 cursor-pointer mr-4px"
             onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
               e,
               row,
@@ -347,7 +348,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
             onMouseleave={() => tableRef.value?.handleCellLeave({ row })}
             onClick={() => gotoDetails(row)}
           >
-            { row.name }
+            <div class="truncate color-#3a84ff font-bold">
+              { getGatewayDisplayName(row) }
+            </div>
+            {
+              hasDistinctDisplayName(row)
+                ? <div class="truncate text-12px color-#979ba5 font-normal">{ row.name }</div>
+                : ''
+            }
           </div>
           {
             row.is_official
