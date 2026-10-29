@@ -76,6 +76,7 @@ from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
+from .permissions import GatewayAppPermissionApplyPermission
 from .serializers import (
     GatewayAppPermissionApplyOutputSLZ,
     GatewayResourceDetailInputSLZ,
@@ -262,7 +263,7 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
-    permission_classes = [OpenAPIV2GatewayNamePermission]
+    permission_classes = [OpenAPIV2GatewayNamePermission, GatewayAppPermissionApplyPermission]
     serializer_class = serializers.GatewayAppPermissionApplyInputSLZ
 
     @transaction.atomic
