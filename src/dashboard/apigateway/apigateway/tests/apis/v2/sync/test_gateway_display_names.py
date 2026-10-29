@@ -4,12 +4,11 @@ import pytest
 from django.db import IntegrityError
 from django.utils.translation import override, trans_real
 from django_dynamic_fixture import G
-from rest_framework.exceptions import APIException, ValidationError
 
-from apigateway.apis.gateway_name import gateway_name_validation_errors, validate_sync_gateway_names
 from apigateway.apis.open.gateway.serializers import GatewaySyncInputSLZ as V1GatewaySyncInputSLZ
 from apigateway.apis.v2.sync.serializers import GatewaySyncInputSLZ as V2GatewaySyncInputSLZ
 from apigateway.common.error_codes import error_codes
+from apigateway.common.exception_handler import custom_exception_handler
 from apigateway.core.models import Gateway
 from apigateway.service.contexts import GatewayAuthContext
 
@@ -160,15 +159,17 @@ def test_sync_serializer_preserves_default_omission(serializer):
     assert "display_name_en" not in slz.validated_data
 
 
+@pytest.mark.parametrize("serializer", [V1GatewaySyncInputSLZ, V2GatewaySyncInputSLZ])
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])
-def test_queryset_conflict_uses_active_translation(monkeypatch, column):
+def test_queryset_conflict_uses_active_translation(monkeypatch, column, serializer):
     catalog = trans_real.DjangoTranslation("zh-cn")
     catalog._catalog["This display name is already in use."] = "展示名已被使用。"
     monkeypatch.setitem(trans_real._translations, "zh-cn", catalog)
     G(Gateway, **{column: "Taken"})
-    with override("zh-cn"), pytest.raises(ValidationError) as exc, gateway_name_validation_errors():
-        validate_sync_gateway_names({"name": "candidate", column: "Taken"})
-    assert str(exc.value.detail[column][0]) == "展示名已被使用。"
+    slz = serializer(data={"name": "candidate", column: "Taken"})
+    with override("zh-cn"):
+        assert not slz.is_valid()
+        assert str(slz.errors[column][0]) == "展示名已被使用。"
 
 
 @pytest.mark.parametrize(
@@ -182,10 +183,9 @@ def test_queryset_conflict_uses_active_translation(monkeypatch, column):
     ],
 )
 def test_database_errors_return_general_error(error):
-    with pytest.raises(APIException) as exc, gateway_name_validation_errors():
-        raise error
-    assert exc.value.status_code == 500
-    assert str(error) not in str(exc.value)
+    response = custom_exception_handler(error, {})
+    assert response.status_code == 500
+    assert str(error) not in str(response.data)
 
 
 def test_sync_fallback_conflict_requires_explicit_available_display_name(request_view, sync_view, default_data_plane):
@@ -210,25 +210,30 @@ def test_sync_queryset_conflict_precedes_save(request_view, sync_view, default_d
     assert gateway.display_name == "Original"
 
 
-def test_sync_omitted_display_names_need_no_validation_queries(django_assert_num_queries):
-    gateway = G(Gateway, display_name="Current", display_name_en="English")
-    data = {"name": gateway.name}
+@pytest.mark.parametrize("serializer", [V1GatewaySyncInputSLZ, V2GatewaySyncInputSLZ])
+def test_sync_omitted_display_names_need_no_validation_queries(django_assert_num_queries, serializer):
+    gateway = G(Gateway, name="sync-gateway", display_name="Current", display_name_en="English")
+    slz = serializer(gateway, data={"name": gateway.name})
     with django_assert_num_queries(0):
-        validate_sync_gateway_names(data, gateway)
-    assert data == {"name": gateway.name}
+        assert slz.is_valid(), slz.errors
+    assert "display_name" not in slz.validated_data
+    assert "display_name_en" not in slz.validated_data
 
 
-def test_sync_english_update_only_queries_english(django_assert_num_queries):
-    gateway = G(Gateway, display_name="Current")
-    data = {"name": gateway.name, "display_name_en": " New English "}
+@pytest.mark.parametrize("serializer", [V1GatewaySyncInputSLZ, V2GatewaySyncInputSLZ])
+def test_sync_english_update_only_queries_english(django_assert_num_queries, serializer):
+    gateway = G(Gateway, name="sync-gateway", display_name="Current")
+    slz = serializer(gateway, data={"name": gateway.name, "display_name_en": " New English "})
     with django_assert_num_queries(1):
-        validate_sync_gateway_names(data, gateway)
-    assert data == {"name": gateway.name, "display_name_en": "New English"}
+        assert slz.is_valid(), slz.errors
+    assert "display_name" not in slz.validated_data
+    assert slz.validated_data["display_name_en"] == "New English"
 
 
-def test_sync_reports_both_independent_conflicts():
-    G(Gateway, display_name="Taken Display", display_name_en="Taken English")
-    data = {"name": "candidate", "display_name": "Taken Display", "display_name_en": "Taken English"}
-    with pytest.raises(ValidationError) as exc, gateway_name_validation_errors():
-        validate_sync_gateway_names(data)
-    assert set(exc.value.detail) == {"display_name", "display_name_en"}
+@pytest.mark.parametrize("serializer", [V1GatewaySyncInputSLZ, V2GatewaySyncInputSLZ])
+@pytest.mark.parametrize("field", ["display_name", "display_name_en"])
+def test_same_field_conflicts_are_global(serializer, field):
+    G(Gateway, tenant_id="other-tenant", status=0, is_public=False, is_deprecated=True, **{field: "Asset Hub"})
+    slz = serializer(data={"name": "candidate", field: " ASSET HUB "})
+    assert not slz.is_valid()
+    assert slz.errors[field][0].code == "unique"

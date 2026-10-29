@@ -238,7 +238,7 @@ class AppPermissionRecordInputSLZ(serializers.Serializer):
 
 class AppPermissionRecordSLZ(serializers.ModelSerializer):
     api_name = serializers.SerializerMethodField()
-    gateway_display_name = serializers.CharField(source="gateway.display_name_i18n", read_only=True)
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
     handled_by = serializers.SerializerMethodField()

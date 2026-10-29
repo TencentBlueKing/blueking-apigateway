@@ -19,7 +19,6 @@ import logging
 from typing import List, Optional
 
 from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -27,7 +26,6 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
-from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.rbac.constants import GatewayActionEnum, GatewayRoleEnum
@@ -60,7 +58,6 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
 )
-from apigateway.core.gateway_name import validate_display_name
 from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
@@ -346,13 +343,10 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
         )
         return OKJsonResponse(data=slz.data)
 
-    @transaction.atomic
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            check_user_can_access_gateway(instance.tenant_mode, instance.tenant_id, get_user_tenant_id(request))
         data_before = get_model_dict(instance)
 
         slz = GatewayUpdateInputSLZ(instance=instance, data=request.data, partial=partial)
@@ -638,32 +632,19 @@ class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
     gateway_action = GatewayActionEnum.MANAGE_GATEWAY.value
 
     def post(self, request, *args, **kwargs):
+        gateway_id = kwargs.get("gateway_id")
+        if gateway_id is not None and settings.ENABLE_MULTI_TENANT_MODE:
+            gateway = request.gateway
+            check_user_can_access_gateway(gateway.tenant_mode, gateway.tenant_id, get_user_tenant_id(request))
+
         slz = GatewayCheckDisplayNameAvailableInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
-        data = slz.validated_data
-        gateway = None
-        if "gateway_id" in data:
-            # The normal permission pass has no URL gateway_id for this endpoint.
-            self.kwargs["gateway_id"] = data["gateway_id"]
-            self.check_permissions(request)
-            gateway = request.gateway
-            if settings.ENABLE_MULTI_TENANT_MODE:
-                check_user_can_access_gateway(gateway.tenant_mode, gateway.tenant_id, get_user_tenant_id(request))
-
-        name = gateway.name if gateway is not None else data["name"]
-        display_name = data.get("display_name", gateway.display_name if gateway is not None else None)
-        conflicts = []
-        try:
-            validate_display_name(
-                display_name,
-                name=name,
-                gateways=Gateway.objects.exclude(pk=gateway.pk if gateway is not None else None),
-            )
-        except DjangoValidationError as exc:
-            if any(error.code != "unique" for error in exc.error_dict["display_name"]):
-                raise ValidationError(exc.message_dict) from exc
-            conflicts = [{"field": "display_name", "language": "default", "reason": "unique"}]
-        return OKJsonResponse(data={"is_available": not conflicts, "conflicts": conflicts})
+        is_available = (
+            not Gateway.objects.exclude(pk=gateway_id)
+            .filter(display_name__iexact=slz.validated_data["display_name"])
+            .exists()
+        )
+        return OKJsonResponse(data={"is_available": is_available})
 
 
 @method_decorator(

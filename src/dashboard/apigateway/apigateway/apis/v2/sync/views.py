@@ -27,7 +27,6 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.gateway_name import gateway_name_validation_errors
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
@@ -123,15 +122,14 @@ class GatewaySyncApi(generics.CreateAPIView):
             data_plane_names=slz.validated_data.get("data_planes"),
         )
 
-        with gateway_name_validation_errors():
-            gateway = GatewayHandler.sync_gateway(
-                gateway,
-                slz.validated_data,
-                request.app.app_code,
-                username,
-                None,
-                data_plane_ids,
-            )
+        gateway = GatewayHandler.sync_gateway(
+            gateway,
+            slz.validated_data,
+            request.app.app_code,
+            username,
+            None,
+            data_plane_ids,
+        )
 
         # record audit log
         Auditor.record_gateway_op_success(

@@ -725,7 +725,7 @@ class UserMCPServerListApi(generics.ListAPIView):
             gateway.id: {
                 "id": gateway.id,
                 "name": gateway.name,
-                "display_name": gateway.display_name_i18n,
+                "display_name": gateway.display_name_or_name,
                 "maintainers": gateway_administrators_map.get(gateway.id, []),
                 "is_official": gateway.is_official,
             }

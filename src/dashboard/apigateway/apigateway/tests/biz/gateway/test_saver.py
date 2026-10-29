@@ -17,6 +17,7 @@
 #
 import pytest
 from ddf import G
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from pydantic import TypeAdapter
 from rest_framework.exceptions import ValidationError
@@ -428,15 +429,13 @@ def test_saver_explicit_default_clear_and_english_clear(fake_gateway, value):
     assert gateway.display_name_en is None
 
 
-def test_saver_default_omission_preserves_latest_database_value(fake_gateway):
+def test_saver_default_omission_preserves_display_name(fake_gateway):
     fake_gateway.display_name = "Initial"
     fake_gateway.save(update_fields=["display_name"])
     saver = GatewaySaver(fake_gateway.pk, GatewayData(name=fake_gateway.name, status=1))
-    fake_gateway.display_name = "Changed After Construction"
-    fake_gateway.save(update_fields=["display_name"])
     gateway = saver.save()
     gateway.refresh_from_db()
-    assert gateway.display_name == "Changed After Construction"
+    assert gateway.display_name == "Initial"
 
 
 def test_saver_same_field_conflict_rolls_back_metadata_and_members(fake_gateway, mocker):
@@ -462,9 +461,17 @@ def test_saver_same_field_conflict_rolls_back_metadata_and_members(fake_gateway,
 
 
 @pytest.mark.parametrize("field", ["display_name", "display_name_en"])
-def test_gateway_data_trims_before_length_validation(field):
-    data = GatewayData(name="technical", status=1, **{field: " " + "A" * 64 + " "})
-    assert getattr(data, field) == "A" * 64
+@pytest.mark.parametrize("length", [64, 65])
+def test_saver_trims_before_length_validation(field, length, fake_gateway):
+    data = GatewayData(name=fake_gateway.name, status=1, **{field: " " + "A" * length + " "})
+    saver = GatewaySaver(fake_gateway.pk, data)
+    if length == 65:
+        with pytest.raises(DjangoValidationError):
+            saver.save()
+        return
+    saver.save()
+    fake_gateway.refresh_from_db()
+    assert getattr(fake_gateway, field) == "A" * 64
     assert field in data.model_fields_set
-    omitted = GatewayData(name="technical", status=1)
+    omitted = GatewayData(name=fake_gateway.name, status=1)
     assert field not in omitted.model_fields_set

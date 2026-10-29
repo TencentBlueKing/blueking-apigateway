@@ -18,11 +18,12 @@
 
 from django import forms
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 from apigateway.core.constants import ContextScopeTypeEnum
-from apigateway.core.gateway_name import validate_display_name
+from apigateway.core.gateway_name import normalize_display_name
 from apigateway.core.models import (
     JWT,
     Backend,
@@ -45,44 +46,18 @@ from apigateway.core.models import (
 class GatewayAdminForm(forms.ModelForm):
     class Meta:
         model = Gateway
-        # 即使独立使用此表单，英文名也不能被写入；Admin 的 readonly_fields 负责只读展示。
-        exclude = ("display_name_en",)
+        fields = "__all__"
 
-    def clean(self):
-        data = super().clean()
-        if "name" not in data or "display_name" not in data:
-            return data
-        data["display_name"] = validate_display_name(
-            data["display_name"],
-            name=data["name"],
-            gateways=Gateway.objects.exclude(pk=self.instance.pk),
-        )
-        return data
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if commit:
-            if instance._state.adding:
-                instance.save()
-            else:
-                # 只读英文名可能已被同步更新，保存旧表单不能把它覆盖回去。
-                instance.save(
-                    update_fields=[
-                        field.name
-                        for field in instance._meta.concrete_fields
-                        if not field.primary_key and field.name != "display_name_en"
-                    ]
-                )
-            self._save_m2m()
-        return instance
+    def clean_display_name(self):
+        value = normalize_display_name(self.cleaned_data["display_name"], name=self.cleaned_data.get("name", ""))
+        if Gateway.objects.exclude(pk=self.instance.pk).filter(display_name__iexact=value).exists():
+            raise forms.ValidationError(_("This display name is already in use."), code="unique")
+        return value
 
 
 class GatewayAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     form = GatewayAdminForm
     readonly_fields = ("display_name_en",)
-
-    def save_model(self, request, obj, form, change):
-        form.save()
 
     djangoql_completion_enabled_by_default = False
     list_display = [

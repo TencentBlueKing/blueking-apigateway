@@ -35,6 +35,11 @@ urlpatterns = [
             [
                 path("", views.GatewayRetrieveUpdateDestroyApi.as_view(), name="gateways.retrieve_update_destroy"),
                 path("status/", views.GatewayUpdateStatusApi.as_view(), name="gateways.update_status"),
+                path(
+                    "check-display-name-available/",
+                    views.GatewayCheckDisplayNameAvailableApi.as_view(),
+                    name="gateways.check_display_name_available_for_update",
+                ),
                 path("tenant-apps/", views.GatewayTenantAppListApi.as_view(), name="gateway.tenant.apps"),
                 path("dev-guideline/", views.GatewayDevGuidelineRetrieveApi.as_view(), name="gateways.dev_guideline"),
                 path(

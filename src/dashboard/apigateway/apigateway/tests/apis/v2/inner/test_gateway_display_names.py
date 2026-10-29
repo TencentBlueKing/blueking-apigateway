@@ -26,8 +26,13 @@ READ_ROUTES = [
 @pytest.mark.parametrize(
     "language,english,expected", [("zh-cn", "English", "默认名"), ("en", "English", "English"), ("en", None, "默认名")]
 )
-def test_gateway_read_routes_localize_display_name(request_view, fake_gateway, view_name, language, english, expected):
-    fake_gateway.display_name = "默认名"
+@pytest.mark.parametrize("default", ["默认名", None])
+def test_gateway_read_routes_localize_display_name(
+    request_view, fake_gateway, view_name, language, english, expected, default
+):
+    if default is None and expected == "默认名":
+        expected = fake_gateway.name
+    fake_gateway.display_name = default
     fake_gateway.display_name_en = english
     fake_gateway.save(update_fields=["display_name", "display_name_en"])
     G(Release, gateway=fake_gateway)
@@ -96,10 +101,13 @@ def test_inner_lookup_respects_explicit_fields(request_view, fake_gateway):
 @pytest.mark.parametrize(
     "language,english,expected", [("zh-cn", "English", "默认名"), ("en", "English", "English"), ("en", None, "默认名")]
 )
+@pytest.mark.parametrize("default", ["默认名", None])
 def test_permission_record_list_and_detail_projection(
-    request_view, fake_gateway, view_name, language, english, expected
+    request_view, fake_gateway, view_name, language, english, expected, default
 ):
-    fake_gateway.display_name = "默认名"
+    if default is None and expected == "默认名":
+        expected = fake_gateway.name
+    fake_gateway.display_name = default
     fake_gateway.display_name_en = english
     fake_gateway.save(update_fields=["display_name", "display_name_en"])
     record = G(
@@ -152,10 +160,13 @@ def test_docs_keyword_search_excludes_english_display_name(request_view, fake_ga
 @pytest.mark.parametrize(
     "language,english,expected", [("zh-cn", "English", "默认名"), ("en", "English", "English"), ("en", None, "默认名")]
 )
+@pytest.mark.parametrize("default", ["默认名", None])
 def test_permission_dictionary_producer_routes(
-    request_view, fake_gateway, fake_resource_version, fake_release, view_name, language, english, expected
+    request_view, fake_gateway, fake_resource_version, fake_release, view_name, language, english, expected, default
 ):
-    fake_gateway.display_name = "默认名"
+    if default is None and expected == "默认名":
+        expected = fake_gateway.name
+    fake_gateway.display_name = default
     fake_gateway.display_name_en = english
     fake_gateway.save(update_fields=["display_name", "display_name_en"])
     G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)

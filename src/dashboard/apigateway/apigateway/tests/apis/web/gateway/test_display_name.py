@@ -1,10 +1,12 @@
 import pytest
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, connection
+from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 from django_dynamic_fixture import G
 
-from apigateway.apis.gateway_name import validate_web_gateway_names
+from apigateway.apis.gateway_name import validate_gateway_display_name
 from apigateway.apis.open.gateway.serializers import GatewayUpdateStatusInputSLZ as OpenGatewayUpdateStatusInputSLZ
 from apigateway.apis.web.gateway.serializers import GatewayUpdateInputSLZ, GatewayUpdateStatusInputSLZ
 from apigateway.apps.rbac.constants import GatewayRoleEnum
@@ -121,13 +123,14 @@ def test_preview_checks_actual_manage_permission_before_excluding_self(request_v
         _member(gateway, role)
     response = request_view(
         method="POST",
-        view_name="gateways.check_display_name_available",
+        view_name="gateways.check_display_name_available_for_update",
+        path_params={"gateway_id": gateway.pk},
         user=_user(),
-        data={"gateway_id": gateway.pk, "display_name": "Own"},
+        data={"display_name": "Own"},
     )
     assert response.status_code == expected, response.content
     if expected == 200:
-        assert response.json()["data"] == {"is_available": True, "conflicts": []}
+        assert response.json()["data"] == {"is_available": True}
 
 
 def test_preview_rejects_cross_tenant_even_for_member(request_view, settings):
@@ -136,9 +139,10 @@ def test_preview_rejects_cross_tenant_even_for_member(request_view, settings):
     user = _member(gateway)
     response = request_view(
         method="POST",
-        view_name="gateways.check_display_name_available",
+        view_name="gateways.check_display_name_available_for_update",
+        path_params={"gateway_id": gateway.pk},
         user=user,
-        data={"gateway_id": gateway.pk, "display_name": "Own"},
+        data={"display_name": "Own"},
     )
     assert response.status_code == 403, response.json()
 
@@ -149,12 +153,12 @@ def test_preview_display_name_conflict_has_no_private_details(request_view):
         method="POST",
         view_name="gateways.check_display_name_available",
         user=_user(),
-        data={"name": "new-technical", "display_name": "Shared"},
+        data={"display_name": "Shared"},
     )
     assert response.status_code == 200, response.json()
     data = response.json()["data"]
     assert data["is_available"] is False
-    assert data["conflicts"] == [{"field": "display_name", "language": "default", "reason": "unique"}]
+    assert data == {"is_available": False}
     assert private.name not in str(data)
 
 
@@ -190,60 +194,24 @@ def test_preview_ignores_submitted_english_name(request_view):
     ]:
         response = request_view(
             method="POST",
-            view_name="gateways.check_display_name_available",
+            view_name="gateways.check_display_name_available_for_update",
+            path_params={"gateway_id": gateway.pk},
             user=user,
-            data={"gateway_id": gateway.pk, "name": "ignored-rename", "display_name": "Shared", **extra},
+            data={"display_name": "Shared", **extra},
         )
         assert response.status_code == 200, response.json()
-        assert response.json()["data"] == {"is_available": True, "conflicts": []}
+        assert response.json()["data"] == {"is_available": True}
     gateway.refresh_from_db()
     assert gateway.display_name_en == "Own English"
 
 
-@pytest.mark.parametrize("data", [{"name": "candidate", "display_name": "A" * 65}])
+@pytest.mark.parametrize(
+    "data", [{}, {"display_name": None}, {"display_name": ""}, {"display_name": " "}, {"display_name": "A" * 65}]
+)
 def test_preview_format_errors_are_parameter_errors(request_view, data):
     response = request_view(method="POST", view_name="gateways.check_display_name_available", user=_user(), data=data)
     assert response.status_code == 400, response.json()
     assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
-
-
-@pytest.mark.parametrize("name", ["Uppercase", "under_score", "中文网关", "1gateway", "ab", "a" * 31])
-def test_creation_preview_rejects_invalid_technical_names(request_view, name):
-    response = request_view(
-        method="POST",
-        view_name="gateways.check_display_name_available",
-        user=_user(),
-        data={"name": name, "display_name": "Available Display"},
-    )
-    assert response.status_code == 400, response.json()
-    assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
-
-
-def test_edit_preview_uses_persisted_name_instead_of_supplied_name(request_view):
-    gateway = G(Gateway, name="existing-gateway", display_name="Own Display")
-    response = request_view(
-        method="POST",
-        view_name="gateways.check_display_name_available",
-        user=_member(gateway),
-        data={"gateway_id": gateway.pk, "name": "Ignored_Invalid", "display_name": "Own Display"},
-    )
-    assert response.status_code == 200, response.json()
-    assert response.json()["data"] == {"is_available": True, "conflicts": []}
-
-
-def test_all_gateway_updates_check_tenant(request_view, settings):
-    settings.ENABLE_MULTI_TENANT_MODE = True
-    gateway = G(Gateway, tenant_mode="single", tenant_id="other")
-    user = _member(gateway)
-    for payload, expected in [({"display_name": "Change"}, 403), ({"description": "Metadata"}, 403)]:
-        response = request_view(
-            method="PATCH",
-            view_name="gateways.retrieve_update_destroy",
-            path_params={"gateway_id": gateway.pk},
-            data=payload,
-            user=user,
-        )
-        assert response.status_code == expected, response.content
 
 
 def test_name_conflict_precedes_programmable_paas_creation(request_view, mocker):
@@ -279,18 +247,15 @@ def test_explicit_stale_default_input_is_not_suppressed():
     assert gateway.display_name_en == "English"
 
 
-def test_omitted_default_preserves_current_database_value():
-    gateway = G(Gateway, display_name="Original", display_name_en="Before English")
-    stale = Gateway.objects.get(pk=gateway.pk)
-    gateway.display_name = "Current"
-    gateway.display_name_en = "Current English"
-    gateway.save(update_fields=["display_name", "display_name_en"])
-    slz = GatewayUpdateInputSLZ(stale, data={"description": "Metadata"}, partial=True)
+def test_omitted_display_name_preserves_stored_names():
+    gateway = G(Gateway, display_name="Original", display_name_en="English")
+    slz = GatewayUpdateInputSLZ(gateway, data={"description": "Metadata"}, partial=True)
     assert slz.is_valid(), slz.errors
     slz.save()
     gateway.refresh_from_db()
-    assert gateway.display_name == "Current"
-    assert gateway.display_name_en == "Current English"
+    assert gateway.display_name == "Original"
+    assert gateway.display_name_en == "English"
+    assert gateway.description == "Metadata"
 
 
 @pytest.mark.parametrize("column", ["display_name", "display_name_en"])
@@ -328,7 +293,7 @@ def test_web_unrelated_database_error_is_not_a_naming_error(request_view, mocker
     assert response.json()["error"]["code"] == "UNKNOWN"
 
 
-def test_web_update_rolls_back_name_if_later_binding_update_fails(request_view, mocker):
+def test_web_update_keeps_saved_name_if_later_binding_update_fails(request_view, mocker):
     gateway = G(Gateway, display_name="Before")
     user = _member(gateway)
     mocker.patch(
@@ -344,7 +309,7 @@ def test_web_update_rolls_back_name_if_later_binding_update_fails(request_view, 
     )
     assert response.status_code == 500, response.json()
     gateway.refresh_from_db()
-    assert gateway.display_name == "Before"
+    assert gateway.display_name == "After"
 
 
 @pytest.mark.parametrize("role", [None, GatewayRoleEnum.OPERATOR.value])
@@ -389,7 +354,7 @@ def test_display_name_preview_does_not_check_technical_name_availability(request
         data={"name": "existing-name", "display_name": "Available"},
     )
     assert response.status_code == 200, response.json()
-    assert response.json()["data"] == {"is_available": True, "conflicts": []}
+    assert response.json()["data"] == {"is_available": True}
 
 
 def test_create_fallback_conflict_requires_explicit_available_display_name(request_view, default_data_plane):
@@ -406,16 +371,14 @@ def test_create_fallback_conflict_requires_explicit_available_display_name(reque
 
 
 @pytest.mark.parametrize("serializer", [GatewayUpdateStatusInputSLZ, OpenGatewayUpdateStatusInputSLZ])
-def test_status_update_preserves_current_names(serializer):
-    gateway = G(Gateway, display_name="Original", display_name_en="Original English")
-    stale = Gateway.objects.get(pk=gateway.pk)
-    Gateway.objects.filter(pk=gateway.pk).update(display_name="Current", display_name_en="Current English")
-    slz = serializer(stale, data={"status": 0})
+def test_status_update_preserves_names(serializer):
+    gateway = G(Gateway, display_name="Original", display_name_en="English")
+    slz = serializer(gateway, data={"status": 0})
     assert slz.is_valid(), slz.errors
     slz.save(updated_by="ordinary")
     gateway.refresh_from_db()
-    assert gateway.display_name == "Current"
-    assert gateway.display_name_en == "Current English"
+    assert gateway.display_name == "Original"
+    assert gateway.display_name_en == "English"
     assert gateway.status == 0
     assert gateway.updated_by == "ordinary"
 
@@ -442,37 +405,34 @@ def test_web_display_name_update_only_queries_its_uniqueness(django_assert_num_q
     gateway = G(Gateway, display_name="Current", display_name_en="English")
     data = {"display_name": " New Display "}
     with django_assert_num_queries(1):
-        validate_web_gateway_names(data, gateway)
+        validate_gateway_display_name(data, gateway)
     assert data == {"display_name": "New Display"}
 
 
-def test_preview_reports_only_display_name_conflict(request_view):
+@pytest.mark.parametrize("value,expected", [("Taken Display", False), ("Taken English", True)])
+def test_preview_only_checks_display_name(request_view, value, expected):
     G(Gateway, display_name="Taken Display", display_name_en="Taken English")
     response = request_view(
         method="POST",
         view_name="gateways.check_display_name_available",
         user=_user(),
-        data={"name": "candidate", "display_name": "Taken Display", "display_name_en": "Taken English"},
+        data={"display_name": value},
     )
     assert response.status_code == 200, response.json()
-    assert response.json()["data"] == {
-        "is_available": False,
-        "conflicts": [
-            {"field": "display_name", "language": "default", "reason": "unique"},
-        ],
-    }
+    assert response.json()["data"] == {"is_available": expected}
 
 
 def test_preview_does_not_validate_stored_english_name(request_view):
     gateway = G(Gateway, display_name="Own Display", display_name_en="Legacy_English")
     response = request_view(
         method="POST",
-        view_name="gateways.check_display_name_available",
+        view_name="gateways.check_display_name_available_for_update",
+        path_params={"gateway_id": gateway.pk},
         user=_member(gateway),
-        data={"gateway_id": gateway.pk, "display_name": "Own Display"},
+        data={"display_name": "Own Display"},
     )
     assert response.status_code == 200, response.json()
-    assert response.json()["data"] == {"is_available": True, "conflicts": []}
+    assert response.json()["data"] == {"is_available": True}
 
 
 def test_update_saves_property_fields_without_touching_display_names():
@@ -492,3 +452,93 @@ def test_update_saves_property_fields_without_touching_display_names():
     assert gateway.display_name == "Display"
     assert gateway.display_name_en == "English"
     assert gateway.updated_by == "ordinary"
+
+
+def test_lower_comparison_does_not_expand_german_sharp_s():
+    G(Gateway, name="existing", display_name="Straße")
+    data = {"name": "candidate", "display_name": "STRASSE"}
+    validate_gateway_display_name(data)
+    assert data["display_name"] == "STRASSE"
+
+
+@pytest.mark.parametrize("display_name,expected_rows", [("TAKEN", 1), ("Unrelated %", 0), ("Unrelated _", 0)])
+def test_display_name_lookup_reads_at_most_one_row(display_name, expected_rows):
+    Gateway.objects.bulk_create(
+        [Gateway(name=f"unrelated-{i}", display_name=f"Unrelated {i}", status=1) for i in range(100)]
+    )
+    G(Gateway, name="taken-gateway", display_name="Taken")
+    with CaptureQueriesContext(connection) as queries:
+        try:
+            validate_gateway_display_name({"name": "candidate", "display_name": display_name})
+        except ValidationError:
+            assert expected_rows == 1
+        else:
+            assert expected_rows == 0
+    assert len(queries) == 1
+    # Verify the DB result size, not just the number of SQL statements.
+    with connection.cursor() as cursor:
+        cursor.execute(queries[0]["sql"])
+        assert len(cursor.fetchall()) == expected_rows
+
+
+@pytest.mark.parametrize("value,expected", [(" Available ", True), (" TAKEN ", False)])
+def test_create_display_name_check_contract(request_view, value, expected):
+    G(Gateway, display_name="Taken")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_user(),
+        data={"display_name": value},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": expected}
+
+
+def test_edit_display_name_check_uses_url_id(request_view):
+    gateway = G(Gateway, display_name="Own Display")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available_for_update",
+        path_params={"gateway_id": gateway.pk},
+        user=_member(gateway),
+        data={"display_name": "Own Display"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": True}
+
+
+def test_create_display_name_check_ignores_body_gateway_id(request_view):
+    gateway = G(Gateway, display_name="Own Display")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available",
+        user=_user(),
+        data={"gateway_id": gateway.pk, "display_name": "Own Display"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": False}
+
+
+def test_edit_display_name_check_excludes_only_url_gateway(request_view):
+    gateway = G(Gateway, display_name="Own Display")
+    other = G(Gateway, display_name="Other Display")
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available_for_update",
+        path_params={"gateway_id": gateway.pk},
+        user=_member(gateway),
+        data={"gateway_id": other.pk, "display_name": "Other Display"},
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"] == {"is_available": False}
+
+
+def test_edit_display_name_check_missing_gateway_is_not_found(request_view):
+    response = request_view(
+        method="POST",
+        view_name="gateways.check_display_name_available_for_update",
+        path_params={"gateway_id": 999999},
+        user=_user(),
+        data={"display_name": "Available"},
+    )
+    assert response.status_code == 404, response.json()

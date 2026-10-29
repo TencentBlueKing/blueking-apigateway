@@ -126,7 +126,7 @@ class GatewayListInputSLZ(serializers.Serializer):
 class GatewayBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
-    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
@@ -435,7 +435,7 @@ class PermissionApplyRecordOperateInputSLZ(serializers.Serializer):
 
 class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     gateway_name = serializers.SerializerMethodField()
-    gateway_display_name = serializers.CharField(source="gateway.display_name_i18n", read_only=True)
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
     handled_by = serializers.SerializerMethodField()
@@ -1160,7 +1160,7 @@ class OAuth2ResourceScopeOutputSLZ(serializers.Serializer):
 class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
-    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     is_official = serializers.BooleanField(read_only=True)
     mcp_server_count = serializers.IntegerField(source="scope_count", read_only=True)
     mcp_servers = serializers.SerializerMethodField()
@@ -1176,7 +1176,7 @@ class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
 class OAuth2ResourceScopeGatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
-    display_name = SerializerTranslatedField(default_field="display_name_i18n", read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     is_official = serializers.BooleanField(read_only=True)
     resource_count = serializers.IntegerField(source="scope_count", read_only=True)
     resources = serializers.SerializerMethodField()

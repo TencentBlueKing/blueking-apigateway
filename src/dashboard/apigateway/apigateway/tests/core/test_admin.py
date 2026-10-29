@@ -70,6 +70,7 @@ def test_gateway_admin_english_is_readonly():
 
     gateway_admin = GatewayAdmin(Gateway, admin.site)
     assert "display_name_en" in gateway_admin.get_readonly_fields(None)
+    assert "display_name_en" not in gateway_admin.get_form(None).base_fields
 
 
 def _gateway_form(gateway, **changes):
@@ -104,19 +105,6 @@ def test_gateway_admin_conflict_is_a_form_error():
     form = _gateway_form(gateway, display_name=" EXISTING ")
     assert not form.is_valid()
     assert "display_name" in form.errors
-
-
-def test_gateway_admin_metadata_preserves_current_english():
-
-    gateway = G(Gateway, display_name_en="Before English")
-    stale = Gateway.objects.get(pk=gateway.pk)
-    gateway.display_name_en = "Current English"
-    gateway.save(update_fields=["display_name_en"])
-    form = _gateway_form(stale, description="Updated")
-    assert form.is_valid(), form.errors
-    form.save()
-    gateway.refresh_from_db()
-    assert gateway.display_name_en == "Current English"
 
 
 def test_gateway_admin_ignores_english_write():

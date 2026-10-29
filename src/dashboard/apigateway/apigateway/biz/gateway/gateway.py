@@ -52,9 +52,8 @@ from apigateway.core.constants import (
 )
 from apigateway.core.gateway_auth import GatewayAuthConfig
 from apigateway.core.gateway_name import (
-    GATEWAY_DISPLAY_NAME_MAX_LENGTH,
-    validate_display_name,
-    validate_display_name_en,
+    normalize_display_name,
+    normalize_display_name_en,
 )
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
@@ -89,8 +88,8 @@ def _is_official_gateway_type(gateway_type: Optional[GatewayTypeEnum]) -> bool:
 
 class GatewayData(BaseModel):
     name: str = Field(...)
-    display_name: Optional[str] = Field(default=None, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH)
-    display_name_en: Optional[str] = Field(default=None, max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH)
+    display_name: Optional[str] = Field(default=None)
+    display_name_en: Optional[str] = Field(default=None)
     description: str = Field(default="")
     description_en: Optional[str] = Field(default=None)
     maintainers: List[str] = Field(default_factory=list)
@@ -106,10 +105,6 @@ class GatewayData(BaseModel):
 
     tenant_mode: Optional[str] = Field(default=None)
     tenant_id: Optional[str] = Field(default=None)
-
-    @field_validator("display_name", "display_name_en", mode="before")
-    def trim_display_names(cls, value):  # noqa: N805
-        return (value.strip() or None) if isinstance(value, str) else value
 
     @field_validator("gateway_type")
     def validate_gateway_type(cls, v):  # noqa: N805
@@ -601,8 +596,8 @@ class GatewaySaver:
     def _create_gateway(self):
         # 1. resolve and validate data planes before saving the gateway
         validate_gateway_name_kind(self._gateway_data.name, self._gateway_data.kind)
-        display_name = validate_display_name(self._gateway_data.display_name, name=self._gateway_data.name)
-        display_name_en = validate_display_name_en(self._gateway_data.display_name_en)
+        display_name = normalize_display_name(self._gateway_data.display_name, name=self._gateway_data.name)
+        display_name_en = normalize_display_name_en(self._gateway_data.display_name_en)
         self._gateway = gateway = Gateway(
             name=self._gateway_data.name,
             display_name=display_name,
@@ -683,8 +678,8 @@ class GatewaySaver:
         gateway = self._gateway
 
         if "display_name" in self._gateway_data.model_fields_set:
-            gateway.display_name = validate_display_name(self._gateway_data.display_name, name=gateway.name)
-        gateway.display_name_en = validate_display_name_en(self._gateway_data.display_name_en)
+            gateway.display_name = normalize_display_name(self._gateway_data.display_name, name=gateway.name)
+        gateway.display_name_en = normalize_display_name_en(self._gateway_data.display_name_en)
 
         # 1. update gateway
         gateway.description = self._gateway_data.description
@@ -693,15 +688,7 @@ class GatewaySaver:
         if self._gateway_data.gateway_type is not None:
             gateway.is_official = _is_official_gateway_type(self._gateway_data.gateway_type)
         gateway.updated_by = self.username
-        update_fields = ["description", "description_en", "is_public", "updated_by", "updated_time", "display_name_en"]
-        if "display_name" in self._gateway_data.model_fields_set:
-            update_fields.append("display_name")
-        if self._gateway_data.gateway_type is not None:
-            update_fields.append("is_official")
-        gateway.save(update_fields=update_fields)
-        if "display_name" not in self._gateway_data.model_fields_set:
-            # 返回最新默认名；省略字段的写保护由上面的 update_fields 保证。
-            gateway.refresh_from_db(fields=["display_name"])
+        gateway.save()
         # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据
         if self._gateway_data.maintainers:
             add_gateway_administrators(gateway, self._gateway_data.maintainers, self.username)
