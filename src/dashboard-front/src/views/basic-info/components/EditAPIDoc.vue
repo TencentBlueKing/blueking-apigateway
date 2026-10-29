@@ -147,6 +147,24 @@
 
             <div class="li">
               <div class="title">
+                {{ t('网关展示名') }}
+              </div>
+              <div class="value break-all">
+                {{ getGatewayDisplayName(data) }}
+              </div>
+            </div>
+
+            <div class="li">
+              <div class="title">
+                {{ t('网关 ID') }}
+              </div>
+              <div class="value break-all">
+                {{ data?.name || '--' }}
+              </div>
+            </div>
+
+            <div class="li">
+              <div class="title">
                 {{ t('网关描述') }}
               </div>
               <div class="value break-all">
@@ -243,6 +261,7 @@ import { getGatewayDetail, patchGateway } from '@/services/source/gateway';
 import type { IExtractApiReturn } from '@/services/types/utils';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 interface IForm {
   type: string
@@ -369,6 +388,8 @@ const handleCommit = async () => {
     loading.value = true;
 
     const payload: any = { ...data };
+    // 展示名有独立编辑入口，保存文档信息时省略，避免覆盖后端按语言返回的展示名
+    delete payload.display_name;
 
     const { type, contacts, service_account } = docForm.value;
     if (type === 'user') {

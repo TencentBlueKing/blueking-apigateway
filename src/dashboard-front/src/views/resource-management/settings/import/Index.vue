@@ -584,7 +584,7 @@
         </div>
         <div class="dialog-main">
           <header class="apigateway-name">
-            {{ t('网关：') }}<span class="text">{{ gatewayStore.currentGateway!.name }}</span>
+            {{ t('网关：') }}<span class="text">{{ getGatewayFullName(gatewayStore.currentGateway) }}</span>
           </header>
           <main class="import-tips">
             {{ t('将新增') }}
@@ -803,6 +803,7 @@ import {
 import TableResToAction from './components/TableResToAction.vue';
 import TableResToUncheck from './components/TableResToUncheck.vue';
 import { useParentElement } from '@vueuse/core';
+import { getGatewayFullName } from '@/utils/gateway-name';
 import {
   useEnv,
   useGateway,

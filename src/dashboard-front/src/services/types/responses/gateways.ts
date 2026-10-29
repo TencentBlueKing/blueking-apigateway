@@ -7,6 +7,7 @@ import type { IMCPServerToolSchema, IResourceAuthResponse } from '@/services/sou
 export interface IGatewayListOutput {
   id: number
   name: string
+  display_name?: string
   description: string | null
   maintainers: string[]
   doc_maintainers: string[]
@@ -103,6 +104,7 @@ export interface IAlarmRecordSummaryQueryOutput {
 export interface IGatewayRetrieveOutput {
   id: number
   name: string
+  display_name?: string
   description: string | null
   maintainers: string[]
   doc_maintainers: {
@@ -1592,4 +1594,9 @@ export interface IAPIDebugHistoriesRetrieveOutput {
   resource_name: string
   request: any
   response: any
+}
+
+/** 网关展示名查重结果 */
+export interface IDisplayNameCheckResult {
+  is_available: boolean
 }

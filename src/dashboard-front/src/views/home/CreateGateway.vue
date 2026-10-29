@@ -154,8 +154,8 @@
           {{ t('通过编码的方式配置和管理网关的功能，支持接口组合、协议转换和接口编排等功能') }}
         </BkAlert>
         <BkFormItem
-          :label="t('名称')"
-          class="form-item-name"
+          :label="t('网关 ID')"
+          class="form-item-with-tips"
           property="name"
           required
         >
@@ -169,10 +169,27 @@
             show-word-limit
             :prefix="formData.kind === 2 ? 'bkai-' : undefined"
           />
+          <p class="common-form-tips">
+            {{ t('网关的唯一标识，创建后不可更改') }}
+          </p>
         </BkFormItem>
-        <span class="common-form-tips form-item-name-tips">
-          {{ t('网关的唯一标识，创建后不可更改') }}
-        </span>
+        <BkFormItem
+          :label="t('网关展示名')"
+          class="form-item-with-tips"
+          property="display_name"
+          required
+        >
+          <BkInput
+            v-model.trim="formData.display_name"
+            :maxlength="64"
+            :placeholder="t('请输入网关展示名')"
+            clearable
+            show-word-limit
+          />
+          <p class="common-form-tips">
+            {{ t('用于页面展示，可随时修改') }}
+          </p>
+        </BkFormItem>
         <BkFormItem
           v-if="formData.kind === 1"
           :label="t('开发语言')"
@@ -457,23 +474,24 @@ import {
   createGateway,
   patchGateway,
 } from '@/services/source/gateway.ts';
-import { usePopInfoBox } from '@/hooks';
-import { Form, Message, Tag } from 'bkui-vue';
-import { cloneDeep } from 'lodash-es';
-import type { IFormMethod } from '@/types/common';
-import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
-import MemberSelector from '@/components/member-selector';
-import BkUserSelector from '@blueking/bk-user-selector';
-import bareGit from '@/images/bare_git.png';
-import apiIcon from '@/images/api.png';
-import aiIcon from '@/images/ai.png';
-import programmableIcon from '@/images/programmable.png';
 import {
   useEnv,
   useFeatureFlag,
   useGateway,
   useUserInfo,
 } from '@/stores';
+import { useGatewayDisplayNameCheck, usePopInfoBox } from '@/hooks';
+import { Form, Message, Tag } from 'bkui-vue';
+import { cloneDeep } from 'lodash-es';
+import type { IFormMethod } from '@/types/common';
+import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
+import MemberSelector from '@/components/member-selector';
+import BkUserSelector from '@blueking/bk-user-selector';
+import bareGit from '@/images/bare_git.png';
+import apiIcon from '@/images/api.png';
+import aiIcon from '@/images/ai.png';
+import programmableIcon from '@/images/programmable.png';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 type ParamType = IGatewayCreateInputSLZ & {
@@ -493,6 +511,7 @@ const gatewayStore = useGateway();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const formData = ref<ParamType>({
   name: '',
+  display_name: '',
   description: '',
   is_public: true,
   kind: 0,
@@ -524,6 +543,7 @@ let authPollingTimer: ReturnType<typeof setInterval> | null = null;
 
 const defaultFormData = ref({
   name: '',
+  display_name: '',
   description: '',
   is_public: true,
   kind: 0,
@@ -544,11 +564,37 @@ const isNameAvailable = ref(true);
 const RESERVED_NAME_WORDS = ['-dot-', '0us0', '--', '-m-'];
 // 命中的保留字，用于错误提示
 const matchedReservedWord = ref('');
+
+// 实际提交的网关 ID（AI 网关带 bkai- 前缀），展示名为空时用其兜底查重
+const submittedGatewayName = () => {
+  const name = (formData.value.name ?? '').trim();
+  return formData.value.kind === 2 ? `bkai-${name}` : name;
+};
+
+const { checkDisplayName } = useGatewayDisplayNameCheck({
+  // 编辑场景（从基本信息页跳转）需要排除网关自身
+  gatewayId: () => formData.value.id,
+  gatewayName: submittedGatewayName,
+  displayName: () => formData.value.display_name,
+});
+
 const rules = {
+  'display_name': [
+    {
+      required: true,
+      message: t('请输入网关展示名'),
+      trigger: 'blur',
+    },
+    {
+      validator: () => checkDisplayName(),
+      message: t('展示名已被使用'),
+      trigger: 'blur',
+    },
+  ],
   'name': [
     {
       required: true,
-      message: t('请填写名称'),
+      message: t('请填写网关 ID'),
       trigger: 'blur',
     },
     {
@@ -578,7 +624,7 @@ const rules = {
         matchedReservedWord.value = RESERVED_NAME_WORDS.find(word => value.includes(word)) ?? '';
         return !matchedReservedWord.value;
       },
-      message: () => t('名称不能包含保留字 {word}', { word: matchedReservedWord.value }),
+      message: () => t('网关 ID 不能包含保留字 {word}', { word: matchedReservedWord.value }),
       trigger: 'blur',
     },
     {
@@ -597,7 +643,7 @@ const rules = {
           return false;
         }
       },
-      message: t('网关名已被占用'),
+      message: t('网关 ID 已被占用'),
       trigger: 'blur',
     },
   ],
@@ -778,6 +824,10 @@ watch(
   () => formData.value?.name,
   () => {
     setRepositoryAddress();
+    // 展示名为空时以网关 ID 兜底查重，ID 变化后需要重新查重
+    if (!formData.value.display_name?.trim()) {
+      formRef.value?.clearValidate('display_name');
+    }
   },
 );
 
@@ -789,6 +839,7 @@ onMounted(() => {
       formData.value = cloneDeep({
         id: currentGateway.id,
         name: currentGateway.name || '',
+        display_name: currentGateway.display_name || currentGateway.name || '',
         description: currentGateway.description,
         maintainers: currentGateway.maintainers || [],
         developers: currentGateway.developers || [],
@@ -941,6 +992,10 @@ const handleConfirmCreate = async () => {
       if (!featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED) {
         payload.bk_app_codes = undefined;
       }
+      // 展示名有独立编辑入口；未实际修改时不提交该字段，避免用按当前语言返回的展示名覆盖后端默认（中文）展示名
+      if (payload.display_name === defaultFormData.value.display_name) {
+        delete (payload as Record<string, any>).display_name;
+      }
       await patchGateway(payload.id!, payload);
       Message({
         message: t('编辑成功'),
@@ -957,13 +1012,18 @@ const handleConfirmCreate = async () => {
       if (payload.kind === 1) {
         router.push({
           name: 'GatewayGuide',
-          params: { id: response.id,
-            name: payload.name },
+          params: {
+            id: response.id,
+            name: payload.name,
+          },
+          query: {
+            displayName: payload.display_name,
+          },
         });
       }
       else {
         Message({
-          message: t('创建成功'),
+          message: t('网关（{name}）创建成功', { name: getGatewayDisplayName(payload) }),
           theme: 'success',
         });
         router.push({ name: 'Home' });
@@ -1003,9 +1063,11 @@ const handleCancel = () => {
     box-shadow: 0 2px 4px 0 #0000001a;
     flex: 1;
 
-    .form-item-name {
-      :deep(.bk-form-error) {
-        position: relative;
+    .form-item-with-tips {
+
+      .common-form-tips {
+        margin: 4px 0 0;
+        line-height: 18px;
       }
     }
 

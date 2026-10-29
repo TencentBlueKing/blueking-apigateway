@@ -41,7 +41,7 @@
       :expanded-row-keys="expandableConfig.expandedRowKeys"
       :show-first-full-row="selectedRows.length > 0"
       :disabled-check-selection="disabledSelection"
-      :max-limit-config="{ allocatedHeight: 240, mode: 'tdesign' }"
+      :max-limit-config="{ allocatedHeight: 300, mode: 'tdesign' }"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
@@ -143,6 +143,7 @@ import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
+import { getGatewayDisplayName, getGatewayFullName } from '@/utils/gateway-name';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
@@ -290,12 +291,32 @@ const handleDimensionMouseLeave = (row: TableRowData) => {
   }
 };
 
+const getWorkbenchGateway = (row: TableRowData) => {
+  const name = row.gateway_name || row?.mcp_server?.gateway_name;
+  const matchedGateway = gatewayList.value.find(item =>
+    item.id === row.gateway_id || item.name === name,
+  );
+  const displayName = row.gateway_display_name
+    || row?.mcp_server?.gateway_display_name
+    || matchedGateway?.display_name;
+
+  return {
+    name,
+    displayName: getGatewayDisplayName({
+      name,
+      display_name: displayName,
+    }),
+    // 原始展示名是否有值，用于决定是否展示 ID 辅助行
+    hasDisplayName: Boolean(displayName),
+  };
+};
+
 const tableColumns = computed(() => {
   const gatewayAppCodeColumn: PrimaryTableProps['columns'] = [
     {
       title: t('网关'),
       colKey: 'gateway_id',
-      ellipsis: true,
+      ellipsis: false,
       width: 200,
       fixed: 'left' as const,
       filter: {
@@ -303,12 +324,39 @@ const tableColumns = computed(() => {
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: gatewayList.value.map((item: IPersonalWorkbenchFilterOptionResponse) => ({
-          label: item.name,
+          label: getGatewayFullName(item),
           value: item.id,
         })),
       },
       cell: (_: unknown, { row }: { row: TableRowData }) => {
-        return row.gateway_name || row?.mcp_server?.gateway_name || '--';
+        const { name, displayName, hasDisplayName } = getWorkbenchGateway(row);
+
+        // 展示名与 ID 两行共用同一套溢出 tooltip 逻辑，抽成小函数避免重复
+        const renderLine = (content: string, className: string) => (
+          <span
+            class={`truncate ${className}`}
+            v-bk-tooltips={{
+              content,
+              placement: 'top',
+              disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
+            }}
+            onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+            onMouseleave={() => tableRef.value?.handleCellLeave({ row })}
+          >
+            {content}
+          </span>
+        );
+
+        return (
+          <div class="min-w-0 flex flex-col justify-center lh-20px">
+            {renderLine(displayName, 'color-#313238')}
+            {hasDisplayName && renderLine(name, 'color-#979ba5 text-12px')}
+          </div>
+        );
       },
     },
     {

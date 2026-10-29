@@ -27,7 +27,21 @@
           class="icon apigateway-icon icon-ag-return-small"
           @click="handleGoBack"
         />
-        {{ curTab === 'gateway' ? curTargetName : curTargetBasics?.description ?? '' }}
+        <div
+          v-if="curTab === 'gateway'"
+          class="gateway-header-name"
+        >
+          <span class="display-name">{{ gatewayHeaderName }}</span>
+          <span
+            v-if="curTargetName"
+            class="sub-title"
+          >
+            {{ curTargetName }}
+          </span>
+        </div>
+        <template v-else>
+          {{ curTargetBasics?.description ?? '' }}
+        </template>
         <!--  组件系统下拉菜单  -->
         <template v-if="curTab === 'component'">
           <BkDivider direction="vertical" />
@@ -265,6 +279,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useEnv } from '@/stores';
 import { buildResourceUrl } from '../utils/compose-doc';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 interface IApiGroup {
   id: number
@@ -367,6 +382,11 @@ const allSystemList = computed(() => {
   }
   return systems;
 });
+
+const gatewayHeaderName = computed(() => getGatewayDisplayName({
+  name: curTargetName.value,
+  display_name: curTargetBasics.value?.display_name,
+}));
 
 // 请求方法，优先取接口返回，兜底用资源自身的方法
 const curMethod = computed(() => (curDoc.value?.method || curApi.value?.method || '').toUpperCase());
@@ -784,6 +804,31 @@ onBeforeMount(() => {
       font-size: 32px;
       color: #3a84ff;
       cursor: pointer;
+    }
+
+    .gateway-header-name {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 8px;
+
+      .display-name,
+      .sub-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .display-name {
+        flex-shrink: 0;
+        line-height: 22px;
+      }
+
+      .sub-title {
+        font-size: 12px;
+        line-height: 20px;
+        color: #979ba5;
+      }
     }
 
     .system-dropdown-wrap {

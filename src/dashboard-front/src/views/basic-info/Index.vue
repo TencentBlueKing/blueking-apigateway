@@ -32,11 +32,19 @@
             { 'header-info-left-disabled': !basicInfoData.status }
           ]"
         >
-          <span class="name">{{ basicInfoData?.name?.[0]?.toUpperCase() }}</span>
+          <span class="name">{{ getGatewayDisplayName(basicInfoData)[0]?.toUpperCase() }}</span>
         </div>
         <div class="header-info-right">
           <div class="header-info-name">
-            <span class="name">{{ basicInfoData.name }}</span>
+            <div class="gateway-name">
+              <span class="name">{{ getGatewayDisplayName(basicInfoData) }}</span>
+              <span
+                v-if="hasDistinctDisplayName(basicInfoData)"
+                class="gateway-id"
+              >
+                {{ basicInfoData.name }}
+              </span>
+            </div>
             <div class="header-info-tag">
               <BkTag
                 v-if="basicInfoData.kind === 0"
@@ -199,6 +207,22 @@
           </template>
           <template #content>
             <div class="pannel-content">
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('网关展示名')}：` }}
+                </div>
+                <div class="value">
+                  <span>{{ getGatewayDisplayName(basicInfoData) }}</span>
+                </div>
+              </div>
+              <div class="pannel-content-item">
+                <div class="label">
+                  {{ `${t('网关 ID')}：` }}
+                </div>
+                <div class="value">
+                  <span>{{ basicInfoData.name || '--' }}</span>
+                </div>
+              </div>
               <template v-if="featureFlagStore.isTenantMode">
                 <div class="pannel-content-item">
                   <div class="label">
@@ -636,7 +660,7 @@
     <BkDialog
       width="540"
       :is-show="delApigwDialog.isShow"
-      :title="t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: basicInfoData.name })"
+      :title="t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: getGatewayFullName(basicInfoData) })"
       :theme="'primary'"
       @closed="delApigwDialog.isShow = false"
     >
@@ -786,6 +810,7 @@ import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 import { useGatewayReleasingStatus } from '@/hooks/use-gateway-releasing-status';
 import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
 import { isGatewayNavigationPending } from '@/router/gateway-role-guard';
+import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 interface IBasicInfoType extends IExtractApiReturn<typeof getGatewayDetail> {
   programmable_gateway_git_info?: {
@@ -843,6 +868,7 @@ const basicInfoData = ref<IBasicInfoType>({
   id: 0,
   status: 1,
   name: '',
+  display_name: '',
   description: '',
   description_en: '',
   public_key_fingerprint: '',
@@ -910,8 +936,17 @@ const formRemoveApigw = computed(() => {
 });
 
 const delTips = computed(() => {
-  return t(`请完整输入<code class="gateway-del-tips">${basicInfoData.value.name}</code> 来确认删除网关！`);
+  return t('请完整输入 <code class="gateway-del-tips">{name}</code> 来确认删除网关！', {
+    name: basicInfoData.value.name,
+  });
 });
+
+// 展示名有独立的编辑入口，保存其他字段时省略，避免覆盖后端按语言返回的展示名
+const buildUpdatePayload = (data: object) => {
+  const payload = cloneDeep(data) as Record<string, any>;
+  delete payload.display_name;
+  return payload as IGatewayUpdateInputSLZ;
+};
 
 const linksData = computed(() => (basicInfoData.value.links as unknown) as {
   develop?: {
@@ -1046,7 +1081,7 @@ const handleDeleteApigw = async () => {
 
 const handleChangePublic = async (value: boolean) => {
   basicInfoData.value.is_public = value;
-  await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
+  await patchGateway(apigwId.value, buildUpdatePayload(basicInfoData.value));
   syncBasicInfo();
   Message({
     message: t('更新成功'),
@@ -1100,7 +1135,7 @@ const handleDeprecatedClick = (type: string) => {
         basicInfoData.value.is_deprecated = false;
         basicInfoData.value.deprecated_note = '';
 
-        await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
+        await patchGateway(apigwId.value, buildUpdatePayload(basicInfoData.value));
         syncBasicInfo();
         Message({
           message: t('更新成功'),
@@ -1121,7 +1156,7 @@ const handleDeprecatedConfirm = async () => {
     basicInfoData.value.is_deprecated = true;
     basicInfoData.value.deprecated_note = deprecated_note;
 
-    await patchGateway(apigwId.value, basicInfoData.value as IGatewayUpdateInputSLZ);
+    await patchGateway(apigwId.value, buildUpdatePayload(basicInfoData.value));
     syncBasicInfo();
     Message({
       message: t('更新成功'),
@@ -1161,7 +1196,7 @@ const handleOperate = async (type: string) => {
     let title = t('确认要启用网关？');
     let subTitle = '';
     if (basicInfoData.value.status > 0) {
-      title = t('确认是否停用网关？');
+      title = t('确认是否停用网关【{name}】？', { name: getGatewayFullName(basicInfoData.value) });
       subTitle = t('网关停用后，网关下所有资源不可访问，请确认是否继续操作？');
     }
 
@@ -1220,7 +1255,7 @@ const handleInfoChange = async (payload: Record<string, string>) => {
     ...basicInfoData.value,
     ...payload,
   };
-  await patchGateway(apigwId.value, params as IGatewayUpdateInputSLZ);
+  await patchGateway(apigwId.value, buildUpdatePayload(params));
   basicInfoData.value = Object.assign(basicInfoData.value, params);
   syncBasicInfo();
   Message({
@@ -1235,7 +1270,7 @@ const handleRelatedAppCodesChange = async (payload: Record<string, string[]>) =>
     ...basicInfoData.value,
     ...payload,
   };
-  await putGatewayBasics(apigwId.value, params as IGatewayUpdateInputSLZ);
+  await putGatewayBasics(apigwId.value, buildUpdatePayload(params));
   basicInfoData.value = Object.assign(basicInfoData.value, params);
   syncBasicInfo();
   Message({
@@ -1299,10 +1334,22 @@ onUnmounted(() => {
       .header-info-name {
         display: flex;
 
-        .name {
-          font-size: 16px;
-          font-weight: 700;
-          color: #313238;
+        .gateway-name {
+          display: flex;
+          flex-direction: column;
+
+          .name {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 24px;
+            color: #313238;
+          }
+
+          .gateway-id {
+            font-size: 12px;
+            line-height: 20px;
+            color: #979ba5;
+          }
         }
 
         .header-info-tag {

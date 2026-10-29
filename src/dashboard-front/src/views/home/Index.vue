@@ -111,7 +111,7 @@
         <BkInput
           v-model="filterData.keyword"
           class="mx-8px flex-grow-1"
-          :placeholder="t('请输入网关名称')"
+          :placeholder="t('请输入网关展示名或 ID')"
         />
         <BkSelect
           v-model="ordering"
@@ -141,7 +141,7 @@
       <section>
         <div class="table-header">
           <div class="flex-1 of2">
-            {{ t('网关名') }}
+            {{ t('网关') }}
           </div>
           <template v-if="featureFlagStore.isTenantMode">
             <div class="flex-1">
@@ -194,7 +194,9 @@
                 class="flex-1 flex items-center of2 overflow-hidden"
               >
                 <div
-                  :class="item.status ? '' : 'deact'"
+                  :class="[{
+                    'deact-name': !item.status
+                  }]"
                   class="name-logo"
                   @click.stop="() => handleGoPage('StageManagement', item)"
                 >
@@ -209,22 +211,29 @@
                       size="12"
                     />
                   </span>
-                  {{ item.name[0].toUpperCase() }}
+                  {{ getGatewayDisplayName(item)[0].toUpperCase() }}
                 </div>
-                <span
-                  :ref="(el: any) => setNameRef(el, item.id)"
+                <div
+                  :ref="(el) => setNameRef(el, item.id)"
                   v-bk-tooltips="{
-                    content: item.name ?? '',
-                    theme: 'light',
+                    content: getGatewayFullName(item),
                     placement: 'top',
                     disabled: !overflowMap[item.id]
                   }"
-                  :class="item.status ? '' : 'deact-name'"
-                  class="name"
+                  :class="[{
+                    'deact-name': !item.status
+                  }]"
+                  class="gateway-name"
                   @click.stop="() => handleGoPage('StageManagement', item)"
                 >
-                  {{ item.name }}
-                </span>
+                  <span class="display-name">{{ getGatewayDisplayName(item) }}</span>
+                  <span
+                    v-if="hasDistinctDisplayName(item)"
+                    class="gateway-id"
+                  >
+                    {{ item.name }}
+                  </span>
+                </div>
                 <BkTag
                   v-if="item.is_official"
                   theme="info"
@@ -445,6 +454,7 @@ import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 type GatewayType = IExtractListApiResults<typeof getGatewayList>;
 
@@ -507,9 +517,13 @@ const setNameRef = (el: any, id: number) => {
   nameRefs.set(id, node);
 };
 
+const isTextOverflow = (el?: HTMLElement | null) => Boolean(el && el.scrollWidth > el.clientWidth);
+
 const checkOverflow = () => {
   nameRefs.forEach((el, id) => {
-    overflowMap[id] = el.scrollWidth > el.clientWidth;
+    const displayNameEl = el.querySelector<HTMLElement>('.display-name');
+    const gatewayIdEl = el.querySelector<HTMLElement>('.gateway-id');
+    overflowMap[id] = isTextOverflow(displayNameEl) || isTextOverflow(gatewayIdEl);
   });
 };
 
@@ -535,6 +549,7 @@ const setupEnvResizeObserver = () => {
     if (Math.abs(width - lastObservedWidth) < 1) return;
     lastObservedWidth = width;
     calculateVisibleTags();
+    checkOverflow();
   });
   envResizeObserver.observe(tableListRef.value);
 };
@@ -867,6 +882,7 @@ const handleResize = () => {
   }
   resizeTimer = window.setTimeout(() => {
     calculateVisibleTags();
+    checkOverflow();
   }, 100);
 };
 
@@ -994,15 +1010,21 @@ const calculateVisibleTags = () => {
   });
 };
 
-onMounted(async () => {
+onMounted(() => {
   pagination.value.limit = calcPageLimit();
   window.addEventListener('resize', handleResize);
   nextTick(() => {
     calculateVisibleTags();
+    checkOverflow();
     setupEnvResizeObserver();
-    setTimeout(() => calculateVisibleTags(), 100);
-    setTimeout(() => calculateVisibleTags(), 300);
   });
+  // 字体加载完成后文本/标签宽度会变化，重新测量一次；已加载则立即触发
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    document.fonts.ready.then(() => {
+      calculateVisibleTags();
+      checkOverflow();
+    });
+  }
 });
 
 onBeforeUnmount(() => {
@@ -1154,18 +1176,36 @@ onBeforeUnmount(() => {
           }
         }
 
-        .name {
+        .gateway-name {
+          display: flex;
           min-width: 0;
           margin-right: 10px;
-          overflow: hidden;
-          font-weight: 700;
-          color: #313238;
-          text-overflow: ellipsis;
-          white-space: nowrap;
           cursor: pointer;
+          flex-direction: column;
 
           &:hover {
-            color: #3a84ff;
+            .display-name {
+              color: #3a84ff;
+            }
+          }
+
+          .display-name,
+          .gateway-id {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .display-name {
+            font-weight: 700;
+            line-height: 22px;
+            color: #313238;
+          }
+
+          .gateway-id {
+            font-size: 12px;
+            line-height: 20px;
+            color: #979ba5;
           }
         }
 
@@ -1226,11 +1266,11 @@ onBeforeUnmount(() => {
   }
 
   .deact {
-    color: #fff !important;
-    background: #EAEBF0 !important;
+    color: #ffffff !important;
+    background: #eaebf0 !important;
 
     .deact-name {
-      color: #979BA5 !important;
+      color: #979ba5 !important;
     }
   }
 

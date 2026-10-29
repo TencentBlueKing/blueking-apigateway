@@ -28,9 +28,10 @@
     >
       <!-- 左上角的网关选择器 -->
       <template #side-header>
-        <div>
+        <div ref="gatewaySelectContainerRef">
           <BkSelect
             v-show="!isMenuCollapsed"
+            :key="gatewaySelectVersion"
             v-model="gatewayId"
             class="gateway-select"
             filterable
@@ -81,7 +82,10 @@
               v-for="item of gatewayList"
               :id="item.id"
               :key="item.id"
-              :name="item.name"
+              :name="getGatewayFullName(item)"
+              :class="[{
+                'min-h-48px!': hasDistinctDisplayName(item)
+              }]"
             >
               <div class="w-full flex items-center justify-between">
                 <div class="flex items-center justify-center">
@@ -101,13 +105,19 @@
                   <div
                     v-bk-tooltips="{
                       placement: 'right',
-                      content: item.name,
+                      content: getGatewayFullName(item),
                       disabled: !nameOverflowMap.get(item.id),
                     }"
-                    class="max-w-180px color-#4d4f56 truncate"
+                    class="min-w-0 max-w-178px flex flex-col color-#4d4f56 break-all"
                     @mouseenter="handleNameMouseEnter($event, item)"
                   >
-                    {{ item.name }}
+                    <span class="truncate">{{ getGatewayDisplayName(item) }}</span>
+                    <span
+                      v-if="hasDistinctDisplayName(item)"
+                      class="truncate text-12px color-#979ba5"
+                    >
+                      {{ item.name }}
+                    </span>
                   </div>
                 </div>
                 <BkTag
@@ -241,6 +251,7 @@ import { useGatewayRole } from '@/hooks';
 import { canAccessByRole } from '@/utils/gateway-permission';
 import { isGatewayNavigationPending } from '@/router/gateway-role-guard';
 import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
+import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 type GatewayItemType = IExtractListApiResults<typeof getGatewayList>;
 
@@ -261,11 +272,14 @@ const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
 // 网关名称是否溢出（用于决定是否显示 tooltip）
 const nameOverflowMap = ref(new Map<number, boolean>());
+const gatewaySelectContainerRef = ref<HTMLElement>();
 const openedKeys = ref<string[]>(['StageManagement', 'ResourceManagement']);
 const needMenu = ref(true);
 const pageName = ref('');
 // 当前网关Id
 const gatewayId = ref(0);
+// 选择器内部会缓存选中项文案，列表数据变更后通过变更 key 重建，确保展示最新名称
+const gatewaySelectVersion = ref(0);
 // 页面header名
 const headerTitle = ref('');
 
@@ -564,8 +578,12 @@ const setBreadcrumbTitle = (payload: typeof route) => {
 
 const handleNameMouseEnter = (e: MouseEvent, item: GatewayItemType) => {
   const el = e.currentTarget as HTMLElement;
+  // 省略号作用在内部两个 .truncate 子元素上，父容器自身不会溢出，需要分别测量子元素
+  const isOverflow = Array
+    .from(el.querySelectorAll<HTMLElement>('.truncate'))
+    .some(span => span.scrollWidth > span.clientWidth);
   nameOverflowMap.value.clear();
-  nameOverflowMap.value.set(item.id, el.scrollWidth > el.clientWidth);
+  nameOverflowMap.value.set(item.id, isOverflow);
 };
 
 // 检查网关下的环境 schema 版本
@@ -612,6 +630,10 @@ watch(
     // 仅当网关数据存在，并且和当前页面网关id一致，才刷新标题
     if (newGateway && newGateway?.id === gatewayId.value) {
       setBreadcrumbTitle(route);
+    }
+    // 基本信息保存后会刷新详情，这里同步左上角选择器中的网关名称
+    if (newGateway?.id) {
+      syncGatewayListItem(newGateway as Record<string, any>);
     }
   },
   { flush: 'post' },
@@ -695,6 +717,26 @@ watch(
 const getGatewayData = async () => {
   const response = await getGatewayList({ limit: 10000 });
   gatewayList.value = response.results || [];
+};
+
+// 网关基础信息（如展示名）修改成功后同步选择器列表，避免仍展示旧名称
+const syncGatewayListItem = (gateway: Record<string, any>) => {
+  const item = gatewayList.value.find(listItem => listItem.id === gateway.id) as Record<string, any>;
+  if (!item) {
+    return;
+  }
+  let isChanged = false;
+  ['name', 'display_name', 'kind', 'status'].forEach((key) => {
+    if (gateway[key] !== undefined && item[key] !== gateway[key]) {
+      item[key] = gateway[key];
+      isChanged = true;
+    }
+  });
+  if (isChanged) {
+    // 替换数组引用并重建选择器，驱动下拉选项重新渲染
+    gatewayList.value = [...gatewayList.value];
+    gatewaySelectVersion.value += 1;
+  }
 };
 
 // 获取权限审批的数量
@@ -1058,9 +1100,12 @@ onMounted(() => {
     box-sizing: border-box;
 
     .bk-input--text {
+      overflow: hidden;
       font-size: 14px;
       color: #4d4f56;
       background-color: transparent;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       order: 1;
     }
 

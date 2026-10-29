@@ -802,13 +802,17 @@ const handleCellEnter = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
-  const cell = (e.target as HTMLElement).closest('.truncate');
-  if (cell) {
-    const isOverflow = cell.scrollWidth > cell.clientWidth;
-    // 仅当状态变化时才赋值
-    if (row.isOverflow !== isOverflow) {
-      row.isOverflow = isOverflow;
-    }
+  const target = e.target as HTMLElement;
+  const cell = target.closest('.truncate');
+  // 省略号可能作用在子节点上，此时外层容器自身不含 .truncate，
+  // 需要测量内部的 .truncate 子节点，否则 row.isOverflow 恒为 false，tooltip 无法触发
+  const isOverflow = cell
+    ? cell.scrollWidth > cell.clientWidth
+    : Array.from(target.querySelectorAll<HTMLElement>('.truncate'))
+      .some(el => el.scrollWidth > el.clientWidth);
+  // 仅当状态变化时才赋值
+  if (row.isOverflow !== isOverflow) {
+    row.isOverflow = isOverflow;
   }
 };
 
