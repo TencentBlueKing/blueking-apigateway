@@ -331,8 +331,30 @@ class TestItsmPermissionApplyHelper:
         caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
         helper = ItsmPermissionApplyHelper(system_code="not-exists")
         assert helper.is_ready() is False
-        assert "system_code=not-exists" in caplog.text
-        assert "register_to_itsm" in caplog.text
+        records = [record for record in caplog.records if record.name == "apigateway.service.bk_itsm"]
+        assert len(records) == 1
+        assert "system config not found" in records[0].getMessage()
+        assert "system_code=not-exists" in records[0].getMessage()
+        assert "register_to_itsm" in records[0].getMessage()
+        assert records[0].exc_info is None
+
+    def test_config_still_raises_when_not_exists(self):
+        with pytest.raises(APIError, match="please run register_to_itsm command first"):
+            _ = ItsmPermissionApplyHelper(system_code="not-exists").config
+
+    def test_is_ready_reuses_cached_config(self, django_assert_num_queries):
+        config = G(
+            ItsmSystemConfig,
+            system_code="ready",
+            is_registered=True,
+            workflow_key_map={"gateway": "wf-001", "resource": "wf-001"},
+        )
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+
+        with django_assert_num_queries(1):
+            assert helper.is_ready() is True
+            assert helper.is_ready() is True
+            assert helper.config.pk == config.pk
 
     @pytest.mark.parametrize(
         ("is_registered", "workflow_key_map", "expected_log"),
@@ -365,7 +387,14 @@ class TestItsmPermissionApplyHelper:
         assert ItsmPermissionApplyHelper().is_ready() is False
 
         assert "database unavailable" in caplog.text
-        assert caplog.records[-1].exc_info is not None
+        records = [
+            record
+            for record in caplog.records
+            if record.name == "apigateway.service.bk_itsm"
+            and "Failed to check ITSM integration readiness" in record.getMessage()
+        ]
+        assert len(records) == 1
+        assert records[0].exc_info is not None
 
     def test_default_system_code_should_match_template_system_code(self):
         parser = argparse.ArgumentParser()
