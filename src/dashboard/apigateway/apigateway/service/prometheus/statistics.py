@@ -65,21 +65,6 @@ class StatisticsGatewayRequestMetrics(BaseStatisticsMetrics):
         )
 
 
-class StatisticsGatewayRequestDurationMetrics(BaseStatisticsMetrics):
-    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
-        labels = self._get_labels_expression(
-            [
-                ("api_name", "=", gateway_name),
-                *self.default_labels,
-            ]
-        )
-        return (
-            f"sum(increase({self.metric_name_prefix}apigateway_api_request_duration_milliseconds_sum{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, stage_name, resource_name)"
-        )
-
-
 class StatisticsAppRequestMetrics(BaseStatisticsMetrics):
     """
     根据网关、环境、资源，统计应用请求量
@@ -96,23 +81,4 @@ class StatisticsAppRequestMetrics(BaseStatisticsMetrics):
             f"sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
             f"{labels}"
             f"}}[{step}])) by (app_code, api_name, stage_name, resource_name)"
-        )
-
-
-class StatisticsAppRequestByResourceMetrics(BaseStatisticsMetrics):
-    """
-    根据网关、资源，统计应用请求量
-    """
-
-    def _get_query_promql(self, step: str, gateway_name: Optional[str] = None):
-        labels = self._get_labels_expression(
-            [
-                ("api_name", "=", gateway_name),
-                *self.default_labels,
-            ]
-        )
-        return (
-            f"sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (app_code, api_name, resource_name)"
         )

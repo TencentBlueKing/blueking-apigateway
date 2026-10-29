@@ -42,27 +42,6 @@ class TestStatisticsGatewayRequestMetrics:
         assert result == expected
 
 
-class TestStatisticsGatewayRequestDurationMetrics:
-    @pytest.mark.parametrize(
-        "step, expected",
-        [
-            (
-                "5m",
-                (
-                    "sum(increase(bk_apigateway_apigateway_api_request_duration_milliseconds_sum{}[5m])) "
-                    "by (api_name, stage_name, resource_name)"
-                ),
-            )
-        ],
-    )
-    def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-
-        metrics = statistics.StatisticsGatewayRequestDurationMetrics()
-        result = metrics._get_query_promql(step)
-        assert result == expected
-
-
 class TestStatisticsAppRequestMetrics:
     @pytest.mark.parametrize(
         "step, expected",
@@ -80,26 +59,5 @@ class TestStatisticsAppRequestMetrics:
         mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         metrics = statistics.StatisticsAppRequestMetrics()
-        result = metrics._get_query_promql(step)
-        assert result == expected
-
-
-class TestStatisticsAppRequestByResourceMetrics:
-    @pytest.mark.parametrize(
-        "step, expected",
-        [
-            (
-                "5m",
-                (
-                    "sum(increase(bk_apigateway_apigateway_app_requests_total{}[5m])) "
-                    "by (app_code, api_name, resource_name)"
-                ),
-            )
-        ],
-    )
-    def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
-
-        metrics = statistics.StatisticsAppRequestByResourceMetrics()
         result = metrics._get_query_promql(step)
         assert result == expected

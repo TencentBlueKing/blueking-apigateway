@@ -63,9 +63,7 @@ from .mcp_server_dimension import (
 )
 from .statistics import (
     BaseStatisticsMetrics,
-    StatisticsAppRequestByResourceMetrics,
     StatisticsAppRequestMetrics,
-    StatisticsGatewayRequestDurationMetrics,
     StatisticsGatewayRequestMetrics,
 )
 
@@ -112,9 +110,7 @@ __all__ = [
     "ResponseTime90thMetrics",
     "ResponseTime95thMetrics",
     "ResponseTime99thMetrics",
-    "StatisticsAppRequestByResourceMetrics",
     "StatisticsAppRequestMetrics",
-    "StatisticsGatewayRequestDurationMetrics",
     "StatisticsGatewayRequestMetrics",
     "TruncDateFunc",
     "TruncMonthFunc",
