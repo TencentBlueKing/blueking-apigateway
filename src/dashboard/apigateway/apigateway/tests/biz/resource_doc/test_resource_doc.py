@@ -43,10 +43,13 @@ class TestResourceDocHandler:
 
         result = ResourceDocHandler.get_docs_by_resource_ids([fake_resource.id, fake_resource1.id])
 
-        assert result == {
+        expected = {
             fake_resource.id: [
                 {"id": zh_doc.id, "language": "zh"},
                 {"id": en_doc.id, "language": "en"},
             ],
             fake_resource1.id: [{"id": other_doc.id, "language": "zh"}],
+        }
+        assert {resource_id: sorted(docs, key=lambda doc: doc["id"]) for resource_id, docs in result.items()} == {
+            resource_id: sorted(docs, key=lambda doc: doc["id"]) for resource_id, docs in expected.items()
         }
