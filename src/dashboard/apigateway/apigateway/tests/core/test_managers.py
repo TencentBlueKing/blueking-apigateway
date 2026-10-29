@@ -183,36 +183,6 @@ class TestResourceVersionManager:
         assert resources[resource_id]["oauth2_personal_client_enabled"] is True
         ResourceVersion.objects.get_resources.cache_clear()
 
-    def test_get_id_to_fields_map(self):
-        gateway = G(Gateway)
-        rv1 = G(ResourceVersion, gateway=gateway, version="1.0.1")
-        rv2 = G(ResourceVersion, gateway=gateway, version="1.0.2")
-
-        data = [
-            {
-                "params": {
-                    "gateway_id": gateway.id,
-                    "resource_version_ids": None,
-                },
-                "expected": {
-                    rv1.id: {"id": rv1.id, "version": "1.0.1"},
-                    rv2.id: {"id": rv2.id, "version": "1.0.2"},
-                },
-            },
-            {
-                "params": {
-                    "gateway_id": gateway.id,
-                    "resource_version_ids": [rv1.id],
-                },
-                "expected": {
-                    rv1.id: {"id": rv1.id, "version": "1.0.1"},
-                },
-            },
-        ]
-        for test in data:
-            result = ResourceVersion.objects.get_id_to_fields_map(**test["params"])
-            assert result == test["expected"]
-
     def test_get_id_by_version(self, unique_id):
         gateway = G(Gateway)
 

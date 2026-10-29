@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, Optional
+from typing import Optional
 
 from django.db import models
 
@@ -63,10 +63,6 @@ class ReleasedResourceDocManager(models.Manager):
         self.bulk_create(
             resource_doc_to_add, batch_size=RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE, ignore_conflicts=True
         )
-
-    def get_doc_updated_time(self, gateway_id: int, resource_version_id: int, resource_id: int) -> Dict[str, str]:
-        qs = self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id, resource_id=resource_id)
-        return {doc.language: doc.data["updated_time"] for doc in qs}
 
 
 class GatewaySDKManager(models.Manager):

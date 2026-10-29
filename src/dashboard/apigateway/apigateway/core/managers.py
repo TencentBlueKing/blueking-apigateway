@@ -27,7 +27,6 @@ from django.db import models
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
-    BackendKindEnum,
     ResourceKindEnum,
     StageStatusEnum,
 )
@@ -36,22 +35,6 @@ from apigateway.utils.time import now_datetime
 # - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
 
 RELEASED_RESOURCE_CREATE_BATCH_SIZE = 50
-
-
-class BackendManager(models.Manager):
-    def standard(self):
-        return self.filter(kind=BackendKindEnum.STANDARD.value)
-
-    def ai(self):
-        return self.filter(kind=BackendKindEnum.AI.value)
-
-
-class ResourceManager(models.Manager):
-    def standard(self):
-        return self.filter(kind=ResourceKindEnum.STANDARD.value)
-
-    def ai(self):
-        return self.filter(kind=ResourceKindEnum.AI.value)
 
 
 class StageManager(models.Manager):
@@ -104,22 +87,6 @@ class ResourceVersionManager(models.Manager):
                 "oauth2_personal_client_enabled": resource_auth_config.get("oauth2_personal_client_enabled", False),
             }
         return resources
-
-    def get_id_to_fields_map(
-        self,
-        gateway_id: Optional[int] = None,
-        resource_version_ids: Optional[List[int]] = None,
-    ) -> Dict[int, dict]:
-        """获取资源版本信息"""
-        queryset = self.all()
-
-        if gateway_id is not None:
-            queryset = queryset.filter(gateway_id=gateway_id)
-
-        if resource_version_ids is not None:
-            queryset = queryset.filter(id__in=resource_version_ids)
-
-        return {rv["id"]: dict(rv) for rv in queryset.values("id", "version")}
 
     def get_id_by_version(self, gateway_id: int, version: str) -> Optional[int]:
         if not version:
