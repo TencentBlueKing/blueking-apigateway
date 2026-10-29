@@ -49,6 +49,8 @@ def get_redis_pool(redis_conf):
             max_connections=redis_conf["max_connections"],
             socket_timeout=REDIS_TIMEOUT,
             timeout=REDIS_TIMEOUT,
+            # redis-py 8 defaults to RESP3; older Redis servers/proxies may not support HELLO.
+            protocol=2,
             connection_class=redis.SSLConnection,
             ssl_ca_certs=redis_conf.get("tls_cert_ca_file"),
             ssl_certfile=redis_conf.get("tls_cert_file"),
@@ -67,6 +69,8 @@ def get_redis_pool(redis_conf):
         max_connections=redis_conf["max_connections"],
         socket_timeout=REDIS_TIMEOUT,
         timeout=REDIS_TIMEOUT,
+        # redis-py 8 defaults to RESP3; older Redis servers/proxies may not support HELLO.
+        protocol=2,
         # redis-py will send SETINFO command, not valid for older version redis
         lib_name=None,
         lib_version=None,
