@@ -22,6 +22,8 @@ import pytest
 from ddf import G
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.apps.mcp_server import tasks as mcp_server_tasks
+from apigateway.apps.mcp_server.constants import RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME
 from apigateway.biz.release.gateway_releaser import (
     GatewayReleaser,
     ReleaseError,
@@ -29,6 +31,7 @@ from apigateway.biz.release.gateway_releaser import (
 )
 from apigateway.controller.distributor.base import DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE
 from apigateway.controller.distributor.connection import DistributorConnectionError
+from apigateway.controller.tasks.release import MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS
 from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 
@@ -173,6 +176,7 @@ class TestGatewayReleaser:
     def test_do_release(
         self,
         mocker,
+        settings,
         celery_task_eager_mode,
         fake_gateway,
         fake_stage,
@@ -182,6 +186,10 @@ class TestGatewayReleaser:
         fake_publish_success_event,
         celery_mock_task,
     ):
+        settings.CELERY_TASK_EAGER_PROPAGATES = True
+        add_permissions = mocker.spy(mcp_server_tasks.add_stage_mcp_server_permissions_before_release_update, "run")
+        # send_task ignores eager mode and would connect to the real Redis backend.
+        send_task = mocker.patch("apigateway.controller.tasks.release.current_app.send_task")
         mock_release_gateway_by_registry = mocker.patch(
             "apigateway.biz.release.gateway_releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
@@ -196,6 +204,19 @@ class TestGatewayReleaser:
         mock_release_gateway_by_registry.si.assert_called_once_with(
             publish_id=fake_release_history.id,
             data_plane_id=data_plane.id,
+        )
+        add_permissions.assert_called_once_with(
+            stage_id=fake_release.stage.id,
+            resource_version_id=fake_release_history.resource_version.id,
+        )
+        send_task.assert_called_once_with(
+            RECONCILE_STAGE_MCP_SERVER_PERMISSIONS_AFTER_RELEASE_TASK_NAME,
+            kwargs={
+                "stage_id": fake_release.stage.id,
+                "expected_resource_version_id": fake_release_history.resource_version.id,
+                "expected_release_history_id": fake_release_history.id,
+            },
+            countdown=MCP_SERVER_PERMISSION_CLEANUP_DELAY_SECONDS,
         )
 
         assert ReleaseHistory.objects.filter(

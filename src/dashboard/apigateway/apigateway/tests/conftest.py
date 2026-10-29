@@ -87,6 +87,13 @@ def pytest_collection_modifyitems(items):
     for item in items:
         if item.path.match("test_migration*.py") and item.get_closest_marker("migration") is None:
             item.add_marker(pytest.mark.migration)
+        # Declare dynamic DB access before pytest-django chooses database aliases.
+        if (
+            "meta_schemas" in item.fixturenames
+            and not item.get_closest_marker("no_meta_schema")
+            and not item.get_closest_marker("django_db")
+        ):
+            item.add_marker(pytest.mark.django_db)
 
 
 def pytest_sessionstart(session):
@@ -102,18 +109,6 @@ def pytest_sessionstart(session):
 
     TestCase.multi_db = True
     TestCase.databases = "__all__"
-
-
-def pytest_collection_modifyitems(items):
-    # pytest-django decides which databases to create from collection metadata.
-    # Preserve the historical implicit DB fixture even for isolated test selections.
-    for item in items:
-        if (
-            "meta_schemas" in item.fixturenames
-            and not item.get_closest_marker("no_meta_schema")
-            and not item.get_closest_marker("django_db")
-        ):
-            item.add_marker(pytest.mark.django_db)
 
 
 class APIRequestFactory(DRFAPIRequestFactory):
@@ -663,8 +658,30 @@ def meta_schemas(request):
 
     # Existing integration fixtures rely on both DB access and these schema rows.
     request.getfixturevalue("db")
+    _ensure_meta_schemas()
+
+
+def _ensure_meta_schemas():
+    """Restore seed data without rewriting rows that already match."""
     schemas = init_meta_schemas()
+    existing = {
+        schema.natural_key(): schema for schema in Schema.objects.filter(name__in=[schema.name for schema in schemas])
+    }
     for s in schemas:
+        current = existing.get(s.natural_key())
+        # Preserve per-test isolation while avoiding saves of unchanged seed data.
+        try:
+            unchanged = (
+                current is not None
+                and json.dumps(current.schema, sort_keys=True) == json.dumps(s.schema, sort_keys=True)
+                and current.description == s.description
+                and current.example == s.example
+            )
+        except json.JSONDecodeError:
+            # Repair malformed seed rows through the normal save path below.
+            unchanged = False
+        if unchanged:
+            continue
         Schema.objects.update_or_create(
             name=s.name,
             type=s.type,
