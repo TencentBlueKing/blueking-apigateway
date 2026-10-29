@@ -24,7 +24,7 @@ from ddf import G
 from apigateway.apis.open.stage import views
 from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
-from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
+from apigateway.core.models import Backend, BackendConfig, Gateway, GatewayRelatedApp, Stage
 from apigateway.tests.utils.testing import get_response_json
 from apigateway.utils.yaml import yaml_dumps
 
@@ -73,11 +73,14 @@ class TestStageListViewSet:
 
 
 class TestStageV1ViewSet:
-    def list_stages_with_resource_version(self, request_to_view, request_factory, fake_release):
+    def test_list_stages_with_resource_version(self, request_to_view, request_factory, fake_release):
         request = request_factory.get("")
         request.gateway = fake_release.gateway
+        request.app = mock.MagicMock(app_code="stage-list-app")
+        G(GatewayRelatedApp, gateway=request.gateway, bk_app_code=request.app.app_code)
 
         G(Stage, name="test", gateway=request.gateway, status=StageStatusEnum.ACTIVE.value)
+        G(Stage, name="other-gateway-stage", gateway=G(Gateway), status=StageStatusEnum.ACTIVE.value)
 
         response = request_to_view(
             request,
