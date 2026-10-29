@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from django.db import models
 from django.db.models import Q
@@ -28,7 +28,7 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
 )
 from apigateway.common.time import calculate_expires, calculate_renew_time
-from apigateway.utils.time import now_datetime, to_datetime_from_now
+from apigateway.utils.time import now_datetime
 
 if TYPE_CHECKING:
     import datetime
@@ -103,27 +103,6 @@ class AppResourcePermissionManager(models.Manager):
             obj.grant_type = grant_type
 
         self.bulk_update(queryset, ["expires", "grant_type"])
-
-    def renew_not_expired_permissions(
-        self,
-        gateway_id: int,
-        bk_app_code: str,
-        resource_ids: List[int],
-        grant_type=GrantTypeEnum.RENEW.value,
-        expire_days=DEFAULT_PERMISSION_EXPIRE_DAYS,
-    ):
-        """仅续期未过期且权限期限小于待续期时间的权限"""
-        expires = to_datetime_from_now(days=expire_days)
-        queryset = self.filter(
-            gateway_id=gateway_id,
-            bk_app_code=bk_app_code,
-            resource_id__in=resource_ids,
-            expires__range=(now_datetime(), expires),
-        )
-        queryset.update(
-            expires=expires,
-            grant_type=grant_type,
-        )
 
     def save_permissions(self, gateway, resource_ids, bk_app_code, grant_type, expire_days=None, handled_by=""):
         expires = calculate_expires(expire_days)

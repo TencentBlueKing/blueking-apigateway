@@ -277,8 +277,6 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     oauth2_public_client_enabled = models.BooleanField(default=False)
     oauth2_personal_client_enabled = models.BooleanField(default=False)
 
-    objects: ClassVar[managers.ResourceManager] = managers.ResourceManager()
-
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"
 
@@ -413,8 +411,6 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
     )
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=512, default="")
-
-    objects: ClassVar[managers.BackendManager] = managers.BackendManager()
 
     class Meta:
         unique_together = ("gateway", "name")
