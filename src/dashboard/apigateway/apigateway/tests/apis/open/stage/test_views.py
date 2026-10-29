@@ -105,19 +105,30 @@ class TestStageV1ViewSet:
 
 
 class TestStageSyncViewSet:
-    def test_sync_ai_gateway_with_ai_backends(self, mocker, unique_gateway_name, request_factory):
+    @pytest.mark.parametrize("with_backup", [False, True])
+    def test_sync_ai_gateway_with_ai_backends(self, mocker, unique_gateway_name, request_factory, with_backup):
         mocker.patch(
             "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
         gateway = G(Gateway, name=unique_gateway_name, is_public=False, kind=GatewayKindEnum.AI.value)
+        model_backend = _model_backend()
+        if with_backup:
+            model_backend["config"]["instances"].append(
+                {
+                    "name": "backup",
+                    "priority": 0,
+                    "provider": "openai",
+                    "auth": {"header": {"Authorization": "Bearer backup-secret"}},
+                }
+            )
         request = request_factory.post(
             f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
             data={
                 "name": "prod",
                 "description": "desc",
                 "vars": {},
-                "ai_backends": [_model_backend()],
+                "ai_backends": [model_backend],
             },
         )
         request.gateway = gateway
@@ -129,9 +140,25 @@ class TestStageSyncViewSet:
         backend = Backend.objects.get(gateway=gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
-        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
-        assert backend_config.config["instances"][0]["weight"] == 0
-        assert "options" not in backend_config.config["instances"][0]
+        primary = next(item for item in backend_config.config["instances"] if item["name"] == "primary")
+        assert primary["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert primary["weight"] == (1 if with_backup else 0)
+        assert "options" not in primary
+
+        if with_backup:
+            assert backend_config.config["fallback_strategy"] == ["http_429", "http_5xx"]
+            assert sorted(item["priority"] for item in backend_config.config["instances"]) == [0, 10]
+            model_backend["config"]["instances"].pop()
+            updated_request = request_factory.post(
+                "/", data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [model_backend]}
+            )
+            updated_request.gateway = gateway
+            updated = views.StageSyncViewSet.as_view({"post": "sync"})(
+                updated_request, gateway_name=unique_gateway_name
+            )
+            assert updated.status_code == 200
+            backend_config.refresh_from_db()
+            assert len(backend_config.config["instances"]) == 1
 
     def test_sync(self, mocker, unique_gateway_name, request_factory):
         mocker.patch(

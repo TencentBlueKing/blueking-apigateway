@@ -24,7 +24,7 @@ from django.utils.translation.trans_null import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
+from apigateway.apis.backend_config import validate_ai_backend_config
 from apigateway.apis.v2.validators import validate_comma_separated_ints, validate_comma_separated_names
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
@@ -416,7 +416,7 @@ class BackendSLZ(serializers.Serializer):
 
 class AIBackendConfigSLZ(serializers.Serializer):
     def to_internal_value(self, data):
-        return validate_single_instance_ai_backend_config(data)
+        return validate_ai_backend_config(data)
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.AIBackendConfigSLZ"

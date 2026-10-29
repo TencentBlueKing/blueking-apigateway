@@ -33,8 +33,7 @@ def _derive_models_endpoint(completion_endpoint: str) -> str:
     return urlunsplit(parsed._replace(path=path, fragment=""))
 
 
-def _get_endpoint_pair(config: dict) -> tuple[str, str, bool]:
-    instance = config["instances"][0]
+def _get_endpoint_pair(instance: dict) -> tuple[str, str, bool]:
     provider_config = get_ai_backend_provider_config(instance["provider"])
     if provider_config is not None:
         return provider_config.endpoint, provider_config.model_endpoint, False
@@ -44,10 +43,9 @@ def _get_endpoint_pair(config: dict) -> tuple[str, str, bool]:
     return completion, _derive_models_endpoint(completion), True
 
 
-def get_ai_backend_model_ids(config: dict) -> list[str]:
-    instance = config["instances"][0]
+def get_ai_backend_model_ids(instance: dict) -> list[str]:
     provider = instance["provider"]
-    completion_endpoint, model_endpoint, inferred = _get_endpoint_pair(config)
+    completion_endpoint, model_endpoint, inferred = _get_endpoint_pair(instance)
     _resolve_endpoint(completion_endpoint)
     _resolve_endpoint(model_endpoint)
 

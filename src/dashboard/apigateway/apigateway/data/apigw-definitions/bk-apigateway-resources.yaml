@@ -1872,10 +1872,28 @@ paths:
                             maximum: 300
                             default: 300
                             description: 超时时间，单位秒，范围 1..300
+                          balancer:
+                            type: object
+                            description: 多实例公共负载均衡配置；默认 roundrobin，chash 固定按调用应用编码分配
+                            properties:
+                              algorithm:
+                                type: string
+                                enum: [roundrobin, chash]
+                              hash_on:
+                                type: string
+                                enum: [vars_combinations]
+                              key:
+                                type: string
+                                enum: ['$bk_app_code']
+                          fallback_strategy:
+                            type: array
+                            description: 多实例默认对上游 429/5xx 重试；仅主池可传空数组关闭，有备用时至少启用一项
+                            items:
+                              type: string
+                              enum: [http_429, http_5xx]
                           instances:
                             type: array
                             minItems: 1
-                            maxItems: 1
                             items:
                               type: object
                               required:
@@ -1890,10 +1908,14 @@ paths:
                                     - openai
                                     - deepseek
                                     - openai-compatible
+                                priority:
+                                  type: integer
+                                  enum: [10, 0]
+                                  description: 10 为主实例（默认），0 为备用；至少一主、最多一备
                                 weight:
                                   type: integer
                                   minimum: 0
-                                  default: 0
+                                  description: 多实例固定为 1，可省略；旧单实例省略时由后端保持默认 0
                                 auth:
                                   type: object
                                   description: 认证 Header 映射，可包含多个 Header
@@ -5214,10 +5236,28 @@ paths:
                             maximum: 300
                             default: 300
                             description: 超时时间（单位：秒），范围 1..300
+                          balancer:
+                            type: object
+                            description: 多实例公共负载均衡配置；默认 roundrobin，chash 固定按调用应用编码分配
+                            properties:
+                              algorithm:
+                                type: string
+                                enum: [roundrobin, chash]
+                              hash_on:
+                                type: string
+                                enum: [vars_combinations]
+                              key:
+                                type: string
+                                enum: ['$bk_app_code']
+                          fallback_strategy:
+                            type: array
+                            description: 多实例默认对上游 429/5xx 重试；仅主池可传空数组关闭，有备用时至少启用一项
+                            items:
+                              type: string
+                              enum: [http_429, http_5xx]
                           instances:
                             type: array
                             minItems: 1
-                            maxItems: 1
                             items:
                               type: object
                               required:
@@ -5233,10 +5273,14 @@ paths:
                                     - openai
                                     - deepseek
                                     - openai-compatible
+                                priority:
+                                  type: integer
+                                  enum: [10, 0]
+                                  description: 10 为主实例（默认），0 为备用；至少一主、最多一备
                                 weight:
                                   type: integer
                                   minimum: 0
-                                  default: 0
+                                  description: 多实例固定为 1，可省略；旧单实例省略时由后端保持默认 0
                                 auth:
                                   type: object
                                   description: 认证 Header 映射，可包含多个 Header

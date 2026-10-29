@@ -2,32 +2,35 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.ai_backend import AIBackendWebInputSLZ
+from apigateway.apis.web.ai_backend.serializers import AIBackendWebInstanceInputSLZ
 
 
 def test_builtin_web_input_uses_registry_and_optional_model():
-    slz = AIBackendWebInputSLZ(data={"provider": "openai", "api_key": "secret"})
+    slz = AIBackendWebInstanceInputSLZ(data={"name": "primary", "provider": "openai", "api_key": "secret"})
 
     slz.is_valid(raise_exception=True)
 
     assert slz.validated_data == {
+        "name": "primary",
+        "priority": 10,
         "provider": "openai",
         "api_key": "secret",
         "model_options": {},
-        "timeout": 300,
     }
 
 
 @pytest.mark.parametrize("field", ["instances", "auth", "override", "balancer", "fallback_strategy"])
 def test_web_input_rejects_internal_fields(field):
-    slz = AIBackendWebInputSLZ(data={"provider": "openai", "api_key": "secret", field: {}})
+    slz = AIBackendWebInstanceInputSLZ(data={"name": "primary", "provider": "openai", "api_key": "secret", field: {}})
 
     with pytest.raises(ValidationError):
         slz.is_valid(raise_exception=True)
 
 
 def test_custom_web_input_accepts_optional_auth_model_and_models_endpoint():
-    slz = AIBackendWebInputSLZ(
+    slz = AIBackendWebInstanceInputSLZ(
         data={
+            "name": "primary",
             "provider": "openai-compatible",
             "endpoint": "https://llm.example.com/v1/chat/completions",
         }
@@ -36,10 +39,11 @@ def test_custom_web_input_accepts_optional_auth_model_and_models_endpoint():
     slz.is_valid(raise_exception=True)
 
     assert slz.validated_data == {
+        "name": "primary",
+        "priority": 10,
         "provider": "openai-compatible",
         "endpoint": "https://llm.example.com/v1/chat/completions",
         "model_options": {},
-        "timeout": 300,
     }
 
 
@@ -56,8 +60,13 @@ def test_custom_web_input_accepts_optional_auth_model_and_models_endpoint():
     ],
 )
 def test_custom_web_endpoints_accept_backend_service_addresses(field, url):
-    slz = AIBackendWebInputSLZ(
-        data={"provider": "openai-compatible", "endpoint": "https://llm.example.com/component", field: url}
+    slz = AIBackendWebInstanceInputSLZ(
+        data={
+            "name": "primary",
+            "provider": "openai-compatible",
+            "endpoint": "https://llm.example.com/component",
+            field: url,
+        }
     )
 
     slz.is_valid(raise_exception=True)
@@ -85,8 +94,13 @@ def test_custom_web_endpoints_accept_backend_service_addresses(field, url):
     ],
 )
 def test_custom_web_endpoints_reject_invalid_urls(field, url, reason):
-    slz = AIBackendWebInputSLZ(
-        data={"provider": "openai-compatible", "endpoint": "https://llm.example.com/component", field: url}
+    slz = AIBackendWebInstanceInputSLZ(
+        data={
+            "name": "primary",
+            "provider": "openai-compatible",
+            "endpoint": "https://llm.example.com/component",
+            field: url,
+        }
     )
 
     assert not slz.is_valid()
@@ -102,8 +116,9 @@ def test_custom_web_endpoints_reject_invalid_urls(field, url, reason):
 def test_custom_web_endpoints_reject_forbidden_backend_addresses(settings, field, host):
     settings.FORBIDDEN_HOSTS = ["blocked.example.com", "llm.example.com:8443"]
     settings.FORBIDDEN_PORTS = [8080]
-    slz = AIBackendWebInputSLZ(
+    slz = AIBackendWebInstanceInputSLZ(
         data={
+            "name": "primary",
             "provider": "openai-compatible",
             "endpoint": "https://llm.example.com/component",
             field: f"https://{host}/component",
@@ -116,8 +131,9 @@ def test_custom_web_endpoints_reject_forbidden_backend_addresses(settings, field
 
 
 def test_custom_web_input_rejects_model_inside_model_options():
-    slz = AIBackendWebInputSLZ(
+    slz = AIBackendWebInstanceInputSLZ(
         data={
+            "name": "primary",
             "provider": "openai-compatible",
             "endpoint": "https://llm.example.com/v1/chat/completions",
             "model_options": {"model": "duplicate"},
@@ -129,8 +145,8 @@ def test_custom_web_input_rejects_model_inside_model_options():
 
 
 def test_builtin_web_input_rejects_registry_endpoint_override():
-    slz = AIBackendWebInputSLZ(
-        data={"provider": "openai", "endpoint": "https://other.example.com/v1", "api_key": "secret"}
+    slz = AIBackendWebInstanceInputSLZ(
+        data={"name": "primary", "provider": "openai", "endpoint": "https://other.example.com/v1", "api_key": "secret"}
     )
 
     assert not slz.is_valid()
@@ -138,8 +154,9 @@ def test_builtin_web_input_rejects_registry_endpoint_override():
 
 
 def test_builtin_web_input_accepts_read_only_registry_endpoints_on_round_trip():
-    slz = AIBackendWebInputSLZ(
+    slz = AIBackendWebInstanceInputSLZ(
         data={
+            "name": "primary",
             "provider": "openai",
             "endpoint": "https://api.openai.com/v1/chat/completions",
             "model_endpoint": "https://api.openai.com/v1/models",
@@ -155,7 +172,27 @@ def test_builtin_web_input_accepts_read_only_registry_endpoints_on_round_trip():
 
 @pytest.mark.parametrize("timeout", [0, 301])
 def test_web_input_rejects_timeout_outside_seconds_range(timeout):
-    slz = AIBackendWebInputSLZ(data={"provider": "openai", "api_key": "secret", "timeout": timeout})
+    slz = AIBackendWebInputSLZ(
+        data={"instances": [{"name": "primary", "provider": "openai", "api_key": "secret"}], "timeout": timeout}
+    )
 
     assert not slz.is_valid()
     assert "timeout" in slz.errors
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"provider": "openai", "api_key": "secret"},
+        {"instances": [{"name": "primary", "provider": "openai", "api_key": "secret"}], "provider": "openai"},
+    ],
+)
+def test_web_envelope_rejects_flat_or_mixed_protocol(payload):
+    slz = AIBackendWebInputSLZ(data=payload)
+    assert not slz.is_valid()
+
+
+def test_instance_input_requires_name_without_pool_wrapper():
+    slz = AIBackendWebInstanceInputSLZ(data={"provider": "openai", "api_key": "secret"})
+    assert not slz.is_valid()
+    assert "name" in slz.errors

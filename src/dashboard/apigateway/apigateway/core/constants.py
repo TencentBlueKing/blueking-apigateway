@@ -278,6 +278,11 @@ class AIBackendProviderEnum(StructuredEnum):
     OPENAI_COMPATIBLE = EnumField("openai-compatible", "OpenAI Compatible")
 
 
+class AIBackendFallbackStrategyEnum(StructuredEnum):
+    HTTP_429 = EnumField("http_429", "HTTP 429")
+    HTTP_5XX = EnumField("http_5xx", "HTTP 5xx")
+
+
 AI_BACKEND_BUILTIN_PROVIDERS = frozenset(("openai", "deepseek"))
 
 

@@ -296,14 +296,20 @@ class TestResourceVersionRetrieveDestroyApi:
         assert resp.status_code == 200
         config = resp.json()["data"]["resources"][0]["proxy"]["backend"]["config"]
         assert config == {
-            "provider": "openai",
-            "endpoint": "https://api.openai.com/v1/chat/completions",
-            "model_endpoint": "https://api.openai.com/v1/models",
-            "api_key": "se****et",
-            "auth_header": None,
-            "model": "gpt-4o",
-            "model_options": {},
             "timeout": 300,
+            "instances": [
+                {
+                    "name": "primary",
+                    "priority": 10,
+                    "provider": "openai",
+                    "endpoint": "https://api.openai.com/v1/chat/completions",
+                    "model_endpoint": "https://api.openai.com/v1/models",
+                    "api_key": "se****et",
+                    "auth_header": None,
+                    "model": "gpt-4o",
+                    "model_options": {},
+                }
+            ],
         }
 
     def test_destroy(self, request_view, fake_gateway):

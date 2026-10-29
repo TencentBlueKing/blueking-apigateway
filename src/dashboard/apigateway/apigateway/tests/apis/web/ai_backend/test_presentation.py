@@ -22,16 +22,21 @@ def test_serialize_ai_backend_config_for_web():
         },
     )
 
-    assert serialize_ai_backend_config_for_web(backend_config) == {
-        "provider": "openai",
-        "endpoint": "https://api.openai.com/v1/chat/completions",
-        "model_endpoint": "https://api.openai.com/v1/models",
-        "api_key": "se****et",
-        "auth_header": None,
-        "model": None,
-        "model_options": {},
-        "timeout": 300,
-    }
+    result = serialize_ai_backend_config_for_web(backend_config)
+    assert result["timeout"] == 300
+    assert result["instances"] == [
+        {
+            "name": "primary",
+            "priority": 10,
+            "provider": "openai",
+            "endpoint": "https://api.openai.com/v1/chat/completions",
+            "model_endpoint": "https://api.openai.com/v1/models",
+            "api_key": "se****et",
+            "auth_header": None,
+            "model": None,
+            "model_options": {},
+        }
+    ]
 
 
 @pytest.mark.parametrize(

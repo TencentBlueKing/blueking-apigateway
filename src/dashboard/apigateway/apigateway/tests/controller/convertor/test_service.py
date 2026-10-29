@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
+from dataclasses import replace
 
 import pytest
 from django.conf import settings
@@ -27,6 +28,7 @@ from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
 from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION, LABEL_KEY_BACKEND_ID
 from apigateway.controller.release_data import PluginData, StageBackendConfig
+from apigateway.core.backend_config import AIBackendConfig
 from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, LoadBalanceTypeEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
@@ -399,6 +401,96 @@ class TestServiceConvertor:
             "instances": expected_instances,
             "balancer": {"algorithm": "roundrobin"},
             "fallback_strategy": ["http_429", "http_5xx"],
+            "timeout": 60000,
+            "ssl_verify": True,
+            "logging": {"summaries": True, "payloads": False},
+        }
+
+    @pytest.mark.parametrize("algorithm", ["roundrobin", "chash"])
+    @pytest.mark.parametrize("with_backup", [False, True])
+    def test_pool_routing_published_contract(self, mock_release_data, algorithm, with_backup):
+        instances = [
+            {"name": "a", "provider": "openai", "auth": {"header": {"Authorization": "Bearer real-key"}}},
+            {
+                "name": "b",
+                "provider": "openai-compatible",
+                "override": {"endpoint": "https://llm.example.com/v1/chat/completions"},
+            },
+        ]
+        if with_backup:
+            instances.append(
+                {
+                    "name": "backup",
+                    "priority": 0,
+                    "provider": "deepseek",
+                    "auth": {"header": {"Authorization": "Bearer backup-key"}},
+                }
+            )
+        raw = {"timeout": 60, "instances": instances, "balancer": {"algorithm": algorithm}}
+        if not with_backup:
+            raw["fallback_strategy"] = []
+        config = AIBackendConfig.normalize_for_write(raw)
+        mock_release_data.stage_backend_configs = {
+            10: StageBackendConfig(
+                backend_id=10,
+                backend_name="pool",
+                backend_kind="ai",
+                backend_type="http",
+                config=config,
+            )
+        }
+        service = ServiceConvertor(mock_release_data, publish_id=123, apisix_version="3.18").convert()[0]
+        expected_instances = [
+            {
+                "name": "a",
+                "provider": "openai-compatible",
+                "auth": {"header": {"Authorization": "Bearer real-key"}},
+                "priority": 10,
+                "weight": 1,
+                "override": {"endpoint": "https://api.openai.com/v1/chat/completions"},
+            },
+            {
+                "name": "b",
+                "provider": "openai-compatible",
+                "auth": {},
+                "priority": 10,
+                "weight": 1,
+                "override": {"endpoint": "https://llm.example.com/v1/chat/completions"},
+            },
+        ]
+        if with_backup:
+            expected_instances.append(
+                {
+                    "name": "backup",
+                    "provider": "openai-compatible",
+                    "auth": {"header": {"Authorization": "Bearer backup-key"}},
+                    "priority": 0,
+                    "weight": 1,
+                    "override": {"endpoint": "https://api.deepseek.com/chat/completions"},
+                }
+            )
+        balancer = {"algorithm": algorithm}
+        if algorithm == "chash":
+            balancer.update(hash_on="vars_combinations", key="$bk_app_code")
+        assert service.plugins["ai-proxy-multi"].model_dump(exclude_none=True) == {
+            "instances": expected_instances,
+            "timeout": 60000,
+            "ssl_verify": True,
+            "logging": {"summaries": True, "payloads": False},
+            "balancer": balancer,
+            "fallback_strategy": ["http_429", "http_5xx"] if with_backup else [],
+        }
+        # Removing the other instances switches publication back to ai-proxy.
+        mock_release_data.stage_backend_configs[10] = replace(
+            mock_release_data.stage_backend_configs[10],
+            config=AIBackendConfig.normalize_for_write({"timeout": 60, "instances": [config["instances"][0]]}),
+        )
+        single = ServiceConvertor(mock_release_data, publish_id=123, apisix_version="3.18").convert()[0]
+        assert "ai-proxy-multi" not in single.plugins
+        assert single.plugins["ai-proxy"].model_dump(exclude_none=True) == {
+            "provider": "openai-compatible",
+            "auth": {"header": {"Authorization": "Bearer real-key"}},
+            "override": {"endpoint": "https://api.openai.com/v1/chat/completions"},
             "timeout": 60000,
             "ssl_verify": True,
             "logging": {"summaries": True, "payloads": False},

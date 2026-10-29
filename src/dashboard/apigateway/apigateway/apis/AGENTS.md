@@ -31,8 +31,11 @@
 Open and v2 Sync AI backend input uses normalized storage configuration; submitted
 secret values are literal. Web masked-secret restoration belongs only to
 `web/ai_backend/adapter.py`: it requires an existing matching mask and unchanged
-provider/destination origin and auth-header identity. Web represents one instance
-and at most one auth header; preserve nonrepresentable-config errors in
+provider/destination origin and auth-header identity. Web configuration CRUD accepts and returns an instances array, including for a
+single instance. It does not accept the legacy flat configuration or negotiate
+an output format. Match masked credentials by stable instance name within the
+same Backend and Stage, never by array position. Web represents at most one auth header per
+instance; preserve nonrepresentable-config errors in
 `web/ai_backend/presentation.py` instead of silently dropping valid stored fields.
 
 ## API consistency and coverage
