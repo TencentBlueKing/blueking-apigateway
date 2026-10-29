@@ -1,4 +1,11 @@
 {
+  "默认用户频率限制": "Default user rate limit",
+  "特殊用户频率限制": "Specific user rate limits",
+  "同一用户只能配置一条频率限制": "Each user can have only one rate limit",
+  "用户名不能为 __default": "The username must not be __default",
+  "暂不支持配置此插件": "Configuration is not supported for this plugin yet",
+  "插件配置格式错误，请检查后重试": "Invalid plugin configuration. Check the configuration and try again",
+  "插件配置转换失败": "Failed to convert plugin configuration",
   "网关设置": "Gateway Settings",
   "成员管理": "Members",
   "新增成员": "Add Member",

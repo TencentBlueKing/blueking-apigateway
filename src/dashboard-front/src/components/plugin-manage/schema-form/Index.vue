@@ -36,7 +36,8 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { type ComponentMap, type IHeaderWriteFormData, type ISchema, defaultComponentMap } from '@/components/plugin-manage/schema-type';
+import type { ComponentMap, IHeaderWriteFormData, ISchema } from './types';
+import { defaultComponentMap } from './component-map';
 
 type ICustomFormData = IHeaderWriteFormData & Record<string, any>;
 
