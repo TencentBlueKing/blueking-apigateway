@@ -40,6 +40,11 @@ CASES = [
 ]
 
 
+@pytest.fixture(scope="module", autouse=True)
+def meta_schemas():
+    """Skip the inherited DB fixture: these tests only exercise subprocesses."""
+
+
 def runtime_env(edition, enabled, multi_tenant):
     env = dict(os.environ, EDITION=edition, ENABLE_MULTI_TENANT_MODE=multi_tenant, BKPAAS_ENVIRONMENT="prod")
     env.pop("ENABLE_ESB", None)
@@ -48,9 +53,8 @@ def runtime_env(edition, enabled, multi_tenant):
     return env
 
 
-@pytest.mark.parametrize("flag_enabled", ["true", "false"])
 @pytest.mark.parametrize("edition, enabled, multi_tenant, expected", CASES)
-def test_esb_runtime_registration(edition, enabled, multi_tenant, expected, flag_enabled):
+def test_esb_runtime_registration(edition, enabled, multi_tenant, expected):
     # Run fresh Django startup so cached settings/URL imports cannot hide a broken guard.
     code = """
 import importlib
@@ -113,8 +117,9 @@ print(json.dumps({
     }[active_edition]
     env = runtime_env(edition, enabled, multi_tenant)
     env["DJANGO_SETTINGS_MODULE"] = "apigateway.settings"
+    # Legacy flags must not restore management features even when explicitly enabled.
     for flag in ("MENU_ITEM_ESB_API", "MENU_ITEM_ESB_API_DOC", "SYNC_ESB_TO_APIGW_ENABLED"):
-        env[f"FEATURE_FLAG_{flag}"] = flag_enabled
+        env[f"FEATURE_FLAG_{flag}"] = "true"
     result = subprocess.run(
         [sys.executable, "-c", code, sync_command],
         cwd=PROJECT,
