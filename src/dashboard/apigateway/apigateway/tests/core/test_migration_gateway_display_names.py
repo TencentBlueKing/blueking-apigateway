@@ -2,7 +2,7 @@ import pytest
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
 MIGRATE_FROM = [("core", "0056_releasedresource_oauth2_scope_fields")]
 MIGRATE_TO = [("core", "0057_gateway_display_names")]

@@ -39,47 +39,56 @@ update: VERSION
 
 # ====== test ======
 
+TEST_PATHS ?= apigateway/tests
+DEFAULT_TEST_WORKERS = auto
+TEST_WORKERS ?= $(DEFAULT_TEST_WORKERS)
+PYTEST_RUN = cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest
+TEST_CLEAN = rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1 || true
+PYTEST_COMMON_ARGS = --ds apigateway.settings --reuse-db \
+	-n $(TEST_WORKERS) $(if $(filter auto logical,$(TEST_WORKERS)),--maxprocesses 8) \
+	--dist worksteal
+
 .PHONY: test
 test:
-	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && pytest \
-		--ds apigateway.settings \
-		--reuse-db \
-		-n auto \
-		--dist loadscope \
-		apigateway/tests
-	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+	$(PYTEST_RUN) \
+		$(PYTEST_COMMON_ARGS) --migrations $(TEST_PATHS)
+	$(TEST_CLEAN)
+
+.PHONY: test-fast
+test-fast:
+	$(PYTEST_RUN) \
+		$(PYTEST_COMMON_ARGS) --nomigrations -m 'not migration' $(TEST_PATHS)
+	$(TEST_CLEAN)
+
+.PHONY: test-migrations
+test-migrations: DEFAULT_TEST_WORKERS = 2
+test-migrations:
+	$(PYTEST_RUN) \
+		$(PYTEST_COMMON_ARGS) --migrations -m migration $(TEST_PATHS)
+	$(TEST_CLEAN)
 
 .PHONY: test-lf
 test-lf:
-	cd apigateway && . apigateway/conf/unittest_env && pytest \
-		--ds apigateway.settings \
-		--reuse-db \
-		-n auto \
-		--dist loadscope \
-		--lf \
-		apigateway/tests
-	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+	$(PYTEST_RUN) \
+		$(PYTEST_COMMON_ARGS) --migrations --lf $(TEST_PATHS)
+	$(TEST_CLEAN)
 
 .PHONY: test-cov
 test-cov:
-	cd apigateway && . apigateway/conf/unittest_env && pytest \
-		--ds apigateway.settings \
-		--cov=. \
-		--reuse-db \
-		--maxfail 1 \
-		-n auto \
-		apigateway/tests
-	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+	$(PYTEST_RUN) \
+		$(PYTEST_COMMON_ARGS) --migrations --cov=. --maxfail 1 $(TEST_PATHS)
+	$(TEST_CLEAN)
 
 .PHONY: test-pdb
 test-pdb:
-	cd apigateway && . apigateway/conf/unittest_env && pytest \
+	$(PYTEST_RUN) \
 		-vv \
 		--ds apigateway.settings \
 		--reuse-db \
+		--migrations \
 		--pdb \
 		--maxfail 1 \
-		apigateway/tests
+		$(TEST_PATHS)
 
 .PHONY: tox
 tox:

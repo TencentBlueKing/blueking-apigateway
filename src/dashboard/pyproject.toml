@@ -149,6 +149,9 @@ ignore_errors = true
 
 [tool.pytest.ini_options]
 addopts = "-p no:pastebin -p no:nose -p no:doctest -p no:warnings"
+markers = [
+    "migration: validates Django schema or data migrations; run with migrations enabled",
+]
 testpaths = [
     "apigateway/apigateway/tests"
 ]

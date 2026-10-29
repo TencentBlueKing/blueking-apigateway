@@ -29,23 +29,12 @@ It does not check Ruff formatting; use `uv run ruff format --check` on affected
 Python paths when formatting evidence is needed. `uv run make lint` formats and
 auto-fixes files, so use it only when those changes are intended.
 
-For focused Django tests, replace the final target in this wrapper:
+## Test selection
 
-```bash
-uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
-```
-
-The test environment and Django settings are required. `--nomigrations` avoids
-migration setup for focused tests. Test-fixture contracts are in
+[TESTING.md](TESTING.md) owns the test commands, scope selection, required gates,
+verification reuse policy and database behavior. Follow it for focused tests,
+migration changes and broad/shared changes. Test-fixture contracts are in
 `apigateway/apigateway/tests/AGENTS.md`.
-
-Code changes need affected tests and the EE lint gate. Broad/shared changes also
-need the full gate, which uses migrations and parallel workers:
-
-```bash
-uv run make edition-ee
-uv run make test
-```
 
 ## Architecture and source map
 
