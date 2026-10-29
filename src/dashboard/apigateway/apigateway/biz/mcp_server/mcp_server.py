@@ -514,9 +514,9 @@ class MCPServerHandler:
         mcp_servers: Sequence,
         releases: Optional[Dict[Tuple[int, int], Release]] = None,
     ) -> Dict[int, List[str]]:
-        """检测开启了 oauth2_public_client_enabled 的 MCPServer 是否存在应用态权限安全风险。
+        """检测开启了 OAuth2 公开客户端或个人令牌的 MCPServer 是否存在应用态权限安全风险。
 
-        当 oauth2_public_client_enabled=True 时，public 应用被自动授权；
+        开启公开客户端或个人令牌时，public 或 personal 应用被自动授权；
         如果工具对应的 API 要求应用认证(verified_app_required)，则存在权限失效的安全风险。
 
         Args:
@@ -526,7 +526,9 @@ class MCPServerHandler:
         Returns:
             {mcp_server_id: [risk_tool_name, ...]} 映射，仅包含存在风险的 MCPServer
         """
-        risk_mcp_servers = [m for m in mcp_servers if m.oauth2_public_client_enabled]
+        risk_mcp_servers = [
+            m for m in mcp_servers if m.oauth2_public_client_enabled or m.oauth2_personal_client_enabled
+        ]
         if not risk_mcp_servers:
             return {}
 
@@ -589,7 +591,7 @@ class MCPServerHandler:
     def get_mcp_server_url(instance: MCPServer, least_privilege: str = "") -> str:
         """根据 MCP Server 的应用态条件返回合适的访问 URL
 
-        当未开启公共客户端模式且所有工具都是应用态时，返回应用态 URL。
+        当未开启公共客户端模式和个人令牌模式且所有工具都是应用态时，返回应用态 URL。
 
         Args:
             instance: MCPServer 实例
@@ -600,6 +602,7 @@ class MCPServerHandler:
         """
         if (
             not instance.oauth2_public_client_enabled
+            and not instance.oauth2_personal_client_enabled
             and least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value
         ):
             return build_mcp_server_application_url(instance.name, instance.protocol_type)
@@ -811,6 +814,7 @@ class MCPServerHandler:
             gw.id: {
                 "id": gw.id,
                 "name": gw.name,
+                "display_name": gw.display_name_or_name,
                 "maintainers": gateway_administrators.get(gw.id, []),
                 "is_official": gw.is_official,
             }
@@ -907,6 +911,7 @@ class MCPServerHandler:
             instance.gateway.id: {
                 "id": instance.gateway.id,
                 "name": instance.gateway.name,
+                "display_name": instance.gateway.display_name_or_name,
                 "maintainers": gateway_administrators,
                 "is_official": instance.gateway.is_official,
             }

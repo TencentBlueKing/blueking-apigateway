@@ -36,12 +36,19 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ReleasedResource, Resource
 
 
+def _itsm_ticket_id(apply_status: Optional[AppPermissionApplyStatus]) -> str:
+    if apply_status is None or not apply_status.apply_id:
+        return ""
+    return apply_status.apply.itsm_ticket_id or ""
+
+
 def build_resource_permission_display(
     *,
     resource_id: int,
     resource_name: str,
     gateway_id: int,
     gateway_name: str,
+    gateway_display_name: str = "",
     description: str,
     description_en: str | None,
     resource_perm_required: bool,
@@ -50,12 +57,15 @@ def build_resource_permission_display(
     resource_permission,
     gateway_permission_apply_status: str,
     resource_permission_apply_status: str,
+    gateway_permission_itsm_ticket_id: str = "",
+    resource_permission_itsm_ticket_id: str = "",
 ) -> dict:
     return {
         "id": resource_id,
         "name": resource_name,
         "gateway_id": gateway_id,
         "gateway_name": gateway_name,
+        "gateway_display_name": gateway_display_name,
         "description": description,
         "description_en": description_en,
         "resource_perm_required": resource_perm_required,
@@ -64,6 +74,8 @@ def build_resource_permission_display(
         "resource_permission": resource_permission,
         "gateway_permission_apply_status": gateway_permission_apply_status,
         "resource_permission_apply_status": resource_permission_apply_status,
+        "gateway_permission_itsm_ticket_id": gateway_permission_itsm_ticket_id,
+        "resource_permission_itsm_ticket_id": resource_permission_itsm_ticket_id,
     }
 
 
@@ -73,6 +85,7 @@ class ResourcePermission(BaseModel):
     id: int
     name: str
     gateway_name: str
+    gateway_display_name: str = ""
     gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
@@ -84,6 +97,8 @@ class ResourcePermission(BaseModel):
 
     gateway_permission_apply_status: Optional[str] = ""
     resource_permission_apply_status: Optional[str] = ""
+    gateway_permission_itsm_ticket_id: str = ""
+    resource_permission_itsm_ticket_id: str = ""
 
     def as_dict(self):
         gateway_name = self.gateway_name or ""
@@ -91,6 +106,7 @@ class ResourcePermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "gateway_name": gateway_name,
+            "gateway_display_name": self.gateway_display_name,
             "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
@@ -98,7 +114,21 @@ class ResourcePermission(BaseModel):
             "permission_status": self.permission_status,
             "permission_level": self.permission_level,
             "expires_in": self.expires_in,
+            "itsm_ticket_id": self.itsm_ticket_id,
         }
+
+    @property
+    def itsm_ticket_id(self) -> str:
+        """跟 permission_status 一样，网关申请优先于资源申请。
+
+        永久权限会盖过申请状态，这时不再带出工单。
+        """
+        apply_status = self.gateway_permission_apply_status or self.resource_permission_apply_status
+        if not apply_status or self.permission_status != apply_status:
+            return ""
+        if self.gateway_permission_apply_status:
+            return self.gateway_permission_itsm_ticket_id or ""
+        return self.resource_permission_itsm_ticket_id or ""
 
     @property
     def permission_level(self):
@@ -166,8 +196,16 @@ class ResourcePermissionBuilder:
 
         self.gateway_permission = self._get_gateway_permission()
         self.resource_permission_map = self._get_resource_permission_map()
-        self.gateway_permission_apply_status = self._get_gateway_permission_apply_status()
-        self.resource_permission_apply_status_map = self._get_resource_permission_apply_status_map()
+        gateway_apply_status = self._get_gateway_permission_apply_status_record()
+        self.gateway_permission_apply_status = gateway_apply_status.status if gateway_apply_status else ""
+        self.gateway_permission_itsm_ticket_id = _itsm_ticket_id(gateway_apply_status)
+        resource_apply_statuses = self._list_resource_permission_apply_statuses()
+        self.resource_permission_apply_status_map = {
+            apply_status.resource_id: apply_status.status for apply_status in resource_apply_statuses
+        }
+        self.resource_permission_itsm_ticket_id_map = {
+            apply_status.resource_id: _itsm_ticket_id(apply_status) for apply_status in resource_apply_statuses
+        }
 
     def build(self, resources: list) -> list:
         resources = copy.copy(resources)
@@ -180,6 +218,7 @@ class ResourcePermissionBuilder:
                 resource_name=resource["name"],
                 gateway_id=self.gateway.id,
                 gateway_name=self.gateway.name,
+                gateway_display_name=self.gateway.display_name_or_name,
                 description=resource["description"],
                 description_en=resource.get("description_en"),
                 resource_perm_required=resource["resource_perm_required"],
@@ -188,6 +227,8 @@ class ResourcePermissionBuilder:
                 resource_permission=self.resource_permission_map.get(resource["id"]),
                 gateway_permission_apply_status=self.gateway_permission_apply_status,
                 resource_permission_apply_status=self.resource_permission_apply_status_map.get(resource["id"], ""),
+                gateway_permission_itsm_ticket_id=self.gateway_permission_itsm_ticket_id,
+                resource_permission_itsm_ticket_id=self.resource_permission_itsm_ticket_id_map.get(resource["id"], ""),
             )
             for resource in resources
         ]
@@ -210,27 +251,25 @@ class ResourcePermissionBuilder:
             )
         }
 
-    def _get_gateway_permission_apply_status(self):
-        apply_status = AppPermissionApplyStatus.objects.filter(
-            bk_app_code=self.target_app_code,
-            gateway_id=self.gateway.id,
-            grant_dimension=GrantDimensionEnum.API.value,
-        ).first()
+    def _get_gateway_permission_apply_status_record(self) -> Optional[AppPermissionApplyStatus]:
+        return (
+            AppPermissionApplyStatus.objects.filter(
+                bk_app_code=self.target_app_code,
+                gateway_id=self.gateway.id,
+                grant_dimension=GrantDimensionEnum.API.value,
+            )
+            .select_related("apply")
+            .first()
+        )
 
-        if not apply_status:
-            return ""
-
-        return apply_status.status
-
-    def _get_resource_permission_apply_status_map(self):
-        return {
-            apply_status.resource_id: apply_status.status
-            for apply_status in AppPermissionApplyStatus.objects.filter(
+    def _list_resource_permission_apply_statuses(self) -> list[AppPermissionApplyStatus]:
+        return list(
+            AppPermissionApplyStatus.objects.filter(
                 bk_app_code=self.target_app_code,
                 gateway_id=self.gateway.id,
                 grant_dimension=GrantDimensionEnum.RESOURCE.value,
-            )
-        }
+            ).select_related("apply")
+        )
 
 
 class AppPermissionBuilder:
@@ -261,23 +300,23 @@ class AppPermissionBuilder:
             resource.update({"resource_permission": resource_permission_map.get(resource["id"])})
             resource_map[resource["id"]].update(resource)
 
-        resource_id_to_fields = {
-            item["id"]: item
-            for item in Resource.objects.filter(id__in=list(resource_map.keys())).values(
-                "id", "gateway_id", "gateway__name"
-            )
+        resource_id_to_gateway = {
+            resource.id: resource.gateway
+            for resource in Resource.objects.filter(id__in=list(resource_map.keys()))
+            .select_related("gateway")
+            .only("id", "gateway_id", "gateway__name", "gateway__display_name", "gateway__display_name_en")
         }
 
         doc_links = ReleasedResourceHandler.get_latest_doc_link(list(resource_map.keys()))
         # resource_map由 已有的资源
         for resource_id, resource in resource_map.items():
-            resource_fields = resource_id_to_fields.get(resource_id, {})
-            gateway_name = resource_fields.get("gateway__name", "")
-            resource["gateway_name"] = gateway_name
-            resource["gateway_id"] = resource_fields.get("gateway_id")
+            gateway = resource_id_to_gateway.get(resource_id)
+            resource["gateway_name"] = gateway.name if gateway else ""
+            resource["gateway_display_name"] = gateway.display_name_or_name if gateway else ""
+            resource["gateway_id"] = gateway.pk if gateway else None
             resource["doc_link"] = doc_links.get(resource_id, "")
 
-            gateway_apply_status = gateway_id_to_permission_apply_status.get(resource_fields.get("gateway_id"), "")
+            gateway_apply_status = gateway_id_to_permission_apply_status.get(resource["gateway_id"], "")
             resource["gateway_permission_apply_status"] = gateway_apply_status
 
             # 判断这个资源是否有网关资源的权限,而不是直接通过

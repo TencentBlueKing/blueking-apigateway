@@ -28,6 +28,7 @@
       "id": 2321,
       "name": "test",
       "gateway_name": "test-gateway",
+      "gateway_display_name": "蓝鲸 API 网关",
       "gateway_id": 6,
       "description": "",
       "description_en": null,
@@ -35,7 +36,8 @@
       "permission_level": "normal",
       "permission_status": "pending",
       "permission_action": "",
-      "doc_link": "http://test.com/"
+      "doc_link": "http://test.com/",
+      "approval_url": "https://dashboard.example.com/6/permission/apply"
     }
   ]
 }
@@ -54,6 +56,7 @@
 | id                | int    | 资源ID |
 | name              | string | 资源名称 |
 | gateway_name      | string | 网关名称 |
+| gateway_display_name | string | 所属网关的展示名 |
 | gateway_id        | int    | 网关ID |
 | description       | string | 资源描述 |
 | expires_in        | int    | 有效期  |
@@ -61,3 +64,4 @@
 | permission_status | string | 权限状态 |
 | permission_action | string | 权限操作 |
 | doc_link          | string | 文档地址 |
+| approval_url      | string | 权限审批 URL；优先返回 ITSM 工单地址，否则返回 `{DASHBOARD_FE_URL}/{gateway_id}/permission/apply` |

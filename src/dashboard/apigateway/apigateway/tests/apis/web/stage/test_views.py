@@ -16,11 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter
-from apigateway.apps.audit.constants import OpObjectTypeEnum
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
@@ -288,7 +290,8 @@ class TestStageApi:
         ai_backend_config.refresh_from_db()
         assert ai_backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
 
-    def partial_update(self, request_view, fake_stage):
+    def test_partial_update(self, request_view, fake_stage):
+        old_description = fake_stage.description
         data = {"description": "partial_update"}
 
         response = request_view(
@@ -298,9 +301,33 @@ class TestStageApi:
             gateway=fake_stage.gateway,
             data=data,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
         stage = Stage.objects.get(id=fake_stage.id)
         assert stage.description == "partial_update"
+        audit = AuditEventLog.objects.get(
+            op_object_group=str(fake_stage.gateway.id),
+            op_object_type=OpObjectTypeEnum.STAGE.value,
+            op_object_id=str(fake_stage.id),
+        )
+        assert audit.op_type == OpTypeEnum.MODIFY.value
+        assert json.loads(audit.data_before) == {"description": old_description}
+        assert json.loads(audit.data_after) == data
+
+    @pytest.mark.parametrize("data", [{}, {"description": "x" * 513}], ids=["missing", "too-long"])
+    def test_partial_update_rejects_invalid_description(self, request_view, fake_stage, data):
+        old_description = fake_stage.description
+        audit_ids = set(AuditEventLog.objects.values_list("id", flat=True))
+        response = request_view(
+            "PATCH",
+            "stage.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
+            data=data,
+        )
+        assert response.status_code == 400
+        fake_stage.refresh_from_db()
+        assert fake_stage.description == old_description
+        assert set(AuditEventLog.objects.values_list("id", flat=True)) == audit_ids
 
     def test_destroy(self, request_view, fake_stage, fake_backend):
         response = request_view(

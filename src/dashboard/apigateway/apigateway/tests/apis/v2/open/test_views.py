@@ -21,6 +21,7 @@ from datetime import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
 
+import pytest
 from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
@@ -34,6 +35,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply, MCPServerCategory
+from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.released_resource import ReleasedResourceData
@@ -155,6 +157,137 @@ class TestGatewayRetrieveApi:
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
         assert result["data"]["kind"] == "ai"
+
+
+@pytest.fixture
+def app_permissions(fake_gateway):
+    """
+    应用 test：fake_gateway 网关权限永久有效、other_gateway 网关权限已过期；
+    fake_gateway r1、r2 资源权限永久有效、other_gateway r3 资源权限已过期
+    应用 other：fake_gateway 网关权限、r1 资源权限
+    """
+    other_gateway = G(Gateway, is_public=True, tenant_mode="global")
+    r1 = G(Resource, gateway=fake_gateway, name="r1")
+    r2 = G(Resource, gateway=fake_gateway, name="r2")
+    r3 = G(Resource, gateway=other_gateway, name="r3")
+    expired = datetime(2020, 1, 1, tzinfo=ZoneInfo("UTC"))
+
+    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+    G(AppGatewayPermission, gateway=other_gateway, bk_app_code="test", expires=expired)
+    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="other", expires=None)
+    G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="test", expires=None)
+    G(AppResourcePermission, gateway=fake_gateway, resource_id=r2.id, bk_app_code="test", expires=None)
+    G(AppResourcePermission, gateway=other_gateway, resource_id=r3.id, bk_app_code="test", expires=expired)
+    G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="other", expires=None)
+    return other_gateway
+
+
+class TestCurrentAppPermissionListApi:
+    def test_list_gateway_dimension(self, request_view, fake_gateway, app_permissions):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.app.permissions.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"grant_dimension": "gateway"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+        results = {item["gateway_name"]: item for item in result["data"]["results"]}
+        assert set(results) == {fake_gateway.name, app_permissions.name}
+        assert results[fake_gateway.name]["bk_app_code"] == "test"
+        assert results[fake_gateway.name]["resource_name"] == ""
+        assert results[fake_gateway.name]["expires"] is None
+        assert results[app_permissions.name]["expires"] is not None
+
+    def test_list_resource_dimension(self, request_view, app_permissions):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.app.permissions.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"grant_dimension": "resource"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        results = {item["resource_name"]: item for item in result["data"]["results"]}
+        assert set(results) == {"r1", "r2", "r3"}
+        assert results["r1"]["expires"] is None
+        assert results["r3"]["expires"] is not None
+
+    @pytest.mark.parametrize(
+        "params, expected_resource_names",
+        [
+            ({"resource_name": "r2"}, ["r2"]),
+            ({"gateway_name": "not-exist"}, []),
+        ],
+    )
+    def test_list_filter(self, request_view, app_permissions, params, expected_resource_names):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.app.permissions.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"grant_dimension": "resource", **params},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert [item["resource_name"] for item in result["data"]["results"]] == expected_resource_names
+
+    def test_list_filter_by_gateway_name(self, request_view, app_permissions):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.app.permissions.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"grant_dimension": "resource", "gateway_name": app_permissions.name},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert [item["resource_name"] for item in result["data"]["results"]] == ["r3"]
+
+    def test_list_filter_by_tenant(self, mocker, request_view, fake_gateway, app_permissions):
+        tenant_gateway = G(Gateway, is_public=True, tenant_mode="single", tenant_id="other-tenant")
+        G(AppGatewayPermission, gateway=tenant_gateway, bk_app_code="test", expires=None)
+        mocker.patch("apigateway.apis.v2.open.views.get_request_tenant_id", return_value="default")
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.app.permissions.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"grant_dimension": "gateway"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert {item["gateway_name"] for item in result["data"]["results"]} == {
+            fake_gateway.name,
+            app_permissions.name,
+        }
+
+
+class TestGatewayAppPermissionListApi:
+    @pytest.mark.parametrize(
+        "grant_dimension, expected_resource_names",
+        [
+            ("gateway", [""]),
+            ("resource", ["r1"]),
+        ],
+    )
+    def test_list(self, request_view, fake_gateway, app_permissions, grant_dimension, expected_resource_names):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.gateway.app.permissions.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"target_app_code": "other", "grant_dimension": grant_dimension},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert [item["resource_name"] for item in result["data"]["results"]] == expected_resource_names
+        assert {item["bk_app_code"] for item in result["data"]["results"]} == {"other"}
+        assert {item["gateway_name"] for item in result["data"]["results"]} == {fake_gateway.name}
 
 
 class TestMCPServerAppPermissionApplyCreateApi:

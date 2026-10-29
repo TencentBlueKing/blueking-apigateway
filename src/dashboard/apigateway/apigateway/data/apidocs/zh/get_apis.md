@@ -9,6 +9,9 @@
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
+| name | string | 否 | 网关名称 |
+| fuzzy | boolean | 否 | 是否启用模糊匹配 |
+| query | string | 否 | 查询条件 |
 | kind | string | 否 | 网关类型：`normal`、`programmable` 或 `ai`；不传返回所有类型 |
 
 ### 请求参数示例
@@ -38,6 +41,7 @@ result = client.api.get_apis({"kind": "ai"})
     "data": [
         {
             "id": 1,
+            "display_name": "蓝鲸 API 网关",
             "name": "bk-apigateway",
             "kind": "normal",
             "is_official": true,
@@ -63,7 +67,8 @@ result = client.api.get_apis({"kind": "ai"})
 | 参数名称    | 参数类型 | 描述       |
 | ----------- | -------- | ---------- |
 | id          | int      | 网关ID     |
-| name        | string   | 网关名称   |
+| name | string | 否 | 网关名称 |
+| display_name | string | 网关展示名 |
 | kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | is_official | boolean  | 是否为官方网关：`true` 为官方网关，`false` 为普通网关 |
 | description | string   | 网关描述   |

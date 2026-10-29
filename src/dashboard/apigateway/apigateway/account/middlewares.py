@@ -85,6 +85,9 @@ class SelfAppCodeAppSecretLoginMiddleware:
         except Exception:  # pylint: disable=broad-except
             return None, None
 
+        if not isinstance(authorization, dict):
+            return None, None
+
         return authorization.get("bk_app_code"), authorization.get("bk_app_secret")
 
 

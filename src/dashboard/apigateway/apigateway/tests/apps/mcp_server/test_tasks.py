@@ -95,7 +95,9 @@ class TestStageMcpServerPermissionSync:
         mock_permission_sync_lock.assert_not_called()
         mock_filter.assert_not_called()
 
-    def test_adds_permissions_from_explicit_resource_version(self, fake_gateway, fake_stage):
+    def test_adds_permissions_from_explicit_resource_version(
+        self, fake_gateway, fake_stage, mock_permission_sync_lock
+    ):
         resource_version = G(ResourceVersion, gateway=fake_gateway)
         mcp_servers = [
             G(MCPServer, gateway=fake_gateway, stage=fake_stage),
@@ -108,6 +110,7 @@ class TestStageMcpServerPermissionSync:
                 resource_version_id=resource_version.id,
             )
 
+        assert mock_permission_sync_lock.call_args.args[1] == f"bk_apigw:mcp_server_permission_sync:{fake_stage.id}"
         mock_sync.assert_has_calls(
             [
                 call(mcp_servers[0].id, resource_version=resource_version, delete_stale=False),
@@ -355,7 +358,7 @@ class TestSyncMcpServerAfterRelease:
 
         mock_save.assert_not_called()
 
-    def test_save_exception_logged(self, fake_gateway, fake_stage, release_history):
+    def test_save_exception_logged(self, fake_gateway, fake_stage, release_history, caplog):
         """写入异常时不抛出，记录日志"""
         mcp_data = [{"name": "s1"}]
 
@@ -367,7 +370,7 @@ class TestSyncMcpServerAfterRelease:
             patch(
                 "apigateway.apps.mcp_server.tasks.MCPServerHandler.save_mcp_servers",
                 side_effect=Exception("db error"),
-            ),
+            ) as mock_save,
         ):
             sync_mcp_server_after_release(
                 gateway_id=fake_gateway.id,
@@ -377,6 +380,15 @@ class TestSyncMcpServerAfterRelease:
                 release_history_id=release_history.id,
                 mcp_servers_data=mcp_data,
             )
+
+        mock_save.assert_called_once()
+        record = next(record for record in caplog.records if "failed to save mcp servers" in record.message)
+        assert record.levelname == "ERROR"
+        assert f"gateway={fake_gateway.name}({fake_gateway.id})" in record.message
+        assert f"stage={fake_stage.name}({fake_stage.id})" in record.message
+        assert f"release_history_id={release_history.id}" in record.message
+        assert record.exc_info is not None
+        assert str(record.exc_info[1]) == "db error"
 
 
 class TestRefreshOfficialMcpServerCategory:

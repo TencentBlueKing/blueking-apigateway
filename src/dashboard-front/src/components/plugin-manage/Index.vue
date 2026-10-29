@@ -352,8 +352,8 @@
             v-else
             class="px-40px py-20px"
           >
-            <PluginInfo
-              ref="pluginInfoRef"
+            <PluginConfigEditor
+              ref="pluginEditorRef"
               v-model:show-example="isExampleVisible"
               :cur-plugin="curChoosePlugin"
               :scope-info="curScopeInfo"
@@ -400,8 +400,8 @@
     >
       <template #default>
         <div class="px-40px py-20px">
-          <PluginInfo
-            ref="pluginInfoRef"
+          <PluginConfigEditor
+            ref="pluginEditorRef"
             v-model:show-example="isExampleVisible"
             :cur-plugin="curChoosePlugin"
             :scope-info="curScopeInfo"
@@ -418,7 +418,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import PluginInfo from './PluginInfo.vue';
+import PluginConfigEditor from './config-editor/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import {
   InfoBox,
@@ -436,7 +436,7 @@ import {
   getPluginTags,
   getScopeBindingPluginList,
 } from '@/services/source/plugin-manage';
-import ConfigDisplayTable from './ConfigDisplayTable.vue';
+import ConfigDisplayTable from './config-display/Index.vue';
 import { getStageStatus } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 import {
@@ -467,7 +467,7 @@ const stageStore = useStage();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
-const pluginInfoRef = ref<InstanceType<typeof PluginInfo>>();
+const pluginEditorRef = ref<InstanceType<typeof PluginConfigEditor>>();
 const scopeType = ref('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);
@@ -508,7 +508,7 @@ const tableEmptyConf = ref({
   emptyType: '',
   isAbnormal: false,
 });
-// PluginInfo 中的插件示例是否可见
+// PluginConfigEditor 中的插件示例是否可见
 const isExampleVisible = ref(false);
 
 const activeIndex = ref<number[]>([]);
@@ -687,7 +687,6 @@ const handleEditPlugin = async (item: any) => {
   );
   curChoosePlugin.value = curEditItem;
   isEditVisible.value = true;
-  pluginInfoRef.value?.setPluginInfo(curEditItem);
 };
 
 // 删除插件
@@ -869,7 +868,7 @@ const handleCancel = () => {
 
 const handleClosePluginSlider = () => {
   isExampleVisible.value = false;
-  pluginInfoRef.value?.clearValidate();
+  pluginEditorRef.value?.clearValidate();
 };
 
 const updateTableEmptyConfig = () => {
@@ -894,6 +893,7 @@ init();
 
 <style lang="scss" scoped>
 .plugin-container {
+  overflow-y: auto;
 
   :deep(.bk-exception-page) {
     height: 420px;

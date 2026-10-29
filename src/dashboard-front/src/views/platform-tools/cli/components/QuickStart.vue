@@ -140,7 +140,7 @@ $ ${envStore.env.CLI.SKILL_NPM_INSTALL_CMD}`);
 
 const installSourceCode = computed(() => `# ${t('克隆仓库')}
 $ git clone ${envStore.env.CLI.GIT_REPO_URL}
-$ cd cli
+$ cd bk-cli
 $ make install
 
 # ${t('安装 CLI SKILL（必需）')}

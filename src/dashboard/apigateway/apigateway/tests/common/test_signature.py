@@ -16,14 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.test import TestCase
+import pytest
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 
+pytestmark = pytest.mark.no_meta_schema
 
-class TestSignatureGenerator(TestCase):
+
+class TestSignatureGenerator:
     def test_generate_signature(self):
         data = [
             {
@@ -56,69 +58,31 @@ class TestSignatureGenerator(TestCase):
                 test["path"],
                 test["params"],
             )
-            self.assertEqual(signature, test["expected"])
+            assert signature == test["expected"]
 
 
-class TestSignatureValidator(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.factory = APIRequestFactory()
-
-    def test_is_valid(self):
-        data = [
-            {
-                "secret": "test",
-                "path": "/echo/",
-                "params": {
-                    "bk_nonce": 12345,
-                    "bk_timestamp": 1881403843,
-                    "bk_signature": "1b4d93765f4f81f9081897b595a789386c87a994",
-                    "shared_by": "admin",
-                },
-                "expected": True,
-            },
-            # fail, bk_nonce invalid
-            {
-                "secret": "test",
-                "path": "/echo/",
-                "params": {
-                    "bk_nonce": "a",
-                    "bk_timestamp": 1881403843,
-                    "bk_signature": "1b4d93765f4f81f9081897b595a789386c87a994",
-                    "shared_by": "admin",
-                },
-                "expected": False,
-            },
-            # fail, bk_timestamp invalid
-            {
-                "secret": "test",
-                "path": "/echo/",
-                "params": {
-                    "bk_nonce": "a",
-                    "bk_timestamp": 1581403843,
-                    "bk_signature": "1b4d93765f4f81f9081897b595a789386c87a994",
-                    "shared_by": "admin",
-                },
-                "expected": False,
-            },
-            # fail, bk_signature invalid
-            {
-                "secret": "test",
-                "path": "/echo/",
-                "params": {
-                    "bk_nonce": 12345,
-                    "bk_timestamp": 1881403843,
-                    "bk_signature": "ac5e93765f4f81f9081897b595a789386c87a994",
-                    "shared_by": "admin",
-                },
-                "expected": False,
-            },
-        ]
-        for test in data:
-            request = self.factory.get(test["path"], data=test["params"])
-            validator = SignatureValidator(
-                test["secret"],
-                Request(request),
-                timestamp_expire_seconds=10,
-            )
-            self.assertEqual(validator.is_valid(raise_exception=False), test["expected"])
+class TestSignatureValidator:
+    @pytest.mark.parametrize(
+        "nonce, timestamp, signature_valid, expected_error",
+        [
+            (12345, 1000, True, None),
+            (12345, 990, True, None),
+            (12345, 989, True, "bk_timestamp has expired"),
+            ("a", 1000, True, "bk_nonce is illegal"),
+            (0, 1000, True, "bk_nonce is illegal, must be a positive integer"),
+            (12345, None, True, "bk_timestamp is required"),
+            (12345, "bad", True, "bk_timestamp is illegal, must be a timestamp integer"),
+            (12345, 1000, False, "bk_signature validate failed, please check if the parameters are correct"),
+        ],
+    )
+    def test_is_valid(self, mocker, nonce, timestamp, signature_valid, expected_error):
+        mocker.patch("apigateway.common.signature.time.time", return_value=1000)
+        params = {"bk_nonce": nonce, "shared_by": "admin"}
+        if timestamp is not None:
+            params["bk_timestamp"] = timestamp
+        signature = SignatureGenerator("test").generate_signature("GET", "/echo/", params)
+        params["bk_signature"] = signature if signature_valid else "invalid-signature"
+        request = APIRequestFactory().get("/echo/", data=params)
+        validator = SignatureValidator("test", Request(request), timestamp_expire_seconds=10)
+        assert validator.is_valid(raise_exception=False) is (expected_error is None)
+        assert validator.error == expected_error

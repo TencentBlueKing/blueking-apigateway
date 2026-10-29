@@ -23,13 +23,16 @@ import pytest
 from ddf import G
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
+    AppPermissionApply,
+    AppPermissionApplyStatus,
     AppResourcePermission,
 )
 from apigateway.biz.permission import (
     AppPermissionBuilder,
+    ResourcePermissionBuilder,
     ResourcePermissionHandler,
     build_resource_permission_display,
 )
@@ -223,6 +226,94 @@ def test_build_permission_display_preserves_gateway_name(fake_gateway):
 
     assert item["gateway_name"] == fake_gateway.name
     assert item["name"] == "get_user"
+
+
+def _released_resource(resource):
+    return {
+        "id": resource.id,
+        "name": resource.name,
+        "description": resource.description or "",
+        "description_en": resource.description_en,
+        "resource_perm_required": True,
+    }
+
+
+def _create_apply_status(*, gateway, resource, bk_app_code, grant_dimension, itsm_ticket_id, status):
+    apply = G(
+        AppPermissionApply,
+        gateway=gateway,
+        bk_app_code=bk_app_code,
+        applied_by="tester",
+        grant_dimension=grant_dimension,
+        status=status,
+        itsm_ticket_id=itsm_ticket_id,
+        _resource_ids="",
+    )
+    return G(
+        AppPermissionApplyStatus,
+        apply=apply,
+        bk_app_code=bk_app_code,
+        gateway=gateway,
+        resource=resource,
+        grant_dimension=grant_dimension,
+        status=status,
+    )
+
+
+def test_resource_permission_builder_prefers_gateway_apply_ticket(fake_gateway, fake_resource):
+    _create_apply_status(
+        gateway=fake_gateway,
+        resource=None,
+        bk_app_code="test-app",
+        grant_dimension=GrantDimensionEnum.API.value,
+        itsm_ticket_id="gw-ticket",
+        status=ApplyStatusEnum.PENDING.value,
+    )
+    _create_apply_status(
+        gateway=fake_gateway,
+        resource=fake_resource,
+        bk_app_code="test-app",
+        grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        itsm_ticket_id="res-ticket",
+        status=ApplyStatusEnum.REJECTED.value,
+    )
+
+    result = ResourcePermissionBuilder(fake_gateway, "test-app").build([_released_resource(fake_resource)])
+
+    assert result[0]["permission_status"] == ApplyStatusEnum.PENDING.value
+    assert result[0]["itsm_ticket_id"] == "gw-ticket"
+
+
+def test_resource_permission_builder_uses_resource_apply_ticket(fake_gateway, fake_resource):
+    _create_apply_status(
+        gateway=fake_gateway,
+        resource=fake_resource,
+        bk_app_code="test-app",
+        grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        itsm_ticket_id="res-ticket",
+        status=ApplyStatusEnum.PENDING.value,
+    )
+
+    result = ResourcePermissionBuilder(fake_gateway, "test-app").build([_released_resource(fake_resource)])
+
+    assert result[0]["itsm_ticket_id"] == "res-ticket"
+
+
+def test_resource_permission_builder_omits_ticket_when_permission_is_permanent(fake_gateway, fake_resource):
+    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test-app", expires=None)
+    _create_apply_status(
+        gateway=fake_gateway,
+        resource=None,
+        bk_app_code="test-app",
+        grant_dimension=GrantDimensionEnum.API.value,
+        itsm_ticket_id="gw-ticket",
+        status=ApplyStatusEnum.PENDING.value,
+    )
+
+    result = ResourcePermissionBuilder(fake_gateway, "test-app").build([_released_resource(fake_resource)])
+
+    assert result[0]["permission_status"] == "owned"
+    assert result[0]["itsm_ticket_id"] == ""
 
 
 def test_app_permission_builder_uses_released_resource_version_data(fake_gateway, fake_resource_version, fake_release):

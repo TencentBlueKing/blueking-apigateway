@@ -18,19 +18,27 @@
 #
 import logging
 import secrets
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from django.conf import settings
+from django.utils.translation import gettext as _
 
 from apigateway.apps.bk_itsm.constants import DEFAULT_ITSM_SYSTEM_CODE
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import cancel_ticket, create_ticket
+from apigateway.utils.redis_utils import get_default_redis_client
 from apigateway.utils.string import strip_template_ref_prefix
 from apigateway.utils.url import url_join
 
+if TYPE_CHECKING:
+    import redis
+
 logger = logging.getLogger(__name__)
+
+# ITSM 取消工单时会同步回调审批结果，回调据此标记识别取消及其操作人
+ITSM_TICKET_CANCELING_KEY = "bk_apigw:itsm_ticket_canceling:{ticket_id}"
 
 
 class ItsmPermissionApplyHelper:
@@ -69,12 +77,34 @@ class ItsmPermissionApplyHelper:
     def is_ready(self) -> bool:
         """检查 ITSM 集成是否已就绪"""
         try:
-            cfg = self.config
+            if self._config is None:
+                self._config = ItsmSystemConfig.objects.get(system_code=self.system_code)
+            cfg = self._config
             workflow_key_map = cfg.workflow_key_map or {}
-            return (
-                cfg.is_registered and bool(workflow_key_map.get("gateway")) and bool(workflow_key_map.get("resource"))
+            gateway_workflow_configured = bool(workflow_key_map.get("gateway"))
+            resource_workflow_configured = bool(workflow_key_map.get("resource"))
+            ready = cfg.is_registered and gateway_workflow_configured and resource_workflow_configured
+            if not ready:
+                logger.warning(
+                    "ITSM integration is not ready: system_code=%s, is_registered=%s, "
+                    "gateway_workflow_configured=%s, resource_workflow_configured=%s; "
+                    "run register_to_itsm and check workflow mappings",
+                    self.system_code,
+                    cfg.is_registered,
+                    gateway_workflow_configured,
+                    resource_workflow_configured,
+                )
+            return ready
+        except ItsmSystemConfig.DoesNotExist:
+            logger.warning(
+                "ITSM integration is not ready: system config not found, system_code=%s; run register_to_itsm",
+                self.system_code,
             )
+            return False
         except Exception:
+            logger.warning(
+                "Failed to check ITSM integration readiness, system_code=%s", self.system_code, exc_info=True
+            )
             return False
 
     @staticmethod
@@ -169,15 +199,34 @@ class ItsmPermissionApplyHelper:
             options=options,
         )
 
-    def cancel_permission_apply_ticket(self, ticket_id: str) -> None:
-        """取消权限申请关联的 ITSM 工单。"""
-        canceled = cancel_ticket(
-            system_id=self.config.itsm_system_id,
-            ticket_id=ticket_id,
-            system_token=self.config.system_token,
-        )
-        if not canceled:
-            raise error_codes.REMOTE_REQUEST_ERROR.format(f"failed to revoke ITSM ticket, ticket_id={ticket_id}")
+    def cancel_permission_apply_ticket(self, ticket_id: str, operated_by: str) -> None:
+        """取消权限申请关联的 ITSM 工单，取消期间记录取消标记供回调识别"""
+        # 标记按工单共享，只有本次成功写入的请求可以调用 ITSM。
+        # 请求超时或失败时不删除标记：ITSM 可能已经撤销并稍后回调，标记保留至 TTL。
+        acquired = _mark_ticket_canceling(ticket_id, operated_by)
+        if acquired is False:
+            raise error_codes.FAILED_PRECONDITION.format(_("该申请正在取消中，请稍后刷新。"), replace=True)
+        try:
+            canceled = cancel_ticket(
+                system_id=self.config.itsm_system_id,
+                ticket_id=ticket_id,
+                system_token=self.config.system_token,
+            )
+            if not canceled:
+                raise error_codes.REMOTE_REQUEST_ERROR.format(f"failed to revoke ITSM ticket, ticket_id={ticket_id}")
+        except Exception:
+            logger.warning(
+                "cancel itsm ticket failed, keep canceling marker until ttl, ticket_id=%s",
+                ticket_id,
+                exc_info=True,
+            )
+            raise
+
+    @staticmethod
+    def get_canceling_operator(ticket_id: str) -> str:
+        """获取正在取消该工单的操作人，未在取消中返回空字符串"""
+        operator = _access_canceling_marker(ticket_id, lambda client, key: client.get(key))
+        return operator.decode() if operator else ""
 
     def _get_workflow_key(self, grant_dimension: str) -> str:
         workflow_key_map = self.config.workflow_key_map or {}
@@ -243,3 +292,34 @@ class ItsmPermissionApplyHelper:
         """构建 ITSM 回调 URL"""
         bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
         return url_join(bk_apigateway_url, settings.BK_ITSM4_CALLBACK_PATH)
+
+
+def _mark_ticket_canceling(ticket_id: str, operated_by: str) -> Optional[bool]:
+    """写入取消标记。True 表示本次占有，False 表示已有取消在进行，None 表示 Redis 不可用"""
+    # 标记需覆盖整个取消请求，过期时间不能短于 ITSM 接口超时
+    try:
+        client = get_default_redis_client()
+        if client is None:
+            raise ConnectionError("redis client is unavailable")
+        wrote = client.set(
+            ITSM_TICKET_CANCELING_KEY.format(ticket_id=ticket_id),
+            operated_by,
+            ex=settings.BK_ITSM4_API_TIMEOUT + 30,
+            nx=True,
+        )
+        return bool(wrote)
+    except Exception:
+        logger.warning("mark itsm ticket canceling failed, ticket_id=%s", ticket_id, exc_info=True)
+        return None
+
+
+def _access_canceling_marker(ticket_id: str, command: Callable[[redis.Redis, str], Any]) -> Any:
+    """取消标记仅用于修正回调状态，Redis 不可用时按无标记处理，不阻断取消"""
+    try:
+        client = get_default_redis_client()
+        if client is None:
+            raise ConnectionError("redis client is unavailable")
+        return command(client, ITSM_TICKET_CANCELING_KEY.format(ticket_id=ticket_id))
+    except Exception:
+        logger.warning("access itsm ticket canceling marker failed, ticket_id=%s", ticket_id, exc_info=True)
+        return None

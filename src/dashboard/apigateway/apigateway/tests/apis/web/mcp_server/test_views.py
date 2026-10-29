@@ -49,7 +49,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
 from apigateway.core.constants import StageStatusEnum
-from apigateway.core.models import Release, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import now_datetime
 
@@ -3221,8 +3221,15 @@ class TestMCPServerListAppPermissionRisk:
         assert mcp_server_data["app_permission_risk"]["has_risk"] is False
         assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
 
-    def test_list_has_risk_with_app_verified_tools(self, request_view, fake_gateway, fake_stage):
-        """oauth2_public_client_enabled=True 且部分工具需要应用认证时，返回存在风险的工具"""
+    @pytest.mark.parametrize("view_name", ["mcp_server.list_create", "mcp_server.retrieve_update_destroy"])
+    @pytest.mark.parametrize(
+        "public_enabled, personal_enabled, has_risk",
+        [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
+    )
+    def test_app_permission_risk_with_app_verified_tools(
+        self, request_view, fake_gateway, fake_stage, view_name, public_enabled, personal_enabled, has_risk
+    ):
+        """列表和详情均按公开客户端、个人令牌开关返回应用态风险。"""
         rv = G(ResourceVersion, gateway=fake_gateway)
         rv._data = json.dumps(
             self._make_resource_version_data(
@@ -3241,27 +3248,31 @@ class TestMCPServerListAppPermissionRisk:
             gateway=fake_gateway,
             stage=fake_stage,
             status=MCPServerStatusEnum.ACTIVE.value,
-            oauth2_public_client_enabled=True,
+            oauth2_public_client_enabled=public_enabled,
+            oauth2_personal_client_enabled=personal_enabled,
             _resource_names="tool_a;tool_b",
         )
 
+        path_params = {"gateway_id": fake_gateway.id}
+        if view_name == "mcp_server.retrieve_update_destroy":
+            path_params["mcp_server_id"] = mcp_server.id
         resp = request_view(
             method="GET",
-            view_name="mcp_server.list_create",
-            path_params={"gateway_id": fake_gateway.id},
+            view_name=view_name,
+            path_params=path_params,
             gateway=fake_gateway,
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        mcp_server_data = next(
-            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
-            None,
-        )
-        assert mcp_server_data is not None
-        assert mcp_server_data["app_permission_risk"]["has_risk"] is True
-        assert "tool_a" in mcp_server_data["app_permission_risk"]["risk_tools"]
-        assert "tool_b" not in mcp_server_data["app_permission_risk"]["risk_tools"]
+        if view_name == "mcp_server.list_create":
+            mcp_server_data = next(item for item in result["data"]["results"] if item["id"] == mcp_server.id)
+        else:
+            mcp_server_data = result["data"]
+        assert mcp_server_data["app_permission_risk"] == {
+            "has_risk": has_risk,
+            "risk_tools": ["tool_a"] if has_risk else [],
+        }
 
     def test_list_no_risk_when_all_tools_skip_app_auth(self, request_view, fake_gateway, fake_stage):
         """oauth2_public_client_enabled=True 但所有工具都不需要应用认证时无安全风险"""
@@ -3747,68 +3758,49 @@ class TestGatewayMCPServerAppPermissionListApi:
 class TestGatewayMCPServerAppPermissionExportApi:
     """测试网关级 MCPServer 应用权限导出 API"""
 
-    def test_export_all(self, request_view, fake_gateway, fake_mcp_server):
+    @pytest.mark.parametrize(
+        "export_type, expected_apps",
+        [
+            (ExportTypeEnum.ALL.value, {"app1", "app2"}),
+            (ExportTypeEnum.FILTERED.value, {"app1"}),
+            (ExportTypeEnum.SELECTED.value, {"app2"}),
+        ],
+    )
+    def test_export_scope(self, request_view, fake_gateway, fake_mcp_server, export_type, expected_apps):
         G(
             MCPServerAppPermission,
             mcp_server=fake_mcp_server,
             bk_app_code="app1",
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
         )
-
-        resp = request_view(
-            method="POST",
-            view_name="mcp_server.gateway_app_permission.export",
-            path_params={"gateway_id": fake_gateway.id},
-            gateway=fake_gateway,
-            data={"export_type": ExportTypeEnum.ALL.value},
-        )
-        assert resp.status_code == 200
-
-    def test_export_filtered(self, request_view, fake_gateway, fake_mcp_server):
-        G(
-            MCPServerAppPermission,
-            mcp_server=fake_mcp_server,
-            bk_app_code="app1",
-            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
-        )
-        G(
+        selected = G(
             MCPServerAppPermission,
             mcp_server=fake_mcp_server,
             bk_app_code="app2",
             grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
         )
-
-        resp = request_view(
+        other_server = G(MCPServer, gateway=G(Gateway), name="other-gateway-server")
+        other = G(
+            MCPServerAppPermission,
+            mcp_server=other_server,
+            bk_app_code="other-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        response = request_view(
             method="POST",
             view_name="mcp_server.gateway_app_permission.export",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
-                "export_type": ExportTypeEnum.FILTERED.value,
+                "export_type": export_type,
+                "selected_ids": [selected.id, other.id],
                 "grant_type": MCPServerAppPermissionGrantTypeEnum.GRANT.value,
             },
         )
-        assert resp.status_code == 200
-
-    def test_export_selected(self, request_view, fake_gateway, fake_mcp_server):
-        permission = G(
-            MCPServerAppPermission,
-            mcp_server=fake_mcp_server,
-            bk_app_code="app1",
-            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
-        )
-
-        resp = request_view(
-            method="POST",
-            view_name="mcp_server.gateway_app_permission.export",
-            path_params={"gateway_id": fake_gateway.id},
-            gateway=fake_gateway,
-            data={
-                "export_type": ExportTypeEnum.SELECTED.value,
-                "selected_ids": [permission.id],
-            },
-        )
-        assert resp.status_code == 200
+        assert response.status_code == 200
+        rows = list(csv.DictReader(StringIO(b"".join(response.streaming_content).decode(response.charset))))
+        assert {row["蓝鲸应用ID"] for row in rows} == expected_apps
+        assert len(rows) == len(expected_apps)
 
     def test_export_display_values(self, mocker, request_view, settings, fake_gateway, fake_mcp_server):
         settings.ENABLE_MULTI_TENANT_MODE = True

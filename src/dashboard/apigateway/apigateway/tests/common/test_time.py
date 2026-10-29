@@ -21,32 +21,31 @@ import datetime
 import pytest
 
 from apigateway.common.time import calculate_expires, calculate_renew_time
-from apigateway.utils.time import now_datetime
+from apigateway.utils.time import NeverExpiresTime
+
+pytestmark = pytest.mark.no_meta_schema
+
+
+@pytest.fixture
+def fixed_now(mocker):
+    now = datetime.datetime(2026, 1, 15, 12, tzinfo=datetime.timezone.utc)
+    mocker.patch("django.utils.timezone.now", return_value=now)
+    return now
+
+
+@pytest.mark.parametrize("expire_days", [10, 180, None, 0])
+def test_calculate_expires(fixed_now, expire_days):
+    expected = fixed_now + datetime.timedelta(days=expire_days) if expire_days else NeverExpiresTime.time
+    assert calculate_expires(expire_days) == expected
 
 
 @pytest.mark.parametrize(
-    "expire_days, expected",
-    [
-        (10, 10),
-        (180, 180),
-        (None, 360 * 10),
-    ],
+    "remaining_days, expire_days, expected_days",
+    [(-10, 10, 10), (0, 10, 10), (10, 180, 190), (-10, None, None), (10, None, None), (10, 0, None)],
 )
-def test_calculate_expires(expire_days, expected):
-    result = calculate_expires(expire_days)
-    # 因时间创建的误差，因此，结尾时间减去 2 秒
-    assert (result - now_datetime()).total_seconds() >= expected * 24 * 3600 - 2
-
-
-@pytest.mark.parametrize(
-    "default_days, expire_days, expected",
-    [
-        (0, 10, 10),
-        (10, 180, 180 + 10),
-        (0, None, 360 * 10),
-    ],
-)
-def test_calculate_renew_time(default_days, expire_days, expected):
-    expire_time = now_datetime() + datetime.timedelta(days=default_days) if default_days else now_datetime()
-    result = calculate_renew_time(expire_time, expire_days)
-    assert (result - now_datetime()).total_seconds() >= expected * 24 * 3600 - 2
+def test_calculate_renew_time(fixed_now, remaining_days, expire_days, expected_days):
+    expire_time = fixed_now + datetime.timedelta(days=remaining_days)
+    expected = (
+        fixed_now + datetime.timedelta(days=expected_days) if expected_days is not None else NeverExpiresTime.time
+    )
+    assert calculate_renew_time(expire_time, expire_days) == expected

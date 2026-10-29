@@ -66,6 +66,7 @@ def mixed_servers(request, fake_gateway, fake_stage, settings):
             is_public=True,
             protocol_type="sse",
             oauth2_public_client_enabled=False,
+            oauth2_personal_client_enabled=False,
             _resource_names="user_tool" if name == "user" else "app_tool",
         )
         G(MCPServerAppPermission, mcp_server=server, bk_app_code="test-app", expires=NeverExpiresTime.time)
@@ -91,11 +92,16 @@ def mixed_servers(request, fake_gateway, fake_stage, settings):
     ],
 )
 @pytest.mark.parametrize("public_client", [False, True])
-def test_list_urls_use_each_servers_tools(request_view, fake_gateway, mixed_servers, view_name, public_client):
-    if public_client:
-        MCPServer.objects.filter(pk__in=[server.id for server in mixed_servers.values()]).update(
-            oauth2_public_client_enabled=True
-        )
+@pytest.mark.parametrize("personal_client", [False, True])
+@pytest.mark.parametrize(("protocol_type", "url_suffix"), [("sse", "sse/"), ("streamable_http", "mcp/")])
+def test_list_urls_use_each_servers_tools(
+    request_view, fake_gateway, mixed_servers, view_name, public_client, personal_client, protocol_type, url_suffix
+):
+    MCPServer.objects.filter(pk__in=[server.id for server in mixed_servers.values()]).update(
+        oauth2_public_client_enabled=public_client,
+        oauth2_personal_client_enabled=personal_client,
+        protocol_type=protocol_type,
+    )
     path_params = {"gateway_id": fake_gateway.id} if view_name == "mcp_server.list_create" else None
     resp = request_view(
         method="GET",
@@ -111,14 +117,16 @@ def test_list_urls_use_each_servers_tools(request_view, fake_gateway, mixed_serv
     servers = [row.get("mcp_server", row) for row in rows]
     by_name = {server["name"]: server for server in servers}
     base_url = "http://example.com/bk-apigateway/prod/api/v2/mcp-servers"
-    assert by_name["user-server"]["url"] == f"{base_url}/user-server/sse/"
-    app_suffix = "sse/" if public_client else "application/sse/"
+    assert by_name["user-server"]["url"] == f"{base_url}/user-server/{url_suffix}"
+    app_suffix = url_suffix if public_client or personal_client else f"application/{url_suffix}"
     assert by_name["application-server"]["url"] == f"{base_url}/application-server/{app_suffix}"
     if view_name == "openapi.v2.open.user.mcp_server.list":
         assert by_name["user-server"]["least_privilege"] == "application_and_user"
         assert by_name["user-server"]["application_url"] == ""
         assert by_name["application-server"]["least_privilege"] == "application"
-        assert by_name["application-server"]["application_url"] == f"{base_url}/application-server/application/sse/"
+        assert by_name["application-server"]["application_url"] == (
+            f"{base_url}/application-server/application/{url_suffix}"
+        )
 
 
 @pytest.mark.parametrize(
@@ -149,13 +157,21 @@ def test_list_urls_do_not_depend_on_page_size(request_view, fake_gateway, mixed_
     "view_name",
     ["mcp_server.retrieve_update_destroy", "mcp_marketplace.server.retrieve"],
 )
-def test_detail_preserves_application_url(request_view, fake_gateway, mixed_servers, view_name):
+@pytest.mark.parametrize("personal_client", [False, True])
+@pytest.mark.parametrize(("protocol_type", "url_suffix"), [("sse", "sse/"), ("streamable_http", "mcp/")])
+def test_detail_preserves_application_url(
+    request_view, fake_gateway, mixed_servers, view_name, personal_client, protocol_type, url_suffix
+):
     server = mixed_servers["application"]
+    server.oauth2_personal_client_enabled = personal_client
+    server.protocol_type = protocol_type
+    server.save(update_fields=["oauth2_personal_client_enabled", "protocol_type"])
     path_params = {"mcp_server_id": server.id}
     if view_name == "mcp_server.retrieve_update_destroy":
         path_params["gateway_id"] = fake_gateway.id
     resp = request_view(method="GET", view_name=view_name, path_params=path_params, gateway=fake_gateway)
     assert resp.status_code == 200, resp.json()
+    suffix = url_suffix if personal_client else f"application/{url_suffix}"
     assert resp.json()["data"]["url"] == (
-        "http://example.com/bk-apigateway/prod/api/v2/mcp-servers/application-server/application/sse/"
+        f"http://example.com/bk-apigateway/prod/api/v2/mcp-servers/application-server/{suffix}"
     )

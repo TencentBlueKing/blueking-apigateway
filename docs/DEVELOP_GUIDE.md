@@ -14,6 +14,8 @@
 
 `dashboard` 基于 Django 框架开发，为网关产品提供后端接口。本地开发环境搭建请参考 [本地开发文档](../src/dashboard/README.md)
 
+单元测试的局部验证、快跑和含迁移完整验证入口见 [Dashboard 测试指南](../src/dashboard/TESTING.md)。
+
 ## dashboard-front
 
 `dashboard-front` 为基于 Vue.js 的前端项目。本地开发环境搭建请参考 [本地开发文档](../src/dashboard-front/README.md)

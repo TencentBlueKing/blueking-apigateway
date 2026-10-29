@@ -34,6 +34,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apis.v2.tenant import get_request_tenant_id
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerPermissionActionEnum,
@@ -48,7 +49,8 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.access_log import LogSearchClient
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.audit import Auditor
+from apigateway.biz.gateway import GatewayHandler, delete_gateway_members
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import (
     AppPermissionBuilder,
@@ -375,7 +377,11 @@ class GatewayListApi(generics.ListAPIView):
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
-            queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
+            queryset = (
+                queryset.filter(Q(name__contains=name) | Q(display_name__contains=name))
+                if fuzzy
+                else queryset.filter(name=name)
+            )
 
         if kind:
             kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
@@ -471,11 +477,57 @@ class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
+def _gateway_member_audit_records(members) -> list[dict[str, str]]:
+    return [{"username": member.username, "role": member.role} for member in members]
+
+
+@method_decorator(
+    name="delete",
+    decorator=extend_schema(
+        description="按用户名批量删除网关维护人",
+        parameters=[serializers.GatewayMaintainerDeleteInputSLZ],
+        responses={status.HTTP_200_OK: serializers.GatewayMaintainerDeleteOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayMaintainerDeleteApi(generics.GenericAPIView):
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = serializers.GatewayMaintainerDeleteInputSLZ
+
+    def delete(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        members_before = GatewayMember.objects.list_gateway_members(request.gateway.id)
+        deleted_members = delete_gateway_members(
+            request.gateway,
+            slz.validated_data["maintainers"],
+            username,
+        )
+        deleted_usernames = [member.username for member in deleted_members]
+        if deleted_usernames:
+            members_after = GatewayMember.objects.list_gateway_members(request.gateway.id)
+            Auditor.record_gateway_op_success(
+                op_type=OpTypeEnum.DELETE,
+                username=username,
+                gateway_id=request.gateway.id,
+                instance_id=request.gateway.id,
+                instance_name=request.gateway.name,
+                data_before={"maintainers": _gateway_member_audit_records(members_before)},
+                data_after={"maintainers": _gateway_member_audit_records(members_after)},
+                comment=_("移除网关维护人({app_code})").format(app_code=request.app.app_code),
+            )
+
+        output_slz = serializers.GatewayMaintainerDeleteOutputSLZ({"deleted": deleted_usernames})
+        return OKJsonResponse(data=output_slz.data)
+
+
 @method_decorator(
     name="get",
     decorator=extend_schema(
         parameters=[serializers.AppResourcePermissionListInputSLZ],
-        responses={status.HTTP_200_OK: serializers.AppResourcePermissionListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.GatewayPermissionResourceListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -499,7 +551,7 @@ class GatewayPermissionResourceListApi(generics.ListAPIView):
             slz.validated_data["target_app_code"],
         ).build(resources)
 
-        slz = serializers.AppResourcePermissionListOutputSLZ(
+        slz = serializers.GatewayPermissionResourceListOutputSLZ(
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )

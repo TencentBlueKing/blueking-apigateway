@@ -161,6 +161,7 @@ def test_mcp_scope_list_returns_gateway_group_and_title_fallback(request_view):
                 {
                     "id": gateway.id,
                     "name": "official_mcp_gateway",
+                    "display_name": gateway.display_name_i18n,
                     "is_official": True,
                     "mcp_server_count": 1,
                     "mcp_servers": [
@@ -194,6 +195,7 @@ def test_resource_scope_list_paginates_gateways_and_translates_description(reque
                 {
                     "id": second_gateway.id,
                     "name": "b_gateway",
+                    "display_name": second_gateway.display_name_i18n,
                     "is_official": True,
                     "resource_count": 1,
                     "resources": [
@@ -247,3 +249,28 @@ def test_resource_scope_list_applies_tenant_header_visibility(request_view, sett
         data={"oauth_client_type": "public"},
     )
     assert missing_tenant_response.status_code == 400
+
+
+@pytest.mark.parametrize("view_name", [MCP_SCOPE_VIEW, RESOURCE_SCOPE_VIEW])
+@pytest.mark.parametrize(
+    "language,english,expected", [("zh-cn", "English", "默认名"), ("en", "English", "English"), ("en", None, "默认名")]
+)
+def test_oauth2_both_gateway_dtos_localize_and_search(request_view, view_name, language, english, expected):
+    gateway = _make_gateway("scope-gateway")
+    gateway.display_name = "默认名"
+    gateway.display_name_en = english
+    gateway.save(update_fields=["display_name", "display_name_en"])
+    _make_resource(gateway, resource_id=1, name="resource")
+    _make_mcp_server(gateway, name="scope-server")
+    for keyword in ["默认", "English"] if english else ["默认"]:
+        with translation.override(language):
+            response = request_view(
+                method="GET",
+                view_name=view_name,
+                data={"oauth_client_type": "public", "gateway_name": keyword, "limit": 1},
+                app=mock.MagicMock(app_code="test"),
+            )
+        assert response.status_code == 200, response.json()
+        assert response.json()["data"]["count"] == (0 if keyword == "English" else 1)
+        if keyword != "English":
+            assert response.json()["data"]["results"][0]["display_name"] == expected

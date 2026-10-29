@@ -44,10 +44,12 @@ stages:
           - v2_open_list_gateways
           - v2_open_list_gateway_resources
           - v2_open_retrieve_gateway_api_details
+          - v2_open_list_current_app_permissions
         tool_names:
           - list_gateways
           - list_gateway_resources
           - retrieve_gateway_api_details
+          - list_current_app_permissions
         is_public: true
         status: 1
         protocol_type: "streamable_http"
@@ -89,6 +91,7 @@ grant_permissions:
       # gateway related
       - v2_inner_list_gateways
       - v2_inner_get_gateway
+      - v2_inner_delete_gateway_maintainers
       - v2_inner_list_gateway_permission_resources
       - v2_inner_check_is_allowed_apply_by_gateway
       - v2_inner_apply_gateway_resource_permission

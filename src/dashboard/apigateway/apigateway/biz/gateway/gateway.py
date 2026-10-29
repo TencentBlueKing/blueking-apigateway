@@ -51,6 +51,10 @@ from apigateway.core.constants import (
     GatewayTypeEnum,
 )
 from apigateway.core.gateway_auth import GatewayAuthConfig
+from apigateway.core.gateway_name import (
+    normalize_display_name,
+    normalize_display_name_en,
+)
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
@@ -84,6 +88,8 @@ def _is_official_gateway_type(gateway_type: Optional[GatewayTypeEnum]) -> bool:
 
 class GatewayData(BaseModel):
     name: str = Field(...)
+    display_name: Optional[str] = Field(default=None)
+    display_name_en: Optional[str] = Field(default=None)
     description: str = Field(default="")
     description_en: Optional[str] = Field(default=None)
     maintainers: List[str] = Field(default_factory=list)
@@ -590,8 +596,12 @@ class GatewaySaver:
     def _create_gateway(self):
         # 1. resolve and validate data planes before saving the gateway
         validate_gateway_name_kind(self._gateway_data.name, self._gateway_data.kind)
+        display_name = normalize_display_name(self._gateway_data.display_name, name=self._gateway_data.name)
+        display_name_en = normalize_display_name_en(self._gateway_data.display_name_en)
         self._gateway = gateway = Gateway(
             name=self._gateway_data.name,
+            display_name=display_name,
+            display_name_en=display_name_en,
             description=self._gateway_data.description,
             description_en=self._gateway_data.description_en,
             status=self._gateway_data.status,
@@ -666,6 +676,10 @@ class GatewaySaver:
 
     def _update_gateway(self):
         gateway = self._gateway
+
+        if "display_name" in self._gateway_data.model_fields_set:
+            gateway.display_name = normalize_display_name(self._gateway_data.display_name, name=gateway.name)
+        gateway.display_name_en = normalize_display_name_en(self._gateway_data.display_name_en)
 
         # 1. update gateway
         gateway.description = self._gateway_data.description

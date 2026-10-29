@@ -26,6 +26,7 @@ from .members import (
     add_gateway_members,
     build_gateway_doc_maintainers,
     delete_gateway_member,
+    delete_gateway_members,
     replace_gateway_administrators,
     update_gateway_member_role,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "add_gateway_members",
     "build_gateway_doc_maintainers",
     "delete_gateway_member",
+    "delete_gateway_members",
     "replace_gateway_administrators",
     "update_gateway_member_role",
     # others

@@ -54,6 +54,7 @@ from apigateway.core.constants import (
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
 from apigateway.utils.crypto import get_crypto
@@ -75,6 +76,12 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     """
 
     name = models.CharField(max_length=64, unique=True)
+    display_name_i18n = I18nProperty(
+        models.CharField(max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, unique=True, blank=True)
+    )
+    # 创建入口负责在未配置 display_name 时使用 name。
+    display_name = display_name_i18n.default_field(null=True, default=None)
+    display_name_en = display_name_i18n.field("en", null=True, default=None)
     description_i18n = I18nProperty(models.CharField(max_length=512, blank=True, null=True, default=None))
     description = description_i18n.default_field(default="")
     description_en = description_i18n.field("en")
@@ -120,6 +127,11 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = "Gateway"
         verbose_name_plural = "Gateway"
         db_table = "core_api"
+
+    @property
+    def display_name_or_name(self) -> str:
+        """按当前语言展示；未配置展示名时使用 name。"""
+        return self.display_name_i18n or self.name
 
     @property
     def doc_maintainers(self) -> Dict:

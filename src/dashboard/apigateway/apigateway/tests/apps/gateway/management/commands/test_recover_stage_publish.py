@@ -65,8 +65,8 @@ def test_apply_is_scoped_and_idempotent(fake_gateway, fake_stage, fake_release_h
     call_command(COMMAND, **args)
 
     events = list(PublishEvent.objects.order_by("publish_id"))
-    assert {event.publish_id for event in events} == {fake_release_history.id, plane_history.id}
-    assert len(events) == 2
+    assert {event.publish_id for event in events} == {plane_history.id}
+    assert len(events) == 1
     for event in events:
         assert event.status == "failure"
         assert event.gateway_id == fake_gateway.id
@@ -152,3 +152,117 @@ def test_gateway_without_history(fake_gateway, fake_stage):
 def test_missing_gateway():
     with pytest.raises(CommandError, match="Gateway does not exist"):
         call_command(COMMAND, gateway_id=99999)
+
+
+@pytest.mark.parametrize("gateway_option", ["--gateway_name", "--gateawy_name"])
+@pytest.mark.parametrize("stage_option", ["--stage_name", "--stage"])
+def test_name_options_are_scoped(
+    fake_gateway, fake_stage, fake_release_history, publish_lock, gateway_option, stage_option
+):
+    foreign_gateway = G(Gateway)
+    foreign_stage = G(Stage, gateway=foreign_gateway, name=fake_stage.name)
+    G(ReleaseHistory, gateway=foreign_gateway, stage=foreign_stage, created_time=fake_release_history.created_time)
+    other_stage = G(Stage, gateway=fake_gateway)
+    G(ReleaseHistory, gateway=fake_gateway, stage=other_stage, created_time=fake_release_history.created_time)
+
+    call_command(
+        COMMAND,
+        gateway_option,
+        fake_gateway.name,
+        stage_option,
+        fake_stage.name,
+        "--apply",
+        "--operator",
+        "operator",
+        "--reason",
+        "missing events",
+    )
+
+    assert list(PublishEvent.objects.values_list("publish_id", flat=True)) == [fake_release_history.id]
+
+
+def test_name_options_preview(fake_gateway, fake_stage, fake_release_history):
+    output = StringIO()
+    call_command(COMMAND, gateway_name=fake_gateway.name, stage_name=fake_stage.name, stdout=output)
+    assert "would_recover" in output.getvalue()
+    assert fake_gateway.name in output.getvalue()
+    assert not PublishEvent.objects.exists()
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"gateway_name": ""}, {"gateway_name": " "}, {"stage_name": ""}, {"stage_name": " "}, {"gateway_id": 1}],
+)
+def test_invalid_selectors_do_not_broaden_scope(fake_gateway, fake_release_history, options):
+    selectors = {"gateway_name": fake_gateway.name, **options}
+    with pytest.raises(CommandError):
+        call_command(COMMAND, apply=True, operator="operator", reason="repair", **selectors)
+    assert not PublishEvent.objects.exists()
+
+
+def test_missing_gateway_name():
+    with pytest.raises(CommandError, match="Gateway does not exist"):
+        call_command(COMMAND, gateway_name="does-not-exist")
+
+
+def test_all_stages_only_recovers_eligible_latest_histories(
+    fake_gateway, fake_stage, fake_release_history, publish_lock
+):
+    old = timezone.now() - timedelta(days=400)
+    eligible_stage = G(Stage, gateway=fake_gateway, name="eligible")
+    eligible = G(ReleaseHistory, gateway=fake_gateway, stage=eligible_stage, created_time=old)
+    G(Stage, gateway=fake_gateway, name="unpublished")
+    for status in ["success", "doing", "pending", "failure"]:
+        stage = G(Stage, gateway=fake_gateway, name=status)
+        G(ReleaseHistory, gateway=fake_gateway, stage=stage, created_time=old)
+        latest = G(ReleaseHistory, gateway=fake_gateway, stage=stage, created_time=old)
+        G(PublishEvent, gateway=fake_gateway, stage=stage, publish=latest, status=status)
+    for age in [0, None]:
+        stage = G(Stage, gateway=fake_gateway)
+        G(ReleaseHistory, gateway=fake_gateway, stage=stage, created_time=old)
+        G(ReleaseHistory, gateway=fake_gateway, stage=stage, created_time=timezone.now() if age == 0 else None)
+    foreign_gateway = G(Gateway)
+    foreign_stage = G(Stage, gateway=foreign_gateway, name=fake_stage.name)
+    G(ReleaseHistory, gateway=foreign_gateway, stage=foreign_stage, created_time=old)
+    before = list(PublishEvent.objects.order_by("id").values())
+    output = StringIO()
+
+    for _ in range(2):
+        call_command(
+            COMMAND, gateway_name=fake_gateway.name, apply=True, operator="operator", reason="repair", stdout=output
+        )
+
+    assert list(PublishEvent.objects.order_by("id").values())[: len(before)] == before
+    repaired = PublishEvent.objects.exclude(id__in=[event["id"] for event in before])
+    assert set(repaired.values_list("publish_id", flat=True)) == {fake_release_history.id, eligible.id}
+    assert repaired.count() == 2
+    assert "no publish history" in output.getvalue()
+
+
+def test_older_data_plane_history_is_not_recovered(fake_gateway, fake_stage, fake_release_history, publish_lock):
+    latest = G(
+        ReleaseHistory,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        data_plane=G(DataPlane),
+        created_time=fake_release_history.created_time,
+    )
+    G(PublishEvent, gateway=fake_gateway, stage=fake_stage, publish=latest, status="success")
+    before = list(PublishEvent.objects.values())
+    call_command(COMMAND, gateway_id=fake_gateway.id, apply=True, operator="operator", reason="repair")
+    assert list(PublishEvent.objects.values()) == before
+
+
+def test_rechecks_new_publish_on_another_data_plane(fake_gateway, fake_stage, fake_release_history, publish_lock):
+    def concurrent_publish():
+        G(ReleaseHistory, gateway=fake_gateway, stage=fake_stage, data_plane=G(DataPlane))
+
+    publish_lock.return_value.__enter__.side_effect = concurrent_publish
+    call_command(COMMAND, gateway_id=fake_gateway.id, apply=True, operator="operator", reason="repair")
+    assert not PublishEvent.objects.exists()
+
+
+def test_inconsistent_history_gateway_is_not_recovered(fake_gateway, fake_stage, fake_release_history, publish_lock):
+    G(ReleaseHistory, gateway=G(Gateway), stage=fake_stage, created_time=fake_release_history.created_time)
+    call_command(COMMAND, gateway_id=fake_gateway.id, apply=True, operator="operator", reason="repair")
+    assert not PublishEvent.objects.exists()

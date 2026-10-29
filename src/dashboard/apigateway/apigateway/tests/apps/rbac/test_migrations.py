@@ -7,11 +7,13 @@ from django.db import connections
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
-MIGRATE_ZERO = [("rbac", None)]
-MIGRATE_SCHEMA = [("rbac", "0001_initial")]
-MIGRATE_TO = [("rbac", "0002_backfill_gateway_members")]
+# Keep the physical Gateway table aligned with the historical model used below.
+CORE_SCHEMA = ("core", "0056_releasedresource_oauth2_scope_fields")
+MIGRATE_ZERO = [("rbac", None), CORE_SCHEMA]
+MIGRATE_SCHEMA = [("rbac", "0001_initial"), CORE_SCHEMA]
+MIGRATE_TO = [("rbac", "0002_backfill_gateway_members"), CORE_SCHEMA]
 MIGRATION_MODULE = import_module("apigateway.apps.rbac.migrations.0002_backfill_gateway_members")
 
 

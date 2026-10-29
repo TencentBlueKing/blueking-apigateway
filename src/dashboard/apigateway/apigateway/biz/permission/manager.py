@@ -25,6 +25,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
@@ -40,10 +41,12 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkpaas import get_app_maintainers
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.time import now_datetime
 
 from .permission import ResourcePermissionHandler
@@ -236,6 +239,29 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         return record
 
     @staticmethod
+    def cancel_permission_apply(apply: AppPermissionApply, operated_by: str) -> None:
+        """将待审批的申请落库为已取消，调用方需持有申请的行锁"""
+        data_before = get_model_dict(apply)
+        AppPermissionApplyStatus.objects.filter(apply=apply).delete()
+        AppPermissionRecord.objects.filter(id=apply.apply_record_id).update(
+            status=ApplyStatusEnum.CANCELED.value,
+            handled_by=operated_by,
+            handled_time=now_datetime(),
+        )
+        apply.status = ApplyStatusEnum.CANCELED.value
+        apply.save(update_fields=["status"])
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=operated_by,
+            gateway_id=apply.gateway_id,
+            instance_id=apply.id,
+            instance_name=apply.bk_app_code,
+            data_before=data_before,
+            data_after=get_model_dict(apply),
+            comment="取消权限申请",
+        )
+
+    @staticmethod
     def _get_itsm_ticket_applicant(username: str, bk_app_code: str) -> str:
         if username:
             return username
@@ -261,7 +287,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         try:
             helper = ItsmPermissionApplyHelper()
             if not helper.is_ready():
-                logger.info(
+                logger.warning(
                     "Skip creating ITSM ticket for permission apply because ITSM helper is not ready, record_id=%s, gateway_id=%s, bk_app_code=%s",
                     record.id,
                     gateway.id,
@@ -304,7 +330,14 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             )
         except Exception:
             # ITSM 工单创建失败不应阻塞主流程
-            logger.exception("Failed to create ITSM ticket for permission apply, record_id=%s", record.id)
+            logger.exception(
+                "Failed to create ITSM ticket for permission apply, record_id=%s, gateway_id=%s, bk_app_code=%s, "
+                "grant_dimension=%s",
+                record.id,
+                gateway.id,
+                bk_app_code,
+                grant_dimension,
+            )
 
 
 class GatewayPermissionDimensionManager(PermissionDimensionManager):

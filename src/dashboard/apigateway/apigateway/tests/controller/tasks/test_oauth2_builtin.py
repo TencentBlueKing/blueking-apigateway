@@ -133,7 +133,7 @@ def test_reconcile_uses_auto_renewing_owned_lock(fake_gateway, mock_permission_l
     redis_client.assert_called_once_with()
     mock_permission_lock.assert_called_once_with(
         mocker.sentinel.redis_client,
-        f"oauth2_builtin_permission:{fake_gateway.id}",
+        f"bk_apigw:oauth2_builtin_permission:{fake_gateway.id}",
         expire=5,
         auto_renewal=True,
         strict=False,

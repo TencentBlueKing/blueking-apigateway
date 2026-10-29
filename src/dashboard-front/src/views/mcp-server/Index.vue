@@ -156,11 +156,10 @@
                 </div>
               </template>
               <template
-                v-if="server?.oauth2_public_client_enabled && isEnabledOAuth"
+                v-if="hasAppPermissionRisk(server)"
                 #externalTag
               >
                 <div
-                  v-if="server?.app_permission_risk?.has_risk"
                   v-bk-tooltips="renderRiskToolToolTip(server)"
                   class="external-oauth-tag bg-#ffebeb"
                 >
@@ -222,7 +221,7 @@ import {
 } from '@/services/source/mcp-server';
 import type { ISearchSelect } from '@/types/common.ts';
 import { useFeatureFlag } from '@/stores';
-import { useMcpBatchCopyConfig, usePopInfoBox } from '@/hooks';
+import { useMcpAuthRisk, useMcpBatchCopyConfig, usePopInfoBox } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import ServerCardTable from '@/views/mcp-server/components/ServerCardTable.vue';
@@ -238,6 +237,7 @@ const { gatewayId = 0 } = defineProps<IProps>();
 const { t } = useI18n();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
+const { hasAppPermissionRisk, getAppPermissionRiskTips } = useMcpAuthRisk();
 
 const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverCardTableRef = ref<InstanceType<typeof ServerCardTable>>();
@@ -345,23 +345,14 @@ const mcpViewList = shallowRef([
 ]);
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-const isEnabledOAuth = computed(() =>
-  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
-);
 const isTableView = computed(() => activeViewTab.value.includes('table'));
 
-const renderRiskToolToolTip = (row: IMCPServerWithUIState & { app_permission_risk?: boolean }) => {
+const renderRiskToolToolTip = (row: IMCPServerWithUIState) => {
+  const tips = getAppPermissionRiskTips(row);
   return {
     content: () => (
       <div class="break-all">
-        { t('此 MCP Server 已开启 OAuth2公开客户端模式，且包含{count}个应用态鉴权工具({content})',
-          {
-            count: row?.app_permission_risk?.risk_tools?.length,
-            content: row?.app_permission_risk?.risk_tools?.join('、'),
-          })}
-        <div>
-          { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
-        </div>
+        { tips.map(tip => <div>{ tip }</div>) }
       </div>
     ),
     extCls: 'max-w-300px',

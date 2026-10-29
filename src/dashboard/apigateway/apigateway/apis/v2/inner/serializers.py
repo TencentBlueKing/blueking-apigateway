@@ -126,6 +126,7 @@ class GatewayListInputSLZ(serializers.Serializer):
 class GatewayBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
@@ -306,10 +307,11 @@ class GatewayAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateInputSLZ"
 
 
-class AppResourcePermissionListOutputSLZ(serializers.Serializer):
+class AppResourcePermissionListOutputBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     gateway_name = serializers.CharField()
+    gateway_display_name = serializers.CharField(read_only=True)
     gateway_id = serializers.IntegerField(required=False, allow_null=True)
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -320,7 +322,7 @@ class AppResourcePermissionListOutputSLZ(serializers.Serializer):
     doc_link = serializers.CharField()
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppResourcePermissionListOutputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppResourcePermissionListOutputBaseSLZ"
 
     def get_expires_in(self, obj):
         if math.isinf(obj["expires_in"]):
@@ -353,6 +355,24 @@ class AppResourcePermissionListOutputSLZ(serializers.Serializer):
             return True
 
         return False
+
+
+class AppResourcePermissionListOutputSLZ(AppResourcePermissionListOutputBaseSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppResourcePermissionListOutputSLZ"
+
+
+class GatewayPermissionResourceListOutputSLZ(AppResourcePermissionListOutputBaseSLZ):
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayPermissionResourceListOutputSLZ"
+
+    def get_approval_url(self, obj) -> str:
+        gateway_id = obj.get("gateway_id")
+        if not gateway_id:
+            return ""
+        return build_gateway_permission_approval_url(gateway_id, obj.get("itsm_ticket_id") or "")
 
 
 class AppPermissionRenewInputSLZ(serializers.Serializer):
@@ -415,6 +435,7 @@ class PermissionApplyRecordOperateInputSLZ(serializers.Serializer):
 
 class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     gateway_name = serializers.SerializerMethodField()
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
     handled_by = serializers.SerializerMethodField()
@@ -442,6 +463,7 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
             "itsm_ticket_url",
             "approval_url",
             "gateway_name",
+            "gateway_display_name",
         ]
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordBaseSLZ"
 
@@ -935,6 +957,32 @@ class GatewayUpdateStatusInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayUpdateStatusInputSLZ"
 
 
+class GatewayMaintainerDeleteInputSLZ(serializers.Serializer):
+    maintainers = serializers.CharField(help_text="待删除的网关维护人，多个以逗号分隔")
+
+    def validate_maintainers(self, value) -> list[str]:
+        return validate_comma_separated_names(
+            value,
+            required=True,
+            required_error=_("maintainers 不能为空"),
+            max_count_error=_("maintainers 最多支持 {max_count} 个"),
+        )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayMaintainerDeleteInputSLZ"
+
+
+class GatewayMaintainerDeleteOutputSLZ(serializers.Serializer):
+    deleted = serializers.ListField(
+        child=serializers.CharField(),
+        read_only=True,
+        help_text="实际删除的网关维护人",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayMaintainerDeleteOutputSLZ"
+
+
 class MonitorCallbackInputSLZ(serializers.Serializer):
     """监控告警回调参数校验（query params 中的 token）"""
 
@@ -1112,6 +1160,7 @@ class OAuth2ResourceScopeOutputSLZ(serializers.Serializer):
 class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     is_official = serializers.BooleanField(read_only=True)
     mcp_server_count = serializers.IntegerField(source="scope_count", read_only=True)
     mcp_servers = serializers.SerializerMethodField()
@@ -1127,6 +1176,7 @@ class OAuth2MCPServerScopeGatewayOutputSLZ(serializers.Serializer):
 class OAuth2ResourceScopeGatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     is_official = serializers.BooleanField(read_only=True)
     resource_count = serializers.IntegerField(source="scope_count", read_only=True)
     resources = serializers.SerializerMethodField()

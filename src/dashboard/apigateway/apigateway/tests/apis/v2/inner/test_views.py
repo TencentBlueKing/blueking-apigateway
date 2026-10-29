@@ -48,12 +48,12 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
-from apigateway.apps.permission.constants import ApplyStatusEnum
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
+from apigateway.apps.permission.models import AppPermissionApply, AppPermissionApplyStatus, AppPermissionRecord
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
@@ -160,6 +160,63 @@ class TestGatewayRetrieveApi:
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
         assert result["data"]["kind"] == "ai"
+
+
+class TestGatewayMaintainerDeleteApi:
+    def test_delete_maintainers(self, request_to_view, request_factory, fake_gateway):
+        GatewayMember.objects.add_gateway_administrators(fake_gateway.id, ["second-admin"], "operator-user")
+        request = request_factory.delete("/?maintainers=second-admin,missing,second-admin")
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.maintainer.delete",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"] == {"deleted": ["second-admin"]}
+        assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.GATEWAY.value,
+            op_object_id=fake_gateway.id,
+        )
+        assert audit_log.comment == "移除网关维护人(test)"
+        assert json.loads(audit_log.data_before) == {
+            "maintainers": [
+                {"username": "admin", "role": GatewayRoleEnum.ADMINISTRATOR.value},
+                {"username": "second-admin", "role": GatewayRoleEnum.ADMINISTRATOR.value},
+            ]
+        }
+        assert json.loads(audit_log.data_after) == {
+            "maintainers": [{"username": "admin", "role": GatewayRoleEnum.ADMINISTRATOR.value}]
+        }
+
+    def test_delete_maintainers_rejects_empty_list(self, request_to_view, request_factory, fake_gateway):
+        request = request_factory.delete("/?maintainers=")
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.maintainer.delete",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 400
+
+    def test_delete_maintainers_rejects_last_administrator(self, request_to_view, request_factory, fake_gateway):
+        request = request_factory.delete("/?maintainers=admin")
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.maintainer.delete",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 400
+        assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
 
 
 class TestGatewayOutputSLZ:
@@ -284,6 +341,64 @@ class TestGatewayAppPermissionApplyCreateApi:
         assert "resource_ids" in result["error"]["message"]
         get_released_public_resources.assert_called_once_with(fake_gateway.id)
         get_manager.assert_not_called()
+
+
+class TestGatewayPermissionResourceListApi:
+    def test_list_returns_approval_url(
+        self, request_view, fake_gateway, fake_resource, fake_resource_echo, mocker, settings
+    ):
+        settings.DASHBOARD_FE_URL = "https://dashboard.example.com"
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "https://itsm.example.com/ticket/{ticket_id}"
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="tester",
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="itsm-001",
+            _resource_ids=str(fake_resource.id),
+        )
+        G(
+            AppPermissionApplyStatus,
+            apply=apply,
+            bk_app_code="test-app",
+            gateway=fake_gateway,
+            resource=fake_resource,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.ResourceVersionHandler.get_released_public_resources",
+            return_value=[
+                {
+                    "id": resource.id,
+                    "name": resource.name,
+                    "description": resource.description or "",
+                    "description_en": resource.description_en,
+                    "resource_perm_required": True,
+                    "allow_apply_permission": True,
+                }
+                for resource in (fake_resource, fake_resource_echo)
+            ],
+        )
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.permission.resource.list",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = response.json()
+
+        assert response.status_code == 200
+        approval_urls = {item["id"]: item["approval_url"] for item in result["data"]}
+        assert approval_urls[fake_resource.id] == "https://itsm.example.com/ticket/itsm-001"
+        assert (
+            approval_urls[fake_resource_echo.id] == f"https://dashboard.example.com/{fake_gateway.id}/permission/apply"
+        )
 
 
 class TestMCPServerPermissionListApi:
@@ -1581,7 +1696,7 @@ class TestGatewayUpdateStatusApi:
         mcp_server = G(MCPServer, gateway=fake_gateway, status=MCPServerStatusEnum.ACTIVE.value)
 
         # Mock 触发发布
-        mocker.patch(
+        publish = mocker.patch(
             "apigateway.apis.v2.inner.views.trigger_gateway_publish",
             return_value=None,
         )
@@ -1597,6 +1712,9 @@ class TestGatewayUpdateStatusApi:
         )
 
         assert response.status_code == 204
+        publish.assert_called_once_with(
+            PublishSourceEnum.GATEWAY_DISABLE, request.user.username, fake_gateway.id, user_credentials=None
+        )
 
         # 验证网关状态已更新
         fake_gateway.refresh_from_db()
@@ -1616,7 +1734,7 @@ class TestGatewayUpdateStatusApi:
         fake_gateway.save()
 
         # Mock 触发发布
-        mocker.patch(
+        publish = mocker.patch(
             "apigateway.apis.v2.inner.views.trigger_gateway_publish",
             return_value=None,
         )
@@ -1632,10 +1750,34 @@ class TestGatewayUpdateStatusApi:
         )
 
         assert response.status_code == 204
+        publish.assert_called_once_with(
+            PublishSourceEnum.GATEWAY_ENABLE, request.user.username, fake_gateway.id, user_credentials=None
+        )
 
         # 验证网关状态已更新
         fake_gateway.refresh_from_db()
         assert fake_gateway.status == GatewayStatusEnum.ACTIVE.value
+
+    @pytest.mark.parametrize("status", [0, 1, 99])
+    def test_unchanged_or_invalid_status_does_not_publish(self, request_view, fake_gateway, mocker, status):
+        fake_gateway.name = "bp-status-test"
+        fake_gateway.status = status if status in (0, 1) else 1
+        fake_gateway.save()
+        before = fake_gateway.status
+        publish = mocker.patch("apigateway.apis.v2.inner.views.trigger_gateway_publish")
+        response = request_view(
+            method="PUT",
+            view_name="openapi.v2.inner.gateway.update_status",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            app=mock.MagicMock(app_code="test"),
+            data={"status": status},
+            format="json",
+        )
+        assert response.status_code == (400 if status == 99 else 204)
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.status == before
+        publish.assert_not_called()
 
 
 class TestGatewayDestroyApi:

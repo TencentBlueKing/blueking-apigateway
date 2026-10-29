@@ -160,6 +160,8 @@ class TestResourceViewSet:
         if expected:
             for d in expected:
                 d["gateway_id"] = fake_gateway.id
+                if mocked_resource_permissions is None:
+                    d["gateway_display_name"] = fake_gateway.display_name_i18n
 
         mocker.patch(
             "apigateway.core.models.Gateway.is_active_and_public",

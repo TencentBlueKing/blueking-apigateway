@@ -65,32 +65,6 @@
         </BkSelect>
       </BkFormItem>
       <BkFormItem
-        :label="t('维护人员')"
-        property="maintainers"
-        class="member-selector-form"
-        :class="[{ 'is-error': isShowMemberError}]"
-      >
-        <MemberSelector
-          v-if="!featureFlagStore.isTenantMode"
-          v-model="formData.maintainers"
-          @change="handleMemberChange"
-        />
-        <BkUserSelector
-          v-else
-          v-model="formData.maintainers"
-          :api-base-url="envStore.tenantUserDisplayAPI"
-          multiple
-          :tenant-id="userStore.info.tenant_id"
-          @change="handleTenantUserChange"
-        />
-        <div
-          v-if="isShowMemberError"
-          class="color-#ea3636 text-12px p-t-4px leading-[1]"
-        >
-          {{ t('维护人员不能为空') }}
-        </div>
-      </BkFormItem>
-      <BkFormItem
         :label="t('描述')"
         property="description"
       >
@@ -188,25 +162,7 @@
     </BkForm>
     <template #footer>
       <div class="p-l-24px">
-        <BkPopConfirm
-          v-if="!formData.maintainers?.includes(userStore.info.username)"
-          width="288"
-          :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
-          trigger="click"
-          ext-cls="confirm-custom-btn"
-          @confirm="handleConfirmCreate"
-          @cancel="handleCancel"
-        >
-          <BkButton
-            theme="primary"
-            class="min-w-88px"
-            :loading="submitLoading"
-          >
-            {{ t('确定') }}
-          </BkButton>
-        </BkPopConfirm>
         <BkButton
-          v-else
           theme="primary"
           class="min-w-88px"
           :loading="submitLoading"
@@ -233,8 +189,6 @@ import { getEnv } from '@/services/source/basic.ts';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import type { IFormMethod } from '@/types/common';
 import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
-import MemberSelector from '@/components/member-selector';
-import BkUserSelector from '@blueking/bk-user-selector';
 import {
   useEnv,
   useFeatureFlag,
@@ -290,7 +244,6 @@ const formData = ref<ParamType>({
   },
 });
 const submitLoading = ref(false);
-const isShowMemberError = ref(false);
 const repositoryUrl = ref('');
 // 代码仓库授权状态：null=未检测，true=已授权，false=未授权
 const isRepoAuthorized = ref<boolean | null>(null);
@@ -438,18 +391,6 @@ const checkAuthorization = async () => {
   }
 };
 
-const handleMemberChange = (member: string[]) => {
-  formData.value.maintainers = member;
-  isShowMemberError.value = !member.length;
-};
-
-// 多选模式下 payload 恒为数组；此处统一归一，兼容组件 change 事件的联合类型签名
-const handleTenantUserChange = (members: { id: string } | { id: string }[] | null) => {
-  const list = members ? (Array.isArray(members) ? members : [members]) : [];
-  formData.value.maintainers = list.map(member => member.id);
-  isShowMemberError.value = !list.length;
-};
-
 const getUrlPrefix = async () => {
   const res = await getEnv();
   repositoryUrl.value = res.BK_PAAS_APP_REPO_URL_TMPL;
@@ -495,10 +436,6 @@ const handleConfirmCreate = async () => {
       return;
     }
 
-    if (!formData.value.maintainers.length) {
-      return;
-    }
-
     submitLoading.value = true;
     const payload = cloneDeep(formData.value);
     if (payload.kind !== 1) {
@@ -528,7 +465,6 @@ const handleCancel = () => {
   clearAuthPolling();
   formRef?.value?.clearValidate();
   formData.value = cloneDeep(defaultFormData.value);
-  isShowMemberError.value = false;
   isShow.value = false;
 };
 
@@ -544,28 +480,5 @@ const handleCancel = () => {
 .common-form-tips {
   font-size: 12px;
   color: #979ba5;
-}
-
-.member-selector-form {
-
-  :deep(.bk-form-label) {
-
-    &::after {
-      position: absolute;
-      top: 0;
-      width: 14px;
-      color: #ea3636;
-      text-align: center;
-      content: "*";
-    }
-  }
-
-  &.is-error {
-
-    :deep(.bk-tag-input-trigger),
-    :deep(.tags-container) {
-      border-color: #ea3636;
-    }
-  }
 }
 </style>

@@ -24,7 +24,7 @@ from functools import partial
 
 import pytest
 from celery import shared_task
-from ddf import G
+from ddf import C, G, teach
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
@@ -81,6 +81,21 @@ FAKE_USERNAME = "admin"
 # pytest fixtures
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items):
+    # Apply the filename convention before pytest evaluates its -m expression.
+    for item in items:
+        if item.path.match("test_migration*.py") and item.get_closest_marker("migration") is None:
+            item.add_marker(pytest.mark.migration)
+        # Declare dynamic DB access before pytest-django chooses database aliases.
+        if (
+            "meta_schemas" in item.fixturenames
+            and not item.get_closest_marker("no_meta_schema")
+            and not item.get_closest_marker("django_db")
+        ):
+            item.add_marker(pytest.mark.django_db)
+
+
 def pytest_sessionstart(session):
     # pytest-django 4.3.0, https://pytest-django.readthedocs.io/en/latest/helpers.html
     # databases defaults to only the `default` database.
@@ -88,6 +103,9 @@ def pytest_sessionstart(session):
     #   Add 'bkcore' to pytest_django.fixtures._django_db_helper.<locals>.PytestDjangoTestCase.databases
     #   to ensure proper test isolation and silence this failure
     from django.test import TestCase  # noqa
+
+    # DDF 负责生成完整的测试数据，展示名默认值由业务入口处理。
+    teach(Gateway, display_name=C("name"))
 
     TestCase.multi_db = True
     TestCase.databases = "__all__"
@@ -634,9 +652,36 @@ def fake_openapi_file_resource_schema_version(fake_resource_version):
 
 
 @pytest.fixture(autouse=True)
-def meta_schemas(db):
+def meta_schemas(request):
+    if request.node.get_closest_marker("no_meta_schema"):
+        return
+
+    # Existing integration fixtures rely on both DB access and these schema rows.
+    request.getfixturevalue("db")
+    _ensure_meta_schemas()
+
+
+def _ensure_meta_schemas():
+    """Restore seed data without rewriting rows that already match."""
     schemas = init_meta_schemas()
+    existing = {
+        schema.natural_key(): schema for schema in Schema.objects.filter(name__in=[schema.name for schema in schemas])
+    }
     for s in schemas:
+        current = existing.get(s.natural_key())
+        # Preserve per-test isolation while avoiding saves of unchanged seed data.
+        try:
+            unchanged = (
+                current is not None
+                and json.dumps(current.schema, sort_keys=True) == json.dumps(s.schema, sort_keys=True)
+                and current.description == s.description
+                and current.example == s.example
+            )
+        except json.JSONDecodeError:
+            # Repair malformed seed rows through the normal save path below.
+            unchanged = False
+        if unchanged:
+            continue
         Schema.objects.update_or_create(
             name=s.name,
             type=s.type,

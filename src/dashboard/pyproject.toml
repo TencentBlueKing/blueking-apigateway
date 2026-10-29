@@ -149,6 +149,10 @@ ignore_errors = true
 
 [tool.pytest.ini_options]
 addopts = "-p no:pastebin -p no:nose -p no:doctest -p no:warnings"
+markers = [
+    "no_meta_schema: test does not need automatic database access or meta-schema rows",
+    "migration: validates Django schema or data migrations; run with migrations enabled",
+]
 testpaths = [
     "apigateway/apigateway/tests"
 ]

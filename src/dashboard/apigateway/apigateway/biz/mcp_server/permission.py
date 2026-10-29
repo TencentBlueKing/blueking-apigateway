@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, List, Optional
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
@@ -29,6 +30,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.query import (
     gateway_filter_by_maintainer_tenant_id,
@@ -37,6 +39,7 @@ from apigateway.common.tenant.query import (
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.time import now_datetime
 
 if TYPE_CHECKING:
@@ -118,12 +121,31 @@ class MCPServerPermissionHandler:
         return new_applies.select_related("mcp_server")
 
     @staticmethod
+    def cancel_apply(apply: MCPServerAppPermissionApply, operated_by: str) -> None:
+        """将待审批的申请落库为已取消，调用方需持有申请的行锁"""
+        data_before = get_model_dict(apply)
+        apply.status = MCPServerAppPermissionApplyStatusEnum.CANCELED.value
+        apply.handled_by = operated_by
+        apply.handled_time = now_datetime()
+        apply.save(update_fields=["status", "handled_by", "handled_time"])
+        Auditor.record_mcp_server_permission_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=operated_by,
+            gateway_id=apply.mcp_server.gateway_id,
+            instance_id=apply.id,
+            instance_name=apply.bk_app_code,
+            data_before=data_before,
+            data_after=get_model_dict(apply),
+            comment="取消 MCP Server 权限申请",
+        )
+
+    @staticmethod
     def _create_itsm_tickets_for_applies(applies):
         """为 MCP Server 权限申请创建 ITSM 工单"""
         try:
             helper = ItsmPermissionApplyHelper()
             if not helper.is_ready():
-                logger.info(
+                logger.warning(
                     "Skip creating ITSM tickets for mcp server applies because ITSM helper is not ready, apply_count=%s",
                     applies.count(),
                 )

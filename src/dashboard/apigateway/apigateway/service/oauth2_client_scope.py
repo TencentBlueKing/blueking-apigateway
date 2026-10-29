@@ -2,7 +2,7 @@
 
 from typing import Any, Sequence
 
-from django.db.models import Count, Exists, OuterRef, QuerySet, Subquery
+from django.db.models import Count, Exists, OuterRef, Q, QuerySet, Subquery
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
@@ -85,7 +85,7 @@ def get_oauth2_resource_scope_gateways(
     if tenant_id:
         queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
     if gateway_name:
-        queryset = queryset.filter(name__contains=gateway_name)
+        queryset = queryset.filter(Q(name__contains=gateway_name) | Q(display_name__contains=gateway_name))
 
     eligible_for_gateway = eligible_resources.filter(gateway_id=OuterRef("pk"))
     scope_count = (
@@ -130,7 +130,8 @@ def get_oauth2_resource_scope_gateways(
     #          api.tenant_mode = 'global'
     #          OR (api.tenant_mode = 'single' AND api.tenant_id = %(tenant_id)s)
     #      ) */
-    #   /* AND api.name LIKE CONCAT('%', %(gateway_name)s, '%') */
+    #   /* AND (api.name LIKE CONCAT('%', %(gateway_name)s, '%')
+    #        OR api.display_name LIKE CONCAT('%', %(gateway_name)s, '%')) */
     # ORDER BY api.name, api.id;
     # Commented predicates are included only when their corresponding argument is provided.
     return queryset.annotate(scope_count=Subquery(scope_count)).order_by("name", "id")
@@ -188,7 +189,7 @@ def get_oauth2_mcp_server_scope_gateways(
     if tenant_id:
         queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
     if gateway_name:
-        queryset = queryset.filter(name__contains=gateway_name)
+        queryset = queryset.filter(Q(name__contains=gateway_name) | Q(display_name__contains=gateway_name))
 
     eligible_for_gateway = eligible_mcp_servers.filter(gateway_id=OuterRef("pk"))
     scope_count = eligible_for_gateway.values("gateway_id").annotate(value=Count("id", distinct=True)).values("value")
@@ -228,7 +229,8 @@ def get_oauth2_mcp_server_scope_gateways(
     #          api.tenant_mode = 'global'
     #          OR (api.tenant_mode = 'single' AND api.tenant_id = %(tenant_id)s)
     #      ) */
-    #   /* AND api.name LIKE CONCAT('%', %(gateway_name)s, '%') */
+    #   /* AND (api.name LIKE CONCAT('%', %(gateway_name)s, '%')
+    #        OR api.display_name LIKE CONCAT('%', %(gateway_name)s, '%')) */
     # ORDER BY api.name, api.id;
     # Commented predicates are included only when their corresponding argument is provided.
     return queryset.annotate(scope_count=Subquery(scope_count)).order_by("name", "id")

@@ -21,16 +21,25 @@ import argparse
 import json
 import os
 
+import fakeredis
 import pytest
 from ddf import G
 
 from apigateway.apps.bk_itsm.management.commands.register_to_itsm import Command as RegisterToItsmCommand
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
+from apigateway.common.error_codes import APIError
 from apigateway.components.bkitsm import ItsmFormModelUpdateResult, ItsmWorkflowList
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def fake_redis(mocker):
+    client = fakeredis.FakeRedis()
+    mocker.patch("apigateway.service.bk_itsm.get_default_redis_client", return_value=client)
+    return client
 
 
 class TestItsmPermissionApplyHelper:
@@ -76,7 +85,7 @@ class TestItsmPermissionApplyHelper:
         assert "reason" not in kwargs["form_data"]
         assert "expire_days" not in kwargs["form_data"]
 
-    def test_cancel_permission_apply_ticket(self, mocker):
+    def test_cancel_permission_apply_ticket(self, mocker, fake_redis):
         config = G(
             ItsmSystemConfig,
             system_code="bk-apigateway",
@@ -85,15 +94,67 @@ class TestItsmPermissionApplyHelper:
             is_registered=True,
         )
         helper = ItsmPermissionApplyHelper(system_code=config.system_code)
-        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", return_value=True)
+        canceling_operators = []
 
-        helper.cancel_permission_apply_ticket("t-001")
+        def fake_cancel_ticket(**kwargs):
+            canceling_operators.append(ItsmPermissionApplyHelper.get_canceling_operator(kwargs["ticket_id"]))
+            return True
+
+        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", side_effect=fake_cancel_ticket)
+
+        helper.cancel_permission_apply_ticket("t-001", "admin")
 
         mock_cancel_ticket.assert_called_once_with(
             system_id="bk-apigateway",
             ticket_id="t-001",
             system_token="token-001",
         )
+        assert canceling_operators == ["admin"]
+        assert fake_redis.ttl("bk_apigw:itsm_ticket_canceling:t-001") > 0
+
+    @pytest.mark.parametrize(
+        "cancel_ticket_kwargs",
+        [
+            {"return_value": False},
+            {"side_effect": Exception("ITSM unavailable")},
+        ],
+    )
+    def test_cancel_permission_apply_ticket_failed_keeps_canceling_marker(
+        self, mocker, fake_redis, cancel_ticket_kwargs
+    ):
+        config = G(ItsmSystemConfig, system_code="bk-apigateway", is_registered=True)
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+        mocker.patch("apigateway.service.bk_itsm.cancel_ticket", **cancel_ticket_kwargs)
+
+        with pytest.raises(Exception):
+            helper.cancel_permission_apply_ticket("t-001", "admin")
+
+        assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == "admin"
+        assert fake_redis.ttl("bk_apigw:itsm_ticket_canceling:t-001") > 0
+
+    def test_cancel_permission_apply_ticket_when_redis_unavailable(self, mocker):
+        config = G(ItsmSystemConfig, system_code="bk-apigateway", is_registered=True)
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+        mocker.patch("apigateway.service.bk_itsm.get_default_redis_client", return_value=None)
+        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", return_value=True)
+
+        helper.cancel_permission_apply_ticket("t-001", "admin")
+
+        mock_cancel_ticket.assert_called_once()
+        assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == ""
+
+    def test_cancel_permission_apply_ticket_when_canceling_marker_exists(self, mocker, fake_redis):
+        config = G(ItsmSystemConfig, system_code="bk-apigateway", is_registered=True)
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+        fake_redis.set("bk_apigw:itsm_ticket_canceling:t-001", "first-operator", ex=60)
+        mock_cancel_ticket = mocker.patch("apigateway.service.bk_itsm.cancel_ticket", return_value=False)
+
+        with pytest.raises(APIError) as exc_info:
+            helper.cancel_permission_apply_ticket("t-001", "second-operator")
+
+        assert exc_info.value.code.code_name == "FAILED_PRECONDITION"
+        mock_cancel_ticket.assert_not_called()
+        assert ItsmPermissionApplyHelper.get_canceling_operator("t-001") == "first-operator"
 
     def test_create_permission_apply_ticket_normalizes_none_apply_reason(self, mocker):
         config = G(
@@ -266,9 +327,74 @@ class TestItsmPermissionApplyHelper:
 
         mock_create_ticket.assert_not_called()
 
-    def test_is_ready_false_when_config_not_exists(self):
+    def test_is_ready_false_when_config_not_exists(self, caplog):
+        caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
         helper = ItsmPermissionApplyHelper(system_code="not-exists")
         assert helper.is_ready() is False
+        records = [record for record in caplog.records if record.name == "apigateway.service.bk_itsm"]
+        assert len(records) == 1
+        assert "system config not found" in records[0].getMessage()
+        assert "system_code=not-exists" in records[0].getMessage()
+        assert "register_to_itsm" in records[0].getMessage()
+        assert records[0].exc_info is None
+
+    def test_config_still_raises_when_not_exists(self):
+        with pytest.raises(APIError, match="please run register_to_itsm command first"):
+            _ = ItsmPermissionApplyHelper(system_code="not-exists").config
+
+    def test_is_ready_reuses_cached_config(self, django_assert_num_queries):
+        config = G(
+            ItsmSystemConfig,
+            system_code="ready",
+            is_registered=True,
+            workflow_key_map={"gateway": "wf-001", "resource": "wf-001"},
+        )
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+
+        with django_assert_num_queries(1):
+            assert helper.is_ready() is True
+            assert helper.is_ready() is True
+            assert helper.config.pk == config.pk
+
+    @pytest.mark.parametrize(
+        ("is_registered", "workflow_key_map", "expected_log"),
+        [
+            (False, {"gateway": "wf-001", "resource": "wf-001"}, "is_registered=False"),
+            (True, {"resource": "wf-001"}, "gateway_workflow_configured=False"),
+            (True, {"gateway": "wf-001"}, "resource_workflow_configured=False"),
+        ],
+    )
+    def test_is_ready_logs_incomplete_registration(self, caplog, is_registered, workflow_key_map, expected_log):
+        caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
+        config = G(
+            ItsmSystemConfig,
+            system_code="incomplete",
+            system_token="secret-system-token",
+            is_registered=is_registered,
+            workflow_key_map=workflow_key_map,
+        )
+
+        assert ItsmPermissionApplyHelper(system_code=config.system_code).is_ready() is False
+
+        assert expected_log in caplog.text
+        assert "system_code=incomplete" in caplog.text
+        assert "secret-system-token" not in caplog.text
+
+    def test_is_ready_logs_lookup_exception(self, mocker, caplog):
+        caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
+        mocker.patch.object(ItsmSystemConfig.objects, "get", side_effect=RuntimeError("database unavailable"))
+
+        assert ItsmPermissionApplyHelper().is_ready() is False
+
+        assert "database unavailable" in caplog.text
+        records = [
+            record
+            for record in caplog.records
+            if record.name == "apigateway.service.bk_itsm"
+            and "Failed to check ITSM integration readiness" in record.getMessage()
+        ]
+        assert len(records) == 1
+        assert records[0].exc_info is not None
 
     def test_default_system_code_should_match_template_system_code(self):
         parser = argparse.ArgumentParser()
