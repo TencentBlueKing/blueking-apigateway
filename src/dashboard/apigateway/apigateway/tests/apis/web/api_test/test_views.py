@@ -20,6 +20,7 @@
 
 import datetime
 import json
+import shlex
 
 import pytest
 import requests
@@ -107,6 +108,16 @@ class TestAPITestAPIView:
             grant.assert_called_once()
         history = APIDebugHistory.objects.get()
         assert history.request["headers"] == {"X-Trace": "trace"}
+        assert response.json()["data"] == history.response["data"]
+        if mode != "bearer":
+            args = shlex.split(history.response["data"]["curl"])
+            auth_header = next(arg for arg in args if arg.lower().startswith("x-bkapi-authorization:"))
+            auth = json.loads(auth_header.partition(":")[2])
+            if mode == "access_token":
+                assert auth == {"access_token": "***"}
+            else:
+                assert auth["bk_app_code"] == "debug-app"
+                assert auth["bk_app_secret"] == "***"
         for secret in ["test-app-secret", "login-ticket", "access-token", "personal-token", "legacy-skey"]:
             assert secret not in json.dumps(history.request)
             assert secret not in json.dumps(history.response)

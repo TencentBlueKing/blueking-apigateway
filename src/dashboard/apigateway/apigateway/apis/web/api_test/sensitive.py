@@ -62,16 +62,28 @@ class DebugDataSanitizer:
                     if cookie_name.strip().lower() in login_cookie_names:
                         self._add_secret(cookie_value.strip())
                 continue
-            self._add_secret(value)
             if name == HEADER_BKAPI_AUTHORIZATION.lower():
-                try:
-                    authorization = json.loads(value)
-                except ValueError, TypeError:
-                    continue
-                if isinstance(authorization, dict):
-                    self.add_authorization(authorization)
-            elif name in {"authorization", "proxy-authorization"}:
+                self._add_bkapi_authorization(value)
+                continue
+            self._add_secret(value)
+            if name in {"authorization", "proxy-authorization"}:
                 self._add_secret(value.partition(" ")[2])
+
+    def _add_bkapi_authorization(self, value):
+        try:
+            authorization = json.loads(value)
+        except ValueError, TypeError:
+            self._add_secret(value)
+            return
+        if isinstance(authorization, dict):
+            self.add_authorization(authorization)
+            # Do not register already-masked headers or application metadata as
+            # secrets: later output/history cleanup must keep those fields visible.
+            if any(
+                key.lower() in SENSITIVE_KEYS and isinstance(secret, str) and secret and secret != "***"
+                for key, secret in authorization.items()
+            ):
+                self._add_secret(value)
 
     def _add_secret(self, value):
         if isinstance(value, str) and value and value != "***":
@@ -95,7 +107,7 @@ class DebugDataSanitizer:
             else:
                 if isinstance(decoded, (dict, list)):
                     cleaned = self.clean(decoded)
-                    return json.dumps(cleaned) if cleaned != decoded else data
+                    return json.dumps(cleaned, ensure_ascii=False) if cleaned != decoded else data
             for secret in sorted(self._secrets, key=len, reverse=True):
                 data = data.replace(secret, "***")
         return data
@@ -120,7 +132,16 @@ class DebugDataSanitizer:
                 name, _, value = args[index + 1].partition(":")
                 if name.lower() in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS:
                     self.add_headers({name: value.strip()})
-                    args[index + 1] = f"{name}: ***"
+                    cleaned_value = "***"
+                    if name.lower() == HEADER_BKAPI_AUTHORIZATION.lower():
+                        try:
+                            authorization = json.loads(value)
+                        except ValueError:
+                            pass
+                        else:
+                            if isinstance(authorization, dict):
+                                cleaned_value = json.dumps(self.clean(authorization), ensure_ascii=False)
+                    args[index + 1] = f"{name}: {cleaned_value}"
         return shlex.join(self.clean(args))
 
 

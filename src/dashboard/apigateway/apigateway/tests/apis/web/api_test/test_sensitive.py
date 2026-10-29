@@ -37,6 +37,42 @@ def test_scrub_echoes_and_curl_body(secret):
     assert sanitizer.clean(quote(secret, safe="")) == "***"
 
 
+@pytest.mark.parametrize("secret", ['token"with\\quotes', "***", None])
+@pytest.mark.parametrize("header_name", ["X-Bkapi-Authorization", "x-bkapi-authorization"])
+def test_curl_preserves_non_sensitive_auth_fields_across_repeated_cleaning(secret, header_name):
+    authorization = {"bk_app_code": "demo-app", "client_label": "中文标签"}
+    if secret is not None:
+        authorization["bk_app_secret"] = secret
+    headers = {header_name: json.dumps(authorization)}
+    sanitizer = DebugDataSanitizer()
+    sanitizer.add_headers(headers)
+    curl = shlex.join(["curl", "-H", f"{header_name}: {headers[header_name]}", "http://example.com"])
+    expected = {"bk_app_code": "demo-app", "client_label": "中文标签"}
+    if secret is not None:
+        expected["bk_app_secret"] = "***"
+    cleaned = sanitizer.clean_curl(curl)
+    # The view cleans the whole response, then history reads clean the curl again.
+    cleaned = sanitizer.clean({"curl": cleaned})["curl"]
+    _, response = sanitize_history({}, {"data": {"curl": cleaned}})
+    for result in [cleaned, response["data"]["curl"]]:
+        header = shlex.split(result)[2]
+        assert json.loads(header.partition(":")[2]) == expected
+        assert "中文标签" in result
+
+
+@pytest.mark.parametrize("value", ["invalid-json", "[]", "null", '"token"'])
+def test_curl_masks_unparseable_or_non_object_auth_header(value):
+    curl = shlex.join(["curl", "-H", f"X-Bkapi-Authorization: {value}", "http://example.com"])
+    assert shlex.split(DebugDataSanitizer().clean_curl(curl))[2] == "X-Bkapi-Authorization: ***"
+
+
+def test_json_redaction_preserves_readable_chinese():
+    body = '{"message": "中文内容", "bk_token": "login-ticket"}'
+    cleaned = DebugDataSanitizer().clean(body)
+    assert json.loads(cleaned) == {"message": "中文内容", "bk_token": "***"}
+    assert "中文内容" in cleaned
+
+
 def test_cookie_values_and_json_escaped_echoes():
     sanitizer = DebugDataSanitizer()
     sanitizer.add_headers({"Cookie": "bk_token=cookie-token; session=session-token"})
