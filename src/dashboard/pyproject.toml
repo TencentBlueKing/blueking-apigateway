@@ -102,7 +102,6 @@ dev = [
     "mypy==2.3.1",
     "rope==1.14.0",
     "watchdog==6.0.0",
-    "tox==4.61.4",
     "ipython==9.17.1",
     "fakeredis==2.38.0",
     "ruff==0.16.7",

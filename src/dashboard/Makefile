@@ -90,11 +90,6 @@ test-pdb:
 		--maxfail 1 \
 		$(TEST_PATHS)
 
-.PHONY: tox
-tox:
-	tox -l
-	tox
-
 # ====== edition ======
 
 .PHONY: edition
