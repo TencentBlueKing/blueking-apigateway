@@ -41,6 +41,7 @@ from apigateway.utils.time import convert_second_to_epoch_millisecond
 from .data_models import ApiDebugHistoryRequest, ApiDebugHistoryResponse
 from .filters import APIDebugHistoryRecordFilter
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
+from .sensitive import DebugDataSanitizer
 from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
 TEST_PERMISSION_EXPIRE_DAYS = 1
@@ -65,20 +66,31 @@ class APITestApi(generics.CreateAPIView):
             raise Http404
 
         authorization = data.get("authorization", {})
-        if data.get("use_test_app") and released_resource.resource_perm_required:
-            # 为测试账号临时授权
-            ResourcePermissionHandler().grant_or_renewal_expire_soon(
-                request.gateway, released_resource.id, authorization["bk_app_code"], TEST_PERMISSION_EXPIRE_DAYS, 300
-            )
-
+        authorization_from_cookies = (
+            self._get_authorization_from_cookies() if data.get("use_user_from_cookies") else {}
+        )
         prepared_request_headers = PreparedRequestHeaders()
         prepared_request_headers.prepare_headers(
             headers=data["headers"],
             authorization=authorization,
-            authorization_from_cookies=self._get_authorization_from_cookies()
-            if data.get("use_user_from_cookies")
-            else {},
+            authorization_from_cookies=authorization_from_cookies,
         )
+
+        if (
+            data.get("use_test_app")
+            and not prepared_request_headers.uses_access_token
+            and released_resource.resource_perm_required
+        ):
+            # Token requests use the token's application identity, not the test app.
+            ResourcePermissionHandler().grant_or_renewal_expire_soon(
+                request.gateway, released_resource.id, authorization["bk_app_code"], TEST_PERMISSION_EXPIRE_DAYS, 300
+            )
+
+        sanitizer = DebugDataSanitizer()
+        sanitizer.add_authorization(authorization)
+        sanitizer.add_authorization(authorization_from_cookies)
+        sanitizer.add_headers(data["headers"])
+        sanitizer.add_headers(prepared_request_headers.headers)
 
         prepared_request_url = PreparedRequestURL(
             resource_path=released_resource.path,
@@ -101,13 +113,13 @@ class APITestApi(generics.CreateAPIView):
             "path_params": data.get("path_params", {}),
             "query_params": data.get("query_params", {}),
             "body": body,
-            "headers": data.get("headers", {}),
+            "headers": data["headers"],
             "subpath": data.get("subpath", ""),
             "use_test_app": data.get("use_test_app", True),
             "use_user_from_cookies": data.get("use_user_from_cookies", False),
             "spec_version": SPEC_VERSION,
         }
-        validated_request = ApiDebugHistoryRequest(**history_request)
+        validated_request = ApiDebugHistoryRequest(**sanitizer.clean_request(history_request))
         try:
             response = requests.request(
                 method=data["method"],
@@ -125,6 +137,8 @@ class APITestApi(generics.CreateAPIView):
             response_data_dict = self._get_response_data(
                 response, prepared_request_headers.headers_without_sensitive, verify=False
             )
+            response_data_dict["curl"] = sanitizer.clean_curl(response_data_dict["curl"])
+            response_data_dict = sanitizer.clean(response_data_dict)
             # 结果检查
             success_history_response = {
                 "data": response_data_dict,
@@ -140,9 +154,10 @@ class APITestApi(generics.CreateAPIView):
             }
             APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:  # pylint: disable=broad-except
+            error_message = sanitizer.clean(str(err))
             # 结果检查
             error_history_response = {
-                "error": err,
+                "error": error_message,
                 "spec_version": SPEC_VERSION,
             }
             validated_response = ApiDebugHistoryResponse(**error_history_response)
@@ -157,7 +172,7 @@ class APITestApi(generics.CreateAPIView):
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 code="UNKNOWN",
-                message=_("请求网关资源失败，错误消息：{err}。").format(err=html_escape(str(err))),
+                message=_("请求网关资源失败，错误消息：{err}。").format(err=html_escape(error_message)),
             )
 
         return OKJsonResponse(
