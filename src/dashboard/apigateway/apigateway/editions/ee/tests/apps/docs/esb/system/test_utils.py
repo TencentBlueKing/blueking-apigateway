@@ -85,5 +85,27 @@ class TestSystemDocCategoryHandler:
             }
         ]
 
-    def test_get_system_doc_categories_by_settings(self):
-        pass
+    def test_get_system_doc_categories_by_settings(self, settings, mocker):
+        settings.SYSTEM_DOC_CATEGORIES = [{"board": "test", "categories": [{"name": "category", "systems": []}]}]
+        board = mocker.Mock(label="Test board")
+        get_board = mocker.patch(
+            "apigateway.biz.esb.system_doc_category.BoardConfigManager.get_board_config", return_value=board
+        )
+        from_db = mocker.patch.object(SystemDocCategoryHandler, "_get_system_doc_categories_by_db")
+        result = SystemDocCategoryHandler.get_system_doc_categories()
+        assert result == [
+            {"board": "test", "board_label": "Test board", "categories": [{"name": "category", "systems": []}]}
+        ]
+        get_board.assert_called_once_with("test")
+        from_db.assert_not_called()
+        result[0]["categories"][0]["name"] = "changed"
+        assert settings.SYSTEM_DOC_CATEGORIES == [
+            {"board": "test", "categories": [{"name": "category", "systems": []}]}
+        ]
+
+    @pytest.mark.parametrize("configured", [None, []])
+    def test_empty_settings_fall_back_to_database(self, settings, mocker, configured):
+        settings.SYSTEM_DOC_CATEGORIES = configured
+        from_db = mocker.patch.object(SystemDocCategoryHandler, "_get_system_doc_categories_by_db", return_value=[])
+        assert SystemDocCategoryHandler.get_system_doc_categories() == []
+        from_db.assert_called_once_with()

@@ -51,14 +51,12 @@ class ZipArchiveFile(BaseArchiveFile):
         fileobj.seek(0)
 
         with zipfile.ZipFile(fileobj, mode="r") as zip_:  # type: ignore
-            zip_.extractall(output_dir)
-
-            # 文档对应文档文件的路径，因并非所有文档都需更新，此处不读取文件内容
-            return {
-                item.filename: os.path.join(output_dir, item.filename.lstrip("/"))
-                for item in zip_.infolist()
-                if not item.is_dir()
-            }
+            paths = {}
+            for item in zip_.infolist():
+                extracted_path = zip_.extract(item, output_dir)
+                if not item.is_dir():
+                    paths[item.filename] = extracted_path
+            return paths
 
     def get_names(self, fileobj: IO[AnyStr]) -> List[str]:
         fileobj.seek(0)

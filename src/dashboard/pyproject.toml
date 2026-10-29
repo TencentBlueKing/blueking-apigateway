@@ -148,6 +148,7 @@ module = [
 ignore_errors = true
 
 [tool.pytest.ini_options]
+markers = ["no_meta_schema: test does not need automatic database access or meta-schema rows"]
 addopts = "-p no:pastebin -p no:nose -p no:doctest -p no:warnings"
 testpaths = [
     "apigateway/apigateway/tests"

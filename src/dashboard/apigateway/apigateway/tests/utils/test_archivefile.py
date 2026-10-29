@@ -15,13 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import io
 import os
 import shutil
 import tarfile
 import tempfile
 import zipfile
+from pathlib import Path
+
+import pytest
 
 from apigateway.utils.archivefile import TgzArchiveFile, ZipArchiveFile
+
+pytestmark = pytest.mark.no_meta_schema
 
 
 def _make_temp_files(output_dir, faker):
@@ -61,6 +67,22 @@ class TestZipArchiveFile:
             result = ZipArchiveFile().get_names(open(os.path.join(output_dir, "test.zip"), "rb"))
             assert result == ["zh/get_user.md"]
 
+    @pytest.mark.parametrize(
+        "member_name, relative_path",
+        [("../escaped.md", "escaped.md"), ("/absolute.md", "absolute.md"), ("docs/readme.md", "docs/readme.md")],
+    )
+    def test_extractall_returns_actual_normalized_paths(self, tmp_path, member_name, relative_path):
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, "w") as zip_:
+            zip_.writestr(member_name, "documentation")
+        destination = tmp_path / "extracted"
+        result = ZipArchiveFile().extractall(str(destination), archive)
+        assert result == {member_name: str(destination / relative_path)}
+        for path in result.values():
+            resolved = Path(path).resolve()
+            assert resolved.is_relative_to(destination.resolve())
+            assert resolved.read_text() == "documentation"
+
 
 class TestTgzArchiveFile:
     def test_archive(self, faker):
@@ -92,3 +114,28 @@ class TestTgzArchiveFile:
 
             result = TgzArchiveFile().get_names(open(os.path.join(output_dir, "test.tgz"), "rb"))
             assert result == ["zh/get_user.md"]
+
+    @pytest.mark.parametrize("member_type", ["traversal", "symlink", "hardlink"])
+    def test_rejects_members_escaping_destination(self, tmp_path, member_type):
+        archive = io.BytesIO()
+        member = tarfile.TarInfo("../escaped.md" if member_type == "traversal" else "link")
+        if member_type != "traversal":
+            member.type = tarfile.SYMTYPE if member_type == "symlink" else tarfile.LNKTYPE
+            member.linkname = "../escaped.md"
+        with tarfile.open(fileobj=archive, mode="w:gz") as tgz:
+            tgz.addfile(member)
+        destination = tmp_path / "extracted"
+        with pytest.raises(tarfile.FilterError):
+            TgzArchiveFile().extractall(str(destination), archive)
+        assert not (tmp_path / "escaped.md").exists()
+
+    def test_absolute_member_is_normalized_inside_destination(self, tmp_path):
+        archive = io.BytesIO()
+        member = tarfile.TarInfo("/doc.md")
+        content = b"documentation"
+        member.size = len(content)
+        with tarfile.open(fileobj=archive, mode="w:gz") as tgz:
+            tgz.addfile(member, io.BytesIO(content))
+        destination = tmp_path / "extracted"
+        assert TgzArchiveFile().extractall(str(destination), archive) == {"/doc.md": str(destination / "doc.md")}
+        assert (destination / "doc.md").read_bytes() == content
