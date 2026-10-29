@@ -18,6 +18,7 @@
 #
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from ddf import G
@@ -2513,3 +2514,45 @@ class TestGatewayAppPermissionRevokeApi:
         assert resp.status_code == 400
         assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
         assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code="app1").exists()
+
+
+@pytest.mark.parametrize("operation", ["grant", "revoke"])
+@pytest.mark.parametrize("identity", ["missing", "unrelated", "other-gateway"])
+def test_permission_mutations_reject_unrelated_app(request_view, fake_gateway, operation, identity):
+    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="target")
+    if identity == "other-gateway":
+        G(GatewayRelatedApp, gateway=G(Gateway), bk_app_code="caller")
+    before_gateway = list(AppGatewayPermission.objects.values())
+    before_resource = list(AppResourcePermission.objects.values())
+    response = request_view(
+        method="POST",
+        view_name=f"openapi.v2.sync.gateway.permissions.{operation}",
+        path_params={"gateway_name": fake_gateway.name},
+        gateway=fake_gateway,
+        app=None if identity == "missing" else SimpleNamespace(app_code="caller"),
+        data={
+            "target_app_code": "target",
+            "target_app_codes": ["target"],
+            "expire_days": 10,
+            "grant_dimension": "gateway",
+        },
+        format="json",
+    )
+    assert response.status_code == 403
+    assert list(AppGatewayPermission.objects.values()) == before_gateway
+    assert list(AppResourcePermission.objects.values()) == before_resource
+
+
+def test_grant_permission_with_real_related_app(request_view, fake_gateway):
+    G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="caller")
+    response = request_view(
+        method="POST",
+        view_name="openapi.v2.sync.gateway.permissions.grant",
+        path_params={"gateway_name": fake_gateway.name},
+        gateway=fake_gateway,
+        app=SimpleNamespace(app_code="caller"),
+        format="json",
+        data={"target_app_code": "target", "expire_days": 10, "grant_dimension": "gateway"},
+    )
+    assert response.status_code == 201
+    assert AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code="target").expires is not None
