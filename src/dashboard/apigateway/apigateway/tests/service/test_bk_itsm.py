@@ -327,9 +327,45 @@ class TestItsmPermissionApplyHelper:
 
         mock_create_ticket.assert_not_called()
 
-    def test_is_ready_false_when_config_not_exists(self):
+    def test_is_ready_false_when_config_not_exists(self, caplog):
+        caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
         helper = ItsmPermissionApplyHelper(system_code="not-exists")
         assert helper.is_ready() is False
+        assert "system_code=not-exists" in caplog.text
+        assert "register_to_itsm" in caplog.text
+
+    @pytest.mark.parametrize(
+        ("is_registered", "workflow_key_map", "expected_log"),
+        [
+            (False, {"gateway": "wf-001", "resource": "wf-001"}, "is_registered=False"),
+            (True, {"resource": "wf-001"}, "gateway_workflow_configured=False"),
+            (True, {"gateway": "wf-001"}, "resource_workflow_configured=False"),
+        ],
+    )
+    def test_is_ready_logs_incomplete_registration(self, caplog, is_registered, workflow_key_map, expected_log):
+        caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
+        config = G(
+            ItsmSystemConfig,
+            system_code="incomplete",
+            system_token="secret-system-token",
+            is_registered=is_registered,
+            workflow_key_map=workflow_key_map,
+        )
+
+        assert ItsmPermissionApplyHelper(system_code=config.system_code).is_ready() is False
+
+        assert expected_log in caplog.text
+        assert "system_code=incomplete" in caplog.text
+        assert "secret-system-token" not in caplog.text
+
+    def test_is_ready_logs_lookup_exception(self, mocker, caplog):
+        caplog.set_level("WARNING", logger="apigateway.service.bk_itsm")
+        mocker.patch.object(ItsmSystemConfig.objects, "get", side_effect=RuntimeError("database unavailable"))
+
+        assert ItsmPermissionApplyHelper().is_ready() is False
+
+        assert "database unavailable" in caplog.text
+        assert caplog.records[-1].exc_info is not None
 
     def test_default_system_code_should_match_template_system_code(self):
         parser = argparse.ArgumentParser()

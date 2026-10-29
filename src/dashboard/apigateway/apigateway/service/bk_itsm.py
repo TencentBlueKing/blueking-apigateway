@@ -79,10 +79,24 @@ class ItsmPermissionApplyHelper:
         try:
             cfg = self.config
             workflow_key_map = cfg.workflow_key_map or {}
-            return (
+            ready = (
                 cfg.is_registered and bool(workflow_key_map.get("gateway")) and bool(workflow_key_map.get("resource"))
             )
+            if not ready:
+                logger.warning(
+                    "ITSM integration is not ready: system_code=%s, is_registered=%s, "
+                    "gateway_workflow_configured=%s, resource_workflow_configured=%s; "
+                    "run register_to_itsm and check workflow mappings",
+                    self.system_code,
+                    cfg.is_registered,
+                    bool(workflow_key_map.get("gateway")),
+                    bool(workflow_key_map.get("resource")),
+                )
+            return ready
         except Exception:
+            logger.warning(
+                "Failed to check ITSM integration readiness, system_code=%s", self.system_code, exc_info=True
+            )
             return False
 
     @staticmethod

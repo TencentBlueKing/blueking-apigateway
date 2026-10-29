@@ -287,7 +287,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         try:
             helper = ItsmPermissionApplyHelper()
             if not helper.is_ready():
-                logger.info(
+                logger.warning(
                     "Skip creating ITSM ticket for permission apply because ITSM helper is not ready, record_id=%s, gateway_id=%s, bk_app_code=%s",
                     record.id,
                     gateway.id,
@@ -330,7 +330,14 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             )
         except Exception:
             # ITSM 工单创建失败不应阻塞主流程
-            logger.exception("Failed to create ITSM ticket for permission apply, record_id=%s", record.id)
+            logger.exception(
+                "Failed to create ITSM ticket for permission apply, record_id=%s, gateway_id=%s, bk_app_code=%s, "
+                "grant_dimension=%s",
+                record.id,
+                gateway.id,
+                bk_app_code,
+                grant_dimension,
+            )
 
 
 class GatewayPermissionDimensionManager(PermissionDimensionManager):
