@@ -5,6 +5,13 @@ AGENTS.md when implementing its contract; source-layer guides are not ancestors
 of this test tree. Runtime, EE activation and pytest commands come from the
 Dashboard guide.
 
+- Mark schema/data migration tests with `pytest.mark.migration` (module-level
+  `pytestmark` is suitable for migration-only files). Preserve existing
+  `django_db(transaction=True)` requirements. Run them through `test-migrations`
+  or the full `test` gate; `test-fast` deliberately excludes this marker.
+- Tests must remain isolated under `worksteal` scheduling. If a real shared
+  resource requires tests to stay together, document the constraint and use an
+  appropriate explicit scheduler/group for that target.
 - Reuse `conftest.py` fixtures and `tests/utils/testing.py` helpers. Model fixtures
   commonly use `G()` from `django_dynamic_fixture`; version fixtures build
   snapshots through `ResourceVersionHandler.make_version()`.

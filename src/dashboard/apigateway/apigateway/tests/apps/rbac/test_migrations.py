@@ -7,7 +7,7 @@ from django.db import connections
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
 # Keep the physical Gateway table aligned with the historical model used below.
 CORE_SCHEMA = ("core", "0056_releasedresource_oauth2_scope_fields")

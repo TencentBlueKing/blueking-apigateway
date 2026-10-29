@@ -39,47 +39,52 @@ update: VERSION
 
 # ====== test ======
 
+TEST_PATHS ?= apigateway/tests
+TEST_WORKERS ?= auto
+PYTEST_COMMON_ARGS = --ds apigateway.settings --reuse-db \
+	-n $(TEST_WORKERS) $(if $(filter auto logical,$(TEST_WORKERS)),--maxprocesses 8) \
+	--dist worksteal
+
 .PHONY: test
 test:
-	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && pytest \
-		--ds apigateway.settings \
-		--reuse-db \
-		-n auto \
-		--dist loadscope \
-		apigateway/tests
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest \
+		$(PYTEST_COMMON_ARGS) --migrations $(TEST_PATHS)
+	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+
+.PHONY: test-fast
+test-fast:
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest \
+		$(PYTEST_COMMON_ARGS) --nomigrations -m 'not migration' $(TEST_PATHS)
+	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
+
+.PHONY: test-migrations
+test-migrations:
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest \
+		$(PYTEST_COMMON_ARGS) --migrations -m migration $(TEST_PATHS)
 	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
 
 .PHONY: test-lf
 test-lf:
-	cd apigateway && . apigateway/conf/unittest_env && pytest \
-		--ds apigateway.settings \
-		--reuse-db \
-		-n auto \
-		--dist loadscope \
-		--lf \
-		apigateway/tests
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest \
+		$(PYTEST_COMMON_ARGS) --migrations --lf $(TEST_PATHS)
 	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
 
 .PHONY: test-cov
 test-cov:
-	cd apigateway && . apigateway/conf/unittest_env && pytest \
-		--ds apigateway.settings \
-		--cov=. \
-		--reuse-db \
-		--maxfail 1 \
-		-n auto \
-		apigateway/tests
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest \
+		$(PYTEST_COMMON_ARGS) --migrations --cov=. --maxfail 1 $(TEST_PATHS)
 	rm apigateway/*.sqlite3 apigateway/dashboard-*.log > /dev/null 2>&1  || true
 
 .PHONY: test-pdb
 test-pdb:
-	cd apigateway && . apigateway/conf/unittest_env && pytest \
+	cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && python -m pytest \
 		-vv \
 		--ds apigateway.settings \
 		--reuse-db \
+		--migrations \
 		--pdb \
 		--maxfail 1 \
-		apigateway/tests
+		$(TEST_PATHS)
 
 .PHONY: tox
 tox:

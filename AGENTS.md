@@ -35,6 +35,11 @@ and module-specific constraints without copying the glossary.
   component unless a verified producer/consumer contract requires more.
 - Run component commands from the directory its guide specifies. Runtime and
   checks are component-local; the root `.envrc` is not a shared activation script.
+- Select tests from the affected behavior and the component's guide. A local
+  change does not automatically require every component's full suite; preserve
+  the full gates required for broad/shared changes and CI.
+- Reuse passing checks while the relevant diff, inputs, runtime, command and
+  scope are unchanged. Commit or PR creation alone does not require rerunning them.
 - For review findings, distinguish issues present in the inspected code from
   issues introduced by the selected diff.
 - For Markdown-only changes, check the diff, references, and executable examples;

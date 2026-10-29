@@ -29,23 +29,34 @@ It does not check Ruff formatting; use `uv run ruff format --check` on affected
 Python paths when formatting evidence is needed. `uv run make lint` formats and
 auto-fixes files, so use it only when those changes are intended.
 
-For focused Django tests, replace the final target in this wrapper:
+## Test selection
+
+See [TESTING.md](TESTING.md) for test modes, selectors and database behavior.
+For a focused ordinary test, run without parallel worker startup:
 
 ```bash
-uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
+uv run make test-fast TEST_WORKERS=0 TEST_PATHS=apigateway/tests/path/to/test_file.py::TestClass::test_method
 ```
 
-The test environment and Django settings are required. `--nomigrations` avoids
-migration setup for focused tests. Test-fixture contracts are in
-`apigateway/apigateway/tests/AGENTS.md`.
+Code changes need tests for affected behavior and the EE lint gate. For local
+changes, expand from focused tests to the affected module/callers as needed;
+do not automatically run the full suite at every task or delivery phase.
+`test-fast` disables migrations and excludes tests marked `migration`; it is
+feedback coverage, not the full gate. For migration changes, run
+`uv run make test-migrations` and the affected ordinary tests.
 
-Code changes need affected tests and the EE lint gate. Broad/shared changes also
-need the full gate, which uses migrations and parallel workers:
+Broad/shared changes (including test configuration and shared fixtures) also
+need the full gate below. CI uses the same entrypoint, enables migrations, and
+includes migration tests. Do not substitute `test-fast` or `test-lf` for it:
 
 ```bash
 uv run make edition-ee
 uv run make test
 ```
+
+Test-fixture contracts are in `apigateway/apigateway/tests/AGENTS.md`. Reuse
+passing verification when the relevant diff, inputs, runtime, command and scope
+are unchanged; committing or opening the PR does not invalidate that evidence.
 
 ## Architecture and source map
 
