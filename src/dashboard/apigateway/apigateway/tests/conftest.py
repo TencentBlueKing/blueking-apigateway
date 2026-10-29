@@ -81,6 +81,14 @@ FAKE_USERNAME = "admin"
 # pytest fixtures
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items):
+    # Apply the filename convention before pytest evaluates its -m expression.
+    for item in items:
+        if item.path.match("test_migration*.py") and item.get_closest_marker("migration") is None:
+            item.add_marker(pytest.mark.migration)
+
+
 def pytest_sessionstart(session):
     # pytest-django 4.3.0, https://pytest-django.readthedocs.io/en/latest/helpers.html
     # databases defaults to only the `default` database.

@@ -31,32 +31,10 @@ auto-fixes files, so use it only when those changes are intended.
 
 ## Test selection
 
-See [TESTING.md](TESTING.md) for test modes, selectors and database behavior.
-For a focused ordinary test, run without parallel worker startup:
-
-```bash
-uv run make test-fast TEST_WORKERS=0 TEST_PATHS=apigateway/tests/path/to/test_file.py::TestClass::test_method
-```
-
-Code changes need tests for affected behavior and the EE lint gate. For local
-changes, expand from focused tests to the affected module/callers as needed;
-do not automatically run the full suite at every task or delivery phase.
-`test-fast` disables migrations and excludes tests marked `migration`; it is
-feedback coverage, not the full gate. For migration changes, run
-`uv run make test-migrations` and the affected ordinary tests.
-
-Broad/shared changes (including test configuration and shared fixtures) also
-need the full gate below. CI uses the same entrypoint, enables migrations, and
-includes migration tests. Do not substitute `test-fast` or `test-lf` for it:
-
-```bash
-uv run make edition-ee
-uv run make test
-```
-
-Test-fixture contracts are in `apigateway/apigateway/tests/AGENTS.md`. Reuse
-passing verification when the relevant diff, inputs, runtime, command and scope
-are unchanged; committing or opening the PR does not invalidate that evidence.
+[TESTING.md](TESTING.md) owns the test commands, scope selection, required gates,
+verification reuse policy and database behavior. Follow it for focused tests,
+migration changes and broad/shared changes. Test-fixture contracts are in
+`apigateway/apigateway/tests/AGENTS.md`.
 
 ## Architecture and source map
 

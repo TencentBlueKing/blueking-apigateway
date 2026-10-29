@@ -31,8 +31,11 @@ Makefile 测试入口会加载 `apigateway/apigateway/conf/unittest_env` 并指�
 ## 并发与筛选
 
 并行入口使用 pytest-xdist 的 `worksteal`，避免耗时较长的模块被整组分给一个 worker。
-默认 `TEST_WORKERS=auto`，按可用物理核数选择，最多 8 个 worker，兼顾共享机器与小规格 CI。
-显式设置数字可覆盖默认上限；`0` 表示不启用并行，适合少量测试。
+除迁移专项外，默认 `TEST_WORKERS=auto`，由 xdist 自动探测 CPU 数，最多 8 个 worker。
+安装了 psutil 时，`auto` 按物理核数计数；否则使用可用 CPU 数的回退探测。
+迁移专项默认 2 个 worker，减少少量用例重复建库的开销。
+通过命令行或环境变量设置 `TEST_WORKERS` 可覆盖目标默认值；显式数字不受自动上限限制，
+`0` 表示不启用并行，适合少量测试。
 
 ```bash
 uv run make test TEST_WORKERS=16
@@ -48,8 +51,13 @@ PYTEST_ADDOPTS='--durations=20 --tb=short' uv run make test
 
 ## 迁移测试与数据库
 
-新增验证 schema/data migration 的测试必须加 `pytest.mark.migration`。
-迁移专项文件可使用模块级标记，并保留事务测试原有的数据库隔离方式：
+`migration` 按测试语义分类，既包含历史 schema 的迁移执行测试，也包含直接调用
+数据回填/反向函数的测试（例如 `test_migration_gateway_is_official.py`）。后者即使可以
+在 `--nomigrations` 下运行，也归入迁移专项，由专项入口和完整门禁覆盖。
+
+迁移专项文件使用 `test_migration*.py` 命名。collection 会在 `-m` 筛选前自动加上
+`pytest.mark.migration`，避免新文件因漏写标记混入快跑集合。已有显式标记仍然有效；
+其他命名的混合测试模块必须对迁移测试显式加标。事务测试仍需保留原有数据库隔离方式：
 
 ```python
 pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
