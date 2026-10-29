@@ -20,11 +20,13 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Iterator, Mapping, TypeVar
 
-from django.conf import settings
 from django.utils import timezone
 
 from apigateway.apps.rbac.constants import GatewayResourceTypeEnum
-from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
+from apigateway.common.tenant.request import (
+    get_tenant_id_for_gateway_maintainers,
+    is_configured_excluded_username,
+)
 from apigateway.components.bkiam import (
     AuthorizationPayload,
     AuthorizationSubjectItem,
@@ -68,7 +70,7 @@ def check_gateway_authorization(gateway: Gateway, payload: DirectAuthPayload) ->
 
 
 def is_gateway_iam_authorization_excluded(username: str) -> bool:
-    return settings.ENABLE_MULTI_TENANT_MODE and username in settings.BK_IAM_V4_EXCLUDED_USERNAMES
+    return is_configured_excluded_username(username)
 
 
 def _filter_excluded_gateway_authorizations(
