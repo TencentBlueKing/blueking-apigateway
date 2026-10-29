@@ -104,6 +104,18 @@ def pytest_sessionstart(session):
     TestCase.databases = "__all__"
 
 
+def pytest_collection_modifyitems(items):
+    # pytest-django decides which databases to create from collection metadata.
+    # Preserve the historical implicit DB fixture even for isolated test selections.
+    for item in items:
+        if (
+            "meta_schemas" in item.fixturenames
+            and not item.get_closest_marker("no_meta_schema")
+            and not item.get_closest_marker("django_db")
+        ):
+            item.add_marker(pytest.mark.django_db)
+
+
 class APIRequestFactory(DRFAPIRequestFactory):
     def request(self, *args, **kwargs):
         request = super().request(*args, **kwargs)
@@ -645,7 +657,12 @@ def fake_openapi_file_resource_schema_version(fake_resource_version):
 
 
 @pytest.fixture(autouse=True)
-def meta_schemas(db):
+def meta_schemas(request):
+    if request.node.get_closest_marker("no_meta_schema"):
+        return
+
+    # Existing integration fixtures rely on both DB access and these schema rows.
+    request.getfixturevalue("db")
     schemas = init_meta_schemas()
     for s in schemas:
         Schema.objects.update_or_create(

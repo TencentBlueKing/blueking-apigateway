@@ -23,6 +23,8 @@ from apigateway.controller.models import BaseUpstream, Labels, Service
 from apigateway.controller.registry.base import Registry
 from apigateway.controller.registry.etcd import EtcdRegistry
 
+pytestmark = pytest.mark.no_meta_schema
+
 
 class TestEtcdRegistry:
     """Test EtcdRegistry class"""
@@ -184,3 +186,43 @@ class TestEtcdRegistry:
 
         registry2 = EtcdRegistry("/test", etcd_client=mock_etcd_client)
         assert registry2.key_prefix == "/test/"
+
+
+@pytest.mark.parametrize("delete_succeeds", [True, False])
+def test_sync_mixed_results_preserves_desired_keys(mocker, caplog, delete_succeeds):
+    client = mocker.Mock()
+    client.get_prefix.return_value = [
+        (None, mocker.Mock(key=key.encode()))
+        for key in ["/test/service/ok", "/test/service/failed", "/test/service/stale"]
+    ]
+    client.delete.return_value = delete_succeeds
+    registry = EtcdRegistry("/test/", etcd_client=client)
+    resources = [
+        Service(id=name, name=name, labels=Labels(gateway="g", stage="prod"), upstream=BaseUpstream())
+        for name in ("ok", "failed")
+    ]
+    apply = mocker.patch.object(registry, "apply_resource", side_effect=[True, False])
+    assert registry.sync_resources_by_key_prefix(resources) == [resources[1]]
+    assert apply.call_args_list == [mocker.call(resources[0]), mocker.call(resources[1])]
+    client.delete.assert_called_once_with("/test/service/stale")
+    assert ("failed to remove key" in caplog.text) is (not delete_succeeds)
+
+
+def test_put_error_propagates_without_deleting_keys(mocker):
+    client = mocker.Mock()
+    client.get_prefix.return_value = [(None, mocker.Mock(key=b"/test/service/stale"))]
+    client.put.side_effect = RuntimeError("etcd unavailable")
+    registry = EtcdRegistry("/test/", etcd_client=client)
+    resource = Service(id="new", name="new", labels=Labels(gateway="g", stage="prod"), upstream=BaseUpstream())
+    with pytest.raises(RuntimeError, match="etcd unavailable"):
+        registry.sync_resources_by_key_prefix([resource])
+    client.delete.assert_not_called()
+
+
+def test_bad_payload_does_not_hide_later_valid_resources(mocker, caplog):
+    client = mocker.Mock()
+    valid = {"id": "valid", "name": "valid", "labels": {"gateway": "g", "stage": "prod"}, "upstream": {"nodes": []}}
+    client.get_prefix.return_value = [(b"not-json", None), (json.dumps(valid).encode(), None)]
+    result = list(EtcdRegistry("/test/", etcd_client=client).iter_by_type(Service))
+    assert [resource.id for resource in result] == ["valid"]
+    assert "deserialize resource" in caplog.text

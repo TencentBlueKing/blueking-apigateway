@@ -572,17 +572,17 @@ def test_resource_auth_diff_includes_oauth2_client_switches(field):
     assert target_diff["contexts"]["resource_auth"]["config"][field] is True
 
 
-class ResourceProxyHTTPConfig:
+class TestResourceProxyHTTPConfig:
     @pytest.mark.parametrize(
         "source, target, expected",
         [
             # empty and equal
-            ({"transform_headers": {}}, {"transform_headers": {}}, (None, None)),
+            ({"transform_headers": {}}, {"transform_headers": {}}, ({}, {})),
             # not empty and equal
             (
                 {"transform_headers": {"set": {"X-Token": "t"}}},
                 {"transform_headers": {"set": {"X-Token": "t"}}},
-                (None, None),
+                ({}, {}),
             ),
             # not equal
             (
@@ -620,8 +620,8 @@ class ResourceProxyHTTPConfig:
         source.update(config)
         target.update(config)
 
-        source_differ = ResourceProxyHTTPConfig(**source)
-        target_differ = ResourceProxyHTTPConfig(**target)
+        source_differ = ResourceHTTPProxy(type="http", config=json.dumps(source)).config
+        target_differ = ResourceHTTPProxy(type="http", config=json.dumps(target)).config
         result = source_differ.diff(target_differ)
         assert result == expected
 

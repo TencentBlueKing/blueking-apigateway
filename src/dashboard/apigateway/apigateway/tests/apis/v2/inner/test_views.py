@@ -53,7 +53,7 @@ from apigateway.apps.permission.models import AppPermissionApply, AppPermissionA
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
@@ -1696,7 +1696,7 @@ class TestGatewayUpdateStatusApi:
         mcp_server = G(MCPServer, gateway=fake_gateway, status=MCPServerStatusEnum.ACTIVE.value)
 
         # Mock 触发发布
-        mocker.patch(
+        publish = mocker.patch(
             "apigateway.apis.v2.inner.views.trigger_gateway_publish",
             return_value=None,
         )
@@ -1712,6 +1712,9 @@ class TestGatewayUpdateStatusApi:
         )
 
         assert response.status_code == 204
+        publish.assert_called_once_with(
+            PublishSourceEnum.GATEWAY_DISABLE, request.user.username, fake_gateway.id, user_credentials=None
+        )
 
         # 验证网关状态已更新
         fake_gateway.refresh_from_db()
@@ -1731,7 +1734,7 @@ class TestGatewayUpdateStatusApi:
         fake_gateway.save()
 
         # Mock 触发发布
-        mocker.patch(
+        publish = mocker.patch(
             "apigateway.apis.v2.inner.views.trigger_gateway_publish",
             return_value=None,
         )
@@ -1747,10 +1750,34 @@ class TestGatewayUpdateStatusApi:
         )
 
         assert response.status_code == 204
+        publish.assert_called_once_with(
+            PublishSourceEnum.GATEWAY_ENABLE, request.user.username, fake_gateway.id, user_credentials=None
+        )
 
         # 验证网关状态已更新
         fake_gateway.refresh_from_db()
         assert fake_gateway.status == GatewayStatusEnum.ACTIVE.value
+
+    @pytest.mark.parametrize("status", [0, 1, 99])
+    def test_unchanged_or_invalid_status_does_not_publish(self, request_view, fake_gateway, mocker, status):
+        fake_gateway.name = "bp-status-test"
+        fake_gateway.status = status if status in (0, 1) else 1
+        fake_gateway.save()
+        before = fake_gateway.status
+        publish = mocker.patch("apigateway.apis.v2.inner.views.trigger_gateway_publish")
+        response = request_view(
+            method="PUT",
+            view_name="openapi.v2.inner.gateway.update_status",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            app=mock.MagicMock(app_code="test"),
+            data={"status": status},
+            format="json",
+        )
+        assert response.status_code == (400 if status == 99 else 204)
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.status == before
+        publish.assert_not_called()
 
 
 class TestGatewayDestroyApi:

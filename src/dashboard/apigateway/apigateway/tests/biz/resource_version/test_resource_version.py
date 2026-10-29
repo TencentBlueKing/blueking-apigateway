@@ -73,7 +73,7 @@ class TestResourceVersionHandler:
         mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
         mocker.patch(
             "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi",
-            return_value={"openapi": "3.0.0"},
+            return_value=json.dumps({"openapi": "3.0.0"}),
         )
         G(ResourceDoc, gateway=fake_gateway, resource_id=fake_resource.id)
 
@@ -86,14 +86,16 @@ class TestResourceVersionHandler:
         assert result.gateway_id == fake_gateway.id
         assert result.version == "20260526120000"
         assert ResourceDocVersion.objects.filter(gateway=fake_gateway, resource_version=result).exists()
-        assert OpenAPIFileResourceSchemaVersion.objects.filter(gateway=fake_gateway, resource_version=result).exists()
+        assert json.loads(
+            OpenAPIFileResourceSchemaVersion.objects.get(gateway=fake_gateway, resource_version=result).schema
+        ) == {"openapi": "3.0.0"}
 
     def test_create_resource_version_with_artifacts_without_doc(self, fake_gateway, mocker):
         """Test that OpenAPIFileResourceSchemaVersion is created even when no ResourceDoc exists."""
         mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
         mocker.patch(
             "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi",
-            return_value={"openapi": "3.0.0"},
+            return_value=json.dumps({"openapi": "3.0.0"}),
         )
         # No ResourceDoc created for this gateway
 
@@ -108,7 +110,9 @@ class TestResourceVersionHandler:
         # ResourceDocVersion should NOT be created when no ResourceDoc exists
         assert not ResourceDocVersion.objects.filter(gateway=fake_gateway, resource_version=result).exists()
         # OpenAPIFileResourceSchemaVersion should still be created
-        assert OpenAPIFileResourceSchemaVersion.objects.filter(gateway=fake_gateway, resource_version=result).exists()
+        assert json.loads(
+            OpenAPIFileResourceSchemaVersion.objects.get(gateway=fake_gateway, resource_version=result).schema
+        ) == {"openapi": "3.0.0"}
 
     @pytest.mark.parametrize(
         "gateway_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",
@@ -327,3 +331,27 @@ class TestResourceVersionHandler:
         assert not ResourceDocVersion.objects.filter(resource_version_id=rv_id).exists()
         assert not OpenAPIResourceSchemaVersion.objects.filter(resource_version_id=rv_id).exists()
         assert not OpenAPIFileResourceSchemaVersion.objects.filter(resource_version_id=rv_id).exists()
+
+
+@pytest.mark.parametrize("failure_point", ["export", "save"])
+def test_artifact_creation_rolls_back_all_new_records(fake_gateway, fake_resource, mocker, failure_point):
+    G(ResourceDoc, gateway=fake_gateway, resource_id=fake_resource.id)
+    mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
+    previous = ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
+        gateway=fake_gateway, data={"version": "previous", "comment": "keep"}, username="admin"
+    )
+    models = (ResourceVersion, ResourceDocVersion, OpenAPIFileResourceSchemaVersion)
+    before = {model: set(model.objects.values_list("id", flat=True)) for model in models}
+    target = (
+        "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi"
+        if failure_point == "export"
+        else "apigateway.biz.resource_version.artifacts.OpenAPIFileResourceSchemaVersion.objects.create"
+    )
+    mocker.patch(target, side_effect=RuntimeError("artifact failure"))
+    with pytest.raises(RuntimeError, match="artifact failure"):
+        ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
+            gateway=fake_gateway, data={"version": "failed", "comment": "rollback"}, username="admin"
+        )
+    for model in models:
+        assert set(model.objects.values_list("id", flat=True)) == before[model]
+    assert ResourceVersion.objects.filter(id=previous.id).exists()

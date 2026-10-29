@@ -358,7 +358,7 @@ class TestSyncMcpServerAfterRelease:
 
         mock_save.assert_not_called()
 
-    def test_save_exception_logged(self, fake_gateway, fake_stage, release_history):
+    def test_save_exception_logged(self, fake_gateway, fake_stage, release_history, caplog):
         """写入异常时不抛出，记录日志"""
         mcp_data = [{"name": "s1"}]
 
@@ -370,7 +370,7 @@ class TestSyncMcpServerAfterRelease:
             patch(
                 "apigateway.apps.mcp_server.tasks.MCPServerHandler.save_mcp_servers",
                 side_effect=Exception("db error"),
-            ),
+            ) as mock_save,
         ):
             sync_mcp_server_after_release(
                 gateway_id=fake_gateway.id,
@@ -380,6 +380,15 @@ class TestSyncMcpServerAfterRelease:
                 release_history_id=release_history.id,
                 mcp_servers_data=mcp_data,
             )
+
+        mock_save.assert_called_once()
+        record = next(record for record in caplog.records if "failed to save mcp servers" in record.message)
+        assert record.levelname == "ERROR"
+        assert f"gateway={fake_gateway.name}({fake_gateway.id})" in record.message
+        assert f"stage={fake_stage.name}({fake_stage.id})" in record.message
+        assert f"release_history_id={release_history.id}" in record.message
+        assert record.exc_info is not None
+        assert str(record.exc_info[1]) == "db error"
 
 
 class TestRefreshOfficialMcpServerCategory:

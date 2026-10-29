@@ -19,6 +19,9 @@ Dashboard guide.
 - The shared `APIRequestFactory` gives requests a superuser and login cookie.
   Those defaults do not exercise permission denial or tenant isolation; override
   identity and context explicitly when that is the behavior under test.
+- Pure tests may use `pytest.mark.no_meta_schema` to skip the automatic schema
+  rows and implicit database access. Add `django_db` explicitly if the test still
+  needs ORM access; keep database-backed fixtures isolated per test.
 - `pytest_sessionstart()` allows all Django databases for TestCase isolation.
   Preserve that setup when adding tests involving the default/bkcore databases.
 - Fixture state is not interchangeable: editable Resource rows, ResourceVersion
