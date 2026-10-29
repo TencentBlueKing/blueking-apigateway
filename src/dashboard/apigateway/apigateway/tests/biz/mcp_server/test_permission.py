@@ -368,7 +368,8 @@ class TestMCPServerPermissionHandlerItsm:
         helper.create_permission_apply_ticket.assert_called_once()
         assert helper.create_permission_apply_ticket.call_args.kwargs["apply_reason"] == apply.reason
 
-    def test_create_itsm_tickets_for_applies_when_not_ready(self, mocker, fake_gateway, fake_stage):
+    def test_create_itsm_tickets_for_applies_when_not_ready(self, mocker, fake_gateway, fake_stage, caplog):
+        caplog.set_level("WARNING", logger="apigateway.biz.mcp_server.permission")
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
         apply = G(
             MCPServerAppPermissionApply,
@@ -391,6 +392,8 @@ class TestMCPServerPermissionHandlerItsm:
         apply.refresh_from_db()
         assert apply.itsm_ticket_id == ""
         helper.create_permission_apply_ticket.assert_not_called()
+        assert "Skip creating ITSM tickets for mcp server applies" in caplog.text
+        assert "apply_count=1" in caplog.text
 
     def test_create_itsm_tickets_persists_callback_token_before_ticket_id(self, mocker, fake_gateway, fake_stage):
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)

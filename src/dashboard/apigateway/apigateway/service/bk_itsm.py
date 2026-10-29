@@ -77,12 +77,34 @@ class ItsmPermissionApplyHelper:
     def is_ready(self) -> bool:
         """检查 ITSM 集成是否已就绪"""
         try:
-            cfg = self.config
+            if self._config is None:
+                self._config = ItsmSystemConfig.objects.get(system_code=self.system_code)
+            cfg = self._config
             workflow_key_map = cfg.workflow_key_map or {}
-            return (
-                cfg.is_registered and bool(workflow_key_map.get("gateway")) and bool(workflow_key_map.get("resource"))
+            gateway_workflow_configured = bool(workflow_key_map.get("gateway"))
+            resource_workflow_configured = bool(workflow_key_map.get("resource"))
+            ready = cfg.is_registered and gateway_workflow_configured and resource_workflow_configured
+            if not ready:
+                logger.warning(
+                    "ITSM integration is not ready: system_code=%s, is_registered=%s, "
+                    "gateway_workflow_configured=%s, resource_workflow_configured=%s; "
+                    "run register_to_itsm and check workflow mappings",
+                    self.system_code,
+                    cfg.is_registered,
+                    gateway_workflow_configured,
+                    resource_workflow_configured,
+                )
+            return ready
+        except ItsmSystemConfig.DoesNotExist:
+            logger.warning(
+                "ITSM integration is not ready: system config not found, system_code=%s; run register_to_itsm",
+                self.system_code,
             )
+            return False
         except Exception:
+            logger.warning(
+                "Failed to check ITSM integration readiness, system_code=%s", self.system_code, exc_info=True
+            )
             return False
 
     @staticmethod
