@@ -83,12 +83,12 @@ def _assert_initial_migration_logs(capsys, empty_gateway_id):
     assert any(
         record
         == {
-            "created": 6,
+            "created": 18,
             "empty": 1,
             "event": "gateway_member_migration.summary",
             "existing": 0,
             "invalid": 0,
-            "scanned": 5,
+            "scanned": 6,
         }
         for record in log_records
     )
@@ -100,13 +100,13 @@ def _assert_idempotent_rerun(connection, apps, member_model, gateway_id, capsys)
     with connection.schema_editor() as schema_editor:
         MIGRATION_MODULE.backfill_gateway_members(apps, schema_editor)
 
-    assert member_model.objects.count() == 6
+    assert member_model.objects.count() == 18
     preserved_member.refresh_from_db()
     assert preserved_member.role == "operator"
     assert preserved_member.expires is None
     rerun_records = _json_log_records(capsys.readouterr().out)
     assert any(
-        record["event"] == "gateway_member_migration.summary" and record["created"] == 0 and record["existing"] == 6
+        record["event"] == "gateway_member_migration.summary" and record["created"] == 0 and record["existing"] == 18
         for record in rerun_records
     )
 
@@ -133,6 +133,10 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
             developers="developer",
             doc_maintainers={"type": "user", "contacts": ["doc_maintainer"]},
         )
+        comma_usernames = [f"user{index:02d}" for index in range(12)]
+        comma_maintainers = comma_usernames[0] + ", " + ",".join(comma_usernames[1:]) + ","
+        assert len(comma_maintainers) > 64
+        comma_gateway = _create_gateway(Gateway, "member-comma", comma_maintainers)
         migration_started_at = timezone.now()
 
         monkeypatch.setattr(MIGRATION_MODULE, "BATCH_SIZE", 2)
@@ -151,6 +155,7 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
                 (inner_empty_gateway.id, "first"),
                 (inner_empty_gateway.id, "second"),
                 (ignored_fields_gateway.id, "maintainer"),
+                *((comma_gateway.id, username) for username in comma_usernames),
             },
             empty_gateway.id,
             migration_started_at,
@@ -172,7 +177,7 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_SCHEMA)
         schema_apps = executor.loader.project_state(MIGRATE_SCHEMA).apps
-        assert schema_apps.get_model("rbac", "GatewayMember").objects.count() == 6
+        assert schema_apps.get_model("rbac", "GatewayMember").objects.count() == 18
 
         executor = MigrationExecutor(connection)
         executor.migrate(MIGRATE_ZERO)
@@ -182,7 +187,7 @@ def test_gateway_member_migration_backfills_members_and_is_reversible(monkeypatc
         executor.migrate(latest_migrations)
 
 
-def test_gateway_member_migration_reports_invalid_username_and_can_resume(capsys):
+def test_gateway_member_migration_skips_invalid_username_without_failing(capsys):
     connection = connections["default"]
     executor = MigrationExecutor(connection)
     latest_migrations = executor.loader.graph.leaf_nodes()
@@ -194,31 +199,25 @@ def test_gateway_member_migration_reports_invalid_username_and_can_resume(capsys
         schema_apps = executor.loader.project_state(MIGRATE_SCHEMA).apps
         Gateway = schema_apps.get_model("core", "Gateway")
         GatewayMember = schema_apps.get_model("rbac", "GatewayMember")
-        valid_gateway = _create_gateway(Gateway, "member-valid-before-failure", "valid")
+        valid_gateway = _create_gateway(Gateway, "member-valid-before-invalid", "valid")
         invalid_gateway = _create_gateway(Gateway, "member-invalid", "x" * 65)
 
         executor = MigrationExecutor(connection)
-        with pytest.raises(RuntimeError, match="failed to migrate 1 invalid gateway maintainers"):
-            executor.migrate(MIGRATE_TO)
+        executor.migrate(MIGRATE_TO)
 
         assert GatewayMember.objects.filter(gateway_id=valid_gateway.id, username="valid").count() == 1
-        failed_records = _json_log_records(capsys.readouterr().out)
+        assert not GatewayMember.objects.filter(gateway_id=invalid_gateway.id).exists()
+        log_records = _json_log_records(capsys.readouterr().out)
         assert any(
             record["event"] == "gateway_member_migration.invalid_maintainer"
             and record["gateway_id"] == invalid_gateway.id
             and record["reason"] == "username exceeds 64 characters"
-            for record in failed_records
+            for record in log_records
         )
-
-        Gateway.objects.filter(id=invalid_gateway.id).update(_maintainers="fixed")
-        executor = MigrationExecutor(connection)
-        executor.migrate(MIGRATE_TO)
-        migrated_apps = executor.loader.project_state(MIGRATE_TO).apps
-        migrated_gateway_member = migrated_apps.get_model("rbac", "GatewayMember")
-        assert set(migrated_gateway_member.objects.values_list("gateway_id", "username")) == {
-            (valid_gateway.id, "valid"),
-            (invalid_gateway.id, "fixed"),
-        }
+        assert any(
+            record["event"] == "gateway_member_migration.summary" and record["created"] == 1 and record["invalid"] == 1
+            for record in log_records
+        )
     finally:
         executor = MigrationExecutor(connection)
         executor.migrate(latest_migrations)
