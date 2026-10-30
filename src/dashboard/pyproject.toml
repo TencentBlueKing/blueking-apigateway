@@ -23,7 +23,7 @@ dependencies = [
     "elasticsearch==7.17.13",
     "elasticsearch-dsl==7.4.1",
     "werkzeug==3.1.8",
-    "redis==8.1.0",
+    "redis==6.2.0",
     "ruamel.yaml==0.19.1",
     "pyyaml==6.0.3",
     "PyJWT==2.14.0",
