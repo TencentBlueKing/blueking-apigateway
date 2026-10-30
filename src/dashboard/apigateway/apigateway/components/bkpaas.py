@@ -29,7 +29,11 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
 )
-from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_for_gateway_maintainers
+from apigateway.common.tenant.request import (
+    gen_tenant_header,
+    get_tenant_id_for_gateway_maintainers,
+    is_configured_excluded_username,
+)
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
@@ -564,10 +568,25 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
     }
 
 
+def _maintainers_for_paas(app_code: str, maintainers: List[str]) -> List[str]:
+    excluded_usernames = [username for username in maintainers if is_configured_excluded_username(username)]
+    if excluded_usernames:
+        logger.warning(
+            "skip excluded paas app maintainers, app_code=%s usernames=%s",
+            app_code,
+            excluded_usernames,
+        )
+    return [username for username in maintainers if username not in excluded_usernames]
+
+
 def update_app_maintainers(app_code: str, maintainers: List[str], user_credentials: Optional[UserCredentials] = None):
     """
     更新 paas 的 app 成员
     """
+    maintainers_to_sync = _maintainers_for_paas(app_code, maintainers)
+    if not maintainers_to_sync:
+        return True
+
     url = url_join(get_paas3_url_prefix(), f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
     # NOTE: this api should not pass user_credentials!!!
     # and the paasv3 not care about the x-bk-tenant-id, so just pass one
@@ -581,7 +600,7 @@ def update_app_maintainers(app_code: str, maintainers: List[str], user_credentia
                 "id": "2",
             },
         }
-        for m in maintainers
+        for m in maintainers_to_sync
     ]
 
     ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
