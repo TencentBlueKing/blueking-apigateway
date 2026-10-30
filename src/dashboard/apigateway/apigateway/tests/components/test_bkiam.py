@@ -231,7 +231,7 @@ def test_add_authorization_retries_once_without_missing_users(mocker, mock_heade
     assert mock_post.call_count == 2
 
 
-def test_add_authorization_retry_failure_raises(mocker, mock_headers):
+def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog):
     kept = _user_authorization("alice")
     missing = _user_authorization("jsorwan")
     mock_post = mocker.patch(
@@ -241,12 +241,17 @@ def test_add_authorization_retry_failure_raises(mocker, mock_headers):
             (False, {"error": "status_code is 500, not 2xx!", "status_code": 500}),
         ],
     )
+    caplog.set_level("ERROR", logger="apigateway.components.bkiam")
 
-    with pytest.raises(APIError, match="status_code is 500"):
-        bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a")
+    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
 
     assert mock_post.call_count == 2
     assert mock_post.call_args_list[1].kwargs["data"] == [kept]
+    assert "retry bkiam authorizations failed" in caplog.text
+    assert "tenant_id=tenant-a" in caplog.text
+    assert "operator=admin" in caplog.text
+    assert "missing_users=['jsorwan']" in caplog.text
+    assert "status_code is 500" in caplog.text
 
 
 def test_add_authorization_raises_when_every_subject_is_missing(mocker, mock_headers):

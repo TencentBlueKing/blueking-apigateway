@@ -450,13 +450,21 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str,
         ):
             raise
         logger.warning("retry bkiam authorizations without missing users, missing_users=%s", missing_users)
-        _call_bkiam_api(
-            post,
-            path,
-            retry_payload,
-            more_headers={"X-Bkiam-Operator": operator},
-            tenant_id=tenant_id,
-        )
+        try:
+            _call_bkiam_api(
+                post,
+                path,
+                retry_payload,
+                more_headers={"X-Bkiam-Operator": operator},
+                tenant_id=tenant_id,
+            )
+        except APIError:
+            logger.exception(
+                "retry bkiam authorizations failed, tenant_id=%s operator=%s missing_users=%s",
+                tenant_id,
+                operator,
+                missing_users,
+            )
 
 
 def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:
