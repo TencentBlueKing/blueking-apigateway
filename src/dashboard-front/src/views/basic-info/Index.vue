@@ -1329,7 +1329,7 @@ onUnmounted(() => {
 
     &-right {
       flex: 1;
-      padding: 16px 16px 0;
+      padding: 0 16px;
 
       .header-info-name {
         display: flex;
@@ -1342,7 +1342,7 @@ onUnmounted(() => {
             font-size: 16px;
             font-weight: 700;
             line-height: 24px;
-            color: #313238;
+            color: #4d4f56;
           }
 
           .gateway-id {
@@ -1390,8 +1390,8 @@ onUnmounted(() => {
       }
 
       .header-info-description {
-        margin-top: 8px;
-        margin-bottom: 23px;
+        margin-top: 12px;
+        margin-bottom: 24px;
       }
 
       .header-info-button {

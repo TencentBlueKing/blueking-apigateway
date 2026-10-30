@@ -1100,12 +1100,12 @@ onMounted(() => {
     box-sizing: border-box;
 
     .bk-input--text {
-      overflow: hidden;
-      font-size: 14px;
+      font-size: 12px;
       color: #4d4f56;
       background-color: transparent;
       text-overflow: ellipsis;
       white-space: nowrap;
+      overflow: hidden;
       order: 1;
     }
 
@@ -1138,6 +1138,7 @@ onMounted(() => {
 .bk-popover.bk-pop2-content.gateway-select-popover .bk-select-content-wrapper {
 
   .bk-select-option {
+    padding: 0 8px;
 
     &.is-hover,
     &.is-selected,
