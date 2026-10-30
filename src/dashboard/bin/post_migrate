@@ -62,5 +62,5 @@ fi
 # only sync IAM when BK_IAM_V4_ENABLED = true/True
 if [ "${BK_IAM_V4_ENABLED}" = "true" ] || [ "${BK_IAM_V4_ENABLED}" = "True" ]; then
     python manage.py sync_gateway_rbac_model_to_iam
-    python manage.py sync_gateway_rbac_auth_to_iam --initial --all --apply --force
+    python manage.py sync_gateway_rbac_auth_to_iam --initial --all --apply
 fi
