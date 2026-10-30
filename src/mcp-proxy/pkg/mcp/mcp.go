@@ -298,7 +298,8 @@ func checkNeedLoad(mcpProxy *proxy.MCPProxy, s *model.MCPServer, release *model.
 	if mcpServer.GetProtocolType() != s.GetProtocolType() {
 		logging.GetLogger().Infof(
 			"mcp server[%s] protocol type changed from %s to %s, will recreate",
-			s.Name, mcpServer.GetProtocolType(), s.GetProtocolType())
+			s.Name, mcpServer.GetProtocolType(), s.GetProtocolType(),
+		)
 		return true
 	}
 
@@ -315,7 +316,8 @@ func checkNeedLoad(mcpProxy *proxy.MCPProxy, s *model.MCPServer, release *model.
 	for _, toolName := range s.GetToolNames() {
 		if _, exists := currentToolSet[toolName]; !exists {
 			logging.GetLogger().Infof(
-				"mcp server[%s] resource_names changed, will reload openapi spec", s.Name)
+				"mcp server[%s] resource_names changed, will reload openapi spec", s.Name,
+			)
 			return true
 		}
 	}
@@ -324,7 +326,8 @@ func checkNeedLoad(mcpProxy *proxy.MCPProxy, s *model.MCPServer, release *model.
 	if mcpServer.RawResponseEnabled() != s.RawResponseEnabled {
 		logging.GetLogger().Infof(
 			"mcp server[%s] raw_response_enabled changed from %v to %v, will reload",
-			s.Name, mcpServer.RawResponseEnabled(), s.RawResponseEnabled)
+			s.Name, mcpServer.RawResponseEnabled(), s.RawResponseEnabled,
+		)
 		return true
 	}
 
@@ -464,7 +467,8 @@ func addMCPServer(
 	}
 	logging.GetLogger().Infof(
 		"add mcp server[%s] protocol:%s, tool:%d, prompt:%d, duration=%s",
-		svr.Name, svr.GetProtocolType(), len(resourceNames), len(prompts), time.Since(addStart))
+		svr.Name, svr.GetProtocolType(), len(resourceNames), len(prompts), time.Since(addStart),
+	)
 	return true
 }
 
@@ -511,7 +515,8 @@ func updateMCPServer(
 	if toolUpdated || resourceVersionUpdated {
 		logging.GetLogger().Infof(
 			"updated prompts:%d, tools_changed:%v, resource_version_changed:%v for mcp server[%s]",
-			len(prompts), toolUpdated, resourceVersionUpdated, svr.Name)
+			len(prompts), toolUpdated, resourceVersionUpdated, svr.Name,
+		)
 		return true, nil
 	}
 	return false, nil

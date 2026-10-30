@@ -96,7 +96,8 @@ func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 	c.Set(string(constant.BkGatewayInnerJWT), jwtToken)
 	if c.Request != nil {
 		c.Request = c.Request.WithContext(
-			context.WithValue(c.Request.Context(), constant.BkGatewayInnerJWT, jwtToken))
+			context.WithValue(c.Request.Context(), constant.BkGatewayInnerJWT, jwtToken),
+		)
 	}
 }
 

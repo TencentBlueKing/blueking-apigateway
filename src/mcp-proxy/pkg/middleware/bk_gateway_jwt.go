@@ -175,8 +175,7 @@ func parseBKJWTToken(tokenString string, publicKey []byte) (*CustomClaims, error
 	claims := &CustomClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, keyFunc)
 	if err != nil {
-		var verr *jwt.ValidationError
-		if errors.As(err, &verr) {
+		if verr, ok := errors.AsType[*jwt.ValidationError](err); ok {
 			switch {
 			case verr.Errors&jwt.ValidationErrorExpired > 0:
 				return nil, ErrExpired

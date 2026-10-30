@@ -22,7 +22,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.27.3'
         cache-dependency-path: src/core-api/go.sum
 
     - name: Build
@@ -32,7 +32,7 @@ jobs:
     - name: Lint
       uses: golangci/golangci-lint-action@v9
       with:
-        version: v2.11
+        version: v2.15.0
         working-directory: src/core-api
 
     - name: Aqua Security Trivy

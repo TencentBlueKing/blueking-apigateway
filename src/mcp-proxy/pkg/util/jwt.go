@@ -80,13 +80,11 @@ func SignInnerJWT(claims *JWTClaimsForLazySigning, privateKeyText []byte, mcpSer
 			Username: claims.Username,
 			Verified: claims.UserVerified,
 		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    claims.Issuer,
-			Audience:  jwt.ClaimStrings(claims.Audience),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.G.McpServer.InnerJwtExpireTime)),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
+		Issuer:    claims.Issuer,
+		Audience:  jwt.ClaimStrings(claims.Audience),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.G.McpServer.InnerJwtExpireTime)),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS512, innerJwtClaims)
 	token.Header["kid"] = constant.OfficialGatewayName
