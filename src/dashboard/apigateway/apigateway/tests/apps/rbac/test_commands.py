@@ -134,7 +134,7 @@ def _sync_result(gateway, *, applied=False, grant_count=0):
                 username=f"user-{index}",
                 role=GatewayRoleEnum.OPERATOR.value,
                 expired_at=1_900_000_000,
-                reason="missing",
+                reason="missing-in-iam",
             )
             for index in range(grant_count)
         ),
@@ -229,6 +229,23 @@ def test_sync_gateway_rbac_auth_to_iam_accepts_gateway_id_or_name(
     )
 
 
+def test_sync_gateway_rbac_auth_to_iam_reports_directional_reason(settings, mocker, fake_gateway):
+    _enable_iam(settings)
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.return_value = _sync_result(fake_gateway, grant_count=1)
+    output = StringIO()
+
+    call_command(
+        "sync_gateway_rbac_auth_to_iam",
+        gateway=str(fake_gateway.id),
+        stdout=output,
+    )
+
+    assert "grant username=user-0 role=operator expired_at=1900000000 reason=missing-in-iam\n" in output.getvalue()
+
+
 def test_sync_gateway_rbac_auth_to_iam_username_checks_every_gateway(settings, mocker, fake_gateway):
     _enable_iam(settings)
     second_gateway = G(Gateway)
@@ -258,28 +275,22 @@ def test_sync_gateway_rbac_auth_to_iam_rate_limits_between_gateways(settings, mo
     sleep.assert_called_once_with(0.25)
 
 
-def test_sync_gateway_rbac_auth_to_iam_threshold_rejects_before_apply(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_apply_reconciles_each_gateway_once(settings, mocker, fake_gateway):
     _enable_iam(settings)
     second_gateway = G(Gateway)
     gateways = list(Gateway.objects.order_by("id"))
     reconcile = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
-    reconcile.side_effect = [_sync_result(gateway, grant_count=1) for gateway in gateways]
+    reconcile.side_effect = [_sync_result(gateway, applied=True, grant_count=1) for gateway in gateways]
 
-    with pytest.raises(CommandError, match="超过 --max-changes=1"):
-        call_command(
-            "sync_gateway_rbac_auth_to_iam",
-            all=True,
-            apply=True,
-            max_changes=1,
-        )
+    call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, gateway_delay=0)
 
     assert [call.args[0] for call in reconcile.call_args_list] == sorted([fake_gateway.id, second_gateway.id])
-    assert all(call.kwargs["apply"] is False for call in reconcile.call_args_list)
+    assert all(call.kwargs["apply"] is True for call in reconcile.call_args_list)
 
 
-def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_apply_writes_iam_without_preflight(settings, mocker, fake_gateway):
     _enable_iam(settings)
     mocker.patch(
         "apigateway.biz.iam.authorization.iter_authorization_subjects",
@@ -288,35 +299,14 @@ def test_sync_gateway_rbac_auth_to_iam_threshold_rejection_makes_no_iam_writes(s
     add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
-    with pytest.raises(CommandError, match="超过 --max-changes=0"):
-        call_command(
-            "sync_gateway_rbac_auth_to_iam",
-            gateway=str(fake_gateway.id),
-            apply=True,
-            max_changes=0,
-        )
-
-    add.assert_not_called()
-    revoke.assert_not_called()
-
-
-def test_sync_gateway_rbac_auth_to_iam_force_applies_over_threshold(settings, mocker, fake_gateway):
-    _enable_iam(settings)
-    mocker.patch(
-        "apigateway.biz.iam.authorization.iter_authorization_subjects",
-        return_value=iter([]),
-    )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
-
     call_command(
         "sync_gateway_rbac_auth_to_iam",
         gateway=str(fake_gateway.id),
         apply=True,
-        max_changes=0,
-        force=True,
     )
 
     add.assert_called_once()
+    revoke.assert_not_called()
 
 
 def test_sync_gateway_rbac_auth_to_iam_all_apply_runs_on_every_invocation(settings, mocker, fake_gateway):
@@ -328,9 +318,9 @@ def test_sync_gateway_rbac_auth_to_iam_all_apply_runs_on_every_invocation(settin
     reconcile.return_value = _sync_result(fake_gateway)
 
     for _ in range(2):
-        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, force=True, gateway_delay=0)
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, gateway_delay=0)
 
-    assert [call.kwargs["apply"] for call in reconcile.call_args_list] == [False, True, False, True]
+    assert [call.kwargs["apply"] for call in reconcile.call_args_list] == [True, True]
 
 
 def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settings, mocker, fake_gateway):
@@ -341,7 +331,7 @@ def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settin
     reconcile.side_effect = RuntimeError("IAM unavailable")
 
     with pytest.raises(CommandError, match="IAM unavailable"):
-        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, force=True, gateway_delay=0)
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, gateway_delay=0)
 
 
 def test_sync_gateway_rbac_auth_to_iam_initial_marks_completion_after_success(settings, mocker, fake_gateway):
@@ -351,10 +341,10 @@ def test_sync_gateway_rbac_auth_to_iam_initial_marks_completion_after_success(se
     ).return_value.reconcile_gateway
     reconcile.return_value = _sync_result(fake_gateway)
 
-    call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, force=True, gateway_delay=0)
+    call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, gateway_delay=0)
 
     assert GatewayIAMSyncContext().is_initial_sync_completed()
-    assert [call.kwargs["apply"] for call in reconcile.call_args_list] == [False, True]
+    assert [call.kwargs["apply"] for call in reconcile.call_args_list] == [True]
 
 
 def test_sync_gateway_rbac_auth_to_iam_initial_failure_does_not_mark_completion(settings, mocker, fake_gateway):
@@ -365,7 +355,7 @@ def test_sync_gateway_rbac_auth_to_iam_initial_failure_does_not_mark_completion(
     reconcile.side_effect = RuntimeError("IAM unavailable")
 
     with pytest.raises(CommandError, match="IAM unavailable"):
-        call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, force=True, gateway_delay=0)
+        call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, gateway_delay=0)
 
     assert not GatewayIAMSyncContext().is_initial_sync_completed()
 
@@ -383,7 +373,6 @@ def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, 
         initial=True,
         all=True,
         apply=True,
-        force=True,
         stdout=output,
     )
 

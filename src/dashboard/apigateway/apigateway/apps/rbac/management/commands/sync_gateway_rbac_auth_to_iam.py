@@ -26,7 +26,6 @@ from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
 from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, GatewayIAMAuthorizationSynchronizer
 from apigateway.core.models import Gateway
 
-DEFAULT_MAX_CHANGES = 1000
 DEFAULT_GATEWAY_DELAY_SECONDS = 0.05
 GATEWAY_ID_ITERATOR_CHUNK_SIZE = 1000
 
@@ -46,10 +45,6 @@ class _RunSummary:
     revokes: int
     unchanged: int
 
-    @property
-    def change_count(self) -> int:
-        return self.grants + self.revokes
-
 
 class Command(BaseCommand):
     help = "以本地 GatewayMember 为准，对账权限中心 V4 网关角色授权"
@@ -63,17 +58,6 @@ class Command(BaseCommand):
             "--initial",
             action="store_true",
             help="首次部署全量同步；已成功执行过则跳过，仅可与 --all --apply 配合",
-        )
-        parser.add_argument(
-            "--force",
-            action="store_true",
-            help="跳过对账变更量限制",
-        )
-        parser.add_argument(
-            "--max-changes",
-            type=int,
-            default=DEFAULT_MAX_CHANGES,
-            help=f"普通 apply 允许的最大变更数，默认 {DEFAULT_MAX_CHANGES}",
         )
         parser.add_argument(
             "--page-size",
@@ -101,24 +85,6 @@ class Command(BaseCommand):
 
         try:
             gateway_ids = self._get_gateway_ids(options)
-            if options["apply"]:
-                preflight = self._reconcile_gateways(
-                    gateway_ids,
-                    apply=False,
-                    operator=BK_IAM_V4_SYSTEM_ID,
-                    username=options["username"],
-                    page_size=options["page_size"],
-                    gateway_delay=options["gateway_delay"],
-                    phase="preflight",
-                )
-                self._write_summary(preflight, phase="preflight")
-                self._raise_for_failures(preflight)
-                if preflight.change_count > options["max_changes"] and not options["force"]:
-                    raise CommandError(
-                        f"计划变更数 {preflight.change_count} 超过 --max-changes={options['max_changes']}；"
-                        "确认后使用 --force 执行"
-                    )
-
             phase = "apply" if options["apply"] else "dry-run"
             summary = self._reconcile_gateways(
                 gateway_ids,
@@ -152,8 +118,6 @@ class Command(BaseCommand):
 
         if not 1 <= options["page_size"] <= 100:
             raise CommandError("--page-size 必须在 1 到 100 之间")
-        if options["max_changes"] < 0:
-            raise CommandError("--max-changes 不能小于 0")
         if options["gateway_delay"] < 0:
             raise CommandError("--gateway-delay 不能小于 0")
         if options["username"] is not None and not options["username"].strip():
