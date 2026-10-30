@@ -87,6 +87,7 @@ export interface IExportDialog extends IDialog {
   exportFileDocType: string
 }
 
+// 资源 / 资源版本导出参数
 export interface IExportParams {
   export_type?: string
   query?: string
@@ -141,15 +142,6 @@ export type IFormMethod = {
   validate: () => void
   clearValidate: () => void
 };
-
-// SearchSelect的data类型声明
-export interface ISearchSelectData {
-  name: string
-  id: string
-  placeholder: string
-  multiple?: boolean
-  children?: ISearchSelect[]
-}
 
 // mavon-editor 类型定义
 export interface IMavonEditorToolbars {

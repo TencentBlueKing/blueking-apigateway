@@ -17,7 +17,7 @@
  */
 import { defineStore } from 'pinia';
 
-import { getGatewayDetail } from '@/services/source/gateway';
+import { getGatewayDetail } from '@/services/source/gateway/gateway';
 
 type GatewayDetailType = Awaited<ReturnType<typeof getGatewayDetail>>;
 

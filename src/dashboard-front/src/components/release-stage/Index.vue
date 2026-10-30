@@ -306,13 +306,11 @@
 import dayjs from 'dayjs';
 import { Divider, Message } from 'bkui-vue';
 import { usePopInfoBox } from '@/hooks';
-import {
-  type IStageListItem,
-  getStageList,
-} from '@/services/source/stage.ts';
-import { getVersionDiff, getVersionList } from '@/services/source/resource.ts';
-import { createRelease } from '@/services/source/release.ts';
-import { checkMcpServersDel } from '@/services/source/mcp-market.ts';
+import { getStageList } from '@/services/source/gateway/stage';
+import type { IStageListItem } from '@/types/stage';
+import { getVersionDiff, getVersionList } from '@/services/source/gateway/resource-version';
+import { createRelease } from '@/services/source/gateway/release';
+import { checkMcpServerStageRelease } from '@/services/source/gateway/mcp-server/server';
 import VersionDiff from '@/components/version-diff/Index.vue';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 
@@ -655,7 +653,7 @@ const getMcpServersDel = async () => {
     return;
   }
 
-  mcpCheckData.value = await checkMcpServersDel(apigwId.value, {
+  mcpCheckData.value = await checkMcpServerStageRelease(apigwId.value, {
     stage_id,
     resource_version_id,
   });

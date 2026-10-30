@@ -32,7 +32,6 @@ export * from './getStageStatus';
 export * from './json2Yaml';
 export * from './yaml2Json';
 export * from './getMethodsTheme';
-export * from './blobDownload';
 export * from './getStrFromFile';
 export * from './getLoginURL';
 export * from './dayUtc';

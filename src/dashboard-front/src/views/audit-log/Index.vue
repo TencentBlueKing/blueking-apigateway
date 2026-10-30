@@ -107,11 +107,9 @@ import {
   useGateway,
   useUserInfo,
 } from '@/stores';
-import { getTenantUsers } from '@/services/source/basic';
-import {
-  type IAuditLog,
-  getAuditLogList,
-} from '@/services/source/audit-log.ts';
+import { getTenantUsers } from '@/services/source/external/bk-user';
+import { getAuditLogList } from '@/services/source/gateway/audit';
+import type { IAuditLog } from '@/types/audit-log';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
 import Detail from './detail/Index.vue';

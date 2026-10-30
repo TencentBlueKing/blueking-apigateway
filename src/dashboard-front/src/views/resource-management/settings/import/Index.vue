@@ -776,7 +776,7 @@ import { InfoBox, Message, ResizeLayout } from 'bkui-vue';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { getStrFromFile, messageError } from '@/utils';
-import { checkResourceImport, importResource } from '@/services/source/resource';
+import { checkResourceImport, importResource } from '@/services/source/gateway/resource';
 import type { IResourceImportCheckInputSLZ } from '@/services/types/body/post/gateways';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
 import {

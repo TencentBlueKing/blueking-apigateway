@@ -83,7 +83,10 @@ import { Form, Message } from 'bkui-vue';
 import type MavonEditor from 'mavon-editor';
 import LazyMavonEditor from '@/components/LazyMavonEditor';
 import type { IFormMethod, IMavonEditorProps } from '@/types/common';
-import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
+import {
+  addCustomServerGuideDoc,
+  updateCustomServerGuideDoc,
+} from '@/services/source/gateway/mcp-server/server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
 interface IProps {

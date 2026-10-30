@@ -249,8 +249,8 @@
 import { Input, TagInput } from 'bkui-vue';
 import { InfoLine } from 'bkui-vue/lib/icon';
 import { escape } from 'lodash-es';
-import type { IMCPFormData, IMCPServerCategory } from '@/services/source/mcp-server';
-import type { IStageListItem } from '@/services/source/stage.ts';
+import type { IMCPFormData, IMCPServerCategory } from '@/types/mcp-server';
+import type { IStageListItem } from '@/types/stage';
 import { MCP_PROTOCOL_TYPE } from '@/constants';
 import { useEnv, useGateway } from '@/stores';
 import { copy } from '@/utils';

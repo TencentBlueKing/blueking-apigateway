@@ -92,7 +92,7 @@
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
 import { usePopInfoBox, useSidebar } from '@/hooks';
-import { updateGatewayMember } from '@/services/source/gateway-member.ts';
+import { patchGatewayMember } from '@/services/source/gateway/member';
 import { useFeatureFlag, useGateway, useUserInfo } from '@/stores';
 import PermissionModel from './PermissionModel.vue';
 import type { IMember } from '../types';
@@ -178,7 +178,7 @@ const persist = async (memberId: number, role: MemberRole) => {
   }
   submitting.value = true;
   try {
-    const updatedMember = await updateGatewayMember(apigwId.value, memberId, { role });
+    const updatedMember = await patchGatewayMember(apigwId.value, memberId, { role });
     isShow.value = false;
     Message({
       theme: 'success',

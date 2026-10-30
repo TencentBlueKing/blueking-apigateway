@@ -467,13 +467,13 @@
 
 <script lang="ts" setup>
 // @ts-nocheck
-import { getEnv } from '@/services/source/basic.ts';
+import { getEnvVars } from '@/services/source/platform/setting';
 import {
   checkNameAvailable,
   checkRepoAuthorization,
   createGateway,
   patchGateway,
-} from '@/services/source/gateway.ts';
+} from '@/services/source/gateway/gateway';
 import {
   useEnv,
   useFeatureFlag,
@@ -900,7 +900,7 @@ const handleTenantUserChange = (members: { id: string } | { id: string }[] | nul
 };
 
 const getUrlPrefix = async () => {
-  const res = await getEnv();
+  const res = await getEnvVars();
   repositoryUrl.value = res.BK_PAAS_APP_REPO_URL_TMPL;
 };
 

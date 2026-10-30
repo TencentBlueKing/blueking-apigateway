@@ -64,10 +64,7 @@ import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { Message } from 'bkui-vue';
 import AgTable from '@/components/ag-table/Index.vue';
 import { usePopInfoBox } from '@/hooks';
-import {
-  deleteBackendService,
-  getBackendServiceList,
-} from '@/services/source/backend-services.ts';
+import { deleteBackendService, getBackendServiceList } from '@/services/source/gateway/backend';
 import { useGateway } from '@/stores';
 import AddModelService from './components/AddModelService.vue';
 

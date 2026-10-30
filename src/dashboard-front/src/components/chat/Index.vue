@@ -70,10 +70,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  createChat,
-  sendChat,
-} from '@/services/source/chat';
+import { createChat, sendChat } from '@/services/source/external/chat';
 import { useStage } from '@/stores';
 import { Message } from 'bkui-vue';
 

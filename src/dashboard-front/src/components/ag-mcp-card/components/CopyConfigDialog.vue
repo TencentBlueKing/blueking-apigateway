@@ -40,7 +40,7 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
-import type { IMCPAIConfig } from '@/services/source/mcp-server';
+import type { IMCPAIConfig } from '@/types/mcp-server';
 import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
 
 interface IProps {

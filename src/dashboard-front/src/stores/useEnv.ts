@@ -16,9 +16,9 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import { defineStore } from 'pinia';
-import { getEnv } from '@/services/source/basic';
+import { getEnvVars } from '@/services/source/platform/setting';
 
-type EnvType = Awaited<ReturnType<typeof getEnv>>;
+type EnvType = Awaited<ReturnType<typeof getEnvVars>>;
 
 export const useEnv = defineStore('useEnv', {
   state: (): { env: EnvType } => ({
@@ -140,7 +140,7 @@ export const useEnv = defineStore('useEnv', {
      * 查询环境变量信息
      */
     async fetchEnv() {
-      const result = await getEnv();
+      const result = await getEnvVars();
       this.env = Object.assign(this.env, result ?? {});
       return this.env;
     },

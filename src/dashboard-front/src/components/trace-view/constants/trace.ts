@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ITraceLog } from '@/services/source/observability';
+import type { ITraceLog } from '@/types/observability';
 
 export const DEFAULT_TRACE_DATA: ITraceLog = {
   app_code: '',

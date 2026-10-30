@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { IMCPFormData } from '@/services/source/mcp-server';
+import type { IMCPFormData } from '@/types/mcp-server';
 
 interface IProps {
   isShow: boolean

@@ -223,12 +223,11 @@
 <script lang="ts" setup>
 import { debounce } from 'lodash-es';
 import {
-  type IMCPMarketCategory,
-  type IMarketplaceItemWithUIState,
-  getMcpBatchCopyConfigList,
+  getMarketplaceBatchConfigs,
   getMcpMarketplace,
   getMcpMarketplaceCategories,
-} from '@/services/source/mcp-market';
+} from '@/services/source/mcp-marketplace';
+import type { IMCPMarketCategory, IMarketplaceItemWithUIState } from '@/types/mcp-marketplace';
 import { type IPagination, type ITableEmptyType } from '@/types/common';
 import { vIntersectionObserver } from '@vueuse/components';
 import { useMcpBatchCopyConfig } from '@/hooks';
@@ -248,7 +247,7 @@ const {
   mcpConfigList,
   fetchMcpBatchCopyConfigList,
 } = useMcpBatchCopyConfig({
-  fetchApi: getMcpBatchCopyConfigList,
+  fetchApi: getMarketplaceBatchConfigs,
 });
 
 // 顶部导航高度（bk-navigation-header 为 52px）

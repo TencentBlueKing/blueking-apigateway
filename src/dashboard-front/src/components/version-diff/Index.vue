@@ -489,14 +489,10 @@
 import ResourceDetail from '@/components/resource-detail/Index.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import { getGatewayLabels } from '@/services/source/gateway';
-import {
-  type IDiffData,
-  type IVersionItem,
-  getVersionDiff,
-  getVersionList,
-} from '@/services/source/resource';
-import { getBackendServiceList } from '@/services/source/backend-services.ts';
+import { getLabelList } from '@/services/source/gateway/label';
+import { getVersionDiff, getVersionList } from '@/services/source/gateway/resource-version';
+import type { IDiffData, IVersionItem } from '@/types/resource-version';
+import { getBackendServiceList } from '@/services/source/gateway/backend';
 import { useGateway } from '@/stores';
 
 interface IProps {
@@ -846,7 +842,7 @@ const getApigwVersions = async () => {
 };
 
 const getLabels = async () => {
-  const res = await getGatewayLabels(apigwId.value);
+  const res = await getLabelList(apigwId.value);
   gatewayStore.setGatewayLabels(res);
 };
 

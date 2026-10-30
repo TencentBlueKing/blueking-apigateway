@@ -18,10 +18,7 @@
 
 // 环境状态
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import {
-  getStageDetail,
-  getStageList,
-} from '@/services/source/stage.ts';
+import { getStageDetail, getStageList } from '@/services/source/gateway/stage';
 
 type IStage = IExtractApiReturn<typeof getStageDetail>;
 

@@ -29,7 +29,7 @@ import type {
   ITraceListItem,
   ITraceTree,
 } from '@/components/trace-view/typings/trace';
-import type { ITraceLog } from '@/services/source/observability';
+import type { ITraceLog } from '@/types/observability';
 
 export type IInterfaceStatisticsType = {
   selectedInterfaceStatisticsType?: []

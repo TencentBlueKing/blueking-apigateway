@@ -147,19 +147,18 @@ import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateway
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import {
   type IAuthData,
-  type IExportParams,
   batchDeletePermission,
   batchUpdatePermission,
   deleteApiPermission,
   deleteResourcePermission,
   exportPermissionList,
   getPermissionList,
-  getResourceListData,
   getResourcePermissionAppList,
-} from '@/services/source/permission';
+} from '@/services/source/gateway/permission';
+import { getResourceList } from '@/services/source/gateway/resource';
 import { useFeatureFlag, useGateway, usePermission } from '@/stores';
 import type { IDropList, ITableMethod } from '@/types/common';
-import type { IPermission, IResource } from '@/types/permission';
+import type { IPermission, IPermissionExportParams, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
 import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';
@@ -375,7 +374,7 @@ const batchRemoveSliderConf = ref({
   title: t('批量删除'),
 });
 // 导出参数
-const exportParams = ref<IExportParams>({ export_type: 'all' });
+const exportParams = ref<IPermissionExportParams>({ export_type: 'all' });
 const filterValues = ref<ISearchValue[]>([]);
 const filterConditions = ref<ISearchItem[]>([
   {
@@ -543,7 +542,7 @@ const getApigwResources = async () => {
   const resourceIdOption = filterConditions.value.find(
     (condition: ISearchItem) => condition.id === 'resource_id',
   );
-  const response = await getResourceListData(apigwId.value, pageParams);
+  const response = await getResourceList(apigwId.value, pageParams);
   const resources = response.results || [];
   const results = resources.map((resource: any) => ({
     id: resource.id,

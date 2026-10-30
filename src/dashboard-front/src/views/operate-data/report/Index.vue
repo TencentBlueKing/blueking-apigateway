@@ -166,13 +166,11 @@ import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import {
   exportMetricsSummary,
-  getCallers,
-  getReportSummary,
-} from '@/services/source/report';
-import {
-  getApigwResources,
-  getApigwStages,
-} from '@/services/source/dashboard';
+  getMetricsSummary,
+  getMetricsSummaryCallers,
+} from '@/services/source/gateway/metrics';
+import { getResourceList } from '@/services/source/gateway/resource';
+import { getStageList } from '@/services/source/gateway/stage';
 import Chart from './components/Chart.vue';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
@@ -227,10 +225,10 @@ watch(
 );
 
 const getStages = async () => {
-  const pageParams: Parameters<typeof getApigwStages>[1] = {};
+  const pageParams: Parameters<typeof getStageList>[1] = {};
 
   try {
-    const res = await getApigwStages(apigwId.value, pageParams);
+    const res = await getStageList(apigwId.value, pageParams);
 
     stageList.value = res;
     if (!searchParams.stage_id) {
@@ -250,7 +248,7 @@ const getCallersData = async () => {
   };
 
   try {
-    const res = await getCallers(apigwId.value, pageParams);
+    const res = await getMetricsSummaryCallers(apigwId.value, pageParams);
     callerOptions.value = (res as any)?.app_codes || [];
   }
   catch (err) {
@@ -259,7 +257,7 @@ const getCallersData = async () => {
 };
 
 const getResources = async () => {
-  const pageParams: Parameters<typeof getApigwResources>[1] = {
+  const pageParams: Parameters<typeof getResourceList>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,
@@ -267,7 +265,7 @@ const getResources = async () => {
   };
 
   try {
-    const res = await getApigwResources(apigwId.value, pageParams);
+    const res = await getResourceList(apigwId.value, pageParams);
     resourceList.value = res.results;
   }
   catch (err) {
@@ -285,7 +283,7 @@ const handleRefresh = async (metrics: string) => {
       metrics,
     };
 
-    const res = await getReportSummary(apigwId.value, params);
+    const res = await getMetricsSummary(apigwId.value, params);
 
     chartData.value[metrics] = res;
   }
@@ -339,7 +337,7 @@ const getChartData = async () => {
       metrics,
     };
 
-    return getReportSummary(apigwId.value, params);
+    return getMetricsSummary(apigwId.value, params);
   });
 
   try {

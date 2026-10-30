@@ -70,12 +70,8 @@ import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 import { copy } from '@/utils';
 import { useTrace } from '@/stores';
-import {
-  type IGatewayLog,
-  type ITraceDetail,
-  fetchObservabilityLogInfoByGateway,
-  fetchObservabilityTraceChainByGateway,
-} from '@/services/source/observability';
+import { getMcpLogChain, getMcpLogDetail } from '@/services/source/gateway/mcp-server/log';
+import type { IGatewayLog, ITraceDetail } from '@/types/observability';
 import { DEFAULT_TRACE_DATA } from '@/components/trace-view/constants/trace';
 import AgMcpTraceChain from '@/components/ag-mcp-trace-chain/Index.vue';
 
@@ -103,8 +99,8 @@ const getTraceChainDetail = async () => {
 
   try {
     const promiseList = [
-      fetchObservabilityLogInfoByGateway(apiGatewayId as number, requestId, {} as any),
-      fetchObservabilityTraceChainByGateway(apiGatewayId as number, requestId),
+      getMcpLogDetail(apiGatewayId as number, requestId, {} as any),
+      getMcpLogChain(apiGatewayId as number, requestId),
     ];
     const results = await Promise.allSettled(promiseList);
 

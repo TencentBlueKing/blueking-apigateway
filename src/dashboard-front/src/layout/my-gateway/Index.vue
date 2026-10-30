@@ -241,11 +241,11 @@ import {
   useStage,
   useUserInfo,
 } from '@/stores';
-import { getGatewayList } from '@/services/source/gateway';
+import { getGatewayList } from '@/services/source/gateway/gateway';
+import { getStageList } from '@/services/source/gateway/stage';
+import { getPermissionApplyList } from '@/services/source/gateway/permission';
 import type { IExtractListApiResults } from '@/services/types/utils';
 import type { IMenu } from '@/types/common';
-import { getStageList } from '@/services/source/stage';
-import { getPermissionApplyList } from '@/services/source/permission';
 import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
 import { useGatewayRole } from '@/hooks';
 import { canAccessByRole } from '@/utils/gateway-permission';

@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import { useGateway, useStage } from '@/stores';
-import { getServer } from '@/services/source/mcp-server';
+import { getServer } from '@/services/source/gateway/mcp-server/server';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 

@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { ITraceDetail } from '@/services/source/observability';
+import type { ITraceDetail } from '@/types/observability';
 import AgMcpTraceChainInfo from '@/components/ag-mcp-trace-chain/info/Index.vue';
 import AgMcpTraceChainChart from '@/components/trace-view';
 import AgMcpTraceChainTable from '@/components/ag-mcp-trace-chain/table/Index.vue';

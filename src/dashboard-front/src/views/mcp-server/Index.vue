@@ -210,15 +210,13 @@ import { Plus } from 'bkui-vue/lib/icon';
 import { vIntersectionObserver } from '@vueuse/components';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils';
 import {
-  type IMCPFilterParams,
-  type IMCPServerCategory,
-  type IMCPServerWithUIState,
   deleteServer,
-  getMcpBatchCopyConfigList,
+  getMcpServerBatchConfigs,
   getMcpServerFilterOptions,
   getServers,
   patchServerStatus,
-} from '@/services/source/mcp-server';
+} from '@/services/source/gateway/mcp-server/server';
+import type { IMCPFilterParams, IMCPServerCategory, IMCPServerWithUIState } from '@/types/mcp-server';
 import type { ISearchSelect } from '@/types/common.ts';
 import { useFeatureFlag } from '@/stores';
 import { useMcpAuthRisk, useMcpBatchCopyConfig, usePopInfoBox } from '@/hooks';
@@ -276,7 +274,7 @@ const {
   mcpConfigList,
   fetchMcpBatchCopyConfigList,
 } = useMcpBatchCopyConfig({
-  fetchApi: getMcpBatchCopyConfigList,
+  fetchApi: getMcpServerBatchConfigs,
   gatewayId,
 });
 

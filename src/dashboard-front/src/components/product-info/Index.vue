@@ -80,7 +80,7 @@
 import semver from 'semver';
 import ReleaseNote from '@blueking/release-note';
 
-import { getVersionLog } from '@/services/source/basic';
+import { getVersionLog } from '@/services/source/platform/version-log';
 import { useEnv } from '@/stores';
 
 const { t } = useI18n();

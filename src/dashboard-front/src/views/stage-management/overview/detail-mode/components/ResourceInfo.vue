@@ -75,19 +75,17 @@ import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableEmptyType } from '@/types/common';
-import {
-  type IStageListItem,
-  getStageList,
-} from '@/services/source/stage';
+import { getStageList } from '@/services/source/gateway/stage';
+import type { IStageListItem } from '@/types/stage';
+import { getLabelList } from '@/services/source/gateway/label';
+import { getVersionDetail } from '@/services/source/gateway/resource-version';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import { getGatewayLabels } from '@/services/source/gateway';
-import { getVersionDetail } from '@/services/source/resource';
 import ResourceDetails from './ResourceDetails.vue';
 import CreateStage from '../../components/CreateStage.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number];
 
 interface IProps {
@@ -474,7 +472,7 @@ async function init() {
 }
 
 async function getLabels() {
-  labels.value = await getGatewayLabels(gatewayId.value);
+  labels.value = await getLabelList(gatewayId.value);
 }
 
 const getRowClassName = ({ row }: { row: IVersionResource }) => {

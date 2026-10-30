@@ -440,8 +440,8 @@ import {
   createBackendService,
   getBackendServiceDetail,
   updateBackendService,
-} from '@/services/source/backend-services.ts';
-import { getStageList } from '@/services/source/stage';
+} from '@/services/source/gateway/backend';
+import { getStageList } from '@/services/source/gateway/stage';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';

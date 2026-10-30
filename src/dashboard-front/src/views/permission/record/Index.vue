@@ -215,7 +215,7 @@
 
 <script setup lang="tsx">
 import { Button } from 'bkui-vue';
-import { getPermissionRecordList } from '@/services/source/permission';
+import { getPermissionRecordList } from '@/services/source/gateway/permission';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';

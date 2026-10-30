@@ -34,7 +34,7 @@ import type {
   TUpdateViewRangeTimeFunction,
   ViewRangeTimeUpdate,
 } from '@/components/trace-view/typings';
-import type { ITraceDetail } from '@/services/source/observability';
+import type { ITraceDetail } from '@/types/observability';
 
 const TraceProps = { traceChainDetail: Object as PropType<ITraceDetail> };
 

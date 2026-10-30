@@ -368,7 +368,7 @@
 </template>
 
 <script lang="ts" setup>
-import { getGatewayLabels } from '@/services/source/gateway';
+import { getLabelList } from '@/services/source/gateway/label';
 import { getMethodsTheme } from '@/utils';
 import { useGateway } from '@/stores';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
@@ -376,7 +376,7 @@ import ConfigDisplayTable from '@/components/plugin-manage/config-display/Index.
 import ResponseParams from '@/views/resource-management/components/response-params-v2/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
 
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 
 interface IAuthConfig {
   app_verified_required: boolean
@@ -472,7 +472,7 @@ const showSideslider = () => {
 };
 
 const getLabels = async () => {
-  labels.value = await getGatewayLabels(apigwId.value);
+  labels.value = await getLabelList(apigwId.value);
 };
 getLabels();
 

@@ -257,14 +257,10 @@ import { truncate } from 'lodash-es';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useRouteParams } from '@vueuse/router';
 import { useGateway } from '@/stores';
-import {
-  type IMCPServerTool,
-  getServer,
-  getServerToolDoc,
-  getServerTools,
-} from '@/services/source/mcp-server';
+import { getServer, getServerToolDoc, getServerTools } from '@/services/source/gateway/mcp-server/server';
+import type { IMCPServerTool } from '@/types/mcp-server';
+import { getMcpServerToolDoc } from '@/services/source/mcp-marketplace';
 import type { IMCPServerToolOutput } from '@/services/types/responses/gateways.ts';
-import { getMcpServerToolDoc } from '@/services/source/mcp-market';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';

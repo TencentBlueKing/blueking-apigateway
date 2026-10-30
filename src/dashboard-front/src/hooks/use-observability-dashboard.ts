@@ -17,14 +17,9 @@
  */
 
 import { useGateway } from '@/stores';
-import {
-  type IChartDataLoading,
-  type IChartDataType,
-  type IObservabilitySearchParams,
-  type IStatisticsType,
-  fetchMetricsQueryInstant,
-  fetchMetricsQueryRange,
-} from '@/services/source/observability';
+import { queryMcpMetricsInstant, queryMcpMetricsRange } from '@/services/source/gateway/mcp-server/metrics';
+import type { IChartDataLoading, IChartDataType, IStatisticsType } from '@/types/observability';
+import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 
 /** 时序图指标常量 */
@@ -159,7 +154,7 @@ export function useObservabilityDashboard() {
         metrics,
       };
       const res = await requestHandler(
-        fetchMetricsQueryRange,
+        queryMcpMetricsRange,
         params,
         `时序图指标${metrics}请求失败:`,
       );
@@ -185,7 +180,7 @@ export function useObservabilityDashboard() {
         metrics,
       };
       const res = await requestHandler(
-        fetchMetricsQueryInstant,
+        queryMcpMetricsInstant,
         params,
         `[瞬时统计] ${metrics} 请求失败：`,
       );

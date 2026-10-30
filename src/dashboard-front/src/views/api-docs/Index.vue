@@ -224,11 +224,8 @@
 </template>
 
 <script lang="tsx" setup>
-import {
-  getComponentSystemList,
-  getESBSDKList,
-} from '@/services/source/docs-esb';
-import { getGatewaysDocs } from '@/services/source/docs';
+import { getComponentSystemList, getESBSDKList } from '@/services/source/docs/esb';
+import { getDocsGatewayList } from '@/services/source/docs/gateway';
 import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
 import SDKDetailDialog from './components/SDKDetailDialog.vue';
 import ComponentSearcher from './components/ComponentSearcher.vue';
@@ -518,7 +515,7 @@ watch(
 const getTableData = async (params: {
   offset?: number
   limit?: number
-} = {}) => getGatewaysDocs({
+} = {}) => getDocsGatewayList({
   ...params,
   show_plugin_gateway: filterData.value.show_plugin_gateway,
 });

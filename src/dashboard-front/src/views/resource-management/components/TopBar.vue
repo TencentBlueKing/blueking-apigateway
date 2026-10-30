@@ -118,8 +118,8 @@ import {
 } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import { getResourceList } from '@/services/source/resource.ts';
-import { batchResourceDocAITranslate } from '@/services/source/ai.ts';
+import { getResourceList } from '@/services/source/gateway/resource';
+import { batchResourceDocAITranslate } from '@/services/source/gateway/ai';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
 

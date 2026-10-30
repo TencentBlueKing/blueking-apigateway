@@ -148,11 +148,11 @@ import { useGateway } from '@/stores';
 import { copy } from '@/utils';
 import { createMarkdownRenderer } from '@/utils/markdown';
 import {
-  getApigwResourceDocDocs,
-  getApigwResourceSDKDocs,
-  getGatewaysDetailsDocs,
-} from '@/services/source/docs';
-import { getResourcesOnline } from '@/services/source/online-debugging';
+  getDocsGatewayDetail,
+  getDocsResourceDoc,
+  getDocsSDKUsageExample,
+} from '@/services/source/docs/gateway';
+import { getReleasedStageResources } from '@/services/source/gateway/release';
 import DocAuthSection from '@/views/api-docs/components/DocAuthSection.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
@@ -173,7 +173,7 @@ const {
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
-type IGatewayDocsDetail = IExtractApiReturn<typeof getGatewaysDetailsDocs>;
+type IGatewayDocsDetail = IExtractApiReturn<typeof getDocsGatewayDetail>;
 
 type IDocCom = IDocsGatewaysResourcesListResponse & {
   content: string
@@ -238,7 +238,7 @@ onUnmounted(() => {
 });
 
 const getApigwAPIDetail = async () => {
-  curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name ?? '', { source: 'api_debug' });
+  curApigw.value = await getDocsGatewayDetail(gatewayStore.currentGateway?.name ?? '', { source: 'api_debug' });
 };
 
 const getApigwResourceDetail = async () => {
@@ -246,7 +246,7 @@ const getApigwResourceDetail = async () => {
     limit: 10000,
     offset: 0,
   };
-  const res = await getResourcesOnline(gatewayStore.currentGateway?.id ?? 0, stageId, query);
+  const res = await getReleasedStageResources(gatewayStore.currentGateway?.id ?? 0, stageId, query);
 
   const match = res?.find((item) => {
     return item.name === resourceName;
@@ -264,7 +264,7 @@ const getApigwResourceDoc = async () => {
     stage_name: stageName,
     source: 'api_debug',
   };
-  const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name ?? '', resourceName, query);
+  const res = await getDocsResourceDoc(gatewayStore.currentGateway?.name ?? '', resourceName, query);
   const {
     content,
     method,
@@ -290,7 +290,7 @@ const getApigwResourceSDK = async () => {
     resource_name: resourceName,
     source: 'api_debug',
   };
-  const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name ?? '', query);
+  const res = await getDocsSDKUsageExample(gatewayStore.currentGateway?.name ?? '', query);
   const { content } = res;
   sdkMarkdownHtml.value = md.render(content);
 };

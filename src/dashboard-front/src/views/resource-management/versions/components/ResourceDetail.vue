@@ -484,8 +484,8 @@
 </template>
 
 <script lang="ts" setup>
-import { getGatewayLabels } from '@/services/source/gateway.ts';
-import { getVersionDetail } from '@/services/source/resource.ts';
+import { getLabelList } from '@/services/source/gateway/label';
+import { getVersionDetail } from '@/services/source/gateway/resource-version';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { useGateway } from '@/stores';
 import { getMethodsTheme } from '@/utils';
@@ -494,7 +494,7 @@ import RequestParams from '../../components/request-params-v2/Index.vue';
 import ResponseParams from '../../components/response-params-v2/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';
 
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 
 interface IAuthConfig {
   app_verified_required: boolean
@@ -702,7 +702,7 @@ const getPermRequiredText = (resource: any) => {
 };
 
 const getLabels = async () => {
-  labels.value = await getGatewayLabels(apigwId.value);
+  labels.value = await getLabelList(apigwId.value);
 };
 getLabels();
 

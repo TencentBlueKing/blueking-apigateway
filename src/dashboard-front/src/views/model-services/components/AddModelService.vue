@@ -209,8 +209,8 @@ import {
   createBackendService,
   getBackendServiceDetail,
   updateBackendService,
-} from '@/services/source/backend-services.ts';
-import { getStageList } from '@/services/source/stage';
+} from '@/services/source/gateway/backend';
+import { getStageList } from '@/services/source/gateway/stage';
 import type { IBackendInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IAIBackendConfigOutput } from '@/services/types/responses/gateways.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';

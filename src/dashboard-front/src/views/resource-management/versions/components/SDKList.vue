@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="tsx">
-import { getSDKList } from '@/services/source/sdks';
+import { getSDKList } from '@/services/source/gateway/sdk';
 import { copy } from '@/utils';
 import {
   useFeatureFlag,

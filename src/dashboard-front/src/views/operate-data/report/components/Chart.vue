@@ -61,10 +61,7 @@ import * as echarts from 'echarts';
 import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
 import { useChartIntervalOption } from '@/hooks';
-import type {
-  ISearchParamsType,
-  ISeriesItemType,
-} from '@/services/source/report';
+import type { ISeriesItemType, ISummarySearchParams } from '@/types/metrics';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { getColorHue } from '@/utils';
 
@@ -90,7 +87,7 @@ const { getChartIntervalOption } = useChartIntervalOption();
 
 const myChart = shallowRef();
 // const chartLegend = ref<ChartLegend>({});
-const searchParams = ref<ISearchParamsType>();
+const searchParams = ref<ISummarySearchParams>();
 const isEmpty = ref<boolean>(false);
 const tableEmptyConf = ref<{
   emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
@@ -312,7 +309,7 @@ const renderChart = () => {
   });
 };
 
-const syncParams = (params: ISearchParamsType) => {
+const syncParams = (params: ISummarySearchParams) => {
   searchParams.value = params;
 };
 

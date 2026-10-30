@@ -137,11 +137,8 @@
 import { cloneDeep } from 'lodash-es';
 import { Button, Form, Message, Popover } from 'bkui-vue';
 import type { TableRowData } from '@blueking/tdesign-ui';
-import {
-  getApigwResources,
-  getPermissionApplyList,
-  updatePermissionStatus,
-} from '@/services/source/permission';
+import { getPermissionApplyList, updatePermissionStatus } from '@/services/source/gateway/permission';
+import { getResourceList } from '@/services/source/gateway/resource';
 import {
   useEnv,
   useFeatureFlag,
@@ -467,14 +464,14 @@ const getTableData = async (params: Record<string, any> = {}) => {
 };
 
 // 获取资源列表数据
-const getResourceList = async () => {
+const fetchResourceList = async () => {
   const pageParams: any = {
     no_page: true,
     order_by: 'name',
     offset: 0,
     limit: 10000,
   };
-  const { results } = await getApigwResources(apigwId.value, pageParams);
+  const { results } = await getResourceList(apigwId.value, pageParams);
   resourceList.value = results || [];
 };
 
@@ -483,7 +480,7 @@ const handleRequestDone = () => {
   if (pageConf) {
     permissionStore.setCount(pageConf.total || 0);
   }
-  getResourceList();
+  fetchResourceList();
 };
 
 const isITSMApproval = (row: TableRowData) => {
@@ -528,7 +525,7 @@ const handleRowSelectionChange = (row: any, rowSelections: any) => {
 const handleFilterChange = (filterItem: any) => {
   filterData.value = Object.assign(filterData.value, filterItem);
   filterValue.value = Object.assign({}, filterItem);
-  getResourceList();
+  fetchResourceList();
 };
 
 // 批量审批api
@@ -558,7 +555,7 @@ const updateStatus = async () => {
   });
   handleClearSelection();
   getList();
-  getResourceList();
+  fetchResourceList();
 };
 
 // 全部通过

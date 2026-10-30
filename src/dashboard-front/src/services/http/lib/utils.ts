@@ -84,6 +84,14 @@ function forEach(obj: any, fn: any) {
   }
 }
 
+/**
+ * 在请求地址后追加额外的查询串，查询串为空时原样返回地址
+ * 用于 params 无法表达的场景，如流水日志检索条件里重复出现的 include / exclude 参数
+ * @param url 请求地址
+ * @param queryStr 额外的查询串，例如 `&include=a:1&exclude=b:2`
+ */
+export const withExtraQuery = (url: string, queryStr?: string) => (queryStr ? `${url}?${queryStr}` : url);
+
 function encode(val: string) {
   return encodeURIComponent(val)
     .replace(/%40/gi, '@')

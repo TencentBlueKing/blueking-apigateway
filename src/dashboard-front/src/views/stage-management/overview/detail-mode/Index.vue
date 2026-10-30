@@ -287,13 +287,13 @@
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
 import { getStageStatus } from '@/utils';
-import { getProgrammableStageDetail } from '@/services/source/programmable';
+import { getProgrammableStageDetail } from '@/services/source/gateway/programmable';
 import {
   deleteStage,
   getStageDetail,
   getStageList,
-  toggleStatus,
-} from '@/services/source/stage';
+  updateStageStatus,
+} from '@/services/source/gateway/stage';
 import {
   useEnv,
   useFeatureFlag,
@@ -564,7 +564,7 @@ const handleStageUnlist = async () => {
       isDeleteLoading.value = true;
       const data = { status: 0 };
       try {
-        await toggleStatus(gatewayId.value, currentStage.value!.id, data);
+        await updateStageStatus(gatewayId.value, currentStage.value!.id, data);
         Message({
           message: t('下架成功'),
           theme: 'success',

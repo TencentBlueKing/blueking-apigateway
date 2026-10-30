@@ -264,8 +264,8 @@ import {
   getNextVersion,
   getVersionDiff,
   getVersionList,
-} from '@/services/source/resource.ts';
-import { getStageList } from '@/services/source/stage.ts';
+} from '@/services/source/gateway/resource-version';
+import { getStageList } from '@/services/source/gateway/stage';
 import { useGetStageList } from '@/hooks';
 import VersionDiff from '@/components/version-diff/Index.vue';
 

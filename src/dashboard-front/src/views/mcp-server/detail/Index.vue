@@ -305,14 +305,14 @@
 import { Message } from 'bkui-vue';
 import { copy } from '@/utils';
 import {
-  type IMCPAIConfig,
   deleteServer,
   getCustomServerGuideDoc,
-  getMcpAIConfigList,
+  getMcpServerConfigs,
   getServer,
   getServerGuideDoc,
   patchServerStatus,
-} from '@/services/source/mcp-server';
+} from '@/services/source/gateway/mcp-server/server';
+import type { IMCPAIConfig } from '@/types/mcp-server';
 import { useMcpConfigDivideRatio, usePopInfoBox } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { MCP_TAB_LIST } from '@/constants';
@@ -407,7 +407,7 @@ const fetchCustomGuide = async () => {
 };
 
 const fetchMcpAIConfigList = async () => {
-  const res = await getMcpAIConfigList(gatewayId, serverId.value);
+  const res = await getMcpServerConfigs(gatewayId, serverId.value);
   mcpConfigList.value = res?.configs ?? [];
 };
 

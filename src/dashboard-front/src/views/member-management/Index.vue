@@ -94,10 +94,7 @@
 <script setup lang="tsx">
 import { Message } from 'bkui-vue';
 import { usePopInfoBox } from '@/hooks';
-import {
-  deleteGatewayMember,
-  getGatewayMemberList,
-} from '@/services/source/gateway-member';
+import { deleteGatewayMember, getGatewayMemberList } from '@/services/source/gateway/member';
 import { useFeatureFlag, useGateway, useGatewayRoleStore, useUserInfo } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';

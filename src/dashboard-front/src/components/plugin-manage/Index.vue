@@ -435,7 +435,7 @@ import {
   getPluginListData,
   getPluginTags,
   getScopeBindingPluginList,
-} from '@/services/source/plugin-manage';
+} from '@/services/source/gateway/plugin';
 import ConfigDisplayTable from './config-display/Index.vue';
 import { getStageStatus } from '@/utils';
 import { useRouteParams } from '@vueuse/router';

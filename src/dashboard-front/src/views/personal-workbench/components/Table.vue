@@ -133,10 +133,10 @@ import {
   deleteMcpApplied,
   getGatewayFilterOptions,
   getMcpGatewayFilterOptions,
-  getMcpServerFilterOptions,
-} from '@/services/source/personal-workbench.ts';
-import { updatePermissionStatus } from '@/services/source/permission.ts';
-import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
+  getWorkbenchMcpServerOptions,
+} from '@/services/source/me/workbench';
+import { updatePermissionStatus } from '@/services/source/gateway/permission';
+import { patchMcpAppPermissionApplyStatus } from '@/services/source/gateway/mcp-server/permission';
 import { useFeatureFlag } from '@/stores';
 import { usePersonalWorkbench, usePopInfoBox } from '@/hooks';
 import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
@@ -740,7 +740,7 @@ const fetchGatewayFilterOptions = async () => {
 
 const fetchMcpServerFilterOptions = async () => {
   try {
-    const res = await getMcpServerFilterOptions({ type: applyStatus });
+    const res = await getWorkbenchMcpServerOptions({ type: applyStatus });
     mcpServerList.value = res ?? [];
   }
   catch {
@@ -895,7 +895,7 @@ const handleMcpApproveReject = async () => {
 
     const { id, gateway_id, mcp_server_id } = curAction.value;
 
-    await updateMcpPermissions(
+    await patchMcpAppPermissionApplyStatus(
       gateway_id as number,
       mcp_server_id as number,
       id as number,

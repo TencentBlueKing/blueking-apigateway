@@ -117,7 +117,7 @@
 <script lang="ts" setup>
 import { locale, t } from '@/locales';
 import type { IAuthConfig } from '@/types/resource';
-import type { IMCPToolSelections } from '@/services/source/mcp-server';
+import type { IMCPToolSelections } from '@/types/mcp-server';
 
 interface IProps {
   isEditMode?: boolean

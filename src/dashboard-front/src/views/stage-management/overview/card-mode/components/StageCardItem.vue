@@ -191,7 +191,9 @@
 import { Spinner } from 'bkui-vue/lib/icon';
 import StageCardLineChart from './StageCardLineChart.vue';
 import { getStatusText } from '@/utils';
-import { getGatewayMetrics, getGatewayMetricsInstant } from '@/services/source/metrics';
+import { queryMetricsInstant, queryMetricsRange } from '@/services/source/gateway/metrics';
+import type { IStageListItem } from '@/types/stage';
+import { getProgrammableStageDetail } from '@/services/source/gateway/programmable';
 import dayjs from 'dayjs';
 import {
   useEnv,
@@ -200,8 +202,6 @@ import {
 } from '@/stores';
 import { debounce, uniqueId } from 'lodash-es';
 import CardContainer from '@/components/card-container/Index.vue';
-import type { IStageListItem } from '@/services/source/stage.ts';
-import { getProgrammableStageDetail } from '@/services/source/programmable.ts';
 
 type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
@@ -318,7 +318,7 @@ watch(
 async function getRequestCount() {
   const now = dayjs().unix();
   const sixHoursAgo = now - 6 * 60 * 60;
-  const { instant } = await getGatewayMetricsInstant(gatewayId.value, {
+  const { instant } = await queryMetricsInstant(gatewayId.value, {
     stage_id: stage.id,
     time_start: sixHoursAgo,
     time_end: now,
@@ -334,7 +334,7 @@ async function getRequestTrend() {
   const now = dayjs().unix();
   const sixHoursAgo = now - 6 * 60 * 60;
 
-  const { series } = await getGatewayMetrics(gatewayId.value, {
+  const { series } = await queryMetricsRange(gatewayId.value, {
     stage_id: stage.id,
     time_start: sixHoursAgo,
     time_end: now,

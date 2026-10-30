@@ -49,7 +49,7 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
-import type { IMCPAIConfig } from '@/services/source/mcp-server';
+import type { IMCPAIConfig } from '@/types/mcp-server';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import Guide from '@/components/guide/Index.vue';

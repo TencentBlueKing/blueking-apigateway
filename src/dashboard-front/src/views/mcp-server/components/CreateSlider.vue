@@ -484,25 +484,27 @@ import type {
   ITableMethod,
 } from '@/types/common';
 import type { IAuthConfig } from '@/types/resource';
-import { getStageList } from '@/services/source/stage';
-import { getVersionDetail } from '@/services/source/resource';
-import { refDebounced } from '@vueuse/core';
+import { getStageList } from '@/services/source/gateway/stage';
+import { getVersionDetail } from '@/services/source/gateway/resource-version';
 import {
-  type IMCPFormData,
-  type IMCPServerCategory,
-  type IMCPServerPrompt,
-  type IMCPServerTool,
-  type IMCPTabType,
-  type IMCPToolSelections,
-  type IResourceAuthConfig,
-  type ToolNameRowType,
   createServer,
   getMcpCategoryList,
   getServer,
   getServerPrompts,
   getServerPromptsDetail,
   patchServer,
-} from '@/services/source/mcp-server';
+} from '@/services/source/gateway/mcp-server/server';
+import type {
+  IMCPFormData,
+  IMCPServerCategory,
+  IMCPServerPrompt,
+  IMCPServerTool,
+  IMCPTabType,
+  IMCPToolSelections,
+  IResourceAuthConfig,
+  ToolNameRowType,
+} from '@/types/mcp-server';
+import { refDebounced } from '@vueuse/core';
 import type {
   IMCPServerRemotePromptsOutput,
   IMCPServerRetrieveOutput,

@@ -17,7 +17,7 @@
  */
 
 import type { ISpan, KeyValuePair } from '@/components/trace-view/typings';
-import type { ITraceLog } from '@/services/source/observability';
+import type { ITraceLog } from '@/types/observability';
 import { DEFAULT_TRACE_DATA } from '@/components/trace-view/constants/trace';
 import { getSpanBgColor, getTraceName } from '@/components/trace-view/model/trace-viewer';
 import { getConfigValue } from '@/components/trace-view/utils/config/get-config';

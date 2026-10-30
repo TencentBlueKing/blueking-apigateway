@@ -223,7 +223,7 @@
 <script setup lang="ts">
 import { snakeCase } from 'lodash-es';
 import type { ComponentPublicInstance } from 'vue';
-import { createPlugin, updatePluginConfig } from '@/services/source/plugin-manage';
+import { createPlugin, updatePluginConfig } from '@/services/source/gateway/plugin';
 import type { IPluginConfigRetrieveOutput } from '@/services/types/responses/gateways';
 import { Message } from 'bkui-vue';
 import { useEnv, useStage } from '@/stores';

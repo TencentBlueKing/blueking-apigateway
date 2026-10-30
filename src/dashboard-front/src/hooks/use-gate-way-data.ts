@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 // 获取网关列表的hooks, 多个地方用到
-import { getGatewayList } from '@/services/source/gateway';
+import { getGatewayList } from '@/services/source/gateway/gateway';
 import type { IPagination } from '@/types/common';
 import type { IApiGateway } from '@/types/gateway';
 

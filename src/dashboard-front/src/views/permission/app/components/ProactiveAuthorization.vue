@@ -182,7 +182,7 @@ import {
   type IAuthData,
   authApiPermission,
   authResourcePermission,
-} from '@/services/source/permission';
+} from '@/services/source/gateway/permission';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
 type ISliderParams = {

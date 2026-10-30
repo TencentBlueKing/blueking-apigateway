@@ -142,7 +142,7 @@
 <script lang="tsx" setup>
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { IResourcePathConflictGroupOutput } from '@/services/types/responses/gateways.ts';
-import { getResourcePathConflicts } from '@/services/source/resource';
+import { getResourcePathConflicts } from '@/services/source/gateway/resource';
 import { useEnv } from '@/stores';
 import { useFeatureFlag } from '@/stores/useFeatureFlag';
 import { METHOD_THEMES } from '@/enums';

@@ -304,11 +304,8 @@ import { cloneDeep } from 'lodash-es';
 import { Input, Message } from 'bkui-vue';
 import { useGateway } from '@/stores';
 import { t } from '@/locales';
-import {
-  getBackendServiceDetail,
-  getBackendServiceList,
-} from '@/services/source/backend-services.ts';
-import { backendsPathCheck } from '@/services/source/resource.ts';
+import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/gateway/backend';
+import { backendsPathCheck } from '@/services/source/gateway/resource';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
 import type { IBackendListOutput, IStandardBackendConfigOutput } from '@/services/types/responses/gateways.ts';

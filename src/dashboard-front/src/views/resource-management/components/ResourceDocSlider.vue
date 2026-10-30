@@ -194,12 +194,13 @@
 import MarkdownIt from 'markdown-it';
 import { cloneDeep } from 'lodash-es';
 import {
-  deleteResourceDocs,
-  getResourceDocPreview,
+  createResourceDoc,
+  deleteResourceDoc,
   getResourceDocs,
-  saveResourceDocs,
-  updateResourceDocs,
-} from '@/services/source/resource';
+  updateResourceDoc,
+} from '@/services/source/gateway/resource-doc';
+import { getResourceDocPreview } from '@/services/source/gateway/resource';
+import { getAICompletion } from '@/services/source/gateway/ai';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import {
   InfoBox,
@@ -210,7 +211,6 @@ import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import LazyMavonEditor from '@/components/LazyMavonEditor';
-import { getAICompletion } from '@/services/source/ai.ts';
 import hljs from 'highlight.js';
 import { useFeatureFlag } from '@/stores';
 
@@ -419,7 +419,7 @@ const handleTranslateClick = async () => {
           language: targetLanguage,
         },
       });
-      await saveResourceDocs(gatewayId.value, resource.id, {
+      await createResourceDoc(gatewayId.value, resource.id, {
         language: targetLanguage,
         content: response.content,
       });
@@ -449,7 +449,7 @@ const handleTranslateClick = async () => {
             },
           });
           const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id!;
-          await updateResourceDocs(gatewayId.value, resource.id!, {
+          await updateResourceDoc(gatewayId.value, resource.id!, {
             language: targetLanguage,
             content: response.content,
           }, docId);
@@ -484,11 +484,11 @@ const handleSaveMarkdown = async () => {
     isSaving.value = true;
     if (docId.value) {
       // 更新
-      await updateResourceDocs(gatewayId.value, resource.id, data, docId.value);
+      await updateResourceDoc(gatewayId.value, resource.id, data, docId.value);
     }
     else {
       // 新增
-      await saveResourceDocs(gatewayId.value, resource.id, data);
+      await createResourceDoc(gatewayId.value, resource.id, data);
     }
     isEdited.value = false;
     Message({
@@ -511,7 +511,7 @@ const handleCancelMarkdown = () => {
 
 // 删除文档
 const handleDeleteMarkdown = async () => {
-  await deleteResourceDocs(gatewayId.value, resource.id, docId.value);
+  await deleteResourceDoc(gatewayId.value, resource.id, docId.value);
   Message({
     message: t('删除成功'),
     theme: 'success',

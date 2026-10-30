@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { getStageList } from '@/services/source/stage';
+import { getStageList } from '@/services/source/gateway/stage';
 import { useStage } from '@/stores';
 
 /**

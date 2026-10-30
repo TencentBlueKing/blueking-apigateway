@@ -176,7 +176,8 @@ import type { ITableMethod } from '@/types/common';
 import { useAccessLog, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
-import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
+import { getRecordList, getStrategyList } from '@/services/source/gateway/monitor';
+import type { IAlarmRecord } from '@/types/monitor';
 import type { IExtractListApiResults } from '@/services/types/utils';
 import AgTable from '@/components/ag-table/Index.vue';
 

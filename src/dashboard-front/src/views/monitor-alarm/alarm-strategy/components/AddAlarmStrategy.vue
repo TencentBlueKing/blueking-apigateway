@@ -410,12 +410,9 @@ import { Checkbox, Form, Input, Message, Select } from 'bkui-vue';
 import { useAccessLog, useGateway } from '@/stores';
 import type { IFormMethod } from '@/types/common';
 import type { IExtractApiReturn } from '@/services/types/utils';
-import { getStageList } from '@/services/source/stage';
-import {
-  type IAlarmStrategy,
-  createStrategy,
-  updateStrategy,
-} from '@/services/source/monitor';
+import { getStageList } from '@/services/source/gateway/stage';
+import { createStrategy, updateStrategy } from '@/services/source/gateway/monitor';
+import type { IAlarmStrategy } from '@/types/monitor';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
 type IStageListItem = IExtractApiReturn<typeof getStageList>[number];

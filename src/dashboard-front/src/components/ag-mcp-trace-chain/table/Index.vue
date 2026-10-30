@@ -48,7 +48,7 @@
 <script lang="tsx" setup>
 import dayjs from 'dayjs';
 import { t } from '@/locales';
-import type { ITraceDetail } from '@/services/source/observability';
+import type { ITraceDetail } from '@/types/observability';
 import { useTrace } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 

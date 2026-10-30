@@ -221,15 +221,13 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import {
-  type IStageListItem,
-  getStageList,
-} from '@/services/source/stage';
+import { getStageList } from '@/services/source/gateway/stage';
+import type { IStageListItem } from '@/types/stage';
 import {
   deployReleases,
   getProgrammableStageDetail,
   getStageNextVersion,
-} from '@/services/source/programmable';
+} from '@/services/source/gateway/programmable';
 import {
   useRoute,
   useRouter,
