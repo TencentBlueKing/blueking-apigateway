@@ -313,13 +313,11 @@
                   {{ t('用户认证') }}：
                 </div>
                 <div class="request-setting-main">
-                  <span>
-                    ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
-                    {{ authField }}：{{ formData.useUserFromCookies ? '******' : formData.authorization[authField] }}
-                  </span>
+                  <span>{{ userAuthSummary }}</span>
                   <BkPopConfirm
-                    width="470"
+                    width="480"
                     trigger="click"
+                    placement="bottom"
                     @confirm="saveUserAuthEdit"
                     @cancel="cancelUserAuthEdit"
                   >
@@ -334,41 +332,70 @@
                           {{ t('用户认证') }}<span>*</span>
                         </div>
                         <BkRadioGroup
-                          v-model="userCookies.useUserFromCookies"
+                          v-model="userAuth.userAuthType"
                           class="auth-type"
                         >
-                          <BkRadioButton label>
-                            {{ t('默认用户认证') }}
+                          <BkRadioButton label="use_cookies">
+                            {{ t('当前登录用户') }}
                           </BkRadioButton>
-                          <BkRadioButton :label="false">
-                            {{ t('自定义用户认证') }}
+                          <BkRadioButton label="ticket">
+                            {{ t('登录态票据') }}
+                          </BkRadioButton>
+                          <BkRadioButton label="access_token">
+                            access_token
+                          </BkRadioButton>
+                          <BkRadioButton label="personal_token">
+                            {{ t('个人令牌') }}
                           </BkRadioButton>
                         </BkRadioGroup>
-                        <template v-if="userCookies.useUserFromCookies">
+                        <!-- 当前登录用户 -->
+                        <template v-if="userAuth.userAuthType === 'use_cookies'">
                           <BkInput
                             class="auth-value"
                             :prefix="authField"
-                            :value="'******'"
+                            value="******"
                             disabled
                           />
                         </template>
-                        <template v-else>
-                          <BkInput
-                            v-model="userCookies[authField]"
-                            class="auth-value"
-                            :prefix="authField"
-                            :placeholder="t('请输入 Cookies 中，字段 {name} 的值', { name: authField })"
-                          />
-                        </template>
+                        <!-- 登录态票据 -->
+                        <BkInput
+                          v-else-if="userAuth.userAuthType === 'ticket'"
+                          v-model="userAuth.ticketValue"
+                          class="auth-value"
+                          :prefix="authField"
+                          :placeholder="t('请输入 Cookies 中，字段 {name} 的值', { name: authField })"
+                        />
+                        <!-- access_token -->
+                        <BkInput
+                          v-else-if="userAuth.userAuthType === 'access_token'"
+                          v-model="userAuth.accessToken"
+                          class="auth-value"
+                          type="password"
+                          prefix="access_token"
+                          :placeholder="t('请输入 access_token')"
+                        />
+                        <!-- 个人令牌 -->
+                        <BkInput
+                          v-else
+                          v-model="userAuth.personalToken"
+                          class="auth-value"
+                          type="password"
+                          :placeholder="t('请输入个人令牌')"
+                        >
+                          <template #prefix>
+                            <div class="personal-token-prefix">
+                              <span class="key">Authorization</span>
+                              <span class="bearer">Bearer</span>
+                            </div>
+                          </template>
+                        </BkInput>
 
-                        <div class="edit-user-tips">
-                          <InfoLine class="icon" />
-                          <span class="tips">{{ t('默认用户认证，将默认从 Cookies 中获取用户认证信息；自定义用户认证，可自定义用户认证信息') }}</span>
-                        </div>
-                        <!-- <div class="edit-user-btns">
-                          <BkButton theme="primary" @click="saveUserAuthEdit">{{ t('保存') }}</BkButton>
-                          <BkButton class="ml8" @click="cancelUserAuthEdit">{{ t('取消') }}</BkButton>
-                          </div> -->
+                        <BkAlert
+                          v-if="userAuthTips"
+                          class="user-auth-alert"
+                          theme="info"
+                          :title="userAuthTips"
+                        />
                       </div>
                     </template>
                   </BkPopConfirm>
@@ -562,24 +589,6 @@ const originResourceGroup = ref<any>({});
 const curComponentName = ref<any>('');
 const curResource = ref<any>({});
 const defaultValue = {
-  params: {
-    stage_id: '',
-    resource_id: '',
-    method: '',
-    headers: {},
-    path_params: {},
-    query_params: {},
-    body: '',
-    use_test_app: true,
-    subpath: '',
-    use_user_from_cookies: false,
-    authorization: {
-      bk_app_code: '',
-      bk_app_secret: '',
-      uin: '',
-      skey: '',
-    },
-  },
   formData: {
     path: '',
     method: '',
@@ -588,8 +597,6 @@ const defaultValue = {
     authorization: {
       bk_app_code: '',
       bk_app_secret: '',
-      uin: '',
-      skey: '',
       bk_ticket: '',
       bk_token: '',
     },
@@ -598,8 +605,9 @@ const defaultValue = {
       query: {},
     },
     headers: {},
-    // 用户认证
-    useUserFromCookies: true,
+    // 用户认证：use_cookies | ticket | access_token | personal_token
+    userAuthType: 'use_cookies',
+    userAuthValue: '',
   },
 };
 const formData = ref<any>({ ...defaultValue.formData });
@@ -625,11 +633,12 @@ const appAuthorization = reactive<any>({
   bk_app_secret: '',
 });
 // 编辑用户认证
-const userCookies = reactive<any>({
+const userAuth = reactive<any>({
   isEdit: false,
-  useUserFromCookies: true,
-  bk_token: '',
-  bk_ticket: '',
+  userAuthType: 'use_cookies',
+  ticketValue: '',
+  accessToken: '',
+  personalToken: '',
 });
 const response = ref<any>({});
 
@@ -655,6 +664,42 @@ const containerWidth = ref(0);
 const toolsWidth = ref(0);
 
 const authField = computed(() => envStore.env.EDITION === 'te' ? 'bk_ticket' : 'bk_token');
+
+// 用户认证方式收起后的摘要
+const userAuthSummary = computed(() => {
+  const { userAuthType, userAuthValue } = formData.value;
+  switch (userAuthType) {
+    case 'ticket':
+      return userAuthValue
+        ? `（${t('登录态票据')}）${authField.value}：******`
+        : `（${t('登录态票据')}）${t('未配置')}`;
+    case 'access_token':
+      return userAuthValue
+        ? '（access_token）******'
+        : `（access_token）${t('未配置')}`;
+    case 'personal_token':
+      return userAuthValue
+        ? `（${t('个人令牌')}）Bearer ******`
+        : `（${t('个人令牌')}）${t('未配置')}`;
+    default:
+      return t('当前登录用户（自动读取 Cookie）');
+  }
+});
+
+// 各认证方式的说明，个人令牌不展示请求头示例
+const userAuthTips = computed(() => {
+  const field = authField.value;
+  switch (userAuth.userAuthType) {
+    case 'use_cookies':
+      return `${t('从 Cookie 中获取当前登录用户的票据（{name}）。', { name: field })}${t('请求头示例')}：X-Bkapi-Authorization: {"${field}":"<Cookie ${field}>"}`;
+    case 'ticket':
+      return `${t('将自定义票据写入请求头 X-Bkapi-Authorization，与应用认证一起传递。')}${t('请求头示例')}：X-Bkapi-Authorization: {"${field}":"<自定义 ${field}>"}`;
+    case 'access_token':
+      return `${t('请求头示例')}：X-Bkapi-Authorization: {"access_token":"YOUR_ACCESS_TOKEN"}`;
+    default:
+      return '';
+  }
+});
 
 const availableTabWidth = computed(() => {
   const width = containerWidth.value - toolsWidth.value;
@@ -1341,25 +1386,29 @@ const cancelAppAuthEdit = () => {
 };
 
 const handleEditUserAuth = () => {
-  userCookies.useUserFromCookies = formData.value.useUserFromCookies;
-  userCookies[authField.value] = formData.value.authorization[authField.value];
-  userCookies.isEdit = true;
+  const { userAuthType, userAuthValue } = formData.value;
+  userAuth.userAuthType = userAuthType || 'use_cookies';
+  userAuth.ticketValue = userAuth.userAuthType === 'ticket' ? userAuthValue : '';
+  userAuth.accessToken = userAuth.userAuthType === 'access_token' ? userAuthValue : '';
+  userAuth.personalToken = userAuth.userAuthType === 'personal_token' ? userAuthValue : '';
+  userAuth.isEdit = true;
 };
 
 const saveUserAuthEdit = () => {
-  if (userCookies.useUserFromCookies) {
-    formData.value.authorization[authField.value] = '';
-  }
-  else {
-    formData.value.authorization[authField.value] = userCookies[authField.value];
-  }
+  const modeValues: Record<string, string> = {
+    use_cookies: '',
+    ticket: userAuth.ticketValue,
+    access_token: userAuth.accessToken,
+    personal_token: userAuth.personalToken,
+  };
 
-  formData.value.useUserFromCookies = userCookies.useUserFromCookies;
-  userCookies.isEdit = false;
+  formData.value.userAuthType = userAuth.userAuthType;
+  formData.value.userAuthValue = modeValues[userAuth.userAuthType] ?? '';
+  userAuth.isEdit = false;
 };
 
 const cancelUserAuthEdit = () => {
-  userCookies.isEdit = false;
+  userAuth.isEdit = false;
 };
 
 const getKeyValue = (list: any[]) => {
@@ -1425,9 +1474,14 @@ const formatPayload = () => {
   data.body = raw;
 
   // 用户认证
-  data.use_user_from_cookies = curResource.value?.verified_user_required ? formData.value?.useUserFromCookies : false;
-  data.authorization = formData.value?.authorization || {};
+  const { userAuthType } = formData.value;
+  const userAuthValue = (formData.value.userAuthValue || '').trim();
+  const useCookiesAuth = (userAuthType || 'use_cookies') === 'use_cookies';
+  // 资源未开启用户认证时，不携带 Cookie 认证信息
+  data.use_user_from_cookies = Boolean(curResource.value?.verified_user_required) && useCookiesAuth;
+
   data.use_test_app = isDefaultAppAuth.value;
+  data.authorization = { ...formData.value?.authorization };
 
   // 默认应用认证数据过滤
   if (isDefaultAppAuth.value) {
@@ -1435,9 +1489,17 @@ const formatPayload = () => {
     data.authorization.bk_app_code = '';
   }
 
-  // 默认用户认证数据过滤
-  if (formData.value?.useUserFromCookies) {
-    data.authorization[authField.value] = '';
+  if (userAuthType === 'ticket' && userAuthValue) {
+    // 登录态票据
+    data.authorization[authField.value] = userAuthValue;
+  }
+  else if (userAuthType === 'access_token' && userAuthValue) {
+    // access_token
+    data.headers['X-Bkapi-Authorization'] = JSON.stringify({ access_token: userAuthValue });
+  }
+  else if (userAuthType === 'personal_token' && userAuthValue) {
+    // 个人令牌
+    data.headers.Authorization = `Bearer ${userAuthValue}`;
   }
 
   if (checkFormData(data)) {
@@ -1735,6 +1797,7 @@ init();
 }
 
 .edit-user-auth {
+  min-height: 180px;
 
   .title {
     margin-bottom: 8px;
@@ -1756,6 +1819,26 @@ init();
     margin-bottom: 16px;
   }
 
+  .personal-token-prefix {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    padding: 0 8px;
+    color: #63656E;
+    background-color: #F5F7FA;
+    border-right: 1px solid #C4C6CC;
+
+    .key {
+      padding-right: 8px;
+      border-right: 1px solid #DCDEE5;
+    }
+
+    .bearer {
+      padding-left: 8px;
+      color: #979BA5;
+    }
+  }
+
   .edit-user-tips {
     display: flex;
     margin-bottom: 8px;
@@ -1769,7 +1852,22 @@ init();
     .tips {
       margin-left: 6px;
       font-size: 12px;
+      line-height: 20px;
       color: #63656E;
+      word-break: break-all;
+    }
+  }
+
+  .user-auth-alert {
+    margin-bottom: 8px;
+
+    :deep(.bk-alert-wraper) {
+      align-items: flex-start;
+
+      .bk-alert-title {
+        line-height: 20px;
+        word-break: break-all;
+      }
     }
   }
 }
