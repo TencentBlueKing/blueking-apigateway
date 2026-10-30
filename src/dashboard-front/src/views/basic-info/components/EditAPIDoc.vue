@@ -124,7 +124,7 @@
         <template #content>
           <div class="preview-content">
             <div class="header li">
-              <div class="title">
+              <div class="title text-14px font-700">
                 {{ t('网关详情') }}
               </div>
               <div
@@ -493,13 +493,12 @@ const handleContactsChange = ({ contacts }: { contacts: string[] }) => {
 
     .title {
       margin-bottom: 4px;
-      font-size: 12px;
-      color: #4D4F56;
+      color: #4d4f56;
     }
 
     .value {
       font-size: 12px;
-      color: #4D4F56;
+      color: #313238;
     }
   }
 

@@ -36,7 +36,7 @@
             v-if="curTargetName"
             class="sub-title"
           >
-            {{ curTargetName }}
+            ({{ curTargetName }})
           </span>
         </div>
         <template v-else>

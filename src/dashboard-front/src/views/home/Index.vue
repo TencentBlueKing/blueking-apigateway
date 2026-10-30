@@ -226,10 +226,12 @@
                   class="gateway-name"
                   @click.stop="() => handleGoPage('StageManagement', item)"
                 >
-                  <span class="display-name">{{ getGatewayDisplayName(item) }}</span>
+                  <span class="truncate display-name">
+                    {{ getGatewayDisplayName(item) }}
+                  </span>
                   <span
                     v-if="hasDistinctDisplayName(item)"
-                    class="gateway-id"
+                    class="truncate gateway-id"
                   >
                     {{ item.name }}
                   </span>
@@ -1172,7 +1174,7 @@ onBeforeUnmount(() => {
             left: 0;
             font-size: 12px;
             line-height: 12px;
-            color: #3A84FF;
+            color: #3a84ff;
           }
         }
 
@@ -1184,22 +1186,16 @@ onBeforeUnmount(() => {
           flex-direction: column;
 
           &:hover {
+
             .display-name {
               color: #3a84ff;
             }
           }
 
-          .display-name,
-          .gateway-id {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
           .display-name {
             font-weight: 700;
             line-height: 22px;
-            color: #313238;
+            color: #4d4f56;
           }
 
           .gateway-id {

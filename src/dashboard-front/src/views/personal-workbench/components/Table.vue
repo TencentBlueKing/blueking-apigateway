@@ -31,9 +31,9 @@
       v-model:table-data="tableData"
       v-model:selected-row-keys="selectedRowKeys"
       v-model:settings="settings"
-      :immediate="false"
       show-settings
       show-cell-empty-content
+      :immediate="false"
       :show-selection="isShowSelection"
       :table-empty-type="tableEmptyType"
       :expand-icon="false"
@@ -1171,6 +1171,13 @@ defineExpose({
 <style lang="scss" scoped>
 .personal-workbench-table {
   box-sizing: border-box;
+
+  :deep(.t-table__body) {
+
+    tr > td {
+      padding: 7.5px 16px;
+    }
+  }
 
   &.pending {
 

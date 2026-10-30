@@ -21,10 +21,14 @@ import cn from './cn.json';
 import en from './en.json';
 import Cookie from 'js-cookie';
 
-const cookieLocale = Cookie.get('blueking_language') || 'zh-cn';
+// 蓝鲸体系下 blueking_language 可能是 EN / en-US 等变体，直接当 locale 会与注册的 'en' 键不匹配，
+const normalizeLocale = (raw?: string) => (raw || '').toLowerCase().startsWith('en') ? 'en' : 'zh-cn';
+
+const cookieLocale = normalizeLocale(Cookie.get('blueking_language'));
+
 const i18n = createI18n({
   legacy: false,
-  locale: cookieLocale || 'zh-cn',
+  locale: cookieLocale,
   fallbackLocale: 'zh-cn',
   // 部分词条（如删除确认的 <code> 高亮）按设计包含 HTML，
   // 渲染处统一通过 v-bk-xss-html 过滤，这里关闭开发期的 HTML 提示
