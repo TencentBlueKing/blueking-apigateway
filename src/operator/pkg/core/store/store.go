@@ -128,7 +128,8 @@ func (s *ApisixEtcdStore) Init() {
 		utils.GoroutineWithRecovery(context.Background(), func() {
 			defer wg.Done()
 			apisixEtcdRegistry, err := registry.NewApisixEtcdRegistry(
-				s.ctx, s.client, s.prefix+"/"+tempResourceType+"/", s.syncTimeout)
+				s.ctx, s.client, s.prefix+"/"+tempResourceType+"/", s.syncTimeout,
+			)
 			if err != nil {
 				s.logger.Errorw("Create resource store failed", "resourceType", tempResourceType)
 				return

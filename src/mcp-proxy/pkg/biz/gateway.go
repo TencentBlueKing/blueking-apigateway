@@ -39,7 +39,8 @@ func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID, resour
 ) {
 	r := repo.OpenapiGatewayResourceVersionSpec
 	return repo.OpenapiGatewayResourceVersionSpec.WithContext(ctx).Where(
-		r.GatewayID.Eq(gatewayID), r.ResourceVersionID.Eq(resourceVersionID)).First()
+		r.GatewayID.Eq(gatewayID), r.ResourceVersionID.Eq(resourceVersionID),
+	).First()
 }
 
 // GetJWTInfoByGatewayName ...

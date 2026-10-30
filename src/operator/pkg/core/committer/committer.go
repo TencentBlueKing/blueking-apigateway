@@ -169,7 +169,8 @@ func (c *Committer) commitGroup(ctx context.Context, releaseInfoList []*entity.R
 						tmpResourceInfo.LogFields(),
 						"resourceInfo",
 						tmpResourceInfo.String(),
-					)...)
+					)...,
+				)
 				c.commitGlobalResource(ctx, tmpResourceInfo)
 				c.logger.Infow(
 					"end commit global resource",
@@ -177,7 +178,8 @@ func (c *Committer) commitGroup(ctx context.Context, releaseInfoList []*entity.R
 						tmpResourceInfo.LogFields(),
 						"resourceInfo",
 						tmpResourceInfo.String(),
-					)...)
+					)...,
+				)
 			})
 		} else {
 			// Stage 资源按 gateway 维度串行处理
@@ -252,7 +254,8 @@ func (c *Committer) commitStage(ctx context.Context, si *entity.ReleaseInfo, sta
 	if err != nil {
 		c.logger.Errorw(
 			"get native apisix configuration failed",
-			append(si.LogFields(), "stageInfo", si, "err", err)...)
+			append(si.LogFields(), "stageInfo", si, "err", err)...,
+		)
 		// retry
 		c.retryStage(si)
 		span.RecordError(err)
@@ -274,7 +277,8 @@ func (c *Committer) commitStage(ctx context.Context, si *entity.ReleaseInfo, sta
 	if err != nil {
 		c.logger.Errorw(
 			"sync apisix configuration failed",
-			append(si.LogFields(), "stageInfo", si, "err", err)...)
+			append(si.LogFields(), "stageInfo", si, "err", err)...,
+		)
 		// retry
 		c.retryStage(si)
 		span.RecordError(err)

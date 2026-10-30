@@ -3,7 +3,7 @@
 ## Runtime and commands
 
 Run commands from `src/core-api`. The Go module is `core`; `go.mod` and
-`Dockerfile` pin Go 1.25.5, while `.github/workflows/core-api.yml` selects Go 1.25.
+`Dockerfile` pin Go 1.27.3, while `.github/workflows/core-api.yml` selects Go 1.27.3.
 Use an available matching toolchain. A local `.envrc` is optional and untracked.
 Start local configuration from `config.yaml.tpl`; the CLI requires `-c/--config`.
 

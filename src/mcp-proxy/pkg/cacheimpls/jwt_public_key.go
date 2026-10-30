@@ -52,7 +52,8 @@ func retrieveJWTInfo(ctx context.Context, k cache.Key) (any, error) {
 		return nil, err
 	}
 	decodePrivateKey, err := util.AESGCMDecrypt(
-		config.G.McpServer.EncryptKey, config.G.McpServer.CryptoNonce, jwtInfo.EncryptedPrivateKey)
+		config.G.McpServer.EncryptKey, config.G.McpServer.CryptoNonce, jwtInfo.EncryptedPrivateKey,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -84,9 +84,7 @@ func NewResourceClient(host, apiKey string) *ResourceClient {
 	// set auth
 	cli.Use(auth.Basic(constant.ApiAuthAccount, apiKey))
 	return &ResourceClient{
-		baseClient: baseClient{
-			client: cli,
-		},
+		client: cli,
 		Apikey: apiKey,
 	}
 }

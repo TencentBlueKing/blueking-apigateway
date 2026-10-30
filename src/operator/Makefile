@@ -22,7 +22,7 @@ SETUP_ENVTEST = $(LOCALBIN)/setup-envtest
 DOCKER_COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo ""; fi)
 
 ## Tool Versions
-GOLANGCI_LINT_VERSION ?= v2.11.4
+GOLANGCI_LINT_VERSION ?= v2.15.0
 MOCKGEN_VERSION ?= v1.6.0
 GINKGO_VERSION ?= v2.27.2
 GCI_VERSION ?= v0.14.0
@@ -39,7 +39,7 @@ SHELL = /usr/bin/env bash -o pipefail
 .PHONY: init
 init: $(LOCALBIN)
 	# for golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/$(GOLANGCI_LINT_VERSION)/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION)
 	# for make mock
 	GOBIN=$(LOCALBIN) go install github.com/golang/mock/mockgen@$(MOCKGEN_VERSION)
 	# for ginkgo

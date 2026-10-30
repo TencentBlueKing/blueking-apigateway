@@ -3,7 +3,7 @@
 ## Runtime and verification
 
 Run commands from `src/operator`. This is the standalone etcd synchronization
-service (module `operator`), using Go 1.25.5 in `go.mod`, `Dockerfile`, and
+service (module `operator`), using Go 1.27.3 in `go.mod`, `Dockerfile`, and
 `.github/workflows/operator.yaml`. An ignored local `.envrc` is optional.
 
 | Command | Effect |

@@ -239,7 +239,8 @@ func ReportLoadConfigurationResultEvent(ctx context.Context, release *entity.Rel
 			if err != nil {
 				logging.GetLogger().Errorf(
 					"get release[gateway:%s,release:%s,publish_id:%s] version from apisix err:%v",
-					eventReq.BkGatewayName, eventReq.BkStageName, eventReq.PublishID, err)
+					eventReq.BkGatewayName, eventReq.BkStageName, eventReq.PublishID, err,
+				)
 				return
 			}
 			event := reportEvent{

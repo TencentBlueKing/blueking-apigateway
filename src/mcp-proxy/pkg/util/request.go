@@ -73,7 +73,8 @@ func SetRequestID(c *gin.Context, requestID string) {
 	c.Set(RequestIDKey, requestID)
 	if c.Request != nil {
 		c.Request = c.Request.WithContext(
-			context.WithValue(c.Request.Context(), constant.RequestID, requestID))
+			context.WithValue(c.Request.Context(), constant.RequestID, requestID),
+		)
 	}
 }
 
@@ -99,7 +100,8 @@ func SetXRequestID(c *gin.Context, xRequestID string) {
 	c.Set(XRequestIDKey, xRequestID)
 	if c.Request != nil {
 		c.Request = c.Request.WithContext(
-			context.WithValue(c.Request.Context(), constant.XRequestID, xRequestID))
+			context.WithValue(c.Request.Context(), constant.XRequestID, xRequestID),
+		)
 	}
 }
 
