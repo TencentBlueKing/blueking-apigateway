@@ -123,6 +123,20 @@ export default defineComponent({
         />
       );
     }
+
+    // 渲染已选标签：单行展示并省略溢出部分，避免窄输入框中文字换行后被标签固定高度裁剪成空白
+    function tagTpl(node: IStaff) {
+      const text = `${node.username} (${node.display_name})`;
+      return (
+        <div
+          class="px-10px leading-20px truncate"
+          title={text}
+        >
+          {text}
+        </div>
+      );
+    }
+
     // 处理输入变化事件
     function handleChange(val: IStaff[]) {
       ctx.emit('input', val);
@@ -178,7 +192,7 @@ export default defineComponent({
           onBlur={handleBlur}
           onInput={handleInput}
           tpl={tpl}
-          tagTpl={tpl}
+          tagTpl={tagTpl}
           clearable={props.clearable}
           allowCreate={props.allowCreate}
           popoverProps={popoverProps}
