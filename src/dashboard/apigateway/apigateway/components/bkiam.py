@@ -21,6 +21,7 @@ from typing import Any, Iterator, NotRequired, TypedDict, TypeVar
 
 from django.conf import settings
 
+from apigateway.common.error_codes import APIError
 from apigateway.common.tenant.constants import TENANT_ID_OPERATION
 from apigateway.common.tenant.request import gen_tenant_header
 from apigateway.utils.url import url_join
@@ -402,13 +403,44 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str,
     payload = _batch(authorizations)
     _validate_authorization_resources(payload)
     path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/"
-    _call_bkiam_api(
-        http_post,
-        path,
-        payload,
-        more_headers={"X-Bkiam-Operator": operator},
-        tenant_id=tenant_id,
-    )
+
+    def grant(data):
+        captured = {}
+
+        def post(*args, **kwargs):
+            ok, resp_data = http_post(*args, **kwargs)
+            captured["resp_data"] = resp_data
+            return ok, resp_data
+
+        post.__name__ = "http_post"
+        try:
+            _call_bkiam_api(
+                post,
+                path,
+                data,
+                more_headers={"X-Bkiam-Operator": operator},
+                tenant_id=tenant_id,
+            )
+        except APIError:
+            return captured.get("resp_data") or {}
+        return None
+
+    resp_data = grant(payload)
+    if resp_data is None:
+        return
+
+    try:
+        missing_users = resp_data["response_data"]["error"]["data"]["missing_users"]
+    except KeyError:
+        missing_users = []
+    retry_payload = [item for item in payload if item["subject"]["id"] not in missing_users]
+    if retry_payload and len(retry_payload) < len(payload):
+        logger.warning("retry bkiam authorizations without missing users, missing_users=%s", missing_users)
+        resp_data = grant(retry_payload)
+        if resp_data is None:
+            return
+
+    logger.error("bkiam authorizations failed, error=%s", resp_data.get("error"))
 
 
 def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:

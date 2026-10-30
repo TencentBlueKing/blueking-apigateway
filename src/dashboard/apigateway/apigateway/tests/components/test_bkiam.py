@@ -185,6 +185,101 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
         bkiam.add_authorization([oversized_resources], operator="admin", tenant_id="tenant-a")
 
 
+def _user_authorization(username: str) -> dict:
+    return {
+        "subject": {"type": "user", "id": username},
+        "role_id": "administrator",
+        "related_resource_type_id": "gateway",
+        "resources": [{"type": "gateway", "id": "127"}],
+        "expired_at": 1_800_000_000,
+    }
+
+
+def _missing_users_failure(*usernames: str):
+    return (
+        False,
+        {
+            "error": "status_code is 400, not 2xx!",
+            "status_code": 400,
+            "response_data": {
+                "error": {
+                    "code": "INVALID_REQUEST",
+                    "message": "some subject not exists",
+                    "data": {"missing_users": list(usernames)},
+                }
+            },
+        },
+    )
+
+
+def test_add_authorization_retries_once_without_missing_users(mocker, mock_headers, caplog):
+    kept = _user_authorization("alice")
+    missing = _user_authorization("jsorwan")
+    mock_post = mocker.patch(
+        "apigateway.components.bkiam.http_post",
+        side_effect=[
+            _missing_users_failure("jsorwan", "lorryxywu"),
+            (True, {"data": None}),
+        ],
+    )
+    caplog.set_level("WARNING", logger="apigateway.components.bkiam")
+
+    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
+
+    assert [item.kwargs["data"] for item in mock_post.call_args_list] == [[kept, missing], [kept]]
+    assert "missing_users=['jsorwan', 'lorryxywu']" in caplog.text
+    assert mock_post.call_count == 2
+
+
+def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog):
+    kept = _user_authorization("alice")
+    missing = _user_authorization("jsorwan")
+    mock_post = mocker.patch(
+        "apigateway.components.bkiam.http_post",
+        side_effect=[
+            _missing_users_failure("jsorwan"),
+            (False, {"error": "status_code is 500, not 2xx!", "status_code": 500}),
+        ],
+    )
+    caplog.set_level("ERROR", logger="apigateway.components.bkiam")
+
+    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
+
+    assert mock_post.call_count == 2
+    assert mock_post.call_args_list[1].kwargs["data"] == [kept]
+    assert "bkiam authorizations failed" in caplog.text
+    assert "status_code is 500" in caplog.text
+
+
+def test_add_authorization_skips_retry_when_every_subject_is_missing(mocker, mock_headers, caplog):
+    missing = _user_authorization("jsorwan")
+    mock_post = mocker.patch(
+        "apigateway.components.bkiam.http_post",
+        return_value=_missing_users_failure("jsorwan"),
+    )
+    caplog.set_level("ERROR", logger="apigateway.components.bkiam")
+
+    assert bkiam.add_authorization([missing], operator="admin", tenant_id="tenant-a") is None
+
+    mock_post.assert_called_once()
+    assert "bkiam authorizations failed" in caplog.text
+    assert "status_code is 400" in caplog.text
+
+
+def test_add_authorization_without_missing_users_logs_and_returns(mocker, mock_headers, caplog):
+    mock_post = mocker.patch(
+        "apigateway.components.bkiam.http_post",
+        return_value=(False, {"error": "status_code is 500, not 2xx!", "status_code": 500}),
+    )
+    caplog.set_level("ERROR", logger="apigateway.components.bkiam")
+
+    assert bkiam.add_authorization([_user_authorization("alice")], operator="admin", tenant_id="tenant-a") is None
+
+    mock_post.assert_called_once()
+    assert "bkiam authorizations failed" in caplog.text
+    assert "status_code is 500" in caplog.text
+
+
 def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
     mock_get = _patch_http(
         mocker,
