@@ -404,43 +404,59 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str,
     _validate_authorization_resources(payload)
     path = f"/api/v1/open/rbac/mgmt/systems/{BK_IAM_V4_SYSTEM_ID}/authorizations/"
 
-    def grant(data):
-        captured = {}
+    captured = {}
 
-        def post(*args, **kwargs):
-            ok, resp_data = http_post(*args, **kwargs)
-            captured["resp_data"] = resp_data
-            return ok, resp_data
+    def post(*args, **kwargs):
+        ok, resp_data = http_post(*args, **kwargs)
+        captured["resp_data"] = resp_data
+        return ok, resp_data
 
-        post.__name__ = "http_post"
-        try:
-            _call_bkiam_api(
-                post,
-                path,
-                data,
-                more_headers={"X-Bkiam-Operator": operator},
-                tenant_id=tenant_id,
-            )
-        except APIError:
-            return captured.get("resp_data") or {}
-        return None
-
-    resp_data = grant(payload)
-    if resp_data is None:
-        return
-
+    post.__name__ = "http_post"
     try:
-        missing_users = resp_data["response_data"]["error"]["data"]["missing_users"]
-    except KeyError:
-        missing_users = []
-    retry_payload = [item for item in payload if item["subject"]["id"] not in missing_users]
-    if retry_payload and len(retry_payload) < len(payload):
+        _call_bkiam_api(
+            post,
+            path,
+            payload,
+            more_headers={"X-Bkiam-Operator": operator},
+            tenant_id=tenant_id,
+        )
+    except APIError:
+        # 如果返回的错误码是 400，并且错误信息中包含 missing_users，需要重试
+        # {
+        #     "error": "status_code is 400, not 2xx! ...",
+        #     "status_code": 400,
+        #     "response_data": {
+        #         "error": {
+        #             "code": "INVALID_REQUEST",
+        #             "message": "some subject not found",
+        #             "data": {"missing_users": ["user-a", "user-b"]},
+        #         }
+        #     },
+        # }
+        resp_data = captured.get("resp_data") or {}
+        try:
+            error = resp_data["response_data"]["error"]
+            missing_users = error["data"]["missing_users"]
+        except KeyError:
+            error = {}
+            missing_users = []
+        retry_payload = [item for item in payload if item["subject"]["id"] not in missing_users]
+        if not (
+            resp_data.get("status_code") == 400
+            and error.get("code") == "INVALID_REQUEST"
+            and missing_users
+            and retry_payload
+            and len(retry_payload) < len(payload)
+        ):
+            raise
         logger.warning("retry bkiam authorizations without missing users, missing_users=%s", missing_users)
-        resp_data = grant(retry_payload)
-        if resp_data is None:
-            return
-
-    logger.error("bkiam authorizations failed, error=%s", resp_data.get("error"))
+        _call_bkiam_api(
+            post,
+            path,
+            retry_payload,
+            more_headers={"X-Bkiam-Operator": operator},
+            tenant_id=tenant_id,
+        )
 
 
 def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:
