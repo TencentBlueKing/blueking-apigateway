@@ -17,6 +17,7 @@
 #
 from datetime import timedelta
 from io import StringIO
+from types import SimpleNamespace
 
 import pytest
 from django.core.management import call_command
@@ -146,6 +147,10 @@ def _sync_result(gateway, *, applied=False, grant_count=0):
 
 def test_sync_gateway_rbac_auth_to_iam_skips_when_disabled(settings, mocker):
     settings.BK_IAM_V4_ENABLED = False
+    mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.uuid.uuid4",
+        return_value=SimpleNamespace(hex="run-disabled"),
+    )
     synchronizer = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     )
@@ -153,7 +158,9 @@ def test_sync_gateway_rbac_auth_to_iam_skips_when_disabled(settings, mocker):
 
     call_command("sync_gateway_rbac_auth_to_iam", stdout=output)
 
-    assert output.getvalue() == "BK_IAM_V4_ENABLED=false; skipped\n"
+    assert output.getvalue() == (
+        "event=iam-rbac-sync-summary run_id=run-disabled status=skipped reason=iam-disabled\n"
+    )
     synchronizer.assert_not_called()
 
 
@@ -229,8 +236,49 @@ def test_sync_gateway_rbac_auth_to_iam_accepts_gateway_id_or_name(
     )
 
 
-def test_sync_gateway_rbac_auth_to_iam_reports_directional_reason(settings, mocker, fake_gateway):
+def test_sync_gateway_rbac_auth_to_iam_explicit_dry_run_does_not_apply(settings, mocker, fake_gateway):
     _enable_iam(settings)
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.return_value = _sync_result(fake_gateway)
+
+    call_command(
+        "sync_gateway_rbac_auth_to_iam",
+        gateway=str(fake_gateway.id),
+        dry_run=True,
+    )
+
+    reconcile.assert_called_once_with(
+        fake_gateway.id,
+        apply=False,
+        operator=BK_IAM_V4_SYSTEM_ID,
+        username=None,
+    )
+
+
+def test_sync_gateway_rbac_auth_to_iam_rejects_apply_with_dry_run(settings, fake_gateway):
+    _enable_iam(settings)
+
+    with pytest.raises(CommandError, match="不能同时指定"):
+        call_command(
+            "sync_gateway_rbac_auth_to_iam",
+            gateway=str(fake_gateway.id),
+            apply=True,
+            dry_run=True,
+        )
+
+
+def test_sync_gateway_rbac_auth_to_iam_reports_one_readable_line_per_gateway(settings, mocker, fake_gateway):
+    _enable_iam(settings)
+    mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.time.monotonic",
+        return_value=100,
+    )
+    mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.uuid.uuid4",
+        return_value=SimpleNamespace(hex="run-readable"),
+    )
     reconcile = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
@@ -243,7 +291,32 @@ def test_sync_gateway_rbac_auth_to_iam_reports_directional_reason(settings, mock
         stdout=output,
     )
 
-    assert "grant username=user-0 role=operator expired_at=1900000000 reason=missing-in-iam\n" in output.getvalue()
+    gateway_lines = [line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-gateway" in line]
+    assert gateway_lines == [
+        f"event=iam-rbac-sync-gateway run_id=run-readable mode=dry-run gateway_index=1 gateways_total=1 "
+        f"status=success outcome=changed gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
+        "grants_planned=1 revokes_planned=0 already_consistent=1 "
+        'changes="grant(username=user-0,role=operator,reason=missing-in-iam,'
+        'expires_at=2030-03-17T17:46:40Z)" changes_logged=1 changes_omitted=0 duration_ms=0'
+    ]
+
+
+def test_sync_gateway_rbac_auth_to_iam_limits_logged_changes(settings, mocker, fake_gateway):
+    _enable_iam(settings)
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.return_value = _sync_result(fake_gateway, grant_count=25)
+    output = StringIO()
+
+    call_command(
+        "sync_gateway_rbac_auth_to_iam",
+        gateway=str(fake_gateway.id),
+        stdout=output,
+    )
+
+    gateway_line = next(line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-gateway" in line)
+    assert "changes_logged=20 changes_omitted=5" in gateway_line
 
 
 def test_sync_gateway_rbac_auth_to_iam_username_checks_every_gateway(settings, mocker, fake_gateway):
@@ -325,13 +398,38 @@ def test_sync_gateway_rbac_auth_to_iam_all_apply_runs_on_every_invocation(settin
 
 def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settings, mocker, fake_gateway):
     _enable_iam(settings)
+    mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.uuid.uuid4",
+        return_value=SimpleNamespace(hex="run-failed"),
+    )
     reconcile = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     ).return_value.reconcile_gateway
     reconcile.side_effect = RuntimeError("IAM unavailable")
+    output = StringIO()
+    error_output = StringIO()
 
-    with pytest.raises(CommandError, match="IAM unavailable"):
-        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, gateway_delay=0)
+    with pytest.raises(CommandError, match="1/1 个网关失败; run_id=run-failed"):
+        call_command(
+            "sync_gateway_rbac_auth_to_iam",
+            all=True,
+            apply=True,
+            gateway_delay=0,
+            stdout=output,
+            stderr=error_output,
+        )
+
+    failure_line = error_output.getvalue()
+    assert (
+        "event=iam-rbac-sync-gateway run_id=run-failed mode=apply gateway_index=1 gateways_total=1 status=failed"
+    ) in failure_line
+    assert f"gateway_id={fake_gateway.id} gateway_name={fake_gateway.name}" in failure_line
+    assert 'write_result=unknown error="IAM unavailable"' in failure_line
+    assert (
+        "event=iam-rbac-sync-summary run_id=run-failed mode=apply status=failed gateways_total=1 "
+        "gateways_succeeded=0 gateways_failed=1 grants_processed=0 revokes_processed=0 "
+        "already_consistent=0 failed_gateway_changes=unknown"
+    ) in output.getvalue()
 
 
 def test_sync_gateway_rbac_auth_to_iam_initial_marks_completion_after_success(settings, mocker, fake_gateway):
@@ -354,7 +452,7 @@ def test_sync_gateway_rbac_auth_to_iam_initial_failure_does_not_mark_completion(
     ).return_value.reconcile_gateway
     reconcile.side_effect = RuntimeError("IAM unavailable")
 
-    with pytest.raises(CommandError, match="IAM unavailable"):
+    with pytest.raises(CommandError, match="1/1 个网关失败"):
         call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, gateway_delay=0)
 
     assert not GatewayIAMSyncContext().is_initial_sync_completed()
@@ -363,6 +461,10 @@ def test_sync_gateway_rbac_auth_to_iam_initial_failure_does_not_mark_completion(
 def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, mocker):
     _enable_iam(settings)
     GatewayIAMSyncContext().mark_initial_sync_completed()
+    mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.uuid.uuid4",
+        return_value=SimpleNamespace(hex="run-complete"),
+    )
     synchronizer = mocker.patch(
         "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
     )
@@ -376,7 +478,10 @@ def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, 
         stdout=output,
     )
 
-    assert output.getvalue() == "gateway RBAC initial sync already completed; skipped\n"
+    assert output.getvalue() == (
+        "event=iam-rbac-sync-summary run_id=run-complete mode=apply status=skipped "
+        "reason=initial-sync-already-completed\n"
+    )
     synchronizer.assert_not_called()
 
 

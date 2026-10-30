@@ -15,32 +15,30 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import time
+import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
-from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, GatewayIAMAuthorizationSynchronizer
+from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, GatewayIAMAuthorizationSynchronizer, GatewayIAMSyncResult
 from apigateway.core.models import Gateway
 
 DEFAULT_GATEWAY_DELAY_SECONDS = 0.05
 GATEWAY_ID_ITERATOR_CHUNK_SIZE = 1000
-
-
-@dataclass(frozen=True)
-class _Failure:
-    gateway_id: int
-    error: str
+MAX_LOGGED_CHANGES = 20
 
 
 @dataclass(frozen=True)
 class _RunSummary:
     gateways: int
     succeeded: int
-    failures: tuple[_Failure, ...]
+    failed: int
     grants: int
     revokes: int
     unchanged: int
@@ -53,7 +51,9 @@ class Command(BaseCommand):
         parser.add_argument("--gateway", help="仅对账指定网关 ID 或名称")
         parser.add_argument("--username", help="对所有现存网关仅对账指定用户")
         parser.add_argument("--all", action="store_true", help="对账全部现存网关")
-        parser.add_argument("--apply", action="store_true", help="应用变更；不指定时仅输出 dry-run 计划")
+        mode = parser.add_mutually_exclusive_group()
+        mode.add_argument("--apply", action="store_true", help="查询差异并立即应用变更")
+        mode.add_argument("--dry-run", action="store_true", help="仅查询并输出计划，不修改 IAM；默认模式")
         parser.add_argument(
             "--initial",
             action="store_true",
@@ -73,19 +73,29 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
+        run_id = uuid.uuid4().hex[:12]
         if not settings.BK_IAM_V4_ENABLED:
-            self.stdout.write("BK_IAM_V4_ENABLED=false; skipped")
+            self.stdout.write(f"event=iam-rbac-sync-summary run_id={run_id} status=skipped reason=iam-disabled")
             return
 
         self._validate_arguments(options)
         initial_sync_context = GatewayIAMSyncContext()
         if options["initial"] and initial_sync_context.is_initial_sync_completed():
-            self.stdout.write("gateway RBAC initial sync already completed; skipped")
+            self.stdout.write(
+                f"event=iam-rbac-sync-summary run_id={run_id} mode=apply status=skipped "
+                "reason=initial-sync-already-completed"
+            )
             return
 
         try:
             gateway_ids = self._get_gateway_ids(options)
-            phase = "apply" if options["apply"] else "dry-run"
+            mode = "apply" if options["apply"] else "dry-run"
+            started_at = time.monotonic()
+            username_filter = options["username"] or "all"
+            self.stdout.write(
+                f"event=iam-rbac-sync-start run_id={run_id} mode={mode} gateways_total={len(gateway_ids)} "
+                f"username_filter={username_filter} page_size={options['page_size']}"
+            )
             summary = self._reconcile_gateways(
                 gateway_ids,
                 apply=options["apply"],
@@ -93,13 +103,19 @@ class Command(BaseCommand):
                 username=options["username"],
                 page_size=options["page_size"],
                 gateway_delay=options["gateway_delay"],
-                phase=phase,
+                mode=mode,
+                run_id=run_id,
             )
-            self._write_summary(summary, phase=phase)
-            self._raise_for_failures(summary)
+            self._write_summary(
+                summary,
+                mode=mode,
+                run_id=run_id,
+                duration_ms=int((time.monotonic() - started_at) * 1000),
+            )
+            self._raise_for_failures(summary, run_id=run_id)
             if options["initial"]:
                 initial_sync_context.mark_initial_sync_completed()
-                self.stdout.write("gateway RBAC initial sync marked as completed")
+                self.stdout.write(f"event=iam-rbac-initial-sync run_id={run_id} mode=apply status=completed")
         except Exception as err:
             if isinstance(err, CommandError):
                 raise
@@ -113,6 +129,8 @@ class Command(BaseCommand):
         ]
         if sum(selectors) != 1:
             raise CommandError("必须且只能指定 --gateway、--username、--all 之一")
+        if options["apply"] and options["dry_run"]:
+            raise CommandError("--apply 与 --dry-run 不能同时指定")
         if options["initial"] and not (options["all"] and options["apply"]):
             raise CommandError("--initial 必须与 --all --apply 配合使用")
 
@@ -154,10 +172,12 @@ class Command(BaseCommand):
         username: str | None,
         page_size: int,
         gateway_delay: float,
-        phase: str,
+        mode: str,
+        run_id: str,
     ) -> _RunSummary:
         synchronizer = GatewayIAMAuthorizationSynchronizer(page_size=page_size)
-        failures: list[_Failure] = []
+        gateway_names = dict(Gateway.objects.filter(id__in=gateway_ids).values_list("id", "name"))
+        failed = 0
         succeeded = 0
         grants = 0
         revokes = 0
@@ -165,7 +185,7 @@ class Command(BaseCommand):
         total = len(gateway_ids)
 
         for index, gateway_id in enumerate(gateway_ids, start=1):
-            self.stdout.write(f"progress={index}/{total} gateway={gateway_id} phase={phase}")
+            gateway_started_at = time.monotonic()
             try:
                 result = synchronizer.reconcile_gateway(
                     gateway_id,
@@ -174,8 +194,16 @@ class Command(BaseCommand):
                     username=username,
                 )
             except Exception as err:
-                failures.append(_Failure(gateway_id, str(err)))
-                self.stderr.write(f"gateway={gateway_id} phase={phase} status=failed error={err}")
+                gateway_name = gateway_names.get(gateway_id, "unknown")
+                failed += 1
+                self.stderr.write(
+                    f"event=iam-rbac-sync-gateway run_id={run_id} mode={mode} "
+                    f"gateway_index={index} gateways_total={total} "
+                    f"status=failed gateway_id={gateway_id} gateway_name={gateway_name} "
+                    f"write_result={'unknown' if apply else 'not-applicable'} "
+                    f"error={json.dumps(str(err), ensure_ascii=False)} "
+                    f"duration_ms={int((time.monotonic() - gateway_started_at) * 1000)}"
+                )
                 if gateway_delay and index < total:
                     time.sleep(gateway_delay)
                 continue
@@ -184,41 +212,60 @@ class Command(BaseCommand):
             grants += result.grant_count
             revokes += result.revoke_count
             unchanged += result.unchanged
+            change_count = result.change_count
+            changes, changes_logged = self._format_changes(result)
+            grant_field = "grants_processed" if apply else "grants_planned"
+            revoke_field = "revokes_processed" if apply else "revokes_planned"
             self.stdout.write(
-                f"gateway={result.gateway_id}:{result.gateway_name} "
-                f"grants={result.grant_count} revokes={result.revoke_count} "
-                f"unchanged={result.unchanged} applied={str(result.applied).lower()}"
+                f"event=iam-rbac-sync-gateway run_id={run_id} mode={mode} "
+                f"gateway_index={index} gateways_total={total} "
+                f"status=success outcome={'changed' if change_count else 'no-change'} "
+                f"gateway_id={result.gateway_id} gateway_name={result.gateway_name} "
+                f"{grant_field}={result.grant_count} {revoke_field}={result.revoke_count} "
+                f"already_consistent={result.unchanged} changes={json.dumps(changes, ensure_ascii=False)} "
+                f"changes_logged={changes_logged} changes_omitted={change_count - changes_logged} "
+                f"duration_ms={int((time.monotonic() - gateway_started_at) * 1000)}"
             )
-            for item in result.grants:
-                self.stdout.write(
-                    f"grant username={item.username} role={item.role} "
-                    f"expired_at={item.expired_at} reason={item.reason}"
-                )
-            for item in result.revokes:
-                self.stdout.write(
-                    f"revoke username={item.username} role={item.role} "
-                    f"expired_at={item.expired_at} reason={item.reason}"
-                )
             if gateway_delay and index < total:
                 time.sleep(gateway_delay)
         return _RunSummary(
             gateways=total,
             succeeded=succeeded,
-            failures=tuple(failures),
+            failed=failed,
             grants=grants,
             revokes=revokes,
             unchanged=unchanged,
         )
 
-    def _write_summary(self, summary: _RunSummary, *, phase: str) -> None:
+    @staticmethod
+    def _format_changes(result: GatewayIAMSyncResult) -> tuple[str, int]:
+        items = [("grant", item) for item in result.grants]
+        items.extend(("revoke", item) for item in result.revokes)
+        logged_items = items[:MAX_LOGGED_CHANGES]
+        changes = ";".join(
+            f"{operation}(username={item.username},role={item.role},reason={item.reason},"
+            f"expires_at={datetime.fromtimestamp(item.expired_at, tz=UTC).isoformat().replace('+00:00', 'Z')})"
+            for operation, item in logged_items
+        )
+        return changes, len(logged_items)
+
+    def _write_summary(self, summary: _RunSummary, *, mode: str, run_id: str, duration_ms: int) -> None:
+        failure_count = summary.failed
+        status = "success" if failure_count == 0 else "failed" if summary.succeeded == 0 else "partial-failure"
+        grant_field = "grants_processed" if mode == "apply" else "grants_planned"
+        revoke_field = "revokes_processed" if mode == "apply" else "revokes_planned"
         self.stdout.write(
-            f"summary phase={phase} gateways={summary.gateways} succeeded={summary.succeeded} "
-            f"failed={len(summary.failures)} grants={summary.grants} "
-            f"revokes={summary.revokes} unchanged={summary.unchanged}"
+            f"event=iam-rbac-sync-summary run_id={run_id} mode={mode} status={status} "
+            f"gateways_total={summary.gateways} gateways_succeeded={summary.succeeded} "
+            f"gateways_failed={failure_count} {grant_field}={summary.grants} "
+            f"{revoke_field}={summary.revokes} already_consistent={summary.unchanged} "
+            f"failed_gateway_changes={'none' if failure_count == 0 else 'unknown'} duration_ms={duration_ms}"
         )
 
-    def _raise_for_failures(self, summary: _RunSummary) -> None:
-        if not summary.failures:
+    def _raise_for_failures(self, summary: _RunSummary, *, run_id: str) -> None:
+        if not summary.failed:
             return
-        error = "; ".join(f"gateway={failure.gateway_id} error={failure.error}" for failure in summary.failures)
-        raise CommandError(f"网关 RBAC 权限对账失败: {error}")
+        raise CommandError(
+            f"网关 RBAC 权限对账失败: {summary.failed}/{summary.gateways} 个网关失败; "
+            f"run_id={run_id}; 请检索 event=iam-rbac-sync-gateway status=failed"
+        )
