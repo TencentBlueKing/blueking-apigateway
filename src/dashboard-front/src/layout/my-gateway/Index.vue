@@ -853,6 +853,7 @@ onMounted(() => {
 
       .bk-navigation-title {
         flex-basis: 51px !important;
+        padding: 0 8px;
       }
 
       .nav-slider-list {
@@ -1080,7 +1081,7 @@ onMounted(() => {
 }
 
 :deep(.gateway-select) {
-  width: 224px;
+  width: 240px;
   height: 32px;
   border: 1px solid transparent;
   border-radius: 2px;
@@ -1093,7 +1094,7 @@ onMounted(() => {
 
   .bk-input {
     height: 100%;
-    background-color: #f5f7fa;
+    background-color: #f0f1f5;
     border: none;
     border-radius: 2px;
     box-shadow: none;
@@ -1103,10 +1104,6 @@ onMounted(() => {
       font-size: 12px;
       color: #4d4f56;
       background-color: transparent;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
-      order: 1;
     }
 
     .gateway-selector-prefix {

@@ -353,7 +353,7 @@ const tableColumns = computed(() => {
 
         return (
           <div class="min-w-0 flex flex-col justify-center lh-20px">
-            {renderLine(displayName, 'color-#313238')}
+            {renderLine(displayName, 'color-#63656e font-700')}
             {hasDisplayName && renderLine(name, 'color-#979ba5 text-12px')}
           </div>
         );
