@@ -19,9 +19,19 @@
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type { IPersonalWorkbenchFilterOptionQuery, IPersonalWorkbenchListQuery } from '@/services/types/query/personal-workbench.ts';
-import type { IPersonalWorkbenchFilterOptionResponse, IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
+import type {
+  IPersonalWorkbenchFilterOptionResponse,
+  IPersonalWorkbenchListResponse,
+  IPersonalWorkbenchPendingCountResponse,
+} from '@/services/types/responses/personal-workbench.ts';
 
 const path = '/me/workbench';
+
+/**
+ * 个人工作台 - 我的待办数量统计（API 网关、MCP Server 及合计）
+ */
+export const getPendingCount = () =>
+  http.get<IPersonalWorkbenchPendingCountResponse>(`${path}/permissions/pending-count/`);
 
 /**
  * 个人工作台 - 我的待办 - API 网关权限申请列表

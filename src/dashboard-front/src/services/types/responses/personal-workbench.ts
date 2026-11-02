@@ -26,6 +26,13 @@ export interface IPersonalWorkbenchFilterOptionResponse {
   title?: string
 }
 
+// 个人工作台 - 我的待办数量统计返回参数
+export interface IPersonalWorkbenchPendingCountResponse {
+  gateways: number
+  mcp_servers: number
+  total: number
+}
+
 // 个人工作台 —> MCP Server 列表/ gateway 列表响应参数
 export interface IPersonalWorkbenchListResponse {
   id: number

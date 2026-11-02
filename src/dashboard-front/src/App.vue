@@ -66,6 +66,10 @@
                   @click="() => handleNavClick(item.url, index, item.link)"
                 >
                   <span class="text">{{ item.name }}</span>
+                  <span
+                    v-if="item.url === 'PersonalWorkbench' && pendingCount > 0"
+                    class="nav-dot"
+                  />
                 </div>
               </template>
               <div
@@ -118,7 +122,10 @@ import {
   useGateway,
   useUserInfo,
 } from '@/stores';
-import { useBkUserDisplayName } from '@/hooks';
+import {
+  useBkUserDisplayName,
+  usePersonalWorkbench,
+} from '@/hooks';
 import type { IHeaderNav } from '@/types/common';
 import { useScriptTag, useTitle } from '@vueuse/core';
 
@@ -129,6 +136,7 @@ const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 const { configure: configureDisplayName } = useBkUserDisplayName();
+const { pendingCount, getMyPendingData } = usePersonalWorkbench();
 const gateway = useGateway();
 
 // 接入访问统计逻辑，只在上云版执行
@@ -260,6 +268,13 @@ watch(locale, () => {
   document.documentElement.lang = locale.value === 'en' ? 'en' : 'zh-CN';
   const docTitle = useTitle();
   docTitle.value = t('API Gateway | 腾讯蓝鲸智云');
+}, { immediate: true });
+
+// 登录信息就绪后查询一次待办数量，用于顶部导航「个人工作台」的红点提示
+watch(userLoaded, (loaded) => {
+  if (loaded) {
+    getMyPendingData();
+  }
 }, { immediate: true });
 
 // flag需要是实时的，确保不同页面组件执行顺序需要监听下
@@ -403,24 +418,27 @@ const handleDeveloperCenterClick = () => {
         margin: 0;
 
         .header-nav-item {
-          color: #96A2B9;
+          position: relative;
+          color: #96a2B9;
           list-style: none;
 
           &.item-active {
-            color: #FFF !important;
+            color: #ffffff !important;
           }
 
           &:hover {
-            color: #D3D9E4;
+            color: #d3d9e4;
             cursor: pointer;
           }
 
-          text {
-            color: #96A2B9;
-
-            &:hover {
-              color: #D3D9E4;
-            }
+          .nav-dot {
+            position: absolute;
+            top: -2px;
+            right: -12px;
+            width: 8px;
+            height: 8px;
+            background-color: #ea3636;
+            border-radius: 50%;
           }
         }
 

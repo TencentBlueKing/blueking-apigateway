@@ -17,37 +17,39 @@
  */
 
 import type { ITabKey } from '@/services/types/query/personal-workbench.ts';
-import { getGatewayPendingList, getMcpPendingList } from '@/services/source/me/workbench';
+import { getPendingCount } from '@/services/source/me/workbench';
 
 // tab切换选项
 const personalWorkbenchTab = ref<ITabKey>('gateway');
+// 我的待办待审批总数（API 网关 + MCP Server）
+const pendingCount = ref(0);
 // 我的待办是否存在需要审批数据
 const isExistPending = ref(true);
 // 初始待办数据是否已确定（getMyPendingData 完成后置 true，表格首次请求应在其后发出，避免用未定的 tab 调错接口）
 const isWorkbenchDataReady = ref(false);
 
-// 并行请求处理
-const getParallelRequestResult = (payload: PromiseSettledResult<any>) => {
-  return payload?.status === 'fulfilled'
-    ? payload.value
-    : {
-      count: 0,
-      results: [],
-    };
-};
-
 // 处理个人工作台公共数据部分
 export function usePersonalWorkbench() {
-  // 获取我的待办需要审批数据
+  // 获取我的待办数量（网关、MCP 及合计）
   const getMyPendingData = async () => {
-    const results = await Promise.allSettled([getGatewayPendingList(), getMcpPendingList()]);
-    const [gatewayData, mcpData] = results.map(getParallelRequestResult);
-    isExistPending.value = gatewayData.count > 0 || mcpData.count > 0;
-    if (gatewayData.count < 1 && mcpData.count > 0) {
-      personalWorkbenchTab.value = 'mcp';
+    try {
+      const res = await getPendingCount();
+      const { mcp_servers = 0, gateways = 0, total = 0 } = res ?? {};
+      pendingCount.value = total || gateways + mcp_servers;
+      isExistPending.value = pendingCount.value > 0;
+      // 网关没有待办而 MCP 有时，默认切到 MCP 选项
+      if (gateways < 1 && mcp_servers > 0) {
+        personalWorkbenchTab.value = 'mcp';
+      }
     }
-    // 初始数据已确定，页面据此发起首次列表请求（此时 tab 为最终值）
-    isWorkbenchDataReady.value = true;
+    catch {
+      pendingCount.value = 0;
+      isExistPending.value = false;
+    }
+    finally {
+      // 初始数据已确定，页面据此发起首次列表请求（此时 tab 为最终值）
+      isWorkbenchDataReady.value = true;
+    }
   };
 
   //  重置到网关选项
@@ -56,6 +58,7 @@ export function usePersonalWorkbench() {
   };
 
   return {
+    pendingCount,
     isExistPending,
     personalWorkbenchTab,
     isWorkbenchDataReady,
