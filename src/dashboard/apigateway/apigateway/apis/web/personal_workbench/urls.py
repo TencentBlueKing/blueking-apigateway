@@ -32,6 +32,7 @@ from .views import (
     WorkbenchMyApplyMCPPermissionListApi,
     WorkbenchPendingGatewayPermissionListApi,
     WorkbenchPendingMCPPermissionListApi,
+    WorkbenchPendingPermissionCountApi,
 )
 
 gateway_permission_patterns = [
@@ -81,6 +82,11 @@ urlpatterns = [
         "filter-options/mcp-gateways/",
         WorkbenchMCPGatewayFilterOptionListApi.as_view(),
         name="workbench.filter_options.mcp_gateways",
+    ),
+    path(
+        "permissions/pending-count/",
+        WorkbenchPendingPermissionCountApi.as_view(),
+        name="workbench.permissions.pending_count",
     ),
     path("permissions/gateway/", include(gateway_permission_patterns)),
     path("permissions/mcp/", include(mcp_permission_patterns)),

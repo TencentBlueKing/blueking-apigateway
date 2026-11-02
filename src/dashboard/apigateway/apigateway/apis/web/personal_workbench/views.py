@@ -57,6 +57,7 @@ from .serializers import (
     WorkbenchMCPPermissionMyApplyOutputSLZ,
     WorkbenchMCPPermissionPendingOutputSLZ,
     WorkbenchMCPServerFilterOptionSLZ,
+    WorkbenchPendingPermissionCountOutputSLZ,
     WorkbenchPermissionOperateInputSLZ,
 )
 
@@ -292,6 +293,32 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
 
 
 # ========== 我的待办 ==========
+
+
+@method_decorator(
+    name="get",
+    decorator=extend_schema(
+        description="个人工作台 - 我的待办计数",
+        responses={status.HTTP_200_OK: WorkbenchPendingPermissionCountOutputSLZ()},
+        tags=["WebAPI.PersonalWorkbench"],
+    ),
+)
+class WorkbenchPendingPermissionCountApi(WorkbenchPermissionMixin, generics.RetrieveAPIView):
+    """统计当前用户待审批的 API 网关和 MCP Server 权限申请单"""
+
+    serializer_class = WorkbenchPendingPermissionCountOutputSLZ
+
+    def retrieve(self, request, *args, **kwargs):
+        gateways = self._get_pending_gateway_permission_apply_queryset().count()
+        mcp_servers = self._get_pending_mcp_permission_apply_queryset().count()
+        serializer = self.get_serializer(
+            {
+                "gateways": gateways,
+                "mcp_servers": mcp_servers,
+                "total": gateways + mcp_servers,
+            }
+        )
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(
