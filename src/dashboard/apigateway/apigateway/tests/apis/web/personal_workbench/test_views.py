@@ -757,6 +757,187 @@ class TestWorkbenchMCPGatewayFilterOptionListApi:
         assert resp.status_code == 400
 
 
+# ==================== 我的待办计数 ====================
+
+
+class TestWorkbenchPendingPermissionCountApi:
+    def test_count_empty(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 0,
+            "mcp_count": 0,
+            "count": 0,
+        }
+
+    def test_count_gateway_pending(self, request_view, fake_gateway):
+        G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 1,
+            "mcp_count": 0,
+            "count": 1,
+        }
+
+    def test_count_mcp_pending(self, request_view, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 0,
+            "mcp_count": 1,
+            "count": 1,
+        }
+
+    def test_count_combines_gateway_and_mcp_pending(self, request_view, fake_gateway, fake_mcp_server):
+        for bk_app_code in ["app1", "app2"]:
+            G(
+                AppPermissionApply,
+                gateway=fake_gateway,
+                bk_app_code=bk_app_code,
+                applied_by="applicant",
+                status=ApplyStatusEnum.PENDING.value,
+            )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app3",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 2,
+            "mcp_count": 1,
+            "count": 3,
+        }
+
+    def test_count_excludes_non_maintainer_gateway(
+        self,
+        request_view,
+        fake_other_gateway,
+        make_mcp_server,
+    ):
+        G(
+            AppPermissionApply,
+            gateway=fake_other_gateway,
+            bk_app_code="app1",
+            applied_by="applicant",
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=make_mcp_server(fake_other_gateway),
+            bk_app_code="app2",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 0,
+            "mcp_count": 0,
+            "count": 0,
+        }
+
+    def test_count_excludes_non_pending(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant",
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app2",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 0,
+            "mcp_count": 0,
+            "count": 0,
+        }
+
+    def test_count_excludes_deleted_mcp_pending(self, request_view, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=True,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.pending_count",
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "gateway_count": 0,
+            "mcp_count": 0,
+            "count": 0,
+        }
+
+
 # ==================== 我的待办 - API 网关 ====================
 
 

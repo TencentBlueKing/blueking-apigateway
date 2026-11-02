@@ -40,6 +40,17 @@ class WorkbenchPermissionOperateInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchPermissionOperateInputSLZ"
 
 
+class WorkbenchPendingPermissionCountOutputSLZ(serializers.Serializer):
+    """个人工作台 - 我的待办计数"""
+
+    gateway_count = serializers.IntegerField(read_only=True, help_text="API 网关待办数量")
+    mcp_count = serializers.IntegerField(read_only=True, help_text="MCP Server 待办数量")
+    count = serializers.IntegerField(read_only=True, help_text="全部待办数量")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchPendingPermissionCountOutputSLZ"
+
+
 # ========== 下拉筛选项序列化器 ==========
 
 
