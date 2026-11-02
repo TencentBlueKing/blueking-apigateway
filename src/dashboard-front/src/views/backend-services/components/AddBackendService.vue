@@ -78,7 +78,7 @@
                 </div>
               </template>
               <template #content>
-                <div>
+                <div class="ml-20px">
                   <BkForm
                     ref="baseInfoRef"
                     :model="baseInfo"
@@ -157,7 +157,7 @@
                           <BkFormItem
                             :label="t('负载均衡类型')"
                             property="configs.loadbalance"
-                            class="mt-20px relative"
+                            class="relative"
                             required
                             :rules="configRules.loadbalance"
                           >
@@ -175,7 +175,7 @@
                               />
                             </BkSelect>
                             <BkLink
-                              class="absolute right-0 top--30px"
+                              class="absolute right-0 top--26px line-height-20px"
                               theme="primary"
                               :href="envStore.env.DOC_LINKS.LOADBALANCE"
                               target="_blank"
@@ -1091,6 +1091,7 @@ defineExpose({ show });
   }
 
   .stage {
+    margin-left: 20px;
 
     .stage-name {
       font-size: 14px;
@@ -1099,24 +1100,27 @@ defineExpose({ show });
     }
 
     :deep(.bk-collapse-title) {
-      margin-left: 23px;
-      font-size: 14px;
+      margin-left: 20px;
+      font-size: 12px;
       font-weight: 700;
-      color: #63656e;
+      color: #313238;
     }
 
     :deep(.bk-collapse-item) {
-      margin-bottom: 24px;
-      background-color: #f5f7fb;
+      margin-bottom: 20px;
+      background-color: #fafbfd;
+      border: 1px solid #dcdee5;
+      border-radius: 2px;
 
       .bk-collapse-header {
-        height: 40px;
-        line-height: 40px;
-        background-color: #f0f1f5;
+        height: 32px;
+        padding: 0 12px;
+        line-height: 32px;
+        background-color: #eaebf0;
       }
 
       .bk-collapse-content {
-        padding: 0 32px;
+        padding: 16px 31px 0;
       }
 
       &:last-child {
@@ -1125,12 +1129,19 @@ defineExpose({ show });
     }
 
     :deep(.bk-collapse-icon) {
-      left: 17px;
+      top: 10px;
+      left: 12px;
+      display: flex;
       color: #979aa2;
 
       svg {
-        font-size: 13px;
+        font-size: 12px;
       }
+    }
+
+    :deep(.stage-config-form > .bk-form-item:not(.timeout-item) > .bk-form-label) {
+      font-size: 12px;
+      line-height: 20px;
     }
   }
 }

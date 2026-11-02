@@ -8,7 +8,7 @@
       <AgIcon
         :class="{ 'rotate-180': visible }"
         color="#3a84ff"
-        name="arrows-down"
+        name="down-small"
         size="22"
       />
     </div>
