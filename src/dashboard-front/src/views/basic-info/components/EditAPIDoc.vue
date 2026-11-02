@@ -257,7 +257,7 @@
 import { useEnv, useFeatureFlag } from '@/stores';
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
-import { getGatewayDetail, patchGateway } from '@/services/source/gateway';
+import { getGatewayDetail, patchGateway } from '@/services/source/gateway/gateway';
 import type { IExtractApiReturn } from '@/services/types/utils';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';

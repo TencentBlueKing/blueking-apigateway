@@ -17,7 +17,7 @@
  */
 import { defineStore } from 'pinia';
 
-import { getUserInfo } from '@/services/source/basic';
+import { getUserInfo } from '@/services/source/platform/account';
 
 type InfoType = Awaited<ReturnType<typeof getUserInfo>>;
 

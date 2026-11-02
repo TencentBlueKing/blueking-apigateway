@@ -297,7 +297,7 @@ import {
   Form,
   Message,
 } from 'bkui-vue';
-import { testBackendServiceConnection } from '@/services/source/backend-services.ts';
+import { testBackendServiceConnection } from '@/services/source/gateway/backend';
 import type { IBackendTestConnectionInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IFormMethod } from '@/types/common';
 import {

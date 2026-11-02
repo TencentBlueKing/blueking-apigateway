@@ -203,7 +203,8 @@
 // @ts-nocheck
 import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
-import { getEnv } from '@/services/source/basic.ts';
+import { getEnvVars } from '@/services/source/platform/setting';
+import { checkRepoAuthorization, patchGateway } from '@/services/source/gateway/gateway';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import type { IFormMethod } from '@/types/common';
 import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
@@ -212,10 +213,6 @@ import {
   useFeatureFlag,
   useUserInfo,
 } from '@/stores';
-import {
-  checkRepoAuthorization,
-  patchGateway,
-} from '@/services/source/gateway.ts';
 import { useGatewayDisplayNameCheck } from '@/hooks';
 
 export type ParamType = IGatewayCreateInputSLZ & {
@@ -432,7 +429,7 @@ const checkAuthorization = async () => {
 };
 
 const getUrlPrefix = async () => {
-  const res = await getEnv();
+  const res = await getEnvVars();
   repositoryUrl.value = res.BK_PAAS_APP_REPO_URL_TMPL;
 };
 

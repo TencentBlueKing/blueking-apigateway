@@ -946,9 +946,9 @@ import {
   deleteResources,
   getResourceDetail,
   updateResources,
-} from '@/services/source/resource';
-import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/backend-services.ts';
-import { getGatewayLabels } from '@/services/source/gateway';
+} from '@/services/source/gateway/resource';
+import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/gateway/backend';
+import { getLabelList } from '@/services/source/gateway/label';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
 import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
@@ -962,7 +962,7 @@ import ResponseParams from '../../components/response-params-v2/Index.vue';
 import { useGateway } from '@/stores';
 import SelectCheckBox from './SelectCheckBox.vue';
 
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 type IBackendPathCheckItem = IExtractApiReturn<typeof backendsPathCheck>[number];
 
 interface IProps {
@@ -1119,7 +1119,7 @@ const handleEditClick = () => {
 };
 
 const initLabels = async () => {
-  labelsData.value = await getGatewayLabels(gatewayId);
+  labelsData.value = await getLabelList(gatewayId);
 };
 initLabels();
 

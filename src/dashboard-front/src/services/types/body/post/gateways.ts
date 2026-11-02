@@ -1,4 +1,4 @@
-import type { IMCPTabType } from '@/services/source/mcp-server';
+import type { IMCPTabType } from '@/types/mcp-server';
 import type { IAuthConfig } from '@/types/resource';
 
 // POST /gateways/ - 创建网关

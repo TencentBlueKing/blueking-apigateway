@@ -17,7 +17,7 @@
  */
 
 import type { Ref } from 'vue';
-import { getReleasingStatus } from '@/services/source/gateway';
+import { getReleasingStatus } from '@/services/source/gateway/gateway';
 import { useUserInfo } from '@/stores/useUserInfo';
 
 /** 只负责发布状态查询/轮询，角色权限仍由只读 useGatewayRole 提供。 */

@@ -72,16 +72,16 @@ import type { FilterValue } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
-import { getGatewayLabels } from '@/services/source/gateway';
-import type { IExtractApiReturn } from '@/services/types/utils';
+import { getLabelList } from '@/services/source/gateway/label';
 import {
-  type IAlarmStrategy,
   deleteStrategy,
   getStrategyDetail,
   getStrategyList,
-  updateStrategyStatus,
-} from '@/services/source/monitor';
-import { getStageList } from '@/services/source/stage';
+  patchStrategyStatus,
+} from '@/services/source/gateway/monitor';
+import type { IAlarmStrategy } from '@/types/monitor';
+import { getStageList } from '@/services/source/gateway/stage';
+import type { IExtractApiReturn } from '@/services/types/utils';
 import AgTable from '@/components/ag-table/Index.vue';
 import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/AddAlarmStrategy.vue';
 
@@ -91,7 +91,7 @@ type IAlarmStrategyRow = IAlarmStrategy & {
   gateway_label_ids?: number[]
 };
 
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -333,7 +333,7 @@ const handleIsEnable = async (item: IAlarmStrategyRow) => {
       return;
     }
     item.statusUpdating = true;
-    await updateStrategyStatus(apigwId.value, id, { enabled });
+    await patchStrategyStatus(apigwId.value, id, { enabled });
     Message({
       message: enabled ? t('启用成功') : t('禁用成功'),
       theme: 'success',
@@ -402,7 +402,7 @@ const getStages = async () => {
 };
 
 const init = async () => {
-  labelList.value = await getGatewayLabels(apigwId.value);
+  labelList.value = await getLabelList(apigwId.value);
   nextTick(() => {
     tableData.value.forEach((item: any) => {
       item.statusUpdating = false;

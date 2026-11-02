@@ -91,7 +91,7 @@ import dayjs from 'dayjs';
 import { Divider } from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { useStage } from '@/stores';
-import { getReleaseEvents } from '@/services/source/release';
+import { getReleaseEvents } from '@/services/source/gateway/release';
 import AgEditor from '@/components/ag-editor/Index.vue';
 
 interface IStep {

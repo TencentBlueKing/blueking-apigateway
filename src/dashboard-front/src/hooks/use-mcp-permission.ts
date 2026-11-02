@@ -24,10 +24,10 @@ import type { IGatewaysMcpServersPermissionsListQuery } from '@/services/types/q
 import {
   type IAppPermissionExport,
   type IExportType,
-  type IPermissionApprovalFilterValue,
-  deleteMcpPermissions,
+  deleteMcpAppPermission,
   exportMcpAppPermissions,
-} from '@/services/source/mcp-market.ts';
+} from '@/services/source/gateway/mcp-server/permission';
+import type { IPermissionApprovalFilterValue } from '@/types/mcp-server';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 
 const exportType = ref<IExportType>('all');
@@ -51,7 +51,7 @@ const exportDropData = shallowRef<IDropList[]>([
 export function useMcpPermission() {
   // 删除应用
   const handleDelete = async (gatewayId: number, mcpServerId: number, id: number) => {
-    await deleteMcpPermissions(gatewayId, mcpServerId, id);
+    await deleteMcpAppPermission(gatewayId, mcpServerId, id);
     Message({
       theme: 'success',
       message: t('删除成功'),

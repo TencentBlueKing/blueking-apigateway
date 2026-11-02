@@ -111,7 +111,7 @@ import { Message } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
 import MemberSelector from '@/components/member-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
-import { createGatewayMembers } from '@/services/source/gateway-member.ts';
+import { createGatewayMembers } from '@/services/source/gateway/member';
 import { useEnv, useFeatureFlag, useGateway, useUserInfo } from '@/stores';
 import PermissionModel from './PermissionModel.vue';
 import {

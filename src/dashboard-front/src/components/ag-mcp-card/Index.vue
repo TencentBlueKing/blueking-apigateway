@@ -313,11 +313,7 @@
 
 <script lang="ts" setup>
 import { locale, t } from '@/locales';
-import type {
-  IMCPServer,
-  IMCPServerCategory,
-  IMCPServerWithUIState,
-} from '@/services/source/mcp-server';
+import type { IMCPServer, IMCPServerCategory, IMCPServerWithUIState } from '@/types/mcp-server';
 import { useFeatureFlag } from '@/stores';
 import { getUtcTimeAgo, setupDayjsLocale } from '@/utils/dayUtc';
 import AgDescription from '@/components/ag-description/Index.vue';

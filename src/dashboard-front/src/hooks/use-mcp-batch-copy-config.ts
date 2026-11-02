@@ -16,11 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import {
-  type IMCPAIConfig,
-  type IMCPServerWithUIState,
-} from '@/services/source/mcp-server.ts';
-import type { IMarketplaceItemWithUIState } from '@/services/source/mcp-market.ts';
+import type { IMCPAIConfig, IMCPServerWithUIState } from '@/types/mcp-server';
+import type { IMarketplaceItemWithUIState } from '@/types/mcp-marketplace';
 import type { IMcpClientConfig } from '@/services/types/responses/mcp-marketplace.ts';
 
 // 客户端类型枚举

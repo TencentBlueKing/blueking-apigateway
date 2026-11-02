@@ -87,11 +87,11 @@ src/dashboard-front/
 │   ├── router/                 # 路由定义，15 个功能模块
 │   ├── services/
 │   │   ├── http/               # Axios 封装（缓存、CSRF、中间件）
-│   │   ├── source/             # ~28 个 API 服务模块
-│   │   └── types/              # HTTP 响应类型
+│   │   ├── source/             # API 接口函数，按作用域分目录（见「API 服务层」）
+│   │   └── types/              # 接口出入参类型（query / body / responses）
 │   ├── stores/                 # 11 个 Pinia Store
 │   ├── styles/                 # 全局 SCSS 样式
-│   ├── types/                  # TypeScript 接口/类型定义
+│   ├── types/                  # 领域类型与视图类型（见「类型系统」）
 │   ├── utils/                  # 26 个工具函数
 │   └── views/                  # 15 个功能视图模块
 ├── .env                        # 环境变量模板
@@ -174,17 +174,35 @@ http.get<T>(url, params ?, payload ?):Promise<T>
 - 错误处理策略：`page`（页面级）| `dialog`（弹窗）| `catch`（调用方捕获）
 - 上传进度回调
 
-**API 服务模块** (`source/*.ts`)：约 28 个模块，每个导出带类型的函数：
+**接口模块** (`source/`)：按接口作用域分目录，`gateway/` 下的文件大体按后端 `apis/web/<module>` 划分（下划线改为短横线）：
 
-```typescript
-// 示例：services/source/resource.ts
-export async function getResourceList(apigwId: number, params: {}) {
-  return await http.get(`/gateways/${apigwId}/resources/`, params);
-}
+```
+services/source/
+├── platform/            # 平台级接口：account（用户信息）、setting（功能开关、环境变量）、version-log、
+│                        #   toolbox（工具箱按请求 ID 查询日志，无需网关权限）
+├── external/            # 第三方系统（URL 来自环境变量）：bk-user（用户管理）、chat（拉群、发消息）
+├── me/                  # 当前用户：application（可管理的应用）、workbench（个人工作台）
+├── gateway/             # /gateways/ 及 /gateways/:id/*
+│   ├── gateway.ts       # 网关 CRUD、状态、名称校验、操作指引、发布状态
+│   ├── member.ts        # 成员管理、当前用户在网关中的角色
+│   ├── label.ts         # 标签
+│   ├── stage.ts         # 环境、环境变量、环境后端
+│   ├── backend.ts       # 后端服务
+│   ├── resource.ts      # 资源 CRUD、导入导出、路径冲突、后端地址校验
+│   ├── resource-doc.ts  # 资源文档、文档导入导出
+│   ├── resource-version.ts
+│   ├── release.ts       # 发布、发布历史、已发布资源及 schema
+│   ├── programmable.ts  # 可编程网关部署
+│   ├── plugin.ts / permission.ts / sdk.ts / monitor.ts / audit.ts / ai.ts
+│   ├── api-test.ts      # 在线调试
+│   ├── access-log.ts    # 流水日志（含导出）
+│   ├── metrics.ts       # 仪表盘指标、统计报表
+│   └── mcp-server/      # server（MCP Server 本体）、permission（应用权限）、log（日志与调用链）、metrics
+├── docs/                # /docs/*：gateway（网关文档、网关 SDK 文档）、esb（组件文档）
+└── mcp-marketplace.ts   # /mcp-marketplace/*
 ```
 
-主要模块包括：`gateway`、`resource`、`stage`、`permission`、`mcp-server`、`mcp-market`、`plugin-manage`、`online-debugging`、
-`audit-log`、`access-log`、`monitor`、`backend-services`、`ai`、`docs` 等。
+新增接口的规范见「新增 API 服务函数」。
 
 ### 组件 (`src/components/`)
 
@@ -240,13 +258,33 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 - **UnoCSS + Tailwind v3 预设**：原子化 CSS 工具类（如 `flex items-center gap-16px`）
 - **CSS 命名规范**：kebab-case（`^[a-z][a-z0-9_-]+$`，由 stylelint 强制）
 
-### 类型系统 (`src/types/`)
+### 类型系统
 
-- `common.ts` — 通用类型（IPagination、IDialog、ITableMethod 等）
-- `gateway.ts` — 网关相关类型（Gateway、GatewayListItem 等）
-- `permission.ts` — 权限类型
-- `resource.ts` — 资源类型
+类型按用途分三处存放：
+
+| 位置                                  | 内容                                                                |
+|-------------------------------------|-------------------------------------------------------------------|
+| `services/source/**`                | 只保留接口签名用到的入参类型（如 `IAuthData`、`IObservabilitySearchParams`）          |
+| `services/types/{query,body,responses}/` | 接口出入参类型，按后端 URL 命名（如 `IGatewaysStagesListQuery`、`IStageListOutput`） |
+| `src/types/`                        | 领域类型与视图类型，供多个页面、组件、Store 复用                                       |
+
+`src/types/` 文件：
+
+- `common.ts` — 通用类型（IPagination、IDialog、ITableMethod，以及资源导出参数 `IExportParams` 等）
+- `gateway.ts` — 网关（Gateway、IApiGateway 等）
+- `permission.ts` — 权限（含应用权限导出参数 `IPermissionExportParams`）
+- `resource.ts` / `resource-version.ts` — 资源、资源版本（IVersionItem、IDiffData）
+- `stage.ts` — 环境（IStageListItem）
+- `backend.ts` — 后端服务（IHealthCheck）
+- `programmable.ts` — 可编程网关部署事件（IEventResponse 等）
+- `access-log.ts` / `audit-log.ts` / `monitor.ts` — 流水日志、操作记录、监控告警
+- `metrics.ts` — 指标图表的公共结构（ISeriesItemType、IChartSeries、IInstantValue），以及网关仪表盘、统计报表的类型
+- `observability.ts` — MCP Server 可观测：图表数据，以及日志与调用链（ITraceLog、ISpan、ITraceDetail 等）
+- `mcp-server.ts` / `mcp-marketplace.ts` — MCP Server、MCP 市场
 - `auto-imports.d.ts` — 由 unplugin-auto-import 自动生成
+
+> `metrics.ts` 与 `observability.ts` 都导出 `IStatisticsType`、`IChartDataType`、`IChartDataLoading`，但字段不同：
+> 网关仪表盘用前者，MCP Server 可观测用后者。
 
 ## 代码风格规范
 
@@ -362,18 +400,51 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 
 ### 新增 API 服务函数
 
+规范：
+
+- **放置位置**：按 URL 前缀放入「API 服务层」中对应的文件。同一个后端接口只定义一次，各页面复用；例如环境列表统一使用
+  `gateway/stage.ts` 的 `getStageList`，不要在页面所属模块里重复定义。
+- **网关 ID**：作为第一个参数，命名为 `gatewayId: number`。
+- **函数命名**：列表 `get{X}List`、详情 `get{X}Detail`、新建 `create{X}`、更新 `update{X}`（PUT）/ `patch{X}`（PATCH）、
+  删除 `delete{X}`、批量 `batch{Action}{X}`、导出 `export{X}`、校验 `check{X}`；不要使用 `fetch`、`Apigw` 前缀。
+  审批、撤销这类动作接口（POST 到 `.../approval/`、`.../cancel/` 等子路径）按动作语义命名，如 `cancelGatewayApplied`。
+  存量代码中还有部分列表、详情接口没有按 `get{X}List` / `get{X}Detail` 命名（如 `getServers`、`getServer`、
+  `getReleaseHistories`），新增接口按规范命名即可。
+- **写法**：使用箭头函数直接返回 `http.xxx<T>()`，不写 `async`/`await`，GET 请求必须通过泛型声明返回类型；
+  统一从 `@/services/http` 引入 `http`；每个文件用 `const path = '/gateways'` 这类常量定义 URL 前缀，不要在函数里写死。
+- **参数**：查询参数通过 `params` 传递，不要手动拼接查询串。params 无法表达的检索串（如重复出现的 `include` / `exclude`）
+  用 `@/services/http` 导出的 `withExtraQuery(url, extraStr)` 追加，它会在检索串为空时原样返回地址。
+  注意 `http.delete` 会把 params 放进请求体；如果后端从查询串读取参数，需要拼在 URL 上（参考 `gateway/permission.ts` 的
+  `deleteApiPermission`）。
+- **类型**：接口文件只放接口函数和签名用到的入参类型，其余类型按「类型系统」放到 `services/types/` 或 `src/types/`。
+- **无副作用**：不要修改调用方传入的对象，也不要在接口函数里触发下载。`application/octet-stream` 响应由
+  `http/middleware/response.ts` 统一下载，调用方 `await` 之后提示结果即可。
+
 ```typescript
-// src/services/source/xxx.ts
-import http from '../http';
+// src/services/source/gateway/xxx.ts
+import http from '@/services/http';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type { IXxxListOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysXxxListQuery } from '@/services/types/query/gateways.ts';
+import type { IXxxInputSLZ } from '@/services/types/body/post/gateways.ts';
 
-// 接口函数直接调用 http 方法，返回类型通过泛型指定
-export async function getXxxList(apigwId: number, params: Record<string, any>) {
-  return await http.get<XxxListResponse>(`/gateways/${apigwId}/xxx/`, params);
-}
+const path = '/gateways';
 
-export async function createXxx(apigwId: number, data: CreateXxxParams) {
-  return await http.post(`/gateways/${apigwId}/xxx/`, data);
-}
+/**
+ * 获取 xxx 列表
+ * @param gatewayId 网关id
+ * @param params 查询参数
+ */
+export const getXxxList = (gatewayId: number, params: IGatewaysXxxListQuery = {}) =>
+  http.get<ICountAndResults<IXxxListOutput>>(`${path}/${gatewayId}/xxx/`, params);
+
+/**
+ * 新建 xxx
+ * @param gatewayId 网关id
+ * @param data 新建参数
+ */
+export const createXxx = (gatewayId: number, data: IXxxInputSLZ) =>
+  http.post(`${path}/${gatewayId}/xxx/`, data);
 ```
 
 ### 新增 Pinia Store
@@ -390,8 +461,8 @@ export const useXxx = defineStore('xxx', {
     filteredList: (state) => state.list.filter(/* ... */),
   },
   actions: {
-    async fetchList(apigwId: number) {
-      this.list = await getXxxList(apigwId, {});
+    async fetchList(gatewayId: number) {
+      this.list = await getXxxList(gatewayId, {});
     },
   },
 });
@@ -484,4 +555,6 @@ Pre-commit 钩子自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `eslint 
 3. **环境变量**：Vite 构建时变量以 `VITE_` 为前缀；运行时全局变量通过 `window.BK_DASHBOARD_URL` 等方式访问。
 4. **错误处理**：API 调用的 `payload` 参数可指定 `permission` 字段控制错误处理策略（`page`、`dialog`、`catch`）。
 5. **缓存**：仅 GET 请求支持缓存，通过 `payload.cache` 传入 TTL（毫秒）。
+   **文件下载**：后端返回 `application/octet-stream` 时，响应拦截器自动下载文件，此时 `http` 的返回值为 `undefined`；
+   导出类接口需传 `responseType: 'blob'`，通常配合 `catchError: true` 由调用方处理错误（错误响应体为 Blob）。
 6. **Feature Flag**：通过 `useFeatureFlag` Store 管理功能开关，控制菜单和功能的显隐。

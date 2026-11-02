@@ -19,7 +19,7 @@
 import {
   checkDisplayNameAvailable,
   checkDisplayNameAvailableForUpdate,
-} from '@/services/source/gateway';
+} from '@/services/source/gateway/gateway';
 
 interface IDisplayNameCheckOptions {
   // 编辑场景传入网关 ID，用于排除自身

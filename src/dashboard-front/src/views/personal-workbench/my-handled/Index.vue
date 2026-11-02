@@ -30,7 +30,7 @@
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type { IPersonalWorkbenchListQuery, ITabKey } from '@/services/types/query/personal-workbench.ts';
 import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
-import { getGatewayHandledList, getMcpHandledList } from '@/services/source/personal-workbench.ts';
+import { getGatewayHandledList, getMcpHandledList } from '@/services/source/me/workbench';
 import { usePersonalWorkbench, usePersonalWorkbenchListRefresh } from '@/hooks';
 import TopBar from '@/views/personal-workbench/components/TopBar.vue';
 import ApplyTable from '@/views/personal-workbench/components/Table.vue';

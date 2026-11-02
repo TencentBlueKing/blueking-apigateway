@@ -76,11 +76,9 @@
 <script lang="tsx" setup>
 import { useDatePicker } from '@/hooks';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import { getReleaseHistories } from '@/services/source/release';
-import {
-  type IEventResponse,
-  getDeployHistories,
-} from '@/services/source/programmable';
+import { getReleaseHistories } from '@/services/source/gateway/release';
+import { getDeployHistories } from '@/services/source/gateway/programmable';
+import type { IEventResponse } from '@/types/programmable';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { t } from '@/locales';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';

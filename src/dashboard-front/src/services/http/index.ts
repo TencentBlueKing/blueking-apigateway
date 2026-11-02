@@ -20,6 +20,8 @@ import type { CancelTokenSource } from 'axios';
 
 import Request, { type Config, type Method } from './lib/request';
 
+export { withExtraQuery } from './lib/utils';
+
 export type IRequestPayload = Config['payload'];
 
 // type IRequestConfig = Pick<Config, 'params' | 'payload'>

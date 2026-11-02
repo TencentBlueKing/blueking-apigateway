@@ -59,11 +59,7 @@ import { Message } from 'bkui-vue';
 import { useRouteParams } from '@vueuse/router';
 import { useSidebar } from '@/hooks';
 import { useGateway } from '@/stores';
-import {
-  createResources,
-  getResourceDetail,
-  updateResources,
-} from '@/services/source/resource';
+import { createResources, getResourceDetail, updateResources } from '@/services/source/gateway/resource';
 import Standard from './components/Standard.vue';
 import ModelProxy from './components/ModelProxy.vue';
 

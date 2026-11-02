@@ -203,14 +203,13 @@ import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
 import { useFeatureFlag } from '@/stores';
 import { useMcpPermission } from '@/hooks';
 import {
-  type IPermissionApprovalAction,
-  type IPermissionApprovalFilterValue,
-  getMcpAppPermissionApply,
-  getMcpPermissions,
-  getMcpPermissionsApplicant,
-  updateMcpPermissions,
-} from '@/services/source/mcp-market.ts';
-import { getServers } from '@/services/source/mcp-server';
+  getMcpAppPermissionApplicants,
+  getMcpAppPermissionApplyList,
+  getMcpAppPermissionList,
+  patchMcpAppPermissionApplyStatus,
+} from '@/services/source/gateway/mcp-server/permission';
+import type { IPermissionApprovalAction, IPermissionApprovalFilterValue } from '@/types/mcp-server';
+import { getServers } from '@/services/source/gateway/mcp-server/server';
 import type { IGatewaysMcpServersAppPermissionApplyListQuery } from '@/services/types/query/gateways.ts';
 import type { IMCPServerAppPermissionApplyListOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
@@ -530,9 +529,9 @@ const getTableData = async (params: {
 
   // 定义 tab 与对应接口的映射
   const tabApiMap = {
-    processed: getMcpAppPermissionApply,
-    unprocessed: getMcpAppPermissionApply,
-    appPerm: getMcpPermissions,
+    processed: getMcpAppPermissionApplyList,
+    unprocessed: getMcpAppPermissionApplyList,
+    appPerm: getMcpAppPermissionList,
   } as const;
 
   // 获取当前 tab 对应的请求方法
@@ -614,7 +613,7 @@ const getApplicant = async () => {
   if (featureFlagStore.isTenantMode || isAppPerm.value) {
     return;
   }
-  const response = await getMcpPermissionsApplicant(
+  const response = await getMcpAppPermissionApplicants(
     gatewayId,
     filterData.value.mcp_server_id || '-',
     {
@@ -736,7 +735,7 @@ const handleSubmitApprove = async () => {
     applyActionDialogConf.isLoading = true;
 
     await approveForm.value?.validate();
-    await updateMcpPermissions(
+    await patchMcpAppPermissionApplyStatus(
       gatewayId,
       curAction.value.mcp_server_id as number,
       curAction.value.id,

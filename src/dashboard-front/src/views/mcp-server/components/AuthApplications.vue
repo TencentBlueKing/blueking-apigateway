@@ -133,9 +133,9 @@ import type { IMCPServerAppPermissionListOutput } from '@/services/types/respons
 import type { IGatewaysMcpServersPermissionsListQuery } from '@/services/types/query/gateways.ts';
 import type { IMCPServerAppPermissionCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
 import {
-  authMcpPermissions,
-  getMcpPermissions,
-} from '@/services/source/mcp-market';
+  getMcpAppPermissionList,
+  grantMcpAppPermission,
+} from '@/services/source/gateway/mcp-server/permission';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
@@ -284,7 +284,7 @@ const getTableData = async (params: {
     ...filterData.value,
     mcp_server_id: mcpServerId,
   };
-  const res = await getMcpPermissions(gatewayId.value, filterSimpleEmpty(queryParams));
+  const res = await getMcpAppPermissionList(gatewayId.value, filterSimpleEmpty(queryParams));
   return res ?? {
     count: 0,
     results: [],
@@ -319,7 +319,7 @@ const submitAuth = async () => {
     authLoading.value = true;
 
     await formRef.value?.validate();
-    await authMcpPermissions(gatewayId.value, mcpServerId, formData.value);
+    await grantMcpAppPermission(gatewayId.value, mcpServerId, formData.value);
 
     Message({
       theme: 'success',

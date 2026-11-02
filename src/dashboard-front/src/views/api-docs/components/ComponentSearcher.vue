@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { searchAPI } from '@/services/source/docs-esb';
+import { searchAPI } from '@/services/source/docs/esb';
 import type { IExtractApiReturn } from '@/services/types/utils';
 import type { IDocsEsbBoardsSystemsListResponse as IBoard } from '@/services/types/responses/docs';
 

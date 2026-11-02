@@ -11,7 +11,8 @@
   不要由其中一个推断另一个。URL 预览由 `ServerBasicForm.vue` 结合服务名、前缀和协议生成。
 - 工具/提示模板选择与基础表单校验都通过后才能提交；保留私有提示模板的确认流程。
   选择候选的环境改变后需检查候选刷新和旧选择回显。
-- 观测页面使用 `src/services/source/mcp-server.ts` 等既有服务入口；日志、指标和 trace
-  查询有不同参数与结果。修改表格/图表时检查时间范围、空结果、错误和分页行为。
+- 观测页面的日志与调用链接口见 `src/services/source/gateway/mcp-server/log.ts`，指标接口见
+  `src/services/source/gateway/mcp-server/metrics.ts`；共享视图类型见 `src/types/observability.ts`。
+  日志、指标和 trace 查询有不同参数与结果。修改表格/图表时检查时间范围、空结果、错误和分页行为。
 - 相关页面验证包括新建、编辑回显、工具别名、协议切换、权限和观测中受影响的流程；
   不另复制组件级构建/类型检查命令。

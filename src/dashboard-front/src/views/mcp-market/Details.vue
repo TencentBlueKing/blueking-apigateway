@@ -353,14 +353,11 @@ import { copy } from '@/utils';
 import { useMcpConfigDivideRatio } from '@/hooks';
 import { useFeatureFlag } from '@/stores';
 import AgIcon from '@/components/ag-icon/Index.vue';
-import {
-  type IMCPMarketCategory,
-  type IMarketplaceConfig,
-  getMcpAIConfigList,
-  getMcpServerDetails,
-} from '@/services/source/mcp-market';
+import { getMarketplaceServerConfigs, getMcpServerDetails } from '@/services/source/mcp-marketplace';
+import type { IMCPMarketCategory } from '@/types/mcp-marketplace';
+import type { IMCPAIConfig } from '@/types/mcp-server';
+import type { getServer } from '@/services/source/gateway/mcp-server/server';
 import type { IMCPServerRetrieveOutput } from '@/services/types/responses/mcp-marketplace.ts';
-import type { getServer } from '@/services/source/mcp-server';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import Guideline from './components/GuideLine.vue';
@@ -408,7 +405,7 @@ const defaultMarkdownStr = ref('');
 const markdownStr = ref('');
 const isExistCustomGuide = ref(false);
 const isShowGuideSlider = ref(false);
-const mcpConfigList = ref<IMarketplaceConfig[]>([]);
+const mcpConfigList = ref<IMCPAIConfig[]>([]);
 const isShowApplyPermissionDialog = ref<boolean>(false);
 
 const mcpId = computed(() => {
@@ -446,7 +443,7 @@ const getDetails = async () => {
 };
 
 const fetchMcpAIConfigList = async () => {
-  const res = await getMcpAIConfigList(Number(mcpId.value));
+  const res = await getMarketplaceServerConfigs(Number(mcpId.value));
   mcpConfigList.value = (res?.configs ?? []).map(item => ({
     ...item,
     install_url: item.install_url ?? '',

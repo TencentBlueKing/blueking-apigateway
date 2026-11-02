@@ -37,7 +37,7 @@ import Ticks from '@/components/trace-view/trace-timeline-viewer/ticks';
 import type { ISpan } from '@/components/trace-view/typings';
 import { getSpanIcon } from '@/components/trace-view/model/trace-viewer';
 import { t } from '@/locales';
-import type { ITraceDetail } from '@/services/source/observability';
+import type { ITraceDetail } from '@/types/observability';
 import { useTrace } from '@/stores/useTrace';
 
 import './span-bar-row.scss';

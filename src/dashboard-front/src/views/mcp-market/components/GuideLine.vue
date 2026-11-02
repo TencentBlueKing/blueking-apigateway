@@ -94,7 +94,7 @@ import { usePopInfoBox } from '@/hooks';
 import {
   deleteCustomServerGuideDoc,
   getCustomServerGuideDoc,
-} from '@/services/source/mcp-server';
+} from '@/services/source/gateway/mcp-server/server';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import Guide from '@/components/guide/Index.vue';

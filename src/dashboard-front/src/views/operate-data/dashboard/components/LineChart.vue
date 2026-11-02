@@ -71,7 +71,7 @@ import * as echarts from 'echarts';
 import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
 import { useChartIntervalOption } from '@/hooks';
-import type { ISearchParamsType, ISeriesItemType } from '@/services/source/dashboard';
+import type { ISearchParamsType, ISeriesItemType } from '@/types/metrics';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { getColorHue } from '@/utils';
 

@@ -926,9 +926,9 @@ import {
   createStage,
   getStageBackends,
   getStageDetail,
-  putStage,
-} from '@/services/source/stage';
-import { getBackendServiceList } from '@/services/source/backend-services.ts';
+  updateStage,
+} from '@/services/source/gateway/stage';
+import { getBackendServiceList } from '@/services/source/gateway/backend';
 import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import {
@@ -1469,7 +1469,7 @@ const handleConfirmCreate = async () => {
 
 // 编辑环境
 const handleConfirmEdit = async () => {
-  await putStage(gatewayId.value, stageId, buildStageParams());
+  await updateStage(gatewayId.value, stageId, buildStageParams());
   Message({
     message: t('更新成功'),
     theme: 'success',

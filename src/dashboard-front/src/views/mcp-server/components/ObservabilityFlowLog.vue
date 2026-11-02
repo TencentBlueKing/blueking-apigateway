@@ -104,7 +104,7 @@ import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import { useGateway } from '@/stores';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import { fetchExportFlowLog, fetchObservabilityLogChart } from '@/services/source/observability';
+import { exportMcpLogs, getMcpLogTimechart } from '@/services/source/gateway/mcp-server/log';
 import ObservabilityBasicForm from '@/views/mcp-server/components/ObservabilityBasicForm.vue';
 import FlowLogChart from '@/views/mcp-server/components/FlowLogChart.vue';
 import FlowLogDetailTable from '@/views/mcp-server/components/FlowLogDetailTable.vue';
@@ -198,7 +198,7 @@ const getObservabilityLogChart = async () => {
 
     chartEmptyConf.value.emptyType = 'searchEmpty';
 
-    const res = await fetchObservabilityLogChart(apigwId.value, params as any, path);
+    const res = await getMcpLogTimechart(apigwId.value, params as any, path);
 
     if (!res || res?.series?.length === 0) {
       chartEmptyConf.value = {
@@ -308,7 +308,7 @@ const handleDownload = async (e: MouseEvent) => {
       limit: 10000,
     });
 
-    await fetchExportFlowLog(apigwId.value, queryParams as any, path);
+    await exportMcpLogs(apigwId.value, queryParams as any, path);
 
     Message({
       message: t('导出成功'),

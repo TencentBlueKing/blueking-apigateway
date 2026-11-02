@@ -197,7 +197,7 @@
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
 import CheckboxCollapse from './CheckboxCollapse.vue';
-import type { IHealthCheck } from '@/services/source/backend-services.ts';
+import type { IHealthCheck } from '@/types/backend';
 import {
   cloneDeep,
   isPlainObject,

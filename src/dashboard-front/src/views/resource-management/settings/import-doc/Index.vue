@@ -326,12 +326,12 @@
 import { Message } from 'bkui-vue';
 import editorMonaco from '@/components/ag-editor/Index.vue';
 import { getStrFromFile, messageError } from '@/utils';
+import { checkResourceImport } from '@/services/source/gateway/resource';
 import {
-  checkResourceImport,
-  importResourceDoc,
-  importResourceDocSwagger,
-  parseResourceDocArchive,
-} from '@/services/source/resource';
+  importDocsByArchive,
+  importDocsBySwagger,
+  parseDocArchive,
+} from '@/services/source/gateway/resource-doc';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { useSelection } from '@/hooks';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
@@ -413,7 +413,7 @@ const setEditValue = () => {
 const handleArchiveUpload = async ({ file }: UploadRequestOptions): Promise<IArchiveUploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);
-  const data = await parseResourceDocArchive(gatewayId, formData);
+  const data = await parseDocArchive(gatewayId, formData);
   return {
     code: 0,
     data,
@@ -495,7 +495,7 @@ const handleImportDoc = async () => {
       language: language.value,
     };
     const params = docType.value === 'archive' ? formData : paramsSwagger;
-    const fetchUrl: any = docType.value === 'archive' ? importResourceDoc : importResourceDocSwagger;
+    const fetchUrl: any = docType.value === 'archive' ? importDocsByArchive : importDocsBySwagger;
     const message = docType.value === 'archive' ? '资源文档' : '资源';
     await fetchUrl(gatewayId, params);
     Message({

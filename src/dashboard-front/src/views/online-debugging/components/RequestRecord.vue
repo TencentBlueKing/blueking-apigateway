@@ -197,10 +197,7 @@ import EditorMonaco from '@/components/ag-editor/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { ExpandOptions, PrimaryTableProps } from '@blueking/tdesign-ui';
-import {
-  getTestHistories,
-  getTestHistoriesDetails,
-} from '@/services/source/online-debugging';
+import { getApiTestHistoryDetail, getApiTestHistoryList } from '@/services/source/gateway/api-test';
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/utils';
 
@@ -412,7 +409,7 @@ const getList = async () => {
     limit: 10000,
     ...filterData.value,
   };
-  const results = await getTestHistories(apigwId.value, data);
+  const results = await getApiTestHistoryList(apigwId.value, data);
 
   results?.forEach((item: any) => {
     item.editorText = '';
@@ -439,7 +436,7 @@ const handleInput = () => {
 };
 
 const getDetails = async (id: number, row: Record<string, any>) => {
-  const response = await getTestHistoriesDetails(apigwId.value, id);
+  const response = await getApiTestHistoryDetail(apigwId.value, id);
 
   row.editorText = response?.response?.data?.curl;
   row.requestBody = response?.request?.body;

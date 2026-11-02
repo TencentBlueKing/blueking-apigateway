@@ -17,7 +17,7 @@
  */
 
 import type { ITabKey } from '@/services/types/query/personal-workbench.ts';
-import { getGatewayPendingList, getMcpPendingList } from '@/services/source/personal-workbench.ts';
+import { getGatewayPendingList, getMcpPendingList } from '@/services/source/me/workbench';
 
 // tab切换选项
 const personalWorkbenchTab = ref<ITabKey>('gateway');

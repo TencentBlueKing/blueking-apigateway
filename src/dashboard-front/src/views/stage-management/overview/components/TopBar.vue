@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { getStageList } from '@/services/source/stage';
+import { getStageList } from '@/services/source/gateway/stage';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { getStageStatus, getStatusText } from '@/utils';
 import { useGateway, useStage } from '@/stores';

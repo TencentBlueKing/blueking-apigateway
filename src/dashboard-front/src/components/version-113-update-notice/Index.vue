@@ -55,7 +55,7 @@
 <script lang="ts" setup>
 import { useEnv, useStage } from '@/stores';
 import { useGetStageList } from '@/hooks';
-import { getStageList } from '@/services/source/stage';
+import { getStageList } from '@/services/source/gateway/stage';
 import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
 import ReleaseStage from '@/components/release-stage/Index.vue';
 

@@ -134,10 +134,8 @@
 
 <script lang="ts" setup>
 import { useFeatureFlag } from '@/stores';
-import {
-  type IMCPServerPrompt,
-  getServer,
-} from '@/services/source/mcp-server';
+import { getServer } from '@/services/source/gateway/mcp-server/server';
+import type { IMCPServerPrompt } from '@/types/mcp-server';
 import AgDescription from '@/components/ag-description/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;

@@ -81,7 +81,8 @@ import type {
 } from 'echarts/types/dist/shared';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { IObservabilitySearchParams, ISeriesItemType } from '@/services/source/observability';
+import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
+import type { ISeriesItemType } from '@/types/metrics';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 // 图例类型定义

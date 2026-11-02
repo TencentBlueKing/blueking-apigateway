@@ -56,8 +56,8 @@
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { copy } from '@/utils';
-import { getESBSDKDoc } from '@/services/source/docs-esb';
-import { getGatewaySDKDoc } from '@/services/source/sdks';
+import { getESBSDKDoc } from '@/services/source/docs/esb';
+import { getGatewaySDKDoc } from '@/services/source/docs/gateway';
 import { docTabKey } from '../utils/doc-context';
 import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs';
 import { useEnv } from '@/stores';

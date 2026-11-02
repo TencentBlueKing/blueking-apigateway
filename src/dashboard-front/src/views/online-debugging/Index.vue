@@ -540,13 +540,10 @@ import Doc from '@/views/online-debugging/components/Doc.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import { useEnv, useGateway, useResourceDebugging } from '@/stores';
-import {
-  getApiDetail,
-  getResourcesOnline,
-  getStages,
-  postAPITest,
-  resourceSchema,
-} from '@/services/source/online-debugging';
+import { getReleasedResourceSchema, getReleasedStageResources } from '@/services/source/gateway/release';
+import { createApiTest } from '@/services/source/gateway/api-test';
+import { getGatewayDetail } from '@/services/source/gateway/gateway';
+import { getStageList } from '@/services/source/gateway/stage';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways.ts';
 
@@ -983,7 +980,7 @@ const getApigwReleaseResources = async () => {
       limit: 10000,
       offset: 0,
     };
-    const res = await getResourcesOnline(apigwId.value, stage.value, query);
+    const res = await getReleasedStageResources(apigwId.value, stage.value, query);
     const group: any = {};
     const defaultItem: any = {
       labelId: 'default',
@@ -1082,7 +1079,7 @@ const clearSchema = () => {
 
 const getResourceParams = async () => {
   if (!apigwId.value || !stage.value || !curResource.value?.id) return;
-  const res = await resourceSchema(apigwId.value, stage.value, curResource.value?.id);
+  const res = await getReleasedResourceSchema(apigwId.value, stage.value, curResource.value?.id);
 
   clearSchema();
   if (res?.body_example) {
@@ -1165,7 +1162,7 @@ const getApigwStages = async () => {
   };
 
   try {
-    const res = await getStages(apigwId.value, pageParams);
+    const res = await getStageList(apigwId.value, pageParams);
     stageList.value = res || [];
     if (stageList.value.length) {
       const effectiveStage = stageList.value.find((item: any) => item.release?.status === 'success' || item.resource_version?.version) || stageList.value[0];
@@ -1187,7 +1184,7 @@ const getApigwStages = async () => {
 
 const getApigwDetail = async () => {
   try {
-    const res = await getApiDetail(apigwId.value);
+    const res = await getGatewayDetail(apigwId.value);
     curApigw.value = res;
     curApigw.value.statusBoolean = Boolean(curApigw.value?.status);
   }
@@ -1517,7 +1514,7 @@ const handleSend = async (e: Event, name: string) => {
 
   try {
     isLoading.value = true;
-    const res = await postAPITest(apigwId.value, data);
+    const res = await createApiTest(apigwId.value, data);
 
     if (name === curResource.value?.name) {
       response.value = res;

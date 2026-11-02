@@ -386,15 +386,15 @@ import QueryUsagePopover from './components/QueryUsagePopover.vue';
 import SearchInput from './components/SearchInput.vue';
 import { useAccessLog, useFeatureFlag, useGateway } from '@/stores';
 import {
-  type ISearchParamsInterface,
-  fetchApigwAccessLogChart,
-  fetchApigwAccessLogList,
-  fetchApigwAccessLogShareLink,
-  fetchApigwStages,
-} from '@/services/source/access-log';
-import { exportLogs } from '@/services/source/report';
-import { getApigwResources } from '@/services/source/dashboard';
-import { getBackendServiceList } from '@/services/source/backend-services.ts';
+  exportAccessLogs,
+  getAccessLogList,
+  getAccessLogShareLink,
+  getAccessLogTimechart,
+} from '@/services/source/gateway/access-log';
+import type { ISearchParamsInterface } from '@/types/access-log';
+import { getResourceList } from '@/services/source/gateway/resource';
+import { getStageList } from '@/services/source/gateway/stage';
+import { getBackendServiceList } from '@/services/source/gateway/backend';
 import {
   AngleUpFill,
   CopyShape,
@@ -419,7 +419,7 @@ import type {
 } from '@/services/types/utils.ts';
 import type { EChartsType } from 'echarts';
 
-type IStageItem = IExtractApiReturn<typeof fetchApigwStages>[number];
+type IStageItem = IExtractApiReturn<typeof getStageList>[number];
 type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
 
 const { t } = useI18n();
@@ -725,7 +725,7 @@ const renderChart = (data: Record<string, any>) => {
 };
 
 const getResources = async () => {
-  const pageParams: Parameters<typeof getApigwResources>[1] = {
+  const pageParams: Parameters<typeof getResourceList>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,
@@ -734,7 +734,7 @@ const getResources = async () => {
   };
 
   try {
-    const res = await getApigwResources(apigwId.value, pageParams);
+    const res = await getResourceList(apigwId.value, pageParams);
     resourceList.value = res.results;
   }
   catch (err) {
@@ -901,8 +901,8 @@ const handleResourceChange = () => {
 };
 
 const getApigwStages = async () => {
-  const pageParams: Parameters<typeof fetchApigwStages>[1] = {};
-  const res = await fetchApigwStages(apigwId.value, pageParams);
+  const pageParams: Parameters<typeof getStageList>[1] = {};
+  const res = await getStageList(apigwId.value, pageParams);
   stageList.value = res || [];
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
@@ -947,7 +947,7 @@ const getList = () => {
 const getTableData = async (params: Record<string, any> = {}) => {
   // setSearchTimeRange();
   const { path } = getPayload();
-  const results = await fetchApigwAccessLogList(apigwId.value, params, path);
+  const results = await getAccessLogList(apigwId.value, params, path);
 
   expandedFields.value = results?.fields || [];
   pageCount.value = results?.count || 0;
@@ -960,7 +960,7 @@ const getApigwAccessLogChart = async () => {
   const { params, path } = getPayload();
   params.no_page = true;
 
-  const results = await fetchApigwAccessLogChart(apigwId.value, params, path);
+  const results = await getAccessLogTimechart(apigwId.value, params, path);
 
   chartData.value = results || {};
   renderChart(chartData.value);
@@ -1082,7 +1082,7 @@ const handleDownload = async (event: Event) => {
     params.offset = tableRef.value?.getPagination()?.current || 1;
     params.limit = 10000;
 
-    await exportLogs(apigwId.value, params, path);
+    await exportAccessLogs(apigwId.value, params, path);
 
     Message({
       message: t('导出成功'),
@@ -1105,7 +1105,7 @@ const handleClickCopyLink = async ({ request_id }: any) => {
   const params = { request_id };
   isShareLoading.value = true;
   try {
-    const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
+    const { link } = await getAccessLogShareLink(apigwId.value, params);
     copy(link || '');
   }
   catch (err) {

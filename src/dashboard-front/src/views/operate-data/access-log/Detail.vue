@@ -71,10 +71,8 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import {
-  type ILogDetailInterface,
-  fetchApigwAccessLogDetail,
-} from '@/services/source/access-log';
+import { getAccessLogDetail } from '@/services/source/gateway/access-log';
+import type { ILogDetailInterface } from '@/types/access-log';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -122,10 +120,10 @@ const getDetailData = async () => {
   };
   isDataLoading.value = true;
   try {
-    const res = await fetchApigwAccessLogDetail(
+    const res = await getAccessLogDetail(
       +routeParams.value.id,
       String(routeParams.value.requestId),
-      params as unknown as Parameters<typeof fetchApigwAccessLogDetail>[2],
+      params as unknown as Parameters<typeof getAccessLogDetail>[2],
     );
     details.value.result = res.results[0] || {};
     details.value.fields = res.fields;

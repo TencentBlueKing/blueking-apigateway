@@ -223,7 +223,7 @@
 <script setup lang="ts">
 import { useRouteParams, useRouteQuery } from '@vueuse/router';
 import { useEnv, useGateway } from '@/stores';
-import { getGatewayLabels } from '@/services/source/gateway.ts';
+import { getLabelList } from '@/services/source/gateway/label';
 import SelectCheckBox from '@/views/resource-management/settings/components/SelectCheckBox.vue';
 
 interface IProps {
@@ -415,7 +415,7 @@ watch(
 );
 
 const init = async () => {
-  labelsData.value = await getGatewayLabels(gatewayId.value);
+  labelsData.value = await getLabelList(gatewayId.value);
 };
 
 const handleLabelAddSuccess = async (labelId: number) => {

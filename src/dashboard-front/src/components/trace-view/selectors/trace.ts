@@ -29,7 +29,7 @@ import {
   getSpanServiceName,
   getSpanTimestamp,
 } from './span';
-import type { ITraceLog } from '@/services/source/observability';
+import type { ITraceLog } from '@/types/observability';
 
 export const getTraceId = (trace: { trace_id: string }) => trace.trace_id;
 

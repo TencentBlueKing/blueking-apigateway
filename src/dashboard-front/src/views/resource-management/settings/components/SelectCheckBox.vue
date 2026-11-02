@@ -135,12 +135,8 @@
 
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
-import { updateResourceLabels } from '@/services/source/resource';
-import {
-  createLabels,
-  deleteLabels,
-  updateLabel,
-} from '@/services/source/labels';
+import { updateResourceLabels } from '@/services/source/gateway/resource';
+import { createLabel, deleteLabel, updateLabel } from '@/services/source/gateway/label';
 import { useRouteParams } from '@vueuse/router';
 
 interface IProps {
@@ -254,7 +250,7 @@ const handleToggle = async (v: boolean) => {
 const addOption = async () => {
   const optionNameTmp = optionName.value.trim();
   if (optionNameTmp) {
-    const ret = await createLabels(gatewayId.value, { name: optionNameTmp });
+    const ret = await createLabel(gatewayId.value, { name: optionNameTmp });
     Message({
       message: t('标签新建成功'),
       theme: 'success',
@@ -350,7 +346,7 @@ const handleDeleteOptionItem = () => {
 // 删除某个标签
 const handleDeleteOptionItemConfirm = async (e: any) => {
   curLabelIds.value = curLabelIds.value.filter((item: number) => item !== e.id);
-  await deleteLabels(gatewayId.value, e.id);
+  await deleteLabel(gatewayId.value, e.id);
   Message({
     message: t('删除标签成功'),
     theme: 'success',

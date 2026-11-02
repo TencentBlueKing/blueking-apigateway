@@ -39,7 +39,7 @@
 <script setup lang="ts">
 import ActiveChecks from './components/ActiveChecks.vue';
 import PassiveChecks from './components/PassiveChecks.vue';
-import type { IHealthCheck } from '@/services/source/backend-services.ts';
+import type { IHealthCheck } from '@/types/backend';
 import { isPlainObject } from 'lodash-es';
 
 interface IProps {

@@ -69,11 +69,8 @@
 import { Message } from 'bkui-vue';
 import { useGateway } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
-import {
-  deleteBackendService,
-  getBackendServiceList,
-} from '@/services/source/backend-services.ts';
-import { getStageList } from '@/services/source/stage';
+import { deleteBackendService, getBackendServiceList } from '@/services/source/gateway/backend';
+import { getStageList } from '@/services/source/gateway/stage';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import AgTable from '@/components/ag-table/Index.vue';

@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ISpan as ITraceSpan } from '@/services/source/observability';
+import type { ISpan as ITraceSpan } from '@/types/observability';
 
 export type CrossRelation = {
   app_code: string

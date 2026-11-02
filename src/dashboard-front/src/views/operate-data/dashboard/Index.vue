@@ -392,19 +392,18 @@
 <script lang="ts" setup>
 import dayjs from 'dayjs';
 import { useGateway } from '@/stores';
-import {
-  type IChartDataLoading,
-  type IChartDataType,
-  type ISearchParamsType,
-  type IStatisticsType,
-  getApigwMetrics,
-  getApigwMetricsInstant,
-  getApigwResources,
-  getApigwStages,
-} from '@/services/source/dashboard';
+import { queryMetricsInstant, queryMetricsRange } from '@/services/source/gateway/metrics';
+import type {
+  IChartDataLoading,
+  IChartDataType,
+  ISearchParamsType,
+  IStatisticsType,
+} from '@/types/metrics';
+import { getResourceList } from '@/services/source/gateway/resource';
+import { getStageList } from '@/services/source/gateway/stage';
+import { getBackendServiceList } from '@/services/source/gateway/backend';
 import Top from './components/Top.vue';
 import LineChart from './components/LineChart.vue';
-import { getBackendServiceList } from '@/services/source/backend-services.ts';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
@@ -418,10 +417,10 @@ type InfoTypeItem = {
   dayjs: dayjs.Dayjs | null
 };
 
-type IStageItem = IExtractApiReturn<typeof getApigwStages>[number];
+type IStageItem = IExtractApiReturn<typeof getStageList>[number];
 type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
-type IResourceItem = IExtractListApiResults<typeof getApigwResources>;
-type MetricsType = Parameters<typeof getApigwMetrics>[1]['metrics'];
+type IResourceItem = IExtractListApiResults<typeof getResourceList>;
+type MetricsType = Parameters<typeof queryMetricsRange>[1]['metrics'];
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -531,8 +530,8 @@ watch(searchParams, () => {
 }, { deep: true });
 
 const getStages = async () => {
-  const pageParams: Parameters<typeof getApigwStages>[1] = {};
-  const res = await getApigwStages(apigwId.value, pageParams);
+  const pageParams: Parameters<typeof getStageList>[1] = {};
+  const res = await getStageList(apigwId.value, pageParams);
 
   stageList.value = res || [];
   if (!searchParams.value.stage_id) {
@@ -541,14 +540,14 @@ const getStages = async () => {
 };
 
 const getResources = async () => {
-  const pageParams: Parameters<typeof getApigwResources>[1] = {
+  const pageParams: Parameters<typeof getResourceList>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,
     limit: 10000,
     backend_id: (backend_id.value || undefined) as number | undefined,
   };
-  const response = await getApigwResources(apigwId.value, pageParams);
+  const response = await getResourceList(apigwId.value, pageParams);
   resourceList.value = response.results;
 };
 
@@ -571,12 +570,12 @@ const handleBackendChange = async () => {
 const getData = async (params: ISearchParamsType & { step?: string }, type: MetricsType) => {
   chartLoading.value[type as keyof IChartDataLoading] = true;
   try {
-    chartData.value[type as keyof IChartDataType] = await getApigwMetrics(
+    chartData.value[type as keyof IChartDataType] = await queryMetricsRange(
       apigwId.value,
       {
         ...params,
         metrics: type,
-      } as Parameters<typeof getApigwMetrics>[1],
+      } as Parameters<typeof queryMetricsRange>[1],
     ) as any;
   }
   finally {
@@ -597,12 +596,12 @@ const getInstantData = () => {
   statisticsTypes.value.forEach(async (type: string) => {
     chartLoading.value[type as keyof IChartDataLoading] = true;
     try {
-      statistics.value[type as keyof IStatisticsType] = await getApigwMetricsInstant(
+      statistics.value[type as keyof IStatisticsType] = await queryMetricsInstant(
         apigwId.value,
         {
           ...searchParams.value,
           metrics: type,
-        } as Parameters<typeof getApigwMetricsInstant>[1],
+        } as Parameters<typeof queryMetricsInstant>[1],
       );
     }
     finally {

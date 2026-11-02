@@ -157,8 +157,9 @@ import { STATUS_LIST } from '@/constants';
 import { useAccessLog } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import { type IObservabilityBasicForm, fetchObservabilityAppCode } from '@/services/source/observability';
-import { getServers } from '@/services/source/mcp-server';
+import type { IObservabilityBasicForm } from '@/services/source/gateway/mcp-server/log';
+import { getMcpAppPermissionAppCodes } from '@/services/source/gateway/mcp-server/permission';
+import { getServers } from '@/services/source/gateway/mcp-server/server';
 import QueryStatement from '@/views/mcp-server/components/QueryStatement.vue';
 
 interface IProps {
@@ -266,7 +267,7 @@ const fetchMcpServerList = async () => {
 // 获取AppCode列表
 const fetchMcpAppCodeList = async () => {
   try {
-    const res = await fetchObservabilityAppCode(apiGatewayId as number);
+    const res = await getMcpAppPermissionAppCodes(apiGatewayId as number);
     appCodeList.value = res?.bk_app_codes ?? [];
   }
   catch {

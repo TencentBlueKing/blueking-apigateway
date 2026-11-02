@@ -137,7 +137,7 @@
 import AgIcon from '@/components/ag-icon/Index.vue';
 import { copy as copyToClipboard } from '@/utils';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import { getLogsInfo } from '@/services/source/access-log';
+import { queryAccessLogByRequestId } from '@/services/source/platform/toolbox';
 import dayjs from 'dayjs';
 import { useGateway } from '@/stores';
 
@@ -196,7 +196,7 @@ const getDetailData = async () => {
   isDataLoading.value = true;
 
   try {
-    const res = await getLogsInfo(requestId.value) as any;
+    const res = await queryAccessLogByRequestId(requestId.value) as any;
     details.value.result = res.results?.[0] || {};
     details.value.fields = res.fields;
   }

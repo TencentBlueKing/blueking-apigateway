@@ -100,8 +100,8 @@
 <script lang="ts" setup>
 import { t } from '@/locales';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils';
-import type { IMCPServerWithUIState } from '@/services/source/mcp-server';
-import type { IMarketplaceItemWithUIState } from '@/services/source/mcp-market';
+import type { IMCPServerWithUIState } from '@/types/mcp-server';
+import type { IMarketplaceItemWithUIState } from '@/types/mcp-marketplace';
 
 interface IProps {
   placeholder?: string

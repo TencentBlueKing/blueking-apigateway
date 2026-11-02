@@ -81,55 +81,6 @@ export interface Gateway {
   links: Record<string, any>
 }
 
-export interface GatewayListItem {
-  // 创建者
-  created_by: string
-  // 创建时间
-  created_time: string
-  // 描述
-  description: string
-  // 额外信息
-  extra_info: Record<string, any>
-  // 网关ID
-  id: number
-  // 是否为官方网关
-  is_official: boolean
-  // 是否公开
-  is_public: boolean
-  // 是否为可编程网关，0 非可编程网关，1 可编程网关
-  kind: 0 | 1
-  // 网关名称
-  name: string
-  // 网关展示名
-  display_name?: string
-  // 资源数量
-  resource_count: number
-  // 网关状态
-  status: number
-  // 更新时间
-  updated_time: string
-  // 阶段列表
-  stages: {
-    // 阶段ID
-    id: number
-    // 阶段名称
-    name: string
-    // 是否已发布
-    released: boolean
-  }[]
-}
-
-// 导出参数interface
-export interface IExportParams {
-  export_type?: string
-  query?: string
-  method?: string
-  label_name?: string
-  file_type?: string
-  resource_ids?: Array<number>
-  resource_filter_condition?: any
-}
-
 export interface IStage {
   id: number
   name: string
@@ -154,25 +105,4 @@ export interface IApiGateway {
   created_by: string
   created_time: string
   updated_time: string
-}
-
-export interface IApiGatewayDetail extends IApiGateway {
-  maintainers: []
-  doc_maintainers: {
-    type: string
-    contacts: string[]
-    service_account: {
-      name: string
-      link: string
-    }
-  }
-  developers: string[]
-  public_key: string
-  allow_update_gateway_auth: boolean
-  api_domain: string
-  docs_url: string
-  public_key_fingerprint: string
-  bk_app_codes: string[]
-  related_app_codes: string[]
-  links: any
 }

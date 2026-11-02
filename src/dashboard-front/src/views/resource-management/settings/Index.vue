@@ -453,19 +453,16 @@ import { usePopInfoBox, useTableFilterChange } from '@/hooks';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateways.ts';
 import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
-import {
-  exportDocs,
-  getGatewayLabels,
-} from '@/services/source/gateway';
+import { exportDocs } from '@/services/source/gateway/resource-doc';
+import { getLabelList } from '@/services/source/gateway/label';
 import {
   batchDeleteResources,
   batchEditResources,
-  checkNeedNewVersion,
   deleteResources,
   exportResources,
   getResourceList,
-  getVersionList,
-} from '@/services/source/resource';
+} from '@/services/source/gateway/resource';
+import { checkNeedNewVersion, getVersionList } from '@/services/source/gateway/resource-version';
 import ResourceDetail from '@/views/resource-management/settings/components/ResourceDetail.vue';
 import SelectCheckBox from '@/views/resource-management/settings/components/SelectCheckBox.vue';
 import ResourceDocViewer from '@/views/resource-management/settings/components/ResourceDocViewer.vue';
@@ -1738,7 +1735,7 @@ const handleCreateResourceVersion = async () => {
 
 // 获取标签数据
 const getLabelsData = async () => {
-  const res = await getGatewayLabels(gatewayId);
+  const res = await getLabelList(gatewayId);
   res.forEach((e: any) => e.isEdited = false);
   labelsData.value = res;
 };

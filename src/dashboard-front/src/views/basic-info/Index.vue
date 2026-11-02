@@ -781,9 +781,9 @@ import {
   getGatewayDetail,
   getGuideDocs,
   patchGateway,
-  putGatewayBasics,
-  toggleStatus,
-} from '@/services/source/gateway.ts';
+  updateGateway,
+  updateGatewayStatus,
+} from '@/services/source/gateway/gateway';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
@@ -1094,7 +1094,7 @@ const handleChangeApigwStatus = async () => {
   const status = basicInfoData.value.status === 1 ? 0 : 1;
   try {
     statusChanging.value = true;
-    await toggleStatus(apigwId.value, { status });
+    await updateGatewayStatus(apigwId.value, { status });
     basicInfoData.value = Object.assign(basicInfoData.value, { status });
     syncBasicInfo();
     Message({
@@ -1270,7 +1270,7 @@ const handleRelatedAppCodesChange = async (payload: Record<string, string[]>) =>
     ...basicInfoData.value,
     ...payload,
   };
-  await putGatewayBasics(apigwId.value, buildUpdatePayload(params));
+  await updateGateway(apigwId.value, buildUpdatePayload(params));
   basicInfoData.value = Object.assign(basicInfoData.value, params);
   syncBasicInfo();
   Message({

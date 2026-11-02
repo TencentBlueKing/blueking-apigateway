@@ -139,8 +139,8 @@ import {
   exportVersion,
   exportVersionDocs,
   getVersionList,
-} from '@/services/source/resource.ts';
-import { getStageList } from '@/services/source/stage';
+} from '@/services/source/gateway/resource-version';
+import { getStageList } from '@/services/source/gateway/stage';
 import CreateSDK from './CreateSDK.vue';
 import ResourceDetail from './ResourceDetail.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';

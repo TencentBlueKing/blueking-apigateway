@@ -333,7 +333,7 @@ import { throttle } from 'lodash-es';
 import { InfoBox, Message } from 'bkui-vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { useRouteParams } from '@vueuse/router';
-import { getVerifiedUserRequiredResources } from '@/services/source/resource.ts';
+import { getVerifiedUserRequiredResources } from '@/services/source/gateway/resource';
 
 interface IProps {
   yamlStr?: string

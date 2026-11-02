@@ -18,7 +18,7 @@
 
 import { defineStore } from 'pinia';
 import { MEMBER_ROLES, type MemberRole } from '@/constants/gateway-permission';
-import { getUserGatewayRole } from '@/services/source/me';
+import { getMyGatewayRole } from '@/services/source/gateway/member';
 import { useUserInfo } from './useUserInfo';
 
 export type GatewayRoleStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -92,7 +92,7 @@ export const useGatewayRoleStore = defineStore('useGatewayRole', () => {
       status: 'loading',
       previousRole: cached?.status === 'ready' ? cached.role : undefined,
     };
-    const request: Promise<MemberRole | ''> = getUserGatewayRole(gatewayId)
+    const request: Promise<MemberRole | ''> = getMyGatewayRole(gatewayId)
       .then((data) => {
         // 身份变化、主动失效或新请求已替代当前请求时，旧响应既不写缓存，也不返回旧角色，
         // 避免等待该 Promise 的旧导航继续用过期结果授权。

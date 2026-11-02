@@ -250,18 +250,18 @@
 <script lang="ts" setup>
 import { refDebounced } from '@vueuse/core';
 import {
-  getApigwResourceDocDocs,
-  getApigwResourcesDocs,
-  getApigwStagesDocs,
-  getGatewaysDetailsDocs,
-} from '@/services/source/docs';
+  getDocsGatewayDetail,
+  getDocsResourceDoc,
+  getDocsResourceList,
+  getDocsStageList,
+} from '@/services/source/docs/gateway';
 import {
   getComponentSystemDetail,
   getComponentSystemList,
   getESBSDKDetail,
   getSystemAPIList,
   getSystemComponentDoc,
-} from '@/services/source/docs-esb.ts';
+} from '@/services/source/docs/esb';
 import type { ComponentPublicInstance } from 'vue';
 import type {
   IDocsEsbBoardsSystemsListResponse as IBoard,
@@ -442,7 +442,7 @@ watch(() => route.query, async () => {
 const fetchTargetBasics = async () => {
   try {
     if (curTab.value === 'gateway') {
-      const { sdks: sdksResponse, ...restResponse } = await getGatewaysDetailsDocs(curTargetName.value);
+      const { sdks: sdksResponse, ...restResponse } = await getDocsGatewayDetail(curTargetName.value);
       curTargetBasics.value = restResponse;
       sdks.value = Array.isArray(sdksResponse) ? sdksResponse : [];
     }
@@ -478,7 +478,7 @@ const fetchApigwStages = async () => {
       offset: 0,
     };
 
-    stageList.value = await getApigwStagesDocs(curTargetName.value, query);
+    stageList.value = await getDocsStageList(curTargetName.value, query);
 
     const requestedStage = stageList.value.find((stage: IStage) => stage.name === route.query?.stage);
     if (requestedStage) {
@@ -504,7 +504,7 @@ const fetchApiList = async () => {
         offset: 0,
         stage_name: curStageName.value,
       };
-      res = await getApigwResourcesDocs(curTargetName.value, query);
+      res = await getDocsResourceList(curTargetName.value, query);
     }
     else if (curTab.value === 'component') {
       res = await getSystemAPIList(board.value, curTargetName.value);
@@ -563,7 +563,7 @@ const getApigwResourceDoc = async () => {
     let res: IDocContent | undefined;
     if (curTab.value === 'gateway') {
       const query = { stage_name: curStageName.value };
-      res = await getApigwResourceDocDocs(curTargetName.value, api.name, query);
+      res = await getDocsResourceDoc(curTargetName.value, api.name, query);
     }
     else if (curTab.value === 'component') {
       res = await getSystemComponentDoc(board.value, curTargetName.value, api.name);

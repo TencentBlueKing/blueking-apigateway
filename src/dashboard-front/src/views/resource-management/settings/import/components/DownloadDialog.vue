@@ -83,8 +83,8 @@
 <script setup lang="ts">
 import { type IDialog } from '@/types/common';
 import { Message } from 'bkui-vue';
-import { exportDocs } from '@/services/source/gateway';
-import { exportResources } from '@/services/source/resource';
+import { exportDocs } from '@/services/source/gateway/resource-doc';
+import { exportResources } from '@/services/source/gateway/resource';
 import { useRouteParams } from '@vueuse/router';
 
 const isShow = defineModel<boolean>({

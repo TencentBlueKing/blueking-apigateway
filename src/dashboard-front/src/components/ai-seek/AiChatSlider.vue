@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { getAICompletion } from '@/services/source/ai';
+import { getAICompletion } from '@/services/source/gateway/ai';
 import { useGateway } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
 import MarkdownIt from 'markdown-it';

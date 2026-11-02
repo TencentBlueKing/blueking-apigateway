@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ISpan } from '@/services/source/observability';
+import type { ISpan } from '@/types/observability';
 
 export type ViewedBoundsFunctionType = (start: number, end: number) => {
   start: number

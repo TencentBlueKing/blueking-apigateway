@@ -449,7 +449,7 @@ import {
   useFeatureFlag,
 } from '@/stores';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
-import { getGatewayList } from '@/services/source/gateway';
+import { getGatewayList } from '@/services/source/gateway/gateway';
 import { vIntersectionObserver } from '@vueuse/components';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';

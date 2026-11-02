@@ -96,7 +96,7 @@
 import dayjs from 'dayjs';
 import { isNumber } from 'lodash-es';
 import { t } from '@/locales';
-import type { ILatencyDistribution, ITraceDetail } from '@/services/source/observability';
+import type { ILatencyDistribution, ITraceDetail } from '@/types/observability';
 import AgStatusDot from '@/components/ag-status-dot/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }

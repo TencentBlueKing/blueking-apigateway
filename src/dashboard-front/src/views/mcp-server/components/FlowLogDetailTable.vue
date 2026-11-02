@@ -131,11 +131,8 @@ import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 // 图标组件
 import { CopyShape, EnlargeLine, InfoLine, NarrowLine } from 'bkui-vue/lib/icon';
 // 服务请求
-import {
-  type IFlowLogTable,
-  type IObservabilitySearchParams,
-  fetchObservabilityLogList,
-} from '@/services/source/observability';
+import { type IObservabilitySearchParams, getMcpLogList } from '@/services/source/gateway/mcp-server/log';
+import type { IFlowLogTable } from '@/types/observability';
 // 工具函数
 import { copy } from '@/utils';
 import { t } from '@/locales';
@@ -446,7 +443,7 @@ const getPagination = () => {
  */
 const getTableData = async (params: IObservabilitySearchParams = {}, extraStr?: string) => {
   try {
-    const res = await fetchObservabilityLogList(apiGatewayId as number, params as any, extraStr);
+    const res = await getMcpLogList(apiGatewayId as number, params as any, extraStr);
     const { fields = [], count = 0 } = res ?? {};
     // 更新展开字段配置
     expandedFields.value = fields;

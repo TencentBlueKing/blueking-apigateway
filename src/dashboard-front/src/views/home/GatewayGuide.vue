@@ -84,7 +84,7 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import Guide from '@/components/guide/Index.vue';
-import { getGuideDocs } from '@/services/source/gateway.ts';
+import { getGuideDocs } from '@/services/source/gateway/gateway';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 const { t } = useI18n();

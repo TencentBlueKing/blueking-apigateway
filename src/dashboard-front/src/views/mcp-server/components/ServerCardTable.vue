@@ -49,12 +49,8 @@ import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import {
-  type IMCPFilterParams,
-  type IMCPServerCategory,
-  type IMCPServerWithUIState,
-  getServers,
-} from '@/services/source/mcp-server';
+import { getServers } from '@/services/source/gateway/mcp-server/server';
+import type { IMCPFilterParams, IMCPServerCategory, IMCPServerWithUIState } from '@/types/mcp-server';
 import type { IGatewaysMcpServersListQuery } from '@/services/types/query/gateways.ts';
 import type { IMCPServerFilterOptionsOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';

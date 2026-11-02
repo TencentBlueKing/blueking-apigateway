@@ -17,7 +17,7 @@
  */
 import { defineStore } from 'pinia';
 
-import { getFeatureFlags } from '@/services/source/basic';
+import { getFeatureFlags } from '@/services/source/platform/setting';
 
 type FlagType = Awaited<ReturnType<typeof getFeatureFlags>>;
 
