@@ -1122,9 +1122,11 @@ class TestOpenAPIExporter:
 
         assert operation == {
             "operationId": fake_resource_dict["name"],
+            "deprecated": False,
             "description": fake_resource_dict["description"],
             "tags": fake_resource_dict["labels"],
             "x-bk-apigateway-resource": {
+                "deprecatedNotes": "",
                 "descriptionEn": fake_resource_dict["description_en"],
                 "isPublic": fake_resource_dict["is_public"],
                 "allowApplyPermission": fake_resource_dict["allow_apply_permission"],

@@ -148,6 +148,8 @@ def snapshot_resource(
         "path": resource.path,
         "match_subpath": resource.match_subpath,
         "enable_websocket": resource.enable_websocket,
+        "is_deprecated": resource.is_deprecated,
+        "deprecated_notes": resource.deprecated_notes,
         "is_public": resource.is_public,
         "allow_apply_permission": resource.allow_apply_permission,
         "created_time": time.format(resource.created_time),

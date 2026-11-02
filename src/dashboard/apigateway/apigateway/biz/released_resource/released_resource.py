@@ -35,6 +35,8 @@ class ReleasedResourceData:
     description_en: Optional[str] = field(default=None)
     match_subpath: bool = field(default=False)
     enable_websocket: bool = field(default=False)
+    is_deprecated: bool = field(default=False)
+    deprecated_notes: str = field(default="")
     is_public: bool = field(default=False)
     kind: str = field(default=ResourceKindEnum.STANDARD.value)
     allow_apply_permission: bool = field(default=False)
@@ -66,6 +68,8 @@ class ReleasedResourceData:
             description_en=released_resource_data.get("description_en"),
             match_subpath=released_resource_data.get("match_subpath", False),
             enable_websocket=released_resource_data.get("enable_websocket", False),
+            is_deprecated=released_resource_data.get("is_deprecated", False),
+            deprecated_notes=released_resource_data.get("deprecated_notes", ""),
             is_public=released_resource_data["is_public"],
             kind=released_resource_data.get("kind") or ResourceKindEnum.STANDARD.value,
             allow_apply_permission=released_resource_data.get("allow_apply_permission", True),

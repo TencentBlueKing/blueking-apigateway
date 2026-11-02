@@ -65,6 +65,7 @@ from .serializers import (
     BackendPathCheckOutputSLZ,
     ResourceBatchDestroyInputSLZ,
     ResourceBatchUpdateInputSLZ,
+    ResourceDeprecationInputSLZ,
     ResourceExportInputSLZ,
     ResourceExportOutputSLZ,
     ResourceImportCheckFailOutputSLZ,
@@ -417,6 +418,40 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
+class ResourceDeprecationUpdateApi(ResourceQuerySetMixin, generics.GenericAPIView):
+    serializer_class = ResourceDeprecationInputSLZ
+    gateway_action = GatewayActionEnum.MANAGE_GATEWAY.value
+    lookup_url_kwarg = "resource_id"
+    lookup_field = "id"
+
+    @extend_schema(request=ResourceDeprecationInputSLZ, responses={204: None}, tags=["WebAPI.Resource"])
+    @transaction.atomic
+    def patch(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+        instance = get_object_or_404(self.get_queryset().select_for_update(), id=kwargs["resource_id"])
+        self.check_object_permissions(request, instance)
+        if all(getattr(instance, key) == value for key, value in slz.validated_data.items()):
+            return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+        data_before = get_model_dict(instance)
+        instance.is_deprecated = slz.validated_data["is_deprecated"]
+        instance.deprecated_notes = slz.validated_data["deprecated_notes"]
+        instance.updated_by = request.user.username
+        instance.updated_time = now_datetime()
+        instance.save(update_fields=["is_deprecated", "deprecated_notes", "updated_by", "updated_time"])
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.identity,
+            data_before=data_before,
+            data_after=get_model_dict(instance),
+        )
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
 @method_decorator(
     name="put",
     decorator=extend_schema(
@@ -445,8 +480,8 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
             label_ids=slz.validated_data["label_ids"],
         )
 
-        # 更新标签也要更新资源的更新时间
-        instance.save()
+        # Only touch the timestamp; a stale instance must not overwrite deprecation metadata.
+        instance.save(update_fields=["updated_time"])
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 

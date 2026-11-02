@@ -72,6 +72,7 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 | 环境 / Stage | `Stage`；id；`(gateway, name)` 唯一 | 网关内的发布目标，如 prod、test，带变量、状态和环境配置；与 DataPlane 是不同维度。 |
 | 环境变量 / Stage Variable | `Stage.vars` | 环境级键值，用于受支持的路径或配置渲染；可引用范围由配置契约决定，与进程环境变量区分。 |
 | 资源 / Resource | `Resource`；id；归属 Gateway | 可编辑的 API 定义，含名称、方法、路径、类别与代理；不直接归属 Stage。 |
+| 资源弃用 / Resource Deprecation | `Resource.is_deprecated`、`deprecated_notes`；资源 ID | 管理员通过资源列表独立操作或 OpenAPI 导入标记；保存为编辑态配置，随 ResourceVersion 发布后在对应环境文档展示。取消／回滚同样遵循版本语义，不改变转发、认证、授权或公开性；网关级弃用保持独立。OpenAPI 使用 Operation `deprecated` 与 `x-bk-apigateway-resource.deprecatedNotes`。 |
 | 资源名称 / Resource Name | `Resource.name` | 网关内业务标识，用于快照、OpenAPI、MCP 映射；与主键、METHOD path、工具别名区分。Web 写入校验网关内 name 及 `(gateway, method, path)` 唯一、lower-dash 归一撞名（getFoo/get_foo）、同路径 ANY 与其他方法互斥；不能都称为 ORM 唯一约束。 |
 | 资源类别 / Resource Kind | `Resource.kind` | `standard` 或 `ai`；缺少 kind 的历史快照按 standard 解释。 |
 | 资源代理配置 / Resource Proxy | `Proxy`；`(resource, type)` 唯一 | `Resource.proxy_id` 选择代理，`Proxy.backend` 引用 Backend；与 mcp-proxy 和 ai-proxy 插件区分。 |

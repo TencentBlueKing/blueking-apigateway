@@ -71,6 +71,9 @@ class ResourceInfoSLZ(serializers.Serializer):
     has_openapi_schema = serializers.SerializerMethodField(help_text="是否配置了 openapi schema")
     openapi_schema = serializers.SerializerMethodField(help_text="资源openapi schema")
 
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_notes = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
+
     class Meta:
         ref_name = "apigateway.apis.web.resource_version.serializers.ResourceInfoSLZ"
 

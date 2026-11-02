@@ -140,6 +140,7 @@ class BaseExporter:
                 resource["none_schema"] = False
 
             operation.update(schema)
+            operation["deprecated"] = resource.get("is_deprecated", False)
             if "responses" not in operation:
                 operation["responses"] = {"default": {"description": ""}}
 
@@ -177,6 +178,7 @@ class BaseExporter:
             method = self._adapt_method(resource["method"])
             operation = {
                 "operationId": resource["name"],
+                "deprecated": resource.get("is_deprecated", False),
                 "description": resource["description"],
                 "tags": resource.get("labels", []),
                 "responses": {
@@ -195,6 +197,7 @@ class BaseExporter:
         kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
 
         operation[OPENAPI_RESOURCE_EXTENSION] = {
+            "deprecatedNotes": resource.get("deprecated_notes", "") if resource.get("is_deprecated") else "",
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
             "matchSubpath": resource.get("match_subpath", False),

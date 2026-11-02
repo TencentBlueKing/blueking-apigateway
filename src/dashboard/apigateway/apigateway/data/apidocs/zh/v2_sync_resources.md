@@ -18,6 +18,30 @@
 | delete   | boolean | 否   | 是否删除未指定的资源，如果为 true，则删除网关中未在 content 中指定的资源，以确保网关中资源和 content 中描述的资源一致 |
 | doc_language   | string  | 否   | 生成接口文档的语言：en: 英文，zh: 中文，不传不生成                                          |
 
+#### 资源弃用
+
+Operation 标准字段 `deprecated`（boolean，默认 `false`）声明 API 是否弃用；弃用说明通过
+`x-bk-apigateway-resource.deprecatedNotes` 配置（string，最长 2048 字符，默认空字符串）。
+
+```yaml
+paths:
+  /users/:
+    get:
+      operationId: list_users
+      deprecated: true
+      x-bk-apigateway-resource:
+        deprecatedNotes: "请改用 list_users_v2：https://example.com/docs/list_users_v2"
+      responses:
+        "200":
+          description: OK
+```
+
+同步修改资源编辑态，生成资源版本并发布后，开发者才能在对应环境文档看到标记及说明。
+设置 `deprecated: false` 会取消弃用并清空说明，也需要发布新版本。
+省略 `deprecated` 按 `false` 同步，省略 `deprecatedNotes` 按空字符串同步；自动化管理的资源应将
+管理员在列表页设置的弃用信息写回 YAML，否则下一次同步会覆盖手工标记。
+不需要传入 `doc_language`，不修改现有文档正文。弃用仅用于提示，不影响 API 调用、认证或授权。
+
 #### 资源 YAML 字段说明
 
 资源配置通过 OpenAPI Operation 下的 `x-bk-apigateway-resource` 扩展字段导入，支持以下字段：
@@ -25,6 +49,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
 | `kind` | string | 否 | 资源类型：`standard` 表示普通 API，`ai` 表示模型代理 API；不传默认为 `standard` |
+| `deprecatedNotes` | string | 否 | API 弃用说明，最长 2048 字符；仅在 Operation 的 `deprecated` 为 `true` 时保留 |
 | `isPublic` | boolean | 否 | 是否公开资源，默认 `true` |
 | `allowApplyPermission` | boolean | 否 | 是否允许用户申请资源权限，默认 `true` |
 | `matchSubpath` | boolean | 否 | 是否匹配所有子路径，默认 `false`；普通 API 需与 `backend.matchSubpath` 保持一致，模型代理 API 不支持开启 |

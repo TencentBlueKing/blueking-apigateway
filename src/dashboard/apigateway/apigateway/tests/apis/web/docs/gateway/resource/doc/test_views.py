@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
 from django.test import Client
 from django.urls import reverse
 
@@ -34,6 +35,7 @@ class TestDocListApi:
 
         assert resp.status_code == 401
 
+    @pytest.mark.parametrize("deprecation", [{}, {"is_deprecated": True, "deprecated_notes": "Use v2"}])
     def test_list(
         self,
         request_view,
@@ -42,7 +44,12 @@ class TestDocListApi:
         fake_stage,
         fake_released_resource,
         fake_released_resource_doc,
+        deprecation,
     ):
+        data = fake_released_resource.data
+        data.update(deprecation)
+        fake_released_resource.data = data
+        fake_released_resource.save()
         resp = request_view(
             method="GET",
             view_name="docs.gateway.resource.doc.retrieve",
@@ -58,6 +65,8 @@ class TestDocListApi:
         assert result["data"]["content"]
         assert result["data"]["updated_time"]
         data = result["data"]
+        assert data["is_deprecated"] is deprecation.get("is_deprecated", False)
+        assert data["deprecated_notes"] == deprecation.get("deprecated_notes", "")
         assert "X-Bkapi-Authorization" in data["auth_content"]
         assert data["auth_content"] in data["content"]
         assert "body_content" in data

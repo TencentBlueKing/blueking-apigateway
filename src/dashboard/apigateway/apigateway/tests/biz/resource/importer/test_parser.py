@@ -131,6 +131,24 @@ class TestResourceDataConvertor:
 
 
 class TestBaseParser:
+    def test_operation_deprecation(self):
+        resources = BaseParser(
+            _openapi_data={
+                "paths": {
+                    "/users": {
+                        "get": {
+                            "operationId": "list_users",
+                            "deprecated": True,
+                            "x-bk-apigateway-resource": {"deprecatedNotes": "Use list_users_v2"},
+                        }
+                    }
+                }
+            }
+        ).get_resources()
+
+        assert resources[0]["is_deprecated"] is True
+        assert resources[0]["deprecated_notes"] == "Use list_users_v2"
+
     def test_get_ai_resource(self):
         parser = BaseParser(
             _openapi_data={
