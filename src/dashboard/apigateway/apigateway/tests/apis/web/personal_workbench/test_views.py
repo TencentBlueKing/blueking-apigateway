@@ -769,9 +769,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 0,
-            "mcp_count": 0,
-            "count": 0,
+            "gateways": 0,
+            "mcp_servers": 0,
+            "total": 0,
         }
 
     def test_count_gateway_pending(self, request_view, fake_gateway):
@@ -790,9 +790,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 1,
-            "mcp_count": 0,
-            "count": 1,
+            "gateways": 1,
+            "mcp_servers": 0,
+            "total": 1,
         }
 
     def test_count_mcp_pending(self, request_view, fake_mcp_server):
@@ -813,9 +813,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 0,
-            "mcp_count": 1,
-            "count": 1,
+            "gateways": 0,
+            "mcp_servers": 1,
+            "total": 1,
         }
 
     def test_count_combines_gateway_and_mcp_pending(self, request_view, fake_gateway, fake_mcp_server):
@@ -844,9 +844,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 2,
-            "mcp_count": 1,
-            "count": 3,
+            "gateways": 2,
+            "mcp_servers": 1,
+            "total": 3,
         }
 
     def test_count_excludes_non_maintainer_gateway(
@@ -879,9 +879,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 0,
-            "mcp_count": 0,
-            "count": 0,
+            "gateways": 0,
+            "mcp_servers": 0,
+            "total": 0,
         }
 
     def test_count_excludes_non_pending(self, request_view, fake_gateway, fake_mcp_server):
@@ -909,9 +909,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 0,
-            "mcp_count": 0,
-            "count": 0,
+            "gateways": 0,
+            "mcp_servers": 0,
+            "total": 0,
         }
 
     def test_count_excludes_deleted_mcp_pending(self, request_view, fake_mcp_server):
@@ -932,9 +932,9 @@ class TestWorkbenchPendingPermissionCountApi:
 
         assert resp.status_code == 200
         assert resp.json()["data"] == {
-            "gateway_count": 0,
-            "mcp_count": 0,
-            "count": 0,
+            "gateways": 0,
+            "mcp_servers": 0,
+            "total": 0,
         }
 
 

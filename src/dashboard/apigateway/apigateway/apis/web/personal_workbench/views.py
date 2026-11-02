@@ -309,13 +309,13 @@ class WorkbenchPendingPermissionCountApi(WorkbenchPermissionMixin, generics.Retr
     serializer_class = WorkbenchPendingPermissionCountOutputSLZ
 
     def retrieve(self, request, *args, **kwargs):
-        gateway_count = self._get_pending_gateway_permission_apply_queryset().count()
-        mcp_count = self._get_pending_mcp_permission_apply_queryset().count()
+        gateways = self._get_pending_gateway_permission_apply_queryset().count()
+        mcp_servers = self._get_pending_mcp_permission_apply_queryset().count()
         serializer = self.get_serializer(
             {
-                "gateway_count": gateway_count,
-                "mcp_count": mcp_count,
-                "count": gateway_count + mcp_count,
+                "gateways": gateways,
+                "mcp_servers": mcp_servers,
+                "total": gateways + mcp_servers,
             }
         )
         return OKJsonResponse(data=serializer.data)
