@@ -3554,3 +3554,43 @@ msgstr "%(host)s returned HTTP %(status_code)s: %(reason)s"
 
 #~ msgid "是否托管实例"
 #~ msgstr "Is managed instance"
+
+#: apigateway/core/backend_config.py
+msgid "模型实例名称不能重复。"
+msgstr "Model instance names must be unique."
+
+#: apigateway/core/backend_config.py
+msgid "模型实例优先级只能为 10（主实例）或 0（备用实例）。"
+msgstr "Model instance priority must be 10 (primary) or 0 (backup)."
+
+#: apigateway/core/backend_config.py
+msgid "至少需要一个主实例，且最多只能配置一个备用实例。"
+msgstr "At least one primary instance and at most one backup instance are required."
+
+#: apigateway/core/backend_config.py
+msgid "故障重试策略必须为数组。"
+msgstr "The fallback strategy must be an array."
+
+#: apigateway/core/backend_config.py
+msgid "多实例配置的权重必须为 1。"
+msgstr "Multi-instance weight must be 1."
+
+#: apigateway/core/backend_config.py
+msgid "轮询算法不支持配置 hash_on 和 key。"
+msgstr "Roundrobin does not accept hash_on or key."
+
+#: apigateway/core/backend_config.py
+msgid "配置备用实例时，至少需要启用一项故障重试条件。"
+msgstr "A backup instance requires at least one retry condition."
+
+#: apigateway/core/backend_config.py
+msgid "一致性哈希仅支持 vars_combinations 和 $bk_app_code。"
+msgstr "Consistent hashing only supports vars_combinations and $bk_app_code."
+
+#: apigateway/core/backend_config.py
+msgid "故障重试策略仅支持 http_429 和 http_5xx 数组。"
+msgstr "The fallback strategy only supports an array of http_429 and http_5xx."
+
+#: apigateway/apis/web/ai_backend/adapter.py
+msgid "认证凭据掩码无法恢复，请重新输入认证凭据。"
+msgstr "The masked credential cannot be restored. Please enter the credential again."

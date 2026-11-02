@@ -7,7 +7,12 @@ from rest_framework import serializers
 
 from apigateway.common.security import is_forbidden_host
 from apigateway.core.ai_backend import get_ai_backend_provider_config
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, AIBackendProviderEnum
+from apigateway.core.backend_config import AI_BACKUP_PRIORITY, AI_PRIMARY_PRIORITY
+from apigateway.core.constants import (
+    HOST_WITHOUT_SCHEME_PATTERN,
+    AIBackendFallbackStrategyEnum,
+    AIBackendProviderEnum,
+)
 
 
 class AIBackendEndpointField(serializers.CharField):
@@ -66,7 +71,9 @@ class AIBackendAuthHeaderSLZ(_StrictSerializer):
     value = serializers.CharField(allow_blank=False, trim_whitespace=False)
 
 
-class AIBackendWebInputSLZ(_StrictSerializer):
+class AIBackendWebInstanceInputSLZ(_StrictSerializer):
+    name = serializers.CharField(min_length=1, max_length=100, trim_whitespace=False)
+    priority = serializers.ChoiceField(choices=[AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY], default=AI_PRIMARY_PRIORITY)
     provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     endpoint = AIBackendEndpointField(required=False)
     model_endpoint = AIBackendEndpointField(required=False, allow_null=True)
@@ -74,7 +81,6 @@ class AIBackendWebInputSLZ(_StrictSerializer):
     auth_header = AIBackendAuthHeaderSLZ(required=False, allow_null=True)
     model = serializers.CharField(required=False, allow_null=True, allow_blank=False)
     model_options = serializers.DictField(required=False, default=dict)
-    timeout = serializers.IntegerField(required=False, default=300, min_value=1, max_value=300)
 
     def validate(self, attrs):
         provider_config = get_ai_backend_provider_config(attrs["provider"])
@@ -98,7 +104,29 @@ class AIBackendWebInputSLZ(_StrictSerializer):
         return attrs
 
 
-class AIBackendWebOutputSLZ(serializers.Serializer):
+class AIBackendWebConnectivityInputSLZ(_StrictSerializer):
+    stage_id = serializers.IntegerField()
+    instance = AIBackendWebInstanceInputSLZ()
+
+
+class AIBackendWebBalancerSLZ(_StrictSerializer):
+    algorithm = serializers.ChoiceField(choices=["roundrobin", "chash"])
+
+
+class AIBackendWebInputSLZ(_StrictSerializer):
+    timeout = serializers.IntegerField(required=False, default=300, min_value=1, max_value=300)
+    instances = AIBackendWebInstanceInputSLZ(many=True, allow_empty=False)
+    balancer = AIBackendWebBalancerSLZ(required=False)
+    fallback_strategy = serializers.ListField(
+        child=serializers.ChoiceField(choices=AIBackendFallbackStrategyEnum.get_choices()),
+        required=False,
+        allow_empty=True,
+    )
+
+
+class AIBackendWebInstanceOutputSLZ(serializers.Serializer):
+    name = serializers.CharField()
+    priority = serializers.IntegerField()
     provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     endpoint = serializers.URLField()
     model_endpoint = serializers.URLField(allow_null=True)
@@ -106,4 +134,12 @@ class AIBackendWebOutputSLZ(serializers.Serializer):
     auth_header = AIBackendAuthHeaderSLZ(allow_null=True)
     model = serializers.CharField(allow_null=True)
     model_options = serializers.DictField()
+
+
+class AIBackendWebOutputSLZ(serializers.Serializer):
     timeout = serializers.IntegerField()
+    instances = AIBackendWebInstanceOutputSLZ(many=True)
+    balancer = AIBackendWebBalancerSLZ(required=False)
+    fallback_strategy = serializers.ListField(
+        child=serializers.ChoiceField(choices=AIBackendFallbackStrategyEnum.get_choices()), required=False
+    )

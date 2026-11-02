@@ -4,7 +4,7 @@ import pytest
 from django.db import connection
 from django_dynamic_fixture import G
 
-from apigateway.core.backend_config import AIBackendConfig, StandardBackendConfig
+from apigateway.core.backend_config import AIBackendConfig, AIBackendInstance, StandardBackendConfig
 from apigateway.core.constants import BackendKindEnum
 from apigateway.core.models import Backend, BackendConfig
 
@@ -195,21 +195,25 @@ def test_ai_backend_config_rejects_forbidden_headers(ai_backend_config, header):
         (("instances", 0, "options", "metadata"), {"region": "{{env.region}}"}),
     ],
 )
-def test_ai_backend_config_rejects_environment_variables(ai_backend_config, path, value):
+@pytest.mark.parametrize("model_type", [AIBackendConfig, AIBackendInstance])
+def test_ai_backend_config_rejects_environment_variables(ai_backend_config, path, value, model_type):
     target = ai_backend_config
     for key in path[:-1]:
         target = target[key]
     target[path[-1]] = value
 
+    data = ai_backend_config if model_type is AIBackendConfig else ai_backend_config["instances"][0]
     with pytest.raises(ValueError, match="must not contain environment variables"):
-        AIBackendConfig.model_validate(ai_backend_config)
+        model_type.model_validate(data)
 
 
-def test_ai_backend_config_rejects_environment_variables_in_header_names(ai_backend_config):
+@pytest.mark.parametrize("model_type", [AIBackendConfig, AIBackendInstance])
+def test_ai_backend_config_rejects_environment_variables_in_header_names(ai_backend_config, model_type):
     ai_backend_config["instances"][0]["auth"]["header"]["{{env.header_name}}"] = "value"
 
+    data = ai_backend_config if model_type is AIBackendConfig else ai_backend_config["instances"][0]
     with pytest.raises(ValueError, match="must not contain environment variables"):
-        AIBackendConfig.model_validate(ai_backend_config)
+        model_type.model_validate(data)
 
 
 @pytest.mark.parametrize("patch", [{"instances": []}, {"unknown": True}, {"timeout": 0}])
@@ -423,4 +427,10 @@ def test_ai_backend_config_rejects_forbidden_model_endpoint_port(ai_backend_conf
     instance["model_endpoint"] = "https://example.com:22/models"
 
     with pytest.raises(ValueError, match="port is forbidden"):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
+def test_ai_backend_config_rejects_environment_variables_in_global_routing(ai_backend_config):
+    ai_backend_config["balancer"] = {"algorithm": "chash", "hash_on": "vars", "key": "{env.hash_key}"}
+    with pytest.raises(ValueError, match="must not contain environment variables"):
         AIBackendConfig.model_validate(ai_backend_config)

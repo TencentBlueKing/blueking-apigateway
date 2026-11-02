@@ -12,15 +12,13 @@ from apigateway.biz.backend.connectivity import (
 )
 
 
-def _config(provider="openai", **instance_values):
-    instance = {
+def _instance(provider="openai", **instance_values):
+    return {
         "name": "primary",
         "provider": provider,
-        "weight": 0,
         "auth": {"header": {"Authorization": "Bearer secret"}},
         **instance_values,
     }
-    return {"timeout": 300, "instances": [instance]}
 
 
 @pytest.mark.parametrize(
@@ -46,13 +44,13 @@ def test_non_derivable_endpoint_requires_explicit_model_endpoint():
 def test_inferred_models_failure_does_not_fallback(mocker):
     mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
     http_get = mocker.patch("apigateway.biz.backend.connectivity.http_get", return_value=(False, {}))
-    config = _config(
+    instance = _instance(
         "openai-compatible",
         override={"endpoint": "https://llm.example.com/v1/chat/completions"},
     )
 
     with pytest.raises(AIBackendModelEndpointRequiredError):
-        get_ai_backend_model_ids(config)
+        get_ai_backend_model_ids(instance)
 
     assert http_get.call_count == 1
     assert http_get.call_args.args[0] == "https://llm.example.com/v1/models"
@@ -64,13 +62,13 @@ def test_explicit_models_endpoint_may_use_different_origin(mocker):
         "apigateway.biz.backend.connectivity.http_get",
         return_value=(True, {"data": [{"id": "model-a"}]}),
     )
-    config = _config(
+    instance = _instance(
         "openai-compatible",
         override={"endpoint": "https://chat.example.com/v1/chat/completions"},
         model_endpoint="https://catalog.example.net/models",
     )
 
-    assert get_ai_backend_model_ids(config) == ["model-a"]
+    assert get_ai_backend_model_ids(instance) == ["model-a"]
     assert [call.args[0] for call in resolver.call_args_list] == [
         "https://chat.example.com/v1/chat/completions",
         "https://catalog.example.net/models",
@@ -92,7 +90,7 @@ def test_builtin_provider_uses_registry_models_endpoint(mocker, provider, expect
         return_value=(True, {"data": [{"id": "model-a"}]}),
     )
 
-    assert get_ai_backend_model_ids(_config(provider)) == ["model-a"]
+    assert get_ai_backend_model_ids(_instance(provider)) == ["model-a"]
     assert http_get.call_args.args[0] == expected_url
 
 
@@ -108,7 +106,7 @@ def test_provider_redirect_is_rejected(mocker):
     mocker.patch("apigateway.biz.backend.connectivity.http_get", return_value=(False, {"status_code": 302}))
 
     with pytest.raises(AIBackendConnectivityError):
-        get_ai_backend_model_ids(_config())
+        get_ai_backend_model_ids(_instance())
 
 
 def test_rejects_malformed_provider_response(mocker):
@@ -119,7 +117,7 @@ def test_rejects_malformed_provider_response(mocker):
     )
 
     with pytest.raises(AIBackendConnectivityError):
-        get_ai_backend_model_ids(_config())
+        get_ai_backend_model_ids(_instance())
 
 
 def test_provider_failure_log_does_not_expose_credentials(caplog, mocker):
@@ -130,7 +128,7 @@ def test_provider_failure_log_does_not_expose_credentials(caplog, mocker):
     )
 
     with caplog.at_level(logging.WARNING), pytest.raises(AIBackendConnectivityError):
-        get_ai_backend_model_ids(_config())
+        get_ai_backend_model_ids(_instance())
 
     assert "Bearer secret" not in caplog.text
     assert "Authorization" not in caplog.text

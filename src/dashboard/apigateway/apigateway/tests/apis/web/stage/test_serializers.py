@@ -129,10 +129,10 @@ class TestStageInputSLZ:
                     {
                         "id": backend.id,
                         "config": {
-                            "provider": "openai",
-                            "api_key": "secret",
-                            "model_options": {},
                             "timeout": 300,
+                            "instances": [
+                                {"name": "primary", "provider": "openai", "api_key": "secret", "model_options": {}}
+                            ],
                         },
                     }
                 ],

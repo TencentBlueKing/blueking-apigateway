@@ -142,7 +142,7 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
         slz = self.get_serializer(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
         try:
-            models = get_ai_backend_model_ids(slz.validated_data["config"])
+            models = get_ai_backend_model_ids(slz.validated_data["config"]["instance"])
         except AIBackendEndpointError:
             raise error_codes.FAILED_PRECONDITION.format(_("模型服务地址不安全或无法解析，请检查配置。")) from None
         except AIBackendModelEndpointRequiredError:

@@ -55,11 +55,12 @@ def test_automation_defaults_weight_and_accepts_multiple_headers():
     assert "options" not in slz.validated_data["instances"][0]
 
 
-def test_automation_rejects_multiple_instances_in_first_phase():
+def test_automation_accepts_multiple_instances_with_fixed_weights():
     slz = AIBackendConfigSLZ(data={"instances": [_custom_instance("primary"), _custom_instance("fallback")]})
 
-    assert not slz.is_valid()
-    assert "instances" in slz.errors
+    slz.is_valid(raise_exception=True)
+    assert all(item["weight"] == 1 and item["priority"] == 10 for item in slz.validated_data["instances"])
+    assert slz.validated_data["fallback_strategy"] == ["http_429", "http_5xx"]
 
 
 def test_ai_backend_ignores_unknown_outer_field():

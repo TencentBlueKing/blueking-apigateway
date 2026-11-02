@@ -5,9 +5,17 @@ from django.utils.translation import gettext as _
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
-from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.apis.backend_config import pydantic_to_drf_validation_error, validate_ai_backend_config
 from apigateway.core.ai_backend import get_ai_backend_provider_config
-from apigateway.core.backend_config import AIBackendConfig, mask_header_value
+from apigateway.core.backend_config import (
+    AI_BACKUP_PRIORITY,
+    AI_INSTANCE_WEIGHT,
+    AI_PRIMARY_PRIORITY,
+    AIBackendConfig,
+    AIBackendInstance,
+    get_ai_pool_routing_error,
+    mask_header_value,
+)
 
 _NOT_RESTORED = object()
 
@@ -20,18 +28,57 @@ class AIBackendWebConfigAdapter:
     @classmethod
     def to_internal(cls, data: dict, *, existing_config: dict | None = None) -> dict:
         try:
-            restored_auth = cls._restore_masked_auth(data, existing_config)
+            old_instances = cls._existing_instances(existing_config)
+            instances = []
+            for item in data["instances"]:
+                instance = cls._instance_to_internal(item, old_instances.get(item["name"]))
+                instance.update(
+                    priority=item["priority"],
+                    weight=AI_INSTANCE_WEIGHT,
+                )
+                instances.append(instance)
+            config = {"timeout": data.get("timeout", 300), "instances": instances}
+            if len(instances) > 1:
+                for key in ("balancer", "fallback_strategy"):
+                    if key in data:
+                        config[key] = data[key]
+            return validate_ai_backend_config(config)
         except PydanticValidationError, AIBackendWebConfigNotRepresentable:
             raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
+
+    @classmethod
+    def to_connectivity(cls, data: dict, *, existing_config: dict | None = None) -> dict:
+        """Probe an instance independently; its primary/backup role is irrelevant."""
+        try:
+            old_instances = cls._existing_instances(existing_config)
+            instance = cls._instance_to_internal(data, old_instances.get(data["name"]))
+        except PydanticValidationError, AIBackendWebConfigNotRepresentable:
+            raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
+
+        try:
+            return AIBackendInstance.model_validate(instance).model_dump(exclude_unset=True, exclude_none=True)
+        except PydanticValidationError as err:
+            raise pydantic_to_drf_validation_error(err) from err
+
+    @staticmethod
+    def _existing_instances(config: dict | None) -> dict:
+        if not config:
+            return {}
+        existing = AIBackendConfig.model_validate(config).to_config()["instances"]
+        return {item["name"]: item for item in existing}
+
+    @classmethod
+    def _instance_to_internal(cls, data: dict, existing: dict | None) -> dict:
+        restored_auth = cls._restore_masked_auth(data, existing)
+        if restored_auth is _NOT_RESTORED and (credential := cls._credential(data)):
+            value = credential[2]
+            # Only the exact display-mask shapes are reserved in the Web protocol.
+            if value == "****" or (len(value) == 8 and value == mask_header_value(value)):
+                raise serializers.ValidationError({credential[0]: _("认证凭据掩码无法恢复，请重新输入认证凭据。")})
         options = dict(data.get("model_options", {}))
         if data.get("model") is not None:
             options["model"] = data["model"]
-        instance = {
-            "name": "primary",
-            "provider": data["provider"],
-            "weight": 0,
-            "options": options,
-        }
+        instance = {"name": data["name"], "provider": data["provider"], "options": options}
         provider_config = get_ai_backend_provider_config(data["provider"])
         if restored_auth is not _NOT_RESTORED:
             instance["auth"] = restored_auth
@@ -43,14 +90,31 @@ class AIBackendWebConfigAdapter:
             instance["override"] = {"endpoint": data["endpoint"]}
             if data.get("model_endpoint") is not None:
                 instance["model_endpoint"] = data["model_endpoint"]
-        return validate_ai_backend_config({"timeout": data.get("timeout", 300), "instances": [instance]})
+        return instance
 
     @classmethod
     def to_web(cls, config: dict) -> dict:
-        normalized = AIBackendConfig.model_validate(config).to_config()
-        if len(normalized["instances"]) != 1:
-            raise AIBackendWebConfigNotRepresentable("Web protocol requires exactly one instance")
-        instance = normalized["instances"][0]
+        model = AIBackendConfig.model_validate(config)
+        normalized = model.to_config()
+        if message := get_ai_pool_routing_error(normalized):
+            raise AIBackendWebConfigNotRepresentable(message)
+        result: dict = {"timeout": normalized["timeout"], "instances": []}
+        # Historical reads preserve priorities/weights instead of applying write defaults.
+        for item in normalized["instances"]:
+            priority = item.get("priority", AI_PRIMARY_PRIORITY)
+            if priority not in (AI_PRIMARY_PRIORITY, AI_BACKUP_PRIORITY) or (
+                len(normalized["instances"]) > 1 and item["weight"] != AI_INSTANCE_WEIGHT
+            ):
+                raise AIBackendWebConfigNotRepresentable("Web protocol cannot represent custom weights or priorities")
+            result["instances"].append({"name": item["name"], "priority": priority, **cls._instance_to_web(item)})
+        if model.balancer is not None:
+            result["balancer"] = {"algorithm": model.balancer.algorithm}
+        if "fallback_strategy" in normalized:
+            result["fallback_strategy"] = normalized["fallback_strategy"]
+        return result
+
+    @staticmethod
+    def _instance_to_web(instance: dict) -> dict:
         headers = instance.get("auth", {}).get("header", {})
         if len(headers) > 1:
             raise AIBackendWebConfigNotRepresentable("Web protocol cannot represent multiple auth headers")
@@ -65,7 +129,6 @@ class AIBackendWebConfigAdapter:
             "auth_header": None,
             "model": model,
             "model_options": options,
-            "timeout": normalized["timeout"],
         }
         if provider_config is not None:
             authorization = next(value for key, value in headers.items() if key.casefold() == "authorization")
@@ -77,19 +140,19 @@ class AIBackendWebConfigAdapter:
         return result
 
     @classmethod
-    def _restore_masked_auth(cls, data: dict, existing_config: dict | None):
-        if existing_config is None:
+    def _restore_masked_auth(cls, data: dict, existing: dict | None):
+        if existing is None:
             return _NOT_RESTORED
-        existing_web = cls.to_web(existing_config)
+        existing_web = cls._instance_to_web(existing)
         incoming = cls._credential(data)
-        existing = cls._credential(existing_web)
-        if incoming is None or existing is None or incoming[2] != existing[2]:
+        previous = cls._credential(existing_web)
+        if incoming is None or previous is None or incoming[2] != previous[2]:
             return _NOT_RESTORED
         if cls._destination_identity(data) != cls._destination_identity(existing_web):
             raise serializers.ValidationError({incoming[0]: _("模型服务地址已变更，请重新输入认证凭据。")})
-        if incoming[1].casefold() != existing[1].casefold():
+        if incoming[1].casefold() != previous[1].casefold():
             raise serializers.ValidationError({incoming[0]: _("认证 Header 已变更，请重新输入认证凭据。")})
-        return deepcopy(existing_config["instances"][0].get("auth", {}))
+        return deepcopy(existing.get("auth", {}))
 
     @staticmethod
     def _credential(data: dict) -> tuple[str, str, str] | None:

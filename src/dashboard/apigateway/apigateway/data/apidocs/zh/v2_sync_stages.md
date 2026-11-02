@@ -60,15 +60,18 @@ ai_backends.config 参数说明
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
 | `timeout` | integer | 否 | 超时时间，单位秒，默认 `300`，范围 `1..300` |
-| `instances` | array[object] | 是 | 模型实例列表；第一期必须且只能配置 1 个实例 |
+| `instances` | array[object] | 是 | 模型实例列表；至少一个主实例，最多一个备用实例 |
+| `balancer` | object | 否 | 多实例公共负载均衡配置，algorithm 为 roundrobin（默认）或 chash |
+| `fallback_strategy` | array[string] | 否 | 多实例默认启用 http_429、http_5xx；仅主池可传空数组关闭重试 |
 
 instances 参数说明
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
-| `name` | string | 是 | 实例名称 |
+| `name` | string | 是 | 配置内唯一且稳定的实例名称 |
 | `provider` | string | 是 | `openai`、`deepseek` 或 `openai-compatible` |
-| `weight` | integer | 否 | 实例权重，默认 `0` |
+| `priority` | integer | 否 | `10` 为主实例（默认），`0` 为备用实例；至少一主、最多一备 |
+| `weight` | integer | 否 | 多实例固定为 `1`，可省略；旧单实例兼容默认 `0` |
 | `auth.header` | object | 否 | 发往模型服务的认证 Header 映射，可包含多个 Header；凭证入库时加密 |
 | `options` | object | 否 | 模型参数对象，除 `model` 外的 JSON 字段会完整保存并发布 |
 | `options.model` | string | 否 | 固定模型名称；未配置时不强制覆盖请求中的 model |
@@ -83,6 +86,16 @@ plugin_configs 参数说明
 | `type`    | string    | 是   | 插件类型（例如 `"bk-rate-limit"`）                                   |
 | `yaml`    | string    | 是   | YAML 格式的插件配置（需转义换行符，示例见下方代码块）                |
 
+
+多实例调度规则：
+
+- 所有实例共用外层 timeout（秒），它不是整个重试链的总期限。
+- chash 固定按调用应用编码分配：hash_on 为 `vars_combinations`，key 为 `$bk_app_code`。两项可省略，由后端填入；不支持其他哈希变量。roundrobin 不接受哈希参数。
+- `fallback_strategy` 仅支持 `http_429`、`http_5xx`；重复项会去重。429 指模型上游限流；5xx 也包括映射后的连接失败和超时。400/401/403 不触发重试。
+- 主池候选耗尽后进入备用实例；有备用实例时至少开启一项重试条件。
+- 更新时完整替换所提交配置的 instances 数组；从数组移除即删除该实例，不新增独立实例接口。
+- 单实例省略调度配置；显式空策略会移除。其他调度配置在单实例下会被拒绝。
+- 认证值按字面值处理，不使用 Web 的掩码回填逻辑；配置继续整体加密保存。
 
 ### 请求参数示例
 
