@@ -19,6 +19,7 @@
 | `api-standard`       | 统一网络请求       | HTTP 封装          |
 | `pinia-setup`        | 全局状态管理       | Pinia            |
 | `bkui-cheatsheet`    | BKUI 组件速查    | 快速参考             |
+| `tapd-workitem`      | TAPD 单据查询    | 需求/缺陷/任务详情     |
 
 ## 技术栈
 

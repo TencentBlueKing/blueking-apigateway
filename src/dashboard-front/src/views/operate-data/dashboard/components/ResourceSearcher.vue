@@ -23,7 +23,7 @@
       :filter-option="resourceFilterMethod"
       :list="list"
       :popover-options="{ boundary: 'parent', extCls: 'resource-dropdown-wrapper' }"
-      :popover-width="180"
+      :popover-min-width="360"
       class="resource-select"
       display-key="name"
       filterable
@@ -41,8 +41,12 @@
       </template>
       <template #optionRender="{ item } ">
         <div class="resource-option-wrapper">
-          <strong v-bk-xss-html="getHighlightContent(item, 'name')" />
+          <strong
+            v-bk-tooltips="{ content: item.name, disabled: !item.name }"
+            v-bk-xss-html="getHighlightContent(item, 'name')"
+          />
           <span
+            v-bk-tooltips="{ content: item.path, disabled: !item.path }"
             v-bk-xss-html="getHighlightContent(item, 'path')"
             class="path"
           />
@@ -111,44 +115,10 @@ const handleChange = () => {
       border-right: 1px solid #c4c6cc;
     }
   }
-
-  .resource-dropdown-wrapper {
-
-    .bk-select-content-wrapper .bk-select-option {
-      border: 1px solid red !important;
-    }
-
-    .bk-popover.bk-pop2-content.bk-select-popover .bk-select-content-wrapper .bk-select-option {
-      border: 1px solid red !important;
-
-    }
-
-    .bk-select-option {
-      height: 43px !important;
-
-      .resource-option-wrapper {
-        display: flex;
-        width: 100%;
-        line-height: 20px;
-        padding-block: 4px;
-        flex-direction: column;
-
-        .path {
-          font-size: 10px;
-          line-height: 14px;
-        }
-
-        .keyword {
-          color: #3a84ff !important;
-        }
-      }
-    }
-  }
 }
 </style>
 
 <style lang="scss">
-
 .resource-dropdown-wrapper {
 
   .bk-select-option {
@@ -160,6 +130,14 @@ const handleChange = () => {
       line-height: 20px;
       padding-block: 4px;
       flex-direction: column;
+
+      strong,
+      .path {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
       .path {
         font-size: 10px;
