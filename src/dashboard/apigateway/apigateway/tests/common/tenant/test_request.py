@@ -18,7 +18,11 @@
 
 from unittest.mock import Mock, patch
 
-from apigateway.common.tenant.request import gen_operation_tenant_header, get_user_tenant_id
+from apigateway.common.tenant.request import (
+    gen_operation_tenant_header,
+    get_user_tenant_id,
+    is_configured_excluded_username,
+)
 
 
 @patch("apigateway.common.tenant.request.settings")
@@ -37,3 +41,15 @@ def test_get_user_tenant_id_single_tenant_mode(mock_settings):
 
 def test_gen_operation_tenant_headers():
     assert gen_operation_tenant_header() == {"X-Bk-Tenant-Id": "system"}
+
+
+def test_is_configured_excluded_username_follows_multi_tenant_and_exclude_list(settings):
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    assert is_configured_excluded_username("admin")
+    assert is_configured_excluded_username("bk_admin")
+    assert not is_configured_excluded_username("alice")
+
+    settings.ENABLE_MULTI_TENANT_MODE = False
+    assert not is_configured_excluded_username("admin")

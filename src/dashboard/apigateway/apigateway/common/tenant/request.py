@@ -40,6 +40,11 @@ def gen_tenant_header(tenant_id: str) -> Dict[str, str]:
     return {"X-Bk-Tenant-Id": tenant_id}
 
 
+def is_configured_excluded_username(username: str) -> bool:
+    """多租户下，BK_IAM_V4_EXCLUDED_USERNAMES 中的用户名不写到外部系统。"""
+    return bool(settings.ENABLE_MULTI_TENANT_MODE) and username in settings.BK_IAM_V4_EXCLUDED_USERNAMES
+
+
 def get_tenant_id_for_gateway_maintainers(gateway_tenant_mode: str, gateway_tenant_id: str) -> str:
     # 不开启多租户，返回 default
     if not settings.ENABLE_MULTI_TENANT_MODE:

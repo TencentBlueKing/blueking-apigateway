@@ -61,7 +61,9 @@ class GatewayListApi(generics.ListAPIView):
         # 根据网关名称、描述过滤
         keyword = slz.validated_data.get("keyword")
         if keyword:
-            queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+            queryset = queryset.filter(
+                Q(name__icontains=keyword) | Q(description__icontains=keyword) | Q(display_name__icontains=keyword)
+            )
 
         show_plugin_gateway = slz.validated_data["show_plugin_gateway"]
         if not show_plugin_gateway:

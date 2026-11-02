@@ -95,10 +95,13 @@ class TestResourceSyncApi:
         self,
         request_view,
         fake_gateway,
+        fake_resource,
         fake_default_backend,
         fake_err_resource_swagger,
+        fake_plugin_type_bk_header_rewrite,
         ignore_related_app_permission,
     ):
+        before = list(Resource.objects.filter(gateway=fake_gateway).values())
         resp = request_view(
             method="POST",
             view_name="openapi.resource.sync",
@@ -109,7 +112,12 @@ class TestResourceSyncApi:
             },
             gateway=fake_gateway,
         )
-        assert resp.status_code != 200
+        assert resp.status_code == 400
+        result = resp.json()
+        assert result["code"] == 40002
+        assert result["result"] is False
+        assert "content" in result["message"]
+        assert list(Resource.objects.filter(gateway=fake_gateway).values()) == before
 
     def test_sync_gen_doc(
         self,

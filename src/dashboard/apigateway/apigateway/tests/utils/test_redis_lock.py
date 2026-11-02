@@ -17,104 +17,50 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import time
-
 import pytest
 
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 
-
-# 定义一个 mock Redis 客户端对象
-class MockRedisClient:
-    def __init__(self):
-        self.data = {}
-        self.key = ""
-
-    def setnx(self, key, value):
-        if key in self.data:
-            return False
-        self.data[key] = value
-        return True
-
-    def expire(self, key, timeout):
-        pass
-
-    def delete(self, key):
-        if key in self.data:
-            del self.data[key]
-
-    def get(self, key):
-        return self.data.get(key)
-
-    def lock(self, key, timeout):
-        self.key = key
-        return self
-
-    def acquire(self, blocking=None, blocking_timeout=None, token=None):
-        return self.setnx(self.key, "")
+pytestmark = pytest.mark.no_meta_schema
 
 
-# 定义 Redis 客户端的 fixture
-@pytest.fixture(scope="function")
-def redis_client():
-    client = MockRedisClient()
-    yield client
-    client.data = {}
+@pytest.fixture
+def redis_client(mocker):
+    client = mocker.Mock(spec=["lock", "delete"])
+    client.lock.return_value.acquire.return_value = True
+    mocker.patch("apigateway.utils.redis_utils.get_default_redis_client", return_value=client)
+    return client
 
 
-# 测试 Lock 对象的基本功能
-def test_lock_basic(redis_client):
-    # 创建一个锁对象
-    lock = Lock("test_lock")
-    lock.client = redis_client
-
-    # 获取锁
-    with lock:
-        # 模拟持有锁时的操作
-        time.sleep(1)
-
-    # 确认锁已经被释放
-    assert redis_client.get("lock_test_lock") is None
+def test_lock_passes_timeout_and_releases(redis_client):
+    with Lock("test_lock", timeout=30):
+        redis_client.delete.assert_not_called()
+    redis_client.lock.assert_called_once_with("lock_test_lock", 30)
+    redis_client.lock.return_value.acquire.assert_called_once_with(blocking=False)
+    redis_client.delete.assert_called_once_with("lock_test_lock")
 
 
-# 测试 Lock 对象的超时功能
-def test_lock_timeout(redis_client):
-    # 创建一个锁对象
-    lock = Lock("test_lock", timeout=2, try_get_times=2)
-    lock.client = redis_client
-
-    # 获取锁
-    with lock:
-        # 模拟持有锁时的操作
-        time.sleep(3)
-
-    # 确认锁已经被释放
-    assert redis_client.get("lock_test_lock") is None
+def test_lock_releases_on_body_error(redis_client):
+    with pytest.raises(ValueError, match="body error"), Lock("test_lock"):
+        raise ValueError("body error")
+    redis_client.delete.assert_called_once_with("lock_test_lock")
 
 
-def test_lock_acquire_failed(redis_client):
-    # 创建一个锁对象
-    lock1 = Lock("test_lock", timeout=2, try_get_times=1)
-    lock1.client = redis_client
+def test_lock_retries_until_acquired(redis_client, mocker):
+    sleep = mocker.patch("apigateway.utils.redis_utils.time.sleep")
+    redis_client.lock.return_value.acquire.side_effect = [False, True]
+    with Lock("test_lock", try_get_times=3):
+        assert redis_client.lock.return_value.acquire.call_count == 2
+    sleep.assert_called_once_with(1)
+    redis_client.delete.assert_called_once_with("lock_test_lock")
 
-    lock2 = Lock("test_lock", timeout=2, try_get_times=1)
-    lock2.client = redis_client
 
-    # 获取锁1
-    with lock1:
-        # 模拟持有锁时的操作
-        time.sleep(1)
-
-        # 获取锁2，期望获取锁失败
-        with pytest.raises(LockTimeout), lock2:
-            # 模拟持有锁时的操作
-            time.sleep(1)
-
-    # 获取锁2，期望获取锁成功
-    with lock2:
-        # 模拟持有锁时的操作
-        time.sleep(1)
-
-    # 确认锁已经被释放
-    assert redis_client.get("lock_test_lock") is None
+def test_failed_acquisition_does_not_delete_another_lock(redis_client, mocker):
+    sleep = mocker.patch("apigateway.utils.redis_utils.time.sleep")
+    redis_client.lock.return_value.acquire.return_value = False
+    with pytest.raises(LockTimeout, match="Timeout while waiting for lock"), Lock("test_lock", try_get_times=2):
+        pytest.fail("failed acquisition must not enter the body")
+    assert redis_client.lock.return_value.acquire.call_count == 2
+    sleep.assert_called_once_with(1)
+    redis_client.delete.assert_not_called()

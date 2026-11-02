@@ -489,7 +489,7 @@ import { getVersionDetail } from '@/services/source/resource.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { useGateway } from '@/stores';
 import { getMethodsTheme } from '@/utils';
-import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
+import ConfigDisplayTable from '@/components/plugin-manage/config-display/Index.vue';
 import RequestParams from '../../components/request-params-v2/Index.vue';
 import ResponseParams from '../../components/response-params-v2/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';

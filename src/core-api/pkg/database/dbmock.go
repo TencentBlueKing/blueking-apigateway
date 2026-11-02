@@ -61,12 +61,12 @@ func NewMockRowsWithoutData(mock sqlmock.Sqlmock, arg any) *sqlmock.Rows {
 
 	// 根据 Struct 的 db 标签，获取 columns
 	objType := reflect.TypeOf(arg)
-	if objType.Kind() == reflect.Ptr {
+	if objType.Kind() == reflect.Pointer {
 		objType = objType.Elem()
 	}
 	var columns []string
-	for i := range objType.NumField() {
-		dbTagName := objType.Field(i).Tag.Get("db")
+	for field := range objType.Fields() {
+		dbTagName := field.Tag.Get("db")
 		if dbTagName != "" {
 			columns = append(columns, dbTagName)
 		}
@@ -86,7 +86,7 @@ func NewMockRows(mock sqlmock.Sqlmock, args ...any) *sqlmock.Rows {
 	// 获取数据并写入
 	for _, obj := range args {
 		objValue := reflect.ValueOf(obj)
-		if objType.Kind() == reflect.Ptr {
+		if objType.Kind() == reflect.Pointer {
 			objValue = objValue.Elem()
 		}
 		values := []driver.Value{}

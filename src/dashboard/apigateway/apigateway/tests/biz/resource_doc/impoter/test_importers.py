@@ -37,6 +37,7 @@ class TestDocImporter:
                 content=faker.pystr(),
                 resource=fake_resource,
                 resource_doc=fake_resource_doc,
+                content_changed=True,
             ),
             ArchiveDoc(
                 resource_name=resource_2.name,
@@ -55,6 +56,11 @@ class TestDocImporter:
         importer.import_docs(docs)
 
         assert ResourceDoc.objects.filter(gateway=fake_gateway).count() == 2
+        for doc in docs[:2]:
+            saved = ResourceDoc.objects.get(
+                gateway=fake_gateway, resource_id=doc.resource.id, language=doc.language.value
+            )
+            assert saved.content == doc.content
 
     def test_filter_valid_docs(self, faker, fake_resource):
         importer = DocImporter(1, None)
@@ -145,6 +151,7 @@ class TestDocImporter:
                 content=faker.pystr(),
                 resource=fake_resource,
                 resource_doc=fake_resource_doc,
+                content_changed=True,
             ),
             ArchiveDoc(
                 resource_name=resource_2.name,
@@ -158,6 +165,11 @@ class TestDocImporter:
         importer._save_docs(docs)
 
         assert ResourceDoc.objects.filter(gateway=fake_gateway).count() == 2
+        for doc in docs[:2]:
+            saved = ResourceDoc.objects.get(
+                gateway=fake_gateway, resource_id=doc.resource.id, language=doc.language.value
+            )
+            assert saved.content == doc.content
 
     @pytest.mark.parametrize(
         "selected_resource_docs, expected",
@@ -185,3 +197,36 @@ class TestDocImporter:
         importer = DocImporter(1, selected_resource_docs=selected_resource_docs)
         result = importer._get_selected_resource_doc_keys()
         assert result == expected
+
+
+@pytest.mark.parametrize("changed", [True, False])
+def test_import_preserves_or_updates_existing_content(fake_resource_doc, changed):
+    resource = Resource.objects.get(id=fake_resource_doc.resource_id)
+    before = ResourceDoc.objects.get(id=fake_resource_doc.id)
+    incoming = ArchiveDoc(
+        resource_name=resource.name,
+        language=DocLanguageEnum(before.language),
+        content="# updated documentation",
+        resource=resource,
+        resource_doc=fake_resource_doc,
+        content_changed=changed,
+    )
+    DocImporter(before.gateway_id, None).import_docs([incoming])
+    after = ResourceDoc.objects.get(id=before.id)
+    assert after.content == (incoming.content if changed else before.content)
+    assert after.resource_id == before.resource_id
+    assert after.language == before.language
+    if changed:
+        assert after.type == "markdown"
+        assert after.source == "import"
+        assert after.updated_time >= before.updated_time
+    else:
+        assert (after.type, after.source, after.updated_time) == (before.type, before.source, before.updated_time)
+
+
+def test_empty_selection_does_not_import(fake_resource):
+    doc = ArchiveDoc(
+        resource_name=fake_resource.name, language=DocLanguageEnum.ZH, content="not selected", resource=fake_resource
+    )
+    DocImporter(fake_resource.gateway_id, []).import_docs([doc])
+    assert not ResourceDoc.objects.filter(gateway_id=fake_resource.gateway_id).exists()

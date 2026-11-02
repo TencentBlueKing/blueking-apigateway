@@ -15,9 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
-from typing import TYPE_CHECKING, ClassVar, Dict, Iterable, List, Type
+from typing import TYPE_CHECKING, ClassVar, Dict, List
 
 from django.utils.encoding import force_str
 
@@ -82,12 +81,3 @@ class EtcdRegistry(Registry):
     def delete_resources_by_key_prefix(self):
         """删除 key_prefix 下的所有资源"""
         self._etcd_client.delete_prefix(self.key_prefix)
-
-    def iter_by_type(self, resource_type: Type[ApisixModel]) -> Iterable[ApisixModel]:
-        for payload, _ in self._etcd_client.get_prefix(self._get_kind_key_prefix(resource_type.kind)):
-            try:
-                value = json.loads(payload)
-                yield resource_type(**value)
-            except Exception as err:  # pylint: disable=broad-except
-                logger.warning("deserialize resource %s failed: %s", resource_type, err)
-                continue

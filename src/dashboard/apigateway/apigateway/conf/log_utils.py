@@ -126,6 +126,12 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
                 "level": "WARNING",
                 "propagate": True,
             },
+            # HTTP request logs include full URLs and may expose login credentials.
+            "httpx2": {
+                "handlers": [],
+                "level": "WARNING",
+                "propagate": True,
+            },
             "celery": {
                 "handlers": [*logger_handlers_map["celery"], "sentry"],
                 "level": "INFO",

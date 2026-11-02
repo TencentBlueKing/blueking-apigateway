@@ -372,7 +372,7 @@ import { getGatewayLabels } from '@/services/source/gateway';
 import { getMethodsTheme } from '@/utils';
 import { useGateway } from '@/stores';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
+import ConfigDisplayTable from '@/components/plugin-manage/config-display/Index.vue';
 import ResponseParams from '@/views/resource-management/components/response-params-v2/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
 

@@ -20,6 +20,7 @@ from ddf import G
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceAuthConfig, ResourceData, ResourcesSaver
+from apigateway.biz.resource.savers import ResourceProxyDuplicateError
 from apigateway.core.constants import BackendKindEnum, ContextScopeTypeEnum, ContextTypeEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Context, Proxy, Resource
 
@@ -105,20 +106,16 @@ class TestResourceSavers:
         assert "oauth2_public_client_enabled" not in context.config
         assert "oauth2_personal_client_enabled" not in context.config
 
-    # FIXME: should check the error here
-    # def test_save__error(self, fake_resource, fake_resource_data):
-    #     resource_data_list = [
-    #         fake_resource_data.copy(update={"resource": fake_resource}, deep=True),
-    #     ]
-    #     # G(
-    #     #     Proxy,
-    #     #     resource=fake_resource,
-    #     #     type=ProxyTypeEnum.HTTP.value,
-    #     # )
-
-    #     saver = ResourcesSaver(fake_resource.gateway, resource_data_list, "admin")
-    #     with pytest.raises(ResourceProxyDuplicateError):
-    #         saver.save()
+    def test_save_rejects_multiple_legacy_proxy_types(self, fake_resource, fake_resource_data):
+        # The database allows one row per (resource, type), including historical mock proxies.
+        # Reproduce persisted legacy data without the current save() enum validation.
+        Proxy.objects.bulk_create([Proxy(resource=fake_resource, type="mock", _config="{}")])
+        data = fake_resource_data.model_copy(update={"resource": fake_resource}, deep=True)
+        before = Resource.objects.get(id=fake_resource.id).name
+        with pytest.raises(ResourceProxyDuplicateError, match=str(fake_resource.id)):
+            ResourcesSaver(fake_resource.gateway, [data], "admin").save()
+        assert Resource.objects.get(id=fake_resource.id).name == before
+        assert Proxy.objects.filter(resource=fake_resource).count() == 2
 
     def test_save_resources(self, fake_resource, fake_resource_data):
         fake_gateway = fake_resource.gateway

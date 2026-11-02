@@ -30,24 +30,6 @@ if TYPE_CHECKING:
 
 class ResourceDocHandler:
     @staticmethod
-    def get_docs(resource_ids: List[int]) -> Dict[int, List]:
-        if not resource_ids:
-            return {}
-
-        queryset = ResourceDoc.objects.filter(resource_id__in=resource_ids).values("id", "resource_id", "language")
-
-        docs = defaultdict(list)
-        for doc in queryset:
-            docs[doc["resource_id"]].append(
-                {
-                    "id": doc["id"],
-                    "language": doc["language"],
-                }
-            )
-
-        return docs
-
-    @staticmethod
     def get_docs_by_resource_ids(resource_ids: List[int]) -> Dict[int, List[Dict]]:
         if len(resource_ids) == 0:
             return {}

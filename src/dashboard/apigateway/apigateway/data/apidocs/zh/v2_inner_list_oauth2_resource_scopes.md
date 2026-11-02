@@ -6,6 +6,7 @@
 
 该接口不按 Stage 过滤，也不使用 `disabled_stages`。多租户模式下只返回全租户网关和请求租户所属的单租户网关。
 
+
 ### 输入参数
 
 #### query 参数
@@ -29,6 +30,7 @@
     "results": [
       {
         "id": 1,
+        "display_name": "蓝鲸 API 网关",
         "name": "bk-apigateway",
         "is_official": true,
         "resource_count": 1,
@@ -53,6 +55,7 @@
 | data.results | array | 当前页网关列表，按网关名称、网关 ID 稳定排序 |
 | data.results[].id | int | 网关 ID |
 | data.results[].name | string | 网关名称 |
+| data.results[].display_name | string | 网关展示名 |
 | data.results[].is_official | bool | 是否为官方网关 |
 | data.results[].resource_count | int | 当前过滤条件下该网关包含的去重资源数量 |
 | data.results[].resources | array | 当前过滤条件下该网关包含的资源列表 |

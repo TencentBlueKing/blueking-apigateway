@@ -2,6 +2,7 @@
 
 查询 mcp_server 列表
 
+
 ### 输入参数
 
 #### 请求参数
@@ -43,6 +44,7 @@
         },
         "gateway": {
           "id": 2,
+          "display_name": "蓝鲸 API 网关",
           "name": "bk-esb",
           "maintainers": [
             "admin"
@@ -102,6 +104,7 @@
 |---------------|---------|--------------|
 | id            | int     | 网关 ID        |
 | name          | string  | 网关名称         |
+| display_name | string | 网关展示名 |
 | maintainers   | array   | 网关管理员        |
 | is_official   | boolean | 是否为官方网关      |
 

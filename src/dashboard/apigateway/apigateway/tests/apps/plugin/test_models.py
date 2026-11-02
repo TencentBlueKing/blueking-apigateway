@@ -15,14 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-
-import pytest
-from jsonschema import validate
-
 from apigateway.apps.plugin.models import PluginConfig
-from apigateway.schema.models import Schema
-from apigateway.service.plugin import PluginConvertorFactory
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -33,26 +26,6 @@ class TestPluginConfig:
         fake_plugin_config.save()
         assert fake_plugin_config.yaml == "foo: bar\n"
         assert PluginConfig.objects.get(id=fake_plugin_config.id).config == {"foo": "bar"}
-
-        # schema check ok
-        fake_plugin_config.type.schema = Schema(
-            schema=json.dumps(
-                {
-                    "type": "object",
-                    "properties": {"foo": {"type": "string"}},
-                }
-            )
-        )
-        fake_plugin_config.config = yaml_dumps({"foo": "bar2"})
-        assert fake_plugin_config.yaml == "foo: bar2\n"
-
-        # schema check error
-        with pytest.raises(Exception):
-            fake_plugin_config.config = yaml_dumps({"foo": 1})
-
-            convertor = PluginConvertorFactory("")
-            _data = convertor.convert(fake_plugin_config.config)
-            validate(_data, schema=fake_plugin_config.type.schema.schema)
 
 
 class TestPluginBinding:

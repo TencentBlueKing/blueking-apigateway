@@ -429,16 +429,35 @@ class TestMCPMarketplaceServerListApi:
         assert mcp_server_data is not None
         assert mcp_server_data["prompts_count"] == 3
 
-    def test_list_with_keyword(self, request_view, fake_public_mcp_server):
-        """测试带关键词过滤"""
-        resp = request_view(
-            method="GET",
-            view_name="mcp_marketplace.server.list",
-            data={"keyword": fake_public_mcp_server.name[:5]},
+    @pytest.mark.parametrize(
+        "field, keyword, matched",
+        [
+            ("name", "needle", True),
+            ("title", "needle", True),
+            ("description", "needle", True),
+            ("_labels", "needle", True),
+            ("name", "absent", False),
+        ],
+    )
+    def test_list_with_keyword(self, request_view, fake_public_mcp_server, field, keyword, matched):
+        value = json.dumps(["needle"]) if field == "_labels" else "needle"
+        MCPServer.objects.filter(id=fake_public_mcp_server.id).update(**{field: value})
+        G(
+            MCPServer,
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            name="unmatched",
+            title="other",
+            description="other",
+            _labels="[]",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
         )
-        result = resp.json()
-
-        assert resp.status_code == 200
+        response = request_view(method="GET", view_name="mcp_marketplace.server.list", data={"keyword": keyword})
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert {item["id"] for item in data["results"]} == ({fake_public_mcp_server.id} if matched else set())
+        assert data["count"] == int(matched)
 
 
 class TestMCPMarketplaceServerRetrieveApi:

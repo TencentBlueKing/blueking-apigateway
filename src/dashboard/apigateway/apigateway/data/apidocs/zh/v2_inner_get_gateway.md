@@ -12,13 +12,13 @@
 | gateway_name | string | 是  | 网关名称 |
 
 
-
 ### 响应示例
 
 ```json
 {
     "data": {
         "id": 1,
+        "display_name": "蓝鲸 API 网关",
         "name": "bk-apigateway",
         "kind": "normal",
         "description": "",
@@ -51,6 +51,7 @@
 |-----------------|----------|----------|
 | id              | int      | 网关ID     |
 | name            | string   | 网关名称     |
+| display_name | string | 网关展示名 |
 | kind            | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | description     | string   | 网关描述     |
 | maintainers     | array    | 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表 |

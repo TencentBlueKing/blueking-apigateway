@@ -17,7 +17,7 @@
 #
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Iterable, List, Type
+from typing import TYPE_CHECKING, ClassVar, List
 
 if TYPE_CHECKING:
     from apigateway.controller.models import ApisixModel
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class Registry(ABC):
-    """配置注册中心，本质上是一个 KV 结构的存储，可以同时存储多种类型的资源，并可以进行迭代，修改和查询等操作"""
+    """配置注册中心，按 key 前缀写入、同步和删除不同类型的资源"""
 
     registry_type: ClassVar[str]
 
@@ -53,11 +53,6 @@ class Registry(ABC):
     @abstractmethod
     def delete_resources_by_key_prefix(self):
         """删除 key_prefix 下的所有资源"""
-        raise NotImplementedError()
-
-    @abstractmethod
-    def iter_by_type(self, resource_type: Type[ApisixModel]) -> Iterable[ApisixModel]:
-        """获取 key_prefix 下，指定类型的资源"""
         raise NotImplementedError()
 
     def _get_kind_key_prefix(self, kind: str) -> str:

@@ -65,6 +65,8 @@ dashboard、core-api、mcp-proxy 访问同一网关业务 MySQL 数据库；模�
 | 中文 / English | 代码名与身份范围 | 定义与约束 |
 | --- | --- | --- |
 | 网关 / Gateway | `Gateway`；id；name 全局唯一 | 一组 API 的管理与发布归属，拥有环境、资源、后端等。 |
+| 网关展示名 / Gateway Display Name | `Gateway.display_name`；最长 64 字符；全局唯一 | 用于展示的网关名称，不填时为 name。 |
+| 网关英文展示名 / Gateway English Display Name | `Gateway.display_name_en`；最长 64 字符；非空时全局唯一 | 网关的英文展示名，仅支持自动化同步配置。 |
 | 网关类别 / Gateway Kind | `Gateway.kind` | `normal`、`programmable`、`ai`；ORM 分别存 `0`、`1`、`2`，API 按 GatewayKindEnum/GatewayKindNameEnum 转换。与认证配置的网关类型区分。 |
 | 网关弃用 / Gateway Deprecation | `is_deprecated`、`deprecated_note` | 弃用标记及原因，与启停、公开、官方、删除分别表达。 |
 | 环境 / Stage | `Stage`；id；`(gateway, name)` 唯一 | 网关内的发布目标，如 prod、test，带变量、状态和环境配置；与 DataPlane 是不同维度。 |
@@ -223,6 +225,7 @@ AI Gateway 也可含普通后端/资源；不能以 Gateway.kind 代替子对象
 | --- | --- |
 | gateway_id；兼容 api_id/core_api | 新增逻辑使用 gateway_id 表达 Gateway 主键；api_id 与表名 core_api 仅为存量兼容。“API”指接口时须明确 Resource，不能由 api_id 推断单个接口。 |
 | gateway_name；兼容 api_name/{api_name} | 新增逻辑使用 gateway_name 表达 Gateway.name；api_name 及历史地址/模板占位符仅为存量兼容，与 Resource.name 区分。 |
+| display_name / gateway_display_name | 网关展示名。 |
 | 前端 apigwId | 相关网关接口的 Gateway.id；按 services/source 请求路径核对。 |
 | stage_id/stage_name | Stage 主键/网关内环境名；同名环境可属不同网关。 |
 | resource_id/resource_name | 资源主键/业务名；权限、版本、MCP 按所用快照映射，与 APISIX resourceID 区分。 |

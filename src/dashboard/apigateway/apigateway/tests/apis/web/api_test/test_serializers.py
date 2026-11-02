@@ -58,6 +58,39 @@ class TestAuthorizationSLZ:
 
 
 class TestAPITestInputSLZ:
+    @pytest.mark.parametrize("header", ["invalid-json", "[]", '"token"', "null"])
+    def test_invalid_authorization_header(self, header):
+        slz = APITestInputSLZ(
+            data={
+                "stage_id": 1,
+                "resource_id": 1,
+                "method": "GET",
+                "headers": {"X-Bkapi-Authorization": header},
+                "path_params": {},
+                "query_params": {},
+                "use_test_app": False,
+            }
+        )
+        assert not slz.is_valid()
+        assert "headers" in slz.errors
+
+    @pytest.mark.parametrize("use_test_app", [False, True])
+    def test_null_authorization(self, use_test_app):
+        slz = APITestInputSLZ(
+            data={
+                "stage_id": 1,
+                "resource_id": 1,
+                "method": "GET",
+                "headers": {},
+                "path_params": {},
+                "query_params": {},
+                "use_test_app": use_test_app,
+                "authorization": None,
+            }
+        )
+        assert slz.is_valid(), slz.errors
+        assert isinstance(slz.validated_data["authorization"], dict)
+
     @pytest.mark.parametrize(
         "params, expected",
         [

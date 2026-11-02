@@ -360,8 +360,7 @@ func recordMCPMetrics(
 	if hasError {
 		errorLabel = "1"
 		errorCode = "unknown"
-		var jsonrpcErr *jsonrpc.Error
-		if errors.As(err, &jsonrpcErr) {
+		if jsonrpcErr, ok := errors.AsType[*jsonrpc.Error](err); ok {
 			errorCode = matchErrorCodeName(jsonrpcErr.Code)
 		}
 	}
@@ -444,8 +443,7 @@ func shouldReportToSentry(err error) bool {
 	if err == nil {
 		return false
 	}
-	var jsonrpcErr *jsonrpc.Error
-	if errors.As(err, &jsonrpcErr) {
+	if jsonrpcErr, ok := errors.AsType[*jsonrpc.Error](err); ok {
 		if _, isClient := clientErrorCodes[jsonrpcErr.Code]; isClient {
 			return false
 		}
@@ -564,8 +562,7 @@ func TracingMiddleware(serverName string) mcp.Middleware {
 			if span != nil && err != nil {
 				span.SetStatus(codes.Error, err.Error())
 				span.RecordError(err)
-				var jsonrpcErr *jsonrpc.Error
-				if errors.As(err, &jsonrpcErr) {
+				if jsonrpcErr, ok := errors.AsType[*jsonrpc.Error](err); ok {
 					span.SetAttributes(attribute.Int64("mcp.error_code", jsonrpcErr.Code))
 				}
 			}
@@ -654,8 +651,7 @@ func BkAIDevTraceMiddleware(serverName string) mcp.Middleware {
 			if err != nil {
 				status = "failed"
 				span.SetStatus(codes.Error, err.Error())
-				var jsonrpcErr *jsonrpc.Error
-				if errors.As(err, &jsonrpcErr) {
+				if jsonrpcErr, ok := errors.AsType[*jsonrpc.Error](err); ok {
 					span.SetAttributes(attribute.Int64("error_code", jsonrpcErr.Code))
 				}
 			}

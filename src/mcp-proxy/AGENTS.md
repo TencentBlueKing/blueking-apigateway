@@ -4,7 +4,7 @@
 
 Run commands from `src/mcp-proxy`. The module is `mcp_proxy`, using the official
 `github.com/modelcontextprotocol/go-sdk`. `go.mod` and `Dockerfile` pin Go
-1.25.5; `.github/workflows/mcp-proxy.yml` selects Go 1.25. An ignored local
+1.27.3; `.github/workflows/mcp-proxy.yml` selects Go 1.27.3. An ignored local
 `.envrc` is optional, not a tracked runtime specification.
 
 | Command | Effect |

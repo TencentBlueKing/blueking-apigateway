@@ -2,6 +2,7 @@
 
 查询网关列表
 
+
 ### 输入参数
 
 ### 路径参数
@@ -17,6 +18,7 @@
 {
     "data": {
         "id": 1,
+        "display_name": "蓝鲸 API 网关",
         "name": "bk-apigateway",
         "kind": "normal",
         "description": "",
@@ -39,6 +41,7 @@ data
 | ----------- | -------- | ---------- |
 | id          | int      | 网关 ID     |
 | name        | string   | 网关名称   |
+| display_name | string | 网关展示名 |
 | kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | description | string   | 网关描述   |
 | maintainers | array    | 网关管理员 |

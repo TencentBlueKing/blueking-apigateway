@@ -18,10 +18,12 @@
 
 from django import forms
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 from apigateway.core.constants import ContextScopeTypeEnum
+from apigateway.core.gateway_name import normalize_display_name
 from apigateway.core.models import (
     JWT,
     Backend,
@@ -41,7 +43,22 @@ from apigateway.core.models import (
 )
 
 
+class GatewayAdminForm(forms.ModelForm):
+    class Meta:
+        model = Gateway
+        fields = "__all__"
+
+    def clean_display_name(self):
+        value = normalize_display_name(self.cleaned_data["display_name"], name=self.cleaned_data.get("name", ""))
+        if Gateway.objects.exclude(pk=self.instance.pk).filter(display_name__iexact=value).exists():
+            raise forms.ValidationError(_("This display name is already in use."), code="unique")
+        return value
+
+
 class GatewayAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
+    form = GatewayAdminForm
+    readonly_fields = ("display_name_en",)
+
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",

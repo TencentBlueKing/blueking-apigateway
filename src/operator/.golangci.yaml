@@ -83,7 +83,7 @@ linters:
       disable:
         - omitzero
         - stringsbuilder
-        - waitgroup
+        - waitgroupgo
     perfsprint:
       err-error: false
       errorf: false

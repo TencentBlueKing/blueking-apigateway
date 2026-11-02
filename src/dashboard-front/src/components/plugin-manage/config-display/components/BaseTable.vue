@@ -24,7 +24,12 @@
             :style="index === 0 ? { width: firstColWidth, minWidth: firstColWidth } : undefined"
             :rowspan="row.rowspan"
           >
-            {{ renderValue(row, col) }}
+            <slot
+              :name="col.field"
+              :row="row"
+            >
+              {{ renderValue(row, col) }}
+            </slot>
           </td>
         </tr>
       </tbody>
@@ -33,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import type { IBaseTableRow, IColumn } from './types';
+import type { IBaseTableRow, IColumn } from '../types';
 
 interface IProps {
   columns: any[]

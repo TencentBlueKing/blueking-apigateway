@@ -46,8 +46,8 @@
 
 <script setup lang="ts">
 import { isEqual, isObject } from 'lodash-es';
-import { type ISchema } from '@/components/plugin-manage/schema-type';
-import SchemaFields from './SchemaField.vue';
+import type { ISchema } from '../types';
+import SchemaFields from '../Index.vue';
 
 interface IProps {
   disabled?: boolean

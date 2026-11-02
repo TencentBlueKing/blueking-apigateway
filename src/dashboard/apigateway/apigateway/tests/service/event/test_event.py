@@ -16,56 +16,43 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
+import pytest
+
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import PublishEvent
 from apigateway.service.event import PublishEventReporter
 
 
+@pytest.mark.parametrize(
+    "reporter, name, status, step, detail",
+    [
+        ("report_config_validate_success", "validata_configuration", "success", 0, None),
+        ("report_config_validate_failure", "validata_configuration", "failure", 0, {"err_msg": "invalid config"}),
+        ("report_create_publish_task_doing", "generate_release_task", "doing", 1, None),
+        ("report_create_publish_task_success", "generate_release_task", "success", 1, None),
+        ("report_distribute_config_doing", "distribute_configuration", "doing", 2, None),
+        ("report_distribute_config_success", "distribute_configuration", "success", 2, None),
+        ("report_distribute_config_failure", "distribute_configuration", "failure", 2, {"err_msg": "sync failed"}),
+    ],
+)
 class TestPublishEventReporter:
-    # def test_report_config_validate_doing_event(self, fake_release_history):
-    #     PublishEventReporter.report_config_validate_doing(fake_release_history)
-    #     assert PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
+    def test_persists_event(self, fake_release_history, reporter, name, status, step, detail):
+        args = [detail["err_msg"]] if detail else []
+        previous_ids = set(PublishEvent.objects.values_list("id", flat=True))
+        getattr(PublishEventReporter, reporter)(fake_release_history, *args)
+        event = PublishEvent.objects.exclude(id__in=previous_ids).get()
+        assert event.publish_id == fake_release_history.id
+        assert event.gateway_id == fake_release_history.gateway_id
+        assert event.stage_id == fake_release_history.stage_id
+        assert (event.name, event.status, event.step, event.detail) == (name, status, step, detail)
 
-    def test_report_config_validate_success_event(self, fake_release_history):
-        PublishEventReporter.report_config_validate_success(fake_release_history)
-        event = PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
-        assert event
-
-    def test_report_config_validate_fail_event(self, fake_release_history):
-        msg = "test_error_message"
-        PublishEventReporter.report_config_validate_failure(fake_release_history, msg)
-        event = PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
-        assert event
-
-    def test_report_create_publish_task_doing_event(self, fake_release_history):
-        PublishEventReporter.report_create_publish_task_doing(fake_release_history)
-
-    def test_report_create_publish_task_success_event(self, fake_release_history):
-        PublishEventReporter.report_create_publish_task_success(fake_release_history)
-        result = PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
-        assert result is not None
-        assert result.name == PublishEventNameTypeEnum.GENERATE_TASK.value
-        assert result.status == PublishEventStatusTypeEnum.SUCCESS.value
-
-    def test_report_distribute_configuration_doing_event(self, fake_release_history):
-        PublishEventReporter.report_distribute_config_doing(fake_release_history)
-        result = PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
-        assert result is not None
-        assert result.name == PublishEventNameTypeEnum.DISTRIBUTE_CONFIGURATION.value
-        assert result.status == PublishEventStatusTypeEnum.DOING.value
-
-    def test_report_distribute_configuration_success_event(self, fake_release_history):
-        PublishEventReporter.report_distribute_config_success(fake_release_history)
-        result = PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
-        assert result is not None
-        assert result.name == PublishEventNameTypeEnum.DISTRIBUTE_CONFIGURATION.value
-        assert result.status == PublishEventStatusTypeEnum.SUCCESS.value
-
-    def test_report_distribute_configuration_failure_event(self, fake_release_history):
-        msg = "test_error_message"
-        PublishEventReporter.report_distribute_config_failure(fake_release_history, msg)
-        result = PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
-        assert result is not None
-        assert result.name == PublishEventNameTypeEnum.DISTRIBUTE_CONFIGURATION.value
-        assert result.status == PublishEventStatusTypeEnum.FAILURE.value
-        assert result.detail == {"err_msg": msg}
+    @pytest.mark.parametrize("publish_source", [None, PublishSourceEnum.CLI_SYNC.value])
+    def test_suppresses_event(self, fake_release_history, reporter, name, status, step, detail, publish_source):
+        publish = None
+        if publish_source is not None:
+            fake_release_history.source = publish_source
+            publish = fake_release_history
+        args = [detail["err_msg"]] if detail else []
+        previous_ids = set(PublishEvent.objects.values_list("id", flat=True))
+        getattr(PublishEventReporter, reporter)(publish, *args)
+        assert set(PublishEvent.objects.values_list("id", flat=True)) == previous_ids

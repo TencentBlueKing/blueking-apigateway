@@ -22,6 +22,7 @@ import type { IResource } from '@/types/permission';
 export interface IPersonalWorkbenchFilterOptionResponse {
   id: number
   name: string
+  display_name?: string
   title?: string
 }
 
@@ -30,6 +31,7 @@ export interface IPersonalWorkbenchListResponse {
   id: number
   bk_app_code: string
   gateway_name: string
+  gateway_display_name?: string
   grant_dimension: string
   grant_dimension_display: string
   expire_days: number
@@ -49,6 +51,7 @@ export interface IPersonalWorkbenchListResponse {
     name: string
     title: string
     gateway_name: string
+    gateway_display_name?: string
     gateway_id: number
   }
   resources?: IResource[]

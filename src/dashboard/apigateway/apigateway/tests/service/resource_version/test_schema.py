@@ -21,11 +21,11 @@ import pytest
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.common.error_codes import APIError
 from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import ResourceVersion
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
-    get_resource_names_set,
     get_resource_schema,
     get_standard_resource_names_set,
     get_used_stage_vars,
@@ -35,11 +35,9 @@ from apigateway.service.resource_version import (
 
 @pytest.fixture(autouse=True)
 def clear_resource_version_schema_caches():
-    get_resource_names_set.cache_clear()
     get_standard_resource_names_set.cache_clear()
     get_used_stage_vars.cache_clear()
     yield
-    get_resource_names_set.cache_clear()
     get_standard_resource_names_set.cache_clear()
     get_used_stage_vars.cache_clear()
 
@@ -95,14 +93,14 @@ def test_get_resource_id_to_schema_by_resource_version_returns_schema_map(fake_r
     }
 
 
-def test_get_resource_names_set_returns_empty_without_resource_version():
-    assert get_resource_names_set(resource_version_id=0) == set()
+def test_get_standard_resource_names_set_returns_empty_without_resource_version():
+    assert get_standard_resource_names_set(resource_version_id=0) == set()
 
 
-def test_get_resource_names_set_returns_names(fake_resource_version):
-    assert get_resource_names_set(fake_resource_version.id) == {
-        resource["name"] for resource in fake_resource_version.data
-    }
+def test_get_standard_resource_names_set_can_raise_for_missing_resource_version():
+    with pytest.raises(APIError) as exc_info:
+        get_standard_resource_names_set(resource_version_id=0, raise_exception=True)
+    assert exc_info.value.code.code_name == "NOT_FOUND"
 
 
 def test_get_standard_resource_names_set_filters_ai_and_treats_empty_kind_as_standard(fake_resource_version):

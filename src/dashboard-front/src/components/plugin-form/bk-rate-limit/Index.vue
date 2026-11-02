@@ -49,8 +49,8 @@
 <script setup lang="ts">
 import { cloneDeep, isEmpty, isObject } from 'lodash-es';
 import { Form } from 'bkui-vue';
-import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
-import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
+import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-form/types';
+import SchemaField from '@/components/plugin-manage/schema-form/Index.vue';
 
 interface IProps {
   schema?: ISchema

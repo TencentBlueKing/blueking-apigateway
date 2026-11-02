@@ -18,8 +18,8 @@
 
 <template>
   <!--  插件配置展示态组件  -->
-  <!--  IP访问限制控制插件  -->
-  <CustomTable
+  <!--  流量染色插件  -->
+  <BaseTable
     :columns="tableCols"
     :data="tableData"
   />
@@ -30,72 +30,73 @@ import type {
   IBaseTableRow,
   IColumn,
   IPlugin,
-  ValueRenderType,
-} from '@/components/plugin-manage/types';
-import CustomTable from './CustomTable.vue';
+} from '../types';
+import BaseTable from './BaseTable.vue';
 
-interface IIpRestrictionConfig {
-  whitelist?: string
-  blacklist?: string
+interface ITrafficLabelConfig {
+  rules: {
+    match: (string | string[])[]
+    actions: {
+      set_headers: Record<string, string>
+      weight: number
+    }[]
+  }[]
 }
 
-interface IIpRestrictionTableRow extends IBaseTableRow { type: string }
-
 interface IProps {
-  plugin: IPlugin<IIpRestrictionConfig>
+  plugin: IPlugin<ITrafficLabelConfig>
   firstColWidth: string
-  valueRender: ValueRenderType
 }
 
 const {
   plugin,
   firstColWidth,
-  valueRender,
 } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const ipTypeTextMap: Record<string, string> = {
-  whitelist: t('白名单'),
-  blacklist: t('黑名单'),
-};
-
-// ip访问限制插件表格列
+// 流量染色插件表格列
 const tableCols = ref<IColumn[]>([
   {
-    label: t('类型'),
+    label: t('键'),
     align: 'right',
-    field: 'type',
+    field: 'key',
     width: firstColWidth,
     index: 0,
-    rowspan: ({ row }: any) => row.rowSpan || 1,
+    rowspan: ({ row }: any) => row.rowSpan || 0,
   },
   {
-    label: 'IP',
+    label: t('值'),
     field: 'value',
-    render: valueRender,
   },
 ]);
 
-// ip访问限制插件表格数据
+// 流量染色插件表格数据
 const tableData = computed(() => {
-  const data: IIpRestrictionTableRow[] = [];
-  const { config } = plugin;
-  Object.entries(config).forEach(([type, ip]) => {
-    data.push({
-      type: ipTypeTextMap[type],
-      value: ip,
-    });
-  });
-  return data;
+  let matchRows: IBaseTableRow[] = [];
+  let actionRows: IBaseTableRow[] = [];
+  const { rules } = plugin.config;
+  if (rules[0]) {
+    const { match, actions } = rules[0];
+    matchRows = match.map((item: any) => ({
+      key: 'match',
+      value: item,
+    }));
+
+    if (matchRows[0]) {
+      matchRows[0].rowSpan = match.length;
+    }
+
+    actionRows = actions.map((item: any) => ({
+      key: 'action',
+      value: item,
+    }));
+
+    if (actionRows[0]) {
+      actionRows[0].rowSpan = actions.length;
+    }
+  }
+  return [...matchRows, ...actionRows];
 });
 
 </script>
-
-<style lang="scss" scoped>
-:deep(.multi-line-table-cell-pre) {
-  font: inherit;
-  line-height: 1.4 !important;
-  color: inherit;
-}
-</style>

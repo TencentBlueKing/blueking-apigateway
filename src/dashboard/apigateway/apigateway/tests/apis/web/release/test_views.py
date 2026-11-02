@@ -86,66 +86,43 @@ class TestReleaseCreateApi:
             "data": None,
         }
 
-    def test_release_with_hosts(self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version):
-        """Test release API with different hosts config of stage objects."""
-        stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
-        stage_2 = G(Stage, gateway=fake_gateway, name="test", status=0)
-        resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([]))
-        G(Release, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
-
+    def test_release_delegates_stage_version_and_returns_history(
+        self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version, fake_stage
+    ):
+        history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            resource_version=fake_resource_version,
+            created_time=dummy_time.time,
+        )
         mocker.patch("apigateway.apis.web.release.views.Lock", return_value=MagicMock())
-
-        # Config a valid hosts config for each stages
-        # FIXME: use backend_config
-        # for stage in [stage_1, stage_2]:
-        #     StageProxyHTTPContext().save(
-        #         stage.id,
-        #         config={
-        #             "upstreams": {"hosts": [{"host": "https://example.com"}], "loadbalance": "roundrobin"},
-        #             "timeout": 60,
-        #             "transform_headers": {},
-        #         },
-        #     )
-
-        for stage in [stage_1, stage_2]:
-            release_history = G(
-                ReleaseHistory,
-                gateway=fake_gateway,
-                stage=stage,
-                resource_version=fake_resource_version,
-                created_time=dummy_time.time,
-            )
-            G(
-                PublishEvent,
-                publish=release_history,
-                name=PublishEventNameTypeEnum.LOAD_CONFIGURATION.value,
-                status=PublishEventStatusTypeEnum.SUCCESS.value,
-                created_time=now_datetime(),
-            )
-            # TODO: mock the releaser
-            mocker.patch("apigateway.apis.web.release.views.release_biz.release_gateway", return_value=release_history)
-
-            data = {
-                "gateway_id": fake_gateway.id,
-                "stage_id": stage.id,
-                "resource_version_id": resource_version.id,
-            }
-            resp = request_view(
-                method="POST",
-                view_name="gateway.release.create",
-                gateway=fake_gateway,
-                path_params={"gateway_id": fake_gateway.id},
-                data=data,
-                user=fake_admin_user,
-            )
-
-            result = resp.json()
-
-            # There should be one history record for both cases.
-            history_qs = ReleaseHistory.objects.filter(stage_id=data["stage_id"]).distinct()
-            assert history_qs.count() == 1
-
-            assert resp.status_code == 200, result
+        mocker.patch(
+            "apigateway.apis.web.release.views.release_biz.ReleaseHandler.batch_get_stage_release_status",
+            return_value={},
+        )
+        release = mocker.patch("apigateway.apis.web.release.views.release_biz.release_gateway", return_value=history)
+        response = request_view(
+            method="POST",
+            view_name="gateway.release.create",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            user=fake_admin_user,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_version_id": fake_resource_version.id,
+                "comment": "release test",
+            },
+        )
+        assert response.status_code == 200
+        release.assert_called_once_with(
+            gateway=fake_gateway,
+            stage_id=fake_stage.id,
+            resource_version_id=fake_resource_version.id,
+            comment="release test",
+            username=fake_admin_user.username,
+        )
+        assert response.json()["data"]["id"] == history.id
 
 
 class TestReleaseAvailableResourceListApi:

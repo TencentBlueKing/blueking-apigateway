@@ -43,6 +43,12 @@
         </template>
         <template #content>
           <template v-if="curTab === 'gateway'">
+            <DocDetailField :label="t('网关展示名')">
+              {{ getGatewayDisplayName(basics) }}
+            </DocDetailField>
+            <DocDetailField :label="t('网关 ID')">
+              {{ basics?.name || '--' }}
+            </DocDetailField>
             <DocDetailField :label="t('网关描述')">
               {{ basics?.description || '--' }}
             </DocDetailField>
@@ -143,6 +149,7 @@ import { docTabKey } from '../utils/doc-context';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useBkUserDisplayName } from '@/hooks';
 import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 // 网关和组件的公共信息必填，各自的详情字段按需提供。
 export interface IDocBasics extends Pick<IDocsGatewaysReadResponse, 'name' | 'description' | 'maintainers'>,

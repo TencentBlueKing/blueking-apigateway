@@ -35,6 +35,7 @@ from apigateway.components.bkpaas import (
     get_pass_deploy_streams_history_events,
     paas_app_module_offline,
     set_paas_stage_env,
+    update_app_maintainers,
 )
 
 
@@ -211,6 +212,50 @@ def test_paas_api_failure_raises_readable_remote_request_error(mocker, call_paas
     message = str(exc_info.value.code.message)
     assert detail in message
     assert r"\xe6\x97\xa0" not in message
+
+
+def _mock_paas_maintainer_request(mocker):
+    mocker.patch("apigateway.components.bkpaas.get_paas3_url_prefix", return_value="https://paas.example.com/prod")
+    mocker.patch("apigateway.components.bkpaas.gen_gateway_headers", return_value={"X-Gateway": "1"})
+    return mocker.patch("apigateway.components.bkpaas.http_post", return_value=(True, {}))
+
+
+def test_update_app_maintainers_filters_configured_excluded_usernames(settings, mocker):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    http_post = _mock_paas_maintainer_request(mocker)
+
+    assert update_app_maintainers("wewe45", ["45pkuh8is23y9q7f", "admin", "qd813g3ytkww1vo4", "bk_admin"])
+
+    http_post.assert_called_once_with(
+        "https://paas.example.com/prod/sys/shim/plugins_center/bk_plugins/wewe45/members/",
+        [
+            {"username": "45pkuh8is23y9q7f", "role": {"name": "管理员", "id": "2"}},
+            {"username": "qd813g3ytkww1vo4", "role": {"name": "管理员", "id": "2"}},
+        ],
+        headers={"X-Gateway": "1"},
+        timeout=REQ_PAAS_API_TIMEOUT,
+    )
+
+
+def test_update_app_maintainers_keeps_admin_when_multi_tenant_disabled(settings, mocker):
+    settings.ENABLE_MULTI_TENANT_MODE = False
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    http_post = _mock_paas_maintainer_request(mocker)
+
+    update_app_maintainers("wewe45", ["admin", "alice"])
+
+    assert [item["username"] for item in http_post.call_args.args[1]] == ["admin", "alice"]
+
+
+def test_update_app_maintainers_skips_request_when_every_username_is_excluded(settings, mocker):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin"})
+    http_post = _mock_paas_maintainer_request(mocker)
+
+    assert update_app_maintainers("wewe45", ["admin"])
+
+    http_post.assert_not_called()
 
 
 def test_paas_api_failure_falls_back_to_transport_error(mocker):

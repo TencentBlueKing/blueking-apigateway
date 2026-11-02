@@ -20,6 +20,7 @@ import logging
 
 from blue_krill.web.drf_utils import stringify_validation_error
 from django.conf import settings
+from django.db import IntegrityError
 from rest_framework import status
 from rest_framework.exceptions import (
     APIException,
@@ -114,5 +115,5 @@ def custom_exception_handler(exc, context):  # noqa: PLR0911
 
     set_rollback()
 
-    error = error_codes.UNKNOWN.format(message=str(exc))
+    error = error_codes.UNKNOWN.format(message=None if isinstance(exc, IntegrityError) else str(exc))
     return Response(error.code.as_json(is_legacy), status=error.code.status_code, headers={})

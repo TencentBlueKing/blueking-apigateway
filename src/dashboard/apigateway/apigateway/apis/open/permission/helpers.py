@@ -41,6 +41,7 @@ class ResourcePermission(BaseModel):
     id: int
     name: str
     api_name: str
+    gateway_display_name: str = ""
     gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
@@ -56,6 +57,7 @@ class ResourcePermission(BaseModel):
             "id": self.id,
             "name": self.name,
             "api_name": self.api_name,
+            "gateway_display_name": self.gateway_display_name,
             "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
@@ -141,6 +143,7 @@ class ResourcePermissionBuilder:
 
         for resource in resources:
             resource["api_name"] = self.gateway.name
+            resource["gateway_display_name"] = self.gateway.display_name_or_name
             resource["gateway_id"] = self.gateway.id
             resource["doc_link"] = doc_links.get(resource["id"], "")
             resource["api_permission"] = self.api_permission
@@ -216,22 +219,23 @@ class AppPermissionBuilder:
             resource.update({"resource_permission": resource_permission_map.get(resource["id"])})
             resource_map[resource["id"]].update(resource)
 
-        resource_id_to_fields = {
-            item["id"]: item
-            for item in Resource.objects.filter(id__in=list(resource_map.keys())).values(
-                "id", "gateway_id", "gateway__name"
-            )
+        resource_id_to_gateway = {
+            resource.id: resource.gateway
+            for resource in Resource.objects.filter(id__in=list(resource_map.keys()))
+            .select_related("gateway")
+            .only("id", "gateway_id", "gateway__name", "gateway__display_name", "gateway__display_name_en")
         }
 
         doc_links = ReleasedResourceHandler.get_latest_doc_link(list(resource_map.keys()))
         # resource_map由 已有的资源
         for resource_id, resource in resource_map.items():
-            resource_fields = resource_id_to_fields.get(resource_id, {})
-            resource["api_name"] = resource_fields.get("gateway__name", "")
-            resource["gateway_id"] = resource_fields.get("gateway_id")
+            gateway = resource_id_to_gateway.get(resource_id)
+            resource["api_name"] = gateway.name if gateway else ""
+            resource["gateway_display_name"] = gateway.display_name_or_name if gateway else ""
+            resource["gateway_id"] = gateway.pk if gateway else None
             resource["doc_link"] = doc_links.get(resource_id, "")
             resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
-                resource_fields.get("gateway_id"), ""
+                resource["gateway_id"], ""
             )
             # 判断这个资源是否有网关资源的权限,而不是直接通过
             # 如果应用已经有网关权限，则不展示单个资源申请的状态

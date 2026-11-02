@@ -66,7 +66,7 @@ func InitApisixClient(cfg *config.Config) {
 
 		cli.URL(cfg.EventReporter.ApisixHost)
 		apisixClient = &ApisixClient{
-			baseClient:           baseClient{client: cli},
+			client:               cli,
 			versionProbeCount:    cfg.EventReporter.VersionProbe.Retry.Count,
 			versionProbeInterval: cfg.EventReporter.VersionProbe.Retry.Interval,
 		}
@@ -83,7 +83,8 @@ func (a *ApisixClient) GetReleaseVersion(gatewayName, stageName string,
 	publishID string,
 ) (*VersionRouteResp, error) {
 	retryStrategy := retrier.New(retrier.ConstantBackoff(
-		a.versionProbeCount, a.versionProbeInterval), nil)
+		a.versionProbeCount, a.versionProbeInterval,
+	), nil)
 	var resp VersionRouteResp
 	err := retryStrategy.Run(func() error {
 		request := a.newReleaseVersionRequest(gatewayName, stageName)
@@ -145,7 +146,8 @@ func evaluateReleaseVersionResponse(gateway, stage string, publishID int64, resp
 	// 虚拟路由不存在,继续重试
 	if res.StatusCode == http.StatusNotFound {
 		err := fmt.Errorf(
-			"configuration [gateway: %s,stage: %s] version route not found", gateway, stage)
+			"configuration [gateway: %s,stage: %s] version route not found", gateway, stage,
+		)
 		logging.GetLogger().Info(err)
 		return err
 	}
@@ -166,7 +168,8 @@ func evaluateReleaseVersionResponse(gateway, stage string, publishID int64, resp
 		if unmarshalErr != nil {
 			err := fmt.Errorf(
 				"unmarshal configuration [gateway: %s,stage: %s] version route body err: %w",
-				gateway, stage, unmarshalErr)
+				gateway, stage, unmarshalErr,
+			)
 			logging.GetLogger().Error(err)
 			return err
 		}

@@ -4,6 +4,7 @@ import type { IAuthConfig } from '@/types/resource';
 // POST /gateways/ - 创建网关
 export interface IGatewayCreateInputSLZ {
   name: string
+  display_name: string
   description?: string
   maintainers: string[]
   developers?: string[]

@@ -194,42 +194,6 @@ class TestAppResourcePermissionManager:
         assert to_datetime_from_now(days=70 + 359) < perm_2.expires < to_datetime_from_now(70 + 361)
         assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(720 + 181)
 
-    def test_renew_not_expired_permission(self):
-        perm_1 = G(
-            models.AppResourcePermission,
-            gateway=self.gateway,
-            bk_app_code="test-1",
-            expires=dummy_time.time,
-            resource_id=self.resource.id,
-        )
-        perm_2 = G(
-            models.AppResourcePermission,
-            gateway=self.gateway,
-            bk_app_code="test-2",
-            expires=to_datetime_from_now(days=70),
-            resource_id=self.resource.id,
-        )
-        perm_3 = G(
-            models.AppResourcePermission,
-            gateway=self.gateway,
-            bk_app_code="test-3",
-            expires=to_datetime_from_now(days=720),
-            resource_id=self.resource.id,
-        )
-
-        for bk_app_code in ["test-1", "test-2", "test-3"]:
-            models.AppResourcePermission.objects.renew_not_expired_permissions(
-                self.gateway,
-                bk_app_code=bk_app_code,
-                resource_ids=[self.resource.id],
-            )
-        perm_1 = models.AppResourcePermission.objects.get(id=perm_1.id)
-        perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
-        perm_3 = models.AppResourcePermission.objects.get(id=perm_3.id)
-        assert perm_1.expires == dummy_time.time
-        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(181)
-        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
-
     def test_save_permissions(self):
         resource_1 = G(Resource, gateway=self.gateway)
         resource_2 = G(Resource, gateway=self.gateway)

@@ -50,6 +50,7 @@
 | data[].categories | array | MCPServer 分类列表 |
 | data[].stage | object | MCPServer 环境信息 |
 | data[].gateway | object | MCPServer 网关信息 |
+| data[].gateway.display_name | string | 网关展示名 |
 | data[].tools_count | int | MCPServer 工具数量 |
 | data[].prompts_count | int | MCPServer Prompts 数量 |
 | data[].url | string | MCPServer 访问 URL |

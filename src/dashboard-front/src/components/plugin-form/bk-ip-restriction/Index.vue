@@ -50,8 +50,8 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
 import { Form } from 'bkui-vue';
-import type { IIPRestriction, ISchema } from '@/components/plugin-manage/schema-type';
-import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
+import type { IIPRestriction, ISchema } from '@/components/plugin-manage/schema-form/types';
+import SchemaField from '@/components/plugin-manage/schema-form/Index.vue';
 
 interface IProps {
   schema?: ISchema

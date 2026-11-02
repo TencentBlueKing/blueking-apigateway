@@ -1,6 +1,6 @@
 ### 描述
 
-同步网关，如果网关不存在，创建网关，如果网关已存在，更新网关
+同步网关，如果网关不存在，创建网关，如果网关已存在，更新网关。
 
 
 ### 输入参数
@@ -15,16 +15,23 @@
 
 | 参数名称    | 参数类型 | 必选 | 描述                   |
 | ----------- | -------- |----| ---------------------- |
+| display_name | string/null | 否 | 网关展示名，最长 64 字符；创建时不填或为空默认为 name，更新时不填保持不变，传空值恢复为 name |
+| display_name_en | string/null | 否 | 英文展示名，最长 64 字符，以英文字母开头，仅支持英文字母、数字、空格和横杠；不填或为空表示清空 |
 | description | string   | 否  | 网关描述               |
 | maintainers | array    | 否  | 网关管理员             |
 | is_public   | boolean  | 否  | 网关是否公开，默认公开 |
 | is_official | boolean  | 否  | `true` 为官方网关，`false` 为普通网关；新建时默认 `false`，更新时不传则保留原值 |
 | kind        | string   | 否  | 网关类型：`normal`（默认）或 `ai`；仅创建时生效 |
 
+
+两个展示名字段分别唯一，不区分大小写，并会去除首尾空白。
+
 ### 请求参数示例
 
 ```json
 {
+    "display_name": "示例网关",
+    "display_name_en": "Example Gateway",
     "description": "just for test",
     "maintainers": ["admin"],
     "is_public": true,
@@ -41,6 +48,8 @@ from bkapi.bk_apigateway.shortcuts import get_client_by_request
 client = get_client_by_request(request)
 result = client.api.sync_api(
     {
+        "display_name": "示例网关",
+        "display_name_en": "Example Gateway",
         "description": "just for test",
         "maintainers": ["admin"],
         "is_public": True,
@@ -63,6 +72,7 @@ result = client.api.sync_api(
     "message": "OK",
     "data": {
         "id": 1,
+        "display_name": "示例网关",
         "name": "demo",
         "kind": "normal",
         "is_official": false
@@ -84,5 +94,6 @@ result = client.api.sync_api(
 | ----------- | -------- | ---------------------------------------- |
 | id          | int      | 网关ID                                   |
 | name        | string   | 网关名称                                 |
+| display_name | string | 网关展示名 |
 | kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |
 | is_official | boolean  | 是否为官方网关                           |

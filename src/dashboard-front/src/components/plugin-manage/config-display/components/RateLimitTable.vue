@@ -19,10 +19,23 @@
 <template>
   <!--  插件配置展示态组件  -->
   <!--  频率控制插件  -->
-  <CustomTable
+  <BaseTable
     :columns="tableCols"
     :data="tableData"
-  />
+  >
+    <template
+      v-if="isUserRateLimit && featureFlagStore.isEnableDisplayName"
+      #appId="{ row }"
+    >
+      <bk-user-display-name
+        v-if="!row.isDefault"
+        :user-id="row.appId"
+      />
+      <template v-else>
+        --
+      </template>
+    </template>
+  </BaseTable>
 </template>
 
 <script setup lang="ts">
@@ -30,8 +43,9 @@ import type {
   IBaseTableRow,
   IColumn,
   IPlugin,
-} from '@/components/plugin-manage/types';
-import CustomTable from './CustomTable.vue';
+} from '../types';
+import BaseTable from './BaseTable.vue';
+import { useFeatureFlag } from '@/stores';
 
 interface IRateLimitConfig {
   rates: {
@@ -47,6 +61,7 @@ interface IRateLimitTableRow extends IBaseTableRow {
   tokens: number
   period: string
   appId?: string
+  isDefault: boolean
 }
 
 interface IProps {
@@ -59,6 +74,7 @@ const {
   firstColWidth,
 } = defineProps<IProps>();
 
+const featureFlagStore = useFeatureFlag();
 const { t } = useI18n();
 
 const periodTextMap: Record<number, string> = {
@@ -68,8 +84,10 @@ const periodTextMap: Record<number, string> = {
   86400: t('天'),
 };
 
+const isUserRateLimit = computed(() => (plugin.code || plugin.type) === 'bk-resource-user-rate-limit');
+
 // 频率控制插件表格列
-const tableCols = ref<IColumn[]>([
+const tableCols = computed<IColumn[]>(() => [
   {
     label: t('类别'),
     align: 'right',
@@ -87,7 +105,7 @@ const tableCols = ref<IColumn[]>([
     field: 'period',
   },
   {
-    label: t('蓝鲸应用 ID'),
+    label: isUserRateLimit.value ? t('用户名') : t('蓝鲸应用 ID'),
     field: 'appId',
   },
 ]);
@@ -98,24 +116,21 @@ const tableData = computed(() => {
   const specialData: IRateLimitTableRow[] = [];
   const { rates } = plugin.config;
   Object.entries(rates).forEach(([appId, rateConfig]) => {
-    // @ts-ignore
-    const { tokens, period } = rateConfig[0];
-    if (appId === '__default') {
-      defaultData.push({
+    rateConfig.forEach(({ tokens, period }, index) => {
+      const isDefault = appId === '__default';
+      const rows = isDefault ? defaultData : specialData;
+      const type = isDefault
+        ? (isUserRateLimit.value ? t('默认用户频率限制') : t('默认应用频率限制'))
+        : (isUserRateLimit.value ? t('特殊用户频率限制') : t('特殊应用频率限制'));
+      rows.push({
+        key: `${appId}:${index}`,
+        appId: isDefault ? '--' : appId,
+        isDefault,
         tokens,
-        type: t('默认应用频率限制'),
-        period: periodTextMap[period],
-        appId: '--',
+        type,
+        period: periodTextMap[period] ?? `${period} ${t('秒')}`,
       });
-    }
-    else {
-      specialData.push({
-        appId,
-        tokens,
-        type: t('特殊应用频率限制'),
-        period: periodTextMap[period],
-      });
-    }
+    });
   });
   if (specialData.length > 0) {
     specialData[0].rowSpan = specialData.length;

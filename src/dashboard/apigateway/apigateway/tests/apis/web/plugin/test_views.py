@@ -159,7 +159,15 @@ class TestPluginTypeListApi:
         codes = {item["code"] for item in response.json()["data"]["results"]}
         assert (plugin_type_code in codes) is (resource_kind == ResourceKindEnum.AI.value)
 
-    @pytest.mark.parametrize("plugin_type_code", AI_INCOMPATIBLE_PLUGIN_CODES)
+    @pytest.mark.parametrize(
+        "plugin_type_code",
+        [
+            *AI_INCOMPATIBLE_PLUGIN_CODES,
+            pytest.param("unknown-plugin", id="unregistered"),
+            pytest.param("ai-proxy", id="controller-single"),
+            pytest.param("ai-proxy-multi", id="controller-multi"),
+        ],
+    )
     def test_list_excludes_incompatible_plugin_for_ai_resource(
         self,
         request_view,
@@ -183,33 +191,6 @@ class TestPluginTypeListApi:
                 "scope_type": "resource",
                 "scope_id": fake_resource.id,
             },
-        )
-
-        assert response.status_code == 200
-        codes = {item["code"] for item in response.json()["data"]["results"]}
-        assert plugin_type_code not in codes
-
-    @pytest.mark.parametrize("plugin_type_code", ["unknown-plugin", "ai-proxy", "ai-proxy-multi"])
-    def test_list_excludes_unregistered_and_controller_managed_plugins_for_ai_resource(
-        self,
-        request_view,
-        fake_gateway,
-        fake_resource,
-        plugin_type_code,
-    ):
-        fake_resource.kind = ResourceKindEnum.AI.value
-        fake_resource.save(update_fields=["kind"])
-        PluginType.objects.update_or_create(
-            code=plugin_type_code,
-            defaults={"is_public": True, "scope": PluginTypeScopeEnum.RESOURCE.value},
-        )
-
-        response = request_view(
-            "GET",
-            "plugins.types",
-            gateway=fake_gateway,
-            path_params={"gateway_id": fake_gateway.id},
-            data={"scope_type": "resource", "scope_id": fake_resource.id},
         )
 
         assert response.status_code == 200

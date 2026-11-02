@@ -67,9 +67,7 @@ func newCoreAPIClient(host, instanceID, instanceSecret string) *CoreAPIClient {
 	cli.SetHeader("X-Bk-Micro-Gateway-Instance-Secret", instanceSecret)
 
 	return &CoreAPIClient{
-		baseClient: baseClient{
-			client: cli,
-		},
+		client:                 cli,
 		microGatewayInstanceID: instanceID,
 	}
 }

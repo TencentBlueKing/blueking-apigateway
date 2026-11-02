@@ -37,6 +37,8 @@ from apigateway.biz.esb.permissions import (
 )
 from apigateway.utils.time import to_datetime_from_now
 
+pytestmark = pytest.mark.django_db(databases=["default", "bkcore"])
+
 
 class TestComponentPermissionByEsbManager:
     def test_create_apply_record(self, unique_id, fake_system, fake_channel):
@@ -154,7 +156,7 @@ class TestComponentPermissionByEsbManager:
 class TestComponentPermissionByGatewayManager:
     def test_create_apply_record(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
         if ComponentResourceBinding is None:
-            return
+            pytest.skip("Component-resource bindings are unavailable in this edition")
 
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
@@ -180,7 +182,7 @@ class TestComponentPermissionByGatewayManager:
 
     def test_renew_permission(self, mocker, unique_id, fake_channel, fake_gateway, fake_resource):
         if ComponentResourceBinding is None:
-            return
+            pytest.skip("Component-resource bindings are unavailable in this edition")
 
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
@@ -215,9 +217,9 @@ class TestComponentPermissionByGatewayManager:
         assert to_datetime_from_now(days=170) < perm1.expires < to_datetime_from_now(days=190)
         assert to_datetime_from_now(days=170) < perm2.expires < to_datetime_from_now(days=190)
 
-    def list_permissions(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
+    def test_list_permissions(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
         if ComponentResourceBinding is None:
-            return
+            pytest.skip("Component-resource bindings are unavailable in this edition")
 
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
@@ -227,14 +229,8 @@ class TestComponentPermissionByGatewayManager:
             "apigateway.biz.esb.permissions.get_component_doc_link",
             return_value="",
         )
-        mocker.patch(
-            "apigateway.biz.esb.permissions.ComponentPermission.expires_in",
-            new_callable=mocker.PropertyMock(return_value=-math.inf),
-        )
-        mocker.patch(
-            "apigateway.biz.esb.permissions.ComponentPermission.permission_status",
-            new_callable=mocker.PropertyMock(return_value="need_apply"),
-        )
+        fake_channel.permission_level = "normal"
+        fake_channel.save(update_fields=["permission_level"])
         G(
             ComponentResourceBinding,
             component_id=fake_channel.id,
@@ -263,6 +259,7 @@ class TestComponentPermissionByGatewayManager:
 
         manager = ComponentPermissionByGatewayManager()
         result = manager.list_permissions(unique_id, fake_system.id, components)
+        assert 9 * 86400 < result[0]["expires_in"] <= 10 * 86400
         assert result == [
             {
                 "id": fake_channel.id,
@@ -274,14 +271,14 @@ class TestComponentPermissionByGatewayManager:
                 "system_id": fake_system.id,
                 "permission_level": fake_channel.permission_level,
                 "permission_status": "owned",
-                "expires_in": -math.inf,
+                "expires_in": result[0]["expires_in"],
                 "doc_link": "",
             }
         ]
 
     def test_list_applied_permissions(self, mocker, unique_id, fake_system, fake_channel, fake_gateway, fake_resource):
         if ComponentResourceBinding is None:
-            return
+            pytest.skip("Component-resource bindings are unavailable in this edition")
 
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
@@ -333,7 +330,7 @@ class TestComponentPermissionByGatewayManager:
 
     def test_patch_permission_apply_records(self, mocker, unique_id, fake_channel, fake_gateway, fake_resource):
         if ComponentResourceBinding is None:
-            return
+            pytest.skip("Component-resource bindings are unavailable in this edition")
 
         mocker.patch(
             "apigateway.biz.esb.permissions.get_esb_gateway",
@@ -373,7 +370,7 @@ class TestComponentPermissionByGatewayManager:
 
     def test_get_component_id_to_resource_id(self, fake_channel, faker):
         if not ComponentResourceBinding:  # type: ignore
-            return
+            pytest.skip("Component-resource bindings are unavailable in this edition")
 
         resource_id = faker.pyint()
 

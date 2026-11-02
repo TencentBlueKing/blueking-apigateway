@@ -122,13 +122,6 @@ class TestBackend:
         assert standard_backend.is_ai is False
         assert ai_backend.is_ai is True
 
-    def test_kind_manager_filters(self, fake_gateway):
-        standard_backend = G(models.Backend, gateway=fake_gateway)
-        ai_backend = G(models.Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
-
-        assert set(models.Backend.objects.standard().values_list("id", flat=True)) == {standard_backend.id}
-        assert set(models.Backend.objects.ai().values_list("id", flat=True)) == {ai_backend.id}
-
 
 class TestResource:
     @pytest.mark.parametrize(
@@ -149,13 +142,6 @@ class TestResource:
         assert standard_resource.kind == ResourceKindEnum.STANDARD.value
         assert standard_resource.is_ai is False
         assert ai_resource.is_ai is True
-
-    def test_kind_manager_filters(self, fake_gateway):
-        standard_resource = G(models.Resource, gateway=fake_gateway)
-        ai_resource = G(models.Resource, gateway=fake_gateway, kind=ResourceKindEnum.AI.value)
-
-        assert set(models.Resource.objects.standard().values_list("id", flat=True)) == {standard_resource.id}
-        assert set(models.Resource.objects.ai().values_list("id", flat=True)) == {ai_resource.id}
 
 
 class TestPublishEvent:

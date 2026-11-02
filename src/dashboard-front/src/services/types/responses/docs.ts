@@ -86,6 +86,7 @@ export interface IDocsGatewaysListResponse {
   kind?: number
   id: number
   name: string
+  display_name?: string
   description: string | null
   tenant_mode: string | null
   tenant_id: string | null

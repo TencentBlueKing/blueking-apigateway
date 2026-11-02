@@ -107,11 +107,11 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { isObject } from 'lodash-es';
-import type { ComponentMap, ICorsFormData, IHeaderWriteFormData, ISchema } from '@/components/plugin-manage/schema-type';
+import type { ComponentMap, ICorsFormData, IHeaderWriteFormData, ISchema } from '../types';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
-import InputComponent from '@/components/plugin-manage/components/InputComponent.vue';
-import InputNumberComponent from '@/components/plugin-manage/components/InputNumberComponent.vue';
-import SwitchComponent from '@/components/plugin-manage/components/SwitchComponent.vue';
+import InputComponent from './InputComponent.vue';
+import InputNumberComponent from './InputNumberComponent.vue';
+import SwitchComponent from './SwitchComponent.vue';
 
 type ICustomFormData = IHeaderWriteFormData & ICorsFormData;
 

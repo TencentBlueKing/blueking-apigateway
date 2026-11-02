@@ -27,23 +27,22 @@ from apigateway.core.models import Resource, ResourceVersion
 
 
 class TestDocArchiveGenerator:
-    def test_generate(self, mocker, faker, fake_resource_doc):
-        mocker.patch("apigateway.biz.resource_doc.exporter.generators.write_to_file", return_value=None)
+    def test_generate(self, tmp_path, fake_resource_doc):
 
         fake_gateway = fake_resource_doc.gateway
         resource = Resource.objects.get(id=fake_resource_doc.resource_id)
 
         generator = DocArchiveGenerator()
-        result = generator.generate("/tmp", fake_gateway.id, [fake_resource_doc.resource_id])
+        result = generator.generate(str(tmp_path), fake_gateway.id, [fake_resource_doc.resource_id])
         assert result == [f"{fake_resource_doc.language}/{resource.name}.md"]
+        assert (tmp_path / result[0]).read_text() == fake_resource_doc.content
 
         with pytest.raises(NoResourceDocError):
-            generator.generate("/tmp", fake_gateway.id, [0])
+            generator.generate(str(tmp_path), fake_gateway.id, [0])
 
 
 class TestResourceVersionDocArchiveGenerator:
-    def test_generate(self, mocker, fake_gateway):
-        mocker.patch("apigateway.biz.resource_doc.exporter.generators.write_to_file", return_value=None)
+    def test_generate(self, tmp_path, fake_gateway):
 
         rv = G(
             ResourceVersion,
@@ -70,8 +69,12 @@ class TestResourceVersionDocArchiveGenerator:
         )
 
         generator = ResourceVersionDocArchiveGenerator()
-        result = generator.generate("/tmp", rv)
-        assert sorted(result) == sorted(["zh/get_user.md", "zh/create_user.md", "en/get_user.md"])
+        result = generator.generate(str(tmp_path), rv)
+        assert {name: (tmp_path / name).read_text() for name in result} == {
+            "zh/get_user.md": "# 获取用户",
+            "zh/create_user.md": "# 创建用户",
+            "en/get_user.md": "# Get User",
+        }
 
         # 没有对应的文档版本时应抛出异常
         rv_no_doc = G(
@@ -81,10 +84,9 @@ class TestResourceVersionDocArchiveGenerator:
             _data=json.dumps([{"id": 1, "name": "get_user"}]),
         )
         with pytest.raises(NoResourceDocError):
-            generator.generate("/tmp", rv_no_doc)
+            generator.generate(str(tmp_path), rv_no_doc)
 
-    def test_generate_skip_unknown_resource_id(self, mocker, fake_gateway):
-        mocker.patch("apigateway.biz.resource_doc.exporter.generators.write_to_file", return_value=None)
+    def test_generate_skip_unknown_resource_id(self, tmp_path, fake_gateway):
 
         rv = G(
             ResourceVersion,
@@ -105,5 +107,7 @@ class TestResourceVersionDocArchiveGenerator:
         )
 
         generator = ResourceVersionDocArchiveGenerator()
-        result = generator.generate("/tmp", rv)
+        result = generator.generate(str(tmp_path), rv)
         assert result == ["zh/get_user.md"]
+        assert (tmp_path / result[0]).read_text() == "# 获取用户"
+        assert len(list(tmp_path.rglob("*.md"))) == 1

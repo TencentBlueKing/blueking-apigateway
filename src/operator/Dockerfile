@@ -1,4 +1,4 @@
-FROM golang:1.25.5 AS builder
+FROM golang:1.27.3 AS builder
 
 COPY ./ /app
 WORKDIR /app
@@ -10,7 +10,7 @@ ARG COMMIT=HEAD
 RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ./build/${BINARY}
 
 # install dlv
-RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.27.0
 
 FROM tencentos/tencentos4-minimal:4.4-v20250922
 

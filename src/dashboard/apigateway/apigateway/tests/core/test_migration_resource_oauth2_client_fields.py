@@ -3,7 +3,7 @@ from django.db import DatabaseError, connections, models
 from django.db.migrations.executor import MigrationExecutor
 from django.db.migrations.recorder import MigrationRecorder
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
 MIGRATE_FROM = [("core", "0054_backendconfig_private_config")]
 MIGRATE_TO = [("core", "0055_resource_oauth2_client_fields")]

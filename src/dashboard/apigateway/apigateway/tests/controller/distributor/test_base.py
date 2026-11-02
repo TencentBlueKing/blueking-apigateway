@@ -50,30 +50,3 @@ class TestBaseDistributor:
         # Should not be able to instantiate without implementing revoke
         with pytest.raises(TypeError):
             IncompleteDistributor()
-
-    def test_complete_implementation(self, mocker):
-        """Test a complete implementation of BaseDistributor"""
-
-        class CompleteDistributor(BaseDistributor):
-            def test_connection(self):
-                return True, "ok"
-
-            def distribute(self, release_task_id: str, publish_id: int):
-                return True, "distributed"
-
-            def revoke(self, release_task_id: str, publish_id: int):
-                return True, "revoked"
-
-        # Should be able to instantiate with all methods implemented
-        distributor = CompleteDistributor()
-        assert distributor is not None
-
-        # Test the methods
-        mock_release = mocker.Mock()
-        success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
-        assert success is True
-        assert message == "distributed"
-
-        success, message = distributor.revoke(release_task_id="test-task-id", publish_id=123)
-        assert success is True
-        assert message == "revoked"

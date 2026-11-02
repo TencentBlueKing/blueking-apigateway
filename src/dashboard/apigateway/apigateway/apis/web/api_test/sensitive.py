@@ -1,0 +1,156 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+import json
+import shlex
+from urllib.parse import quote, quote_plus
+
+from django.conf import settings
+
+from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
+
+SENSITIVE_KEYS = {"bk_app_secret", "app_secret", "bk_token", "bk_ticket", "skey", "access_token"}
+SENSITIVE_HEADER_NAMES = {
+    HEADER_BKAPI_AUTHORIZATION.lower(),
+    "authorization",
+    "proxy-authorization",
+    "cookie",
+    "set-cookie",
+}
+
+
+def remove_sensitive_headers(headers):
+    return {key: value for key, value in headers.items() if key.lower() not in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS}
+
+
+class DebugDataSanitizer:
+    """Keep credentials used for sending out of debug output and persistence."""
+
+    def __init__(self):
+        self._secrets: set[str] = set()
+
+    def add_authorization(self, authorization):
+        for key, value in authorization.items():
+            if key.lower() in SENSITIVE_KEYS:
+                self._add_secret(value)
+
+    def add_headers(self, headers):
+        login_cookie_names = SENSITIVE_KEYS | {
+            name.lower() for name in settings.BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME.values()
+        }
+        for key, value in headers.items():
+            name = key.lower()
+            if name not in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS or not isinstance(value, str):
+                continue
+            if name == "cookie":
+                for cookie in value.split(";"):
+                    cookie_name, _, cookie_value = cookie.partition("=")
+                    if cookie_name.strip().lower() in login_cookie_names:
+                        self._add_secret(cookie_value.strip())
+                continue
+            if name == HEADER_BKAPI_AUTHORIZATION.lower():
+                self._add_bkapi_authorization(value)
+                continue
+            self._add_secret(value)
+            if name in {"authorization", "proxy-authorization"}:
+                self._add_secret(value.partition(" ")[2])
+
+    def _add_bkapi_authorization(self, value):
+        try:
+            authorization = json.loads(value)
+        except ValueError, TypeError:
+            self._add_secret(value)
+            return
+        if isinstance(authorization, dict):
+            self.add_authorization(authorization)
+            # Do not register already-masked headers or application metadata as
+            # secrets: later output/history cleanup must keep those fields visible.
+            if any(
+                key.lower() in SENSITIVE_KEYS and isinstance(secret, str) and secret and secret != "***"
+                for key, secret in authorization.items()
+            ):
+                self._add_secret(value)
+
+    def _add_secret(self, value):
+        if isinstance(value, str) and value and value != "***":
+            self._secrets.update({value, json.dumps(value)[1:-1], quote(value, safe=""), quote_plus(value)})
+
+    def clean(self, data):
+        if isinstance(data, dict):
+            return {
+                key: "***" if key.lower() in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS and value else self.clean(value)
+                for key, value in data.items()
+            }
+        if isinstance(data, list):
+            return [self.clean(value) for value in data]
+        if isinstance(data, str):
+            # Header JSON embedded in an echoed JSON body has another escaping layer.
+            # Clean the decoded output copy by field meaning, preserving valid JSON.
+            try:
+                decoded = json.loads(data)
+            except ValueError:
+                pass
+            else:
+                if isinstance(decoded, (dict, list)):
+                    cleaned = self.clean(decoded)
+                    return json.dumps(cleaned, ensure_ascii=False) if cleaned != decoded else data
+            for secret in sorted(self._secrets, key=len, reverse=True):
+                data = data.replace(secret, "***")
+        return data
+
+    def clean_request(self, request):
+        request = dict(request, headers=self.clean(remove_sensitive_headers(request.get("headers", {}))))
+        # Only user-provided payload fields may contain echoed credentials. Fixed
+        # metadata (method/type/version/flags) must keep its schema-defined values.
+        for key in ("request_url", "path_params", "query_params", "body", "subpath"):
+            if key in request:
+                request[key] = self.clean(request[key])
+        return request
+
+    def clean_curl(self, curl):
+        # Historical curls were generated by curlify with separate '-H' arguments.
+        try:
+            args = shlex.split(curl)
+        except ValueError:
+            return ""
+        for index, arg in enumerate(args[:-1]):
+            if arg in {"-H", "--header"}:
+                name, _, value = args[index + 1].partition(":")
+                if name.lower() in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS:
+                    self.add_headers({name: value.strip()})
+                    cleaned_value = "***"
+                    if name.lower() == HEADER_BKAPI_AUTHORIZATION.lower():
+                        try:
+                            authorization = json.loads(value)
+                        except ValueError:
+                            pass
+                        else:
+                            if isinstance(authorization, dict):
+                                cleaned_value = json.dumps(self.clean(authorization), ensure_ascii=False)
+                    args[index + 1] = f"{name}: {cleaned_value}"
+        return shlex.join(self.clean(args))
+
+
+def sanitize_history(request, response):
+    sanitizer = DebugDataSanitizer()
+    sanitizer.add_headers(request.get("headers", {}))
+    response = dict(response)
+    if isinstance(response.get("data"), dict):
+        response["data"] = dict(response["data"])
+        if response["data"].get("curl"):
+            response["data"]["curl"] = sanitizer.clean_curl(response["data"]["curl"])
+    return sanitizer.clean_request(request), sanitizer.clean(response)

@@ -21,27 +21,31 @@
 
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "bk_app_code": "test",
-      "applied_by": "admin",
-      "applied_time": "2025-01-01 00:00:00 +0800",
-      "handled_by": [
-        "admin"
-      ],
-      "handled_time": "2025-01-02 10:00:00 +0800",
-      "apply_status": "pending",
-      "apply_status_display": "待审批",
-      "grant_dimension": "api",
-      "comment": "",
-      "reason": "",
-      "expire_days": 180,
-      "itsm_ticket_id": "102025051310362600001802",
-      "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001802",
-      "gateway_name": "test"
-    }
-  ]
+  "data": {
+    "count": 1,
+    "results": [
+      {
+        "id": 1,
+        "bk_app_code": "test",
+        "applied_by": "admin",
+        "applied_time": "2025-01-01 00:00:00 +0800",
+        "handled_by": [
+          "admin"
+        ],
+        "handled_time": "2025-01-02 10:00:00 +0800",
+        "apply_status": "pending",
+        "apply_status_display": "待审批",
+        "grant_dimension": "api",
+        "comment": "",
+        "reason": "",
+        "expire_days": 180,
+        "itsm_ticket_id": "102025051310362600001802",
+        "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001802",
+        "gateway_name": "test",
+        "gateway_display_name": "蓝鲸 API 网关"
+      }
+    ]
+  }
 }
 ```
 
@@ -49,9 +53,11 @@
 
 | 字段    | 类型   | 描述                               |
 | ------- | ------ | ---------------------------------- |
-| data    | array  | 结果数据，详细信息请见下面说明     |
+| data | object | 分页结果，包含 count 和 results |
+| data.count | int | 符合条件的记录总数 |
+| data.results | array | 当前页申请记录 |
 
-#### data
+#### data.results[]
 
 | 参数名称                 | 参数类型   | 描述                                          |
 |----------------------|--------|---------------------------------------------|
@@ -70,3 +76,4 @@
 | itsm_ticket_id       | string | 关联的 ITSM 工单 ID，未关联时为空字符串                    |
 | approval_url | string | 权限审批 URL；优先返回 ITSM 工单地址，否则返回 `{DASHBOARD_FE_URL}/{gateway_id}/permission/apply` |
 | gateway_name         | string | 网关名称                                        |
+| gateway_display_name | string | 所属网关的展示名 |

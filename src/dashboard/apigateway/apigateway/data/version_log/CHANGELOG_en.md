@@ -1,3 +1,43 @@
+<!-- 2026-10-30 -->
+# V1.25.0 Release Log
+
+### Features
+
+- Integrate with BlueKing IAM V4
+- Deployment: add KMS support to the underlying deployment
+- Resource Management: support duplicate route detection
+
+### Enhancements
+
+- Resource Editing: improve the request parameter editor
+- Resource Import: distinguish APIs with unchanged configurations when importing configuration files
+- Documentation Center: support applying for API permissions directly, with a searchable dropdown of my applications
+- Documentation Center: improve page styling
+- MCP Market: improve the homepage and add an icon indicating whether personal tokens are enabled
+- BK-CLI: improve presentation
+- MCP Server: add instructions for OAuth2 public clients and personal tokens to the usage guide
+- Personal Workbench: support canceling/deleting pending applications and viewing approved/rejected applications in My Applications
+
+### Bug Fixes
+
+- Fix: the "This resource has no request parameters" option is selected by default when request parameters are not configured
+- Fix: detailed Git failure reasons are not displayed when creating a programmable gateway
+- Fix: the Generate Version button remains disabled after a successful batch resource update
+- Fix: tenant and permission isolation issues in MCP Server APIs
+- Fix: permission error messages on the log sharing page, and make it a standalone page
+- Fix: high CPU usage caused by Prometheus metrics collection in APISIX
+
+### Other
+
+- Resource Details: align columns in the plugin configuration table
+- bk-esb: prepare for retirement; bk-esb will be removed in the next major release
+- Upgrade the Django dependency
+- Use the `is_official` field consistently to identify official gateways
+- Align homepage content in the top navigation
+- Standardize icons and styling across the site
+
+---
+
 <!-- 2026-08-21 -->
 # V1.24.0 Release Log
 

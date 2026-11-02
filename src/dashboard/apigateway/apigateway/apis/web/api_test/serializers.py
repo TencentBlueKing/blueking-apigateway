@@ -23,23 +23,18 @@ from rest_framework import serializers
 
 from apigateway.core.constants import HTTP_METHOD_CHOICES
 
+from .prepared_request import PreparedRequestHeaders
+from .sensitive import sanitize_history
+
 
 class AuthorizationSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸应用编码")
     bk_app_secret = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸应用密钥")
     bk_ticket = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸用户票据")
     bk_token = serializers.CharField(allow_blank=True, required=False, help_text="蓝鲸用户票据")
-    uin = serializers.CharField(allow_blank=True, required=False, help_text="uin")
-    skey = serializers.CharField(allow_blank=True, required=False, help_text="skey")
 
     class Meta:
         ref_name = "apigateway.apis.web.api_test.serializers.AuthorizationSLZ"
-
-    def validate_uin(self, value):
-        try:
-            return value.lstrip("o0")
-        except Exception:  # pylint: disable=broad-except
-            return value
 
     def validate(self, data: Dict[str, str]) -> Dict[str, str]:
         return {k: v for k, v in data.items() if v}
@@ -63,8 +58,15 @@ class APITestInputSLZ(serializers.Serializer):
     class Meta:
         ref_name = "apigateway.apis.web.api_test.serializers.APITestInputSLZ"
 
+    def validate_headers(self, headers):
+        try:
+            PreparedRequestHeaders(headers).get_bkapi_authorization()
+        except ValueError as err:
+            raise serializers.ValidationError(str(err))
+        return headers
+
     def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        data.setdefault("authorization", {})
+        data["authorization"] = data.get("authorization") or {}
         if data.get("use_test_app"):
             data["authorization"].update(settings.DEFAULT_TEST_APP)
 
@@ -89,6 +91,11 @@ class APIDebugHistoriesListOutputSLZ(serializers.Serializer):
     resource_name = serializers.CharField(read_only=True, help_text="资源名称")
     request = serializers.JSONField(help_text="请求参数")
     response = serializers.JSONField(help_text="返回结果")
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["request"], data["response"] = sanitize_history(data["request"] or {}, data["response"] or {})
+        return data
 
     class Meta:
         ref_name = "apigateway.apis.web.api_test.serializers.APIDebugHistoriesListOutputSLZ"

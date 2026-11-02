@@ -187,9 +187,12 @@ class TestGatewayResourceDistributor:
         mock_release.stage.name = "prod"
 
         # Mock dependencies
-        mock_convertor = mocker.patch("apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer")
+        mock_convertor = mocker.patch(
+            "apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer", autospec=True
+        )
         mock_convertor_instance = mock_convertor.return_value
-        mock_convertor_instance.get_apisix_resources.return_value = []
+        resources = [mocker.sentinel.release_marker, mocker.sentinel.detect_route]
+        mock_convertor_instance.get_transformed_resources.return_value = resources
 
         mock_registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
         mock_registry_instance = mock_registry.return_value
@@ -205,6 +208,10 @@ class TestGatewayResourceDistributor:
         assert success is True
         assert message == ""
 
+        mock_registry_instance.sync_resources_by_key_prefix.assert_called_once_with(resources)
+        mock_convertor.return_value.transform.assert_called_once_with()
+        mock_convertor.assert_called_once_with(mock_release, mock_data_plane.apisix_version, publish_id=123)
+
     def test_distribute_failure(self, mocker):
         """Test distribute method failure case"""
         mock_release = mocker.Mock()
@@ -217,7 +224,7 @@ class TestGatewayResourceDistributor:
         mock_convertor = mocker.patch("apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer")
         mock_convertor.return_value.transform.side_effect = Exception("Test error")
 
-        mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
+        registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry").return_value
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
         mock_data_plane = mocker.Mock()
@@ -228,6 +235,7 @@ class TestGatewayResourceDistributor:
         assert success is False
         assert "distribute gateway resources to etcd failed" in message
         assert "Test error" in message
+        registry.sync_resources_by_key_prefix.assert_not_called()
 
     def test_revoke_with_delete_publish_id(self, mocker):
         """Test revoke method with DELETE_PUBLISH_ID"""
@@ -266,9 +274,12 @@ class TestGatewayResourceDistributor:
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
 
-        mock_convertor = mocker.patch("apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer")
+        mock_convertor = mocker.patch(
+            "apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer", autospec=True
+        )
         mock_convertor_instance = mock_convertor.return_value
-        mock_convertor_instance.get_apisix_resources.return_value = []
+        resources = [mocker.sentinel.release_marker, mocker.sentinel.detect_route]
+        mock_convertor_instance.get_transformed_resources.return_value = resources
 
         mock_registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
         mock_registry_instance = mock_registry.return_value
@@ -284,6 +295,12 @@ class TestGatewayResourceDistributor:
         assert success is True
         assert message == "ok"
         mock_registry_instance.delete_resources_by_key_prefix.assert_called_once()
+
+        mock_registry_instance.sync_resources_by_key_prefix.assert_called_once_with(resources)
+        mock_convertor.return_value.transform.assert_called_once_with()
+        mock_convertor.assert_called_once_with(
+            mock_release, mock_data_plane.apisix_version, publish_id=123, revoke_flag=True
+        )
 
     def test_revoke_failure(self, mocker):
         """Test revoke method failure case"""
@@ -553,3 +570,21 @@ class TestGlobalResourceDistributor:
         distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         assert mock_transformer.call_args.args[0] == APISIX_VERSION_3_16
+
+
+@pytest.mark.parametrize("operation", ["distribute", "revoke"])
+def test_gateway_distributor_reports_failed_resources(mocker, operation):
+    release = mocker.Mock()
+    data_plane = mocker.Mock()
+    mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+    transformer = mocker.patch(
+        "apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer", autospec=True
+    )
+    transformer.return_value.get_transformed_resources.return_value = [mocker.sentinel.resource]
+    registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry").return_value
+    registry.sync_resources_by_key_prefix.return_value = [mocker.sentinel.resource]
+    mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
+    success, message = getattr(GatewayResourceDistributor(release, data_plane), operation)("task", 123)
+    assert success is False
+    assert "sync resources failed" in message
+    registry.sync_resources_by_key_prefix.assert_called_once_with([mocker.sentinel.resource])

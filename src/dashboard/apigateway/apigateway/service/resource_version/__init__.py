@@ -18,7 +18,6 @@
 from .openapi_export import BaseExporter, OpenAPIExportManager, has_openapi_schema
 from .schema import (
     get_resource_id_to_schema_by_resource_version,
-    get_resource_names_set,
     get_resource_schema,
     get_standard_resource_names_set,
     get_used_stage_vars,
@@ -33,7 +32,6 @@ __all__ = [
     "OpenAPIExportManager",
     # functions
     "get_resource_id_to_schema_by_resource_version",
-    "get_resource_names_set",
     "get_resource_schema",
     "get_standard_resource_names_set",
     "get_used_stage_vars",

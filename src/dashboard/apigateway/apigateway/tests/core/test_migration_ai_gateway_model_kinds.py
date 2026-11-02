@@ -2,7 +2,7 @@ import pytest
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
 MIGRATE_FROM = [("core", "0052_gateway_is_official")]
 MIGRATE_TO = [("core", "0053_add_ai_gateway_model_kinds")]

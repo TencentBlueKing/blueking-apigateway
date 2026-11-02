@@ -503,7 +503,8 @@ func buildBenchmarkToolCallWireBody(targetSize int) []byte {
 	wireBody := make([]byte, 0, len(arguments)+96)
 	wireBody = append(
 		wireBody,
-		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"large_json","arguments":`...)
+		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"large_json","arguments":`...,
+	)
 	wireBody = append(wireBody, arguments...)
 	wireBody = append(wireBody, `}}`...)
 	return wireBody

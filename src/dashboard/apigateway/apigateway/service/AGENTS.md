@@ -35,6 +35,9 @@ uncategorized names under `# others`.
 - Keep public exports small and private helpers prefixed with `_`. Document
   non-trivial module ownership. Prefer stateless functions; classes need state,
   strategy, validation, factories or polymorphism.
+  The `_` prefix is a code-review convention. Public API tests check export
+  availability and import-linter checks import boundaries; neither infers
+  external callers nor enforces private-helper naming.
 - Names express behavior: `get_*`, `delete_*` / `clear_*`, `build_*`,
   `format_*` / `normalize_*`, `snapshot_*`, or idempotent `ensure_*`.
 - Keep wrappers with required compatibility/interface/lifecycle roles; remove

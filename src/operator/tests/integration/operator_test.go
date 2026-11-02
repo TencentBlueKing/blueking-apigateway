@@ -116,30 +116,36 @@ var _ = Describe("Operator Integration", func() {
 
 				// assert resource_event_triggered_count
 				Expect(metricsAdapter.GetResourceEventTriggeredCountMetric(
-					testGateway, testStage, constant.Route.String()),
+					testGateway, testStage, constant.Route.String(),
+				),
 				).To(Equal(testDataRoutesAmount))
 
 				Expect(metricsAdapter.GetResourceEventTriggeredCountMetric(
-					testGateway, testStage, constant.Service.String()),
+					testGateway, testStage, constant.Service.String(),
+				),
 				).To(Equal(testDataServiceAmount))
 
 				// assert resource convert
 				Expect(metricsAdapter.GetResourceConvertedCountMetric(
-					testGateway, testStage, constant.ApisixResourceTypeRoutes),
+					testGateway, testStage, constant.ApisixResourceTypeRoutes,
+				),
 				).To(Equal(testDataRoutesAmount))
 
 				Expect(metricsAdapter.GetResourceConvertedCountMetric(
-					testGateway, testStage, constant.ApisixResourceTypeServices),
+					testGateway, testStage, constant.ApisixResourceTypeServices,
+				),
 				).To(Equal(testDataServiceAmount))
 
 				// assert apisix operation count
 				Expect(metricsAdapter.GetApisixOperationCountMetric(
-					metric.ActionPut, metric.ResultSuccess, constant.ApisixResourceTypeRoutes),
+					metric.ActionPut, metric.ResultSuccess, constant.ApisixResourceTypeRoutes,
+				),
 				// 2 micro-gateway-not-found-handling and healthz-outer and head-outer
 				).To(Equal(testDataRoutesAmount + 3))
 
 				Expect(metricsAdapter.GetApisixOperationCountMetric(
-					metric.ActionPut, metric.ResultSuccess, constant.ApisixResourceTypeServices),
+					metric.ActionPut, metric.ResultSuccess, constant.ApisixResourceTypeServices,
+				),
 				).To(Equal(testDataServiceAmount))
 
 				// assert apisix resource

@@ -48,6 +48,7 @@
         },
         "gateway": {
           "id": 1,
+          "display_name": "蓝鲸 API 网关",
           "name": "bk-apigateway",
           "maintainers": ["admin"],
           "is_official": true
@@ -120,5 +121,6 @@
 |-------------|--------|----------|
 | id          | int    | 网关 ID    |
 | name        | string | 网关名称     |
+| display_name | string | 网关展示名 |
 | maintainers | array  | 网关维护者列表  |
 | is_official | bool   | 是否为官方网关  |

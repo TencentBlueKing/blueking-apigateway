@@ -27,7 +27,7 @@
           />
         </p>
         <div class="title">
-          {{ t('网关（{name}）创建成功', { name: gateway.name }) }}
+          {{ t('网关（{name}）创建成功', { name: gatewayName }) }}
         </div>
         <div class="tips">
           {{ t('接下来您可以按照开发指引，完成网关的开发，或进入环境概览查看环境信息') }}
@@ -85,6 +85,7 @@ import hljs from 'highlight.js';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import Guide from '@/components/guide/Index.vue';
 import { getGuideDocs } from '@/services/source/gateway.ts';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -92,8 +93,10 @@ const route = useRoute();
 
 const gateway = computed(() => ({
   name: route.params.name as string,
+  display_name: route.query.displayName as string,
   id: Number(route.params.id),
 }));
+const gatewayName = computed(() => getGatewayDisplayName(gateway.value));
 
 const markdownHtml = ref('');
 const isLoading = ref(false);

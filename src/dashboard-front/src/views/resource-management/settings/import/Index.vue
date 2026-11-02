@@ -583,8 +583,15 @@
           {{ t('确认导入资源？') }}
         </div>
         <div class="dialog-main">
-          <header class="apigateway-name">
-            {{ t('网关：') }}<span class="text">{{ gatewayStore.currentGateway!.name }}</span>
+          <header class="mb-16px apigateway-name">
+            {{ t('网关：') }}
+            <span class="color-#313238 font-700">{{ getGatewayDisplayName(gatewayStore.currentGateway) }}</span>
+            <span
+              v-if="gatewayStore.currentGateway?.name"
+              class="color-#63656e"
+            >
+              ({{ gatewayStore.currentGateway.name }})
+            </span>
           </header>
           <main class="import-tips">
             {{ t('将新增') }}
@@ -803,6 +810,7 @@ import {
 import TableResToAction from './components/TableResToAction.vue';
 import TableResToUncheck from './components/TableResToUncheck.vue';
 import { useParentElement } from '@vueuse/core';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
 import {
   useEnv,
   useGateway,
@@ -2133,14 +2141,6 @@ const handleReturnClick = () => {
     }
 
     .dialog-main {
-
-      .apigateway-name {
-        margin-bottom: 16px;
-
-        .text {
-          font-weight: 700;
-        }
-      }
 
       .import-tips {
         padding: 12px 16px;

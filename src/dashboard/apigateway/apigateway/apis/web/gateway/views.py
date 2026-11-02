@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -45,6 +46,7 @@ from apigateway.common.tenant.constants import (
 )
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
+from apigateway.common.tenant.validators import check_user_can_access_gateway
 from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
 from apigateway.components.bkpaas import create_paas_app, get_paas_repo_authorization, update_app_maintainers
 from apigateway.components.bkuser import list_tenants
@@ -64,6 +66,8 @@ from apigateway.utils.local import local
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    GatewayCheckDisplayNameAvailableInputSLZ,
+    GatewayCheckDisplayNameAvailableOutputSLZ,
     GatewayCheckNameAvailableInputSLZ,
     GatewayCheckNameAvailableOutputSLZ,
     GatewayCreateInputSLZ,
@@ -158,7 +162,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         queryset = Gateway.objects.filter(id__in=gateway_ids)
 
         if keyword:
-            queryset = queryset.filter(name__icontains=keyword)
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(display_name__icontains=keyword))
 
         return queryset.order_by(order_by)
 
@@ -608,12 +612,39 @@ class GatewayCheckNameAvailableApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         name = slz.validated_data.get("name")
 
-        is_available = True
-        if Gateway.objects.filter(name=name).exists():
-            is_available = False
+        is_available = not Gateway.objects.filter(name=name).exists()
 
         slz = self.get_serializer({"is_available": is_available})
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=extend_schema(
+        description="检查网关展示名是否可用",
+        request=GatewayCheckDisplayNameAvailableInputSLZ,
+        responses={status.HTTP_200_OK: GatewayCheckDisplayNameAvailableOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayCheckDisplayNameAvailableApi(generics.GenericAPIView):
+    serializer_class = GatewayCheckDisplayNameAvailableOutputSLZ
+    gateway_action = GatewayActionEnum.MANAGE_GATEWAY.value
+
+    def post(self, request, *args, **kwargs):
+        gateway_id = kwargs.get("gateway_id")
+        if gateway_id is not None and settings.ENABLE_MULTI_TENANT_MODE:
+            gateway = request.gateway
+            check_user_can_access_gateway(gateway.tenant_mode, gateway.tenant_id, get_user_tenant_id(request))
+
+        slz = GatewayCheckDisplayNameAvailableInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+        is_available = (
+            not Gateway.objects.exclude(pk=gateway_id)
+            .filter(display_name__iexact=slz.validated_data["display_name"])
+            .exists()
+        )
+        return OKJsonResponse(data={"is_available": is_available})
 
 
 @method_decorator(

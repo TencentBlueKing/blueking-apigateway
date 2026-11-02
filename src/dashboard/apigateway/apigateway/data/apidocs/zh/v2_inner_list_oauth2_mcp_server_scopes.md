@@ -4,6 +4,7 @@
 
 仅返回公开且启用的网关、Stage 和 MCP Server，并根据 `oauth_client_type` 检查对应的 OAuth2 开关。多租户模式下只返回全租户网关和请求租户所属的单租户网关。
 
+
 ### 输入参数
 
 #### query 参数
@@ -27,6 +28,7 @@
     "results": [
       {
         "id": 1,
+        "display_name": "蓝鲸 API 网关",
         "name": "bk-apigateway",
         "is_official": true,
         "mcp_server_count": 1,
@@ -51,6 +53,7 @@
 | data.results | array | 当前页网关列表，按网关名称、网关 ID 稳定排序 |
 | data.results[].id | int | 网关 ID |
 | data.results[].name | string | 网关名称 |
+| data.results[].display_name | string | 网关展示名 |
 | data.results[].is_official | bool | 是否为官方网关 |
 | data.results[].mcp_server_count | int | 当前过滤条件下该网关包含的 MCP Server 数量 |
 | data.results[].mcp_servers | array | 当前过滤条件下该网关包含的 MCP Server 列表 |

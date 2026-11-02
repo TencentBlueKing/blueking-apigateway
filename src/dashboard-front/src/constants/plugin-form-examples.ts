@@ -1,5 +1,18 @@
 // 插件表单填写示例
 export const PLUGIN_FORM_EXAMPLE_CN: { [pluginCode: string]: string } = {
+  // bk-resource-user-rate-limit
+  'bk-resource-user-rate-limit': `作用：默认每个用户每分钟可调用 100 次，alice 每秒可调用 10 次，bob 每分钟可调用 300 次。
+
+rates:
+  __default:
+    - period: 60
+      tokens: 100
+  alice:
+    - period: 1
+      tokens: 10
+  bob:
+    - period: 60
+      tokens: 300`,
   // proxy-cache
   'proxy-cache': `作用：可缓存 GET 请求的响应数据 300 秒
 
@@ -253,6 +266,19 @@ Remove debug
 };
 
 export const PLUGIN_FORM_EXAMPLE_EN: { [pluginCode: string]: string } = {
+  // bk-resource-user-rate-limit
+  'bk-resource-user-rate-limit': `Purpose: Allow 100 requests per minute for each user by default, 10 requests per second for alice, and 300 requests per minute for bob.
+
+rates:
+  __default:
+    - period: 60
+      tokens: 100
+  alice:
+    - period: 1
+      tokens: 10
+  bob:
+    - period: 60
+      tokens: 300`,
   // proxy-cache
   'proxy-cache': `Purpose: The response data of GET request can be cached for 300 seconds.
 

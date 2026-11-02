@@ -809,8 +809,7 @@ func handleToolCallError(
 		IsError: true,
 	}
 
-	var apiErr *runtime.APIError
-	if !errors.As(err, &apiErr) {
+	if _, ok := errors.AsType[*runtime.APIError](err); !ok {
 		// For non-APIError, append trace_id to the error message for traceability
 		if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
 			msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
@@ -974,7 +973,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 
 		// Prepare audit log with request context
 		auditLog, requestID, xRequestID, appCode, username, _ := prepareToolCallAuditLog(
-			ctx, req, toolApiConfig.Name, toolApiConfig.String())
+			ctx, req, toolApiConfig.Name, toolApiConfig.String(),
+		)
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {

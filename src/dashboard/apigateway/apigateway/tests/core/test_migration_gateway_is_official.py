@@ -1,10 +1,13 @@
 import importlib
 
+import pytest
 from ddf import G
 from django.apps import apps
 
 from apigateway.core.models import Context, Gateway
 from apigateway.service.contexts import GatewayAuthContext
+
+pytestmark = pytest.mark.migration
 
 
 def test_gateway_is_official_migration_backfills_from_gateway_auth_context(meta_schemas):

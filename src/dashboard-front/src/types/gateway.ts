@@ -37,6 +37,8 @@ export interface Gateway {
   id: number
   // 网关名称
   name: string
+  // 网关展示名
+  display_name?: string
   // 网关描述
   description: string
   // 网关维护者列表
@@ -98,6 +100,8 @@ export interface GatewayListItem {
   kind: 0 | 1
   // 网关名称
   name: string
+  // 网关展示名
+  display_name?: string
   // 资源数量
   resource_count: number
   // 网关状态
@@ -136,6 +140,7 @@ export interface IStage {
 export interface IApiGateway {
   id: number
   name: string
+  display_name?: string
   description: string
   tenant_mode: string
   tenant_id: string

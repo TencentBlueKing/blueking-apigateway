@@ -191,6 +191,7 @@ class TestGatewayLookupApi:
         assert set(response.json()["data"][0]) == {
             "id",
             "name",
+            "display_name",
             "description",
             "doc_maintainers",
             "kind",

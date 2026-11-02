@@ -1,9 +1,4 @@
-import { type Component, defineAsyncComponent } from 'vue';
-
-import {
-  Checkbox,
-  Input,
-} from 'bkui-vue';
+import type { Component } from 'vue';
 
 export type ComponentItem = | Component | (() => {
   component: Component
@@ -15,31 +10,6 @@ export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 
 
 // 组件映射配置
 export type ComponentMap = Record<SchemaType, Component>;
-
-// 默认组件映射
-export const defaultComponentMap: ComponentMap = {
-  'string': () => ({
-    component: Input,
-    props: { type: 'text' },
-  }),
-  'number': () => ({
-    component: Input,
-    props: { type: 'number' },
-  }),
-  'integer': () => ({
-    component: Input,
-    props: { type: 'number' },
-  }),
-  'boolean': ({
-    component: Checkbox,
-    props: {},
-  }),
-  'object': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
-  'array': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
-  'bk-cors': defineAsyncComponent(() => import('@/components/plugin-manage/components/CustomAddDelForm.vue')),
-  'bk-header-rewrite': defineAsyncComponent(() => import('@/components/plugin-manage/components/CustomAddDelForm.vue')),
-  'bk-rate-limit': defineAsyncComponent(() => import('@/components/plugin-form/bk-rate-limit/components/RateLimitForm.vue')),
-};
 
 // 以下就是Schema各种插件配置声明
 export interface ISchema {

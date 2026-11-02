@@ -44,6 +44,7 @@
 import Chat from '@/components/chat/Index.vue';
 import type { IDocBasics } from './DocDetailSideContent.vue';
 import { useFeatureFlag, useUserInfo } from '@/stores';
+import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 interface IProps { basics?: IDocBasics | null }
 
@@ -68,7 +69,8 @@ const userList = computed(() => {
   ]);
   return [...set].filter((s): s is string => !!s);
 });
-const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${basics?.name}`);
+// 群标题只使用网关展示名；展示名缺失时回退网关 ID
+const chatName = computed(() => getGatewayDisplayName(basics));
 const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
 </script>
 

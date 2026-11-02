@@ -103,7 +103,8 @@ func (w *EventAgent) Run(ctx context.Context) {
 				releaseInfo := event.GetReleaseInfo()
 				w.logger.Infow(
 					"release event triggered timer flush",
-					append(releaseInfo.LogFields(), "reason", "release_event")...)
+					append(releaseInfo.LogFields(), "reason", "release_event")...,
+				)
 				w.handleTicker(ctx)
 				continue
 			}
@@ -112,7 +113,8 @@ func (w *EventAgent) Run(ctx context.Context) {
 				releaseInfo := event.GetReleaseInfo()
 				w.logger.Infow(
 					"delete release triggered immediate commit",
-					append(releaseInfo.LogFields(), "reason", "delete_release")...)
+					append(releaseInfo.LogFields(), "reason", "delete_release")...,
+				)
 				w.commitChan <- []*entity.ReleaseInfo{releaseInfo}
 				continue
 			}

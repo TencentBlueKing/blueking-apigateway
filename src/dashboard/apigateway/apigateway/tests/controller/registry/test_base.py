@@ -39,9 +39,6 @@ class TestRegistry:
             def delete_resources_by_key_prefix(self):
                 pass
 
-            def iter_by_type(self, resource_type):
-                pass
-
         return TestRegistry
 
     def test_registry_is_abstract(self):
@@ -87,9 +84,6 @@ class TestRegistry:
                 def delete_resources_by_key_prefix(self):
                     pass
 
-                def iter_by_type(self, resource_type):
-                    pass
-
             IncompleteRegistry1("/test")
 
         # Missing sync_resources_by_key_prefix
@@ -102,9 +96,6 @@ class TestRegistry:
                     pass
 
                 def delete_resources_by_key_prefix(self):
-                    pass
-
-                def iter_by_type(self, resource_type):
                     pass
 
             IncompleteRegistry2("/test")
@@ -123,9 +114,6 @@ class TestRegistry:
 
             def delete_resources_by_key_prefix(self):
                 pass
-
-            def iter_by_type(self, resource_type):
-                return []
 
         registry = CompleteRegistry("/test/")
         assert registry.registry_type == "complete"

@@ -83,7 +83,7 @@ class TestResourcePermission:
     )
     def test_as_dict(self, resource, expected):
         perm = ResourcePermission.model_validate(resource)
-        assert perm.as_dict() == expected
+        assert perm.as_dict() == {"gateway_display_name": "", **expected}
 
     @pytest.mark.parametrize(
         "resource_perm_required, expected",
@@ -296,6 +296,7 @@ class TestAppPermissionBuilder:
                 "id": r.id,
                 "name": "test1-2",
                 "api_name": fake_gateway.name,
+                "gateway_display_name": fake_gateway.display_name_i18n,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",
@@ -357,6 +358,7 @@ class TestAppPermissionBuilder:
                 "id": r.id,
                 "name": "test1-2",
                 "api_name": fake_gateway.name,
+                "gateway_display_name": fake_gateway.display_name_i18n,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",
@@ -418,6 +420,7 @@ class TestAppPermissionBuilder:
                 "id": r.id,
                 "name": "test1-2",
                 "api_name": fake_gateway.name,
+                "gateway_display_name": fake_gateway.display_name_i18n,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",
@@ -484,6 +487,7 @@ class TestAppPermissionBuilder:
                 "id": fake_resource.id,
                 "name": "test1-2",
                 "api_name": fake_gateway.name,
+                "gateway_display_name": fake_gateway.display_name_i18n,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",

@@ -45,3 +45,8 @@ class TestPluginConfigYamlValidator:
         )
         with pytest.raises(ValueError):
             validator.validate("bk-header-rewrite", yaml_dumps({"set": [], "remove": [{"key": "foo:bar"}]}), None)
+
+    def test_rejects_invalid_schema_value(self):
+        schema = {"type": "object", "properties": {"foo": {"type": "string"}}, "required": ["foo"]}
+        with pytest.raises(ValueError, match="is not of type 'string'.*path"):
+            PluginConfigYamlValidator().validate("api-breaker", yaml_dumps({"foo": 1}), schema)

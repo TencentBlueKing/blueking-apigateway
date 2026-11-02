@@ -497,7 +497,7 @@
 </template>
 
 <script setup lang="ts">
-import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
+import ConfigDisplayTable from '@/components/plugin-manage/config-display/Index.vue';
 import { useGateway } from '@/stores';
 
 interface IProps {

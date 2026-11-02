@@ -17,7 +17,10 @@
 #
 import json
 
+import pytest
+
 from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveDoc
 
 
@@ -50,29 +53,32 @@ class TestDocArchiveParseApi:
 
 
 class TestDocImportByArchiveApi:
-    def post(self, request_view, fake_gateway, mocker, faker, fake_tgz_file):
-        mocker.patch("apigateway.apis.web.resource_doc.views.ArchiveParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
-
+    def test_post(self, request_view, fake_gateway, mocker, fake_tgz_file):
+        docs = [
+            ArchiveDoc(
+                resource_name="get_user",
+                language=DocLanguageEnum.ZH,
+                content="# user",
+                content_changed=True,
+                filename="zh/get_user.md",
+            )
+        ]
+        parser = mocker.patch("apigateway.apis.web.resource_doc.views.ArchiveParser", autospec=True)
+        parser.return_value.parse.return_value = docs
+        importer = mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter", autospec=True)
+        selected = [{"language": "zh", "resource_name": "get_user"}]
         resp = request_view(
             method="POST",
             view_name="resource_doc.import.by_archive",
             path_params={"gateway_id": fake_gateway.id},
-            data={
-                "selected_resource_docs": json.dumps(
-                    [
-                        {
-                            "language": "zh",
-                            "resource_name": faker.pystr(),
-                        }
-                    ]
-                ),
-                "file": fake_tgz_file,
-            },
+            data={"selected_resource_docs": json.dumps(selected), "file": fake_tgz_file},
             format="multipart",
         )
-
-        assert resp.status_code == 200
+        assert resp.status_code == 204
+        parser.assert_called_once_with(gateway_id=fake_gateway.id)
+        assert parser.return_value.parse.call_count == 1
+        importer.assert_called_once_with(gateway_id=fake_gateway.id, selected_resource_docs=selected)
+        importer.return_value.import_docs.assert_called_once_with(docs=docs)
 
 
 class TestDocImportBySwaggerApi:
@@ -114,3 +120,27 @@ class TestDocExportApi:
         )
 
         assert resp.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "error, status, code",
+    [
+        (NoResourceDocError(), 400, "INVALID_ARGUMENT"),
+        (ResourceDocJinja2TemplateError("resource.md", ValueError("bad template")), 500, "INTERNAL"),
+    ],
+)
+def test_archive_import_reports_parse_error_without_importing(
+    request_view, fake_gateway, fake_tgz_file, mocker, error, status, code
+):
+    mocker.patch("apigateway.apis.web.resource_doc.views.ArchiveParser.parse", side_effect=error)
+    importer = mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
+    response = request_view(
+        method="POST",
+        view_name="resource_doc.import.by_archive",
+        path_params={"gateway_id": fake_gateway.id},
+        format="multipart",
+        data={"selected_resource_docs": "[]", "file": fake_tgz_file},
+    )
+    assert response.status_code == status
+    assert response.json()["error"]["code"] == code
+    importer.assert_not_called()

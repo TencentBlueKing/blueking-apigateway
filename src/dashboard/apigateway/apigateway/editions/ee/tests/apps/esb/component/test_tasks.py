@@ -74,14 +74,6 @@ def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources
     fake_component_release_history = G(
         ComponentReleaseHistory, resource_version_id=0, data=[], status=ReleaseStatusEnum.RELEASING.value
     )
-    # not acquired
-    mocker.patch(
-        "apigateway.apps.esb.component.tasks.get_release_lock",
-        return_value=mocker.MagicMock(**{"acquire.return_value": False}),
-    )
-
-    sync_and_release_esb_components(fake_gateway.id, fake_component_release_history.id, "admin", False)
-
     # acquired
     mock_release_lock_release = mocker.MagicMock()
     mocker.patch(
@@ -108,7 +100,7 @@ def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources
     else:
         sync_and_release_esb_components(fake_gateway.id, fake_component_release_history.id, "admin", False)
 
-    mock_sync_to_resources.asset_called_once_with(fake_gateway, username="admin")
+    mock_sync_to_resources.assert_called_once_with(fake_gateway, username="admin")
     mock_release.assert_called_once_with()
     mock_release_lock_release.assert_called_once_with()
 
@@ -139,3 +131,16 @@ def test_test_sync_and_release_esb_components_error(mocker, fake_gateway):
 
     mock_mark_release_fail.assert_called_once()
     mock_release_lock_release.assert_called_once_with()
+
+
+def test_sync_and_release_skips_when_lock_is_busy(mocker):
+    release_lock = mocker.Mock()
+    release_lock.acquire.return_value = False
+    mocker.patch("apigateway.apps.esb.component.tasks.get_release_lock", return_value=release_lock)
+    sync = mocker.patch("apigateway.apps.esb.component.tasks.ComponentSynchronizer.sync_to_resources")
+    release = mocker.patch("apigateway.apps.esb.component.tasks.ComponentReleaser.release")
+    sync_and_release_esb_components(1, 1, "admin", False)
+    release_lock.acquire.assert_called_once_with(blocking=False)
+    sync.assert_not_called()
+    release.assert_not_called()
+    release_lock.release.assert_not_called()

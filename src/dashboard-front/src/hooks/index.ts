@@ -62,3 +62,5 @@ export * from './use-json-transformer';
 export * from './use-gateway-role';
 // Mcp 应用态鉴权风险展示
 export * from './use-mcp-auth-risk';
+// 网关展示名查重
+export * from './use-gateway-display-name-check';

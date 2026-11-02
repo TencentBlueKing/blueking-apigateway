@@ -35,6 +35,8 @@ and module-specific constraints without copying the glossary.
   component unless a verified producer/consumer contract requires more.
 - Run component commands from the directory its guide specifies. Runtime and
   checks are component-local; the root `.envrc` is not a shared activation script.
+- Follow the affected component's guide for test selection, required full gates,
+  and reuse of verification evidence.
 - For review findings, distinguish issues present in the inspected code from
   issues introduced by the selected diff.
 - For Markdown-only changes, check the diff, references, and executable examples;

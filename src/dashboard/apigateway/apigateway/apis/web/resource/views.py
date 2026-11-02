@@ -131,7 +131,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             many=True,
             context={
                 "labels": get_resource_id_to_labels(resource_ids),
-                "docs": ResourceDocHandler.get_docs(resource_ids),
+                "docs": ResourceDocHandler.get_docs_by_resource_ids(resource_ids),
                 "backends": get_backend_id_to_instance(request.gateway.id),
                 "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "plugin_counts": PluginBindingHandler.get_resource_ids_plugin_binding_count(

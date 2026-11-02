@@ -17,9 +17,10 @@
 #
 
 import pytest
+from ddf import G
 from django.db.models import Q
-from django.test import TestCase
 
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
 from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
 from apigateway.common.tenant.query import (
     gateway_filter_by_app_tenant_id,
@@ -30,11 +31,12 @@ from apigateway.common.tenant.query import (
     mcp_server_related_filter_by_maintainer_tenant_id,
     mcp_server_related_filter_by_user_tenant_id,
 )
+from apigateway.core.models import Gateway, Stage
 
 
-@pytest.mark.django_db
-class TestGatewayFilterByMaintainerTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestGatewayFilterByMaintainerTenantId:
+    def setup_method(self):
         # Setup initial data for the tests
         self.queryset = MockQuerySet()
 
@@ -53,9 +55,9 @@ class TestGatewayFilterByMaintainerTenantId(TestCase):
         assert filtered_queryset.filter_condition == expected_filter
 
 
-@pytest.mark.django_db
-class TestGatewayRelatedFilterByMaintainerTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestGatewayRelatedFilterByMaintainerTenantId:
+    def setup_method(self):
         self.queryset = MockQuerySet()
 
     def test_filter_by_operation_tenant(self):
@@ -77,9 +79,9 @@ class TestGatewayRelatedFilterByMaintainerTenantId(TestCase):
         assert filtered_queryset.filter_condition == expected_filter
 
 
-@pytest.mark.django_db
-class TestGatewayRelatedFilterByUserTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestGatewayRelatedFilterByUserTenantId:
+    def setup_method(self):
         self.queryset = MockQuerySet()
 
     def test_filter_by_operation_tenant(self):
@@ -101,9 +103,9 @@ class TestGatewayRelatedFilterByUserTenantId(TestCase):
         assert filtered_queryset.filter_condition == expected_filter
 
 
-@pytest.mark.django_db
-class TestMCPServerRelatedFilterByMaintainerTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestMCPServerRelatedFilterByMaintainerTenantId:
+    def setup_method(self):
         self.queryset = MockQuerySet()
 
     def test_filter_by_operation_tenant(self):
@@ -125,9 +127,9 @@ class TestMCPServerRelatedFilterByMaintainerTenantId(TestCase):
         assert filtered_queryset.filter_condition == expected_filter
 
 
-@pytest.mark.django_db
-class TestMCPServerRelatedFilterByUserTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestMCPServerRelatedFilterByUserTenantId:
+    def setup_method(self):
         self.queryset = MockQuerySet()
 
     def test_filter_by_operation_tenant(self):
@@ -149,9 +151,9 @@ class TestMCPServerRelatedFilterByUserTenantId(TestCase):
         assert filtered_queryset.filter_condition == expected_filter
 
 
-@pytest.mark.django_db
-class TestGatewayMCPServerFilterByUserTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestGatewayMCPServerFilterByUserTenantId:
+    def setup_method(self):
         self.queryset = MockQuerySet()
 
     def test_filter_by_operation_tenant(self):
@@ -173,9 +175,9 @@ class TestGatewayMCPServerFilterByUserTenantId(TestCase):
         assert filtered_queryset.filter_condition == expected_filter
 
 
-@pytest.mark.django_db
-class TestGatewayFilterByAppTenantId(TestCase):
-    def setUp(self):
+@pytest.mark.no_meta_schema
+class TestGatewayFilterByAppTenantId:
+    def setup_method(self):
         # Setup initial data for the tests
         self.queryset = MockQuerySet()
 
@@ -198,3 +200,47 @@ class MockQuerySet:
         else:
             self.filter_condition = kwargs
         return self
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "filter_function, tenant_id, include_global",
+    [
+        (gateway_filter_by_maintainer_tenant_id, TENANT_ID_OPERATION, True),
+        (gateway_filter_by_maintainer_tenant_id, "tenant-a", False),
+        (gateway_filter_by_app_tenant_id, "tenant-a", True),
+    ],
+)
+def test_gateway_filters_isolate_real_rows(filter_function, tenant_id, include_global):
+    own = G(Gateway, tenant_mode="single", tenant_id=tenant_id)
+    global_gateway = G(Gateway, tenant_mode="global", tenant_id="")
+    G(Gateway, tenant_mode="single", tenant_id="other-tenant")
+    expected = {own.id, global_gateway.id} if include_global else {own.id}
+    assert set(filter_function(Gateway.objects.all(), tenant_id).values_list("id", flat=True)) == expected
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "filter_function, through_mcp, include_global",
+    [
+        (gateway_related_filter_by_maintainer_tenant_id, False, False),
+        (gateway_related_filter_by_user_tenant_id, False, True),
+        (mcp_server_related_filter_by_maintainer_tenant_id, True, False),
+        (mcp_server_related_filter_by_user_tenant_id, True, True),
+        (gateway_mcp_server_filter_by_user_tenant_id, False, True),
+    ],
+)
+def test_related_filters_isolate_real_rows(filter_function, through_mcp, include_global):
+    rows = []
+    for mode, tenant in [("single", "tenant-a"), ("global", ""), ("single", "tenant-b")]:
+        gateway = G(Gateway, tenant_mode=mode, tenant_id=tenant)
+        stage = G(Stage, gateway=gateway)
+        if through_mcp or filter_function is gateway_mcp_server_filter_by_user_tenant_id:
+            server = G(MCPServer, gateway=gateway, stage=stage)
+            row = G(MCPServerAppPermission, mcp_server=server) if through_mcp else server
+        else:
+            row = stage
+        rows.append(row)
+    expected = {rows[0].pk, rows[1].pk} if include_global else {rows[0].pk}
+    queryset = type(rows[0]).objects.all()
+    assert set(filter_function(queryset, "tenant-a").values_list("pk", flat=True)) == expected

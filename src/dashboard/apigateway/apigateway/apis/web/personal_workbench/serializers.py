@@ -59,10 +59,12 @@ class WorkbenchFilterOptionQueryInputSLZ(serializers.Serializer):
 class WorkbenchGatewayFilterOptionSLZ(serializers.ModelSerializer):
     """个人工作台 - 网关下拉筛选项"""
 
+    display_name = serializers.CharField(source="display_name_or_name", read_only=True)
+
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayFilterOptionSLZ"
         model = Gateway
-        fields = ["id", "name"]
+        fields = ["id", "name", "display_name"]
         read_only_fields = fields
 
 
@@ -79,11 +81,12 @@ class WorkbenchMCPServerFilterOptionSLZ(serializers.ModelSerializer):
 
     title = serializers.SerializerMethodField(help_text="MCP Server 展示名称（为空时回退到 name）")
     gateway_name = serializers.SerializerMethodField(help_text="所属网关名称")
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerFilterOptionSLZ"
         model = MCPServer
-        fields = ["id", "name", "title", "gateway_id", "gateway_name"]
+        fields = ["id", "name", "title", "gateway_id", "gateway_name", "gateway_display_name"]
         read_only_fields = fields
 
     def get_title(self, obj) -> str:
@@ -115,6 +118,7 @@ class WorkbenchGatewayPermissionPendingOutputSLZ(serializers.ModelSerializer):
 
     gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
@@ -130,6 +134,7 @@ class WorkbenchGatewayPermissionPendingOutputSLZ(serializers.ModelSerializer):
             "bk_app_code",
             "gateway_id",
             "gateway_name",
+            "gateway_display_name",
             "grant_dimension",
             "grant_dimension_display",
             "expire_days",
@@ -177,6 +182,7 @@ class WorkbenchGatewayPermissionMyApplyOutputSLZ(serializers.ModelSerializer):
 
     gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
@@ -193,6 +199,7 @@ class WorkbenchGatewayPermissionMyApplyOutputSLZ(serializers.ModelSerializer):
             "bk_app_code",
             "gateway_id",
             "gateway_name",
+            "gateway_display_name",
             "grant_dimension",
             "grant_dimension_display",
             "expire_days",
@@ -246,6 +253,7 @@ class WorkbenchGatewayPermissionHandledOutputSLZ(serializers.ModelSerializer):
 
     gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
@@ -260,6 +268,7 @@ class WorkbenchGatewayPermissionHandledOutputSLZ(serializers.ModelSerializer):
             "bk_app_code",
             "gateway_id",
             "gateway_name",
+            "gateway_display_name",
             "grant_dimension",
             "grant_dimension_display",
             "expire_days",
@@ -312,6 +321,7 @@ class WorkbenchMCPServerBaseSLZ(serializers.Serializer):
     title = serializers.SerializerMethodField(help_text="MCPServer 显示名称")
     gateway_id = serializers.IntegerField(read_only=True, help_text="所属网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="所属网关名称")
+    gateway_display_name = serializers.CharField(source="gateway.display_name_or_name", read_only=True)
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerBaseSLZ"

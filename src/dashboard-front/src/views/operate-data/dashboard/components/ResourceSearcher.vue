@@ -28,7 +28,7 @@
       display-key="name"
       filterable
       id-key="id"
-      scroll-height="262"
+      :scroll-height="262"
       v-bind="$attrs"
     >
       <template

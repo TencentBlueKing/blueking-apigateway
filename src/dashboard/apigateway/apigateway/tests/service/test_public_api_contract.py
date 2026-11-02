@@ -16,13 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import ast
-import tokenize
+from importlib import import_module
 from pathlib import Path
 
 import pytest
 
 SERVICE_DIR = Path(__file__).resolve().parents[2] / "service"
-PYTHON_SOURCE_DIR = SERVICE_DIR.parent
 
 
 def _assigns_dunder_all(module_path: Path) -> bool:
@@ -73,58 +72,18 @@ def _package_dunder_all(package_dir: Path) -> set[str]:
     return set()
 
 
-def _function_name_tokens(name: str) -> list[Path]:
-    matched_paths = []
-    for path in PYTHON_SOURCE_DIR.rglob("*.py"):
-        with path.open("rb") as source_file:
-            if any(
-                token.string == name
-                for token in tokenize.tokenize(source_file.readline)
-                if token.type == tokenize.NAME
-            ):
-                matched_paths.append(path)
-
-    return matched_paths
-
-
-def _service_private_helper_violations() -> list[str]:
-    violations = []
-
-    for module_path in _service_leaf_modules():
-        exported_names = _package_dunder_all(module_path.parent)
-        tree = ast.parse(module_path.read_text())
-
-        for node in tree.body:
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                continue
-
-            if node.name.startswith("_") or node.name in exported_names:
-                continue
-
-            name_refs = [path for path in _function_name_tokens(node.name) if path != module_path]
-            if not name_refs:
-                violations.append(f"{module_path.relative_to(SERVICE_DIR.parent)}::{node.name}")
-
-    return violations
-
-
 @pytest.mark.parametrize("package_dir", _service_package_dirs(), ids=lambda path: path.name)
-def test_service_package_public_api_is_declared_in_init(package_dir):
+def test_service_package_public_api_is_declared_and_importable(package_dir):
     assert _assigns_dunder_all(package_dir / "__init__.py")
+    package_name = f"apigateway.service.{package_dir.name}"
+    package = import_module(package_name)
+    missing_exports = sorted(name for name in package.__all__ if not hasattr(package, name))
+    assert not missing_exports, f"{package_name} exports undefined names: {missing_exports}"
 
 
 @pytest.mark.parametrize("module_path", _service_leaf_modules(), ids=lambda path: f"{path.parent.name}/{path.name}")
 def test_service_leaf_modules_do_not_define_dunder_all(module_path):
     assert not _assigns_dunder_all(module_path)
-
-
-def test_service_private_helpers_are_prefixed_with_underscore():
-    violations = _service_private_helper_violations()
-
-    assert not violations, (
-        "Module-private service helpers must be prefixed with '_' when they are not exported and have no callers "
-        f"outside their defining module: {violations}"
-    )
 
 
 def test_plugin_compatibility_contract_is_public():

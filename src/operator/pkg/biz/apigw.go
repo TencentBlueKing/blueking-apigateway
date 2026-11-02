@@ -37,13 +37,11 @@ func GetApigwResourcesByStage(
 	isExcludeReleaseVersion bool,
 ) (*entity.ApisixStageResource, error) {
 	si := &entity.ReleaseInfo{
-		Ctx: ctx,
-		ResourceMetadata: entity.ResourceMetadata{
-			APIVersion: "v2",
-			Labels: &entity.LabelInfo{
-				Gateway: gatewayName,
-				Stage:   stageName,
-			},
+		Ctx:        ctx,
+		APIVersion: "v2",
+		Labels: &entity.LabelInfo{
+			Gateway: gatewayName,
+			Stage:   stageName,
 		},
 	}
 	apisixConf, err := committer.GetStageReleaseNativeApisixConfiguration(ctx, si)
@@ -66,14 +64,12 @@ func GetApigwResourceCount(
 	stageName string,
 ) (int64, error) {
 	si := &entity.ReleaseInfo{
-		Ctx: ctx,
-		ResourceMetadata: entity.ResourceMetadata{
-			APIVersion: "v2",
-			Kind:       constant.Route,
-			Labels: &entity.LabelInfo{
-				Gateway: gatewayName,
-				Stage:   stageName,
-			},
+		Ctx:        ctx,
+		APIVersion: "v2",
+		Kind:       constant.Route,
+		Labels: &entity.LabelInfo{
+			Gateway: gatewayName,
+			Stage:   stageName,
 		},
 	}
 	count, err := committer.GetResourceCount(ctx, si)
@@ -131,14 +127,12 @@ func GetApigwResource(
 
 	// by resourceID
 	si := &entity.ReleaseInfo{
-		Ctx: ctx,
-		ResourceMetadata: entity.ResourceMetadata{
-			APIVersion: "v2",
-			Kind:       constant.Route,
-			Labels: &entity.LabelInfo{
-				Gateway: gatewayName,
-				Stage:   stageName,
-			},
+		Ctx:        ctx,
+		APIVersion: "v2",
+		Kind:       constant.Route,
+		Labels: &entity.LabelInfo{
+			Gateway: gatewayName,
+			Stage:   stageName,
 		},
 	}
 
@@ -160,13 +154,11 @@ func GetApigwStageCurrentVersionInfo(
 	stageName string,
 ) (*entity.ReleaseInfo, error) {
 	si := &entity.ReleaseInfo{
-		Ctx: ctx,
-		ResourceMetadata: entity.ResourceMetadata{
-			APIVersion: "v2",
-			Labels: &entity.LabelInfo{
-				Gateway: gatewayName,
-				Stage:   stageName,
-			},
+		Ctx:        ctx,
+		APIVersion: "v2",
+		Labels: &entity.LabelInfo{
+			Gateway: gatewayName,
+			Stage:   stageName,
 		},
 	}
 	releaseVersionInfo, err := committer.GetStageReleaseVersion(ctx, si)

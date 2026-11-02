@@ -16,9 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
+from apigateway.core.models import Gateway
 
 
 class TestGatewayLabelListCreateApi:
@@ -47,7 +49,7 @@ class TestGatewayLabelListCreateApi:
         assert resp.status_code == 200
 
 
-class GatewayLabelRetrieveUpdateDestroyApi:
+class TestGatewayLabelRetrieveUpdateDestroyApi:
     def test_retrieve(self, request_view, fake_gateway):
         label = G(APILabel, gateway=fake_gateway)
 
@@ -87,3 +89,16 @@ class GatewayLabelRetrieveUpdateDestroyApi:
 
         assert resp.status_code == 204
         assert not APILabel.objects.filter(gateway=fake_gateway).exists()
+
+    @pytest.mark.parametrize("method", ["GET", "PUT", "DELETE"])
+    def test_rejects_label_from_another_gateway(self, method, request_view, fake_gateway):
+        label = G(APILabel, gateway=G(Gateway), name="other-label")
+        response = request_view(
+            method=method,
+            view_name="label.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": label.id},
+            data={"name": "changed"} if method == "PUT" else None,
+        )
+        assert response.status_code == 404
+        label.refresh_from_db()
+        assert label.name == "other-label"

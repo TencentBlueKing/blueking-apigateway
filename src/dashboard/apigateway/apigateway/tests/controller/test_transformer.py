@@ -43,23 +43,6 @@ class TestBaseTransformer:
         with pytest.raises(TypeError):
             BaseTransformer()
 
-    def test_base_transformer_abstract_methods(self):
-        """Test that BaseTransformer has required abstract methods"""
-
-        # Create a concrete implementation to test abstract methods
-        class ConcreteTransformer(BaseTransformer):
-            def transform(self):
-                pass
-
-            def get_transformed_resources(self):
-                return []
-
-        transformer = ConcreteTransformer()
-        assert hasattr(transformer, "transform")
-        assert hasattr(transformer, "get_transformed_resources")
-        assert callable(transformer.transform)
-        assert callable(transformer.get_transformed_resources)
-
 
 class TestGlobalApisixResourceConvertor:
     """Test GlobalApisixResourceConvertor class"""

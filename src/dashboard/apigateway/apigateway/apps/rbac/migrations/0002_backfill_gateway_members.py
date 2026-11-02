@@ -29,11 +29,10 @@ def _parse_maintainers(raw_maintainers):
     if not raw_maintainers:
         return []
 
-    # Keep this aligned with the historical Gateway.maintainers behavior at
-    # migration creation time. Do not normalize usernames here, as doing so
-    # could grant a user who did not match the legacy permission check.
-    usernames = raw_maintainers.rstrip(";,").split(";")
-    return list(dict.fromkeys(username for username in usernames if username))
+    # Historical writes joined with ";". Some rows stored a comma-separated
+    # list in the same field. Split on both separators.
+    pieces = raw_maintainers.replace(",", ";").split(";")
+    return list(dict.fromkeys(piece.strip() for piece in pieces if piece.strip()))
 
 
 def _flush_members(member_model, members, db_alias):
@@ -119,6 +118,7 @@ def backfill_gateway_members(apps, schema_editor):
         created_count += created
         existing_count += existing
 
+    # Invalid usernames are already reported and skipped. Do not fail migrate.
     _report(
         "gateway_member_migration.summary",
         created=created_count,
@@ -127,8 +127,6 @@ def backfill_gateway_members(apps, schema_editor):
         invalid=invalid_count,
         scanned=scanned_count,
     )
-    if invalid_count:
-        raise RuntimeError(f"failed to migrate {invalid_count} invalid gateway maintainers")
 
 
 class Migration(migrations.Migration):

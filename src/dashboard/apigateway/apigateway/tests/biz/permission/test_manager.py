@@ -641,7 +641,8 @@ class TestPermissionDimensionManagerItsmIntegration:
         get_app_maintainers.assert_called_once_with("test-app")
         assert helper.create_permission_apply_ticket.call_args.kwargs["applied_by"] == "app-owner"
 
-    def test_create_apply_record_with_itsm_not_ready(self, settings, mocker, fake_gateway, fake_resource):
+    def test_create_apply_record_with_itsm_not_ready(self, settings, mocker, fake_gateway, fake_resource, caplog):
+        caplog.set_level("WARNING", logger="apigateway.biz.permission.manager")
         settings.ENABLE_ITSM4_PERMISSION_APPLY = True
 
         helper = mocker.MagicMock()
@@ -662,9 +663,11 @@ class TestPermissionDimensionManagerItsmIntegration:
         record.refresh_from_db()
         assert record.itsm_ticket_id == ""
         helper.create_permission_apply_ticket.assert_not_called()
+        assert "Skip creating ITSM ticket for permission apply" in caplog.text
+        assert f"record_id={record.id}, gateway_id={fake_gateway.id}, bk_app_code=test-app" in caplog.text
 
     def test_create_apply_record_persists_callback_token_before_ticket_id(
-        self, settings, mocker, fake_gateway, fake_resource
+        self, settings, mocker, fake_gateway, fake_resource, caplog
     ):
         settings.ENABLE_ITSM4_PERMISSION_APPLY = True
 
@@ -692,3 +695,5 @@ class TestPermissionDimensionManagerItsmIntegration:
         assert record.itsm_ticket_id == ""
         assert apply.itsm_ticket_id == ""
         assert apply.itsm_callback_token == "cb-token-001"
+        assert f"record_id={record.id}, gateway_id={fake_gateway.id}, bk_app_code=test-app" in caplog.text
+        assert "cb-token-001" not in caplog.text

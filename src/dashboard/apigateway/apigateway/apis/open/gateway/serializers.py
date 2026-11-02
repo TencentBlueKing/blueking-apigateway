@@ -22,6 +22,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.gateway_name import validate_gateway_display_name
 from apigateway.biz.gateway import GatewayHandler, build_gateway_doc_maintainers
 from apigateway.biz.validators import BKAppCodeListValidator, GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
@@ -36,6 +37,7 @@ from apigateway.core.constants import (
     convert_gateway_kind_name_to_value,
     convert_gateway_kind_to_name,
 )
+from apigateway.core.gateway_name import GATEWAY_DISPLAY_NAME_MAX_LENGTH, normalize_display_name_en
 from apigateway.core.models import Gateway
 from apigateway.service.gateway_name import validate_gateway_name_kind
 
@@ -51,6 +53,7 @@ class GatewayListV1InputSLZ(serializers.Serializer):
 class GatewayListV1OutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    display_name = SerializerTranslatedField(default_field="display_name_or_name", read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
@@ -125,6 +128,12 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         max_length=64,
         validators=[NameValidator()],
     )
+    display_name = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
+    display_name_en = serializers.CharField(
+        max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False)
     status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices(), default=GatewayStatusEnum.ACTIVE.value)
@@ -153,6 +162,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         model = Gateway
         fields = [
             "name",
+            "display_name",
+            "display_name_en",
             "description",
             "description_en",
             "maintainers",
@@ -173,6 +184,17 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         }
         ref_name = "apigateway.apis.open.gateway.serializers.GatewaySyncInputSLZ"
 
+    def validate_display_name_en(self, value):
+        value = normalize_display_name_en(value)
+        if (
+            value is not None
+            and Gateway.objects.exclude(pk=self.instance.pk if self.instance else None)
+            .filter(display_name_en__iexact=value)
+            .exists()
+        ):
+            raise serializers.ValidationError(_("This display name is already in use."), code="unique")
+        return value
+
     def validate(self, data):
         kind = convert_gateway_kind_name_to_value(data["kind"])
         effective_kind = self.instance.kind if self.instance else kind
@@ -190,6 +212,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
         if self.instance is None:
             validate_gateway_name_kind(data["name"], kind)
+
+        validate_gateway_display_name(data, self.instance)
 
         data["gateway_type"] = api_type
         data["kind"] = kind

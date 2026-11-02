@@ -310,7 +310,8 @@ func (r *APIGWEtcdRegistry) ListStageResources(stageRelease *entity.ReleaseInfo)
 
 	etcdKey := fmt.Sprintf(
 		constant.ApigwStageResourcePrefixFormat,
-		r.keyPrefix, stageRelease.APIVersion, stageRelease.Labels.Gateway, stageRelease.Labels.Stage)
+		r.keyPrefix, stageRelease.APIVersion, stageRelease.Labels.Gateway, stageRelease.Labels.Stage,
+	)
 	resp, err := r.etcdClient.Get(stageRelease.Ctx, etcdKey, clientv3.WithPrefix())
 	if err != nil {
 		r.logger.Error(err, "get etcd value failed", "key", etcdKey, "stageRelease", stageRelease.GetID())
@@ -418,7 +419,8 @@ func (r *APIGWEtcdRegistry) ListGlobalResources(releaseInfo *entity.ReleaseInfo)
 	startedTime := time.Now()
 	etcdKey := fmt.Sprintf(
 		constant.ApigwGlobalResourcePrefixFormat,
-		r.keyPrefix, releaseInfo.APIVersion)
+		r.keyPrefix, releaseInfo.APIVersion,
+	)
 	resp, err := r.etcdClient.Get(releaseInfo.Ctx, etcdKey, clientv3.WithPrefix())
 	if err != nil {
 		metric.ReportRegistryAction(releaseInfo.Kind.String(), metric.ActionGet, metric.ResultFail, startedTime)
