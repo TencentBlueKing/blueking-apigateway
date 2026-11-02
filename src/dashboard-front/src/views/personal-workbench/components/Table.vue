@@ -106,7 +106,7 @@
 <script setup lang="tsx">
 import { Button, Message, Popover } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
-import { t } from '@/locales';
+import { locale, t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableEmptyType, ITableMethod } from '@/types/common';
 import type { IResource } from '@/types/permission';
@@ -245,7 +245,7 @@ const isApplied = computed(() => ['applied'].includes(applyStatus));
 const isShowSelection = computed(() => isGateway.value && isPending.value);
 // 操作列宽度：我的待办需展示审批按钮，我的申请需展示详情/撤销/删除
 const operateColumnWidth = computed(() => {
-  if (isPending.value) return 200;
+  if (isPending.value) return locale.value.indexOf('en') > -1 ? 200 : 140;
   if (isApplied.value) return 160;
   return 84;
 });

@@ -187,28 +187,30 @@ const handleBack = () => {
 
       .bk-menu-item {
         margin: 0;
-        color: rgb(99 101 110);
+        color: #4d4f56;
 
         .item-icon {
+          color: #979ba5;
 
           .default-icon {
-            background-color: rgb(197 199 205);
+            background-color: #c5c7cd;
           }
         }
 
         &:hover {
           background: #f0f1f5;
         }
-      }
 
-      .bk-menu-item.is-active {
-        color: rgb(58 132 255);
-        background: rgb(225 236 255);
+        &.is-active {
+          color: #3a84ff;
+          background: #e1ecff;
 
-        .item-icon {
+          .item-icon {
+            color: inherit;
 
-          .default-icon {
-            background-color: rgb(58 132 255);
+            .default-icon {
+              background-color: #3a84ff;
+            }
           }
         }
       }
