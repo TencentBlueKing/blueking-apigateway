@@ -89,13 +89,13 @@ def test_reconcile_plan_adds_fixes_revokes_and_refreshes_expiry(fake_gateway, mo
     )
 
     assert [(item.username, item.role, item.reason) for item in result.grants] == [
-        ("alice", "administrator", "missing"),
+        ("alice", "administrator", "missing-in-iam"),
         ("bob", "operator", "role-mismatch"),
         ("refresh", "operator", "expiry-refresh"),
     ]
     assert [(item.username, item.role, item.reason) for item in result.revokes] == [
         ("bob", "administrator", "role-mismatch"),
-        ("extra", "administrator", "extra"),
+        ("extra", "administrator", "extra-in-iam"),
     ]
     assert result.unchanged == 0
     assert result.applied is False
