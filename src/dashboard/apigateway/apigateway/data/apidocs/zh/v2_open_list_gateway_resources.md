@@ -37,7 +37,7 @@
 }
 ```
 
-#### 指定全部字段（fields=id,name,kind,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config）
+#### 指定全部字段（fields=id,name,kind,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config,is_deprecated,deprecated_note）
 
 ```json
 {
@@ -52,6 +52,8 @@
             "match_subpath": false,
             "enable_websocket": false,
             "is_public": true,
+            "is_deprecated": false,
+            "deprecated_note": "",
             "labels": [
                 {
                     "id": 1,
@@ -90,6 +92,8 @@
 | match_subpath         | boolean | 是否匹配子路径                 |
 | enable_websocket      | boolean | 是否启用 WebSocket          |
 | is_public             | boolean | 是否公开                    |
+| is_deprecated         | boolean | 是否弃用（资源编辑态） |
+| deprecated_note       | string | 弃用说明 |
 | labels                | array   | 标签列表，详见 labels[] 说明     |
 | auth_config           | object  | 认证配置，详见 auth_config 说明  |
 

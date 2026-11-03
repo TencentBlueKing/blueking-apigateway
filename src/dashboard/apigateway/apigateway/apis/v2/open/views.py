@@ -896,6 +896,8 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
             "match_subpath": resource_data.match_subpath,
             "enable_websocket": resource_data.enable_websocket,
             "is_public": resource_data.is_public,
+            "is_deprecated": resource_data.is_deprecated,
+            "deprecated_note": resource_data.deprecated_note,
             "schema": resource_schema or {},
             "doc": doc_info,
             "auth_config": {
@@ -927,6 +929,8 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
                 "type": doc.get("type"),
                 "content": doc.get("content"),
                 "updated_time": doc.get("updated_time"),
+                "is_deprecated": doc.get("is_deprecated", False),
+                "deprecated_note": doc.get("deprecated_note", ""),
             }
         except Exception:  # pylint: disable=broad-except
             logger.exception(

@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from collections import defaultdict
 from typing import Any, Dict, List
 
 from django.db.models import Count
@@ -73,9 +74,15 @@ class ResourcesSaver:
 
     def _save_resources(self) -> bool:
         add_resources = []
-        update_resources = []
+        update_resources = defaultdict(list)
         now = now_datetime()
         for resource_data in self.resource_data_list:
+            basic_data = resource_data.basic_data
+            # Ordinary editing must not overwrite independently managed deprecation metadata,
+            # including when its Resource instance was loaded before a concurrent update.
+            for field_name in ("is_deprecated", "deprecated_note"):
+                if field_name not in resource_data.model_fields_set:
+                    basic_data.pop(field_name)
             oauth2_client_config = {
                 field_name: getattr(resource_data.auth_config, field_name)
                 for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS
@@ -86,19 +93,19 @@ class ResourcesSaver:
                     raise ValueError(_("Resource.kind 创建后不能修改。"))
                 resource.updated_by = self.username
                 resource.updated_time = now
-                for key, value in resource_data.basic_data.items():
+                for key, value in basic_data.items():
                     setattr(resource, key, value)
                 for key, value in oauth2_client_config.items():
                     setattr(resource, key, value)
 
-                update_resources.append(resource)
+                update_resources[tuple(basic_data)].append(resource)
             else:
                 resource = Resource(
                     gateway=self.gateway,
                     created_by=self.username,
                     updated_by=self.username,
                     proxy_id=0,
-                    **resource_data.basic_data,
+                    **basic_data,
                     **oauth2_client_config,
                 )
                 add_resources.append(resource)
@@ -106,11 +113,9 @@ class ResourcesSaver:
         if add_resources:
             Resource.objects.bulk_create(add_resources, batch_size=BULK_BATCH_SIZE)
 
-        if update_resources:
-            field_names = (
-                ResourceData.basic_field_names() + list(RESOURCE_OAUTH2_CLIENT_FIELDS) + ["updated_by", "updated_time"]
-            )
-            Resource.objects.bulk_update(update_resources, fields=field_names, batch_size=BULK_BATCH_SIZE)
+        for basic_fields, resources in update_resources.items():
+            field_names = list(basic_fields) + list(RESOURCE_OAUTH2_CLIENT_FIELDS) + ["updated_by", "updated_time"]
+            Resource.objects.bulk_update(resources, fields=field_names, batch_size=BULK_BATCH_SIZE)
 
         return bool(add_resources)
 

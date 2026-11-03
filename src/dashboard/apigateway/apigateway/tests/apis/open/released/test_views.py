@@ -178,6 +178,7 @@ class TestReleasedResourceRetrieveApi:
             assert result["code"] == 40000
             return
         assert result["code"] == 0
+        expected.update(is_deprecated=False, deprecated_note="")
         assert result["data"] == expected
 
         get_released_resource_version_id_mock.assert_called_once_with(
@@ -300,6 +301,8 @@ class TestReleasedResourceListByGatewayNameApi:
         result = get_response_json(response)
 
         assert result["code"] == 0, result
+        for resource in expected["results"]:
+            resource.update(is_deprecated=False, deprecated_note="")
         assert result["data"] == expected
 
         get_released_public_resources_mock.assert_called_once_with(

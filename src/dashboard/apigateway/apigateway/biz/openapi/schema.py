@@ -242,7 +242,7 @@ def convert_operation_v3_to_v2(v3_operation):
     v2_operation = {}
 
     # 复制基本信息，如描述、摘要、操作ID等
-    for key in ["description", "summary", "operationId", "tags"]:
+    for key in ["description", "summary", "operationId", "tags", "deprecated"]:
         if key in v3_operation:
             v2_operation[key] = v3_operation[key]
 

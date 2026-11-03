@@ -63,6 +63,8 @@ class ResourceData(BaseModel):
     path: str = Field(...)
     match_subpath: bool = Field(default=False)
     enable_websocket: bool = Field(default=False)
+    is_deprecated: bool = Field(default=False, strict=True)
+    deprecated_note: str = Field(default="", max_length=2048, strict=True)
     is_public: bool = Field(default=True)
     allow_apply_permission: bool = Field(default=True)
     # auth config
@@ -91,6 +93,12 @@ class ResourceData(BaseModel):
             raise ValueError(f"unsupported resource kind: {self.kind}")
         return self
 
+    @model_validator(mode="after")
+    def normalize_deprecation(self):
+        if not self.is_deprecated and "is_deprecated" in self.model_fields_set:
+            self.deprecated_note = ""
+        return self
+
     @property
     def basic_data(self) -> Dict[str, Any]:
         return self.model_dump(include=set(self.basic_field_names()))
@@ -106,6 +114,8 @@ class ResourceData(BaseModel):
             "path",
             "match_subpath",
             "enable_websocket",
+            "is_deprecated",
+            "deprecated_note",
             "is_public",
             "allow_apply_permission",
         ]

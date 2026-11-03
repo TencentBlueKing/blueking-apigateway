@@ -1075,6 +1075,26 @@ paths:
 
 
 class TestOpenAPIExporter:
+    @pytest.mark.parametrize("method", ["_generate_paths", "_gen_swagger_paths"])
+    @pytest.mark.parametrize("is_deprecated,notes", [(False, ""), (True, ""), (True, "Use v2")])
+    def test_export_deprecation_omits_defaults(self, fake_resource_dict, method, is_deprecated, notes):
+        resource = dict(fake_resource_dict)
+        resource.update(
+            is_deprecated=is_deprecated,
+            deprecated_note=notes,
+            openapi_schema={"deprecated": not is_deprecated},
+        )
+        operation = getattr(BaseExporter(), method)([resource])[resource["path"]][resource["method"].lower()]
+        if is_deprecated:
+            assert operation["deprecated"] is True
+        else:
+            assert "deprecated" not in operation
+        extension = operation["x-bk-apigateway-resource"]
+        if is_deprecated and notes:
+            assert extension["deprecatedNote"] == notes
+        else:
+            assert "deprecatedNote" not in extension
+
     def test_generate_ai_resource_extension(self, fake_resource_dict):
         resource = dict(fake_resource_dict)
         resource.update(

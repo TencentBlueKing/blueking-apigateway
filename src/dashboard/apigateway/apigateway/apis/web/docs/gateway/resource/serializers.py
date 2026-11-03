@@ -52,6 +52,9 @@ class ResourceOutputSLZ(serializers.Serializer):
     allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否需要申请权限")
     labels = serializers.SerializerMethodField(help_text="资源标签列表")
 
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
+
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.resource.serializers.ResourceOutputSLZ"
 

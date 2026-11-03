@@ -47,6 +47,8 @@ result = client.api.get_released_resources(
         "results": [
             {
                 "id": 3,
+                "is_deprecated": false,
+                "deprecated_note": "",
                 "name": "echo",
                 "kind": "standard",
                 "description": "",
@@ -85,6 +87,8 @@ data.results 中字段说明
 | 参数名称               | 参数类型 | 描述                                                                |
 | ---------------------- | -------- | ------------------------------------------------------------------- |
 | id                     | int      | ID                                                                  |
+| is_deprecated | boolean | 是否弃用，来自已发布资源快照；旧版本默认为 false |
+| deprecated_note | string | 弃用说明；旧版本默认为空字符串 |
 | name                   | string   | 资源名称                                                            |
 | kind                   | string   | 资源类型，`standard`：普通 API，`ai`：模型代理 API                    |
 | description            | string   | 资源描述                                                            |

@@ -407,6 +407,10 @@
               "type": "string",
               "enum": ["standard", "ai"]
             },
+            "deprecatedNote": {
+              "type": "string",
+              "maxLength": 2048
+            },
             "isPublic": {
               "type": "boolean"
             },

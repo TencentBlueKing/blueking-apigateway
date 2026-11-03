@@ -290,6 +290,8 @@ class _GatewayReleasedResourceApiMixin:
                 "oauth2_personal_client_enabled": resource.oauth2_personal_client_enabled,
                 "description": (resource.data or {}).get("description", ""),
                 "description_en": (resource.data or {}).get("description_en"),
+                "is_deprecated": (resource.data or {}).get("is_deprecated", False),
+                "deprecated_note": (resource.data or {}).get("deprecated_note", ""),
             }
             for resource in resources
         ]

@@ -858,6 +858,14 @@ paths:
                         items:
                           type: object
                           properties:
+                            is_deprecated:
+                              type: boolean
+                              default: false
+                              description: 是否弃用
+                            deprecated_note:
+                              type: string
+                              default: ''
+                              description: 弃用说明
                             id:
                               type: integer
                               example: 3
@@ -955,6 +963,14 @@ paths:
                   data:
                     type: object
                     properties:
+                      is_deprecated:
+                        type: boolean
+                        default: false
+                        description: 是否弃用
+                      deprecated_note:
+                        type: string
+                        default: ''
+                        description: 弃用说明
                       id:
                         type: integer
                         description: 资源ID
@@ -2600,6 +2616,14 @@ paths:
                       resource_info:
                         type: object
                         properties:
+                          is_deprecated:
+                            type: boolean
+                            default: false
+                            description: 是否弃用
+                          deprecated_note:
+                            type: string
+                            default: ''
+                            description: 弃用说明
                           id:
                             type: number
                             description: 资源id
@@ -2846,6 +2870,14 @@ paths:
                         items:
                           type: object
                           properties:
+                            is_deprecated:
+                              type: boolean
+                              default: false
+                              description: 是否弃用
+                            deprecated_note:
+                              type: string
+                              default: ''
+                              description: 弃用说明
                             id:
                               type: integer
                             name:
@@ -2907,6 +2939,14 @@ paths:
                   data:
                     type: object
                     properties:
+                      is_deprecated:
+                        type: boolean
+                        default: false
+                        description: 是否弃用
+                      deprecated_note:
+                        type: string
+                        default: ''
+                        description: 弃用说明
                       id:
                         type: integer
                       name:
@@ -6958,7 +6998,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled、is_deprecated、deprecated_note
         - name: limit
           in: query
           required: false
@@ -6995,6 +7035,14 @@ paths:
                         items:
                           type: object
                           properties:
+                            is_deprecated:
+                              type: boolean
+                              default: false
+                              description: 是否弃用
+                            deprecated_note:
+                              type: string
+                              default: ''
+                              description: 弃用说明
                             id:
                               type: integer
                               description: 资源 ID
@@ -7054,7 +7102,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled、is_deprecated、deprecated_note
       responses:
         '200':
           description: 成功返回匹配的当前已发布资源列表，无分页包装
@@ -7068,6 +7116,14 @@ paths:
                     items:
                       type: object
                       properties:
+                        is_deprecated:
+                          type: boolean
+                          default: false
+                          description: 是否弃用
+                        deprecated_note:
+                          type: string
+                          default: ''
+                          description: 弃用说明
                         id:
                           type: integer
                           description: 资源 ID

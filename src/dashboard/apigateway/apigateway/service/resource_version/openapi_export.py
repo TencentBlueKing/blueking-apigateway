@@ -140,6 +140,10 @@ class BaseExporter:
                 resource["none_schema"] = False
 
             operation.update(schema)
+            if resource.get("is_deprecated", False):
+                operation["deprecated"] = True
+            else:
+                operation.pop("deprecated", None)
             if "responses" not in operation:
                 operation["responses"] = {"default": {"description": ""}}
 
@@ -184,6 +188,9 @@ class BaseExporter:
                 },
             }
 
+            if resource.get("is_deprecated", False):
+                operation["deprecated"] = True
+
             if self.include_bk_apigateway_resource:
                 self._generate_bk_apigateway_resource(operation, resource)
 
@@ -219,6 +226,8 @@ class BaseExporter:
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }
+        if resource.get("is_deprecated") and resource.get("deprecated_note"):
+            operation[OPENAPI_RESOURCE_EXTENSION]["deprecatedNote"] = resource["deprecated_note"]
         if kind == ResourceKindEnum.AI.value:
             operation[OPENAPI_RESOURCE_EXTENSION]["kind"] = ResourceKindEnum.AI.value
         if resource.get("none_schema"):

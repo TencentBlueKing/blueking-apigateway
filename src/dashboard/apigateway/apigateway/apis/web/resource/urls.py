@@ -21,6 +21,7 @@ from django.urls import include, path
 from apigateway.apis.web.resource.views import (
     BackendPathCheckApi,
     ResourceBatchUpdateDestroyApi,
+    ResourceDeprecationUpdateApi,
     ResourceExportApi,
     ResourceImportApi,
     ResourceImportCheckApi,
@@ -43,6 +44,7 @@ urlpatterns = [
         "<int:resource_id>/",
         include(
             [
+                path("deprecation/", ResourceDeprecationUpdateApi.as_view(), name="resource.deprecation.update"),
                 path("labels/", ResourceLabelUpdateApi.as_view(), name="resource.label.update"),
                 path("docs/", include("apigateway.apis.web.resource.doc.urls")),
             ]

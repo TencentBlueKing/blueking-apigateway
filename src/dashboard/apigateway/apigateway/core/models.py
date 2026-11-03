@@ -272,6 +272,9 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     # only one proxy is activated
     proxy_id = models.IntegerField(blank=False, null=False)
 
+    is_deprecated = models.BooleanField(default=False)
+    deprecated_note = models.CharField(max_length=2048, blank=True, default="")
+
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
     oauth2_public_client_enabled = models.BooleanField(default=False)

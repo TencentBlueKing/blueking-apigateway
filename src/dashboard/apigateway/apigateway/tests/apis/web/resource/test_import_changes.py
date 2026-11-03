@@ -403,3 +403,33 @@ def test_schema_example_boolean_to_number_is_update(request_view, importable_res
     response = check_content(request_view, resource, json.dumps(content), include_change_type=True)
     assert response.status_code == 200, response.json()
     assert response.json()["data"][0]["change_type"] == "update"
+
+
+@pytest.mark.parametrize("notes", ["Use v2", "Use v3"])
+def test_deprecation_export_check_and_import(request_view, importable_resource, notes):
+    resource = importable_resource
+    resource.is_deprecated = True
+    resource.deprecated_note = "Use v2"
+    resource.save()
+    content = json.loads(export_content(request_view, resource))
+    operation = content["paths"][resource.path]["get"]
+    assert operation["deprecated"] is True
+    assert operation["x-bk-apigateway-resource"]["deprecatedNote"] == "Use v2"
+    operation["x-bk-apigateway-resource"]["deprecatedNote"] = notes
+    response = check_content(request_view, resource, json.dumps(content), include_change_type=True)
+    assert response.status_code == 200, response.json()
+    imported = response.json()["data"][0]
+    assert imported["change_type"] == ("unchanged" if notes == "Use v2" else "update")
+    backend = imported.pop("backend")
+    imported["backend_name"] = backend["name"]
+    imported["backend_config"] = backend["config"]
+    response = request_view(
+        method="POST",
+        view_name="resource.import",
+        path_params={"gateway_id": resource.gateway_id},
+        gateway=resource.gateway,
+        data={"import_resources": [imported]},
+    )
+    assert response.status_code == 204, response.json()
+    resource.refresh_from_db()
+    assert (resource.is_deprecated, resource.deprecated_note) == (True, notes)

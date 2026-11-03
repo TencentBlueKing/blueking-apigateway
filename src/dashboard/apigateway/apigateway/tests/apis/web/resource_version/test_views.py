@@ -180,6 +180,8 @@ class TestResourceVersionRetrieveDestroyApi:
                 {
                     "id": fake_resource_version_v2.data[0]["id"],
                     "kind": ResourceKindEnum.STANDARD.value,
+                    "is_deprecated": False,
+                    "deprecated_note": "",
                     "name": fake_resource_version_v2.data[0]["name"],
                     "method": fake_resource_version_v2.data[0]["method"],
                     "path": fake_resource_version_v2.data[0]["path"],
@@ -528,6 +530,8 @@ class TestResourceVersionDiffApi:
                     {
                         "id": fake_resource.id,
                         "kind": ResourceKindEnum.STANDARD.value,
+                        "is_deprecated": False,
+                        "deprecated_note": "",
                         "name": fake_resource.name,
                         "description": fake_resource.description,
                         "method": fake_resource.method,
