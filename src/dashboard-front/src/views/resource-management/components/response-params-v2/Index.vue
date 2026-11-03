@@ -56,18 +56,63 @@
               v-model="codeDraft"
               :placeholder="t('请输入 HTTP 状态码，按 Enter 确认')"
               :status="validationErrors[response.id] ? 'error' : undefined"
-              @blur="cancelCodeEdit(response)"
-              @enter="finishCodeEdit(response)"
-              @input="clearValidationError(response.id)"
+              @blur="() => cancelCodeEdit(response)"
+              @enter="() => finishCodeEdit(response)"
+              @input="() => clearValidationError(response.id)"
             />
+            <!-- 阻止按下时输入框失焦，避免先触发失焦取消导致按钮点击失效。 -->
+            <div
+              class="response-card__code-actions"
+              @mousedown.prevent
+            >
+              <BkButton
+                v-bk-tooltips="{ content: t('保存') }"
+                class="save-button"
+                text
+                @click="() => finishCodeEdit(response)"
+              >
+                <AgIcon
+                  name="check-1"
+                  size="24"
+                />
+              </BkButton>
+              <BkButton
+                v-bk-tooltips="{ content: t('取消') }"
+                text
+                @click="() => cancelCodeEdit(response)"
+              >
+                <AgIcon
+                  name="icon-close"
+                  size="24"
+                />
+              </BkButton>
+            </div>
           </div>
-          <div
-            v-else
-            class="response-card__code"
-            :class="{ 'is-error': validationErrors[response.id] }"
-          >
-            {{ response.code || '--' }}
-          </div>
+          <template v-else>
+            <div
+              class="response-card__code"
+              :class="{ 'is-error': validationErrors[response.id] }"
+            >
+              {{ response.code || '--' }}
+            </div>
+            <!-- 只读模式隐藏状态码编辑入口。 -->
+            <div
+              v-if="!readonly"
+              class="response-card__code-actions"
+              @click.stop
+            >
+              <BkButton
+                v-bk-tooltips="{ content: t('编辑') }"
+                text
+                @click="() => startCodeEdit(response)"
+              >
+                <AgIcon
+                  name="edit-line"
+                  size="15"
+                />
+              </BkButton>
+            </div>
+          </template>
 
           <span class="response-card__label">
             {{ t('状态码') }}
@@ -81,27 +126,17 @@
             size="14"
           />
 
-          <!-- 只读模式隐藏状态码编辑和响应删除操作。 -->
+          <!-- 只读模式隐藏响应删除操作。 -->
           <div
             v-if="!readonly"
             class="response-card__actions"
             @click.stop
           >
             <BkButton
-              v-bk-tooltips="{ content: t('编辑') }"
-              text
-              @click="startCodeEdit(response)"
-            >
-              <AgIcon
-                name="edit-line"
-                size="15"
-              />
-            </BkButton>
-            <BkButton
               v-bk-tooltips="{ content: t('删除') }"
               class="delete-button"
               text
-              @click="deleteResponse(response)"
+              @click="() => deleteResponse(response)"
             >
               <AgIcon
                 name="delet"
@@ -128,7 +163,7 @@
             </div>
             <IconButton
               theme="primary"
-              @click="openJsonEditor(response)"
+              @click="() => openJsonEditor(response)"
             >
               {{ t('通过 JSON 生成') }}
             </IconButton>
@@ -504,7 +539,6 @@ defineExpose({
   }
 
   &__code {
-    min-width: 48px;
     font-size: 14px;
     font-weight: 600;
     color: #313238;
@@ -515,13 +549,16 @@ defineExpose({
   }
 
   &__code-editor {
-    flex: 0 1 260px;
-    width: 260px;
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
     height: 30px;
-    margin-right: 8px;
+    min-width: 0;
 
     :deep(.bk-input) {
+      flex: 0 1 260px;
       height: 30px;
+      min-width: 0;
     }
   }
 
@@ -536,11 +573,11 @@ defineExpose({
     color: #EA3636;
   }
 
+  &__code-actions,
   &__actions {
     display: flex;
     gap: 2px;
     align-items: center;
-    margin-left: auto;
 
     :deep(.bk-button) {
       width: 28px;
@@ -554,6 +591,19 @@ defineExpose({
         background: #E1ECFF;
       }
     }
+  }
+
+  &__code-actions {
+    flex: 0 0 auto;
+    margin-left: 4px;
+
+    .save-button {
+      color: #3A84FF;
+    }
+  }
+
+  &__actions {
+    margin-left: auto;
 
     .delete-button:hover {
       color: #EA3636;
