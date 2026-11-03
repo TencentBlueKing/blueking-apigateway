@@ -52,7 +52,7 @@
           @click.stop="handleCategoryChange('all')"
         >
           <div class="mcp-categorize-content">
-            <svg class="icon svg-icon w-16px">
+            <svg class="icon svg-icon w-16px h-16px">
               <use xlink:href="#icon-ag-quanbu" />
             </svg>
             <div class="categorize-text">
