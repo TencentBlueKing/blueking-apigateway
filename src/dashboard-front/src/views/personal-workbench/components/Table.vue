@@ -354,7 +354,7 @@ const tableColumns = computed(() => {
           <div class="w-full">
             <RenderTagOverflow
               data={row.approvers || [row?.handled_by]}
-              is-member
+              is-member={!row.approvers}
             />
           </div>
         );

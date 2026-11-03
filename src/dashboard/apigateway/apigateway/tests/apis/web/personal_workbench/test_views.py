@@ -44,6 +44,78 @@ pytestmark = pytest.mark.django_db
 FAKE_USERNAME = "admin"
 
 
+@pytest.mark.parametrize("kind", ["gateway", "mcp"])
+@pytest.mark.parametrize("source", ["pending", "applied"])
+@pytest.mark.parametrize(
+    ("multi_tenant", "tenant_mode", "expected_tenant"),
+    [(True, "global", "system"), (True, "single", "tenant-a"), (False, "single", "default")],
+)
+@pytest.mark.parametrize("lookup_result", ["found", "missing", "error"])
+def test_approver_display_names(
+    request_view,
+    fake_gateway,
+    make_mcp_server,
+    fake_request,
+    settings,
+    mocker,
+    kind,
+    source,
+    multi_tenant,
+    tenant_mode,
+    expected_tenant,
+    lookup_result,
+):
+    """审批人按网关成员租户转换，保留顺序，并在查询失败时回退账号。"""
+    settings.ENABLE_MULTI_TENANT_MODE = multi_tenant
+    fake_gateway.tenant_mode = tenant_mode
+    fake_gateway.tenant_id = "tenant-a" if multi_tenant else "default"
+    fake_gateway.save()
+    user = fake_request.user
+    user.tenant_id = expected_tenant if source == "pending" else fake_gateway.tenant_id
+    G(GatewayMember, gateway=fake_gateway, username="operator", role=GatewayRoleEnum.OPERATOR.value)
+    mocker.patch(
+        "apigateway.biz.permission.ResourcePermissionHandler.convert_applied_by_to_display_name",
+        return_value=FAKE_USERNAME,
+    )
+    query_names = mocker.patch("apigateway.components.bkuser.query_display_names_cached")
+    if lookup_result == "error":
+        query_names.side_effect = RuntimeError("bk-user unavailable")
+    else:
+        # 逆序返回，且缺少 operator，验证映射保持输入顺序并逐个回退。
+        query_names.return_value = (
+            [{"bk_username": "admin", "display_name": "管理员"}]
+            if lookup_result == "missing"
+            else [
+                {"bk_username": "operator", "display_name": "运营人员"},
+                {"bk_username": "admin", "display_name": "管理员"},
+            ]
+        )
+    if kind == "mcp":
+        model = MCPServerAppPermissionApply
+        relation = {"mcp_server": make_mcp_server(fake_gateway)}
+    else:
+        model = AppPermissionApply if source == "pending" else AppPermissionRecord
+        relation = {"gateway": fake_gateway}
+    for _ in range(2):
+        G(model, **relation, bk_app_code="app1", applied_by=FAKE_USERNAME, status=ApplyStatusEnum.PENDING.value)
+
+    response = request_view(method="GET", view_name=f"workbench.permissions.{kind}.{source}", user=user)
+
+    assert response.status_code == 200
+    rows = response.json()["data"]["results"]
+    assert len(rows) == 2
+    expected = ["admin", "operator"]
+    if multi_tenant and lookup_result == "found":
+        expected = ["管理员", "运营人员"]
+    elif multi_tenant and lookup_result == "missing":
+        expected = ["管理员", "operator"]
+    assert all(row["approvers"] == expected for row in rows)
+    if multi_tenant:
+        query_names.assert_called_once_with(expected_tenant, "admin,operator")
+    else:
+        query_names.assert_not_called()
+
+
 @pytest.fixture
 def fake_other_gateway(faker):
     """创建一个当前用户不是 maintainer 的网关"""

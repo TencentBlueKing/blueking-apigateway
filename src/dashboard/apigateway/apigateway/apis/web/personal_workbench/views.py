@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import TYPE_CHECKING
+
 from django.utils.decorators import method_decorator
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
@@ -60,6 +62,9 @@ from .serializers import (
     WorkbenchPermissionOperateInputSLZ,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 class WorkbenchPermissionMixin:
     """个人工作台权限接口 Mixin
@@ -69,6 +74,18 @@ class WorkbenchPermissionMixin:
     """
 
     permission_classes = [IsAuthenticated]
+
+    def _get_gateway_approver_display_names(self, gateways: Iterable[Gateway]) -> dict[int, list[str]]:
+        gateways_by_id = {gateway.id: gateway for gateway in gateways}
+        approvers_map = GatewayMember.objects.build_gateway_approvers_map(gateways_by_id)
+        return {
+            gateway_id: ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+                gateways_by_id[gateway_id].tenant_mode,
+                gateways_by_id[gateway_id].tenant_id,
+                approvers,
+            )
+            for gateway_id, approvers in approvers_map.items()
+        }
 
     def _get_pending_gateway_permission_apply_queryset(self):
         """获取当前用户待审批的 API 网关权限申请列表"""
@@ -321,9 +338,7 @@ class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         items = page if page is not None else queryset
 
         context = self.get_serializer_context()
-        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
-            {item.gateway_id for item in items}
-        )
+        context["gateway_approvers"] = self._get_gateway_approver_display_names(item.gateway for item in items)
         context["prefetched_resources"] = self._prefetch_resources(items)
         serializer = self.get_serializer(items, many=True, context=context)
 
@@ -363,8 +378,8 @@ class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
         items = page if page is not None else queryset
 
         context = self.get_serializer_context()
-        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
-            {item.mcp_server.gateway_id for item in items}
+        context["gateway_approvers"] = self._get_gateway_approver_display_names(
+            item.mcp_server.gateway for item in items
         )
         serializer = self.get_serializer(items, many=True, context=context)
 
@@ -405,9 +420,7 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         items = page if page is not None else queryset
 
         context = self.get_serializer_context()
-        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
-            {item.gateway_id for item in items}
-        )
+        context["gateway_approvers"] = self._get_gateway_approver_display_names(item.gateway for item in items)
         context["prefetched_resources"] = self._prefetch_resources(items)
         serializer = self.get_serializer(items, many=True, context=context)
 
@@ -495,8 +508,8 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
         items = page if page is not None else queryset
 
         context = self.get_serializer_context()
-        context["gateway_approvers"] = GatewayMember.objects.build_gateway_approvers_map(
-            {item.mcp_server.gateway_id for item in items}
+        context["gateway_approvers"] = self._get_gateway_approver_display_names(
+            item.mcp_server.gateway for item in items
         )
         serializer = self.get_serializer(items, many=True, context=context)
 
