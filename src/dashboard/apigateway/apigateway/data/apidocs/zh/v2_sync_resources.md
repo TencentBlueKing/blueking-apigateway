@@ -36,12 +36,6 @@ paths:
           description: OK
 ```
 
-同步修改资源编辑态，生成资源版本并发布后，开发者才能在对应环境文档看到标记及说明。
-设置 `deprecated: false` 会取消弃用并清空说明，也需要发布新版本。
-省略 `deprecated` 按 `false` 同步，省略 `deprecatedNotes` 按空字符串同步；自动化管理的资源应将
-管理员在列表页设置的弃用信息写回 YAML，否则下一次同步会覆盖手工标记。
-不需要传入 `doc_language`，不修改现有文档正文。弃用仅用于提示，不影响 API 调用、认证或授权。
-
 #### 资源 YAML 字段说明
 
 资源配置通过 OpenAPI Operation 下的 `x-bk-apigateway-resource` 扩展字段导入，支持以下字段：

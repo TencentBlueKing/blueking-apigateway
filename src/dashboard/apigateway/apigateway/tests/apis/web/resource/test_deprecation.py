@@ -61,9 +61,9 @@ def test_deprecation_is_narrow_and_idempotent(request_view, fake_resource, mocke
     [
         {},
         {"is_deprecated": None},
-        {"is_deprecated": "true"},
+        {"is_deprecated": "invalid"},
         {"is_deprecated": True, "deprecated_notes": None},
-        {"is_deprecated": True, "deprecated_notes": 123},
+        {"is_deprecated": True, "deprecated_notes": []},
         {"is_deprecated": True, "deprecated_notes": "x" * 2049},
     ],
 )
@@ -276,3 +276,10 @@ def test_label_edit_preserves_concurrently_updated_deprecation(request_view, fak
     assert response.status_code == 204
     fake_resource.refresh_from_db()
     assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "Use v2")
+
+
+def test_deprecation_accepts_drf_type_conversion(request_view, fake_resource):
+    response = set_deprecation(request_view, fake_resource, is_deprecated="true", deprecated_notes=123)
+    assert response.status_code == 204
+    fake_resource.refresh_from_db()
+    assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "123")

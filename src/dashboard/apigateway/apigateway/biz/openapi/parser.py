@@ -433,8 +433,8 @@ class ResourceDataConvertor:
                     path=resource["path"],
                     match_subpath=resource.get("match_subpath", False),
                     enable_websocket=resource.get("enable_websocket", False),
-                    is_deprecated=resource.get("is_deprecated", False),
-                    deprecated_notes=resource.get("deprecated_notes", ""),
+                    # OpenAPI parsing supplies defaults; internal sync inputs may omit these fields.
+                    **{key: resource[key] for key in ("is_deprecated", "deprecated_notes") if key in resource},
                     is_public=resource.get("is_public", True),
                     allow_apply_permission=resource.get("allow_apply_permission", True),
                     auth_config=ResourceAuthConfig.model_validate(resource.get("auth_config", {})),

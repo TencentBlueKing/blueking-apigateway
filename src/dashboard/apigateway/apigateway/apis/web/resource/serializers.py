@@ -608,15 +608,6 @@ class ResourceDeprecationInputSLZ(serializers.Serializer):
     is_deprecated = serializers.BooleanField(help_text="是否弃用")
     deprecated_notes = serializers.CharField(default="", allow_blank=True, max_length=2048, help_text="弃用说明")
 
-    def to_internal_value(self, data):
-        if not isinstance(data, dict):
-            return super().to_internal_value(data)
-        if "is_deprecated" in data and not isinstance(data["is_deprecated"], bool):
-            raise serializers.ValidationError({"is_deprecated": _("必须为布尔值。")})
-        if "deprecated_notes" in data and not isinstance(data["deprecated_notes"], str):
-            raise serializers.ValidationError({"deprecated_notes": _("必须为字符串。")})
-        return super().to_internal_value(data)
-
     def validate(self, attrs):
         if not attrs["is_deprecated"]:
             attrs["deprecated_notes"] = ""

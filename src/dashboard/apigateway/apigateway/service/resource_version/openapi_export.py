@@ -140,7 +140,10 @@ class BaseExporter:
                 resource["none_schema"] = False
 
             operation.update(schema)
-            operation["deprecated"] = resource.get("is_deprecated", False)
+            if resource.get("is_deprecated", False):
+                operation["deprecated"] = True
+            else:
+                operation.pop("deprecated", None)
             if "responses" not in operation:
                 operation["responses"] = {"default": {"description": ""}}
 
@@ -178,13 +181,15 @@ class BaseExporter:
             method = self._adapt_method(resource["method"])
             operation = {
                 "operationId": resource["name"],
-                "deprecated": resource.get("is_deprecated", False),
                 "description": resource["description"],
                 "tags": resource.get("labels", []),
                 "responses": {
                     "default": {"description": ""},
                 },
             }
+
+            if resource.get("is_deprecated", False):
+                operation["deprecated"] = True
 
             if self.include_bk_apigateway_resource:
                 self._generate_bk_apigateway_resource(operation, resource)
@@ -197,7 +202,6 @@ class BaseExporter:
         kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
 
         operation[OPENAPI_RESOURCE_EXTENSION] = {
-            "deprecatedNotes": resource.get("deprecated_notes", "") if resource.get("is_deprecated") else "",
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
             "matchSubpath": resource.get("match_subpath", False),
@@ -222,6 +226,8 @@ class BaseExporter:
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }
+        if resource.get("is_deprecated") and resource.get("deprecated_notes"):
+            operation[OPENAPI_RESOURCE_EXTENSION]["deprecatedNotes"] = resource["deprecated_notes"]
         if kind == ResourceKindEnum.AI.value:
             operation[OPENAPI_RESOURCE_EXTENSION]["kind"] = ResourceKindEnum.AI.value
         if resource.get("none_schema"):

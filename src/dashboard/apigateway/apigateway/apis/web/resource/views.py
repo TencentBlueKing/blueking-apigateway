@@ -438,7 +438,6 @@ class ResourceDeprecationUpdateApi(ResourceQuerySetMixin, generics.GenericAPIVie
         instance.is_deprecated = slz.validated_data["is_deprecated"]
         instance.deprecated_notes = slz.validated_data["deprecated_notes"]
         instance.updated_by = request.user.username
-        instance.updated_time = now_datetime()
         instance.save(update_fields=["is_deprecated", "deprecated_notes", "updated_by", "updated_time"])
         Auditor.record_resource_op_success(
             op_type=OpTypeEnum.MODIFY,

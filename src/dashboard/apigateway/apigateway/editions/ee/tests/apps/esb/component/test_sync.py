@@ -18,6 +18,7 @@
 #
 import pytest
 
+from apigateway.apps.esb.component.convertor import Component
 from apigateway.apps.esb.component.sync import ComponentSynchronizer
 
 pytestmark = pytest.mark.django_db
@@ -77,3 +78,32 @@ class TestComponentSynchronizer:
         synchronizer = ComponentSynchronizer()
         result = synchronizer.sync_to_resources(fake_gateway, "admin")
         assert len(result) == 1
+
+    def test_sync_preserves_resource_deprecation(self, mocker, fake_gateway, fake_resource, fake_default_backend):
+        fake_resource.is_deprecated = True
+        fake_resource.deprecated_notes = "Use v2"
+        fake_resource.save()
+        component = Component(
+            id=1,
+            name="get_users",
+            system_name="test",
+            method=fake_resource.method,
+            path=fake_resource.path,
+            full_path="/esb/users/",
+            is_public=True,
+            description="",
+            permission_level="normal",
+            verified_user_required=True,
+            binding_resource_id=fake_resource.id,
+            binding_resource_name=fake_resource.name,
+        )
+        mocker.patch(
+            "apigateway.apps.esb.component.sync.ComponentSynchronizer.get_importing_resources",
+            return_value=[component.to_resource()],
+        )
+        mocker.patch("apigateway.apps.esb.component.sync.ComponentResourceBindingHandler.sync")
+
+        ComponentSynchronizer().sync_to_resources(fake_gateway, "admin")
+
+        fake_resource.refresh_from_db()
+        assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "Use v2")
