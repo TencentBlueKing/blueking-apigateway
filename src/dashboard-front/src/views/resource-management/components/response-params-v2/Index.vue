@@ -54,7 +54,7 @@
           >
             <BkInput
               v-model="codeDraft"
-              :placeholder="t('请输入 HTTP 状态码，按 Enter 确认')"
+              :placeholder="t('请输入 HTTP 状态码或 default，按 Enter 确认')"
               :status="validationErrors[response.id] ? 'error' : undefined"
               @blur="() => cancelCodeEdit(response)"
               @enter="() => finishCodeEdit(response)"
@@ -243,6 +243,8 @@ const responseList = ref<IResponseState[]>([]);
 const validationErrors = ref<Record<string, string>>({});
 
 const HTTP_STATUS_CODE_PATTERN = /^[1-5]\d{2}$/;
+/** OpenAPI responses 中用于兜底未声明状态码的特殊键。 */
+const DEFAULT_RESPONSE_CODE = 'default';
 
 watch(
   () => detail,
@@ -302,9 +304,9 @@ const startCodeEdit = (response: IResponseState) => {
   editingResponseId.value = response.id;
 };
 
-/** 校验状态码是否为 100 至 599 的三位 HTTP 状态码。 */
-const isValidHttpStatusCode = (code: string) => {
-  return HTTP_STATUS_CODE_PATTERN.test(code);
+/** 校验状态码是否为 100 至 599 的三位 HTTP 状态码，或 OpenAPI 的 default 兜底响应。 */
+const isValidResponseCode = (code: string) => {
+  return code === DEFAULT_RESPONSE_CODE || HTTP_STATUS_CODE_PATTERN.test(code);
 };
 
 /** 取消状态码编辑并恢复原值。 */
@@ -326,7 +328,7 @@ const finishCodeEdit = (response: IResponseState) => {
 
   const code = codeDraft.value.trim();
 
-  if (!isValidHttpStatusCode(code)) {
+  if (!isValidResponseCode(code)) {
     const message = t('请输入合法的状态码');
     validationErrors.value[response.id] = message;
     messageWarn(message);
@@ -416,7 +418,7 @@ const validate = () => {
   responseList.value.forEach((response) => {
     const code = response.code.trim();
 
-    if (!isValidHttpStatusCode(code)) {
+    if (!isValidResponseCode(code)) {
       errors[response.id] = t('请输入合法的状态码');
       hasIncompleteField = true;
       hasInvalidStatusCode = true;
