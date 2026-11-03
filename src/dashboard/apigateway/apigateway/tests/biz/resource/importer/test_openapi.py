@@ -1081,7 +1081,7 @@ class TestOpenAPIExporter:
         resource = dict(fake_resource_dict)
         resource.update(
             is_deprecated=is_deprecated,
-            deprecated_notes=notes,
+            deprecated_note=notes,
             openapi_schema={"deprecated": not is_deprecated},
         )
         operation = getattr(BaseExporter(), method)([resource])[resource["path"]][resource["method"].lower()]
@@ -1091,9 +1091,9 @@ class TestOpenAPIExporter:
             assert "deprecated" not in operation
         extension = operation["x-bk-apigateway-resource"]
         if is_deprecated and notes:
-            assert extension["deprecatedNotes"] == notes
+            assert extension["deprecatedNote"] == notes
         else:
-            assert "deprecatedNotes" not in extension
+            assert "deprecatedNote" not in extension
 
     def test_generate_ai_resource_extension(self, fake_resource_dict):
         resource = dict(fake_resource_dict)

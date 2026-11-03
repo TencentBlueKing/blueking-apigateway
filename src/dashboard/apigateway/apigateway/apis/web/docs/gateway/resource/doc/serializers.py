@@ -36,7 +36,7 @@ class DocOutputSLZ(serializers.Serializer):
     updated_time = serializers.DateTimeField(help_text="文档更新时间")
 
     is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
-    deprecated_notes = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.resource.doc.serializers.DocOutputSLZ"

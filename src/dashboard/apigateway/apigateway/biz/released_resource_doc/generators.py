@@ -63,7 +63,7 @@ class DocGenerator:
             "type": APIDocTypeEnum.MARKDOWN.value,
             "content": "\n\n".join(filter(None, [resource_url_content, auth_content, body_content])),
             "is_deprecated": self.resource_data.is_deprecated,
-            "deprecated_notes": self.resource_data.deprecated_notes,
+            "deprecated_note": self.resource_data.deprecated_note,
             "method": self.resource_data.method,
             "resource_url": self._get_resource_url(),
             "auth_content": auth_content,

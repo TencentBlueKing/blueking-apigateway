@@ -21,7 +21,7 @@
 #### 资源弃用
 
 Operation 标准字段 `deprecated`（boolean，默认 `false`）声明 API 是否弃用；弃用说明通过
-`x-bk-apigateway-resource.deprecatedNotes` 配置（string，最长 2048 字符，默认空字符串）。
+`x-bk-apigateway-resource.deprecatedNote` 配置（string，最长 2048 字符，默认空字符串）。
 
 ```yaml
 paths:
@@ -30,7 +30,7 @@ paths:
       operationId: list_users
       deprecated: true
       x-bk-apigateway-resource:
-        deprecatedNotes: "请改用 list_users_v2：https://example.com/docs/list_users_v2"
+        deprecatedNote: "请改用 list_users_v2：https://example.com/docs/list_users_v2"
       responses:
         "200":
           description: OK
@@ -43,7 +43,7 @@ paths:
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
 | `kind` | string | 否 | 资源类型：`standard` 表示普通 API，`ai` 表示模型代理 API；不传默认为 `standard` |
-| `deprecatedNotes` | string | 否 | API 弃用说明，最长 2048 字符；仅在 Operation 的 `deprecated` 为 `true` 时保留 |
+| `deprecatedNote` | string | 否 | API 弃用说明，最长 2048 字符；仅在 Operation 的 `deprecated` 为 `true` 时保留 |
 | `isPublic` | boolean | 否 | 是否公开资源，默认 `true` |
 | `allowApplyPermission` | boolean | 否 | 是否允许用户申请资源权限，默认 `true` |
 | `matchSubpath` | boolean | 否 | 是否匹配所有子路径，默认 `false`；普通 API 需与 `backend.matchSubpath` 保持一致，模型代理 API 不支持开启 |

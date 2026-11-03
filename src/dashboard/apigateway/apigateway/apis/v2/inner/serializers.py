@@ -70,6 +70,8 @@ RELEASED_RESOURCE_FIELDS = frozenset(
         "id",
         "name",
         "description",
+        "is_deprecated",
+        "deprecated_note",
         "is_public",
         "oauth2_public_client_enabled",
         "oauth2_personal_client_enabled",
@@ -238,6 +240,9 @@ class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializ
         allow_blank=True,
         read_only=True,
     )
+
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayReleasedResourceOutputSLZ"

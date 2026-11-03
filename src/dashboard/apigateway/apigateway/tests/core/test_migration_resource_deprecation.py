@@ -39,7 +39,7 @@ def test_existing_resources_default_to_not_deprecated():
         resource_model = executor.loader.project_state(after).apps.get_model("core", "Resource")
         migrated = resource_model.objects.get(pk=resource.pk)
         assert migrated.is_deprecated is False
-        assert migrated.deprecated_notes == ""
+        assert migrated.deprecated_note == ""
         assert (migrated.name, migrated.path) == ("get_users", "/users")
     finally:
         MigrationExecutor(connection).migrate(latest)

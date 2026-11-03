@@ -80,7 +80,7 @@ class ResourcesSaver:
             basic_data = resource_data.basic_data
             # Ordinary editing must not overwrite independently managed deprecation metadata,
             # including when its Resource instance was loaded before a concurrent update.
-            for field_name in ("is_deprecated", "deprecated_notes"):
+            for field_name in ("is_deprecated", "deprecated_note"):
                 if field_name not in resource_data.model_fields_set:
                     basic_data.pop(field_name)
             oauth2_client_config = {

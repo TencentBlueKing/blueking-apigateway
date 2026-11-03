@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="resource",
-            name="deprecated_notes",
+            name="deprecated_note",
             field=models.CharField(blank=True, default="", max_length=2048),
         ),
         migrations.AddField(

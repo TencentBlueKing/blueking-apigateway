@@ -185,7 +185,7 @@ class _ResourceBasicDiffer(BaseModel, DiffMixin):
     match_subpath: bool = False
     enable_websocket: bool = False
     is_deprecated: bool = False
-    deprecated_notes: str = ""
+    deprecated_note: str = ""
     is_public: bool = True
     allow_apply_permission: bool = True
 

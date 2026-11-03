@@ -1184,7 +1184,7 @@ class TestResourceImportCheckApi:
 
         assert resp.status_code == 200
         for item in expected:
-            item.update(is_deprecated=False, deprecated_notes="")
+            item.update(is_deprecated=False, deprecated_note="")
         assert result["data"] == expected
 
     def test_post_ai_resource(self, request_view, fake_gateway):

@@ -226,8 +226,8 @@ class BaseExporter:
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }
-        if resource.get("is_deprecated") and resource.get("deprecated_notes"):
-            operation[OPENAPI_RESOURCE_EXTENSION]["deprecatedNotes"] = resource["deprecated_notes"]
+        if resource.get("is_deprecated") and resource.get("deprecated_note"):
+            operation[OPENAPI_RESOURCE_EXTENSION]["deprecatedNote"] = resource["deprecated_note"]
         if kind == ResourceKindEnum.AI.value:
             operation[OPENAPI_RESOURCE_EXTENSION]["kind"] = ResourceKindEnum.AI.value
         if resource.get("none_schema"):

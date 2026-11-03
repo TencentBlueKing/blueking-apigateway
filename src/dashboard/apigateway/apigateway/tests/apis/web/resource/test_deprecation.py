@@ -38,13 +38,13 @@ def test_deprecation_is_narrow_and_idempotent(request_view, fake_resource, mocke
     before = deepcopy(fake_resource.__dict__)
     audit = mocker.patch("apigateway.apis.web.resource.views.Auditor.record_resource_op_success")
     for deprecated, notes in [(True, "Use v2"), (True, "Use v3"), (False, "clear me")]:
-        response = set_deprecation(request_view, fake_resource, is_deprecated=deprecated, deprecated_notes=notes)
+        response = set_deprecation(request_view, fake_resource, is_deprecated=deprecated, deprecated_note=notes)
         assert response.status_code == 204
         fake_resource.refresh_from_db()
         assert fake_resource.is_deprecated is deprecated
-        assert fake_resource.deprecated_notes == (notes if deprecated else "")
+        assert fake_resource.deprecated_note == (notes if deprecated else "")
         for key, value in before.items():
-            if key not in {"_state", "is_deprecated", "deprecated_notes", "updated_time", "updated_by"}:
+            if key not in {"_state", "is_deprecated", "deprecated_note", "updated_time", "updated_by"}:
                 assert getattr(fake_resource, key) == value
     assert audit.call_count == 3
     assert audit.call_args.kwargs["data_before"]["is_deprecated"] is True
@@ -62,9 +62,9 @@ def test_deprecation_is_narrow_and_idempotent(request_view, fake_resource, mocke
         {},
         {"is_deprecated": None},
         {"is_deprecated": "invalid"},
-        {"is_deprecated": True, "deprecated_notes": None},
-        {"is_deprecated": True, "deprecated_notes": []},
-        {"is_deprecated": True, "deprecated_notes": "x" * 2049},
+        {"is_deprecated": True, "deprecated_note": None},
+        {"is_deprecated": True, "deprecated_note": []},
+        {"is_deprecated": True, "deprecated_note": "x" * 2049},
     ],
 )
 def test_deprecation_rejects_invalid_input(request_view, fake_resource, data):
@@ -99,25 +99,23 @@ def test_deprecation_requires_manage_gateway(fake_gateway, fake_request, role, a
 
 def test_normal_saver_preserves_concurrently_updated_deprecation(fake_resource, fake_resource_data):
     data = fake_resource_data.model_copy(update={"resource": fake_resource})
-    Resource.objects.filter(pk=fake_resource.pk).update(is_deprecated=True, deprecated_notes="Use v2")
+    Resource.objects.filter(pk=fake_resource.pk).update(is_deprecated=True, deprecated_note="Use v2")
     ResourcesSaver(fake_resource.gateway, [data], "admin")._save_resources()
     fake_resource.refresh_from_db()
     assert fake_resource.is_deprecated is True
-    assert fake_resource.deprecated_notes == "Use v2"
+    assert fake_resource.deprecated_note == "Use v2"
 
 
 def test_saver_mixed_explicit_and_omitted_deprecation(fake_resource, fake_resource_data):
-    Resource.objects.filter(pk=fake_resource.pk).update(is_deprecated=True, deprecated_notes="Keep")
-    other = G(Resource, gateway=fake_resource.gateway, is_deprecated=True, deprecated_notes="Clear")
+    Resource.objects.filter(pk=fake_resource.pk).update(is_deprecated=True, deprecated_note="Keep")
+    other = G(Resource, gateway=fake_resource.gateway, is_deprecated=True, deprecated_note="Clear")
     omitted = fake_resource_data.model_copy(update={"resource": fake_resource})
-    explicit = fake_resource_data.model_copy(
-        update={"resource": other, "is_deprecated": False, "deprecated_notes": ""}
-    )
+    explicit = fake_resource_data.model_copy(update={"resource": other, "is_deprecated": False, "deprecated_note": ""})
     ResourcesSaver(fake_resource.gateway, [omitted, explicit], "admin")._save_resources()
     fake_resource.refresh_from_db()
     other.refresh_from_db()
-    assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "Keep")
-    assert (other.is_deprecated, other.deprecated_notes) == (False, "")
+    assert (fake_resource.is_deprecated, fake_resource.deprecated_note) == (True, "Keep")
+    assert (other.is_deprecated, other.deprecated_note) == (False, "")
 
 
 def test_doc_deprecation_follows_environment_version(request_view, fake_gateway, fake_resource, fake_stage):
@@ -141,26 +139,26 @@ def test_doc_deprecation_follows_environment_version(request_view, fake_gateway,
         return next(item for item in response.json()["data"] if item["id"] == fake_resource.id)
 
     assert (
-        set_deprecation(request_view, fake_resource, is_deprecated=True, deprecated_notes="Use v2").status_code == 204
+        set_deprecation(request_view, fake_resource, is_deprecated=True, deprecated_note="Use v2").status_code == 204
     )
     new = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps(ResourceVersionHandler.make_version(fake_gateway)))
     assert read(fake_stage)["is_deprecated"] is False
     release.resource_version = new
     release.save()
     assert read(fake_stage)["is_deprecated"] is True
-    assert read(fake_stage)["deprecated_notes"] == "Use v2"
+    assert read(fake_stage)["deprecated_note"] == "Use v2"
     assert read(other_stage)["is_deprecated"] is False
     # Historical versions remain readable with missing fields.
     data = old.data
     for item in data:
         item.pop("is_deprecated", None)
-        item.pop("deprecated_notes", None)
+        item.pop("deprecated_note", None)
     old.data = data
     old.save()
     release.resource_version = old
     release.save()
     assert read(fake_stage)["is_deprecated"] is False
-    assert read(fake_stage)["deprecated_notes"] == ""
+    assert read(fake_stage)["deprecated_note"] == ""
 
 
 @pytest.mark.parametrize("version", ["2.0", "3.0.3", "3.1.0"])
@@ -172,7 +170,7 @@ def test_sync_deprecation_without_doc_generation(request_view, fake_gateway, moc
     operation = {
         "operationId": "get_users",
         "deprecated": True,
-        "x-bk-apigateway-resource": {"deprecatedNotes": "Use v2"},
+        "x-bk-apigateway-resource": {"deprecatedNote": "Use v2"},
         "responses": {"200": {"description": "OK"}},
     }
     spec = {
@@ -193,15 +191,15 @@ def test_sync_deprecation_without_doc_generation(request_view, fake_gateway, moc
     response = sync()
     assert response.status_code == 200, response.json()
     resource = Resource.objects.get(gateway=fake_gateway, name="get_users")
-    assert (resource.is_deprecated, resource.deprecated_notes) == (True, "Use v2")
+    assert (resource.is_deprecated, resource.deprecated_note) == (True, "Use v2")
     assert snapshot_resource(resource, as_dict=True)["is_deprecated"] is True
     operation.pop("deprecated")
-    operation["x-bk-apigateway-resource"].pop("deprecatedNotes")
+    operation["x-bk-apigateway-resource"].pop("deprecatedNote")
     assert sync().status_code == 200
     resource.refresh_from_db()
-    assert (resource.is_deprecated, resource.deprecated_notes) == (False, "")
+    assert (resource.is_deprecated, resource.deprecated_note) == (False, "")
     operation["deprecated"] = True
-    operation["x-bk-apigateway-resource"]["deprecatedNotes"] = "x" * 2049
+    operation["x-bk-apigateway-resource"]["deprecatedNote"] = "x" * 2049
     assert sync().status_code == 400
     resource.refresh_from_db()
     assert resource.is_deprecated is False
@@ -210,7 +208,7 @@ def test_sync_deprecation_without_doc_generation(request_view, fake_gateway, moc
 @pytest.mark.parametrize("create", [False, True])
 def test_regular_write_does_not_accept_deprecation(request_view, fake_resource, create):
     fake_resource.is_deprecated = True
-    fake_resource.deprecated_notes = "Keep"
+    fake_resource.deprecated_note = "Keep"
     fake_resource.save()
     backend = Backend.objects.filter(gateway=fake_resource.gateway).first()
     data = {
@@ -223,7 +221,7 @@ def test_regular_write_does_not_accept_deprecation(request_view, fake_resource, 
         "backend": {"id": backend.id, "config": {"method": "GET", "path": "/normal/", "timeout": 30}},
         "auth_config": {"auth_verified_required": True, "app_verified_required": True, "resource_perm_required": True},
         "is_deprecated": create,
-        "deprecated_notes": "Must be ignored",
+        "deprecated_note": "Must be ignored",
     }
     path_params = {"gateway_id": fake_resource.gateway_id}
     if not create:
@@ -237,20 +235,20 @@ def test_regular_write_does_not_accept_deprecation(request_view, fake_resource, 
     )
     assert response.status_code == (201 if create else 204), response.json()
     resource = Resource.objects.get(gateway=fake_resource.gateway, name="normal_resource")
-    assert (resource.is_deprecated, resource.deprecated_notes) == ((False, "") if create else (True, "Keep"))
+    assert (resource.is_deprecated, resource.deprecated_note) == ((False, "") if create else (True, "Keep"))
 
 
 def test_deprecation_diff_and_management_responses(request_view, fake_resource):
     before = snapshot_resource(fake_resource, as_dict=True)
     assert (
-        set_deprecation(request_view, fake_resource, is_deprecated=True, deprecated_notes="Use v2").status_code == 204
+        set_deprecation(request_view, fake_resource, is_deprecated=True, deprecated_note="Use v2").status_code == 204
     )
     fake_resource.refresh_from_db()
     after = snapshot_resource(fake_resource, as_dict=True)
     for source, target in [(before, after), (after, before)]:
         result = ResourceDifferHandler.diff_resource_version_data([deepcopy(source)], [deepcopy(target)], {}, {})
         assert result["update"][0]["target"]["diff"]["is_deprecated"] is target["is_deprecated"]
-        assert result["update"][0]["target"]["diff"]["deprecated_notes"] == target["deprecated_notes"]
+        assert result["update"][0]["target"]["diff"]["deprecated_note"] == target["deprecated_note"]
     # Read APIs expose metadata independently of the regular input contract.
     for view, params in [
         ("resource.list_create", {"gateway_id": fake_resource.gateway_id}),
@@ -260,12 +258,12 @@ def test_deprecation_diff_and_management_responses(request_view, fake_resource):
         result = response.json()["data"]
         if "results" in result:
             result = next(item for item in result["results"] if item["id"] == fake_resource.id)
-        assert (result["is_deprecated"], result["deprecated_notes"]) == (True, "Use v2")
+        assert (result["is_deprecated"], result["deprecated_note"]) == (True, "Use v2")
 
 
 def test_label_edit_preserves_concurrently_updated_deprecation(request_view, fake_resource, mocker):
     mocker.patch("apigateway.apis.web.resource.views.ResourceLabelUpdateApi.get_object", return_value=fake_resource)
-    Resource.objects.filter(pk=fake_resource.pk).update(is_deprecated=True, deprecated_notes="Use v2")
+    Resource.objects.filter(pk=fake_resource.pk).update(is_deprecated=True, deprecated_note="Use v2")
     response = request_view(
         method="PUT",
         view_name="resource.label.update",
@@ -275,11 +273,11 @@ def test_label_edit_preserves_concurrently_updated_deprecation(request_view, fak
     )
     assert response.status_code == 204
     fake_resource.refresh_from_db()
-    assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "Use v2")
+    assert (fake_resource.is_deprecated, fake_resource.deprecated_note) == (True, "Use v2")
 
 
 def test_deprecation_accepts_drf_type_conversion(request_view, fake_resource):
-    response = set_deprecation(request_view, fake_resource, is_deprecated="true", deprecated_notes=123)
+    response = set_deprecation(request_view, fake_resource, is_deprecated="true", deprecated_note=123)
     assert response.status_code == 204
     fake_resource.refresh_from_db()
-    assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "123")
+    assert (fake_resource.is_deprecated, fake_resource.deprecated_note) == (True, "123")

@@ -352,7 +352,7 @@
                 "ai"
               ]
             },
-            "deprecatedNotes": {
+            "deprecatedNote": {
               "type": "string",
               "maxLength": 2048
             },

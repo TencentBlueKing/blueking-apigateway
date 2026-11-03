@@ -81,7 +81,7 @@ class TestComponentSynchronizer:
 
     def test_sync_preserves_resource_deprecation(self, mocker, fake_gateway, fake_resource, fake_default_backend):
         fake_resource.is_deprecated = True
-        fake_resource.deprecated_notes = "Use v2"
+        fake_resource.deprecated_note = "Use v2"
         fake_resource.save()
         component = Component(
             id=1,
@@ -106,4 +106,4 @@ class TestComponentSynchronizer:
         ComponentSynchronizer().sync_to_resources(fake_gateway, "admin")
 
         fake_resource.refresh_from_db()
-        assert (fake_resource.is_deprecated, fake_resource.deprecated_notes) == (True, "Use v2")
+        assert (fake_resource.is_deprecated, fake_resource.deprecated_note) == (True, "Use v2")

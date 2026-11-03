@@ -101,7 +101,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "id",
             "name",
             "is_deprecated",
-            "deprecated_notes",
+            "deprecated_note",
             "description",
             "kind",
             "method",
@@ -487,7 +487,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "id",
             "name",
             "is_deprecated",
-            "deprecated_notes",
+            "deprecated_note",
             "description",
             "description_en",
             "kind",
@@ -606,11 +606,11 @@ class ResourceBatchDestroyInputSLZ(serializers.Serializer):
 
 class ResourceDeprecationInputSLZ(serializers.Serializer):
     is_deprecated = serializers.BooleanField(help_text="是否弃用")
-    deprecated_notes = serializers.CharField(default="", allow_blank=True, max_length=2048, help_text="弃用说明")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, max_length=2048, help_text="弃用说明")
 
     def validate(self, attrs):
         if not attrs["is_deprecated"]:
-            attrs["deprecated_notes"] = ""
+            attrs["deprecated_note"] = ""
         return attrs
 
 
@@ -681,7 +681,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             "kind",
             "name",
             "is_deprecated",
-            "deprecated_notes",
+            "deprecated_note",
             "description",
             "description_en",
             "method",
@@ -835,7 +835,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
     enable_websocket = serializers.BooleanField(help_text="是否启用 websocket")
     is_deprecated = serializers.BooleanField(default=False, help_text="是否弃用")
-    deprecated_notes = serializers.CharField(default="", allow_blank=True, help_text="弃用说明")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, help_text="弃用说明")
     is_public = serializers.BooleanField(help_text="是否公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 
@@ -927,7 +927,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
     enable_websocket = serializers.BooleanField(help_text="是否启用 websocket")
     is_deprecated = serializers.BooleanField(default=False, help_text="是否弃用")
-    deprecated_notes = serializers.CharField(default="", allow_blank=True, help_text="弃用说明")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, help_text="弃用说明")
     is_public = serializers.BooleanField(help_text="是否公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 

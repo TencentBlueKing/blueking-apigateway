@@ -18,7 +18,7 @@
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
-| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`is_public`、`oauth2_public_client_enabled`、`oauth2_personal_client_enabled`，不传返回全部字段 |
+| fields | string | 否 | 返回字段列表，多个以逗号分隔；支持 `id`、`name`、`description`、`is_public`、`oauth2_public_client_enabled`、`oauth2_personal_client_enabled`、`is_deprecated`、`deprecated_note`，不传返回全部字段 |
 | limit | int | 否 | 每页数量，默认 10，最大 1000 |
 | offset | int | 否 | 分页偏移量，默认 0 |
 
@@ -31,6 +31,8 @@
     "results": [
       {
         "id": 101,
+        "is_deprecated": false,
+        "deprecated_note": "",
         "name": "get_user",
         "description": "查询用户",
         "is_public": true,
@@ -50,6 +52,8 @@
 | data.count | int | 去重后的资源总数 |
 | data.results | array | 按资源名称、资源 ID 排序的当前已发布资源列表 |
 | data.results[].id | int | 资源 ID |
+| data.results[].is_deprecated | boolean | 是否弃用，来自已发布资源快照；旧版本默认为 false |
+| data.results[].deprecated_note | string | 弃用说明；旧版本默认为空字符串 |
 | data.results[].name | string | 资源名称 |
 | data.results[].description | string | 当前快照中的资源描述，随请求语言返回中文或英文 |
 | data.results[].is_public | bool | 资源是否公开 |

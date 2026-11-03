@@ -596,6 +596,9 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
     labels = serializers.SerializerMethodField(help_text="标签列表")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
+
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceListOutputSLZ"
 
@@ -655,6 +658,9 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
     schema = serializers.DictField(read_only=True, help_text="资源的 OpenAPI Schema 定义")
     doc = serializers.DictField(read_only=True, help_text="资源文档信息", allow_null=True)
     auth_config = AuthConfigOutputSLZ(read_only=True, help_text="认证配置")
+
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceDetailOutputSLZ"
@@ -886,6 +892,9 @@ class GatewayReleasedResourceOutputSLZ(serializers.Serializer):
     path = serializers.CharField(read_only=True)
     schema = serializers.DictField(read_only=True, help_text="参数协议")
 
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
+
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayReleasedResourceOutputSLZ"
 
@@ -908,6 +917,9 @@ class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
     user_verified_required = serializers.BooleanField(read_only=True)
     oauth2_public_client_enabled = serializers.BooleanField(read_only=True)
     oauth2_personal_client_enabled = serializers.BooleanField(read_only=True)
+
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayReleasedResourceListItemOutputSLZ"

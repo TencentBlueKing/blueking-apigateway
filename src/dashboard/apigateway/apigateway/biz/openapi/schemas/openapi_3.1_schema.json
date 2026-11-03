@@ -407,7 +407,7 @@
               "type": "string",
               "enum": ["standard", "ai"]
             },
-            "deprecatedNotes": {
+            "deprecatedNote": {
               "type": "string",
               "maxLength": 2048
             },

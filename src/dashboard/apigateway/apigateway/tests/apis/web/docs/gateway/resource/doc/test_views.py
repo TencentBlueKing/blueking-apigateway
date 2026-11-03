@@ -35,7 +35,7 @@ class TestDocListApi:
 
         assert resp.status_code == 401
 
-    @pytest.mark.parametrize("deprecation", [{}, {"is_deprecated": True, "deprecated_notes": "Use v2"}])
+    @pytest.mark.parametrize("deprecation", [{}, {"is_deprecated": True, "deprecated_note": "Use v2"}])
     def test_list(
         self,
         request_view,
@@ -66,7 +66,7 @@ class TestDocListApi:
         assert result["data"]["updated_time"]
         data = result["data"]
         assert data["is_deprecated"] is deprecation.get("is_deprecated", False)
-        assert data["deprecated_notes"] == deprecation.get("deprecated_notes", "")
+        assert data["deprecated_note"] == deprecation.get("deprecated_note", "")
         assert "X-Bkapi-Authorization" in data["auth_content"]
         assert data["auth_content"] in data["content"]
         assert "body_content" in data

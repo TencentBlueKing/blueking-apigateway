@@ -36,6 +36,8 @@ class ResourceV1SLZ(serializers.Serializer):
     description_en = serializers.CharField(default=None, required=False, write_only=True)
     method = serializers.CharField()
     path = serializers.CharField()
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
 
 
 class ReleasedResourceOutputSLZ(serializers.Serializer):
@@ -47,6 +49,8 @@ class ReleasedResourceOutputSLZ(serializers.Serializer):
     method = serializers.CharField(read_only=True)
     path = serializers.CharField(read_only=True)
     schema = serializers.DictField(help_text="参数协议")
+    is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
+    deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
 
 
 class ReleasedResourceListV1InputSLZ(ResourceV1SLZ):

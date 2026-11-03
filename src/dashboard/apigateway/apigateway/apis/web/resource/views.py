@@ -421,8 +421,6 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
 class ResourceDeprecationUpdateApi(ResourceQuerySetMixin, generics.GenericAPIView):
     serializer_class = ResourceDeprecationInputSLZ
     gateway_action = GatewayActionEnum.MANAGE_GATEWAY.value
-    lookup_url_kwarg = "resource_id"
-    lookup_field = "id"
 
     @extend_schema(request=ResourceDeprecationInputSLZ, responses={204: None}, tags=["WebAPI.Resource"])
     @transaction.atomic
@@ -436,9 +434,9 @@ class ResourceDeprecationUpdateApi(ResourceQuerySetMixin, generics.GenericAPIVie
 
         data_before = get_model_dict(instance)
         instance.is_deprecated = slz.validated_data["is_deprecated"]
-        instance.deprecated_notes = slz.validated_data["deprecated_notes"]
+        instance.deprecated_note = slz.validated_data["deprecated_note"]
         instance.updated_by = request.user.username
-        instance.save(update_fields=["is_deprecated", "deprecated_notes", "updated_by", "updated_time"])
+        instance.save(update_fields=["is_deprecated", "deprecated_note", "updated_by", "updated_time"])
         Auditor.record_resource_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,

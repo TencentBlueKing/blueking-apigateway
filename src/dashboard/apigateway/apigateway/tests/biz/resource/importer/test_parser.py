@@ -139,7 +139,7 @@ class TestBaseParser:
                         "get": {
                             "operationId": "list_users",
                             "deprecated": True,
-                            "x-bk-apigateway-resource": {"deprecatedNotes": "Use list_users_v2"},
+                            "x-bk-apigateway-resource": {"deprecatedNote": "Use list_users_v2"},
                         }
                     }
                 }
@@ -147,7 +147,7 @@ class TestBaseParser:
         ).get_resources()
 
         assert resources[0]["is_deprecated"] is True
-        assert resources[0]["deprecated_notes"] == "Use list_users_v2"
+        assert resources[0]["deprecated_note"] == "Use list_users_v2"
 
     def test_get_ai_resource(self):
         parser = BaseParser(
