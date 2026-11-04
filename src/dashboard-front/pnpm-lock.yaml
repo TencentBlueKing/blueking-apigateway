@@ -32,6 +32,9 @@ importers:
       '@blueking/notice-component':
         specifier: ^2.0.5
         version: 2.0.5(dompurify@3.2.6)
+      '@blueking/platform-config':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@blueking/release-note':
         specifier: 0.0.1-beta.17
         version: 0.0.1-beta.17(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(markdown-it@13.0.2)(vue@3.5.34(typescript@5.9.3))
@@ -547,6 +550,9 @@ packages:
     resolution: {integrity: sha512-w1Mjviz0HWvSoOtxElJlKslY2lkjxP0e8PHjxUHTUBMR3VAU14O2I9XM3+7IHmE9eB9JAkXvmqYQqn7YVugw5Q==}
     peerDependencies:
       dompurify: ^3.0.6
+
+  '@blueking/platform-config@1.0.5':
+    resolution: {integrity: sha512-z88WCgnPJ1V5XzFMcftEEwDVz3Cvfn7VWv+mRlfh+LfBBDJyUrwX4uhkMYr06kP+35NPIky8ZdETFb2VWDoMyg==}
 
   '@blueking/release-note@0.0.1-beta.17':
     resolution: {integrity: sha512-yOI/y0svMqIKSFJ+7827/WBXGlXwWaGYL/P8lhQ0PLOSlwIoTuDWJHH8Yj2ZnbySalgOF6iq12NJdJifggd8uA==}
@@ -4801,6 +4807,10 @@ snapshots:
   '@blueking/notice-component@2.0.5(dompurify@3.2.6)':
     dependencies:
       dompurify: 3.2.6
+
+  '@blueking/platform-config@1.0.5':
+    dependencies:
+      xss: 1.0.15
 
   '@blueking/release-note@0.0.1-beta.17(bkui-vue@3.0.8(highlight.js@11.11.1)(vue@3.5.34(typescript@5.9.3)))(markdown-it@13.0.2)(vue@3.5.34(typescript@5.9.3))':
     dependencies:

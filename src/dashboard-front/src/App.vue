@@ -116,6 +116,7 @@ import {
   useEnv,
   useFeatureFlag,
   useGateway,
+  usePlatformConfig,
   useUserInfo,
 } from '@/stores';
 import { useBkUserDisplayName } from '@/hooks';
@@ -128,6 +129,7 @@ const router = useRouter();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
+const platformConfigStore = usePlatformConfig();
 const { configure: configureDisplayName } = useBkUserDisplayName();
 const gateway = useGateway();
 
@@ -265,8 +267,11 @@ watch(
 
 watch(locale, () => {
   document.documentElement.lang = locale.value === 'en' ? 'en' : 'zh-CN';
-  const docTitle = useTitle();
-  docTitle.value = t('API Gateway | 腾讯蓝鲸智云');
+  // 平台配置加载完成前先使用默认标题，加载后由 platform-config 设置
+  if (!platformConfigStore.config) {
+    const docTitle = useTitle();
+    docTitle.value = t('API Gateway | 腾讯蓝鲸智云');
+  }
 }, { immediate: true });
 
 // flag需要是实时的，确保不同页面组件执行顺序需要监听下
@@ -304,6 +309,8 @@ async function getUserInfo() {
   try {
     const userData = await userInfoStore.fetchUserInfo();
     const envData = await envStore.fetchEnv();
+    // 平台配置（标题、favicon、页脚等）依赖环境变量 BK_SHARED_RES_URL，store 内保证只请求一次，不阻塞页面渲染
+    platformConfigStore.fetchConfig();
     const tenantId = userData?.tenant_id ?? '';
     const apiBaseUrl = envData?.BK_USER_WEB_API_URL ?? '';
 

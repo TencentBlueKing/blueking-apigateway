@@ -17,6 +17,7 @@
  */
 
 export * from './useEnv';
+export * from './usePlatformConfig';
 export * from './useUserInfo';
 export * from './useFeatureFlag';
 export * from './useGateway';
