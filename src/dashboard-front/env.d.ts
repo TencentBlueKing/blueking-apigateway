@@ -27,6 +27,53 @@ declare module '@blueking/login-modal' {
   export function showLoginModal(params: { loginUrl: string }): void;
 }
 
+declare module '@blueking/platform-config' {
+  // 需要国际化的字段，根据 blueking_language cookie 自动匹配
+  export interface IPlatformConfigI18n {
+    name?: string
+    productName?: string
+    helperText?: string
+    brandImg?: string
+    brandName?: string
+    footerInfoHTML?: string
+  }
+
+  export interface IPlatformConfig {
+    bkAppCode?: string
+    name?: string
+    nameEn?: string
+    appLogo?: string
+    favicon?: string
+    productName?: string
+    productNameEn?: string
+    helperText?: string
+    helperTextEn?: string
+    helperLink?: string
+    brandImg?: string
+    brandImgEn?: string
+    brandName?: string
+    brandNameEn?: string
+    // 页脚内容，仅支持 a 的 markdown 格式
+    footerInfo?: string
+    footerInfoEn?: string
+    // 版权信息，支持 {{version}} 变量
+    footerCopyright?: string
+    version?: string
+    // 以下字段由 getPlatformConfig 处理后附加
+    footerInfoHTML?: string
+    footerInfoHTMLEn?: string
+    footerCopyrightContent?: string
+    i18n?: IPlatformConfigI18n
+  }
+
+  export function getPlatformConfig(defaults: IPlatformConfig): Promise<IPlatformConfig>;
+  export function getPlatformConfig(url: string, defaults?: IPlatformConfig): Promise<IPlatformConfig>;
+  export function getI18nValue(config: IPlatformConfig, key: string, lang?: string): string | undefined;
+  export function setDocumentTitle(i18n?: IPlatformConfigI18n, extra?: string | string[]): void;
+  export function setShortcutIcon(url?: string): void;
+  export const titleSeparator: string;
+}
+
 declare module '@blueking/release-note';
 
 declare module '@blueking/xss-filter' {

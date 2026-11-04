@@ -412,33 +412,12 @@
     class="footer-container "
     :class="{'empty': shouldShowGuide}"
   >
-    <p class="contact">
-      <BkLink
-        class="text-12px color-#3a84ff!"
-        :href="contacts[0].link"
-        target="_blank"
-      >
-        {{ contacts[0].text }}
-      </BkLink>
-      |
-      <BkLink
-        class="text-12px color-#3a84ff!"
-        :href="contacts[1].link"
-        target="_blank"
-      >
-        {{ contacts[1].text }}
-      </BkLink>
-      |
-      <BkLink
-        class="text-12px color-#3a84ff!"
-        :href="contacts[2].link"
-        target="_blank"
-      >
-        {{ contacts[2].text }}
-      </BkLink>
-    </p>
+    <p
+      v-bk-xss-html="platformConfigStore.footerInfoHTML"
+      class="contact"
+    />
     <p class="copyright">
-      {{ copyright }}
+      {{ platformConfigStore.footerCopyright }}
     </p>
   </div>
 </template>
@@ -447,6 +426,7 @@
 import {
   useEnv,
   useFeatureFlag,
+  usePlatformConfig,
 } from '@/stores';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway/gateway';
@@ -472,6 +452,7 @@ const { t } = useI18n();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
+const platformConfigStore = usePlatformConfig();
 
 const ordering = ref('updated_time');
 const filterData = ref({
@@ -590,21 +571,6 @@ const orderingOptions = [
   },
 ];
 
-const contacts = [
-  {
-    text: t('技术支持'),
-    link: 'https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true',
-  },
-  {
-    text: t('社区论坛'),
-    link: 'https://bk.tencent.com/s-mart/community/',
-  },
-  {
-    text: t('产品官网'),
-    link: 'https://bk.tencent.com/index/',
-  },
-];
-
 const steps: {
   name: string
   describe: string
@@ -646,8 +612,6 @@ const filteredSteps = computed(() => {
 });
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-
-const copyright = computed(() => `Copyright © 2012-${new Date().getFullYear()} Tencent BlueKing. All Rights Reserved. V${envStore.env.BK_APIGATEWAY_VERSION}`);
 
 const progressImg = computed(() => {
   if (envStore.env.EDITION === 'te') {
@@ -1262,7 +1226,7 @@ onBeforeUnmount(() => {
   }
 
   .deact {
-    color: #ffffff !important;
+    color: #fff !important;
     background: #eaebf0 !important;
 
     .deact-name {
@@ -1319,6 +1283,16 @@ onBeforeUnmount(() => {
     height: 58px;
     padding-top: 8px;
     background: #FFF;
+  }
+
+  // 页脚链接由平台配置的 markdown 转换而来，通过 v-bk-xss-html 渲染
+
+  .contact :deep(a) {
+    color: #3a84ff;
+
+    &:hover {
+      color: #699df4;
+    }
   }
 }
 
