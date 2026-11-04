@@ -86,6 +86,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     is_official = serializers.BooleanField(
         read_only=True, help_text="是否为官方网关，true：官方网关，false：非官方网关"
     )
+    is_deprecated = serializers.BooleanField(read_only=True, help_text="是否已废弃")
+    deprecated_note = serializers.CharField(allow_blank=True, allow_null=True, read_only=True, help_text="废弃原因")
     resource_count = serializers.SerializerMethodField(help_text="网关下资源的数量")
     stages = serializers.SerializerMethodField(help_text="网关环境列表，其中的 released 表示环境是否已发布")
 
