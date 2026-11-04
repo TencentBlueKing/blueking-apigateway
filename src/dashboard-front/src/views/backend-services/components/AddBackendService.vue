@@ -347,7 +347,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="pl-24px">
+        <div class="pl-44px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"
@@ -924,7 +924,7 @@ defineExpose({ show });
   }
 
   .slider-content {
-    padding: 24px 24px 22px 24px;
+    padding: 24px 24px 22px;
 
     .bk-form-label {
       line-height: 22px;
