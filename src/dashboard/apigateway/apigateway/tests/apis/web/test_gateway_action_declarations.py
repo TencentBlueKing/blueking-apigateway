@@ -74,6 +74,7 @@ APPROVE_VIEWS = (
     mcp_server_views.MCPServerAppPermissionListCreateApi,
     mcp_server_views.MCPServerAppPermissionDestroyApi,
     mcp_server_views.MCPServerAppPermissionApplyListApi,
+    mcp_server_views.MCPServerAppPermissionApplyPendingCountApi,
     mcp_server_views.MCPServerAppPermissionApplyApplicantListApi,
     mcp_server_views.MCPServerAppPermissionApplyUpdateStatusApi,
     mcp_server_views.MCPServerAppPermissionAppCodeListApi,

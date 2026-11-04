@@ -24,6 +24,7 @@ from .views import (
     MCPServerAppPermissionAppCodeListApi,
     MCPServerAppPermissionApplyApplicantListApi,
     MCPServerAppPermissionApplyListApi,
+    MCPServerAppPermissionApplyPendingCountApi,
     MCPServerAppPermissionApplyUpdateStatusApi,
     MCPServerAppPermissionDestroyApi,
     MCPServerAppPermissionListCreateApi,
@@ -87,6 +88,12 @@ urlpatterns = [
                                 "applicant/",
                                 MCPServerAppPermissionApplyApplicantListApi.as_view(),
                                 name="mcp_server.app-permission-apply.gateway_applicant_list",
+                            ),
+                            # 待审批数量
+                            path(
+                                "-/pending-count/",
+                                MCPServerAppPermissionApplyPendingCountApi.as_view(),
+                                name="mcp_server.app-permission-apply.pending_count",
                             ),
                         ]
                     ),

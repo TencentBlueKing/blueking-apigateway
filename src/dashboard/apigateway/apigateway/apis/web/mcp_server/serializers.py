@@ -808,6 +808,13 @@ class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
+class MCPServerAppPermissionApplyPendingCountOutputSLZ(serializers.Serializer):
+    count = serializers.IntegerField(read_only=True, help_text="待审批数量")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyPendingCountOutputSLZ"
+
+
 class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")

@@ -58,11 +58,7 @@ class MCPServerPermissionHandler:
             queryset = gateway_filter_by_maintainer_tenant_id(queryset, tenant_id)
             gateway_ids = queryset.values_list("id", flat=True)
 
-        return MCPServerAppPermissionApply.objects.filter(
-            mcp_server__gateway_id__in=gateway_ids,
-            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
-            is_deleted=False,
-        )
+        return MCPServerAppPermissionApply.objects.filter_pending(gateway_ids)
 
     @staticmethod
     def create_apply(
