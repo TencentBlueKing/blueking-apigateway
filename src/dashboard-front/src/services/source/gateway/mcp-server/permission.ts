@@ -26,6 +26,7 @@ import type {
   IMCPServerAppPermissionAppCodeListOutput,
   IMCPServerAppPermissionApplyApplicantOutput,
   IMCPServerAppPermissionApplyListOutput,
+  IMCPServerAppPermissionApplyPendingCountOutput,
   IMCPServerAppPermissionListOutput,
 } from '@/services/types/responses/gateways.ts';
 import type {
@@ -107,6 +108,13 @@ export const deleteMcpAppPermission = (gatewayId: number, mcp_server_id: number,
  */
 export const getMcpAppPermissionApplyList = (gatewayId: number, data: IGatewaysMcpServersAppPermissionApplyListQuery) =>
   http.get<ICountAndResults<IMCPServerAppPermissionApplyListOutput>>(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permission-apply/`, data);
+
+/**
+ *  待审批的应用权限申请数量（用于左侧菜单红点提示）
+ * @param gatewayId 网关id
+ */
+export const getMcpAppPermissionApplyPendingCount = (gatewayId: number) =>
+  http.get<IMCPServerAppPermissionApplyPendingCountOutput>(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permission-apply/-/pending-count/`);
 
 /**
  *  授权审批申请人列表

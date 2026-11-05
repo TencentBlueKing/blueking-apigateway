@@ -200,11 +200,12 @@ import { cloneDeep, debounce } from 'lodash-es';
 import type { FilterValue, PrimaryTableProps, SortInfo, TableRowData } from '@blueking/tdesign-ui';
 import type { IDropList, IFormMethod, ITableEmptyType, ITableMethod } from '@/types/common';
 import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
-import { useFeatureFlag } from '@/stores';
+import { useFeatureFlag, usePermission } from '@/stores';
 import { useMcpPermission } from '@/hooks';
 import {
   getMcpAppPermissionApplicants,
   getMcpAppPermissionApplyList,
+  getMcpAppPermissionApplyPendingCount,
   getMcpAppPermissionList,
   patchMcpAppPermissionApplyStatus,
 } from '@/services/source/gateway/mcp-server/permission';
@@ -224,6 +225,7 @@ const { gatewayId = 0 } = defineProps<IProps>();
 
 const route = useRoute();
 const featureFlagStore = useFeatureFlag();
+const permissionStore = usePermission();
 const {
   exportDropData,
   getExportDropData,
@@ -518,6 +520,20 @@ const getList = () => {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
 };
 
+// 审批通过/驳回后，通过待审批数量接口同步左侧菜单红点数字
+const refreshPendingCount = async () => {
+  try {
+    const res = await getMcpAppPermissionApplyPendingCount(gatewayId);
+    // 校验响应仍属于当前网关，避免切换网关后旧响应回写全局 store
+    if (gatewayId === Number(route.params.id)) {
+      permissionStore.setMcpCount(res?.count ?? 0);
+    }
+  }
+  catch {
+    // 忽略数量刷新失败，不影响审批主流程
+  }
+};
+
 const getTableData = async (params: {
   offset: number
   limit: number
@@ -746,6 +762,7 @@ const handleSubmitApprove = async () => {
       theme: 'success',
     });
     getList();
+    refreshPendingCount();
     applyActionDialogConf.isShow = false;
   }
   catch (e: any) {
