@@ -174,6 +174,38 @@ def test_invalid_update_does_not_change_storage_or_publish(request_view, mocker,
     publish.assert_not_called()
 
 
+@pytest.mark.parametrize("secondary_priority", [10, 0])
+def test_first_stage_saves_pool_without_stage_id(request_view, fake_gateway, secondary_priority):
+    fake_gateway.kind = GatewayKindEnum.AI.value
+    fake_gateway.save()
+    backend = Backend.objects.create(gateway=fake_gateway, name="model-service", kind=BackendKindEnum.AI.value)
+    config = {
+        "timeout": 60,
+        "instances": [
+            {"name": "primary", "priority": 10, "provider": "openai", "api_key": "primary-secret"},
+            {"name": "secondary", "priority": secondary_priority, "provider": "openai", "api_key": "secondary-secret"},
+        ],
+    }
+    assert not Stage.objects.filter(gateway=fake_gateway).exists()
+
+    response = request_view(
+        "POST",
+        "stage.list-create",
+        path_params={"gateway_id": fake_gateway.id},
+        gateway=fake_gateway,
+        data={"name": "first-stage", "description": "", "backends": [{"id": backend.id, "config": config}]},
+    )
+
+    assert response.status_code == 201, response.json()
+    stage = Stage.objects.get(gateway=fake_gateway, name="first-stage")
+    stored = BackendConfig.objects.get(backend=backend, stage=stage).config
+    assert [item["name"] for item in stored["instances"]] == ["primary", "secondary"]
+    assert [item["auth"]["header"]["Authorization"] for item in stored["instances"]] == [
+        "Bearer primary-secret",
+        "Bearer secondary-secret",
+    ]
+
+
 def test_stage_create_with_pool_and_connectivity_remains_single_instance(request_view, mocker, pool_backend):
     data = AIBackendWebConfigAdapter.to_web(pool_backend.config)
     response = request_view(
