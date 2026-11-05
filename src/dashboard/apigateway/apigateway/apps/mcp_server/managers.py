@@ -20,8 +20,9 @@ from typing import Iterable, List
 
 from django.db import models
 
-from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.common.time import calculate_renew_time
+
+from .constants import MCPServerAppPermissionApplyStatusEnum
 
 
 class MCPServerAppPermissionManager(models.Manager):
