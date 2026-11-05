@@ -356,10 +356,7 @@
                         </div>
                       </template>
                       <template #title>
-                        <div>
-                          <div>• {{ t('每个环境（Stage）需单独配置一份模型服务，暂不支持同一环境下多渠道负载均衡') }}</div>
-                          <div>• {{ t('任一环境的配置变更后，需重新连通测试通过才可保存') }}</div>
-                        </div>
+                        <div>{{ t('每个环境（Stage）单独配置，可添加多个实例做负载均衡与故障切换') }}</div>
                       </template>
                     </BkAlert>
                     <BkCollapse
@@ -381,22 +378,14 @@
                                 : 'panel-header-hide'"
                             />
                             <span class="ai-backend-name">{{ backend.name }}</span>
-                            <BkTag :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].theme">
-                              <div class="flex items-center">
-                                <status-tag
-                                  type="filled"
-                                  :theme="AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].tagTheme"
-                                  status=""
-                                  class="mr--4px"
-                                />
-                                <span>{{ t(AI_BACKEND_TEST_STATUS_META[backend.config.testStatus].text) }}</span>
-                              </div>
+                            <BkTag :theme="getAIBackendConfigStatusMeta(backend.config).theme">
+                              {{ t(getAIBackendConfigStatusMeta(backend.config).text) }}
                             </BkTag>
                           </div>
                         </template>
                         <template #content>
                           <div class="ai-backend-content">
-                            <AIBackendConfigForm
+                            <AIBackendInstancesForm
                               :ref="(el: any) => setAIBackendFormRef(el, index)"
                               v-model="backend.config"
                               :apigw-id="gatewayId"
@@ -531,7 +520,7 @@
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
-                      {{ `${backend.config.timeout}秒` }}
+                      {{ t('{count}秒', { count: backend.config.timeout }) }}
                     </div>
                   </BkCol>
                 </BkRow>
@@ -834,33 +823,42 @@
                 :class="{ highlighted: modelServices.name === selectedBackendName }"
                 :col="14"
               >
-                <BkRow>
+                <BkRow
+                  v-for="(instance, instanceIndex) in modelServices.config.instances"
+                  :key="instance.uid"
+                >
                   <BkCol :span="2">
-                    <label class="ag-key">Provider:</label>
+                    <label class="ag-key">{{ getAIBackendInstanceLabel(modelServices.config, instanceIndex) }}:</label>
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
-                      {{ modelServices.config.provider }}
+                      {{ [
+                        instance.name.trim(),
+                        instance.provider,
+                        `${instance.endpointScheme}://${instance.endpoint}`,
+                        instance.model || '--',
+                      ].filter(Boolean).join(' | ') }}
                     </div>
                   </BkCol>
                 </BkRow>
-                <BkRow>
+                <BkRow v-if="shouldShowAIBackendBalancer(modelServices.config)">
                   <BkCol :span="2">
-                    <label class="ag-key">Endpoint:</label>
+                    <label class="ag-key">{{ t('负载均衡算法') }}:</label>
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
-                      {{ modelServices.config.endpoint }}
+                      {{ t(AI_BACKEND_BALANCER_TEXT[modelServices.config.balancerAlgorithm]) }}
                     </div>
                   </BkCol>
                 </BkRow>
-                <BkRow>
+                <BkRow v-if="shouldShowAIBackendFallback(modelServices.config)">
                   <BkCol :span="2">
-                    <label class="ag-key">Model:</label>
+                    <label class="ag-key">{{ t('故障切换条件') }}:</label>
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
-                      {{ modelServices.config.model }}
+                      {{ modelServices.config.fallbackStrategy.map(item => t(AI_BACKEND_FALLBACK_TEXT[item])).join('、')
+                        || t('不重试') }}
                     </div>
                   </BkCol>
                 </BkRow>
@@ -870,7 +868,7 @@
                   </BkCol>
                   <BkCol :span="12">
                     <div class="ag-value">
-                      {{ `${modelServices.config.timeout}秒` }}
+                      {{ t('{count}秒', { count: modelServices.config.timeout }) }}
                     </div>
                   </BkCol>
                 </BkRow>
@@ -939,16 +937,21 @@ import {
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
 import type { IExtractApiReturn } from '@/services/types/utils';
-import AIBackendConfigForm from '@/views/model-services/components/AIBackendConfigForm.vue';
+import AIBackendInstancesForm from '@/views/model-services/components/AIBackendInstancesForm.vue';
 import {
-  AI_BACKEND_TEST_STATUS_META,
+  AI_BACKEND_BALANCER_TEXT,
+  AI_BACKEND_FALLBACK_TEXT,
   type IAIBackendConfigFormData,
   type IAIBackendConfigFormMethod,
   type IStageAIBackendConfigOutput,
   buildStageAIBackendConfig,
   createDefaultAIBackendConfigFormData,
   createEditAIBackendConfigFormData,
+  getAIBackendConfigStatusMeta,
+  getAIBackendInstanceLabel,
   isAIBackendConfigTestPassed,
+  shouldShowAIBackendBalancer,
+  shouldShowAIBackendFallback,
 } from '@/views/model-services/utils/ai-backend-config.ts';
 
 type IStageBackend = IExtractApiReturn<typeof getStageBackends>[number];
@@ -1124,7 +1127,6 @@ const rules = {
 
 const backendConfigFormRefs: InstanceType<typeof Form>[] = [];
 const aiBackendFormRefs = ref<Array<IAIBackendConfigFormMethod | null>>([]);
-
 const healthCheckRefMap: Record<number, InstanceType<typeof HealthChecks>> = {};
 
 // 网关id
@@ -1213,10 +1215,7 @@ const setStageBackendList = (backendList: IStageBackend[]) => {
       id: backend.id,
       name: backend.name,
       kind: 'ai',
-      config: createEditAIBackendConfigFormData(
-        backend.config as IStageAIBackendConfigOutput,
-        stageId,
-      ),
+      config: createEditAIBackendConfigFormData(backend.config as IStageAIBackendConfigOutput),
     }));
   activeIndex.value = curStageData.value.backends.map((_, index) => index);
   activeAIBackendIds.value = curStageData.value.aiBackends.map(backend => backend.id);
@@ -1394,18 +1393,20 @@ const validateForms = async () => {
     }
   }
 
-  const untestedBackend = curStageData.value.aiBackends.find((backend) => {
-    return !isAIBackendConfigTestPassed(backend.config, stageId);
+  const untestedIndex = curStageData.value.aiBackends.findIndex((backend) => {
+    return !isAIBackendConfigTestPassed(backend.config);
   });
-  if (untestedBackend) {
+  if (untestedIndex > -1) {
+    const untestedBackend = curStageData.value.aiBackends[untestedIndex];
     if (!activeKey.value.includes('ai-backend-config')) {
       activeKey.value.push('ai-backend-config');
     }
     if (!activeAIBackendIds.value.includes(untestedBackend.id)) {
       activeAIBackendIds.value.push(untestedBackend.id);
     }
+    aiBackendFormRefs.value[untestedIndex]?.expandUntested?.();
     Message({
-      message: t('配置变更后需重新测试'),
+      message: t('存在未通过连通测试的实例，请测试通过后再保存'),
       theme: 'warning',
     });
     return false;

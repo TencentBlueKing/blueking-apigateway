@@ -326,6 +326,15 @@ watch(() => route.query.mode, (value) => {
 
   .model-service-alert {
     margin-bottom: 16px;
+
+    // bkui 默认把关闭图标顶在内容顶部，这里让它和 16px 高的标题行垂直居中
+    :deep(.bk-alert-close) {
+      display: flex;
+      height: 16px;
+      padding-top: 0;
+      margin-top: 0;
+      align-items: center;
+    }
   }
 
   .header {

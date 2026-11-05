@@ -87,6 +87,14 @@
       :title="t('后端服务地址不允许为空，请更新')"
       class="table-warning"
     />
+    <BkAlert
+      v-if="!appVerifiedRequired && chashStageNames.length"
+      theme="warning"
+      :title="t('所选模型服务在 {stages} 环境使用「按调用方应用一致性哈希」，资源需开启「应用认证」才能生效', {
+        stages: chashStageNames.join(', '),
+      })"
+      class="table-warning"
+    />
     <BkTable
       v-if="backConfigData.id"
       class="table-layout"
@@ -97,42 +105,23 @@
     >
       <BkTableColumn
         :label="t('环境名称')"
-        width="20%"
+        :width="isModelProxy ? '30%' : '20%'"
         :resizable="false"
       >
         <template #default="{ data }">
           {{ data?.stage?.name || '--' }}
         </template>
       </BkTableColumn>
-      <template v-if="isModelProxy">
-        <BkTableColumn
-          label="Provider"
-          width="20%"
-          :resizable="false"
-        >
-          <template #default="{ data }">
-            {{ data?.provider || '--' }}
-          </template>
-        </BkTableColumn>
-        <BkTableColumn
-          label="Endpoint"
-          width="20%"
-          :resizable="false"
-        >
-          <template #default="{ data }">
-            {{ data?.endpoint || '--' }}
-          </template>
-        </BkTableColumn>
-        <BkTableColumn
-          label="Model"
-          width="20%"
-          :resizable="false"
-        >
-          <template #default="{ data }">
-            {{ data?.model || '--' }}
-          </template>
-        </BkTableColumn>
-      </template>
+      <BkTableColumn
+        v-if="isModelProxy"
+        :label="t('名称')"
+        width="43%"
+        :resizable="false"
+      >
+        <template #default="{ data }">
+          <AIInstanceNameList :config="getAIBackendConfigView(data)" />
+        </template>
+      </BkTableColumn>
       <BkTableColumn
         v-if="!isModelProxy"
         :label="t('后端服务地址')"
@@ -155,7 +144,7 @@
       <BkTableColumn
         :label="renderTimeOutLabel"
         prop="timeout"
-        width="20%"
+        :width="isModelProxy ? '27%' : '20%'"
         :resizable="false"
       >
         <template #default="{ row }">
@@ -306,10 +295,21 @@ import { useGateway } from '@/stores';
 import { t } from '@/locales';
 import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/gateway/backend';
 import { backendsPathCheck } from '@/services/source/gateway/resource';
+import AIInstanceNameList from '@/views/model-services/components/AIInstanceNameList.vue';
+import {
+  getAIBackendConfigView,
+  isAIBackendConfigChash,
+} from '@/views/model-services/utils/ai-backend-config.ts';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
-import type { IBackendListOutput, IStandardBackendConfigOutput } from '@/services/types/responses/gateways.ts';
+import type {
+  IAIBackendConfigOutput,
+  IBackendListOutput,
+  IBackendRetrieveOutput,
+} from '@/services/types/responses/gateways.ts';
 import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
+
+type IServiceConfig = IBackendRetrieveOutput['configs'][number];
 
 interface IProps {
   detail?: any
@@ -321,6 +321,8 @@ interface IProps {
   }
   serviceLabel?: string
   isModelProxy?: boolean
+  // 资源是否开启了应用认证，模型服务使用一致性哈希时需要
+  appVerifiedRequired?: boolean
 }
 
 const {
@@ -328,6 +330,7 @@ const {
   frontConfig,
   serviceLabel = '服务',
   isModelProxy = false,
+  appVerifiedRequired = true,
 } = defineProps<IProps>();
 
 // 获取到服务数据后抛出一个事件
@@ -355,10 +358,10 @@ const baseInfo = ref({
 });
 // 服务列表下拉框数据
 const servicesData = ref<IBackendListOutput[]>([]);
-// 服务详情
-const servicesConfigs = ref<IStandardBackendConfigOutput[]>([]);
+// 服务详情：普通 API 是普通后端服务的配置，模型代理 API 是模型服务的配置
+const servicesConfigs = ref<IServiceConfig[]>([]);
 // 服务详情缓存数据
-const servicesConfigsStorage = ref<IStandardBackendConfigOutput[]>([]);
+const servicesConfigsStorage = ref<IServiceConfig[]>([]);
 // 校验列表
 const servicesCheckData = ref<{
   stage: {
@@ -407,16 +410,29 @@ const invalidFormElementIds = ref<string[]>([]);
 const gatewayId = computed(() => gatewayStore.apigwId);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
+const isAIServiceConfig = (config: IServiceConfig): config is IAIBackendConfigOutput => 'instances' in config;
+// 普通后端服务是否配置了地址；模型服务配置没有 hosts，模型代理 API 不做这项检查
+const hasServiceHost = (config: IServiceConfig) => 'hosts' in config && Boolean(config.hosts?.[0]?.host);
+
 const isEditService = computed(() => {
   let flag = false;
   for (let i = 0; i < servicesConfigs.value?.length; i++) {
     const item = servicesConfigs.value[i];
-    if (!item?.hosts?.[0]?.host) {
+    if (!hasServiceHost(item)) {
       flag = true;
       break;
     }
   }
   return flag && !isModelProxy;
+});
+
+// 所选模型服务使用一致性哈希的环境；资源不开应用认证时这些环境无法按调用方应用分流
+const chashStageNames = computed(() => {
+  return servicesConfigs.value
+    .filter(isAIServiceConfig)
+    .filter(isAIBackendConfigChash)
+    .map(config => config.stage?.name || '')
+    .filter(Boolean);
 });
 
 watch(
@@ -607,10 +623,21 @@ const renderTimeOutLabel = () => {
 
 // 选择服务获取服务详情数据
 async function handleServiceChange(backendId: number) {
-  const res = await getBackendServiceDetail(gatewayId.value, backendId);
+  let res;
+  try {
+    res = await getBackendServiceDetail(gatewayId.value, backendId);
+  }
+  catch {
+    // 详情读取失败（如模型服务凭据无法解密）时清空表格，避免继续展示上一个服务的配置；错误由全局提示展示
+    servicesConfigs.value = [];
+    servicesConfigsStorage.value = [];
+    emitServiceInit();
+    return;
+  }
   const resStorage: any = cloneDeep(res);
   const detailTimeout = detail?.backend?.config?.timeout;
-  if (detailTimeout !== 0 && detailTimeout !== undefined && detailTimeout !== null) {
+  // 模型代理资源没有资源级超时，直接展示模型服务各环境的超时
+  if (!isModelProxy && detailTimeout !== 0 && detailTimeout !== undefined && detailTimeout !== null) {
     res.configs.forEach((item: any) => {
       item.timeout = detailTimeout;
     });
@@ -619,11 +646,15 @@ async function handleServiceChange(backendId: number) {
     servicesConfigs.value,
     servicesConfigsStorage.value,
   ] = [
-    cloneDeep(res.configs as IStandardBackendConfigOutput[] || []),
+    cloneDeep(res.configs || []),
     cloneDeep(resStorage.configs || []),
   ];
   backConfigData.value.name = res.name;
-  // 第一次加载服务数据后，抛出事件
+  emitServiceInit();
+}
+
+// 第一次加载服务数据后（无论成功与否），抛出事件
+function emitServiceInit() {
   if (!isServiceInit.value) {
     emit('service-init');
     isServiceInit.value = true;
@@ -779,7 +810,7 @@ const validate = async () => {
   let isHost = true;
   for (let i = 0; i < servicesConfigs.value?.length; i++) {
     const item = servicesConfigs.value[i];
-    if (!item?.hosts?.[0]?.host) {
+    if (!hasServiceHost(item)) {
       isHost = false;
       break;
     }

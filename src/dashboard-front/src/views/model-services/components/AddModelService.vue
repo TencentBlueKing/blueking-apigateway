@@ -117,10 +117,7 @@
                   </div>
                 </template>
                 <template #title>
-                  <div>
-                    <div>• {{ t('每个环境（Stage）需单独配置一份模型服务，暂不支持同一环境下多渠道负载均衡') }}</div>
-                    <div>• {{ t('任一环境的配置变更后，需重新连通测试通过才可保存') }}</div>
-                  </div>
+                  <div>{{ t('每个环境（Stage）单独配置，可添加多个实例做负载均衡与故障切换') }}</div>
                 </template>
               </BkAlert>
               <BkCollapse
@@ -139,23 +136,17 @@
                         :class="activeStageIds.includes(stage.id) ? 'panel-header-show' : 'panel-header-hide'"
                       />
                       <span class="stage-name">{{ stage.name }}</span>
-                      <BkTag
-                        :theme="AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].theme"
-                      >
-                        <div class="flex items-center">
-                          <status-tag
-                            type="filled"
-                            :theme="AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].tagTheme"
-                            status=""
-                            class="mr--4px"
-                          /><span>{{ t(AI_BACKEND_TEST_STATUS_META[stage.config.testStatus].text) }}</span>
-                        </div>
+                      <span class="stage-instance-count">
+                        {{ t('{count} 个实例', { count: stage.config.instances.length }) }}
+                      </span>
+                      <BkTag :theme="getAIBackendConfigStatusMeta(stage.config).theme">
+                        {{ t(getAIBackendConfigStatusMeta(stage.config).text) }}
                       </BkTag>
                     </div>
                   </template>
                   <template #content>
                     <div class="stage-card-content">
-                      <AIBackendConfigForm
+                      <AIBackendInstancesForm
                         :ref="(el: any) => setStageFormRef(el, index)"
                         v-model="stage.config"
                         :apigw-id="apigwId"
@@ -177,7 +168,7 @@
         <BkButton
           class="mr-8px w-88px"
           theme="primary"
-          :disabled="!canSubmit"
+          :disabled="!stageConfigs.length"
           :loading="isSaveLoading"
           @click="handleConfirm"
         >
@@ -192,6 +183,12 @@
       </div>
     </template>
   </AgSideslider>
+
+  <ServicePublishDialog
+    v-model:is-show="publishDialog.isShow"
+    :service-name="baseInfo.name"
+    :stage-names="publishDialog.stageNames"
+  />
 </template>
 
 <script setup lang="ts">
@@ -216,20 +213,19 @@ import type { IAIBackendConfigOutput } from '@/services/types/responses/gateways
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { useGateway } from '@/stores';
 import type { IFormMethod } from '@/types/common';
-import AIBackendConfigForm from '@/views/model-services/components/AIBackendConfigForm.vue';
+import ServicePublishDialog from '@/views/backend-services/components/ServicePublishDialog.vue';
+import AIBackendInstancesForm from '@/views/model-services/components/AIBackendInstancesForm.vue';
 import {
-  AI_BACKEND_TEST_STATUS_META,
   type IAIBackendConfigFormData,
   type IAIBackendConfigFormMethod,
-  type ICompatibleAIBackendConfigOutput,
-  type IInternalAIBackendConfigOutput,
   buildAIBackendConfig,
   createDefaultAIBackendConfigFormData,
   createEditAIBackendConfigFormData,
   getAIBackendConfigStageId,
+  getAIBackendConfigStatusMeta,
   getAIBackendFormSnapshot,
   isAIBackendConfigTestPassed,
-  isBuiltinAIBackendProvider,
+  resetAIBackendConfigSecrets,
 } from '@/views/model-services/utils/ai-backend-config.ts';
 
 interface IModelStageConfig {
@@ -244,7 +240,7 @@ interface IModelServiceDetail {
   description: string | null
   kind: 'ai'
   type: 'http'
-  configs: (IAIBackendConfigOutput | IInternalAIBackendConfigOutput)[]
+  configs: IAIBackendConfigOutput[]
 }
 
 interface IEmits {
@@ -269,6 +265,10 @@ const stageFormRefs = ref<Array<IAIBackendConfigFormMethod | null>>([]);
 const initData = ref<object>();
 const isSaveLoading = ref(false);
 const currentServiceId = ref(0);
+const publishDialog = ref({
+  isShow: false,
+  stageNames: [] as string[],
+});
 const sliderConfig = reactive({
   isShow: false,
 });
@@ -293,16 +293,6 @@ const baseInfoRules = {
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const isEditing = computed(() => Boolean(currentServiceId.value));
-const canSubmit = computed(() => {
-  return nameReg.test(baseInfo.value.name)
-    && stageConfigs.value.length > 0
-    && stageConfigs.value.every((stage) => {
-      const { config } = stage;
-      const hasEndpoint = config.provider !== 'openai-compatible' || Boolean(config.endpoint.trim());
-      const hasApiKey = !isBuiltinAIBackendProvider(config.provider) || Boolean(config.apiKey.trim());
-      return hasEndpoint && hasApiKey && isAIBackendConfigTestPassed(config, stage.id);
-    });
-});
 
 const setStageFormRef = (el: IAIBackendConfigFormMethod, index: number) => {
   if (el) {
@@ -327,15 +317,34 @@ const validateForms = async () => {
     return false;
   }
 
+  const expandStage = (index: number) => {
+    if (!activeKey.value.includes('stage-config')) {
+      activeKey.value.push('stage-config');
+    }
+    const currentStageId = stageConfigs.value[index]?.id;
+    if (currentStageId && !activeStageIds.value.includes(currentStageId)) {
+      activeStageIds.value.push(currentStageId);
+    }
+  };
+
   for (let index = 0; index < stageFormRefs.value.length; index++) {
     const form = stageFormRefs.value[index];
     if (form && !await form.validate()) {
-      const currentStageId = stageConfigs.value[index]?.id;
-      if (currentStageId && !activeStageIds.value.includes(currentStageId)) {
-        activeStageIds.value.push(currentStageId);
-      }
+      expandStage(index);
       return false;
     }
+  }
+
+  // 所有实例都要通过连通测试才能保存：展开未通过的环境和实例，告诉用户原因
+  const untestedIndex = stageConfigs.value.findIndex(stage => !isAIBackendConfigTestPassed(stage.config));
+  if (untestedIndex > -1) {
+    expandStage(untestedIndex);
+    stageFormRefs.value[untestedIndex]?.expandUntested?.();
+    Message({
+      message: t('存在未通过连通测试的实例，请测试通过后再保存'),
+      theme: 'warning',
+    });
+    return false;
   }
   return true;
 };
@@ -359,15 +368,34 @@ const handleConfirm = async () => {
   isSaveLoading.value = true;
   try {
     if (isEditing.value) {
-      await updateBackendService(apigwId.value, currentServiceId.value, params);
+      // updated_stages 是本次因配置变化而触发发布的环境（环境启用，且已发布版本引用了此服务）。
+      // 返回只代表保存成功，发布结果需去发布记录查看；无响应体时按没有触发发布处理
+      const result = await updateBackendService(
+        apigwId.value,
+        currentServiceId.value,
+        params,
+      );
+      const updatedStages = result?.updated_stages ?? [];
+      if (updatedStages.length) {
+        publishDialog.value = {
+          isShow: true,
+          stageNames: updatedStages.map(stage => stage.name),
+        };
+      }
+      else {
+        Message({
+          message: t('更新成功'),
+          theme: 'success',
+        });
+      }
     }
     else {
       await createBackendService(apigwId.value, params);
+      Message({
+        message: t('新建成功'),
+        theme: 'success',
+      });
     }
-    Message({
-      message: t(isEditing.value ? '更新成功' : '新建成功'),
-      theme: 'success',
-    });
     sliderConfig.isShow = false;
     emit('done');
   }
@@ -393,17 +421,13 @@ const createDefaultStageConfig = (stage: IStage): IModelStageConfig => ({
 });
 
 const createDetailStageConfig = (
-  config: ICompatibleAIBackendConfigOutput,
+  config: IAIBackendConfigOutput,
   stage: IStage,
   isClone = false,
 ): IModelStageConfig => {
-  const formConfig = createEditAIBackendConfigFormData(config, stage.id);
+  const formConfig = createEditAIBackendConfigFormData(config);
   if (isClone) {
-    formConfig.apiKey = '';
-    formConfig.authHeaderValue = '';
-    formConfig.testStatus = 'untested';
-    formConfig.testConfigSnapshot = undefined;
-    formConfig.initialTestConfigSnapshot = undefined;
+    resetAIBackendConfigSecrets(formConfig);
   }
   return {
     id: stage.id,
@@ -556,6 +580,12 @@ defineExpose({
     .stage-name {
       font-weight: 700;
       flex: 1;
+    }
+
+    .stage-instance-count {
+      margin-right: 12px;
+      font-size: 12px;
+      color: #979ba5;
     }
   }
 

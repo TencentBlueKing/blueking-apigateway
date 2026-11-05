@@ -542,39 +542,27 @@
                   >
                     <BkTableColumn
                       :label="t('环境名称')"
+                      width="30%"
                       :resizable="false"
                     >
                       <template #default="{ data }">
-                        {{ data?.stage?.name }}
+                        {{ data?.stage?.name || '--' }}
                       </template>
                     </BkTableColumn>
                     <BkTableColumn
-                      label="Provider"
+                      :label="t('名称')"
+                      width="43%"
                       :resizable="false"
+                      :show-overflow-tooltip="false"
                     >
                       <template #default="{ data }">
-                        {{ data?.provider || '--' }}
-                      </template>
-                    </BkTableColumn>
-                    <BkTableColumn
-                      label="Endpoint"
-                      :resizable="false"
-                    >
-                      <template #default="{ data }">
-                        {{ data?.endpoint || '--' }}
-                      </template>
-                    </BkTableColumn>
-                    <BkTableColumn
-                      label="Model"
-                      :resizable="false"
-                    >
-                      <template #default="{ data }">
-                        {{ data?.model || '--' }}
+                        <AIInstanceNameList :config="getAIBackendConfigView(data)" />
                       </template>
                     </BkTableColumn>
                     <BkTableColumn
                       :label="t('超时时间')"
                       prop="timeout"
+                      width="27%"
                       :resizable="false"
                     >
                       <template #default="{ data }">
@@ -949,6 +937,8 @@ import {
 } from '@/services/source/gateway/resource';
 import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/gateway/backend';
 import { getLabelList } from '@/services/source/gateway/label';
+import AIInstanceNameList from '@/views/model-services/components/AIInstanceNameList.vue';
+import { getAIBackendConfigView } from '@/views/model-services/utils/ai-backend-config.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
 import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
@@ -1132,10 +1122,22 @@ const handleUpdateLabelSuccess = () => {
 
 // 选择服务获取服务详情数据
 const getServiceData = async (update?: boolean) => {
-  const res = await getBackendServiceDetail(gatewayId, formData.value.backend.id);
+  const isModelProxy = formData.value.kind === 'ai';
+  let res;
+  try {
+    res = await getBackendServiceDetail(gatewayId, formData.value.backend.id);
+  }
+  catch {
+    // 详情读取失败（如模型服务凭据无法解密）时清空表格，避免展示上一个服务的配置；错误由全局提示展示
+    servicesData.value.config = [];
+    servicesConfigsStorage.value = [];
+    emit('done', false);
+    return;
+  }
 
   const resourceDetailTimeout = formData.value?.backend?.config?.timeout;
-  if (resourceDetailTimeout !== 0) {
+  // 模型代理资源没有资源级超时，直接展示模型服务各环境的超时
+  if (!isModelProxy && resourceDetailTimeout !== 0) {
     res.configs.forEach((item: any) => {
       item.timeout = resourceDetailTimeout;
     });

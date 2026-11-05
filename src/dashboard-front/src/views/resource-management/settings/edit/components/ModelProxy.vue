@@ -71,6 +71,7 @@
           ref="backConfigRef"
           service-label="模型服务"
           is-model-proxy
+          :app-verified-required="baseInfoRef?.formData?.auth_config?.app_verified_required ?? true"
           :detail="resourceDetail"
           :front-config="frontConfig"
           @service-init="getServiceInit"
