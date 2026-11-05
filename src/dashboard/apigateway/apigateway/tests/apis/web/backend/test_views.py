@@ -425,6 +425,58 @@ def _mock_model_response(mocker, data, *, success=True):
 
 
 class TestBackendConnectivityApi:
+    @pytest.mark.parametrize("stage_config", [{}, {"stage_id": None}, {"stage_id": 0}])
+    def test_new_stage_probes_instance_without_creating_stage(self, mocker, request_view, fake_gateway, stage_config):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        Backend.objects.create(gateway=fake_gateway, name="model-service", kind=BackendKindEnum.AI.value)
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = _mock_model_response(mocker, {"data": [{"id": "gpt-4o"}]})
+        config = {"instance": _connectivity_config(0)["instance"], **stage_config}
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"config": config},
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["data"] == {"models": ["gpt-4o"]}
+        assert http_get.call_args.kwargs["headers"] == {"Authorization": "Bearer secret"}
+        assert not Stage.objects.filter(gateway=fake_gateway).exists()
+        assert not BackendConfig.objects.filter(gateway=fake_gateway).exists()
+
+    @pytest.mark.parametrize("stage_config", [{}, {"stage_id": None}, {"stage_id": 0}])
+    def test_existing_backend_requires_stage_for_masked_credentials(
+        self, mocker, request_view, fake_stage, stage_config
+    ):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway, name="model-service", kind=BackendKindEnum.AI.value
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway, backend=backend, stage=fake_stage, config=_stored_ai_config()
+        )
+        http_get = _mock_model_response(mocker, {"data": []})
+        instance = _connectivity_config(0)["instance"]
+        instance["api_key"] = "se****et"
+
+        response = request_view(
+            "POST",
+            "backend.test-connection",
+            path_params={"gateway_id": fake_stage.gateway_id},
+            gateway=fake_stage.gateway,
+            data={"backend_id": backend.id, "config": {"instance": instance, **stage_config}},
+        )
+
+        assert response.status_code == 400, response.json()
+        assert "stage_id" in response.json()["error"]["message"]
+        assert "secret" not in response.json()["error"]["message"]
+        http_get.assert_not_called()
+
     @pytest.mark.parametrize(
         ("provider", "expected_url"),
         [

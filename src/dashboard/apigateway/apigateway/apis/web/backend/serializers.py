@@ -62,9 +62,11 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
 
     def validate(self, attrs):
         config = attrs["config"]
-        stage_id = config["stage_id"]
         existing_value = None
         if backend_id := attrs.get("backend_id"):
+            stage_id = config.get("stage_id")
+            if not stage_id:
+                raise serializers.ValidationError({"config": {"stage_id": _("测试已有模型服务时必须提供环境 ID。")}})
             existing = (
                 BackendConfig.objects.filter(
                     backend_id=backend_id,
