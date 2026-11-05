@@ -46,6 +46,27 @@ class TestGatewayListCreateApi:
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
 
+    @pytest.mark.parametrize(
+        "is_deprecated,deprecated_note",
+        [(True, "请迁移至新版网关"), (False, ""), (False, None)],
+    )
+    def test_list_includes_deprecation(self, request_view, fake_gateway, is_deprecated, deprecated_note):
+        fake_gateway.is_deprecated = is_deprecated
+        fake_gateway.deprecated_note = deprecated_note
+        fake_gateway.save(update_fields=["is_deprecated", "deprecated_note"])
+
+        response = request_view(
+            method="GET",
+            view_name="gateways.list_create",
+            data={"limit": 5, "offset": 0, "ordering": "updated_time"},
+        )
+
+        assert response.status_code == 200
+        gateways = response.json()["data"]["results"]
+        gateway = next(item for item in gateways if item["id"] == fake_gateway.id)
+        assert gateway["is_deprecated"] is is_deprecated
+        assert gateway["deprecated_note"] == deprecated_note
+
     def test_list_includes_operator_gateways(self, request_view, fake_gateway, mocker):
         GatewayMember.objects.create(
             gateway=fake_gateway,
