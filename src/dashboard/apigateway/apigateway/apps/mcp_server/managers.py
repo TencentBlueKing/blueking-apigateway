@@ -16,11 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+from typing import Iterable, List
 
 from django.db import models
 
 from apigateway.common.time import calculate_renew_time
+
+from .constants import MCPServerAppPermissionApplyStatusEnum
 
 
 class MCPServerAppPermissionManager(models.Manager):
@@ -55,6 +57,13 @@ class MCPServerAppPermissionManager(models.Manager):
 
 
 class MCPServerAppPermissionApplyManager(models.Manager):
+    def filter_pending(self, gateway_ids: Iterable[int]):
+        return self.filter(
+            mcp_server__gateway_id__in=gateway_ids,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
     def filter_app_permission_apply(self, queryset, status_list: List[str], bk_app_code: str, applied_by: str):
         queryset = queryset.filter(status__in=status_list)
 

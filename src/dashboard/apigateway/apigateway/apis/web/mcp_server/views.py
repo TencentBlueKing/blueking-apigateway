@@ -71,6 +71,7 @@ from .serializers import (
     MCPServerAppPermissionApplyApplicantListInputSLZ,
     MCPServerAppPermissionApplyListInputSLZ,
     MCPServerAppPermissionApplyListOutputSLZ,
+    MCPServerAppPermissionApplyPendingCountOutputSLZ,
     MCPServerAppPermissionApplyUpdateInputSLZ,
     MCPServerAppPermissionCreateInputSLZ,
     MCPServerAppPermissionListInputSLZ,
@@ -922,6 +923,24 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
         }
         slz = MCPServerAppPermissionApplyListOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=extend_schema(
+        description="获取网关下 MCPServer 待审批的权限申请数量",
+        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyPendingCountOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionApplyPendingCountApi(generics.RetrieveAPIView):
+    gateway_action = GatewayActionEnum.APPROVE_GATEWAY_PERMISSION.value
+    serializer_class = MCPServerAppPermissionApplyPendingCountOutputSLZ
+
+    def retrieve(self, request, *args, **kwargs):
+        count = MCPServerAppPermissionApply.objects.filter_pending([request.gateway.id]).count()
+        slz = self.get_serializer({"count": count})
+        return OKJsonResponse(data=slz.data)
 
 
 @method_decorator(

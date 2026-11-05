@@ -1538,6 +1538,94 @@ class TestMCPServerAppPermissionApplyListApi:
         assert bk_app_codes == {"app-1", "app-2"}
 
 
+class TestMCPServerAppPermissionApplyPendingCountApi:
+    def _request(self, request_view, gateway):
+        return request_view(
+            method="GET",
+            view_name="mcp_server.app-permission-apply.pending_count",
+            path_params={"gateway_id": gateway.id},
+            gateway=gateway,
+        )
+
+    def test_count_empty(self, request_view, fake_gateway):
+        resp = self._request(request_view, fake_gateway)
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {"count": 0}
+
+    def test_count_pending_across_mcp_servers(self, request_view, fake_gateway, fake_stage, faker):
+        for name in ["mcp-server-1", "mcp-server-2"]:
+            mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, name=name)
+            G(
+                MCPServerAppPermissionApply,
+                mcp_server=mcp_server,
+                bk_app_code=faker.pystr()[:20],
+                applied_by="applicant",
+                applied_time=now_datetime(),
+                status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            )
+
+        resp = self._request(request_view, fake_gateway)
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {"count": 2}
+
+    def test_count_excludes_non_pending_and_deleted(self, request_view, fake_gateway, fake_mcp_server):
+        for status in [
+            MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+            MCPServerAppPermissionApplyStatusEnum.CANCELED.value,
+        ]:
+            G(
+                MCPServerAppPermissionApply,
+                mcp_server=fake_mcp_server,
+                bk_app_code=f"app-{status}",
+                applied_by="applicant",
+                applied_time=now_datetime(),
+                status=status,
+            )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app-deleted",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=True,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app-pending",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        resp = self._request(request_view, fake_gateway)
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {"count": 1}
+
+    def test_count_excludes_other_gateway(self, request_view, fake_gateway, faker):
+        other_gateway = create_gateway()
+        other_stage = G(Stage, gateway=other_gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        other_mcp_server = G(MCPServer, gateway=other_gateway, stage=other_stage, name=faker.pystr()[:20])
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=other_mcp_server,
+            bk_app_code="other-app",
+            applied_by="applicant",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        resp = self._request(request_view, fake_gateway)
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {"count": 0}
+
+
 class TestMCPServerAppPermissionApplyApplicantListApi:
     def test_list(self, request_view, fake_gateway, fake_mcp_server):
         G(
