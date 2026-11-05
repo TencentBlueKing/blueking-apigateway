@@ -1609,6 +1609,13 @@ export interface IMCPServerAppPermissionAppCodeListOutput {
 }
 
 /**
+ * GET /gateways/{gateway_id}/mcp-servers/-/permissions/app-permission-apply/-/pending-count/
+ */
+export interface IMCPServerAppPermissionApplyPendingCountOutput {
+  count: number
+}
+
+/**
  * GET /gateways/{gateway_id}/mcp-servers/-/logs/timechart/
  */
 export interface IMCPServerLogTimeChartOutput {

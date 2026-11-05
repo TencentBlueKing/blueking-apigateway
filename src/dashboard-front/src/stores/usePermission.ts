@@ -20,7 +20,12 @@ import { t } from '@/locales';
 import dayjs from 'dayjs';
 
 export const usePermission = defineStore('usePermission', {
-  state: () => ({ count: 0 }),
+  state: () => ({
+    // API 网关待审批数量
+    count: 0,
+    // MCP Server 权限待审批数量
+    mcpCount: 0,
+  }),
   actions: {
     /**
      * 设置待审批的数量
@@ -28,6 +33,13 @@ export const usePermission = defineStore('usePermission', {
      */
     setCount(count: number) {
       this.count = count;
+    },
+    /**
+     * 设置 MCP Server 权限待审批的数量
+     * @param {number} count
+     */
+    setMcpCount(count: number) {
+      this.mcpCount = count;
     },
     // 获取有效期时间
     getDurationText(expireAt: string | null) {
