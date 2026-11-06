@@ -63,6 +63,7 @@
         <BkFormItem :label="t('蓝鲸应用')">
           <BkSelect
             v-model="searchParams.bk_app_code"
+            filterable
             style="min-width: 300px;"
             @change="handleSearchChange()"
           >
@@ -415,62 +416,76 @@ init();
 .app-content {
   padding-bottom: 24px;
 }
+
 .page-content {
   min-height: calc(100vh - 268px);
+
   .time-dimension {
     // margin-bottom: -16px;
+
     .title {
+      margin-bottom: 8px;
       font-size: 14px;
       color: #4D4F56;
-      margin-bottom: 8px;
     }
+
     .time-radio {
-      background: #FFFFFF;
+      background: #FFF;
     }
   }
+
   .charts-wrapper {
     display: flex;
+
     .charts-item-outbox {
+      position: relative;
       height: 396px;
       padding-top: 16px;
       box-sizing: border-box;
       flex: 1;
-      position: relative;
+
       &:not(:nth-last-child(1)) {
         margin-right: 16px;
       }
+
       &:hover {
+
         .charts-tools {
           display: flex;
         }
       }
+
       .charts-tools {
         position: absolute;
         top: -16px;
         right: 0;
-        display: flex;
         align-items: center;
         display: none;
+
         .tool {
+          display: flex;
           width: 28px;
           height: 28px;
-          border-radius: 2px;
+          cursor: pointer;
           background: #FAFBFD;
           border: 1px solid #DCDEE5;
-          display: flex;
+          border-radius: 2px;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
+
           i {
-            color: #979BA5;
             font-size: 16px;
+            color: #979BA5;
           }
+
           &:not(:nth-last-child(1)) {
             margin-right: 4px;
           }
+
           &:hover {
             background: #E1ECFF;
             border: 1px solid #3A84FF;
+
             i {
               color: #3A84FF;
             }
@@ -478,10 +493,11 @@ init();
         }
       }
     }
+
     .charts-item {
-      height: 380px;
       width: 100%;
-      background: #FFFFFF;
+      height: 380px;
+      background: #FFF;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
     }
@@ -506,13 +522,14 @@ init();
 
     .bk-form-label {
       width: auto;
+      padding-right: 8px !important;
       text-align: right;
       white-space: nowrap;
-      padding-right: 8px !important;
     }
 
     .bk-form-content {
       line-height: normal;
+
       .bk-input,
       .bk-user-selector,
       .member-selector {
