@@ -22,6 +22,7 @@ from django.core.exceptions import ValidationError
 from apigateway.apps.skill.validators import (
     normalize_tag_name,
     validate_skill_changelog,
+    validate_skill_datetime,
     validate_skill_description,
     validate_skill_display_name,
     validate_skill_display_name_en,
@@ -146,9 +147,17 @@ class TestValidateSkillChangelog:
 
 
 class TestValidateSkillVersion:
-    @pytest.mark.parametrize("value", ["1.0.0", "1.1.1-alpha.1", "2.0.0+build.1"])
-    def test_valid(self, value):
-        validate_skill_version(value)
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            ("1.0.0", "1.0.0"),
+            ("1.1.1-alpha.1", "1.1.1-alpha.1"),
+            ("1.0.0-Alpha", "1.0.0-alpha"),
+            ("2.0.0+Build.1", "2.0.0+build.1"),
+        ],
+    )
+    def test_valid(self, value, expected):
+        assert validate_skill_version(value) == expected
 
     @pytest.mark.parametrize(
         "value, code",
@@ -158,6 +167,8 @@ class TestValidateSkillVersion:
             ("v1.0.0", "invalid"),
             ("1.0", "invalid"),
             ("1.0.0\n", "invalid"),
+            ("1١.0.0", "invalid"),
+            ("1𝟘.0.0", "invalid"),
         ],
     )
     def test_invalid(self, value, code):
@@ -167,12 +178,38 @@ class TestValidateSkillVersion:
         assert exc_info.value.code == code
 
 
+class TestValidateSkillDatetime:
+    @pytest.mark.parametrize("value", ["2026-11-06T08:09:00Z", "2024-02-29T23:59:59Z"])
+    def test_valid(self, value):
+        validate_skill_datetime(value)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "2026-11-06",
+            "2026-11-06 08:09:00",
+            "2026-11-06T08:09:00+08:00",
+            "2026-11-06T08:09:00.123Z",
+            "2026-13-06T08:09:00Z",
+            "2026-02-29T08:09:00Z",
+            "2026-11-06T8:09:00Z",
+        ],
+    )
+    def test_invalid(self, value):
+        with pytest.raises(ValidationError) as exc_info:
+            validate_skill_datetime(value)
+
+        assert exc_info.value.code == "invalid"
+
+
 class TestNormalizeTagName:
     @pytest.mark.parametrize(
         "value, expected",
         [
             ("作业运维", "作业运维"),
-            ("  JOB  ", "JOB"),
+            ("  JOB  ", "job"),
+            ("DevOps", "devops"),
+            ("AI-运维", "ai-运维"),
             ("精选", "精选"),
             (" " + "a" * 64 + " ", "a" * 64),
         ],

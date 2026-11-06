@@ -3,6 +3,8 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+import apigateway.apps.skill.deletion
+
 
 class Migration(migrations.Migration):
 
@@ -39,6 +41,7 @@ class Migration(migrations.Migration):
                 ('display_name', models.CharField(help_text='Skill 展示名', max_length=64)),
                 ('display_name_en', models.CharField(default=None, help_text='Skill 展示名', max_length=64, null=True)),
                 ('description', models.CharField(help_text='Skill 描述', max_length=1024)),
+                ('metadata', models.JSONField(blank=True, default=dict, help_text='扩展元数据')),
                 ('status', models.CharField(choices=[('unpublished', '未发布'), ('published', '已发布'), ('offline', '已下架')], default='unpublished', help_text='Skill 状态', max_length=16)),
                 ('download_count', models.PositiveIntegerField(default=0, help_text='下载数')),
                 ('gateway', models.ForeignKey(blank=True, help_text='所属网关，内置 Skill 为空', null=True, on_delete=django.db.models.deletion.CASCADE, to='core.gateway')),
@@ -75,7 +78,7 @@ class Migration(migrations.Migration):
                 ('updated_time', models.DateTimeField(auto_now=True, null=True)),
                 ('created_by', models.CharField(blank=True, max_length=32, null=True)),
                 ('updated_by', models.CharField(blank=True, max_length=32, null=True)),
-                ('version', models.CharField(help_text='版本号', max_length=64)),
+                ('version', models.CharField(help_text='版本号，保存时转为小写', max_length=64)),
                 ('changelog', models.TextField(blank=True, default='', help_text='版本说明')),
                 ('orchestration', models.JSONField(default=dict, help_text='发版时的编排内容')),
                 ('artifact', models.JSONField(default=dict, help_text='冻结的 Skill 包文件内容')),
@@ -91,7 +94,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='skillmetadata',
             name='current_version',
-            field=models.ForeignKey(blank=True, help_text='当前版本', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='skill.skillversion'),
+            field=models.ForeignKey(blank=True, help_text='当前版本', null=True, on_delete=apigateway.apps.skill.deletion.restrict_current_version, related_name='+', to='skill.skillversion'),
         ),
         migrations.AlterUniqueTogether(
             name='skillmetadata',
@@ -110,8 +113,8 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Skill 版本关联资源',
                 'verbose_name_plural': 'Skill 版本关联资源',
                 'db_table': 'skill_version_relation',
-                'indexes': [models.Index(fields=['gateway_name', 'resource_name'], name='skill_versi_gateway_1df87d_idx'), models.Index(fields=['resource_name'], name='skill_versi_resourc_e7640b_idx')],
-                'unique_together': {('version', 'gateway_name', 'resource_name')},
+                'indexes': [models.Index(fields=['resource_name'], name='skill_versi_resourc_e7640b_idx')],
+                'unique_together': {('gateway_name', 'resource_name', 'version')},
             },
         ),
     ]

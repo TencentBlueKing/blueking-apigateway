@@ -21,6 +21,7 @@ import pytest
 from ddf import G
 from django.db import IntegrityError, connection, transaction
 from django.db.models import F
+from django.db.models.deletion import RestrictedError
 from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 
@@ -35,6 +36,7 @@ from apigateway.apps.skill.models import (
 from apigateway.core.models import Gateway
 
 DELETE_TABLE_PATTERN = re.compile(r'^DELETE FROM [`"](\w+)[`"]')
+CLEAR_CURRENT_VERSION_PATTERN = re.compile(r'^UPDATE [`"]skill_metadata[`"] SET [`"]current_version_id[`"] = NULL\b')
 
 
 @pytest.fixture
@@ -105,6 +107,19 @@ class TestSkillMetadata:
         assert metadata.gateway is None
         assert metadata.download_count == 0
         assert metadata.display_name_en is None
+        assert metadata.metadata == {}
+
+    def test_metadata_round_trip(self, fake_skill_metadata):
+        metadata = {
+            "custom_key": "custom_value",
+            "labels": ["official", "recommended"],
+            "options": {"enabled": True},
+        }
+        fake_skill_metadata.metadata = metadata
+        fake_skill_metadata.save()
+
+        fake_skill_metadata.refresh_from_db()
+        assert fake_skill_metadata.metadata == metadata
 
     def test_display_name_i18n(self, fake_skill_metadata):
         with override("en"):
@@ -169,14 +184,27 @@ class TestSkillMetadata:
         assert fake_skill_metadata.download_count == 1
         assert fake_skill_metadata.updated_time == updated_time
 
-    def test_delete_current_version_set_null(self, fake_skill_metadata, fake_skill_version):
+    def test_delete_referenced_version_restricted(self, fake_skill_metadata, fake_skill_version):
         fake_skill_metadata.current_version = fake_skill_version
+        fake_skill_metadata.save()
+
+        with pytest.raises(RestrictedError), transaction.atomic():
+            fake_skill_version.delete()
+
+        fake_skill_metadata.refresh_from_db()
+        assert fake_skill_metadata.current_version_id == fake_skill_version.pk
+        assert SkillVersion.objects.filter(pk=fake_skill_version.pk).exists()
+
+    def test_delete_version_after_clearing_reference(self, fake_skill_metadata, fake_skill_version):
+        newer = G(SkillVersion, metadata=fake_skill_metadata, version="1.1.0")
+        fake_skill_metadata.current_version = newer
         fake_skill_metadata.save()
 
         fake_skill_version.delete()
 
         fake_skill_metadata.refresh_from_db()
-        assert fake_skill_metadata.current_version is None
+        assert fake_skill_metadata.current_version_id == newer.pk
+        assert not SkillVersion.objects.filter(pk=fake_skill_version.pk).exists()
 
     def test_delete_cascade(self, fake_skill_metadata, fake_skill_version):
         G(SkillConfig, metadata=fake_skill_metadata, orchestration={"steps": []})
@@ -209,12 +237,16 @@ class TestSkillMetadata:
         with CaptureQueriesContext(connection) as context:
             SkillMetadata.objects.filter(pk=fake_skill_metadata.pk).delete()
 
-        deleted_tables = []
+        statements = []
         for query in context.captured_queries:
+            if CLEAR_CURRENT_VERSION_PATTERN.match(query["sql"]):
+                statements.append("clear_current_version")
+                continue
             match = DELETE_TABLE_PATTERN.match(query["sql"])
             if match:
-                deleted_tables.append(match.group(1))
-        assert deleted_tables.index("skill_version") < deleted_tables.index("skill_metadata")
+                statements.append(match.group(1))
+        assert statements.index("clear_current_version") < statements.index("skill_version")
+        assert statements.index("skill_version") < statements.index("skill_metadata")
 
     def test_delete_gateway_cascade(self, fake_skill_metadata, fake_gateway_skill_metadata):
         version = G(SkillVersion, metadata=fake_gateway_skill_metadata, version="1.0.0")
@@ -238,17 +270,24 @@ class TestSkillVersion:
         assert version.orchestration == {}
         assert version.artifact == {}
 
-    def test_artifact_round_trip(self, fake_skill_version):
+    def test_artifact_round_trip(self, fake_skill_metadata):
         artifact = {SKILL_MD_ARTIFACT_KEY: "# 执行作业方案并收集日志\n\n## 不适用场景\n\n无\n"}
-        fake_skill_version.artifact = artifact
-        fake_skill_version.save()
+        version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0", artifact=artifact)
 
-        fake_skill_version.refresh_from_db()
-        assert fake_skill_version.artifact == artifact
+        version.refresh_from_db()
+        assert version.artifact == artifact
 
     def test_unique_metadata_version(self, fake_skill_version):
         with pytest.raises(IntegrityError), transaction.atomic():
             SkillVersion.objects.create(metadata=fake_skill_version.metadata, version=fake_skill_version.version)
+
+    def test_version_saved_as_lowercase(self, fake_skill_metadata):
+        version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0-Alpha")
+
+        version.refresh_from_db()
+        assert version.version == "1.0.0-alpha"
+        with pytest.raises(IntegrityError), transaction.atomic():
+            SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0-ALPHA")
 
 
 class TestSkillVersionRelation:
@@ -272,10 +311,12 @@ class TestSkillVersionRelation:
     def test_indexes(self):
         with connection.cursor() as cursor:
             constraints = connection.introspection.get_constraints(cursor, "skill_version_relation")
-        index_columns = [c["columns"] for c in constraints.values() if c["index"]]
+        unique_columns = [c["columns"] for c in constraints.values() if c["unique"]]
+        non_unique_index_columns = [c["columns"] for c in constraints.values() if c["index"] and not c["unique"]]
 
-        assert ["gateway_name", "resource_name"] in index_columns
-        assert ["resource_name"] in index_columns
+        assert ["gateway_name", "resource_name", "version_id"] in unique_columns
+        assert ["resource_name"] in non_unique_index_columns
+        assert ["gateway_name", "resource_name"] not in non_unique_index_columns
 
     def test_delete_version_cascade(self, fake_skill_version):
         G(
@@ -307,11 +348,3 @@ class TestSkillTag:
 
         with pytest.raises(IntegrityError), transaction.atomic():
             SkillMetadata.tags.through.objects.create(skillmetadata=fake_skill_metadata, skilltag=tag)
-
-
-def test_no_category_tables():
-    table_names = connection.introspection.table_names()
-
-    assert "skill_version_relation" in table_names
-    assert "skill_category" not in table_names
-    assert "skill_metadata_categories" not in table_names

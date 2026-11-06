@@ -36,6 +36,7 @@ from .constants import (
     SkillStatusEnum,
     SkillTypeEnum,
 )
+from .deletion import restrict_current_version
 
 
 class SkillTag(models.Model):
@@ -73,20 +74,23 @@ class SkillMetadata(TimestampedModelMixin, OperatorModelMixin):
     display_name = display_name_i18n.default_field()
     display_name_en = display_name_i18n.field("en", null=True, default=None)
     description = models.CharField(max_length=SKILL_DESCRIPTION_MAX_LENGTH, help_text=_("Skill 描述"))
+    metadata = models.JSONField(default=dict, blank=True, help_text=_("扩展元数据"))
     status = models.CharField(
         max_length=16,
         choices=SkillStatusEnum.get_choices(),
         default=SkillStatusEnum.UNPUBLISHED.value,
         help_text=_("Skill 状态"),
     )
-    # 用 QuerySet.update(F() + 1) 累加，不经过 save()，避免刷新 updated_time
+    # 用 QuerySet.update(F() + 1) 累加，不经过 save()，避免刷新 updated_time。
+    # 其他写入需用 save(update_fields=...)，否则旧实例的整行保存会把并发累加的值写回旧值。
     download_count = models.PositiveIntegerField(default=0, help_text=_("下载数"))
 
-    # SET_NULL：删除 metadata（含随网关级联）时先置空再删版本。RESTRICT 会与 versions 的 CASCADE
-    # 构成删除依赖环，Django 无法排序而先删 metadata，MySQL 立即检查外键报 1451；PROTECT 则报 ProtectedError。
+    # 被引用的版本不能单独删除。删 metadata（含随网关级联）时引用方在同一批里，先置空再删版本。
+    # 不用 RESTRICT：它和 versions 的 CASCADE 构成删除顺序环，MySQL 报 1451。不用 PROTECT：删 metadata 会 ProtectedError。
+    # 必须指向本 Skill 的版本；指向其他 Skill 的版本会让那个 Skill（及其网关）删除时报 RestrictedError。
     current_version = models.ForeignKey(
         "SkillVersion",
-        on_delete=models.SET_NULL,
+        on_delete=restrict_current_version,
         null=True,
         blank=True,
         related_name="+",
@@ -138,10 +142,14 @@ class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
     """
 
     metadata = models.ForeignKey(SkillMetadata, on_delete=models.CASCADE, related_name="versions")
-    version = models.CharField(max_length=SKILL_VERSION_MAX_LENGTH, help_text=_("版本号"))
+    version = models.CharField(max_length=SKILL_VERSION_MAX_LENGTH, help_text=_("版本号，保存时转为小写"))
     changelog = models.TextField(blank=True, default="", help_text=_("版本说明"))
     orchestration = models.JSONField(default=dict, help_text=_("发版时的编排内容"))
     artifact = models.JSONField(default=dict, help_text=_("冻结的 Skill 包文件内容"))
+
+    def save(self, *args, **kwargs):
+        self.version = self.version.lower()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"<SkillVersion: {self.pk}/{self.metadata_id}/{self.version}>"
@@ -154,7 +162,10 @@ class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
 
 
 class SkillVersionRelation(models.Model):
-    """从某一版 steps[].calls 拆出的网关名、资源名，按 (gateway_name, resource_name) 去重，供检索"""
+    """从某一版 steps[].calls 拆出的网关名、资源名，按 (gateway_name, resource_name) 去重，供检索
+
+    metadata 是用于直接按 Skill 检索的冗余外键，写入时必须取自 version.metadata_id。
+    """
 
     metadata = models.ForeignKey(SkillMetadata, on_delete=models.CASCADE)
     version = models.ForeignKey(SkillVersion, on_delete=models.CASCADE, related_name="relations")
@@ -168,8 +179,7 @@ class SkillVersionRelation(models.Model):
         verbose_name = _("Skill 版本关联资源")
         verbose_name_plural = _("Skill 版本关联资源")
         db_table = "skill_version_relation"
-        unique_together = ("version", "gateway_name", "resource_name")
+        unique_together = ("gateway_name", "resource_name", "version")
         indexes = [
-            models.Index(fields=["gateway_name", "resource_name"]),
             models.Index(fields=["resource_name"]),
         ]

@@ -188,13 +188,14 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | Skill 元数据 / Skill Metadata | `SkillMetadata`；`code` 唯一，`(type, gateway, name)` 唯一 | 编排网关 API 的 Skill；type 为 platform（内置，gateway 为空）或 gateway（属于某个网关）。name 是 Agent Skills 规范名，即 SKILL.md 的 name 和包目录名；display_name / display_name_en 是展示名。 |
 | Skill ID | `SkillMetadata.code` | 新建时由 `build_code()` 拼出并入库：`p_{name}` 或 `g_{网关名}_{name}`，即对外的 skill_id。 |
 | Skill 编排 / Skill Orchestration | `SkillConfig.orchestration` | 可编辑草稿：steps 是业务步骤，calls 是步内 API 调用。 |
-| Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文，创建后不改；与 ResourceVersion 区分。 |
+| Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文，创建后不改。version 保存时转为小写，大小写不同视为同一版本。`created_time` 是下载包 `metadata.datetime` 的事实来源，输出为 RFC 3339 UTC 秒精度；与 ResourceVersion 区分。 |
 | Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 calls 里的网关名、资源名，供检索；按名称引用，不是外键。 |
 
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
 MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
+SKILL.md frontmatter 遵循 Agent Skills 规范，只有 name、description、metadata；metadata 只有 type、version、author、datetime、source。display_name、code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、
 [OpenAPI 模型](../src/dashboard/apigateway/apigateway/apps/openapi/models.py)、

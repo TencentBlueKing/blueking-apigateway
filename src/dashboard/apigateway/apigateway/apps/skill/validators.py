@@ -18,6 +18,7 @@
 """Skill 字段校验，供注入声明校验和管理接口共用"""
 
 import re
+from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -25,6 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from apigateway.common.constants import SEMVER_PATTERN
 
 from .constants import (
+    SKILL_DATETIME_FORMAT,
     SKILL_DESCRIPTION_MAX_LENGTH,
     SKILL_DISPLAY_NAME_MAX_LENGTH,
     SKILL_NAME_MAX_LENGTH,
@@ -41,6 +43,8 @@ SKILL_DISPLAY_NAME_PATTERN = re.compile(rf"{_SKILL_DISPLAY_NAME_WORD}(?: {_SKILL
 
 _SKILL_DISPLAY_NAME_EN_WORD = r"[A-Za-z0-9-]+"
 SKILL_DISPLAY_NAME_EN_PATTERN = re.compile(rf"{_SKILL_DISPLAY_NAME_EN_WORD}(?: {_SKILL_DISPLAY_NAME_EN_WORD})*")
+
+SKILL_DATETIME_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
 # 表按 utf8mb3 处理，不能存码点大于 U+FFFF 的字符（如 emoji）
 _MAX_BMP_CODE_POINT = 0xFFFF
@@ -103,15 +107,28 @@ def validate_skill_changelog(value: str) -> None:
     _validate_no_4byte_chars(value)
 
 
-def validate_skill_version(value: str) -> None:
+def validate_skill_version(value: str) -> str:
+    """转为小写后校验；写入和查询都使用返回值，大小写不同视为同一版本"""
+    value = value.lower()
     _validate_length(value, SKILL_VERSION_MAX_LENGTH)
-    if not SEMVER_PATTERN.fullmatch(value):
+    # SEMVER_PATTERN 的 \d 会匹配非 ASCII 数字（如 ١），共享正则不改，在这里排除
+    if not value.isascii() or not SEMVER_PATTERN.fullmatch(value):
         raise ValidationError(_("Enter a valid semantic version, such as 1.0.0."), code="invalid")
+    return value
+
+
+def validate_skill_datetime(value: str) -> None:
+    if not SKILL_DATETIME_PATTERN.fullmatch(value):
+        raise ValidationError(_("Enter a valid UTC datetime, such as 2026-11-06T08:09:00Z."), code="invalid")
+    try:
+        datetime.strptime(value, SKILL_DATETIME_FORMAT)
+    except ValueError:
+        raise ValidationError(_("Enter a valid UTC datetime, such as 2026-11-06T08:09:00Z."), code="invalid") from None
 
 
 def normalize_tag_name(value: str) -> str:
-    """去除首尾空白后校验，保留大小写，返回规范化后的标签名"""
-    value = value.strip()
+    """去除首尾空白并转为小写后校验，返回规范化后的标签名"""
+    value = value.strip().lower()
     _validate_no_4byte_chars(value)
     _validate_length(value, SKILL_TAG_NAME_MAX_LENGTH)
     return value
