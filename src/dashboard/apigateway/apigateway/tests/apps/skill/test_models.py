@@ -199,12 +199,14 @@ class TestSkillMetadata:
         newer = G(SkillVersion, metadata=fake_skill_metadata, version="1.1.0")
         fake_skill_metadata.current_version = newer
         fake_skill_metadata.save()
+        # delete() 会把实例 pk 置为 None，需提前保存
+        version_id = fake_skill_version.pk
 
         fake_skill_version.delete()
 
         fake_skill_metadata.refresh_from_db()
         assert fake_skill_metadata.current_version_id == newer.pk
-        assert not SkillVersion.objects.filter(pk=fake_skill_version.pk).exists()
+        assert not SkillVersion.objects.filter(pk=version_id).exists()
 
     def test_delete_cascade(self, fake_skill_metadata, fake_skill_version):
         G(SkillConfig, metadata=fake_skill_metadata, orchestration={"steps": []})
@@ -219,14 +221,16 @@ class TestSkillMetadata:
         fake_skill_metadata.tags.add(tag)
         fake_skill_metadata.current_version = fake_skill_version
         fake_skill_metadata.save()
+        # delete() 会把实例 pk 置为 None，需提前保存
+        metadata_id = fake_skill_metadata.pk
 
         fake_skill_metadata.delete()
 
-        assert not SkillMetadata.objects.filter(pk=fake_skill_metadata.pk).exists()
-        assert not SkillConfig.objects.filter(metadata_id=fake_skill_metadata.pk).exists()
-        assert not SkillVersion.objects.filter(metadata_id=fake_skill_metadata.pk).exists()
-        assert not SkillVersionRelation.objects.filter(metadata_id=fake_skill_metadata.pk).exists()
-        assert not SkillMetadata.tags.through.objects.filter(skillmetadata_id=fake_skill_metadata.pk).exists()
+        assert not SkillMetadata.objects.filter(pk=metadata_id).exists()
+        assert not SkillConfig.objects.filter(metadata_id=metadata_id).exists()
+        assert not SkillVersion.objects.filter(metadata_id=metadata_id).exists()
+        assert not SkillVersionRelation.objects.filter(metadata_id=metadata_id).exists()
+        assert not SkillMetadata.tags.through.objects.filter(skillmetadata_id=metadata_id).exists()
         assert SkillTag.objects.filter(pk=tag.pk).exists()
 
     def test_delete_versions_before_metadata(self, fake_skill_metadata, fake_skill_version):
@@ -326,10 +330,12 @@ class TestSkillVersionRelation:
             gateway_name="jobv3-cloud",
             resource_name="execute_job_plan",
         )
+        # delete() 会把实例 pk 置为 None，需提前保存
+        version_id = fake_skill_version.pk
 
         fake_skill_version.delete()
 
-        assert not SkillVersionRelation.objects.filter(version_id=fake_skill_version.pk).exists()
+        assert not SkillVersionRelation.objects.filter(version_id=version_id).exists()
 
 
 class TestSkillTag:

@@ -167,7 +167,7 @@ class SkillVersionRelation(models.Model):
     metadata 是用于直接按 Skill 检索的冗余外键，写入时必须取自 version.metadata_id。
     """
 
-    metadata = models.ForeignKey(SkillMetadata, on_delete=models.CASCADE)
+    metadata = models.ForeignKey(SkillMetadata, on_delete=models.CASCADE, related_name="version_relations")
     version = models.ForeignKey(SkillVersion, on_delete=models.CASCADE, related_name="relations")
     gateway_name = models.CharField(max_length=64, help_text=_("网关名"))
     resource_name = models.CharField(max_length=256, help_text=_("资源名"))

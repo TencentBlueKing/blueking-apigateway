@@ -106,7 +106,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('gateway_name', models.CharField(help_text='网关名', max_length=64)),
                 ('resource_name', models.CharField(help_text='资源名', max_length=256)),
-                ('metadata', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='skill.skillmetadata')),
+                ('metadata', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='version_relations', to='skill.skillmetadata')),
                 ('version', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='relations', to='skill.skillversion')),
             ],
             options={

@@ -46,6 +46,8 @@ SKILL_DISPLAY_NAME_EN_PATTERN = re.compile(rf"{_SKILL_DISPLAY_NAME_EN_WORD}(?: {
 
 SKILL_DATETIME_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
+_CONSECUTIVE_SPACES_PATTERN = re.compile(r" {2,}")
+
 # 表按 utf8mb3 处理，不能存码点大于 U+FFFF 的字符（如 emoji）
 _MAX_BMP_CODE_POINT = 0xFFFF
 
@@ -127,8 +129,12 @@ def validate_skill_datetime(value: str) -> None:
 
 
 def normalize_tag_name(value: str) -> str:
-    """去除首尾空白并转为小写后校验，返回规范化后的标签名"""
+    """去除首尾空白、转为小写、连续空格合并为一个后校验，返回规范化后的标签名"""
     value = value.strip().lower()
+    # isprintable() 对控制字符、格式字符和除 ASCII 空格外的空白字符（如 \n、\t、全角空格）返回 False
+    if not value.isprintable():
+        raise ValidationError(_("Control characters and non-space whitespace are not supported."), code="invalid_char")
+    value = _CONSECUTIVE_SPACES_PATTERN.sub(" ", value)
     _validate_no_4byte_chars(value)
     _validate_length(value, SKILL_TAG_NAME_MAX_LENGTH)
     return value

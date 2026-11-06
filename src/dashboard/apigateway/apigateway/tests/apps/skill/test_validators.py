@@ -212,6 +212,8 @@ class TestNormalizeTagName:
             ("AI-运维", "ai-运维"),
             ("精选", "精选"),
             (" " + "a" * 64 + " ", "a" * 64),
+            ("作业  运维", "作业 运维"),
+            ("a" + " " * 64 + "b", "a b"),
         ],
     )
     def test_valid(self, value, expected):
@@ -224,6 +226,11 @@ class TestNormalizeTagName:
             ("   ", "min_length"),
             ("a" * 65, "max_length"),
             (f"精选{EMOJI}", "invalid_char"),
+            ("作业\n运维", "invalid_char"),
+            ("作业\t运维", "invalid_char"),
+            ("作业\u3000运维", "invalid_char"),
+            ("作业\u200b运维", "invalid_char"),
+            ("作业\x00运维", "invalid_char"),
         ],
     )
     def test_invalid(self, value, code):

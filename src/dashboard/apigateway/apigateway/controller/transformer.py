@@ -42,7 +42,7 @@ class BaseTransformer(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_transformed_resources(self) -> Iterable[ApisixModel]:
+    def get_transformed_resources(self) -> Iterable["ApisixModel"]:
         raise NotImplementedError()
 
 
@@ -57,7 +57,7 @@ class GlobalApisixResourceTransformer(BaseTransformer):
         plugin_metadata_convertor = PluginMetadataConvertor(self.apisix_version)
         self._converted_plugin_metadata = plugin_metadata_convertor.convert()
 
-    def get_transformed_resources(self) -> Iterable[ApisixModel]:
+    def get_transformed_resources(self) -> Iterable["ApisixModel"]:
         yield from self._converted_plugin_metadata
 
 
@@ -68,7 +68,7 @@ class GatewayApisixResourceTransformer(BaseTransformer):
 
     def __init__(
         self,
-        release: Release,
+        release: "Release",
         apisix_version: str,
         publish_id: Optional[int] = None,
         revoke_flag: Optional[bool] = False,
@@ -147,7 +147,7 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         )
         self._converted_bk_releases = bk_release_convertor.convert()
 
-    def get_transformed_resources(self) -> Iterable[ApisixModel]:
+    def get_transformed_resources(self) -> Iterable["ApisixModel"]:
         yield from self._converted_ssls
 
         yield from self._converted_protos
