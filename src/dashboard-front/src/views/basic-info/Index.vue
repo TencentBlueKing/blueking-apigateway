@@ -35,112 +35,100 @@
           <span class="name">{{ getGatewayDisplayName(basicInfoData)[0]?.toUpperCase() }}</span>
         </div>
         <div class="header-info-right">
-          <div class="header-info-name">
-            <div class="gateway-name">
-              <span class="name">{{ getGatewayDisplayName(basicInfoData) }}</span>
-              <span
-                v-if="hasDistinctDisplayName(basicInfoData)"
-                class="gateway-id"
-              >
-                {{ basicInfoData.name }}
-              </span>
-            </div>
-            <div class="header-info-tag">
-              <BkTag
-                v-if="basicInfoData.kind === 0"
-                theme="info"
-              >
-                {{ t('普通网关') }}
-              </BkTag>
-              <BkTag
-                v-if="basicInfoData.kind === 1"
-                theme="success"
-              >
-                {{ t('可编程网关') }}
-              </BkTag>
-              <BkTag
-                v-if="basicInfoData.kind === 2"
-                theme="warning"
-              >
-                {{ t('AI 网关') }}
-              </BkTag>
-              <BkTag
-                v-if="basicInfoData.is_official"
-                class="website"
-              >
-                {{ t('官方') }}
-              </BkTag>
-              <div v-if="basicInfoData.status > 0">
-                <BkTag class="enabling">
-                  <AgIcon name="yiqiyong" />
-                  {{ t('启用中') }}
+          <div class="header-info-main">
+            <div class="header-info-name">
+              <div class="gateway-name">
+                <span class="name">{{ getGatewayDisplayName(basicInfoData) }}</span>
+                <span
+                  v-if="hasDistinctDisplayName(basicInfoData)"
+                  class="gateway-id"
+                >
+                  {{ basicInfoData.name }}
+                </span>
+              </div>
+              <div class="header-info-tag">
+                <BkTag
+                  v-if="basicInfoData.kind === 0"
+                  theme="info"
+                >
+                  {{ t('普通网关') }}
+                </BkTag>
+                <BkTag
+                  v-if="basicInfoData.kind === 1"
+                  theme="success"
+                >
+                  {{ t('可编程网关') }}
+                </BkTag>
+                <BkTag
+                  v-if="basicInfoData.kind === 2"
+                  theme="warning"
+                >
+                  {{ t('AI 网关') }}
+                </BkTag>
+                <BkTag
+                  v-if="basicInfoData.is_official"
+                  class="website"
+                >
+                  {{ t('官方') }}
+                </BkTag>
+                <div v-if="basicInfoData.status > 0">
+                  <BkTag class="enabling">
+                    <AgIcon name="yiqiyong" />
+                    {{ t('启用中') }}
+                  </BkTag>
+                </div>
+                <BkTag
+                  v-if="!basicInfoData.status"
+                  class="deactivated"
+                >
+                  <AgIcon name="minus-circle" />
+                  {{ t('已停用') }}
+                </BkTag>
+                <BkTag
+                  v-if="basicInfoData.status && basicInfoData.is_deprecated"
+                  theme="danger"
+                >
+                  deprecated
                 </BkTag>
               </div>
-              <BkTag
-                v-if="!basicInfoData.status"
-                class="deactivated"
-              >
-                <AgIcon name="minus-circle" />
-                {{ t('已停用') }}
-              </BkTag>
-              <BkTag
-                v-if="basicInfoData.status && basicInfoData.is_deprecated"
-                theme="danger"
-              >
-                deprecated
-              </BkTag>
             </div>
-          </div>
-          <div class="header-info-description">
-            <EditDesc
-              field="description"
-              width="1008px"
-              :placeholder="t('请输入描述')"
-              :content="basicInfoData.description ?? ''"
-              :mode="canEditBasicInfo ? 'edit' : 'detail'"
-              @on-change="(e:Record<string, string>) => handleInfoChange(e)"
-            />
+            <div class="header-info-description">
+              <EditDesc
+                field="description"
+                width="100%"
+                :placeholder="t('请输入描述')"
+                :content="basicInfoData.description ?? ''"
+                :mode="canEditBasicInfo ? 'edit' : 'detail'"
+                @on-change="(e:Record<string, string>) => handleInfoChange(e)"
+              />
+            </div>
           </div>
           <div
             v-if="canEditBasicInfo || basicInfoData.kind === 1"
             class="header-info-button"
           >
             <template v-if="canEditBasicInfo">
-              <div>
-                <BkButton
-                  v-if="basicInfoData.status > 0"
-                  v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
-                  class="deactivate-btn operate-btn"
-                  :disabled="releasingStatus"
-                  @click="() => handleOperate('enable')"
-                >
-                  {{ t('停用') }}
-                </BkButton>
-                <BkButton
-                  v-else
-                  v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
-                  theme="primary"
-                  class="operate-btn"
-                  :disabled="releasingStatus"
-                  @click="() => handleOperate('deactivate')"
-                >
-                  {{ t('立即启用') }}
-                </BkButton>
-              </div>
               <BkButton
-                v-bk-tooltips="{ content: t('请先停用才可删除'), disabled: basicInfoData.status <= 0 }"
-                class="operate-btn"
-                :disabled="basicInfoData.status > 0"
-                @click="() => handleOperate('delete')"
+                v-if="basicInfoData.status > 0"
+                v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
+                class="deactivate-btn operate-btn"
+                :disabled="releasingStatus"
+                @click="() => handleOperate('enable')"
               >
-                {{ t('删除') }}
+                {{ t('停用') }}
+              </BkButton>
+              <BkButton
+                v-else
+                v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
+                theme="primary"
+                class="operate-btn"
+                :disabled="releasingStatus"
+                @click="() => handleOperate('deactivate')"
+              >
+                {{ t('立即启用') }}
               </BkButton>
             </template>
             <template v-if="basicInfoData.kind === 1">
-              <span
-                v-if="canEditBasicInfo"
-                class="btn-line"
-              />
               <BkButton
                 class="operate-btn"
                 @click="showGuide"
@@ -155,7 +143,7 @@
             <BkDropdown
               v-if="canEditBasicInfo"
               :popover-options="{ clickContentAutoHide: true }"
-              placement="right"
+              placement="bottom-end"
             >
               <div class="icon-deprecated">
                 <AgIcon
@@ -167,9 +155,13 @@
                   <BkDropdownItem
                     v-for="item in dropdownList"
                     :key="item.value"
+                    v-bk-tooltips="{
+                      content: t('请先停用才可删除'),
+                      disabled: item.value !== 'delete' || basicInfoData.status <= 0,
+                    }"
                     :disabled="dropdownItemDisabled(item)"
                     :ext-cls="{ 'is-disabled': dropdownItemDisabled(item) }"
-                    @click="handleDeprecatedClick(item.value)"
+                    @click="handleDropdownClick(item)"
                   >
                     {{ item.name }}
                   </BkDropdownItem>
@@ -836,14 +828,20 @@ const basicInfoDetailLoading = ref(false);
 const isShowMarkdown = ref(false);
 const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
-const dropdownList = ref([
+// 弃用操作互斥：未弃用仅显示「标记为弃用」，已弃用仅显示「取消弃用标记」
+const dropdownList = computed(() => [
+  basicInfoData.value.is_deprecated
+    ? {
+      name: t('取消弃用标记'),
+      value: 'undeprecated',
+    }
+    : {
+      name: t('标记为弃用'),
+      value: 'deprecated',
+    },
   {
-    name: t('标记为弃用'),
-    value: 'deprecated',
-  },
-  {
-    name: t('去除弃用标记'),
-    value: 'undeprecated',
+    name: t('删除'),
+    value: 'delete',
   },
 ]);
 
@@ -854,13 +852,23 @@ const {
 } = useGatewayReleasingStatus(apigwId, canEditBasicInfo);
 
 const dropdownItemDisabled = (item: { value: string }) => {
-  if (item?.value === 'deprecated') {
-    return basicInfoData.value.is_deprecated || !basicInfoData.value.status;
+  if (item?.value === 'delete') {
+    return basicInfoData.value.status > 0;
   }
-  if (item?.value === 'undeprecated') {
-    return !basicInfoData.value.is_deprecated || !basicInfoData.value.status;
+  // 弃用/取消弃用：仅启用中的网关可操作
+  return !basicInfoData.value.status;
+};
+
+const handleDropdownClick = (item: { value: string }) => {
+  if (dropdownItemDisabled(item)) {
+    return;
   }
-  return false;
+  if (item.value === 'delete') {
+    handleOperate('delete');
+  }
+  else {
+    handleDeprecatedClick(item.value);
+  }
 };
 
 // 当前网关基本信息（默认值仅在 API 数据加载前作为占位，会在 getBasicInfo 中立即替换）
@@ -1128,7 +1136,7 @@ const handleDeprecatedClick = (type: string) => {
   else if (type === 'undeprecated' && basicInfoData.value.is_deprecated) {
     usePopInfoBox({
       isShow: true,
-      title: t('确认去除弃用标记？'),
+      title: t('确认取消弃用标记？'),
       subTitle: t('去除后，API 文档中的“deprecated”标记将被移除'),
       cancelText: t('取消'),
       onConfirm: async () => {
@@ -1328,8 +1336,16 @@ onUnmounted(() => {
     }
 
     &-right {
+      display: flex;
       flex: 1;
+      min-width: 0;
       padding: 0 16px;
+      align-items: center;
+
+      .header-info-main {
+        flex: 1;
+        min-width: 0;
+      }
 
       .header-info-name {
         display: flex;
@@ -1396,15 +1412,9 @@ onUnmounted(() => {
 
       .header-info-button {
         display: flex;
+        margin-left: 16px;
         align-items: center;
-
-        .btn-line {
-          width: 1px;
-          height: 16px;
-          margin-top: 8px;
-          margin-right: 8px;
-          background-color: #DCDEE5;
-        }
+        flex: none;
 
         .operate-btn {
           min-width: 88px;

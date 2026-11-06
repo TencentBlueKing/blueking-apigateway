@@ -40,6 +40,7 @@ import type {
 } from '@/services/types/body/post/gateways.ts';
 import type {
   IResourceBatchUpdateInputSLZ,
+  IResourceDeprecationUpdateInputSLZ,
   IResourceLabelUpdateInputSLZ,
 } from '@/services/types/body/patch/gateways.ts';
 
@@ -177,3 +178,15 @@ export const backendsPathCheck = (gatewayId: number, data: IGatewaysResourcesBac
  */
 export const updateResourceLabels = (gatewayId: number, resourceId: number, data: IResourceLabelUpdateInputSLZ) =>
   http.put(`${path}/${gatewayId}/resources/${resourceId}/labels/`, data);
+
+/**
+ * 更新资源弃用标记
+ * @param gatewayId 网关id
+ * @param resourceId 资源id
+ * @param data 弃用标记及说明
+ */
+export const updateResourceDeprecation = (
+  gatewayId: number,
+  resourceId: number,
+  data: IResourceDeprecationUpdateInputSLZ,
+) => http.patch(`${path}/${gatewayId}/resources/${resourceId}/deprecation/`, data);

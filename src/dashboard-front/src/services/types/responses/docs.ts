@@ -118,6 +118,8 @@ export interface IDocsGatewaysResourcesListResponse {
     id: number
     name: string
   }[]
+  is_deprecated?: boolean
+  deprecated_note?: string
 }
 
 export interface IDocsResourceDocPlugin {

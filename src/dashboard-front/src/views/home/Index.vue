@@ -245,6 +245,12 @@
                 <BkTag v-if="item.status === 0">
                   {{ t('已停用') }}
                 </BkTag>
+                <BkTag
+                  v-if="item.is_deprecated"
+                  theme="danger"
+                >
+                  deprecated
+                </BkTag>
               </div>
               <template v-if="featureFlagStore.isTenantMode">
                 <div class="flex-1">

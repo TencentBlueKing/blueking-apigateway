@@ -16,6 +16,7 @@ export interface IGatewayListOutput {
   status: number
   kind: number
   is_public: boolean
+  is_deprecated?: boolean
   is_official: string
   resource_count: string
   stages: {
@@ -1290,6 +1291,8 @@ export interface IResourceVersionRetrieveOutput {
 export interface IResourceListPageOutput {
   id: number
   name: string | null
+  is_deprecated: boolean
+  deprecated_note: string | null
   description: string | null
   method: string
   path: string
