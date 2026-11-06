@@ -25,10 +25,74 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/spf13/viper"
 
+	"operator/pkg/config"
 	"operator/pkg/constant"
 	"operator/pkg/entity"
 )
+
+var _ = Describe("Configured release windows", func() {
+	var (
+		stageTimer            *ReleaseTimer
+		stageInfo             entity.ReleaseInfo
+		previousWaitingWindow time.Duration
+		previousForceWindow   time.Duration
+	)
+
+	BeforeEach(func() {
+		previousWaitingWindow = eventsWaitingTimeWindow
+		previousForceWindow = forceUpdateTimeWindow
+		cfg, err := config.Load(viper.New())
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		Init(cfg)
+		stageTimer = NewReleaseTimer()
+		stageInfo = entity.ReleaseInfo{
+			ResourceMetadata: entity.ResourceMetadata{
+				Labels: &entity.LabelInfo{Gateway: "gateway", Stage: "prod", PublishId: "8014"},
+				Ctx:    context.Background(),
+			},
+			PublishId: 8014,
+		}
+	})
+
+	AfterEach(func() {
+		eventsWaitingTimeWindow = previousWaitingWindow
+		forceUpdateTimeWindow = previousForceWindow
+	})
+
+	It("keeps an ongoing publication pending beyond the old force window", func() {
+		stageTimer.Update(&stageInfo)
+		value, _ := stageTimer.releaseTimer.Load(stageInfo.GetReleaseID())
+		cached := value.(*CacheTimer)
+		// Model a publication that began 12 seconds ago and last changed 3 seconds ago.
+		cached.CachedTime = time.Now().Add(-12 * time.Second)
+		cached.ShouldCommitTime = time.Now().Add(eventsWaitingTimeWindow - 3*time.Second)
+
+		gomega.Expect(stageTimer.ListReleaseForCommit()).To(gomega.BeEmpty())
+	})
+
+	It("commits after the quiet window without waiting for the force window", func() {
+		stageTimer.Update(&stageInfo)
+		value, _ := stageTimer.releaseTimer.Load(stageInfo.GetReleaseID())
+		cached := value.(*CacheTimer)
+		cached.CachedTime = time.Now().Add(-8 * time.Second)
+		cached.ShouldCommitTime = time.Now().Add(eventsWaitingTimeWindow - 6*time.Second)
+
+		gomega.Expect(stageTimer.ListReleaseForCommit()).To(gomega.Equal([]*entity.ReleaseInfo{&stageInfo}))
+		gomega.Expect(stageTimer.ListReleaseForCommit()).To(gomega.BeEmpty())
+	})
+
+	It("forces a commit after 30 seconds despite a fresh event", func() {
+		stageTimer.Update(&stageInfo)
+		value, _ := stageTimer.releaseTimer.Load(stageInfo.GetReleaseID())
+		cached := value.(*CacheTimer)
+		cached.CachedTime = time.Now().Add(-31 * time.Second)
+		stageTimer.Update(&stageInfo)
+
+		gomega.Expect(stageTimer.ListReleaseForCommit()).To(gomega.Equal([]*entity.ReleaseInfo{&stageInfo}))
+	})
+})
 
 var _ = Describe("Timer", func() {
 	var (
@@ -60,7 +124,7 @@ var _ = Describe("Timer", func() {
 	})
 
 	AfterEach(func() {
-		eventsWaitingTimeWindow = 2 * time.Second
+		eventsWaitingTimeWindow = 5 * time.Second
 	})
 
 	It("should update the stage timer correctly", func() {

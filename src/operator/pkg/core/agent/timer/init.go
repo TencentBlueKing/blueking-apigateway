@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	forceUpdateTimeWindow   = 10 * time.Second
-	eventsWaitingTimeWindow = 2 * time.Second
+	forceUpdateTimeWindow   = 30 * time.Second
+	eventsWaitingTimeWindow = 5 * time.Second
 )
 
 // Init ...
