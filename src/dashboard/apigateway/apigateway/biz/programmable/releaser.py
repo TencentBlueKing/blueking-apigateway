@@ -16,8 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from threading import RLock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from cachetools import TTLCache
 from django.conf import settings
 from django.db.models import Q
 
@@ -26,6 +28,7 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
+from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.components.bkpaas import (
     deploy_paas_app,
     get_paas_deployment_result,
@@ -45,6 +48,12 @@ from apigateway.utils.django import get_model_dict
 
 if TYPE_CHECKING:
     from apigateway.common.tenant.user_credentials import UserCredentials
+
+# PaaS 部署、下架操作结束后的状态，进入后不再变化
+PAAS_FINISHED_STATUSES = ("successful", "failed", "interrupted")
+
+_paas_status_cache: TTLCache[tuple[str, str, str, str], str] = TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS)
+_paas_status_cache_lock = RLock()
 
 
 class ProgrammableGatewayReleaser:
@@ -169,6 +178,29 @@ class ProgrammableGatewayReleaser:
         )
 
     @staticmethod
+    def _get_paas_deploy_status(
+        gateway: Gateway, deploy_history: ProgrammableGatewayDeployHistory, user_credentials: UserCredentials
+    ) -> str:
+        """查询 paas 的 deploy 状态，只缓存已结束的状态"""
+        cache_key = (
+            user_credentials.tenant_id if user_credentials else "",
+            gateway.name,
+            deploy_history.source,
+            deploy_history.deploy_id,
+        )
+        with _paas_status_cache_lock:
+            status = _paas_status_cache.get(cache_key)
+        if status:
+            return status
+
+        result = ProgrammableGatewayReleaser._get_paas_deploy_result(gateway, deploy_history, user_credentials)
+        status = result.get("status", "")
+        if status in PAAS_FINISHED_STATUSES:
+            with _paas_status_cache_lock:
+                _paas_status_cache[cache_key] = status
+        return status
+
+    @staticmethod
     def get_stage_deploy_status(gateway: Gateway, stage_id: int, user_credentials: UserCredentials) -> Dict[str, Any]:
         """查询 stage 的 deploy 状态"""
         latest_deploy_history = ProgrammableGatewayDeployHistory()
@@ -217,17 +249,20 @@ class ProgrammableGatewayReleaser:
                 latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
                 latest_history_id = deploy_history.publish_id
 
-        if deploy_history:
-            result = ProgrammableGatewayReleaser._get_paas_deploy_result(gateway, deploy_history, user_credentials)
+        # 部署已稳定时，后续判断不读取 PaaS 结果，只有发布中或首次发布才需要查询
+        if deploy_history and (latest_publish_status != "" or last_publish_status == ""):
+            paas_status = ProgrammableGatewayReleaser._get_paas_deploy_status(
+                gateway, deploy_history, user_credentials
+            )
             # 正在发布的话需要判断是否失败
-            if latest_publish_status != "" and result.get("status", "") == "failed":
+            if latest_publish_status != "" and paas_status == "failed":
                 latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
 
             # 第一次发布
-            if last_publish_status == "" and result.get("status", "") == "failed":
+            if last_publish_status == "" and paas_status == "failed":
                 last_deploy_history = deploy_history
                 last_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
-            elif last_publish_status == "" and result.get("status", "") != "failed":
+            elif last_publish_status == "" and paas_status != "failed":
                 latest_deploy_history = deploy_history
                 if deploy_history.publish_id:
                     latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
