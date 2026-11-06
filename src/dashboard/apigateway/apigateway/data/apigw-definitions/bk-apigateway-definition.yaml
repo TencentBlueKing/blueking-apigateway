@@ -157,6 +157,16 @@ grant_permissions:
       - v2_open_get_released_resource
       - v2_open_get_gateway
       - v2_open_list_gateways
+  # bk_aidev
+  - bk_app_code: bk_aidev
+    grant_dimension: "resource"
+    resource_names:
+      - v2_open_list_mcp_server_app_permissions
+      - v2_open_list_mcp_server_app_permissions_apply_records
+      - v2_open_mcp_server_app_permissions_apply
+      - v2_open_list_user_mcp_server
+      - v2_inner_list_mcp_server_app_permissions
+      - v2_inner_list_mcp_server
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"
