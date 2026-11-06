@@ -82,12 +82,10 @@ def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
 def test_get_cli_function_overview_includes_developer_center():
     overview = get_cli_function_overview("ZH")
 
-    assert overview[-1] == {
-        "service": "开发者中心",
-        "title": "创建应用、部署应用、查看访问地址",
-    }
     assert [item["service"] for item in overview] == [
         "API 网关",
+        "监控平台",
+        "AIDev",
         "配置平台",
         "作业平台",
         "标准运维",
@@ -97,10 +95,18 @@ def test_get_cli_function_overview_includes_developer_center():
 
 
 def test_get_cli_function_overview_english():
-    assert get_cli_function_overview("EN")[-1] == {
-        "service": "Developer Center",
-        "title": "Create Application, Deploy Application, View Access Address",
-    }
+    overview = get_cli_function_overview("EN")
+
+    assert [item["service"] for item in overview] == [
+        "API Gateway",
+        "Monitor",
+        "AIDev",
+        "CMDB",
+        "Job",
+        "SOPS",
+        "NodeMan",
+        "Developer Center",
+    ]
 
 
 def test_get_doc_links_includes_personal_token():
