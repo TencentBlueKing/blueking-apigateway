@@ -185,8 +185,8 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | MCP 提示模板 / MCP Prompt | `MCPServerExtend(type=prompts)` | 服务扩展中的提示模板，与工具、后端 provider、API 请求体区分。 |
 | MCP 协议类型 / MCP Protocol Type | protocol_type | SSE / Streamable HTTP，与 Backend.type、Resource.kind 区分。 |
 | MCP 原始响应模式 / Raw Response Mode | raw_response_enabled | 工具结果返回原始 API 响应体，不改变身份、授权或版本选择。 |
-| Skill 元数据 / Skill Metadata | `SkillMetadata`；`(type, gateway, code)` 唯一 | 编排网关 API 的 Skill；type 为 platform（内置，gateway 为空）或 gateway（属于某个网关）。code 是来源内标识，name 是展示名。 |
-| Skill ID | `SkillMetadata.skill_id` 属性 | 不入库，读取时拼出：`p_{code}` 或 `g_{网关名}_{code}`。 |
+| Skill 元数据 / Skill Metadata | `SkillMetadata`；`code` 唯一，`(type, gateway, name)` 唯一 | 编排网关 API 的 Skill；type 为 platform（内置，gateway 为空）或 gateway（属于某个网关）。name 是 Agent Skills 规范名，即 SKILL.md 的 name 和包目录名；display_name / display_name_en 是展示名。 |
+| Skill ID | `SkillMetadata.code` | 新建时由 `build_code()` 拼出并入库：`p_{name}` 或 `g_{网关名}_{name}`，即对外的 skill_id。 |
 | Skill 编排 / Skill Orchestration | `SkillConfig.orchestration` | 可编辑草稿：steps 是业务步骤，calls 是步内 API 调用。 |
 | Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文，创建后不改；与 ResourceVersion 区分。 |
 | Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 calls 里的网关名、资源名，供检索；按名称引用，不是外键。 |

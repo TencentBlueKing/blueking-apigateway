@@ -25,19 +25,22 @@ from django.utils.translation import gettext_lazy as _
 from apigateway.common.constants import SEMVER_PATTERN
 
 from .constants import (
-    SKILL_CODE_MAX_LENGTH,
     SKILL_DESCRIPTION_MAX_LENGTH,
+    SKILL_DISPLAY_NAME_MAX_LENGTH,
     SKILL_NAME_MAX_LENGTH,
     SKILL_TAG_NAME_MAX_LENGTH,
     SKILL_VERSION_MAX_LENGTH,
 )
 
-# 小写字母、数字、连字符；不以连字符开头或结尾，不含连续连字符
-SKILL_CODE_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+# Agent Skills 规范名：小写字母、数字、连字符；不以连字符开头或结尾，不含连续连字符
+SKILL_NAME_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 
 # 字母（含中文）、数字、连字符，词之间用单个空格分隔；[^\W_] 为去掉下划线的 \w
-_SKILL_NAME_WORD = r"(?:[^\W_]|-)+"
-SKILL_NAME_PATTERN = re.compile(rf"{_SKILL_NAME_WORD}(?: {_SKILL_NAME_WORD})*")
+_SKILL_DISPLAY_NAME_WORD = r"(?:[^\W_]|-)+"
+SKILL_DISPLAY_NAME_PATTERN = re.compile(rf"{_SKILL_DISPLAY_NAME_WORD}(?: {_SKILL_DISPLAY_NAME_WORD})*")
+
+_SKILL_DISPLAY_NAME_EN_WORD = r"[A-Za-z0-9-]+"
+SKILL_DISPLAY_NAME_EN_PATTERN = re.compile(rf"{_SKILL_DISPLAY_NAME_EN_WORD}(?: {_SKILL_DISPLAY_NAME_EN_WORD})*")
 
 # 表按 utf8mb3 处理，不能存码点大于 U+FFFF 的字符（如 emoji）
 _MAX_BMP_CODE_POINT = 0xFFFF
@@ -63,21 +66,30 @@ def _validate_length(value: str, max_length: int, min_length: int = 1) -> None:
         )
 
 
-def validate_skill_code(value: str) -> None:
-    _validate_length(value, SKILL_CODE_MAX_LENGTH)
-    if not SKILL_CODE_PATTERN.fullmatch(value):
+def validate_skill_name(value: str) -> None:
+    _validate_length(value, SKILL_NAME_MAX_LENGTH)
+    if not SKILL_NAME_PATTERN.fullmatch(value):
         raise ValidationError(
             _("Use lowercase letters, digits and single hyphens, not starting or ending with a hyphen."),
             code="invalid",
         )
 
 
-def validate_skill_name(value: str) -> None:
+def validate_skill_display_name(value: str) -> None:
     _validate_no_4byte_chars(value)
-    _validate_length(value, SKILL_NAME_MAX_LENGTH)
-    if not SKILL_NAME_PATTERN.fullmatch(value):
+    _validate_length(value, SKILL_DISPLAY_NAME_MAX_LENGTH)
+    if not SKILL_DISPLAY_NAME_PATTERN.fullmatch(value):
         raise ValidationError(
             _("Use letters, digits, hyphens and single spaces, not starting or ending with a space."),
+            code="invalid",
+        )
+
+
+def validate_skill_display_name_en(value: str) -> None:
+    _validate_length(value, SKILL_DISPLAY_NAME_MAX_LENGTH)
+    if not SKILL_DISPLAY_NAME_EN_PATTERN.fullmatch(value):
+        raise ValidationError(
+            _("Use English letters, digits, hyphens and single spaces, not starting or ending with a space."),
             code="invalid",
         )
 

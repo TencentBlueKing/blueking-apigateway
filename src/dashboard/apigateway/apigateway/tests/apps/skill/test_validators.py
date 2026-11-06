@@ -22,8 +22,9 @@ from django.core.exceptions import ValidationError
 from apigateway.apps.skill.validators import (
     normalize_tag_name,
     validate_skill_changelog,
-    validate_skill_code,
     validate_skill_description,
+    validate_skill_display_name,
+    validate_skill_display_name_en,
     validate_skill_name,
     validate_skill_version,
 )
@@ -31,10 +32,10 @@ from apigateway.apps.skill.validators import (
 EMOJI = "\U0001f600"
 
 
-class TestValidateSkillCode:
+class TestValidateSkillName:
     @pytest.mark.parametrize("value", ["job-plan-run-and-log", "a", "abc123", "a" * 64])
     def test_valid(self, value):
-        validate_skill_code(value)
+        validate_skill_name(value)
 
     @pytest.mark.parametrize(
         "value, code",
@@ -48,22 +49,23 @@ class TestValidateSkillCode:
             ("job_plan", "invalid"),
             ("job plan", "invalid"),
             ("job\n", "invalid"),
+            ("执行作业", "invalid"),
         ],
     )
     def test_invalid(self, value, code):
         with pytest.raises(ValidationError) as exc_info:
-            validate_skill_code(value)
+            validate_skill_name(value)
 
         assert exc_info.value.code == code
 
 
-class TestValidateSkillName:
+class TestValidateSkillDisplayName:
     @pytest.mark.parametrize(
         "value",
         ["执行 JOB 作业方案", "执行作业方案并收集日志", "job-plan", "JOB 2", "a" * 64],
     )
     def test_valid(self, value):
-        validate_skill_name(value)
+        validate_skill_display_name(value)
 
     @pytest.mark.parametrize(
         "value, code",
@@ -80,7 +82,32 @@ class TestValidateSkillName:
     )
     def test_invalid(self, value, code):
         with pytest.raises(ValidationError) as exc_info:
-            validate_skill_name(value)
+            validate_skill_display_name(value)
+
+        assert exc_info.value.code == code
+
+
+class TestValidateSkillDisplayNameEn:
+    @pytest.mark.parametrize("value", ["Run JOB Plan and Collect Logs", "Query IAM Policies", "bk-sops", "a" * 64])
+    def test_valid(self, value):
+        validate_skill_display_name_en(value)
+
+    @pytest.mark.parametrize(
+        "value, code",
+        [
+            ("", "min_length"),
+            ("a" * 65, "max_length"),
+            (" Run JOB Plan", "invalid"),
+            ("Run JOB Plan ", "invalid"),
+            ("Run  JOB Plan", "invalid"),
+            ("Run_JOB_Plan", "invalid"),
+            ("执行作业方案", "invalid"),
+            (f"Run JOB Plan{EMOJI}", "invalid"),
+        ],
+    )
+    def test_invalid(self, value, code):
+        with pytest.raises(ValidationError) as exc_info:
+            validate_skill_display_name_en(value)
 
         assert exc_info.value.code == code
 
