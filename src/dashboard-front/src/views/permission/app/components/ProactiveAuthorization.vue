@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="authSliderConfig.isShow"
     :width="800"
     :init-data="initData"
@@ -169,7 +169,7 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script lang="ts" setup>
@@ -183,7 +183,7 @@ import {
   authApiPermission,
   authResourcePermission,
 } from '@/services/source/gateway/permission';
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 
 type ISliderParams = {
   isShow: boolean

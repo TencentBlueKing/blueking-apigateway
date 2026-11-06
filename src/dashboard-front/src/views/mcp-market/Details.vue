@@ -156,7 +156,7 @@
                 {{ t('负责人') }}:
               </div>
               <div class="value">
-                <TenantUserSelector
+                <TenantUserEditor
                   v-if="featureFlagStore.isEnableDisplayName"
                   :content="mcpDetails?.maintainers"
                   field="maintainers"
@@ -239,7 +239,7 @@
             #aside
           >
             <!-- 配置 -->
-            <AgMcpAgentConfig
+            <McpAccessConfig
               :list="mcpConfigList"
               class="h-full bg-white mcp-detail-config"
             />
@@ -352,7 +352,7 @@
 import { copy } from '@/utils';
 import { useMcpConfigDivideRatio } from '@/hooks';
 import { useFeatureFlag } from '@/stores';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { getMarketplaceServerConfigs, getMcpServerDetails } from '@/services/source/mcp-marketplace';
 import type { IMCPMarketCategory } from '@/types/mcp-marketplace';
 import type { IMCPAIConfig } from '@/types/mcp-server';
@@ -364,8 +364,8 @@ import Guideline from './components/GuideLine.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import DefaultMdGuideSlider from '@/views/mcp-market/components/DefaultMdGuideSlider.vue';
 import ApplyPermissionDialog from '@/views/mcp-market/components/ApplyPermissionDialog.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
-import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
+import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
+import McpAccessConfig from '@/components/mcp/mcp-access-config/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 

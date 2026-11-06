@@ -1,5 +1,5 @@
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="visible"
     :title="t('通过 JSON 生成')"
     :scrollbar="false"
@@ -7,13 +7,13 @@
   >
     <div class="px-40px pt-40px text-12px">
       <div class="mb-24px">
-        <IconButton
+        <AgIconButton
           theme="primary"
           icon="upload"
           @click="handleImportJSON"
         >
           {{ t('导入 JSON') }}
-        </IconButton>
+        </AgIconButton>
       </div>
       <bk-alert
         theme="info"
@@ -37,7 +37,7 @@
           </aside>
         </header>
         <main class="editor-main-content">
-          <EditorMonaco
+          <AgCodeEditor
             ref="editorRef"
             :model-value="source"
             language="json"
@@ -63,12 +63,12 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script setup lang="ts">
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { useFileSystemAccess } from '@vueuse/core';
 import { Message } from 'bkui-vue';
 
@@ -94,7 +94,7 @@ const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
   }],
 });
 
-const editorRef = ref<InstanceType<typeof EditorMonaco>>();
+const editorRef = ref<InstanceType<typeof AgCodeEditor>>();
 
 const alertText = computed(() => (type === 'request'
   ? t('请粘贴接口真实的请求体 JSON，或通过「导入 JSON」上传文件。内容可从接口文档、调试工具或实际调用中获取，系统将据此自动生成参数结构。')

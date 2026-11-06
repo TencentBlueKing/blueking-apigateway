@@ -42,10 +42,9 @@ import i18n from './locales';
 import { BkXssFilterDirective } from '@blueking/xss-filter';
 
 import directive from '@/directives';
-import AgIcon from '@/components/ag-icon/Index.vue';
-import IconButton from '@/components/icon-button/Index.vue';
-import CopyButton from '@/components/copy-button/Index.vue';
-import CardContainer from '@/components/card-container/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
+import AgIconButton from '@/components/base/ag-icon-button/Index.vue';
+import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
 //  highlight.js github代码高亮风格
 import 'highlight.js/styles/github.css';
 // 多租户组件样式
@@ -63,9 +62,8 @@ app.use(createPinia())
   .use(directive)
   // 全局组件
   .component('AgIcon', AgIcon)
-  .component('IconButton', IconButton)
-  .component('CopyButton', CopyButton)
-  .component('CardContainer', CardContainer);
+  .component('AgIconButton', AgIconButton)
+  .component('AgCopyButton', AgCopyButton);
 
 // 等首次导航完成后再挂载：否则挂载时 currentRoute 仍是初始 location，
 // 依赖当前路由信息的逻辑（如 use-table-setting 的表格列缓存标识）会取到空值。

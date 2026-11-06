@@ -31,7 +31,7 @@
 <script setup lang="tsx">
 import { type ILocalImportedResource } from '@/types/resource';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import { RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { useTextGetter } from '@/hooks';

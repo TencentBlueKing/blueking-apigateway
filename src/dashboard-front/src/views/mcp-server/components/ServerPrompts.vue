@@ -100,7 +100,7 @@
                   </BkTag>
                 </div>
               </div>
-              <AgDescription
+              <AgExpandableText
                 v-if="curPromptData?.content?.length"
                 class="mt-12px lh-22px text-14px gap-16px"
                 :dynamic-max-height="500"
@@ -111,7 +111,7 @@
                     class="color-#4d4f56 break-all whitespace-pre-line font-unset"
                   />
                 </template>
-              </AgDescription>
+              </AgExpandableText>
               <div
                 v-if="curPromptData?.labels?.length"
                 class="mt-16px"
@@ -136,7 +136,7 @@
 import { useFeatureFlag } from '@/stores';
 import { getServer } from '@/services/source/gateway/mcp-server/server';
 import type { IMCPServerPrompt } from '@/types/mcp-server';
-import AgDescription from '@/components/ag-description/Index.vue';
+import AgExpandableText from '@/components/base/ag-expandable-text/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 

@@ -69,7 +69,7 @@
       class="edit-mode-content"
     >
       <main class="edit-member-wrap">
-        <MemberSelector
+        <StaffSelector
           ref="memberSelectorRef"
           v-model="displayValue"
           class="edit-selector w-500px"
@@ -131,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import MemberSelector from '@/components/member-selector/index.tsx';
+import StaffSelector from '@/components/user/staff-selector';
 import { useFeatureFlag, useUserInfo } from '@/stores';
 
 interface IProps {

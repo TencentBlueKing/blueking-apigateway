@@ -157,7 +157,7 @@ import BkUserSelector from '@blueking/bk-user-selector';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import CustomHeader from '@/views/permission/apply/components/CustomHeader.vue';
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 // 扩展 IApprovalListItem，补充运行时动态添加的字段
 interface IApprovalListItemExt extends IApprovalListItem {

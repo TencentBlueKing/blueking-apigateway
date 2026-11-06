@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import PluginManage from '@/components/plugin-manage/Index.vue';
+import PluginManage from '@/components/plugin/plugin-manage/Index.vue';
 
 interface IProps { stageId: number }
 

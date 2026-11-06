@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="sliderConfig.isShow"
     ext-cls="alarm-strategy-slider"
     :width="640"
@@ -401,7 +401,7 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script lang="ts" setup>
@@ -413,7 +413,7 @@ import type { IExtractApiReturn } from '@/services/types/utils';
 import { getStageList } from '@/services/source/gateway/stage';
 import { createStrategy, updateStrategy } from '@/services/source/gateway/monitor';
 import type { IAlarmStrategy } from '@/types/monitor';
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 
 type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
 

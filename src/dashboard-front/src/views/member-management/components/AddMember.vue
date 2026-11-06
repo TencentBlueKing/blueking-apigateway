@@ -38,7 +38,7 @@
           required
           :error-display-type="'normal'"
         >
-          <MemberSelector
+          <StaffSelector
             v-if="!featureFlagStore.isTenantMode"
             v-model="formData.usernames"
             :placeholder="t('请输入人员名称搜索')"
@@ -109,7 +109,7 @@
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
-import MemberSelector from '@/components/member-selector';
+import StaffSelector from '@/components/user/staff-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
 import { createGatewayMembers } from '@/services/source/gateway/member';
 import { useEnv, useFeatureFlag, useGateway, useUserInfo } from '@/stores';

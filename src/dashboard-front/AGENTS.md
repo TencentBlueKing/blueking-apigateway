@@ -74,10 +74,13 @@ src/dashboard-front/
 ├── src/
 │   ├── App.vue                 # 根布局（BkNavigation 导航、菜单、用户信息）
 │   ├── main.ts                 # 应用入口（安装 Pinia、Router、bkui-vue、i18n、指令）
-│   ├── components/             # 60+ 自定义组件
-│   │   ├── ag-*/               # ag- 前缀可复用组件
-│   │   ├── plugin-form/        # 15+ 插件配置表单
-│   │   └── plugin-manage/      # 插件管理 UI
+│   ├── components/             # 跨模块复用的自定义组件
+│   │   ├── base/               # 与业务无关的基础组件（ag- 前缀）
+│   │   ├── user/               # 人员选择与成员编辑
+│   │   ├── ai/                 # AI 助手入口与对话侧栏
+│   │   ├── release/            # 生成资源版本、发布、发布事件与版本对比
+│   │   ├── mcp/                # MCP Server 卡片、接入配置、调用链
+│   │   └── plugin/             # 插件管理（plugin-manage）与插件表单（plugin-form）
 │   ├── constants/              # 常量定义（插件示例、HTTP 头等）
 │   ├── directives/             # 自定义指令（clickOutSide、bkTooltips）
 │   ├── enums/                  # TypeScript 枚举
@@ -111,8 +114,8 @@ src/dashboard-front/
 ### 入口与引导
 
 - **`main.ts`** — 创建 Vue 应用，安装 Pinia、Vue Router、bkui-vue（全量引入）、vue-i18n、XSS 过滤指令，注册全局组件 `AgIcon`、
-  `IconButton`、`CopyButton`、`CardContainer`。
-- **`App.vue`** — 根布局，使用 `BkNavigation`（上下导航），包含顶部菜单、语言切换、用户信息。路由变化时获取环境配置和用户信息，通过
+  `AgIconButton`、`AgCopyButton`。
+- **`App.vue`** — 根布局，使用 `BkNavigation`（上下导航），包含顶部菜单、语言切换、帮助菜单、用户信息（头部组件位于 `src/layout/app-header/`）。路由变化时获取环境配置和用户信息，通过
   Feature Flag 控制菜单显隐。
 
 ### 路由 (`src/router/index.ts`)
@@ -207,11 +210,21 @@ services/source/
 
 ### 组件 (`src/components/`)
 
-- **`ag-*` 前缀组件**：可复用自定义组件（ag-icon、ag-editor、ag-table、ag-dropdown、ag-sideslider、ag-mcp-card 等）
-- **`plugin-form/`**：15+ 插件配置表单（cors、rate-limit、ip-restriction、header-rewrite、api-breaker 等）
-- **`plugin-manage/`**：插件展示与管理 UI
-- **TSX 组件**：`member-selector`、`table-header-filter`、`custom-table-header-filter` 等
-- **全局组件**（在 `main.ts` 注册，无需导入直接使用）：`AgIcon`、`IconButton`、`CopyButton`、`CardContainer`
+- **`base/`**：与业务无关的基础组件，统一使用 `ag-` 前缀，不调用业务接口。包括 `ag-icon`、`ag-icon-button`、
+  `ag-copy-button`、`ag-table`、`ag-table-empty`、`ag-sideslider`、`ag-dropdown`、`ag-code-editor`（Monaco）、
+  `ag-markdown-editor`（mavon-editor 懒加载）、`ag-markdown-viewer`、`ag-expandable-text`、`ag-status-dot`、`ag-overflow-tags`
+- **命名**：目录名使用 kebab-case 并与组件名一致，入口为 `Index.vue`；私有子组件放在该目录的 `components/` 下，
+  文件名使用 PascalCase。`ag-` 前缀只用于 `base/`，业务组件使用领域名词命名
+- **`user/`**：`staff-selector`（非多租户人员选择，TSX）、`tenant-user-editor`（多租户成员的展示与行内编辑）
+- **`ai/`**：`ai-blueking-button`（「问问 AI」入口）、`ai-chat-slider`（AI 对话侧栏）
+- **`release/`**：`create-resource-version-slider`、`release-stage-slider`、`publish-event-slider`、`version-diff`，
+  由资源管理、环境管理和网关布局共用
+- **`mcp/`**：`mcp-server-card`、`mcp-server-toolbar`、`mcp-access-config`、`mcp-access-config-dialog`、
+  `mcp-trace-chain`，以及调用链瀑布图模块 `trace-view`（TSX）
+- **`plugin/`**：`plugin-manage`（插件展示与管理，结构见其 README）、`plugin-form`（15+ 插件专用表单，按插件 code 分目录）
+- **全局组件**（在 `main.ts` 注册，无需导入直接使用）：`AgIcon`、`AgIconButton`、`AgCopyButton`
+- **放置原则**：`src/components/` 只放被两个及以上功能模块（`views/<模块>`、`layout/<布局>`）复用的组件；
+  只被一个模块使用的组件放在该模块的 `components/` 下，只被 `App.vue` 使用的放在 `src/layout/app-header/`。
 
 ### 组合式函数 (`src/hooks/`)
 

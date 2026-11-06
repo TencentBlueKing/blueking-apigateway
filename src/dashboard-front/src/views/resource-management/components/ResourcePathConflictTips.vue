@@ -146,8 +146,8 @@ import { getResourcePathConflicts } from '@/services/source/gateway/resource';
 import { useEnv } from '@/stores';
 import { useFeatureFlag } from '@/stores/useFeatureFlag';
 import { METHOD_THEMES } from '@/enums';
-import AgTable from '@/components/ag-table/Index.vue';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 interface IConflictPartner {
   id: number

@@ -1,5 +1,5 @@
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="isShow"
     v-bind="$attrs"
     :width="960"
@@ -7,17 +7,17 @@
   >
     <template #default>
       <div class="p-l-40px p-r-24px">
-        <Guide :markdown-html="markdownHtml" />
+        <AgMarkdownViewer :markdown-html="markdownHtml" />
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import Guide from '@/components/guide/Index.vue';
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 
 const isShow = defineModel('isShow', {
   type: Boolean,

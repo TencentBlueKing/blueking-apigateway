@@ -111,16 +111,16 @@
 </template>
 
 <script setup lang="tsx">
-import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
+import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
 import {
   useFeatureFlag,
   useStage,
 } from '@/stores';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getResourceList } from '@/services/source/gateway/resource';
 import { batchResourceDocAITranslate } from '@/services/source/gateway/ai';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
 
 interface IProps {

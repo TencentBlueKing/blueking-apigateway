@@ -73,7 +73,7 @@ import { deleteBackendService, getBackendServiceList } from '@/services/source/g
 import { getStageList } from '@/services/source/gateway/stage';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 
 type IStageListItem = IExtractApiReturn<typeof getStageList>[number];

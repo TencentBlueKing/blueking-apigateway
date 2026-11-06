@@ -104,7 +104,7 @@
 import { usePermission } from '@/stores';
 import { t } from '@/locales';
 import { type IPermission } from '@/types/permission';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
 type IDialogParams = {

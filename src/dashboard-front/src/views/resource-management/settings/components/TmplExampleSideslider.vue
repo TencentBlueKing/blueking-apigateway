@@ -27,7 +27,7 @@
       @hidden="handleHidden"
     >
       <div class="tmpl-example-monaco-editor">
-        <editor-monaco
+        <AgCodeEditor
           v-model="editorText"
           read-only
         />
@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import editorMonaco from '@/components/ag-editor/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 
 interface IProps { isShow?: boolean }

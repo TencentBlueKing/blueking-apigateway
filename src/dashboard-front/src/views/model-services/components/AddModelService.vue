@@ -201,7 +201,7 @@ import {
   Message,
 } from 'bkui-vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
-import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import {
   createBackendService,
   getBackendServiceDetail,

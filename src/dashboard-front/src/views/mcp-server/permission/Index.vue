@@ -216,8 +216,8 @@ import type { IMCPServerAppPermissionApplyListOutput, IMCPServerListOutput } fro
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { locale, t } from '@/locales';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
-import AgDropdown from '@/components/ag-dropdown/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 interface IProps { gatewayId?: number }
 

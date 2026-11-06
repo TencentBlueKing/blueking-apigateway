@@ -92,7 +92,7 @@
                           <label>{{ t('访问地址') }}：</label>
                           <!-- 网关名/环境名 -->
                           <span>{{ stageAddress || '--' }}</span>
-                          <CopyButton :source="stageAddress" />
+                          <AgCopyButton :source="stageAddress" />
                         </div>
                       </BkFormItem>
                       <BkFormItem
@@ -435,7 +435,7 @@
                 <BkCol :span="12">
                   <div class="ag-value address">
                     <span>{{ stageAddress || '--' }}</span>
-                    <CopyButton :source="stageAddress" />
+                    <AgCopyButton :source="stageAddress" />
                   </div>
                 </BkCol>
               </BkRow>

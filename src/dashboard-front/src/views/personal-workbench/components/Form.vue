@@ -78,7 +78,7 @@
             :multiple="false"
             :placeholder="t('请输入用户')"
           />
-          <MemberSelector
+          <StaffSelector
             v-else
             v-model="formData.applied_by"
             :class="[{ 'is-exist-member': formData.applied_by?.length > 0 }]"
@@ -106,7 +106,7 @@ import { useDatePicker } from '@/hooks';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
 import type { IPersonalWorkbenchListQuery, IPersonalWorkbenchUIState } from '@/services/types/query/personal-workbench.ts';
 import BkUserSelector from '@blueking/bk-user-selector';
-import MemberSelector from '@/components/member-selector';
+import StaffSelector from '@/components/user/staff-selector';
 
 interface IProps {
   isShowSelection?: boolean

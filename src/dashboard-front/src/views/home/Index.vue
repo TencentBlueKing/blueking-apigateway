@@ -177,7 +177,7 @@
           <template
             v-if="['searchEmpty', 'error'].includes(emptyType ?? '') && !gatewaysList.length && !loading"
           >
-            <TableEmpty
+            <AgTableEmpty
               background="#f5f7fa"
               :empty-type="emptyType"
               @clear-filter="handleClearFilter"
@@ -437,11 +437,11 @@ import {
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway/gateway';
 import { vIntersectionObserver } from '@vueuse/components';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 type GatewayType = IExtractListApiResults<typeof getGatewayList>;

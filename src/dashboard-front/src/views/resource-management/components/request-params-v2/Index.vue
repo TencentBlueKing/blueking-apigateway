@@ -213,7 +213,7 @@
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
-import AgDropdown from '@/components/ag-dropdown/Index.vue';
+import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
 import BodyParameterTable from './components/BodyParameterTable.vue';
 import { RequestParamsImportError, jsonExampleToBody, openApiJsonToState } from './import-utils';
 import {

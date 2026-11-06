@@ -112,7 +112,7 @@
     </BkSideslider>
 
     <!-- 发布资源 -->
-    <ReleaseStage
+    <ReleaseStageSlider
       ref="releaseSidesliderRef"
       :current-assets="stageData"
       :version="versionData"
@@ -143,7 +143,7 @@ import {
 import { getStageList } from '@/services/source/gateway/stage';
 import CreateSDK from './CreateSDK.vue';
 import ResourceDetail from './ResourceDetail.vue';
-import VersionDiff from '@/components/version-diff/Index.vue';
+import VersionDiff from '@/components/release/version-diff/Index.vue';
 import {
   useFeatureFlag,
   useGateway,
@@ -153,13 +153,13 @@ import {
   type IExportDialog,
   type IExportParams,
 } from '@/types/common';
-import ReleaseStage from '@/components/release-stage/Index.vue';
+import ReleaseStageSlider from '@/components/release/release-stage-slider/Index.vue';
 import ExportResourceDialog from '../../components/ExportResourceDialog.vue';
 import { orderBy } from 'lodash-es';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
 
 interface IProps { version?: string }
 
@@ -306,7 +306,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               />
             )
             : (
-              <TenantUserSelector
+              <TenantUserEditor
                 mode="detail"
                 field="created_by"
                 content={[row?.created_by]}

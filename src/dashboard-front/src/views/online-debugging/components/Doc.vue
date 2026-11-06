@@ -120,7 +120,7 @@
               >
                 {{ curComponent.resource_url || '--' }}
               </code>
-              <CopyButton
+              <AgCopyButton
                 v-if="curComponent.resource_url"
                 v-bk-tooltips="t('复制')"
                 class="url-copy"

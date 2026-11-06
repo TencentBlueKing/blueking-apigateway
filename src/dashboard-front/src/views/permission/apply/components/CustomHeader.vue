@@ -39,7 +39,7 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const { t } = useI18n();
 const router = useRouter();

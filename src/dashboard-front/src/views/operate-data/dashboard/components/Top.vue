@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import { useStage } from '@/stores';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 type IntervalItem = {
   label: string

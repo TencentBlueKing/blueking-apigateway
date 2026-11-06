@@ -459,7 +459,7 @@
     />
 
     <!-- 生成版本 -->
-    <CreateResourceVersion
+    <CreateResourceVersionSlider
       ref="createResourceVersionRef"
       @done="handleVersionCreated"
     />
@@ -530,12 +530,12 @@ import ExportResourceDialog from '@/views/resource-management/components/ExportR
 import ResourceDocSlider from '@/views/resource-management/components/ResourceDocSlider.vue';
 import ResourcePathConflictTips from '@/views/resource-management/components/ResourcePathConflictTips.vue';
 import PageNotFound from '@/views/404.vue';
-import AgDropdown from '@/components/ag-dropdown/Index.vue';
-import PluginManage from '@/components/plugin-manage/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
-import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
-import VersionDiff from '@/components/version-diff/Index.vue';
-import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
+import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
+import PluginManage from '@/components/plugin/plugin-manage/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
+import CreateResourceVersionSlider from '@/components/release/create-resource-version-slider/Index.vue';
+import VersionDiff from '@/components/release/version-diff/Index.vue';
+import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
 import { useElementSize, useWindowSize } from '@vueuse/core';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
@@ -997,7 +997,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 {
                   row.labels?.length
                     ? (
-                      <RenderTagOverflow
+                      <AgOverflowTags
                         data={row.labels.map((label: any) => label.name)}
                       />
                     )

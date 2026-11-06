@@ -18,17 +18,17 @@
 
 import { defineStore } from 'pinia';
 
-import { transformTraceTree } from '@/components/trace-view/model/transform-trace-data';
-import { formatDuration } from '@/components/trace-view/utils/date';
-import { handleToggleCollapse, handleTraceTreeGroup } from '@/components/trace-view/utils/group';
-import { DEFAULT_TRACE_DATA } from '@/components/trace-view/constants/trace';
-import type { ISpan } from '@/components/trace-view/typings';
+import { transformTraceTree } from '@/components/mcp/trace-view/model/transform-trace-data';
+import { formatDuration } from '@/components/mcp/trace-view/utils/date';
+import { handleToggleCollapse, handleTraceTreeGroup } from '@/components/mcp/trace-view/utils/group';
+import { DEFAULT_TRACE_DATA } from '@/components/mcp/trace-view/constants/trace';
+import type { ISpan } from '@/components/mcp/trace-view/typings';
 import type {
   DirectionType,
   ISpanListItem,
   ITraceListItem,
   ITraceTree,
-} from '@/components/trace-view/typings/trace';
+} from '@/components/mcp/trace-view/typings/trace';
 import type { ITraceLog } from '@/types/observability';
 
 export type IInterfaceStatisticsType = {

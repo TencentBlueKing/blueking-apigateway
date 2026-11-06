@@ -95,7 +95,7 @@
                           />
                         </div>
                         <div class="icon-wrapper">
-                          <CopyButton
+                          <AgCopyButton
                             class="mr-8px"
                             :source="stageDetail.repo_info.repo_url"
                           />

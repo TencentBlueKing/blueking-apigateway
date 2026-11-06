@@ -109,7 +109,7 @@
                 </BkCollapse>
               </template>
               <template v-else>
-                <TableEmpty
+                <AgTableEmpty
                   v-if="!serverToolLoading"
                   :empty-type="keyword ? 'searchEmpty' : 'empty'"
                   @clear-filter="keyword = ''"
@@ -200,7 +200,7 @@
               <div class="color-#4d4f56 font-700 mb-16px">
                 {{ t('描述') }}
               </div>
-              <AgDescription
+              <AgExpandableText
                 ref="descriptionRef"
                 class="color-#4d4f56 break-all gap-4px"
                 :max-lines="5"
@@ -209,7 +209,7 @@
                 <template #description>
                   {{ selectedTool?.description }}
                 </template>
-              </AgDescription>
+              </AgExpandableText>
             </div>
           </template>
           <!--  API markdown 文档  -->
@@ -245,7 +245,7 @@
               </article>
             </div>
           </article>
-          <!-- <TableEmpty v-else /> -->
+          <!-- <AgTableEmpty v-else /> -->
         </div>
       </template>
     </BkResizeLayout>
@@ -266,8 +266,8 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import ResponseParams from '@/views/resource-management/components/response-params-v2/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
-import AgDescription from '@/components/ag-description/Index.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgExpandableText from '@/components/base/ag-expandable-text/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -307,7 +307,7 @@ const md = new MarkdownIt({
   },
 });
 
-const descriptionRef = ref<InstanceType<typeof AgDescription> | null>(null);
+const descriptionRef = ref<InstanceType<typeof AgExpandableText> | null>(null);
 const toolList = ref<IMCPServerToolOutput[]>([]);
 const keyword = ref(''); // 筛选器输入框的搜索关键字
 const activeGroupPanelNames = ref<string[]>([]); // 分类 collapse 展开的 panel

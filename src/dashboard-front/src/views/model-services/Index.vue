@@ -62,7 +62,7 @@
 <script setup lang="tsx">
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { Message } from 'bkui-vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import { usePopInfoBox } from '@/hooks';
 import { deleteBackendService, getBackendServiceList } from '@/services/source/gateway/backend';
 import { useGateway } from '@/stores';

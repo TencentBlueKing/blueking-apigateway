@@ -159,7 +159,7 @@
                 </BkSelect>
               </div>
               <div class="response-content">
-                <EditorMonaco
+                <AgCodeEditor
                   ref="resourceEditorRef"
                   v-model="editorText"
                   theme="Visual Studio"
@@ -199,10 +199,10 @@
 <script lang="ts" setup>
 import { useFeatureFlag } from '@/stores';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
-import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
-import AiChatSlider from '@/components/ai-seek/AiChatSlider.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
+import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
+import AiChatSlider from '@/components/ai/ai-chat-slider/Index.vue';
 
 type TableDataItem = {
   name: string
@@ -252,7 +252,7 @@ const detailsTypeList = ref([
   },
 ]);
 const editorText = ref<any>('');
-const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
+const resourceEditorRef: any = ref<InstanceType<typeof AgCodeEditor>>();
 const data = ref<any>({});
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
