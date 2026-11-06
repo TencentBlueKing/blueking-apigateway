@@ -200,16 +200,52 @@ export interface IStandardBackendConfigOutput {
   key?: string
 }
 
-export interface IAIBackendConfigOutput {
-  api_key: string | null
-  auth_header: Record<string, any> | null
-  endpoint: string
-  model: string | null
-  model_endpoint: string | null
-  model_options: Record<string, unknown>
+export interface IAIBackendInstanceOutput {
+  name: string
+  // 历史未配置 priority 的实例按主实例 10 返回
+  priority: number
   provider: 'openai' | 'deepseek' | 'openai-compatible'
-  stage_id: number
+  endpoint: string
+  model_endpoint: string | null
+  // 已脱敏的掩码
+  api_key: string | null
+  auth_header: {
+    name: string
+    value: string
+  } | null
+  model: string | null
+  model_options: Record<string, unknown>
+}
+
+export interface IAIBackendConfigOutput {
+  // 仅模型服务详情返回；环境后端接口的 config 不带环境信息
+  stage?: {
+    id: number
+    name: string
+  }
+  // 单位秒
   timeout: number
+  instances: IAIBackendInstanceOutput[]
+  // 历史数据可能缺省
+  balancer?: {
+    algorithm: 'roundrobin' | 'chash'
+  } | null
+  fallback_strategy?: ('http_429' | 'http_5xx')[] | null
+}
+
+/**
+ * PUT /gateways/{gateway_id}/backends/{id}/
+ */
+export interface IBackendUpdateOutput {
+  bound_stages: {
+    id: number
+    name: string
+  }[]
+  // 配置发生变化的环境，不代表发布完成
+  updated_stages: {
+    id: number
+    name: string
+  }[]
 }
 
 export interface IBackendTestConnectionOutput {
@@ -1473,16 +1509,7 @@ interface IStandardStageBackendConfigOutput {
   }
 }
 
-interface IAIStageBackendConfigOutput {
-  api_key: string | null
-  auth_header: Record<string, any> | null
-  endpoint: string
-  model: string | null
-  model_endpoint: string | null
-  model_options: Record<string, unknown>
-  provider: 'openai' | 'deepseek' | 'openai-compatible'
-  timeout: number
-}
+type IAIStageBackendConfigOutput = Omit<IAIBackendConfigOutput, 'stage'>;
 
 /**
  * GET /gateways/{gateway_id}/stages/{id}/backends/

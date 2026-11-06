@@ -21,6 +21,7 @@ import type {
   IBackendListOutput,
   IBackendRetrieveOutput,
   IBackendTestConnectionOutput,
+  IBackendUpdateOutput,
 } from '@/services/types/responses/gateways.ts';
 import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
 import type {
@@ -61,7 +62,7 @@ export const createBackendService = (gatewayId: number, params: IBackendInputSLZ
  * @param params 更新参数
  */
 export const updateBackendService = (gatewayId: number, id: number, params: IBackendInputSLZ) =>
-  http.put(`${path}/${gatewayId}/backends/${id}/`, params);
+  http.put<IBackendUpdateOutput>(`${path}/${gatewayId}/backends/${id}/`, params);
 
 /**
  * 测试 AI 后端服务连通性
@@ -69,7 +70,12 @@ export const updateBackendService = (gatewayId: number, id: number, params: IBac
  * @param params 连通测试参数
  */
 export const testBackendServiceConnection = (gatewayId: number, params: IBackendTestConnectionInputSLZ) =>
-  http.post<IBackendTestConnectionOutput>(`${path}/${gatewayId}/backends/test-connection/`, params);
+  http.post<IBackendTestConnectionOutput>(
+    `${path}/${gatewayId}/backends/test-connection/`,
+    params,
+    // 失败原因由表单内的提示条展示
+    { catchError: true },
+  );
 
 /**
  * 删除后端服务

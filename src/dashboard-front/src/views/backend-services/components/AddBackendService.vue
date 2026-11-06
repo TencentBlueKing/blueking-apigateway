@@ -368,50 +368,11 @@
     </AgSideslider>
 
     <!-- 提示弹窗 -->
-    <BkDialog
+    <ServicePublishDialog
       v-model:is-show="publishDialog.isShow"
-      class="custom-main-dialog"
-      width="500"
-    >
-      <div class="dialog-content">
-        <div class="publish-icon">
-          <Success fill="#3FC06D" />
-        </div>
-        <div class="dialog-title">
-          {{ t("内容保存成功，正在发布至对应环境...") }}
-        </div>
-        <div class="dialog-main">
-          <div class="publish-tips">
-            {{ t("当前服务") }} <span>{{ baseInfo.name }}</span>{{ t("，") }} {{ t("已绑定以下") }}
-            <span>{{ publishDialog.stageNames?.length }}</span>
-            {{ t("个环境，所有修改都将发布到这些环境中：") }}
-          </div>
-          <div class="flex flex-wrap publish-stages">
-            <div
-              v-for="stage in publishDialog.stageNames"
-              :key="stage"
-              class="stage-item"
-            >
-              {{ stage }}
-            </div>
-          </div>
-        </div>
-        <div class="dialog-footer">
-          <BkButton
-            theme="primary"
-            @click="toStageReleaseRecord"
-          >
-            {{ t("去查看发布记录") }}
-          </BkButton>
-          <BkButton
-            class="ml-10px"
-            @click="publishDialog.isShow = false"
-          >
-            {{ t("关闭") }}
-          </BkButton>
-        </div>
-      </div>
-    </BkDialog>
+      :service-name="baseInfo.name"
+      :stage-names="publishDialog.stageNames"
+    />
   </div>
 </template>
 
@@ -426,10 +387,7 @@ import {
   Input,
   Message,
 } from 'bkui-vue';
-import {
-  AngleUpFill,
-  Success,
-} from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import {
   useEnv,
   useFeatureFlag,
@@ -445,6 +403,7 @@ import { getStageList } from '@/services/source/gateway/stage';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
+import ServicePublishDialog from '@/views/backend-services/components/ServicePublishDialog.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 interface ILocalStageConfig {
@@ -470,7 +429,6 @@ const { editId = 0, base } = defineProps<IProps>();
 const emits = defineEmits<IEmits>();
 
 const { t, locale } = useI18n();
-const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
@@ -780,10 +738,6 @@ const handleConfirm = async () => {
   finally {
     isSaveLoading.value = false;
   }
-};
-
-const toStageReleaseRecord = () => {
-  router.push({ name: 'StageReleaseRecord' });
 };
 
 const setInit = () => {
@@ -1142,77 +1096,6 @@ defineExpose({ show });
     :deep(.stage-config-form > .bk-form-item:not(.timeout-item) > .bk-form-label) {
       font-size: 12px;
       line-height: 20px;
-    }
-  }
-}
-
-.custom-main-dialog {
-
-  :deep(.bk-dialog-title) {
-    display: none;
-  }
-
-  :deep(.bk-modal-footer) {
-    display: none;
-  }
-
-  .dialog-content {
-
-    .publish-icon {
-      margin-bottom: 18px;
-      font-size: 42px;
-      line-height: 32px;
-      text-align: center;
-    }
-
-    .dialog-title {
-      margin-bottom: 16px;
-      font-size: 20px;
-      color: #313238;
-      text-align: center;
-    }
-
-    .dialog-main {
-      padding: 12px 16px 18px;
-      margin-bottom: 25px;
-      background-color: #f5f6fa;
-      border-radius: 2px;
-
-      .publish-tips {
-        margin-bottom: 10px;
-        font-size: 14px;
-        color: #63656e;
-
-        span {
-          font-weight: 700;
-        }
-      }
-
-      .publish-stages {
-
-        .stage-item {
-          position: relative;
-          width: 33%;
-          padding-left: 12px;
-          font-size: 14px;
-          color: #63656e;
-
-          &::after {
-            position: absolute;
-            top: 10px;
-            left: 0;
-            width: 4px;
-            height: 4px;
-            background-color: #63656e;
-            border-radius: 50%;
-            content: " ";
-          }
-        }
-      }
-    }
-
-    .dialog-footer {
-      text-align: center;
     }
   }
 }

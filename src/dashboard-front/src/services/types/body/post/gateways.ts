@@ -95,21 +95,52 @@ export interface IAIBackendAuthHeaderInput {
   value: string
 }
 
-export interface IAIBackendConfigInput {
-  stage_id: number
-  provider: 'openai' | 'deepseek' | 'openai-compatible'
+export type AIBackendProviderInput = 'openai' | 'deepseek' | 'openai-compatible';
+export type AIBackendFallbackItemInput = 'http_429' | 'http_5xx';
+
+// 模型服务实例；后端严格拒绝未知字段，也不接受 null，可选字段为空时直接省略
+export interface IAIBackendInstanceInput {
+  // 实例名称：同环境、同模型服务内唯一，也是凭据掩码恢复的身份标识
+  name: string
+  // 主实例 10，备用实例 0
+  priority: number
+  provider: AIBackendProviderInput
+  // 仅自定义 Provider；内置 Provider 地址固定，不提交
   endpoint?: string
-  model_endpoint?: string | null
-  api_key?: string | null
-  auth_header?: IAIBackendAuthHeaderInput | null
-  model?: string | null
-  model_options: Record<string, unknown>
-  timeout: number
+  model_endpoint?: string
+  // 仅内置 Provider，不带 Bearer 前缀；未修改的已有凭据回传原掩码
+  api_key?: string
+  // 仅自定义 Provider
+  auth_header?: IAIBackendAuthHeaderInput
+  model?: string
+  model_options?: Record<string, unknown>
 }
 
+export interface IAIBackendBalancerInput {
+  // chash 固定按 $bk_app_code 分流，不提交 hash_on/key
+  algorithm: 'roundrobin' | 'chash'
+}
+
+export interface IAIBackendConfigInput {
+  stage_id: number
+  // 单位秒，整个环境的实例共用
+  timeout: number
+  instances: IAIBackendInstanceInput[]
+  // 仅多个主实例时提交；省略时后端默认 roundrobin
+  balancer?: IAIBackendBalancerInput
+  // 仅多实例时提交；省略时后端默认两项都启用，关闭重试必须显式提交 []
+  fallback_strategy?: AIBackendFallbackItemInput[]
+}
+
+// POST /gateways/{gateway_id}/backends/test-connection/ - 单实例连通性测试
 export interface IBackendTestConnectionInputSLZ {
+  // 仅测试已保存的实例时携带，用于按 Backend + 环境 + 实例名称恢复已脱敏的凭据
   backend_id?: number
-  config: IAIBackendConfigInput
+  config: {
+    // 新建环境时还没有环境 id，不传
+    stage_id?: number
+    instance: IAIBackendInstanceInput
+  }
 }
 
 // POST /gateways/{gateway_id}/backends/ - 创建后端服务
@@ -524,16 +555,7 @@ interface IStageStandardBackendConfigInput {
   }
 }
 
-interface IStageAIBackendConfigInput {
-  provider: 'openai' | 'deepseek' | 'openai-compatible'
-  endpoint?: string
-  model_endpoint?: string | null
-  api_key?: string | null
-  auth_header?: IAIBackendAuthHeaderInput | null
-  model?: string | null
-  model_options: Record<string, unknown>
-  timeout: number
-}
+type IStageAIBackendConfigInput = Omit<IAIBackendConfigInput, 'stage_id'>;
 
 // POST /gateways/{gateway_id}/stages/ - 创建环境
 export interface IStageInputSLZ {
