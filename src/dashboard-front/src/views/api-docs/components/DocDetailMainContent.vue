@@ -37,7 +37,7 @@
               {{ t('模型代理 API') }}
             </BkTag>
             <BkTag
-              v-if="basics?.is_deprecated"
+              v-if="deprecation.isDeprecated"
               theme="danger"
               class="font-400"
             >
@@ -71,11 +71,11 @@
           {{ api.description ?? '--' }}
         </p>
         <BkAlert
-          v-if="basics?.deprecated_note"
+          v-if="deprecation.note"
           theme="warning"
           class="mt-16px"
           closable
-          :title="basics?.deprecated_note"
+          :title="deprecation.note"
         />
       </header>
       <main class="detail-main">
@@ -224,7 +224,7 @@ import { useScroll } from '@vueuse/core';
 export interface IDocApi extends Pick<IDocsGatewaysResourcesListResponse,
   'id' | 'name' | 'description' | 'verified_app_required' | 'verified_user_required'>,
   Partial<Pick<IDocsGatewaysResourcesListResponse,
-    'method' | 'path' | 'resource_perm_required' | 'allow_apply_permission' | 'labels'>>,
+    'method' | 'path' | 'resource_perm_required' | 'allow_apply_permission' | 'labels' | 'is_deprecated' | 'deprecated_note'>>,
   Partial<Pick<IDocsEsbBoardsSystemsComponentsListResponse, 'component_permission_required'>> {}
 
 export type IDocContent = Omit<IDocsGatewaysResourcesDocReadResponse, 'updated_time'> & {
@@ -316,6 +316,20 @@ const { y } = useScroll(detailWrapRef, {
 const showApplyPermission = computed(() => {
   return curTab?.value === 'gateway'
     && Boolean(api?.verified_app_required && api?.resource_perm_required && api?.allow_apply_permission);
+});
+
+// 弃用状态：网关弃用时覆盖其下所有资源（展示网关的弃用说明），否则取资源自身
+const deprecation = computed(() => {
+  if (basics?.is_deprecated) {
+    return {
+      isDeprecated: true,
+      note: basics?.deprecated_note ?? '',
+    };
+  }
+  return {
+    isDeprecated: Boolean(api?.is_deprecated),
+    note: api?.deprecated_note ?? '',
+  };
 });
 
 const appVerifiedTooltips = computed(() => {

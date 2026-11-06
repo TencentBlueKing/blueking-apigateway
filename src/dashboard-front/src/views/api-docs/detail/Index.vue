@@ -169,7 +169,7 @@
                               {{ t('模型代理 API') }}
                             </BkTag>
                             <BkTag
-                              v-if="curTargetBasics?.is_deprecated"
+                              v-if="curTargetBasics?.is_deprecated || api.is_deprecated"
                               theme="danger"
                             >
                               deprecated

@@ -382,6 +382,64 @@
       </div>
     </BkDialog>
 
+    <!-- 标记为弃用 dialog -->
+    <BkDialog
+      width="540"
+      :is-show="deprecationDialog.isShow"
+      :title="t('确认标记为弃用？')"
+      quick-close
+      theme="primary"
+      @closed="deprecationDialog.isShow = false"
+    >
+      <div>
+        <BkAlert
+          class="mb-16px"
+          theme="warning"
+        >
+          <template #title>
+            <div>{{ t('资源被标记为弃用后，将在 API 文档中标记为“deprecated”，不推荐用户调用') }}</div>
+          </template>
+        </BkAlert>
+        <BkForm
+          ref="deprecationFormRef"
+          :model="deprecationDialog.formData"
+          form-type="vertical"
+        >
+          <BkFormItem
+            class="form-item-name"
+            :label="t('弃用说明')"
+            property="deprecated_note"
+            required
+          >
+            <BkInput
+              v-model="deprecationDialog.formData.deprecated_note"
+              :placeholder="t('请输入废弃说明，比如：此 API 即将下线，请使用 xx API 替代。')"
+              type="textarea"
+              :maxlength="100"
+              :rows="3"
+              show-word-limit
+            />
+          </BkFormItem>
+          <span class="font-size-12px color-#979ba5 top--20px position-relative">
+            {{ t('说明将会展示在 API 文档中，帮助用户理解弃用影响以及如何迁移') }}
+          </span>
+        </BkForm>
+      </div>
+      <template #footer>
+        <BkButton
+          theme="primary"
+          class="mr-8px"
+          :loading="deprecationDialog.loading"
+          @click="handleDeprecationConfirm"
+        >
+          {{ t('确定') }}
+        </BkButton>
+        <BkButton @click="deprecationDialog.isShow = false">
+          {{ t('取消') }}
+        </BkButton>
+      </template>
+    </BkDialog>
+
     <!-- 资源配置导出 -->
     <ExportResourceDialog
       v-model:dialog-config="exportDialogConfig"
@@ -461,6 +519,7 @@ import {
   deleteResources,
   exportResources,
   getResourceList,
+  updateResourceDeprecation,
 } from '@/services/source/gateway/resource';
 import { checkNeedNewVersion, getVersionList } from '@/services/source/gateway/resource-version';
 import ResourceDetail from '@/views/resource-management/settings/components/ResourceDetail.vue';
@@ -788,6 +847,20 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
               />
             )
             : null}
+          {row.is_deprecated
+            ? (
+              <bk-tag
+                theme="danger"
+                v-bk-tooltips={{
+                  content: row.deprecated_note || t('该资源已弃用'),
+                  disabled: !row.deprecated_note,
+                  extCls: 'max-w-480px',
+                }}
+              >
+                deprecated
+              </bk-tag>
+            )
+            : null}
         </div>
       ),
     },
@@ -1003,6 +1076,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                           text
                         >
                           { t('克隆') }
+                        </bk-button>
+                      </bk-dropdown-item>
+                      <bk-dropdown-item onClick={() => handleDeprecation(row)}>
+                        <bk-button
+                          size="small"
+                          text
+                        >
+                          { row.is_deprecated ? t('取消弃用标记') : t('标记为弃用') }
                         </bk-button>
                       </bk-dropdown-item>
                       <bk-dropdown-item onClick={() => handleConfirmDelete(row)}>
@@ -1453,6 +1534,73 @@ const handleConfirmDelete = (row: TableRowData) => {
       }
     },
   });
+};
+
+// 标记为弃用 / 取消弃用标记
+const deprecationFormRef = ref<InstanceType<typeof import('bkui-vue')['Form']>>();
+const deprecationDialog = reactive({
+  isShow: false,
+  loading: false,
+  resource: null as TableRowData | null,
+  formData: { deprecated_note: '' },
+});
+
+const handleDeprecation = (row: TableRowData) => {
+  if (row.is_deprecated) {
+    usePopInfoBox({
+      isShow: true,
+      title: t('确认取消弃用标记？'),
+      subTitle: t('去除后，API 文档中的“deprecated”标记将被移除'),
+      cancelText: t('取消'),
+      onConfirm: async () => {
+        await updateResourceDeprecation(gatewayId, row.id, {
+          is_deprecated: false,
+          deprecated_note: '',
+        });
+        row.is_deprecated = false;
+        row.deprecated_note = '';
+        Message({
+          message: t('更新成功'),
+          theme: 'success',
+          width: 'auto',
+        });
+        handleSuccess();
+      },
+    });
+  }
+  else {
+    deprecationDialog.resource = row;
+    deprecationDialog.formData.deprecated_note = '';
+    deprecationDialog.isShow = true;
+    setTimeout(() => {
+      deprecationFormRef.value?.clearValidate();
+    }, 0);
+  }
+};
+
+const handleDeprecationConfirm = async () => {
+  const row = deprecationDialog.resource;
+  if (!row) return;
+  try {
+    await deprecationFormRef.value?.validate();
+    deprecationDialog.loading = true;
+    await updateResourceDeprecation(gatewayId, row.id, {
+      is_deprecated: true,
+      deprecated_note: deprecationDialog.formData.deprecated_note,
+    });
+    row.is_deprecated = true;
+    row.deprecated_note = deprecationDialog.formData.deprecated_note;
+    Message({
+      message: t('更新成功'),
+      theme: 'success',
+      width: 'auto',
+    });
+    handleSuccess();
+    deprecationDialog.isShow = false;
+  }
+  finally {
+    deprecationDialog.loading = false;
+  }
 };
 
 // 展示右边内容
@@ -1966,6 +2114,13 @@ onMounted(() => {
 
   &.show-notice {
     height: calc(100vh - 205px);
+  }
+}
+
+.form-item-name {
+
+  :deep(.bk-form-error) {
+    position: relative;
   }
 }
 </style>

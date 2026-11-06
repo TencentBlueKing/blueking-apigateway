@@ -315,3 +315,9 @@ export interface IAPIDebugHistoriesListOutputSLZ {
   request: Record<string, any> // 请求参数
   response: Record<string, any> // 返回结果
 }
+
+// PATCH /gateways/{gateway_id}/resources/{resource_id}/deprecation/ - 更新资源弃用标记
+export interface IResourceDeprecationUpdateInputSLZ {
+  is_deprecated: boolean // 是否弃用
+  deprecated_note: string // 弃用说明，取消弃用时为空字符串
+}
