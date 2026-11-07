@@ -16,8 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Optional
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -26,10 +24,9 @@ from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModel
 from apigateway.core.models import Gateway
 
 from .constants import (
-    SKILL_CODE_MAX_LENGTH,
+    SKILL_CODE_PREFIXES,
     SKILL_DESCRIPTION_MAX_LENGTH,
     SKILL_DISPLAY_NAME_MAX_LENGTH,
-    SKILL_ID_PREFIXES,
     SKILL_NAME_MAX_LENGTH,
     SKILL_TAG_NAME_MAX_LENGTH,
     SKILL_VERSION_MAX_LENGTH,
@@ -53,11 +50,8 @@ class SkillTag(models.Model):
 
 
 class SkillMetadata(TimestampedModelMixin, OperatorModelMixin):
-    """Skill 元数据，code 为对外 ID，新建时由 build_code() 拼出"""
+    """Skill 元数据，对外 ID 由 code 属性读取时拼出，不入库"""
 
-    # 内置 Skill 的 gateway 为 NULL，MySQL 唯一索引不把多个 NULL 视为重复，(type, gateway, name) 拦不住
-    # 同名的内置 Skill，所以把对外 ID 存下来并加唯一约束。name 不含下划线，能从 code 无歧义地拆出网关名。
-    code = models.CharField(max_length=SKILL_CODE_MAX_LENGTH, unique=True, help_text=_("对外 ID"))
     type = models.CharField(max_length=16, choices=SkillTypeEnum.get_choices(), help_text=_("Skill 来源类型"))
     gateway = models.ForeignKey(
         Gateway,
@@ -107,14 +101,16 @@ class SkillMetadata(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = _("Skill 元数据")
         verbose_name_plural = _("Skill 元数据")
         db_table = "skill_metadata"
+        # gateway 为空时唯一索引拦不住同名内置 Skill，重复校验由业务代码保证。
         unique_together = ("type", "gateway", "name")
 
-    @staticmethod
-    def build_code(type: str, gateway_name: Optional[str], name: str) -> str:
-        """内置 Skill 为 p_{name}，网关 Skill 为 g_{网关名}_{name}"""
-        if type == SkillTypeEnum.GATEWAY.value:
-            return f"{SKILL_ID_PREFIXES[type]}{gateway_name}_{name}"
-        return f"{SKILL_ID_PREFIXES[type]}{name}"
+    @property
+    def code(self) -> str:
+        """对外 ID：内置 Skill 为 p_{name}，网关 Skill 为 g_{网关名}_{name}"""
+        prefix = SKILL_CODE_PREFIXES[self.type]
+        if self.type == SkillTypeEnum.GATEWAY.value:
+            return f"{prefix}{self.gateway.name}_{self.name}"
+        return f"{prefix}{self.name}"
 
 
 class SkillConfig(TimestampedModelMixin, OperatorModelMixin):

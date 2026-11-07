@@ -35,8 +35,7 @@ class SkillStatusEnum(StructuredEnum):
     OFFLINE = EnumField("offline", label=_("已下架"))
 
 
-# 对外 ID（skill_id）的来源前缀
-SKILL_ID_PREFIXES = {
+SKILL_CODE_PREFIXES = {
     SkillTypeEnum.PLATFORM.value: "p_",
     SkillTypeEnum.GATEWAY.value: "g_",
 }
@@ -44,8 +43,6 @@ SKILL_ID_PREFIXES = {
 # artifact 中 SKILL.md 正文的键，键为包内相对路径
 SKILL_MD_ARTIFACT_KEY = "SKILL.md"
 
-# code 存对外 ID：前缀 2 + 网关名最长 64 + 下划线 1 + name 最长 64 = 131
-SKILL_CODE_MAX_LENGTH = 160
 SKILL_NAME_MAX_LENGTH = 64
 SKILL_DISPLAY_NAME_MAX_LENGTH = 64
 SKILL_DESCRIPTION_MAX_LENGTH = 1024

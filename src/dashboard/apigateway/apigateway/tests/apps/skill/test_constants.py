@@ -16,15 +16,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from apigateway.apps.skill.constants import SKILL_ID_PREFIXES, SkillStatusEnum, SkillTypeEnum
+from apigateway.apps.skill.constants import SKILL_CODE_PREFIXES, SkillStatusEnum, SkillTypeEnum
 
 
 class TestSkillTypeEnum:
     def test_values(self):
         assert SkillTypeEnum.get_values() == ["platform", "gateway"]
 
-    def test_every_type_has_id_prefix(self):
-        assert set(SKILL_ID_PREFIXES) == set(SkillTypeEnum.get_values())
+    def test_every_type_has_code_prefix(self):
+        assert set(SKILL_CODE_PREFIXES) == set(SkillTypeEnum.get_values())
 
 
 class TestSkillStatusEnum:

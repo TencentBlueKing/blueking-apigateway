@@ -43,7 +43,6 @@ def fake_skill_metadata():
     return G(
         SkillMetadata,
         type=SkillTypeEnum.PLATFORM.value,
-        code="p_job-plan-run-and-log",
         name="job-plan-run-and-log",
         display_name="执行作业方案并收集日志",
         display_name_en=None,
@@ -59,7 +58,6 @@ def fake_gateway_skill_metadata(fake_gateway):
         SkillMetadata,
         type=SkillTypeEnum.GATEWAY.value,
         gateway=fake_gateway,
-        code=SkillMetadata.build_code(SkillTypeEnum.GATEWAY.value, fake_gateway.name, "task-status"),
         name="task-status",
         current_version=None,
     )
@@ -84,18 +82,15 @@ class TestSkillMetadata:
             (SkillTypeEnum.GATEWAY.value, "bk-sops", "task-status", "g_bk-sops_task-status"),
         ],
     )
-    def test_build_code(self, type_, gateway_name, name, expected):
-        assert SkillMetadata.build_code(type_, gateway_name, name) == expected
+    def test_code(self, type_, gateway_name, name, expected):
+        gateway = Gateway(name=gateway_name) if gateway_name else None
+        metadata = SkillMetadata(type=type_, gateway=gateway, name=name)
 
-    def test_longest_code_fits_column(self):
-        code = SkillMetadata.build_code(SkillTypeEnum.GATEWAY.value, "a" * 64, "b" * 64)
-
-        assert len(code) <= SkillMetadata._meta.get_field("code").max_length
+        assert metadata.code == expected
 
     def test_defaults(self):
         metadata = SkillMetadata.objects.create(
             type=SkillTypeEnum.PLATFORM.value,
-            code="p_task-status",
             name="task-status",
             display_name="查任务状态",
             description="查询标准运维任务状态",
@@ -128,22 +123,11 @@ class TestSkillMetadata:
         with override("zh-cn"):
             assert fake_skill_metadata.display_name_i18n == "执行作业方案并收集日志"
 
-    def test_unique_code(self, fake_skill_metadata):
-        with pytest.raises(IntegrityError), transaction.atomic():
-            SkillMetadata.objects.create(
-                type=SkillTypeEnum.PLATFORM.value,
-                code=fake_skill_metadata.code,
-                name=fake_skill_metadata.name,
-                display_name="执行作业方案",
-                description="执行作业平台的作业执行方案",
-            )
-
     def test_same_name_with_different_type(self, fake_skill_metadata, fake_gateway):
         other = G(
             SkillMetadata,
             type=SkillTypeEnum.GATEWAY.value,
             gateway=fake_gateway,
-            code=SkillMetadata.build_code(SkillTypeEnum.GATEWAY.value, fake_gateway.name, fake_skill_metadata.name),
             name=fake_skill_metadata.name,
             current_version=None,
         )
@@ -156,9 +140,6 @@ class TestSkillMetadata:
             SkillMetadata,
             type=SkillTypeEnum.GATEWAY.value,
             gateway=other_gateway,
-            code=SkillMetadata.build_code(
-                SkillTypeEnum.GATEWAY.value, other_gateway.name, fake_gateway_skill_metadata.name
-            ),
             name=fake_gateway_skill_metadata.name,
             current_version=None,
         )
@@ -168,7 +149,6 @@ class TestSkillMetadata:
             SkillMetadata.objects.create(
                 type=SkillTypeEnum.GATEWAY.value,
                 gateway=fake_gateway_skill_metadata.gateway,
-                code="g_another_task-status",
                 name=fake_gateway_skill_metadata.name,
                 display_name="查任务状态",
                 description="查询标准运维任务状态",

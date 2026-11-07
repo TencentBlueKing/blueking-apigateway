@@ -33,7 +33,6 @@ class Migration(migrations.Migration):
                 ('updated_time', models.DateTimeField(auto_now=True, null=True)),
                 ('created_by', models.CharField(blank=True, max_length=32, null=True)),
                 ('updated_by', models.CharField(blank=True, max_length=32, null=True)),
-                ('code', models.CharField(help_text='对外 ID', max_length=160, unique=True)),
                 ('type', models.CharField(choices=[('platform', '平台内置'), ('gateway', '网关')], help_text='Skill 来源类型', max_length=16)),
                 ('name', models.CharField(help_text='Skill 名称，即 SKILL.md 的 name', max_length=64)),
                 ('display_name', models.CharField(help_text='Skill 展示名', max_length=64)),
