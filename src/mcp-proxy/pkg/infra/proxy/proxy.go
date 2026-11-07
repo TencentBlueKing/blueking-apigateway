@@ -169,12 +169,42 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
-func buildToolResultFromJSONBytes(output []byte) *mcp.CallToolResult {
+func buildToolResultFromJSONText(output string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
-			&mcp.TextContent{Text: string(output)},
+			&mcp.TextContent{Text: output},
 		},
 	}
+}
+
+// marshalToolResponse returns the text consumed by TextContent on success.
+// Non-2xx responses retain the byte payload expected by APIError, avoiding a
+// string-to-byte round trip and preserving its JSON error formatting.
+func marshalToolResponse(
+	payload *toolResponsePayload,
+	traceID, xRequestID string,
+	rawResponseEnabled bool,
+) (string, error) {
+	isSuccess := payload.statusCode >= 200 && payload.statusCode <= 299
+	if !rawResponseEnabled && isSuccess {
+		return payload.marshalEnvelope(traceID, xRequestID)
+	}
+
+	var responseBytes []byte
+	var err error
+	if rawResponseEnabled {
+		// Raw mode omits envelope metadata for both success and non-2xx response bodies.
+		responseBytes, err = payload.marshalRawResponse()
+	} else {
+		responseBytes, err = payload.marshalEnvelopeBytes(traceID, xRequestID)
+	}
+	if err != nil {
+		return "", err
+	}
+	if !isSuccess {
+		return "", runtime.NewAPIError("call tool err", json.RawMessage(responseBytes), payload.statusCode)
+	}
+	return string(responseBytes), nil
 }
 
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
@@ -1143,30 +1173,12 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 						bodyBytes,
 					)
 
-					var responseBytes []byte
-					var marshalErr error
-					if rawResponseEnabledGetter() {
-						// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
-						// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
-						// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
-						responseBytes, marshalErr = responsePayload.marshalRawResponse()
-					} else {
-						responseBytes, marshalErr = responsePayload.marshalEnvelope(
-							trace.GetTraceIDFromContext(ctx),
-							xRequestID,
-						)
-					}
-					if marshalErr != nil {
-						return nil, marshalErr
-					}
-					if response.Code() < 200 || response.Code() > 299 {
-						return nil, runtime.NewAPIError(
-							"call tool err",
-							json.RawMessage(responseBytes),
-							response.Code(),
-						)
-					}
-					return json.RawMessage(responseBytes), nil
+					return marshalToolResponse(
+						responsePayload,
+						trace.GetTraceIDFromContext(ctx),
+						xRequestID,
+						rawResponseEnabledGetter(),
+					)
 				},
 			),
 		}
@@ -1224,8 +1236,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		auditUpstreamReqID = responsePayload.upstreamRequestID
 		auditLatency = duration
 		// 注意：完整的调用结果会在 defer 中的 "call tool complete" 日志中记录
-		// Reader contract guarantees submit is json.RawMessage on success; see ClientResponseReaderFunc above.
-		responseBytes, ok := submit.(json.RawMessage)
+		// Reader contract guarantees submit is JSON text on success; see ClientResponseReaderFunc above.
+		responseText, ok := submit.(string)
 		if !ok {
 			return handleUnexpectedSubmitResult(
 				ctx,
@@ -1247,7 +1259,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			), nil
 		}
 		auditStatus = "success"
-		return buildToolResultFromJSONBytes(responseBytes), nil
+		return buildToolResultFromJSONText(responseText), nil
 	}
 	return handler
 }
