@@ -82,8 +82,8 @@ import { getVersionDetail } from '@/services/source/gateway/resource-version';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import ResourceDetails from './ResourceDetails.vue';
 import CreateStage from '../../components/CreateStage.vue';
-import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number];
@@ -265,7 +265,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
         labels.value?.filter((label: IGatewayLabelItem) =>
           row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name).length
           ? (
-            <RenderTagOverflow
+            <AgOverflowTags
               data={labels.value?.filter((label: IGatewayLabelItem) =>
                 row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name)}
             />

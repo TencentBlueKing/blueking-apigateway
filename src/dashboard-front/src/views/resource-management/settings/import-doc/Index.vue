@@ -164,7 +164,7 @@
           v-if="docType === 'swagger'"
           class="monaco-editor-wrapper"
         >
-          <editor-monaco
+          <AgCodeEditor
             ref="resourceEditorRef"
             v-model="editorText"
           />
@@ -324,7 +324,7 @@
 
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
-import editorMonaco from '@/components/ag-editor/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { getStrFromFile, messageError } from '@/utils';
 import { checkResourceImport } from '@/services/source/gateway/resource';
 import {
@@ -367,7 +367,7 @@ const isDataLoading = ref(false);
 const isImportLoading = ref(false);
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
 const zipFile = ref<File | string>('');
-const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
+const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>(); // 实例化
 
 // 上传文件大小限制，单位 mb
 const uploadMaxSize = 10;

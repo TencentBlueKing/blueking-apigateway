@@ -63,7 +63,7 @@
             :is-error-class="'maintainers-error-tip'"
             @on-change="(e: any) => handleContactsChange(e)"
           />
-          <TenantUserSelector
+          <TenantUserEditor
             v-else
             ref="selectorRef"
             :content="docForm.contacts"
@@ -185,7 +185,7 @@
                     field="maintainers"
                     :content="data?.maintainers"
                   />
-                  <TenantUserSelector
+                  <TenantUserEditor
                     v-else
                     :content="data?.maintainers"
                     field="maintainers"
@@ -212,7 +212,7 @@
                     field="contacts"
                     :content="docForm.contacts"
                   />
-                  <TenantUserSelector
+                  <TenantUserEditor
                     v-else
                     :content="docForm.contacts"
                     field="contacts"
@@ -260,7 +260,7 @@ import { Form, Message } from 'bkui-vue';
 import { getGatewayDetail, patchGateway } from '@/services/source/gateway/gateway';
 import type { IExtractApiReturn } from '@/services/types/utils';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 interface IForm {
@@ -305,7 +305,7 @@ const InitForm = (): IForm => {
 };
 
 const formRef = ref<InstanceType<typeof Form> & { clearValidate: () => void }>();
-const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelector> & { isShowError: boolean
+const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserEditor> & { isShowError: boolean
   isEditable: boolean }>();
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());

@@ -46,7 +46,7 @@
       v-show="isEmpty"
       class="ap-nodata basic-height"
     >
-      <TableEmpty
+      <AgTableEmpty
         :empty-type="tableEmptyConf.emptyType"
         :abnormal="tableEmptyConf.isAbnormal"
         @refresh="handleInit"
@@ -62,7 +62,7 @@ import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
 import { useChartIntervalOption } from '@/hooks';
 import type { ISeriesItemType, ISummarySearchParams } from '@/types/metrics';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { getColorHue } from '@/utils';
 
 interface IProps {

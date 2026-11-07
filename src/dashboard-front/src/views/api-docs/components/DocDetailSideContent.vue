@@ -76,7 +76,7 @@
             </DocDetailField>
             <DocDetailField :label="t('网关访问地址')">
               <span>{{ basics?.api_url || '--' }}</span>
-              <CopyButton
+              <AgCopyButton
                 v-if="basics?.api_url"
                 :source="basics.api_url"
               />

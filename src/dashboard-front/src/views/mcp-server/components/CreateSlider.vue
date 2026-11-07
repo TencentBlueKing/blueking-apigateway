@@ -410,7 +410,7 @@
                                 </div>
                               </div>
                             </div>
-                            <TableEmpty
+                            <AgTableEmpty
                               v-else
                               class="h-[calc(100%-50px)]"
                             />
@@ -522,8 +522,8 @@ import { t } from '@/locales';
 import ServerBasicForm from '@/views/mcp-server/components/ServerBasicForm.vue';
 import OAuthSwitcher from '@/views/mcp-server/components/OAuthSwitcher.vue';
 import OAuthAlert from '@/views/mcp-server/components/OAuthAlert.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 type IResourceTabItem = {
   label: string

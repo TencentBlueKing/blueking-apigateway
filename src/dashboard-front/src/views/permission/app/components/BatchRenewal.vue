@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="renewalSliderConfig.isShow"
     :width="960"
     quick-close
@@ -114,7 +114,7 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script lang="tsx" setup>
@@ -122,8 +122,8 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
-import AgTable from '@/components/ag-table/Index.vue';
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
 type ISliderParams = {

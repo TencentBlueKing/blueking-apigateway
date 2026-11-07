@@ -173,7 +173,7 @@ import {
 import { getResourceList } from '@/services/source/gateway/resource';
 import { getStageList } from '@/services/source/gateway/stage';
 import Chart from './components/Chart.vue';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
 
 type InfoTypeItem = {

@@ -19,7 +19,7 @@
 /** 基于infoBox二次封装  */
 import { InfoBox } from 'bkui-vue';
 import { isFunction } from 'lodash-es';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 type Align = 'center' | 'left' | 'right';
 type Theme = 'danger' | 'success' | 'warning' | 'primary';

@@ -82,7 +82,7 @@ import {
 import type { IAlarmStrategy } from '@/types/monitor';
 import { getStageList } from '@/services/source/gateway/stage';
 import type { IExtractApiReturn } from '@/services/types/utils';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/AddAlarmStrategy.vue';
 
 // 扩展 IAlarmStrategy 以包含运行时动态属性

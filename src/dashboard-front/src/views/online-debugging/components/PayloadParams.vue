@@ -74,7 +74,7 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import EditTable from '@/views/online-debugging/components/EditTable.vue';
 
 interface IProps {

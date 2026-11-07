@@ -70,7 +70,7 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { useEnv } from '@/stores';
 
 const envStore = useEnv();

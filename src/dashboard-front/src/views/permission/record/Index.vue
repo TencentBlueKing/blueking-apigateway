@@ -223,8 +223,8 @@ import type { ITableMethod } from '@/types/common';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
-import AgIcon from '@/components/ag-icon/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 // 扩展 IApprovalListItem，补充运行时动态添加的字段
 interface IApprovalListItemExt extends IApprovalListItem {

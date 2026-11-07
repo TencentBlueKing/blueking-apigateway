@@ -73,7 +73,7 @@
       </div>
     </template>
 
-    <Guide :markdown-html="markdownHtml" />
+    <AgMarkdownViewer :markdown-html="markdownHtml" />
 
     <CustomMdGuideSlider
       v-model:is-show="isShowGuideSlider"
@@ -97,7 +97,7 @@ import {
 } from '@/services/source/gateway/mcp-server/server';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import Guide from '@/components/guide/Index.vue';
+import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
 import CustomMdGuideSlider from '@/views/mcp-server/components/CustomMdGuideSlider.vue';
 
 interface IProps {

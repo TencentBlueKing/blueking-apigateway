@@ -95,8 +95,8 @@
             </div>
             <div class="header-aside-wrap">
               <LanguageToggle />
-              <ProductInfo />
-              <UserInfo v-if="isBkUserNameConfigured" />
+              <HelpMenu />
+              <UserMenu v-if="isBkUserNameConfigured" />
             </div>
           </div>
         </template>
@@ -109,9 +109,9 @@
 </template>
 
 <script lang="ts" setup>
-import LanguageToggle from '@/components/language-toggle/Index.vue';
-import ProductInfo from '@/components/product-info/Index.vue';
-import UserInfo from '@/components/user-info/Index.vue';
+import LanguageToggle from '@/layout/app-header/LanguageToggle.vue';
+import HelpMenu from '@/layout/app-header/HelpMenu.vue';
+import UserMenu from '@/layout/app-header/UserMenu.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';

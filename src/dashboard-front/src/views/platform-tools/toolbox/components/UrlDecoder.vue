@@ -103,7 +103,7 @@
 import { Input } from 'bkui-vue';
 import { copy } from '@/utils';
 import highlightJs from 'highlight.js';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const { t } = useI18n();
 

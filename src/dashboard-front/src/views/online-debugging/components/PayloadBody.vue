@@ -84,7 +84,7 @@
       v-show="type === 'raw'"
       class="raw-content"
     >
-      <EditorMonaco
+      <AgCodeEditor
         ref="resourceEditorRef"
         v-model="editorText"
         theme="Visual Studio"
@@ -100,7 +100,7 @@
 
 <script lang="ts" setup>
 import EditTable from '@/views/online-debugging/components/EditTable.vue';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 
 interface IProps {
   fromDataPayload?: any[]
@@ -138,7 +138,7 @@ const datasource = ref([
     label: 'TEXT',
   },
 ]);
-const resourceEditorRef = ref<InstanceType<typeof EditorMonaco>>();
+const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>();
 const editorText = ref(JSON.stringify(rawPayload, null, 2));
 
 const validate = async () => {

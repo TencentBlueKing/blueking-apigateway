@@ -235,7 +235,7 @@
       </div>
     </BkNavigation>
     <!-- 1.13 版本升级提示 -->
-    <Version113UpdateNotice ref="version113UpdateNoticeRef" />
+    <V113ReleaseNoteDialog ref="version113UpdateNoticeRef" />
   </div>
 </template>
 
@@ -254,7 +254,7 @@ import { getPermissionApplyList } from '@/services/source/gateway/permission';
 import { getMcpAppPermissionApplyPendingCount } from '@/services/source/gateway/mcp-server/permission';
 import type { IExtractListApiResults } from '@/services/types/utils';
 import type { IMenu } from '@/types/common';
-import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
+import V113ReleaseNoteDialog from './components/V113ReleaseNoteDialog.vue';
 import { useGatewayRole } from '@/hooks';
 import { canAccessByRole } from '@/utils/gateway-permission';
 import { isGatewayNavigationPending } from '@/router/gateway-role-guard';

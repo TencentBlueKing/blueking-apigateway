@@ -123,7 +123,7 @@
 import { t } from '@/locales';
 import { INTERVAL_TIME_LIST, PRECISION_STEPS_LIST } from '@/constants';
 import { useObservabilityDashboard } from '@/hooks';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const {
   interval,

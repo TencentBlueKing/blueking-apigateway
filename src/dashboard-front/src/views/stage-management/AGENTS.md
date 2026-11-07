@@ -6,7 +6,7 @@
   资源详情复用资源管理中的协议组件；修改共享组件时需核对环境中的只读展示。
 - `overview/components/ReleaseProgrammable.vue` 和 `components/ReleaseProgrammableEvent.vue`
   处理可编程网关的部署及发布事件，不能用普通网关发布流程代替其 PaaS 部署状态。
-- 普通发布的共享组件位于 `src/components/`；发布接口见 `src/services/source/gateway/release.ts`，
+- 普通发布的共享组件位于 `src/components/release/`；发布接口见 `src/services/source/gateway/release.ts`，
   事件响应类型见 `src/services/types/responses/gateways.ts`，事件视图类型见 `src/types/programmable.ts`。
   修改发布逻辑需核对环境 ID、版本 ID、发布记录和数据面关联，避免把提交请求成功显示为最终发布成功。
 - `release-record/Index.vue` 是历史查询入口；保留失败/进行中/超时等展示和事件详情。

@@ -26,7 +26,7 @@
             ref="chartBoxRef"
             class="chart-el"
           />
-          <TableEmpty
+          <AgTableEmpty
             v-show="!isDisplayChart && !chartLoading"
             :empty-type="chartEmptyConf.emptyType"
             :abnormal="chartEmptyConf.isAbnormal"
@@ -49,7 +49,7 @@ import 'echarts/lib/component/dataZoom';
 import { debounce, merge } from 'lodash-es';
 import { t } from '@/locales';
 import { useChartIntervalOption } from '@/hooks';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
 interface IEmits {
   'clear-filter': [void]

@@ -136,8 +136,8 @@ import {
   getMcpAppPermissionList,
   grantMcpAppPermission,
 } from '@/services/source/gateway/mcp-server/permission';
-import AgDropdown from '@/components/ag-dropdown/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 interface IProps { mcpServerId?: number }
 

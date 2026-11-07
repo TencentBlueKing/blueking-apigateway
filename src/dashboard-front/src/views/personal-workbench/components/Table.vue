@@ -148,8 +148,8 @@ import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
 import BasicForm from '@/views/personal-workbench/components/Form.vue';
-import AgTable from '@/components/ag-table/Index.vue';
-import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
+import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
 
 interface IProps {
   activeTab?: ITabKey
@@ -400,7 +400,7 @@ const tableColumns = computed(() => {
 
         return (
           <div class="w-full">
-            <RenderTagOverflow
+            <AgOverflowTags
               data={row.approvers || [row?.handled_by]}
               is-member={!row.approvers}
             />

@@ -216,7 +216,7 @@
           class="member-selector-form"
           :class="[{ 'is-error': isShowMemberError}]"
         >
-          <MemberSelector
+          <StaffSelector
             v-if="!featureFlagStore.isTenantMode"
             v-model="formData.maintainers"
             @change="handleMemberChange"
@@ -486,13 +486,13 @@ import { cloneDeep } from 'lodash-es';
 import type { IFormMethod } from '@/types/common';
 import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
-import MemberSelector from '@/components/member-selector';
+import StaffSelector from '@/components/user/staff-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
 import bareGit from '@/images/bare_git.png';
 import apiIcon from '@/images/api.png';
 import aiIcon from '@/images/ai.png';
 import programmableIcon from '@/images/programmable.png';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 type ParamType = IGatewayCreateInputSLZ & {
   id?: number

@@ -230,7 +230,7 @@
                   </div>
                   <div class="value url">
                     <span>{{ basicInfoData.tenant_id || '--' }}</span>
-                    <CopyButton :source="basicInfoData.tenant_id" />
+                    <AgCopyButton :source="basicInfoData.tenant_id" />
                   </div>
                 </div>
               </template>
@@ -282,7 +282,7 @@
                 </div>
                 <div class="value url">
                   <span>{{ basicInfoData.api_domain || '--' }}</span>
-                  <CopyButton :source="basicInfoData.api_domain" />
+                  <AgCopyButton :source="basicInfoData.api_domain" />
                 </div>
               </div>
               <div class="pannel-content-item">
@@ -386,7 +386,7 @@
                       field="contacts"
                       :content="basicInfoData.doc_maintainers?.contacts"
                     />
-                    <TenantUserSelector
+                    <TenantUserEditor
                       v-else
                       :content="basicInfoData.doc_maintainers?.contacts"
                       field="contacts"
@@ -444,7 +444,7 @@
                       name="jump"
                       @click.stop="handleOpenNav(basicInfoData.docs_url)"
                     />
-                    <CopyButton :source="basicInfoData.docs_url" />
+                    <AgCopyButton :source="basicInfoData.docs_url" />
                   </template>
                 </div>
               </div>
@@ -503,7 +503,7 @@
                       {{ basicInfoData.public_key_fingerprint }}
                     </span>
                     <div>
-                      <CopyButton :source="basicInfoData.public_key" />
+                      <AgCopyButton :source="basicInfoData.public_key" />
                       <AgIcon
                         name="download"
                         size="16"
@@ -741,7 +741,7 @@
       </template>
     </BkDialog>
 
-    <CreateGateway
+    <EditBasicInfoDialog
       v-model="createGatewayShow"
       :init-data="(basicInfoDetailData as ParamType)"
       @done="getBasicInfo()"
@@ -757,7 +757,7 @@
       :width="960"
     >
       <section class="markdown-box">
-        <Guide :markdown-html="markdownHtml" />
+        <AgMarkdownViewer :markdown-html="markdownHtml" />
       </section>
     </AgSideslider>
   </div>
@@ -786,9 +786,9 @@ import hljs from 'highlight.js';
 import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
 import EditRelatedAppCodes from './components/EditRelatedAppCodes.vue';
-import AgSideslider from '@/components/ag-sideslider/Index.vue';
-import Guide from '@/components/guide/Index.vue';
-import CreateGateway, { type ParamType } from '@/components/create-gateway/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
+import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
+import EditBasicInfoDialog, { type ParamType } from './components/EditBasicInfoDialog.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import {
   useEnv,
@@ -797,7 +797,7 @@ import {
   useGatewayRoleStore,
 } from '@/stores';
 import { useGatewayRole, usePopInfoBox } from '@/hooks';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 import { useGatewayReleasingStatus } from '@/hooks/use-gateway-releasing-status';
 import { getGatewayErrorRoute } from '@/utils/gateway-access-error';

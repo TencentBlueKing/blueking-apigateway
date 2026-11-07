@@ -187,7 +187,7 @@
                   </BkCollapse>
                 </template>
                 <template v-else-if="keyword">
-                  <TableEmpty
+                  <AgTableEmpty
                     :empty-type="!!keyword ? 'searchEmpty' : 'empty'"
                     @clear-filter="keyword = ''"
                   />
@@ -213,7 +213,7 @@
               @show-gateway-detail="handleShowGatewayDetail"
               @show-apply-permission="handleShowApplyPermission"
             />
-            <TableEmpty
+            <AgTableEmpty
               v-else
               empty-type="empty"
               class="empty-wrapper"
@@ -275,7 +275,7 @@ import { createMarkdownRenderer } from '@/utils/markdown';
 import DocDetailMainContent, { type IDocApi, type IDocContent } from '../components/DocDetailMainContent.vue';
 import DocDetailSideContent, { type IDocBasics } from '../components/DocDetailSideContent.vue';
 import ApplyPermissionDialog from '../components/ApplyPermissionDialog.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useEnv } from '@/stores';
 import { buildResourceUrl } from '../utils/compose-doc';

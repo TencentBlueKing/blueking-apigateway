@@ -70,9 +70,9 @@ import {
 } from '@/stores';
 import CreateSDK from './CreateSDK.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
 
 const emits = defineEmits<{ 'on-show-version': [version: string] }>();
 
@@ -137,7 +137,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               />
             )
             : (
-              <TenantUserSelector
+              <TenantUserEditor
                 mode="detail"
                 width="600px"
                 field="created_by"

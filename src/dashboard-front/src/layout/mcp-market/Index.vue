@@ -101,7 +101,7 @@
       >
         <!-- 顶部操作栏：吸顶固定，不随卡片列表滚动 -->
         <div class="mcp-market-top-bar">
-          <AgMcpTopBar
+          <McpServerToolbar
             v-model:publish-time="filterData.order_by"
             :selections="selections"
             @batch-copy="handleBatchCopy"
@@ -131,7 +131,7 @@
                 clearable
               />
             </template>
-          </AgMcpTopBar>
+          </McpServerToolbar>
         </div>
         <!-- 卡片区域内容 -->
         <BkLoading
@@ -148,7 +148,7 @@
             class="mcp-market-list"
           >
             <template v-if="mcpMarketList.length < 1 && !isLoading">
-              <TableEmpty
+              <AgTableEmpty
                 background="#f5f7fa"
                 :empty-type="cardEmptyType"
                 @clear-filter="handleClearFilter"
@@ -156,7 +156,7 @@
               />
             </template>
             <template v-else>
-              <AgMcpCard
+              <McpServerCard
                 v-for="server of mcpMarketList"
                 :key="server.id"
                 :server="server"
@@ -198,12 +198,12 @@
                     {{ t("复制配置") }}
                   </BkButton>
                 </template>
-              </AgMcpCard>
+              </McpServerCard>
             </template>
           </div>
         </BkLoading>
         <!-- 复制 MCP 配置 -->
-        <AgMcpCopyConfigDialog
+        <McpAccessConfigDialog
           v-model:is-show="isShowConfig"
           :loading="copyConfigLoading"
           :list="mcpConfigList"
@@ -234,10 +234,10 @@ import { useMcpBatchCopyConfig } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import mcpBanner from '@/images/mcp-banner.jpg';
 import mcpBannerEn from '@/images/mcp-banner-en.jpg';
-import TableEmpty from '@/components/table-empty/Index.vue';
-import AgMcpCard from '@/components/ag-mcp-card/Index.vue';
-import AgMcpTopBar from '@/components/ag-mcp-search-bar/Index.vue';
-import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfigDialog.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
+import McpServerCard from '@/components/mcp/mcp-server-card/Index.vue';
+import McpServerToolbar from '@/components/mcp/mcp-server-toolbar/Index.vue';
+import McpAccessConfigDialog from '@/components/mcp/mcp-access-config-dialog/Index.vue';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -522,7 +522,7 @@ const syncBottomTriggerArmedState = () => {
 /**
  * 重置分页并重新拉取列表
  * @param keepSelections 是否保留已勾选的 MCP Server：默认保留并回填，
- *                       仅切换分类（以及列表为空展示 TableEmpty 时）清空
+ *                       仅切换分类（以及列表为空展示 AgTableEmpty 时）清空
  */
 const resetPagination = async (keepSelections = true) => {
   // 重置分页后，滚动距离重置
@@ -551,7 +551,7 @@ const resetPagination = async (keepSelections = true) => {
   }
   // 保留选中时，刷新后的列表需要同步卡片勾选态
   if (selectionsSnapshot) {
-    // 列表为空（展示 TableEmpty）时没有卡片可回显，不清空选中，
+    // 列表为空（展示 AgTableEmpty）时没有卡片可回显，不清空选中，
     // 否则搜索无结果会把已勾选项清掉，导致后续搜索无法回显
     if (mcpMarketList.value.length < 1) {
       return;

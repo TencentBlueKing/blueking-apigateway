@@ -94,7 +94,7 @@ import type { TableRowData } from '@blueking/tdesign-ui';
 import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
 import { useFeatureFlag } from '@/stores';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 type IDialogParams = {
   isShow: boolean

@@ -125,7 +125,7 @@
                 v-if="isEdited"
                 class="ag-markdown-editor"
               >
-                <LazyMavonEditor
+                <AgMarkdownEditor
                   ref="markdownRef"
                   v-model="markdownDoc"
                   :class="{ 'content-editor': !isFullscreen }"
@@ -209,8 +209,8 @@ import {
 // import mitt from '@/common/event-bus';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
-import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
-import LazyMavonEditor from '@/components/LazyMavonEditor';
+import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
+import AgMarkdownEditor from '@/components/base/ag-markdown-editor';
 import hljs from 'highlight.js';
 import { useFeatureFlag } from '@/stores';
 

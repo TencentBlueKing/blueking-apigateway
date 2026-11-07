@@ -58,7 +58,7 @@
     />
 
     <!-- 日志抽屉 -->
-    <ReleaseStageEvent
+    <PublishEventSlider
       ref="logDetailsRef"
       :history-id="historyId"
       @release-success="handleReleaseSuccess"
@@ -81,10 +81,10 @@ import { getDeployHistories } from '@/services/source/gateway/programmable';
 import type { IEventResponse } from '@/types/programmable';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { t } from '@/locales';
-import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
+import PublishEventSlider from '@/components/release/publish-event-slider/Index.vue';
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
-import AgTable from '@/components/ag-table/Index.vue';
-import CopyButton from '@/components/copy-button/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
+import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
@@ -244,7 +244,7 @@ const columns = computed(() => {
       cell: (_: unknown, { row }: { row: TableRowData }) => (
         <div v-bk-tooltips={row?.commit_id}>
           { row?.commit_id ? (row.commit_id.length > 8 ? `${row.commit_id.slice(0, 8)}...` : row.commit_id) : '--' }
-          <CopyButton class="ml-4px" source={row?.commit_id} />
+          <AgCopyButton class="ml-4px" source={row?.commit_id} />
         </div>
       ),
     },

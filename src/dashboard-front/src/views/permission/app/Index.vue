@@ -166,7 +166,7 @@ import RenewalDialog from '@/views/permission/app/components/Renewal.vue';
 import BatchRenewal from '@/views/permission/app/components/BatchRenewal.vue';
 import BatchRemove from '@/views/permission/app/components/BatchRemove.vue';
 import DeletePermission from '@/views/permission/app/components/DeletePermission.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 const { t } = useI18n();
 const { handleTableFilterChange } = useTableFilterChange();

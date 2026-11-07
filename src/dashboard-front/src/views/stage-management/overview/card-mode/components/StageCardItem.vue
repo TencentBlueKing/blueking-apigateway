@@ -201,7 +201,7 @@ import {
   useGateway,
 } from '@/stores';
 import { debounce, uniqueId } from 'lodash-es';
-import CardContainer from '@/components/card-container/Index.vue';
+import CardContainer from './CardContainer.vue';
 
 type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 

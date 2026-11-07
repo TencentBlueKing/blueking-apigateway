@@ -17,7 +17,7 @@
  */
 
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="isShow"
     v-bind="$attrs"
     :width="960"
@@ -38,7 +38,7 @@
           class="mb-0! h-full markdown-guide-editor"
           required
         >
-          <LazyMavonEditor
+          <AgMarkdownEditor
             v-if="isShow"
             ref="markdownRef"
             v-model="formData.content"
@@ -74,20 +74,20 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
 import type MavonEditor from 'mavon-editor';
-import LazyMavonEditor from '@/components/LazyMavonEditor';
+import AgMarkdownEditor from '@/components/base/ag-markdown-editor';
 import type { IFormMethod, IMavonEditorProps } from '@/types/common';
 import {
   addCustomServerGuideDoc,
   updateCustomServerGuideDoc,
 } from '@/services/source/gateway/mcp-server/server';
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 
 interface IProps {
   gatewayId?: number

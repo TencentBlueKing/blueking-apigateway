@@ -27,7 +27,7 @@
     v-bind="$attrs"
   >
     <template #empty>
-      <TableEmpty
+      <AgTableEmpty
         :empty-type="keyword ? 'search-empty' : 'empty'"
         @clear-filter="handleClearFilter"
       />
@@ -43,11 +43,11 @@ import {
   type IPublicConfig,
 } from '@/types/resource';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import { RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { useTextGetter } from '@/hooks';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { type IDocConfig } from '../Index.vue';
 
 interface IProps {

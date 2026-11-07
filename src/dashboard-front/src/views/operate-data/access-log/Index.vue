@@ -205,7 +205,7 @@
                   class="no-data-chart"
                 >
                   <slot name="empty">
-                    <TableEmpty
+                    <AgTableEmpty
                       :keyword="tableEmptyConf.keyword"
                       :abnormal="tableEmptyConf.isAbnormal"
                       @refresh="getSearchData"
@@ -406,13 +406,13 @@ import {
 } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
-import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
-import AiChatSlider from '@/components/ai-seek/AiChatSlider.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
+import AiChatSlider from '@/components/ai/ai-chat-slider/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import type { ITableMethod } from '@/types/common';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import type {
   IExtractApiReturn,
   IExtractListApiResults,

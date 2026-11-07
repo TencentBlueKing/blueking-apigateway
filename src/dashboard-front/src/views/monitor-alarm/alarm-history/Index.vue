@@ -179,7 +179,7 @@ import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getRecordList, getStrategyList } from '@/services/source/gateway/monitor';
 import type { IAlarmRecord } from '@/types/monitor';
 import type { IExtractListApiResults } from '@/services/types/utils';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 type IStrategyOptionItem = {
   id: number

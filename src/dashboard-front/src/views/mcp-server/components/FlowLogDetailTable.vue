@@ -137,8 +137,8 @@ import type { IFlowLogTable } from '@/types/observability';
 import { copy } from '@/utils';
 import { t } from '@/locales';
 // 组件
-import AgStatusDot from '@/components/ag-status-dot/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgStatusDot from '@/components/base/ag-status-dot/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import AgTraceChainSlider from '@/views/mcp-server/components/TraceChainSlider.vue';
 
 interface IProps { apiGatewayId: string | number }

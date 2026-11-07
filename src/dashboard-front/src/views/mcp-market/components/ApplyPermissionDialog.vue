@@ -104,7 +104,7 @@ import type {
 } from '@/services/types/responses/mcp-marketplace.ts';
 import type { IUserApplicationOutput } from '@/services/types/responses/me';
 import { useEnv } from '@/stores';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 interface IProps {
   mcpId: number

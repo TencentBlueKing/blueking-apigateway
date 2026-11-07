@@ -180,7 +180,7 @@
                 :class="{ 'show-valid-msg': isValidBannerVisible }"
               >
                 <!--  编辑器本体  -->
-                <EditorMonaco
+                <AgCodeEditor
                   ref="resourceEditorRef"
                   v-model="editorText"
                   @find-state-changed="(isVisible: any) => {
@@ -780,7 +780,7 @@ import { InfoBox, Message, ResizeLayout } from 'bkui-vue';
 // const router = useRouter();
 
 // import useTsxRouter from './hooks/useTsxRouter';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { getStrFromFile, messageError } from '@/utils';
 import { checkResourceImport, importResource } from '@/services/source/gateway/resource';
@@ -842,7 +842,7 @@ const envStore = useEnv();
 const gatewayStore = useGateway();
 
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
-const resourceEditorRef = ref<InstanceType<typeof EditorMonaco>>(); // 实例化
+const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>(); // 实例化
 const docConfig = ref<IDocConfig>({
   showDoc: true,
   language: 'zh',

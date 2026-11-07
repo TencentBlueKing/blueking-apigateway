@@ -54,7 +54,7 @@
         :z-index="999"
       >
         <div class="trace-chain-content">
-          <AgMcpTraceChain
+          <McpTraceChain
             v-if="isShow"
             :trace-chain-detail="traceData"
           />
@@ -72,8 +72,8 @@ import { copy } from '@/utils';
 import { useTrace } from '@/stores';
 import { getMcpLogChain, getMcpLogDetail } from '@/services/source/gateway/mcp-server/log';
 import type { IGatewayLog, ITraceDetail } from '@/types/observability';
-import { DEFAULT_TRACE_DATA } from '@/components/trace-view/constants/trace';
-import AgMcpTraceChain from '@/components/ag-mcp-trace-chain/Index.vue';
+import { DEFAULT_TRACE_DATA } from '@/components/mcp/trace-view/constants/trace';
+import McpTraceChain from '@/components/mcp/mcp-trace-chain/Index.vue';
 
 interface IProps {
   apiGatewayId: string | number

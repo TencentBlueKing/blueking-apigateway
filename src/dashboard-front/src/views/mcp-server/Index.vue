@@ -19,7 +19,7 @@
 <template>
   <div>
     <div class="page-wrapper">
-      <AgMcpTopBar
+      <McpServerToolbar
         v-model:search-value="searchValue"
         v-model:publish-time="filterData.order_by"
         class="mb-16px"
@@ -89,7 +89,7 @@
             </div>
           </div>
         </template>
-      </AgMcpTopBar>
+      </McpServerToolbar>
       <BkLoading
         :loading="isLoading"
         :z-index="99"
@@ -120,7 +120,7 @@
           class="mcp-server-list"
         >
           <template v-if="['searchEmpty', 'error'].includes(cardEmptyType ?? '') && mcpList.length < 1 && !isLoading">
-            <TableEmpty
+            <AgTableEmpty
               background="#f5f7fa"
               :empty-type="cardEmptyType"
               @clear-filter="handleClearFilter"
@@ -128,7 +128,7 @@
             />
           </template>
           <template v-else>
-            <AgMcpCard
+            <McpServerCard
               v-for="server of mcpList"
               :key="server.id"
               :server="server"
@@ -170,7 +170,7 @@
                   />
                 </div>
               </template>
-            </AgMcpCard>
+            </McpServerCard>
             <div
               class="flex items-center justify-center add-server-card"
               @click.stop="handleAddServerClick"
@@ -190,7 +190,7 @@
         @updated="handleServerUpdated"
       />
       <!-- 复制 MCP 配置 -->
-      <AgMcpCopyConfigDialog
+      <McpAccessConfigDialog
         v-model:is-show="isShowConfig"
         :loading="copyConfigLoading"
         :list="mcpConfigList"
@@ -223,10 +223,10 @@ import { useMcpAuthRisk, useMcpBatchCopyConfig, usePopInfoBox } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import ServerCardTable from '@/views/mcp-server/components/ServerCardTable.vue';
-import AgMcpTopBar from '@/components/ag-mcp-search-bar/Index.vue';
-import AgMcpCard from '@/components/ag-mcp-card/Index.vue';
-import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfigDialog.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import McpServerToolbar from '@/components/mcp/mcp-server-toolbar/Index.vue';
+import McpServerCard from '@/components/mcp/mcp-server-card/Index.vue';
+import McpAccessConfigDialog from '@/components/mcp/mcp-access-config-dialog/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
 interface IProps { gatewayId?: number }
 

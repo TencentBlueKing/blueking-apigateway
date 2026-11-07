@@ -53,7 +53,7 @@
       v-show="isEmpty"
       class="basic-height"
     >
-      <TableEmpty
+      <AgTableEmpty
         :empty-type="tableEmptyConf.emptyType"
         :abnormal="tableEmptyConf.isAbnormal"
         @refresh="handleInit"
@@ -83,7 +83,7 @@ import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
 import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
 import type { ISeriesItemType } from '@/types/metrics';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
 // 图例类型定义
 type LegendSelectedType = 'all' | 'selected' | 'unselected';

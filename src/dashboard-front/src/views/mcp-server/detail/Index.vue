@@ -234,7 +234,7 @@
           #aside
         >
           <!-- 配置 -->
-          <AgMcpAgentConfig
+          <McpAccessConfig
             :list="mcpConfigList"
             class="h-full bg-white mcp-detail-config"
           />
@@ -323,7 +323,7 @@ import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
-import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
+import McpAccessConfig from '@/components/mcp/mcp-access-config/Index.vue';
 
 type IPanelType = {
   name: string

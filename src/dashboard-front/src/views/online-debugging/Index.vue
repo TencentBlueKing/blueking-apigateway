@@ -111,7 +111,7 @@
           </template>
         </BkCollapse>
         <template v-else-if="keyword">
-          <TableEmpty
+          <AgTableEmpty
             empty-type="search-empty"
             @clear-filter="keyword = ''"
           />
@@ -537,14 +537,14 @@ import Top from '@/views/online-debugging/components/Top.vue';
 import RequestPayload from '@/views/online-debugging/components/RequestPayload.vue';
 import ResponseContent from '@/views/online-debugging/components/ResponseContent.vue';
 import Doc from '@/views/online-debugging/components/Doc.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
-import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import { useEnv, useGateway, useResourceDebugging } from '@/stores';
 import { getReleasedResourceSchema, getReleasedStageResources } from '@/services/source/gateway/release';
 import { createApiTest } from '@/services/source/gateway/api-test';
 import { getGatewayDetail } from '@/services/source/gateway/gateway';
 import { getStageList } from '@/services/source/gateway/stage';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways.ts';
 
 interface IProps { gatewayId?: number }

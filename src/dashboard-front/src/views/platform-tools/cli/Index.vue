@@ -21,14 +21,14 @@
         </div>
       </div>
       <div class="banner-right">
-        <IconButton
+        <AgIconButton
           class="banner-detail-button"
           theme="primary"
           icon="link"
           @click="openDetailUrl"
         >
           {{ t('查看详情') }}
-        </IconButton>
+        </AgIconButton>
       </div>
     </div>
 

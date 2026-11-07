@@ -95,7 +95,7 @@
                     class="content-item code"
                     :class="`code-${row?.id}`"
                   >
-                    <EditorMonaco
+                    <AgCodeEditor
                       v-if="row?.editorText"
                       ref="resourceEditorRef"
                       v-model="row.editorText"
@@ -137,7 +137,7 @@
                     class="content-item request-body"
                     :class="`request-body-${row?.id}`"
                   >
-                    <EditorMonaco
+                    <AgCodeEditor
                       v-if="row?.requestBody"
                       v-model="row.requestBody"
                       theme="Visual Studio"
@@ -153,7 +153,7 @@
                     class="content-item response-body"
                     :class="`response-body-${row?.id}`"
                   >
-                    <EditorMonaco
+                    <AgCodeEditor
                       v-if="row?.responseBody"
                       v-model="row.responseBody"
                       theme="Visual Studio"
@@ -193,9 +193,9 @@
 <script lang="tsx" setup>
 import { useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
-import AgSideslider from '@/components/ag-sideslider/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 import type { ExpandOptions, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getApiTestHistoryDetail, getApiTestHistoryList } from '@/services/source/gateway/api-test';
 import { CopyShape } from 'bkui-vue/lib/icon';
@@ -228,7 +228,7 @@ const topDatePicker = ref();
 const tableData = ref<any[]>([]);
 const expandedRowKeys = ref<Array<string | number>>([]);
 const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
-const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
+const resourceEditorRef: any = ref<InstanceType<typeof AgCodeEditor>>();
 const tabList = ref([
   {
     name: t('请求代码'),

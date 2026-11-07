@@ -134,7 +134,7 @@
           </div>
         </div>
         <div class="main-encoding">
-          <AgEditor
+          <AgCodeEditor
             ref="editorRef"
             v-model="eventOutputLines"
             read-only
@@ -158,7 +158,7 @@ import type {
   IPaasEventInstance,
 } from '@/types/programmable';
 import type { IStageListItem } from '@/types/stage';
-import AgEditor from '@/components/ag-editor/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { useTimeoutPoll } from '@vueuse/core';
 import { Divider } from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';

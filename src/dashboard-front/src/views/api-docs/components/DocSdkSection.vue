@@ -40,7 +40,7 @@
       <DocDetailField :label="t('SDK地址')">
         <span>{{ sdkUrl || '--' }}</span>
         <template v-if="sdkUrl">
-          <CopyButton :source="sdkUrl" />
+          <AgCopyButton :source="sdkUrl" />
           <AgIcon
             v-bk-tooltips="t('下载')"
             name="download"
@@ -51,7 +51,7 @@
       </DocDetailField>
       <DocDetailField :label="t('安装')">
         <span>{{ installCommand || '--' }}</span>
-        <CopyButton
+        <AgCopyButton
           v-if="installCommand"
           :source="installCommand"
         />

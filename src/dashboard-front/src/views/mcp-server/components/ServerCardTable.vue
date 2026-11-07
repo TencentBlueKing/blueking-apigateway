@@ -56,8 +56,8 @@ import type { IMCPServerFilterOptionsOutput, IMCPServerListOutput } from '@/serv
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useMcpAuthRisk } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';
-import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
+import AgTable from '@/components/base/ag-table/Index.vue';
 
 type IMCPServer = IMCPServerWithUIState | TableRowData;
 
@@ -276,7 +276,7 @@ const tableColumns = computed(() => {
         return row?.stage?.name
           ? (
             <div class="w-full">
-              <RenderTagOverflow
+              <AgOverflowTags
                 data={[row?.stage?.name]}
                 class={[{ stage_name: Boolean(row.status) }]}
               />
@@ -305,7 +305,7 @@ const tableColumns = computed(() => {
         return categoriesFilters.length
           ? (
             <div class="w-full">
-              <RenderTagOverflow
+              <AgOverflowTags
                 data={categoriesFilters.map((cg: IMCPServerCategory) => cg.display_name)}
               />
             </div>
@@ -332,7 +332,7 @@ const tableColumns = computed(() => {
         row?.labels?.length
           ? (
             <div class="w-full">
-              <RenderTagOverflow
+              <AgOverflowTags
                 data={row.labels as string[]}
               />
             </div>
