@@ -18,13 +18,24 @@
 #
 import pytest
 
-from apigateway.biz import constants as biz_constants
 from apigateway.common import constants
 
 
 class TestConstants:
-    def test_semver_pattern_reexported_by_biz(self):
-        assert biz_constants.SEMVER_PATTERN is constants.SEMVER_PATTERN
+    @pytest.mark.parametrize(
+        "value, match",
+        [
+            ("1.0.0", True),
+            ("1.0.0-beta.1", True),
+            ("v1.0.0", False),
+        ],
+    )
+    def test_semver_pattern(self, value, match):
+        result = constants.SEMVER_PATTERN.match(value)
+        if match:
+            assert result
+        else:
+            assert not result
 
     @pytest.mark.parametrize(
         "value, matched",

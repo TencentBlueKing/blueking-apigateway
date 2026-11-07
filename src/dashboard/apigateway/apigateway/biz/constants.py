@@ -19,9 +19,6 @@ import re
 
 from django.conf import settings
 
-# 保留导出：现有调用方从 biz.constants 导入 SEMVER_PATTERN
-from apigateway.common.constants import SEMVER_PATTERN  # noqa: F401
-
 # bk app code
 APP_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
