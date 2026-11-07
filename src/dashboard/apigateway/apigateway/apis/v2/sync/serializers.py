@@ -38,7 +38,7 @@ from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
 )
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
-from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.biz.validators import (
@@ -56,6 +56,7 @@ from apigateway.biz.validators import (
 from apigateway.common.constants import (
     DOMAIN_PATTERN,
     GATEWAY_NAME_PATTERN,
+    SEMVER_PATTERN,
     CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
 )

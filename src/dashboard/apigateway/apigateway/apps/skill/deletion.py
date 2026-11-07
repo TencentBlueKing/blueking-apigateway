@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,23 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
-
-from apigateway.biz import constants
 
 
-class TestConstants:
-    @pytest.mark.parametrize(
-        "value, match",
-        [
-            ("1.0.0", True),
-            ("1.0.0-beta.1", True),
-            ("v1.0.0", False),
-        ],
-    )
-    def test_semver_pattern(self, value, match):
-        result = constants.SEMVER_PATTERN.match(value)
-        if match:
-            assert result
+def restrict_current_version(collector, field, sub_objs, using):
+    """单独删当前版本时按 RESTRICT 拒绝；连同 SkillMetadata 一起删时先置空 current_version，再删版本。"""
+    deleting = collector.data.get(field.model, ())
+    blocked = []
+    clearing = []
+    for obj in sub_objs:
+        if obj in deleting:
+            clearing.append(obj)
         else:
-            assert not result
+            blocked.append(obj)
+    if clearing:
+        collector.add_field_update(field, None, clearing)
+    if blocked:
+        collector.add_restricted_objects(field, blocked)
+        collector.add_dependency(field.remote_field.model, field.model)

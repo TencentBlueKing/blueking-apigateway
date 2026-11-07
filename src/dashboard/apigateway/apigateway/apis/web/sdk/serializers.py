@@ -21,7 +21,7 @@ from rest_framework import serializers
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.constants import SEMVER_PATTERN
+from apigateway.common.constants import SEMVER_PATTERN
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.utils.time import now_datetime
 

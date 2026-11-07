@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     "apigateway.apps.docs",
     "apigateway.apps.api_debug",
     "apigateway.apps.mcp_server",
+    "apigateway.apps.skill",
     "apigateway.apps.bk_itsm",
     "apigateway.apps.data_plane",
     "apigw_manager.apigw",
