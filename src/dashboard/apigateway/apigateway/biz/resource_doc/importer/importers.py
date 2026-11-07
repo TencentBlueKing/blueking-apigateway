@@ -34,19 +34,19 @@ class DocImporter:
         self.gateway_id = gateway_id
         self.selected_resource_docs = selected_resource_docs
 
-    def import_docs(self, docs: List["BaseDoc"]):
+    def import_docs(self, docs: List[BaseDoc]):
         docs = self._filter_valid_docs(docs)
         docs = self._filter_selected_docs(docs)
         self._save_docs(docs)
 
-    def _filter_valid_docs(self, docs: List["BaseDoc"]) -> List["BaseDoc"]:
+    def _filter_valid_docs(self, docs: List[BaseDoc]) -> List[BaseDoc]:
         """
         过滤出有效的资源文档
         - 去除资源不存在的文档
         """
         return [doc for doc in docs if doc.resource]
 
-    def _filter_selected_docs(self, docs: List["BaseDoc"]) -> List["BaseDoc"]:
+    def _filter_selected_docs(self, docs: List[BaseDoc]) -> List[BaseDoc]:
         selected_docs = []
         selected_resource_doc_keys = self._get_selected_resource_doc_keys()
         for doc in docs:
@@ -58,7 +58,7 @@ class DocImporter:
 
         return selected_docs
 
-    def _save_docs(self, docs: List["BaseDoc"]):
+    def _save_docs(self, docs: List[BaseDoc]):
         add_resource_docs = []
         update_resource_docs = []
         now = now_datetime()
