@@ -36,7 +36,6 @@ from .constants import (
     SkillStatusEnum,
     SkillTypeEnum,
 )
-from .deletion import restrict_current_version
 
 
 class SkillTag(models.Model):
@@ -85,12 +84,10 @@ class SkillMetadata(TimestampedModelMixin, OperatorModelMixin):
     # 其他写入需用 save(update_fields=...)，否则旧实例的整行保存会把并发累加的值写回旧值。
     download_count = models.PositiveIntegerField(default=0, help_text=_("下载数"))
 
-    # 被引用的版本不能单独删除。删 metadata（含随网关级联）时引用方在同一批里，先置空再删版本。
-    # 不用 RESTRICT：它和 versions 的 CASCADE 构成删除顺序环，MySQL 报 1451。不用 PROTECT：删 metadata 会 ProtectedError。
-    # 必须指向本 Skill 的版本；指向其他 Skill 的版本会让那个 Skill（及其网关）删除时报 RestrictedError。
+    # 删除版本前需由用户先解除当前版本关联，服务端不自动解除。
     current_version = models.ForeignKey(
         "SkillVersion",
-        on_delete=restrict_current_version,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="+",

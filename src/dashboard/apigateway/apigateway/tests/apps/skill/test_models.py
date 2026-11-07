@@ -21,7 +21,7 @@ import pytest
 from ddf import G
 from django.db import IntegrityError, connection, transaction
 from django.db.models import F
-from django.db.models.deletion import RestrictedError
+from django.db.models.deletion import ProtectedError
 from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 
@@ -36,7 +36,6 @@ from apigateway.apps.skill.models import (
 from apigateway.core.models import Gateway
 
 DELETE_TABLE_PATTERN = re.compile(r'^DELETE FROM [`"](\w+)[`"]')
-CLEAR_CURRENT_VERSION_PATTERN = re.compile(r'^UPDATE [`"]skill_metadata[`"] SET [`"]current_version_id[`"] = NULL\b')
 
 
 @pytest.fixture
@@ -184,15 +183,25 @@ class TestSkillMetadata:
         assert fake_skill_metadata.download_count == 1
         assert fake_skill_metadata.updated_time == updated_time
 
-    def test_delete_referenced_version_restricted(self, fake_skill_metadata, fake_skill_version):
+    def test_delete_referenced_version_protected(self, fake_skill_metadata, fake_skill_version):
         fake_skill_metadata.current_version = fake_skill_version
         fake_skill_metadata.save()
 
-        with pytest.raises(RestrictedError), transaction.atomic():
+        with pytest.raises(ProtectedError), transaction.atomic():
             fake_skill_version.delete()
 
         fake_skill_metadata.refresh_from_db()
         assert fake_skill_metadata.current_version_id == fake_skill_version.pk
+        assert SkillVersion.objects.filter(pk=fake_skill_version.pk).exists()
+
+    def test_delete_metadata_with_current_version_protected(self, fake_skill_metadata, fake_skill_version):
+        fake_skill_metadata.current_version = fake_skill_version
+        fake_skill_metadata.save()
+
+        with pytest.raises(ProtectedError), transaction.atomic():
+            fake_skill_metadata.delete()
+
+        assert SkillMetadata.objects.filter(pk=fake_skill_metadata.pk).exists()
         assert SkillVersion.objects.filter(pk=fake_skill_version.pk).exists()
 
     def test_delete_version_after_clearing_reference(self, fake_skill_metadata, fake_skill_version):
@@ -219,8 +228,6 @@ class TestSkillMetadata:
         )
         tag = G(SkillTag, name="作业运维")
         fake_skill_metadata.tags.add(tag)
-        fake_skill_metadata.current_version = fake_skill_version
-        fake_skill_metadata.save()
         # delete() 会把实例 pk 置为 None，需提前保存
         metadata_id = fake_skill_metadata.pk
 
@@ -235,28 +242,29 @@ class TestSkillMetadata:
 
     def test_delete_versions_before_metadata(self, fake_skill_metadata, fake_skill_version):
         # MySQL 立即检查外键，必须先删版本再删 metadata；SQLite 延迟检查，只能通过语句顺序验证
-        fake_skill_metadata.current_version = fake_skill_version
-        fake_skill_metadata.save()
-
         with CaptureQueriesContext(connection) as context:
             SkillMetadata.objects.filter(pk=fake_skill_metadata.pk).delete()
 
         statements = []
         for query in context.captured_queries:
-            if CLEAR_CURRENT_VERSION_PATTERN.match(query["sql"]):
-                statements.append("clear_current_version")
-                continue
             match = DELETE_TABLE_PATTERN.match(query["sql"])
             if match:
                 statements.append(match.group(1))
-        assert statements.index("clear_current_version") < statements.index("skill_version")
         assert statements.index("skill_version") < statements.index("skill_metadata")
+
+    def test_delete_gateway_with_current_version_protected(self, fake_gateway_skill_metadata):
+        version = G(SkillVersion, metadata=fake_gateway_skill_metadata, version="1.0.0")
+        fake_gateway_skill_metadata.current_version = version
+        fake_gateway_skill_metadata.save()
+
+        with pytest.raises(ProtectedError), transaction.atomic():
+            fake_gateway_skill_metadata.gateway.delete()
+
+        assert SkillMetadata.objects.filter(pk=fake_gateway_skill_metadata.pk).exists()
 
     def test_delete_gateway_cascade(self, fake_skill_metadata, fake_gateway_skill_metadata):
         version = G(SkillVersion, metadata=fake_gateway_skill_metadata, version="1.0.0")
         G(SkillConfig, metadata=fake_gateway_skill_metadata, orchestration={"steps": []})
-        fake_gateway_skill_metadata.current_version = version
-        fake_gateway_skill_metadata.save()
 
         fake_gateway_skill_metadata.gateway.delete()
 

@@ -3,8 +3,6 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-import apigateway.apps.skill.deletion
-
 
 class Migration(migrations.Migration):
 
@@ -94,7 +92,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='skillmetadata',
             name='current_version',
-            field=models.ForeignKey(blank=True, help_text='当前版本', null=True, on_delete=apigateway.apps.skill.deletion.restrict_current_version, related_name='+', to='skill.skillversion'),
+            field=models.ForeignKey(blank=True, help_text='当前版本', null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='skill.skillversion'),
         ),
         migrations.AlterUniqueTogether(
             name='skillmetadata',
