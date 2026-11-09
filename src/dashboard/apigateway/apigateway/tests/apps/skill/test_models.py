@@ -25,7 +25,7 @@ from django.db.models.deletion import ProtectedError
 from django.test.utils import CaptureQueriesContext
 from django.utils.translation import override
 
-from apigateway.apps.skill.constants import SKILL_MD_ARTIFACT_KEY, SkillStatusEnum, SkillTypeEnum
+from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import (
     SkillConfig,
     SkillMetadata,
@@ -70,7 +70,7 @@ def fake_skill_version(fake_skill_metadata):
         metadata=fake_skill_metadata,
         version="1.0.0",
         orchestration={"steps": []},
-        artifact={SKILL_MD_ARTIFACT_KEY: "# 执行作业方案并收集日志"},
+        artifact={"SKILL.md": "# 执行作业方案并收集日志"},
     )
 
 
@@ -263,7 +263,7 @@ class TestSkillVersion:
         assert version.artifact == {}
 
     def test_artifact_round_trip(self, fake_skill_metadata):
-        artifact = {SKILL_MD_ARTIFACT_KEY: "# 执行作业方案并收集日志\n\n## 不适用场景\n\n无\n"}
+        artifact = {"SKILL.md": "# 执行作业方案并收集日志\n\n## 不适用场景\n\n无\n"}
         version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0", artifact=artifact)
 
         version.refresh_from_db()
