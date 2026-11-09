@@ -198,7 +198,7 @@ MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=sta
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
 MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
-SKILL.md frontmatter 以 Agent Skills 规范为基础，顶层依次只有 name、description、display_name、display_name_en（为空时写 ""）、metadata；metadata 只有 type、version、author、datetime、source。code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
+SKILL.md frontmatter 遵循 Agent Skills 规范，只有 name、description、metadata；metadata 只有 type、version、author、datetime、source。display_name、code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
 内置 Skill 注入在 `post_migrate` 中执行，单条声明被拒绝、因资源缺失跳过或出错都不中断部署；资源缺失的声明在下次部署重试。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、

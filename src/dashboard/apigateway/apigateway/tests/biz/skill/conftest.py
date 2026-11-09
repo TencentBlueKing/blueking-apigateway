@@ -24,8 +24,8 @@ import yaml
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
-from apigateway.biz.skill import StaticResourceProvider
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
+from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 DECLARATIONS_DIR = FIXTURES_DIR / "declarations"

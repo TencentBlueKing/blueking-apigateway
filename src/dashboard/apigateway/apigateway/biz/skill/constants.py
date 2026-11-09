@@ -32,30 +32,13 @@ WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 SKILL_BODY_MAX_LINES = 500
 
-SKILL_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-SKILL_DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
-SKILL_SOURCE = "apigateway"
-PLATFORM_SKILL_AUTHOR = "apigateway"
-SKILL_FRONTMATTER_KEYS = ("name", "description", "display_name", "display_name_en", "metadata")
-SKILL_FRONTMATTER_METADATA_KEYS = ("type", "version", "author", "datetime", "source")
-
 SKILL_FILE_NAME = "SKILL.md"
-SKILL_REFERENCE_FILE_NAMES = ("how-to-call-apis.md", "permissions.md")
 
 SKILL_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "skill"
 SKILL_TEMPLATES_DIR = SKILL_DATA_DIR / "templates"
-SKILL_REFERENCES_DIR = SKILL_DATA_DIR / "references"
 SKILL_DECLARATIONS_DIR = SKILL_DATA_DIR / "declarations"
 SKILL_RESOURCES_DIR = SKILL_DATA_DIR / "resources"
 SKILL_BODY_TEMPLATE_NAME = "SKILL.md.j2"
-
-
-class SkillReferencePlaceholderEnum(StructuredEnum):
-    """references 里的占位符，写成 `{{ name }}`，打包时按部署环境用字符串替换填充"""
-
-    GATEWAY_URL_TEMPLATE = EnumField("gateway_url_template", label="网关访问地址模板")
-    EXAMPLE_URL = EnumField("example_url", label="curl 示例地址")
-    DEVELOPER_CENTER_URL = EnumField("developer_center_url", label="开发者中心地址")
 
 
 class SkillSyncStatusEnum(StructuredEnum):

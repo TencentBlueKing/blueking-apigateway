@@ -20,7 +20,7 @@ import copy
 import pytest
 import yaml
 
-from apigateway.biz.skill import SkillDeclarationError, normalize_tag_name, parse_declaration
+from apigateway.biz.skill.declaration import SkillDeclarationError, normalize_tag_name, parse_declaration
 from apigateway.tests.biz.skill.conftest import DECLARATIONS_DIR, GOLDEN_NAMES
 
 pytestmark = pytest.mark.no_meta_schema
@@ -77,11 +77,15 @@ class TestTopLevelRules:
         [
             ("name", "Bad_Name"),
             ("name", "a" * 65),
+            ("name", "job-plan-run-and-log\n"),
             ("display_name", ""),
+            ("display_name", "执行作业方案\n"),
             ("display_name_en", None),
+            ("display_name_en", "Run Job Plan\n"),
             ("description", ""),
             ("version", "1.0"),
             ("version", 1.0),
+            ("version", "1.0.0\n"),
             ("tags", []),
             ("tags", ["JOB", " job "]),
             ("tags", ["x" * 65]),
@@ -113,6 +117,11 @@ class TestTopLevelRules:
 
 
 class TestOrchestrationRules:
+    def test_step_name_trailing_newline(self, job_plan_data):
+        job_plan_data["orchestration"]["steps"][0]["name"] = "run-plan\n"
+
+        assert _errors(job_plan_data)
+
     def test_duplicate_step_name(self, job_plan_data):
         steps = job_plan_data["orchestration"]["steps"]
         steps[1]["name"] = steps[0]["name"]

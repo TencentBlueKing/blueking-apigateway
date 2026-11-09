@@ -21,17 +21,15 @@
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from .constants import CREDENTIAL_PARAMS
-from .declaration import SkillCall, SkillDeclaration, SkillOrchestration
 from .refs import parse_ref, poll_expr_paths
 
 if TYPE_CHECKING:
+    from .declaration import SkillCall, SkillDeclaration, SkillOrchestration
     from .resource_definition import ResourceDefinition, ResourceProvider
 
-# 网关 Skill 的额外规则（只能调用所在网关、同一环境），返回 error 列表
-GatewayRule = Callable[[SkillDeclaration], List[str]]
 ResourceKey = Tuple[str, str, str]
 
 
@@ -60,17 +58,9 @@ def load_resources(
     return resources
 
 
-def validate_declaration(
-    declaration: SkillDeclaration,
-    provider: ResourceProvider,
-    *,
-    gateway_rule: Optional[GatewayRule] = None,
-) -> ValidationResult:
+def validate_declaration(declaration: SkillDeclaration, provider: ResourceProvider) -> ValidationResult:
     """缺失的资源放进 missing_resources，不算 error 也不算 warning，涉及它的字段级检查跳过"""
     result = ValidationResult()
-    if gateway_rule:
-        result.errors += gateway_rule(declaration)
-
     resources = load_resources(declaration.orchestration, provider)
     for key, resource in resources.items():
         if resource is None:

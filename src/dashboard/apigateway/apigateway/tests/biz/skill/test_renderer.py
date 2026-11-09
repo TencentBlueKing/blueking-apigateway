@@ -22,8 +22,10 @@ import pytest
 import yaml
 from openapi_spec_validator import validate
 
-from apigateway.biz.skill import SkillRenderError, StaticResourceProvider, parse_declaration, render_skill_body
+from apigateway.biz.skill.declaration import parse_declaration
+from apigateway.biz.skill.renderer import SkillRenderError, render_skill_body
 from apigateway.tests.biz.skill.conftest import EXPECTED_DIR, GOLDEN_NAMES, load_declaration_data
+from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
 
 pytestmark = pytest.mark.no_meta_schema
 

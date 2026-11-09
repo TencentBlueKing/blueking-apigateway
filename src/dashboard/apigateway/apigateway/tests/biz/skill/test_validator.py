@@ -17,14 +17,16 @@
 #
 import pytest
 
-from apigateway.biz.skill import MissingResource, StaticResourceProvider, parse_declaration, validate_declaration
+from apigateway.biz.skill.declaration import parse_declaration
+from apigateway.biz.skill.validator import MissingResource, validate_declaration
 from apigateway.tests.biz.skill.conftest import GOLDEN_NAMES, load_declaration_data
+from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
 
 pytestmark = pytest.mark.no_meta_schema
 
 
-def _validate(data: dict, provider, **kwargs):
-    return validate_declaration(parse_declaration(data), provider, **kwargs)
+def _validate(data: dict, provider):
+    return validate_declaration(parse_declaration(data), provider)
 
 
 def _run_call(data: dict) -> dict:
@@ -62,11 +64,6 @@ class TestValidateDeclaration:
         static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan").warnings.append("schema 缺失")
 
         assert _validate(job_plan_data, static_provider).warnings == ["schema 缺失"]
-
-    def test_gateway_rule(self, static_provider, job_plan_data):
-        result = _validate(job_plan_data, static_provider, gateway_rule=lambda declaration: ["只能调用本网关"])
-
-        assert result.errors == ["只能调用本网关"]
 
     def test_unknown_input(self, static_provider, job_plan_data):
         _run_call(job_plan_data)["params"]["job_plan_id"] = "inputs.not_exists"

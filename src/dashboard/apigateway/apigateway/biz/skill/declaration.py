@@ -218,7 +218,7 @@ class SkillStep(_DeclarationModel):
     @field_validator("name")
     @classmethod
     def _check_name(cls, value: str) -> str:
-        if not SKILL_STEP_NAME_PATTERN.match(value):
+        if not SKILL_STEP_NAME_PATTERN.fullmatch(value):
             raise ValueError(f"步骤名不合规：{value}")
         return value
 
@@ -289,14 +289,14 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("name")
     @classmethod
     def _check_name(cls, value: str) -> str:
-        if len(value) > SKILL_NAME_MAX_LENGTH or not SKILL_NAME_PATTERN.match(value):
+        if len(value) > SKILL_NAME_MAX_LENGTH or not SKILL_NAME_PATTERN.fullmatch(value):
             raise ValueError(f"不合规：{value}")
         return value
 
     @field_validator("display_name")
     @classmethod
     def _check_display_name(cls, value: str) -> str:
-        if not (1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH and SKILL_DISPLAY_NAME_PATTERN.match(value)):
+        if not (1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH and SKILL_DISPLAY_NAME_PATTERN.fullmatch(value)):
             raise ValueError(f"不合规：{value}")
         return value
 
@@ -306,7 +306,7 @@ class SkillDeclaration(_DeclarationModel):
         if not (
             isinstance(value, str)
             and 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH
-            and SKILL_DISPLAY_NAME_EN_PATTERN.match(value)
+            and SKILL_DISPLAY_NAME_EN_PATTERN.fullmatch(value)
         ):
             raise ValueError(f"不合规：{value}")
         return value
@@ -335,7 +335,7 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("version")
     @classmethod
     def _check_version(cls, value: str) -> str:
-        if len(value) > SKILL_VERSION_MAX_LENGTH or not SEMVER_PATTERN.match(value):
+        if len(value) > SKILL_VERSION_MAX_LENGTH or not SEMVER_PATTERN.fullmatch(value):
             raise ValueError(f"不是 Semver：{value}")
         return value
 

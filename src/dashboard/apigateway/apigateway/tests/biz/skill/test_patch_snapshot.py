@@ -18,8 +18,8 @@
 import pytest
 import yaml
 
-from apigateway.biz.skill import ResourceParam, ResponseField, SkillSnapshotError
-from apigateway.biz.skill.patch_snapshot import PatchSnapshotStore
+from apigateway.biz.skill.patch_snapshot import PatchSnapshotStore, SkillSnapshotError
+from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
 
 pytestmark = pytest.mark.no_meta_schema
 

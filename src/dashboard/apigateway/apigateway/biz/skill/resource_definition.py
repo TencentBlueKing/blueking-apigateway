@@ -22,7 +22,7 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple
+from typing import List, Optional, Protocol, Tuple
 
 from .refs import norm_path
 
@@ -35,26 +35,12 @@ class ResourceParam:
     required: bool = False
     description: str = ""
 
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ResourceParam":
-        return cls(
-            name=data["name"],
-            location=data["in"],
-            type=data.get("type") or "",
-            required=bool(data.get("required", False)),
-            description=data.get("description") or "",
-        )
-
 
 @dataclass
 class ResponseField:
     field: str
     type: str = ""
     description: str = ""
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ResponseField":
-        return cls(field=data["field"], type=data.get("type") or "", description=data.get("description") or "")
 
 
 @dataclass
@@ -107,35 +93,3 @@ class ResourceDefinition:
 class ResourceProvider(Protocol):
     def get_resource(self, gateway: str, stage: str, resource: str) -> Optional[ResourceDefinition]:
         """资源不存在时返回 None"""
-
-
-class StaticResourceProvider:
-    """内存中的资源定义，用于测试和离线渲染"""
-
-    def __init__(self, resources: Iterable[ResourceDefinition]):
-        self._resources = {resource.key: resource for resource in resources}
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "StaticResourceProvider":
-        """`{"resources": [...]}`，每项含 gateway、stage、resource、method、path、description、auth、params、response"""
-        return cls(_definition_from_dict(item) for item in data["resources"])
-
-    def get_resource(self, gateway: str, stage: str, resource: str) -> Optional[ResourceDefinition]:
-        return self._resources.get((gateway, stage, resource))
-
-
-def _definition_from_dict(data: Dict[str, Any]) -> ResourceDefinition:
-    auth = data.get("auth") or {}
-    return ResourceDefinition(
-        gateway=data["gateway"],
-        stage=data["stage"],
-        resource=data["resource"],
-        method=data["method"],
-        path=data["path"],
-        description=data.get("description") or "",
-        app_verified_required=bool(auth.get("app_verified_required", False)),
-        user_verified_required=bool(auth.get("user_verified_required", False)),
-        resource_perm_required=bool(auth.get("resource_perm_required", False)),
-        params=[ResourceParam.from_dict(item) for item in data.get("params", [])],
-        responses=[ResponseField.from_dict(item) for item in data.get("response", [])],
-    )

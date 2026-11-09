@@ -22,7 +22,8 @@ from django.db.models import F
 
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersionRelation
-from apigateway.biz.skill import SkillVersionExistsError, parse_declaration, save_skill_version
+from apigateway.biz.skill.declaration import parse_declaration
+from apigateway.biz.skill.writer import SkillVersionExistsError, save_skill_version
 
 pytestmark = pytest.mark.django_db
 

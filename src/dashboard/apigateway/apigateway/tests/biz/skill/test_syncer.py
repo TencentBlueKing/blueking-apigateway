@@ -20,12 +20,8 @@ import yaml
 
 from apigateway.apps.skill.constants import SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata, SkillVersion
-from apigateway.biz.skill import (
-    SkillSyncStatusEnum,
-    get_changed_metadata_ids,
-    render_skill_body,
-    sync_platform_skills,
-)
+from apigateway.biz.skill import SkillSyncStatusEnum, get_changed_metadata_ids, sync_platform_skills
+from apigateway.biz.skill.renderer import render_skill_body
 from apigateway.tests.biz.skill.conftest import EXPECTED_DIR, release_fixture_gateway, write_snapshots
 
 pytestmark = pytest.mark.django_db

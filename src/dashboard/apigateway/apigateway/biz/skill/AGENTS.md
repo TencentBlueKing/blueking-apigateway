@@ -18,8 +18,6 @@ runs from `bin/post_migrate`.
 | `resource_loader.py` / `schema_converter.py` / `patch_snapshot.py` | definitions from the current release + OpenAPI schema, patched by resource patch snapshots |
 | `validator.py` | cross-checks between the orchestration and resource definitions |
 | `renderer.py` | template context and the per-call OpenAPI snippet |
-| `frontmatter.py` | SKILL.md frontmatter render/parse: Agent Skills keys plus `display_name` / `display_name_en` |
-| `package.py` | SKILL.md + `references/` file map for download packages |
 | `writer.py` | one transactional publish: metadata, tags, config, version, relations |
 | `syncer.py` | per-declaration status for built-in injection |
 
@@ -28,13 +26,10 @@ runs from `bin/post_migrate`.
 - SKILL.md body wording or section order: `data/skill/templates/SKILL.md.j2`.
   The template uses `trim_blocks`/`lstrip_blocks`; keep the whitespace notes at
   its top. Context fields come from `renderer._SkillBodyContext`.
-- `references/*.md`: `data/skill/references/`; placeholders are listed in
-  `SkillReferencePlaceholderEnum`. `package.load_references()` returns them
-  unfilled; the download package build fills them.
+- `references/*.md`: `data/skill/references/`. The body links to these files;
+  wording changes belong in the file itself.
 - New declaration field or rule: `declaration.py`; reference checks against
   resources go in `validator._RefChecker`.
-- Frontmatter keys or format: `frontmatter.py` and the `SKILL_FRONTMATTER_*`
-  constants; the glossary records the spec.
 
 ## Constraints
 
@@ -47,8 +42,7 @@ runs from `bin/post_migrate`.
   `download_count` increments are kept.
 - Injection reads only the database and repository files; it never calls
   gateways or external systems.
-- Rendering is deterministic: no timestamps or environment URLs in the body. The
-  frontmatter `datetime` comes from the version's `created_time` when packaging.
+- Rendering is deterministic: no timestamps or environment URLs in the body.
 
 ## Tests
 

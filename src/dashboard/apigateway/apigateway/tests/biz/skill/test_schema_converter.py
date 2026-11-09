@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.skill import ResourceParam, ResponseField
+from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
 from apigateway.biz.skill.schema_converter import convert_schema_params, convert_schema_responses, schema_type_text
 
 pytestmark = pytest.mark.no_meta_schema

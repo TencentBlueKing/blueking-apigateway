@@ -18,7 +18,8 @@
 import pytest
 from ddf import G
 
-from apigateway.biz.skill import ReleasedResourceProvider, ResourceParam, ResponseField
+from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
+from apigateway.biz.skill.resource_loader import ReleasedResourceProvider
 from apigateway.core.models import Stage
 from apigateway.tests.biz.skill.conftest import release_resources, write_snapshots
 
