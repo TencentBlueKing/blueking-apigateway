@@ -44,12 +44,14 @@ from apigateway.apps.skill.constants import (
     SKILL_TAG_NAME_MAX_LENGTH,
     SKILL_VERSION_MAX_LENGTH,
 )
-from apigateway.common.constants import SEMVER_PATTERN
+from apigateway.common.constants import GATEWAY_NAME_PATTERN, SEMVER_PATTERN
+from apigateway.core.constants import STAGE_NAME_PATTERN
 
 from .constants import (
     SKILL_DISPLAY_NAME_EN_PATTERN,
     SKILL_DISPLAY_NAME_PATTERN,
     SKILL_NAME_PATTERN,
+    SKILL_RESOURCE_NAME_PATTERN,
     SKILL_STEP_NAME_PATTERN,
 )
 from .refs import ParsedRef, parse_poll_expr, parse_ref, ref_text, ref_where
@@ -64,6 +66,7 @@ _ERROR_MESSAGES = {
     "dict_type": "应为对象",
     "model_type": "应为对象",
     "model_attributes_type": "应为对象",
+    "greater_than": "应为正整数",
 }
 
 
@@ -112,7 +115,9 @@ class SkillOutput(_DeclarationModel):
     @field_validator("from_")
     @classmethod
     def _check_from(cls, value: str) -> str:
-        return _check_ref(value)
+        if parse_ref(value).kind == "each":
+            raise ValueError("输出不能引用 each.*")
+        return value
 
 
 class SkillForEach(_DeclarationModel):
@@ -127,6 +132,27 @@ class SkillForEach(_DeclarationModel):
         return value
 
 
+def _check_poll_expr(expr: str) -> None:
+    path = parse_poll_expr(expr)[0]
+    if "[" in path:
+        raise ValueError(f"表达式只支持对象字段路径，不支持数组：{expr}")
+
+
+def _validated_poll_expr(value: str) -> str:
+    _check_poll_expr(value)
+    return value
+
+
+PollExpr = Annotated[StrictStr, AfterValidator(_validated_poll_expr)]
+
+
+class SkillPollStop(_DeclarationModel):
+    """stop_when 的一项：表达式连续成立 times 次才停止"""
+
+    expr: PollExpr
+    times: StrictInt = Field(gt=0)
+
+
 class SkillPoll(_DeclarationModel):
     """until、stop_when 是 `<响应体字段路径> <==|!=|in|not in> <JSON 值>` 表达式；
     stop_when 的元素也可以写 {expr, times}，表示连续成立 times 次才停止
@@ -134,8 +160,8 @@ class SkillPoll(_DeclarationModel):
 
     interval: StrictInt
     max: StrictInt
-    until: StrictStr
-    stop_when: List[Any] = Field(default_factory=list)
+    until: PollExpr
+    stop_when: List[Union[PollExpr, SkillPollStop]] = Field(default_factory=list)
 
     @field_validator("interval", "max")
     @classmethod
@@ -144,45 +170,14 @@ class SkillPoll(_DeclarationModel):
             raise ValueError("应为正整数")
         return value
 
-    @field_validator("until")
-    @classmethod
-    def _check_until(cls, value: str) -> str:
-        _check_poll_expr(value)
-        return value
-
-    @field_validator("stop_when")
-    @classmethod
-    def _check_stop_when(cls, value: List[Any]) -> List[Any]:
-        for item in value:
-            if isinstance(item, str):
-                _check_poll_expr(item)
-                continue
-            if not (
-                isinstance(item, dict)
-                and set(item) == {"expr", "times"}
-                and isinstance(item["expr"], str)
-                and isinstance(item["times"], int)
-                and not isinstance(item["times"], bool)
-                and item["times"] > 0
-            ):
-                raise ValueError("每项应为表达式，或 {expr, times}（连续成立 times 次才停止）")
-            _check_poll_expr(item["expr"])
-        return value
-
     @property
     def stop_conditions(self) -> List[Tuple[str, int]]:
         """stop_when 的每一项规整成 (表达式, 连续成立次数)"""
-        return [(item, 1) if isinstance(item, str) else (item["expr"], item["times"]) for item in self.stop_when]
+        return [(item, 1) if isinstance(item, str) else (item.expr, item.times) for item in self.stop_when]
 
     @property
     def exprs(self) -> List[str]:
         return [self.until] + [expr for expr, _ in self.stop_conditions]
-
-
-def _check_poll_expr(expr: str) -> None:
-    path = parse_poll_expr(expr)[0]
-    if "[" in path:
-        raise ValueError(f"表达式只支持对象字段路径，不支持数组：{expr}")
 
 
 class SkillCall(_DeclarationModel):
@@ -193,6 +188,27 @@ class SkillCall(_DeclarationModel):
     for_each: Optional[SkillForEach] = None
     reads: List[StrictStr] = Field(default_factory=list)
     poll: Optional[SkillPoll] = None
+
+    @field_validator("gateway")
+    @classmethod
+    def _check_gateway(cls, value: str) -> str:
+        if not GATEWAY_NAME_PATTERN.fullmatch(value):
+            raise ValueError(f"不合规：{value}")
+        return value
+
+    @field_validator("stage")
+    @classmethod
+    def _check_stage(cls, value: str) -> str:
+        if not STAGE_NAME_PATTERN.fullmatch(value):
+            raise ValueError(f"不合规：{value}")
+        return value
+
+    @field_validator("resource")
+    @classmethod
+    def _check_resource(cls, value: str) -> str:
+        if not SKILL_RESOURCE_NAME_PATTERN.fullmatch(value):
+            raise ValueError(f"不合规：{value}")
+        return value
 
     @model_validator(mode="after")
     def _check_call(self) -> "SkillCall":
@@ -300,14 +316,12 @@ class SkillDeclaration(_DeclarationModel):
             raise ValueError(f"不合规：{value}")
         return value
 
-    @field_validator("display_name_en", mode="before")
+    @field_validator("display_name_en")
     @classmethod
-    def _check_display_name_en(cls, value: Any) -> Any:
-        if not (
-            isinstance(value, str)
-            and 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH
-            and SKILL_DISPLAY_NAME_EN_PATTERN.fullmatch(value)
-        ):
+    def _check_display_name_en(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        if not (1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH and SKILL_DISPLAY_NAME_EN_PATTERN.fullmatch(value)):
             raise ValueError(f"不合规：{value}")
         return value
 

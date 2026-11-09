@@ -194,12 +194,14 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | Skill 资源定义 / Skill Resource Definition | `ResourceDefinition`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API：方法、路径、说明、认证取目标环境当前发布版本，参数和响应取该版本的 OpenAPI schema，没有 schema 时取资源补丁快照；不是 Resource 或 ReleasedResource 本身。 |
 | 资源补丁快照 / Resource Patch Snapshot | `data/skill/resources/{gateway}.yaml` | 只给内置 Skill 用：网关没有导入 schema 时补参数和响应；网关补上 schema 后应删除对应条目。 |
 
+内置 Skill 的资源取自启用中网关、启用中环境的当前发布版本，只要 kind=standard（旧快照缺 kind 按 standard）。当前环境在 disabled_stages 中则视为不存在；资源未公开时仍可用，只产生告警。
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
 MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
 SKILL.md frontmatter 遵循 Agent Skills 规范，只有 name、description、metadata；metadata 只有 type、version、author、datetime、source。display_name、code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
-内置 Skill 注入在 `post_migrate` 中执行，单条声明被拒绝、因资源缺失跳过或出错都不中断部署；资源缺失的声明在下次部署重试。
+内置 Skill 注入在 `post_migrate` 中执行，单条声明被拒绝、因资源缺失跳过或出错都不中断部署；资源缺失的声明在下次部署重试。引用的资源没有 OpenAPI schema、也没有资源补丁快照时，注入拒绝该声明、不写版本，下次部署重试；这种资源跳过字段级对照。
+已写入的内置 Skill 版本是注入时资源定义的快照，网关发布不会重新渲染或更新它，目前也没有变更检测；资源变更后需升声明版本号再注入。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、
 [OpenAPI 模型](../src/dashboard/apigateway/apigateway/apps/openapi/models.py)、

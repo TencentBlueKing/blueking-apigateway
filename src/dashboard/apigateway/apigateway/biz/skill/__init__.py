@@ -17,17 +17,17 @@
 #
 
 from .constants import SKILL_DECLARATIONS_DIR, SKILL_RESOURCES_DIR, SkillSyncStatusEnum
-from .syncer import get_changed_metadata_ids, sync_platform_skills
+from .syncer import DECLARATION_FILE_PATTERN, sync_platform_skills
 
 __all__ = [
     # constant
+    "DECLARATION_FILE_PATTERN",
     "SKILL_DECLARATIONS_DIR",
     "SKILL_RESOURCES_DIR",
     # Enum
     "SkillSyncStatusEnum",
     # class
     # functions
-    "get_changed_metadata_ids",
     "sync_platform_skills",
     # others
 ]

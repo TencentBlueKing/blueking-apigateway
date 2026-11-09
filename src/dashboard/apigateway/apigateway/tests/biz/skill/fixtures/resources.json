@@ -377,6 +377,731 @@
           "description": "文件分发日志"
         }
       ]
+    },
+    {
+      "gateway": "bk-sops",
+      "stage": "prod",
+      "resource": "create_task",
+      "method": "POST",
+      "path": "/create_task/",
+      "description": "按流程模板创建任务。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "bk_biz_id",
+          "in": "body",
+          "type": "integer",
+          "required": true,
+          "description": "模板所属的 CMDB 业务 ID"
+        },
+        {
+          "name": "template_id",
+          "in": "body",
+          "type": "integer",
+          "required": true,
+          "description": "流程模板 ID"
+        },
+        {
+          "name": "name",
+          "in": "body",
+          "type": "string",
+          "required": true,
+          "description": "任务名称"
+        },
+        {
+          "name": "constants",
+          "in": "body",
+          "type": "object",
+          "required": false,
+          "description": "模板全局变量，键为 ${key}"
+        },
+        {
+          "name": "template_source",
+          "in": "body",
+          "type": "string",
+          "required": false,
+          "description": "模板来源：business 业务流程，common 公共流程"
+        }
+      ],
+      "response": [
+        {
+          "field": "result",
+          "type": "boolean",
+          "description": "请求是否成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "data.task_id",
+          "type": "integer",
+          "description": "任务实例 ID"
+        },
+        {
+          "field": "data.task_url",
+          "type": "string",
+          "description": "任务实例链接"
+        }
+      ]
+    },
+    {
+      "gateway": "bk-sops",
+      "stage": "prod",
+      "resource": "start_task",
+      "method": "POST",
+      "path": "/start_task/{task_id}/",
+      "description": "启动已创建的任务。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "bk_biz_id",
+          "in": "body",
+          "type": "integer",
+          "required": true,
+          "description": "CMDB 业务 ID，与创建任务时相同"
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "type": "integer",
+          "required": true,
+          "description": "任务实例 ID"
+        }
+      ],
+      "response": [
+        {
+          "field": "result",
+          "type": "boolean",
+          "description": "请求是否成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        }
+      ]
+    },
+    {
+      "gateway": "bk-sops",
+      "stage": "prod",
+      "resource": "get_task_status",
+      "method": "GET",
+      "path": "/get_task_status/{task_id}/",
+      "description": "查询任务执行状态。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "bk_biz_id",
+          "in": "query",
+          "type": "integer",
+          "required": true,
+          "description": "CMDB 业务 ID；scope 为 project 时是标准运维项目 ID"
+        },
+        {
+          "name": "task_id",
+          "in": "path",
+          "type": "integer",
+          "required": true,
+          "description": "任务实例 ID"
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "description": "bk_biz_id 的作用域：cmdb_biz 或 project。创建并启动任务的声明不传"
+        },
+        {
+          "name": "with_ex_data",
+          "in": "query",
+          "type": "boolean",
+          "required": true,
+          "description": "为 true 时返回失败节点的错误信息"
+        }
+      ],
+      "response": [
+        {
+          "field": "result",
+          "type": "boolean",
+          "description": "请求是否成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "data.state",
+          "type": "string",
+          "description": "CREATED、RUNNING、FAILED、SUSPENDED、REVOKED、FINISHED"
+        },
+        {
+          "field": "data.ex_data",
+          "type": "object",
+          "description": "失败节点 ID 到错误信息；其他状态为空"
+        }
+      ]
+    },
+    {
+      "gateway": "bk-sops",
+      "stage": "prod",
+      "resource": "get_task_list",
+      "method": "GET",
+      "path": "/get_task_list/",
+      "description": "按业务列出任务。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "bk_biz_id",
+          "in": "query",
+          "type": "integer",
+          "required": true,
+          "description": "CMDB 业务 ID；scope 为 project 时是标准运维项目 ID"
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "description": "bk_biz_id 的作用域：cmdb_biz 或 project"
+        },
+        {
+          "name": "keyword",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "description": "任务名关键词"
+        },
+        {
+          "name": "is_finished",
+          "in": "query",
+          "type": "boolean",
+          "required": false,
+          "description": "只看已结束或未结束的任务"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "type": "integer",
+          "required": false,
+          "description": "本次返回的条数"
+        }
+      ],
+      "response": [
+        {
+          "field": "result",
+          "type": "boolean",
+          "description": "请求是否成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "count",
+          "type": "integer",
+          "description": "符合条件的任务总数"
+        },
+        {
+          "field": "data[].id",
+          "type": "integer",
+          "description": "任务实例 ID"
+        },
+        {
+          "field": "data[].name",
+          "type": "string",
+          "description": "任务名称"
+        },
+        {
+          "field": "data[].is_started",
+          "type": "boolean",
+          "description": "是否已启动"
+        },
+        {
+          "field": "data[].is_finished",
+          "type": "boolean",
+          "description": "是否已结束"
+        }
+      ]
+    },
+    {
+      "gateway": "devops",
+      "stage": "prod",
+      "resource": "v4_app_build_list",
+      "method": "GET",
+      "path": "/v4/apigw-app/builds",
+      "description": "应用态查询流水线构建历史。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": false,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "projectId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾项目英文名"
+        },
+        {
+          "name": "pipelineId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "流水线 ID"
+        },
+        {
+          "name": "X-DEVOPS-UID",
+          "in": "header",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾用户名，只放请求头"
+        },
+        {
+          "name": "buildNoStart",
+          "in": "query",
+          "type": "integer",
+          "required": false,
+          "description": "构建号下界；指定构建号时与 buildNoEnd 相同"
+        },
+        {
+          "name": "buildNoEnd",
+          "in": "query",
+          "type": "integer",
+          "required": false,
+          "description": "构建号上界"
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "type": "array<string>",
+          "required": false,
+          "description": "只返回这些构建状态"
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "required": true,
+          "description": "页码，从 1 开始"
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "type": "integer",
+          "required": true,
+          "description": "每页条数"
+        }
+      ],
+      "response": [
+        {
+          "field": "status",
+          "type": "integer",
+          "description": "0 表示成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "data.count",
+          "type": "integer",
+          "description": "符合条件的构建数"
+        },
+        {
+          "field": "data.records[].id",
+          "type": "string",
+          "description": "构建 ID"
+        },
+        {
+          "field": "data.records[].buildNum",
+          "type": "integer",
+          "description": "构建号"
+        },
+        {
+          "field": "data.records[].status",
+          "type": "string",
+          "description": "构建状态，如 SUCCEED、FAILED、CANCELED、RUNNING"
+        }
+      ]
+    },
+    {
+      "gateway": "devops",
+      "stage": "prod",
+      "resource": "v4_app_build_detail",
+      "method": "GET",
+      "path": "/v4/apigw-app/builds/detail",
+      "description": "应用态查询一次构建的详情。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": false,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "projectId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾项目英文名"
+        },
+        {
+          "name": "pipelineId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "流水线 ID"
+        },
+        {
+          "name": "buildId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "构建 ID"
+        },
+        {
+          "name": "X-DEVOPS-UID",
+          "in": "header",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾用户名，只放请求头"
+        }
+      ],
+      "response": [
+        {
+          "field": "status",
+          "type": "integer",
+          "description": "0 表示成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "data.buildNum",
+          "type": "integer",
+          "description": "构建号"
+        },
+        {
+          "field": "data.status",
+          "type": "string",
+          "description": "构建状态"
+        },
+        {
+          "field": "data.errorInfoList[].atomCode",
+          "type": "string",
+          "description": "失败插件代码"
+        },
+        {
+          "field": "data.errorInfoList[].taskName",
+          "type": "string",
+          "description": "失败任务名"
+        },
+        {
+          "field": "data.errorInfoList[].errorMsg",
+          "type": "string",
+          "description": "错误信息"
+        }
+      ]
+    },
+    {
+      "gateway": "devops",
+      "stage": "prod",
+      "resource": "v4_user_build_list",
+      "method": "GET",
+      "path": "/v4/apigw-user/builds",
+      "description": "用户态查询流水线构建历史。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "projectId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾项目英文名"
+        },
+        {
+          "name": "pipelineId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "流水线 ID"
+        },
+        {
+          "name": "buildNoStart",
+          "in": "query",
+          "type": "integer",
+          "required": false,
+          "description": "构建号下界"
+        },
+        {
+          "name": "buildNoEnd",
+          "in": "query",
+          "type": "integer",
+          "required": false,
+          "description": "构建号上界"
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "type": "array<string>",
+          "required": false,
+          "description": "只返回这些构建状态"
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "required": true,
+          "description": "页码，从 1 开始"
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "type": "integer",
+          "required": true,
+          "description": "每页条数"
+        }
+      ],
+      "response": [
+        {
+          "field": "status",
+          "type": "integer",
+          "description": "0 表示成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "data.hasDownloadPermission",
+          "type": "boolean",
+          "description": "当前用户能否下载该流水线的产物"
+        },
+        {
+          "field": "data.records[].id",
+          "type": "string",
+          "description": "构建 ID"
+        },
+        {
+          "field": "data.records[].buildNum",
+          "type": "integer",
+          "description": "构建号"
+        },
+        {
+          "field": "data.records[].status",
+          "type": "string",
+          "description": "构建状态"
+        }
+      ]
+    },
+    {
+      "gateway": "devops",
+      "stage": "prod",
+      "resource": "v4_user_build_status",
+      "method": "GET",
+      "path": "/v4/apigw-user/builds/status",
+      "description": "用户态查询一次构建的状态。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "projectId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾项目英文名"
+        },
+        {
+          "name": "pipelineId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "流水线 ID"
+        },
+        {
+          "name": "buildId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "构建 ID"
+        }
+      ],
+      "response": [
+        {
+          "field": "status",
+          "type": "integer",
+          "description": "0 表示成功"
+        },
+        {
+          "field": "message",
+          "type": "string",
+          "description": "失败时的错误信息"
+        },
+        {
+          "field": "data.status",
+          "type": "string",
+          "description": "构建状态，如 SUCCEED、FAILED、RUNNING、QUEUE、REVIEWING"
+        },
+        {
+          "field": "data.errorInfoList[].atomCode",
+          "type": "string",
+          "description": "失败插件代码"
+        },
+        {
+          "field": "data.errorInfoList[].errorMsg",
+          "type": "string",
+          "description": "错误信息"
+        }
+      ]
+    },
+    {
+      "gateway": "devops",
+      "stage": "prod",
+      "resource": "v4_user_artifactory_list",
+      "method": "GET",
+      "path": "/v4/apigw-user/artifactories",
+      "description": "用户态列出一次构建的产物。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "projectId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾项目英文名"
+        },
+        {
+          "name": "pipelineId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "流水线 ID"
+        },
+        {
+          "name": "buildId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "构建 ID"
+        }
+      ],
+      "response": [
+        {
+          "field": "status",
+          "type": "integer",
+          "description": "0 表示成功"
+        },
+        {
+          "field": "data.records[].name",
+          "type": "string",
+          "description": "文件名"
+        },
+        {
+          "field": "data.records[].folder",
+          "type": "boolean",
+          "description": "是否为文件夹"
+        },
+        {
+          "field": "data.records[].fullPath",
+          "type": "string",
+          "description": "产物路径，生成下载地址时原样传递"
+        },
+        {
+          "field": "data.records[].artifactoryType",
+          "type": "string",
+          "description": "仓库类型，如 PIPELINE、CUSTOM_DIR、IMAGE、REPORT"
+        }
+      ]
+    },
+    {
+      "gateway": "devops",
+      "stage": "prod",
+      "resource": "user_artifactory_thirdPartyDownloadUrl",
+      "method": "GET",
+      "path": "/v4/apigw-user/artifactories/download_url",
+      "description": "为一条产物生成临时下载地址。",
+      "auth": {
+        "app_verified_required": true,
+        "user_verified_required": true,
+        "resource_perm_required": true
+      },
+      "params": [
+        {
+          "name": "projectId",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "蓝盾项目英文名"
+        },
+        {
+          "name": "artifactoryType",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "仓库类型"
+        },
+        {
+          "name": "path",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "description": "产物路径"
+        },
+        {
+          "name": "ttl",
+          "in": "query",
+          "type": "integer",
+          "required": false,
+          "description": "下载链接有效期，秒"
+        }
+      ],
+      "response": [
+        {
+          "field": "status",
+          "type": "integer",
+          "description": "0 表示成功"
+        },
+        {
+          "field": "data",
+          "type": "string",
+          "description": "临时下载地址"
+        }
+      ]
     }
   ]
 }

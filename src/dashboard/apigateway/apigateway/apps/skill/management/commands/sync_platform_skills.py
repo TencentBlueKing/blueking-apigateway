@@ -21,10 +21,10 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from apigateway.biz.skill import (
+    DECLARATION_FILE_PATTERN,
     SKILL_DECLARATIONS_DIR,
     SKILL_RESOURCES_DIR,
     SkillSyncStatusEnum,
-    get_changed_metadata_ids,
     sync_platform_skills,
 )
 
@@ -61,16 +61,21 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         declarations_dir: Path = options["dir"]
-        if not declarations_dir.is_dir() or not any(declarations_dir.glob("*.yaml")):
+        if not declarations_dir.is_dir() or not any(declarations_dir.glob(DECLARATION_FILE_PATTERN)):
             self.stdout.write(f"No skill declarations found in {declarations_dir}, skip.")
             return
 
+        name = options["name"]
         results = sync_platform_skills(
             declarations_dir,
             options["resources_dir"],
-            name=options["name"] or None,
+            name=name or None,
             dry_run=options["dry_run"],
         )
+        if name and not results:
+            self.stdout.write(f"No skill declaration named {name} in {declarations_dir}.")
+            return
+
         labels = dict(SkillSyncStatusEnum.get_choices())
         for result in results:
             line = f"[{labels[result.status]}] {result.name}"
@@ -84,8 +89,6 @@ class Command(BaseCommand):
         summary = "，".join(f"{labels[status]} {counts[status]}" for status in labels if counts[status])
         prefix = "dry-run " if options["dry_run"] else ""
         self.stdout.write(f"{prefix}total {len(results)}：{summary or '无'}")
-        if not options["dry_run"]:
-            self.stdout.write(f"changed metadata ids: {get_changed_metadata_ids(results)}")
 
     def _style(self, status: str):
         if status in (SkillSyncStatusEnum.CREATED.value, SkillSyncStatusEnum.NEW_VERSION.value):

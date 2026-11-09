@@ -97,7 +97,8 @@ class _RefChecker:
                 self._check_ref(for_each_from, f"{where}.for_each.from")
             for name, ref in call.params.items():
                 self._check_ref(ref, f"{where}.params.{name}", for_each_from)
-            if resource:
+            # 没有 schema、也没有快照时，参数和响应是空的，逐项对照只会重复那条总告警
+            if resource and not resource.definition_unverified:
                 self._check_params(call, resource, where)
                 self._check_reads(call, resource, where)
                 self._check_poll(call, resource, where)
@@ -115,7 +116,7 @@ class _RefChecker:
             source = parse_ref(for_each_from)
             resource = self.call_resources.get((source.step, source.resource))
             full_path = f"{source.path}[].{parsed.path}"
-            if resource and not resource.has_response_field(full_path):
+            if self._missing_response_field(resource, full_path):
                 self.result.warnings.append(f"{where}：{source.resource} 的响应定义中没有 {full_path}")
         elif parsed.kind == "call":
             target = (parsed.step, parsed.resource)
@@ -124,8 +125,14 @@ class _RefChecker:
                 self.result.errors.append(f"{where}：引用的调用 {parsed.step}.{parsed.resource} 不在当前调用之前")
             elif self.earlier_calls.count(target) > 1:
                 self.result.errors.append(f"{where}：{parsed.resource} 在步骤 {parsed.step} 内出现多次，不能被引用")
-            elif resource and not resource.has_response_field(parsed.path):
+            elif self._missing_response_field(resource, parsed.path):
                 self.result.warnings.append(f"{where}：{parsed.resource} 的响应定义中没有 {parsed.path}")
+
+    def _missing_response_field(self, resource: Optional[ResourceDefinition], path: str) -> bool:
+        """资源不存在，或没有 schema 也没有快照时，不再把每个字段都报成缺失"""
+        if resource is None or resource.definition_unverified:
+            return False
+        return not resource.has_response_field(path)
 
     def _check_params(self, call: SkillCall, resource: ResourceDefinition, where: str) -> None:
         for name, ref in call.params.items():

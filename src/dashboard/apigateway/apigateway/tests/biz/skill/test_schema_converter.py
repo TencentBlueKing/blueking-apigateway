@@ -18,7 +18,12 @@
 import pytest
 
 from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
-from apigateway.biz.skill.schema_converter import convert_schema_params, convert_schema_responses, schema_type_text
+from apigateway.biz.skill.schema_converter import (
+    convert_schema_params,
+    convert_schema_responses,
+    has_non_json_request_body,
+    schema_type_text,
+)
 
 pytestmark = pytest.mark.no_meta_schema
 
@@ -77,6 +82,46 @@ def test_convert_schema_params():
         ResourceParam(name="X-Trace", location="header", type="string"),
         ResourceParam(name="name", location="body", type="string", required=True, description="任务名"),
         ResourceParam(name="hosts", location="body", type="array<integer>"),
+    ]
+
+
+def test_non_json_request_body_is_not_converted():
+    schema = {
+        "parameters": [{"name": "task_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["file"],
+                        "properties": {"file": {"type": "string", "description": "文件"}},
+                    }
+                }
+            }
+        },
+    }
+
+    assert has_non_json_request_body(schema)
+    assert convert_schema_params(schema) == [
+        ResourceParam(name="task_id", location="path", type="integer", required=True),
+    ]
+
+
+def test_json_request_body_preferred_over_other_content_types():
+    schema = {
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string"}}}},
+                "application/json": {
+                    "schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+                },
+            }
+        }
+    }
+
+    assert not has_non_json_request_body(schema)
+    assert convert_schema_params(schema) == [
+        ResourceParam(name="name", location="body", type="string", required=True),
     ]
 
 

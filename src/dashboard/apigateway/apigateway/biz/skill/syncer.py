@@ -30,7 +30,7 @@ from apigateway.apps.skill.models import SkillMetadata, SkillVersion
 from .constants import SkillSyncStatusEnum
 from .declaration import SkillDeclarationError, parse_declaration
 from .renderer import render_skill_body
-from .resource_loader import ReleasedResourceProvider
+from .resource_loader import UNVERIFIED_RESOURCE_DEFINITION, ReleasedResourceProvider
 from .validator import validate_declaration
 from .writer import save_skill_version
 
@@ -54,7 +54,6 @@ class SkillSyncResult:
 def sync_platform_skills(
     declarations_dir: Path,
     resources_dir: Optional[Path] = None,
-    *,
     name: Optional[str] = None,
     dry_run: bool = False,
 ) -> List[SkillSyncResult]:
@@ -64,16 +63,10 @@ def sync_platform_skills(
         paths = [path for path in paths if path.stem == name]
 
     provider = ReleasedResourceProvider(snapshot_dir=resources_dir)
-    return [sync_platform_skill(path, provider, dry_run=dry_run) for path in paths]
+    return [sync_platform_skill(path, provider, dry_run) for path in paths]
 
 
-def get_changed_metadata_ids(results: List[SkillSyncResult]) -> List[int]:
-    """本次新建和新版本的 metadata ID"""
-    changed = (SkillSyncStatusEnum.CREATED.value, SkillSyncStatusEnum.NEW_VERSION.value)
-    return [result.metadata_id for result in results if result.status in changed and result.metadata_id]
-
-
-def sync_platform_skill(path: Path, provider: ResourceProvider, *, dry_run: bool = False) -> SkillSyncResult:
+def sync_platform_skill(path: Path, provider: ResourceProvider, dry_run: bool = False) -> SkillSyncResult:
     result = SkillSyncResult(name=path.stem, status=SkillSyncStatusEnum.FAILED.value)
     try:
         _sync(path, provider, dry_run, result)
@@ -92,6 +85,10 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
         result.reasons += err.errors
         return
     result.name = declaration.name
+    if path.stem != declaration.name:
+        result.status = SkillSyncStatusEnum.REJECTED.value
+        result.reasons.append(f"文件名 {path.stem} 与声明的 name {declaration.name} 不一致")
+        return
 
     metadata = SkillMetadata.objects.filter(
         type=SkillTypeEnum.PLATFORM.value, gateway__isnull=True, name=declaration.name
@@ -111,9 +108,13 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
             for item in validation.missing_resources
         ]
         return
-    if validation.errors:
+    # 资源已发布但参数和响应无法核对时，渲染会按方法猜参数位置。版本写入后不能改，这里直接拒绝。
+    unverified = [warning for warning in validation.warnings if UNVERIFIED_RESOURCE_DEFINITION in warning]
+    if unverified or validation.errors:
         result.status = SkillSyncStatusEnum.REJECTED.value
         result.reasons += validation.errors
+        result.reasons += unverified
+        result.warnings = [warning for warning in result.warnings if warning not in unverified]
         return
 
     rendered = render_skill_body(declaration, provider)

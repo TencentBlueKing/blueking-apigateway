@@ -24,6 +24,12 @@ from .resource_definition import ResourceParam, ResponseField
 JSON_CONTENT_TYPE = "application/json"
 
 
+def has_non_json_request_body(schema: Dict[str, Any]) -> bool:
+    """有请求体，但没有 application/json。这种请求体不转成 body 参数。"""
+    content = (schema.get("requestBody") or {}).get("content") or {}
+    return bool(content) and JSON_CONTENT_TYPE not in content
+
+
 def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
     """parameters 转成 path / query / header 参数，requestBody 的 JSON 对象顶层属性转成 body 参数"""
     params = [
@@ -38,7 +44,7 @@ def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
         if item.get("name") and item.get("in") in ("path", "query", "header")
     ]
 
-    body_schema = _get_content_schema(schema.get("requestBody") or {})
+    body_schema = _json_content_schema(schema.get("requestBody") or {})
     required = set(body_schema.get("required") or [])
     for name, prop in (body_schema.get("properties") or {}).items():
         params.append(
@@ -78,7 +84,14 @@ def schema_type_text(schema: Dict[str, Any]) -> str:
     return schema_type or ""
 
 
+def _json_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
+    """只取 application/json。请求体没有 JSON 时不退回其他 content type，避免被渲染成 JSON。"""
+    content = container.get("content") or {}
+    return ((content.get(JSON_CONTENT_TYPE) or {}).get("schema")) or {}
+
+
 def _get_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
+    """响应：没有 application/json 时退回第一个 content type。"""
     content = container.get("content") or {}
     if not content:
         return {}

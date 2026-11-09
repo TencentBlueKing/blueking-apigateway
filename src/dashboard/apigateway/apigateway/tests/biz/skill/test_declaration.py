@@ -80,7 +80,7 @@ class TestTopLevelRules:
             ("name", "job-plan-run-and-log\n"),
             ("display_name", ""),
             ("display_name", "执行作业方案\n"),
-            ("display_name_en", None),
+            ("display_name", "作业𠀀"),
             ("display_name_en", "Run Job Plan\n"),
             ("description", ""),
             ("version", "1.0"),
@@ -114,6 +114,11 @@ class TestTopLevelRules:
         job_plan_data.pop("changelog")
 
         assert parse_declaration(job_plan_data).changelog == ""
+
+    def test_display_name_en_null(self, job_plan_data):
+        job_plan_data["display_name_en"] = None
+
+        assert parse_declaration(job_plan_data).display_name_en is None
 
 
 class TestOrchestrationRules:
@@ -158,6 +163,8 @@ class TestOrchestrationRules:
             {"until": "data.finished"},
             {"until": "data.list[].status == 1"},
             {"stop_when": [{"expr": "data.status == 3", "times": 0}]},
+            {"stop_when": [{"expr": "data.status == 3", "times": True}]},
+            {"stop_when": [{"expr": "data.list[].status == 1", "times": 2}]},
         ],
     )
     def test_invalid_poll(self, job_plan_data, patch):
@@ -178,6 +185,57 @@ class TestOrchestrationRules:
         job_plan_data["orchestration"]["steps"][0]["calls"][0]["params"]["job_plan_id"] = ref
 
         assert _errors(job_plan_data)
+
+    def test_stop_when_streak(self, job_plan_data):
+        job_plan_data["orchestration"]["steps"][1]["calls"][0]["poll"]["stop_when"] = [
+            "result == false",
+            {"expr": "data.job_instance.status == 7", "times": 3},
+        ]
+
+        declaration = parse_declaration(job_plan_data)
+        poll = declaration.orchestration.steps[1].calls[0].poll
+
+        assert poll.stop_conditions == [
+            ("result == false", 1),
+            ("data.job_instance.status == 7", 3),
+        ]
+        assert declaration.orchestration_data()["steps"][1]["calls"][0]["poll"]["stop_when"][1] == {
+            "expr": "data.job_instance.status == 7",
+            "times": 3,
+        }
+
+    def test_nested_where_rejected(self, job_plan_data):
+        job_plan_data["orchestration"]["steps"][1]["calls"][0]["params"]["job_instance_id"] = {
+            "ref": {"ref": "run-plan.execute_job_plan.data.step_instance_list[].id", "where": "w1"},
+            "where": "w2",
+        }
+
+        errors = _errors(job_plan_data)
+
+        assert any("ref 应为字符串" in error for error in errors), errors
+
+    def test_output_cannot_use_each(self, job_plan_data):
+        job_plan_data["orchestration"]["outputs"][0]["from"] = "each.job_instance_id"
+
+        errors = _errors(job_plan_data)
+
+        assert any("each" in error for error in errors), errors
+
+    @pytest.mark.parametrize(
+        "field, value",
+        [
+            ("gateway", "../../etc"),
+            ("gateway", "Job"),
+            ("stage", "../prod"),
+            ("resource", "get-task"),
+        ],
+    )
+    def test_invalid_call_target(self, job_plan_data, field, value):
+        job_plan_data["orchestration"]["steps"][0]["calls"][0][field] = value
+
+        errors = _errors(job_plan_data)
+
+        assert any(error.startswith(f"orchestration.steps[0].calls[0].{field}") for error in errors), errors
 
     def test_where_requires_array_path(self, job_plan_data):
         job_plan_data["orchestration"]["steps"][1]["calls"][0]["params"]["job_instance_id"] = {

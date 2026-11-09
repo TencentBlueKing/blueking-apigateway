@@ -58,6 +58,8 @@ class ResourceDefinition:
     responses: List[ResponseField] = field(default_factory=list)
     # 读取资源定义时发现的问题（如无 schema、快照可删除），由校验原样输出
     warnings: List[str] = field(default_factory=list)
+    # 没有 schema 也没有快照，参数和响应是空的；字段级对照没有依据，调用方应跳过
+    definition_unverified: bool = False
 
     @property
     def key(self) -> Tuple[str, str, str]:

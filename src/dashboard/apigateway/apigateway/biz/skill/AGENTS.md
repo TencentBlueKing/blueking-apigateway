@@ -36,8 +36,18 @@ runs from `bin/post_migrate`.
 - Built-in injection must not break deployment: one bad declaration only affects
   its own result, and the command exits 0. Missing resources skip the declaration
   until the next deploy; do not partially write it.
+- A referenced resource with neither an OpenAPI schema nor a patch snapshot
+  rejects the declaration. Parameter locations would otherwise be guessed from
+  the HTTP method, and a version is immutable once written. The next deploy
+  retries because nothing was written.
 - A version is immutable once written; the same version (case-insensitive) is
   skipped, not overwritten.
+- A written version is a snapshot of the resource definitions at injection time.
+  Gateway releases do not re-render or update built-in Skills, and nothing yet
+  detects drift. After a referenced resource changes, bump the declaration
+  `version` and redeploy, or run `sync_platform_skills`. Do not auto-generate
+  versions on release: they would collide with versions bumped in the
+  repository, and hand-written step text would not be reviewed.
 - Update `SkillMetadata` with `save(update_fields=...)` so concurrent
   `download_count` increments are kept.
 - Injection reads only the database and repository files; it never calls
@@ -49,8 +59,14 @@ runs from `bin/post_migrate`.
 `tests/biz/skill/` holds one golden fixture, `fixtures/declarations/job-plan-run-and-log.yaml`,
 plus `fixtures/resources.json` and `fixtures/expected/job-plan-run-and-log.md`. That
 declaration covers poll, for_each, where, literal values and write calls; rule tests
-mutate this one declaration. Shipped declarations in `data/skill/declarations/` are
-not snapshotted one by one. After an intentional template change, regenerate
-`expected/` from the renderer and review the diff; the rendered snippet must stay
-valid OpenAPI 3.1. Command output is covered by
-`tests/apps/skill/management/commands/test_sync_platform_skills.py`.
+mutate this one declaration. `fixtures/resources.json` is also the resource contract
+for every file in `data/skill/declarations/`: `test_shipped_declarations.py` publishes
+those resources, fills parameters and responses from patch snapshots, then validates
+and renders each shipped declaration. `errors` and warnings must be empty, including
+the "no schema and no snapshot" warning. For bk-sops and devops the fixture records
+the parameters and response fields those declarations map; `task_id` is a path
+parameter and `X-DEVOPS-UID` is a header, and the other GET parameters are query,
+POST parameters body. It is not a copy of the live OpenAPI document. After an
+intentional template change, regenerate `expected/` from the renderer and review
+the diff; the rendered snippet must stay valid OpenAPI 3.1. Command output is
+covered by `tests/apps/skill/management/commands/test_sync_platform_skills.py`.

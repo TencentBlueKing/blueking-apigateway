@@ -48,7 +48,6 @@ class SavedSkillVersion:
 def save_skill_version(
     declaration: SkillDeclaration,
     body: str,
-    *,
     skill_type: str,
     gateway: Optional[Gateway],
     operator: str,

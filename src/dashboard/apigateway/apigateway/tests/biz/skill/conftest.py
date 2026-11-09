@@ -24,6 +24,7 @@ import yaml
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
 
@@ -44,8 +45,12 @@ def release_resources(
     schemas: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> Gateway:
     """建网关、环境、资源版本和发布，并写入 ReleasedResource 投影；schemas 按资源名给 OpenAPI schema"""
-    gateway = Gateway.objects.filter(name=gateway_name).first() or G(Gateway, name=gateway_name)
-    stage = G(Stage, gateway=gateway, name=stage_name)
+    gateway = Gateway.objects.filter(name=gateway_name).first() or G(
+        Gateway, name=gateway_name, status=GatewayStatusEnum.ACTIVE.value
+    )
+    gateway.status = GatewayStatusEnum.ACTIVE.value
+    gateway.save(update_fields=["status"])
+    stage = G(Stage, gateway=gateway, name=stage_name, status=StageStatusEnum.ACTIVE.value)
     resource_version = G(ResourceVersion, gateway=gateway)
     G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
 
@@ -64,6 +69,7 @@ def release_resources(
             "path": item["path"],
             "description": item.get("description", ""),
             "is_public": item.get("is_public", True),
+            "kind": item.get("kind") or ResourceKindEnum.STANDARD.value,
             "disabled_stages": item.get("disabled_stages", []),
             "contexts": {"resource_auth": {"config": json.dumps(auth_config)}},
             "api_labels": [],

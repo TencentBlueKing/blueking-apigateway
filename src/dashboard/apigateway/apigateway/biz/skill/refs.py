@@ -21,7 +21,8 @@
 - `inputs.<输入名>`：来自输入；
 - `<步骤>.<资源>.<字段路径>`：来自之前某次调用的响应体；
 - `each.<字段路径>`：带 for_each 的调用里当前元素的字段；
-- `{"value": <JSON 值>}` 固定值，或 `{"ref": <上面的字符串>, "where": <条件>}` 只取满足条件的数组元素。
+- `{"value": <JSON 值>}` 固定值，或 `{"ref": <上面三种字符串>, "where": <条件>}` 只取满足条件的数组元素。
+  `ref` 只能是字符串，不能再套一层对象。
 """
 
 import json
@@ -48,6 +49,8 @@ def parse_ref(ref: Any) -> ParsedRef:
     """解析引用；格式不对时抛 ValueError"""
     if isinstance(ref, dict):
         if set(ref) == {"ref", "where"}:
+            if not isinstance(ref["ref"], str):
+                raise ValueError(f"ref 应为字符串：{ref}")
             if not isinstance(ref["where"], str) or not ref["where"]:
                 raise ValueError(f"where 应为非空字符串：{ref}")
             return parse_ref(ref["ref"])
@@ -70,7 +73,8 @@ def parse_ref(ref: Any) -> ParsedRef:
 def ref_text(ref: Any) -> Optional[str]:
     """引用的字符串形式；固定值返回 None"""
     if isinstance(ref, dict):
-        return ref_text(ref["ref"]) if "ref" in ref else None
+        inner = ref.get("ref")
+        return inner if isinstance(inner, str) else None
     return ref
 
 
@@ -101,12 +105,10 @@ def parse_poll_expr(expr: str) -> Tuple[str, str, Any]:
 
 
 def poll_expr_paths(exprs: List[str]) -> List[str]:
+    """表达式在解析声明时已经校验过，这里不再吞掉解析错误"""
     paths: List[str] = []
     for expr in exprs:
-        try:
-            path = parse_poll_expr(expr)[0]
-        except ValueError:
-            continue
+        path = parse_poll_expr(expr)[0]
         if path not in paths:
             paths.append(path)
     return paths

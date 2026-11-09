@@ -73,8 +73,8 @@ class TestSyncPlatformSkillsCommand:
         assert lines[1].startswith("[跳过（资源缺失）] job-plan-missing：")
         assert lines[2] == "[新建] job-plan-run-and-log"
         assert "total 3：新建 1，跳过（资源缺失） 1，拒绝 1" in output
-        metadata = SkillMetadata.objects.get(name="job-plan-run-and-log")
-        assert f"changed metadata ids: [{metadata.id}]" in output
+        assert "changed metadata ids" not in output
+        assert SkillMetadata.objects.filter(name="job-plan-run-and-log").exists()
 
     def test_dry_run_and_name(self, declarations_dir, resources_dir):
         output = _call(
@@ -112,5 +112,17 @@ class TestSyncPlatformSkillsCommand:
         lines = [line.split("：", 1)[0] for line in output.splitlines() if line.startswith("[")]
         assert lines == [f"[跳过（资源缺失）] {name}" for name in names]
         assert "total 5：跳过（资源缺失） 5" in output
-        assert "changed metadata ids: []" in output
+        assert "changed metadata ids" not in output
         assert not SkillMetadata.objects.exists()
+
+    def test_name_not_found(self, declarations_dir, resources_dir):
+        output = _call(
+            "--dir",
+            str(declarations_dir),
+            "--resources-dir",
+            str(resources_dir),
+            "--name",
+            "missing-skill",
+        )
+
+        assert output == f"No skill declaration named missing-skill in {declarations_dir}.\n"

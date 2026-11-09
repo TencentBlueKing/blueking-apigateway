@@ -20,6 +20,7 @@ from ddf import G
 
 from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
 from apigateway.biz.skill.resource_loader import ReleasedResourceProvider
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.tests.biz.skill.conftest import release_resources, write_snapshots
 
@@ -111,6 +112,39 @@ class TestReleasedResourceProvider:
 
         assert definition.warnings == ["bk-sops.get_task_status：资源未公开，调用方无法申请权限"]
 
+    def test_non_json_request_body_warns_without_rejecting(self):
+        schema = {
+            "parameters": [{"name": "task_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
+            "requestBody": {
+                "content": {
+                    "multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string"}}}}
+                }
+            },
+        }
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.params == [ResourceParam(name="task_id", location="path", type="integer", required=True)]
+        assert definition.definition_unverified is False
+        assert definition.warnings == ["bk-sops.get_task_status：请求体不是 application/json，未转换为 body 参数"]
+
+    def test_non_json_request_body_only_is_not_unverified(self):
+        schema = {
+            "requestBody": {
+                "content": {
+                    "multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string"}}}}
+                }
+            }
+        }
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.params == []
+        assert definition.definition_unverified is False
+        assert definition.warnings == ["bk-sops.get_task_status：请求体不是 application/json，未转换为 body 参数"]
+
     @pytest.mark.parametrize(
         "gateway, stage, resource",
         [
@@ -126,9 +160,27 @@ class TestReleasedResourceProvider:
 
     def test_stage_without_release(self):
         gateway = release_resources("bk-sops", "prod", [RESOURCE])
-        G(Stage, gateway=gateway, name="test")
+        G(Stage, gateway=gateway, name="test", status=StageStatusEnum.ACTIVE.value)
 
         assert ReleasedResourceProvider().get_resource("bk-sops", "test", "get_task_status") is None
+
+    def test_inactive_gateway(self):
+        gateway = release_resources("bk-sops", "prod", [RESOURCE])
+        gateway.status = GatewayStatusEnum.INACTIVE.value
+        gateway.save(update_fields=["status"])
+
+        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+
+    def test_inactive_stage(self):
+        gateway = release_resources("bk-sops", "prod", [RESOURCE])
+        Stage.objects.filter(gateway=gateway, name="prod").update(status=StageStatusEnum.INACTIVE.value)
+
+        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+
+    def test_ai_resource(self):
+        release_resources("bk-sops", "prod", [{**RESOURCE, "kind": ResourceKindEnum.AI.value}])
+
+        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
 
     def test_disabled_stage(self):
         release_resources("bk-sops", "prod", [{**RESOURCE, "disabled_stages": ["prod"]}])

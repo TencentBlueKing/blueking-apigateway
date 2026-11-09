@@ -18,22 +18,25 @@
 """从目标环境当前发布的版本读取资源定义。
 
 方法、路径、说明、认证取发布数据；参数和响应取 OpenAPI schema，传入快照目录时用补丁快照补。
-网关、环境、发布、资源任何一层不存在，或该环境在资源的 disabled_stages 里，都视为资源不存在。
+网关或环境未启用、发布或资源不存在、资源不是 standard，或该环境在资源的 disabled_stages 里，都视为资源不存在。
 """
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.service.resource_version import get_resource_id_to_schema_by_resource_version
 
 from .patch_snapshot import PatchSnapshotStore, SnapshotResource
 from .resource_definition import ResourceDefinition
-from .schema_converter import convert_schema_params, convert_schema_responses
+from .schema_converter import convert_schema_params, convert_schema_responses, has_non_json_request_body
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+UNVERIFIED_RESOURCE_DEFINITION = "资源无 schema、无快照，参数和响应字段无法核对"
 
 
 @dataclass
@@ -83,21 +86,25 @@ class ReleasedResourceProvider:
         return self._stages[key]
 
     def _load_stage_resources(self, gateway_name: str, stage_name: str) -> Optional[_StageResources]:
-        gateway = Gateway.objects.filter(name=gateway_name).first()
+        gateway = Gateway.objects.filter(name=gateway_name, status=GatewayStatusEnum.ACTIVE.value).first()
         if not gateway:
             return None
-        stage = Stage.objects.filter(gateway=gateway, name=stage_name).first()
+        stage = Stage.objects.filter(gateway=gateway, name=stage_name, status=StageStatusEnum.ACTIVE.value).first()
         if not stage:
             return None
-        resource_version_id = (
-            Release.objects.filter(gateway=gateway, stage=stage).values_list("resource_version_id", flat=True).first()
-        )
+        resource_version_id = Release.objects.get_released_resource_version_id(gateway.id, stage_name)
         if not resource_version_id:
             return None
 
         released_resources = ReleasedResource.objects.filter(gateway=gateway, resource_version_id=resource_version_id)
+        resources = {}
+        for item in released_resources:
+            data = ReleasedResourceData.from_data(item.data)
+            if data.kind != ResourceKindEnum.STANDARD.value:
+                continue
+            resources[item.resource_name] = data
         return _StageResources(
-            resources={item.resource_name: ReleasedResourceData.from_data(item.data) for item in released_resources},
+            resources=resources,
             schemas=get_resource_id_to_schema_by_resource_version(resource_version_id),
         )
 
@@ -108,12 +115,13 @@ def _fill_params_and_responses(
     """快照里有的资源，参数和响应整体以快照为准，不做字段级合并"""
     params = convert_schema_params(schema)
     responses = convert_schema_responses(schema)
+    non_json_body = has_non_json_request_body(schema)
     where = f"{definition.gateway}.{definition.resource}"
 
     if snapshot:
         definition.params = snapshot.to_params()
         definition.responses = snapshot.to_responses()
-        if params or responses:
+        if params or responses or non_json_body:
             definition.warnings.append(
                 f"{where}：资源已有 schema，核对后删除 resources/{definition.gateway}.yaml 里的这条快照"
             )
@@ -121,5 +129,9 @@ def _fill_params_and_responses(
 
     definition.params = params
     definition.responses = responses
-    if not (params or responses):
-        definition.warnings.append(f"{where}：资源无 schema、无快照，参数和响应字段无法核对")
+    if non_json_body:
+        definition.warnings.append(f"{where}：请求体不是 application/json，未转换为 body 参数")
+    # 只有非 JSON 请求体时，schema 是有的，只是不能转成 body 参数；不要当成「无 schema」拒绝。
+    if not (params or responses) and not non_json_body:
+        definition.definition_unverified = True
+        definition.warnings.append(f"{where}：{UNVERIFIED_RESOURCE_DEFINITION}")

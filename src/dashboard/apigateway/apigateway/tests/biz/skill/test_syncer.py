@@ -20,7 +20,7 @@ import yaml
 
 from apigateway.apps.skill.constants import SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata, SkillVersion
-from apigateway.biz.skill import SkillSyncStatusEnum, get_changed_metadata_ids, sync_platform_skills
+from apigateway.biz.skill import SkillSyncStatusEnum, sync_platform_skills
 from apigateway.biz.skill.renderer import render_skill_body
 from apigateway.tests.biz.skill.conftest import EXPECTED_DIR, release_fixture_gateway, write_snapshots
 
@@ -67,7 +67,6 @@ class TestSyncPlatformSkills:
         assert results[0].warnings == []
         metadata = SkillMetadata.objects.get(type=SkillTypeEnum.PLATFORM.value, gateway=None, name=JOB_PLAN)
         assert results[0].metadata_id == metadata.id
-        assert get_changed_metadata_ids(results) == [metadata.id]
         assert metadata.current_version.artifact["SKILL.md"] == (EXPECTED_DIR / f"{JOB_PLAN}.md").read_text(
             encoding="utf-8"
         )
@@ -140,7 +139,6 @@ class TestSyncPlatformSkills:
         results = _sync(sync_dirs, dry_run=True)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.CREATED.value)]
-        assert get_changed_metadata_ids(results) == []
         assert not SkillMetadata.objects.exists()
 
     def test_name_filter(self, sync_dirs, write_declaration, job_plan_data):
@@ -148,3 +146,33 @@ class TestSyncPlatformSkills:
         write_declaration({**job_plan_data, "name": "other-skill"})
 
         assert _statuses(_sync(sync_dirs, name="other-skill")) == [("other-skill", SkillSyncStatusEnum.CREATED.value)]
+
+    def test_file_name_must_match_declaration_name(self, sync_dirs, write_declaration, job_plan_data):
+        write_declaration(job_plan_data, file_name="other-file")
+
+        results = _sync(sync_dirs)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert results[0].reasons == ["文件名 other-file 与声明的 name job-plan-run-and-log 不一致"]
+        assert not SkillMetadata.objects.exists()
+
+    def test_no_schema_no_snapshot_rejected(self, tmp_path, resources_data, job_plan_data):
+        release_fixture_gateway(resources_data, "jobv3-cloud")
+        declarations_dir = tmp_path / "declarations"
+        declarations_dir.mkdir()
+        (declarations_dir / f"{JOB_PLAN}.yaml").write_text(
+            yaml.safe_dump(job_plan_data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+        resources_dir = tmp_path / "resources"
+        resources_dir.mkdir()
+
+        results = sync_platform_skills(declarations_dir, resources_dir)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert results[0].warnings == []
+        assert results[0].reasons == [
+            "jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对",
+            "jobv3-cloud.get_job_instance_status：资源无 schema、无快照，参数和响应字段无法核对",
+            "jobv3-cloud.batch_get_job_instance_ip_log：资源无 schema、无快照，参数和响应字段无法核对",
+        ]
+        assert not SkillMetadata.objects.exists()

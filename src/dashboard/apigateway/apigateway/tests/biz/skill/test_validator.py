@@ -18,6 +18,7 @@
 import pytest
 
 from apigateway.biz.skill.declaration import parse_declaration
+from apigateway.biz.skill.refs import poll_expr_paths
 from apigateway.biz.skill.validator import MissingResource, validate_declaration
 from apigateway.tests.biz.skill.conftest import GOLDEN_NAMES, load_declaration_data
 from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
@@ -64,6 +65,18 @@ class TestValidateDeclaration:
         static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan").warnings.append("schema 缺失")
 
         assert _validate(job_plan_data, static_provider).warnings == ["schema 缺失"]
+
+    def test_unverified_definition_skips_field_checks(self, static_provider, job_plan_data):
+        resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
+        resource.params = []
+        resource.responses = []
+        resource.definition_unverified = True
+        resource.warnings.append("jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对")
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert result.errors == []
+        assert result.warnings == ["jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对"]
 
     def test_unknown_input(self, static_provider, job_plan_data):
         _run_call(job_plan_data)["params"]["job_plan_id"] = "inputs.not_exists"
@@ -135,3 +148,7 @@ class TestValidateDeclaration:
         warnings = _validate(job_plan_data, static_provider).warnings
 
         assert "wait-result.get_job_instance_status.poll：响应定义中没有 data.not_exists" in warnings
+
+    def test_invalid_poll_expr_is_not_swallowed(self):
+        with pytest.raises(ValueError, match="轮询表达式"):
+            poll_expr_paths(["not an expr"])

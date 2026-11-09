@@ -23,8 +23,12 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 # Agent Skills 规范名：小写字母、数字、单个连字符，1–64，不以连字符开头或结尾；步骤名同规则
 SKILL_NAME_PATTERN = re.compile(r"^(?!.*--)[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 SKILL_STEP_NAME_PATTERN = SKILL_NAME_PATTERN
-SKILL_DISPLAY_NAME_PATTERN = re.compile(r"^(?:[^\W_]|-)+(?: (?:[^\W_]|-)+)*$")
+# 展示名：文字、数字、连字符，词之间单个空格，不含下划线和 U+10000 及以上字符
+_BMP_WORD_OR_HYPHEN = r"(?:(?![\U00010000-\U0010FFFF])(?:[^\W_]|-))"
+SKILL_DISPLAY_NAME_PATTERN = re.compile(rf"^(?:{_BMP_WORD_OR_HYPHEN})+(?: (?:{_BMP_WORD_OR_HYPHEN})+)*$")
 SKILL_DISPLAY_NAME_EN_PATTERN = re.compile(r"^[A-Za-z0-9-]+(?: [A-Za-z0-9-]+)*$")
+# 资源名：字母开头，字母、数字、下划线，最长 256
+SKILL_RESOURCE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,255}$")
 
 # 资源文档里列为必填的认证凭据，由调用方按登录态注入，不进参数映射
 CREDENTIAL_PARAMS = frozenset({"access_token", "bk_token", "bk_ticket", "bk_app_secret"})
