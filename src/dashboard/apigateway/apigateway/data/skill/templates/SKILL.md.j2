@@ -1,0 +1,136 @@
+{#
+SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version.artifact["SKILL.md"]。
+上下文由 biz/skill/renderer.py 提供。环境开启 trim_blocks、lstrip_blocks：独占一行的块标签不留空行；
+行尾的块标签会吞掉换行，行内条件用 {%- 拼接多行。
+#}
+{% set place_texts = {
+    "path": "`path` 替换路径里的 `{参数名}`",
+    "query": "`query` 放查询串",
+    "header": "`header` 放请求头",
+} %}
+# {{ display_name }}
+
+## 不适用场景
+
+{{ guide.not_for }}
+
+## 前置条件
+
+按 [references/permissions.md](references/permissions.md) 申请权限。接口清单里「需申请权限」为「是」的资源，申请通过后才能调用；为「否」的不必申请网关接口权限。业务侧权限（业务、模板、方案、流水线）由各系统自己校验，缺少时按「异常处理」提示用户申请。
+
+## 接口清单
+
+每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每次调用的 OpenAPI 片段。
+
+| 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+{% for res in resources %}
+| `{{ res.resource }}` | {{ res.gateway }} | {{ res.stage }} | {{ res.method }} | `{{ res.path }}` | {{ res.description | md_cell }} | {{ res.user_verified_required | yn }} | {{ res.app_verified_required | yn }} | {{ res.resource_perm_required | yn }} |
+{% endfor %}
+
+## 输入
+
+必填缺失时先问用户，不要猜测。说明里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。
+
+| 参数 | 类型 | 必填 | 说明 | 示例 | 默认值 |
+| --- | --- | --- | --- | --- | --- |
+{% for item in inputs %}
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.required | yn }} | {{ item.description | md_cell }} | {{ item.example | code_cell }} | {{ item.default | code_cell }} |
+{% endfor %}
+
+## 输出
+
+完成后按下表组织回复，字段取值只来自「来源」列，不要编造。
+
+| 字段 | 类型 | 说明 | 来源 |
+| --- | --- | --- | --- |
+{% for item in outputs %}
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.description | md_cell }} | `{{ item.source }}`{% if item.looped %}，逐个调用的结果按顺序汇总{% endif %} |
+{% endfor %}
+
+## 执行步骤
+
+来源和取值里 `<步骤>.<资源>.<字段路径>` 的第一段是步骤名，对应关系如下。
+
+| 步骤名 | 调用 |
+| --- | --- |
+{% for step in steps %}
+| `{{ step.name }}` | {% for call in step.calls %}{% if not loop.first %}、{% endif %}第 {{ call.index }} 步 `{{ call.resource }}`{% endfor %} |
+{% endfor %}
+
+{{ description }}
+
+每次调用写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 只列要读的响应字段。
+{%- if notation.places %}
+参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
+  {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}
+{%- elif notation.body %}
+`requestBody` 里的字段组成 JSON 正文。
+{%- endif %}
+
+
+取值：`x-from: inputs.<输入名>` 来自输入
+{%- if notation.call %}；`x-from: <步骤>.<资源>.<字段路径>` 来自该次调用的响应体
+  {%- if notation.index %}，`[0]` 是数组第一个元素{% endif %}
+  {%- if notation.all %}，`[]` 是数组每个元素的该字段组成的数组{% endif %}
+{%- endif %}
+{%- if notation.each %}；`each.<字段路径>` 是逐个调用时当前元素的字段{% endif %}
+{%- if notation.where %}；`x-where` 是只取满足条件的元素{% endif %}
+{%- if notation.value %}；`x-value` 是固定值，按 JSON 原样传{% endif %}
+{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}。
+
+{% for step in steps %}
+{{ step.description }}
+
+{% for call in step.calls %}
+{{ call.index }}. {{ step.name }} / {{ call.resource }}
+
+{% filter indent(3, first=True) %}
+{% if call.for_each %}
+对 `{{ call.for_each.from_ }}` 中{% if call.for_each.where %}满足「{{ call.for_each.where }}」的{% endif %}每个元素各调用一次，`each.` 指当前元素。没有这样的元素时跳过。
+
+{% endif %}
+```yaml
+{{ call.openapi }}
+```
+{% if call.credentials or call.unmapped or call.poll %}
+
+{% endif %}
+{% if call.credentials %}
+{{ call.credentials | map("backtick") | join("、") }} 不传、不向用户要，见「调用方式」。
+{% endif %}
+{% if call.unmapped %}
+资源定义中必填但未映射：{{ call.unmapped | map("backtick") | join("、") }}，按本步说明处理。
+{% endif %}
+{% if call.poll %}
+轮询：同一调用每 {{ call.poll.interval }} 秒重复一次，最多 {{ call.poll.max }} 次；`{{ call.poll.until }}` 成立时结束
+  {%- for expr, times in call.poll.stop_conditions %}，`{{ expr }}` {% if times == 1 %}成立时立即停止{% else %}连续 {{ times }} 次成立时停止{% endif %}{% endfor %}。
+  {%- if call.poll_has_streak %}连续次数只计紧邻的几次，中间打断就重新计。{% endif %}
+先看外壳 `ok`，`ok` 为 false 时停止。用最后一次响应继续。
+{% endif %}
+{% endfilter %}
+
+{% endfor %}
+{% endfor %}
+## 运行约束
+
+{% if has_write %}
+会改动线上状态的接口按用户原话选一种模式，整次只选一次。用户已经说出执行意图时直接执行，不要再问选哪种模式，也不要逐步再确认：
+
+- 直接执行：用户要求现在就做（「跑一下」「执行」「启动」「直接执行」「不用再问」），且必填参数齐全。按拟定规则补上的值写进最终回复，不要为拟定值再问一次。
+- 确认后执行：用户说先确认、先别执行，或必填参数有歧义。只问一次，列出将使用的参数，得到确认后再调用写接口。
+
+{% endif %}
+{{ guide.constraints }}
+
+## 调用方式
+
+按 [references/how-to-call-apis.md](references/how-to-call-apis.md) 把上面的取值代进调用。步骤里不写命令。
+
+## 异常处理
+
+{{ guide.errors }}
+
+## 示例
+
+{{ guide.example }}

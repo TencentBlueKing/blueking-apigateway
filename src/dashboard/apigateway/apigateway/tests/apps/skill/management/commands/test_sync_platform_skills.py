@@ -1,0 +1,116 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+import copy
+import json
+import shutil
+from io import StringIO
+
+import pytest
+import yaml
+from django.core.management import call_command
+
+from apigateway.apps.skill.models import SkillMetadata
+from apigateway.biz.skill import SKILL_DECLARATIONS_DIR
+from apigateway.tests.biz.skill.conftest import (
+    DECLARATIONS_DIR,
+    FIXTURES_DIR,
+    release_fixture_gateway,
+    write_snapshots,
+)
+
+pytestmark = pytest.mark.django_db
+
+
+def _call(*args) -> str:
+    out = StringIO()
+    call_command("sync_platform_skills", *args, stdout=out, no_color=True)
+    return out.getvalue()
+
+
+@pytest.fixture
+def declarations_dir(tmp_path):
+    directory = tmp_path / "declarations"
+    directory.mkdir()
+    source = DECLARATIONS_DIR / "job-plan-run-and-log.yaml"
+    shutil.copy(source, directory)
+    missing = copy.deepcopy(yaml.safe_load(source.read_text(encoding="utf-8")))
+    missing["name"] = "job-plan-missing"
+    missing["orchestration"]["steps"][0]["calls"][0]["resource"] = "not_released"
+    (directory / "job-plan-missing.yaml").write_text(
+        yaml.safe_dump(missing, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    (directory / "broken.yaml").write_text("name: [\n", encoding="utf-8")
+    return directory
+
+
+@pytest.fixture
+def resources_dir(tmp_path):
+    resources_data = json.loads((FIXTURES_DIR / "resources.json").read_text(encoding="utf-8"))
+    return write_snapshots(tmp_path / "resources", release_fixture_gateway(resources_data, "jobv3-cloud"))
+
+
+class TestSyncPlatformSkillsCommand:
+    def test_sync(self, declarations_dir, resources_dir):
+        output = _call("--dir", str(declarations_dir), "--resources-dir", str(resources_dir))
+
+        lines = output.splitlines()
+        assert lines[0].startswith("[拒绝] broken：")
+        assert lines[1].startswith("[跳过（资源缺失）] job-plan-missing：")
+        assert lines[2] == "[新建] job-plan-run-and-log"
+        assert "total 3：新建 1，跳过（资源缺失） 1，拒绝 1" in output
+        metadata = SkillMetadata.objects.get(name="job-plan-run-and-log")
+        assert f"changed metadata ids: [{metadata.id}]" in output
+
+    def test_dry_run_and_name(self, declarations_dir, resources_dir):
+        output = _call(
+            "--dir",
+            str(declarations_dir),
+            "--resources-dir",
+            str(resources_dir),
+            "--name",
+            "job-plan-run-and-log",
+            "--dry-run",
+        )
+
+        assert output.splitlines() == [
+            "[新建] job-plan-run-and-log：dry-run，未写库",
+            "dry-run total 1：新建 1",
+        ]
+        assert not SkillMetadata.objects.exists()
+
+    def test_empty_dir(self, tmp_path):
+        assert _call("--dir", str(tmp_path)) == f"No skill declarations found in {tmp_path}, skip.\n"
+        assert _call("--dir", str(tmp_path / "missing")).startswith("No skill declarations found")
+
+    def test_default_dir_skips_without_released_resources(self):
+        names = sorted(path.stem for path in SKILL_DECLARATIONS_DIR.glob("*.yaml"))
+        assert names == [
+            "job-plan-run-and-log",
+            "pipeline-app-build-detail",
+            "pipeline-build-artifact-url",
+            "sops-create-and-start",
+            "sops-task-list-and-status",
+        ]
+
+        output = _call()
+
+        lines = [line.split("：", 1)[0] for line in output.splitlines() if line.startswith("[")]
+        assert lines == [f"[跳过（资源缺失）] {name}" for name in names]
+        assert "total 5：跳过（资源缺失） 5" in output
+        assert "changed metadata ids: []" in output
+        assert not SkillMetadata.objects.exists()

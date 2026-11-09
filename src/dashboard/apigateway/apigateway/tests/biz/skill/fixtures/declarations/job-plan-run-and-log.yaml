@@ -1,0 +1,138 @@
+name: job-plan-run-and-log
+display_name: 执行作业方案并收集日志
+display_name_en: Run JOB Plan and Collect Logs
+description: 执行作业平台（JOB、jobv3）的作业执行方案并跟踪到结束；失败时拉取失败主机的执行日志，汇总失败步骤、主机和关键报错。会在方案配置的主机上真实执行。用户给出业务和方案、要求现在执行时使用，例如“执行作业方案 1024”“跑一下 JOB 方案”“用作业平台的发布方案把 version 改成 1.2.3 跑一遍，失败的机器把日志给我”。只想查看已经跑过的作业结果时不要使用。
+tags:
+- 作业平台
+- jobv3-cloud
+- 写操作
+- 故障排查
+version: 1.0.0
+changelog: 首个官方版本：execute_job_plan → get_job_instance_status → batch_get_job_instance_ip_log。
+orchestration:
+  description: run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
+  inputs:
+  - name: bk_scope_id
+    type: string
+    required: true
+    description: 业务 ID；bk_scope_type 为 biz_set 时是业务集 ID
+    example: '2'
+  - name: job_plan_id
+    type: integer
+    required: true
+    description: 作业执行方案 ID，可在作业平台方案列表中看到
+    example: 1024
+  - name: bk_scope_type
+    type: string
+    required: false
+    description: 资源范围类型：biz 业务，biz_set 业务集
+    example: biz
+    default: biz
+  - name: global_var_list
+    type: array
+    required: false
+    description: 要覆盖的全局变量，元素为 `{name, value}` 或主机变量 `{name, server}`；不传则使用方案默认值
+    example:
+    - name: version
+      value: 1.2.3
+  outputs:
+  - name: job_instance_id
+    type: integer
+    description: 作业实例 ID
+    from: run-plan.execute_job_plan.data.job_instance_id
+  - name: job_status
+    type: integer
+    description: 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段
+    from: wait-result.get_job_instance_status.data.job_instance.status
+  - name: step_results
+    type: array
+    description: 每个步骤的状态，以及每台主机的状态、退出码和错误码
+    from: wait-result.get_job_instance_status.data.step_instance_list
+  - name: failed_host_logs
+    type: array
+    description: 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs`
+    from: collect-log.batch_get_job_instance_ip_log.data
+  steps:
+  - name: run-plan
+    description: 执行方案。不传已弃用的 `bk_biz_id`。
+    calls:
+    - gateway: jobv3-cloud
+      stage: prod
+      resource: execute_job_plan
+      params:
+        bk_scope_type: inputs.bk_scope_type
+        bk_scope_id: inputs.bk_scope_id
+        job_plan_id: inputs.job_plan_id
+        global_var_list: inputs.global_var_list
+  - name: wait-result
+    description: 轮询作业状态，直到 `data.finished = true`。`return_ip_result=true` 用于拿到每台主机的结果。`job_instance.status` 为 7（等待用户）时 `finished` 不会变 true，轮询会停下，按「异常处理」告诉用户。到达次数上限（约 10 分钟）仍未结束时，返回 `job_instance_id` 和当前状态。
+    calls:
+    - gateway: jobv3-cloud
+      stage: prod
+      resource: get_job_instance_status
+      params:
+        bk_scope_type: inputs.bk_scope_type
+        bk_scope_id: inputs.bk_scope_id
+        job_instance_id: run-plan.execute_job_plan.data.job_instance_id
+        return_ip_result:
+          value: true
+      poll:
+        interval: 5
+        max: 120
+        until: data.finished == true
+        stop_when:
+        - result == false
+        - data.job_instance.status == 7
+      reads:
+      - data.finished
+      - data.step_instance_list[].name
+      - data.step_instance_list[].type
+      - data.step_instance_list[].step_ip_result_list[].ip
+      - data.step_instance_list[].step_ip_result_list[].status
+      - data.step_instance_list[].step_ip_result_list[].exit_code
+      - data.step_instance_list[].step_ip_result_list[].error_code
+  - name: collect-log
+    description: 只在 `job_instance.status` 不是 3（执行成功）时执行。`host_id_list` 只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
+    calls:
+    - gateway: jobv3-cloud
+      stage: prod
+      resource: batch_get_job_instance_ip_log
+      for_each:
+        from: wait-result.get_job_instance_status.data.step_instance_list
+        where: '`status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）'
+      params:
+        bk_scope_type: inputs.bk_scope_type
+        bk_scope_id: inputs.bk_scope_id
+        job_instance_id: run-plan.execute_job_plan.data.job_instance_id
+        step_instance_id: each.step_instance_id
+        host_id_list:
+          ref: each.step_ip_result_list[].bk_host_id
+          where: '`status` 不是 9（执行成功）'
+      reads:
+      - data.log_type
+  guide:
+    not_for: |-
+      - 临时在主机上执行脚本或分发文件（fast_execute_script、fast_transfer_file）：不在本 Skill 范围。
+      - 只查已有作业实例的状态和日志：用「作业执行失败诊断」。
+      - 不知道方案 ID：先在作业平台查到方案 ID 再使用。
+    constraints: |-
+      - execute_job_plan 会在方案配置的主机上执行。一次请求只执行一次。执行接口返回后，后续任何失败都不要重新执行方案：重跑会在所有主机上再执行一遍，失败时更需要先看日志。
+      - 三个接口的 `bk_scope_type`、`bk_scope_id` 必须与输入一致，否则查不到这次作业实例。
+      - 日志可能很长：每台主机只摘录最后 50 行和含 error、fail、exception 的行，不整段贴出。
+    errors: |-
+      - `result=false`：把 `code` 和 `message` 告诉用户并停止。
+      - 外壳 `status` 为 403 且 `headers` 里的 `X-Bkapi-Error-Code` 为 `1640301`：应用没有网关接口权限，按 references/permissions.md 申请。
+      - `message` 提示没有业务或方案权限：请用户在作业平台申请对应权限，不属于网关权限。
+      - `job_instance.status` 为 7（等待用户）：方案里有人工确认步骤，请用户到作业平台处理；不拉日志，也不要替用户确认。
+      - 主机 `status` 为 1 或 `error_code` 为 310（Agent 异常）：日志可能为空，直接报告 Agent 异常，建议检查该主机的 GSE Agent。
+    example: |-
+      用户：在业务 2 执行方案 1024，version 用 1.2.3。
+
+      用户要求现在执行，按直接执行。bk_scope_type 用默认值 `biz`。
+
+      1. execute_job_plan → `data.job_instance_id = 10000`。
+      2. get_job_instance_status 每 5 秒一次，第 6 次 `data.finished = true`，`job_instance.status = 4`；步骤 75 失败，主机 101 `status = 11`、`error_code = 104`。
+      3. batch_get_job_instance_ip_log（step_instance_id 75，host_id_list [101]）→ 日志末尾 `nginx: [emerg] unknown directive`。
+      4. 回复：作业 10000 失败。步骤“重载 nginx”在 10.0.0.1 上脚本返回码非零，报错 `nginx: [emerg] unknown directive`，其余 3 台成功。
+
+      用户若说「先别执行」：不调用接口，列出范围、方案 1024 和 global_var_list，等这一次确认。

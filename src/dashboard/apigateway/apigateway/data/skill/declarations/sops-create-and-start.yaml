@@ -1,0 +1,125 @@
+name: sops-create-and-start
+display_name: 创建并启动标准运维任务
+display_name_en: Create and Start SOPS Task
+description: 用标准运维（SOPS、bk-sops）的流程模板创建任务、启动并跟踪到结束，返回任务 ID、任务链接、最终状态和失败节点原因。会真实执行模板里的操作。用户给出业务和模板、想把流程跑起来时使用，例如“跑一下标准运维流程”“用模板 128 建个任务并执行”“启动 SOPS 任务”“用标准运维把这批机器的 nginx 重载一下”，即使没有提到“标准运维”，只要说的是按已有流程模板执行变更就应使用。
+tags:
+- 标准运维
+- bk-sops
+- 写操作
+- 任务执行
+version: 1.0.0
+changelog: 首个官方版本：create_task → start_task → get_task_status。
+orchestration:
+  description: create-task 返回的 `data.task_id` 是后两步的路径参数，三步的 `bk_biz_id` 必须相同。创建成功不代表已经执行，必须再调用 start_task。
+  inputs:
+  - name: bk_biz_id
+    type: integer
+    required: true
+    description: 模板所属的 CMDB 业务 ID
+    example: 2
+  - name: template_id
+    type: integer
+    required: true
+    description: 流程模板 ID，可在标准运维模板列表或模板链接中看到
+    example: 128
+  - name: task_name
+    type: string
+    required: true
+    description: 任务名称。用户没给时按「用途-YYYYMMDD」拟一个，写进回复；有变更单号时带上。不要为拟定的名称再问一次
+    example: nginx-reload-20261029
+  - name: constants
+    type: object
+    required: false
+    description: '模板全局变量，键为 `${key}` 格式。只填用户明确提到的变量，用户说“ip_list 填 X”就写 `{"${ip_list}": "X"}`；不传则使用模板默认值'
+    example:
+      "${ip_list}": 10.0.0.1,10.0.0.2
+  - name: template_source
+    type: string
+    required: false
+    description: 模板来源：business 业务流程，common 公共流程
+    example: business
+    default: business
+  outputs:
+  - name: task_id
+    type: integer
+    description: 任务实例 ID
+    from: create-task.create_task.data.task_id
+  - name: task_url
+    type: string
+    description: 任务实例链接，交给用户在页面查看
+    from: create-task.create_task.data.task_url
+  - name: state
+    type: string
+    description: 最终状态：FINISHED、FAILED、SUSPENDED、REVOKED；轮询到上限仍未结束时为 RUNNING；启动后一直没开始时为 CREATED
+    from: wait-result.get_task_status.data.state
+  - name: failed_nodes
+    type: object
+    description: 失败节点 ID → 错误信息，只在 FAILED 时有值
+    from: wait-result.get_task_status.data.ex_data
+  steps:
+  - name: create-task
+    description: 用输入创建任务。
+    calls:
+    - gateway: bk-sops
+      stage: prod
+      resource: create_task
+      params:
+        bk_biz_id: inputs.bk_biz_id
+        template_id: inputs.template_id
+        name: inputs.task_name
+        constants: inputs.constants
+        template_source: inputs.template_source
+  - name: start-task
+    description: 用 create-task 返回的 `task_id` 启动任务。启动失败时不要重新创建任务。
+    calls:
+    - gateway: bk-sops
+      stage: prod
+      resource: start_task
+      params:
+        bk_biz_id: inputs.bk_biz_id
+        task_id: create-task.create_task.data.task_id
+  - name: wait-result
+    description: 轮询任务状态，直到 FINISHED、FAILED、SUSPENDED、REVOKED 之一。连续 3 次仍是 CREATED 说明任务没有真正开始；到达次数上限（约 10 分钟）仍未结束时也停止。这两种情况都把当前状态和 `task_url` 给用户，请他到页面查看。`with_ex_data=true` 用于拿到失败节点的错误信息。
+    calls:
+    - gateway: bk-sops
+      stage: prod
+      resource: get_task_status
+      params:
+        bk_biz_id: inputs.bk_biz_id
+        task_id: create-task.create_task.data.task_id
+        with_ex_data:
+          value: true
+      poll:
+        interval: 10
+        max: 60
+        until: data.state in ["FINISHED", "FAILED", "SUSPENDED", "REVOKED"]
+        stop_when:
+        - result == false
+        - expr: data.state == "CREATED"
+          times: 3
+  guide:
+    not_for: |-
+      - 只查已有任务的状态或失败原因：用「列出标准运维任务并查看状态」。
+      - 暂停、继续、终止已有任务：本 Skill 不调用 operate_task。
+      - 不知道模板 ID：先在标准运维页面查到模板 ID 再使用。
+    constraints: |-
+      - create_task 和 start_task 会真实操作模板里的主机和服务。一次请求只创建一个任务。create_task 成功后，后续任何失败都不要再次创建：多出来的任务会留在业务里，被人误启动就会重复变更。
+      - start_task 失败时，可以用同一个 `task_id` 重试 1 次。
+      - 全局变量的 KEY 以模板为准。用户不确定变量名时，请他到模板页面查看，不要自己补用户没提到的变量。
+    errors: |-
+      - `result=false`：把 `message` 原样告诉用户并停止，不要换参数重试。
+      - 外壳 `status` 为 403 且 `headers` 里的 `X-Bkapi-Error-Code` 为 `1640301`：应用没有网关接口权限，按 references/permissions.md 申请。
+      - 业务权限不足（`message` 提到无权限或 IAM）：请用户在标准运维申请该业务、模板的权限，不属于网关权限。
+      - 状态为 FAILED：从 `data.ex_data` 逐个列出失败节点 ID 和错误信息，附上 `task_url`。
+      - 状态为 SUSPENDED：任务被暂停（多为人工确认节点），请用户到 `task_url` 处理，不要自动继续。
+    example: |-
+      用户：用业务 2 的模板 128 跑一下 nginx 重载，ip_list 填 10.0.0.1。
+
+      用户要求现在执行，按直接执行。任务名没给，拟定为 `nginx-reload-20261029`，写进回复，不再单独确认。
+
+      1. create_task → `data.task_id = 90231`，`data.task_url = https://bk-sops.example.com/taskflow/execute/2/?instance_id=90231`。
+      2. start_task（task_id 90231）→ `result = true`。
+      3. get_task_status 每 10 秒一次，第 4 次返回 `data.state = FINISHED`。
+      4. 回复：任务 90231（nginx-reload-20261029）已完成，状态 FINISHED，链接见上。
+
+      用户若说「先别执行」：不调用接口，列出业务 2、模板 128、拟定任务名和 constants，等这一次确认。

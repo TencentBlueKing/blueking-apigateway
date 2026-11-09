@@ -1,0 +1,120 @@
+name: sops-task-list-and-status
+display_name: 列出标准运维任务并查看状态
+display_name_en: List SOPS Tasks and Check Status
+description: 只读。按业务列出标准运维（SOPS、bk-sops）里已有的任务，再逐个查询这些任务的执行状态，返回任务名、任务 ID、状态和失败节点原因。不创建、不启动、不暂停任务。用户想看某个业务里任务现在怎样时使用，例如“业务 2 的标准运维任务什么状态”“nginx 那几个 SOPS 任务跑完了没”“列出未结束的标准运维任务”，即使没有提到“标准运维”，只要说的是查看已有流程任务的状态就应使用。要新建或启动流程时不要使用。
+tags:
+- 标准运维
+- bk-sops
+- 只读
+- 任务状态
+version: 1.0.0
+changelog: 首个官方版本：get_task_list → get_task_status。
+orchestration:
+  description: list-tasks 返回的 `data[].id` 是 check-status 的路径参数 `task_id`；两步的 `bk_biz_id`、`scope` 必须相同。check-status 对列表里的每条任务各查一次，结果与列表顺序一一对应。列表为空时不再查状态。
+  inputs:
+  - name: bk_biz_id
+    type: integer
+    required: true
+    description: CMDB 业务 ID。scope 为 project 时改传标准运维项目 ID
+    example: 2
+  - name: keyword
+    type: string
+    required: false
+    description: 任务名关键词。用户点了任务名里的词时传入，例如“nginx 那些任务”
+    example: nginx
+  - name: is_finished
+    type: boolean
+    required: false
+    description: 只看已结束或未结束的任务。用户说“没跑完的”“进行中的”时传 false；说“已结束的”时传 true。没提就不传
+    example: false
+  - name: limit
+    type: integer
+    required: false
+    description: 本次查看的条数。接口默认一次返回 100 条，这里默认 5，避免对整页逐个查状态。用户要多看时再加大，不超过 20
+    example: 5
+    default: 5
+  - name: scope
+    type: string
+    required: false
+    description: bk_biz_id 的作用域。cmdb_biz 按 CMDB 业务 ID 检索，project 按标准运维项目 ID 检索
+    example: cmdb_biz
+    default: cmdb_biz
+  outputs:
+  - name: total
+    type: integer
+    description: 符合条件的任务总数，可能大于本次查看的条数
+    from: list-tasks.get_task_list.count
+  - name: tasks
+    type: array
+    description: 本次列出的任务。元素含 id、name、is_started、is_finished
+    from: list-tasks.get_task_list.data
+  - name: states
+    type: array
+    description: 与 tasks 顺序对应的执行状态：CREATED 未执行，RUNNING 执行中，FAILED 失败，SUSPENDED 暂停，REVOKED 已终止，FINISHED 已完成
+    from: check-status.get_task_status.data.state
+  - name: failed_nodes
+    type: array
+    description: 与 tasks 顺序对应。FAILED 时为失败节点 ID → 错误信息，其他状态为空
+    from: check-status.get_task_status.data.ex_data
+  steps:
+  - name: list-tasks
+    description: 按业务列出任务。`data` 为空时停止，告诉用户这个业务下没有符合条件的任务，不要调用 get_task_status。`count` 大于本页条数时，在回复里说明还有更多，问用户要不要加大 limit 再查；不要自行把 limit 改成 100。
+    calls:
+    - gateway: bk-sops
+      stage: prod
+      resource: get_task_list
+      params:
+        bk_biz_id: inputs.bk_biz_id
+        scope: inputs.scope
+        keyword: inputs.keyword
+        is_finished: inputs.is_finished
+        limit: inputs.limit
+      reads:
+      - result
+      - count
+      - data[].id
+      - data[].name
+      - data[].is_finished
+  - name: check-status
+    description: 对 list-tasks 返回的每条任务各查一次状态。`with_ex_data=true` 用于拿到失败节点的错误信息。第 i 次调用对应列表第 i 条，回复时把任务名、任务 ID 和 state 写在一起。本步只查询，任务停在 CREATED、RUNNING 或 SUSPENDED 时不要启动、继续或重试。
+    calls:
+    - gateway: bk-sops
+      stage: prod
+      resource: get_task_status
+      for_each:
+        from: list-tasks.get_task_list.data
+      params:
+        bk_biz_id: inputs.bk_biz_id
+        scope: inputs.scope
+        task_id: each.id
+        with_ex_data:
+          value: true
+      reads:
+      - result
+      - data.state
+      - data.ex_data
+  guide:
+    not_for: |-
+      - 创建或启动标准运维任务：用「创建并启动标准运维任务」。
+      - 暂停、继续、终止已有任务：本 Skill 不调用 operate_task。
+      - 用户已经给出 task_id、只要这一个任务、不需要列表：直接查 get_task_status，不要先拉一页任务。
+    constraints: |-
+      - 两个接口都只读，不需要向用户确认。一次请求只列一页，并且只给这一页里的任务查状态。
+      - 两步的 bk_biz_id、scope 必须与输入一致，否则会查到别的项目，或第二步报任务不存在。
+      - 回复只保留任务名、任务 ID、state，以及 FAILED 时的 ex_data。不要贴出 children 或整棵流程树。
+    errors: |-
+      - `result=false`：把 `message` 原样告诉用户并停止，不要换参数重试。
+      - 外壳 `status` 为 403 且 `headers` 里的 `X-Bkapi-Error-Code` 为 `1640301`：应用没有网关接口权限，按 references/permissions.md 申请 get_task_list 和 get_task_status。
+      - 业务权限不足（`message` 提到无权限或 IAM）：请用户在标准运维申请该业务的查看权限，不属于网关权限。
+      - 列表为空：说明没有符合条件的任务，并写上实际使用的 keyword、is_finished。
+      - 状态为 FAILED：从对应的 `data.ex_data` 列出失败节点 ID 和错误信息。
+      - 状态为 SUSPENDED：告诉用户任务暂停在人工确认节点，不要自动继续。
+    example: |-
+      用户：看一下业务 2 里名字带 nginx 的标准运维任务现在什么状态。
+
+      keyword 用 `nginx`，limit 用默认值 5，scope 用默认值 `cmdb_biz`。用户没说是否已结束，不传 is_finished。
+
+      1. get_task_list → `count = 2`，`data[0]` 为 id 90231、name nginx-reload，`data[1]` 为 id 90240、name nginx-reload-retry。
+      2. get_task_status（task_id 90231）→ `data.state = FINISHED`。
+      3. get_task_status（task_id 90240）→ `data.state = FAILED`，`data.ex_data` 中节点 n7a2 为 `nginx: [emerg] unknown directive`。
+      4. 回复：业务 2 有 2 个名字含 nginx 的任务。90231 nginx-reload 已完成（FINISHED）。90240 nginx-reload-retry 失败（FAILED），节点 n7a2：`nginx: [emerg] unknown directive`。

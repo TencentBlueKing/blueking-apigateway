@@ -1,0 +1,43 @@
+# 内置 Skill 的资源补丁快照示例。本文件不会被注入：sync_platform_skills 只按声明里的
+# 网关名读取同名文件，例如声明调用 jobv3-cloud 时才读 jobv3-cloud.yaml。没有任何声明使用
+# 网关名 example，所以 example.yaml 只作格式说明。
+#
+# 正式快照手写后随代码提交，命令不会生成这个目录。一个网关一个文件，文件名必须与 gateway 相同。
+# 只补参数和响应。方法、路径、说明、认证仍取该环境当前已发布版本，不要写进快照。
+# 快照里有的资源，参数和响应整体以快照为准，不与 OpenAPI schema 做字段级合并。
+# 网关导入 schema 后，注入会警告；核对无误就删掉对应条目。一个网关的条目都删光后，删除整个文件。
+gateway: example
+resources:
+  # resource 是资源名，与声明 calls[].resource 一致，不是路径。
+- resource: execute_job_plan
+  # 为什么需要这份快照。网关补上 schema 后应删除本条。
+  reason: 网关未导入 schema
+  # 参数和响应摘录的日期。
+  source_date: "2026-10-29"
+  # 摘录来源，便于以后核对。
+  source: 作业平台文档
+  # 声明里会映射或需要被校验的参数。in 取 path、query、header、body。
+  params:
+  - name: bk_scope_type
+    in: body
+    type: string
+    required: true
+    description: 资源范围类型：biz 业务，biz_set 业务集
+  - name: bk_scope_id
+    in: body
+    type: string
+    required: true
+    description: 资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID
+  - name: job_plan_id
+    in: body
+    type: integer
+    required: true
+    description: 作业执行方案 ID
+  # field 是相对响应体的字段路径。数组用 []，例如 data.step_instance_list[].status。
+  responses:
+  - field: result
+    type: boolean
+    description: 请求是否成功
+  - field: data.job_instance_id
+    type: integer
+    description: 作业实例 ID
