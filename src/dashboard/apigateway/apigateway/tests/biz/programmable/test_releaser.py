@@ -17,18 +17,26 @@
 #
 import datetime
 
+import fakeredis
 import pytest
+import redis
 from ddf import G
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
-from apigateway.biz.programmable.releaser import _paas_status_cache
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.core.constants import PublishSourceEnum, ReleaseHistoryStatusEnum
 from apigateway.core.models import Gateway, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def fake_redis(mocker):
+    client = fakeredis.FakeRedis()
+    mocker.patch("apigateway.biz.programmable.releaser.get_default_redis_client", return_value=client)
+    return client
 
 
 class TestProgrammableGatewayReleaser:
@@ -191,13 +199,7 @@ class TestProgrammableGatewayReleaser:
         assert result["last_publish_status"] == ReleaseHistoryStatusEnum.FAILURE.value
 
 
-class TestGetPaasDeployStatusCache:
-    @pytest.fixture(autouse=True)
-    def clear_paas_status_cache(self):
-        _paas_status_cache.clear()
-        yield
-        _paas_status_cache.clear()
-
+class TestGetPaaSDeployStatusCache:
     @staticmethod
     def _get_status(
         tenant_id="default", app_code="demo", source=PublishSourceEnum.VERSION_PUBLISH.value, deploy_id="deploy-1"
@@ -209,19 +211,22 @@ class TestGetPaasDeployStatusCache:
         )
 
     @pytest.mark.parametrize("paas_status", ["successful", "failed", "interrupted"])
-    def test_finished_status_is_cached(self, mocker, paas_status):
-        mock_result = mocker.patch.object(
-            ProgrammableGatewayReleaser, "_get_paas_deploy_result", return_value={"status": paas_status}
+    def test_finished_status_is_cached(self, mocker, fake_redis, paas_status):
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value={"status": paas_status},
         )
 
         assert self._get_status() == paas_status
         assert self._get_status() == paas_status
         mock_result.assert_called_once()
+        assert fake_redis.ttl("bk_apigw:programmable_paas_deploy_status:default:demo:version_publish:deploy-1") > 0
 
     @pytest.mark.parametrize("paas_result", [{"status": "pending"}, {}])
     def test_unfinished_status_is_not_cached(self, mocker, paas_result):
-        mock_result = mocker.patch.object(
-            ProgrammableGatewayReleaser, "_get_paas_deploy_result", return_value=paas_result
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value=paas_result,
         )
 
         self._get_status()
@@ -239,11 +244,32 @@ class TestGetPaasDeployStatusCache:
         ],
     )
     def test_cache_is_scoped(self, mocker, other_scope):
-        mock_result = mocker.patch.object(
-            ProgrammableGatewayReleaser, "_get_paas_deploy_result", return_value={"status": "failed"}
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value={"status": "failed"},
         )
 
         self._get_status()
         self._get_status(**other_scope)
 
+        assert mock_result.call_count == 2
+
+    @pytest.mark.parametrize(
+        "side_effect",
+        [None, redis.ConnectionError("redis error")],
+        ids=["redis-unavailable", "redis-error"],
+    )
+    def test_redis_failure_falls_back_to_paas(self, mocker, side_effect):
+        mocker.patch(
+            "apigateway.biz.programmable.releaser.get_default_redis_client",
+            return_value=None,
+            side_effect=side_effect,
+        )
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value={"status": "failed"},
+        )
+
+        assert self._get_status() == "failed"
+        assert self._get_status() == "failed"
         assert mock_result.call_count == 2
