@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,23 +15,33 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
 
-from apigateway.biz import constants
+from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.utils.translation import gettext_lazy as _
 
 
-class TestConstants:
-    @pytest.mark.parametrize(
-        "value, match",
-        [
-            ("1.0.0", True),
-            ("1.0.0-beta.1", True),
-            ("v1.0.0", False),
-        ],
-    )
-    def test_semver_pattern(self, value, match):
-        result = constants.SEMVER_PATTERN.match(value)
-        if match:
-            assert result
-        else:
-            assert not result
+class SkillTypeEnum(StructuredEnum):
+    """Skill 来源类型"""
+
+    PLATFORM = EnumField("platform", label=_("平台内置"))
+    GATEWAY = EnumField("gateway", label=_("网关"))
+
+
+class SkillStatusEnum(StructuredEnum):
+    """Skill 状态"""
+
+    UNPUBLISHED = EnumField("unpublished", label=_("未发布"))
+    PUBLISHED = EnumField("published", label=_("已发布"))
+    OFFLINE = EnumField("offline", label=_("已下架"))
+
+
+SKILL_CODE_PREFIXES = {
+    SkillTypeEnum.PLATFORM.value: "p_",
+    SkillTypeEnum.GATEWAY.value: "g_",
+}
+
+SKILL_NAME_MAX_LENGTH = 64
+SKILL_DISPLAY_NAME_MAX_LENGTH = 64
+SKILL_DESCRIPTION_MAX_LENGTH = 1024
+SKILL_VERSION_MAX_LENGTH = 64
+SKILL_TAG_NAME_MAX_LENGTH = 64
