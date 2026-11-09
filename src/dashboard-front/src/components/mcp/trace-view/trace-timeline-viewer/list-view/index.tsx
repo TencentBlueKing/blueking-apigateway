@@ -18,7 +18,8 @@
 
 import { type CSSProperties, getCurrentInstance } from 'vue';
 import { useTrace } from '@/stores/useTrace';
-import type { ISpan, TNil } from '@/components/mcp/trace-view/typings';
+import type { ISpan } from '@/types/trace';
+import type { TNil } from '@/components/mcp/trace-view/typings';
 import { PEER_SERVICE } from '@/components/mcp/trace-view/constants/tag-keys';
 import { useChildrenHiddenInject, useFocusMatchesInject, useSpanBarCurrentInject } from '@/components/mcp/trace-view/hooks';
 import {

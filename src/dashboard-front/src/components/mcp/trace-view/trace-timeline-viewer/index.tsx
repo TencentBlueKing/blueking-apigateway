@@ -21,8 +21,8 @@ import { useChildrenHiddenProvide } from '../hooks';
 import TimelineHeaderRow from './timeline-header-row';
 import VirtualizedTraceView from './virtualized-trace-view';
 
-import type { ITraceTree } from '@/components/mcp/trace-view/typings/trace';
-import type { ISpan, TUpdateViewRangeTimeFunction, ViewRangeTimeUpdate } from '../typings';
+import type { ISpan, ITraceTree } from '@/types/trace';
+import type { TUpdateViewRangeTimeFunction, ViewRangeTimeUpdate } from '../typings';
 
 interface IState {
   height: number

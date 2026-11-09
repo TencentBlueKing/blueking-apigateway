@@ -27,9 +27,8 @@ import {
 import TraceTimelineViewer from '@/components/mcp/trace-view/trace-timeline-viewer';
 import filterSpans from '@/components/mcp/trace-view/utils/filter-spans';
 
-import type { ITraceTree } from '@/components/mcp/trace-view/typings/trace';
+import type { ISpan, ITraceTree } from '@/types/trace';
 import type {
-  ISpan,
   IViewRange,
   TUpdateViewRangeTimeFunction,
   ViewRangeTimeUpdate,

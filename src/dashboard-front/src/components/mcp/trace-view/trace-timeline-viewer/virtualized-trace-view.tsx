@@ -19,7 +19,8 @@
 import _isEqual from 'lodash-es/isEqual';
 import { useTrace } from '@/stores';
 import { useChildrenHiddenInject } from '@/components/mcp/trace-view/hooks';
-import type { ISpan, TNil, Trace } from '@/components/mcp/trace-view/typings';
+import type { ISpan } from '@/types/trace';
+import type { TNil, Trace } from '@/components/mcp/trace-view/typings';
 import ListView from '@/components/mcp/trace-view/trace-timeline-viewer/list-view';
 
 import './virtualized-trace-view.scss';

@@ -72,7 +72,7 @@ import { copy } from '@/utils';
 import { useTrace } from '@/stores';
 import { getMcpLogChain, getMcpLogDetail } from '@/services/source/gateway/mcp-server/log';
 import type { IGatewayLog, ITraceDetail } from '@/types/observability';
-import { DEFAULT_TRACE_DATA } from '@/components/mcp/trace-view/constants/trace';
+import { DEFAULT_TRACE_DATA } from '@/constants/trace';
 import McpTraceChain from '@/components/mcp/mcp-trace-chain/Index.vue';
 
 interface IProps {

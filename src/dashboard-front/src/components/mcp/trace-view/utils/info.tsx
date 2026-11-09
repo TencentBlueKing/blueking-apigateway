@@ -18,7 +18,7 @@
 
 import { isArray, isNull, isObjectLike, isString, isUndefined, mergeWith } from 'lodash-es';
 
-import type { ITraceTree } from '@/components/mcp/trace-view/typings/trace';
+import type { ITraceTree } from '@/types/trace';
 
 // 定义明确的函数类型，替代不安全的 Function
 type AnyFunction = (...args: any[]) => any;

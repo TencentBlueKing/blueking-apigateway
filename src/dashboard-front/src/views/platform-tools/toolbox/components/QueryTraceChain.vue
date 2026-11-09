@@ -90,7 +90,7 @@ import {
   queryMcpLogChain,
   queryMcpLogSummary,
 } from '@/services/source/platform/toolbox';
-import { DEFAULT_TRACE_DATA } from '@/components/mcp/trace-view/constants/trace';
+import { DEFAULT_TRACE_DATA } from '@/constants/trace';
 import McpTraceChain from '@/components/mcp/mcp-trace-chain/Index.vue';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
