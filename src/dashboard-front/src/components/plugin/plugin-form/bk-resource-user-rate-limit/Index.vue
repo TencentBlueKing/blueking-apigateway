@@ -105,22 +105,12 @@
             :rules="getUsernameRules(row)"
             required
           >
-            <StaffSelector
-              v-if="!featureFlagStore.isTenantMode"
+            <UserSelector
               :model-value="row.username ? [row.username] : []"
               :multiple="false"
               :placeholder="t('请输入人员名称搜索')"
               has-delete-icon
-              @change="members => handleMemberChange(row, members)"
-            />
-            <BkUserSelector
-              v-else
-              :model-value="row.username"
-              :api-base-url="envStore.tenantUserDisplayAPI"
-              :tenant-id="userStore.info.tenant_id || ''"
-              :multiple="false"
-              :placeholder="t('请选择用户')"
-              @change="members => handleTenantUserChange(row, members)"
+              @change="usernames => handleUserChange(row, usernames)"
             />
           </BkFormItem>
           <div class="row-actions">
@@ -154,9 +144,7 @@
 
 <script setup lang="ts">
 import type { Form } from 'bkui-vue';
-import BkUserSelector from '@blueking/bk-user-selector';
-import StaffSelector from '@/components/user/staff-selector';
-import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
+import UserSelector from '@/components/user/user-selector/Index.vue';
 import { PluginEditorError } from '@/components/plugin/plugin-manage/config-editor/form-adapter';
 import {
   type IUserRateLimitFormData,
@@ -172,15 +160,8 @@ interface IProps {
   data: Record<string, unknown>
 }
 
-interface ISelectedUser {
-  id: string
-}
-
 const { data } = defineProps<IProps>();
 
-const envStore = useEnv();
-const userStore = useUserInfo();
-const featureFlagStore = useFeatureFlag();
 const { t } = useI18n();
 const formData = ref<IUserRateLimitFormData>(getUserRateLimitFormData({}));
 const initializationError = ref('');
@@ -287,13 +268,8 @@ const updateUsername = (row: IUserRateLimitRow, username: string) => {
   void revalidateUsernames(row);
 };
 
-const handleMemberChange = (row: IUserRateLimitRow, members: string[] | null) => {
-  updateUsername(row, members?.[0] ?? '');
-};
-
-const handleTenantUserChange = (row: IUserRateLimitRow, members: ISelectedUser | ISelectedUser[] | null) => {
-  const member = Array.isArray(members) ? members[0] : members;
-  updateUsername(row, member?.id ?? '');
+const handleUserChange = (row: IUserRateLimitRow, usernames: string[]) => {
+  updateUsername(row, usernames[0] ?? '');
 };
 
 const clearValidate = () => {

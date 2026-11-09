@@ -38,20 +38,10 @@
           required
           :error-display-type="'normal'"
         >
-          <StaffSelector
-            v-if="!featureFlagStore.isTenantMode"
+          <UserSelector
             v-model="formData.usernames"
             :placeholder="t('请输入人员名称搜索')"
             has-delete-icon
-            @change="handleMemberChange"
-          />
-          <BkUserSelector
-            v-else
-            v-model="formData.usernames"
-            :api-base-url="envStore.tenantUserDisplayAPI"
-            multiple
-            :tenant-id="userStore.info.tenant_id || ''"
-            @change="handleTenantUserChange"
           />
         </BkFormItem>
         <BkFormItem
@@ -109,10 +99,9 @@
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
-import StaffSelector from '@/components/user/staff-selector';
-import BkUserSelector from '@blueking/bk-user-selector';
+import UserSelector from '@/components/user/user-selector/Index.vue';
 import { createGatewayMembers } from '@/services/source/gateway/member';
-import { useEnv, useFeatureFlag, useGateway, useUserInfo } from '@/stores';
+import { useGateway } from '@/stores';
 import PermissionModel from './PermissionModel.vue';
 import {
   getRoleLabel,
@@ -129,9 +118,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const route = useRoute();
 const gatewayStore = useGateway();
-const userStore = useUserInfo();
-const envStore = useEnv();
-const featureFlagStore = useFeatureFlag();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const submitting = ref(false);
@@ -167,16 +153,6 @@ const resetForm = () => {
     usernames: [],
     role: 'operator',
   };
-};
-
-const handleMemberChange = (member: string[]) => {
-  formData.value.usernames = member;
-};
-
-// 多选模式下 payload 恒为数组；此处统一归一，兼容组件 change 事件的联合类型签名
-const handleTenantUserChange = (members: { id: string } | { id: string }[] | null) => {
-  const list = members ? (Array.isArray(members) ? members : [members]) : [];
-  formData.value.usernames = list.map(member => member.id);
 };
 
 const handleBeforeClose = () => {
