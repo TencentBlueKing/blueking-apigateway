@@ -33,7 +33,7 @@ class GatewayAppPermissionApplyPermission(BasePermission):
             return False
 
         jwt = getattr(request, "jwt", None)
-        if not jwt:
+        if jwt is None:
             # The preceding permission requires request.app. Without JWT, only
             # SelfAppCodeAppSecretLoginMiddleware sets it after verifying our credentials.
             return True
