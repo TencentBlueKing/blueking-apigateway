@@ -84,6 +84,31 @@ class TestSyncPlatformSkills:
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.NEW_VERSION.value)]
         assert SkillVersion.objects.filter(metadata_id=results[0].metadata_id).count() == 2
 
+    def test_lower_version_rejected(self, sync_dirs, write_declaration, job_plan_data):
+        job_plan_data["version"] = "1.1.0"
+        write_declaration(job_plan_data)
+        _sync(sync_dirs)
+
+        job_plan_data["version"] = "1.0.1"
+        write_declaration(job_plan_data)
+        results = _sync(sync_dirs)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert results[0].reasons == [f"{JOB_PLAN} 的版本 1.0.1 不高于当前版本 1.1.0"]
+        metadata = SkillMetadata.objects.get(name=JOB_PLAN)
+        assert metadata.current_version.version == "1.1.0"
+        assert metadata.versions.count() == 1
+
+    def test_param_not_in_definition_rejected(self, sync_dirs, write_declaration, job_plan_data):
+        job_plan_data["orchestration"]["steps"][0]["calls"][0]["params"]["unknown"] = "inputs.bk_scope_id"
+        write_declaration(job_plan_data)
+
+        results = _sync(sync_dirs)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert results[0].reasons == ["run-plan.execute_job_plan：参数 unknown 不在资源定义中"]
+        assert not SkillMetadata.objects.exists()
+
     def test_missing_resources(self, sync_dirs, write_declaration, job_plan_data):
         job_plan_data["orchestration"]["steps"][0]["calls"][0]["resource"] = "not_released"
         write_declaration(job_plan_data)

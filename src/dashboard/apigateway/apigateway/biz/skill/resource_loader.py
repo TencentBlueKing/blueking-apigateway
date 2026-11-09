@@ -36,8 +36,6 @@ from .schema_converter import convert_schema_params, convert_schema_responses, h
 if TYPE_CHECKING:
     from pathlib import Path
 
-UNVERIFIED_RESOURCE_DEFINITION = "资源无 schema、无快照，参数和响应字段无法核对"
-
 
 @dataclass
 class _StageResources:
@@ -113,15 +111,18 @@ def _fill_params_and_responses(
     definition: ResourceDefinition, schema: Dict[str, Any], snapshot: Optional[SnapshotResource]
 ) -> None:
     """快照里有的资源，参数和响应整体以快照为准，不做字段级合并"""
+    where = f"{definition.gateway}.{definition.resource}"
+    # SKILL.md 的请求体只渲染 application/json，快照里的 body 参数同样会按 JSON 渲染，补不了
+    if has_non_json_request_body(schema):
+        definition.errors.append(f"{where}：请求体不是 application/json，SKILL.md 只能描述 JSON 请求体")
+        return
+
     params = convert_schema_params(schema)
     responses = convert_schema_responses(schema)
-    non_json_body = has_non_json_request_body(schema)
-    where = f"{definition.gateway}.{definition.resource}"
-
     if snapshot:
         definition.params = snapshot.to_params()
         definition.responses = snapshot.to_responses()
-        if params or responses or non_json_body:
+        if params or responses:
             definition.warnings.append(
                 f"{where}：资源已有 schema，核对后删除 resources/{definition.gateway}.yaml 里的这条快照"
             )
@@ -129,9 +130,5 @@ def _fill_params_and_responses(
 
     definition.params = params
     definition.responses = responses
-    if non_json_body:
-        definition.warnings.append(f"{where}：请求体不是 application/json，未转换为 body 参数")
-    # 只有非 JSON 请求体时，schema 是有的，只是不能转成 body 参数；不要当成「无 schema」拒绝。
-    if not (params or responses) and not non_json_body:
-        definition.definition_unverified = True
-        definition.warnings.append(f"{where}：{UNVERIFIED_RESOURCE_DEFINITION}")
+    if not (params or responses):
+        definition.errors.append(f"{where}：资源无 schema、无快照，参数和响应字段无法核对")

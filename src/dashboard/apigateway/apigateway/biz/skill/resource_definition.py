@@ -56,10 +56,11 @@ class ResourceDefinition:
     resource_perm_required: bool = False
     params: List[ResourceParam] = field(default_factory=list)
     responses: List[ResponseField] = field(default_factory=list)
-    # 读取资源定义时发现的问题（如无 schema、快照可删除），由校验原样输出
+    # 读取资源定义时发现的问题（如资源未公开、快照可删除），由校验原样输出
     warnings: List[str] = field(default_factory=list)
-    # 没有 schema 也没有快照，参数和响应是空的；字段级对照没有依据，调用方应跳过
-    definition_unverified: bool = False
+    # 资源定义不能用来生成 Skill 的原因（如无 schema 也无快照、请求体不是 JSON）；
+    # 由校验作为 error 输出，有值时字段级对照没有依据，跳过
+    errors: List[str] = field(default_factory=list)
 
     @property
     def key(self) -> Tuple[str, str, str]:
@@ -67,13 +68,6 @@ class ResourceDefinition:
 
     def get_param(self, name: str) -> Optional[ResourceParam]:
         return next((param for param in self.params if param.name == name), None)
-
-    def get_param_location(self, name: str) -> str:
-        """参数定义里没有时（校验已报 warning）按方法推断位置"""
-        param = self.get_param(name)
-        if param:
-            return param.location
-        return "query" if self.method in ("GET", "DELETE") else "body"
 
     def has_response_field(self, path: str) -> bool:
         """path 是响应中的字段，或某些字段的对象 / 数组前缀"""

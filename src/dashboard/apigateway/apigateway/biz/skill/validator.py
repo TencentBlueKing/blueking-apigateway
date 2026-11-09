@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""声明的完整校验：编排前后引用关系（error），以及与资源定义的对照（warning）。
+"""声明的完整校验：编排前后引用关系、资源定义不可用、参数不在资源定义中（error），以及其他与资源定义的对照（warning）。
 
 结构和字段规则已在解析声明时检查，见 declaration.py。
 """
@@ -66,6 +66,7 @@ def validate_declaration(declaration: SkillDeclaration, provider: ResourceProvid
         if resource is None:
             result.missing_resources.append(MissingResource(*key))
         else:
+            result.errors += resource.errors
             result.warnings += resource.warnings
 
     _RefChecker(declaration.orchestration, resources, result).check()
@@ -97,8 +98,7 @@ class _RefChecker:
                 self._check_ref(for_each_from, f"{where}.for_each.from")
             for name, ref in call.params.items():
                 self._check_ref(ref, f"{where}.params.{name}", for_each_from)
-            # 没有 schema、也没有快照时，参数和响应是空的，逐项对照只会重复那条总告警
-            if resource and not resource.definition_unverified:
+            if resource and not resource.errors:
                 self._check_params(call, resource, where)
                 self._check_reads(call, resource, where)
                 self._check_poll(call, resource, where)
@@ -129,16 +129,17 @@ class _RefChecker:
                 self.result.warnings.append(f"{where}：{parsed.resource} 的响应定义中没有 {parsed.path}")
 
     def _missing_response_field(self, resource: Optional[ResourceDefinition], path: str) -> bool:
-        """资源不存在，或没有 schema 也没有快照时，不再把每个字段都报成缺失"""
-        if resource is None or resource.definition_unverified:
+        """资源不存在，或资源定义本身已报 error 时，不再把每个字段都报成缺失"""
+        if resource is None or resource.errors:
             return False
         return not resource.has_response_field(path)
 
     def _check_params(self, call: SkillCall, resource: ResourceDefinition, where: str) -> None:
         for name, ref in call.params.items():
             param = resource.get_param(name)
+            # 不在定义中的参数没有位置和类型，渲染只能靠猜，而版本写入后不能改
             if param is None:
-                self.result.warnings.append(f"{where}：参数 {name} 不在资源定义中")
+                self.result.errors.append(f"{where}：参数 {name} 不在资源定义中")
                 continue
             parsed = parse_ref(ref)
             if parsed.kind != "input" or param.location == "path":

@@ -17,6 +17,7 @@
 #
 """Skill 发版写库：内置 Skill 注入和网关 Skill 上传共用"""
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
@@ -35,6 +36,27 @@ if TYPE_CHECKING:
 
 class SkillVersionExistsError(Exception):
     pass
+
+
+class SkillVersionNotNewerError(Exception):
+    pass
+
+
+def check_new_version(metadata: SkillMetadata, version: str) -> None:
+    """新版本必须不存在（大小写不敏感），且按 major.minor.patch 高于当前版本
+
+    低版本若成为当前版本，之后更高的版本会因「已存在」被跳过，当前版本就停在低版本上。
+    预发布、构建后缀不参与比较：1.0.0-rc1 不高于 1.0.0。
+    """
+    if SkillVersion.objects.filter(metadata=metadata, version=version.lower()).exists():
+        raise SkillVersionExistsError(f"{metadata.name} 已有版本 {version}")
+    current = metadata.current_version
+    if current and _semver_core(version) <= _semver_core(current.version):
+        raise SkillVersionNotNewerError(f"{metadata.name} 的版本 {version} 不高于当前版本 {current.version}")
+
+
+def _semver_core(version: str) -> Tuple[int, ...]:
+    return tuple(int(part) for part in re.split(r"[-+]", version, maxsplit=1)[0].split("."))
 
 
 @dataclass
@@ -65,8 +87,8 @@ def save_skill_version(
     created = metadata is None
     if metadata is None:
         metadata = SkillMetadata(type=skill_type, gateway=gateway, name=declaration.name, created_by=operator)
-    elif SkillVersion.objects.filter(metadata=metadata, version=declaration.version.lower()).exists():
-        raise SkillVersionExistsError(f"{declaration.name} 已有版本 {declaration.version}")
+    else:
+        check_new_version(metadata, declaration.version)
 
     metadata.display_name = declaration.display_name
     metadata.display_name_en = declaration.display_name_en

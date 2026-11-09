@@ -71,6 +71,7 @@ class TestReleasedResourceProvider:
         assert definition.params == [ResourceParam(name="task_id", location="path", type="integer", required=True)]
         assert definition.responses == [ResponseField(field="result", type="boolean")]
         assert definition.warnings == []
+        assert definition.errors == []
 
     def test_no_schema_no_snapshot(self):
         release_resources("bk-sops", "prod", [RESOURCE])
@@ -78,7 +79,8 @@ class TestReleasedResourceProvider:
         definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
         assert definition.params == []
-        assert definition.warnings == ["bk-sops.get_task_status：资源无 schema、无快照，参数和响应字段无法核对"]
+        assert definition.warnings == []
+        assert definition.errors == ["bk-sops.get_task_status：资源无 schema、无快照，参数和响应字段无法核对"]
 
     def test_snapshot_fills_missing_schema(self, tmp_path):
         release_resources("bk-sops", "prod", [RESOURCE])
@@ -112,7 +114,8 @@ class TestReleasedResourceProvider:
 
         assert definition.warnings == ["bk-sops.get_task_status：资源未公开，调用方无法申请权限"]
 
-    def test_non_json_request_body_warns_without_rejecting(self):
+    @pytest.mark.parametrize("with_snapshot", [False, True])
+    def test_non_json_request_body_is_error(self, tmp_path, with_snapshot):
         schema = {
             "parameters": [{"name": "task_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
             "requestBody": {
@@ -122,28 +125,16 @@ class TestReleasedResourceProvider:
             },
         }
         release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+        snapshot_dir = write_snapshots(tmp_path, [SNAPSHOT_RESOURCE]) if with_snapshot else None
 
-        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+        definition = ReleasedResourceProvider(snapshot_dir=snapshot_dir).get_resource(
+            "bk-sops", "prod", "get_task_status"
+        )
 
-        assert definition.params == [ResourceParam(name="task_id", location="path", type="integer", required=True)]
-        assert definition.definition_unverified is False
-        assert definition.warnings == ["bk-sops.get_task_status：请求体不是 application/json，未转换为 body 参数"]
-
-    def test_non_json_request_body_only_is_not_unverified(self):
-        schema = {
-            "requestBody": {
-                "content": {
-                    "multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string"}}}}
-                }
-            }
-        }
-        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
-
-        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
-
-        assert definition.params == []
-        assert definition.definition_unverified is False
-        assert definition.warnings == ["bk-sops.get_task_status：请求体不是 application/json，未转换为 body 参数"]
+        assert definition.warnings == []
+        assert definition.errors == [
+            "bk-sops.get_task_status：请求体不是 application/json，SKILL.md 只能描述 JSON 请求体"
+        ]
 
     @pytest.mark.parametrize(
         "gateway, stage, resource",

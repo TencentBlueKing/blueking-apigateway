@@ -83,3 +83,10 @@ class TestRenderSkillBody:
 
         with pytest.raises(SkillRenderError, match="get_job_instance_status"):
             _render("job-plan-run-and-log", StaticResourceProvider.from_dict(resources_data))
+
+    def test_param_not_in_definition(self, static_provider):
+        data = load_declaration_data("job-plan-run-and-log")
+        data["orchestration"]["steps"][0]["calls"][0]["params"]["unknown"] = "inputs.bk_scope_id"
+
+        with pytest.raises(SkillRenderError, match="没有参数 unknown"):
+            render_skill_body(parse_declaration(data), static_provider)

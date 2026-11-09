@@ -36,12 +36,21 @@ runs from `bin/post_migrate`.
 - Built-in injection must not break deployment: one bad declaration only affects
   its own result, and the command exits 0. Missing resources skip the declaration
   until the next deploy; do not partially write it.
-- A referenced resource with neither an OpenAPI schema nor a patch snapshot
-  rejects the declaration. Parameter locations would otherwise be guessed from
-  the HTTP method, and a version is immutable once written. The next deploy
-  retries because nothing was written.
+- Parameter locations and types come only from the resource definition; nothing
+  is guessed from the HTTP method, because a version is immutable once written.
+  The declaration is rejected when a referenced resource has neither an OpenAPI
+  schema nor a patch snapshot, when its request body is not `application/json`
+  (a snapshot cannot fix that: the body is always rendered as JSON), or when a
+  call maps a parameter missing from the definition. Resource-level problems go
+  in `ResourceDefinition.errors`; the validator reports them as errors and skips
+  field checks for that resource. The next deploy retries because nothing was
+  written.
 - A version is immutable once written; the same version (case-insensitive) is
-  skipped, not overwritten.
+  skipped, not overwritten. A new version must be higher than the current one by
+  `major.minor.patch` (pre-release and build suffixes are ignored), otherwise it
+  is rejected: a lower version made current would leave the higher one skipped
+  as "already exists" on every later deploy. `writer.check_new_version` owns
+  this rule for both the injection pre-check and the write transaction.
 - A written version is a snapshot of the resource definitions at injection time.
   Gateway releases do not re-render or update built-in Skills, and nothing yet
   detects drift. After a referenced resource changes, bump the declaration
@@ -62,9 +71,9 @@ declaration covers poll, for_each, where, literal values and write calls; rule t
 mutate this one declaration. `fixtures/resources.json` is also the resource contract
 for every file in `data/skill/declarations/`: `test_shipped_declarations.py` publishes
 those resources, fills parameters and responses from patch snapshots, then validates
-and renders each shipped declaration. `errors` and warnings must be empty, including
-the "no schema and no snapshot" warning. For bk-sops and devops the fixture records
-the parameters and response fields those declarations map; `task_id` is a path
+and renders each shipped declaration. `errors` and warnings must be empty. For
+bk-sops and devops the fixture records the parameters and response fields those
+declarations map; `task_id` is a path
 parameter and `X-DEVOPS-UID` is a header, and the other GET parameters are query,
 POST parameters body. It is not a copy of the live OpenAPI document. After an
 intentional template change, regenerate `expected/` from the renderer and review

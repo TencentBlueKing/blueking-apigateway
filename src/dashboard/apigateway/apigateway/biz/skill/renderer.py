@@ -39,11 +39,11 @@ from .constants import (
     WRITE_METHODS,
 )
 from .refs import norm_path, parse_ref, poll_expr_paths, ref_text, ref_where
-from .resource_definition import ResourceDefinition, ResourceParam, ResourceProvider
 from .validator import ResourceKey, load_resources
 
 if TYPE_CHECKING:
     from .declaration import SkillCall, SkillDeclaration, SkillOrchestration
+    from .resource_definition import ResourceDefinition, ResourceParam, ResourceProvider
 
 PARAM_LOCATION_ORDER = {"path": 0, "query": 1, "header": 2, "body": 3}
 NOTATION_PLACES = ("path", "query", "header")
@@ -60,7 +60,7 @@ class RenderResult:
 
 
 def render_skill_body(declaration: SkillDeclaration, provider: ResourceProvider) -> RenderResult:
-    """渲染正文；调用方需先完成校验，编排引用的资源都存在时才能渲染"""
+    """渲染正文；调用方需先完成校验，没有 error、编排引用的资源都存在时才能渲染"""
     resources = load_resources(declaration.orchestration, provider)
     missing = [".".join(key) for key, resource in resources.items() if resource is None]
     if missing:
@@ -205,7 +205,7 @@ class _SkillBodyContext:
         locations = set()
         for call in calls:
             resource = self.resources[call.key]
-            locations |= {resource.get_param_location(name) for name in call.params}
+            locations |= {_get_param(resource, name).location for name in call.params}
 
         return {
             "places": [place for place in NOTATION_PLACES if place in locations],
@@ -334,8 +334,12 @@ def _response_schema(resource: ResourceDefinition, paths: List[str]) -> Dict[str
     return root
 
 
-def _param_spec(resource: ResourceDefinition, name: str) -> ResourceParam:
-    return resource.get_param(name) or ResourceParam(name=name, location=resource.get_param_location(name))
+def _get_param(resource: ResourceDefinition, name: str) -> ResourceParam:
+    """参数必须在资源定义中，位置和类型以定义为准；不在定义中的参数校验已报 error"""
+    param = resource.get_param(name)
+    if param is None:
+        raise SkillRenderError(f"{resource.gateway}.{resource.resource} 的资源定义中没有参数 {name}，不能渲染")
+    return param
 
 
 def _build_params(
@@ -344,7 +348,7 @@ def _build_params(
     """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性"""
 
     def order(item: Tuple[str, Any]) -> Tuple[int, int]:
-        location = resource.get_param_location(item[0])
+        location = _get_param(resource, item[0]).location
         position = resource.path.find("{" + item[0] + "}") if location == "path" else 0
         return PARAM_LOCATION_ORDER.get(location, 9), position
 
@@ -352,7 +356,7 @@ def _build_params(
     body: Dict[str, Any] = {}
     body_required: List[str] = []
     for name, ref in sorted(call.params.items(), key=order):
-        spec = _param_spec(resource, name)
+        spec = _get_param(resource, name)
         required = spec.required or spec.location == "path"
         schema: Optional[_Flow] = _type_schema(spec.type) if spec.type else None
         if spec.location == "body":

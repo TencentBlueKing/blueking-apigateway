@@ -23,7 +23,7 @@ from django.db.models import F
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersionRelation
 from apigateway.biz.skill.declaration import parse_declaration
-from apigateway.biz.skill.writer import SkillVersionExistsError, save_skill_version
+from apigateway.biz.skill.writer import SkillVersionExistsError, SkillVersionNotNewerError, save_skill_version
 
 pytestmark = pytest.mark.django_db
 
@@ -93,6 +93,26 @@ class TestSaveSkillVersion:
 
         with pytest.raises(SkillVersionExistsError):
             _save(job_plan_data)
+
+    @pytest.mark.parametrize("version", ["1.0.1", "1.1.0-rc1", "1.0.9+build"])
+    def test_not_newer_than_current(self, job_plan_data, version):
+        job_plan_data["version"] = "1.1.0"
+        first = _save(job_plan_data)
+        job_plan_data["version"] = version
+
+        with pytest.raises(SkillVersionNotNewerError):
+            _save(job_plan_data)
+
+        metadata = SkillMetadata.objects.get(id=first.metadata.id)
+        assert metadata.current_version_id == first.version.id
+        assert metadata.versions.count() == 1
+
+    def test_newer_by_numeric_order(self, job_plan_data):
+        job_plan_data["version"] = "1.9.0"
+        _save(job_plan_data)
+        job_plan_data["version"] = "1.10.0"
+
+        assert _save(job_plan_data).version.version == "1.10.0"
 
     def test_relations_deduplicated(self, job_plan_data):
         steps = job_plan_data["orchestration"]["steps"]

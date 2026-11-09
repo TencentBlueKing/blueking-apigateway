@@ -66,17 +66,24 @@ class TestValidateDeclaration:
 
         assert _validate(job_plan_data, static_provider).warnings == ["schema 缺失"]
 
-    def test_unverified_definition_skips_field_checks(self, static_provider, job_plan_data):
+    def test_resource_errors_skip_field_checks(self, static_provider, job_plan_data):
         resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
         resource.params = []
         resource.responses = []
-        resource.definition_unverified = True
-        resource.warnings.append("jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对")
+        resource.errors.append("jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对")
 
         result = _validate(job_plan_data, static_provider)
 
-        assert result.errors == []
-        assert result.warnings == ["jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对"]
+        assert result.errors == ["jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对"]
+        assert result.warnings == []
+
+    def test_param_not_in_definition_is_error(self, static_provider, job_plan_data):
+        _run_call(job_plan_data)["params"]["unknown"] = "inputs.bk_scope_id"
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert result.errors == ["run-plan.execute_job_plan：参数 unknown 不在资源定义中"]
+        assert result.warnings == []
 
     def test_unknown_input(self, static_provider, job_plan_data):
         _run_call(job_plan_data)["params"]["job_plan_id"] = "inputs.not_exists"
@@ -105,10 +112,6 @@ class TestValidateDeclaration:
     @pytest.mark.parametrize(
         "patch, expected",
         [
-            (
-                lambda data: _run_call(data)["params"].update(unknown="inputs.bk_scope_id"),
-                "run-plan.execute_job_plan：参数 unknown 不在资源定义中",
-            ),
             (
                 lambda data: _run_call(data)["params"].update(job_plan_id="inputs.bk_scope_id"),
                 "run-plan.execute_job_plan.params.job_plan_id：输入类型 string 与参数类型 integer 不一致",

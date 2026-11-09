@@ -25,14 +25,14 @@ from typing import TYPE_CHECKING, List, Optional
 from django.conf import settings
 
 from apigateway.apps.skill.constants import SkillTypeEnum
-from apigateway.apps.skill.models import SkillMetadata, SkillVersion
+from apigateway.apps.skill.models import SkillMetadata
 
 from .constants import SkillSyncStatusEnum
 from .declaration import SkillDeclarationError, parse_declaration
 from .renderer import render_skill_body
-from .resource_loader import UNVERIFIED_RESOURCE_DEFINITION, ReleasedResourceProvider
+from .resource_loader import ReleasedResourceProvider
 from .validator import validate_declaration
-from .writer import save_skill_version
+from .writer import SkillVersionExistsError, SkillVersionNotNewerError, check_new_version, save_skill_version
 
 if TYPE_CHECKING:
     from .resource_definition import ResourceProvider
@@ -93,11 +93,18 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
     metadata = SkillMetadata.objects.filter(
         type=SkillTypeEnum.PLATFORM.value, gateway__isnull=True, name=declaration.name
     ).first()
-    if metadata and SkillVersion.objects.filter(metadata=metadata, version=declaration.version.lower()).exists():
-        result.status = SkillSyncStatusEnum.SKIPPED_SAME_VERSION.value
-        result.reasons.append(f"版本 {declaration.version} 已存在")
-        result.metadata_id = metadata.id
-        return
+    if metadata:
+        try:
+            check_new_version(metadata, declaration.version)
+        except SkillVersionExistsError:
+            result.status = SkillSyncStatusEnum.SKIPPED_SAME_VERSION.value
+            result.reasons.append(f"版本 {declaration.version} 已存在")
+            result.metadata_id = metadata.id
+            return
+        except SkillVersionNotNewerError as err:
+            result.status = SkillSyncStatusEnum.REJECTED.value
+            result.reasons.append(str(err))
+            return
 
     validation = validate_declaration(declaration, provider)
     result.warnings += validation.warnings
@@ -108,30 +115,24 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
             for item in validation.missing_resources
         ]
         return
-    # 资源已发布但参数和响应无法核对时，渲染会按方法猜参数位置。版本写入后不能改，这里直接拒绝。
-    unverified = [warning for warning in validation.warnings if UNVERIFIED_RESOURCE_DEFINITION in warning]
-    if unverified or validation.errors:
+    if validation.errors:
         result.status = SkillSyncStatusEnum.REJECTED.value
         result.reasons += validation.errors
-        result.reasons += unverified
-        result.warnings = [warning for warning in result.warnings if warning not in unverified]
         return
 
     rendered = render_skill_body(declaration, provider)
     result.warnings += rendered.warnings
 
-    status = SkillSyncStatusEnum.NEW_VERSION.value if metadata else SkillSyncStatusEnum.CREATED.value
     if dry_run:
-        result.status = status
+        result.status = SkillSyncStatusEnum.NEW_VERSION.value if metadata else SkillSyncStatusEnum.CREATED.value
         result.reasons.append("dry-run，未写库")
-        return
-
-    saved = save_skill_version(
-        declaration,
-        rendered.body,
-        skill_type=SkillTypeEnum.PLATFORM.value,
-        gateway=None,
-        operator=settings.GATEWAY_DEFAULT_CREATOR,
-    )
-    result.status = SkillSyncStatusEnum.CREATED.value if saved.created else SkillSyncStatusEnum.NEW_VERSION.value
-    result.metadata_id = saved.metadata.id
+    else:
+        saved = save_skill_version(
+            declaration,
+            rendered.body,
+            skill_type=SkillTypeEnum.PLATFORM.value,
+            gateway=None,
+            operator=settings.GATEWAY_DEFAULT_CREATOR,
+        )
+        result.status = SkillSyncStatusEnum.CREATED.value if saved.created else SkillSyncStatusEnum.NEW_VERSION.value
+        result.metadata_id = saved.metadata.id
