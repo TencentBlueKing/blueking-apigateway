@@ -98,6 +98,9 @@ class V1OKJsonResponse(JsonResponse):
 
 class DownloadableResponse(FileResponse):
     def __init__(self, streaming_content=(), filename=None):
+        # Encode the whole body at once. Windows uses utf-8-sig, and encoding per character inserts a BOM before each one.
+        if isinstance(streaming_content, (str, bytes)):
+            streaming_content = [streaming_content]
         super().__init__(streaming_content)
 
         self["Content-Type"] = "application/octet-stream"
