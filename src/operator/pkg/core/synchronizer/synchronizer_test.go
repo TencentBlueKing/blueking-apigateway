@@ -868,9 +868,16 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 			Expect(resp1.Kvs).To(HaveLen(1))
 			revision1 := resp1.Kvs[0].ModRevision
 
-			// Wait for registry watch to process the event and update cache
-			// The registry uses async watch to update its internal cache
-			time.Sleep(200 * time.Millisecond)
+			// The second sync compares against the async watch cache, not etcd directly.
+			Eventually(func() entity.PluginMetadataConf {
+				metadata := etcdStore.GetGlobal().PluginMetadata["file-logger"]
+				if metadata == nil {
+					return nil
+				}
+				return metadata.PluginMetadataConf
+			}, 5*time.Second, 10*time.Millisecond).Should(Equal(
+				globalConfig.PluginMetadata["file-logger"].PluginMetadataConf,
+			))
 
 			// Second sync with same config
 			globalConfig2 := &entity.ApisixGlobalResource{
