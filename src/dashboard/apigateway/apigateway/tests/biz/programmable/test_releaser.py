@@ -141,10 +141,10 @@ class TestProgrammableGatewayReleaser:
         result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
 
         assert result["latest_publish_status"] == ""
-        assert result["last_publish_status"] == ""
+        assert result["current_publish_status"] == ""
         assert result["latest_history_id"] == 0
-        assert result["last_deploy_history"] is not None
-        assert result["last_deploy_history"].pk is None
+        assert result["current_deploy_history"] is not None
+        assert result["current_deploy_history"].pk is None
         assert result["latest_deploy_history"] is not None
         assert result["latest_deploy_history"].pk is None
 
@@ -163,7 +163,7 @@ class TestProgrammableGatewayReleaser:
 
         mock_paas_result.assert_not_called()
         assert result["latest_publish_status"] == ""
-        assert result["last_publish_status"] == ReleaseHistoryStatusEnum.SUCCESS.value
+        assert result["current_publish_status"] == ReleaseHistoryStatusEnum.SUCCESS.value
 
     def test_get_stage_deploy_status_reads_paas_when_upgrade_failed(self, mocker):
         mocker.patch(
@@ -182,7 +182,7 @@ class TestProgrammableGatewayReleaser:
         result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
 
         assert result["latest_publish_status"] == ReleaseHistoryStatusEnum.FAILURE.value
-        assert result["last_publish_status"] == ReleaseHistoryStatusEnum.SUCCESS.value
+        assert result["current_publish_status"] == ReleaseHistoryStatusEnum.SUCCESS.value
 
     def test_get_stage_deploy_status_reads_paas_when_first_publish_failed(self, mocker):
         mocker.patch(
@@ -196,7 +196,7 @@ class TestProgrammableGatewayReleaser:
 
         result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
 
-        assert result["last_publish_status"] == ReleaseHistoryStatusEnum.FAILURE.value
+        assert result["current_publish_status"] == ReleaseHistoryStatusEnum.FAILURE.value
 
 
 class TestGetPaaSDeployStatusCache:

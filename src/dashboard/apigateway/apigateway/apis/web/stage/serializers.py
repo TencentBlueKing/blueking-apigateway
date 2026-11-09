@@ -428,7 +428,7 @@ class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.stage.serializers.ProgrammableStageDeployOutputSLZ"
 
     def get_status(self, obj):
-        return self.context.get("last_publish_status", "")
+        return self.context.get("current_publish_status", "")
 
     def get_repo_info(self, obj):
         return self.context.get("repo_info", {})
