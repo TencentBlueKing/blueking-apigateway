@@ -221,7 +221,6 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import { getStageList } from '@/services/source/gateway/stage';
 import type { IStageListItem } from '@/types/stage';
 import {
   deployReleases,
@@ -315,7 +314,6 @@ const stageDetail = ref<IPaasInfo>({
 });
 
 const deployId = ref('');
-const stageList = ref<IStageListItem[]>([]);
 const semVerType = ref('minor');
 const currentCommitInfo = ref<ICommitInfo>({
   commit_id: '',
@@ -362,7 +360,6 @@ watch(isShow, async (val: boolean) => {
   if (val) {
     try {
       isLoading.value = true;
-      await fetchStageList();
       stageDetail.value = await getProgrammableStageDetail(apigwId.value, currentStage?.id as number);
       const { version } = await getVersion();
       formData.value.version = version;
@@ -392,10 +389,6 @@ watch(isShow, async (val: boolean) => {
 watchEffect(() => {
   localStage.value = cloneDeep(currentStage);
 });
-
-const fetchStageList = async () => {
-  stageList.value = await getStageList(apigwId.value);
-};
 
 const showPublishDia = () => {
   usePopInfoBox({
