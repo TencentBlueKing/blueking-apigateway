@@ -17,7 +17,10 @@
 */
 
 <template>
-  <BkForm :model="formData">
+  <BkForm
+    :model="formData"
+    class="query-string-rewrite-form"
+  >
     <BkFormItem
       label="Add"
       property="add"
@@ -25,6 +28,7 @@
       <KeyValuePairs
         ref="addRef"
         v-model="formData.add"
+        :key-rule="keyRule"
       />
     </BkFormItem>
     <BkFormItem
@@ -34,6 +38,7 @@
       <KeyValuePairs
         ref="setRef"
         v-model="formData.set"
+        :key-rule="keyRule"
       />
     </BkFormItem>
     <BkFormItem
@@ -50,7 +55,7 @@
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
-import KeyValuePairs from './components/KeyValuePairs.vue';
+import KeyValuePairs from '@/components/plugin/plugin-form/components/KeyValuePairs.vue';
 import KeysInput from './components/KeysInput.vue';
 
 interface KeyValuePair {
@@ -75,6 +80,12 @@ interface IProps { data: IRawData }
 const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
+
+// 查询参数名不能包含查询串的分隔符
+const keyRule = {
+  pattern: /^[^=&#?]+$/,
+  message: t('不能包含 =, &, #, ?'),
+};
 
 const addRef = useTemplateRef('addRef');
 const setRef = useTemplateRef('setRef');
@@ -144,3 +155,9 @@ defineExpose({
 });
 
 </script>
+
+<style scoped lang="scss">
+.query-string-rewrite-form {
+  --key-value-pairs-actions-padding-top: 8px;
+}
+</style>

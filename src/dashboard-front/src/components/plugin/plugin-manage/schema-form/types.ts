@@ -6,7 +6,7 @@ export type ComponentItem = | Component | (() => {
 });
 
 // Schema 字段类型
-export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-cors' | 'bk-header-rewrite' | 'bk-rate-limit';
+export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-cors' | 'bk-header-rewrite';
 
 // 组件映射配置
 export type ComponentMap = Record<SchemaType, Component>;

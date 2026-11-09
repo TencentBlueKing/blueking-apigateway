@@ -41,6 +41,12 @@ plugin-manage/
 
 插件专用表单仍放在相邻的 `src/components/plugin/plugin-form/<插件 code>/` 中；多个表单共用的字段控件放在
 `plugin-form/components/`。
+`plugin-form/components/KeyValuePairs.vue` 供 `api-breaker`、`bk-mock`、`response-rewrite` 和
+`bk-query-string-rewrite` 共用：键名格式默认只允许字母、数字、下划线和连字符，可通过 `keyRule`（`pattern` 与已翻译的
+`message`）替换；操作按钮的上边距默认 4px，外层可设置 CSS 变量 `--key-value-pairs-actions-padding-top` 调整。
+`bk-query-string-rewrite` 使用 `/^[^=&#?]+$/` 规则，并把该变量设为 8px。
+依赖方向为 `plugin-form/` → `schema-form/`：插件表单可以使用 Schema 表单的入口、字段控件和类型，`schema-form/` 不导入
+`plugin-form/` 中的任何文件。
 同一职责目录内使用相对导入，跨目录使用 `@/components/...` 路径。
 类型从各目录的 `types.ts` 导入；运行时组件映射和表单适配逻辑分别维护。
 
@@ -54,7 +60,12 @@ plugin-manage/
 `EnabledTable.vue` 展示无参数插件的启用状态，供多个插件共用。
 
 `schema-form/Index.vue` 提供 Schema 字段渲染入口，`component-map.ts` 维护字段类型与组件的映射。
+渲染入口先按 `routeMode`（插件 code）查找组件，再按 Schema 字段类型查找；目前只有 `bk-cors` 和 `bk-header-rewrite`
+按插件 code 映射到本目录的 `CustomAddDelForm.vue`。
 Schema 表单和插件专用表单可以复用该目录的字段控件。
+只属于某个插件的渲染组件放在该插件目录的 `components/` 下，由插件表单直接渲染，不登记到 `component-map.ts`。
+例如 `bk-rate-limit/Index.vue` 直接渲染 `bk-rate-limit/components/RateLimitForm.vue`，分别用于默认限制和特殊限制。
+需要替换 Schema 字段组件时，插件表单可以向 `schema-form/Index.vue` 传入 `componentMap`，它会覆盖默认映射。
 
 ## 新增插件
 

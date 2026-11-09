@@ -91,12 +91,22 @@ import { cloneDeep } from 'lodash-es';
 
 interface KeyValuePair {
   key: string
-  value: string
+  value: string | number
 }
 
-interface IProps { modelValue?: KeyValuePair[] }
+interface IKeyRule {
+  pattern: RegExp
+  // 已翻译的提示文案
+  message: string
+}
 
-const { modelValue = [] } = defineProps<IProps>();
+interface IProps {
+  modelValue?: KeyValuePair[]
+  // 键名格式规则，不传时只允许字母、数字、下划线和连字符
+  keyRule?: IKeyRule
+}
+
+const { modelValue = [], keyRule = undefined } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'update:modelValue': [KeyValuePair[]] }>();
 
@@ -123,7 +133,12 @@ watch(internalValue, (newVal: any) => {
   emit('update:modelValue', newVal);
 }, { deep: true });
 
-const rules = {
+const keyFormatRule = computed<IKeyRule>(() => keyRule ?? {
+  pattern: /^[\w-]+$/,
+  message: t('允许输入：字母、数字、下划线_、连字符-'),
+});
+
+const rules = computed(() => ({
   key: [
     {
       required: true,
@@ -131,8 +146,8 @@ const rules = {
       trigger: 'blur',
     },
     {
-      validator: (value: string) => /^[\w-]+$/.test(value),
-      message: t('允许输入：字母、数字、下划线_、连字符-'),
+      validator: (value: string) => keyFormatRule.value.pattern.test(value),
+      message: keyFormatRule.value.message,
       trigger: 'blur',
     },
     {
@@ -148,7 +163,7 @@ const rules = {
       trigger: 'blur',
     },
   ],
-};
+}));
 
 const addPair = () => {
   internalValue.value.push({
@@ -176,8 +191,8 @@ const validate = async (): Promise<boolean> => {
   }
 };
 
-const getValue = (): Record<string, string> => {
-  const result: Record<string, string> = {};
+const getValue = (): Record<string, string | number> => {
+  const result: Record<string, string | number> = {};
   internalValue.value.forEach((pair: any) => {
     if (pair.key && pair.value) {
       result[pair.key] = pair.value;
@@ -222,7 +237,9 @@ defineExpose({
   display: flex;
   gap: 8px;
   min-width: 80px;
-  padding-top: 4px;
+
+  // 外层可通过 --key-value-pairs-actions-padding-top 调整操作按钮与输入框的垂直对齐
+  padding-top: var(--key-value-pairs-actions-padding-top, 4px);
 }
 
 </style>
