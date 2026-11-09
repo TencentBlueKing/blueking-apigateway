@@ -216,18 +216,9 @@
           class="member-selector-form"
           :class="[{ 'is-error': isShowMemberError}]"
         >
-          <StaffSelector
-            v-if="!featureFlagStore.isTenantMode"
+          <UserSelector
             v-model="formData.maintainers"
             @change="handleMemberChange"
-          />
-          <BkUserSelector
-            v-else
-            v-model="formData.maintainers"
-            :api-base-url="envStore.tenantUserDisplayAPI"
-            multiple
-            :tenant-id="userStore.info.tenant_id"
-            @change="handleTenantUserChange"
           />
           <div
             v-if="isShowMemberError"
@@ -486,8 +477,7 @@ import { cloneDeep } from 'lodash-es';
 import type { IFormMethod } from '@/types/common';
 import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
-import StaffSelector from '@/components/user/staff-selector';
-import BkUserSelector from '@blueking/bk-user-selector';
+import UserSelector from '@/components/user/user-selector/Index.vue';
 import bareGit from '@/images/bare_git.png';
 import apiIcon from '@/images/api.png';
 import aiIcon from '@/images/ai.png';
@@ -887,16 +877,8 @@ const handleKindChange = (type: number) => {
   setRepositoryAddress();
 };
 
-const handleMemberChange = (member: string[]) => {
-  formData.value.maintainers = member;
-  isShowMemberError.value = !member.length;
-};
-
-// 多选模式下 payload 恒为数组；此处统一归一，兼容组件 change 事件的联合类型签名
-const handleTenantUserChange = (members: { id: string } | { id: string }[] | null) => {
-  const list = members ? (Array.isArray(members) ? members : [members]) : [];
-  formData.value.maintainers = list.map(member => member.id);
-  isShowMemberError.value = !list.length;
+const handleMemberChange = (members: string[]) => {
+  isShowMemberError.value = !members.length;
 };
 
 const getUrlPrefix = async () => {

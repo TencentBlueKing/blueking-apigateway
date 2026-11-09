@@ -215,7 +215,9 @@ services/source/
   `ag-markdown-editor`（mavon-editor 懒加载）、`ag-markdown-viewer`、`ag-expandable-text`、`ag-status-dot`、`ag-overflow-tags`
 - **命名**：目录名使用 kebab-case 并与组件名一致，入口为 `Index.vue`；私有子组件放在该目录的 `components/` 下，
   文件名使用 PascalCase。`ag-` 前缀只用于 `base/`，业务组件使用领域名词命名
-- **`user/`**：`staff-selector`（非多租户人员选择，TSX）、`tenant-user-editor`（多租户成员的展示与行内编辑）
+- **`user/`**：`user-selector`（人员选择入口，按多租户模式切换 `BkUserSelector` / `staff-selector`，
+  v-model 统一为用户名数组）、`staff-selector`（非多租户人员选择，TSX）、`tenant-user-editor`（多租户成员的展示与行内编辑）。
+  新增人员选择优先使用 `user-selector`，不要在页面里自行判断 `isTenantMode` 切换两种选择器
 - **`ai/`**：`ai-blueking-button`（「问问 AI」入口）、`ai-chat-slider`（AI 对话侧栏）
 - **`release/`**：`create-resource-version-slider`、`release-stage-slider`、`publish-event-slider`、`version-diff`，
   由资源管理、环境管理和网关布局共用
