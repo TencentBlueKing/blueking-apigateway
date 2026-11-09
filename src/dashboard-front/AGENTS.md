@@ -220,7 +220,9 @@ services/source/
 - **`release/`**：`create-resource-version-slider`、`release-stage-slider`、`publish-event-slider`、`version-diff`，
   由资源管理、环境管理和网关布局共用
 - **`mcp/`**：`mcp-server-card`、`mcp-server-toolbar`、`mcp-access-config`、`mcp-access-config-dialog`、
-  `mcp-trace-chain`，以及调用链瀑布图模块 `trace-view`（TSX）
+  `mcp-trace-chain`，以及调用链瀑布图模块 `trace-view`（TSX）。`trace-view` 外部只能引用其入口
+  `@/components/mcp/trace-view`；`useTrace` Store 与页面需要的瀑布树转换、折叠分组、耗时格式化放在 `@/utils/trace`，
+  默认调用链数据 `DEFAULT_TRACE_DATA` 放在 `@/constants/trace`，类型放在 `@/types/trace`，组件内部也从这些位置引用
 - **`plugin/`**：`plugin-manage`（插件展示与管理，结构见其 README）、`plugin-form`（15+ 插件专用表单，按插件 code 分目录）
 - **全局组件**（在 `main.ts` 注册，无需导入直接使用）：`AgIcon`、`AgIconButton`、`AgCopyButton`
 - **放置原则**：`src/components/` 只放被两个及以上功能模块（`views/<模块>`、`layout/<布局>`）复用的组件；
@@ -294,11 +296,16 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 - `access-log.ts` / `audit-log.ts` / `monitor.ts` — 流水日志、操作记录、监控告警
 - `metrics.ts` — 指标图表的公共结构（ISeriesItemType、IChartSeries、IInstantValue），以及网关仪表盘、统计报表的类型
 - `observability.ts` — MCP Server 可观测：图表数据，以及日志与调用链（ITraceLog、ISpan、ITraceDetail 等）
+- `trace.ts` — 调用链瀑布图的数据模型（ISpan、ITraceTree、ITraceListItem、ISpanListItem 等），由 `useTrace` 与
+  `components/mcp/trace-view` 共用
 - `mcp-server.ts` / `mcp-marketplace.ts` — MCP Server、MCP 市场
 - `auto-imports.d.ts` — 由 unplugin-auto-import 自动生成
 
 > `metrics.ts` 与 `observability.ts` 都导出 `IStatisticsType`、`IChartDataType`、`IChartDataLoading`，但字段不同：
 > 网关仪表盘用前者，MCP Server 可观测用后者。
+>
+> `observability.ts` 与 `trace.ts` 都导出 `ISpan`：前者是接口返回的 span，后者在其基础上补充瀑布图需要的层级、
+> 折叠、标签等字段。
 
 ## 代码风格规范
 

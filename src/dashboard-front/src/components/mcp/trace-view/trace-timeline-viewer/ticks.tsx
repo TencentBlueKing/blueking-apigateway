@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { formatDuration } from '@/components/mcp/trace-view/utils/date';
+import { formatDuration } from '@/utils/trace';
 
 import type { TNil } from '@/components/mcp/trace-view/typings';
 

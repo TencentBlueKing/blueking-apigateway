@@ -138,4 +138,4 @@ export function spanContainsErredSpan(spans: ISpan[], parentSpanIndex: number): 
   return false;
 }
 
-export { formatDuration } from '../utils/date';
+export { formatDuration } from '@/utils/trace';

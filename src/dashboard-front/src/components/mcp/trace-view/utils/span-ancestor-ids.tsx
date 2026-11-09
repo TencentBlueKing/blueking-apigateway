@@ -19,7 +19,8 @@
 import _find from 'lodash-es/find';
 import _get from 'lodash-es/get';
 
-import type { ISpan, TNil } from '../typings';
+import type { ISpan } from '@/types/trace';
+import type { TNil } from '../typings';
 
 export default function spanAncestorIds(span: ISpan | TNil): string[] {
   const ancestorIDs: string[] = [];

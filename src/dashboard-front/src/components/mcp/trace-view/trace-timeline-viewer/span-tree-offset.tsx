@@ -8,7 +8,7 @@
  */
 
 import _get from 'lodash-es/get';
-import type { ISpan } from '@/components/mcp/trace-view/typings';
+import type { ISpan } from '@/types/trace';
 import spanAncestorIds from '@/components/mcp/trace-view/utils/span-ancestor-ids';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 

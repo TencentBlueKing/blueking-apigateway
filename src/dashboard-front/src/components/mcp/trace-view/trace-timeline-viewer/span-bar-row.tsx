@@ -34,7 +34,7 @@ import SpanTreeOffset from '@/components/mcp/trace-view/trace-timeline-viewer/sp
 import TimelineRow from '@/components/mcp/trace-view/trace-timeline-viewer/timeline-row';
 import TimelineRowCell from '@/components/mcp/trace-view/trace-timeline-viewer/timeline-row-cell';
 import Ticks from '@/components/mcp/trace-view/trace-timeline-viewer/ticks';
-import type { ISpan } from '@/components/mcp/trace-view/typings';
+import type { ISpan } from '@/types/trace';
 import { getSpanIcon } from '@/components/mcp/trace-view/model/trace-viewer';
 import { t } from '@/locales';
 import type { ITraceDetail } from '@/types/observability';

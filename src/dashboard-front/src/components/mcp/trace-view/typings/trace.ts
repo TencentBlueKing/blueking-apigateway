@@ -16,7 +16,12 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ISpan as ITraceSpan } from '@/types/observability';
+import type {
+  ISpan,
+  ITraceListItem,
+  ITraceTree,
+  Process,
+} from '@/types/trace';
 
 export type CrossRelation = {
   app_code: string
@@ -27,87 +32,9 @@ export type CrossRelation = {
   trace_id: string
 };
 
-export type GroupInfo = {
-  duration: number
-  id: string
-  members: string[]
-};
-
-export type KeyValuePair = {
-  key: string
-  value: any
-};
-
 export type Link = {
   text: string
   url: string
-};
-
-export type Log = {
-  fields: Array<KeyValuePair>
-  timestamp: number
-};
-
-export type Process = {
-  serviceName: string
-  tags: Array<KeyValuePair>
-};
-
-export type SpanAttributesItem = {
-  key: string
-  query_key: string
-  query_value: string
-  type: string
-  value: string
-};
-
-export type ISpanData = {
-  id?: number | string
-  app_code?: string
-  attributes?: Array<SpanAttributesItem>
-  bgColor?: string
-  color?: string
-  duration?: number
-  ebpf_kind?: string // ebpf 类型
-  ebpf_tap_port_name?: string
-  ebpf_tap_side?: string
-  ebpf_thread_name?: string
-  error?: boolean
-  group_info?: GroupInfo // 折叠分组信息
-  icon?: string
-  is_expand: boolean // 折叠节点当前被展开
-  is_virtual?: boolean // 是否推断（虚拟）span
-  kind?: number
-  logs?: Array<Log>
-  mark?: string
-  operation: string
-  processID?: string
-  references?: Array<ISpanReference>
-  service: string
-  source?: string
-  span_id: string
-  startTime?: number
-  start_offset_ms: number
-  tags?: Array<KeyValuePair>
-  trace_id?: string
-  warnings?: Array<string> | null
-};
-
-export type ISpan = ITraceSpan & ISpanData & {
-  depth: number
-  hasChildren: boolean
-  references?: NonNullable<ISpanData['references']>
-  relativeStartTime?: number
-  subsidiarilyReferencedBy?: Array<ISpanReference>
-  tags?: NonNullable<ISpanData['tags']>
-  warnings?: NonNullable<ISpanData['warnings']>
-};
-
-export type ISpanReference = {
-  refType: 'CHILD_OF' | 'FOLLOWS_FROM'
-  span: ISpan | undefined
-  span_id: string
-  trace_id: string
 };
 
 export type TNil = undefined | null;
@@ -141,31 +68,6 @@ export enum EListItemType {
 export enum ETopoType {
   service = 'service',
   time = 'time',
-}
-
-export type DirectionType = 'ltr' | 'rtl';
-
-export interface IDetailInfo {
-  [key: string]: any
-  app_code?: string
-  category?: string // 调用类型
-  error?: boolean // 入口服务感叹号
-  hierarchy_count: number
-  max_duration: number
-  min_duration: number
-  product_time: number
-  root_endpoint?: string
-  root_service?: string
-  root_span_id: string
-  service_count: number
-  time_error: boolean
-  trace_duration: number
-  trace_end_time?: number
-  trace_start_time?: number
-  status_code?: {
-    type: string
-    value: number
-  }
 }
 
 export interface IDiffInfo {
@@ -308,37 +210,6 @@ export interface ISpanDetail {
   }
 }
 
-export interface ISpanListItem {
-  [key: string]: any
-  elapsed_time: number | string
-  end_time: number | string
-  kind: number
-  parent_span_id: string
-  span_id: string
-  span_name: string
-  start_time: number | string
-  time: string
-  trace_id: string
-  trace_state: string
-  resource: {
-    'bk.instance.id': string
-    'bk_data_id': number
-    'service.name': string
-    'service.version': string
-    'telemetry.sdk.language': string
-    'telemetry.sdk.name': string
-    'telemetry.sdk.version': string
-  }
-  status: {
-    code: number
-    message: string
-  }
-  status_code: {
-    type: string
-    value: string
-  }
-}
-
 export interface IStageTimeItem {
   // 阶段耗时
   active: string
@@ -405,36 +276,6 @@ export interface ITraceData extends ITraceListItem {
     edges: any[]
     nodes: any[]
   }
-}
-
-export interface ITraceListItem {
-  [key: string]: any
-  appName?: string
-  duration?: string
-  entryEndpoint?: string
-  entryService?: string
-  status?: string
-  statusCode?: number
-  time?: number
-  trace_id: string
-  trace_info: IDetailInfo
-  type?: string
-}
-
-export interface ITraceTree {
-  [key: string]: any
-  duration?: number
-  endTime?: number
-  entryEndpoint?: string
-  entryService?: string
-  processes?: Record<string, Process>
-  spans: ISpan[]
-  startTime?: number
-  status?: string
-  statusCode?: string
-  time?: string
-  trace_id?: string
-  type?: string
 }
 
 export interface OriginCrossAppSpanMap { [key: string]: ISpan[] }

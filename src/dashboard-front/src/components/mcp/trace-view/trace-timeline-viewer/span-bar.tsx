@@ -18,7 +18,7 @@
 
 import _groupBy from 'lodash-es/groupBy';
 import { useElementSize } from '@vueuse/core';
-import type { ISpan } from '@/components/mcp/trace-view/typings';
+import type { ISpan } from '@/types/trace';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 import './span-bar.scss';

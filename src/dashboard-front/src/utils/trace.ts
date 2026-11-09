@@ -16,11 +16,75 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ISpan, KeyValuePair } from '@/components/mcp/trace-view/typings';
+// 调用链瀑布图的数据处理：接口数据转换为瀑布树、折叠分组、耗时格式化
+// 由 useTrace Store 与 components/mcp/trace-view 共用，不依赖组件内部实现
+
+import _memoize from 'lodash-es/memoize';
+import { DEFAULT_TRACE_DATA } from '@/constants/trace';
 import type { ITraceLog } from '@/types/observability';
-import { DEFAULT_TRACE_DATA } from '@/components/mcp/trace-view/constants/trace';
-import { getSpanBgColor, getTraceName } from '@/components/mcp/trace-view/model/trace-viewer';
-import { getConfigValue } from '@/components/mcp/trace-view/utils/config/get-config';
+import type { ISpan, KeyValuePair } from '@/types/trace';
+
+type IToggleStatus = 'collpase' | 'expand';
+
+export function _getTraceNameImpl(spans: ISpan[]) {
+  let candidateSpan: ISpan | undefined;
+  const allIDs: Set<string> = new Set(spans.map(({ span_id }) => span_id));
+
+  for (let i = 0; i < spans.length; i++) {
+    const hasInternalRef = !!spans[i].references?.some(
+      ({ trace_id, span_id }: {
+        trace_id: string
+        span_id: string
+      }) =>
+        trace_id === spans[i].trace_id && allIDs.has(span_id),
+    );
+    if (hasInternalRef) {
+      continue;
+    }
+
+    if (!candidateSpan) {
+      candidateSpan = spans[i];
+      continue;
+    }
+
+    const thisRefLength = spans[i] && Array.isArray(spans[i].references) ? spans[i].references!.length : 0;
+    const candidateRefLength = (candidateSpan?.references && candidateSpan.references.length) || 0;
+
+    if (
+      thisRefLength < candidateRefLength
+      || (thisRefLength === candidateRefLength && (spans[i].startTime ?? 0) < (candidateSpan.startTime ?? 0))
+    ) {
+      candidateSpan = spans[i];
+    }
+  }
+
+  return candidateSpan ? `${candidateSpan.service_name}: ${candidateSpan.operation}` : '';
+}
+
+export const getTraceName = _memoize(_getTraceNameImpl, (spans: ISpan[]) => {
+  if (!spans.length) {
+    return 0;
+  }
+  return spans?.[0]?.trace_id ?? '';
+});
+
+/**
+ * @description: 根据layer展示对应span的borderColor
+ * @param detail 需要展示的span数据
+ */
+export const getSpanBgColor = (span: ISpan) => {
+  const { mcp_method, layer } = span;
+
+  if (['mcp'].includes(layer)) {
+    if (['tools/call'].includes(mcp_method)) {
+      return '#92d4f1';
+    }
+
+    return '#f5c78e';
+  }
+
+  return '#5ab8a8';
+};
 
 export function deduplicateTags(spanTags: KeyValuePair[]) {
   const warningsHash: Map<string, string> = new Map<string, string>();
@@ -40,7 +104,6 @@ export function deduplicateTags(spanTags: KeyValuePair[]) {
   };
 }
 
-// exported for tests
 export function orderTags(spanTags: KeyValuePair[], topPrefixes?: string[]) {
   const orderedTags: KeyValuePair[] = spanTags.slice();
   const tp = (topPrefixes || []).map((p: string) => p.toLowerCase());
@@ -125,9 +188,9 @@ export function transformTraceTree(data: ITraceLog): ITraceLog {
     traceStartTime = Math.min(traceStartTime, startMs);
     traceEndTime = Math.max(traceEndTime, endMs);
 
-    // 标签处理
+    // 标签处理（按 key 排序，不设置置顶前缀）
     const tagsInfo = deduplicateTags(span.tags);
-    span.tags = orderTags(tagsInfo.tags, getConfigValue('topTagPrefixes'));
+    span.tags = orderTags(tagsInfo.tags);
     span.warnings = span.warnings.concat(tagsInfo.warnings);
     span.color = getSpanBgColor(span);
 
@@ -170,4 +233,48 @@ export function transformTraceTree(data: ITraceLog): ITraceLog {
     upstream_gateway_log,
     downstream_gateway_log,
   };
+}
+
+/** 基于 traceTree 进行折叠分组
+ * 当前节点为折叠的聚合节点 parent_span_id !== span_id
+ */
+export const handleTraceTreeGroup = (spans: ISpan[]) => {
+  const list: ISpan[] = [];
+  spans.forEach((span) => {
+    if (span.parent_span_id !== span.span_id || span.is_expand) {
+      list.push(span);
+    }
+  });
+
+  return list;
+};
+
+/** 切换 traceTree 分组的折叠状态 */
+export const handleToggleCollapse = (spans: ISpan[], groupID: string, status: IToggleStatus) => {
+  let list = [];
+  // 点击切换折叠状态时 只需要更改 is_expand 的值
+  list = spans.map(span => ({
+    ...span,
+    is_expand: span.group_info?.id === groupID ? status === 'expand' : span.is_expand,
+  }));
+
+  return list;
+};
+
+/**
+ * 耗时格式化，直接以 ms 输出，不做单位换算
+ *
+ * @param {number} duration 耗时（ms）
+ * @param {string} split 分隔符
+ * @param {number} precision 精度
+ * @return {string} formatted duration
+ */
+export function formatDuration(duration: number, split: string = '', precision?: number | null): string {
+  const decimalLen = (String(duration).split('.')[1] || '').length;
+  if (precision && duration > 0) {
+    return decimalLen > precision ? `${duration.toFixed(precision)}${split}ms` : `${duration}${split}ms`;
+  }
+
+  // 直接以 ms 输出，完全不换算、不四舍五入
+  return `${duration}${split}ms`;
 }

@@ -16,7 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ISpan, KeyValuePair, TNil } from '../typings';
+import type { ISpan, KeyValuePair } from '@/types/trace';
+import type { TNil } from '../typings';
 
 export default function filterSpans(textFilter: string, spans: ISpan[] | TNil) {
   if (!spans) {

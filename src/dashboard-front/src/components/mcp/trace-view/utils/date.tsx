@@ -119,29 +119,6 @@ export function formatDatetime(duration: number): string {
   return dayjs.tz(duration / ONE_MILLISECOND).format(STANDARD_DATETIME_FORMAT);
 }
 
-/**
- * Humanizes the duration for display.
- *
- * Example:
- * 5000ms => 5s
- * 1000μs => 1ms
- * 183840s => 2d 3h
- *
- * @param {number} duration (in microseconds)
- * @param {string} split 分隔符
- * @param {number} precision 精度
- * @return {string} formatted duration
- */
-export function formatDuration(duration: number, split: string = '', precision?: number | null): string {
-  const decimalLen = (String(duration).split('.')[1] || '').length;
-  if (precision && duration > 0) {
-    return decimalLen > precision ? `${duration.toFixed(precision)}${split}ms` : `${duration}${split}ms`;
-  }
-
-  // 直接以 ms 输出，完全不换算、不四舍五入
-  return `${duration}${split}ms`;
-}
-
 export function formatDurationWithUnit(duration: number, split = '') {
   const units = _dropWhile(
     UNIT_STEPS,
