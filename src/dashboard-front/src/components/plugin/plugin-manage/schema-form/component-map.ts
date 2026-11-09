@@ -24,5 +24,4 @@ export const defaultComponentMap: ComponentMap = {
   'array': defineAsyncComponent(() => import('./components/SchemaObjectField.vue')),
   'bk-cors': defineAsyncComponent(() => import('./components/CustomAddDelForm.vue')),
   'bk-header-rewrite': defineAsyncComponent(() => import('./components/CustomAddDelForm.vue')),
-  'bk-rate-limit': defineAsyncComponent(() => import('@/components/plugin/plugin-form/bk-rate-limit/components/RateLimitForm.vue')),
 };

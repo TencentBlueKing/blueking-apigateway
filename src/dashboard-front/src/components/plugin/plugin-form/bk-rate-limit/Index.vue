@@ -21,26 +21,18 @@
     :model="formData"
   >
     <div class="schema-form-group grid gap-24px">
-      <SchemaField
-        ref="defaultSchemaFieldRef"
+      <RateLimitForm
         v-model="formData"
         :schema="schema?.properties?.rates?.properties?.default"
-        :component-map="componentMap"
-        :route-mode="routeMode"
         :disabled="disabled"
         :layout="getLayout('default')"
-        @update:model-value="updateDefault"
       />
 
-      <SchemaField
-        ref="specialsSchemaFieldRef"
+      <RateLimitForm
         v-model="formData"
         :schema="schema?.properties?.rates?.properties?.specials"
-        :component-map="componentMap"
-        :route-mode="routeMode"
         :disabled="disabled"
         :layout="getLayout('specials')"
-        @update:model-value="updateSpecials as any"
       />
     </div>
   </BkForm>
@@ -50,12 +42,12 @@
 import { cloneDeep, isEmpty, isObject } from 'lodash-es';
 import { Form } from 'bkui-vue';
 import type { IRateLimitFormData, ISchema } from '@/components/plugin/plugin-manage/schema-form/types';
-import SchemaField from '@/components/plugin/plugin-manage/schema-form/Index.vue';
+import RateLimitForm from './components/RateLimitForm.vue';
 
 interface IProps {
   schema?: ISchema
-  componentMap?: Record<string, Component>
   disabled?: boolean
+  // schema 编辑协议的公共入参，本表单不使用
   routeMode: string
   layout?: Record<string, any>
 }
@@ -68,7 +60,6 @@ const formData = defineModel<IRateLimitFormData>('modelValue', {
 const {
   schema = {} as ISchema,
   layout = {} as Record<string, any>,
-  componentMap = {} as Record<string, any>,
   disabled = false,
 } = defineProps<IProps>();
 
@@ -83,28 +74,11 @@ const DEFAULT_FORM_DATA: IRateLimitFormData = reactive({
 });
 
 const formRef = ref<InstanceType<typeof Form> | null>(null);
-const defaultSchemaFieldRef = ref<InstanceType<typeof SchemaField> | null>(null);
-const specialsSchemaFieldRef = ref<InstanceType<typeof SchemaField> | null>(null); ;
 
 // 获取布局配置
 const getLayout = (prop: string) => {
   const ratesLayout = layout?.[0]?.[0]?.group;
   return ratesLayout?.flat(1).find((item: any) => item.prop === prop)?.container || {};
-};
-
-// 更新默认限制数据
-const updateDefault = (value: {
-  tokens: number
-  period: number
-}) => {
-  formData.value.rates.default = value;
-};
-
-// 更新特殊限制数据
-const updateSpecials = (index: number, value: string | number) => {
-  formData.value.rates.specials = formData.value.rates.specials.map((item: any, i: any) =>
-    i === index ? value : item,
-  );
 };
 
 const getValue = () => {
