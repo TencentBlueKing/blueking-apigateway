@@ -25,8 +25,6 @@ from django.conf import settings
 SKILL_NAME_PATTERN = re.compile(r"^(?!.*--)[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 SKILL_STEP_NAME_PATTERN = SKILL_NAME_PATTERN
 
-# 资源文档里列为必填的认证凭据，由调用方按登录态注入，不进参数映射
-CREDENTIAL_PARAMS = frozenset({"access_token", "bk_token", "bk_ticket", "bk_app_secret"})
 WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 SKILL_BODY_MAX_LINES = 500

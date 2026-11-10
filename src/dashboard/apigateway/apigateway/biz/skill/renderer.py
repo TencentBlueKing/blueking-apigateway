@@ -32,7 +32,6 @@ from jinja2 import FileSystemLoader, StrictUndefined, Template
 from jinja2.sandbox import SandboxedEnvironment
 
 from .constants import (
-    CREDENTIAL_PARAMS,
     SKILL_BODY_MAX_LINES,
     SKILL_BODY_TEMPLATE_NAME,
     SKILL_TEMPLATES_DIR,
@@ -181,11 +180,6 @@ class _SkillBodyContext:
                     "condition": step.if_,
                     "description": step.description,
                     "call": _render_call(self.orchestration, step, resource),
-                    "credentials": [
-                        param.name
-                        for param in resource.params
-                        if param.name in CREDENTIAL_PARAMS and param.name not in step.with_
-                    ],
                     "unmapped": _unmapped_params(step, resource),
                 }
             )
@@ -219,13 +213,11 @@ class _SkillBodyContext:
 
 
 def _unmapped_params(step: SkillStep, resource: ResourceDefinition) -> List[str]:
-    """资源定义里必填、with 没写的参数（认证凭据除外），取值由步骤说明交代"""
+    """资源定义里必填、with 没写的参数，取值由步骤说明交代"""
     return [
         param.name
         for param in resource.params
-        if (param.required or param.location == "path")
-        and param.name not in step.with_
-        and param.name not in CREDENTIAL_PARAMS
+        if (param.required or param.location == "path") and param.name not in step.with_
     ]
 
 

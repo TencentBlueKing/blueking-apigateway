@@ -72,8 +72,10 @@ runs from `bin/post_migrate`.
   language for the AI; do not add machine-checked poll, loop or filter fields.
   Required parameters left out of `with` are listed in the snippet without a
   value and explained by the step description.
-- Do not map credentials (`access_token`, `bk_token`, `bk_ticket`,
-  `bk_app_secret`) in `with`; the body tells the AI not to pass or ask for them.
+- Authentication methods are gateway-specific and must not be inferred from a
+  fixed list of credential parameter names. The body tells the AI not to ask
+  users for credentials; callers inject them using the target gateway's
+  supported authentication method.
 - `references/how-to-call-apis.md` contains literal `${{ }}` and
   `{{ ... }}` placeholders; do not render it with Jinja.
 

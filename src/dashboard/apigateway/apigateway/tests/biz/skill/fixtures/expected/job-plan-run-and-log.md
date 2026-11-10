@@ -20,6 +20,8 @@
 | `get_job_instance_status` | jobv3-cloud | prod | GET | `/api/v3/get_job_instance_status` | 根据作业实例 ID 查询作业执行状态。 | 是 | 是 | 是 |
 | `batch_get_job_instance_ip_log` | jobv3-cloud | prod | POST | `/api/v3/batch_get_job_instance_ip_log` | 根据主机列表批量查询作业执行日志。 | 是 | 是 | 是 |
 
+认证凭据不在执行步骤中配置、不向用户索取，由调用方按目标网关支持的认证方式注入。
+
 ## 输入
 
 必填缺失时先问用户，不要猜测。说明里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。

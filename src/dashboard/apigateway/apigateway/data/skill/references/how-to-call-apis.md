@@ -14,7 +14,7 @@
 - 没有 `x-from`、`x-value` 的参数按该步的说明取值，例如逐个调用时取当前元素的字段。
 - `responses` 是该接口已发布 OpenAPI 的响应字段，字段路径相对响应体，见「返回内容」。
 - 使用 bk-cli 时，query 不要自己做 URL 编码，bk-cli 会编码。不使用 bk-cli 时，query 里的保留字符要编码；产物下载接口的 `path` 就是这种值。
-- `access_token`、`bk_token`、`bk_ticket`、`bk_app_secret` 不写进执行步骤的请求参数，不向用户要，也不出现在回复里。使用 bk-cli 时由登录态注入。不使用 bk-cli 时放进请求头 `X-Bkapi-Authorization`。某个接口的文档仍把 `access_token` 列为必填 query 时，把同一个用户 access token 放进 query，仍然不要写进回复。
+- 接口认证不根据凭据字段名判断。认证凭据不向用户要，也不出现在回复里；使用 bk-cli 时由当前 context 按目标网关支持的认证方式注入。不使用 bk-cli 时，按目标网关的调用文档传递认证信息。
 
 ## 使用 bk-cli
 
@@ -51,7 +51,7 @@ curl -H 'X-Bkapi-Authorization: {"bk_app_code":"<应用 ID>","bk_app_secret":"<�
   '{{ example_url }}'
 ```
 
-`X-Bkapi-Authorization` 的值是 JSON。按接口清单取舍字段：
+不同网关支持的认证方式和凭据字段可能不同，应以目标网关的调用文档为准。下面仅说明默认蓝鲸认证下 `X-Bkapi-Authorization` 的常见字段，值是 JSON：
 
 - 「用户认证」为「是」：带 `bk_token`，或带已有的 `access_token`，二选一。
 - 「应用认证」为「是」：带 `bk_app_code` 和 `bk_app_secret`。

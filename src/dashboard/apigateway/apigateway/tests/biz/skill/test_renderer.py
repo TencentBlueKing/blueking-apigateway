@@ -145,6 +145,34 @@ class TestRenderSkillBody:
         assert "没有 `x-from`、`x-value` 的参数按该步说明取值" in body
         assert "执行条件" not in body
 
+    def test_parameter_name_does_not_define_authentication(self, resources_data):
+        data = load_declaration_data("job-plan-run-and-log")
+        data["orchestration"]["inputs"]["access_token"] = {
+            "type": "string",
+            "required": True,
+            "description": "接口业务参数，不是网关认证凭据",
+            "example": "example-token",
+        }
+        data["orchestration"]["steps"][0]["with"]["access_token"] = "${{ inputs.access_token }}"
+        resources_data["resources"][0]["params"].append(
+            {
+                "name": "access_token",
+                "in": "query",
+                "type": "string",
+                "required": True,
+                "description": "接口业务参数",
+            }
+        )
+
+        body = render_skill_body(
+            parse_declaration(data),
+            StaticResourceProvider.from_dict(resources_data),
+        ).body
+        run_plan = body.split("1. run-plan", 1)[1].split("2. wait-result", 1)[0]
+
+        assert "name: access_token" in run_plan
+        assert "x-from: ${{ inputs.access_token }}" in run_plan
+
     def test_responses_keep_unreferenced_schema(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
         outputs = data["orchestration"]["outputs"]

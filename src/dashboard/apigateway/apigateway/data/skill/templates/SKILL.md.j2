@@ -30,6 +30,8 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 | `{{ res.resource }}` | {{ res.gateway }} | {{ res.stage }} | {{ res.method }} | `{{ res.path }}` | {{ res.description | md_cell }} | {{ res.user_verified_required | yn }} | {{ res.app_verified_required | yn }} | {{ res.resource_perm_required | yn }} |
 {% endfor %}
 
+认证凭据不在执行步骤中配置、不向用户索取，由调用方按目标网关支持的认证方式注入。
+
 ## 输入
 
 必填缺失时先问用户，不要猜测。说明里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。
@@ -97,13 +99,8 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 ```yaml
 {{ step.call }}
 ```
-{% if step.credentials or step.unmapped %}
-
-{% endif %}
-{% if step.credentials %}
-{{ step.credentials | map("backtick") | join("、") }} 不传、不向用户要，见「调用方式」。
-{% endif %}
 {% if step.unmapped %}
+
 资源定义中必填但未映射：{{ step.unmapped | map("backtick") | join("、") }}，按本步说明处理。
 {% endif %}
 {% endfilter %}
