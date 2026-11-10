@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
@@ -26,6 +27,7 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
+from apigateway.common.constants import CACHE_TIME_24_HOURS
 from apigateway.components.bkpaas import (
     deploy_paas_app,
     get_paas_deployment_result,
@@ -42,9 +44,38 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
+from apigateway.utils.redis_utils import get_default_redis_client
+
+from .constants import PAAS_DEPLOY_FINISHED_STATUSES, PaaSDeployStatusEnum
 
 if TYPE_CHECKING:
     from apigateway.common.tenant.user_credentials import UserCredentials
+
+logger = logging.getLogger(__name__)
+
+# PaaS 部署、下架操作结束后的状态缓存
+PAAS_DEPLOY_STATUS_CACHE_KEY = "bk_apigw:programmable_paas_deploy_status:{tenant_id}:{app_code}:{source}:{deploy_id}"
+
+
+def _get_cached_paas_deploy_status(cache_key: str) -> str:
+    """缓存只用于减少 PaaS 查询，Redis 不可用时按未命中处理"""
+    try:
+        client = get_default_redis_client()
+        status = client.get(cache_key) if client else None
+    except Exception:
+        logger.warning("get paas deploy status cache failed, key=%s", cache_key, exc_info=True)
+        return ""
+    return status.decode() if status else ""
+
+
+def _set_cached_paas_deploy_status(cache_key: str, status: str) -> None:
+    """写入失败时只记录日志，下次查询仍会回源 PaaS"""
+    try:
+        client = get_default_redis_client()
+        if client:
+            client.set(cache_key, status, ex=CACHE_TIME_24_HOURS)
+    except Exception:
+        logger.warning("set paas deploy status cache failed, key=%s", cache_key, exc_info=True)
 
 
 class ProgrammableGatewayReleaser:
@@ -169,10 +200,33 @@ class ProgrammableGatewayReleaser:
         )
 
     @staticmethod
+    def _get_paas_deploy_status(
+        gateway: Gateway, deploy_history: ProgrammableGatewayDeployHistory, user_credentials: UserCredentials
+    ) -> str:
+        """查询 paas 的 deploy 状态，只缓存已结束的状态"""
+        cache_key = PAAS_DEPLOY_STATUS_CACHE_KEY.format(
+            tenant_id=user_credentials.tenant_id if user_credentials else "",
+            app_code=gateway.name,
+            source=deploy_history.source,
+            deploy_id=deploy_history.deploy_id,
+        )
+        status = _get_cached_paas_deploy_status(cache_key)
+        if status:
+            return status
+
+        result = ProgrammableGatewayReleaser._get_paas_deploy_result(gateway, deploy_history, user_credentials)
+        status = result.get("status", "")
+        if status in PAAS_DEPLOY_FINISHED_STATUSES:
+            _set_cached_paas_deploy_status(cache_key, status)
+        return status
+
+    @staticmethod
     def get_stage_deploy_status(gateway: Gateway, stage_id: int, user_credentials: UserCredentials) -> Dict[str, Any]:
         """查询 stage 的 deploy 状态"""
+        # 当前生效版本的部署记录，首次发布失败时为该次部署
+        current_deploy_history = ProgrammableGatewayDeployHistory()
+        # 正在发布版本的部署记录
         latest_deploy_history = ProgrammableGatewayDeployHistory()
-        last_deploy_history = ProgrammableGatewayDeployHistory()
         # 查询当前 deploy 历史
         deploy_history = (
             ProgrammableGatewayDeployHistory.objects.filter(
@@ -183,26 +237,26 @@ class ProgrammableGatewayReleaser:
             .first()
         )
         stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
+        # 当前生效版本状态
+        current_publish_status = ""
         # 正在发布版本状态
         latest_publish_status = ""
         latest_history_id = 0
-        # 当前生效版本状态
-        last_publish_status = ""
         if stage_release:
             # 优先使用与 stage_release 匹配的记录
-            last_deploy_history = (
+            current_deploy_history = (
                 ProgrammableGatewayDeployHistory.objects.filter(
                     gateway=gateway, stage_id=stage_id, version=stage_release["resource_version_display"]
                 ).first()
                 or deploy_history  # 回退到最新记录
-                or last_deploy_history  # 从开发者中心发布时可能没有 deploy history
+                or current_deploy_history  # 从开发者中心发布时可能没有 deploy history
             )
             # 查询当前生效环境的 release history
-            last_release_history = ReleaseHistory.objects.filter(
+            current_release_history = ReleaseHistory.objects.filter(
                 gateway=gateway, stage_id=stage_id, resource_version__version=stage_release["resource_version_display"]
             ).first()
-            if last_release_history:
-                last_publish_status = ReleaseHandler.get_release_status(last_release_history.id)
+            if current_release_history:
+                current_publish_status = ReleaseHandler.get_release_status(current_release_history.id)
 
             # 如果 stage_release 的版本和 deploy_history 的第一个不一致，说明正在发布
             # 从开发者中心直接发布时可能没有 deploy_history
@@ -217,28 +271,31 @@ class ProgrammableGatewayReleaser:
                 latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
                 latest_history_id = deploy_history.publish_id
 
-        if deploy_history:
-            result = ProgrammableGatewayReleaser._get_paas_deploy_result(gateway, deploy_history, user_credentials)
-            # 正在发布的话需要判断是否失败
-            if latest_publish_status != "" and result.get("status", "") == "failed":
-                latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
-
+        # 部署已稳定时，后续判断不读取 PaaS 结果，只有首次发布或发布中才需要查询
+        if deploy_history and (current_publish_status == "" or latest_publish_status != ""):
+            paas_status = ProgrammableGatewayReleaser._get_paas_deploy_status(
+                gateway, deploy_history, user_credentials
+            )
             # 第一次发布
-            if last_publish_status == "" and result.get("status", "") == "failed":
-                last_deploy_history = deploy_history
-                last_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
-            elif last_publish_status == "" and result.get("status", "") != "failed":
+            if current_publish_status == "" and paas_status == PaaSDeployStatusEnum.FAILED.value:
+                current_deploy_history = deploy_history
+                current_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
+            elif current_publish_status == "" and paas_status != PaaSDeployStatusEnum.FAILED.value:
                 latest_deploy_history = deploy_history
                 if deploy_history.publish_id:
                     latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
                 else:
                     latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
+
+            # 正在发布的话需要判断是否失败
+            if latest_publish_status != "" and paas_status == PaaSDeployStatusEnum.FAILED.value:
+                latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
         return {
+            "current_deploy_history": current_deploy_history,
+            "current_publish_status": current_publish_status,
             "latest_deploy_history": latest_deploy_history,
-            "latest_history_id": latest_history_id,
             "latest_publish_status": latest_publish_status,
-            "last_publish_status": last_publish_status,
-            "last_deploy_history": last_deploy_history,
+            "latest_history_id": latest_history_id,
         }
 
     @staticmethod

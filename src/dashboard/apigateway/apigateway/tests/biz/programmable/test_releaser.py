@@ -17,16 +17,26 @@
 #
 import datetime
 
+import fakeredis
 import pytest
+import redis
 from ddf import G
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.common.tenant.user_credentials import UserCredentials
-from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
+from apigateway.core.constants import PublishSourceEnum, ReleaseHistoryStatusEnum
+from apigateway.core.models import Gateway, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def fake_redis(mocker):
+    client = fakeredis.FakeRedis()
+    mocker.patch("apigateway.biz.programmable.releaser.get_default_redis_client", return_value=client)
+    return client
 
 
 class TestProgrammableGatewayReleaser:
@@ -131,9 +141,135 @@ class TestProgrammableGatewayReleaser:
         result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
 
         assert result["latest_publish_status"] == ""
-        assert result["last_publish_status"] == ""
+        assert result["current_publish_status"] == ""
         assert result["latest_history_id"] == 0
-        assert result["last_deploy_history"] is not None
-        assert result["last_deploy_history"].pk is None
+        assert result["current_deploy_history"] is not None
+        assert result["current_deploy_history"].pk is None
         assert result["latest_deploy_history"] is not None
         assert result["latest_deploy_history"].pk is None
+
+    def test_get_stage_deploy_status_skips_paas_when_deploy_is_stable(self, mocker):
+        mock_paas_result = mocker.patch("apigateway.biz.programmable.releaser.get_paas_deployment_result")
+        mocker.patch("apigateway.biz.programmable.releaser.ReleaseHandler.get_release_status", return_value="success")
+        gateway = G(Gateway)
+        stage = G(Stage, gateway=gateway, status=1)
+        resource_version = G(ResourceVersion, gateway=gateway, version="1.0.0")
+        G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
+        G(ReleaseHistory, gateway=gateway, stage=stage, resource_version=resource_version)
+        G(ProgrammableGatewayDeployHistory, gateway=gateway, stage=stage, version="1.0.0")
+        user_credentials = UserCredentials(credentials="token", tenant_id="default")
+
+        result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
+
+        mock_paas_result.assert_not_called()
+        assert result["latest_publish_status"] == ""
+        assert result["current_publish_status"] == ReleaseHistoryStatusEnum.SUCCESS.value
+
+    def test_get_stage_deploy_status_reads_paas_when_upgrade_failed(self, mocker):
+        mocker.patch(
+            "apigateway.biz.programmable.releaser.get_paas_deployment_result",
+            return_value={"status": "failed"},
+        )
+        mocker.patch("apigateway.biz.programmable.releaser.ReleaseHandler.get_release_status", return_value="success")
+        gateway = G(Gateway)
+        stage = G(Stage, gateway=gateway, status=1)
+        resource_version = G(ResourceVersion, gateway=gateway, version="1.0.0")
+        G(Release, gateway=gateway, stage=stage, resource_version=resource_version)
+        G(ReleaseHistory, gateway=gateway, stage=stage, resource_version=resource_version)
+        G(ProgrammableGatewayDeployHistory, gateway=gateway, stage=stage, version="2.0.0", publish_id=None)
+        user_credentials = UserCredentials(credentials="token", tenant_id="default")
+
+        result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
+
+        assert result["latest_publish_status"] == ReleaseHistoryStatusEnum.FAILURE.value
+        assert result["current_publish_status"] == ReleaseHistoryStatusEnum.SUCCESS.value
+
+    def test_get_stage_deploy_status_reads_paas_when_first_publish_failed(self, mocker):
+        mocker.patch(
+            "apigateway.biz.programmable.releaser.get_paas_deployment_result",
+            return_value={"status": "failed"},
+        )
+        gateway = G(Gateway)
+        stage = G(Stage, gateway=gateway, status=1)
+        G(ProgrammableGatewayDeployHistory, gateway=gateway, stage=stage, version="1.0.0")
+        user_credentials = UserCredentials(credentials="token", tenant_id="default")
+
+        result = ProgrammableGatewayReleaser.get_stage_deploy_status(gateway, stage.id, user_credentials)
+
+        assert result["current_publish_status"] == ReleaseHistoryStatusEnum.FAILURE.value
+
+
+class TestGetPaaSDeployStatusCache:
+    @staticmethod
+    def _get_status(
+        tenant_id="default", app_code="demo", source=PublishSourceEnum.VERSION_PUBLISH.value, deploy_id="deploy-1"
+    ):
+        return ProgrammableGatewayReleaser._get_paas_deploy_status(
+            Gateway(name=app_code),
+            ProgrammableGatewayDeployHistory(source=source, deploy_id=deploy_id),
+            UserCredentials(credentials="token", tenant_id=tenant_id),
+        )
+
+    @pytest.mark.parametrize("paas_status", ["successful", "failed", "interrupted"])
+    def test_finished_status_is_cached(self, mocker, fake_redis, paas_status):
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value={"status": paas_status},
+        )
+
+        assert self._get_status() == paas_status
+        assert self._get_status() == paas_status
+        mock_result.assert_called_once()
+        assert fake_redis.ttl("bk_apigw:programmable_paas_deploy_status:default:demo:version_publish:deploy-1") > 0
+
+    @pytest.mark.parametrize("paas_result", [{"status": "pending"}, {}])
+    def test_unfinished_status_is_not_cached(self, mocker, paas_result):
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value=paas_result,
+        )
+
+        self._get_status()
+        self._get_status()
+
+        assert mock_result.call_count == 2
+
+    @pytest.mark.parametrize(
+        "other_scope",
+        [
+            {"tenant_id": "other"},
+            {"app_code": "other"},
+            {"source": PublishSourceEnum.STAGE_DISABLE.value},
+            {"deploy_id": "deploy-2"},
+        ],
+    )
+    def test_cache_is_scoped(self, mocker, other_scope):
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value={"status": "failed"},
+        )
+
+        self._get_status()
+        self._get_status(**other_scope)
+
+        assert mock_result.call_count == 2
+
+    @pytest.mark.parametrize(
+        "side_effect",
+        [None, redis.ConnectionError("redis error")],
+        ids=["redis-unavailable", "redis-error"],
+    )
+    def test_redis_failure_falls_back_to_paas(self, mocker, side_effect):
+        mocker.patch(
+            "apigateway.biz.programmable.releaser.get_default_redis_client",
+            return_value=None,
+            side_effect=side_effect,
+        )
+        mock_result = mocker.patch(
+            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
+            return_value={"status": "failed"},
+        )
+
+        assert self._get_status() == "failed"
+        assert self._get_status() == "failed"
+        assert mock_result.call_count == 2
