@@ -23,7 +23,6 @@ from django.core.management.base import BaseCommand
 from apigateway.biz.skill import (
     DECLARATION_FILE_PATTERN,
     SKILL_DECLARATIONS_DIR,
-    SKILL_RESOURCES_DIR,
     SkillSyncStatusEnum,
     sync_platform_skills,
 )
@@ -40,12 +39,6 @@ class Command(BaseCommand):
             type=Path,
             default=SKILL_DECLARATIONS_DIR,
             help="Directory of skill declaration YAML files.",
-        )
-        parser.add_argument(
-            "--resources-dir",
-            type=Path,
-            default=SKILL_RESOURCES_DIR,
-            help="Directory of resource snapshot YAML files, one file per gateway.",
         )
         parser.add_argument(
             "--name",
@@ -68,7 +61,6 @@ class Command(BaseCommand):
         name = options["name"]
         results = sync_platform_skills(
             declarations_dir,
-            options["resources_dir"],
             name=name or None,
             dry_run=options["dry_run"],
         )

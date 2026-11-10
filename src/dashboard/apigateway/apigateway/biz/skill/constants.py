@@ -41,7 +41,6 @@ SKILL_FILE_NAME = "SKILL.md"
 SKILL_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "skill"
 SKILL_TEMPLATES_DIR = SKILL_DATA_DIR / "templates"
 SKILL_DECLARATIONS_DIR = SKILL_DATA_DIR / "declarations"
-SKILL_RESOURCES_DIR = SKILL_DATA_DIR / "resources"
 SKILL_BODY_TEMPLATE_NAME = "SKILL.md.j2"
 
 

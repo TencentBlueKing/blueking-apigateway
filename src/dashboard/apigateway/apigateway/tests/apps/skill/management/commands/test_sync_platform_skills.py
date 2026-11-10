@@ -30,7 +30,6 @@ from apigateway.tests.biz.skill.conftest import (
     DECLARATIONS_DIR,
     FIXTURES_DIR,
     release_fixture_gateway,
-    write_snapshots,
 )
 
 pytestmark = pytest.mark.django_db
@@ -59,14 +58,14 @@ def declarations_dir(tmp_path):
 
 
 @pytest.fixture
-def resources_dir(tmp_path):
+def published_resources():
     resources_data = json.loads((FIXTURES_DIR / "resources.json").read_text(encoding="utf-8"))
-    return write_snapshots(tmp_path / "resources", release_fixture_gateway(resources_data, "jobv3-cloud"))
+    release_fixture_gateway(resources_data, "jobv3-cloud")
 
 
 class TestSyncPlatformSkillsCommand:
-    def test_sync(self, declarations_dir, resources_dir):
-        output = _call("--dir", str(declarations_dir), "--resources-dir", str(resources_dir))
+    def test_sync(self, declarations_dir, published_resources):
+        output = _call("--dir", str(declarations_dir))
 
         lines = output.splitlines()
         assert lines[0].startswith("[拒绝] broken：")
@@ -76,12 +75,10 @@ class TestSyncPlatformSkillsCommand:
         assert "changed metadata ids" not in output
         assert SkillMetadata.objects.filter(name="job-plan-run-and-log").exists()
 
-    def test_dry_run_and_name(self, declarations_dir, resources_dir):
+    def test_dry_run_and_name(self, declarations_dir, published_resources):
         output = _call(
             "--dir",
             str(declarations_dir),
-            "--resources-dir",
-            str(resources_dir),
             "--name",
             "job-plan-run-and-log",
             "--dry-run",
@@ -115,12 +112,10 @@ class TestSyncPlatformSkillsCommand:
         assert "changed metadata ids" not in output
         assert not SkillMetadata.objects.exists()
 
-    def test_name_not_found(self, declarations_dir, resources_dir):
+    def test_name_not_found(self, declarations_dir):
         output = _call(
             "--dir",
             str(declarations_dir),
-            "--resources-dir",
-            str(resources_dir),
             "--name",
             "missing-skill",
         )

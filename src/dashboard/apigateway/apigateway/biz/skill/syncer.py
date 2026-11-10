@@ -53,7 +53,6 @@ class SkillSyncResult:
 
 def sync_platform_skills(
     declarations_dir: Path,
-    resources_dir: Optional[Path] = None,
     name: Optional[str] = None,
     dry_run: bool = False,
 ) -> List[SkillSyncResult]:
@@ -62,7 +61,7 @@ def sync_platform_skills(
     if name:
         paths = [path for path in paths if path.stem == name]
 
-    provider = ReleasedResourceProvider(snapshot_dir=resources_dir)
+    provider = ReleasedResourceProvider()
     return [sync_platform_skill(path, provider, dry_run) for path in paths]
 
 
@@ -111,9 +110,14 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
     if validation.missing_resources:
         result.status = SkillSyncStatusEnum.SKIPPED_MISSING_RESOURCES.value
         result.reasons += [
-            f"{item.gateway}.{item.resource}（环境 {item.stage}）在当前发布版本中不存在，下次部署重试"
+            (
+                f"{item.gateway}.{item.resource}（环境 {item.stage}）不可编排："
+                "请检查网关和环境已启用、环境已发布、当前版本存在该资源，且已配置 OpenAPI 请求参数和响应参数；"
+                "下次部署重试"
+            )
             for item in validation.missing_resources
         ]
+        logger.warning("skip platform skill %s: %s", declaration.name, "；".join(result.reasons))
         return
     if validation.errors:
         result.status = SkillSyncStatusEnum.REJECTED.value

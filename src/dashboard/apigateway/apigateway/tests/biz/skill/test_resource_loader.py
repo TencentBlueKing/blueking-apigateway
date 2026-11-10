@@ -22,7 +22,7 @@ from apigateway.biz.skill.resource_definition import ResourceParam, ResponseFiel
 from apigateway.biz.skill.resource_loader import ReleasedResourceProvider
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Stage
-from apigateway.tests.biz.skill.conftest import release_resources, write_snapshots
+from apigateway.tests.biz.skill.conftest import release_resources
 
 pytestmark = pytest.mark.django_db
 
@@ -43,12 +43,6 @@ SCHEMA = {
             },
         }
     },
-}
-SNAPSHOT_RESOURCE = {
-    "gateway": "bk-sops",
-    "resource": "get_task_status",
-    "params": [{"name": "task_id", "in": "path", "type": "string", "required": True}],
-    "response": [{"field": "data.state", "type": "string"}],
 }
 
 
@@ -73,39 +67,40 @@ class TestReleasedResourceProvider:
         assert definition.warnings == []
         assert definition.errors == []
 
-    def test_no_schema_no_snapshot(self):
+    def test_no_schema(self):
         release_resources("bk-sops", "prod", [RESOURCE])
 
         definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
+        assert definition is None
+
+    @pytest.mark.parametrize(
+        "schema",
+        [
+            pytest.param({}, id="empty"),
+            pytest.param({"none_schema": True}, id="no-request-params-no-response"),
+            pytest.param({"parameters": SCHEMA["parameters"]}, id="request-only"),
+            pytest.param({"responses": SCHEMA["responses"]}, id="response-only"),
+            pytest.param(
+                {"parameters": SCHEMA["parameters"], "responses": {"204": {"description": "ok"}}},
+                id="response-without-fields",
+            ),
+        ],
+    )
+    def test_requires_request_and_response(self, schema):
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+
+    def test_declared_no_request_params_with_response(self):
+        schema = {"none_schema": True, "responses": SCHEMA["responses"]}
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
         assert definition.params == []
-        assert definition.warnings == []
-        assert definition.errors == ["bk-sops.get_task_status：资源无 schema、无快照，参数和响应字段无法核对"]
-
-    def test_snapshot_fills_missing_schema(self, tmp_path):
-        release_resources("bk-sops", "prod", [RESOURCE])
-        snapshot_dir = write_snapshots(tmp_path, [SNAPSHOT_RESOURCE])
-
-        definition = ReleasedResourceProvider(snapshot_dir=snapshot_dir).get_resource(
-            "bk-sops", "prod", "get_task_status"
-        )
-
-        assert definition.params == [ResourceParam(name="task_id", location="path", type="string", required=True)]
-        assert definition.responses == [ResponseField(field="data.state", type="string")]
-        assert definition.warnings == []
-
-    def test_snapshot_wins_over_schema_with_warning(self, tmp_path):
-        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
-        snapshot_dir = write_snapshots(tmp_path, [SNAPSHOT_RESOURCE])
-
-        definition = ReleasedResourceProvider(snapshot_dir=snapshot_dir).get_resource(
-            "bk-sops", "prod", "get_task_status"
-        )
-
-        assert definition.responses == [ResponseField(field="data.state", type="string")]
-        assert definition.warnings == [
-            "bk-sops.get_task_status：资源已有 schema，核对后删除 resources/bk-sops.yaml 里的这条快照"
-        ]
+        assert definition.responses == [ResponseField(field="result", type="boolean")]
+        assert definition.errors == []
 
     def test_not_public_warning(self):
         release_resources("bk-sops", "prod", [{**RESOURCE, "is_public": False}], schemas={"get_task_status": SCHEMA})
@@ -114,8 +109,7 @@ class TestReleasedResourceProvider:
 
         assert definition.warnings == ["bk-sops.get_task_status：资源未公开，调用方无法申请权限"]
 
-    @pytest.mark.parametrize("with_snapshot", [False, True])
-    def test_non_json_request_body_is_error(self, tmp_path, with_snapshot):
+    def test_non_json_request_body_is_error(self):
         schema = {
             "parameters": [{"name": "task_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
             "requestBody": {
@@ -123,13 +117,11 @@ class TestReleasedResourceProvider:
                     "multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string"}}}}
                 }
             },
+            "responses": SCHEMA["responses"],
         }
         release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
-        snapshot_dir = write_snapshots(tmp_path, [SNAPSHOT_RESOURCE]) if with_snapshot else None
 
-        definition = ReleasedResourceProvider(snapshot_dir=snapshot_dir).get_resource(
-            "bk-sops", "prod", "get_task_status"
-        )
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
         assert definition.warnings == []
         assert definition.errors == [

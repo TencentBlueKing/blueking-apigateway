@@ -56,9 +56,9 @@ class ResourceDefinition:
     resource_perm_required: bool = False
     params: List[ResourceParam] = field(default_factory=list)
     responses: List[ResponseField] = field(default_factory=list)
-    # 读取资源定义时发现的问题（如资源未公开、快照可删除），由校验原样输出
+    # 读取资源定义时发现的非阻断问题（如资源未公开），由校验原样输出
     warnings: List[str] = field(default_factory=list)
-    # 资源定义不能用来生成 Skill 的原因（如无 schema 也无快照、请求体不是 JSON）；
+    # 资源定义不能用来生成 Skill 的原因（如请求体不是 JSON）；
     # 由校验作为 error 输出，有值时字段级对照没有依据，跳过
     errors: List[str] = field(default_factory=list)
 

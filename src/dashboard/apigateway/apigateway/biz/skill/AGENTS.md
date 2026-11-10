@@ -15,7 +15,7 @@ runs from `bin/post_migrate`.
 | `declaration.py` | pydantic model of the declaration YAML; field rules and error messages |
 | `refs.py` | reference syntax: a whole-string `${{ inputs.<name> }}` or `${{ steps.<id>.outputs.<path> }}`; any other value is fixed |
 | `resource_definition.py` | `ResourceDefinition` and the `ResourceProvider` protocol |
-| `resource_loader.py` / `schema_converter.py` / `patch_snapshot.py` | definitions from the current release + OpenAPI schema, patched by resource patch snapshots |
+| `resource_loader.py` / `schema_converter.py` | definitions from the current release and its OpenAPI schema |
 | `validator.py` | cross-checks between the orchestration and resource definitions |
 | `renderer.py` | template context and the per-step OpenAPI snippet |
 | `writer.py` | one transactional publish: metadata, tags, config, version, relations |
@@ -35,16 +35,21 @@ runs from `bin/post_migrate`.
 
 - Built-in injection must not break deployment: one bad declaration only affects
   its own result, and the command exits 0. Missing resources skip the declaration
-  until the next deploy; do not partially write it.
+  until the next deploy; do not partially write it. A resource is unavailable
+  when its gateway or Stage is inactive, the Stage has no release, the released
+  version does not contain that standard resource, the resource is disabled in
+  that Stage, or its versioned OpenAPI schema does not define both request
+  parameters and response fields. `none_schema` (explicitly "no request
+  parameters") counts as defined request parameters; an imported `responses`
+  without fields does not count as a response definition. Log the skip so the
+  gateway owner can fix the source schema.
 - Parameter locations and types come only from the resource definition; nothing
   is guessed from the HTTP method, because a version is immutable once written.
-  The declaration is rejected when a referenced resource has neither an OpenAPI
-  schema nor a patch snapshot, when its request body is not `application/json`
-  (a snapshot cannot fix that: the body is always rendered as JSON), or when a
-  step maps a parameter missing from the definition. Resource-level problems go
-  in `ResourceDefinition.errors`; the validator reports them as errors and skips
-  field checks for that resource. The next deploy retries because nothing was
-  written.
+  The declaration is rejected when a referenced resource's request body is not
+  `application/json` (the body is always rendered as JSON), or when a step maps
+  a parameter missing from the definition. Resource-level problems go in
+  `ResourceDefinition.errors`; the validator reports them as errors and skips
+  field checks for that resource.
 - A version is immutable once written; the same version (case-insensitive) is
   skipped, not overwritten. A new version must be higher than the current one by
   `major.minor.patch` (pre-release and build suffixes are ignored), otherwise it
@@ -80,8 +85,8 @@ declaration covers a step `if`, polling and per-item calls described in text, fi
 values and write calls; rule tests
 mutate this one declaration. `fixtures/resources.json` is also the resource contract
 for every file in `data/skill/declarations/`: `test_shipped_declarations.py` publishes
-those resources, fills parameters and responses from patch snapshots, then validates
-and renders each shipped declaration. `errors` and warnings must be empty. For
+those resources with versioned OpenAPI schemas, then validates and renders each
+shipped declaration. `errors` and warnings must be empty. For
 bk-sops and devops the fixture records the parameters and response fields those
 declarations map; `task_id` is a path
 parameter and `X-DEVOPS-UID` is a header, and the other GET parameters are query,

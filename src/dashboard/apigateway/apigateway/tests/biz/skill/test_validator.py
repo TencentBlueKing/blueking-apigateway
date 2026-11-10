@@ -61,11 +61,11 @@ class TestValidateDeclaration:
         resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
         resource.params = []
         resource.responses = []
-        resource.errors.append("jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对")
+        resource.errors.append("jobv3-cloud.execute_job_plan：请求体不是 application/json")
 
         result = _validate(job_plan_data, static_provider)
 
-        assert result.errors == ["jobv3-cloud.execute_job_plan：资源无 schema、无快照，参数和响应字段无法核对"]
+        assert result.errors == ["jobv3-cloud.execute_job_plan：请求体不是 application/json"]
         assert result.warnings == []
 
     def test_param_not_in_definition_is_error(self, static_provider, job_plan_data):

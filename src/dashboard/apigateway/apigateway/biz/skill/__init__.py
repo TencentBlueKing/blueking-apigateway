@@ -16,14 +16,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .constants import SKILL_DECLARATIONS_DIR, SKILL_RESOURCES_DIR, SkillSyncStatusEnum
+from .constants import SKILL_DECLARATIONS_DIR, SkillSyncStatusEnum
 from .syncer import DECLARATION_FILE_PATTERN, sync_platform_skills
 
 __all__ = [
     # constant
     "DECLARATION_FILE_PATTERN",
     "SKILL_DECLARATIONS_DIR",
-    "SKILL_RESOURCES_DIR",
     # Enum
     "SkillSyncStatusEnum",
     # class

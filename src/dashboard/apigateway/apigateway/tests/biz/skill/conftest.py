@@ -93,36 +93,94 @@ def release_resources(
     return gateway
 
 
-def write_snapshots(directory: Path, resources: List[Dict[str, Any]]) -> Path:
-    """把 resources.json 格式的资源按网关写成补丁快照文件"""
-    by_gateway: Dict[str, List[Dict[str, Any]]] = {}
-    for item in resources:
-        by_gateway.setdefault(item["gateway"], []).append(
+def release_fixture_gateway(resources_data: dict, gateway_name: str, stage_name: str = "prod") -> List[dict]:
+    """把 resources.json 里该网关的资源及其 OpenAPI schema 发布到数据库。"""
+    resources = [item for item in resources_data["resources"] if item["gateway"] == gateway_name]
+    schemas = {item["resource"]: _fixture_resource_schema(item) for item in resources}
+    release_resources(gateway_name, stage_name, resources, schemas)
+    return resources
+
+
+def _fixture_resource_schema(resource: Dict[str, Any]) -> Dict[str, Any]:
+    parameters = []
+    body_properties = {}
+    body_required = []
+    for item in resource.get("params", []):
+        param_schema = _fixture_type_schema(item.get("type") or "")
+        if item.get("description"):
+            param_schema["description"] = item["description"]
+        if item["in"] == "body":
+            body_properties[item["name"]] = param_schema
+            if item.get("required"):
+                body_required.append(item["name"])
+            continue
+        parameters.append(
             {
-                "resource": item["resource"],
-                "reason": "网关未导入 schema",
-                "source_date": "2026-10-29",
-                "source": "测试数据",
-                "params": [
-                    {key: param[key] for key in ("name", "in", "type", "required", "description") if key in param}
-                    for param in item.get("params", [])
-                ],
-                "responses": item.get("response", []),
+                "name": item["name"],
+                "in": item["in"],
+                "required": bool(item.get("required")),
+                "description": item.get("description") or "",
+                "schema": param_schema,
             }
         )
-    directory.mkdir(parents=True, exist_ok=True)
-    for gateway, items in by_gateway.items():
-        (directory / f"{gateway}.yaml").write_text(
-            yaml.safe_dump({"gateway": gateway, "resources": items}, allow_unicode=True), encoding="utf-8"
-        )
-    return directory
+
+    schema: Dict[str, Any] = {"parameters": parameters}
+    if body_properties:
+        schema["requestBody"] = {
+            "required": bool(body_required),
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": body_properties,
+                        "required": body_required,
+                    }
+                }
+            },
+        }
+
+    response_schema: Dict[str, Any] = {"type": "object", "properties": {}}
+    for item in resource.get("response", []):
+        _add_fixture_response_field(response_schema, item)
+    if response_schema["properties"]:
+        schema["responses"] = {
+            "200": {
+                "description": "ok",
+                "content": {"application/json": {"schema": response_schema}},
+            }
+        }
+    return schema
 
 
-def release_fixture_gateway(resources_data: dict, gateway_name: str, stage_name: str = "prod") -> List[dict]:
-    """把 resources.json 里该网关的资源发布到数据库（不带 schema），返回这些资源"""
-    resources = [item for item in resources_data["resources"] if item["gateway"] == gateway_name]
-    release_resources(gateway_name, stage_name, resources)
-    return resources
+def _fixture_type_schema(type_text: str) -> Dict[str, Any]:
+    if type_text.startswith("array<") and type_text.endswith(">"):
+        return {"type": "array", "items": _fixture_type_schema(type_text[6:-1])}
+    if "|" in type_text:
+        return {"type": type_text.split("|")}
+    return {"type": type_text} if type_text else {}
+
+
+def _add_fixture_response_field(root: Dict[str, Any], field: Dict[str, Any]) -> None:
+    current = root
+    parts = field["field"].split(".")
+    for index, raw_part in enumerate(parts):
+        is_array = raw_part.endswith("[]")
+        name = raw_part[:-2] if is_array else raw_part
+        is_last = index == len(parts) - 1
+        properties = current.setdefault("properties", {})
+        if is_last:
+            value_schema = _fixture_type_schema(field.get("type") or "")
+            if field.get("description"):
+                value_schema["description"] = field["description"]
+            properties[name] = {"type": "array", "items": value_schema} if is_array else value_schema
+            return
+        if is_array:
+            item_schema = properties.setdefault(
+                name, {"type": "array", "items": {"type": "object", "properties": {}}}
+            )["items"]
+            current = item_schema
+        else:
+            current = properties.setdefault(name, {"type": "object", "properties": {}})
 
 
 @pytest.fixture

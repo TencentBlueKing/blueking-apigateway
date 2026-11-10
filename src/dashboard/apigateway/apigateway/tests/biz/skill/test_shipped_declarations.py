@@ -22,7 +22,7 @@ from apigateway.biz.skill.declaration import parse_declaration
 from apigateway.biz.skill.renderer import render_skill_body
 from apigateway.biz.skill.resource_loader import ReleasedResourceProvider
 from apigateway.biz.skill.validator import validate_declaration
-from apigateway.tests.biz.skill.conftest import release_fixture_gateway, write_snapshots
+from apigateway.tests.biz.skill.conftest import release_fixture_gateway
 
 pytestmark = pytest.mark.django_db
 
@@ -30,11 +30,11 @@ SHIPPED_NAMES = sorted(path.stem for path in SKILL_DECLARATIONS_DIR.glob("*.yaml
 
 
 @pytest.fixture
-def shipped_provider(tmp_path, resources_data):
-    """发布声明用到的网关资源，参数和响应用夹具快照补上，不走「无 schema、无快照」"""
+def shipped_provider(resources_data):
+    """发布声明用到的网关资源及其 OpenAPI schema。"""
     for gateway in sorted({item["gateway"] for item in resources_data["resources"]}):
         release_fixture_gateway(resources_data, gateway)
-    return ReleasedResourceProvider(snapshot_dir=write_snapshots(tmp_path / "resources", resources_data["resources"]))
+    return ReleasedResourceProvider()
 
 
 class TestShippedDeclarations:
