@@ -26,7 +26,7 @@ from apigateway.apps.permission.constants import OAUTH2_BUILTIN_APP_CODES
 class GatewayAppPermissionApplyPermission(BasePermission):
     """Only ordinary applications without an authenticated JWT user may apply."""
 
-    message = gettext_lazy("仅允许普通应用以应用身份申请权限，不支持用户身份及 personal/public 应用。")
+    message = gettext_lazy("仅允许普通应用以应用身份申请权限，不支持用户身份 access_token 及 personal/public 应用。")
 
     def has_permission(self, request, view):
         if request.app.app_code in OAUTH2_BUILTIN_APP_CODES:
