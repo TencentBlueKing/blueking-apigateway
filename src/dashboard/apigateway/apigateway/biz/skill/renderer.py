@@ -18,7 +18,7 @@
 """SKILL.md 正文渲染。
 
 章节、顺序和固定文案在 data/skill/templates/SKILL.md.j2；这里只计算模板用到的数据：
-接口清单、输入输出、步骤，以及每一步的 OpenAPI 3.1 片段。步骤的 if 和 description 原样写出。
+接口清单、输入输出、步骤，以及每一步的 YAML 调用说明。步骤的 if 和 description 原样写出。
 """
 
 import json
@@ -180,7 +180,7 @@ class _SkillBodyContext:
                     "title": title,
                     "condition": step.if_,
                     "description": step.description,
-                    "openapi": _render_operation(self.orchestration, step, resource),
+                    "call": _render_call(self.orchestration, step, resource),
                     "credentials": [
                         param.name
                         for param in resource.params
@@ -409,32 +409,33 @@ def _build_params(
     return params, body, body_required
 
 
-def _render_operation(orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition) -> str:
+def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition) -> str:
     params, body, body_required = _build_params(orchestration, step, resource)
-    operation: Dict[str, Any] = {
-        "operationId": step.resource,
-        "x-bk-gateway": step.gateway,
-        "x-bk-stage": step.stage,
+    call: Dict[str, Any] = {
+        "gateway_name": step.gateway,
+        "stage_name": step.stage,
+        "resource_name": step.resource,
+        "method": resource.method,
+        "path": resource.path,
     }
     if params:
-        operation["parameters"] = params
+        call["parameters"] = params
     if body:
         body_schema: Dict[str, Any] = {"type": "object"}
         if body_required:
             body_schema["required"] = _FlowList(body_required)
         body_schema["properties"] = body
-        operation["requestBody"] = {
+        call["requestBody"] = {
             "required": bool(body_required),
             "content": {"application/json": {"schema": body_schema}},
         }
     if resource.responses:
-        operation["responses"] = {
+        call["responses"] = {
             "200": {
                 "description": "已发布接口的响应字段",
                 "content": {"application/json": {"schema": _response_schema(resource)}},
             }
         }
 
-    doc = {"paths": {resource.path: {resource.method.lower(): operation}}}
-    text = yaml.dump(doc, Dumper=_OpenAPIDumper, allow_unicode=True, sort_keys=False, width=10000)
+    text = yaml.dump(call, Dumper=_OpenAPIDumper, allow_unicode=True, sort_keys=False, width=10000)
     return text.rstrip("\n")

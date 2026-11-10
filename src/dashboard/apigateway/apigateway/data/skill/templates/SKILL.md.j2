@@ -62,7 +62,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 {{ description }}
 
-每步写成一段兼容 OpenAPI 3.1 结构的 YAML 调用说明，但不是完整的 OpenAPI 文档。`paths` 下是路径和方法；`x-bk-gateway`、`x-bk-stage` 是 Skill 生成器根据步骤 `uses` 添加的扩展字段，分别表示目标网关和环境，不是接口 OpenAPI 原有的标准字段；片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。
+每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。
 {%- if notation.places %}
 参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
   {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}
@@ -95,7 +95,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 {{ step.description }}
 
 ```yaml
-{{ step.openapi }}
+{{ step.call }}
 ```
 {% if step.credentials or step.unmapped %}
 

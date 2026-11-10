@@ -45,13 +45,22 @@ class TestRenderSkillBody:
         assert result.warnings == []
 
     @pytest.mark.parametrize("name", GOLDEN_NAMES)
-    def test_openapi_snippets_are_valid(self, static_provider, name):
+    def test_openapi_sections_are_valid(self, static_provider, name):
         blocks = YAML_BLOCK_PATTERN.findall(_render(name, static_provider))
 
         assert blocks
         for _, block in blocks:
-            snippet = yaml.safe_load(textwrap.dedent(block))
-            validate({"openapi": "3.1.0", "info": {"title": name, "version": "1.0.0"}, **snippet})
+            call = yaml.safe_load(textwrap.dedent(block))
+            assert all(call[key] for key in ("gateway_name", "stage_name", "resource_name", "method", "path"))
+
+            operation = {key: call[key] for key in ("parameters", "requestBody", "responses") if key in call}
+            validate(
+                {
+                    "openapi": "3.1.0",
+                    "info": {"title": name, "version": "1.0.0"},
+                    "paths": {call["path"]: {call["method"].lower(): operation}},
+                }
+            )
 
     def test_no_interface_available_column(self, static_provider):
         body = _render("job-plan-run-and-log", static_provider)

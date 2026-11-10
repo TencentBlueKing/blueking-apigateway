@@ -54,7 +54,7 @@
 
 run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
 
-每步写成一段兼容 OpenAPI 3.1 结构的 YAML 调用说明，但不是完整的 OpenAPI 文档。`paths` 下是路径和方法；`x-bk-gateway`、`x-bk-stage` 是 Skill 生成器根据步骤 `uses` 添加的扩展字段，分别表示目标网关和环境，不是接口 OpenAPI 原有的标准字段；片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
+每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
 
 取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传；没有 `x-from`、`x-value` 的参数按该步说明取值。
 
@@ -65,55 +65,54 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
    执行方案。不传已弃用的 `bk_biz_id`。
 
    ```yaml
-   paths:
-     /api/v3/execute_job_plan:
-       post:
-         operationId: execute_job_plan
-         x-bk-gateway: jobv3-cloud
-         x-bk-stage: prod
-         requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
+   gateway_name: jobv3-cloud
+   stage_name: prod
+   resource_name: execute_job_plan
+   method: POST
+   path: /api/v3/execute_job_plan
+   requestBody:
+     required: true
+     content:
+       application/json:
+         schema:
+           type: object
+           required: [bk_scope_type, bk_scope_id, job_plan_id]
+           properties:
+             bk_scope_type:
+               type: string
+               description: 资源范围类型：biz 业务，biz_set 业务集
+               x-from: ${{ inputs.bk_scope_type }}
+             bk_scope_id:
+               type: string
+               description: 资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID
+               x-from: ${{ inputs.bk_scope_id }}
+             job_plan_id:
+               type: integer
+               description: 作业执行方案 ID
+               x-from: ${{ inputs.job_plan_id }}
+             global_var_list:
+               type: array
+               items: {type: object}
+               description: 全局变量。元素字段：id 或 name 二选一作为标识；value 为字符、密码、数组、命名空间变量值；server 为主机变量值（host_id_list / ip_list / dynamic_group_list / topo_node_list）。未传的变量用方案默认值
+               x-from: ${{ inputs.global_var_list }}
+               x-omit-if-unset: true
+   responses:
+     '200':
+       description: 已发布接口的响应字段
+       content:
+         application/json:
+           schema:
+             type: object
+             properties:
+               result: {type: boolean, description: 请求是否成功}
+               code: {type: integer, description: 错误码，0 表示成功，大于 0 表示失败}
+               message: {type: string, description: 失败时的错误信息}
+               data:
                  type: object
-                 required: [bk_scope_type, bk_scope_id, job_plan_id]
                  properties:
-                   bk_scope_type:
-                     type: string
-                     description: 资源范围类型：biz 业务，biz_set 业务集
-                     x-from: ${{ inputs.bk_scope_type }}
-                   bk_scope_id:
-                     type: string
-                     description: 资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID
-                     x-from: ${{ inputs.bk_scope_id }}
-                   job_plan_id:
-                     type: integer
-                     description: 作业执行方案 ID
-                     x-from: ${{ inputs.job_plan_id }}
-                   global_var_list:
-                     type: array
-                     items: {type: object}
-                     description: 全局变量。元素字段：id 或 name 二选一作为标识；value 为字符、密码、数组、命名空间变量值；server 为主机变量值（host_id_list / ip_list / dynamic_group_list / topo_node_list）。未传的变量用方案默认值
-                     x-from: ${{ inputs.global_var_list }}
-                     x-omit-if-unset: true
-         responses:
-           '200':
-             description: 已发布接口的响应字段
-             content:
-               application/json:
-                 schema:
-                   type: object
-                   properties:
-                     result: {type: boolean, description: 请求是否成功}
-                     code: {type: integer, description: 错误码，0 表示成功，大于 0 表示失败}
-                     message: {type: string, description: 失败时的错误信息}
-                     data:
-                       type: object
-                       properties:
-                         job_instance_id: {type: integer, description: 作业实例 ID}
-                         job_instance_name: {type: string, description: 作业实例名称}
-                     permission: {type: object, description: 权限信息，无权限时返回}
+                   job_instance_id: {type: integer, description: 作业实例 ID}
+                   job_instance_name: {type: string, description: 作业实例名称}
+               permission: {type: object, description: 权限信息，无权限时返回}
    ```
 
 2. wait-result / get_job_instance_status：轮询作业状态
@@ -121,76 +120,75 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
    每 5 秒查一次，最多 120 次（约 10 分钟）；`data.finished` 为 true 时结束。`result` 为 false，或 `data.job_instance.status` 为 7（等待用户）时立即停止：状态为 7 时 `finished` 不会变 true，按「异常处理」告诉用户。`return_ip_result=true` 用于拿到每台主机的结果。到达次数上限仍未结束时，返回 `job_instance_id` 和当前状态。
 
    ```yaml
-   paths:
-     /api/v3/get_job_instance_status:
-       get:
-         operationId: get_job_instance_status
-         x-bk-gateway: jobv3-cloud
-         x-bk-stage: prod
-         parameters:
-           - name: bk_scope_type
-             in: query
-             required: true
-             description: 资源范围类型：biz 业务，biz_set 业务集
-             schema: {type: string}
-             x-from: ${{ inputs.bk_scope_type }}
-           - name: bk_scope_id
-             in: query
-             required: true
-             description: 资源范围 ID
-             schema: {type: string}
-             x-from: ${{ inputs.bk_scope_id }}
-           - name: job_instance_id
-             in: query
-             required: true
-             description: 作业实例 ID
-             schema: {type: integer}
-             x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}
-           - name: return_ip_result
-             in: query
-             description: 是否返回每台主机的执行结果（step_ip_result_list），默认 false
-             schema: {type: boolean}
-             x-value: true
-         responses:
-           '200':
-             description: 已发布接口的响应字段
-             content:
-               application/json:
-                 schema:
-                   type: object
-                   properties:
-                     result: {type: boolean, description: 请求是否成功}
-                     code: {type: integer, description: 错误码，0 表示成功}
-                     message: {type: string, description: 失败时的错误信息}
-                     data:
+   gateway_name: jobv3-cloud
+   stage_name: prod
+   resource_name: get_job_instance_status
+   method: GET
+   path: /api/v3/get_job_instance_status
+   parameters:
+     - name: bk_scope_type
+       in: query
+       required: true
+       description: 资源范围类型：biz 业务，biz_set 业务集
+       schema: {type: string}
+       x-from: ${{ inputs.bk_scope_type }}
+     - name: bk_scope_id
+       in: query
+       required: true
+       description: 资源范围 ID
+       schema: {type: string}
+       x-from: ${{ inputs.bk_scope_id }}
+     - name: job_instance_id
+       in: query
+       required: true
+       description: 作业实例 ID
+       schema: {type: integer}
+       x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}
+     - name: return_ip_result
+       in: query
+       description: 是否返回每台主机的执行结果（step_ip_result_list），默认 false
+       schema: {type: boolean}
+       x-value: true
+   responses:
+     '200':
+       description: 已发布接口的响应字段
+       content:
+         application/json:
+           schema:
+             type: object
+             properties:
+               result: {type: boolean, description: 请求是否成功}
+               code: {type: integer, description: 错误码，0 表示成功}
+               message: {type: string, description: 失败时的错误信息}
+               data:
+                 type: object
+                 properties:
+                   finished: {type: boolean, description: 作业是否结束}
+                   job_instance:
+                     type: object
+                     properties:
+                       status: {type: integer, description: 作业状态：1 未执行，2 正在执行，3 执行成功，4 执行失败，5 跳过，6 忽略错误，7 等待用户，8 手动结束，9 状态异常，10 强制终止中，11 强制终止成功}
+                       name: {type: string, description: 作业实例名称}
+                       total_time: {type: integer, description: 总耗时，毫秒}
+                   step_instance_list:
+                     type: array
+                     items:
                        type: object
                        properties:
-                         finished: {type: boolean, description: 作业是否结束}
-                         job_instance:
-                           type: object
-                           properties:
-                             status: {type: integer, description: 作业状态：1 未执行，2 正在执行，3 执行成功，4 执行失败，5 跳过，6 忽略错误，7 等待用户，8 手动结束，9 状态异常，10 强制终止中，11 强制终止成功}
-                             name: {type: string, description: 作业实例名称}
-                             total_time: {type: integer, description: 总耗时，毫秒}
-                         step_instance_list:
+                         step_instance_id: {type: integer, description: 步骤实例 ID}
+                         name: {type: string, description: 步骤名称}
+                         type: {type: integer, description: 步骤类型：1 脚本，2 文件，4 SQL}
+                         status: {type: integer, description: 步骤状态，取值同作业状态，另有 12 强制终止失败}
+                         step_ip_result_list:
                            type: array
                            items:
                              type: object
                              properties:
-                               step_instance_id: {type: integer, description: 步骤实例 ID}
-                               name: {type: string, description: 步骤名称}
-                               type: {type: integer, description: 步骤类型：1 脚本，2 文件，4 SQL}
-                               status: {type: integer, description: 步骤状态，取值同作业状态，另有 12 强制终止失败}
-                               step_ip_result_list:
-                                 type: array
-                                 items:
-                                   type: object
-                                   properties:
-                                     bk_host_id: {type: integer, description: 主机 ID}
-                                     ip: {type: string, description: 主机 IP}
-                                     status: {type: integer, description: 主机执行状态：1 Agent 异常，5 等待执行，7 正在执行，9 执行成功，11 执行失败，12 任务下发失败，403 强制终止成功，404 强制终止失败}
-                                     exit_code: {type: integer, description: 脚本退出码}
-                                     error_code: {type: integer, description: 主机任务状态码，见错误码}
+                               bk_host_id: {type: integer, description: 主机 ID}
+                               ip: {type: string, description: 主机 IP}
+                               status: {type: integer, description: 主机执行状态：1 Agent 异常，5 等待执行，7 正在执行，9 执行成功，11 执行失败，12 任务下发失败，403 强制终止成功，404 强制终止失败}
+                               exit_code: {type: integer, description: 脚本退出码}
+                               error_code: {type: integer, description: 主机任务状态码，见错误码}
    ```
 
 3. collect-log / batch_get_job_instance_ip_log：拉取失败主机日志
@@ -200,74 +198,73 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
    对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
 
    ```yaml
-   paths:
-     /api/v3/batch_get_job_instance_ip_log:
-       post:
-         operationId: batch_get_job_instance_ip_log
-         x-bk-gateway: jobv3-cloud
-         x-bk-stage: prod
-         requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
+   gateway_name: jobv3-cloud
+   stage_name: prod
+   resource_name: batch_get_job_instance_ip_log
+   method: POST
+   path: /api/v3/batch_get_job_instance_ip_log
+   requestBody:
+     required: true
+     content:
+       application/json:
+         schema:
+           type: object
+           required: [bk_scope_type, bk_scope_id, job_instance_id, step_instance_id]
+           properties:
+             bk_scope_type:
+               type: string
+               description: 资源范围类型：biz 业务，biz_set 业务集
+               x-from: ${{ inputs.bk_scope_type }}
+             bk_scope_id:
+               type: string
+               description: 资源范围 ID
+               x-from: ${{ inputs.bk_scope_id }}
+             job_instance_id:
+               type: integer
+               description: 作业实例 ID
+               x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}
+             step_instance_id:
+               type: integer
+               description: 步骤实例 ID
+   responses:
+     '200':
+       description: 已发布接口的响应字段
+       content:
+         application/json:
+           schema:
+             type: object
+             properties:
+               result: {type: boolean, description: 请求是否成功}
+               code: {type: integer, description: 错误码，0 表示成功}
+               message: {type: string, description: 失败时的错误信息}
+               data:
                  type: object
-                 required: [bk_scope_type, bk_scope_id, job_instance_id, step_instance_id]
                  properties:
-                   bk_scope_type:
-                     type: string
-                     description: 资源范围类型：biz 业务，biz_set 业务集
-                     x-from: ${{ inputs.bk_scope_type }}
-                   bk_scope_id:
-                     type: string
-                     description: 资源范围 ID
-                     x-from: ${{ inputs.bk_scope_id }}
-                   job_instance_id:
-                     type: integer
-                     description: 作业实例 ID
-                     x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}
-                   step_instance_id:
-                     type: integer
-                     description: 步骤实例 ID
-         responses:
-           '200':
-             description: 已发布接口的响应字段
-             content:
-               application/json:
-                 schema:
-                   type: object
-                   properties:
-                     result: {type: boolean, description: 请求是否成功}
-                     code: {type: integer, description: 错误码，0 表示成功}
-                     message: {type: string, description: 失败时的错误信息}
-                     data:
+                   log_type: {type: integer, description: 日志类型：1 脚本执行，2 文件分发}
+                   script_task_logs:
+                     type: array
+                     items:
                        type: object
                        properties:
-                         log_type: {type: integer, description: 日志类型：1 脚本执行，2 文件分发}
-                         script_task_logs:
+                         bk_host_id: {type: integer, description: 主机 ID}
+                         ip: {type: string, description: 主机 IP}
+                         log_content: {type: string, description: 脚本执行日志}
+                   file_task_logs:
+                     type: array
+                     items:
+                       type: object
+                       properties:
+                         bk_host_id: {type: integer, description: 主机 ID}
+                         file_logs:
                            type: array
                            items:
                              type: object
                              properties:
-                               bk_host_id: {type: integer, description: 主机 ID}
-                               ip: {type: string, description: 主机 IP}
-                               log_content: {type: string, description: 脚本执行日志}
-                         file_task_logs:
-                           type: array
-                           items:
-                             type: object
-                             properties:
-                               bk_host_id: {type: integer, description: 主机 ID}
-                               file_logs:
-                                 type: array
-                                 items:
-                                   type: object
-                                   properties:
-                                     mode: {type: integer, description: 0 上传，1 下载}
-                                     src_path: {type: string, description: 源文件路径}
-                                     dest_path: {type: string, description: 目标路径，mode=1 时有值}
-                                     status: {type: integer, description: 1 等待开始，2 上传中，3 下载中，4 成功，5 失败}
-                                     log_content: {type: string, description: 文件分发日志}
+                               mode: {type: integer, description: 0 上传，1 下载}
+                               src_path: {type: string, description: 源文件路径}
+                               dest_path: {type: string, description: 目标路径，mode=1 时有值}
+                               status: {type: integer, description: 1 等待开始，2 上传中，3 下载中，4 成功，5 失败}
+                               log_content: {type: string, description: 文件分发日志}
    ```
 
    资源定义中必填但未映射：`step_instance_id`，按本步说明处理。

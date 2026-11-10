@@ -4,7 +4,7 @@
 
 ## 参数放哪
 
-执行步骤里每次调用是一段兼容 OpenAPI 3.1 结构的 YAML 调用说明，不是完整的 OpenAPI 文档。`paths` 下的键是路径，再下一层是方法。`x-bk-gateway`、`x-bk-stage` 是 Skill 生成器根据步骤 `uses` 添加的扩展字段，分别表示目标网关和环境；它们不是接口 OpenAPI 原有的标准字段，CLI 也不会自动读取。
+执行步骤里每次调用是一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 是 Skill 生成器根据步骤 `uses` 和资源定义写入的调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构，但整段说明不是 OpenAPI 文档。
 
 - `parameters` 按 `in` 放：`path` 替换路径里的 `{参数名}`，`query` 放查询串，`header` 放请求头。
 - `requestBody` 的 `properties` 组成 JSON 正文。没有 `requestBody` 就不发正文。
@@ -29,7 +29,7 @@ bk-cli api <gateway> <METHOD> '<path>' --stage <stage> \
 
 以上为参数格式示例，请按接口定义替换；不需要的选项应删除。
 
-- `<METHOD>`、`<path>` 使用接口定义中的方法和路径。片段中的 `x-bk-gateway`、`x-bk-stage` 分别作为 `<gateway>`、`<stage>`；这是生成片段提供的信息，不是 CLI 自动读取的字段。
+- `<gateway>`、`<stage>`、`<METHOD>`、`<path>` 分别使用调用说明中的 `gateway_name`、`stage_name`、`method`、`path`；这些值需要代入命令，CLI 不会自动读取调用说明。
 - 路径中的 `{参数名}` 使用 `--path` 替换，键名必须与占位符一致；路径已填入实际值时，无需传 `--path`。
 - 查询参数使用 `--query`；请求头使用 `--header '名字:取值'`，多个请求头重复传入该选项。
 - JSON 请求体使用 `--body`，保持接口要求的完整结构，也可使用 `--body @body.json`。
