@@ -62,7 +62,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 {{ description }}
 
-每步写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 只列要读的响应字段。
+每步写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。
 {%- if notation.places %}
 参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
   {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}

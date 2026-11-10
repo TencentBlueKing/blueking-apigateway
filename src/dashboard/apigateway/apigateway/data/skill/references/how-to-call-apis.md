@@ -12,7 +12,7 @@
 - `x-value` 是固定值，按 JSON 原样传。
 - `x-from: ${{ inputs.<名> }}` 换成用户输入。`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 换成该步骤响应体里的值。`[0]` 是数组第一个元素，`[]` 是每个元素的该字段组成的数组。
 - 没有 `x-from`、`x-value` 的参数按该步的说明取值，例如逐个调用时取当前元素的字段。
-- `responses` 只列要读的字段，字段路径相对响应体，见「返回内容」。
+- `responses` 是该接口已发布 OpenAPI 的响应字段，字段路径相对响应体，见「返回内容」。
 - 使用 bk-cli 时，query 不要自己做 URL 编码，bk-cli 会编码。不使用 bk-cli 时，query 里的保留字符要编码；产物下载接口的 `path` 就是这种值。
 - `access_token`、`bk_token`、`bk_ticket`、`bk_app_secret` 不写进执行步骤的请求参数，不向用户要，也不出现在回复里。使用 bk-cli 时由登录态注入。不使用 bk-cli 时放进请求头 `X-Bkapi-Authorization`。某个接口的文档仍把 `access_token` 列为必填 query 时，把同一个用户 access token 放进 query，仍然不要写进回复。
 

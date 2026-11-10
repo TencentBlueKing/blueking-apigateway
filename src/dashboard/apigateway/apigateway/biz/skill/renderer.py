@@ -133,7 +133,7 @@ class _SkillBodyContext:
             "description": orchestration.description,
             "guide": orchestration.guide,
             "resources": list(self.resources.values()),
-            "inputs": [{"name": name, **item.model_dump()} for name, item in orchestration.inputs.items()],
+            "inputs": self._inputs(),
             "outputs": [
                 {"name": name, "type": item.type, "description": item.description, "source": item.value}
                 for name, item in orchestration.outputs.items()
@@ -143,8 +143,28 @@ class _SkillBodyContext:
             "has_write": any(resource.method in WRITE_METHODS for resource in self.resources.values()),
         }
 
+    def _inputs(self) -> List[Dict[str, Any]]:
+        """保留声明里的编排说明，并追加绑定参数在 OpenAPI 中的完整说明。"""
+        descriptions: Dict[str, List[str]] = {name: [] for name in self.orchestration.inputs}
+        for step in self.orchestration.steps:
+            resource = self.resources[step.key]
+            for param_name, value in step.with_.items():
+                ref = parse_ref(value)
+                if ref.kind != "input":
+                    continue
+                param = _get_param(resource, param_name)
+                if param.description and param.description not in descriptions[ref.name]:
+                    descriptions[ref.name].append(param.description)
+
+        inputs = []
+        for name, item in self.orchestration.inputs.items():
+            data = {"name": name, **item.model_dump()}
+            if descriptions[name]:
+                data["description"] = f"{item.description}；OpenAPI 参数说明：{'；'.join(descriptions[name])}"
+            inputs.append(data)
+        return inputs
+
     def _steps(self) -> List[Dict[str, Any]]:
-        used_fields = _used_response_fields(self.orchestration)
         steps = []
         for index, step in enumerate(self.orchestration.steps, 1):
             resource = self.resources[step.key]
@@ -160,7 +180,7 @@ class _SkillBodyContext:
                     "title": title,
                     "condition": step.if_,
                     "description": step.description,
-                    "openapi": _render_operation(self.orchestration, step, resource, used_fields.get(step.id, [])),
+                    "openapi": _render_operation(self.orchestration, step, resource),
                     "credentials": [
                         param.name
                         for param in resource.params
@@ -209,28 +229,6 @@ def _unmapped_params(step: SkillStep, resource: ResourceDefinition) -> List[str]
     ]
 
 
-def _used_response_fields(orchestration: SkillOrchestration) -> Dict[str, List[str]]:
-    """每一步要读的响应字段：被后续 with、outputs 直接引用的字段；列了子字段时不再单独列它的前缀"""
-    used: Dict[str, List[str]] = {}
-    values = [value for step in orchestration.steps for value in step.with_.values()]
-    values += [output.value for output in orchestration.outputs.values()]
-    for value in values:
-        parsed = parse_ref(value)
-        if parsed.kind == "step":
-            paths = used.setdefault(parsed.step, [])
-            if parsed.path not in paths:
-                paths.append(parsed.path)
-
-    for key, paths in used.items():
-        normed = [norm_path(path) for path in paths]
-        used[key] = [
-            path
-            for path, current in zip(paths, normed)
-            if not any(other != current and other.startswith((current + ".", current + "[")) for other in normed)
-        ]
-    return used
-
-
 # ---------- OpenAPI 片段 ----------
 
 
@@ -276,32 +274,90 @@ def _binding_fields(orchestration: SkillOrchestration, value: Any) -> Dict[str, 
     return fields
 
 
-def _response_schema(resource: ResourceDefinition, paths: List[str]) -> Dict[str, Any]:
-    """把要读的响应字段路径（data.records[0].id）还原成嵌套的 JSON Schema，只含这些字段"""
-    root: Dict[str, Any] = {"type": "object", "properties": {}}
-    for path in paths:
-        parts = norm_path(path).split(".")
-        node, sofar = root, ""
-        for index, segment in enumerate(parts):
-            is_array = segment.endswith("[]")
-            name = segment[:-2] if is_array else segment
-            sofar = f"{sofar}.{segment}" if sofar else segment
-            props = node.setdefault("properties", {})
-            if index == len(parts) - 1 and not is_array:
-                meta = resource.get_response_field(sofar)
-                if meta:
-                    props[name] = _Flow(_type_schema(meta.type), description=meta.description)
-                elif resource.has_response_array(sofar):
-                    props[name] = _Flow(type="array")
-                else:
-                    props[name] = _Flow(type="object")
+class _ResponseNode:
+    """把扁平的响应字段路径还原成嵌套 schema，父字段说明和子字段都保留。"""
+
+    def __init__(self) -> None:
+        self.type = ""
+        self.description = ""
+        self.properties: Dict[str, _ResponseNode] = {}
+        self.item: Optional[_ResponseNode] = None
+
+    def place(self, path: str, type_text: str, description: str) -> None:
+        node = self
+        parts = [part for part in norm_path(path).split(".") if part]
+        for index, part in enumerate(parts):
+            is_array = part.endswith("[]")
+            name = part[:-2] if is_array else part
+            child = node.properties.setdefault(name, _ResponseNode())
+            if is_array:
+                item = child._ensure_array()
+                if index == len(parts) - 1:
+                    child.apply(type_text, description)
+                node = item
                 continue
-            child = props.get(name)
-            if child is None or isinstance(child, _Flow):
-                child = {"type": "array", "items": {"type": "object"}} if is_array else {"type": "object"}
-                props[name] = child
-            node = child["items"] if is_array else child
-    return root
+            if index == len(parts) - 1:
+                child.apply(type_text, description)
+                return
+            if not child.type:
+                child.type = "object"
+            node = child
+
+    def apply(self, type_text: str, description: str) -> None:
+        if description:
+            self.description = description
+        if type_text == "array" or type_text.startswith("array<"):
+            item = self._ensure_array()
+            inner = type_text[6:-1] if type_text.startswith("array<") and type_text.endswith(">") else ""
+            if inner:
+                item.apply(inner, "")
+            elif not item.type and not item.properties:
+                item.type = "object"
+            return
+        if self.properties or self.item is not None:
+            if not self.type:
+                self.type = "object"
+            return
+        self.type = type_text or "object"
+
+    def to_schema(self) -> Any:
+        if self.item is not None or self.type == "array":
+            items = self.item.to_schema() if self.item is not None else _Flow(type="object")
+            if isinstance(items, dict) and "properties" in items:
+                schema: Dict[str, Any] = {"type": "array"}
+                if self.description:
+                    schema["description"] = self.description
+                schema["items"] = items
+                return schema
+            schema = _Flow(type="array", items=items)
+            if self.description:
+                schema["description"] = self.description
+            return schema
+        if self.properties:
+            schema = {"type": self.type or "object"}
+            if self.description:
+                schema["description"] = self.description
+            schema["properties"] = {name: child.to_schema() for name, child in self.properties.items()}
+            return schema
+        schema = _type_schema(self.type or "object")
+        if self.description:
+            schema["description"] = self.description
+        return schema
+
+    def _ensure_array(self) -> _ResponseNode:
+        self.type = "array"
+        if self.item is None:
+            self.item = _ResponseNode()
+        return self.item
+
+
+def _response_schema(resource: ResourceDefinition) -> Dict[str, Any]:
+    """用资源定义里的全部响应字段还原 JSON Schema。"""
+    root = _ResponseNode()
+    root.type = "object"
+    for item in resource.responses:
+        root.place(item.field, item.type, item.description)
+    return root.to_schema()
 
 
 def _get_param(resource: ResourceDefinition, name: str) -> ResourceParam:
@@ -353,9 +409,7 @@ def _build_params(
     return params, body, body_required
 
 
-def _render_operation(
-    orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition, response_paths: List[str]
-) -> str:
+def _render_operation(orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition) -> str:
     params, body, body_required = _build_params(orchestration, step, resource)
     operation: Dict[str, Any] = {
         "operationId": step.resource,
@@ -373,11 +427,11 @@ def _render_operation(
             "required": bool(body_required),
             "content": {"application/json": {"schema": body_schema}},
         }
-    if response_paths:
+    if resource.responses:
         operation["responses"] = {
             "200": {
-                "description": "只列本 Skill 要读的字段",
-                "content": {"application/json": {"schema": _response_schema(resource, response_paths)}},
+                "description": "已发布接口的响应字段",
+                "content": {"application/json": {"schema": _response_schema(resource)}},
             }
         }
 

@@ -58,6 +58,31 @@ class TestRenderSkillBody:
 
         assert "可用" not in body.split("## 输入", 1)[0]
 
+    def test_input_description_keeps_declaration_and_openapi_contents(self, resources_data):
+        data = load_declaration_data("job-plan-run-and-log")
+        data["orchestration"]["inputs"]["bk_scope_id"]["description"] = "声明中的编排说明"
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "execute_job_plan":
+                resource["params"][1]["description"] = "完整 OpenAPI 说明，包含枚举 A | B 和其他内容"
+            elif resource["resource"] == "get_job_instance_status":
+                resource["params"][1]["description"] = "第二个接口的不同说明"
+
+        body = render_skill_body(
+            parse_declaration(data),
+            StaticResourceProvider.from_dict(resources_data),
+        ).body
+        input_section = body.split("## 输入", 1)[1].split("## 输出", 1)[0]
+
+        assert (
+            "声明中的编排说明；OpenAPI 参数说明：完整 OpenAPI 说明，包含枚举 A \\| B 和其他内容；"
+            "第二个接口的不同说明；资源范围 ID"
+        ) in input_section
+
+    def test_duplicate_openapi_input_descriptions_are_appended_once(self, static_provider):
+        input_section = _render("job-plan-run-and-log", static_provider).split("## 输入", 1)[1].split("## 输出", 1)[0]
+
+        assert input_section.count("OpenAPI 参数说明：资源范围类型：biz 业务，biz_set 业务集") == 1
+
     def test_write_mode(self, static_provider, resources_data):
         assert "会改动线上状态的接口" in _render("job-plan-run-and-log", static_provider)
 
@@ -111,12 +136,27 @@ class TestRenderSkillBody:
         assert "没有 `x-from`、`x-value` 的参数按该步说明取值" in body
         assert "执行条件" not in body
 
-    def test_responses_only_referenced_fields(self, static_provider):
+    def test_responses_keep_unreferenced_schema(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
         outputs = data["orchestration"]["outputs"]
         data["orchestration"]["outputs"] = {"job_instance_id": outputs["job_instance_id"]}
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "get_job_instance_status":
+                resource["response"].append(
+                    {
+                        "field": "data.step_instance_list",
+                        "type": "array<object>",
+                        "description": "步骤列表，含状态码 12 强制终止失败和其他说明",
+                    }
+                )
 
-        body = render_skill_body(parse_declaration(data), static_provider).body
+        body = render_skill_body(
+            parse_declaration(data),
+            StaticResourceProvider.from_dict(resources_data),
+        ).body
         wait_result = body.split("2. wait-result", 1)[1].split("3. collect-log", 1)[0]
 
-        assert "responses" not in wait_result
+        assert "已发布接口的响应字段" in wait_result
+        assert "作业是否结束" in wait_result
+        assert "步骤列表，含状态码 12 强制终止失败和其他说明" in wait_result
+        assert "step_ip_result_list:" in wait_result
