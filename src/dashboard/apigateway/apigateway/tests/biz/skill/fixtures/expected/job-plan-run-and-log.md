@@ -12,7 +12,7 @@
 
 ## 接口清单
 
-每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 OpenAPI 片段。
+每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 YAML 调用说明。
 
 | 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -54,7 +54,7 @@
 
 run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
 
-每步写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
+每步写成一段兼容 OpenAPI 3.1 结构的 YAML 调用说明，但不是完整的 OpenAPI 文档。`paths` 下是路径和方法；`x-bk-gateway`、`x-bk-stage` 是 Skill 生成器根据步骤 `uses` 添加的扩展字段，分别表示目标网关和环境，不是接口 OpenAPI 原有的标准字段；片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
 
 取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传；没有 `x-from`、`x-value` 的参数按该步说明取值。
 

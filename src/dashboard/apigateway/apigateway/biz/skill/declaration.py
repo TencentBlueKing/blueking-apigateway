@@ -45,13 +45,12 @@ from apigateway.apps.skill.constants import (
     SKILL_VERSION_MAX_LENGTH,
 )
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, SEMVER_PATTERN
-from apigateway.core.constants import STAGE_NAME_PATTERN
+from apigateway.core.constants import RESOURCE_NAME_PATTERN, STAGE_NAME_PATTERN
 
 from .constants import (
     SKILL_DISPLAY_NAME_EN_PATTERN,
     SKILL_DISPLAY_NAME_PATTERN,
     SKILL_NAME_PATTERN,
-    SKILL_RESOURCE_NAME_PATTERN,
     SKILL_STEP_NAME_PATTERN,
 )
 from .refs import INPUT_NAME, parse_ref
@@ -128,7 +127,7 @@ def split_uses(uses: str) -> Tuple[str, str, str]:
     gateway, resource, stage = match.groups()
     if not GATEWAY_NAME_PATTERN.fullmatch(gateway):
         raise ValueError(f"网关名不合规：{gateway}")
-    if not SKILL_RESOURCE_NAME_PATTERN.fullmatch(resource):
+    if not RESOURCE_NAME_PATTERN.fullmatch(resource):
         raise ValueError(f"资源名不合规：{resource}")
     if not STAGE_NAME_PATTERN.fullmatch(stage):
         raise ValueError(f"环境名不合规：{stage}")

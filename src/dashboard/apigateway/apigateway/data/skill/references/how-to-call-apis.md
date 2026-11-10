@@ -4,7 +4,7 @@
 
 ## 参数放哪
 
-执行步骤里每次调用是一段 OpenAPI 3.1 片段。`paths` 下的键是路径，再下一层是方法；`x-bk-gateway`、`x-bk-stage` 是网关和环境。
+执行步骤里每次调用是一段兼容 OpenAPI 3.1 结构的 YAML 调用说明，不是完整的 OpenAPI 文档。`paths` 下的键是路径，再下一层是方法。`x-bk-gateway`、`x-bk-stage` 是 Skill 生成器根据步骤 `uses` 添加的扩展字段，分别表示目标网关和环境；它们不是接口 OpenAPI 原有的标准字段，CLI 也不会自动读取。
 
 - `parameters` 按 `in` 放：`path` 替换路径里的 `{参数名}`，`query` 放查询串，`header` 放请求头。
 - `requestBody` 的 `properties` 组成 JSON 正文。没有 `requestBody` 就不发正文。
@@ -18,16 +18,23 @@
 
 ## 使用 bk-cli
 
-登录后调用会带上用户身份。接口清单里「应用认证」为「是」的接口，使用已配置的蓝鲸应用。
+完成登录后，`bk-cli api` 默认使用当前 context 保存的凭据进行认证。调用前，请确认所用凭据满足接口的应用认证、用户认证及权限要求。
 
 ```bash
 bk-cli api <gateway> <METHOD> '<path>' --stage <stage> \
-  --path '{"路径参数": "<取值>"}' \
-  --query '{"查询参数": "<取值>"}' \
-  --body '{"请求体参数": <取值>}'
+  --path '{"id": 123}' \
+  --query '{"keyword": "示例", "limit": 10}' \
+  --body '{"name": "示例", "enabled": true}'
 ```
 
-`<METHOD>`、`<path>` 取片段里的方法和路径，`<gateway>`、`<stage>` 取 `x-bk-gateway`、`x-bk-stage`。`in: path` 的参数放 `--path`，`in: query` 放 `--query`，`requestBody` 的字段放 `--body`，`in: header` 用 `--header '名字:取值'`。string 和路径参数的占位符带引号，数字、布尔、对象、数组不加引号。
+以上为参数格式示例，请按接口定义替换；不需要的选项应删除。
+
+- `<METHOD>`、`<path>` 使用接口定义中的方法和路径。片段中的 `x-bk-gateway`、`x-bk-stage` 分别作为 `<gateway>`、`<stage>`；这是生成片段提供的信息，不是 CLI 自动读取的字段。
+- 路径中的 `{参数名}` 使用 `--path` 替换，键名必须与占位符一致；路径已填入实际值时，无需传 `--path`。
+- 查询参数使用 `--query`；请求头使用 `--header '名字:取值'`，多个请求头重复传入该选项。
+- JSON 请求体使用 `--body`，保持接口要求的完整结构，也可使用 `--body @body.json`。
+- JSON 字符串使用双引号；数字、布尔值、对象和数组保持各自的 JSON 类型。`--path` 的值仅支持字符串、数字和布尔值。
+- 复杂查询参数须按接口要求确认编码方式；表单和文件上传不适用上述 JSON 请求体示例。
 
 ## 不使用 bk-cli
 

@@ -27,8 +27,6 @@ SKILL_STEP_NAME_PATTERN = SKILL_NAME_PATTERN
 _BMP_WORD_OR_HYPHEN = r"(?:(?![\U00010000-\U0010FFFF])(?:[^\W_]|-))"
 SKILL_DISPLAY_NAME_PATTERN = re.compile(rf"^(?:{_BMP_WORD_OR_HYPHEN})+(?: (?:{_BMP_WORD_OR_HYPHEN})+)*$")
 SKILL_DISPLAY_NAME_EN_PATTERN = re.compile(r"^[A-Za-z0-9-]+(?: [A-Za-z0-9-]+)*$")
-# 资源名：字母开头，字母、数字、下划线，最长 256
-SKILL_RESOURCE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,255}$")
 
 # 资源文档里列为必填的认证凭据，由调用方按登录态注入，不进参数映射
 CREDENTIAL_PARAMS = frozenset({"access_token", "bk_token", "bk_ticket", "bk_app_secret"})
