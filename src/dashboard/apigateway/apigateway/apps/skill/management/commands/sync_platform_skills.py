@@ -83,8 +83,6 @@ class Command(BaseCommand):
         self.stdout.write(f"{prefix}total {len(results)}：{summary or '无'}")
 
     def _style(self, status: str):
-        if status in (SkillSyncStatusEnum.CREATED.value, SkillSyncStatusEnum.NEW_VERSION.value):
+        if status in (SkillSyncStatusEnum.CREATED.value, SkillSyncStatusEnum.RELEASED.value):
             return self.style.SUCCESS
-        if status in (SkillSyncStatusEnum.REJECTED.value, SkillSyncStatusEnum.FAILED.value):
-            return self.style.ERROR
         return self.style.WARNING

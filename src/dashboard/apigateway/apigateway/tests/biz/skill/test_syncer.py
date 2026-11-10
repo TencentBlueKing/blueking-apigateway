@@ -73,13 +73,13 @@ class TestSyncPlatformSkills:
         write_declaration(job_plan_data)
         _sync(declarations_dir)
 
-        assert _statuses(_sync(declarations_dir)) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED_SAME_VERSION.value)]
+        assert _statuses(_sync(declarations_dir)) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
 
         job_plan_data["version"] = "1.1.0"
         write_declaration(job_plan_data)
         results = _sync(declarations_dir)
 
-        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.NEW_VERSION.value)]
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.RELEASED.value)]
         assert SkillVersion.objects.filter(metadata_id=results[0].metadata_id).count() == 2
 
     def test_lower_version_rejected(self, declarations_dir, write_declaration, job_plan_data):
@@ -91,7 +91,7 @@ class TestSyncPlatformSkills:
         write_declaration(job_plan_data)
         results = _sync(declarations_dir)
 
-        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert results[0].reasons == [f"{JOB_PLAN} 的版本 1.0.1 不高于当前版本 1.1.0"]
         metadata = SkillMetadata.objects.get(name=JOB_PLAN)
         assert metadata.current_version.version == "1.1.0"
@@ -103,7 +103,7 @@ class TestSyncPlatformSkills:
 
         results = _sync(declarations_dir)
 
-        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert results[0].reasons == ["run-plan：参数 unknown 不在资源定义中"]
         assert not SkillMetadata.objects.exists()
 
@@ -113,7 +113,7 @@ class TestSyncPlatformSkills:
 
         results = _sync(declarations_dir)
 
-        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED_MISSING_RESOURCES.value)]
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert "jobv3-cloud.not_released（环境 prod）不可编排" in results[0].reasons[0]
         assert "已配置 OpenAPI 请求参数和响应参数" in results[0].reasons[0]
         assert f"skip platform skill {JOB_PLAN}" in caplog.text
@@ -133,8 +133,8 @@ class TestSyncPlatformSkills:
         results = _sync(declarations_dir)
 
         assert _statuses(results) == [
-            ("a-bad", SkillSyncStatusEnum.REJECTED.value),
-            ("b-invalid-ref", SkillSyncStatusEnum.REJECTED.value),
+            ("a-bad", SkillSyncStatusEnum.SKIPPED.value),
+            ("b-invalid-ref", SkillSyncStatusEnum.SKIPPED.value),
             (JOB_PLAN, SkillSyncStatusEnum.CREATED.value),
         ]
         assert results[1].reasons == ["outputs.job_instance_id：输入 not_exists 不存在"]
@@ -154,7 +154,7 @@ class TestSyncPlatformSkills:
         results = _sync(declarations_dir)
 
         assert _statuses(results) == [
-            ("a-first", SkillSyncStatusEnum.FAILED.value),
+            ("a-first", SkillSyncStatusEnum.SKIPPED.value),
             (JOB_PLAN, SkillSyncStatusEnum.CREATED.value),
         ]
         assert results[0].reasons == ["RuntimeError: boom"]
@@ -180,7 +180,7 @@ class TestSyncPlatformSkills:
 
         results = _sync(declarations_dir)
 
-        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert results[0].reasons == ["文件名 other-file 与声明的 name job-plan-run-and-log 不一致"]
         assert not SkillMetadata.objects.exists()
 
@@ -194,7 +194,7 @@ class TestSyncPlatformSkills:
         )
         results = sync_platform_skills(declarations_dir)
 
-        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED_MISSING_RESOURCES.value)]
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert results[0].warnings == []
         assert len(results[0].reasons) == 3
         assert all("已配置 OpenAPI 请求参数和响应参数" in reason for reason in results[0].reasons)

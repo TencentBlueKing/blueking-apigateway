@@ -41,8 +41,5 @@ class SkillSyncStatusEnum(StructuredEnum):
     """内置 Skill 单条注入的结果"""
 
     CREATED = EnumField("created", label="新建")
-    NEW_VERSION = EnumField("new_version", label="新版本")
-    SKIPPED_SAME_VERSION = EnumField("skipped_same_version", label="跳过（同版本）")
-    SKIPPED_MISSING_RESOURCES = EnumField("skipped_missing_resources", label="跳过（资源缺失）")
-    REJECTED = EnumField("rejected", label="拒绝")
-    FAILED = EnumField("failed", label="失败")
+    RELEASED = EnumField("released", label="发布")
+    SKIPPED = EnumField("skipped", label="跳过")
