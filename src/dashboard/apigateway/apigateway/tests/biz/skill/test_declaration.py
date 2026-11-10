@@ -89,9 +89,12 @@ class TestTopLevelRules:
             ("name", "a" * 65),
             ("name", "job-plan-run-and-log\n"),
             ("display_name", ""),
-            ("display_name", "执行作业方案\n"),
-            ("display_name", "作业𠀀"),
-            ("display_name_en", "Run Job Plan\n"),
+            ("display_name", "   "),
+            ("display_name", "x" * 65),
+            ("display_name", "执行\n作业方案"),
+            ("display_name", "执行\r作业方案"),
+            ("display_name_en", "   "),
+            ("display_name_en", "x" * 65),
             ("description", ""),
             ("version", "1.0"),
             ("version", 1.0),
@@ -129,6 +132,15 @@ class TestTopLevelRules:
         job_plan_data["display_name_en"] = None
 
         assert parse_declaration(job_plan_data).display_name_en is None
+
+    def test_display_name_strips_and_allows_punctuation(self, job_plan_data):
+        job_plan_data["display_name"] = "  作业_方案（生产）/日志 𠀀\n"
+        job_plan_data["display_name_en"] = "  Run_Job (prod)\n"
+
+        declaration = parse_declaration(job_plan_data)
+
+        assert declaration.display_name == "作业_方案（生产）/日志 𠀀"
+        assert declaration.display_name_en == "Run_Job (prod)"
 
 
 class TestOrchestrationRules:

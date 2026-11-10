@@ -48,8 +48,6 @@ from apigateway.common.constants import GATEWAY_NAME_PATTERN, SEMVER_PATTERN
 from apigateway.core.constants import RESOURCE_NAME_PATTERN, STAGE_NAME_PATTERN
 
 from .constants import (
-    SKILL_DISPLAY_NAME_EN_PATTERN,
-    SKILL_DISPLAY_NAME_PATTERN,
     SKILL_NAME_PATTERN,
     SKILL_STEP_NAME_PATTERN,
 )
@@ -250,8 +248,12 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("display_name")
     @classmethod
     def _check_display_name(cls, value: str) -> str:
-        if not (1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH and SKILL_DISPLAY_NAME_PATTERN.fullmatch(value)):
-            raise ValueError(f"不合规：{value}")
+        value = value.strip()
+        if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
+            raise ValueError(f"长度应为 1–{SKILL_DISPLAY_NAME_MAX_LENGTH}")
+        # 展示名会写成 SKILL.md 的一级标题，中间换行会拆开这一行
+        if "\n" in value or "\r" in value:
+            raise ValueError("不能包含换行")
         return value
 
     @field_validator("display_name_en")
@@ -259,8 +261,9 @@ class SkillDeclaration(_DeclarationModel):
     def _check_display_name_en(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
-        if not (1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH and SKILL_DISPLAY_NAME_EN_PATTERN.fullmatch(value)):
-            raise ValueError(f"不合规：{value}")
+        value = value.strip()
+        if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
+            raise ValueError(f"长度应为 1–{SKILL_DISPLAY_NAME_MAX_LENGTH}")
         return value
 
     @field_validator("description")
