@@ -44,13 +44,14 @@
           >
             <div>
               <img
-                :src="LogoWithoutTitle"
-                alt="API Gateway"
+                :src="appLogo"
+                alt=""
                 class="max-w-none h-28px cursor-pointer"
+                @error="handleLogoError"
               >
             </div>
             <div class="text-16px font-bold color-#eaebf0 cursor-pointer">
-              {{ t('蓝鲸 API 网关') }}
+              {{ productName }}
             </div>
           </div>
         </template>
@@ -112,7 +113,7 @@
 import LanguageToggle from '@/layout/app-header/LanguageToggle.vue';
 import HelpMenu from '@/layout/app-header/HelpMenu.vue';
 import UserMenu from '@/layout/app-header/UserMenu.vue';
-import LogoWithoutTitle from '@/images/APIgateway-logo.png';
+import DefaultAppLogo from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
 import NoticeComponent from '@blueking/notice-component';
@@ -171,6 +172,7 @@ const userLoaded = ref(false);
 const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
 const curLeavePageData = ref({});
+const failedLogoUrl = shallowRef('');
 // 是否配置了bk用户名配置，配置了才能渲染 bk-user-name 组件
 const isBkUserNameConfigured = ref(false);
 
@@ -218,6 +220,13 @@ const menuList = ref<IHeaderNav[]>([
     link: '',
   },
 ]);
+
+const appLogo = computed(() => {
+  const configuredLogo = platformConfigStore.config?.appLogo?.trim();
+  return configuredLogo && configuredLogo !== failedLogoUrl.value ? configuredLogo : DefaultAppLogo;
+});
+
+const productName = computed(() => platformConfigStore.config?.i18n?.productName?.trim() || t('蓝鲸 API 网关'));
 
 const bkuiLocale = computed(() => {
   if (locale.value === 'zh-cn') {
@@ -353,6 +362,13 @@ const handleNavClick = (url: string, index: number, link: string = '') => {
     return;
   }
   getRouteData(url, index, link);
+};
+
+const handleLogoError = (event: Event) => {
+  const src = (event.currentTarget as HTMLImageElement).getAttribute('src');
+  if (src && src !== DefaultAppLogo) {
+    failedLogoUrl.value = src;
+  }
 };
 
 const handleLogoClick = () => {
