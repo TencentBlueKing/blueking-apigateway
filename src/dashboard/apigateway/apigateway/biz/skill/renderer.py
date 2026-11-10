@@ -25,7 +25,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 from jinja2 import FileSystemLoader, StrictUndefined, Template
@@ -38,7 +38,7 @@ from .constants import (
     WRITE_METHODS,
 )
 from .refs import norm_path, parse_ref
-from .validator import ResourceKey, load_resources
+from .validator import ResourceKey, input_bindings, input_type, load_resources
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
@@ -134,7 +134,7 @@ class _SkillBodyContext:
             "resources": list(self.resources.values()),
             "inputs": self._inputs(),
             "outputs": [
-                {"name": name, "type": item.type, "description": item.description, "source": item.value}
+                {"name": name, "description": item.description, "source": item.value}
                 for name, item in orchestration.outputs.items()
             ],
             "steps": self._steps(),
@@ -143,25 +143,20 @@ class _SkillBodyContext:
         }
 
     def _inputs(self) -> List[Dict[str, Any]]:
-        """保留声明里的编排说明，并追加绑定参数在 OpenAPI 中的完整说明。"""
-        descriptions: Dict[str, List[str]] = {name: [] for name in self.orchestration.inputs}
-        for step in self.orchestration.steps:
-            resource = self.resources[step.key]
-            for param_name, value in step.with_.items():
-                ref = parse_ref(value)
-                if ref.kind != "input":
-                    continue
-                param = _get_param(resource, param_name)
-                if param.description and param.description not in descriptions[ref.name]:
-                    descriptions[ref.name].append(param.description)
-
-        inputs = []
-        for name, item in self.orchestration.inputs.items():
-            data = {"name": name, **item.model_dump()}
-            if descriptions[name]:
-                data["description"] = f"{item.description}；OpenAPI 参数说明：{'；'.join(descriptions[name])}"
-            inputs.append(data)
-        return inputs
+        """类型和说明取自绑定参数的 OpenAPI 定义，声明里的说明单列为编排提示"""
+        bindings = input_bindings(self.orchestration, self.resources)
+        return [
+            {
+                "name": name,
+                "type": input_type(bindings[name]),
+                "required": item.required,
+                "description": "；".join(_distinct_descriptions(item.param.description for item in bindings[name])),
+                "hint": item.description,
+                "example": item.example,
+                "default": item.default,
+            }
+            for name, item in self.orchestration.inputs.items()
+        ]
 
     def _steps(self) -> List[Dict[str, Any]]:
         steps = []
@@ -210,6 +205,12 @@ class _SkillBodyContext:
             "unmapped": unmapped,
             "condition": any(step.if_ for step in steps),
         }
+
+
+def _distinct_descriptions(descriptions: Iterable[str]) -> List[str]:
+    """去掉空的、重复的，以及被另一条完整包含的说明（如「资源范围 ID」之于「资源范围 ID，与……对应」）"""
+    items = list(dict.fromkeys(text for text in descriptions if text))
+    return [text for text in items if not any(text != other and text in other for other in items)]
 
 
 def _unmapped_params(step: SkillStep, resource: ResourceDefinition) -> List[str]:

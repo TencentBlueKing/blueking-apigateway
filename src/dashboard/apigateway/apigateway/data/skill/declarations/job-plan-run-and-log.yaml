@@ -13,43 +13,33 @@ orchestration:
   description: run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
   inputs:
     bk_scope_id:
-      type: string
       required: true
-      description: 业务 ID；bk_scope_type 为 biz_set 时是业务集 ID
       example: '2'
     job_plan_id:
-      type: integer
       required: true
-      description: 作业执行方案 ID，可在作业平台方案列表中看到
+      description: 可在作业平台方案列表中看到
       example: 1024
     bk_scope_type:
-      type: string
       required: false
-      description: 资源范围类型：biz 业务，biz_set 业务集
       example: biz
       default: biz
     global_var_list:
-      type: array
       required: false
-      description: 要覆盖的全局变量，元素为 `{name, value}` 或主机变量 `{name, server}`；不传则使用方案默认值
+      description: 只放用户要覆盖的变量，元素写成 `{name, value}`，主机变量写成 `{name, server}`
       example:
       - name: version
         value: 1.2.3
   outputs:
     job_instance_id:
-      type: integer
       description: 作业实例 ID
       value: ${{ steps.run-plan.outputs.data.job_instance_id }}
     job_status:
-      type: integer
       description: 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段
       value: ${{ steps.wait-result.outputs.data.job_instance.status }}
     step_results:
-      type: array
       description: 每个步骤的状态，以及每台主机的状态、退出码和错误码
       value: ${{ steps.wait-result.outputs.data.step_instance_list }}
     failed_host_logs:
-      type: array
       description: 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs`
       value: ${{ steps.collect-log.outputs.data }}
   steps:

@@ -174,11 +174,11 @@ class TestOrchestrationRules:
         assert any(error.startswith(f"orchestration.steps[2].{field}") for error in errors), errors
 
     def test_name_if_with_optional(self, job_plan_data):
-        step = job_plan_data["orchestration"]["steps"][0]
+        step = job_plan_data["orchestration"]["steps"][1]
         for field in ("name", "if", "with"):
             step.pop(field, None)
 
-        parsed = parse_declaration(job_plan_data).orchestration.steps[0]
+        parsed = parse_declaration(job_plan_data).orchestration.steps[1]
 
         assert (parsed.name, parsed.if_, parsed.with_) == (None, None, {})
 
@@ -225,6 +225,7 @@ class TestOrchestrationRules:
     @pytest.mark.parametrize("value", [1, "inputs.job_plan_id", {"value": 1}, [1, 2], None, "${ip_list}"])
     def test_literal_value(self, job_plan_data, value):
         job_plan_data["orchestration"]["steps"][0]["with"]["job_plan_id"] = value
+        job_plan_data["orchestration"]["inputs"].pop("job_plan_id")
 
         step = parse_declaration(job_plan_data).orchestration.steps[0]
 
@@ -254,6 +255,26 @@ class TestOrchestrationRules:
         errors = _errors(job_plan_data)
 
         assert errors == ["orchestration.inputs: 应为对象"]
+
+    @pytest.mark.parametrize("section, name", [("inputs", "bk_scope_id"), ("outputs", "job_instance_id")])
+    def test_type_not_declared(self, job_plan_data, section, name):
+        job_plan_data["orchestration"][section][name]["type"] = "string"
+
+        errors = _errors(job_plan_data)
+
+        assert errors == [f"orchestration.{section}.{name}.type: 未知字段"]
+
+    def test_input_description_optional(self, job_plan_data):
+        assert "description" not in job_plan_data["orchestration"]["inputs"]["bk_scope_id"]
+
+        assert parse_declaration(job_plan_data).orchestration.get_input("bk_scope_id").description == ""
+
+    def test_input_must_be_bound(self, job_plan_data):
+        job_plan_data["orchestration"]["inputs"]["unused"] = {"required": False, "example": 1}
+
+        errors = _errors(job_plan_data)
+
+        assert errors == ["orchestration: 输入没有绑定到任何步骤的 with，类型和说明无从取得：unused"]
 
     def test_guide_fields_required(self, job_plan_data):
         job_plan_data["orchestration"]["guide"]["example"] = ""

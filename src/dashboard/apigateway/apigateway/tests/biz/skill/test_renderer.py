@@ -67,9 +67,9 @@ class TestRenderSkillBody:
 
         assert "可用" not in body.split("## 输入", 1)[0]
 
-    def test_input_description_keeps_declaration_and_openapi_contents(self, resources_data):
+    def test_input_type_and_description_come_from_openapi(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
-        data["orchestration"]["inputs"]["bk_scope_id"]["description"] = "声明中的编排说明"
+        data["orchestration"]["inputs"]["bk_scope_id"]["description"] = "声明中的编排提示"
         for resource in resources_data["resources"]:
             if resource["resource"] == "execute_job_plan":
                 resource["params"][1]["description"] = "完整 OpenAPI 说明，包含枚举 A | B 和其他内容"
@@ -83,14 +83,16 @@ class TestRenderSkillBody:
         input_section = body.split("## 输入", 1)[1].split("## 输出", 1)[0]
 
         assert (
-            "声明中的编排说明；OpenAPI 参数说明：完整 OpenAPI 说明，包含枚举 A \\| B 和其他内容；"
-            "第二个接口的不同说明；资源范围 ID"
+            "| `bk_scope_id` | string | 是 | 完整 OpenAPI 说明，包含枚举 A \\| B 和其他内容；第二个接口的不同说明；"
+            "资源范围 ID | 声明中的编排提示 |"
         ) in input_section
+        assert "| `global_var_list` | array<object> |" in input_section
 
-    def test_duplicate_openapi_input_descriptions_are_appended_once(self, static_provider):
+    def test_input_descriptions_drop_duplicates_and_contained(self, static_provider):
         input_section = _render("job-plan-run-and-log", static_provider).split("## 输入", 1)[1].split("## 输出", 1)[0]
 
-        assert input_section.count("OpenAPI 参数说明：资源范围类型：biz 业务，biz_set 业务集") == 1
+        assert input_section.count("资源范围类型：biz 业务，biz_set 业务集") == 1
+        assert "| 资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID | - |" in input_section
 
     def test_write_mode(self, static_provider, resources_data):
         assert "会改动线上状态的接口" in _render("job-plan-run-and-log", static_provider)
@@ -137,6 +139,7 @@ class TestRenderSkillBody:
     def test_unmapped_param_listed(self, static_provider):
         data = load_declaration_data("job-plan-run-and-log")
         data["orchestration"]["steps"][0]["with"].pop("job_plan_id")
+        data["orchestration"]["inputs"].pop("job_plan_id")
         data["orchestration"]["steps"][2].pop("if")
 
         body = render_skill_body(parse_declaration(data), static_provider).body
@@ -148,7 +151,6 @@ class TestRenderSkillBody:
     def test_parameter_name_does_not_define_authentication(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
         data["orchestration"]["inputs"]["access_token"] = {
-            "type": "string",
             "required": True,
             "description": "接口业务参数，不是网关认证凭据",
             "example": "example-token",

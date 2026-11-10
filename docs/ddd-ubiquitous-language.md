@@ -199,7 +199,7 @@ MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=sta
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
 MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
 SKILL.md frontmatter 遵循 Agent Skills 规范，只有 name、description、metadata；metadata 只有 type、version、author、datetime、source。display_name、code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
-内置 Skill 注入在 `post_migrate` 中执行，单条声明被拒绝、因资源不可编排而跳过或出错都不中断部署；被跳过的声明在下次部署重试。参数位置和类型只取当前发布版本的 OpenAPI schema，不按 HTTP 方法推断：未同时定义请求参数和响应参数时跳过整条 Skill；请求体不是 application/json，或调用映射了资源定义中没有的参数时，注入拒绝该声明、不写版本。新版本须按 major.minor.patch 高于当前版本，否则拒绝。
+内置 Skill 注入在 `post_migrate` 中执行，单条声明被拒绝、因资源不可编排而跳过或出错都不中断部署；被跳过的声明在下次部署重试。参数位置和类型只取当前发布版本的 OpenAPI schema，不按 HTTP 方法推断：未同时定义请求参数和响应参数时跳过整条 Skill；编排只引用资源定义、不重新定义参数和响应：inputs 只写是否向用户收集、默认值、示例和编排提示，类型和接口说明取自 with 绑定的参数；outputs 只写汇报说明和来源，字段结构看来源步骤的响应。请求体不是 application/json、调用映射了资源定义中没有的参数、引用了资源定义中没有的响应字段、同一输入绑定的参数类型不一致、输入没有绑定任何参数，或必填参数取自选填且无默认值的输入时，注入拒绝该声明、不写版本。新版本须按 major.minor.patch 高于当前版本，否则拒绝。
 已写入的内置 Skill 版本是注入时资源定义的快照，网关发布不会重新渲染或更新它，目前也没有变更检测；资源变更后需升声明版本号再注入。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、

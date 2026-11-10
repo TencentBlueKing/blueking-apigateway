@@ -13,46 +13,36 @@ orchestration:
   description: locate-build 只取一条，`data.records[0].id` 是 fetch-detail 的 `buildId`。两步的 `projectId`、`pipelineId` 相同，请求头 `X-DEVOPS-UID` 也相同。不传 `updateTimeDesc` 时列表按构建号降序，第一条就是符合条件的最近一次构建。
   inputs:
     project_id:
-      type: string
       required: true
-      description: 蓝盾项目英文名
       example: my-game
     pipeline_id:
-      type: string
       required: true
-      description: 流水线 ID，形如 `p-` 开头的 32 位字符串
+      description: 形如 `p-` 开头的 32 位字符串
       example: p-4b3a4baf5472466aa575973da87505b4
     devops_uid:
-      type: string
       required: true
-      description: 蓝盾用户名。两个接口都放在请求头 X-DEVOPS-UID，不放 query。网关不收用户 bk_token，蓝盾用这个头识别操作者。用户没给时先问，不要用应用 ID 或当前登录名猜测
+      description: 网关不收用户 bk_token，蓝盾用这个头识别操作者。用户没给时先问，不要用应用 ID 或当前登录名猜测
       example: zhangsan
     build_num:
-      type: integer
       required: false
-      description: 构建号。传入时 buildNoStart、buildNoEnd 都用它；不传则取符合其他条件的最近一次构建
+      description: 传入时 buildNoStart、buildNoEnd 都用它；不传则取符合其他条件的最近一次构建
       example: 128
     build_status:
-      type: array
       required: false
-      description: 只在这些构建状态中找。用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
+      description: 用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
       example:
       - SUCCEED
   outputs:
     build_id:
-      type: string
       description: 构建 ID
       value: ${{ steps.locate-build.outputs.data.records[0].id }}
     build_num:
-      type: integer
       description: 构建号
       value: ${{ steps.fetch-detail.outputs.data.buildNum }}
     build_status:
-      type: string
       description: 构建状态，如 SUCCEED、FAILED、CANCELED、RUNNING
       value: ${{ steps.fetch-detail.outputs.data.status }}
     error_info:
-      type: array
       description: 失败插件、任务名和错误信息。成功时为空
       value: ${{ steps.fetch-detail.outputs.data.errorInfoList }}
   steps:

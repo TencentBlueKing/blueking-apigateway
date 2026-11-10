@@ -77,10 +77,10 @@ class TestValidateDeclaration:
         assert result.warnings == []
 
     def test_unknown_input(self, static_provider, job_plan_data):
-        _with(job_plan_data, 0)["job_plan_id"] = "${{ inputs.not_exists }}"
+        _with(job_plan_data, 1)["bk_scope_id"] = "${{ inputs.not_exists }}"
 
         assert _validate(job_plan_data, static_provider).errors == [
-            "run-plan.with.job_plan_id：输入 not_exists 不存在"
+            "wait-result.with.bk_scope_id：输入 not_exists 不存在"
         ]
 
     @pytest.mark.parametrize("ref_step", ["wait-result", "run-plan", "not-exists"])
@@ -100,6 +100,7 @@ class TestValidateDeclaration:
 
     def test_unmapped_required_param_not_reported(self, static_provider, job_plan_data):
         _with(job_plan_data, 0).pop("job_plan_id")
+        job_plan_data["orchestration"]["inputs"].pop("job_plan_id")
 
         result = _validate(job_plan_data, static_provider)
 
@@ -107,6 +108,7 @@ class TestValidateDeclaration:
 
     def test_literal_value_not_type_checked(self, static_provider, job_plan_data):
         _with(job_plan_data, 0)["job_plan_id"] = "1024"
+        job_plan_data["orchestration"]["inputs"].pop("job_plan_id")
 
         result = _validate(job_plan_data, static_provider)
 
@@ -116,8 +118,15 @@ class TestValidateDeclaration:
         "patch, expected",
         [
             (
-                lambda data: _with(data, 0).update(job_plan_id="${{ inputs.bk_scope_id }}"),
-                "run-plan.with.job_plan_id：输入类型 string 与参数类型 integer 不一致",
+                lambda data: _with(data, 1).update(bk_scope_id="${{ inputs.job_plan_id }}"),
+                (
+                    "inputs.job_plan_id：绑定的参数类型不一致："
+                    "run-plan.with.job_plan_id（integer）、wait-result.with.bk_scope_id（string）"
+                ),
+            ),
+            (
+                lambda data: data["orchestration"]["inputs"]["job_plan_id"].update(required=False),
+                "run-plan.with.job_plan_id：参数 job_plan_id 在资源定义中必填，输入 job_plan_id 却是选填且没有默认值",
             ),
             (
                 lambda data: _with(data, 2).update(
@@ -136,10 +145,26 @@ class TestValidateDeclaration:
             ),
         ],
     )
-    def test_field_warnings(self, static_provider, job_plan_data, patch, expected):
+    def test_field_errors(self, static_provider, job_plan_data, patch, expected):
         patch(job_plan_data)
 
         result = _validate(job_plan_data, static_provider)
 
-        assert result.errors == []
-        assert expected in result.warnings, result.warnings
+        assert expected in result.errors, result.errors
+        assert result.warnings == []
+
+    def test_untyped_param_not_compared(self, static_provider, job_plan_data):
+        resource = static_provider.get_resource("jobv3-cloud", "prod", "get_job_instance_status")
+        resource.get_param("bk_scope_id").type = ""
+        _with(job_plan_data, 1)["bk_scope_id"] = "${{ inputs.job_plan_id }}"
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
+
+    def test_required_param_from_optional_input_with_default(self, static_provider, job_plan_data):
+        job_plan_data["orchestration"]["inputs"]["job_plan_id"].update(required=False, default=1024)
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])

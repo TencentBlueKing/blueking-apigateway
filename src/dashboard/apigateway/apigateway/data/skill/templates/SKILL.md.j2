@@ -34,22 +34,22 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 ## 输入
 
-必填缺失时先问用户，不要猜测。说明里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。
+必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型和说明取自接口定义。
 
-| 参数 | 类型 | 必填 | 说明 | 示例 | 默认值 |
-| --- | --- | --- | --- | --- | --- |
+| 参数 | 类型 | 必填 | 说明 | 编排提示 | 示例 | 默认值 |
+| --- | --- | --- | --- | --- | --- | --- |
 {% for item in inputs %}
-| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.required | yn }} | {{ item.description | md_cell }} | {{ item.example | code_cell }} | {{ item.default | code_cell }} |
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.required | yn }} | {{ item.description | md_cell }} | {{ item.hint | md_cell }} | {{ item.example | code_cell }} | {{ item.default | code_cell }} |
 {% endfor %}
 
 ## 输出
 
-完成后按下表组织回复，字段取值只来自「来源」列，不要编造。
+完成后按下表组织回复，字段取值只来自「来源」列，不要编造。字段结构见来源步骤 YAML 调用说明里的 `responses`。
 
-| 字段 | 类型 | 说明 | 来源 |
-| --- | --- | --- | --- |
+| 字段 | 说明 | 来源 |
+| --- | --- | --- |
 {% for item in outputs %}
-| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.description | md_cell }} | `{{ item.source }}` |
+| `{{ item.name }}` | {{ item.description | md_cell }} | `{{ item.source }}` |
 {% endfor %}
 
 ## 执行步骤

@@ -13,51 +13,39 @@ orchestration:
   description: locate-build 得到构建 ID（`data.records[0].id`），后续接口都用它；所有接口的 `projectId` 相同。只有构建状态为 SUCCEED 才执行 list-artifacts、get-download-urls。
   inputs:
     project_id:
-      type: string
       required: true
-      description: 蓝盾项目英文名
       example: my-game
     pipeline_id:
-      type: string
       required: true
-      description: 流水线 ID，形如 `p-` 开头的 32 位字符串
+      description: 形如 `p-` 开头的 32 位字符串
       example: p-4b3a4baf5472466aa575973da87505b4
     build_num:
-      type: integer
       required: false
-      description: 构建号；不传则取最近一次构建
+      description: 传入时 buildNoStart、buildNoEnd 都用它；不传则取最近一次构建
       example: 128
     build_status:
-      type: array
       required: false
-      description: 只在这些构建状态中找。用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
+      description: 用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
       example:
       - SUCCEED
     ttl:
-      type: integer
       required: false
-      description: 下载链接有效期，秒
       example: 3600
       default: 3600
   outputs:
     build_id:
-      type: string
       description: 构建 ID
       value: ${{ steps.locate-build.outputs.data.records[0].id }}
     build_num:
-      type: integer
       description: 构建号
       value: ${{ steps.locate-build.outputs.data.records[0].buildNum }}
     build_status:
-      type: string
       description: 构建状态
       value: ${{ steps.check-build.outputs.data.status }}
     artifacts:
-      type: array
       description: 产物列表：文件名、大小、路径、仓库类型
       value: ${{ steps.list-artifacts.outputs.data.records }}
     download_urls:
-      type: array
       description: 每个可下载产物的临时下载地址，与跳过文件夹、IMAGE、REPORT 后的 artifacts 一一对应
       value: ${{ steps.get-download-urls.outputs.data }}
   steps:

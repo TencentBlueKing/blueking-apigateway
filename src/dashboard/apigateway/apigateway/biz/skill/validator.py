@@ -15,19 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""声明的完整校验：编排前后引用关系、资源定义不可用、参数不在资源定义中（error），以及其他与资源定义的对照（warning）。
+"""声明的完整校验：编排前后引用关系，以及编排与资源定义的对照。
 
+资源定义（目标环境当前发布版本的 OpenAPI schema）是参数和响应的唯一依据，声明只引用、不重新定义：
+输入的类型取自 with 绑定的参数。参数不在定义中、引用的响应字段不在定义中、同一输入绑定的参数类型不一致、
+必填参数取自可能不传的输入，都是 error。
 结构和字段规则已在解析声明时检查，见 declaration.py。步骤的 if 和 description 是自然语言，不校验。
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 from .refs import parse_ref
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
-    from .resource_definition import ResourceDefinition, ResourceProvider
+    from .resource_definition import ResourceDefinition, ResourceParam, ResourceProvider
 
 ResourceKey = Tuple[str, str, str]
 
@@ -97,6 +100,7 @@ class _RefChecker:
 
         for name, output in self.orchestration.outputs.items():
             self._check_ref(output.value, f"outputs.{name}")
+        self._check_input_types()
 
     def _check_ref(self, value: Any, where: str) -> None:
         parsed = parse_ref(value)
@@ -109,7 +113,7 @@ class _RefChecker:
             resource = self.step_resources[parsed.step]
             # 资源不存在，或资源定义本身已报 error 时，不再把每个字段都报成缺失
             if resource and not resource.errors and not resource.has_response_field(parsed.path):
-                self.result.warnings.append(f"{where}：{resource.resource} 的响应定义中没有 {parsed.path}")
+                self.result.errors.append(f"{where}：{resource.resource} 的响应定义中没有 {parsed.path}")
 
     def _check_params(self, step: SkillStep, resource: ResourceDefinition) -> None:
         """必填参数没有写进 with 不报：逐个调用等每次不同的取值由步骤说明交代，渲染时列出"""
@@ -120,10 +124,46 @@ class _RefChecker:
                 self.result.errors.append(f"{step.id}：参数 {name} 不在资源定义中")
                 continue
             parsed = parse_ref(value)
-            if parsed.kind != "input" or param.location == "path":
+            if parsed.kind != "input":
                 continue
             item = self.orchestration.get_input(parsed.name)
-            if item and not (param.type == item.type or param.type.startswith(item.type + "<")):
-                self.result.warnings.append(
-                    f"{step.id}.with.{name}：输入类型 {item.type} 与参数类型 {param.type} 不一致"
+            if item and (param.required or param.location == "path") and item.omit_if_unset:
+                self.result.errors.append(
+                    f"{step.id}.with.{name}：参数 {name} 在资源定义中必填，输入 {parsed.name} 却是选填且没有默认值"
                 )
+
+    def _check_input_types(self) -> None:
+        """输入的类型取自绑定参数，绑定的参数类型必须相同；定义里没写类型的参数不参与比较"""
+        resources = {key: resource for key, resource in self.resources.items() if resource and not resource.errors}
+        for name, bindings in input_bindings(self.orchestration, resources).items():
+            typed = [binding for binding in bindings if binding.param.type]
+            if len({binding.param.type for binding in typed}) > 1:
+                detail = "、".join(f"{item.step}.with.{item.param.name}（{item.param.type}）" for item in typed)
+                self.result.errors.append(f"inputs.{name}：绑定的参数类型不一致：{detail}")
+
+
+@dataclass(frozen=True)
+class InputBinding:
+    step: str
+    param: ResourceParam
+
+
+def input_bindings(
+    orchestration: SkillOrchestration, resources: Mapping[ResourceKey, Optional[ResourceDefinition]]
+) -> Dict[str, List[InputBinding]]:
+    """每个输入按步骤顺序绑定到的资源参数；资源或参数不存在的绑定不算"""
+    bindings: Dict[str, List[InputBinding]] = {name: [] for name in orchestration.inputs}
+    for step in orchestration.steps:
+        resource = resources.get(step.key)
+        if resource is None:
+            continue
+        for name, value in step.with_.items():
+            parsed = parse_ref(value)
+            param = resource.get_param(name)
+            if parsed.kind == "input" and param and parsed.name in bindings:
+                bindings[parsed.name].append(InputBinding(step=step.id, param=param))
+    return bindings
+
+
+def input_type(bindings: List[InputBinding]) -> str:
+    return next((binding.param.type for binding in bindings if binding.param.type), "")

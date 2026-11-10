@@ -13,47 +13,36 @@ orchestration:
   description: create-task 返回的 `data.task_id` 是后两步的路径参数，三步的 `bk_biz_id` 必须相同。创建成功不代表已经执行，必须再调用 start_task。
   inputs:
     bk_biz_id:
-      type: integer
       required: true
-      description: 模板所属的 CMDB 业务 ID
       example: 2
     template_id:
-      type: integer
       required: true
-      description: 流程模板 ID，可在标准运维模板列表或模板链接中看到
+      description: 可在标准运维模板列表或模板链接中看到
       example: 128
     task_name:
-      type: string
       required: true
-      description: 任务名称。用户没给时按「用途-YYYYMMDD」拟一个，写进回复；有变更单号时带上。不要为拟定的名称再问一次
+      description: 用户没给时按「用途-YYYYMMDD」拟一个，写进回复；有变更单号时带上。不要为拟定的名称再问一次
       example: nginx-reload-20261029
     constants:
-      type: object
       required: false
-      description: '模板全局变量，键为 `${key}` 格式。只填用户明确提到的变量，用户说“ip_list 填 X”就写 `{"${ip_list}": "X"}`；不传则使用模板默认值'
+      description: '只填用户明确提到的变量，用户说“ip_list 填 X”就写 `{"${ip_list}": "X"}`；不传则使用模板默认值'
       example:
         ${ip_list}: 10.0.0.1,10.0.0.2
     template_source:
-      type: string
       required: false
-      description: 模板来源：business 业务流程，common 公共流程
       example: business
       default: business
   outputs:
     task_id:
-      type: integer
       description: 任务实例 ID
       value: ${{ steps.create-task.outputs.data.task_id }}
     task_url:
-      type: string
       description: 任务实例链接，交给用户在页面查看
       value: ${{ steps.create-task.outputs.data.task_url }}
     state:
-      type: string
       description: 最终状态：FINISHED、FAILED、SUSPENDED、REVOKED；轮询到上限仍未结束时为 RUNNING；启动后一直没开始时为 CREATED
       value: ${{ steps.wait-result.outputs.data.state }}
     failed_nodes:
-      type: object
       description: 失败节点 ID → 错误信息，只在 FAILED 时有值
       value: ${{ steps.wait-result.outputs.data.ex_data }}
   steps:

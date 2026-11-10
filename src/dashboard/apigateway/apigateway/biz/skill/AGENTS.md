@@ -43,13 +43,26 @@ runs from `bin/post_migrate`.
   parameters") counts as defined request parameters; an imported `responses`
   without fields does not count as a response definition. Log the skip so the
   gateway owner can fix the source schema.
-- Parameter locations and types come only from the resource definition; nothing
-  is guessed from the HTTP method, because a version is immutable once written.
+- The resource definition (the released OpenAPI schema) is the only source of
+  parameters and responses; the declaration references it and does not redefine
+  it. Parameter locations and types come only from the definition; nothing is
+  guessed from the HTTP method, because a version is immutable once written.
+  Inputs and outputs have no `type`: an input's type and interface description
+  come from the parameters it is bound to in `with`, so every input must be
+  bound at least once; an output's structure is the source step's response (a
+  per-item step aggregates several responses, so it cannot be typed from the
+  definition). An input's `description` is an optional orchestration hint
+  (drafting rules, value strategy) and must not restate the OpenAPI description.
   The declaration is rejected when a referenced resource's request body is not
-  `application/json` (the body is always rendered as JSON), or when a step maps
-  a parameter missing from the definition. Resource-level problems go in
-  `ResourceDefinition.errors`; the validator reports them as errors and skips
+  `application/json` (the body is always rendered as JSON), when a step maps a
+  parameter missing from the definition, when a `${{ steps.* }}` reference names
+  a response field missing from the definition, when the typed parameters bound
+  to one input have different types, or when a required or path parameter is
+  mapped from an optional input without a default. Resource-level problems go
+  in `ResourceDefinition.errors`; the validator reports them as errors and skips
   field checks for that resource.
+  Warnings are only for non-blocking resource facts, such as a non-public
+  resource.
 - A version is immutable once written; the same version (case-insensitive) is
   skipped, not overwritten. A new version must be higher than the current one by
   `major.minor.patch` (pre-release and build suffixes are ignored), otherwise it

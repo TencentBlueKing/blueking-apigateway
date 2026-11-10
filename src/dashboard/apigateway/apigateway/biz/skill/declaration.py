@@ -35,6 +35,7 @@ from pydantic import (
     StrictStr,
     ValidationError,
     field_validator,
+    model_validator,
 )
 
 from apigateway.apps.skill.constants import (
@@ -88,9 +89,11 @@ class _DeclarationModel(BaseModel):
 
 
 class SkillInput(_DeclarationModel):
-    type: StrictStr
+    """Skill 向用户收集的值；类型和接口说明取自 with 绑定参数的资源定义，这里只写 OpenAPI 里没有的编排信息"""
+
     required: StrictBool
-    description: StrictStr
+    # 编排提示：拟定规则、取值策略等；没有就不写
+    description: StrictStr = ""
     example: Any
     default: Any = None
 
@@ -105,7 +108,8 @@ class SkillInput(_DeclarationModel):
 
 
 class SkillOutput(_DeclarationModel):
-    type: StrictStr
+    """汇报给用户的字段；字段结构看来源步骤的响应定义，逐个调用时是多次结果的汇总，所以不写类型"""
+
     description: StrictStr
     value: StrictStr
 
@@ -216,6 +220,19 @@ class SkillOrchestration(_DeclarationModel):
         if duplicated:
             raise ValueError(f"步骤 id 重复：{'、'.join(duplicated)}")
         return value
+
+    @model_validator(mode="after")
+    def _check_inputs_bound(self) -> "SkillOrchestration":
+        bound = {
+            parse_ref(value).name
+            for step in self.steps
+            for value in step.with_.values()
+            if parse_ref(value).kind == "input"
+        }
+        unbound = [name for name in self.inputs if name not in bound]
+        if unbound:
+            raise ValueError(f"输入没有绑定到任何步骤的 with，类型和说明无从取得：{'、'.join(unbound)}")
+        return self
 
     def get_input(self, name: str) -> Optional[SkillInput]:
         return self.inputs.get(name)

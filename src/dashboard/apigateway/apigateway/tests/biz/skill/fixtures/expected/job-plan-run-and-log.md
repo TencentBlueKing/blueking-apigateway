@@ -24,25 +24,25 @@
 
 ## 输入
 
-必填缺失时先问用户，不要猜测。说明里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。
+必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型和说明取自接口定义。
 
-| 参数 | 类型 | 必填 | 说明 | 示例 | 默认值 |
-| --- | --- | --- | --- | --- | --- |
-| `bk_scope_id` | string | 是 | 业务 ID；bk_scope_type 为 biz_set 时是业务集 ID；OpenAPI 参数说明：资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID；资源范围 ID | `2` | - |
-| `job_plan_id` | integer | 是 | 作业执行方案 ID，可在作业平台方案列表中看到；OpenAPI 参数说明：作业执行方案 ID | `1024` | - |
-| `bk_scope_type` | string | 否 | 资源范围类型：biz 业务，biz_set 业务集；OpenAPI 参数说明：资源范围类型：biz 业务，biz_set 业务集 | `biz` | `biz` |
-| `global_var_list` | array | 否 | 要覆盖的全局变量，元素为 `{name, value}` 或主机变量 `{name, server}`；不传则使用方案默认值；OpenAPI 参数说明：全局变量。元素字段：id 或 name 二选一作为标识；value 为字符、密码、数组、命名空间变量值；server 为主机变量值（host_id_list / ip_list / dynamic_group_list / topo_node_list）。未传的变量用方案默认值 | `[{"name": "version", "value": "1.2.3"}]` | - |
+| 参数 | 类型 | 必填 | 说明 | 编排提示 | 示例 | 默认值 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `bk_scope_id` | string | 是 | 资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID | - | `2` | - |
+| `job_plan_id` | integer | 是 | 作业执行方案 ID | 可在作业平台方案列表中看到 | `1024` | - |
+| `bk_scope_type` | string | 否 | 资源范围类型：biz 业务，biz_set 业务集 | - | `biz` | `biz` |
+| `global_var_list` | array<object> | 否 | 全局变量。元素字段：id 或 name 二选一作为标识；value 为字符、密码、数组、命名空间变量值；server 为主机变量值（host_id_list / ip_list / dynamic_group_list / topo_node_list）。未传的变量用方案默认值 | 只放用户要覆盖的变量，元素写成 `{name, value}`，主机变量写成 `{name, server}` | `[{"name": "version", "value": "1.2.3"}]` | - |
 
 ## 输出
 
-完成后按下表组织回复，字段取值只来自「来源」列，不要编造。
+完成后按下表组织回复，字段取值只来自「来源」列，不要编造。字段结构见来源步骤 YAML 调用说明里的 `responses`。
 
-| 字段 | 类型 | 说明 | 来源 |
-| --- | --- | --- | --- |
-| `job_instance_id` | integer | 作业实例 ID | `${{ steps.run-plan.outputs.data.job_instance_id }}` |
-| `job_status` | integer | 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段 | `${{ steps.wait-result.outputs.data.job_instance.status }}` |
-| `step_results` | array | 每个步骤的状态，以及每台主机的状态、退出码和错误码 | `${{ steps.wait-result.outputs.data.step_instance_list }}` |
-| `failed_host_logs` | array | 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs` | `${{ steps.collect-log.outputs.data }}` |
+| 字段 | 说明 | 来源 |
+| --- | --- | --- |
+| `job_instance_id` | 作业实例 ID | `${{ steps.run-plan.outputs.data.job_instance_id }}` |
+| `job_status` | 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段 | `${{ steps.wait-result.outputs.data.job_instance.status }}` |
+| `step_results` | 每个步骤的状态，以及每台主机的状态、退出码和错误码 | `${{ steps.wait-result.outputs.data.step_instance_list }}` |
+| `failed_host_logs` | 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs` | `${{ steps.collect-log.outputs.data }}` |
 
 ## 执行步骤
 
