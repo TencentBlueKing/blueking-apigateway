@@ -116,7 +116,7 @@ class TestSaveSkillVersion:
 
     def test_relations_deduplicated(self, job_plan_data):
         steps = job_plan_data["orchestration"]["steps"]
-        steps.append({**steps[1], "name": "wait-again"})
+        steps.append({**steps[1], "id": "wait-again"})
 
         saved = _save(job_plan_data)
 

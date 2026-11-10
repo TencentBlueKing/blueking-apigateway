@@ -100,17 +100,17 @@ class TestSyncPlatformSkills:
         assert metadata.versions.count() == 1
 
     def test_param_not_in_definition_rejected(self, sync_dirs, write_declaration, job_plan_data):
-        job_plan_data["orchestration"]["steps"][0]["calls"][0]["params"]["unknown"] = "inputs.bk_scope_id"
+        job_plan_data["orchestration"]["steps"][0]["with"]["unknown"] = "${{ inputs.bk_scope_id }}"
         write_declaration(job_plan_data)
 
         results = _sync(sync_dirs)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.REJECTED.value)]
-        assert results[0].reasons == ["run-plan.execute_job_plan：参数 unknown 不在资源定义中"]
+        assert results[0].reasons == ["run-plan：参数 unknown 不在资源定义中"]
         assert not SkillMetadata.objects.exists()
 
     def test_missing_resources(self, sync_dirs, write_declaration, job_plan_data):
-        job_plan_data["orchestration"]["steps"][0]["calls"][0]["resource"] = "not_released"
+        job_plan_data["orchestration"]["steps"][0]["uses"] = "jobv3-cloud/not_released@prod"
         write_declaration(job_plan_data)
 
         results = _sync(sync_dirs)
@@ -121,10 +121,11 @@ class TestSyncPlatformSkills:
 
     def test_rejected_does_not_stop_others(self, sync_dirs, write_declaration, job_plan_data):
         write_declaration({"name": "Bad_Name"}, file_name="a-bad")
+        outputs = job_plan_data["orchestration"]["outputs"]
         invalid_ref = {**job_plan_data, "name": "b-invalid-ref"}
         invalid_ref["orchestration"] = {
             **job_plan_data["orchestration"],
-            "outputs": [{**job_plan_data["orchestration"]["outputs"][0], "from": "inputs.not_exists"}],
+            "outputs": {"job_instance_id": {**outputs["job_instance_id"], "value": "${{ inputs.not_exists }}"}},
         }
         write_declaration(invalid_ref)
         write_declaration(job_plan_data)

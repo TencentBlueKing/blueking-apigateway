@@ -8,9 +8,10 @@
 
 - `parameters` 按 `in` 放：`path` 替换路径里的 `{参数名}`，`query` 放查询串，`header` 放请求头。
 - `requestBody` 的 `properties` 组成 JSON 正文。没有 `requestBody` 就不发正文。
-- 片段里没列的参数不要传。`x-omit-if-unset: true` 的参数取自选填输入，用户没给时整个参数不传。
+- 片段里没列的参数不要传，步骤说明明确要求传的除外。`x-omit-if-unset: true` 的参数取自选填输入，用户没给时整个参数不传。
 - `x-value` 是固定值，按 JSON 原样传。
-- `x-from: inputs.<名>` 换成用户输入。`x-from: <步骤>.<资源>.<字段路径>` 换成该次响应体里的值。`[0]` 是数组第一个元素，`[]` 是每个元素的该字段组成的数组。`each.<字段>` 只在逐个调用时换成当前元素。`x-where` 表示只取满足条件的元素。
+- `x-from: ${{ inputs.<名> }}` 换成用户输入。`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 换成该步骤响应体里的值。`[0]` 是数组第一个元素，`[]` 是每个元素的该字段组成的数组。
+- 没有 `x-from`、`x-value` 的参数按该步的说明取值，例如逐个调用时取当前元素的字段。
 - `responses` 只列要读的字段，字段路径相对响应体，见「返回内容」。
 - 使用 bk-cli 时，query 不要自己做 URL 编码，bk-cli 会编码。不使用 bk-cli 时，query 里的保留字符要编码；产物下载接口的 `path` 就是这种值。
 - `access_token`、`bk_token`、`bk_ticket`、`bk_app_secret` 不写进执行步骤的请求参数，不向用户要，也不出现在回复里。使用 bk-cli 时由登录态注入。不使用 bk-cli 时放进请求头 `X-Bkapi-Authorization`。某个接口的文档仍把 `access_token` 列为必填 query 时，把同一个用户 access token 放进 query，仍然不要写进回复。
@@ -51,9 +52,9 @@ curl -H 'X-Bkapi-Authorization: {"bk_app_code":"<应用 ID>","bk_app_secret":"<�
 
 有 `requestBody` 时把其中的字段作为 JSON 正文，并加上 `Content-Type: application/json`。`in: query` 的参数拼在 URL 上，`in: header` 的参数作为同名请求头。
 
-## 轮询
+## 执行条件、轮询和逐个调用
 
-执行步骤写了「轮询」时，按该步的间隔、次数、结束条件和停止条件重复同一次调用。使用 bk-cli 时外壳 `ok` 为 false 就停止；不使用 bk-cli 时 HTTP 状态不是 2xx 就停止。中间响应不必展开，后续步骤用最后一次响应体。
+步骤写了「执行条件」时，条件不成立就跳过该步。步骤说明要求轮询时，按说明的间隔、次数、结束条件和停止条件重复同一步的调用。使用 bk-cli 时外壳 `ok` 为 false 就停止；不使用 bk-cli 时 HTTP 状态不是 2xx 就停止。中间响应不必展开，后续步骤用最后一次响应体。步骤说明要求对数组逐个调用时，每个元素调用一次，没有这样的元素就跳过；后续步骤和输出用到该步时，把每次的结果按顺序汇总。
 
 ## 返回内容
 

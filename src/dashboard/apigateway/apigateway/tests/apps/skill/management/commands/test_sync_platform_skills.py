@@ -50,7 +50,7 @@ def declarations_dir(tmp_path):
     shutil.copy(source, directory)
     missing = copy.deepcopy(yaml.safe_load(source.read_text(encoding="utf-8")))
     missing["name"] = "job-plan-missing"
-    missing["orchestration"]["steps"][0]["calls"][0]["resource"] = "not_released"
+    missing["orchestration"]["steps"][0]["uses"] = "jobv3-cloud/not_released@prod"
     (directory / "job-plan-missing.yaml").write_text(
         yaml.safe_dump(missing, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )

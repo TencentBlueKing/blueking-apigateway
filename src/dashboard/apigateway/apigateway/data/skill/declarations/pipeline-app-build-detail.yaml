@@ -12,90 +12,72 @@ changelog: 首个官方版本：v4_app_build_list → v4_app_build_detail。
 orchestration:
   description: locate-build 只取一条，`data.records[0].id` 是 fetch-detail 的 `buildId`。两步的 `projectId`、`pipelineId` 相同，请求头 `X-DEVOPS-UID` 也相同。不传 `updateTimeDesc` 时列表按构建号降序，第一条就是符合条件的最近一次构建。
   inputs:
-  - name: project_id
-    type: string
-    required: true
-    description: 蓝盾项目英文名
-    example: my-game
-  - name: pipeline_id
-    type: string
-    required: true
-    description: 流水线 ID，形如 `p-` 开头的 32 位字符串
-    example: p-4b3a4baf5472466aa575973da87505b4
-  - name: devops_uid
-    type: string
-    required: true
-    description: 蓝盾用户名。两个接口都放在请求头 X-DEVOPS-UID，不放 query。网关不收用户 bk_token，蓝盾用这个头识别操作者。用户没给时先问，不要用应用 ID 或当前登录名猜测
-    example: zhangsan
-  - name: build_num
-    type: integer
-    required: false
-    description: 构建号。传入时 buildNoStart、buildNoEnd 都用它；不传则取符合其他条件的最近一次构建
-    example: 128
-  - name: build_status
-    type: array
-    required: false
-    description: 只在这些构建状态中找。用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
-    example:
-    - SUCCEED
+    project_id:
+      type: string
+      required: true
+      description: 蓝盾项目英文名
+      example: my-game
+    pipeline_id:
+      type: string
+      required: true
+      description: 流水线 ID，形如 `p-` 开头的 32 位字符串
+      example: p-4b3a4baf5472466aa575973da87505b4
+    devops_uid:
+      type: string
+      required: true
+      description: 蓝盾用户名。两个接口都放在请求头 X-DEVOPS-UID，不放 query。网关不收用户 bk_token，蓝盾用这个头识别操作者。用户没给时先问，不要用应用 ID 或当前登录名猜测
+      example: zhangsan
+    build_num:
+      type: integer
+      required: false
+      description: 构建号。传入时 buildNoStart、buildNoEnd 都用它；不传则取符合其他条件的最近一次构建
+      example: 128
+    build_status:
+      type: array
+      required: false
+      description: 只在这些构建状态中找。用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
+      example:
+      - SUCCEED
   outputs:
-  - name: build_id
-    type: string
-    description: 构建 ID
-    from: locate-build.v4_app_build_list.data.records[0].id
-  - name: build_num
-    type: integer
-    description: 构建号
-    from: fetch-detail.v4_app_build_detail.data.buildNum
-  - name: build_status
-    type: string
-    description: 构建状态，如 SUCCEED、FAILED、CANCELED、RUNNING
-    from: fetch-detail.v4_app_build_detail.data.status
-  - name: error_info
-    type: array
-    description: 失败插件、任务名和错误信息。成功时为空
-    from: fetch-detail.v4_app_build_detail.data.errorInfoList
+    build_id:
+      type: string
+      description: 构建 ID
+      value: ${{ steps.locate-build.outputs.data.records[0].id }}
+    build_num:
+      type: integer
+      description: 构建号
+      value: ${{ steps.fetch-detail.outputs.data.buildNum }}
+    build_status:
+      type: string
+      description: 构建状态，如 SUCCEED、FAILED、CANCELED、RUNNING
+      value: ${{ steps.fetch-detail.outputs.data.status }}
+    error_info:
+      type: array
+      description: 失败插件、任务名和错误信息。成功时为空
+      value: ${{ steps.fetch-detail.outputs.data.errorInfoList }}
   steps:
-  - name: locate-build
+  - id: locate-build
+    name: 查构建历史
+    uses: devops/v4_app_build_list@prod
     description: 查构建历史，只取一条。不传 updateTimeDesc，按构建号降序，第一条就是符合条件的最近一次构建。给了 build_num 时 buildNoStart、buildNoEnd 都传它；没给则都不传。data.records 为空时停止。X-DEVOPS-UID 放请求头，不放 query：bk-cli 用 --header 'X-DEVOPS-UID:<devops_uid>'，直接 HTTP 时放同名 Header。认证只带 bk_app_code 和 bk_app_secret，不要带 bk_token。
-    calls:
-    - gateway: devops
-      stage: prod
-      resource: v4_app_build_list
-      params:
-        projectId: inputs.project_id
-        pipelineId: inputs.pipeline_id
-        X-DEVOPS-UID: inputs.devops_uid
-        buildNoStart: inputs.build_num
-        buildNoEnd: inputs.build_num
-        status: inputs.build_status
-        page:
-          value: 1
-        pageSize:
-          value: 1
-      reads:
-      - status
-      - data.count
-      - data.records[0].id
-      - data.records[0].buildNum
-      - data.records[0].status
-  - name: fetch-detail
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      X-DEVOPS-UID: ${{ inputs.devops_uid }}
+      buildNoStart: ${{ inputs.build_num }}
+      buildNoEnd: ${{ inputs.build_num }}
+      status: ${{ inputs.build_status }}
+      page: 1
+      pageSize: 1
+  - id: fetch-detail
+    name: 查构建详情
+    uses: devops/v4_app_build_detail@prod
     description: 用 locate-build 的构建 ID 查详情。projectId、pipelineId、X-DEVOPS-UID 与上一步相同，X-DEVOPS-UID 仍然只放请求头。本步只读，状态是 RUNNING 或 QUEUE 时把当前状态告诉用户，不要轮询，也不要触发新构建。FAILED、CANCELED 时列出 errorInfoList 里的 atomCode、taskName、errorMsg。
-    calls:
-    - gateway: devops
-      stage: prod
-      resource: v4_app_build_detail
-      params:
-        projectId: inputs.project_id
-        pipelineId: inputs.pipeline_id
-        buildId: locate-build.v4_app_build_list.data.records[0].id
-        X-DEVOPS-UID: inputs.devops_uid
-      reads:
-      - status
-      - data.status
-      - data.errorInfoList[].atomCode
-      - data.errorInfoList[].taskName
-      - data.errorInfoList[].errorMsg
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      buildId: ${{ steps.locate-build.outputs.data.records[0].id }}
+      X-DEVOPS-UID: ${{ inputs.devops_uid }}
   guide:
     not_for: |-
       - 要下载产物：用「获取流水线构建产物下载链接」。那是用户态接口，要用户登录，不走本 Skill 的应用认证。

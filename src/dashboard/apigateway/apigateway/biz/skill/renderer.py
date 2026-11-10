@@ -18,7 +18,7 @@
 """SKILL.md 正文渲染。
 
 章节、顺序和固定文案在 data/skill/templates/SKILL.md.j2；这里只计算模板用到的数据：
-接口清单、输入输出、步骤，以及每次调用的 OpenAPI 3.1 片段。
+接口清单、输入输出、步骤，以及每一步的 OpenAPI 3.1 片段。步骤的 if 和 description 原样写出。
 """
 
 import json
@@ -38,11 +38,11 @@ from .constants import (
     SKILL_TEMPLATES_DIR,
     WRITE_METHODS,
 )
-from .refs import norm_path, parse_ref, poll_expr_paths, ref_text, ref_where
+from .refs import norm_path, parse_ref
 from .validator import ResourceKey, load_resources
 
 if TYPE_CHECKING:
-    from .declaration import SkillCall, SkillDeclaration, SkillOrchestration
+    from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
     from .resource_definition import ResourceDefinition, ResourceParam, ResourceProvider
 
 PARAM_LOCATION_ORDER = {"path": 0, "query": 1, "header": 2, "body": 3}
@@ -133,120 +133,93 @@ class _SkillBodyContext:
             "description": orchestration.description,
             "guide": orchestration.guide,
             "resources": list(self.resources.values()),
-            "inputs": orchestration.inputs,
-            "outputs": self._outputs(),
+            "inputs": [{"name": name, **item.model_dump()} for name, item in orchestration.inputs.items()],
+            "outputs": [
+                {"name": name, "type": item.type, "description": item.description, "source": item.value}
+                for name, item in orchestration.outputs.items()
+            ],
             "steps": self._steps(),
             "notation": self._notation(),
             "has_write": any(resource.method in WRITE_METHODS for resource in self.resources.values()),
         }
 
-    def _looped_calls(self) -> set:
-        return {(step.name, call.resource) for step, call in self.orchestration.iter_calls() if call.for_each}
-
-    def _outputs(self) -> List[Dict[str, Any]]:
-        looped = self._looped_calls()
-        outputs = []
-        for output in self.orchestration.outputs:
-            parsed = parse_ref(output.from_)
-            outputs.append(
-                {
-                    "name": output.name,
-                    "type": output.type,
-                    "description": output.description,
-                    "source": output.from_,
-                    "looped": parsed.kind == "call" and (parsed.step, parsed.resource) in looped,
-                }
-            )
-        return outputs
-
     def _steps(self) -> List[Dict[str, Any]]:
         used_fields = _used_response_fields(self.orchestration)
-        steps, index = [], 0
-        for step in self.orchestration.steps:
-            calls = []
-            for call in step.calls:
-                index += 1
-                resource = self.resources[call.key]
-                calls.append(
-                    {
-                        "index": index,
-                        "resource": call.resource,
-                        "for_each": call.for_each,
-                        "openapi": _render_operation(
-                            self.orchestration, call, resource, used_fields.get((step.name, call.resource), [])
-                        ),
-                        "credentials": [
-                            param.name
-                            for param in resource.params
-                            if param.name in CREDENTIAL_PARAMS and param.name not in call.params
-                        ],
-                        "unmapped": [
-                            param.name
-                            for param in resource.params
-                            if param.required and param.name not in call.params and param.name not in CREDENTIAL_PARAMS
-                        ],
-                        "poll": call.poll,
-                        "poll_has_streak": bool(call.poll)
-                        and any(times > 1 for _, times in call.poll.stop_conditions),  # type: ignore[union-attr]
-                    }
-                )
-            steps.append({"name": step.name, "description": step.description, "calls": calls})
+        steps = []
+        for index, step in enumerate(self.orchestration.steps, 1):
+            resource = self.resources[step.key]
+            title = f"{index}. {step.id} / {step.resource}"
+            if step.name:
+                title += f"：{step.name}"
+            steps.append(
+                {
+                    "index": index,
+                    "id": step.id,
+                    "name": step.name,
+                    "resource": step.resource,
+                    "title": title,
+                    "condition": step.if_,
+                    "description": step.description,
+                    "openapi": _render_operation(self.orchestration, step, resource, used_fields.get(step.id, [])),
+                    "credentials": [
+                        param.name
+                        for param in resource.params
+                        if param.name in CREDENTIAL_PARAMS and param.name not in step.with_
+                    ],
+                    "unmapped": _unmapped_params(step, resource),
+                }
+            )
         return steps
 
     def _notation(self) -> Dict[str, Any]:
         """本 Skill 的取值和 OpenAPI 片段里实际出现的写法，说明里只写这些"""
-        calls = [call for _, call in self.orchestration.iter_calls()]
-        call_refs = [ref for call in calls for ref in call.params.values()]
-        texts = [ref_text(ref) for ref in call_refs]
-        texts += [output.from_ for output in self.orchestration.outputs]
-        texts += [call.for_each.from_ for call in calls if call.for_each]
-        refs = [text for text in texts if text]
+        steps = self.orchestration.steps
+        values = [value for step in steps for value in step.with_.values()]
+        refs = [value for value in values if parse_ref(value).kind != "value"]
+        refs += [output.value for output in self.orchestration.outputs.values()]
 
-        locations = set()
-        for call in calls:
-            resource = self.resources[call.key]
-            locations |= {_get_param(resource, name).location for name in call.params}
+        locations, unmapped = set(), False
+        for step in steps:
+            resource = self.resources[step.key]
+            names = _unmapped_params(step, resource)
+            unmapped = unmapped or bool(names)
+            locations |= {_get_param(resource, name).location for name in [*step.with_, *names]}
 
         return {
             "places": [place for place in NOTATION_PLACES if place in locations],
             "body": "body" in locations,
             "index": any(re.search(r"\[\d+\]", ref) for ref in refs),
             "all": any("[]" in ref for ref in refs),
-            "each": any(ref.startswith("each.") for ref in refs),
-            "call": any(parse_ref(ref).kind == "call" for ref in refs),
-            "value": any(parse_ref(ref).kind == "value" for ref in call_refs),
-            "where": any(ref_where(ref) for ref in call_refs),
-            "omit": any(self.orchestration.is_omittable_input_ref(ref) for ref in call_refs),
+            "step": any(parse_ref(ref).kind == "step" for ref in refs),
+            "value": any(parse_ref(value).kind == "value" for value in values),
+            "omit": any(self.orchestration.is_omittable_input_ref(value) for value in values),
+            "unmapped": unmapped,
+            "condition": any(step.if_ for step in steps),
         }
 
 
-def _used_response_fields(orchestration: SkillOrchestration) -> Dict[Tuple[str, str], List[str]]:
-    """每个 (step, resource) 要读的响应字段：本调用 reads 和 poll 用到的，以及被后续 for_each / params / outputs 直接引用的。
+def _unmapped_params(step: SkillStep, resource: ResourceDefinition) -> List[str]:
+    """资源定义里必填、with 没写的参数（认证凭据除外），取值由步骤说明交代"""
+    return [
+        param.name
+        for param in resource.params
+        if (param.required or param.location == "path")
+        and param.name not in step.with_
+        and param.name not in CREDENTIAL_PARAMS
+    ]
 
-    逐个调用通过 each.* 用到的子字段写在那次调用的参数表里，这里不再列；列了子字段时不再单独列它的前缀。
-    """
-    used: Dict[Tuple[str, str], List[str]] = {}
 
-    def add(step: str, resource: str, path: str) -> None:
-        paths = used.setdefault((step, resource), [])
-        if path not in paths:
-            paths.append(path)
-
-    def add_ref(ref: Any) -> None:
-        parsed = parse_ref(ref)
-        if parsed.kind == "call":
-            add(parsed.step, parsed.resource, parsed.path)
-
-    for step, call in orchestration.iter_calls():
-        poll_paths = poll_expr_paths(call.poll.exprs) if call.poll else []
-        for path in call.reads + poll_paths:
-            add(step.name, call.resource, path)
-        if call.for_each:
-            add_ref(call.for_each.from_)
-        for ref in call.params.values():
-            add_ref(ref)
-    for output in orchestration.outputs:
-        add_ref(output.from_)
+def _used_response_fields(orchestration: SkillOrchestration) -> Dict[str, List[str]]:
+    """每一步要读的响应字段：被后续 with、outputs 直接引用的字段；列了子字段时不再单独列它的前缀"""
+    used: Dict[str, List[str]] = {}
+    values = [value for step in orchestration.steps for value in step.with_.values()]
+    values += [output.value for output in orchestration.outputs.values()]
+    for value in values:
+        parsed = parse_ref(value)
+        if parsed.kind == "step":
+            paths = used.setdefault(parsed.step, [])
+            if parsed.path not in paths:
+                paths.append(parsed.path)
 
     for key, paths in used.items():
         normed = [norm_path(path) for path in paths]
@@ -295,13 +268,10 @@ def _type_schema(type_text: str) -> _Flow:
     return _Flow(type=type_text)
 
 
-def _binding_fields(orchestration: SkillOrchestration, ref: Any) -> Dict[str, Any]:
-    parsed = parse_ref(ref)
-    fields: Dict[str, Any] = {"x-value": parsed.value} if parsed.kind == "value" else {"x-from": ref_text(ref)}
-    where = ref_where(ref)
-    if where:
-        fields["x-where"] = where
-    if orchestration.is_omittable_input_ref(ref):
+def _binding_fields(orchestration: SkillOrchestration, value: Any) -> Dict[str, Any]:
+    parsed = parse_ref(value)
+    fields: Dict[str, Any] = {"x-value": parsed.value} if parsed.kind == "value" else {"x-from": value}
+    if orchestration.is_omittable_input_ref(value):
         fields["x-omit-if-unset"] = True
     return fields
 
@@ -343,27 +313,30 @@ def _get_param(resource: ResourceDefinition, name: str) -> ResourceParam:
 
 
 def _build_params(
-    orchestration: SkillOrchestration, call: SkillCall, resource: ResourceDefinition
+    orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[str]]:
-    """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性"""
+    """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性；
+    必填但没写进 with 的参数也列出，不带取值
+    """
 
-    def order(item: Tuple[str, Any]) -> Tuple[int, int]:
-        location = _get_param(resource, item[0]).location
-        position = resource.path.find("{" + item[0] + "}") if location == "path" else 0
+    def order(name: str) -> Tuple[int, int]:
+        location = _get_param(resource, name).location
+        position = resource.path.find("{" + name + "}") if location == "path" else 0
         return PARAM_LOCATION_ORDER.get(location, 9), position
 
     params: List[Dict[str, Any]] = []
     body: Dict[str, Any] = {}
     body_required: List[str] = []
-    for name, ref in sorted(call.params.items(), key=order):
+    for name in sorted([*step.with_, *_unmapped_params(step, resource)], key=order):
         spec = _get_param(resource, name)
         required = spec.required or spec.location == "path"
         schema: Optional[_Flow] = _type_schema(spec.type) if spec.type else None
+        binding = _binding_fields(orchestration, step.with_[name]) if name in step.with_ else {}
         if spec.location == "body":
             prop: Dict[str, Any] = dict(schema or {})
             if spec.description:
                 prop["description"] = spec.description
-            prop.update(_binding_fields(orchestration, ref))
+            prop.update(binding)
             body[name] = prop
             if required:
                 body_required.append(name)
@@ -375,19 +348,19 @@ def _build_params(
             item["description"] = spec.description
         if schema:
             item["schema"] = schema
-        item.update(_binding_fields(orchestration, ref))
+        item.update(binding)
         params.append(item)
     return params, body, body_required
 
 
 def _render_operation(
-    orchestration: SkillOrchestration, call: SkillCall, resource: ResourceDefinition, response_paths: List[str]
+    orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition, response_paths: List[str]
 ) -> str:
-    params, body, body_required = _build_params(orchestration, call, resource)
+    params, body, body_required = _build_params(orchestration, step, resource)
     operation: Dict[str, Any] = {
-        "operationId": call.resource,
-        "x-bk-gateway": call.gateway,
-        "x-bk-stage": call.stage,
+        "operationId": step.resource,
+        "x-bk-gateway": step.gateway,
+        "x-bk-stage": step.stage,
     }
     if params:
         operation["parameters"] = params

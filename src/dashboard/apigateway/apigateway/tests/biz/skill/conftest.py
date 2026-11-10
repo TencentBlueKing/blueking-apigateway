@@ -137,5 +137,5 @@ def static_provider(resources_data) -> StaticResourceProvider:
 
 @pytest.fixture
 def job_plan_data() -> dict:
-    """三步编排：run-plan -> wait-result（poll）-> collect-log（for_each）。规则测试都改这一份"""
+    """三步编排：run-plan -> wait-result（说明里写轮询）-> collect-log（带 if，说明里写逐个调用）。规则测试都改这一份"""
     return load_declaration_data("job-plan-run-and-log")

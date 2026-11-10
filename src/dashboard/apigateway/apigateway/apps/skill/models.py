@@ -155,7 +155,7 @@ class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
 
 
 class SkillVersionRelation(models.Model):
-    """从某一版 steps[].calls 拆出的网关名、资源名，按 (gateway_name, resource_name) 去重，供检索
+    """从某一版 steps[].uses 拆出的网关名、资源名，按 (gateway_name, resource_name) 去重，供检索
 
     metadata 是用于直接按 Skill 检索的冗余外键，写入时必须取自 version.metadata_id。
     """

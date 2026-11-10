@@ -18,7 +18,6 @@
 import pytest
 
 from apigateway.biz.skill.declaration import parse_declaration
-from apigateway.biz.skill.refs import poll_expr_paths
 from apigateway.biz.skill.validator import MissingResource, validate_declaration
 from apigateway.tests.biz.skill.conftest import GOLDEN_NAMES, load_declaration_data
 from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
@@ -30,16 +29,8 @@ def _validate(data: dict, provider):
     return validate_declaration(parse_declaration(data), provider)
 
 
-def _run_call(data: dict) -> dict:
-    return data["orchestration"]["steps"][0]["calls"][0]
-
-
-def _status_call(data: dict) -> dict:
-    return data["orchestration"]["steps"][1]["calls"][0]
-
-
-def _log_call(data: dict) -> dict:
-    return data["orchestration"]["steps"][2]["calls"][0]
+def _with(data: dict, index: int) -> dict:
+    return data["orchestration"]["steps"][index]["with"]
 
 
 class TestValidateDeclaration:
@@ -78,61 +69,69 @@ class TestValidateDeclaration:
         assert result.warnings == []
 
     def test_param_not_in_definition_is_error(self, static_provider, job_plan_data):
-        _run_call(job_plan_data)["params"]["unknown"] = "inputs.bk_scope_id"
+        _with(job_plan_data, 0)["unknown"] = "${{ inputs.bk_scope_id }}"
 
         result = _validate(job_plan_data, static_provider)
 
-        assert result.errors == ["run-plan.execute_job_plan：参数 unknown 不在资源定义中"]
+        assert result.errors == ["run-plan：参数 unknown 不在资源定义中"]
         assert result.warnings == []
 
     def test_unknown_input(self, static_provider, job_plan_data):
-        _run_call(job_plan_data)["params"]["job_plan_id"] = "inputs.not_exists"
+        _with(job_plan_data, 0)["job_plan_id"] = "${{ inputs.not_exists }}"
 
         assert _validate(job_plan_data, static_provider).errors == [
-            "run-plan.execute_job_plan.params.job_plan_id：输入 not_exists 不存在"
+            "run-plan.with.job_plan_id：输入 not_exists 不存在"
         ]
 
-    def test_ref_to_later_call(self, static_provider, job_plan_data):
-        _run_call(job_plan_data)["params"]["bk_scope_id"] = "wait-result.get_job_instance_status.data.finished"
+    @pytest.mark.parametrize("ref_step", ["wait-result", "run-plan", "not-exists"])
+    def test_ref_to_non_previous_step(self, static_provider, job_plan_data, ref_step):
+        _with(job_plan_data, 0)["bk_scope_id"] = f"${{{{ steps.{ref_step}.outputs.data.finished }}}}"
 
         errors = _validate(job_plan_data, static_provider).errors
 
-        assert errors == [
-            "run-plan.execute_job_plan.params.bk_scope_id：引用的调用 wait-result.get_job_instance_status 不在当前调用之前"
-        ]
+        assert errors == [f"run-plan.with.bk_scope_id：引用的步骤 {ref_step} 不在当前步骤之前"]
 
-    def test_ref_to_call_repeated_in_step(self, static_provider, job_plan_data):
-        steps = job_plan_data["orchestration"]["steps"]
-        steps[0]["calls"].append(dict(_run_call(job_plan_data)))
+    def test_output_ref_to_unknown_step(self, static_provider, job_plan_data):
+        job_plan_data["orchestration"]["outputs"]["job_status"]["value"] = "${{ steps.not-exists.outputs.data }}"
 
         errors = _validate(job_plan_data, static_provider).errors
 
-        assert any("在步骤 run-plan 内出现多次" in error for error in errors), errors
+        assert errors == ["outputs.job_status：引用的步骤 not-exists 不在当前步骤之前"]
+
+    def test_unmapped_required_param_not_reported(self, static_provider, job_plan_data):
+        _with(job_plan_data, 0).pop("job_plan_id")
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
+
+    def test_literal_value_not_type_checked(self, static_provider, job_plan_data):
+        _with(job_plan_data, 0)["job_plan_id"] = "1024"
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
 
     @pytest.mark.parametrize(
         "patch, expected",
         [
             (
-                lambda data: _run_call(data)["params"].update(job_plan_id="inputs.bk_scope_id"),
-                "run-plan.execute_job_plan.params.job_plan_id：输入类型 string 与参数类型 integer 不一致",
+                lambda data: _with(data, 0).update(job_plan_id="${{ inputs.bk_scope_id }}"),
+                "run-plan.with.job_plan_id：输入类型 string 与参数类型 integer 不一致",
             ),
             (
-                lambda data: _run_call(data)["params"].pop("job_plan_id"),
-                "run-plan.execute_job_plan：必填参数 job_plan_id 未映射，需在步骤说明中交代",
-            ),
-            (
-                lambda data: _log_call(data)["params"].update(step_instance_id="each.not_exists"),
+                lambda data: _with(data, 2).update(
+                    job_instance_id="${{ steps.wait-result.outputs.data.step_instance_list[].not_exists }}"
+                ),
                 (
-                    "collect-log.batch_get_job_instance_ip_log.params.step_instance_id："
+                    "collect-log.with.job_instance_id："
                     "get_job_instance_status 的响应定义中没有 data.step_instance_list[].not_exists"
                 ),
             ),
             (
-                lambda data: _status_call(data)["reads"].append("data.not_exists"),
-                "wait-result.get_job_instance_status.reads：响应定义中没有 data.not_exists",
-            ),
-            (
-                lambda data: data["orchestration"]["outputs"][0].update({"from": "run-plan.execute_job_plan.missing"}),
+                lambda data: data["orchestration"]["outputs"]["job_instance_id"].update(
+                    value="${{ steps.run-plan.outputs.missing }}"
+                ),
                 "outputs.job_instance_id：execute_job_plan 的响应定义中没有 missing",
             ),
         ],
@@ -144,14 +143,3 @@ class TestValidateDeclaration:
 
         assert result.errors == []
         assert expected in result.warnings, result.warnings
-
-    def test_poll_field_warning(self, static_provider, job_plan_data):
-        job_plan_data["orchestration"]["steps"][1]["calls"][0]["poll"]["until"] = "data.not_exists == true"
-
-        warnings = _validate(job_plan_data, static_provider).warnings
-
-        assert "wait-result.get_job_instance_status.poll：响应定义中没有 data.not_exists" in warnings
-
-    def test_invalid_poll_expr_is_not_swallowed(self):
-        with pytest.raises(ValueError, match="轮询表达式"):
-            poll_expr_paths(["not an expr"])

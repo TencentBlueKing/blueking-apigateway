@@ -56,19 +56,29 @@ class TestParseDeclaration:
     def test_orchestration_data_keeps_unset_fields_out(self, job_plan_data):
         data = parse_declaration(job_plan_data).orchestration_data()
 
-        assert data["outputs"][0]["from"] == "run-plan.execute_job_plan.data.job_instance_id"
-        assert "from_" not in data["outputs"][0]
+        assert data["outputs"]["job_instance_id"]["value"] == "${{ steps.run-plan.outputs.data.job_instance_id }}"
         # global_var_list 没写 default，不能导出成 default: null
-        global_var_list = next(item for item in data["inputs"] if item["name"] == "global_var_list")
-        assert "default" not in global_var_list
+        assert "default" not in data["inputs"]["global_var_list"]
+        # if、with 按原键名导出；没写 if 的步骤不导出 if: null
+        assert data["steps"][2]["if"] == job_plan_data["orchestration"]["steps"][2]["if"]
+        assert "if" not in data["steps"][0]
+        assert data["steps"][1]["with"]["return_ip_result"] is True
+        assert data == job_plan_data["orchestration"]
 
     def test_has_default(self, job_plan_data):
         orchestration = parse_declaration(job_plan_data).orchestration
 
         assert orchestration.get_input("bk_scope_type").has_default
         assert not orchestration.get_input("global_var_list").has_default
-        assert orchestration.is_omittable_input_ref("inputs.global_var_list")
-        assert not orchestration.is_omittable_input_ref("inputs.bk_scope_id")
+        assert orchestration.is_omittable_input_ref("${{ inputs.global_var_list }}")
+        assert not orchestration.is_omittable_input_ref("${{ inputs.bk_scope_id }}")
+        assert not orchestration.is_omittable_input_ref("inputs.global_var_list")
+
+    def test_step_target(self, job_plan_data):
+        step = parse_declaration(job_plan_data).orchestration.steps[0]
+
+        assert step.key == ("jobv3-cloud", "prod", "execute_job_plan")
+        assert (step.gateway, step.stage, step.resource) == step.key
 
 
 class TestTopLevelRules:
@@ -122,139 +132,126 @@ class TestTopLevelRules:
 
 
 class TestOrchestrationRules:
-    def test_step_name_trailing_newline(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][0]["name"] = "run-plan\n"
+    def test_step_id_trailing_newline(self, job_plan_data):
+        job_plan_data["orchestration"]["steps"][0]["id"] = "run-plan\n"
 
         assert _errors(job_plan_data)
 
-    def test_duplicate_step_name(self, job_plan_data):
+    def test_duplicate_step_id(self, job_plan_data):
         steps = job_plan_data["orchestration"]["steps"]
-        steps[1]["name"] = steps[0]["name"]
+        steps[1]["id"] = steps[0]["id"]
 
-        assert _errors(job_plan_data)
+        errors = _errors(job_plan_data)
 
-    def test_empty_calls(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][0]["calls"] = []
+        assert any("步骤 id 重复：run-plan" in error for error in errors), errors
 
-        assert _errors(job_plan_data)
+    @pytest.mark.parametrize("field", ["id", "uses", "description"])
+    def test_step_required_field(self, job_plan_data, field):
+        job_plan_data["orchestration"]["steps"][0].pop(field)
 
-    def test_each_without_for_each(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][2]["calls"][0].pop("for_each")
+        errors = _errors(job_plan_data)
 
-        assert _errors(job_plan_data)
+        assert f"orchestration.steps[0].{field}: 缺少必填字段" in errors
 
-    def test_for_each_must_reference_call(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][2]["calls"][0]["for_each"]["from"] = "inputs.bk_scope_id"
+    @pytest.mark.parametrize("field", ["name", "if", "description"])
+    def test_step_text_not_empty(self, job_plan_data, field):
+        job_plan_data["orchestration"]["steps"][2][field] = " "
 
-        assert _errors(job_plan_data)
+        errors = _errors(job_plan_data)
 
-    def test_poll_with_for_each(self, job_plan_data):
-        call = job_plan_data["orchestration"]["steps"][2]["calls"][0]
-        call["poll"] = copy.deepcopy(job_plan_data["orchestration"]["steps"][1]["calls"][0]["poll"])
+        assert any(error.startswith(f"orchestration.steps[2].{field}") for error in errors), errors
 
-        assert _errors(job_plan_data)
+    def test_name_if_with_optional(self, job_plan_data):
+        step = job_plan_data["orchestration"]["steps"][0]
+        for field in ("name", "if", "with"):
+            step.pop(field, None)
+
+        parsed = parse_declaration(job_plan_data).orchestration.steps[0]
+
+        assert (parsed.name, parsed.if_, parsed.with_) == (None, None, {})
 
     @pytest.mark.parametrize(
-        "patch",
+        "uses",
         [
-            {"interval": 0},
-            {"max": -1},
-            {"max": True},
-            {"until": "data.finished"},
-            {"until": "data.list[].status == 1"},
-            {"stop_when": [{"expr": "data.status == 3", "times": 0}]},
-            {"stop_when": [{"expr": "data.status == 3", "times": True}]},
-            {"stop_when": [{"expr": "data.list[].status == 1", "times": 2}]},
+            "jobv3-cloud/execute_job_plan",
+            "jobv3-cloud@prod",
+            "jobv3-cloud/execute_job_plan@prod/x",
+            "../../etc/execute_job_plan@prod",
+            "Job/execute_job_plan@prod",
+            "jobv3-cloud/get-task@prod",
+            "jobv3-cloud/execute_job_plan@../prod",
         ],
     )
-    def test_invalid_poll(self, job_plan_data, patch):
-        job_plan_data["orchestration"]["steps"][1]["calls"][0]["poll"].update(patch)
+    def test_invalid_uses(self, job_plan_data, uses):
+        job_plan_data["orchestration"]["steps"][0]["uses"] = uses
 
-        assert _errors(job_plan_data)
+        errors = _errors(job_plan_data)
+
+        assert any(error.startswith("orchestration.steps[0].uses") for error in errors), errors
 
     @pytest.mark.parametrize(
-        "ref",
+        "value",
         [
-            "a.b",
-            {"value": 1, "extra": 2},
-            {"ref": "inputs.limit", "where": ""},
-            1,
+            "${{ inputs.job_plan_id }} ",
+            "id-${{ inputs.job_plan_id }}",
+            "${{ inputs.a }}${{ inputs.b }}",
+            "${{ env.JOB_PLAN_ID }}",
+            "${{ steps.run-plan.data.job_instance_id }}",
+            "${{ steps.run-plan.outputs. }}",
+            "${{ inputs.作业 }}",
+            {"id": "${{ inputs.job_plan_id }}"},
+            ["${{ inputs.job_plan_id }}"],
         ],
     )
-    def test_invalid_ref(self, job_plan_data, ref):
-        job_plan_data["orchestration"]["steps"][0]["calls"][0]["params"]["job_plan_id"] = ref
-
-        assert _errors(job_plan_data)
-
-    def test_stop_when_streak(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][1]["calls"][0]["poll"]["stop_when"] = [
-            "result == false",
-            {"expr": "data.job_instance.status == 7", "times": 3},
-        ]
-
-        declaration = parse_declaration(job_plan_data)
-        poll = declaration.orchestration.steps[1].calls[0].poll
-
-        assert poll.stop_conditions == [
-            ("result == false", 1),
-            ("data.job_instance.status == 7", 3),
-        ]
-        assert declaration.orchestration_data()["steps"][1]["calls"][0]["poll"]["stop_when"][1] == {
-            "expr": "data.job_instance.status == 7",
-            "times": 3,
-        }
-
-    def test_nested_where_rejected(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][1]["calls"][0]["params"]["job_instance_id"] = {
-            "ref": {"ref": "run-plan.execute_job_plan.data.step_instance_list[].id", "where": "w1"},
-            "where": "w2",
-        }
+    def test_invalid_ref(self, job_plan_data, value):
+        job_plan_data["orchestration"]["steps"][0]["with"]["job_plan_id"] = value
 
         errors = _errors(job_plan_data)
 
-        assert any("ref 应为字符串" in error for error in errors), errors
+        assert any(error.startswith("orchestration.steps[0].with.job_plan_id") for error in errors), errors
 
-    def test_output_cannot_use_each(self, job_plan_data):
-        job_plan_data["orchestration"]["outputs"][0]["from"] = "each.job_instance_id"
+    @pytest.mark.parametrize("value", [1, "inputs.job_plan_id", {"value": 1}, [1, 2], None, "${ip_list}"])
+    def test_literal_value(self, job_plan_data, value):
+        job_plan_data["orchestration"]["steps"][0]["with"]["job_plan_id"] = value
 
-        errors = _errors(job_plan_data)
+        step = parse_declaration(job_plan_data).orchestration.steps[0]
 
-        assert any("each" in error for error in errors), errors
+        assert step.with_["job_plan_id"] == value
 
-    @pytest.mark.parametrize(
-        "field, value",
-        [
-            ("gateway", "../../etc"),
-            ("gateway", "Job"),
-            ("stage", "../prod"),
-            ("resource", "get-task"),
-        ],
-    )
-    def test_invalid_call_target(self, job_plan_data, field, value):
-        job_plan_data["orchestration"]["steps"][0]["calls"][0][field] = value
+    @pytest.mark.parametrize("value", [1, "data.job_instance_id", "x ${{ inputs.bk_scope_id }}"])
+    def test_output_must_be_ref(self, job_plan_data, value):
+        job_plan_data["orchestration"]["outputs"]["job_instance_id"]["value"] = value
 
         errors = _errors(job_plan_data)
 
-        assert any(error.startswith(f"orchestration.steps[0].calls[0].{field}") for error in errors), errors
+        assert any(error.startswith("orchestration.outputs.job_instance_id.value") for error in errors), errors
 
-    def test_where_requires_array_path(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][1]["calls"][0]["params"]["job_instance_id"] = {
-            "ref": "run-plan.execute_job_plan.data.job_instance_id",
-            "where": "id == 1",
-        }
+    @pytest.mark.parametrize("name", ["1st", "业务", "a.b"])
+    def test_invalid_input_name(self, job_plan_data, name):
+        job_plan_data["orchestration"]["inputs"][name] = copy.deepcopy(
+            job_plan_data["orchestration"]["inputs"]["bk_scope_id"]
+        )
 
         errors = _errors(job_plan_data)
 
-        assert any("where" in error for error in errors), errors
+        assert any("输入名不合规" in error for error in errors), errors
+
+    def test_inputs_must_be_mapping(self, job_plan_data):
+        job_plan_data["orchestration"]["inputs"] = [{"name": "bk_scope_id"}]
+
+        errors = _errors(job_plan_data)
+
+        assert errors == ["orchestration.inputs: 应为对象"]
 
     def test_guide_fields_required(self, job_plan_data):
         job_plan_data["orchestration"]["guide"]["example"] = ""
 
         assert _errors(job_plan_data)
 
-    def test_unknown_call_field(self, job_plan_data):
-        job_plan_data["orchestration"]["steps"][0]["calls"][0]["foo"] = 1
+    @pytest.mark.parametrize("field", ["calls", "params", "poll", "for_each", "reads", "run", "env"])
+    def test_unknown_step_field(self, job_plan_data, field):
+        job_plan_data["orchestration"]["steps"][0][field] = 1
 
         errors = _errors(job_plan_data)
 
-        assert errors == ["orchestration.steps[0].calls[0].foo: 未知字段"]
+        assert errors == [f"orchestration.steps[0].{field}: 未知字段"]

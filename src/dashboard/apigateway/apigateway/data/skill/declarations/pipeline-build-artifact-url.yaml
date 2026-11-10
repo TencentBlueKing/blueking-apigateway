@@ -10,117 +10,94 @@ tags:
 version: 1.0.0
 changelog: 首个官方版本：v4_user_build_list → v4_user_build_status → v4_user_artifactory_list → user_artifactory_thirdPartyDownloadUrl。
 orchestration:
-  description: locate-build 得到构建 ID（`data.records[0].id`），后续接口都用它；所有接口的 `projectId` 相同。只有构建状态为 SUCCEED 才进入 fetch-artifacts。
+  description: locate-build 得到构建 ID（`data.records[0].id`），后续接口都用它；所有接口的 `projectId` 相同。只有构建状态为 SUCCEED 才执行 list-artifacts、get-download-urls。
   inputs:
-  - name: project_id
-    type: string
-    required: true
-    description: 蓝盾项目英文名
-    example: my-game
-  - name: pipeline_id
-    type: string
-    required: true
-    description: 流水线 ID，形如 `p-` 开头的 32 位字符串
-    example: p-4b3a4baf5472466aa575973da87505b4
-  - name: build_num
-    type: integer
-    required: false
-    description: 构建号；不传则取最近一次构建
-    example: 128
-  - name: build_status
-    type: array
-    required: false
-    description: 只在这些构建状态中找。用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
-    example:
-    - SUCCEED
-  - name: ttl
-    type: integer
-    required: false
-    description: 下载链接有效期，秒
-    example: 3600
-    default: 3600
+    project_id:
+      type: string
+      required: true
+      description: 蓝盾项目英文名
+      example: my-game
+    pipeline_id:
+      type: string
+      required: true
+      description: 流水线 ID，形如 `p-` 开头的 32 位字符串
+      example: p-4b3a4baf5472466aa575973da87505b4
+    build_num:
+      type: integer
+      required: false
+      description: 构建号；不传则取最近一次构建
+      example: 128
+    build_status:
+      type: array
+      required: false
+      description: 只在这些构建状态中找。用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
+      example:
+      - SUCCEED
+    ttl:
+      type: integer
+      required: false
+      description: 下载链接有效期，秒
+      example: 3600
+      default: 3600
   outputs:
-  - name: build_id
-    type: string
-    description: 构建 ID
-    from: locate-build.v4_user_build_list.data.records[0].id
-  - name: build_num
-    type: integer
-    description: 构建号
-    from: locate-build.v4_user_build_list.data.records[0].buildNum
-  - name: build_status
-    type: string
-    description: 构建状态
-    from: check-build.v4_user_build_status.data.status
-  - name: artifacts
-    type: array
-    description: 产物列表：文件名、大小、路径、仓库类型
-    from: fetch-artifacts.v4_user_artifactory_list.data.records
-  - name: download_urls
-    type: array
-    description: 每个可下载产物的临时下载地址，与跳过文件夹、IMAGE、REPORT 后的 artifacts 一一对应
-    from: fetch-artifacts.user_artifactory_thirdPartyDownloadUrl.data
+    build_id:
+      type: string
+      description: 构建 ID
+      value: ${{ steps.locate-build.outputs.data.records[0].id }}
+    build_num:
+      type: integer
+      description: 构建号
+      value: ${{ steps.locate-build.outputs.data.records[0].buildNum }}
+    build_status:
+      type: string
+      description: 构建状态
+      value: ${{ steps.check-build.outputs.data.status }}
+    artifacts:
+      type: array
+      description: 产物列表：文件名、大小、路径、仓库类型
+      value: ${{ steps.list-artifacts.outputs.data.records }}
+    download_urls:
+      type: array
+      description: 每个可下载产物的临时下载地址，与跳过文件夹、IMAGE、REPORT 后的 artifacts 一一对应
+      value: ${{ steps.get-download-urls.outputs.data }}
   steps:
-  - name: locate-build
-    description: 查构建历史，只取一条：不传 `updateTimeDesc` 时按构建号降序，第一条就是符合条件的最近一次构建。给了 `build_num` 时 `buildNoStart`、`buildNoEnd` 都传它；没给则都不传。`data.records`
-      为空时停止。`data.hasDownloadPermission` 为 false 时停止，告诉用户没有该流水线的下载权限，后面的接口也拿不到可用地址。
-    calls:
-    - gateway: devops
-      stage: prod
-      resource: v4_user_build_list
-      params:
-        projectId: inputs.project_id
-        pipelineId: inputs.pipeline_id
-        buildNoStart: inputs.build_num
-        buildNoEnd: inputs.build_num
-        status: inputs.build_status
-        page:
-          value: 1
-        pageSize:
-          value: 1
-      reads:
-      - data.hasDownloadPermission
-      - data.records[0].status
-  - name: check-build
-    description: 查构建状态，RUNNING、QUEUE 时轮询等待。SUCCEED 继续；REVIEWING 表示在等人工审核，告诉用户后停止；FAILED、CANCELED 等不生成下载地址，报告 `errorInfoList`；到达次数上限仍在进行中时返回当前状态。没给 `build_num` 也没给 `build_status`、而最近一次构建没有成功时，用户多半想要能用的包：说明这次构建的状态，并问是否改取最近一次成功的构建，同意后 `build_status` 传 `["SUCCEED"]` 从第 1 步重新开始。
-    calls:
-    - gateway: devops
-      stage: prod
-      resource: v4_user_build_status
-      params:
-        projectId: inputs.project_id
-        pipelineId: inputs.pipeline_id
-        buildId: locate-build.v4_user_build_list.data.records[0].id
-      poll:
-        interval: 30
-        max: 10
-        until: data.status not in ["RUNNING", "QUEUE"]
-        stop_when:
-        - status != 0
-      reads:
-      - data.errorInfoList[].atomCode
-      - data.errorInfoList[].errorMsg
-  - name: fetch-artifacts
-    description: 先列出产物，再给每个可下载的文件生成下载地址。IMAGE、REPORT 类产物和文件夹不能生成下载地址，列在回复里并说明原因。`path` 原样传递，不要自己做 URL 编码。
-    calls:
-    - gateway: devops
-      stage: prod
-      resource: v4_user_artifactory_list
-      params:
-        projectId: inputs.project_id
-        pipelineId: inputs.pipeline_id
-        buildId: locate-build.v4_user_build_list.data.records[0].id
-    - gateway: devops
-      stage: prod
-      resource: user_artifactory_thirdPartyDownloadUrl
-      for_each:
-        from: fetch-artifacts.v4_user_artifactory_list.data.records
-        where: '`folder` 为 false，且 `artifactoryType` 为 PIPELINE 或 CUSTOM_DIR'
-      params:
-        projectId: inputs.project_id
-        artifactoryType: each.artifactoryType
-        path: each.fullPath
-        ttl: inputs.ttl
+  - id: locate-build
+    name: 查构建历史
+    uses: devops/v4_user_build_list@prod
+    description: 查构建历史，只取一条：不传 `updateTimeDesc` 时按构建号降序，第一条就是符合条件的最近一次构建。给了 `build_num` 时 `buildNoStart`、`buildNoEnd` 都传它；没给则都不传。`data.records` 为空时停止。`data.hasDownloadPermission` 为 false 时停止，告诉用户没有该流水线的下载权限，后面的接口也拿不到可用地址。
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      buildNoStart: ${{ inputs.build_num }}
+      buildNoEnd: ${{ inputs.build_num }}
+      status: ${{ inputs.build_status }}
+      page: 1
+      pageSize: 1
+  - id: check-build
+    name: 查构建状态
+    uses: devops/v4_user_build_status@prod
+    description: 状态为 RUNNING、QUEUE 时每 30 秒查一次，最多 10 次，状态不再是 RUNNING、QUEUE 时结束；外层 `status` 不为 0 时立即停止。SUCCEED 继续；REVIEWING 表示在等人工审核，告诉用户后停止；FAILED、CANCELED 等不生成下载地址，报告 `errorInfoList`；到达次数上限仍在进行中时返回当前状态。没给 `build_num` 也没给 `build_status`、而最近一次构建没有成功时，用户多半想要能用的包：说明这次构建的状态，并问是否改取最近一次成功的构建，同意后 `build_status` 传 `["SUCCEED"]` 从第 1 步重新开始。
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      buildId: ${{ steps.locate-build.outputs.data.records[0].id }}
+  - id: list-artifacts
+    name: 列出构建产物
+    uses: devops/v4_user_artifactory_list@prod
+    if: 构建状态 `data.status` 为 SUCCEED
+    description: 列出这次构建的产物。IMAGE、REPORT 类产物和文件夹不能生成下载地址，列在回复里并说明原因。
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      buildId: ${{ steps.locate-build.outputs.data.records[0].id }}
+  - id: get-download-urls
+    name: 生成下载地址
+    uses: devops/user_artifactory_thirdPartyDownloadUrl@prod
+    if: 构建状态 `data.status` 为 SUCCEED
+    description: 对 list-artifacts 返回的 `data.records` 中 `folder` 为 false、且 `artifactoryType` 为 PIPELINE 或 CUSTOM_DIR 的每个产物各调用一次，没有这样的产物时跳过：`artifactoryType` 取该产物的 `artifactoryType`，`path` 取该产物的 `fullPath`。`path` 原样传递，不要自己做 URL 编码。
+    with:
+      projectId: ${{ inputs.project_id }}
+      ttl: ${{ inputs.ttl }}
   guide:
     not_for: |-
       - 启动或重试流水线构建：本 Skill 只读构建和产物，不调用 build_start。

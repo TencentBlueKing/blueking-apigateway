@@ -86,7 +86,37 @@ class TestRenderSkillBody:
 
     def test_param_not_in_definition(self, static_provider):
         data = load_declaration_data("job-plan-run-and-log")
-        data["orchestration"]["steps"][0]["calls"][0]["params"]["unknown"] = "inputs.bk_scope_id"
+        data["orchestration"]["steps"][0]["with"]["unknown"] = "${{ inputs.bk_scope_id }}"
 
         with pytest.raises(SkillRenderError, match="没有参数 unknown"):
             render_skill_body(parse_declaration(data), static_provider)
+
+    def test_condition_and_ref_text(self, static_provider):
+        body = _render("job-plan-run-and-log", static_provider)
+
+        assert "3. collect-log / batch_get_job_instance_ip_log：拉取失败主机日志" in body
+        assert "   执行条件：`data.job_instance.status` 不是 3（执行成功）" in body
+        assert "带「执行条件」的步骤，条件不成立时跳过。" in body
+        assert "x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}" in body
+        assert "x-value: true" in body
+
+    def test_unmapped_param_listed(self, static_provider):
+        data = load_declaration_data("job-plan-run-and-log")
+        data["orchestration"]["steps"][0]["with"].pop("job_plan_id")
+        data["orchestration"]["steps"][2].pop("if")
+
+        body = render_skill_body(parse_declaration(data), static_provider).body
+
+        assert "资源定义中必填但未映射：`job_plan_id`，按本步说明处理。" in body
+        assert "没有 `x-from`、`x-value` 的参数按该步说明取值" in body
+        assert "执行条件" not in body
+
+    def test_responses_only_referenced_fields(self, static_provider):
+        data = load_declaration_data("job-plan-run-and-log")
+        outputs = data["orchestration"]["outputs"]
+        data["orchestration"]["outputs"] = {"job_instance_id": outputs["job_instance_id"]}
+
+        body = render_skill_body(parse_declaration(data), static_provider).body
+        wait_result = body.split("2. wait-result", 1)[1].split("3. collect-log", 1)[0]
+
+        assert "responses" not in wait_result

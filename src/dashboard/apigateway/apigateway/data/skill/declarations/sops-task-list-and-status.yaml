@@ -12,87 +12,69 @@ changelog: 首个官方版本：get_task_list → get_task_status。
 orchestration:
   description: list-tasks 返回的 `data[].id` 是 check-status 的路径参数 `task_id`；两步的 `bk_biz_id`、`scope` 必须相同。check-status 对列表里的每条任务各查一次，结果与列表顺序一一对应。列表为空时不再查状态。
   inputs:
-  - name: bk_biz_id
-    type: integer
-    required: true
-    description: CMDB 业务 ID。scope 为 project 时改传标准运维项目 ID
-    example: 2
-  - name: keyword
-    type: string
-    required: false
-    description: 任务名关键词。用户点了任务名里的词时传入，例如“nginx 那些任务”
-    example: nginx
-  - name: is_finished
-    type: boolean
-    required: false
-    description: 只看已结束或未结束的任务。用户说“没跑完的”“进行中的”时传 false；说“已结束的”时传 true。没提就不传
-    example: false
-  - name: limit
-    type: integer
-    required: false
-    description: 本次查看的条数。接口默认一次返回 100 条，这里默认 5，避免对整页逐个查状态。用户要多看时再加大，不超过 20
-    example: 5
-    default: 5
-  - name: scope
-    type: string
-    required: false
-    description: bk_biz_id 的作用域。cmdb_biz 按 CMDB 业务 ID 检索，project 按标准运维项目 ID 检索
-    example: cmdb_biz
-    default: cmdb_biz
+    bk_biz_id:
+      type: integer
+      required: true
+      description: CMDB 业务 ID。scope 为 project 时改传标准运维项目 ID
+      example: 2
+    keyword:
+      type: string
+      required: false
+      description: 任务名关键词。用户点了任务名里的词时传入，例如“nginx 那些任务”
+      example: nginx
+    is_finished:
+      type: boolean
+      required: false
+      description: 只看已结束或未结束的任务。用户说“没跑完的”“进行中的”时传 false；说“已结束的”时传 true。没提就不传
+      example: false
+    limit:
+      type: integer
+      required: false
+      description: 本次查看的条数。接口默认一次返回 100 条，这里默认 5，避免对整页逐个查状态。用户要多看时再加大，不超过 20
+      example: 5
+      default: 5
+    scope:
+      type: string
+      required: false
+      description: bk_biz_id 的作用域。cmdb_biz 按 CMDB 业务 ID 检索，project 按标准运维项目 ID 检索
+      example: cmdb_biz
+      default: cmdb_biz
   outputs:
-  - name: total
-    type: integer
-    description: 符合条件的任务总数，可能大于本次查看的条数
-    from: list-tasks.get_task_list.count
-  - name: tasks
-    type: array
-    description: 本次列出的任务。元素含 id、name、is_started、is_finished
-    from: list-tasks.get_task_list.data
-  - name: states
-    type: array
-    description: 与 tasks 顺序对应的执行状态：CREATED 未执行，RUNNING 执行中，FAILED 失败，SUSPENDED 暂停，REVOKED 已终止，FINISHED 已完成
-    from: check-status.get_task_status.data.state
-  - name: failed_nodes
-    type: array
-    description: 与 tasks 顺序对应。FAILED 时为失败节点 ID → 错误信息，其他状态为空
-    from: check-status.get_task_status.data.ex_data
+    total:
+      type: integer
+      description: 符合条件的任务总数，可能大于本次查看的条数
+      value: ${{ steps.list-tasks.outputs.count }}
+    tasks:
+      type: array
+      description: 本次列出的任务。元素含 id、name、is_started、is_finished
+      value: ${{ steps.list-tasks.outputs.data }}
+    states:
+      type: array
+      description: 与 tasks 顺序对应的执行状态：CREATED 未执行，RUNNING 执行中，FAILED 失败，SUSPENDED 暂停，REVOKED 已终止，FINISHED 已完成
+      value: ${{ steps.check-status.outputs.data.state }}
+    failed_nodes:
+      type: array
+      description: 与 tasks 顺序对应。FAILED 时为失败节点 ID → 错误信息，其他状态为空
+      value: ${{ steps.check-status.outputs.data.ex_data }}
   steps:
-  - name: list-tasks
+  - id: list-tasks
+    name: 列出任务
+    uses: bk-sops/get_task_list@prod
     description: 按业务列出任务。`data` 为空时停止，告诉用户这个业务下没有符合条件的任务，不要调用 get_task_status。`count` 大于本页条数时，在回复里说明还有更多，问用户要不要加大 limit 再查；不要自行把 limit 改成 100。
-    calls:
-    - gateway: bk-sops
-      stage: prod
-      resource: get_task_list
-      params:
-        bk_biz_id: inputs.bk_biz_id
-        scope: inputs.scope
-        keyword: inputs.keyword
-        is_finished: inputs.is_finished
-        limit: inputs.limit
-      reads:
-      - result
-      - count
-      - data[].id
-      - data[].name
-      - data[].is_finished
-  - name: check-status
-    description: 对 list-tasks 返回的每条任务各查一次状态。`with_ex_data=true` 用于拿到失败节点的错误信息。第 i 次调用对应列表第 i 条，回复时把任务名、任务 ID 和 state 写在一起。本步只查询，任务停在 CREATED、RUNNING 或 SUSPENDED 时不要启动、继续或重试。
-    calls:
-    - gateway: bk-sops
-      stage: prod
-      resource: get_task_status
-      for_each:
-        from: list-tasks.get_task_list.data
-      params:
-        bk_biz_id: inputs.bk_biz_id
-        scope: inputs.scope
-        task_id: each.id
-        with_ex_data:
-          value: true
-      reads:
-      - result
-      - data.state
-      - data.ex_data
+    with:
+      bk_biz_id: ${{ inputs.bk_biz_id }}
+      scope: ${{ inputs.scope }}
+      keyword: ${{ inputs.keyword }}
+      is_finished: ${{ inputs.is_finished }}
+      limit: ${{ inputs.limit }}
+  - id: check-status
+    name: 逐条查任务状态
+    uses: bk-sops/get_task_status@prod
+    description: 对 list-tasks 返回的 `data` 中每条任务各查一次状态，路径参数 `task_id` 取该任务的 `id`。`with_ex_data=true` 用于拿到失败节点的错误信息。第 i 次调用对应列表第 i 条，回复时把任务名、任务 ID 和 state 写在一起。本步只查询，任务停在 CREATED、RUNNING 或 SUSPENDED 时不要启动、继续或重试。
+    with:
+      bk_biz_id: ${{ inputs.bk_biz_id }}
+      scope: ${{ inputs.scope }}
+      with_ex_data: true
   guide:
     not_for: |-
       - 创建或启动标准运维任务：用「创建并启动标准运维任务」。

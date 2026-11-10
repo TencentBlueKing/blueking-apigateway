@@ -13,11 +13,11 @@ runs from `bin/post_migrate`.
 | Module | Owns |
 | --- | --- |
 | `declaration.py` | pydantic model of the declaration YAML; field rules and error messages |
-| `refs.py` | reference syntax (`inputs.x`, `each.x`, `<step>.<resource>.<path>`, `{value}`, `{ref, where}`) and poll expressions |
+| `refs.py` | reference syntax: a whole-string `${{ inputs.<name> }}` or `${{ steps.<id>.outputs.<path> }}`; any other value is fixed |
 | `resource_definition.py` | `ResourceDefinition` and the `ResourceProvider` protocol |
 | `resource_loader.py` / `schema_converter.py` / `patch_snapshot.py` | definitions from the current release + OpenAPI schema, patched by resource patch snapshots |
 | `validator.py` | cross-checks between the orchestration and resource definitions |
-| `renderer.py` | template context and the per-call OpenAPI snippet |
+| `renderer.py` | template context and the per-step OpenAPI snippet |
 | `writer.py` | one transactional publish: metadata, tags, config, version, relations |
 | `syncer.py` | per-declaration status for built-in injection |
 
@@ -41,7 +41,7 @@ runs from `bin/post_migrate`.
   The declaration is rejected when a referenced resource has neither an OpenAPI
   schema nor a patch snapshot, when its request body is not `application/json`
   (a snapshot cannot fix that: the body is always rendered as JSON), or when a
-  call maps a parameter missing from the definition. Resource-level problems go
+  step maps a parameter missing from the definition. Resource-level problems go
   in `ResourceDefinition.errors`; the validator reports them as errors and skips
   field checks for that resource. The next deploy retries because nothing was
   written.
@@ -62,12 +62,22 @@ runs from `bin/post_migrate`.
 - Injection reads only the database and repository files; it never calls
   gateways or external systems.
 - Rendering is deterministic: no timestamps or environment URLs in the body.
+- Steps follow the GitHub Actions composite-action shape (`id`, `name`, `uses`,
+  `if`, `description`, `with`). `if`, polling and per-item calls are natural
+  language for the AI; do not add machine-checked poll, loop or filter fields.
+  Required parameters left out of `with` are listed in the snippet without a
+  value and explained by the step description.
+- Do not map credentials (`access_token`, `bk_token`, `bk_ticket`,
+  `bk_app_secret`) in `with`; the body tells the AI not to pass or ask for them.
+- `references/how-to-call-apis.md` contains literal `${{ }}` and
+  `{{ ... }}` placeholders; do not render it with Jinja.
 
 ## Tests
 
 `tests/biz/skill/` holds one golden fixture, `fixtures/declarations/job-plan-run-and-log.yaml`,
 plus `fixtures/resources.json` and `fixtures/expected/job-plan-run-and-log.md`. That
-declaration covers poll, for_each, where, literal values and write calls; rule tests
+declaration covers a step `if`, polling and per-item calls described in text, fixed
+values and write calls; rule tests
 mutate this one declaration. `fixtures/resources.json` is also the resource contract
 for every file in `data/skill/declarations/`: `test_shipped_declarations.py` publishes
 those resources, fills parameters and responses from patch snapshots, then validates

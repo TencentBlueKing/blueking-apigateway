@@ -8,6 +8,8 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
     "query": "`query` 放查询串",
     "header": "`header` 放请求头",
 } %}
+{% set ref_input = "${{ inputs.<输入名> }}" %}
+{% set ref_step = "${{ steps.<步骤 id>.outputs.<字段路径> }}" %}
 # {{ display_name }}
 
 ## 不适用场景
@@ -20,7 +22,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 ## 接口清单
 
-每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每次调用的 OpenAPI 片段。
+每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 OpenAPI 片段。
 
 | 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -45,22 +47,22 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 | 字段 | 类型 | 说明 | 来源 |
 | --- | --- | --- | --- |
 {% for item in outputs %}
-| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.description | md_cell }} | `{{ item.source }}`{% if item.looped %}，逐个调用的结果按顺序汇总{% endif %} |
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.description | md_cell }} | `{{ item.source }}` |
 {% endfor %}
 
 ## 执行步骤
 
-来源和取值里 `<步骤>.<资源>.<字段路径>` 的第一段是步骤名，对应关系如下。
+来源和取值里的 `steps.<步骤 id>` 指该步骤调用的响应体，对应关系如下。
 
-| 步骤名 | 调用 |
-| --- | --- |
+| 步骤 | id | 名称 | 资源 |
+| --- | --- | --- | --- |
 {% for step in steps %}
-| `{{ step.name }}` | {% for call in step.calls %}{% if not loop.first %}、{% endif %}第 {{ call.index }} 步 `{{ call.resource }}`{% endfor %} |
+| {{ step.index }} | `{{ step.id }}` | {{ step.name | md_cell }} | `{{ step.resource }}` |
 {% endfor %}
 
 {{ description }}
 
-每次调用写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 只列要读的响应字段。
+每步写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 只列要读的响应字段。
 {%- if notation.places %}
 参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
   {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}
@@ -69,48 +71,43 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 {%- endif %}
 
 
-取值：`x-from: inputs.<输入名>` 来自输入
-{%- if notation.call %}；`x-from: <步骤>.<资源>.<字段路径>` 来自该次调用的响应体
+取值：`x-from: {{ ref_input }}` 来自输入
+{%- if notation.step %}；`x-from: {{ ref_step }}` 来自该步骤的响应体
   {%- if notation.index %}，`[0]` 是数组第一个元素{% endif %}
   {%- if notation.all %}，`[]` 是数组每个元素的该字段组成的数组{% endif %}
 {%- endif %}
-{%- if notation.each %}；`each.<字段路径>` 是逐个调用时当前元素的字段{% endif %}
-{%- if notation.where %}；`x-where` 是只取满足条件的元素{% endif %}
 {%- if notation.value %}；`x-value` 是固定值，按 JSON 原样传{% endif %}
-{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}。
+{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}
+{%- if notation.unmapped %}；没有 `x-from`、`x-value` 的参数按该步说明取值{% endif %}。
 
+{% if notation.condition %}
+带「执行条件」的步骤，条件不成立时跳过。
+
+{% endif %}
 {% for step in steps %}
-{{ step.description }}
-
-{% for call in step.calls %}
-{{ call.index }}. {{ step.name }} / {{ call.resource }}
+{{ step.title }}
 
 {% filter indent(3, first=True) %}
-{% if call.for_each %}
-对 `{{ call.for_each.from_ }}` 中{% if call.for_each.where %}满足「{{ call.for_each.where }}」的{% endif %}每个元素各调用一次，`each.` 指当前元素。没有这样的元素时跳过。
+{% if step.condition %}
+执行条件：{{ step.condition }}
 
 {% endif %}
+{{ step.description }}
+
 ```yaml
-{{ call.openapi }}
+{{ step.openapi }}
 ```
-{% if call.credentials or call.unmapped or call.poll %}
+{% if step.credentials or step.unmapped %}
 
 {% endif %}
-{% if call.credentials %}
-{{ call.credentials | map("backtick") | join("、") }} 不传、不向用户要，见「调用方式」。
+{% if step.credentials %}
+{{ step.credentials | map("backtick") | join("、") }} 不传、不向用户要，见「调用方式」。
 {% endif %}
-{% if call.unmapped %}
-资源定义中必填但未映射：{{ call.unmapped | map("backtick") | join("、") }}，按本步说明处理。
-{% endif %}
-{% if call.poll %}
-轮询：同一调用每 {{ call.poll.interval }} 秒重复一次，最多 {{ call.poll.max }} 次；`{{ call.poll.until }}` 成立时结束
-  {%- for expr, times in call.poll.stop_conditions %}，`{{ expr }}` {% if times == 1 %}成立时立即停止{% else %}连续 {{ times }} 次成立时停止{% endif %}{% endfor %}。
-  {%- if call.poll_has_streak %}连续次数只计紧邻的几次，中间打断就重新计。{% endif %}
-先看外壳 `ok`，`ok` 为 false 时停止。用最后一次响应继续。
+{% if step.unmapped %}
+资源定义中必填但未映射：{{ step.unmapped | map("backtick") | join("、") }}，按本步说明处理。
 {% endif %}
 {% endfilter %}
 
-{% endfor %}
 {% endfor %}
 ## 运行约束
 

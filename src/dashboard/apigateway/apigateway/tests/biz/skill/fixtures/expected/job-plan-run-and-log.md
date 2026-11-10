@@ -12,7 +12,7 @@
 
 ## 接口清单
 
-每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每次调用的 OpenAPI 片段。
+每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 OpenAPI 片段。
 
 | 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -37,30 +37,32 @@
 
 | 字段 | 类型 | 说明 | 来源 |
 | --- | --- | --- | --- |
-| `job_instance_id` | integer | 作业实例 ID | `run-plan.execute_job_plan.data.job_instance_id` |
-| `job_status` | integer | 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段 | `wait-result.get_job_instance_status.data.job_instance.status` |
-| `step_results` | array | 每个步骤的状态，以及每台主机的状态、退出码和错误码 | `wait-result.get_job_instance_status.data.step_instance_list` |
-| `failed_host_logs` | array | 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs` | `collect-log.batch_get_job_instance_ip_log.data`，逐个调用的结果按顺序汇总 |
+| `job_instance_id` | integer | 作业实例 ID | `${{ steps.run-plan.outputs.data.job_instance_id }}` |
+| `job_status` | integer | 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段 | `${{ steps.wait-result.outputs.data.job_instance.status }}` |
+| `step_results` | array | 每个步骤的状态，以及每台主机的状态、退出码和错误码 | `${{ steps.wait-result.outputs.data.step_instance_list }}` |
+| `failed_host_logs` | array | 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs` | `${{ steps.collect-log.outputs.data }}` |
 
 ## 执行步骤
 
-来源和取值里 `<步骤>.<资源>.<字段路径>` 的第一段是步骤名，对应关系如下。
+来源和取值里的 `steps.<步骤 id>` 指该步骤调用的响应体，对应关系如下。
 
-| 步骤名 | 调用 |
-| --- | --- |
-| `run-plan` | 第 1 步 `execute_job_plan` |
-| `wait-result` | 第 2 步 `get_job_instance_status` |
-| `collect-log` | 第 3 步 `batch_get_job_instance_ip_log` |
+| 步骤 | id | 名称 | 资源 |
+| --- | --- | --- | --- |
+| 1 | `run-plan` | 执行作业方案 | `execute_job_plan` |
+| 2 | `wait-result` | 轮询作业状态 | `get_job_instance_status` |
+| 3 | `collect-log` | 拉取失败主机日志 | `batch_get_job_instance_ip_log` |
 
 run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
 
-每次调用写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 只列要读的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
+每步写成一段 OpenAPI 3.1 片段：`paths` 下是路径和方法，`x-bk-gateway`、`x-bk-stage` 是网关和环境；只列本 Skill 要传的参数，`responses` 只列要读的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
 
-取值：`x-from: inputs.<输入名>` 来自输入；`x-from: <步骤>.<资源>.<字段路径>` 来自该次调用的响应体，`[]` 是数组每个元素的该字段组成的数组；`each.<字段路径>` 是逐个调用时当前元素的字段；`x-where` 是只取满足条件的元素；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传。
+取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传；没有 `x-from`、`x-value` 的参数按该步说明取值。
 
-执行方案。不传已弃用的 `bk_biz_id`。
+带「执行条件」的步骤，条件不成立时跳过。
 
-1. run-plan / execute_job_plan
+1. run-plan / execute_job_plan：执行作业方案
+
+   执行方案。不传已弃用的 `bk_biz_id`。
 
    ```yaml
    paths:
@@ -80,20 +82,20 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                    bk_scope_type:
                      type: string
                      description: 资源范围类型：biz 业务，biz_set 业务集
-                     x-from: inputs.bk_scope_type
+                     x-from: ${{ inputs.bk_scope_type }}
                    bk_scope_id:
                      type: string
                      description: 资源范围 ID，与 bk_scope_type 对应的业务 ID 或业务集 ID
-                     x-from: inputs.bk_scope_id
+                     x-from: ${{ inputs.bk_scope_id }}
                    job_plan_id:
                      type: integer
                      description: 作业执行方案 ID
-                     x-from: inputs.job_plan_id
+                     x-from: ${{ inputs.job_plan_id }}
                    global_var_list:
                      type: array
                      items: {type: object}
                      description: 全局变量。元素字段：id 或 name 二选一作为标识；value 为字符、密码、数组、命名空间变量值；server 为主机变量值（host_id_list / ip_list / dynamic_group_list / topo_node_list）。未传的变量用方案默认值
-                     x-from: inputs.global_var_list
+                     x-from: ${{ inputs.global_var_list }}
                      x-omit-if-unset: true
          responses:
            '200':
@@ -109,9 +111,9 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                          job_instance_id: {type: integer, description: 作业实例 ID}
    ```
 
-轮询作业状态，直到 `data.finished = true`。`return_ip_result=true` 用于拿到每台主机的结果。`job_instance.status` 为 7（等待用户）时 `finished` 不会变 true，轮询会停下，按「异常处理」告诉用户。到达次数上限（约 10 分钟）仍未结束时，返回 `job_instance_id` 和当前状态。
+2. wait-result / get_job_instance_status：轮询作业状态
 
-2. wait-result / get_job_instance_status
+   每 5 秒查一次，最多 120 次（约 10 分钟）；`data.finished` 为 true 时结束。`result` 为 false，或 `data.job_instance.status` 为 7（等待用户）时立即停止：状态为 7 时 `finished` 不会变 true，按「异常处理」告诉用户。`return_ip_result=true` 用于拿到每台主机的结果。到达次数上限仍未结束时，返回 `job_instance_id` 和当前状态。
 
    ```yaml
    paths:
@@ -126,19 +128,19 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
              required: true
              description: 资源范围类型：biz 业务，biz_set 业务集
              schema: {type: string}
-             x-from: inputs.bk_scope_type
+             x-from: ${{ inputs.bk_scope_type }}
            - name: bk_scope_id
              in: query
              required: true
              description: 资源范围 ID
              schema: {type: string}
-             x-from: inputs.bk_scope_id
+             x-from: ${{ inputs.bk_scope_id }}
            - name: job_instance_id
              in: query
              required: true
              description: 作业实例 ID
              schema: {type: integer}
-             x-from: run-plan.execute_job_plan.data.job_instance_id
+             x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}
            - name: return_ip_result
              in: query
              description: 是否返回每台主机的执行结果（step_ip_result_list），默认 false
@@ -155,37 +157,18 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                      data:
                        type: object
                        properties:
-                         finished: {type: boolean, description: 作业是否结束}
-                         step_instance_list:
-                           type: array
-                           items:
-                             type: object
-                             properties:
-                               name: {type: string, description: 步骤名称}
-                               type: {type: integer, description: 步骤类型：1 脚本，2 文件，4 SQL}
-                               step_ip_result_list:
-                                 type: array
-                                 items:
-                                   type: object
-                                   properties:
-                                     ip: {type: string, description: 主机 IP}
-                                     status: {type: integer, description: 主机执行状态：1 Agent 异常，5 等待执行，7 正在执行，9 执行成功，11 执行失败，12 任务下发失败，403 强制终止成功，404 强制终止失败}
-                                     exit_code: {type: integer, description: 脚本退出码}
-                                     error_code: {type: integer, description: 主机任务状态码，见错误码}
                          job_instance:
                            type: object
                            properties:
                              status: {type: integer, description: 作业状态：1 未执行，2 正在执行，3 执行成功，4 执行失败，5 跳过，6 忽略错误，7 等待用户，8 手动结束，9 状态异常，10 强制终止中，11 强制终止成功}
-                     result: {type: boolean, description: 请求是否成功}
+                         step_instance_list: {type: array}
    ```
 
-   轮询：同一调用每 5 秒重复一次，最多 120 次；`data.finished == true` 成立时结束，`result == false` 成立时立即停止，`data.job_instance.status == 7` 成立时立即停止。先看外壳 `ok`，`ok` 为 false 时停止。用最后一次响应继续。
+3. collect-log / batch_get_job_instance_ip_log：拉取失败主机日志
 
-只在 `job_instance.status` 不是 3（执行成功）时执行。`host_id_list` 只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
+   执行条件：`data.job_instance.status` 不是 3（执行成功）
 
-3. collect-log / batch_get_job_instance_ip_log
-
-   对 `wait-result.get_job_instance_status.data.step_instance_list` 中满足「`status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）」的每个元素各调用一次，`each.` 指当前元素。没有这样的元素时跳过。
+   对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
 
    ```yaml
    paths:
@@ -205,25 +188,18 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                    bk_scope_type:
                      type: string
                      description: 资源范围类型：biz 业务，biz_set 业务集
-                     x-from: inputs.bk_scope_type
+                     x-from: ${{ inputs.bk_scope_type }}
                    bk_scope_id:
                      type: string
                      description: 资源范围 ID
-                     x-from: inputs.bk_scope_id
+                     x-from: ${{ inputs.bk_scope_id }}
                    job_instance_id:
                      type: integer
                      description: 作业实例 ID
-                     x-from: run-plan.execute_job_plan.data.job_instance_id
+                     x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}
                    step_instance_id:
                      type: integer
                      description: 步骤实例 ID
-                     x-from: each.step_instance_id
-                   host_id_list:
-                     type: array
-                     items: {type: integer}
-                     description: 主机 ID 列表
-                     x-from: each.step_ip_result_list[].bk_host_id
-                     x-where: '`status` 不是 9（执行成功）'
          responses:
            '200':
              description: 只列本 Skill 要读的字段
@@ -232,11 +208,10 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                  schema:
                    type: object
                    properties:
-                     data:
-                       type: object
-                       properties:
-                         log_type: {type: integer, description: 日志类型：1 脚本执行，2 文件分发}
+                     data: {type: object}
    ```
+
+   资源定义中必填但未映射：`step_instance_id`，按本步说明处理。
 
 ## 运行约束
 

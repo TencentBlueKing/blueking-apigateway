@@ -18,10 +18,12 @@
 """Skill 声明的结构与字段规则。
 
 声明由人工编写（内置 Skill）或随上传包提供（网关 Skill），结构不对时报带路径的 error。
-需要对照资源定义或编排前后关系的规则在 validator.py。
+编排的骨架同 GitHub Actions 复合 Action：inputs / outputs / steps，每步 id、name、uses、if、with；
+if 和步骤 description 是自然语言，不解析。需要对照资源定义或编排前后关系的规则在 validator.py。
 """
 
-from typing import Annotated, Any, Dict, Iterator, List, Optional, Tuple, Union
+import re
+from typing import Annotated, Any, Dict, List, Optional, Tuple, Union
 
 import yaml
 from pydantic import (
@@ -30,11 +32,9 @@ from pydantic import (
     ConfigDict,
     Field,
     StrictBool,
-    StrictInt,
     StrictStr,
     ValidationError,
     field_validator,
-    model_validator,
 )
 
 from apigateway.apps.skill.constants import (
@@ -54,19 +54,17 @@ from .constants import (
     SKILL_RESOURCE_NAME_PATTERN,
     SKILL_STEP_NAME_PATTERN,
 )
-from .refs import ParsedRef, parse_poll_expr, parse_ref, ref_text, ref_where
+from .refs import INPUT_NAME, parse_ref
 
 _ERROR_MESSAGES = {
     "extra_forbidden": "未知字段",
     "missing": "缺少必填字段",
     "string_type": "应为字符串",
-    "int_type": "应为整数",
     "bool_type": "应为布尔值",
     "list_type": "应为数组",
     "dict_type": "应为对象",
     "model_type": "应为对象",
     "model_attributes_type": "应为对象",
-    "greater_than": "应为正整数",
 }
 
 
@@ -76,12 +74,16 @@ class SkillDeclarationError(Exception):
         self.errors = errors
 
 
+_USES_PATTERN = re.compile(r"^([^/@]+)/([^/@]+)@([^/@]+)$")
+_INPUT_NAME_PATTERN = re.compile(rf"^{INPUT_NAME}$")
+
+
 def _check_ref(value: Any) -> Any:
     parse_ref(value)
     return value
 
 
-ParamRef = Annotated[Any, AfterValidator(_check_ref)]
+ParamValue = Annotated[Any, AfterValidator(_check_ref)]
 
 
 class _DeclarationModel(BaseModel):
@@ -89,7 +91,6 @@ class _DeclarationModel(BaseModel):
 
 
 class SkillInput(_DeclarationModel):
-    name: StrictStr
     type: StrictStr
     required: StrictBool
     description: StrictStr
@@ -107,143 +108,78 @@ class SkillInput(_DeclarationModel):
 
 
 class SkillOutput(_DeclarationModel):
-    name: StrictStr
     type: StrictStr
     description: StrictStr
-    from_: StrictStr = Field(alias="from")
+    value: StrictStr
 
-    @field_validator("from_")
+    @field_validator("value")
     @classmethod
-    def _check_from(cls, value: str) -> str:
-        if parse_ref(value).kind == "each":
-            raise ValueError("输出不能引用 each.*")
+    def _check_value(cls, value: str) -> str:
+        if parse_ref(value).kind == "value":
+            raise ValueError("应为 ${{ inputs.<输入名> }} 或 ${{ steps.<步骤 id>.outputs.<字段路径> }}")
         return value
 
 
-class SkillForEach(_DeclarationModel):
-    from_: StrictStr = Field(alias="from")
-    where: Optional[StrictStr] = None
-
-    @field_validator("from_")
-    @classmethod
-    def _check_from(cls, value: str) -> str:
-        if parse_ref(value).kind != "call":
-            raise ValueError("必须引用之前调用的响应数组")
-        return value
-
-
-def _check_poll_expr(expr: str) -> None:
-    path = parse_poll_expr(expr)[0]
-    if "[" in path:
-        raise ValueError(f"表达式只支持对象字段路径，不支持数组：{expr}")
-
-
-def _validated_poll_expr(value: str) -> str:
-    _check_poll_expr(value)
-    return value
-
-
-PollExpr = Annotated[StrictStr, AfterValidator(_validated_poll_expr)]
-
-
-class SkillPollStop(_DeclarationModel):
-    """stop_when 的一项：表达式连续成立 times 次才停止"""
-
-    expr: PollExpr
-    times: StrictInt = Field(gt=0)
-
-
-class SkillPoll(_DeclarationModel):
-    """until、stop_when 是 `<响应体字段路径> <==|!=|in|not in> <JSON 值>` 表达式；
-    stop_when 的元素也可以写 {expr, times}，表示连续成立 times 次才停止
-    """
-
-    interval: StrictInt
-    max: StrictInt
-    until: PollExpr
-    stop_when: List[Union[PollExpr, SkillPollStop]] = Field(default_factory=list)
-
-    @field_validator("interval", "max")
-    @classmethod
-    def _check_positive(cls, value: int) -> int:
-        if value <= 0:
-            raise ValueError("应为正整数")
-        return value
-
-    @property
-    def stop_conditions(self) -> List[Tuple[str, int]]:
-        """stop_when 的每一项规整成 (表达式, 连续成立次数)"""
-        return [(item, 1) if isinstance(item, str) else (item.expr, item.times) for item in self.stop_when]
-
-    @property
-    def exprs(self) -> List[str]:
-        return [self.until] + [expr for expr, _ in self.stop_conditions]
-
-
-class SkillCall(_DeclarationModel):
-    gateway: StrictStr
-    stage: StrictStr
-    resource: StrictStr
-    params: Dict[StrictStr, ParamRef]
-    for_each: Optional[SkillForEach] = None
-    reads: List[StrictStr] = Field(default_factory=list)
-    poll: Optional[SkillPoll] = None
-
-    @field_validator("gateway")
-    @classmethod
-    def _check_gateway(cls, value: str) -> str:
-        if not GATEWAY_NAME_PATTERN.fullmatch(value):
-            raise ValueError(f"不合规：{value}")
-        return value
-
-    @field_validator("stage")
-    @classmethod
-    def _check_stage(cls, value: str) -> str:
-        if not STAGE_NAME_PATTERN.fullmatch(value):
-            raise ValueError(f"不合规：{value}")
-        return value
-
-    @field_validator("resource")
-    @classmethod
-    def _check_resource(cls, value: str) -> str:
-        if not SKILL_RESOURCE_NAME_PATTERN.fullmatch(value):
-            raise ValueError(f"不合规：{value}")
-        return value
-
-    @model_validator(mode="after")
-    def _check_call(self) -> "SkillCall":
-        if self.poll and self.for_each:
-            raise ValueError("poll 和 for_each 不能同时使用")
-        for name, ref in self.params.items():
-            if parse_ref(ref).kind == "each" and self.for_each is None:
-                raise ValueError(f"params.{name}：只有带 for_each 的调用能用 each.*")
-            if ref_where(ref) is not None and "[]" not in (ref_text(ref) or ""):
-                raise ValueError(f"params.{name}：where 只能用在取数组元素字段（含 []）的引用上")
-        return self
-
-    @property
-    def key(self) -> Tuple[str, str, str]:
-        return self.gateway, self.stage, self.resource
+def split_uses(uses: str) -> Tuple[str, str, str]:
+    """`<网关>/<资源>@<环境>` -> (gateway, stage, resource)；不合规时抛 ValueError"""
+    match = _USES_PATTERN.match(uses)
+    if not match:
+        raise ValueError(f"应为 <网关>/<资源>@<环境>：{uses}")
+    gateway, resource, stage = match.groups()
+    if not GATEWAY_NAME_PATTERN.fullmatch(gateway):
+        raise ValueError(f"网关名不合规：{gateway}")
+    if not SKILL_RESOURCE_NAME_PATTERN.fullmatch(resource):
+        raise ValueError(f"资源名不合规：{resource}")
+    if not STAGE_NAME_PATTERN.fullmatch(stage):
+        raise ValueError(f"环境名不合规：{stage}")
+    return gateway, stage, resource
 
 
 class SkillStep(_DeclarationModel):
-    name: StrictStr
+    """一步调用一个接口；if 不成立时跳过本步，轮询、逐个调用等写在 description 里"""
+
+    id: StrictStr
+    name: Optional[StrictStr] = None
+    uses: StrictStr
+    if_: Optional[StrictStr] = Field(default=None, alias="if")
     description: StrictStr
-    calls: List[SkillCall]
+    with_: Dict[StrictStr, ParamValue] = Field(default_factory=dict, alias="with")
 
-    @field_validator("name")
+    @field_validator("id")
     @classmethod
-    def _check_name(cls, value: str) -> str:
+    def _check_id(cls, value: str) -> str:
         if not SKILL_STEP_NAME_PATTERN.fullmatch(value):
-            raise ValueError(f"步骤名不合规：{value}")
+            raise ValueError(f"步骤 id 不合规：{value}")
         return value
 
-    @field_validator("calls")
+    @field_validator("uses")
     @classmethod
-    def _check_calls(cls, value: List[SkillCall]) -> List[SkillCall]:
-        if not value:
-            raise ValueError("步骤没有调用")
+    def _check_uses(cls, value: str) -> str:
+        split_uses(value)
         return value
+
+    @field_validator("name", "if_", "description")
+    @classmethod
+    def _check_not_empty(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and not value.strip():
+            raise ValueError("为空")
+        return value
+
+    @property
+    def key(self) -> Tuple[str, str, str]:
+        return split_uses(self.uses)
+
+    @property
+    def gateway(self) -> str:
+        return self.key[0]
+
+    @property
+    def stage(self) -> str:
+        return self.key[1]
+
+    @property
+    def resource(self) -> str:
+        return self.key[2]
 
 
 class SkillGuide(_DeclarationModel):
@@ -262,31 +198,34 @@ class SkillGuide(_DeclarationModel):
 
 class SkillOrchestration(_DeclarationModel):
     description: StrictStr
-    inputs: List[SkillInput]
-    outputs: List[SkillOutput]
+    inputs: Dict[StrictStr, SkillInput]
+    outputs: Dict[StrictStr, SkillOutput]
     steps: List[SkillStep]
     guide: SkillGuide
 
-    @field_validator("steps")
+    @field_validator("inputs")
     @classmethod
-    def _check_step_names(cls, value: List[SkillStep]) -> List[SkillStep]:
-        names = [step.name for step in value]
-        duplicated = sorted({name for name in names if names.count(name) > 1})
-        if duplicated:
-            raise ValueError(f"步骤名重复：{'、'.join(duplicated)}")
+    def _check_input_names(cls, value: Dict[str, SkillInput]) -> Dict[str, SkillInput]:
+        invalid = [name for name in value if not _INPUT_NAME_PATTERN.fullmatch(name)]
+        if invalid:
+            raise ValueError(f"输入名不合规：{'、'.join(invalid)}")
         return value
 
-    def iter_calls(self) -> Iterator[Tuple[SkillStep, SkillCall]]:
-        for step in self.steps:
-            for call in step.calls:
-                yield step, call
+    @field_validator("steps")
+    @classmethod
+    def _check_step_ids(cls, value: List[SkillStep]) -> List[SkillStep]:
+        ids = [step.id for step in value]
+        duplicated = sorted({step_id for step_id in ids if ids.count(step_id) > 1})
+        if duplicated:
+            raise ValueError(f"步骤 id 重复：{'、'.join(duplicated)}")
+        return value
 
     def get_input(self, name: str) -> Optional[SkillInput]:
-        return next((item for item in self.inputs if item.name == name), None)
+        return self.inputs.get(name)
 
-    def is_omittable_input_ref(self, ref: Any) -> bool:
-        parsed = _safe_parse_ref(ref)
-        if parsed is None or parsed.kind != "input":
+    def is_omittable_input_ref(self, value: Any) -> bool:
+        parsed = parse_ref(value)
+        if parsed.kind != "input":
             return False
         item = self.get_input(parsed.name)
         return bool(item and item.omit_if_unset)
@@ -397,10 +336,3 @@ def _format_loc(loc: Tuple[Union[str, int], ...]) -> str:
         else:
             text += f".{part}" if text else str(part)
     return text
-
-
-def _safe_parse_ref(ref: Any) -> Optional[ParsedRef]:
-    try:
-        return parse_ref(ref)
-    except ValueError:
-        return None

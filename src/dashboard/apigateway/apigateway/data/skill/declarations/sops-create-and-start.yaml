@@ -12,91 +12,76 @@ changelog: 首个官方版本：create_task → start_task → get_task_status�
 orchestration:
   description: create-task 返回的 `data.task_id` 是后两步的路径参数，三步的 `bk_biz_id` 必须相同。创建成功不代表已经执行，必须再调用 start_task。
   inputs:
-  - name: bk_biz_id
-    type: integer
-    required: true
-    description: 模板所属的 CMDB 业务 ID
-    example: 2
-  - name: template_id
-    type: integer
-    required: true
-    description: 流程模板 ID，可在标准运维模板列表或模板链接中看到
-    example: 128
-  - name: task_name
-    type: string
-    required: true
-    description: 任务名称。用户没给时按「用途-YYYYMMDD」拟一个，写进回复；有变更单号时带上。不要为拟定的名称再问一次
-    example: nginx-reload-20261029
-  - name: constants
-    type: object
-    required: false
-    description: '模板全局变量，键为 `${key}` 格式。只填用户明确提到的变量，用户说“ip_list 填 X”就写 `{"${ip_list}": "X"}`；不传则使用模板默认值'
-    example:
-      "${ip_list}": 10.0.0.1,10.0.0.2
-  - name: template_source
-    type: string
-    required: false
-    description: 模板来源：business 业务流程，common 公共流程
-    example: business
-    default: business
+    bk_biz_id:
+      type: integer
+      required: true
+      description: 模板所属的 CMDB 业务 ID
+      example: 2
+    template_id:
+      type: integer
+      required: true
+      description: 流程模板 ID，可在标准运维模板列表或模板链接中看到
+      example: 128
+    task_name:
+      type: string
+      required: true
+      description: 任务名称。用户没给时按「用途-YYYYMMDD」拟一个，写进回复；有变更单号时带上。不要为拟定的名称再问一次
+      example: nginx-reload-20261029
+    constants:
+      type: object
+      required: false
+      description: '模板全局变量，键为 `${key}` 格式。只填用户明确提到的变量，用户说“ip_list 填 X”就写 `{"${ip_list}": "X"}`；不传则使用模板默认值'
+      example:
+        ${ip_list}: 10.0.0.1,10.0.0.2
+    template_source:
+      type: string
+      required: false
+      description: 模板来源：business 业务流程，common 公共流程
+      example: business
+      default: business
   outputs:
-  - name: task_id
-    type: integer
-    description: 任务实例 ID
-    from: create-task.create_task.data.task_id
-  - name: task_url
-    type: string
-    description: 任务实例链接，交给用户在页面查看
-    from: create-task.create_task.data.task_url
-  - name: state
-    type: string
-    description: 最终状态：FINISHED、FAILED、SUSPENDED、REVOKED；轮询到上限仍未结束时为 RUNNING；启动后一直没开始时为 CREATED
-    from: wait-result.get_task_status.data.state
-  - name: failed_nodes
-    type: object
-    description: 失败节点 ID → 错误信息，只在 FAILED 时有值
-    from: wait-result.get_task_status.data.ex_data
+    task_id:
+      type: integer
+      description: 任务实例 ID
+      value: ${{ steps.create-task.outputs.data.task_id }}
+    task_url:
+      type: string
+      description: 任务实例链接，交给用户在页面查看
+      value: ${{ steps.create-task.outputs.data.task_url }}
+    state:
+      type: string
+      description: 最终状态：FINISHED、FAILED、SUSPENDED、REVOKED；轮询到上限仍未结束时为 RUNNING；启动后一直没开始时为 CREATED
+      value: ${{ steps.wait-result.outputs.data.state }}
+    failed_nodes:
+      type: object
+      description: 失败节点 ID → 错误信息，只在 FAILED 时有值
+      value: ${{ steps.wait-result.outputs.data.ex_data }}
   steps:
-  - name: create-task
+  - id: create-task
+    name: 创建任务
+    uses: bk-sops/create_task@prod
     description: 用输入创建任务。
-    calls:
-    - gateway: bk-sops
-      stage: prod
-      resource: create_task
-      params:
-        bk_biz_id: inputs.bk_biz_id
-        template_id: inputs.template_id
-        name: inputs.task_name
-        constants: inputs.constants
-        template_source: inputs.template_source
-  - name: start-task
+    with:
+      bk_biz_id: ${{ inputs.bk_biz_id }}
+      template_id: ${{ inputs.template_id }}
+      name: ${{ inputs.task_name }}
+      constants: ${{ inputs.constants }}
+      template_source: ${{ inputs.template_source }}
+  - id: start-task
+    name: 启动任务
+    uses: bk-sops/start_task@prod
     description: 用 create-task 返回的 `task_id` 启动任务。启动失败时不要重新创建任务。
-    calls:
-    - gateway: bk-sops
-      stage: prod
-      resource: start_task
-      params:
-        bk_biz_id: inputs.bk_biz_id
-        task_id: create-task.create_task.data.task_id
-  - name: wait-result
-    description: 轮询任务状态，直到 FINISHED、FAILED、SUSPENDED、REVOKED 之一。连续 3 次仍是 CREATED 说明任务没有真正开始；到达次数上限（约 10 分钟）仍未结束时也停止。这两种情况都把当前状态和 `task_url` 给用户，请他到页面查看。`with_ex_data=true` 用于拿到失败节点的错误信息。
-    calls:
-    - gateway: bk-sops
-      stage: prod
-      resource: get_task_status
-      params:
-        bk_biz_id: inputs.bk_biz_id
-        task_id: create-task.create_task.data.task_id
-        with_ex_data:
-          value: true
-      poll:
-        interval: 10
-        max: 60
-        until: data.state in ["FINISHED", "FAILED", "SUSPENDED", "REVOKED"]
-        stop_when:
-        - result == false
-        - expr: data.state == "CREATED"
-          times: 3
+    with:
+      bk_biz_id: ${{ inputs.bk_biz_id }}
+      task_id: ${{ steps.create-task.outputs.data.task_id }}
+  - id: wait-result
+    name: 轮询任务状态
+    uses: bk-sops/get_task_status@prod
+    description: 每 10 秒查一次，最多 60 次（约 10 分钟）；`data.state` 为 FINISHED、FAILED、SUSPENDED、REVOKED 之一时结束。`result` 为 false 时立即停止；`data.state` 连续 3 次仍是 CREATED（中间被打断就重新计）也停止，说明任务没有真正开始。连续 CREATED 或到达次数上限仍未结束时，把当前状态和 `task_url` 给用户，请他到页面查看。`with_ex_data=true` 用于拿到失败节点的错误信息。
+    with:
+      bk_biz_id: ${{ inputs.bk_biz_id }}
+      task_id: ${{ steps.create-task.outputs.data.task_id }}
+      with_ex_data: true
   guide:
     not_for: |-
       - 只查已有任务的状态或失败原因：用「列出标准运维任务并查看状态」。

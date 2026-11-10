@@ -141,8 +141,8 @@ def _save_config(metadata: SkillMetadata, orchestration: dict, operator: str) ->
 
 def _get_relation_pairs(declaration: SkillDeclaration) -> List[Tuple[str, str]]:
     pairs: List[Tuple[str, str]] = []
-    for _, call in declaration.orchestration.iter_calls():
-        pair = (call.gateway, call.resource)
+    for step in declaration.orchestration.steps:
+        pair = (step.gateway, step.resource)
         if pair not in pairs:
             pairs.append(pair)
     return pairs

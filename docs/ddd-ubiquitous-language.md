@@ -187,9 +187,9 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | MCP 原始响应模式 / Raw Response Mode | raw_response_enabled | 工具结果返回原始 API 响应体，不改变身份、授权或版本选择。 |
 | Skill 元数据 / Skill Metadata | `SkillMetadata`；`(type, gateway, name)` 唯一 | 编排网关 API 的 Skill；type 为 platform（内置，gateway 为空）或 gateway（属于某个网关）。name 是 Agent Skills 规范名，即 SKILL.md 的 name 和包目录名，在同一来源内唯一：同一网关内由唯一约束保证；内置 Skill 的 gateway 为空，数据库约束拦不住，由内置 Skill 注入保证；display_name / display_name_en 是展示名。 |
 | Skill ID | `SkillMetadata.code`（property） | 不入库，读取时由 type、网关名、name 拼出：`p_{name}` 或 `g_{网关名}_{name}`，即对外的 skill_id。 |
-| Skill 编排 / Skill Orchestration | `SkillConfig.orchestration` | 可编辑草稿：steps 是业务步骤，calls 是步内 API 调用。 |
+| Skill 编排 / Skill Orchestration | `SkillConfig.orchestration` | 可编辑草稿，按 GitHub Actions composite action 的骨架写：每个 step 用 `uses` 调一个网关 API，`with` 传参，`${{ }}` 引用输入和之前步骤的响应；`if` 和 `description` 是给 AI 读的自然语言，轮询、逐个调用也写在 `description` 里。 |
 | Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文，创建后不改。version 保存时转为小写，大小写不同视为同一版本。`created_time` 是下载包 `metadata.datetime` 的事实来源，输出为 RFC 3339 UTC 秒精度；与 ResourceVersion 区分。 |
-| Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 calls 里的网关名、资源名，供检索；按名称引用，不是外键。 |
+| Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 steps[].uses 里的网关名、资源名，供检索；按名称引用，不是外键。 |
 | 内置 Skill 声明 / Platform Skill Declaration | `data/skill/declarations/{name}.yaml`；`SkillDeclaration` | 随代码发布的内置 Skill 源文件；部署时注入为 platform 类型的 SkillMetadata 与 SkillVersion，同版本不重复写入。 |
 | Skill 资源定义 / Skill Resource Definition | `ResourceDefinition`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API：方法、路径、说明、认证取目标环境当前发布版本，参数和响应取该版本的 OpenAPI schema，没有 schema 时取资源补丁快照；不是 Resource 或 ReleasedResource 本身。 |
 | 资源补丁快照 / Resource Patch Snapshot | `data/skill/resources/{gateway}.yaml` | 只给内置 Skill 用：网关没有导入 schema 时补参数和响应；网关补上 schema 后应删除对应条目。 |
