@@ -89,7 +89,7 @@ export const getMcpLogChain = (gatewayId: number, requestId: string) =>
  * @param params 导出参数
  * @param extraStr 额外检索串（include/exclude）
  */
-export const exportMcpLogs = (gatewayId: number, params: IObservabilityBasicForm, extraStr?: string) =>
+export const exportMcpLogs = (gatewayId: number, params: IObservabilitySearchParams, extraStr?: string) =>
   http.get<unknown>(
     withExtraQuery(`${path}/${gatewayId}/mcp-servers/-/logs/export/`, extraStr),
     params,

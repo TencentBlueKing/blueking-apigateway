@@ -35,11 +35,15 @@
 import ObservabilityTopBar from '@/views/mcp-server/components/ObservabilityTopBar.vue';
 import ObservabilityFlowLog from '@/views/mcp-server/components/ObservabilityFlowLog.vue';
 import ObservabilityDashboard from '@/views/mcp-server/components/ObservabilityDashboard.vue';
+import { provideObservabilityDashboard } from '@/hooks';
 
 const observabilityCompMap = {
   FlowLog: ObservabilityFlowLog,
   Dashboard: ObservabilityDashboard,
 };
+
+// 仪表盘状态由本页面创建一次，工具栏、仪表盘、图表通过 inject 共享同一份；随页面（网关切换时重建）释放
+provideObservabilityDashboard();
 
 const activeTab = shallowRef('FlowLog');
 

@@ -35,8 +35,9 @@
             :valid-date-range="['now-7d/d', 'now/d']"
             class="date-choose"
             format="YYYY-MM-DD HH:mm:ss"
+            :need-timezone="false"
             style="min-width: 150px;background: #fff;"
-            @update:model-value="(handleValueChange as any)"
+            @update:model-value="handleValueChange"
           />
         </BkFormItem>
         <BkFormItem :label="t('环境')">
@@ -390,7 +391,7 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from 'dayjs';
+import { Message } from 'bkui-vue';
 import { useGateway } from '@/stores';
 import { queryMetricsInstant, queryMetricsRange } from '@/services/source/gateway/metrics';
 import type {
@@ -405,22 +406,21 @@ import { getBackendServiceList } from '@/services/source/gateway/backend';
 import Top from './components/Top.vue';
 import LineChart from './components/LineChart.vue';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
-import DatePicker from '@blueking/date-picker';
+import DatePicker, { type DateValue } from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import type {
   IExtractApiReturn,
   IExtractListApiResults,
 } from '@/services/types/utils.ts';
-
-type InfoTypeItem = {
-  formatText: null | string
-  dayjs: dayjs.Dayjs | null
-};
+import { type TimeRangeSeconds, getRecentRange } from '@/utils/time-range';
+import { resolveDatePickerRange } from '@/utils/date-picker-range';
 
 type IStageItem = IExtractApiReturn<typeof getStageList>[number];
 type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
 type IResourceItem = IExtractListApiResults<typeof getResourceList>;
 type MetricsType = Parameters<typeof queryMetricsRange>[1]['metrics'];
+type InstantMetricsType = Parameters<typeof queryMetricsInstant>[1]['metrics'];
+type MetricsStep = NonNullable<Parameters<typeof queryMetricsRange>[1]['step']>;
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -433,14 +433,10 @@ const backendList = ref<IBackendItem[]>([]);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const standardBackendList = computed(() => backendList.value.filter(item => item?.kind === 'standard'));
 const aiBackendList = computed(() => backendList.value.filter(item => item?.kind === 'ai'));
-const dateTime = ref<[string, string]>([
+// 日期组件的选择值：相对表达式或绝对毫秒时间戳，每轮查询按当前时间解析
+const dateTime = ref<DateValue>([
   'now-10m',
   'now',
-]);
-const formatTime = ref<(string | null)[]>([
-  dayjs().subtract(10, 'minute')
-    .format('YYYY-MM-DD HH:mm:ss'),
-  dayjs().format('YYYY-MM-DD HH:mm:ss'),
 ]);
 const commonMetricsList = [
   'requests', // 总请求数趋势
@@ -465,7 +461,7 @@ const aiMetricsList = [
 const metricsList = computed(() => gatewayStore.isAIGateway
   ? [...commonMetricsList, ...aiMetricsList]
   : commonMetricsList);
-const statisticsTypes = ref<string[]>([
+const statisticsTypes = ref<InstantMetricsType[]>([
   'requests_total', // 请求总数
   'health_rate', // 健康率
 ]);
@@ -488,16 +484,22 @@ const llmLatencyAvgRef = ref<InstanceType<typeof LineChart>>();
 const llmTokenUsageRef = ref<InstanceType<typeof LineChart>>();
 const llmActiveConnectionsRef = ref<InstanceType<typeof LineChart>>();
 const chartLoading = ref<IChartDataLoading>({});
-const searchParams = ref<ISearchParamsType & { step?: string }>({
+// 时序图采样粒度，只用于区间指标请求；与 searchParams 分开保存，切换时不重复请求瞬时统计
+const step = shallowRef<MetricsStep>('auto');
+const initialRange: TimeRangeSeconds = resolveDatePickerRange(dateTime.value) ?? getRecentRange(10, 'minute');
+// 查询参数；time_start/time_end 为本轮查询的时间快照（秒）
+const searchParams = ref<ISearchParamsType>({
   stage_id: 0,
   resource_id: '',
-  time_start: dayjs(formatTime.value[0]!).unix(),
-  time_end: dayjs(formatTime.value[1]!).unix(),
+  time_start: initialRange[0],
+  time_end: initialRange[1],
   metrics: '' as ISearchParamsType['metrics'],
   backend_name: '',
 });
 
 let timeId: ReturnType<typeof setInterval> | null = null;
+// 初始化期间查询参数的变化不触发请求，由 init 结束时统一请求一次
+let isInitializing = false;
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -511,12 +513,10 @@ watch(() => route.query, () => {
       'now-6h',
       'now',
     ];
-    const now = dayjs();
-    const sixHoursAgo = now.subtract(6, 'hours');
-    formatTime.value = [
-      sixHoursAgo.format('YYYY-MM-DD HH:mm:ss'),
-      now.format('YYYY-MM-DD HH:mm:ss'),
-    ];
+    const range = resolveDatePickerRange(dateTime.value);
+    if (range) {
+      [searchParams.value.time_start, searchParams.value.time_end] = range;
+    }
   }
 }, {
   deep: true,
@@ -524,9 +524,10 @@ watch(() => route.query, () => {
 });
 
 watch(searchParams, () => {
-  getPageData();
-  getInstantData();
-  syncParamsToCharts();
+  if (isInitializing) {
+    return;
+  }
+  loadAll();
 }, { deep: true });
 
 const getStages = async () => {
@@ -566,16 +567,35 @@ const handleBackendChange = async () => {
   await getResources();
 };
 
-// 请求数据
-const getData = async (params: ISearchParamsType & { step?: string }, type: MetricsType) => {
+// 区间、瞬时指标的公共查询参数：时间为本轮快照（秒），须成对传；资源为空时不传
+const getMetricsBaseParams = () => {
+  const {
+    stage_id = 0,
+    resource_id,
+    backend_name,
+    time_start,
+    time_end,
+  } = searchParams.value;
+  return {
+    stage_id,
+    resource_id: resource_id ? Number(resource_id) : undefined,
+    backend_name,
+    time_start,
+    time_end,
+  };
+};
+
+// 请求数据：区间指标始终带上当前选择的粒度
+const getData = async (type: MetricsType) => {
   chartLoading.value[type as keyof IChartDataLoading] = true;
   try {
     chartData.value[type as keyof IChartDataType] = await queryMetricsRange(
       apigwId.value,
       {
-        ...params,
+        ...getMetricsBaseParams(),
+        step: step.value,
         metrics: type,
-      } as Parameters<typeof queryMetricsRange>[1],
+      },
     ) as any;
   }
   finally {
@@ -583,25 +603,22 @@ const getData = async (params: ISearchParamsType & { step?: string }, type: Metr
   }
 };
 
-const getPageData = (step?: string) => {
+const getPageData = () => {
   metricsList.value.forEach((type) => {
-    getData({
-      ...searchParams.value,
-      step,
-    }, type);
+    getData(type);
   });
 };
 
 const getInstantData = () => {
-  statisticsTypes.value.forEach(async (type: string) => {
+  statisticsTypes.value.forEach(async (type) => {
     chartLoading.value[type as keyof IChartDataLoading] = true;
     try {
       statistics.value[type as keyof IStatisticsType] = await queryMetricsInstant(
         apigwId.value,
         {
-          ...searchParams.value,
+          ...getMetricsBaseParams(),
           metrics: type,
-        } as Parameters<typeof queryMetricsInstant>[1],
+        },
       );
     }
     finally {
@@ -630,12 +647,9 @@ const setIntervalFn = (interval: string) => {
     case 'd':
       time = Number(interval.replace('d', '')) * 24 * 60 * 60 * 1000;
       break;
-  };
+  }
 
-  timeId = setInterval(() => {
-    getPageData();
-    getInstantData();
-  }, time);
+  timeId = setInterval(refreshData, time);
 };
 
 const syncParamsToCharts = () => {
@@ -672,26 +686,54 @@ watch(() => gatewayStore.isAIGateway, async (isAIGateway) => {
   await nextTick();
   syncAIParamsToCharts();
   aiMetricsList.forEach((type) => {
-    getData({ ...searchParams.value }, type);
+    getData(type);
   });
 });
 
+// 按当前时间解析所选范围：绝对范围固定不变，相对范围（最近 N 分钟、今天等）随时间推进
+const resolveTimeRange = () => resolveDatePickerRange(dateTime.value);
+
+// 写入本轮查询的时间快照；值有变化时由 searchParams 的 watch 统一请求全部数据并同步到子图
+const applyTimeRange = (range: TimeRangeSeconds) => {
+  searchParams.value.time_start = range[0];
+  searchParams.value.time_end = range[1];
+};
+
+// 自动刷新：先重新解析时间；快照未变化（如绝对范围）时直接重新请求
+const refreshData = () => {
+  const range = resolveTimeRange();
+  if (range && (range[0] !== searchParams.value.time_start || range[1] !== searchParams.value.time_end)) {
+    applyTimeRange(range);
+    return;
+  }
+  getPageData();
+  getInstantData();
+};
+
+const stopAutoRefresh = () => {
+  if (timeId) {
+    clearInterval(timeId);
+    timeId = null;
+  }
+};
+
 const handleRefreshChange = (interval: string) => {
-  clearInterval(timeId!);
-  timeId = null;
+  stopAutoRefresh();
   setIntervalFn(interval);
 };
 
-const handleStepChange = (step: string) => {
-  getPageData(step);
+const handleStepChange = (value: MetricsStep) => {
+  step.value = value;
+  getPageData();
 };
 
 const handleClearParams = () => {
+  const range = resolveTimeRange();
   searchParams.value = {
     stage_id: stageList.value[0]?.id,
     resource_id: '',
-    time_start: dayjs(formatTime.value[0]!).unix(),
-    time_end: dayjs(formatTime.value[1]!).unix(),
+    time_start: range?.[0] ?? searchParams.value.time_start,
+    time_end: range?.[1] ?? searchParams.value.time_end,
     metrics: '' as ISearchParamsType['metrics'],
     backend_name: '',
   };
@@ -703,34 +745,56 @@ const handleReportInit = () => {
   init();
 };
 
-const handleValueChange = (value: string[], info: InfoTypeItem[]) => {
-  const [startTime, endTime] = info;
-  formatTime.value = [
-    startTime?.formatText ?? null,
-    endTime?.formatText ?? null,
-  ];
-  const [time_start, time_end] = formatTime.value;
-  if (time_start && time_end) {
-    searchParams.value.time_start = dayjs(time_start).unix();
-    searchParams.value.time_end = dayjs(time_end).unix();
+// 选择变化：解析组件给出的选择值，不使用随显示格式变化的 formatText
+const handleValueChange = (value: DateValue | undefined) => {
+  const range = resolveDatePickerRange(value);
+  if (!range) {
+    Message({
+      theme: 'error',
+      message: t('时间范围无效，请重新选择'),
+    });
+    return;
   }
+  applyTimeRange(range);
 };
 
+// 按当前查询参数请求全部指标，并同步到子图
+const loadAll = () => {
+  getPageData();
+  getInstantData();
+  syncParamsToCharts();
+};
+
+// 首次加载必须显式请求：带环境参数进入时环境已预先写入，同一秒内重新解析的时间也可能与初始值相同，
+// 查询参数没有变化就不会触发 watch
 const init = async () => {
-  await Promise.all([
-    getStages(),
-    getResources(),
-    getBackendServices(),
-  ]);
-  const [time_start, time_end] = formatTime.value;
-  if (time_start && time_end) {
-    searchParams.value.time_start = dayjs(time_start).unix();
-    searchParams.value.time_end = dayjs(time_end).unix();
+  isInitializing = true;
+  try {
+    await Promise.all([
+      getStages(),
+      getResources(),
+      getBackendServices(),
+    ]);
+    const range = resolveTimeRange();
+    if (range) {
+      applyTimeRange(range);
+    }
+    // 等待初始化期间排队的 watch 回调执行完（会被跳过）
+    await nextTick();
   }
+  finally {
+    isInitializing = false;
+  }
+  loadAll();
 };
 
 onMounted(() => {
   init();
+});
+
+// 离开页面时停止自动刷新，避免旧定时器继续请求
+onBeforeUnmount(() => {
+  stopAutoRefresh();
 });
 
 </script>
@@ -759,13 +823,14 @@ onMounted(() => {
 
     .bk-form-label {
       width: auto;
+      padding-right: 8px !important;
       text-align: right;
       white-space: nowrap;
-      padding-right: 8px !important;
     }
 
     .bk-form-content {
       line-height: normal;
+
       .bk-input,
       .bk-user-selector,
       .member-selector {

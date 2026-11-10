@@ -1029,6 +1029,11 @@ const handleCancel = () => {
   router.back();
 };
 
+// 未取消就离开页面时也要停止授权状态轮询
+onBeforeUnmount(() => {
+  clearAuthPolling();
+});
+
 </script>
 
 <style lang="scss" scoped>

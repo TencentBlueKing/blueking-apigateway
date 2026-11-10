@@ -28,7 +28,6 @@
       >
         <DatePicker
           :key="dateKey"
-          ref="datePickerRef"
           v-model="dateValue"
           type="datetimerange"
           :clearable="false"
@@ -154,9 +153,13 @@ import { Funnel } from 'bkui-vue/lib/icon';
 import { useStorage } from '@vueuse/core';
 import { t } from '@/locales';
 import { STATUS_LIST } from '@/constants';
-import { useAccessLog } from '@/stores';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
+import {
+  type TimeRangeSeconds,
+  intersectTimeRange,
+  toTimeRangeSeconds,
+} from '@/utils/time-range';
 import type { IObservabilityBasicForm } from '@/services/source/gateway/mcp-server/log';
 import { getMcpAppPermissionAppCodes } from '@/services/source/gateway/mcp-server/permission';
 import { getServers } from '@/services/source/gateway/mcp-server/server';
@@ -188,9 +191,7 @@ const emit = defineEmits<IEmits>();
 
 const route = useRoute();
 const queryHistory = useStorage<string[]>('observability-flow-log-query-history', []);
-const accessLogStore = useAccessLog();
 
-const datePickerRef = ref<InstanceType<typeof DatePicker>>();
 const scrollLoading = ref(false);
 const mcpServerName = ref('');
 const dateKey = ref('dateKey');
@@ -213,7 +214,12 @@ const {
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(searchParams);
+  applySelectedRange,
+  resetSelection,
+} = useDatePicker(searchParams, {
+  presets: ['today', ...RECENT_DATE_PRESETS],
+  defaultPreset: 'today',
+});
 
 // 获取检索项
 const searchConditions = computed(() => {
@@ -275,27 +281,15 @@ const fetchMcpAppCodeList = async () => {
   }
 };
 
-const formatDatetime = (timeRange: any[]) => {
-  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-};
-
 const renderMcpDisplayName = (option: Record<string, string>) => {
   return option?.title ? `${option.title} (${option.name})` : option.name;
 };
 
-// 设置日期选择
-const handleSearchTimeRange = () => {
-  let timeRange = dateValue.value;
-  // 选择的是时间快捷项，需要实时计算时间值
-  if (shortcutSelectedIndex.value !== -1) {
-    timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  }
-  const formatTimeRange = formatDatetime(timeRange) as any;
-  searchParams.value = Object.assign(searchParams.value ?? {}, {
-    time_start: formatTimeRange?.[0],
-    time_end: formatTimeRange?.[1],
-  });
-};
+/**
+ * 设置日期选择：计算本次查询的秒级区间并写入查询参数
+ * @returns 是否得到有效区间；无效时不修改查询参数，调用方不应发起查询
+ */
+const handleSearchTimeRange = () => applySelectedRange();
 
 const generateTagContent = (tag: string) => {
   if (!tag) {
@@ -310,7 +304,9 @@ const generateTagContent = (tag: string) => {
 };
 
 const fetchSearchData = () => {
-  handleSearchTimeRange();
+  if (!handleSearchTimeRange()) {
+    return;
+  }
   emit('request');
 };
 
@@ -336,7 +332,9 @@ const handleMcpServerScrollEnd = debounce(() => {
 }, 200);
 
 const handlePickerConfirm = () => {
-  handleConfirm();
+  if (!handleConfirm()) {
+    return;
+  }
   fetchSearchData();
 };
 
@@ -385,26 +383,27 @@ const handleClearFilter = () => {
     app_code: '',
     status: 'all',
   });
-  (datePickerRef.value as any).shortcut = accessLogStore.datepickerShortcuts[0];
-  dateValue.value = [];
   includeQuery.value = [];
   excludeQuery.value = [];
-  shortcutSelectedIndex.value = 0;
+  // 恢复默认快捷项后重建日期组件
+  resetSelection();
   dateKey.value = String(+new Date());
   fetchSearchData();
 };
 
-// 请求数组件图表调用的同步更新数据
-const syncDateFromChart = (dateInfo: any) => {
-  if (dateInfo?.dateValue?.length) {
-    shortcutSelectedIndex.value = -1;
-    dateValue.value = dateInfo.dateValue;
+// 请求数组件图表调用的同步更新数据：range 为所选柱子的秒级区间，需与当前查询窗口取交集
+const syncDateFromChart = (range: TimeRangeSeconds) => {
+  const { time_start, time_end } = searchParams.value ?? {};
+  const queryRange = typeof time_start === 'number' && typeof time_end === 'number'
+    ? toTimeRangeSeconds(time_start * 1000, time_end * 1000)
+    : null;
+  const selectedRange = queryRange ? intersectTimeRange(range, queryRange) : range;
+  if (!selectedRange) {
+    return;
   }
-  else {
-    dateValue.value = [];
-    shortcutSelectedIndex.value = 0;
-    (datePickerRef.value as any).shortcut = accessLogStore.datepickerShortcuts[0];
-  }
+
+  shortcutSelectedIndex.value = -1;
+  dateValue.value = [new Date(selectedRange[0] * 1000), new Date(selectedRange[1] * 1000)];
   dateKey.value = String(+new Date());
 
   handlePickerConfirm();
@@ -437,6 +436,7 @@ onMounted(() => {
 defineExpose({
   syncDateFromChart,
   handleClearFilter,
+  handleSearchTimeRange,
 });
 </script>
 

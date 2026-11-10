@@ -104,10 +104,15 @@ import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import { useGateway } from '@/stores';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import { exportMcpLogs, getMcpLogTimechart } from '@/services/source/gateway/mcp-server/log';
+import {
+  type IObservabilityBasicForm,
+  exportMcpLogs,
+  getMcpLogTimechart,
+} from '@/services/source/gateway/mcp-server/log';
 import ObservabilityBasicForm from '@/views/mcp-server/components/ObservabilityBasicForm.vue';
 import FlowLogChart from '@/views/mcp-server/components/FlowLogChart.vue';
 import FlowLogDetailTable from '@/views/mcp-server/components/FlowLogDetailTable.vue';
+import type { TimeRangeSeconds } from '@/utils/time-range';
 
 const flowLogFormCompMap = {
   Query: ObservabilityBasicForm,
@@ -132,10 +137,8 @@ const collapseList = shallowRef([
   },
 ]);
 const activeCollapse = shallowRef(['Query', 'Request', 'Detail']);
-// 查询条件参数
-const searchParams = ref({
-  time_start: '',
-  time_end: '',
+// 查询条件参数；time_start/time_end 由查询表单在每次查询前按当前选择写入（秒）
+const searchParams = ref<IObservabilityBasicForm>({
   app_code: '',
   request_id: '',
   status: 'all',
@@ -198,7 +201,7 @@ const getObservabilityLogChart = async () => {
 
     chartEmptyConf.value.emptyType = 'searchEmpty';
 
-    const res = await getMcpLogTimechart(apigwId.value, params as any, path);
+    const res = await getMcpLogTimechart(apigwId.value, params, path);
 
     if (!res || res?.series?.length === 0) {
       chartEmptyConf.value = {
@@ -288,9 +291,9 @@ const setComponentRef = (el: HTMLElement | null, name: string) => {
 };
 
 // 接收图表组件的日期更新事件
-const handleUpdateDateFromChart = (dateInfo: { dateValue: string[] }) => {
+const handleUpdateDateFromChart = (range: TimeRangeSeconds) => {
   const formInstance = componentRefs?.get('Query');
-  formInstance?.syncDateFromChart(dateInfo);
+  formInstance?.syncDateFromChart(range);
 };
 
 // 下载 MCP日志
@@ -308,7 +311,7 @@ const handleDownload = async (e: MouseEvent) => {
       limit: 10000,
     });
 
-    await exportMcpLogs(apigwId.value, queryParams as any, path);
+    await exportMcpLogs(apigwId.value, queryParams, path);
 
     Message({
       message: t('导出成功'),

@@ -509,6 +509,11 @@ const handleCancel = () => {
   isShow.value = false;
 };
 
+// 未关闭弹窗就离开页面时也要停止授权状态轮询
+onBeforeUnmount(() => {
+  clearAuthPolling();
+});
+
 </script>
 
 <style lang="scss" scoped>

@@ -76,6 +76,7 @@
       ref="tableRef"
       v-model:table-data="tableData"
       table-row-key="event_id"
+      :is-exist-unique-key="false"
       show-settings
       resizable
       :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
@@ -99,7 +100,7 @@ import { cloneDeep } from 'lodash-es';
 import type { ISearchSelect, ITableMethod } from '@/types/common';
 import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import {
   useAccessLog,
   useAuditLog,
@@ -125,7 +126,9 @@ const { handleTableFilterChange } = useTableFilterChange();
 const orderBy = ref('');
 const dateKey = ref('dateKey');
 const searchValue = ref([]);
-const defaultSearchData = ref<IAuditLog>({
+// 筛选默认值：普通对象，每次使用时 cloneDeep 出独立副本。
+// 不能用 ref 再 cloneDeep，否则复制出的是 RefImpl，其 value 不具备响应式
+const defaultSearchData: IAuditLog = {
   keyword: '',
   op_type: '',
   op_object: '',
@@ -135,7 +138,7 @@ const defaultSearchData = ref<IAuditLog>({
   time_start: '',
   time_end: '',
   order_by: '',
-});
+};
 
 const showDetails = ref<boolean>(false);
 const details = ref<IAuditEventLogOutput>({});
@@ -224,7 +227,7 @@ const {
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(filterData);
+} = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const getStatusText = (type: string) => {
   const name = auditLogStore.operateStatus.find((item: Record<string, string>) => item.value === type)?.name;
@@ -356,7 +359,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
 };
 
 const handleClearFilter = () => {
-  filterData.value = cloneDeep(defaultSearchData.value);
+  filterData.value = cloneDeep(defaultSearchData);
   searchValue.value = [];
   handleClear();
   dateKey.value = String(+new Date());
@@ -379,7 +382,9 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
 };
 
 const handlePickSuccess = () => {
-  handleConfirm();
+  if (!handleConfirm()) {
+    return;
+  }
   getList();
 };
 
@@ -410,7 +415,7 @@ watch(
     if (!newVal.length) {
       filterData.value = Object.assign(
         {},
-        cloneDeep(defaultSearchData.value),
+        cloneDeep(defaultSearchData),
         {
           order_by: orderBy.value,
           time_start: filterData.value.time_start,

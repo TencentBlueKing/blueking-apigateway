@@ -132,7 +132,8 @@ const state = reactive({
 });
 const logBody = ref('');
 
-let timeId: any = null;
+// 发布日志轮询定时器：同一时间只保留一个
+let timeId: ReturnType<typeof setInterval> | undefined;
 
 watch(
   isShow,
@@ -144,7 +145,7 @@ watch(
       emit('release-doing');
     }
     if (!isShow.value) {
-      clearInterval(timeId);
+      stopPolling();
     }
   },
 );
@@ -153,6 +154,8 @@ watch(
   () => historyId,
   () => {
     if (historyId && isShow.value) {
+      // 切换到新的发布记录前先停止旧的轮询，避免多个定时器同时请求
+      stopPolling();
       getLogsList();
       timeId = setInterval(() => {
         getLogsList();
@@ -160,6 +163,13 @@ watch(
     }
   },
 );
+
+const stopPolling = () => {
+  if (timeId) {
+    clearInterval(timeId);
+    timeId = undefined;
+  }
+};
 
 // 获取日志列表
 const getLogsList = async () => {
@@ -171,7 +181,7 @@ const getLogsList = async () => {
       if (['success'].includes(response.status)) {
         emit('release-success');
       }
-      clearInterval(timeId);
+      stopPolling();
     }
 
     logDetails.value = response;
@@ -259,13 +269,18 @@ const getLogsList = async () => {
     });
   }
   catch {
-    clearInterval(timeId);
+    stopPolling();
   }
 };
 
 const showSideslider = () => {
   isShow.value = true;
 };
+
+// 侧栏随页面卸载时停止轮询
+onBeforeUnmount(() => {
+  stopPolling();
+});
 
 defineExpose({ showSideslider });
 </script>

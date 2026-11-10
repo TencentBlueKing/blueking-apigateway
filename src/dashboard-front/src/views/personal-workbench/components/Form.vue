@@ -38,16 +38,16 @@
         class="form-item form-item--date"
       >
         <DatePicker
-          ref="datePickerRef"
           :key="dateKey"
           v-model="dateValue"
           type="datetimerange"
-          :clearable="false"
+          clearable
           :placeholder="t('请选择申请时间')"
           use-shortcut-text
           :shortcuts="shortcutsRange"
           :shortcut-selected-index="shortcutSelectedIndex"
           @change="handleChange"
+          @clear="handleClear"
           @shortcut-change="handleShortcutChange"
           @pick-success="handlePickerConfirm"
           @selection-mode-change="handleSelectionModeChange"
@@ -97,14 +97,13 @@ import { DatePicker } from 'bkui-vue';
 import type { FilterValue } from '@blueking/tdesign-ui';
 import { t } from '@/locales';
 import {
-  useAccessLog,
   useEnv,
   useFeatureFlag,
   useUserInfo,
 } from '@/stores';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
-import type { IPersonalWorkbenchListQuery, IPersonalWorkbenchUIState } from '@/services/types/query/personal-workbench.ts';
+import type { IPersonalWorkbenchFilter, IPersonalWorkbenchUIState } from '@/services/types/query/personal-workbench.ts';
 import BkUserSelector from '@blueking/bk-user-selector';
 import StaffSelector from '@/components/user/staff-selector';
 
@@ -118,7 +117,7 @@ interface IEmits {
   'batch-approval': [void]
 }
 
-const formData = defineModel<FilterValue | IPersonalWorkbenchListQuery>('formData', {
+const formData = defineModel<FilterValue | IPersonalWorkbenchFilter>('formData', {
   type: Object,
   default: DEFAULT_FORM_DATA,
 });
@@ -134,39 +133,30 @@ const emit = defineEmits<IEmits>();
 const envStore = useEnv();
 const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
-const accessLogStore = useAccessLog();
 const {
   dateValue,
   shortcutsRange,
   shortcutSelectedIndex,
   handleChange,
+  handleClear,
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(formData);
+  applySelectedRange,
+  resetSelection,
+} = useDatePicker(formData, { presets: ['today', ...RECENT_DATE_PRESETS] });
 
-const datePickerRef = ref<InstanceType<typeof DatePicker>>();
 const dateKey = ref('dateKey');
 
 const getTenantId = computed(() => userStore?.info?.tenant_id as string);
 
-const formatDatetime = (timeRange: (number | string | Date)[]) => {
-  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-};
-
-// 设置日期选择
-const handleSearchTimeRange = () => {
-  let timeRange = dateValue.value;
-  // 选择的是时间快捷项，需要实时计算时间值
-  if (shortcutSelectedIndex.value !== -1) {
-    timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  }
-  const formatTimeRange = formatDatetime(timeRange);
-  formData.value = Object.assign(formData.value ?? {}, {
-    time_start: formatTimeRange?.[0],
-    time_end: formatTimeRange?.[1],
-  });
-};
+/**
+ * 设置日期选择：计算本次查询的秒级区间并写入查询参数
+ * - 未选择：清空时间条件
+ * - 无法得到有效区间：提示错误，保留原有时间条件
+ * @returns 时间条件是否有效
+ */
+const handleSearchTimeRange = () => applySelectedRange();
 
 const handleBatchApply = () => {
   emit('batch-approval');
@@ -174,15 +164,11 @@ const handleBatchApply = () => {
 
 const handlePickerConfirm = () => {
   handleConfirm();
-  handleSearchTimeRange();
 };
 
 const handleResetFormData = () => {
-  if (datePickerRef.value) {
-    datePickerRef.value.shortcut = accessLogStore.datepickerShortcuts[0];
-  }
-  dateValue.value = [];
-  shortcutSelectedIndex.value = -1;
+  // 恢复默认（不限时间）后重建日期组件
+  resetSelection();
   dateKey.value = String(+new Date());
   handleSearchTimeRange();
 };
@@ -241,6 +227,11 @@ defineExpose({
         .member-selector {
           width: 100%;
         }
+      }
+
+      &.form-item--date .bk-form-content {
+        // 选择具体时间范围后文本较长（约 300px），230px 会被截断
+        width: 320px;
       }
     }
   }

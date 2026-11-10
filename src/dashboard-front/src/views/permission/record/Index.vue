@@ -217,7 +217,7 @@
 import { Button } from 'bkui-vue';
 import { getPermissionRecordList } from '@/services/source/gateway/permission';
 import { useFeatureFlag, useGateway } from '@/stores';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
 import type { ITableMethod } from '@/types/common';
 import { sortByKey } from '@/utils';
@@ -344,10 +344,11 @@ const {
   shortcutSelectedIndex,
   handleChange,
   handleClear,
+  resetSelection,
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(filterData);
+} = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
@@ -556,8 +557,7 @@ const handleClearFilter = () => {
     time_end: '',
   });
   filterValue.value = {};
-  shortcutSelectedIndex.value = -1;
-  dateValue.value = [];
+  resetSelection();
   dateKey.value = String(+new Date());
 };
 </script>

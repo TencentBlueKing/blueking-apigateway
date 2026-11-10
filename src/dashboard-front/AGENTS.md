@@ -309,6 +309,24 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 > `observability.ts` 与 `trace.ts` 都导出 `ISpan`：前者是接口返回的 span，后者在其基础上补充瀑布图需要的层级、
 > 折叠、标签等字段。
 
+### 时间与日期
+
+后端时间参数一律是 Unix **整数秒**，前端以后端现有行为为准，各接口的开闭区间、成对规则写在
+`services/types/query/` 对应字段的注释里；前端不对开闭区间做 ±1 秒补偿。
+
+- **转换与校验**：`@/utils/time-range`。`toTimeRangeSeconds` 把 Date、Dayjs、毫秒数或 `YYYY-MM-DD HH:mm:ss` 文本
+  转为秒级区间，无效时返回 `null`；`toTimeRangeQuery` 把筛选状态转为接口参数（两端成对传或都不传）；
+  `getBucketRange` 由柱状图下标计算框选区间。不要用 `new Date(文本)` 解析，也不要从显示文本反推时间。
+- **筛选状态**：时间字段使用 `src/types/common.ts` 的 `ITimeRangeFilter`（秒或空字符串）。
+- **bkui 列表日期选择**：`useDatePicker(filter, { presets, defaultPreset })`。快捷项用稳定 ID（`RECENT_DATE_PRESETS`
+  等）由页面显式声明，不按路由或下标推断；查询前调用 `applySelectedRange()`，快捷项会按当前时间重新计算。
+- **`@blueking/date-picker`**（网关仪表盘、统计报表）：选择值可能是 `now-10m` 这类相对表达式，每轮查询用
+  `@/utils/date-picker-range` 的 `resolveDatePickerRange` 重新解析；不要使用随显示格式变化的 `formatText`。
+- **相对时间**：以客户端时钟在每轮查询开始时解析一次，同一轮的子请求、分页和导出共用这次结果；不要改用后端的
+  `time_range`，它会在每个请求中各自取服务器时间，导致同一轮的请求时间不一致。
+- **统计报表**：后端按 UTC 自然日分桶，起点需对齐到 UTC 0 点，且不得早于服务器时间的半年前。
+- **轮询**：同一份数据只保留一个定时器，由拥有该页面状态的组件启停，并在卸载时清理。
+
 ## 代码风格规范
 
 由 ESLint 9 扁平化配置 + oxlint + stylelint 强制执行：

@@ -174,7 +174,7 @@
 <script lang="tsx" setup>
 import type { ITableMethod } from '@/types/common';
 import { useAccessLog, useGateway } from '@/stores';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getRecordList, getStrategyList } from '@/services/source/gateway/monitor';
 import type { IAlarmRecord } from '@/types/monitor';
@@ -222,10 +222,11 @@ const {
   shortcutSelectedIndex,
   handleChange,
   handleClear,
+  resetSelection,
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(filterData);
+} = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const tableColumns = computed((): any[] => ([
@@ -409,8 +410,7 @@ const handleRowClick = ({ row }: { row: IAlarmRecord }) => {
 };
 
 const handleClearFilter = () => {
-  dateValue.value = [];
-  shortcutSelectedIndex.value = -1;
+  resetSelection();
   dateKey.value = String(+new Date());
   filterData.value = {};
 };

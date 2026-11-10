@@ -31,10 +31,10 @@ export interface IAuditLog {
   op_object_type: string
   // 用户名
   username?: string
-  // 开始时间（可选）
-  time_start?: string
-  // 结束时间（可选）
-  time_end?: string
+  // 开始时间（Unix 秒），未选择时为空字符串
+  time_start?: number | ''
+  // 结束时间（Unix 秒），未选择时为空字符串
+  time_end?: number | ''
   // 关键词（可选）
   keyword?: string
   // 排序字段（可选）

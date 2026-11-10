@@ -132,6 +132,7 @@ const {
   searchParams,
   handleStepChange,
   handleRefreshTimeChange,
+  handleResetTime,
 } = useObservabilityDashboard();
 
 const handleRefreshTimeToggle = (isVisible: boolean) => {
@@ -142,11 +143,9 @@ const handleStepToggle = (isVisible: boolean) => {
   isOpenStep.value = isVisible;
 };
 
+// 只修改共享状态；定时器由仪表盘组件根据 interval 启停
 const handleResetForm = () => {
-  interval.value = 'off';
-  searchParams.value.step = 'auto';
-  handleRefreshTimeChange('off');
-  handleStepChange('auto');
+  handleResetTime();
 };
 
 defineExpose({ handleResetForm });

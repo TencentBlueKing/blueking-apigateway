@@ -23,6 +23,7 @@ import type {
   ITimeChartOutput,
 } from '@/services/types/responses/gateways.ts';
 import type {
+  IGatewaysLogsExportListQuery,
   IGatewaysLogsListQuery,
   IGatewaysLogsReadQuery,
   IGatewaysLogsTimechartReadQuery,
@@ -75,5 +76,5 @@ export const getAccessLogDetail = (gatewayId: number, requestId: string, params:
  * @param data 导出参数
  * @param extraStr 额外检索串（include/exclude）
  */
-export const exportAccessLogs = (gatewayId: number, data: Record<string, unknown> = {}, extraStr?: string) =>
+export const exportAccessLogs = (gatewayId: number, data: IGatewaysLogsExportListQuery, extraStr?: string) =>
   http.get<unknown>(withExtraQuery(`${path}/${gatewayId}/logs/export/`, extraStr), data, { responseType: 'blob' });

@@ -60,7 +60,6 @@
 import * as echarts from 'echarts';
 import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
-import { useChartIntervalOption } from '@/hooks';
 import type { ISeriesItemType, ISummarySearchParams } from '@/types/metrics';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { getColorHue } from '@/utils';
@@ -83,7 +82,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { getChartIntervalOption } = useChartIntervalOption();
 
 const myChart = shallowRef();
 // const chartLegend = ref<ChartLegend>({});
@@ -237,7 +235,7 @@ const getChartOption = () => {
         item[0],
       ])),
     }));
-    moreOption = getChartMoreOption(datapoints);
+    moreOption = getChartMoreOption();
     const dataLength = datapoints?.length || 0;
     if (dataLength <= 10) {
       moreOption.xAxis.axisLabel.rotate = 0;
@@ -259,23 +257,17 @@ const getChartOption = () => {
   return merge(baseOption, chartOption, moreOption);
 };
 
-const getChartMoreOption = (seriesData: Array<Array<number>>) => {
-  // 1. 根据data的最大值，动态计算出max合适值和interval配置
-  // const serieData = seriesData.map((item: Array<number>) => Math.round(item[0]))
-  // .filter((item: number) => !isNaN(item));
-  // const maxNumber = Math.max(...serieData);
-  // const yAxisIntervalOption = getChartIntervalOption(maxNumber, 'number', 'yAxis');
-
-  // 2. 根据时间值计算xAxis显示年/月/日/时间部分
-  const xAxisData = seriesData.map((item: Array<number>) => Math.round(item[1]));
-  xAxisData.sort((a: number, b: number) => a - b);
-  // timeDuration 需要秒为单位
-  const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000);
-  const xAxisIntervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
-
-  // return merge(yAxisIntervalOption, xAxisIntervalOption);
-  return xAxisIntervalOption;
-};
+/**
+ * 横轴配置：报表数据是按日、周、月汇总的桶（time_period 为日期文本），横轴只展示日期，
+ * 刻度间隔交给 ECharts 按宽度计算，最小间隔一天。
+ * 原实现对日期文本取 Math.round 得到 NaN，固定落入“大于 1 年”分支，刻度间隔被强制为约 3 个月
+ */
+const getChartMoreOption = () => ({
+  xAxis: {
+    minInterval: 24 * 60 * 60 * 1000,
+    axisLabel: { formatter: (value: number) => dayjs(value).format('YYYY-MM-DD') },
+  },
+});
 
 const generateChartColor = (chartData: ISeriesItemType[]) => {
   let baseColor = ['#3A84FF', '#5AD8A6', '#5D7092', '#F6BD16', '#FF5656', '#6DC8EC', '#FFB43D', '#4BC7AD', '#FF7756', '#B5E0AB'];

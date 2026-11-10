@@ -93,7 +93,11 @@ export function setupDayjsLocale(lang: string): void {
     yy: (num: number) => (t('{n}年前', { n: num }) || defaultRelativeTime.yy).replace(/\{n\}|%d/g, num.toString()),
   };
 
-  dayjs.locale(validLang, {
+  // dayjs.locale(name, object) 会用 object 整体替换已注册的语言包，丢失月份、星期等配置，
+  // 之后 format('MMMM') 之类的格式化会报错；这里在已注册的语言包上只覆盖 relativeTime
+  dayjs.locale({
+    ...dayjs.Ls[validLang],
+    name: validLang,
     relativeTime: customRelativeTime as Partial<{
       future: string
       past: string
