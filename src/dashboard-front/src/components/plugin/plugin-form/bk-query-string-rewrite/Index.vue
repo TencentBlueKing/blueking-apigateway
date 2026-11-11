@@ -48,6 +48,7 @@
       <KeysInput
         ref="removeRef"
         v-model="formData.remove"
+        :key-rule="keyRule"
       />
     </BkFormItem>
   </BkForm>
@@ -56,7 +57,7 @@
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
 import KeyValuePairs from '@/components/plugin/plugin-form/components/KeyValuePairs.vue';
-import KeysInput from './components/KeysInput.vue';
+import KeysInput from '@/components/plugin/plugin-form/components/KeysInput.vue';
 
 interface KeyValuePair {
   key: string

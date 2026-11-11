@@ -1,7 +1,7 @@
 import { isPlainObject } from 'lodash-es';
 import { json2Yaml } from '@/utils/json2Yaml';
 import { yaml2Json } from '@/utils/yaml2Json';
-import type { ISchemaPluginFormHandle, PluginEditorDefinition, PluginFormHandle } from './types';
+import type { PluginEditorDefinition, PluginFormHandle } from './types';
 
 export class PluginEditorError extends Error {
 }
@@ -58,23 +58,16 @@ export const collectPluginYaml = async (
     }
     return result.data;
   }
-  if (!('getValue' in form) || (editor.kind === 'schema' && !('validate' in form))) {
+  if (!('getValue' in form)) {
     throw new PluginEditorError('表单加载失败');
   }
 
   let config: unknown;
   try {
-    // 自定义表单已在 getValue() 内完成校验；Schema 表单单独返回布尔校验结果，
-    // 必须先通过校验，再读取配置值。
-    if (editor.kind === 'schema' && !await (form as ISchemaPluginFormHandle).validate()) {
-      throw new PluginValidationError();
-    }
+    // 自定义表单在 getValue() 内完成校验，校验失败时抛出异常
     config = await form.getValue();
   }
-  catch (error) {
-    if (error instanceof PluginValidationError) {
-      throw error;
-    }
+  catch {
     throw new PluginValidationError();
   }
   return serializePluginConfig(config);

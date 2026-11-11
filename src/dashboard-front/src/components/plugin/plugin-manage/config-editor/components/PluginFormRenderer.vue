@@ -21,16 +21,6 @@
       />
       <Component
         :is="editor.component"
-        v-else-if="editor?.kind === 'schema'"
-        :key="formVersion"
-        ref="formRef"
-        v-model="formData"
-        :route-mode="code"
-        :schema="formConfig?.schema"
-        :layout="formConfig?.layout"
-      />
-      <Component
-        :is="editor.component"
         v-else-if="editor?.kind === 'whitelist'"
         :key="formVersion"
         ref="formRef"
@@ -66,7 +56,7 @@ interface IProps {
 
 const { definition = undefined, code, type, initialYaml = null } = defineProps<IProps>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 
 const formData = ref<Record<string, any>>({});
 const formVersion = ref(0);
@@ -75,16 +65,9 @@ const whitelistYaml = ref('');
 const formRef = ref<PluginFormHandle | null>(null);
 
 const editor = computed(() => definition?.editor);
-// 切换语言时只更新标签和布局，保留用户当前的配置草稿。
-const formConfig = computed(() => editor.value?.kind === 'schema'
-  ? editor.value.getFormConfig(locale.value)
-  : undefined);
 const errorMessage = computed(() => {
   if (!definition) {
     return '暂不支持配置此插件';
-  }
-  if (editor.value?.kind === 'schema' && !formConfig.value?.schema) {
-    return '表单加载失败';
   }
   return initializationError.value;
 });

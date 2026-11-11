@@ -60,7 +60,7 @@
     </BkForm>
     <AgIcon
       v-if="internalValue?.length === 0"
-      class="icon-btn"
+      class="icon-btn cursor-pointer"
       color="#979BA5"
       name="plus-circle-shape"
       size="18"
@@ -73,9 +73,19 @@
 import { Form } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 
-interface IProps { modelValue?: { key: string }[] }
+interface IKeyRule {
+  pattern: RegExp
+  // 已翻译的提示文案
+  message: string
+}
 
-const { modelValue = [] } = defineProps<IProps>();
+interface IProps {
+  modelValue?: { key: string }[]
+  // 键名格式规则，不传时只允许字母、数字、下划线和连字符
+  keyRule?: IKeyRule
+}
+
+const { modelValue = [], keyRule = undefined } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'update:modelValue': [{ key: string }[]] }>();
 
@@ -85,7 +95,12 @@ const internalValue = ref<{ key: string }[]>([]);
 
 const formRefs = useTemplateRef<InstanceType<typeof Form>[]>('forms');
 
-const rules = {
+const keyFormatRule = computed<IKeyRule>(() => keyRule ?? {
+  pattern: /^[\w-]+$/,
+  message: t('允许输入：字母、数字、下划线_、连字符-'),
+});
+
+const rules = computed(() => ({
   key: [
     {
       required: true,
@@ -93,8 +108,8 @@ const rules = {
       trigger: 'blur',
     },
     {
-      validator: (value: string) => /^[^=&#?]+$/.test(value),
-      message: t('不能包含 =, &, #, ?'),
+      validator: (value: string) => keyFormatRule.value.pattern.test(value),
+      message: keyFormatRule.value.message,
       trigger: 'blur',
     },
     {
@@ -103,7 +118,7 @@ const rules = {
       trigger: 'blur',
     },
   ],
-};
+}));
 
 watch(
   () => modelValue,
