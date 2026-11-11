@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.db.models import Count, Q
+from django.db.models import Count, Q, QuerySet
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
@@ -26,14 +26,12 @@ from apigateway.apis.web.mcp_server.serializers import (
     MCPServerConfigListOutputSLZ,
 )
 from apigateway.apps.mcp_server.constants import (
-    FEATURED_MCP_CATEGORY_NAME,
-    OFFICIAL_MCP_CATEGORY_NAME,
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_mcp_server_filter_by_user_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.validators import check_user_can_access_gateway
@@ -53,6 +51,37 @@ from .serializers import (
 )
 
 
+def _build_marketplace_mcp_server_queryset(request, validated_data) -> QuerySet:
+    """构建 MCP 市场可见的 MCPServer queryset，供列表和分类统计共用"""
+    # mcp server should be public and active
+    queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
+    # gateway should be active
+    queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
+    # the stage should be active and online
+    queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
+
+    keyword = validated_data.get("keyword")
+    if keyword:
+        queryset = queryset.filter(
+            Q(name__icontains=keyword)
+            | Q(title__icontains=keyword)
+            | Q(description__icontains=keyword)
+            | Q(_labels__icontains=keyword)
+        )
+
+    # 分类筛选 —— 使用 biz 层的通用方法
+    categories = validated_data.get("categories")
+    if categories:
+        queryset = MCPServerHandler.apply_category_filter(queryset, categories)
+
+    # tenant_id filter here
+    user_tenant_id = get_user_tenant_id(request)
+    if user_tenant_id:
+        queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
+
+    return queryset
+
+
 @method_decorator(
     name="get",
     decorator=extend_schema(
@@ -67,31 +96,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         slz = MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        # mcp server should be public and active
-        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
-        # gateway should be active
-        queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
-        # the stage should be active and online
-        queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
-
-        keyword = slz.validated_data.get("keyword")
-        if keyword:
-            queryset = queryset.filter(
-                Q(name__icontains=keyword)
-                | Q(title__icontains=keyword)
-                | Q(description__icontains=keyword)
-                | Q(_labels__icontains=keyword)
-            )
-
-        # 分类筛选 —— 使用 biz 层的通用方法
-        categories = slz.validated_data.get("categories")
-        if categories:
-            queryset = MCPServerHandler.apply_category_filter(queryset, categories)
-
-        # tenant_id filter here
-        user_tenant_id = get_user_tenant_id(request)
-        if user_tenant_id:
-            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
+        queryset = _build_marketplace_mcp_server_queryset(request, slz.validated_data)
 
         # optimize query by using select_related and prefetch_related
         queryset = queryset.select_related("gateway", "stage").prefetch_related("categories")
@@ -291,57 +296,31 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
         slz = MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        # 获取用户租户 ID，用于过滤
-        user_tenant_id = get_user_tenant_id(request)
-
-        # 构建分类统计过滤条件（和 MCPMarketplaceServerListApi 保持一致）
-        mcp_server_filter = Q(
-            mcp_servers__is_public=True,
-            mcp_servers__status=MCPServerStatusEnum.ACTIVE.value,
-            mcp_servers__gateway__status=GatewayStatusEnum.ACTIVE.value,
-            mcp_servers__stage__status=StageStatusEnum.ACTIVE.value,
-        )
-
-        # 关键字筛选
-        keyword = slz.validated_data.get("keyword")
-        if keyword:
-            mcp_server_filter &= (
-                Q(mcp_servers__name__icontains=keyword)
-                | Q(mcp_servers__title__icontains=keyword)
-                | Q(mcp_servers__description__icontains=keyword)
-                | Q(mcp_servers___labels__icontains=keyword)
-            )
-
-        # 分类筛选（支持多个分类，与 MCPMarketplaceServerListApi 逻辑一致）
-        categories = slz.validated_data.get("categories")
-        if categories:
-            special_categories = {OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME}
-            if special_categories & set(categories):
-                # 包含 Official 或 Featured 分类时，使用 AND 逻辑：必须同时属于所有选择的分类
-                for category in categories:
-                    mcp_server_filter &= Q(
-                        mcp_servers__categories__name=category, mcp_servers__categories__is_active=True
-                    )
-            else:
-                # 不包含特殊分类时，使用 OR 逻辑：属于任意一个选择的分类即可
-                mcp_server_filter &= Q(
-                    mcp_servers__categories__name__in=categories, mcp_servers__categories__is_active=True
-                )
-        if user_tenant_id:
-            mcp_server_filter &= Q(mcp_servers__gateway__tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
-                mcp_servers__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
-                mcp_servers__gateway__tenant_id=user_tenant_id,
-            )
+        # 与 MCPMarketplaceServerListApi 使用相同的过滤条件
+        mcp_server_ids = _build_marketplace_mcp_server_queryset(request, slz.validated_data).values("id")
 
         # 使用 annotate 一次性统计每个分类的 MCPServer 数量，避免 N+1 查询
         queryset = (
             MCPServerCategory.objects.filter(is_active=True)
-            .annotate(mcp_server_count=Count("mcp_servers", filter=mcp_server_filter, distinct=True))
+            .annotate(
+                mcp_server_count=Count(
+                    "mcp_servers",
+                    filter=Q(mcp_servers__id__in=mcp_server_ids),
+                    distinct=True,
+                )
+            )
             .order_by("sort_order", "id")
         )
 
         # 构建统计数据字典
         category_stats = {cat.id: cat.mcp_server_count for cat in queryset}
+
+        # 未分类按语义统计（没有任何启用的常规分类），与按未分类筛选列表的结果保持一致
+        for cat in queryset:
+            if cat.name == UNCATEGORIZED_MCP_CATEGORY_NAME:
+                category_stats[cat.id] = MCPServerHandler.apply_category_filter(
+                    MCPServer.objects.filter(id__in=mcp_server_ids), [UNCATEGORIZED_MCP_CATEGORY_NAME]
+                ).count()
 
         serializer = self.get_serializer(queryset, many=True, context={"category_stats": category_stats})
         return OKJsonResponse(data=serializer.data)

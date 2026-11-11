@@ -32,6 +32,7 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPAgentClientTypeEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -686,6 +687,7 @@ class MCPServerHandler:
 
         当选择的分类中包含 Official 或 Featured 时，使用 AND 逻辑（结果必须同时满足所有分类）；
         否则使用 OR 逻辑（属于任意一个分类即可）。
+        Uncategorized 表示没有任何启用的常规分类，见 _get_uncategorized_filter。
 
         Args:
             queryset: MCPServer 查询集
@@ -699,13 +701,36 @@ class MCPServerHandler:
 
         special_categories = {OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME}
         if special_categories & set(categories):
+            # AND：逐个分类叠加筛选
             for category in categories:
-                queryset = queryset.filter(categories__name=category, categories__is_active=True)
+                if category == UNCATEGORIZED_MCP_CATEGORY_NAME:
+                    queryset = queryset.filter(MCPServerHandler._get_uncategorized_filter())
+                else:
+                    queryset = queryset.filter(categories__name=category, categories__is_active=True)
             queryset = queryset.distinct()
         else:
-            queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
+            # OR：属于任一所选常规分类，或满足未分类条件
+            # Uncategorized 不参与名称匹配，避免同时有常规分类的 MCPServer 被算作未分类
+            regular_categories = [category for category in categories if category != UNCATEGORIZED_MCP_CATEGORY_NAME]
+            category_filter = Q(categories__name__in=regular_categories, categories__is_active=True)
+            if UNCATEGORIZED_MCP_CATEGORY_NAME in categories:
+                category_filter |= MCPServerHandler._get_uncategorized_filter()
+            queryset = queryset.filter(category_filter).distinct()
 
         return queryset
+
+    @staticmethod
+    def _get_uncategorized_filter() -> Q:
+        """未分类筛选条件：不属于任何启用的常规分类
+
+        常规分类不含 Official、Featured（标记类）和 Uncategorized 本身，
+        因此没有分类、只有官方/精选、或分类均已停用的 MCPServer 都算未分类。
+        """
+        regular_categories = MCPServerCategory.objects.filter(is_active=True).exclude(
+            name__in=[OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME, UNCATEGORIZED_MCP_CATEGORY_NAME]
+        )
+        categorized_mcp_server_ids = MCPServer.objects.filter(categories__in=regular_categories).values("id")
+        return ~Q(id__in=categorized_mcp_server_ids)
 
     @staticmethod
     def build_list_queryset(

@@ -25,6 +25,7 @@ from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
@@ -1086,6 +1087,93 @@ class TestMCPMarketplaceCategoryListApi:
         )
         # 只统计公开的
         assert official_category["mcp_server_count"] == 1
+
+    def test_list_categories_uncategorized_count(self, request_view, fake_categories, fake_public_mcp_server):
+        """测试未分类统计没有任何启用常规分类的 MCPServer，并与按未分类筛选的列表数量一致"""
+        uncategorized_category = G(
+            MCPServerCategory,
+            name=UNCATEGORIZED_MCP_CATEGORY_NAME,
+            display_name="未分类",
+            sort_order=0,
+            is_active=True,
+        )
+        # fake_public_mcp_server 没有任何分类；其余 server 分别只有官方、只有停用分类、显式未分类、常规分类
+        for categories in [
+            [fake_categories["official"]],
+            [fake_categories["inactive"]],
+            [uncategorized_category],
+            [uncategorized_category, fake_categories["devops"]],
+            [fake_categories["official"], fake_categories["devops"]],
+        ]:
+            server = G(
+                MCPServer,
+                gateway=fake_public_mcp_server.gateway,
+                stage=fake_public_mcp_server.stage,
+                status=MCPServerStatusEnum.ACTIVE.value,
+                is_public=True,
+            )
+            server.categories.add(*categories)
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        category_counts = {cat["name"]: cat["mcp_server_count"] for cat in result["data"]}
+        assert category_counts[UNCATEGORIZED_MCP_CATEGORY_NAME] == 4
+        assert category_counts["DevOps"] == 2
+        assert category_counts[OFFICIAL_MCP_CATEGORY_NAME] == 2
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"categories": UNCATEGORIZED_MCP_CATEGORY_NAME},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["data"]["count"] == 4
+
+        # 筛选官方时，未分类只统计官方中没有常规分类的 MCPServer
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"categories": OFFICIAL_MCP_CATEGORY_NAME},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        category_counts = {cat["name"]: cat["mcp_server_count"] for cat in result["data"]}
+        assert category_counts[UNCATEGORIZED_MCP_CATEGORY_NAME] == 1
+        assert category_counts["DevOps"] == 1
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"categories": f"{UNCATEGORIZED_MCP_CATEGORY_NAME},{OFFICIAL_MCP_CATEGORY_NAME}"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["data"]["count"] == 1
+
+    def test_list_categories_with_multiple_special_categories(
+        self, request_view, fake_categories, fake_public_mcp_server
+    ):
+        """测试同时筛选官方和精选时，分类统计与列表结果一致"""
+        featured_category = G(MCPServerCategory, name=FEATURED_MCP_CATEGORY_NAME, sort_order=2, is_active=True)
+        fake_public_mcp_server.categories.add(
+            fake_categories["official"], featured_category, fake_categories["devops"]
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"categories": f"{OFFICIAL_MCP_CATEGORY_NAME},{FEATURED_MCP_CATEGORY_NAME}"},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        devops_category = next(
+            (cat for cat in result["data"] if cat["name"] == "DevOps"),
+            None,
+        )
+        assert devops_category["mcp_server_count"] == 1
 
 
 class TestMCPServerCategoryModel:
