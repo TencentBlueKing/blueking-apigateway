@@ -25,7 +25,7 @@
     >
       <Component
         :is="dashboardFormCompMap[com.name as keyof typeof dashboardFormCompMap]"
-        :ref="(el) => setComponentRef(el as MethodsComponent | null, com.name)"
+        :ref="(el: Element | ComponentPublicInstance | null) => setComponentRef(el, com.name)"
         v-model:search-params="searchParams"
         mode="Dashboard"
         :api-gateway-id="apigwId"
@@ -82,7 +82,7 @@ let timeId: ReturnType<typeof setInterval> | null = null;
 const apigwId = computed(() => gatewayStore.apigwId);
 
 // 设置仪表盘所有动态组件实例
-const setComponentRef = (el: Element | MethodsComponent | null, name: string) => {
+const setComponentRef = (el: Element | ComponentPublicInstance | null, name: string) => {
   if (el) {
     componentRefs.value?.set(name, el as MethodsComponent);
   }

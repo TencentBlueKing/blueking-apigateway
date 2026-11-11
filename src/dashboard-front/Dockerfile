@@ -1,16 +1,16 @@
-# npm part
-FROM node:24.22.1-bookworm AS builder
+# pnpm part
+FROM node:24.22.1-bookworm-slim AS builder
 
 WORKDIR /app
-COPY package.json package-lock.json /app/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml /app/
 
 ENV NODE_OPTIONS=--max_old_space_size=8192
 
-RUN npm install -g npm@11.12.1
-RUN npm install --force
+RUN npm install -g pnpm@11.25.0
+RUN pnpm install --frozen-lockfile
 
 COPY . /app
-RUN npm run build
+RUN pnpm run build
 
 # nginx part
 FROM tencentos/tencentos4-minimal:4.4-v20250922

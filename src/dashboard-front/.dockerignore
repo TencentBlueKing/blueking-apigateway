@@ -1,0 +1,5 @@
+# 避免本地构建时把宿主机的依赖和产物带进镜像，覆盖容器内 pnpm install 的结果
+node_modules
+dist
+index.html.backup
+*.local

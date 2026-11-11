@@ -26,7 +26,7 @@
 | 分类      | 技术                        | 版本         |
 |---------|---------------------------|------------|
 | 框架      | Vue 3 (Composition API)   | ^3.5       |
-| 构建工具    | Vite                      | 7.3        |
+| 构建工具    | Vite (Rolldown)           | 8.3        |
 | 类型系统    | TypeScript                | ~5.8       |
 | 状态管理    | Pinia                     | ^3.0       |
 | 路由      | Vue Router                | ^4.5       |
@@ -105,7 +105,7 @@ src/dashboard-front/
 ├── tsconfig.json               # TypeScript 配置入口
 ├── uno.config.ts               # UnoCSS 配置
 ├── vite.config.ts              # Vite 配置
-├── Dockerfile                  # 多阶段构建（Node 20 → Nginx）
+├── Dockerfile                  # 多阶段构建（Node 24 + pnpm → Nginx）
 └── package.json                # 依赖与脚本
 ```
 

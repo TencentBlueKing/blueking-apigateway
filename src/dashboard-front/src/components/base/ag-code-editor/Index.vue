@@ -61,12 +61,13 @@
 <script setup lang="ts">
 import { copy } from '@/utils';
 import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
-import * as monaco from 'monaco-editor';
+// 只引入编辑器核心和项目实际用到的 yaml、json 语言，避免打包 Monaco 全部语言和语言服务；
+// 如需支持其他语言，需在此引入对应的 contribution，并在 getWorker 中补充其 worker
+import * as monaco from 'monaco-editor/esm/vs/editor/edcore.main';
+import 'monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution';
+import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 const {
   modelValue = 'yaml',
@@ -92,15 +93,6 @@ self.MonacoEnvironment = {
   getWorker(_, label) {
     if (label === 'json') {
       return new jsonWorker();
-    }
-    if (label === 'css' || label === 'scss' || label === 'less') {
-      return new cssWorker();
-    }
-    if (label === 'html' || label === 'handlebars' || label === 'razor') {
-      return new htmlWorker();
-    }
-    if (label === 'typescript' || label === 'javascript') {
-      return new tsWorker();
     }
     return new editorWorker();
   },

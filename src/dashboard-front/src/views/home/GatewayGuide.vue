@@ -81,7 +81,7 @@
 
 <script lang="ts" setup>
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
 import { getGuideDocs } from '@/services/source/gateway/gateway';

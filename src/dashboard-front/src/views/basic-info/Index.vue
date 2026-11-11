@@ -782,7 +782,7 @@ import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateway
 import EditDesc from './components/EditDesc.vue';
 import { cloneDeep } from 'lodash-es';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
 import EditRelatedAppCodes from './components/EditRelatedAppCodes.vue';

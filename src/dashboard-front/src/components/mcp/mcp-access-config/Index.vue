@@ -51,7 +51,7 @@
 import { t } from '@/locales';
 import type { IMCPAIConfig } from '@/types/mcp-server';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
 
 interface IProps {

@@ -76,12 +76,29 @@
   fetch(window.__loadAssetsUrl__(".vite/manifest.json"))
     .then((res) => res.json())
     .then((data) => {
-      Object.values(data).forEach((item) => {
+      // 入口静态依赖的 chunk 也可能带 CSS，需沿 imports 递归收集，依赖的样式先于入口样式加载
+      function collectCss(key, visited, result) {
+        const chunk = data[key];
+        if (!chunk || visited.has(key)) {
+          return;
+        }
+        visited.add(key);
+        (chunk.imports || []).forEach((dep) => collectCss(dep, visited, result));
+        (chunk.css || []).forEach((asset) => {
+          if (!result.includes(asset)) {
+            result.push(asset);
+          }
+        });
+      }
+
+      Object.entries(data).forEach(([key, item]) => {
         if (!item.isEntry) {
           return;
         }
         loadScript(item.file);
-        item.css.forEach((asset) => {
+        const cssList = [];
+        collectCss(key, new Set(), cssList);
+        cssList.forEach((asset) => {
           loadStyle(asset);
         });
       });
