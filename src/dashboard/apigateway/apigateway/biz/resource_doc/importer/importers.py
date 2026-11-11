@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from apigateway.apps.support.constants import DocSourceEnum, DocTypeEnum

@@ -20,18 +20,17 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandParser
 
-from apigateway.biz.gateway import remove_excluded_gateway_members
-from apigateway.core.models import Gateway
+from apigateway.apps.rbac.models import GatewayMember
 
 
 class Command(BaseCommand):
-    help = "删除多租户下配置为排除用户名的网关成员"
+    help = "删除多租户下配置为排除用户名的网关成员记录"
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--apply",
             action="store_true",
-            help="执行删除，默认仅输出 dry-run 计划",
+            help="执行删除，默认仅统计将删除的记录",
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
@@ -40,26 +39,8 @@ class Command(BaseCommand):
             return
 
         apply = options["apply"]
-        operator = settings.GATEWAY_DEFAULT_CREATOR
-        affected = 0
-        delete_count = 0
-        skipped_count = 0
-        for gateway in Gateway.objects.order_by("id"):
-            result = remove_excluded_gateway_members(gateway, operator, apply=apply)
-            if not result.delete_usernames and not result.skipped_last_administrators:
-                continue
-
-            affected += 1
-            delete_count += len(result.delete_usernames)
-            skipped_count += len(result.skipped_last_administrators)
-            delete_usernames = ",".join(result.delete_usernames) or "-"
-            skipped_usernames = ",".join(result.skipped_last_administrators) or "-"
-            self.stdout.write(
-                f"gateway={gateway.id}:{gateway.name} apply={str(apply).lower()} "
-                f"delete={delete_usernames} skipped_last_administrators={skipped_usernames}"
-            )
-
-        self.stdout.write(
-            f"summary gateways={affected} delete={delete_count} "
-            f"skipped_last_administrators={skipped_count} apply={str(apply).lower()}"
-        )
+        queryset = GatewayMember.objects.filter(username__in=settings.BK_IAM_V4_EXCLUDED_USERNAMES)
+        delete_count = queryset.count()
+        if apply and delete_count:
+            queryset.delete()
+        self.stdout.write(f"summary delete={delete_count} apply={str(apply).lower()}")

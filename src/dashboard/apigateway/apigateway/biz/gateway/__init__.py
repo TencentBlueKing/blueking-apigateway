@@ -19,7 +19,6 @@ from .app_binding import GatewayAppBindingHandler
 from .gateway import OPERATION_STATUS_DELTA_DAYS, GatewayData, GatewayHandler, GatewaySaver
 from .label import GatewayLabelHandler
 from .members import (
-    ExcludedMemberCleanupResult,
     GatewayMemberBatchCreateResult,
     GatewayMemberInput,
     GatewayMemberRoleUpdateResult,
@@ -28,7 +27,6 @@ from .members import (
     build_gateway_doc_maintainers,
     delete_gateway_member,
     delete_gateway_members,
-    remove_excluded_gateway_members,
     replace_gateway_administrators,
     update_gateway_member_role,
 )
@@ -39,7 +37,6 @@ __all__ = [
     "OPERATION_STATUS_DELTA_DAYS",
     # Enum
     # class
-    "ExcludedMemberCleanupResult",
     "GatewayAppBindingHandler",
     "GatewayData",
     "GatewayHandler",
@@ -55,7 +52,6 @@ __all__ = [
     "build_gateway_doc_maintainers",
     "delete_gateway_member",
     "delete_gateway_members",
-    "remove_excluded_gateway_members",
     "replace_gateway_administrators",
     "update_gateway_member_role",
     # others

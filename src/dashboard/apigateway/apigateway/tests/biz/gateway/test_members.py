@@ -28,7 +28,6 @@ from apigateway.biz.gateway import (
     build_gateway_doc_maintainers,
     delete_gateway_member,
     delete_gateway_members,
-    remove_excluded_gateway_members,
     replace_gateway_administrators,
     update_gateway_member_role,
 )
@@ -346,46 +345,6 @@ def test_add_gateway_members_drops_excluded_usernames(settings, fake_gateway):
 
     assert [member.username for member in result.created] == ["alice"]
     assert not GatewayMember.objects.filter(gateway=fake_gateway, username="bk_admin").exists()
-
-
-def test_remove_excluded_gateway_members_keeps_last_administrator(settings, fake_gateway):
-    settings.ENABLE_MULTI_TENANT_MODE = True
-    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
-    GatewayMember.objects.create(
-        gateway=fake_gateway,
-        username="bk_admin",
-        role=GatewayRoleEnum.OPERATOR.value,
-    )
-
-    result = remove_excluded_gateway_members(fake_gateway, "operator-user")
-
-    assert result.delete_usernames == ["bk_admin"]
-    assert result.skipped_last_administrators == ["admin"]
-    assert set(GatewayMember.objects.filter(gateway=fake_gateway).values_list("username", flat=True)) == {"admin"}
-
-
-def test_remove_excluded_gateway_members_deletes_excluded_when_another_administrator_remains(
-    settings,
-    fake_gateway,
-):
-    settings.ENABLE_MULTI_TENANT_MODE = True
-    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
-    GatewayMember.objects.create(
-        gateway=fake_gateway,
-        username="alice",
-        role=GatewayRoleEnum.ADMINISTRATOR.value,
-    )
-    GatewayMember.objects.create(
-        gateway=fake_gateway,
-        username="bk_admin",
-        role=GatewayRoleEnum.OPERATOR.value,
-    )
-
-    result = remove_excluded_gateway_members(fake_gateway, "operator-user")
-
-    assert result.delete_usernames == ["admin", "bk_admin"]
-    assert result.skipped_last_administrators == []
-    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["alice"]
 
 
 def test_member_write_does_not_call_iam_when_disabled(settings, fake_gateway, mocker):
