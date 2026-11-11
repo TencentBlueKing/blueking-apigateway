@@ -14,41 +14,29 @@ plugin-manage/
 │   └── components/
 │       ├── PluginFormRenderer.vue
 │       └── WhitelistTable.vue
-├── config-display/                   # 插件配置只读展示
-│   ├── Index.vue
-│   ├── types.ts
-│   └── components/
-│       ├── BaseTable.vue
-│       ├── GenericTable.vue
-│       ├── HeaderRewriteTable.vue
-│       ├── IpRestrictionTable.vue
-│       ├── RateLimitTable.vue
-│       ├── EnabledTable.vue
-│       ├── TrafficLabelTable.vue
-│       └── QueryStringRewriteTable.vue
-└── schema-form/                      # Schema 表单渲染基础组件
+└── config-display/                   # 插件配置只读展示
     ├── Index.vue
     ├── types.ts
-    ├── component-map.ts              # Schema 字段与运行时组件的映射
     └── components/
-        ├── SchemaObjectField.vue
-        ├── CustomAddDelForm.vue
-        ├── InputComponent.vue
-        ├── InputNumberComponent.vue
-        ├── SelectComponent.vue
-        └── SwitchComponent.vue
+        ├── BaseTable.vue
+        ├── GenericTable.vue
+        ├── HeaderRewriteTable.vue
+        ├── IpRestrictionTable.vue
+        ├── RateLimitTable.vue
+        ├── EnabledTable.vue
+        ├── TrafficLabelTable.vue
+        └── QueryStringRewriteTable.vue
 ```
 
-插件专用表单仍放在相邻的 `src/components/plugin/plugin-form/<插件 code>/` 中；多个表单共用的字段控件放在
-`plugin-form/components/`。
-`plugin-form/components/KeyValuePairs.vue` 供 `api-breaker`、`bk-mock`、`response-rewrite` 和
-`bk-query-string-rewrite` 共用：键名格式默认只允许字母、数字、下划线和连字符，可通过 `keyRule`（`pattern` 与已翻译的
-`message`）替换；操作按钮的上边距默认 4px，外层可设置 CSS 变量 `--key-value-pairs-actions-padding-top` 调整。
-`bk-query-string-rewrite` 使用 `/^[^=&#?]+$/` 规则，并把该变量设为 8px。
-依赖方向为 `plugin-form/` → `schema-form/`：插件表单可以使用 Schema 表单的入口、字段控件和类型，`schema-form/` 不导入
-`plugin-form/` 中的任何文件。
+插件专用表单放在相邻的 `src/components/plugin/plugin-form/<插件 code>/` 中，统一直接使用 bkui-vue 组件渲染，
+不再依赖 Schema 描述；多个表单共用的字段控件放在 `plugin-form/components/`。
+`plugin-form/components/KeyValuePairs.vue`（键值对列表）供 `api-breaker`、`bk-mock`、`response-rewrite`、
+`bk-query-string-rewrite` 和 `bk-header-rewrite` 共用；`plugin-form/components/KeysInput.vue`（键名列表）供
+`bk-query-string-rewrite` 和 `bk-header-rewrite` 共用。
+两者的键名格式默认只允许字母、数字、下划线和连字符，可通过 `keyRule`（`pattern` 与已翻译的 `message`）替换。
+`KeyValuePairs` 操作按钮的上边距默认 4px，外层可设置 CSS 变量 `--key-value-pairs-actions-padding-top` 调整。
+`bk-query-string-rewrite` 使用 `/^[^=&#?]+$/` 规则，并把该变量设为 8px；`bk-header-rewrite` 使用默认规则，变量同样设为 8px。
 同一职责目录内使用相对导入，跨目录使用 `@/components/...` 路径。
-类型从各目录的 `types.ts` 导入；运行时组件映射和表单适配逻辑分别维护。
 
 ## 模块职责
 
@@ -59,35 +47,30 @@ plugin-manage/
 `config-display/Index.vue` 根据插件 code 选择展示表格，未单独配置的插件使用 `GenericTable.vue`。
 `EnabledTable.vue` 展示无参数插件的启用状态，供多个插件共用。
 
-`schema-form/Index.vue` 提供 Schema 字段渲染入口，`component-map.ts` 维护字段类型与组件的映射。
-渲染入口先按 `routeMode`（插件 code）查找组件，再按 Schema 字段类型查找；目前只有 `bk-cors` 和 `bk-header-rewrite`
-按插件 code 映射到本目录的 `CustomAddDelForm.vue`。
-Schema 表单和插件专用表单可以复用该目录的字段控件。
-只属于某个插件的渲染组件放在该插件目录的 `components/` 下，由插件表单直接渲染，不登记到 `component-map.ts`。
-例如 `bk-rate-limit/Index.vue` 直接渲染 `bk-rate-limit/components/RateLimitForm.vue`，分别用于默认限制和特殊限制。
-需要替换 Schema 字段组件时，插件表单可以向 `schema-form/Index.vue` 传入 `componentMap`，它会覆盖默认映射。
-
 ## 新增插件
 
 1. 在 `plugin-form/` 实现插件专用表单，保留布局、字段联动和业务配置转换。
-2. 在 `config-editor/definitions.ts` 注册插件 code，选择对应的编辑协议。
-3. 如需要，补充中英文 Schema、示例及国际化词条；现有 Schema 位于 `src/json/schemaPluginForm{Cn,En}.json`，示例位于 `src/constants/plugin-form-examples.ts`。
+2. 在 `config-editor/definitions.ts` 注册插件 code，选择对应的编辑协议；需要在表单上方展示提示时，传入 `notice`。
+3. 如需要，补充示例及国际化词条；示例位于 `src/constants/plugin-form-examples.ts`。
 4. 如需专用的只读展示，在 `config-display/components/` 实现表格，并在 `config-display/Index.vue` 登记映射。
 5. 执行下列检查。无需在 `config-editor/Index.vue` 或公共提交函数中增加插件 code 分支。
 
 | editor.kind | 输入 | 暴露方法 | 提交行为 |
 | --- | --- | --- | --- |
 | `custom` | `data` 配置对象 | `getValue()`，可选 `clearValidate()` | `getValue()` 自行校验并返回业务配置对象，公共层转 YAML |
-| `schema` | `v-model`、`schema`、`layout`、`routeMode` | `validate()`、`getValue()`，可选 `clearValidate()` | 先等待 `validate()` 返回真值，再取业务配置并转 YAML |
 | `whitelist` | `type`、`yamlStr` | `sendPolicyData()` 返回 `{ data, error }` | 检查转换结果，直接使用返回的 YAML |
 | `none` | 无 | 无 | 显式提交 `'{}'` |
 
-`schema` 表示接入协议，不要求各插件使用相同布局。CORS、IP 限制、Header 改写和限流继续使用各自的专用组件。
 界面状态转业务配置的逻辑留在对应表单中，公共层只处理协议适配和 YAML 序列化。
+`custom` 表单校验失败时由 `getValue()` 抛出异常，字段错误由表单自行展示。
 
 未知插件不会被当作无参数插件，界面会阻止提交。
-插件切换、配置切换会重建表单；语言切换仅更新 Schema 和布局，保留当前草稿。
+插件切换、配置切换会重建表单；语言切换只更新界面文案，保留当前草稿。
 编辑配置统一使用详情接口的 `yaml`，不再通过父组件调用方法回填。
+
+`bk-cors` 的字段名直接作为标签展示，字段说明使用 `bk_cors_<字段>_desc` 国际化词条。新增时使用推荐默认值；
+编辑时按已保存的配置回显，缺失字段不套用默认值（`allow_credential` 缺失视为 `false`），提交时只输出插件支持的 7 个字段。
+`allow_origins` 下展示两项联动校验：与 `allow_origins_by_regex` 不能同时为空、不能同时有效。
 
 `bk-resource-user-rate-limit` 使用 `custom` 表单，直接使用 bkui-vue 的表单、输入框和选择框组件，不依赖 Schema 表单控件。
 默认用户频率限制固定为一条，不提供添加、克隆或删除操作，提交时 `rates.__default` 始终为单元素数组。

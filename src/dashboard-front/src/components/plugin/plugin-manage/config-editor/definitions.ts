@@ -18,28 +18,13 @@ import BkHeaderRewrite from '@/components/plugin/plugin-form/bk-header-rewrite/I
 import BkRateLimit from '@/components/plugin/plugin-form/bk-rate-limit/Index.vue';
 import BkResourceUserRateLimit from '@/components/plugin/plugin-form/bk-resource-user-rate-limit/Index.vue';
 import WhitelistTable from './components/WhitelistTable.vue';
-import schemaCn from '@/json/schemaPluginFormCn.json';
-import schemaEn from '@/json/schemaPluginFormEn.json';
 import { PLUGIN_FORM_EXAMPLE_CN, PLUGIN_FORM_EXAMPLE_EN } from '@/constants/plugin-form-examples';
-import type { IPluginDefinition, IPluginFormConfig } from './types';
+import type { IPluginDefinition } from './types';
 
-const custom = (component: Component): IPluginDefinition => ({
+const custom = (component: Component, notice?: string): IPluginDefinition => ({
   editor: {
     kind: 'custom',
     component,
-  },
-});
-
-const schema = (
-  component: Component,
-  cn: IPluginFormConfig,
-  en: IPluginFormConfig,
-  notice?: string,
-): IPluginDefinition => ({
-  editor: {
-    kind: 'schema',
-    component,
-    getFormConfig: locale => locale === 'en' ? en : cn,
   },
   notice,
 });
@@ -60,15 +45,10 @@ export const pluginDefinitions = {
   'bk-traffic-label': custom(BkTrafficLabel),
   'uri-blocker': custom(UriBlocker),
   'bk-query-string-rewrite': custom(BkQueryStringRewrite),
-  'bk-cors': schema(
-    BkCors,
-    schemaCn['bk-cors'].config,
-    schemaEn['bk-cors'].config,
-    'allow_origins 与 allow_origins_by_regex 不能同时为空',
-  ),
-  'bk-ip-restriction': schema(BkIpRestriction, schemaCn['bk-ip-restriction'].config, schemaEn['bk-ip-restriction'].config),
-  'bk-header-rewrite': schema(BkHeaderRewrite, schemaCn['bk-header-rewrite'].config, schemaEn['bk-header-rewrite'].config),
-  'bk-rate-limit': schema(BkRateLimit, schemaCn['bk-rate-limit'].config, schemaEn['bk-rate-limit'].config),
+  'bk-cors': custom(BkCors, 'allow_origins 与 allow_origins_by_regex 不能同时为空'),
+  'bk-ip-restriction': custom(BkIpRestriction),
+  'bk-header-rewrite': custom(BkHeaderRewrite),
+  'bk-rate-limit': custom(BkRateLimit),
   'bk-resource-user-rate-limit': custom(BkResourceUserRateLimit),
   'bk-verified-user-exempted-apps': {
     editor: {

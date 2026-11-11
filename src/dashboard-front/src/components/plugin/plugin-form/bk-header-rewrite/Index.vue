@@ -20,134 +20,134 @@
     ref="formRef"
     :model="formData"
     :rules="formRules"
+    :label-width="150"
+    class="header-rewrite-form"
+    @validate="handleValidate"
   >
-    <SchemaField
-      ref="schemaFieldRef"
-      v-model="formData"
-      :schema="schema"
-      :component-map="componentMap"
-      :route-mode="routeMode"
-      :disabled="disabled"
-      @add="handleAddItem"
-      @remove="handleRemoveItem"
-    />
+    <BkFormItem
+      :label="t('设置')"
+      :description="t('设置的请求头')"
+      property="set"
+    >
+      <KeyValuePairs
+        ref="setRef"
+        v-model="formData.set"
+      />
+    </BkFormItem>
+    <BkFormItem
+      :label="t('删除')"
+      :description="t('删除的请求头')"
+      property="remove"
+    >
+      <KeysInput
+        ref="removeRef"
+        v-model="formData.remove"
+      />
+    </BkFormItem>
   </BkForm>
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, isEmpty, isObject } from 'lodash-es';
-import { Form } from 'bkui-vue';
-import type { IHeaderWriteFormData, ISchema } from '@/components/plugin/plugin-manage/schema-form/types';
-import SchemaField from '@/components/plugin/plugin-manage/schema-form/Index.vue';
+import { isPlainObject } from 'lodash-es';
+import type { Form } from 'bkui-vue';
+import KeyValuePairs from '@/components/plugin/plugin-form/components/KeyValuePairs.vue';
+import KeysInput from '@/components/plugin/plugin-form/components/KeysInput.vue';
 
-interface IProps {
-  schema?: ISchema
-  componentMap?: Record<string, Component>
-  disabled?: boolean
-  routeMode: string
+interface IHeaderPair {
+  key: string
+  value: string | number
 }
 
-const formData = defineModel('modelValue', {
-  required: true,
-  type: Object,
-  default: () => {
-    return {
-      set: [],
-      remove: [],
-    };
-  },
+interface IFormData {
+  set: IHeaderPair[]
+  remove: { key: string }[]
+}
+
+interface IProps {
+  data: Record<string, any>
+}
+
+const { data } = defineProps<IProps>();
+
+const { t } = useI18n();
+
+const toSetList = (value: unknown): IHeaderPair[] => (Array.isArray(value) ? value : [])
+  .filter(item => isPlainObject(item))
+  .map(item => ({
+    key: String(item.key ?? ''),
+    value: item.value ?? '',
+  }));
+
+// 兼容只保存了键名字符串的旧数据
+const toRemoveList = (value: unknown): { key: string }[] => (Array.isArray(value) ? value : [])
+  .map(item => ({ key: String(isPlainObject(item) ? item.key ?? '' : item ?? '') }));
+
+const formRef = ref<InstanceType<typeof Form>>();
+const setRef = useTemplateRef('setRef');
+const removeRef = useTemplateRef('removeRef');
+const formData = ref<IFormData>({
+  set: toSetList(data.set),
+  remove: toRemoveList(data.remove),
 });
-
-const {
-  schema = {} as ISchema,
-  componentMap = {} as Record<string, any>,
-  disabled = false,
-} = defineProps<IProps>();
-
-const DEFAULT_FORM_DATA: IHeaderWriteFormData = reactive({
-  set: [],
-  remove: [],
-});
-
-const formRef = ref<InstanceType<typeof Form> | null>(null);
-
-const schemaFieldRef = ref<InstanceType<typeof SchemaField> | null>(null);
+const isRemoveValidated = ref(false);
 
 const formRules = computed(() => ({
   remove: [
     {
-      required: true,
-      message: (schema?.properties?.set as any)?.['ui:rules']?.[0]?.message,
+      message: t('请求头设置或删除至少需要配置一个'),
       trigger: 'change',
-      validator: () => {
-        const isExistSet = formData.value.set?.length > 0;
-        const isExistRemove = formData.value.remove?.length > 0;
-        if (!isExistSet && !isExistRemove) {
-          return false;
-        }
-        return true;
-      },
+      validator: () => formData.value.set.length > 0 || formData.value.remove.length > 0,
     },
   ],
 }));
 
-const getValue = () => {
-  return cloneDeep(formData.value);
-};
-
-const handleAddItem = (row: any) => {
-  const typeMap = {
-    set: () => {
-      formData.value[row.name]?.push({
-        key: '',
-        value: '',
-      });
-    },
-    remove: () => {
-      formData.value[row.name]?.push({ key: '' });
-    },
-  };
-  // @ts-ignore
-  return typeMap[row?.name]?.();
-};
-
-const handleRemoveItem = (row: any) => {
-  const { field, index } = row;
-  formData.value[field.name]?.splice(index, 1);
-};
-
-const validate = async (): Promise<boolean> => {
+// 「至少配置一项」的提示展示在删除项下，增删任意一侧的行后同步刷新
+watch(() => [formData.value.set.length, formData.value.remove.length], async () => {
+  if (!isRemoveValidated.value) {
+    return;
+  }
   try {
-    const isValid = await (formRef.value as any)?.validate();
-    if (!isValid) {
-      // @ts-ignore
-      return;
-    }
-    return isValid;
+    await formRef.value?.validate('remove');
   }
   catch {
-    return false;
+    // 校验失败由表单项展示
+  }
+});
+
+const handleValidate = (property: string) => {
+  if (property === 'remove') {
+    isRemoveValidated.value = true;
   }
 };
 
 const clearValidate = () => {
-  return formRef.value?.clearValidate();
+  isRemoveValidated.value = false;
+  formRef.value?.clearValidate();
 };
 
-watch(
-  () => formData.value,
-  (newVal: any) => {
-    clearValidate();
-    if (isObject(newVal) && isEmpty(newVal)) {
-      formData.value = { ...DEFAULT_FORM_DATA };
-    }
-  },
-  { immediate: true },
-);
+const getValue = async () => {
+  await formRef.value?.validate();
+  await Promise.all([
+    setRef.value?.validate(),
+    removeRef.value?.validate(),
+  ]);
+  return {
+    set: formData.value.set.map(({ key, value }) => ({
+      key,
+      value,
+    })),
+    remove: formData.value.remove.map(({ key }) => ({ key })),
+  };
+};
 
 defineExpose({
   getValue,
-  validate,
   clearValidate,
 });
 </script>
+
+<style lang="scss" scoped>
+.header-rewrite-form {
+  --key-value-pairs-actions-padding-top: 8px;
+}
+</style>

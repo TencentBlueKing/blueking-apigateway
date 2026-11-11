@@ -19,160 +19,109 @@
   <BkForm
     ref="formRef"
     :model="formData"
-    :rules="formRules"
   >
-    <BkFormItem :label="schema?.['ui:oneOf']?.title">
+    <BkFormItem :label="t('类型')">
       <BkRadioGroup
-        v-model="selectedOptionIndex"
-        @change="handleOptionChange"
+        v-model="listType"
+        @change="handleTypeChange"
       >
         <BkRadio
-          v-for="(option, index) in schema?.oneOf"
-          :key="index"
-          :label="index"
+          v-for="option in typeOptions"
+          :key="option.value"
+          :label="option.value"
         >
-          {{ option.title }}
+          {{ option.label }}
         </BkRadio>
       </BkRadioGroup>
     </BkFormItem>
-
-    <SchemaField
-      ref="schemaFieldRef"
-      v-model="formData"
-      :schema="schema"
-      :selected-schema="selectedSchema"
-      :component-map="componentMap"
-      :disabled="disabled"
-    />
+    <BkFormItem
+      :key="listType"
+      :label="currentLabel"
+      :property="listType"
+      :rules="listRules"
+      required
+    >
+      <BkInput
+        v-model="formData[listType]"
+        type="textarea"
+        :rows="10"
+        :maxlength="51200"
+        :placeholder="t('请输入{inputValue}', { inputValue: currentLabel })"
+      />
+    </BkFormItem>
   </BkForm>
 </template>
 
 <script setup lang="ts">
-import { cloneDeep } from 'lodash-es';
-import { Form } from 'bkui-vue';
-import type { IIPRestriction, ISchema } from '@/components/plugin/plugin-manage/schema-form/types';
-import SchemaField from '@/components/plugin/plugin-manage/schema-form/Index.vue';
+import type { Form } from 'bkui-vue';
+
+type ListType = 'whitelist' | 'blacklist';
 
 interface IProps {
-  schema?: ISchema
-  componentMap?: Record<string, Component>
-  disabled?: boolean
-  routeMode: string
+  data: Record<string, any>
 }
 
-const formData = defineModel<IIPRestriction>('modelValue', {
-  required: true,
-  type: Object,
-});
-
-const {
-  schema = {} as ISchema,
-  componentMap = {} as Record<string, any>,
-  disabled = false,
-} = defineProps<IProps>();
+const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const formRef = ref<InstanceType<typeof Form> | null>(null);
+// 与后端 schema 的 minLength 保持一致，最短的合法 IP 如 1.1.1.1
+const MIN_LENGTH = 7;
 
-const schemaFieldRef = ref<InstanceType<typeof SchemaField> | null>(null);
-
-const selectedOptionIndex = ref(0);
-
-const selectedSchema = computed(() => {
-  return schema?.oneOf?.[selectedOptionIndex.value] as ISchema | undefined;
+const formRef = ref<InstanceType<typeof Form>>();
+// 白名单和黑名单分别保留草稿，切换类型时不丢失已填写的内容
+const formData = ref<Record<ListType, string>>({
+  whitelist: typeof data.whitelist === 'string' ? data.whitelist : '',
+  blacklist: typeof data.blacklist === 'string' ? data.blacklist : '',
 });
+const listType = ref<ListType>(!data.whitelist && data.blacklist ? 'blacklist' : 'whitelist');
 
-const curSelectType = computed(() => {
-  const properties = selectedSchema.value?.properties ?? {};
-  const firstKey = Object.keys(properties)?.[0];
-  return firstKey ?? 'whitelist';
-});
+const typeOptions = computed(() => [
+  {
+    label: t('白名单'),
+    value: 'whitelist',
+  },
+  {
+    label: t('黑名单'),
+    value: 'blacklist',
+  },
+]);
 
-const formRules = computed(() => {
-  const schemaTitle = selectedSchema.value?.title ?? '';
-  const requiredField = selectedSchema.value?.required;
-  // 仅基于当前选中的字段计算规则（curSelectType 是 whitelist/blacklist）
-  const minLength = Array.isArray(requiredField) && requiredField.includes(curSelectType.value)
-    ? selectedSchema.value?.properties?.[curSelectType.value]?.minLength
-    : undefined;
+const currentLabel = computed(() => listType.value === 'whitelist' ? t('白名单') : t('黑名单'));
 
-  const commonRules = [
-    {
-      required: true,
-      message: t('请输入{inputValue}', { inputValue: schemaTitle }),
-      trigger: 'change',
-      validator: (value: string) => !!value?.trim(),
-    },
-  ];
-
-  const extraRules: any[] = [];
-  if (minLength && typeof minLength === 'number' && minLength > 0) {
-    extraRules.push({
-      message: t('{inputValue}不应少于{count}个字符', {
-        inputValue: schemaTitle,
-        count: minLength,
-      }),
-      trigger: 'change',
-      validator: (value: string) => (value?.trim() || '').length >= minLength,
-    });
-  }
-
-  const mergedRules = [...commonRules, ...extraRules];
-
-  return { [curSelectType.value]: mergedRules };
-});
-
-const getValue = () => {
-  const data = cloneDeep(formData.value);
-  if (selectedOptionIndex.value === 0) {
-    delete data.blacklist;
-  }
-  else if (selectedOptionIndex.value === 1) {
-    delete data.whitelist;
-  }
-  return data;
-};
-
-const validate = async (): Promise<boolean> => {
-  try {
-    const isValid = await (formRef.value as any)?.validate();
-    if (!isValid) {
-      const schemaField = schemaFieldRef.value?.comRef?.schemaFieldRef?.[0];
-      if (schemaField?.comRef?.focus) {
-        schemaField.comRef.focus();
-      }
-      return false;
-    }
-    return isValid;
-  }
-  catch {
-    return false;
-  }
-};
+const listRules = computed(() => [
+  {
+    required: true,
+    message: t('请输入{inputValue}', { inputValue: currentLabel.value }),
+    trigger: 'change',
+    validator: (value: string) => !!value?.trim(),
+  },
+  {
+    message: t('{inputValue}不应少于{count}个字符', {
+      inputValue: currentLabel.value,
+      count: MIN_LENGTH,
+    }),
+    trigger: 'change',
+    validator: (value: string) => (value?.trim() ?? '').length >= MIN_LENGTH,
+  },
+]);
 
 const clearValidate = () => {
-  return formRef.value?.clearValidate();
+  formRef.value?.clearValidate();
 };
 
-// 切换类型时重置校验
-const handleOptionChange = () => {
+const handleTypeChange = () => {
   clearValidate();
 };
 
-watch(
-  () => formData.value,
-  (newVal: any) => {
-    clearValidate();
-    if (newVal?.whitelist) selectedOptionIndex.value = 0;
-    if (newVal?.blacklist) selectedOptionIndex.value = 1;
-  },
-  { immediate: true },
-);
+const getValue = async () => {
+  await formRef.value?.validate();
+  // 只提交当前选中的类型
+  return { [listType.value]: formData.value[listType.value] };
+};
 
 defineExpose({
   getValue,
-  validate,
   clearValidate,
 });
 </script>

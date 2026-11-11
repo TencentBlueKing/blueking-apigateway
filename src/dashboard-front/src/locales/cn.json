@@ -2768,5 +2768,15 @@
   "时间范围无效，请重新选择": "时间范围无效，请重新选择",
   "数据按 UTC 自然日统计": "数据按 UTC 自然日统计",
   "请输入 1 到 {max} 之间的整数天数": "请输入 1 到 {max} 之间的整数天数",
-  "不足 1 小时": "不足 1 小时"
+  "不足 1 小时": "不足 1 小时",
+  "bk_cors_allow_origins_desc": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。allow_origins、allow_origins_by_regex 只能一个有效。",
+  "bk_cors_allow_origins_by_regex_desc": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\\\.example\\\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。allow_origins、allow_origins_by_regex 只能一个有效。",
+  "bk_cors_allow_methods_desc": "允许跨域访问的 Method，比如：GET，POST 等。如果你有多个 Method，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Method 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Method 都通过，但请注意这样存在安全隐患。",
+  "bk_cors_allow_headers_desc": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
+  "bk_cors_expose_headers_desc": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
+  "bk_cors_max_age_desc": "浏览器缓存 CORS 结果的最大时间，单位为秒。在这个时间范围内，浏览器会复用上一次的检查结果，-1 表示不缓存。请注意各个浏览器允许的最大时间不同。",
+  "bk_cors_allow_credential_desc": "是否允许跨域访问的请求方携带凭据（如 Cookie 等）。根据 CORS 规范，如果设置该选项为 true，那么将不能在其他属性中使用 *。",
+  "设置的请求头": "设置的请求头",
+  "删除的请求头": "删除的请求头",
+  "请求头设置或删除至少需要配置一个": "请求头设置或删除至少需要配置一个"
 }

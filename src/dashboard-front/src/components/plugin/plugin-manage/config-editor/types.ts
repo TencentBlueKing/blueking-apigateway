@@ -1,19 +1,8 @@
 import type { Component } from 'vue';
 
-export interface IPluginFormConfig {
-  schema: Record<string, any>
-  layout?: Record<string, any> | unknown[]
-}
-
 interface ICustomEditor {
   kind: 'custom'
   component: Component
-}
-
-interface ISchemaEditor {
-  kind: 'schema'
-  component: Component
-  getFormConfig: (locale: string) => IPluginFormConfig
 }
 
 interface IWhitelistEditor {
@@ -25,7 +14,7 @@ interface IEmptyEditor {
   kind: 'none'
 }
 
-export type PluginEditorDefinition = ICustomEditor | ISchemaEditor | IWhitelistEditor | IEmptyEditor;
+export type PluginEditorDefinition = ICustomEditor | IWhitelistEditor | IEmptyEditor;
 
 export interface IPluginDefinition {
   editor: PluginEditorDefinition
@@ -37,10 +26,6 @@ export interface IPluginFormHandle {
   clearValidate?: () => void
 }
 
-export interface ISchemaPluginFormHandle extends IPluginFormHandle {
-  validate: () => Promise<boolean | undefined>
-}
-
 export interface IWhitelistFormHandle {
   sendPolicyData: () => {
     data: string
@@ -48,4 +33,4 @@ export interface IWhitelistFormHandle {
   }
 }
 
-export type PluginFormHandle = IPluginFormHandle | ISchemaPluginFormHandle | IWhitelistFormHandle;
+export type PluginFormHandle = IPluginFormHandle | IWhitelistFormHandle;

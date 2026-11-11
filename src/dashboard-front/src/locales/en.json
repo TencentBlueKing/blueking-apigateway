@@ -2767,5 +2767,15 @@
   "时间范围无效，请重新选择": "Invalid time range. Please select again.",
   "数据按 UTC 自然日统计": "Data is aggregated by UTC calendar day",
   "请输入 1 到 {max} 之间的整数天数": "Enter a whole number of days from 1 to {max}",
-  "不足 1 小时": "Less than 1 hour"
+  "不足 1 小时": "Less than 1 hour",
+  "bk_cors_allow_origins_desc": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+  "bk_cors_allow_origins_by_regex_desc": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\\\.example\\\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+  "bk_cors_allow_methods_desc": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
+  "bk_cors_allow_headers_desc": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
+  "bk_cors_expose_headers_desc": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
+  "bk_cors_max_age_desc": "Maximum time in seconds the result is cached. If the time is within this limit, the browser will check the cached result. Set to -1 to disable caching. Note that the maximum value is browser dependent.",
+  "bk_cors_allow_credential_desc": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
+  "设置的请求头": "Headers to set",
+  "删除的请求头": "Headers to remove",
+  "请求头设置或删除至少需要配置一个": "At least one operation is required when setting or removing request headers."
 }
