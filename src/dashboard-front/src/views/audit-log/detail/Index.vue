@@ -88,7 +88,7 @@
 <script lang="ts" setup>
 import i18n from '@/locales';
 import { isEqual } from 'lodash-es';
-import highlightjs from 'highlight.js';
+import highlightjs from 'highlight.js/lib/common';
 import { useJsonTransformer } from '@/hooks/use-json-transformer';
 import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
 import { useAccessLog } from '@/stores';

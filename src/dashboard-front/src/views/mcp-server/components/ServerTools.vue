@@ -263,7 +263,7 @@ import { getMcpServerToolDoc } from '@/services/source/mcp-marketplace';
 import type { IMCPServerToolOutput } from '@/services/types/responses/gateways.ts';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import ResponseParams from '@/views/resource-management/components/response-params-v2/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
 import AgExpandableText from '@/components/base/ag-expandable-text/Index.vue';

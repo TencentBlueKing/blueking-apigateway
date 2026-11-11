@@ -1435,7 +1435,7 @@ const isExistPrivatePrompt = (): Promise<boolean> => {
               { t('以下 Prompt 仅在授权空间内可用，添加到 MCP 后，所有经MCP 授权的应用均可访问该 Prompt 信息') }
             </div>
             <AgTable
-              v-model:tableData={privateData}
+              tableData={privateData}
               columns={privatePromptColumns.value}
               resizable
               localPage

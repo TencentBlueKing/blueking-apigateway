@@ -211,7 +211,7 @@ import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
 import AgMarkdownEditor from '@/components/base/ag-markdown-editor';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import { useFeatureFlag } from '@/stores';
 
 type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];

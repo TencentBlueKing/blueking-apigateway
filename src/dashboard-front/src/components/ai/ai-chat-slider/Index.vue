@@ -55,7 +55,7 @@ import { useGateway } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
 import MarkdownIt from 'markdown-it';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 
 interface IProps {
   title?: string
