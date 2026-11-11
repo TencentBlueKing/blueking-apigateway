@@ -36,6 +36,12 @@ def _render(name: str, provider: StaticResourceProvider) -> str:
     return render_skill_body(parse_declaration(load_declaration_data(name)), provider).body
 
 
+def _body_properties(body: str, index: int) -> dict:
+    """第 index 步（从 0 起）YAML 调用说明里的请求体字段"""
+    _, block = YAML_BLOCK_PATTERN.findall(body)[index]
+    return yaml.safe_load(textwrap.dedent(block))["requestBody"]["content"]["application/json"]["schema"]["properties"]
+
+
 class TestRenderSkillBody:
     @pytest.mark.parametrize("name", GOLDEN_NAMES)
     def test_golden(self, static_provider, name):
@@ -164,15 +170,32 @@ class TestRenderSkillBody:
         assert "x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}" in body
         assert "x-value: true" in body
 
-    def test_unmapped_param_listed(self, static_provider):
+    def test_each_binding(self, static_provider):
+        body = _render("job-plan-run-and-log", static_provider)
+        properties = _body_properties(body, 2)
+
+        assert properties["step_instance_id"]["x-from"] == (
+            "${{ steps.wait-result.outputs.data.step_instance_list[].step_instance_id }}"
+        )
+        assert properties["step_instance_id"]["x-each"] is True
+        assert "x-each" not in properties["job_instance_id"]
+        assert "`x-each: true` 表示逐个调用" in body
+        # 只有逐个调用用到 `[]`，不写「组成的数组」
+        assert "组成的数组" not in body
+
+    def test_array_param_from_all_elements(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
-        data["orchestration"]["steps"][0]["with"].pop("job_plan_id")
-        data["orchestration"]["inputs"].pop("job_plan_id")
+        data["orchestration"]["steps"][2]["with"]["step_ids"] = (
+            "${{ steps.wait-result.outputs.data.step_instance_list[].step_instance_id }}"
+        )
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "batch_get_job_instance_ip_log":
+                resource["params"].append({"name": "step_ids", "in": "body", "type": "array<integer>"})
 
-        body = render_skill_body(parse_declaration(data), static_provider).body
+        body = render_skill_body(parse_declaration(data), StaticResourceProvider.from_dict(resources_data)).body
 
-        assert "资源定义中必填但未映射：`job_plan_id`，按本步说明处理。" in body
-        assert "没有 `x-from`、`x-value` 的参数按该步说明取值" in body
+        assert "x-each" not in _body_properties(body, 2)["step_ids"]
+        assert "`[]` 是数组每个元素的该字段组成的数组" in body
 
     def test_parameter_name_does_not_define_authentication(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")

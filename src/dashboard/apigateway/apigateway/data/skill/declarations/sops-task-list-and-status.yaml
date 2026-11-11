@@ -73,10 +73,11 @@ orchestration:
   - id: check-status
     name: 逐条查任务状态
     uses: bk-sops/get_task_status@prod
-    description: 对 list-tasks 返回的 `data` 中每条任务各查一次状态，路径参数 `task_id` 取该任务的 `id`。`with_ex_data=true` 用于拿到失败节点的错误信息。第 i 次调用对应列表第 i 条，回复时把任务名、任务 ID 和 state 写在一起。本步只查询，任务停在 CREATED、RUNNING 或 SUSPENDED 时不要启动、继续或重试。
+    description: 对 list-tasks 返回的 `data` 中每条任务各查一次状态。`with_ex_data=true` 用于拿到失败节点的错误信息。第 i 次调用对应列表第 i 条，回复时把任务名、任务 ID 和 state 写在一起。本步只查询，任务停在 CREATED、RUNNING 或 SUSPENDED 时不要启动、继续或重试。
     with:
       bk_biz_id: ${{ inputs.bk_biz_id }}
       scope: ${{ inputs.scope }}
+      task_id: ${{ steps.list-tasks.outputs.data[].id }}
       with_ex_data: true
   guide:
     not_for: |-

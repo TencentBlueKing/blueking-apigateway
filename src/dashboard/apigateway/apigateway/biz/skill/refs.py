@@ -22,6 +22,8 @@
 - 其他值是固定值，按 JSON 原样传。
 
 `${{ }}` 必须占满整个字符串，也不能写在对象、数组固定值的里面。
+字段路径里的 `[]` 表示数组每个元素的该字段：绑定到数组参数时组成一个数组；绑定到非数组参数时是逐个调用，
+对该数组的每个元素调用一次，见 each_array。
 """
 
 import re
@@ -69,6 +71,18 @@ def parse_ref(value: Any) -> ParsedRef:
 
 def is_ref(value: Any) -> bool:
     return parse_ref(value).kind != "value"
+
+
+def each_array(value: Any, type_text: str) -> str:
+    """逐个调用的数组：非数组参数取自带 `[]` 的步骤响应字段时，返回最后一个 `[]` 之前的 `steps.<id>.outputs.<路径>`；
+    其他取值返回空串。type_text 是参数在资源定义中的类型写法，没写类型按非数组处理
+    """
+    parsed = parse_ref(value)
+    if parsed.kind != "step" or "[]" not in parsed.path:
+        return ""
+    if any(part == "array" or part.startswith("array<") for part in type_text.split("|")):
+        return ""
+    return f"steps.{parsed.step}.outputs.{parsed.path.rsplit('[]', 1)[0]}"
 
 
 def norm_path(path: str) -> str:

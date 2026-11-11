@@ -78,9 +78,9 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
   {%- if notation.index %}，`[0]` 是数组第一个元素{% endif %}
   {%- if notation.all %}，`[]` 是数组每个元素的该字段组成的数组{% endif %}
 {%- endif %}
+{%- if notation.each %}；`x-each: true` 表示逐个调用：对 `[]` 前的数组每个元素调用一次，取该元素的这个字段，同一步的 `x-each` 参数取同一个元素，只调用哪些元素看该步说明{% endif %}
 {%- if notation.value %}；`x-value` 是固定值，按 JSON 原样传{% endif %}
-{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}
-{%- if notation.unmapped %}；没有 `x-from`、`x-value` 的参数按该步说明取值{% endif %}。
+{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}。
 
 {% for step in steps %}
 {{ step.title }}
@@ -91,10 +91,6 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 ```yaml
 {{ step.call }}
 ```
-{% if step.unmapped %}
-
-资源定义中必填但未映射：{{ step.unmapped | map("backtick") | join("、") }}，按本步说明处理。
-{% endif %}
 {% endfilter %}
 
 {% endfor %}

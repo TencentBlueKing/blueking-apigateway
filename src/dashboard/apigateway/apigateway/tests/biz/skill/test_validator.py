@@ -98,11 +98,46 @@ class TestValidateDeclaration:
 
         assert errors == ["outputs.job_status：引用的步骤 not-exists 不在当前步骤之前"]
 
-    def test_unmapped_required_param_not_reported(self, static_provider, job_plan_data):
+    def test_required_param_missing_from_with(self, static_provider, job_plan_data):
         _with(job_plan_data, 0).pop("job_plan_id")
         job_plan_data["orchestration"]["inputs"].pop("job_plan_id")
 
         result = _validate(job_plan_data, static_provider)
+
+        assert result.errors == ["run-plan：资源定义中必填的参数没有写进 with：job_plan_id"]
+        assert result.warnings == []
+
+    def test_optional_param_missing_from_with(self, static_provider, job_plan_data):
+        _with(job_plan_data, 1).pop("return_ip_result")
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
+
+    def test_each_params_from_different_arrays(self, resources_data, job_plan_data):
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "batch_get_job_instance_ip_log":
+                resource["params"].append({"name": "step_name", "in": "body", "type": "string"})
+            elif resource["resource"] == "get_job_instance_status":
+                resource["response"].append({"field": "data.other_list[].name", "type": "string"})
+        _with(job_plan_data, 2)["step_name"] = "${{ steps.wait-result.outputs.data.other_list[].name }}"
+
+        result = _validate(job_plan_data, StaticResourceProvider.from_dict(resources_data))
+
+        assert result.errors == [
+            "collect-log：逐个调用的参数须取自同一个数组："
+            "steps.wait-result.outputs.data.other_list、steps.wait-result.outputs.data.step_instance_list"
+        ]
+
+    def test_array_param_from_all_elements_is_not_each(self, resources_data, job_plan_data):
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "batch_get_job_instance_ip_log":
+                resource["params"].append({"name": "step_ids", "in": "body", "type": "array<integer>"})
+            elif resource["resource"] == "get_job_instance_status":
+                resource["response"].append({"field": "data.other_list[].id", "type": "integer"})
+        _with(job_plan_data, 2)["step_ids"] = "${{ steps.wait-result.outputs.data.other_list[].id }}"
+
+        result = _validate(job_plan_data, StaticResourceProvider.from_dict(resources_data))
 
         assert (result.errors, result.warnings) == ([], [])
 
@@ -171,7 +206,73 @@ class TestValidateDeclaration:
 
         assert (result.errors, result.warnings) == ([], [])
 
-    def test_output_type_not_compared_with_response(self, static_provider, job_plan_data):
+    @pytest.mark.parametrize(
+        "name, output, expected",
+        [
+            (
+                "job_instance_id",
+                {"type": "string"},
+                "outputs.job_instance_id：类型 string 与来源不一致，应为 integer",
+            ),
+            # collect-log 逐个调用，单次响应的 data 是 object，汇总后是数组
+            (
+                "failed_host_logs",
+                {"type": "object"},
+                "outputs.failed_host_logs：类型 object 与来源不一致，应为 array<object>",
+            ),
+            (
+                "step_results",
+                {
+                    "type": "integer",
+                    "value": "${{ steps.wait-result.outputs.data.step_instance_list[].step_instance_id }}",
+                },
+                "outputs.step_results：类型 integer 与来源不一致，应为 array<integer>",
+            ),
+            (
+                "job_status",
+                {"type": "integer", "value": "${{ inputs.bk_scope_id }}"},
+                "outputs.job_status：类型 integer 与来源不一致，应为 string",
+            ),
+        ],
+    )
+    def test_output_type_mismatch(self, static_provider, job_plan_data, name, output, expected):
+        job_plan_data["orchestration"]["outputs"][name].update(output)
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert result.errors == [expected]
+        assert result.warnings == []
+
+    @pytest.mark.parametrize(
+        "name, output",
+        [
+            (
+                "step_results",
+                {
+                    "type": "integer",
+                    "value": "${{ steps.wait-result.outputs.data.step_instance_list[0].step_instance_id }}",
+                },
+            ),
+            (
+                "step_results",
+                {
+                    "type": "array<integer>",
+                    "value": "${{ steps.wait-result.outputs.data.step_instance_list[].step_instance_id }}",
+                },
+            ),
+            ("job_status", {"type": "string", "value": "${{ inputs.bk_scope_id }}"}),
+        ],
+    )
+    def test_output_type_matches_source(self, static_provider, job_plan_data, name, output):
+        job_plan_data["orchestration"]["outputs"][name].update(output)
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
+
+    def test_untyped_response_field_not_compared(self, static_provider, job_plan_data):
+        resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
+        next(item for item in resource.responses if item.field == "data.job_instance_id").type = ""
         job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = "string"
 
         result = _validate(job_plan_data, static_provider)

@@ -204,7 +204,7 @@ class SkillInput(_DeclarationModel):
 
 
 class SkillOutput(_DeclarationModel):
-    """汇报给用户的字段；type 只校验写法，不与响应定义比对：逐个调用时是多次结果的汇总，与单次响应的类型不同"""
+    """汇报给用户的字段；type 须与来源推出的类型一致，见 validator._RefChecker._check_output_types"""
 
     type: TypeText
     description: StrictStr
@@ -306,6 +306,14 @@ class SkillOrchestration(_DeclarationModel):
         invalid = [name for name in value if not _INPUT_NAME_PATTERN.fullmatch(name)]
         if invalid:
             raise ValueError(f"输入名不合规：{'、'.join(invalid)}")
+        return value
+
+    @field_validator("outputs")
+    @classmethod
+    def _check_outputs_not_empty(cls, value: Dict[str, SkillOutput]) -> Dict[str, SkillOutput]:
+        # 可编排的资源都有响应字段，总有可汇报的结果
+        if not value:
+            raise ValueError("至少需要一个，写用户最终需要的结果")
         return value
 
     @field_validator("steps")

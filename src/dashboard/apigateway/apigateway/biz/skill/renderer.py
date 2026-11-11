@@ -25,7 +25,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import yaml
 from jinja2 import FileSystemLoader, StrictUndefined, Template
@@ -37,7 +37,7 @@ from .constants import (
     SKILL_TEMPLATES_DIR,
     WRITE_METHODS,
 )
-from .refs import norm_path, parse_ref
+from .refs import each_array, norm_path, parse_ref
 from .validator import ResourceKey, input_bindings, load_resources
 
 if TYPE_CHECKING:
@@ -197,34 +197,40 @@ class _SkillBodyContext:
                     "title": title,
                     "description": step.description,
                     "call": _render_call(self.orchestration, step, resource),
-                    "unmapped": _unmapped_params(step, resource),
                 }
             )
         return steps
 
     def _notation(self) -> Dict[str, Any]:
         """本 Skill 的取值和 OpenAPI 片段里实际出现的写法，说明里只写这些"""
-        steps = self.orchestration.steps
-        values = [value for step in steps for value in step.with_.values()]
-        refs = [value for value in values if parse_ref(value).kind != "value"]
-        refs += [output.value for output in self.orchestration.outputs.values()]
-
-        locations, unmapped = set(), False
-        for step in steps:
+        values: List[Any] = []
+        locations: Set[str] = set()
+        # 逐个调用的 `[]` 取当前元素，其余 `[]` 组成数组，说明分开写
+        each = False
+        array_refs: List[Any] = []
+        for step in self.orchestration.steps:
             resource = self.resources[step.key]
-            names = _unmapped_params(step, resource)
-            unmapped = unmapped or bool(names)
-            locations |= {_get_param(resource, name).location for name in [*step.with_, *names]}
+            for name, value in step.with_.items():
+                param = _get_param(resource, name)
+                locations.add(param.location)
+                values.append(value)
+                if each_array(value, param.type):
+                    each = True
+                elif parse_ref(value).kind != "value":
+                    array_refs.append(value)
+        outputs = [output.value for output in self.orchestration.outputs.values()]
+        array_refs += outputs
+        refs = [value for value in values if parse_ref(value).kind != "value"] + outputs
 
         return {
             "places": [place for place in NOTATION_PLACES if place in locations],
             "body": "body" in locations,
             "index": any(re.search(r"\[\d+\]", ref) for ref in refs),
-            "all": any("[]" in ref for ref in refs),
+            "all": any("[]" in ref for ref in array_refs),
             "step": any(parse_ref(ref).kind == "step" for ref in refs),
             "value": any(parse_ref(value).kind == "value" for value in values),
             "omit": any(self.orchestration.is_omittable_input_ref(value) for value in values),
-            "unmapped": unmapped,
+            "each": each,
         }
 
 
@@ -232,15 +238,6 @@ def _distinct_descriptions(descriptions: Iterable[str]) -> List[str]:
     """去掉空的、重复的，以及被另一条完整包含的说明（如「资源范围 ID」之于「资源范围 ID，与……对应」）"""
     items = list(dict.fromkeys(text for text in descriptions if text))
     return [text for text in items if not any(text != other and text in other for other in items)]
-
-
-def _unmapped_params(step: SkillStep, resource: SkillResource) -> List[str]:
-    """资源定义里必填、with 没写的参数，取值由步骤说明交代"""
-    return [
-        param.name
-        for param in resource.params
-        if (param.required or param.location == "path") and param.name not in step.with_
-    ]
 
 
 # ---------- OpenAPI 片段 ----------
@@ -280,9 +277,11 @@ def _type_schema(type_text: str) -> _Flow:
     return _Flow(type=type_text)
 
 
-def _binding_fields(orchestration: SkillOrchestration, value: Any) -> Dict[str, Any]:
+def _binding_fields(orchestration: SkillOrchestration, value: Any, param: ResourceParam) -> Dict[str, Any]:
     parsed = parse_ref(value)
     fields: Dict[str, Any] = {"x-value": parsed.value} if parsed.kind == "value" else {"x-from": value}
+    if each_array(value, param.type):
+        fields["x-each"] = True
     if orchestration.is_omittable_input_ref(value):
         fields["x-omit-if-unset"] = True
     return fields
@@ -385,9 +384,7 @@ def _get_param(resource: SkillResource, name: str) -> ResourceParam:
 def _build_params(
     orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[str]]:
-    """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性；
-    必填但没写进 with 的参数也列出，不带取值
-    """
+    """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性"""
 
     def order(name: str) -> Tuple[int, int]:
         location = _get_param(resource, name).location
@@ -397,11 +394,11 @@ def _build_params(
     params: List[Dict[str, Any]] = []
     body: Dict[str, Any] = {}
     body_required: List[str] = []
-    for name in sorted([*step.with_, *_unmapped_params(step, resource)], key=order):
+    for name in sorted(step.with_, key=order):
         spec = _get_param(resource, name)
         required = spec.required or spec.location == "path"
         schema: Optional[_Flow] = _type_schema(spec.type) if spec.type else None
-        binding = _binding_fields(orchestration, step.with_[name]) if name in step.with_ else {}
+        binding = _binding_fields(orchestration, step.with_[name], spec)
         if spec.location == "body":
             prop: Dict[str, Any] = dict(schema or {})
             if spec.description:

@@ -76,11 +76,12 @@ orchestration:
   - id: collect-log
     name: 拉取失败主机日志
     uses: jobv3-cloud/batch_get_job_instance_ip_log@prod
-    description: 仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3（执行成功）时执行；作业成功、状态为 7（等待用户）或轮询到上限仍未结束时跳过本步。对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
+    description: 仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3（执行成功）时执行；作业成功、状态为 7（等待用户）或轮询到上限仍未结束时跳过本步。只对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的步骤各调用一次，没有这样的步骤时跳过；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
     with:
       bk_scope_type: ${{ inputs.bk_scope_type }}
       bk_scope_id: ${{ inputs.bk_scope_id }}
       job_instance_id: ${{ steps.run-plan.outputs.data.job_instance_id }}
+      step_instance_id: ${{ steps.wait-result.outputs.data.step_instance_list[].step_instance_id }}
   guide:
     not_for: |-
       - 临时在主机上执行脚本或分发文件（fast_execute_script、fast_transfer_file）：不在本 Skill 范围。

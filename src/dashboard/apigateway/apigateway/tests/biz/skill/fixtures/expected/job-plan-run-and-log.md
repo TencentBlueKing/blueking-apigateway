@@ -58,7 +58,7 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
 
 每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
 
-取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传；没有 `x-from`、`x-value` 的参数按该步说明取值。
+取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-each: true` 表示逐个调用：对 `[]` 前的数组每个元素调用一次，取该元素的这个字段，同一步的 `x-each` 参数取同一个元素，只调用哪些元素看该步说明；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传。
 
 1. run-plan / execute_job_plan：执行作业方案
 
@@ -193,7 +193,7 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
 
 3. collect-log / batch_get_job_instance_ip_log：拉取失败主机日志
 
-   仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3（执行成功）时执行；作业成功、状态为 7（等待用户）或轮询到上限仍未结束时跳过本步。对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
+   仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3（执行成功）时执行；作业成功、状态为 7（等待用户）或轮询到上限仍未结束时跳过本步。只对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的步骤各调用一次，没有这样的步骤时跳过；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
 
    ```yaml
    gateway_name: jobv3-cloud
@@ -224,6 +224,8 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
              step_instance_id:
                type: integer
                description: 步骤实例 ID
+               x-from: ${{ steps.wait-result.outputs.data.step_instance_list[].step_instance_id }}
+               x-each: true
    responses:
      '200':
        description: 已发布接口的响应字段
@@ -264,8 +266,6 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                                status: {type: integer, description: 1 等待开始，2 上传中，3 下载中，4 成功，5 失败}
                                log_content: {type: string, description: 文件分发日志}
    ```
-
-   资源定义中必填但未映射：`step_instance_id`，按本步说明处理。
 
 ## 运行约束
 

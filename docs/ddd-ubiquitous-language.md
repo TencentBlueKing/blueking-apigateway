@@ -181,7 +181,7 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | 网关 SDK / Gateway SDK | `GatewaySDK` | 可关联资源版本的 SDK 制品，包版本与 publish_id、APISIX 版本区分。 |
 | 操作审计事件 / Audit Event | `AuditEventLog` | 操作者、对象、动作与前后数据，与发布事件、访问日志、trace 区分。 |
 | MCP 服务 / MCP Server | `MCPServer`；name 全局唯一；gateway/stage | 将所选环境 API 暴露为工具；跟随 Stage 的 Release，不独立绑定版本。 |
-| MCP 工具 / MCP Tool | resource_names/tool_names | 版本普通资源的协议映射，不创建新 Resource；resource_name@tool_name 表达别名，默认使用资源名。 |
+| MCP 工具 / MCP Tool | resource_names/tool_names | 版本普通资源的协议映射，不创建新 Resource；resource_name@tool_name 表达别名，默认使用资源名。别名不改变资源身份或权限归属。MCP 协议的 resources 与网关 Resource、MCP Tool 不是同一概念。 |
 | MCP 提示模板 / MCP Prompt | `MCPServerExtend(type=prompts)` | 服务扩展中的提示模板，与工具、后端 provider、API 请求体区分。 |
 | MCP 协议类型 / MCP Protocol Type | protocol_type | SSE / Streamable HTTP，与 Backend.type、Resource.kind 区分。 |
 | MCP 原始响应模式 / Raw Response Mode | raw_response_enabled | 工具结果返回原始 API 响应体，不改变身份、授权或版本选择。 |
@@ -193,14 +193,9 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | 内置 Skill 声明 / Platform Skill Declaration | `data/skill/declarations/{name}.yaml`；`SkillDeclaration` | 随代码发布的内置 Skill 源文件；部署时注入为 platform 类型的 SkillMetadata 与 SkillVersion，同版本不重复写入。 |
 | Skill 资源定义 / Skill Resource Definition | `SkillResource`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API。它包装目标环境当前发布的 ReleasedResourceData（方法、路径、说明和全部认证，含 OAuth2）；参数和响应由该版本 OpenAPI schema 转换得到。不是 Resource 或 ReleasedResource 本身。 |
 
-内置 Skill 的资源取自启用中网关、启用中环境的当前发布版本，只要 kind=standard（旧快照缺 kind 按 standard）。只有在该版本 OpenAPI schema 中同时定义了请求参数和响应参数的资源才可编排：明确声明无请求参数（none_schema）算已定义请求参数，成功响应须有字段。当前环境在 disabled_stages 中、当前版本没有该资源或不满足上述条件时，整条 Skill 跳过并记录日志；资源未公开时仍可用，只产生告警。
+内置 Skill 绑定启用中网关、启用中环境当前发布版本里的普通资源（旧快照缺 kind 按 standard）。已写入的版本是当时资源定义的快照，之后的网关发布不改写它。
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
-mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
-MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
-SKILL.md frontmatter 遵循 Agent Skills 规范，只有 name、description、metadata；metadata 只有 type、version、author、datetime、source。display_name、code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
-内置 Skill 注入在 `post_migrate` 中执行，单条声明被拒绝、因资源不可编排而跳过或出错都不中断部署；被跳过的声明在下次部署重试。参数位置和类型只取当前发布版本的 OpenAPI schema，不按 HTTP 方法推断：未同时定义请求参数和响应参数时跳过整条 Skill；编排只引用资源定义、不重新定义参数和响应：inputs 只写是否向用户收集、默认值、示例和编排提示，类型和接口说明取自 with 绑定的参数；outputs 只写汇报说明和来源，字段结构看来源步骤的响应。请求体不是 application/json、调用映射了资源定义中没有的参数、引用了资源定义中没有的响应字段、同一输入绑定的参数类型不一致、输入没有绑定任何参数，或必填参数取自选填且无默认值的输入时，注入拒绝该声明、不写版本。新版本须按 major.minor.patch 高于当前版本，否则拒绝。
-已写入的内置 Skill 版本是注入时资源定义的快照，网关发布不会重新渲染或更新它，目前也没有变更检测；资源变更后需升声明版本号再注入。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、
 [OpenAPI 模型](../src/dashboard/apigateway/apigateway/apps/openapi/models.py)、

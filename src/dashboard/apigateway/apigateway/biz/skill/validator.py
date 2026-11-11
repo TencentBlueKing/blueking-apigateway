@@ -18,15 +18,15 @@
 """声明的完整校验：编排前后引用关系，以及编排与资源定义的对照。
 
 资源定义（目标环境当前发布版本的 OpenAPI schema）是参数和响应的唯一依据，声明只引用、不重新定义：
-输入声明的类型必须与 with 绑定的参数一致。参数不在定义中、引用的响应字段不在定义中、输入类型与绑定参数不一致、
-必填参数取自可能不传的输入，都是 error。
+输入声明的类型必须与 with 绑定的参数一致。必填参数没有写进 with、参数不在定义中、引用的响应字段不在定义中、
+输入类型与绑定参数不一致、必填参数取自可能不传的输入、同一步逐个调用的参数取自不同数组、输出类型与来源不一致，都是 error。
 结构和字段规则已在解析声明时检查，见 declaration.py。步骤 description 是自然语言，不校验。
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Set, Tuple
 
-from .refs import parse_ref
+from .refs import each_array, parse_ref
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
@@ -89,6 +89,8 @@ class _RefChecker:
         self.resources = resources
         self.result = result
         self.step_resources: Dict[str, Optional[SkillResource]] = {}
+        # with 里有逐个调用参数的步骤，结果是多次调用的汇总
+        self.each_steps: Set[str] = set()
 
     def check(self) -> None:
         for step in self.orchestration.steps:
@@ -102,6 +104,7 @@ class _RefChecker:
         for name, output in self.orchestration.outputs.items():
             self._check_ref(output.value, f"outputs.{name}")
         self._check_input_types()
+        self._check_output_types()
 
     def _check_ref(self, value: Any, where: str) -> None:
         parsed = parse_ref(value)
@@ -117,13 +120,25 @@ class _RefChecker:
                 self.result.errors.append(f"{where}：{resource.data.name} 的响应定义中没有 {parsed.path}")
 
     def _check_params(self, step: SkillStep, resource: SkillResource) -> None:
-        """必填参数没有写进 with 不报：逐个调用等每次不同的取值由步骤说明交代，渲染时列出"""
+        """必填参数和路径参数都要写进 with；逐个调用时每次不同的取值写成带 `[]` 的步骤引用，筛选条件写在步骤说明里"""
+        missing = [
+            param.name
+            for param in resource.params
+            if (param.required or param.location == "path") and param.name not in step.with_
+        ]
+        if missing:
+            self.result.errors.append(f"{step.id}：资源定义中必填的参数没有写进 with：{'、'.join(missing)}")
+
+        arrays: Set[str] = set()
         for name, value in step.with_.items():
             param = resource.get_param(name)
             # 不在定义中的参数没有位置和类型，渲染只能靠猜，而版本写入后不能改
             if param is None:
                 self.result.errors.append(f"{step.id}：参数 {name} 不在资源定义中")
                 continue
+            array = each_array(value, param.type)
+            if array:
+                arrays.add(array)
             parsed = parse_ref(value)
             if parsed.kind != "input":
                 continue
@@ -132,6 +147,11 @@ class _RefChecker:
                 self.result.errors.append(
                     f"{step.id}.with.{name}：参数 {name} 在资源定义中必填，输入 {parsed.name} 却是选填且没有默认值"
                 )
+        if arrays:
+            self.each_steps.add(step.id)
+        # 每次调用取同一个元素的各个字段，数组不同就说不清第几次调用取哪个元素
+        if len(arrays) > 1:
+            self.result.errors.append(f"{step.id}：逐个调用的参数须取自同一个数组：{'、'.join(sorted(arrays))}")
 
     def _check_input_types(self) -> None:
         """输入声明的类型须与每个绑定参数的类型相同；定义里没写类型的参数不参与比较"""
@@ -142,6 +162,30 @@ class _RefChecker:
             if mismatched:
                 detail = "、".join(f"{item.step}.with.{item.param.name}（{item.param.type}）" for item in mismatched)
                 self.result.errors.append(f"inputs.{name}：类型 {declared} 与绑定参数不一致：{detail}")
+
+    def _check_output_types(self) -> None:
+        """输出声明的类型须与来源推出的类型相同；推不出（来源字段没写类型、资源缺失或有 error）时不比较"""
+        for name, output in self.orchestration.outputs.items():
+            expected = self._source_type(output.value)
+            if expected and expected != output.type:
+                self.result.errors.append(f"outputs.{name}：类型 {output.type} 与来源不一致，应为 {expected}")
+
+    def _source_type(self, value: Any) -> str:
+        """取自输入时为输入类型；取自响应时为字段类型，路径里每个 `[]` 和逐个调用的来源步骤各包一层 array"""
+        parsed = parse_ref(value)
+        if parsed.kind == "input":
+            item = self.orchestration.get_input(parsed.name)
+            return item.type if item else ""
+        resource = self.step_resources.get(parsed.step)
+        if parsed.kind != "step" or resource is None or resource.errors:
+            return ""
+        type_text = resource.response_type(parsed.path)
+        if not type_text:
+            return ""
+        depth = parsed.path.count("[]") + (1 if parsed.step in self.each_steps else 0)
+        for _ in range(depth):
+            type_text = f"array<{type_text}>"
+        return type_text
 
 
 @dataclass(frozen=True)

@@ -94,9 +94,11 @@ orchestration:
   - id: get-download-urls
     name: 生成下载地址
     uses: devops/user_artifactory_thirdPartyDownloadUrl@prod
-    description: 仅当 check-build 的构建状态 `data.status` 为 SUCCEED 时执行，否则跳过本步。对 list-artifacts 返回的 `data.records` 中 `folder` 为 false、且 `artifactoryType` 为 PIPELINE 或 CUSTOM_DIR 的每个产物各调用一次，没有这样的产物时跳过：`artifactoryType` 取该产物的 `artifactoryType`，`path` 取该产物的 `fullPath`。`path` 原样传递，不要自己做 URL 编码。
+    description: 仅当 check-build 的构建状态 `data.status` 为 SUCCEED 时执行，否则跳过本步。只对 list-artifacts 返回的 `data.records` 中 `folder` 为 false、且 `artifactoryType` 为 PIPELINE 或 CUSTOM_DIR 的产物各调用一次，没有这样的产物时跳过。`path` 原样传递，不要自己做 URL 编码。
     with:
       projectId: ${{ inputs.project_id }}
+      artifactoryType: ${{ steps.list-artifacts.outputs.data.records[].artifactoryType }}
+      path: ${{ steps.list-artifacts.outputs.data.records[].fullPath }}
       ttl: ${{ inputs.ttl }}
   guide:
     not_for: |-

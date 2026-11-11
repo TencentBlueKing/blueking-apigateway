@@ -52,18 +52,30 @@ runs from `bin/post_migrate`.
   `default` must match it. An input's `type` must equal every typed parameter
   it is bound to in `with`, and its interface description comes from those
   parameters, so every input must be bound at least once. An output's `type`
-  is only checked for valid notation, not against the response: a per-item
-  step aggregates several responses, so the reported value can differ from a
-  single response (`failed_host_logs` is `array<object>` while one call's
-  `data` is `object`). An input's `description` is an optional orchestration
+  must equal the type derived from its source: an input's `type`, or the
+  response field's type wrapped in one `array<…>` per `[]` in the path and one
+  more when the source step is a per-item call (`failed_host_logs` is
+  `array<object>` while one call's `data` is `object`). A response field
+  without a type is not compared. An input's `description` is an optional orchestration
   hint (drafting rules, value strategy) and must not restate the OpenAPI
-  description.
+  description. `outputs` must have at least one entry: every orchestrable
+  resource has response fields, so there is always a result to report.
+  Every required or path parameter must appear in `with`. A per-item call binds
+  a non-array parameter to a step reference containing `[]`
+  (`task_id: ${{ steps.list-tasks.outputs.data[].id }}`): one call per element of
+  the array before the last `[]`, rendered with `x-each: true`. Which elements to
+  call stays in the step `description`. All per-item parameters of one step must
+  come from the same array. An array parameter bound to `[]` still receives the
+  collected array. `refs.each_array` owns this rule for the validator and the
+  renderer.
   The declaration is rejected when a referenced resource's request body is not
-  `application/json` (the body is always rendered as JSON), when a step maps a
-  parameter missing from the definition, when a `${{ steps.* }}` reference names
-  a response field missing from the definition, when an input's `type` differs
-  from a bound parameter's type, or when a required or path parameter is
-  mapped from an optional input without a default. Resource-level problems go
+  `application/json` (the body is always rendered as JSON), when a required or
+  path parameter is missing from `with`, when a step maps a parameter missing
+  from the definition, when a `${{ steps.* }}` reference names a response field
+  missing from the definition, when an input's `type` differs from a bound
+  parameter's type, when a required or path parameter is mapped from an
+  optional input without a default, when a step's per-item parameters come
+  from different arrays, or when an output's `type` differs from its source. Resource-level problems go
   in `SkillResource.errors`; the validator reports them as errors and skips
   field checks for that resource.
   Warnings are only for non-blocking resource facts, such as a non-public
@@ -91,12 +103,16 @@ runs from `bin/post_migrate`.
 - Injection reads only the database and repository files; it never calls
   gateways or external systems.
 - Rendering is deterministic: no timestamps or environment URLs in the body.
+- The stored artifact is the body only; `SKILL.md.j2` does not render frontmatter.
+  A download package's frontmatter follows the Agent Skills spec and contains
+  only `name`, `description`, and `metadata`. `metadata` contains only `type`,
+  `version`, `author`, `datetime`, and `source`. `datetime` is
+  `SkillVersion.created_time`. Do not write `display_name`, `SkillMetadata.code`,
+  or the `SkillMetadata.metadata` extension JSON into `SKILL.md`.
 - Steps follow the GitHub Actions composite-action shape (`id`, `name`, `uses`,
-  `description`, `with`) without `if`. Run conditions, polling and per-item
-  calls are natural language in `description`; do not add machine-checked
-  condition, poll, loop or filter fields.
-  Required parameters left out of `with` are listed in the snippet without a
-  value and explained by the step description.
+  `description`, `with`) without `if`. Run conditions, polling and which
+  elements a per-item call covers are natural language in `description`; do not
+  add machine-checked condition, poll, loop or filter fields.
 - Authentication methods are gateway-specific and must not be inferred from a
   fixed list of credential parameter names. The body tells the AI not to ask
   users for credentials; callers inject them using the target gateway's
@@ -108,8 +124,8 @@ runs from `bin/post_migrate`.
 
 `tests/biz/skill/` holds one golden fixture, `fixtures/declarations/job-plan-run-and-log.yaml`,
 plus `fixtures/resources.json` and `fixtures/expected/job-plan-run-and-log.md`. That
-declaration covers a run condition, polling and per-item calls described in text, fixed
-values and write calls; rule tests
+declaration covers a run condition and polling described in text, a per-item `[]`
+binding, fixed values and write calls; rule tests
 mutate this one declaration. `fixtures/resources.json` is also the resource contract
 for every file in `data/skill/declarations/`: `test_shipped_declarations.py` publishes
 those resources with versioned OpenAPI schemas, then validates and renders each

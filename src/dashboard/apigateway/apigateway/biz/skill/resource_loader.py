@@ -71,6 +71,11 @@ class SkillResource:
             for item in self.responses
         )
 
+    def response_type(self, path: str) -> str:
+        """path 对应响应字段的类型写法；没有这一条字段或字段没写类型时为空"""
+        normed = norm_path(path)
+        return next((item.type for item in self.responses if item.field == normed), "")
+
 
 class ResourceProvider(ABC):
     @abstractmethod

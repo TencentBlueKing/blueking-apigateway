@@ -342,6 +342,13 @@ class TestOrchestrationRules:
 
         assert errors == ["orchestration.inputs: 应为对象"]
 
+    def test_outputs_not_empty(self, job_plan_data):
+        job_plan_data["orchestration"]["outputs"] = {}
+
+        errors = _errors(job_plan_data)
+
+        assert errors == ["orchestration.outputs: 至少需要一个，写用户最终需要的结果"]
+
     @pytest.mark.parametrize("section, name", [("inputs", "bk_scope_id"), ("outputs", "job_instance_id")])
     def test_type_required(self, job_plan_data, section, name):
         job_plan_data["orchestration"][section][name].pop("type")
