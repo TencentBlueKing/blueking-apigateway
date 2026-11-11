@@ -354,24 +354,27 @@ const defaultApiCategory = computed(() => ({
   name: t('默认分类'),
 }));
 
-// API 分类列表
+// API 分类列表：资源挂多个标签时，在每个所属标签的分组下都会展示
 const apiGroupList = computed(() => {
-  return filteredApiList.value.reduce<IApiGroup[]>((groupList, api) => {
-    const { id, name } = api.labels?.[0] || defaultApiCategory.value;
-    const group = groupList.find(item => item.id === id);
-
-    if (group) {
+  const groups: IApiGroup[] = [];
+  const labelIdToGroup = new Map<number, IApiGroup>();
+  filteredApiList.value.forEach((api) => {
+    const labels = api.labels?.length ? api.labels : [defaultApiCategory.value];
+    labels.forEach(({ id, name }) => {
+      let group = labelIdToGroup.get(id);
+      if (!group) {
+        group = {
+          id,
+          name,
+          apiList: [],
+        };
+        labelIdToGroup.set(id, group);
+        groups.push(group);
+      }
       group.apiList.push(api);
-    }
-    else {
-      groupList.push({
-        id,
-        name,
-        apiList: [api],
-      });
-    }
-    return groupList;
-  }, []);
+    });
+  });
+  return groups;
 });
 
 const allSystemList = computed(() => {
