@@ -20,7 +20,7 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 
 from django.conf import settings
 
@@ -30,12 +30,9 @@ from apigateway.apps.skill.models import SkillMetadata
 from .constants import SkillSyncStatusEnum
 from .declaration import SkillDeclarationError, parse_declaration
 from .renderer import render_skill_body
-from .resource_loader import ReleasedResourceProvider
+from .resource_loader import ReleasedResourceProvider, ResourceProvider
 from .validator import validate_declaration
 from .writer import SkillVersionExistsError, SkillVersionNotNewerError, check_new_version, save_skill_version
-
-if TYPE_CHECKING:
-    from .resource_definition import ResourceProvider
 
 logger = logging.getLogger(__name__)
 

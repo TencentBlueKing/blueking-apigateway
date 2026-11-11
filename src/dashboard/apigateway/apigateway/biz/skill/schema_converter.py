@@ -15,13 +15,32 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""将资源的 OpenAPI schema 转换为 Skill 资源定义的参数和响应字段"""
+"""将资源的 OpenAPI schema 转换为 Skill 用的参数和响应字段。
 
+类型写法：`string`、`integer`、`array<string>`；多种类型用 `|` 连接，如 `array|integer|string`。
+响应字段用相对响应体的字段路径表示，数组层级写成 `[]`，如 `data.items[].id`。
+"""
+
+from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from .resource_definition import ResourceParam, ResponseField
-
 JSON_CONTENT_TYPE = "application/json"
+
+
+@dataclass
+class ResourceParam:
+    name: str
+    location: str  # path / query / header / body
+    type: str = ""
+    required: bool = False
+    description: str = ""
+
+
+@dataclass
+class ResponseField:
+    field: str
+    type: str = ""
+    description: str = ""
 
 
 def has_non_json_request_body(schema: Dict[str, Any]) -> bool:

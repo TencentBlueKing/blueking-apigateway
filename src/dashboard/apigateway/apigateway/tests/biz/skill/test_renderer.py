@@ -62,6 +62,24 @@ class TestRenderSkillBody:
                 }
             )
 
+    def test_oauth2_client_columns(self, resources_data):
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "execute_job_plan":
+                resource["auth"]["oauth2_public_client_enabled"] = True
+                resource["auth"]["oauth2_personal_client_enabled"] = True
+
+        catalog = (
+            _render("job-plan-run-and-log", StaticResourceProvider.from_dict(resources_data))
+            .split("## 接口清单", 1)[1]
+            .split("## 输入", 1)[0]
+        )
+
+        assert "| OAuth2 public client | OAuth2 personal client |" in catalog
+        execute = next(line for line in catalog.splitlines() if line.startswith("| `execute_job_plan`"))
+        status = next(line for line in catalog.splitlines() if line.startswith("| `get_job_instance_status`"))
+        assert execute.endswith("| 是 | 是 | 是 | 是 | 是 |")
+        assert status.endswith("| 是 | 是 | 是 | 否 | 否 |")
+
     def test_no_interface_available_column(self, static_provider):
         body = _render("job-plan-run-and-log", static_provider)
 

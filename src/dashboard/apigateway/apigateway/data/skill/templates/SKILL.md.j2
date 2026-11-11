@@ -24,10 +24,10 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 YAML 调用说明。
 
-| 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 | OAuth2 public client | OAuth2 personal client |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {% for res in resources %}
-| `{{ res.resource }}` | {{ res.gateway }} | {{ res.stage }} | {{ res.method }} | `{{ res.path }}` | {{ res.description | md_cell }} | {{ res.user_verified_required | yn }} | {{ res.app_verified_required | yn }} | {{ res.resource_perm_required | yn }} |
+| `{{ res.resource }}` | {{ res.gateway }} | {{ res.stage }} | {{ res.method }} | `{{ res.path }}` | {{ res.description | md_cell }} | {{ res.user_verified_required | yn }} | {{ res.app_verified_required | yn }} | {{ res.resource_perm_required | yn }} | {{ res.oauth2_public_client_enabled | yn }} | {{ res.oauth2_personal_client_enabled | yn }} |
 {% endfor %}
 
 认证凭据不在执行步骤中配置、不向用户索取，由调用方按目标网关支持的认证方式注入。

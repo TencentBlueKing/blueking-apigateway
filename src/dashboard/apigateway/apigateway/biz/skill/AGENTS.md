@@ -14,8 +14,8 @@ runs from `bin/post_migrate`.
 | --- | --- |
 | `declaration.py` | pydantic model of the declaration YAML; field rules and error messages |
 | `refs.py` | reference syntax: a whole-string `${{ inputs.<name> }}` or `${{ steps.<id>.outputs.<path> }}`; any other value is fixed |
-| `resource_definition.py` | `ResourceDefinition` and the `ResourceProvider` base class |
-| `resource_loader.py` / `schema_converter.py` | definitions from the current release and its OpenAPI schema |
+| `schema_converter.py` | OpenAPI schema converted to parameters and response fields |
+| `resource_loader.py` | `SkillResource`, `ResourceProvider`, and loading the current release |
 | `validator.py` | cross-checks between the orchestration and resource definitions |
 | `renderer.py` | template context and the per-step OpenAPI snippet |
 | `writer.py` | one transactional publish: metadata, tags, config, version, relations |
@@ -64,7 +64,7 @@ runs from `bin/post_migrate`.
   a response field missing from the definition, when an input's `type` differs
   from a bound parameter's type, or when a required or path parameter is
   mapped from an optional input without a default. Resource-level problems go
-  in `ResourceDefinition.errors`; the validator reports them as errors and skips
+  in `SkillResource.errors`; the validator reports them as errors and skips
   field checks for that resource.
   Warnings are only for non-blocking resource facts, such as a non-public
   resource.

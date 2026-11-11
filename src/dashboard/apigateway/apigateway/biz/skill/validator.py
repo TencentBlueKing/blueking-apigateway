@@ -30,7 +30,8 @@ from .refs import parse_ref
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
-    from .resource_definition import ResourceDefinition, ResourceParam, ResourceProvider
+    from .resource_loader import ResourceProvider, SkillResource
+    from .schema_converter import ResourceParam
 
 ResourceKey = Tuple[str, str, str]
 
@@ -51,9 +52,9 @@ class ValidationResult:
 
 def load_resources(
     orchestration: SkillOrchestration, provider: ResourceProvider
-) -> Dict[ResourceKey, Optional[ResourceDefinition]]:
+) -> Dict[ResourceKey, Optional[SkillResource]]:
     """按步骤顺序查询编排用到的资源，每个资源只查一次"""
-    resources: Dict[ResourceKey, Optional[ResourceDefinition]] = {}
+    resources: Dict[ResourceKey, Optional[SkillResource]] = {}
     for step in orchestration.steps:
         if step.key not in resources:
             resources[step.key] = provider.get_resource(*step.key)
@@ -81,13 +82,13 @@ class _RefChecker:
     def __init__(
         self,
         orchestration: SkillOrchestration,
-        resources: Dict[ResourceKey, Optional[ResourceDefinition]],
+        resources: Dict[ResourceKey, Optional[SkillResource]],
         result: ValidationResult,
     ):
         self.orchestration = orchestration
         self.resources = resources
         self.result = result
-        self.step_resources: Dict[str, Optional[ResourceDefinition]] = {}
+        self.step_resources: Dict[str, Optional[SkillResource]] = {}
 
     def check(self) -> None:
         for step in self.orchestration.steps:
@@ -113,9 +114,9 @@ class _RefChecker:
             resource = self.step_resources[parsed.step]
             # 资源不存在，或资源定义本身已报 error 时，不再把每个字段都报成缺失
             if resource and not resource.errors and not resource.has_response_field(parsed.path):
-                self.result.errors.append(f"{where}：{resource.resource} 的响应定义中没有 {parsed.path}")
+                self.result.errors.append(f"{where}：{resource.data.name} 的响应定义中没有 {parsed.path}")
 
-    def _check_params(self, step: SkillStep, resource: ResourceDefinition) -> None:
+    def _check_params(self, step: SkillStep, resource: SkillResource) -> None:
         """必填参数没有写进 with 不报：逐个调用等每次不同的取值由步骤说明交代，渲染时列出"""
         for name, value in step.with_.items():
             param = resource.get_param(name)
@@ -150,7 +151,7 @@ class InputBinding:
 
 
 def input_bindings(
-    orchestration: SkillOrchestration, resources: Mapping[ResourceKey, Optional[ResourceDefinition]]
+    orchestration: SkillOrchestration, resources: Mapping[ResourceKey, Optional[SkillResource]]
 ) -> Dict[str, List[InputBinding]]:
     """每个输入按步骤顺序绑定到的资源参数；资源或参数不存在的绑定不算"""
     bindings: Dict[str, List[InputBinding]] = {name: [] for name in orchestration.inputs}

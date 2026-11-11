@@ -14,11 +14,11 @@
 
 每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 YAML 调用说明。
 
-| 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `execute_job_plan` | jobv3-cloud | prod | POST | `/api/v3/execute_job_plan` | 启动作业执行方案。 | 是 | 是 | 是 |
-| `get_job_instance_status` | jobv3-cloud | prod | GET | `/api/v3/get_job_instance_status` | 根据作业实例 ID 查询作业执行状态。 | 是 | 是 | 是 |
-| `batch_get_job_instance_ip_log` | jobv3-cloud | prod | POST | `/api/v3/batch_get_job_instance_ip_log` | 根据主机列表批量查询作业执行日志。 | 是 | 是 | 是 |
+| 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 | OAuth2 public client | OAuth2 personal client |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `execute_job_plan` | jobv3-cloud | prod | POST | `/api/v3/execute_job_plan` | 启动作业执行方案。 | 是 | 是 | 是 | 否 | 否 |
+| `get_job_instance_status` | jobv3-cloud | prod | GET | `/api/v3/get_job_instance_status` | 根据作业实例 ID 查询作业执行状态。 | 是 | 是 | 是 | 否 | 否 |
+| `batch_get_job_instance_ip_log` | jobv3-cloud | prod | POST | `/api/v3/batch_get_job_instance_ip_log` | 根据主机列表批量查询作业执行日志。 | 是 | 是 | 是 | 否 | 否 |
 
 认证凭据不在执行步骤中配置、不向用户索取，由调用方按目标网关支持的认证方式注入。
 

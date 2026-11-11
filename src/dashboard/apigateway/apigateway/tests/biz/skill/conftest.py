@@ -24,9 +24,13 @@ import yaml
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
-from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
-from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
+from apigateway.tests.biz.skill.static_provider import (
+    StaticResourceProvider,
+    fixture_resource_schema,
+    released_resource_payload,
+)
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 DECLARATIONS_DIR = FIXTURES_DIR / "declarations"
@@ -63,24 +67,7 @@ def release_resources(
 
     schema_items = []
     for index, item in enumerate(resources, start=1):
-        auth = item.get("auth", {})
-        auth_config = {
-            "app_verified_required": auth.get("app_verified_required", True),
-            "auth_verified_required": auth.get("user_verified_required", False),
-            "resource_perm_required": auth.get("resource_perm_required", True),
-        }
-        data = {
-            "id": index,
-            "name": item["resource"],
-            "method": item["method"],
-            "path": item["path"],
-            "description": item.get("description", ""),
-            "is_public": item.get("is_public", True),
-            "kind": item.get("kind") or ResourceKindEnum.STANDARD.value,
-            "disabled_stages": item.get("disabled_stages", []),
-            "contexts": {"resource_auth": {"config": json.dumps(auth_config)}},
-            "api_labels": [],
-        }
+        data = released_resource_payload(item, index)
         G(
             ReleasedResource,
             gateway=gateway,
@@ -103,91 +90,9 @@ def release_resources(
 def release_fixture_gateway(resources_data: dict, gateway_name: str, stage_name: str = "prod") -> List[dict]:
     """把 resources.json 里该网关的资源及其 OpenAPI schema 发布到数据库。"""
     resources = [item for item in resources_data["resources"] if item["gateway"] == gateway_name]
-    schemas = {item["resource"]: _fixture_resource_schema(item) for item in resources}
+    schemas = {item["resource"]: fixture_resource_schema(item) for item in resources}
     release_resources(gateway_name, stage_name, resources, schemas)
     return resources
-
-
-def _fixture_resource_schema(resource: Dict[str, Any]) -> Dict[str, Any]:
-    parameters = []
-    body_properties = {}
-    body_required = []
-    for item in resource.get("params", []):
-        param_schema = _fixture_type_schema(item.get("type") or "")
-        if item.get("description"):
-            param_schema["description"] = item["description"]
-        if item["in"] == "body":
-            body_properties[item["name"]] = param_schema
-            if item.get("required"):
-                body_required.append(item["name"])
-            continue
-        parameters.append(
-            {
-                "name": item["name"],
-                "in": item["in"],
-                "required": bool(item.get("required")),
-                "description": item.get("description") or "",
-                "schema": param_schema,
-            }
-        )
-
-    schema: Dict[str, Any] = {"parameters": parameters}
-    if body_properties:
-        schema["requestBody"] = {
-            "required": bool(body_required),
-            "content": {
-                "application/json": {
-                    "schema": {
-                        "type": "object",
-                        "properties": body_properties,
-                        "required": body_required,
-                    }
-                }
-            },
-        }
-
-    response_schema: Dict[str, Any] = {"type": "object", "properties": {}}
-    for item in resource.get("response", []):
-        _add_fixture_response_field(response_schema, item)
-    if response_schema["properties"]:
-        schema["responses"] = {
-            "200": {
-                "description": "ok",
-                "content": {"application/json": {"schema": response_schema}},
-            }
-        }
-    return schema
-
-
-def _fixture_type_schema(type_text: str) -> Dict[str, Any]:
-    if type_text.startswith("array<") and type_text.endswith(">"):
-        return {"type": "array", "items": _fixture_type_schema(type_text[6:-1])}
-    if "|" in type_text:
-        return {"type": type_text.split("|")}
-    return {"type": type_text} if type_text else {}
-
-
-def _add_fixture_response_field(root: Dict[str, Any], field: Dict[str, Any]) -> None:
-    current = root
-    parts = field["field"].split(".")
-    for index, raw_part in enumerate(parts):
-        is_array = raw_part.endswith("[]")
-        name = raw_part[:-2] if is_array else raw_part
-        is_last = index == len(parts) - 1
-        properties = current.setdefault("properties", {})
-        if is_last:
-            value_schema = _fixture_type_schema(field.get("type") or "")
-            if field.get("description"):
-                value_schema["description"] = field["description"]
-            properties[name] = {"type": "array", "items": value_schema} if is_array else value_schema
-            return
-        if is_array:
-            item_schema = properties.setdefault(
-                name, {"type": "array", "items": {"type": "object", "properties": {}}}
-            )["items"]
-            current = item_schema
-        else:
-            current = properties.setdefault(name, {"type": "object", "properties": {}})
 
 
 @pytest.fixture

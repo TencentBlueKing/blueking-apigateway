@@ -42,7 +42,8 @@ from .validator import ResourceKey, input_bindings, load_resources
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
-    from .resource_definition import ResourceDefinition, ResourceParam, ResourceProvider
+    from .resource_loader import ResourceProvider, SkillResource
+    from .schema_converter import ResourceParam
 
 PARAM_LOCATION_ORDER = {"path": 0, "query": 1, "header": 2, "body": 3}
 NOTATION_PLACES = ("path", "query", "header")
@@ -120,7 +121,7 @@ def backtick(value: str) -> str:
 
 
 class _SkillBodyContext:
-    def __init__(self, declaration: SkillDeclaration, resources: Dict[ResourceKey, ResourceDefinition]):
+    def __init__(self, declaration: SkillDeclaration, resources: Dict[ResourceKey, SkillResource]):
         self.declaration = declaration
         self.orchestration: SkillOrchestration = declaration.orchestration
         self.resources = resources
@@ -131,7 +132,7 @@ class _SkillBodyContext:
             "display_name": self.declaration.display_name,
             "description": orchestration.description,
             "guide": orchestration.guide,
-            "resources": list(self.resources.values()),
+            "resources": self._resources(),
             "inputs": self._inputs(),
             "outputs": [
                 {"name": name, "type": item.type, "description": item.description, "source": item.value}
@@ -139,8 +140,30 @@ class _SkillBodyContext:
             ],
             "steps": self._steps(),
             "notation": self._notation(),
-            "has_write": any(resource.method in WRITE_METHODS for resource in self.resources.values()),
+            "has_write": any(resource.data.method in WRITE_METHODS for resource in self.resources.values()),
         }
+
+    def _resources(self) -> List[Dict[str, Any]]:
+        """接口清单一行。认证五项直接取发布资源，不在 SkillResource 上再抄一份。"""
+        rows = []
+        for resource in self.resources.values():
+            data = resource.data
+            rows.append(
+                {
+                    "resource": data.name,
+                    "gateway": resource.gateway,
+                    "stage": resource.stage,
+                    "method": data.method,
+                    "path": data.path,
+                    "description": data.description,
+                    "user_verified_required": data.verified_user_required,
+                    "app_verified_required": data.verified_app_required,
+                    "resource_perm_required": data.resource_perm_required,
+                    "oauth2_public_client_enabled": data.oauth2_public_client_enabled,
+                    "oauth2_personal_client_enabled": data.oauth2_personal_client_enabled,
+                }
+            )
+        return rows
 
     def _inputs(self) -> List[Dict[str, Any]]:
         """说明取自绑定参数的 OpenAPI 定义，声明里的说明单列为编排提示"""
@@ -211,7 +234,7 @@ def _distinct_descriptions(descriptions: Iterable[str]) -> List[str]:
     return [text for text in items if not any(text != other and text in other for other in items)]
 
 
-def _unmapped_params(step: SkillStep, resource: ResourceDefinition) -> List[str]:
+def _unmapped_params(step: SkillStep, resource: SkillResource) -> List[str]:
     """资源定义里必填、with 没写的参数，取值由步骤说明交代"""
     return [
         param.name
@@ -342,7 +365,7 @@ class _ResponseNode:
         return self.item
 
 
-def _response_schema(resource: ResourceDefinition) -> Dict[str, Any]:
+def _response_schema(resource: SkillResource) -> Dict[str, Any]:
     """用资源定义里的全部响应字段还原 JSON Schema。"""
     root = _ResponseNode()
     root.type = "object"
@@ -351,16 +374,16 @@ def _response_schema(resource: ResourceDefinition) -> Dict[str, Any]:
     return root.to_schema()
 
 
-def _get_param(resource: ResourceDefinition, name: str) -> ResourceParam:
+def _get_param(resource: SkillResource, name: str) -> ResourceParam:
     """参数必须在资源定义中，位置和类型以定义为准；不在定义中的参数校验已报 error"""
     param = resource.get_param(name)
     if param is None:
-        raise SkillRenderError(f"{resource.gateway}.{resource.resource} 的资源定义中没有参数 {name}，不能渲染")
+        raise SkillRenderError(f"{resource.gateway}.{resource.data.name} 的资源定义中没有参数 {name}，不能渲染")
     return param
 
 
 def _build_params(
-    orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition
+    orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[str]]:
     """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性；
     必填但没写进 with 的参数也列出，不带取值
@@ -368,7 +391,7 @@ def _build_params(
 
     def order(name: str) -> Tuple[int, int]:
         location = _get_param(resource, name).location
-        position = resource.path.find("{" + name + "}") if location == "path" else 0
+        position = resource.data.path.find("{" + name + "}") if location == "path" else 0
         return PARAM_LOCATION_ORDER.get(location, 9), position
 
     params: List[Dict[str, Any]] = []
@@ -400,14 +423,14 @@ def _build_params(
     return params, body, body_required
 
 
-def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: ResourceDefinition) -> str:
+def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource) -> str:
     params, body, body_required = _build_params(orchestration, step, resource)
     call: Dict[str, Any] = {
         "gateway_name": step.gateway,
         "stage_name": step.stage,
         "resource_name": step.resource,
-        "method": resource.method,
-        "path": resource.path,
+        "method": resource.data.method,
+        "path": resource.data.path,
     }
     if params:
         call["parameters"] = params

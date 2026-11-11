@@ -17,8 +17,9 @@
 #
 import pytest
 
-from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
 from apigateway.biz.skill.schema_converter import (
+    ResourceParam,
+    ResponseField,
     convert_schema_params,
     convert_schema_responses,
     has_non_json_request_body,

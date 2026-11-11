@@ -18,8 +18,8 @@
 import pytest
 from ddf import G
 
-from apigateway.biz.skill.resource_definition import ResourceParam, ResponseField
 from apigateway.biz.skill.resource_loader import ReleasedResourceProvider
+from apigateway.biz.skill.schema_converter import ResourceParam, ResponseField
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.tests.biz.skill.conftest import release_resources
@@ -52,16 +52,18 @@ class TestReleasedResourceProvider:
 
         definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
-        assert (definition.method, definition.path, definition.description) == (
+        assert (definition.data.method, definition.data.path, definition.data.description) == (
             "GET",
             "/get_task_status/{task_id}/",
             "查询任务状态",
         )
         assert (
-            definition.app_verified_required,
-            definition.user_verified_required,
-            definition.resource_perm_required,
-        ) == (True, True, True)
+            definition.data.verified_app_required,
+            definition.data.verified_user_required,
+            definition.data.resource_perm_required,
+            definition.data.oauth2_public_client_enabled,
+            definition.data.oauth2_personal_client_enabled,
+        ) == (True, True, True, False, False)
         assert definition.params == [ResourceParam(name="task_id", location="path", type="integer", required=True)]
         assert definition.responses == [ResponseField(field="result", type="boolean")]
         assert definition.warnings == []
@@ -101,6 +103,18 @@ class TestReleasedResourceProvider:
         assert definition.params == []
         assert definition.responses == [ResponseField(field="result", type="boolean")]
         assert definition.errors == []
+
+    def test_oauth2_clients_from_auth_config(self):
+        resource = {
+            **RESOURCE,
+            "auth": {**RESOURCE["auth"], "oauth2_public_client_enabled": True, "oauth2_personal_client_enabled": True},
+        }
+        release_resources("bk-sops", "prod", [resource], schemas={"get_task_status": SCHEMA})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.data.oauth2_public_client_enabled is True
+        assert definition.data.oauth2_personal_client_enabled is True
 
     def test_not_public_warning(self):
         release_resources("bk-sops", "prod", [{**RESOURCE, "is_public": False}], schemas={"get_task_status": SCHEMA})

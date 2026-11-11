@@ -191,7 +191,7 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文，创建后不改。version 保存时转为小写，大小写不同视为同一版本。`created_time` 是下载包 `metadata.datetime` 的事实来源，输出为 RFC 3339 UTC 秒精度；与 ResourceVersion 区分。 |
 | Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 steps[].uses 里的网关名、资源名，供检索；按名称引用，不是外键。 |
 | 内置 Skill 声明 / Platform Skill Declaration | `data/skill/declarations/{name}.yaml`；`SkillDeclaration` | 随代码发布的内置 Skill 源文件；部署时注入为 platform 类型的 SkillMetadata 与 SkillVersion，同版本不重复写入。 |
-| Skill 资源定义 / Skill Resource Definition | `ResourceDefinition`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API：方法、路径、说明、认证、参数和响应均取目标环境当前发布版本及其 OpenAPI schema；不是 Resource 或 ReleasedResource 本身。 |
+| Skill 资源定义 / Skill Resource Definition | `SkillResource`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API。它包装目标环境当前发布的 ReleasedResourceData（方法、路径、说明和全部认证，含 OAuth2）；参数和响应由该版本 OpenAPI schema 转换得到。不是 Resource 或 ReleasedResource 本身。 |
 
 内置 Skill 的资源取自启用中网关、启用中环境的当前发布版本，只要 kind=standard（旧快照缺 kind 按 standard）。只有在该版本 OpenAPI schema 中同时定义了请求参数和响应参数的资源才可编排：明确声明无请求参数（none_schema）算已定义请求参数，成功响应须有字段。当前环境在 disabled_stages 中、当前版本没有该资源或不满足上述条件时，整条 Skill 跳过并记录日志；资源未公开时仍可用，只产生告警。
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
