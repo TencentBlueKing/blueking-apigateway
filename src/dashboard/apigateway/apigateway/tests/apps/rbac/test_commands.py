@@ -657,6 +657,79 @@ def test_add_global_gateway_administrators_rejects_too_long_username(settings):
         call_command("add_global_gateway_administrators", username=["a" * 65])
 
 
+def test_remove_excluded_gateway_members_command_dry_run_does_not_delete(settings):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    gateway = G(Gateway, name="gw-cleanup", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=gateway,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=gateway,
+        username="alice",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    output = StringIO()
+
+    call_command("remove_excluded_gateway_members", stdout=output)
+
+    assert GatewayMember.objects.filter(gateway=gateway, username="admin").exists()
+    assert output.getvalue() == "summary delete=1 apply=false\n"
+
+
+def test_remove_excluded_gateway_members_command_apply_deletes_excluded_usernames(settings):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    removable = G(Gateway, name="gw-removable", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=removable,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=removable,
+        username="alice",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    only_excluded = G(Gateway, name="gw-only-excluded", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=only_excluded,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=only_excluded,
+        username="bk_admin",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+    output = StringIO()
+
+    call_command("remove_excluded_gateway_members", apply=True, stdout=output)
+
+    assert GatewayMember.objects.list_gateway_administrators(removable.id) == ["alice"]
+    assert not GatewayMember.objects.filter(gateway=only_excluded).exists()
+    assert output.getvalue() == "summary delete=3 apply=true\n"
+
+
+def test_remove_excluded_gateway_members_command_skips_when_single_tenant(settings):
+    settings.ENABLE_MULTI_TENANT_MODE = False
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    gateway = G(Gateway, name="gw-single", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=gateway,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    output = StringIO()
+
+    call_command("remove_excluded_gateway_members", apply=True, stdout=output)
+
+    assert GatewayMember.objects.filter(gateway=gateway, username="admin").exists()
+    assert output.getvalue() == "summary status=skipped reason=multi-tenant-disabled\n"
+
+
 def test_add_global_gateway_administrators_accepts_comma_separated_usernames(settings, mocker):
     _enable_iam(settings)
     gateway = G(Gateway, tenant_mode="global", tenant_id="")

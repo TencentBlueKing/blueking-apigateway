@@ -418,7 +418,7 @@ class TestGatewayListCreateApi:
                 {
                     "name": "test3",
                     "description": "test description",
-                    "maintainers": ["admin"],
+                    "maintainers": ["alice"],
                     "is_public": False,
                     "bk_app_codes": ["app1"],
                     "tenant_mode": "single",

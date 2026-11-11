@@ -34,6 +34,7 @@ from apigateway.biz.iam import (
     build_gateway_member_snapshot,
 )
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.request import is_configured_excluded_username
 from apigateway.components.bkpaas import update_app_maintainers
 from apigateway.core.models import Gateway
 
@@ -78,6 +79,35 @@ def _administrator_usernames(snapshot: GatewayMemberSnapshot) -> list[str]:
     )
 
 
+def _remove_excluded_usernames(gateway_id: int, usernames: Iterable[str]) -> list[str]:
+    username_list = list(usernames)
+    kept = [username for username in username_list if not is_configured_excluded_username(username)]
+    excluded = set(username_list) - set(kept)
+    if excluded:
+        logger.warning(
+            "skip excluded gateway members, gateway_id=%s usernames=%s",
+            gateway_id,
+            sorted(excluded),
+        )
+    return kept
+
+
+def _remove_excluded_members(
+    gateway_id: int,
+    members: Iterable[GatewayMemberInput],
+) -> list[GatewayMemberInput]:
+    member_list = list(members)
+    kept = [member for member in member_list if not is_configured_excluded_username(member.username)]
+    excluded = {member.username for member in member_list} - {member.username for member in kept}
+    if excluded:
+        logger.warning(
+            "skip excluded gateway members, gateway_id=%s usernames=%s",
+            gateway_id,
+            sorted(excluded),
+        )
+    return kept
+
+
 def _sync_external_member_state(
     gateway: Gateway,
     before: GatewayMemberSnapshot,
@@ -120,7 +150,7 @@ def replace_gateway_administrators(
     operated_by: str,
 ) -> list[str]:
     """Replace all gateway administrators."""
-    target_usernames = set(usernames)
+    target_usernames = _remove_excluded_usernames(gateway.id, usernames)
     if not target_usernames:
         raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
@@ -128,7 +158,7 @@ def replace_gateway_administrators(
     before = _get_gateway_member_snapshot(locked_gateway.id)
     result = GatewayMember.objects.replace_gateway_administrators(
         locked_gateway.id,
-        target_usernames,
+        set(target_usernames),
         operated_by,
     )
     _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
@@ -142,11 +172,12 @@ def add_gateway_administrators(
     operated_by: str,
 ) -> list[str]:
     """Add gateway administrators without removing existing ones."""
+    target_usernames = _remove_excluded_usernames(gateway.id, usernames)
     locked_gateway = _lock_gateway(gateway)
     before = _get_gateway_member_snapshot(locked_gateway.id)
     result = GatewayMember.objects.add_gateway_administrators(
         locked_gateway.id,
-        set(usernames),
+        set(target_usernames),
         operated_by,
     )
     _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
@@ -168,7 +199,7 @@ def add_gateway_members(
     operated_by: str,
 ) -> GatewayMemberBatchCreateResult:
     """Add gateway members, skipping usernames that already exist."""
-    unique_members = _unique_members(members)
+    unique_members = _unique_members(_remove_excluded_members(gateway.id, members))
     locked_gateway = _lock_gateway(gateway)
     before = _get_gateway_member_snapshot(locked_gateway.id)
     created, skipped = GatewayMember.objects.add_gateway_members(
