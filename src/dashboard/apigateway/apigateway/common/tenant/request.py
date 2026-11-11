@@ -41,7 +41,7 @@ def gen_tenant_header(tenant_id: str) -> Dict[str, str]:
 
 
 def is_configured_excluded_username(username: str) -> bool:
-    """多租户下，BK_IAM_V4_EXCLUDED_USERNAMES 中的用户名不写到外部系统。"""
+    """多租户下，BK_IAM_V4_EXCLUDED_USERNAMES 中的用户名不写入网关成员，也不写到 IAM、PaaS 等外部系统。"""
     return bool(settings.ENABLE_MULTI_TENANT_MODE) and username in settings.BK_IAM_V4_EXCLUDED_USERNAMES
 
 

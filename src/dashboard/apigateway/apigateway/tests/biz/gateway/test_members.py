@@ -28,6 +28,7 @@ from apigateway.biz.gateway import (
     build_gateway_doc_maintainers,
     delete_gateway_member,
     delete_gateway_members,
+    remove_excluded_gateway_members,
     replace_gateway_administrators,
     update_gateway_member_role,
 )
@@ -272,17 +273,119 @@ def test_member_write_uses_gateway_maintainer_tenant(
     assert add_authorization.call_args.kwargs == {"tenant_id": expected_tenant_id}
 
 
-def test_member_write_keeps_excluded_user_locally_without_iam_authorization(settings, fake_gateway, mocker):
+def test_member_write_skips_excluded_user_locally_and_iam(settings, fake_gateway, mocker):
     settings.BK_IAM_V4_ENABLED = True
     settings.ENABLE_MULTI_TENANT_MODE = True
     settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
     add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
 
-    add_gateway_administrators(fake_gateway, ["admin"], "operator-user")
-
-    assert GatewayMember.objects.filter(gateway=fake_gateway, username="admin").exists()
+    assert add_gateway_administrators(fake_gateway, ["admin"], "operator-user") == []
+    assert not GatewayMember.objects.filter(gateway=fake_gateway, username="admin").exists()
     add_authorization.assert_not_called()
+
+
+def test_member_write_keeps_excluded_username_when_single_tenant(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = False
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    GatewayMember.objects.filter(gateway=fake_gateway).delete()
+
+    assert add_gateway_administrators(fake_gateway, ["admin"], "operator-user") == ["admin"]
+
+
+def test_member_write_drops_excluded_usernames_and_keeps_real_users(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+
+    assert add_gateway_administrators(fake_gateway, ["bk_admin", "alice"], "operator-user") == ["admin", "alice"]
+    assert not GatewayMember.objects.filter(gateway=fake_gateway, username="bk_admin").exists()
+
+
+def test_replace_drops_excluded_administrators(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+
+    assert replace_gateway_administrators(fake_gateway, ["alice", "admin"], "operator-user") == ["alice"]
+    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["alice"]
+
+
+def test_replace_only_excluded_usernames_keeps_existing_administrators(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+
+    with pytest.raises(APIError, match="网关至少需要保留一个管理员"):
+        replace_gateway_administrators(fake_gateway, ["admin", "bk_admin"], "operator-user")
+
+    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["admin"]
+
+
+def test_add_gateway_administrators_ignores_only_excluded_usernames(settings, fake_gateway, mocker):
+    settings.BK_IAM_V4_ENABLED = True
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+
+    assert add_gateway_administrators(fake_gateway, ["bk_admin"], "operator-user") == ["admin"]
+    assert not GatewayMember.objects.filter(gateway=fake_gateway, username="bk_admin").exists()
+    add_authorization.assert_not_called()
+
+
+def test_add_gateway_members_drops_excluded_usernames(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+
+    result = add_gateway_members(
+        fake_gateway,
+        [
+            GatewayMemberInput(username="bk_admin", role=GatewayRoleEnum.OPERATOR),
+            GatewayMemberInput(username="bk_admin", role=GatewayRoleEnum.ADMINISTRATOR),
+            GatewayMemberInput(username="alice", role=GatewayRoleEnum.OPERATOR),
+        ],
+        "operator-user",
+    )
+
+    assert [member.username for member in result.created] == ["alice"]
+    assert not GatewayMember.objects.filter(gateway=fake_gateway, username="bk_admin").exists()
+
+
+def test_remove_excluded_gateway_members_keeps_last_administrator(settings, fake_gateway):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    GatewayMember.objects.create(
+        gateway=fake_gateway,
+        username="bk_admin",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+
+    result = remove_excluded_gateway_members(fake_gateway, "operator-user")
+
+    assert result.delete_usernames == ["bk_admin"]
+    assert result.skipped_last_administrators == ["admin"]
+    assert set(GatewayMember.objects.filter(gateway=fake_gateway).values_list("username", flat=True)) == {"admin"}
+
+
+def test_remove_excluded_gateway_members_deletes_excluded_when_another_administrator_remains(
+    settings,
+    fake_gateway,
+):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    GatewayMember.objects.create(
+        gateway=fake_gateway,
+        username="alice",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=fake_gateway,
+        username="bk_admin",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+
+    result = remove_excluded_gateway_members(fake_gateway, "operator-user")
+
+    assert result.delete_usernames == ["admin", "bk_admin"]
+    assert result.skipped_last_administrators == []
+    assert GatewayMember.objects.list_gateway_administrators(fake_gateway.id) == ["alice"]
 
 
 def test_member_write_does_not_call_iam_when_disabled(settings, fake_gateway, mocker):

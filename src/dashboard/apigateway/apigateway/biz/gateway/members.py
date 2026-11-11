@@ -34,6 +34,7 @@ from apigateway.biz.iam import (
     build_gateway_member_snapshot,
 )
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.request import is_configured_excluded_username
 from apigateway.components.bkpaas import update_app_maintainers
 from apigateway.core.models import Gateway
 
@@ -62,6 +63,12 @@ class GatewayMemberRoleUpdateResult:
     changed: bool
 
 
+@dataclass(frozen=True)
+class ExcludedMemberCleanupResult:
+    delete_usernames: list[str]
+    skipped_last_administrators: list[str]
+
+
 def _lock_gateway(gateway: Gateway) -> Gateway:
     return Gateway.objects.select_for_update().get(pk=gateway.pk)
 
@@ -75,6 +82,73 @@ def _administrator_usernames(snapshot: GatewayMemberSnapshot) -> list[str]:
         username
         for username, authorization in snapshot.items()
         if authorization.role == GatewayRoleEnum.ADMINISTRATOR.value
+    )
+
+
+def _without_excluded_usernames(gateway_id: int, usernames: Iterable[str]) -> list[str]:
+    kept: list[str] = []
+    excluded: list[str] = []
+    for username in usernames:
+        if is_configured_excluded_username(username):
+            if username not in excluded:
+                excluded.append(username)
+            continue
+        kept.append(username)
+    if excluded:
+        logger.warning(
+            "skip excluded gateway members, gateway_id=%s usernames=%s",
+            gateway_id,
+            excluded,
+        )
+    return kept
+
+
+def _without_excluded_members(
+    gateway_id: int,
+    members: Iterable[GatewayMemberInput],
+) -> list[GatewayMemberInput]:
+    kept: list[GatewayMemberInput] = []
+    excluded: list[str] = []
+    for member in members:
+        if is_configured_excluded_username(member.username):
+            if member.username not in excluded:
+                excluded.append(member.username)
+            continue
+        kept.append(member)
+    if excluded:
+        logger.warning(
+            "skip excluded gateway members, gateway_id=%s usernames=%s",
+            gateway_id,
+            excluded,
+        )
+    return kept
+
+
+def _excluded_member_cleanup_plan(members: Iterable[GatewayMember]) -> ExcludedMemberCleanupResult:
+    member_list = list(members)
+    excluded_administrators = sorted(
+        member.username
+        for member in member_list
+        if member.role == GatewayRoleEnum.ADMINISTRATOR.value and is_configured_excluded_username(member.username)
+    )
+    excluded_administrator_set = set(excluded_administrators)
+    excluded_others = sorted(
+        member.username
+        for member in member_list
+        if member.username not in excluded_administrator_set and is_configured_excluded_username(member.username)
+    )
+    has_remaining_administrator = any(
+        member.role == GatewayRoleEnum.ADMINISTRATOR.value and member.username not in excluded_administrator_set
+        for member in member_list
+    )
+    if has_remaining_administrator:
+        return ExcludedMemberCleanupResult(
+            delete_usernames=sorted([*excluded_others, *excluded_administrators]),
+            skipped_last_administrators=[],
+        )
+    return ExcludedMemberCleanupResult(
+        delete_usernames=excluded_others,
+        skipped_last_administrators=excluded_administrators,
     )
 
 
@@ -120,7 +194,7 @@ def replace_gateway_administrators(
     operated_by: str,
 ) -> list[str]:
     """Replace all gateway administrators."""
-    target_usernames = set(usernames)
+    target_usernames = _without_excluded_usernames(gateway.id, usernames)
     if not target_usernames:
         raise error_codes.FAILED_PRECONDITION.format(_("网关至少需要保留一个管理员。"), replace=True)
 
@@ -128,7 +202,7 @@ def replace_gateway_administrators(
     before = _get_gateway_member_snapshot(locked_gateway.id)
     result = GatewayMember.objects.replace_gateway_administrators(
         locked_gateway.id,
-        target_usernames,
+        set(target_usernames),
         operated_by,
     )
     _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
@@ -142,11 +216,12 @@ def add_gateway_administrators(
     operated_by: str,
 ) -> list[str]:
     """Add gateway administrators without removing existing ones."""
+    target_usernames = _without_excluded_usernames(gateway.id, usernames)
     locked_gateway = _lock_gateway(gateway)
     before = _get_gateway_member_snapshot(locked_gateway.id)
     result = GatewayMember.objects.add_gateway_administrators(
         locked_gateway.id,
-        set(usernames),
+        set(target_usernames),
         operated_by,
     )
     _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
@@ -168,7 +243,7 @@ def add_gateway_members(
     operated_by: str,
 ) -> GatewayMemberBatchCreateResult:
     """Add gateway members, skipping usernames that already exist."""
-    unique_members = _unique_members(members)
+    unique_members = _unique_members(_without_excluded_members(gateway.id, members))
     locked_gateway = _lock_gateway(gateway)
     before = _get_gateway_member_snapshot(locked_gateway.id)
     created, skipped = GatewayMember.objects.add_gateway_members(
@@ -218,6 +293,23 @@ def delete_gateway_members(gateway: Gateway, usernames: Iterable[str], operated_
     result = GatewayMember.objects.delete_gateway_members_by_usernames(locked_gateway.id, usernames)
     _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
     return result
+
+
+def remove_excluded_gateway_members(
+    gateway: Gateway,
+    operated_by: str,
+    *,
+    apply: bool = True,
+) -> ExcludedMemberCleanupResult:
+    """Delete excluded members while keeping at least one administrator."""
+    plan = _excluded_member_cleanup_plan(GatewayMember.objects.list_gateway_members(gateway.id))
+    if not apply or not plan.delete_usernames:
+        return plan
+    deleted_members = delete_gateway_members(gateway, plan.delete_usernames, operated_by)
+    return ExcludedMemberCleanupResult(
+        delete_usernames=[member.username for member in deleted_members],
+        skipped_last_administrators=plan.skipped_last_administrators,
+    )
 
 
 def _sync_programmable_gateway_administrators(gateway: Gateway) -> None:
