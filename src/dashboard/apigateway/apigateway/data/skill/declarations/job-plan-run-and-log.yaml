@@ -8,22 +8,30 @@ tags:
 - 写操作
 - 故障排查
 version: 1.0.0
-changelog: 首个官方版本：execute_job_plan → get_job_instance_status → batch_get_job_instance_ip_log。
+changelog:
+- version: 1.0.0
+  date: 2026-11-11 11:00:00
+  content: |-
+    首个官方版本：execute_job_plan → get_job_instance_status → batch_get_job_instance_ip_log。
 orchestration:
-  description: run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
+  description: run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。
   inputs:
     bk_scope_id:
+      type: string
       required: true
       example: '2'
     job_plan_id:
+      type: integer
       required: true
       description: 可在作业平台方案列表中看到
       example: 1024
     bk_scope_type:
+      type: string
       required: false
       example: biz
       default: biz
     global_var_list:
+      type: array<object>
       required: false
       description: 只放用户要覆盖的变量，元素写成 `{name, value}`，主机变量写成 `{name, server}`
       example:
@@ -31,15 +39,19 @@ orchestration:
         value: 1.2.3
   outputs:
     job_instance_id:
+      type: integer
       description: 作业实例 ID
       value: ${{ steps.run-plan.outputs.data.job_instance_id }}
     job_status:
+      type: integer
       description: 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段
       value: ${{ steps.wait-result.outputs.data.job_instance.status }}
     step_results:
+      type: array<object>
       description: 每个步骤的状态，以及每台主机的状态、退出码和错误码
       value: ${{ steps.wait-result.outputs.data.step_instance_list }}
     failed_host_logs:
+      type: array<object>
       description: 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs`
       value: ${{ steps.collect-log.outputs.data }}
   steps:
@@ -64,8 +76,7 @@ orchestration:
   - id: collect-log
     name: 拉取失败主机日志
     uses: jobv3-cloud/batch_get_job_instance_ip_log@prod
-    if: '`data.job_instance.status` 不是 3（执行成功）'
-    description: 对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
+    description: 仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3（执行成功）时执行；作业成功、状态为 7（等待用户）或轮询到上限仍未结束时跳过本步。对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
     with:
       bk_scope_type: ${{ inputs.bk_scope_type }}
       bk_scope_id: ${{ inputs.bk_scope_id }}

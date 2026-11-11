@@ -22,7 +22,7 @@ from apigateway.apps.skill.constants import SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata, SkillVersion
 from apigateway.biz.skill import SkillSyncStatusEnum, sync_platform_skills
 from apigateway.biz.skill.renderer import render_skill_body
-from apigateway.tests.biz.skill.conftest import release_fixture_gateway, release_resources
+from apigateway.tests.biz.skill.conftest import release_fixture_gateway, release_resources, set_version
 
 pytestmark = pytest.mark.django_db
 
@@ -75,20 +75,17 @@ class TestSyncPlatformSkills:
 
         assert _statuses(_sync(declarations_dir)) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
 
-        job_plan_data["version"] = "1.1.0"
-        write_declaration(job_plan_data)
+        write_declaration(set_version(job_plan_data, "1.1.0"))
         results = _sync(declarations_dir)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.RELEASED.value)]
         assert SkillVersion.objects.filter(metadata_id=results[0].metadata_id).count() == 2
 
     def test_lower_version_rejected(self, declarations_dir, write_declaration, job_plan_data):
-        job_plan_data["version"] = "1.1.0"
-        write_declaration(job_plan_data)
+        write_declaration(set_version(job_plan_data, "1.1.0"))
         _sync(declarations_dir)
 
-        job_plan_data["version"] = "1.0.1"
-        write_declaration(job_plan_data)
+        write_declaration(set_version(job_plan_data, "1.0.1"))
         results = _sync(declarations_dir)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]

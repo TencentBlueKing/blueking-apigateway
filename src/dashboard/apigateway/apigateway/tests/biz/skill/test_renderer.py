@@ -67,7 +67,7 @@ class TestRenderSkillBody:
 
         assert "可用" not in body.split("## 输入", 1)[0]
 
-    def test_input_type_and_description_come_from_openapi(self, resources_data):
+    def test_input_description_comes_from_openapi(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
         data["orchestration"]["inputs"]["bk_scope_id"]["description"] = "声明中的编排提示"
         for resource in resources_data["resources"]:
@@ -87,6 +87,16 @@ class TestRenderSkillBody:
             "资源范围 ID | 声明中的编排提示 |"
         ) in input_section
         assert "| `global_var_list` | array<object> |" in input_section
+
+    def test_output_type_comes_from_declaration(self, static_provider):
+        output_section = (
+            _render("job-plan-run-and-log", static_provider).split("## 输出", 1)[1].split("## 执行步骤", 1)[0]
+        )
+
+        assert "| 字段 | 类型 | 说明 | 来源 |" in output_section
+        assert "| `job_instance_id` | integer | 作业实例 ID |" in output_section
+        # collect-log 按失败步骤逐个调用，单次响应的 data 是 object，汇总后是数组
+        assert "| `failed_host_logs` | array<object> |" in output_section
 
     def test_input_descriptions_drop_duplicates_and_contained(self, static_provider):
         input_section = _render("job-plan-run-and-log", static_provider).split("## 输入", 1)[1].split("## 输出", 1)[0]
@@ -127,12 +137,12 @@ class TestRenderSkillBody:
         with pytest.raises(SkillRenderError, match="没有参数 unknown"):
             render_skill_body(parse_declaration(data), static_provider)
 
-    def test_condition_and_ref_text(self, static_provider):
+    def test_step_description_and_ref_text(self, static_provider):
         body = _render("job-plan-run-and-log", static_provider)
 
         assert "3. collect-log / batch_get_job_instance_ip_log：拉取失败主机日志" in body
-        assert "   执行条件：`data.job_instance.status` 不是 3（执行成功）" in body
-        assert "带「执行条件」的步骤，条件不成立时跳过。" in body
+        assert "   仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3" in body
+        assert "执行条件" not in body
         assert "x-from: ${{ steps.run-plan.outputs.data.job_instance_id }}" in body
         assert "x-value: true" in body
 
@@ -140,17 +150,16 @@ class TestRenderSkillBody:
         data = load_declaration_data("job-plan-run-and-log")
         data["orchestration"]["steps"][0]["with"].pop("job_plan_id")
         data["orchestration"]["inputs"].pop("job_plan_id")
-        data["orchestration"]["steps"][2].pop("if")
 
         body = render_skill_body(parse_declaration(data), static_provider).body
 
         assert "资源定义中必填但未映射：`job_plan_id`，按本步说明处理。" in body
         assert "没有 `x-from`、`x-value` 的参数按该步说明取值" in body
-        assert "执行条件" not in body
 
     def test_parameter_name_does_not_define_authentication(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
         data["orchestration"]["inputs"]["access_token"] = {
+            "type": "string",
             "required": True,
             "description": "接口业务参数，不是网关认证凭据",
             "example": "example-token",

@@ -24,6 +24,7 @@ from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersionRelation
 from apigateway.biz.skill.declaration import parse_declaration
 from apigateway.biz.skill.writer import SkillVersionExistsError, SkillVersionNotNewerError, save_skill_version
+from apigateway.tests.biz.skill.conftest import set_version
 
 pytestmark = pytest.mark.django_db
 
@@ -57,6 +58,12 @@ class TestSaveSkillVersion:
         )
 
         assert saved.version.artifact == {"SKILL.md": "# body\n"}
+        saved.version.refresh_from_db()
+        assert saved.version.changelog == {
+            "version": "1.0.0",
+            "date": "2026-11-11 11:00:00",
+            "content": "首个官方版本：execute_job_plan → get_job_instance_status → batch_get_job_instance_ip_log。",
+        }
         assert saved.version.orchestration == parse_declaration(job_plan_data).orchestration_data()
         assert SkillConfig.objects.get(metadata=metadata).orchestration == saved.version.orchestration
         assert list(
@@ -73,13 +80,14 @@ class TestSaveSkillVersion:
         first = _save(job_plan_data)
         SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
 
-        job_plan_data.update(version="1.1.0-RC1", display_name="新名字", tags=["job"])
+        set_version(job_plan_data, "1.1.0-RC1").update(display_name="新名字", tags=["job"])
         second = _save(job_plan_data, body="# v2\n")
 
         metadata = SkillMetadata.objects.get(id=first.metadata.id)
         assert not second.created
         assert second.metadata.id == first.metadata.id
         assert second.version.version == "1.1.0-rc1"
+        assert second.version.changelog["version"] == "1.1.0-RC1"
         assert metadata.current_version_id == second.version.id
         assert metadata.display_name == "新名字"
         assert metadata.download_count == 5
@@ -88,17 +96,16 @@ class TestSaveSkillVersion:
         assert metadata.versions.count() == 2
 
     def test_same_version(self, job_plan_data):
-        _save(job_plan_data)
-        job_plan_data["version"] = job_plan_data["version"].upper()
+        _save(set_version(job_plan_data, "1.0.0-rc1"))
+        set_version(job_plan_data, "1.0.0-RC1")
 
         with pytest.raises(SkillVersionExistsError):
             _save(job_plan_data)
 
     @pytest.mark.parametrize("version", ["1.0.1", "1.1.0-rc1", "1.0.9+build"])
     def test_not_newer_than_current(self, job_plan_data, version):
-        job_plan_data["version"] = "1.1.0"
-        first = _save(job_plan_data)
-        job_plan_data["version"] = version
+        first = _save(set_version(job_plan_data, "1.1.0"))
+        set_version(job_plan_data, version)
 
         with pytest.raises(SkillVersionNotNewerError):
             _save(job_plan_data)
@@ -108,11 +115,9 @@ class TestSaveSkillVersion:
         assert metadata.versions.count() == 1
 
     def test_newer_by_numeric_order(self, job_plan_data):
-        job_plan_data["version"] = "1.9.0"
-        _save(job_plan_data)
-        job_plan_data["version"] = "1.10.0"
+        _save(set_version(job_plan_data, "1.9.0"))
 
-        assert _save(job_plan_data).version.version == "1.10.0"
+        assert _save(set_version(job_plan_data, "1.10.0")).version.version == "1.10.0"
 
     def test_relations_deduplicated(self, job_plan_data):
         steps = job_plan_data["orchestration"]["steps"]

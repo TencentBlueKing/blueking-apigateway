@@ -8,44 +8,58 @@ tags:
 - 流水线
 - 构建产物
 version: 1.0.0
-changelog: 首个官方版本：v4_user_build_list → v4_user_build_status → v4_user_artifactory_list → user_artifactory_thirdPartyDownloadUrl。
+changelog:
+- version: 1.0.0
+  date: 2026-11-11 11:00:00
+  content: |-
+    首个官方版本：v4_user_build_list → v4_user_build_status → v4_user_artifactory_list → user_artifactory_thirdPartyDownloadUrl。
 orchestration:
-  description: locate-build 得到构建 ID（`data.records[0].id`），后续接口都用它；所有接口的 `projectId` 相同。只有构建状态为 SUCCEED 才执行 list-artifacts、get-download-urls。
+  description: locate-build 得到构建 ID（`data.records[0].id`），后续接口都用它；所有接口的 `projectId` 相同。
   inputs:
     project_id:
+      type: string
       required: true
       example: my-game
     pipeline_id:
+      type: string
       required: true
       description: 形如 `p-` 开头的 32 位字符串
       example: p-4b3a4baf5472466aa575973da87505b4
     build_num:
+      type: integer
       required: false
       description: 传入时 buildNoStart、buildNoEnd 都用它；不传则取最近一次构建
       example: 128
     build_status:
+      type: array<string>
       required: false
       description: 用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
       example:
       - SUCCEED
     ttl:
+      type: integer
       required: false
       example: 3600
       default: 3600
   outputs:
     build_id:
+      type: string
       description: 构建 ID
       value: ${{ steps.locate-build.outputs.data.records[0].id }}
     build_num:
+      type: integer
       description: 构建号
       value: ${{ steps.locate-build.outputs.data.records[0].buildNum }}
     build_status:
+      type: string
       description: 构建状态
       value: ${{ steps.check-build.outputs.data.status }}
     artifacts:
+      type: array<object>
       description: 产物列表：文件名、大小、路径、仓库类型
       value: ${{ steps.list-artifacts.outputs.data.records }}
     download_urls:
+      type: array<string>
       description: 每个可下载产物的临时下载地址，与跳过文件夹、IMAGE、REPORT 后的 artifacts 一一对应
       value: ${{ steps.get-download-urls.outputs.data }}
   steps:
@@ -72,8 +86,7 @@ orchestration:
   - id: list-artifacts
     name: 列出构建产物
     uses: devops/v4_user_artifactory_list@prod
-    if: 构建状态 `data.status` 为 SUCCEED
-    description: 列出这次构建的产物。IMAGE、REPORT 类产物和文件夹不能生成下载地址，列在回复里并说明原因。
+    description: 仅当 check-build 的构建状态 `data.status` 为 SUCCEED 时执行，否则跳过本步。列出这次构建的产物。IMAGE、REPORT 类产物和文件夹不能生成下载地址，列在回复里并说明原因。
     with:
       projectId: ${{ inputs.project_id }}
       pipelineId: ${{ inputs.pipeline_id }}
@@ -81,8 +94,7 @@ orchestration:
   - id: get-download-urls
     name: 生成下载地址
     uses: devops/user_artifactory_thirdPartyDownloadUrl@prod
-    if: 构建状态 `data.status` 为 SUCCEED
-    description: 对 list-artifacts 返回的 `data.records` 中 `folder` 为 false、且 `artifactoryType` 为 PIPELINE 或 CUSTOM_DIR 的每个产物各调用一次，没有这样的产物时跳过：`artifactoryType` 取该产物的 `artifactoryType`，`path` 取该产物的 `fullPath`。`path` 原样传递，不要自己做 URL 编码。
+    description: 仅当 check-build 的构建状态 `data.status` 为 SUCCEED 时执行，否则跳过本步。对 list-artifacts 返回的 `data.records` 中 `folder` 为 false、且 `artifactoryType` 为 PIPELINE 或 CUSTOM_DIR 的每个产物各调用一次，没有这样的产物时跳过：`artifactoryType` 取该产物的 `artifactoryType`，`path` 取该产物的 `fullPath`。`path` 原样传递，不要自己做 URL 编码。
     with:
       projectId: ${{ inputs.project_id }}
       ttl: ${{ inputs.ttl }}

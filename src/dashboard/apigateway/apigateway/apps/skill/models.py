@@ -131,12 +131,13 @@ class SkillConfig(TimestampedModelMixin, OperatorModelMixin):
 class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
     """Skill 的一次发版；version、changelog、orchestration、artifact 创建后不再修改
 
+    changelog: {"version": "1.0.0", "date": "2026-11-11 11:00:00", "content": "<说明>"}，声明 changelog 里本版本那一条
     artifact: {"SKILL.md": "<正文>"}，键为包内相对路径，值为冻结的正文（含一级标题，不含 frontmatter）
     """
 
     metadata = models.ForeignKey(SkillMetadata, on_delete=models.CASCADE, related_name="versions")
     version = models.CharField(max_length=SKILL_VERSION_MAX_LENGTH, help_text=_("版本号，保存时转为小写"))
-    changelog = models.TextField(blank=True, default="", help_text=_("版本说明"))
+    changelog = models.JSONField(default=dict, blank=True, help_text=_("版本说明：version、date、content"))
     orchestration = models.JSONField(default=dict, help_text=_("发版时的编排内容"))
     artifact = models.JSONField(default=dict, help_text=_("冻结的 Skill 包文件内容"))
 

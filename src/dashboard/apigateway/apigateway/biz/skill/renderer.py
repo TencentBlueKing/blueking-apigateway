@@ -18,7 +18,7 @@
 """SKILL.md 正文渲染。
 
 章节、顺序和固定文案在 data/skill/templates/SKILL.md.j2；这里只计算模板用到的数据：
-接口清单、输入输出、步骤，以及每一步的 YAML 调用说明。步骤的 if 和 description 原样写出。
+接口清单、输入输出、步骤，以及每一步的 YAML 调用说明。步骤 description 原样写出。
 """
 
 import json
@@ -38,7 +38,7 @@ from .constants import (
     WRITE_METHODS,
 )
 from .refs import norm_path, parse_ref
-from .validator import ResourceKey, input_bindings, input_type, load_resources
+from .validator import ResourceKey, input_bindings, load_resources
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
@@ -134,7 +134,7 @@ class _SkillBodyContext:
             "resources": list(self.resources.values()),
             "inputs": self._inputs(),
             "outputs": [
-                {"name": name, "description": item.description, "source": item.value}
+                {"name": name, "type": item.type, "description": item.description, "source": item.value}
                 for name, item in orchestration.outputs.items()
             ],
             "steps": self._steps(),
@@ -143,12 +143,12 @@ class _SkillBodyContext:
         }
 
     def _inputs(self) -> List[Dict[str, Any]]:
-        """类型和说明取自绑定参数的 OpenAPI 定义，声明里的说明单列为编排提示"""
+        """说明取自绑定参数的 OpenAPI 定义，声明里的说明单列为编排提示"""
         bindings = input_bindings(self.orchestration, self.resources)
         return [
             {
                 "name": name,
-                "type": input_type(bindings[name]),
+                "type": item.type,
                 "required": item.required,
                 "description": "；".join(_distinct_descriptions(item.param.description for item in bindings[name])),
                 "hint": item.description,
@@ -172,7 +172,6 @@ class _SkillBodyContext:
                     "name": step.name,
                     "resource": step.resource,
                     "title": title,
-                    "condition": step.if_,
                     "description": step.description,
                     "call": _render_call(self.orchestration, step, resource),
                     "unmapped": _unmapped_params(step, resource),
@@ -203,7 +202,6 @@ class _SkillBodyContext:
             "value": any(parse_ref(value).kind == "value" for value in values),
             "omit": any(self.orchestration.is_omittable_input_ref(value) for value in values),
             "unmapped": unmapped,
-            "condition": any(step.if_ for step in steps),
         }
 
 

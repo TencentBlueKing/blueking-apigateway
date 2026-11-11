@@ -18,9 +18,9 @@
 """声明的完整校验：编排前后引用关系，以及编排与资源定义的对照。
 
 资源定义（目标环境当前发布版本的 OpenAPI schema）是参数和响应的唯一依据，声明只引用、不重新定义：
-输入的类型取自 with 绑定的参数。参数不在定义中、引用的响应字段不在定义中、同一输入绑定的参数类型不一致、
+输入声明的类型必须与 with 绑定的参数一致。参数不在定义中、引用的响应字段不在定义中、输入类型与绑定参数不一致、
 必填参数取自可能不传的输入，都是 error。
-结构和字段规则已在解析声明时检查，见 declaration.py。步骤的 if 和 description 是自然语言，不校验。
+结构和字段规则已在解析声明时检查，见 declaration.py。步骤 description 是自然语言，不校验。
 """
 
 from dataclasses import dataclass, field
@@ -133,13 +133,14 @@ class _RefChecker:
                 )
 
     def _check_input_types(self) -> None:
-        """输入的类型取自绑定参数，绑定的参数类型必须相同；定义里没写类型的参数不参与比较"""
+        """输入声明的类型须与每个绑定参数的类型相同；定义里没写类型的参数不参与比较"""
         resources = {key: resource for key, resource in self.resources.items() if resource and not resource.errors}
         for name, bindings in input_bindings(self.orchestration, resources).items():
-            typed = [binding for binding in bindings if binding.param.type]
-            if len({binding.param.type for binding in typed}) > 1:
-                detail = "、".join(f"{item.step}.with.{item.param.name}（{item.param.type}）" for item in typed)
-                self.result.errors.append(f"inputs.{name}：绑定的参数类型不一致：{detail}")
+            declared = self.orchestration.inputs[name].type
+            mismatched = [binding for binding in bindings if binding.param.type and binding.param.type != declared]
+            if mismatched:
+                detail = "、".join(f"{item.step}.with.{item.param.name}（{item.param.type}）" for item in mismatched)
+                self.result.errors.append(f"inputs.{name}：类型 {declared} 与绑定参数不一致：{detail}")
 
 
 @dataclass(frozen=True)
@@ -163,7 +164,3 @@ def input_bindings(
             if parsed.kind == "input" and param and parsed.name in bindings:
                 bindings[parsed.name].append(InputBinding(step=step.id, param=param))
     return bindings
-
-
-def input_type(bindings: List[InputBinding]) -> str:
-    return next((binding.param.type for binding in bindings if binding.param.type), "")

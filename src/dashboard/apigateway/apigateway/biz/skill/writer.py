@@ -17,7 +17,6 @@
 #
 """Skill 发版写库：内置 Skill 注入和网关 Skill 上传共用"""
 
-import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
@@ -27,6 +26,7 @@ from apigateway.apps.skill.constants import SkillStatusEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
 
 from .constants import SKILL_FILE_NAME
+from .declaration import semver_core
 
 if TYPE_CHECKING:
     from apigateway.core.models import Gateway
@@ -51,12 +51,8 @@ def check_new_version(metadata: SkillMetadata, version: str) -> None:
     if SkillVersion.objects.filter(metadata=metadata, version=version.lower()).exists():
         raise SkillVersionExistsError(f"{metadata.name} 已有版本 {version}")
     current = metadata.current_version
-    if current and _semver_core(version) <= _semver_core(current.version):
+    if current and semver_core(version) <= semver_core(current.version):
         raise SkillVersionNotNewerError(f"{metadata.name} 的版本 {version} 不高于当前版本 {current.version}")
-
-
-def _semver_core(version: str) -> Tuple[int, ...]:
-    return tuple(int(part) for part in re.split(r"[-+]", version, maxsplit=1)[0].split("."))
 
 
 @dataclass
@@ -106,7 +102,7 @@ def save_skill_version(
     version = SkillVersion.objects.create(
         metadata=metadata,
         version=declaration.version,
-        changelog=declaration.changelog,
+        changelog=declaration.current_changelog.model_dump(mode="json"),
         orchestration=orchestration,
         artifact={SKILL_FILE_NAME: body},
         created_by=operator,

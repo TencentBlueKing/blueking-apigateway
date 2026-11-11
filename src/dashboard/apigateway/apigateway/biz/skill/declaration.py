@@ -18,22 +18,26 @@
 """Skill 声明的结构与字段规则。
 
 声明由人工编写（内置 Skill）或随上传包提供（网关 Skill），结构不对时报带路径的 error。
-编排的骨架同 GitHub Actions 复合 Action：inputs / outputs / steps，每步 id、name、uses、if、with；
-if 和步骤 description 是自然语言，不解析。需要对照资源定义或编排前后关系的规则在 validator.py。
+编排的骨架同 GitHub Actions 复合 Action：inputs / outputs / steps，每步 id、name、uses、with；
+步骤 description 是自然语言，执行条件、轮询、逐个调用都写在里面，不解析。
+需要对照资源定义或编排前后关系的规则在 validator.py。
 """
 
+import datetime
 import re
-from typing import Annotated, Any, Dict, List, Optional, Tuple, Union
+from typing import Annotated, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import yaml
 from pydantic import (
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     StrictBool,
     StrictStr,
     ValidationError,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -74,6 +78,40 @@ class SkillDeclarationError(Exception):
 
 _USES_PATTERN = re.compile(r"^([^/@]+)/([^/@]+)@([^/@]+)$")
 _INPUT_NAME_PATTERN = re.compile(rf"^{INPUT_NAME}$")
+_ARRAY_TYPE_PATTERN = re.compile(r"^array<(.+)>$")
+_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2})?$")
+
+# 类型写法同资源定义（schema_converter.schema_type_text）：基本类型、array<类型>、基本类型|基本类型
+_JSON_TYPE_CHECKS: Dict[str, Callable[[Any], bool]] = {
+    "string": lambda value: isinstance(value, str),
+    "integer": lambda value: isinstance(value, int) and not isinstance(value, bool),
+    "number": lambda value: isinstance(value, (int, float)) and not isinstance(value, bool),
+    "boolean": lambda value: isinstance(value, bool),
+    "object": lambda value: isinstance(value, dict),
+    "array": lambda value: isinstance(value, list),
+    "null": lambda value: value is None,
+}
+
+
+def is_type_text(text: str) -> bool:
+    match = _ARRAY_TYPE_PATTERN.match(text)
+    if match:
+        return is_type_text(match.group(1))
+    parts = text.split("|")
+    return len(set(parts)) == len(parts) and all(part in _JSON_TYPE_CHECKS for part in parts)
+
+
+def value_matches_type(value: Any, text: str) -> bool:
+    """YAML/JSON 值是否符合类型写法；text 须已通过 is_type_text"""
+    match = _ARRAY_TYPE_PATTERN.match(text)
+    if match:
+        return isinstance(value, list) and all(value_matches_type(item, match.group(1)) for item in value)
+    return any(_JSON_TYPE_CHECKS[part](value) for part in text.split("|"))
+
+
+def semver_core(version: str) -> Tuple[int, ...]:
+    """major.minor.patch；预发布、构建后缀不参与比较"""
+    return tuple(int(part) for part in re.split(r"[-+]", version, maxsplit=1)[0].split("."))
 
 
 def _check_ref(value: Any) -> Any:
@@ -81,7 +119,54 @@ def _check_ref(value: Any) -> Any:
     return value
 
 
+def _check_type(value: str) -> str:
+    if not is_type_text(value):
+        raise ValueError(
+            f"类型写法不合规：{value!r}，应为 {'、'.join(_JSON_TYPE_CHECKS)} 之一，"
+            "或 array<类型>、string|integer 这样的组合"
+        )
+    return value
+
+
+def _check_semver(value: str) -> str:
+    if len(value) > SKILL_VERSION_MAX_LENGTH or not SEMVER_PATTERN.fullmatch(value):
+        raise ValueError(f"不是 Semver：{value}")
+    return value
+
+
+def _date_to_text(value: Any) -> Any:
+    # YAML 会把不加引号的 2026-11-11、2026-11-11 10:30:00 解析成 date、datetime
+    if isinstance(value, datetime.datetime):
+        # 带时区或毫秒的转成 isoformat 文本，交给格式检查报错
+        if value.tzinfo is None and not value.microsecond:
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+        return value.isoformat()
+    if isinstance(value, datetime.date):
+        return value.isoformat()
+    return value
+
+
+def _check_date(value: str) -> str:
+    """YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS，不带时区；日期和时间之间的 T 统一成空格"""
+    try:
+        if not _DATE_PATTERN.fullmatch(value):
+            raise ValueError
+        datetime.datetime.fromisoformat(value)
+    except ValueError:
+        raise ValueError(f"应为 YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS（不带时区）：{value}") from None
+    return value.replace("T", " ")
+
+
+def _check_text_not_empty(value: str) -> str:
+    if not value.strip():
+        raise ValueError("为空")
+    return value
+
+
 ParamValue = Annotated[Any, AfterValidator(_check_ref)]
+TypeText = Annotated[StrictStr, AfterValidator(_check_type)]
+SemverText = Annotated[StrictStr, AfterValidator(_check_semver)]
+DateText = Annotated[StrictStr, BeforeValidator(_date_to_text), AfterValidator(_check_date)]
 
 
 class _DeclarationModel(BaseModel):
@@ -89,13 +174,24 @@ class _DeclarationModel(BaseModel):
 
 
 class SkillInput(_DeclarationModel):
-    """Skill 向用户收集的值；类型和接口说明取自 with 绑定参数的资源定义，这里只写 OpenAPI 里没有的编排信息"""
+    """Skill 向用户收集的值；type 须与 with 绑定参数在资源定义中的类型一致，接口说明取自资源定义，
+    这里只写 OpenAPI 里没有的编排信息
+    """
 
+    type: TypeText
     required: StrictBool
     # 编排提示：拟定规则、取值策略等；没有就不写
     description: StrictStr = ""
     example: Any
     default: Any = None
+
+    @model_validator(mode="after")
+    def _check_values_type(self) -> "SkillInput":
+        if not value_matches_type(self.example, self.type):
+            raise ValueError(f"example 与类型 {self.type} 不符")
+        if self.has_default and not value_matches_type(self.default, self.type):
+            raise ValueError(f"default 与类型 {self.type} 不符")
+        return self
 
     @property
     def has_default(self) -> bool:
@@ -108,8 +204,9 @@ class SkillInput(_DeclarationModel):
 
 
 class SkillOutput(_DeclarationModel):
-    """汇报给用户的字段；字段结构看来源步骤的响应定义，逐个调用时是多次结果的汇总，所以不写类型"""
+    """汇报给用户的字段；type 只校验写法，不与响应定义比对：逐个调用时是多次结果的汇总，与单次响应的类型不同"""
 
+    type: TypeText
     description: StrictStr
     value: StrictStr
 
@@ -137,12 +234,11 @@ def split_uses(uses: str) -> Tuple[str, str, str]:
 
 
 class SkillStep(_DeclarationModel):
-    """一步调用一个接口；if 不成立时跳过本步，轮询、逐个调用等写在 description 里"""
+    """一步调用一个接口；执行条件、轮询、逐个调用等写在 description 里"""
 
     id: StrictStr
     name: Optional[StrictStr] = None
     uses: StrictStr
-    if_: Optional[StrictStr] = Field(default=None, alias="if")
     description: StrictStr
     with_: Dict[StrictStr, ParamValue] = Field(default_factory=dict, alias="with")
 
@@ -159,7 +255,7 @@ class SkillStep(_DeclarationModel):
         split_uses(value)
         return value
 
-    @field_validator("name", "if_", "description")
+    @field_validator("name", "description")
     @classmethod
     def _check_not_empty(cls, value: Optional[str]) -> Optional[str]:
         if value is not None and not value.strip():
@@ -231,7 +327,7 @@ class SkillOrchestration(_DeclarationModel):
         }
         unbound = [name for name in self.inputs if name not in bound]
         if unbound:
-            raise ValueError(f"输入没有绑定到任何步骤的 with，类型和说明无从取得：{'、'.join(unbound)}")
+            raise ValueError(f"输入没有绑定到任何步骤的 with，类型无从校验、说明无从取得：{'、'.join(unbound)}")
         return self
 
     def get_input(self, name: str) -> Optional[SkillInput]:
@@ -245,14 +341,21 @@ class SkillOrchestration(_DeclarationModel):
         return bool(item and item.omit_if_unset)
 
 
+class SkillChangelogEntry(_DeclarationModel):
+    version: SemverText
+    date: DateText
+    content: Annotated[StrictStr, AfterValidator(_check_text_not_empty)]
+
+
 class SkillDeclaration(_DeclarationModel):
     name: StrictStr
     display_name: StrictStr
     display_name_en: Optional[StrictStr] = None
     description: StrictStr
     tags: List[StrictStr]
-    version: StrictStr
-    changelog: StrictStr = ""
+    version: SemverText
+    # 从新到旧，第一条是当前版本
+    changelog: List[SkillChangelogEntry]
     orchestration: SkillOrchestration
 
     @field_validator("name")
@@ -304,12 +407,24 @@ class SkillDeclaration(_DeclarationModel):
                 raise ValueError(f"标签规范化后重复：{name}")
         return value
 
-    @field_validator("version")
+    @field_validator("changelog")
     @classmethod
-    def _check_version(cls, value: str) -> str:
-        if len(value) > SKILL_VERSION_MAX_LENGTH or not SEMVER_PATTERN.fullmatch(value):
-            raise ValueError(f"不是 Semver：{value}")
+    def _check_changelog(cls, value: List[SkillChangelogEntry], info: ValidationInfo) -> List[SkillChangelogEntry]:
+        if not value:
+            raise ValueError("至少需要一条，第一条为当前版本")
+        # version 不合规时不在 info.data 里，已单独报错
+        version = info.data.get("version")
+        if version and value[0].version.lower() != version.lower():
+            raise ValueError(f"第一条应为当前版本 {version}，实际为 {value[0].version}")
+        # 发版按 major.minor.patch 递增（见 writer.check_new_version），核心版本相同的两条不会都发出去
+        for newer, older in zip(value, value[1:]):
+            if semver_core(older.version) >= semver_core(newer.version):
+                raise ValueError(f"应按版本从新到旧排列且不重复：{newer.version} 之后是 {older.version}")
         return value
+
+    @property
+    def current_changelog(self) -> SkillChangelogEntry:
+        return self.changelog[0]
 
     @property
     def normalized_tags(self) -> List[str]:

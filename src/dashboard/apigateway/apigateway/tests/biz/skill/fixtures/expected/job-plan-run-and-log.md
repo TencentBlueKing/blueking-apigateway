@@ -24,7 +24,7 @@
 
 ## 输入
 
-必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型和说明取自接口定义。
+必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型与接口定义一致，说明取自接口定义。
 
 | 参数 | 类型 | 必填 | 说明 | 编排提示 | 示例 | 默认值 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -37,12 +37,12 @@
 
 完成后按下表组织回复，字段取值只来自「来源」列，不要编造。字段结构见来源步骤 YAML 调用说明里的 `responses`。
 
-| 字段 | 说明 | 来源 |
-| --- | --- | --- |
-| `job_instance_id` | 作业实例 ID | `${{ steps.run-plan.outputs.data.job_instance_id }}` |
-| `job_status` | 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段 | `${{ steps.wait-result.outputs.data.job_instance.status }}` |
-| `step_results` | 每个步骤的状态，以及每台主机的状态、退出码和错误码 | `${{ steps.wait-result.outputs.data.step_instance_list }}` |
-| `failed_host_logs` | 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs` | `${{ steps.collect-log.outputs.data }}` |
+| 字段 | 类型 | 说明 | 来源 |
+| --- | --- | --- | --- |
+| `job_instance_id` | integer | 作业实例 ID | `${{ steps.run-plan.outputs.data.job_instance_id }}` |
+| `job_status` | integer | 作业状态码：3 成功，4 失败，7 等待用户，其余见第 2 步响应字段 | `${{ steps.wait-result.outputs.data.job_instance.status }}` |
+| `step_results` | array<object> | 每个步骤的状态，以及每台主机的状态、退出码和错误码 | `${{ steps.wait-result.outputs.data.step_instance_list }}` |
+| `failed_host_logs` | array<object> | 每个失败步骤中失败主机的日志摘录。`data.log_type` 为 1 时取 `script_task_logs`，为 2 时取 `file_task_logs` | `${{ steps.collect-log.outputs.data }}` |
 
 ## 执行步骤
 
@@ -54,13 +54,11 @@
 | 2 | `wait-result` | 轮询作业状态 | `get_job_instance_status` |
 | 3 | `collect-log` | 拉取失败主机日志 | `batch_get_job_instance_ip_log` |
 
-run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。collect-log 只在作业没有成功时执行。
+run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。
 
 每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
 
 取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传；没有 `x-from`、`x-value` 的参数按该步说明取值。
-
-带「执行条件」的步骤，条件不成立时跳过。
 
 1. run-plan / execute_job_plan：执行作业方案
 
@@ -195,9 +193,7 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
 
 3. collect-log / batch_get_job_instance_ip_log：拉取失败主机日志
 
-   执行条件：`data.job_instance.status` 不是 3（执行成功）
-
-   对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
+   仅当 wait-result 正常结束（`data.finished` 为 true）且 `data.job_instance.status` 不是 3（执行成功）时执行；作业成功、状态为 7（等待用户）或轮询到上限仍未结束时跳过本步。对 wait-result 返回的 `data.step_instance_list` 中 `status` 为 4（执行失败）、9（状态异常）或 12（强制终止失败）的每个步骤各调用一次，没有这样的步骤时跳过：`step_instance_id` 取该步骤的 `step_instance_id`；请求体的 `host_id_list` 取该步骤 `step_ip_result_list` 中 `status` 不是 9（执行成功）的主机的 `bk_host_id`。只放失败的主机：成功主机的日志对排查没有帮助，还会让结果变长。
 
    ```yaml
    gateway_name: jobv3-cloud

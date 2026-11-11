@@ -38,6 +38,13 @@ def load_declaration_data(name: str) -> dict:
     return yaml.safe_load((DECLARATIONS_DIR / f"{name}.yaml").read_text(encoding="utf-8"))
 
 
+def set_version(data: dict, version: str) -> dict:
+    """改 version，changelog 换成只有这个版本的一条，满足「第一条是当前版本」"""
+    data["version"] = version
+    data["changelog"] = [{"version": version, "date": "2026-11-12", "content": f"发布 {version}"}]
+    return data
+
+
 def release_resources(
     gateway_name: str,
     stage_name: str,
@@ -195,5 +202,5 @@ def static_provider(resources_data) -> StaticResourceProvider:
 
 @pytest.fixture
 def job_plan_data() -> dict:
-    """三步编排：run-plan -> wait-result（说明里写轮询）-> collect-log（带 if，说明里写逐个调用）。规则测试都改这一份"""
+    """三步编排：run-plan -> wait-result（说明里写轮询）-> collect-log（说明里写执行条件和逐个调用）。规则测试都改这一份"""
     return load_declaration_data("job-plan-run-and-log")

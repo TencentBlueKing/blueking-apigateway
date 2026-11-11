@@ -14,7 +14,7 @@ runs from `bin/post_migrate`.
 | --- | --- |
 | `declaration.py` | pydantic model of the declaration YAML; field rules and error messages |
 | `refs.py` | reference syntax: a whole-string `${{ inputs.<name> }}` or `${{ steps.<id>.outputs.<path> }}`; any other value is fixed |
-| `resource_definition.py` | `ResourceDefinition` and the `ResourceProvider` protocol |
+| `resource_definition.py` | `ResourceDefinition` and the `ResourceProvider` base class |
 | `resource_loader.py` / `schema_converter.py` | definitions from the current release and its OpenAPI schema |
 | `validator.py` | cross-checks between the orchestration and resource definitions |
 | `renderer.py` | template context and the per-step OpenAPI snippet |
@@ -47,17 +47,22 @@ runs from `bin/post_migrate`.
   parameters and responses; the declaration references it and does not redefine
   it. Parameter locations and types come only from the definition; nothing is
   guessed from the HTTP method, because a version is immutable once written.
-  Inputs and outputs have no `type`: an input's type and interface description
-  come from the parameters it is bound to in `with`, so every input must be
-  bound at least once; an output's structure is the source step's response (a
-  per-item step aggregates several responses, so it cannot be typed from the
-  definition). An input's `description` is an optional orchestration hint
-  (drafting rules, value strategy) and must not restate the OpenAPI description.
+  Inputs and outputs declare a required `type` in the resource-definition
+  notation (`string`, `array<object>`, `integer|string`); `example` and
+  `default` must match it. An input's `type` must equal every typed parameter
+  it is bound to in `with`, and its interface description comes from those
+  parameters, so every input must be bound at least once. An output's `type`
+  is only checked for valid notation, not against the response: a per-item
+  step aggregates several responses, so the reported value can differ from a
+  single response (`failed_host_logs` is `array<object>` while one call's
+  `data` is `object`). An input's `description` is an optional orchestration
+  hint (drafting rules, value strategy) and must not restate the OpenAPI
+  description.
   The declaration is rejected when a referenced resource's request body is not
   `application/json` (the body is always rendered as JSON), when a step maps a
   parameter missing from the definition, when a `${{ steps.* }}` reference names
-  a response field missing from the definition, when the typed parameters bound
-  to one input have different types, or when a required or path parameter is
+  a response field missing from the definition, when an input's `type` differs
+  from a bound parameter's type, or when a required or path parameter is
   mapped from an optional input without a default. Resource-level problems go
   in `ResourceDefinition.errors`; the validator reports them as errors and skips
   field checks for that resource.
@@ -69,6 +74,12 @@ runs from `bin/post_migrate`.
   is rejected: a lower version made current would leave the higher one skipped
   as "already exists" on every later deploy. `writer.check_new_version` owns
   this rule for both the injection pre-check and the write transaction.
+- `changelog` is a list of `{version, date, content}` entries, newest first;
+  the first entry must be the declaration `version`, and versions strictly
+  decrease by `major.minor.patch`. `date` is `YYYY-MM-DD` or
+  `YYYY-MM-DD HH:MM:SS` without a time zone or fractional seconds; unquoted
+  YAML dates/timestamps are accepted and a `T` separator is stored as a space.
+  `SkillVersion.changelog` stores only that version's entry as JSON.
 - A written version is a snapshot of the resource definitions at injection time.
   Gateway releases do not re-render or update built-in Skills, and nothing yet
   detects drift. After a referenced resource changes, bump the declaration
@@ -81,8 +92,9 @@ runs from `bin/post_migrate`.
   gateways or external systems.
 - Rendering is deterministic: no timestamps or environment URLs in the body.
 - Steps follow the GitHub Actions composite-action shape (`id`, `name`, `uses`,
-  `if`, `description`, `with`). `if`, polling and per-item calls are natural
-  language for the AI; do not add machine-checked poll, loop or filter fields.
+  `description`, `with`) without `if`. Run conditions, polling and per-item
+  calls are natural language in `description`; do not add machine-checked
+  condition, poll, loop or filter fields.
   Required parameters left out of `with` are listed in the snippet without a
   value and explained by the step description.
 - Authentication methods are gateway-specific and must not be inferred from a
@@ -96,7 +108,7 @@ runs from `bin/post_migrate`.
 
 `tests/biz/skill/` holds one golden fixture, `fixtures/declarations/job-plan-run-and-log.yaml`,
 plus `fixtures/resources.json` and `fixtures/expected/job-plan-run-and-log.md`. That
-declaration covers a step `if`, polling and per-item calls described in text, fixed
+declaration covers a run condition, polling and per-item calls described in text, fixed
 values and write calls; rule tests
 mutate this one declaration. `fixtures/resources.json` is also the resource contract
 for every file in `data/skill/declarations/`: `test_shipped_declarations.py` publishes

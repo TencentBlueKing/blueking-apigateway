@@ -21,8 +21,9 @@
 响应字段用相对响应体的字段路径表示，数组层级写成 `[]`，如 `data.items[].id`。
 """
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Optional, Protocol, Tuple
+from typing import List, Optional, Tuple
 
 from .refs import norm_path
 
@@ -86,6 +87,8 @@ class ResourceDefinition:
         return any(item.field.startswith(normed + "[") for item in self.responses)
 
 
-class ResourceProvider(Protocol):
+class ResourceProvider(ABC):
+    @abstractmethod
     def get_resource(self, gateway: str, stage: str, resource: str) -> Optional[ResourceDefinition]:
         """资源不存在时返回 None"""
+        raise NotImplementedError()

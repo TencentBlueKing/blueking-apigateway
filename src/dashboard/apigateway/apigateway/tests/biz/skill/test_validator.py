@@ -119,9 +119,18 @@ class TestValidateDeclaration:
         [
             (
                 lambda data: _with(data, 1).update(bk_scope_id="${{ inputs.job_plan_id }}"),
+                "inputs.job_plan_id：类型 integer 与绑定参数不一致：wait-result.with.bk_scope_id（string）",
+            ),
+            (
+                lambda data: data["orchestration"]["inputs"]["job_plan_id"].update(type="string", example="1024"),
+                "inputs.job_plan_id：类型 string 与绑定参数不一致：run-plan.with.job_plan_id（integer）",
+            ),
+            (
+                lambda data: data["orchestration"]["inputs"]["bk_scope_id"].update(type="integer|string"),
                 (
-                    "inputs.job_plan_id：绑定的参数类型不一致："
-                    "run-plan.with.job_plan_id（integer）、wait-result.with.bk_scope_id（string）"
+                    "inputs.bk_scope_id：类型 integer|string 与绑定参数不一致："
+                    "run-plan.with.bk_scope_id（string）、wait-result.with.bk_scope_id（string）、"
+                    "collect-log.with.bk_scope_id（string）"
                 ),
             ),
             (
@@ -157,6 +166,13 @@ class TestValidateDeclaration:
         resource = static_provider.get_resource("jobv3-cloud", "prod", "get_job_instance_status")
         resource.get_param("bk_scope_id").type = ""
         _with(job_plan_data, 1)["bk_scope_id"] = "${{ inputs.job_plan_id }}"
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
+
+    def test_output_type_not_compared_with_response(self, static_provider, job_plan_data):
+        job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = "string"
 
         result = _validate(job_plan_data, static_provider)
 

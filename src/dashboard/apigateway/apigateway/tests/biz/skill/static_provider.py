@@ -19,10 +19,10 @@
 
 from typing import Any, Dict, Iterable, Optional
 
-from apigateway.biz.skill.resource_definition import ResourceDefinition, ResourceParam, ResponseField
+from apigateway.biz.skill.resource_definition import ResourceDefinition, ResourceParam, ResourceProvider, ResponseField
 
 
-class StaticResourceProvider:
+class StaticResourceProvider(ResourceProvider):
     def __init__(self, resources: Iterable[ResourceDefinition]):
         self._resources = {resource.key: resource for resource in resources}
 

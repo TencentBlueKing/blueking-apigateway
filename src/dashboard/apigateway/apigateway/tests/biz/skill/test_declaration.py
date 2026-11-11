@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
+import datetime
 
 import pytest
 import yaml
@@ -59,9 +60,9 @@ class TestParseDeclaration:
         assert data["outputs"]["job_instance_id"]["value"] == "${{ steps.run-plan.outputs.data.job_instance_id }}"
         # global_var_list 没写 default，不能导出成 default: null
         assert "default" not in data["inputs"]["global_var_list"]
-        # if、with 按原键名导出；没写 if 的步骤不导出 if: null
-        assert data["steps"][2]["if"] == job_plan_data["orchestration"]["steps"][2]["if"]
-        assert "if" not in data["steps"][0]
+        assert data["inputs"]["job_plan_id"]["type"] == "integer"
+        assert data["outputs"]["failed_host_logs"]["type"] == "array<object>"
+        # with 按原键名导出
         assert data["steps"][1]["with"]["return_ip_result"] is True
         assert data == job_plan_data["orchestration"]
 
@@ -123,10 +124,95 @@ class TestTopLevelRules:
         assert parse_declaration(job_plan_data).normalized_tags == ["job", "写操作"]
         assert normalize_tag_name("  Job ") == "job"
 
-    def test_changelog_optional(self, job_plan_data):
-        job_plan_data.pop("changelog")
+    def test_changelog_current_entry(self, job_plan_data):
+        declaration = parse_declaration(job_plan_data)
 
-        assert parse_declaration(job_plan_data).changelog == ""
+        # YAML 里不加引号的日期会被解析成 date，统一转成文本
+        assert declaration.current_changelog.model_dump() == {
+            "version": "1.0.0",
+            "date": "2026-11-11 11:00:00",
+            "content": "首个官方版本：execute_job_plan → get_job_instance_status → batch_get_job_instance_ip_log。",
+        }
+
+    def test_changelog_history(self, job_plan_data):
+        job_plan_data["version"] = "1.1.0"
+        job_plan_data["changelog"].insert(0, {"version": "1.1.0", "date": "2026-11-12", "content": "新增输出"})
+
+        assert [entry.version for entry in parse_declaration(job_plan_data).changelog] == ["1.1.0", "1.0.0"]
+
+    @pytest.mark.parametrize(
+        "changelog, message",
+        [
+            (None, "缺少必填字段"),
+            ([], "至少需要一条，第一条为当前版本"),
+            ("首个版本", "应为数组"),
+            ([{"version": "1.1.0", "date": "2026-11-11", "content": "x"}], "第一条应为当前版本 1.0.0，实际为 1.1.0"),
+            (
+                [
+                    {"version": "1.0.0", "date": "2026-11-11", "content": "x"},
+                    {"version": "1.0.0-rc1", "date": "2026-11-10", "content": "x"},
+                ],
+                "应按版本从新到旧排列且不重复：1.0.0 之后是 1.0.0-rc1",
+            ),
+            (
+                [
+                    {"version": "1.0.0", "date": "2026-11-11", "content": "x"},
+                    {"version": "1.1.0", "date": "2026-11-10", "content": "x"},
+                ],
+                "应按版本从新到旧排列且不重复：1.0.0 之后是 1.1.0",
+            ),
+        ],
+    )
+    def test_invalid_changelog(self, job_plan_data, changelog, message):
+        if changelog is None:
+            job_plan_data.pop("changelog")
+        else:
+            job_plan_data["changelog"] = changelog
+
+        assert _errors(job_plan_data) == [f"changelog: {message}"]
+
+    @pytest.mark.parametrize(
+        "field, value",
+        [
+            ("version", "1.0"),
+            ("date", "2026/11/11"),
+            ("date", "2026-02-30"),
+            ("date", "20261111"),
+            ("date", 20261111),
+            ("date", "2026-11-11 10:30"),
+            ("date", "2026-11-11 25:00:00"),
+            ("date", "2026-11-11T10:30:00+08:00"),
+            ("date", datetime.datetime(2026, 11, 11, 10, 30, tzinfo=datetime.timezone.utc)),
+            ("date", datetime.datetime(2026, 11, 11, 10, 30, 0, 500)),
+            ("content", " "),
+        ],
+    )
+    def test_invalid_changelog_entry(self, job_plan_data, field, value):
+        job_plan_data["changelog"][0][field] = value
+
+        errors = _errors(job_plan_data)
+
+        assert any(error.startswith(f"changelog[0].{field}") for error in errors), errors
+
+    @pytest.mark.parametrize(
+        "date_yaml, expected",
+        [
+            ("2026-11-11", "2026-11-11"),
+            ("'2026-11-11'", "2026-11-11"),
+            ("2026-11-11 10:30:05", "2026-11-11 10:30:05"),
+            ("2026-11-11T10:30:05", "2026-11-11 10:30:05"),
+            ("'2026-11-11T10:30:05'", "2026-11-11 10:30:05"),
+        ],
+    )
+    def test_changelog_date_with_time(self, job_plan_data, date_yaml, expected):
+        job_plan_data["changelog"][0]["date"] = yaml.safe_load(f"date: {date_yaml}")["date"]
+
+        assert parse_declaration(job_plan_data).current_changelog.date == expected
+
+    def test_changelog_entry_fields_required(self, job_plan_data):
+        job_plan_data["changelog"][0] = {"version": "1.0.0"}
+
+        assert _errors(job_plan_data) == ["changelog[0].date: 缺少必填字段", "changelog[0].content: 缺少必填字段"]
 
     def test_display_name_en_null(self, job_plan_data):
         job_plan_data["display_name_en"] = None
@@ -165,7 +251,7 @@ class TestOrchestrationRules:
 
         assert f"orchestration.steps[0].{field}: 缺少必填字段" in errors
 
-    @pytest.mark.parametrize("field", ["name", "if", "description"])
+    @pytest.mark.parametrize("field", ["name", "description"])
     def test_step_text_not_empty(self, job_plan_data, field):
         job_plan_data["orchestration"]["steps"][2][field] = " "
 
@@ -173,14 +259,14 @@ class TestOrchestrationRules:
 
         assert any(error.startswith(f"orchestration.steps[2].{field}") for error in errors), errors
 
-    def test_name_if_with_optional(self, job_plan_data):
+    def test_name_with_optional(self, job_plan_data):
         step = job_plan_data["orchestration"]["steps"][1]
-        for field in ("name", "if", "with"):
+        for field in ("name", "with"):
             step.pop(field, None)
 
         parsed = parse_declaration(job_plan_data).orchestration.steps[1]
 
-        assert (parsed.name, parsed.if_, parsed.with_) == (None, None, {})
+        assert (parsed.name, parsed.with_) == (None, {})
 
     @pytest.mark.parametrize(
         "uses",
@@ -257,12 +343,60 @@ class TestOrchestrationRules:
         assert errors == ["orchestration.inputs: 应为对象"]
 
     @pytest.mark.parametrize("section, name", [("inputs", "bk_scope_id"), ("outputs", "job_instance_id")])
-    def test_type_not_declared(self, job_plan_data, section, name):
-        job_plan_data["orchestration"][section][name]["type"] = "string"
+    def test_type_required(self, job_plan_data, section, name):
+        job_plan_data["orchestration"][section][name].pop("type")
 
         errors = _errors(job_plan_data)
 
-        assert errors == [f"orchestration.{section}.{name}.type: 未知字段"]
+        assert errors == [f"orchestration.{section}.{name}.type: 缺少必填字段"]
+
+    @pytest.mark.parametrize(
+        "type_text",
+        ["", "str", "Integer", "array<>", "array<str>", "string|", "string|string", "list<string>", "array<object", 1],
+    )
+    def test_invalid_type(self, job_plan_data, type_text):
+        job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = type_text
+
+        errors = _errors(job_plan_data)
+
+        assert len(errors) == 1
+        assert errors[0].startswith("orchestration.outputs.job_instance_id.type: "), errors
+
+    @pytest.mark.parametrize("type_text", ["integer|null", "array", "array<array<string>>", "number", "object"])
+    def test_valid_output_type(self, job_plan_data, type_text):
+        job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = type_text
+
+        assert parse_declaration(job_plan_data).orchestration.outputs["job_instance_id"].type == type_text
+
+    @pytest.mark.parametrize(
+        "name, field, value",
+        [
+            ("job_plan_id", "example", "1024"),
+            ("job_plan_id", "example", True),
+            ("job_plan_id", "example", 1024.5),
+            ("bk_scope_id", "example", 2),
+            ("bk_scope_type", "default", None),
+            ("global_var_list", "example", {"name": "version"}),
+            ("global_var_list", "example", [{"name": "version"}, "x"]),
+        ],
+    )
+    def test_value_not_match_type(self, job_plan_data, name, field, value):
+        item = job_plan_data["orchestration"]["inputs"][name]
+        item[field] = value
+
+        errors = _errors(job_plan_data)
+
+        assert errors == [f"orchestration.inputs.{name}: {field} 与类型 {item['type']} 不符"]
+
+    @pytest.mark.parametrize(
+        "type_text, example",
+        [("integer|null", None), ("number", 1), ("array", [1, "a"]), ("array<integer>", []), ("object", {})],
+    )
+    def test_value_match_type(self, job_plan_data, type_text, example):
+        item = job_plan_data["orchestration"]["inputs"]["job_plan_id"]
+        item.update(type=type_text, example=example)
+
+        assert parse_declaration(job_plan_data).orchestration.get_input("job_plan_id").example == example
 
     def test_input_description_optional(self, job_plan_data):
         assert "description" not in job_plan_data["orchestration"]["inputs"]["bk_scope_id"]
@@ -270,18 +404,18 @@ class TestOrchestrationRules:
         assert parse_declaration(job_plan_data).orchestration.get_input("bk_scope_id").description == ""
 
     def test_input_must_be_bound(self, job_plan_data):
-        job_plan_data["orchestration"]["inputs"]["unused"] = {"required": False, "example": 1}
+        job_plan_data["orchestration"]["inputs"]["unused"] = {"type": "integer", "required": False, "example": 1}
 
         errors = _errors(job_plan_data)
 
-        assert errors == ["orchestration: 输入没有绑定到任何步骤的 with，类型和说明无从取得：unused"]
+        assert errors == ["orchestration: 输入没有绑定到任何步骤的 with，类型无从校验、说明无从取得：unused"]
 
     def test_guide_fields_required(self, job_plan_data):
         job_plan_data["orchestration"]["guide"]["example"] = ""
 
         assert _errors(job_plan_data)
 
-    @pytest.mark.parametrize("field", ["calls", "params", "poll", "for_each", "reads", "run", "env"])
+    @pytest.mark.parametrize("field", ["if", "calls", "params", "poll", "for_each", "reads", "run", "env"])
     def test_unknown_step_field(self, job_plan_data, field):
         job_plan_data["orchestration"]["steps"][0][field] = 1
 

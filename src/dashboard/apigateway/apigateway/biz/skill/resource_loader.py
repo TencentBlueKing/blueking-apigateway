@@ -30,7 +30,7 @@ from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, Stage
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.service.resource_version import get_resource_id_to_schema_by_resource_version, has_openapi_schema
 
-from .resource_definition import ResourceDefinition
+from .resource_definition import ResourceDefinition, ResourceProvider
 from .schema_converter import convert_schema_params, convert_schema_responses, has_non_json_request_body
 
 
@@ -40,7 +40,7 @@ class _StageResources:
     schemas: Dict[int, Dict[str, Any]]
 
 
-class ReleasedResourceProvider:
+class ReleasedResourceProvider(ResourceProvider):
     """同一网关、环境只查一次数据库，结果缓存在实例内，实例的生命周期是一次注入或一次上传"""
 
     def __init__(self):

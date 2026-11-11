@@ -258,7 +258,7 @@ class TestSkillVersion:
     def test_defaults(self, fake_skill_metadata):
         version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0")
 
-        assert version.changelog == ""
+        assert version.changelog == {}
         assert version.orchestration == {}
         assert version.artifact == {}
 

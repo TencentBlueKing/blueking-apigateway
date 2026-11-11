@@ -34,7 +34,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 ## 输入
 
-必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型和说明取自接口定义。
+必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型与接口定义一致，说明取自接口定义。
 
 | 参数 | 类型 | 必填 | 说明 | 编排提示 | 示例 | 默认值 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -46,10 +46,10 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 完成后按下表组织回复，字段取值只来自「来源」列，不要编造。字段结构见来源步骤 YAML 调用说明里的 `responses`。
 
-| 字段 | 说明 | 来源 |
-| --- | --- | --- |
+| 字段 | 类型 | 说明 | 来源 |
+| --- | --- | --- | --- |
 {% for item in outputs %}
-| `{{ item.name }}` | {{ item.description | md_cell }} | `{{ item.source }}` |
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.description | md_cell }} | `{{ item.source }}` |
 {% endfor %}
 
 ## 执行步骤
@@ -82,18 +82,10 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 {%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}
 {%- if notation.unmapped %}；没有 `x-from`、`x-value` 的参数按该步说明取值{% endif %}。
 
-{% if notation.condition %}
-带「执行条件」的步骤，条件不成立时跳过。
-
-{% endif %}
 {% for step in steps %}
 {{ step.title }}
 
 {% filter indent(3, first=True) %}
-{% if step.condition %}
-执行条件：{{ step.condition }}
-
-{% endif %}
 {{ step.description }}
 
 ```yaml
