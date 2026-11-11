@@ -29,7 +29,6 @@
         >
           <BkDatePicker
             :key="dateKey"
-            ref="datePickerRef"
             v-model="dateValue"
             type="datetimerange"
             style="max-width: 290px;"
@@ -381,10 +380,14 @@ import {
 } from 'lodash-es';
 
 import { copy } from '@/utils';
-import { useChartIntervalOption, useDatePicker } from '@/hooks';
+import {
+  RECENT_DATE_PRESETS,
+  useChartIntervalOption,
+  useDatePicker,
+} from '@/hooks';
 import QueryUsagePopover from './components/QueryUsagePopover.vue';
 import SearchInput from './components/SearchInput.vue';
-import { useAccessLog, useFeatureFlag, useGateway } from '@/stores';
+import { useFeatureFlag, useGateway } from '@/stores';
 import {
   exportAccessLogs,
   getAccessLogList,
@@ -418,6 +421,10 @@ import type {
   IExtractListApiResults,
 } from '@/services/types/utils.ts';
 import type { EChartsType } from 'echarts';
+import {
+  getBucketRange,
+  toTimeRangeSeconds,
+} from '@/utils/time-range';
 
 type IStageItem = IExtractApiReturn<typeof getStageList>[number];
 type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
@@ -425,7 +432,6 @@ type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
 const { t } = useI18n();
 const { getChartIntervalOption } = useChartIntervalOption();
 const gatewayStore = useGateway();
-const accessLogStore = useAccessLog();
 const featureFlagStore = useFeatureFlag();
 
 // 从localStorage 提取搜索历史
@@ -435,7 +441,8 @@ const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
 const chartInstance = ref<EChartsType | null>(null);
 const chartContainer = ref<HTMLDivElement | null>(null);
-const datePickerRef = ref<any>(null);
+// 柱状图各桶起点（秒），框选时按下标换算时间，不解析坐标轴文本
+const chartTimeline = shallowRef<number[]>([]);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
 const isShareLoading = ref(false);
@@ -590,7 +597,12 @@ const {
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(searchParams);
+  applySelectedRange,
+  resetSelection,
+} = useDatePicker(searchParams, {
+  presets: RECENT_DATE_PRESETS,
+  defaultPreset: 'last-1h',
+});
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
@@ -626,22 +638,11 @@ const formatValue = (value: any, field: string) => {
   return value || '--';
 };
 
-const formatDatetime = (timeRange: (number | string | Date)[]) => {
-  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-};
-
-const setSearchTimeRange = () => {
-  let timeRange = dateValue.value;
-  // 选择的是时间快捷项，需要实时计算时间值
-  if (shortcutSelectedIndex.value !== -1) {
-    timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  }
-  const formatTimeRange = formatDatetime(timeRange);
-  searchParams.value = Object.assign(searchParams.value, {
-    time_start: formatTimeRange[0],
-    time_end: formatTimeRange[1],
-  });
-};
+/**
+ * 计算本次查询的秒级区间并写入查询参数
+ * @returns 是否得到有效区间；无效时不修改查询参数，调用方不应发起查询
+ */
+const setSearchTimeRange = () => applySelectedRange();
 
 const handlePanelChange = ({ name }: any) => {
   if (name === 2) {
@@ -651,6 +652,7 @@ const handlePanelChange = ({ name }: any) => {
 
 const renderChart = (data: Record<string, any>) => {
   const { series, timeline } = data;
+  chartTimeline.value = timeline ?? [];
   const xAxisData = timeline.map((time: number) => dayjs.unix(time).format('YYYY-MM-DD\nHH:mm:ss'));
   const options = {
     grid: {
@@ -715,11 +717,14 @@ const renderChart = (data: Record<string, any>) => {
   const intervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
   nextTick(() => {
     chartInstance.value?.setOption(merge(options, intervalOption));
-  });
-  chartInstance.value?.dispatchAction({
-    type: 'takeGlobalCursor',
-    key: 'dataZoomSelect',
-    dataZoomSelectActive: true,
+    // 必须在配置生效后执行：先清除上一次框选留下的缩放，再开启框选。
+    // 若在 setOption 之前开启，首次渲染时 toolbox 尚未注册，拖动鼠标不会产生框选
+    chartInstance.value?.dispatchAction({ type: 'restore' });
+    chartInstance.value?.dispatchAction({
+      type: 'takeGlobalCursor',
+      key: 'dataZoomSelect',
+      dataZoomSelectActive: true,
+    });
   });
   chartResize();
 };
@@ -964,13 +969,14 @@ const getApigwAccessLogChart = async () => {
 
   chartData.value = results || {};
   renderChart(chartData.value);
-  chartInstance.value?.dispatchAction({ type: 'restore' });
 };
 
 const getSearchData = async () => {
   isDataLoading.value = true;
   try {
-    setSearchTimeRange();
+    if (!setSearchTimeRange()) {
+      return;
+    }
     await Promise.all([
       getList(),
       getApigwAccessLogChart(),
@@ -1072,17 +1078,24 @@ const handleClearSearch = () => {
 
 const handleDownload = async (event: Event) => {
   event.stopPropagation();
-  if (pageCount.value === 0 || isDownloadLoading.value) {
+  // 后端导出必须带起止时间（只传 time_range 会报错），导出沿用当前列表的时间快照
+  const { time_start, time_end } = searchParams.value;
+  if (pageCount.value === 0 || isDownloadLoading.value
+    || typeof time_start !== 'number' || typeof time_end !== 'number') {
     return;
   }
 
   try {
     isDownloadLoading.value = true;
     const { params, path } = getPayload();
-    params.offset = tableRef.value?.getPagination()?.current || 1;
-    params.limit = 10000;
 
-    await exportAccessLogs(apigwId.value, params, path);
+    await exportAccessLogs(apigwId.value, {
+      ...params,
+      time_start,
+      time_end,
+      offset: tableRef.value?.getPagination()?.current || 1,
+      limit: 10000,
+    }, path);
 
     Message({
       message: t('导出成功'),
@@ -1117,7 +1130,9 @@ const handleClickCopyLink = async ({ request_id }: any) => {
 };
 
 const handlePickerConfirm = () => {
-  handleConfirm();
+  if (!handleConfirm()) {
+    return;
+  }
   getSearchData();
 };
 
@@ -1155,15 +1170,14 @@ const handleClearFilterKey = () => {
   backend_id.value = '';
   searchParams.value.backend_name = '';
   searchParams.value.resource_id = '';
-  [datePickerRef.value!.shortcut] = [accessLogStore.datepickerShortcuts[1]];
-  dateValue.value = [];
-  shortcutSelectedIndex.value = 1;
+  // 恢复默认快捷项后重建日期组件
+  resetSelection();
   dateKey.value = String(+new Date());
   handleSearch('');
 };
 
 const updateTableEmptyConfig = () => {
-  const time = dateValue.value.some(Boolean);
+  const time = Array.isArray(dateValue.value) && dateValue.value.some(Boolean);
   if (keyword.value || !tableData.value.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
@@ -1197,23 +1211,21 @@ const initChart = async () => {
   window.addEventListener('resize', chartResize);
 
   chartInstance.value?.on('datazoom', (event: any) => {
-    const { startValue, endValue } = event.batch[0];
+    // startValue/endValue 为所选柱子的下标
+    const { startValue, endValue } = event?.batch?.[0] ?? {};
+    const { time_start, time_end } = searchParams.value;
+    const queryRange = typeof time_start === 'number' && typeof time_end === 'number'
+      ? toTimeRangeSeconds(time_start * 1000, time_end * 1000)
+      : null;
+    const range = getBucketRange(chartTimeline.value, startValue, endValue, queryRange);
 
-    // 获取x轴缩放后的数据范围
-    const zoomedXAxisData = (chartInstance.value?.getOption() as any).xAxis[0].data.slice(startValue, endValue + 1);
-    const startTime = zoomedXAxisData[0];
-    const endTime = zoomedXAxisData[zoomedXAxisData.length - 1];
-
-    if (startTime === endTime) {
-      dateValue.value = [];
-      shortcutSelectedIndex.value = 1;
-      [datePickerRef.value!.shortcut] = [accessLogStore.datepickerShortcuts[1]];
-    }
-    else {
-      shortcutSelectedIndex.value = -1;
-      dateValue.value = [new Date(startTime), new Date(endTime)];
+    // 空选择不改变当前查询条件；单个柱子也是有效选择
+    if (!range) {
+      return;
     }
 
+    shortcutSelectedIndex.value = -1;
+    dateValue.value = [new Date(range[0] * 1000), new Date(range[1] * 1000)];
     dateKey.value = String(+new Date());
     handlePickerConfirm();
   });

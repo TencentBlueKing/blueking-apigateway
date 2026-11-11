@@ -17,6 +17,7 @@
  */
 
 import type { IResource } from '@/types/permission';
+import type { ITimeRangeFilter } from '@/types/common';
 import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
 
 // 个人工作台 —> MCP Server 列表/ gateway tab选项
@@ -43,14 +44,19 @@ export interface IPersonalWorkbenchListQuery {
   limit?: number
   offset?: number
   keyword?: string
-  time_start?: string | number
-  time_end?: string | number
+  /** 开始时间（Unix 秒），>= time_start；两端各自生效，同时传时起点不得晚于终点 */
+  time_start?: number
+  /** 结束时间（Unix 秒），<= time_end */
+  time_end?: number
   applied_by?: string | string[]
   bk_app_code?: string
   gateway_id?: string | number
   mcp_server_id?: string | number
   grant_dimension?: string
 }
+
+// 个人工作台 —> 筛选表单状态：时间未选择时为空字符串，请求前用 toTimeRangeQuery 转为接口参数
+export type IPersonalWorkbenchFilter = Omit<IPersonalWorkbenchListQuery, 'time_start' | 'time_end'> & ITimeRangeFilter;
 
 // 个人工作台 - 下拉筛选选项列表请求参数
 export interface IPersonalWorkbenchFilterOptionQuery {

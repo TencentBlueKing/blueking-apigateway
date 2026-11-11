@@ -30,9 +30,9 @@ export interface IGatewaysAuditsLogsListQuery {
   limit?: number
   /** The initial index from which to return the results. */
   offset?: number
-  /** 开始时间 */
+  /** 开始时间（Unix 秒），op_time >= time_start；两端各自生效 */
   time_start?: number | null
-  /** 结束时间 */
+  /** 结束时间（Unix 秒），op_time <= time_end；两端各自生效 */
   time_end?: number | null
   /** 关键字 (模糊) */
   keyword?: string
@@ -72,9 +72,12 @@ export interface IGatewaysLogsListQuery {
   offset?: number // 偏移量，可选
   limit?: number // 限制数量，可选
   query?: string // 查询字符串，可选
-  time_range?: number // 时间范围，可选
-  time_start?: string | number // 开始时间，可以是字符串或数字，可选
-  time_end?: string | number // 结束时间，可以是字符串或数字，可选
+  /** 最近 N 秒（按服务器时间）；与 time_start/time_end 同时传时以起止为准 */
+  time_range?: number
+  /** 开始时间（Unix 秒）；须与 time_end 成对，查询为闭区间，后端不校验先后 */
+  time_start?: number
+  /** 结束时间（Unix 秒） */
+  time_end?: number
   stage_id?: number
   resource_id?: string
   backend_name?: string
@@ -94,12 +97,32 @@ export interface IGatewaysLogsTimechartReadQuery {
   include?: (string)[]
   /** 排除条件 */
   exclude?: (string)[]
-  /** 时间范围 */
+  /** 最近 N 秒（按服务器时间）；与 time_start/time_end 同时传时以起止为准 */
   time_range?: number
-  /** 起始时间 */
+  /** 起始时间（Unix 秒）；须与 time_end 成对，查询为闭区间，后端不校验先后 */
   time_start?: number
-  /** 结束时间 */
+  /** 结束时间（Unix 秒） */
   time_end?: number
+  /** 偏移量 */
+  offset?: number
+  /** 限制条数 */
+  limit?: number
+}
+
+/** /gateways/{gateway_id}/logs/export/ [GET] */
+export interface IGatewaysLogsExportListQuery {
+  /** 环境 ID */
+  stage_id: number
+  /** 资源 ID */
+  resource_id?: number | string | null
+  /** 后端服务名称 */
+  backend_name?: string
+  /** 查询条件 */
+  query?: string
+  /** 开始时间（Unix 秒）。必填：后端导出用起止生成文件名，只传 time_range 会报错 */
+  time_start: number
+  /** 结束时间（Unix 秒）。必填 */
+  time_end: number
   /** 偏移量 */
   offset?: number
   /** 限制条数 */
@@ -234,11 +257,11 @@ export interface IGatewaysMetricsQueryInstantListQuery {
   resource_id?: number | null
   /** metric 类型 */
   metrics: 'requests_total' | 'health_rate'
-  /** 时间范围 */
+  /** 最近 N 秒（按服务器时间）；与 time_start/time_end 同时传时以起止为准 */
   time_range?: number
-  /** 开始时间 */
+  /** 开始时间（Unix 秒）；须与 time_end 成对，或改传 time_range；后端不校验先后 */
   time_start?: number
-  /** 结束时间 */
+  /** 结束时间（Unix 秒） */
   time_end?: number
 }
 
@@ -256,13 +279,13 @@ export interface IGatewaysMetricsQueryRangeListQuery {
   resource_id?: number | null
   /** metric 类型 */
   metrics: 'requests' | 'non_20x_status' | 'app_requests' | 'resource_requests' | 'response_time_90th' | 'response_time_50th' | 'response_time_95th' | 'response_time_99th' | 'ingress' | 'egress' | 'llm_latency_avg' | 'llm_latency_95th' | 'llm_token_usage' | 'llm_token_95th' | 'llm_active_connections'
-  /** 时间范围 */
+  /** 最近 N 秒（按服务器时间）；与 time_start/time_end 同时传时以起止为准 */
   time_range?: number
-  /** 开始时间 */
+  /** 开始时间（Unix 秒）；须与 time_end 成对，或改传 time_range；后端不校验先后 */
   time_start?: number
-  /** 结束时间 */
+  /** 结束时间（Unix 秒） */
   time_end?: number
-  /** 精度 */
+  /** 精度；不传或 auto 时后端按时间跨度推导 */
   step?: 'auto' | '1m' | '5m' | '10m' | '30m' | '1h' | '3h' | '12h'
 }
 
@@ -282,10 +305,14 @@ export interface IGatewaysMetricsQuerySummaryListQuery {
   metrics: 'requests_total' | 'requests_failed_total'
   /** 时间维度 */
   time_dimension: 'day' | 'week' | 'month'
-  /** 开始时间 */
-  time_start?: number
-  /** 结束时间 */
-  time_end?: number
+  /**
+   * 开始时间（Unix 秒）。必填。
+   * 数据为按 UTC 自然日统计的日桶，按桶起点过滤：start_time ∈ [time_start, time_end]；
+   * time_start 不得早于服务器时间的 6 个月前
+   */
+  time_start: number
+  /** 结束时间（Unix 秒）。必填 */
+  time_end: number
 }
 
 /** /gateways/{gateway_id}/metrics/query-summary/caller/ [GET] */
@@ -296,18 +323,24 @@ export interface IGatewaysMetricsQuerySummaryCallerListQuery {
   offset?: number
   /** 环境 id */
   stage_id: number
-  /** 开始时间 */
-  time_start?: number
-  /** 结束时间 */
-  time_end?: number
+  /** 开始时间（Unix 秒）。必填；日桶过滤与半年限制同 query-summary */
+  time_start: number
+  /** 结束时间（Unix 秒）。必填 */
+  time_end: number
 }
 
 /** /gateways/{gateway_id}/metrics/query-summary/export/ [GET] */
 export interface IGatewaysMetricsQuerySummaryExportListQuery {
-  /** Number of results to return per page. */
-  limit?: number
-  /** The initial index from which to return the results. */
-  offset?: number
+  /** 环境 id；不传则导出全部环境 */
+  stage_id?: number | null
+  /** 资源 id */
+  resource_id?: number | null
+  /** app code */
+  bk_app_code?: string
+  /** 开始时间（Unix 秒）。必填；日桶过滤与半年限制同 query-summary */
+  time_start: number
+  /** 结束时间（Unix 秒）。必填 */
+  time_end: number
 }
 
 /** /gateways/{gateway_id}/monitors/alarm/records/ [GET] */
@@ -316,9 +349,9 @@ export interface IGatewaysMonitorsAlarmRecordsListQuery {
   limit?: number
   /** The initial index from which to return the results. */
   offset?: number
-  /** 开始时间 */
+  /** 开始时间（Unix 秒）；只有起止都传才过滤，闭区间 created_time ∈ [time_start, time_end] */
   time_start?: number | null
-  /** 结束时间 */
+  /** 结束时间（Unix 秒） */
   time_end?: number | null
   /** 告警策略 id */
   alarm_strategy_id?: number | null
@@ -357,6 +390,14 @@ export interface IGatewaysPermissionsAppPermissionRecordsListQuery {
   limit?: number
   /** The initial index from which to return the results. */
   offset?: number
+  /** 蓝鲸应用 ID */
+  bk_app_code?: string
+  /** 授权维度 */
+  grant_dimension?: 'api' | 'resource'
+  /** 开始时间（Unix 秒），handled_time >= time_start；两端各自生效 */
+  time_start?: number
+  /** 结束时间（Unix 秒），handled_time < time_end（半开区间，不含结束时刻本身）；两端各自生效 */
+  time_end?: number
 }
 
 /** /gateways/{gateway_id}/permissions/app-permissions/ [GET] */
@@ -442,9 +483,9 @@ export interface IGatewaysReleasesHistoriesListQuery {
   stage_id?: number | null
   /** 创建者 */
   created_by?: string
-  /** 开始时间 */
+  /** 开始时间（Unix 秒）；只有起止都传才过滤，闭区间 created_time ∈ [time_start, time_end] */
   time_start?: number | null
-  /** 结束时间 */
+  /** 结束时间（Unix 秒） */
   time_end?: number | null
 }
 
@@ -460,9 +501,9 @@ export interface IGatewaysReleasesProgrammableDeployHistoriesListQuery {
   stage_id?: number | null
   /** 创建者 */
   created_by?: string
-  /** 开始时间 */
+  /** 开始时间（Unix 秒）；只有起止都传才过滤，闭区间 created_time ∈ [time_start, time_end] */
   time_start?: number | null
-  /** 结束时间 */
+  /** 结束时间（Unix 秒） */
   time_end?: number | null
 }
 
@@ -603,4 +644,13 @@ export interface IGatewaysTestsHistoriesListQuery {
   limit?: number
   /** The initial index from which to return the results. */
   offset?: number
+  /** 资源名称（模糊匹配） */
+  resource_name?: string
+  /**
+   * 开始时间（Unix 秒）。后端直接按整数解析，非整数会导致服务端报错；
+   * 只有起止都传才过滤，闭区间 created_time ∈ [time_start, time_end]
+   */
+  time_start?: number
+  /** 结束时间（Unix 秒） */
+  time_end?: number
 }

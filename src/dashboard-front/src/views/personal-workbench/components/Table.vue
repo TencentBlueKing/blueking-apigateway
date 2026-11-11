@@ -116,6 +116,7 @@ import type {
   IApprovalStatus,
   IFomDataQuery,
   IPermission,
+  IPersonalWorkbenchFilter,
   IPersonalWorkbenchListQuery,
   IPersonalWorkbenchUIState,
   ITabKey,
@@ -143,6 +144,7 @@ import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
+import { toTimeRangeQuery } from '@/utils/time-range';
 import { getGatewayDisplayName, getGatewayFullName } from '@/utils/gateway-name';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
@@ -189,7 +191,7 @@ const approvalSliderConf = ref({
   title: '',
 });
 const approvalSliderDetail = ref<Partial<IPersonalWorkbenchListResponse> | null>(null);
-const filterData = ref<FilterValue | IPersonalWorkbenchListQuery>(cloneDeep(DEFAULT_FORM_DATA));
+const filterData = ref<FilterValue | IPersonalWorkbenchFilter>(cloneDeep(DEFAULT_FORM_DATA));
 const expandableConfig = ref({
   expandColumn: false,
   expandedRowKeys: [] as number[],
@@ -712,9 +714,15 @@ const getTableData = async (params: {
 }) => {
   // 触发表格组件watch
   settings.value = null;
+  const { time_start, time_end, ...filters } = filterData.value;
   const queryParams: IPersonalWorkbenchListQuery = {
     ...params,
-    ...filterData.value,
+    ...filters,
+    // 时间两端都是有效秒数时才成对传，不传空字符串
+    ...toTimeRangeQuery({
+      time_start,
+      time_end,
+    }),
     applied_by: getAppliedBy.value,
   };
   const res = await remoteMethod?.(filterSimpleEmpty(queryParams));

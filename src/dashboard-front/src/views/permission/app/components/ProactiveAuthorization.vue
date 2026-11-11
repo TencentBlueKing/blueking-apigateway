@@ -1,20 +1,20 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+*     http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 <template>
   <AgSideslider
     v-model="authSliderConfig.isShow"
@@ -28,7 +28,7 @@
     <template #default>
       <div class="app-auth-slider-content">
         <div class="ag-span-title">
-          {{ t("你将对指定的蓝鲸应用添加访问资源的权限") }}
+          {{ t('你将对指定的蓝鲸应用添加访问资源的权限') }}
         </div>
         <BkForm
           ref="authFormRef"
@@ -62,19 +62,21 @@
                 label="permanent"
                 class="m-r-15px"
               >
-                {{ t("永久有效") }}
+                {{ t('永久有效') }}
               </BkRadio>
               <BkRadio label="custom">
                 <BkInput
                   ref="expireTypeRef"
                   v-model="curAuthData.expire_days"
                   type="number"
-                  :min="0"
+                  :min="1"
+                  :max="MAX_EXPIRE_DAYS"
+                  :precision="0"
                   :placeholder="t('请输入正整数')"
                   class="w-117px m-r-5px"
                   @focus="curAuthData.expire_type = 'custom'"
                 />
-                {{ t("天") }}
+                {{ t('天') }}
               </BkRadio>
             </BkRadioGroup>
           </BkFormItem>
@@ -86,7 +88,7 @@
             required
           >
             <div class="ag-span-title mb-16px!">
-              {{ t("请选择要授权的资源") }}
+              {{ t('请选择要授权的资源') }}
             </div>
             <div class="m-l-20px">
               <BkRadioGroup
@@ -94,7 +96,7 @@
                 class="ag-resource-radio"
               >
                 <BkRadio label="api">
-                  {{ t("按网关") }}
+                  {{ t('按网关') }}
                   <span v-bk-tooltips="t('包括网关下所有资源，包括未来新创建的资源')">
                     <i class="apigateway-icon icon-ag-help" />
                   </span>
@@ -103,7 +105,7 @@
                   label="resource"
                   class="m-l-0!"
                 >
-                  {{ t("按资源") }}
+                  {{ t('按资源') }}
                   <span v-bk-tooltips="t('仅包含当前选择的资源')">
                     <i class="apigateway-icon icon-ag-help" />
                   </span>
@@ -159,13 +161,13 @@
           theme="primary"
           @click="handleSave"
         >
-          {{ t("保存") }}
+          {{ t('保存') }}
         </BkButton>
         <BkButton
           class="m-l-8px w-88px"
           @click="handleCancel"
         >
-          {{ t("取消") }}
+          {{ t('取消') }}
         </BkButton>
       </div>
     </template>
@@ -198,8 +200,16 @@ interface IProps {
 }
 
 interface IEmits {
-  (e: 'update:sliderParams', value: ISliderParams): void
-  (e: 'update:authData', value: IAuthData): void
+  (
+    e: 'update:sliderParams',
+    value: ISliderParams,
+  ): void
+
+  (
+    e: 'update:authData',
+    value: IAuthData,
+  ): void
+
   (e: 'confirm'): void
 }
 
@@ -219,6 +229,17 @@ const {
 } = defineProps<IProps>();
 
 const emits = defineEmits<IEmits>();
+
+// 后端以 2100-01-01（UTC）作为永久授权的到期时间，到期时间达到该时刻的授权会被展示为“永久”。
+// 后端对 expire_days 没有上下界校验（负数会立即过期，过大会报错），自定义天数只能由前端约束
+const NEVER_EXPIRES_AT = Date.UTC(
+  2100,
+  0,
+  1,
+);
+const DAY_MS = 24 * 60 * 60 * 1000;
+// 自定义有效期的最大天数：保证“当前时间 + 天数”早于永久授权的到期时间
+const MAX_EXPIRE_DAYS = Math.floor((NEVER_EXPIRES_AT - Date.now()) / DAY_MS) - 1;
 
 const route = useRoute();
 
@@ -263,12 +284,15 @@ const rules = reactive({
   expire_type: [
     {
       validator: (value: string) => {
-        if (['custom'].includes(value) && !curAuthData.value.expire_days) {
+        if (['custom'].includes(value) && !isValidExpireDays(curAuthData.value.expire_days)) {
           return false;
         }
         return true;
       },
-      message: t('请输入有效时间'),
+      message: t(
+        '请输入 1 到 {max} 之间的整数天数',
+        { max: MAX_EXPIRE_DAYS },
+      ),
       trigger: 'change',
     },
   ],
@@ -289,35 +313,65 @@ const rules = reactive({
 const authSliderConfig = computed({
   get: () => sliderParams,
   set: (params: any) => {
-    emits('update:sliderParams', params);
+    emits(
+      'update:sliderParams',
+      params,
+    );
   },
 });
 
 const curAuthData = computed({
   get: () => authData,
   set: (params: any) => {
-    emits('update:authData', params);
+    emits(
+      'update:authData',
+      params,
+    );
   },
 });
 
-watch(authSliderConfig.value, ({ isShow }: { isShow: boolean }) => {
-  if (isShow) {
-    resourceTransferList.value = cloneDeep(resourceList);
-    resourceTransferListBack.value = cloneDeep(resourceList);
-  }
-}, { immediate: true });
+watch(
+  authSliderConfig.value,
+  ({ isShow }: { isShow: boolean }) => {
+    if (isShow) {
+      resourceTransferList.value = cloneDeep(resourceList);
+      resourceTransferListBack.value = cloneDeep(resourceList);
+    }
+  },
+  { immediate: true },
+);
 
-watch(curAuthData.value, (authData: IAuthData) => {
-  if (['resource'].includes(authData.dimension)) {
-    nextTick(() => {
-      const transferSourceEl = document.querySelector('.proactive-auth-transfer .source-list');
-      transferIsAllEl.value = transferSourceEl?.querySelector('.select-all') ?? null;
-      transferInputEl.value = transferSourceEl?.querySelector('input') ?? null;
-      transferIsAllEl.value?.addEventListener('click', handleSetSearchAll, { capture: true });
-      transferInputEl.value?.addEventListener('input', getTransferSearch as EventListener, { capture: true });
-    });
+watch(
+  curAuthData.value,
+  (authData: IAuthData) => {
+    if (['resource'].includes(authData.dimension)) {
+      nextTick(() => {
+        const transferSourceEl = document.querySelector('.proactive-auth-transfer .source-list');
+        transferIsAllEl.value = transferSourceEl?.querySelector('.select-all') ?? null;
+        transferInputEl.value = transferSourceEl?.querySelector('input') ?? null;
+        transferIsAllEl.value?.addEventListener(
+          'click',
+          handleSetSearchAll,
+          { capture: true },
+        );
+        transferInputEl.value?.addEventListener(
+          'input',
+          getTransferSearch as EventListener,
+          { capture: true },
+        );
+      });
+    }
+  },
+);
+
+// 自定义有效期：1 到 MAX_EXPIRE_DAYS 之间的整数天（“永久”只通过单选项提交 null）
+const isValidExpireDays = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === '') {
+    return false;
   }
-});
+  const days = Number(value);
+  return Number.isInteger(days) && days >= 1 && days <= MAX_EXPIRE_DAYS;
+};
 
 // 主动授权 不同选项，数据的更改
 const formatData = () => {
@@ -349,22 +403,25 @@ const handleResourceChange = (
   targetValueList: number[],
 ) => {
   // 这里change会触发两次
-  setTimeout(() => {
-    transferSourceList.value = [...sourceList];
-    transferTargetList.value = [...targetList];
-    const isTargetEmpty = document.querySelector('.proactive-auth-transfer .target-list .empty');
-    if (isTargetEmpty && dimensionRef.value!.selectListSearch.length < resourceTransferListBack.value.length) {
-      searchTargetList.value = [];
-      curAuthData.value.resource_ids = [];
-      resourceTransferList.value = cloneDeep(resourceTransferListBack.value);
-    }
-    if (searchTargetList.value.length) {
-      curAuthData.value.resource_ids = searchTargetList.value.map((item: any) => item.id);
-    }
-    else {
-      curAuthData.value.resource_ids = targetValueList;
-    }
-  }, 100);
+  setTimeout(
+    () => {
+      transferSourceList.value = [...sourceList];
+      transferTargetList.value = [...targetList];
+      const isTargetEmpty = document.querySelector('.proactive-auth-transfer .target-list .empty');
+      if (isTargetEmpty && dimensionRef.value!.selectListSearch.length < resourceTransferListBack.value.length) {
+        searchTargetList.value = [];
+        curAuthData.value.resource_ids = [];
+        resourceTransferList.value = cloneDeep(resourceTransferListBack.value);
+      }
+      if (searchTargetList.value.length) {
+        curAuthData.value.resource_ids = searchTargetList.value.map((item: any) => item.id);
+      }
+      else {
+        curAuthData.value.resource_ids = targetValueList;
+      }
+    },
+    100,
+  );
 };
 
 // 设置transfer组件搜索状态选择全部交互
@@ -386,9 +443,12 @@ function handleSetSearchAll() {
       );
     }
     // 重置已选资源
-    setTimeout(() => {
-      dimensionRef.value!.selectedList = searchTargetList.value;
-    }, 0);
+    setTimeout(
+      () => {
+        dimensionRef.value!.selectedList = searchTargetList.value;
+      },
+      0,
+    );
   }
 };
 
@@ -403,9 +463,12 @@ const handleResetTransferData = () => {
     item.name.indexOf(dimensionRef.value!.selectSearchQuery) > -1
     && !hasSelected.map((target: any) => target.id).includes(item.id),
   );
-  setTimeout(() => {
-    dimensionRef.value!.selectedList = hasSelected;
-  }, 0);
+  setTimeout(
+    () => {
+      dimensionRef.value!.selectedList = hasSelected;
+    },
+    0,
+  );
 };
 
 function handleClearTransferSearch() {
@@ -420,7 +483,11 @@ function getTransferSearch(e: InputEvent) {
   // 清空按钮实例
   nextTick(() => {
     clearIconEl.value = document.querySelector('.proactive-auth-transfer .source-list .bk-input--clear-icon');
-    clearIconEl.value?.addEventListener('click', handleClearTransferSearch, { capture: true });
+    clearIconEl.value?.addEventListener(
+      'click',
+      handleClearTransferSearch,
+      { capture: true },
+    );
   });
   handleResetTransferData();
 };
@@ -442,7 +509,7 @@ const handleSave = async () => {
       handleScrollView(appCodeRef?.value?.$el);
       return;
     }
-    if (['custom'].includes(expire_type) && !expire_days) {
+    if (['custom'].includes(expire_type) && !isValidExpireDays(expire_days)) {
       (expireTypeRef.value as any)?.focus();
       handleScrollView(expireTypeRef?.value?.$el);
       return;
@@ -456,7 +523,10 @@ const handleSave = async () => {
   const fetchMethod = ['resource'].includes(params.dimension)
     ? authResourcePermission
     : authApiPermission;
-  await fetchMethod(route.params.id as any, params as any);
+  await fetchMethod(
+    route.params.id as any,
+    params as any,
+  );
   handleCancel();
   emits('confirm');
 };
@@ -464,9 +534,21 @@ const handleSave = async () => {
 const handleCancel = () => {
   authFormRef?.value?.clearValidate();
   curAuthData.value = cloneDeep(initData.value);
-  clearIconEl.value?.removeEventListener('click', handleClearTransferSearch, { capture: true });
-  transferIsAllEl.value?.removeEventListener('click', handleSetSearchAll, { capture: true });
-  transferInputEl.value?.removeEventListener('input', getTransferSearch as EventListener, { capture: true });
+  clearIconEl.value?.removeEventListener(
+    'click',
+    handleClearTransferSearch,
+    { capture: true },
+  );
+  transferIsAllEl.value?.removeEventListener(
+    'click',
+    handleSetSearchAll,
+    { capture: true },
+  );
+  transferInputEl.value?.removeEventListener(
+    'input',
+    getTransferSearch as EventListener,
+    { capture: true },
+  );
   transferIsAllEl.value = null;
   transferInputEl.value = null;
   clearIconEl.value = null;

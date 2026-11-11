@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+import type { InjectionKey } from 'vue';
 import { useGateway } from '@/stores';
 import { queryMcpMetricsInstant, queryMcpMetricsRange } from '@/services/source/gateway/mcp-server/metrics';
 import type { IChartDataLoading, IChartDataType, IStatisticsType } from '@/types/observability';
@@ -46,17 +47,36 @@ export const STATISTICS_TYPES = Object.freeze([
 type MetricsType = (typeof METRICS_LIST)[number];
 type StatisticsType = (typeof STATISTICS_TYPES)[number];
 type IntervalUnit = 's' | 'm' | 'h' | 'd';
-type IntervalValue = `${number}${IntervalUnit}` | 'off';
+export type IntervalValue = `${number}${IntervalUnit}` | 'off';
 
-// 时间转换工具函数
+// 默认时间范围：最近 24 小时。每次调用都按当前时间计算
 const getDefaultTimeRange = (): [number, number] => {
   const end = new Date();
   const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
   return [Math.floor(start.getTime() / 1000), Math.floor(end.getTime() / 1000)];
 };
 
-// 解析刷新间隔工具函数
-const parseIntervalValue = (value: IntervalValue): number => {
+const createDefaultSearchParams = (): IObservabilitySearchParams => {
+  const [timeStart, timeEnd] = getDefaultTimeRange();
+  return {
+    time_start: timeStart,
+    time_end: timeEnd,
+    step: 'auto',
+    app_code: '',
+    metrics: '',
+    mcp_server_name: '',
+  };
+};
+
+// 加载状态 - 初始化为所有指标的 false
+const createDefaultLoading = (): IChartDataLoading =>
+  Object.fromEntries([...METRICS_LIST, ...STATISTICS_TYPES].map(key => [key, false]));
+
+/**
+ * 解析刷新间隔
+ * @returns 毫秒；'off' 或无效值返回 0
+ */
+export const parseIntervalValue = (value: IntervalValue): number => {
   if (value === 'off') return 0;
 
   const unit = value.slice(-1) as IntervalUnit;
@@ -69,47 +89,33 @@ const parseIntervalValue = (value: IntervalValue): number => {
     d: 24 * 60 * 60 * 1000,
   };
 
-  return num * unitMap[unit];
+  const milliseconds = num * unitMap[unit];
+  return Number.isFinite(milliseconds) ? milliseconds : 0;
 };
 
-// 加载状态 - 初始化为所有指标的false
-const chartLoading = ref<IChartDataLoading>(
-  Object.fromEntries([...METRICS_LIST, ...STATISTICS_TYPES].map(key => [key, false])),
-);
-// 时序图数据
-const chartData = ref<IChartDataType>({});
-// 统计瞬时数据
-const statistics = ref<IStatisticsType>({});
-// 自动刷新间隔
-const interval = ref<IntervalValue>('off');
-// 下拉框展开状态
-const isOpenStep = ref(false);
-const isOpenInterval = ref(false);
-
-// 默认时间范围
-const defaultTime = computed(() => getDefaultTimeRange());
-
-// 查询条件参数（优化初始值类型）
-const searchParams = ref<IObservabilitySearchParams>({
-  time_start: defaultTime.value[0],
-  time_end: defaultTime.value[1],
-  step: 'auto',
-  app_code: '',
-  metrics: '',
-  mcp_server_name: '',
-});
-
 /**
- * 可观测监控 Hook
+ * 创建可观测仪表盘的状态与请求方法
+ * 状态归属于可观测页面的一个实例，随页面卸载释放
  */
-export function useObservabilityDashboard() {
+const createObservabilityDashboard = () => {
   const gatewayStore = useGateway();
 
   // 获取最新网关
   const gatewayId = computed(() => gatewayStore?.apigwId);
 
-  // 定时器ID
-  let timeId: ReturnType<typeof setTimeout> | null = null;
+  // 加载状态
+  const chartLoading = ref<IChartDataLoading>(createDefaultLoading());
+  // 时序图数据
+  const chartData = ref<IChartDataType>({});
+  // 统计瞬时数据
+  const statistics = ref<IStatisticsType>({});
+  // 自动刷新间隔；定时器由仪表盘组件根据该值统一调度
+  const interval = ref<IntervalValue>('off');
+  // 下拉框展开状态
+  const isOpenStep = ref(false);
+  const isOpenInterval = ref(false);
+  // 查询条件参数
+  const searchParams = ref<IObservabilitySearchParams>(createDefaultSearchParams());
 
   /**
    * 统一设置所有指标的加载状态
@@ -212,7 +218,7 @@ export function useObservabilityDashboard() {
   };
 
   /**
-   * 初始化数据（自动刷新时触发 loading）
+   * 按当前查询参数请求全部数据（自动刷新时触发 loading）
    */
   const fetchInitData = async () => {
     // 自动刷新/初始化时，统一开启所有 loading
@@ -228,31 +234,11 @@ export function useObservabilityDashboard() {
   };
 
   /**
-   * 设置自动刷新定时器
-   */
-  const setAutoRefreshInterval = (value: IntervalValue) => {
-    if (timeId) {
-      clearInterval(timeId);
-      timeId = null;
-    }
-
-    if (value === 'off') return;
-
-    const intervalTime = parseIntervalValue(value);
-    if (intervalTime <= 0) return;
-
-    timeId = setInterval(() => {
-      fetchInitData();
-    }, intervalTime);
-  };
-
-  /**
    * 处理刷新间隔变更
    */
   const handleRefreshTimeChange = (value: IntervalValue) => {
     isOpenInterval.value = false;
     interval.value = value;
-    setAutoRefreshInterval(value);
   };
 
   /**
@@ -263,32 +249,24 @@ export function useObservabilityDashboard() {
     searchParams.value.step = value;
   };
 
+  /**
+   * 重置刷新间隔与时间粒度
+   */
   const handleResetTime = () => {
-    handleCleanup();
     handleRefreshTimeChange('off');
     handleStepChange('auto');
   };
 
-  // 清理定时器
-  const handleCleanup = () => {
-    if (timeId) {
-      clearInterval(timeId);
-      timeId = null;
-    }
-  };
-
-  onUnmounted(() => {
+  /**
+   * 恢复初始状态：停止自动刷新、清空图表数据，查询参数回到默认的最近 24 小时
+   */
+  const resetDashboard = () => {
     interval.value = 'off';
-    searchParams.value = {
-      time_start: defaultTime.value[0],
-      time_end: defaultTime.value[1],
-      step: 'auto',
-      app_code: '',
-      metrics: '',
-      mcp_server_name: '',
-    };
-    handleCleanup();
-  });
+    searchParams.value = createDefaultSearchParams();
+    chartData.value = {};
+    statistics.value = {};
+    chartLoading.value = createDefaultLoading();
+  };
 
   return {
     interval,
@@ -301,9 +279,34 @@ export function useObservabilityDashboard() {
     handleStepChange,
     handleRefreshTimeChange,
     handleResetTime,
+    resetDashboard,
     fetchPageMetricsData,
     fetchInstantMetricsData,
     fetchSingleMetricsData,
     fetchInitData,
   };
+};
+
+export type IObservabilityDashboard = ReturnType<typeof createObservabilityDashboard>;
+
+const OBSERVABILITY_DASHBOARD_KEY: InjectionKey<IObservabilityDashboard> = Symbol('observability-dashboard');
+
+/**
+ * 可观测页面在 setup 中调用一次：创建仪表盘状态，并提供给仪表盘、工具栏、图表等子组件共享
+ */
+export function provideObservabilityDashboard() {
+  const dashboard = createObservabilityDashboard();
+  provide(OBSERVABILITY_DASHBOARD_KEY, dashboard);
+  return dashboard;
+}
+
+/**
+ * 获取可观测页面提供的仪表盘状态
+ */
+export function useObservabilityDashboard() {
+  const dashboard = inject(OBSERVABILITY_DASHBOARD_KEY);
+  if (!dashboard) {
+    throw new Error('useObservabilityDashboard() must be called inside a descendant of provideObservabilityDashboard()');
+  }
+  return dashboard;
 }

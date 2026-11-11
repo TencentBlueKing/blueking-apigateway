@@ -128,6 +128,9 @@ const displayBytesList: DisplayBytesType[] = ['request_body_size', 'response_bod
 const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
 
+// 本图最近一次同步的查询参数，只用于判断空状态类型；不回写共享查询状态
+const chartParams = shallowRef<IObservabilitySearchParams>({ ...searchParams.value });
+
 const myChart = shallowRef<echarts.ECharts | undefined>();
 const chartLegend = ref<Record<string, ILegendItem[] | null>>({});
 const tableEmptyConf = ref<{
@@ -147,7 +150,7 @@ const isFailedStatus = computed(() => ['non_2xx_status'].includes(instanceId));
 
 // 更新空状态置
 const updateTableEmptyConfig = () => {
-  const hasFilter = Object.values(searchParams.value).some(item => !!item);
+  const hasFilter = Object.values(chartParams.value).some(item => !!item);
   tableEmptyConf.value.emptyType = hasFilter ? 'searchEmpty' : 'empty';
 };
 
@@ -456,7 +459,7 @@ const renderChart = () => {
 
 // 同步搜索参数
 const syncParams = (params: IObservabilitySearchParams) => {
-  searchParams.value = params;
+  chartParams.value = params;
 };
 
 // 清空筛选

@@ -66,7 +66,7 @@ export const getMetricsSummary = (gatewayId: number, params: IGatewaysMetricsQue
  * @param gatewayId 网关id
  * @param data 导出参数
  */
-export const exportMetricsSummary = (gatewayId: number, data: IGatewaysMetricsQuerySummaryExportListQuery = {}) =>
+export const exportMetricsSummary = (gatewayId: number, data: IGatewaysMetricsQuerySummaryExportListQuery) =>
   http.get<unknown>(`${path}/${gatewayId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
 
 /**

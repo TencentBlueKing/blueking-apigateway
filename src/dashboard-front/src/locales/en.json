@@ -2763,5 +2763,9 @@
   "不重试": "No retry",
   "模型服务配置不支持环境变量引用": "Model service configuration does not support stage variable references",
   "Endpoint 不以 /chat/completions 结尾，无法自动推导模型列表地址，请填写 Models Endpoint": "The Endpoint does not end with /chat/completions, so the model list URL cannot be derived. Enter a Models Endpoint.",
-  "凭据中包含 ****，如果是在已保存的掩码上修改的，请完整输入新的凭据": "The credential contains ****. If you edited the saved mask, enter the full new credential instead."
+  "凭据中包含 ****，如果是在已保存的掩码上修改的，请完整输入新的凭据": "The credential contains ****. If you edited the saved mask, enter the full new credential instead.",
+  "时间范围无效，请重新选择": "Invalid time range. Please select again.",
+  "数据按 UTC 自然日统计": "Data is aggregated by UTC calendar day",
+  "请输入 1 到 {max} 之间的整数天数": "Enter a whole number of days from 1 to {max}",
+  "不足 1 小时": "Less than 1 hour"
 }

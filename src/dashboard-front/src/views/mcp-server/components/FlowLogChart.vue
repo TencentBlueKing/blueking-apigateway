@@ -50,11 +50,13 @@ import { debounce, merge } from 'lodash-es';
 import { t } from '@/locales';
 import { useChartIntervalOption } from '@/hooks';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
+import { type TimeRangeSeconds, getBucketRange } from '@/utils/time-range';
 
 interface IEmits {
   'clear-filter': [void]
   'refresh-request': [void]
-  'update-date': [{ dateValue: string[] }]
+  // 所选柱子对应的秒级闭区间（未与查询窗口取交集）
+  'update-date': [range: TimeRangeSeconds]
 }
 
 // 空数据配置
@@ -127,32 +129,21 @@ const handleDataZoom = debounce((e: any) => {
   // 无值直接返回
   if (start === undefined || end === undefined) return;
 
-  const xAxisOption = (chartInstance.value?.getOption() as any).xAxis?.[0];
-  if (!xAxisOption || !xAxisOption.data) return;
+  const { timeline } = chartData.value;
+  const len = timeline.length;
 
-  const xData = xAxisOption.data;
-  const len = xData.length;
-
-  // 百分比 → 数组索引
+  // 百分比 → 桶下标：类目轴上第 i 个桶占 [i/len, (i+1)/len)
   const startIndex = Math.floor((start / 100) * len);
-  const endIndex = Math.ceil((end / 100) * len);
+  const endIndex = Math.ceil((end / 100) * len) - 1;
 
-  // 防止越界
-  const startIdx = Math.max(0, Math.min(len - 1, startIndex));
-  const endIdx = Math.max(0, Math.min(len - 1, endIndex));
+  // 起止落在同一个桶边界上（零宽选择）时没有选中任何桶，不改变查询条件
+  if (endIndex < startIndex) return;
 
-  // 截取选中区间的时间
-  const zoomedData = xData.slice(startIdx, endIdx + 1);
-  const startTime = zoomedData[0];
-  const endTime = zoomedData[zoomedData.length - 1];
-
-  const dateValue: string[] = [];
-
-  if (startTime && endTime && startTime !== endTime) {
-    dateValue.push(startTime, endTime);
+  // 按原始 timeline 计算，不解析坐标轴文本；空选择不改变当前查询条件
+  const range = getBucketRange(timeline, startIndex, endIndex);
+  if (range) {
+    emit('update-date', range);
   }
-
-  emit('update-date', { dateValue });
 }, 1000);
 
 // 渲染chart配置参数

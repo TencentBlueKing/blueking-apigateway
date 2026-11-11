@@ -58,6 +58,15 @@ export interface IPagination {
   current?: number
 }
 
+/**
+ * 带时间范围的筛选状态：有效时为 Unix 整数秒，未选择时为空字符串
+ * 发送请求前用 toTimeRangeQuery 转为接口参数（两端成对传或都不传）
+ */
+export interface ITimeRangeFilter {
+  time_start?: number | ''
+  time_end?: number | ''
+}
+
 export interface IDropList {
   value: string
   label: string

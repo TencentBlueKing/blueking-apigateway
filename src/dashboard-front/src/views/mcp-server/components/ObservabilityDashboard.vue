@@ -32,7 +32,7 @@
         :chart-loading="chartLoading"
         :chart-data="chartData"
         :statistics="statistics"
-        @request="handleRequestDone"
+        @request="refreshDashboard"
         @clear-filter="handleClearFilter"
       />
     </div>
@@ -42,13 +42,14 @@
 <script lang="ts" setup>
 import type { ComponentPublicInstance } from 'vue';
 import { useGateway } from '@/stores';
-import { useObservabilityDashboard } from '@/hooks';
+import { parseIntervalValue, useObservabilityDashboard } from '@/hooks';
 import DashboardBasicForm from '@/views/mcp-server/components/ObservabilityBasicForm.vue';
 import DashboardQuestMonitor from '@/views/mcp-server/components/DashboardQuestMonitor.vue';
 
 type MethodsComponent = ComponentPublicInstance<{
   syncParamsToCharts: () => void
   handleClearFilter: () => void
+  handleSearchTimeRange: () => boolean
 }>;
 
 const dashboardFormCompMap = {
@@ -58,12 +59,14 @@ const dashboardFormCompMap = {
 
 const gatewayStore = useGateway();
 const {
+  interval,
   chartLoading,
   chartData,
   statistics,
   searchParams,
   fetchInitData,
   handleResetTime,
+  resetDashboard,
 } = useObservabilityDashboard();
 
 const componentRefs = shallowRef<Map<string, MethodsComponent> | null>(new Map());
@@ -72,6 +75,9 @@ const componentList = shallowRef([
   { name: 'Query' },
   { name: 'Request' },
 ]);
+
+// 自动刷新定时器：本组件是唯一的调度者，工具栏只修改 interval
+let timeId: ReturnType<typeof setInterval> | null = null;
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -85,18 +91,45 @@ const setComponentRef = (el: Element | MethodsComponent | null, name: string) =>
   }
 };
 
-const handleRequestDone = async () => {
+// 一轮查询：先按当前时间重新解析时间范围（相对快捷项随时间推进），再请求全部数据；时间无效时不请求
+const refreshDashboard = async () => {
+  const queryForm = componentRefs.value?.get('Query');
+  if (queryForm && !queryForm.handleSearchTimeRange()) {
+    return;
+  }
   await fetchInitData();
-  (componentRefs.value?.get('Request') as MethodsComponent)?.syncParamsToCharts();
+  componentRefs.value?.get('Request')?.syncParamsToCharts();
+};
+
+const stopAutoRefresh = () => {
+  if (timeId) {
+    clearInterval(timeId);
+    timeId = null;
+  }
 };
 
 const handleClearFilter = () => {
-  (componentRefs.value?.get('Query') as MethodsComponent)?.handleClearFilter();
+  componentRefs.value?.get('Query')?.handleClearFilter();
   handleResetTime();
 };
 
+// 任何入口修改刷新间隔（工具栏、重置）都只改 interval，由这里统一启停唯一的定时器
+watch(interval, (value) => {
+  stopAutoRefresh();
+  const intervalTime = parseIntervalValue(value);
+  if (intervalTime > 0) {
+    timeId = setInterval(refreshDashboard, intervalTime);
+  }
+}, { immediate: true });
+
 onMounted(() => {
-  handleRequestDone();
+  refreshDashboard();
+});
+
+// 离开仪表盘时停止自动刷新并恢复初始状态，再次进入时不显示旧数据
+onBeforeUnmount(() => {
+  stopAutoRefresh();
+  resetDashboard();
 });
 
 onUnmounted(() => {

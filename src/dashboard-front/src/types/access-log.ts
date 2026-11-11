@@ -23,8 +23,8 @@
 export interface ISearchParamsInterface {
   stage_id?: number // 阶段ID，可选
   resource_id?: string | number // 资源ID，可以是字符串或数字，可选
-  time_start?: string | number // 开始时间，可以是字符串或数字，可选
-  time_end?: string | number // 结束时间，可以是字符串或数字，可选
+  time_start?: number | '' // 开始时间（Unix 秒），查询前由日期选择写入
+  time_end?: number | '' // 结束时间（Unix 秒）
   query?: string // 查询字符串，可选
   backend_name?: string // 后端服务名称，可选
 }

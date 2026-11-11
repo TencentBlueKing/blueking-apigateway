@@ -52,9 +52,10 @@ export const usePermission = defineStore('usePermission', {
         return t('已过期');
       }
       const daysLeft = expireDate.diff(today, 'day');
-      // 有效期不足 24 小时但尚未过期时，以小时为单位展示
+      // 有效期不足 24 小时但尚未过期时，以小时为单位展示；不足 1 小时时不显示“0小时”
       if (daysLeft < 1) {
-        return `${expireDate.diff(today, 'hour')}${t('小时')}`;
+        const hoursLeft = expireDate.diff(today, 'hour');
+        return hoursLeft < 1 ? t('不足 1 小时') : `${hoursLeft}${t('小时')}`;
       }
       return `${daysLeft}${t('天')}`;
     },
@@ -70,7 +71,8 @@ export const usePermission = defineStore('usePermission', {
       }
       return '#63656e';
     },
-    // 计算续期后的过期时间
+    // 计算续期后的剩余天数，与后端续期规则一致：
+    // 未过期时从原到期时间顺延，已过期时从当前时间起算；0 天表示续期为永久
     getDurationAfterRenew(expireAt: string | null, day: number) {
       const curDay = day ?? 0;
       if (!expireAt || curDay === 0) {
@@ -78,12 +80,8 @@ export const usePermission = defineStore('usePermission', {
       }
       const today = dayjs();
       const expireDate = dayjs(expireAt);
-      // 已过期
-      if (today.isAfter(expireDate)) {
-        return `${curDay}${t('天')}`;
-      }
-      const daysLeft = expireDate.diff(today, 'day');
-      return `${daysLeft + curDay}${t('天')}`;
+      const renewBase = expireDate.isAfter(today) ? expireDate : today;
+      return `${renewBase.add(curDay, 'day').diff(today, 'day')}${t('天')}`;
     },
   },
 });

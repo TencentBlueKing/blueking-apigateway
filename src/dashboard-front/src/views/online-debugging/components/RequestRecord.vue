@@ -192,7 +192,7 @@
 
 <script lang="tsx" setup>
 import { useGateway } from '@/stores';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import AgTable from '@/components/base/ag-table/Index.vue';
@@ -200,13 +200,19 @@ import type { ExpandOptions, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getApiTestHistoryDetail, getApiTestHistoryList } from '@/services/source/gateway/api-test';
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/utils';
+import { toTimeRangeQuery } from '@/utils/time-range';
+import type { ITimeRangeFilter } from '@/types/common';
+
+interface IRequestRecordFilter extends ITimeRangeFilter {
+  resource_name: string
+}
 
 const emit = defineEmits<{ retry: [data: any] }>();
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
 const isShow = ref<boolean>(false);
-const filterData = ref<any>({
+const filterData = ref<IRequestRecordFilter>({
   resource_name: '',
   time_start: '',
   time_end: '',
@@ -218,10 +224,11 @@ const {
   shortcutSelectedIndex,
   handleChange,
   handleClear,
+  resetSelection,
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(filterData);
+} = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const dateKey = ref<string>('dateKey');
 const topDatePicker = ref();
@@ -384,7 +391,9 @@ const handlePickClear = () => {
 };
 
 const handlePickSuccess = () => {
-  handleConfirm();
+  if (!handleConfirm()) {
+    return;
+  }
   getList();
 };
 
@@ -392,8 +401,7 @@ const clear = () => {
   filterData.value.resource_name = '';
   filterData.value.time_start = '';
   filterData.value.time_end = '';
-  shortcutSelectedIndex.value = -1;
-  dateValue.value = [];
+  resetSelection();
   expandedRowKeys.value = [];
 };
 
@@ -404,10 +412,13 @@ const show = () => {
 };
 
 const getList = async () => {
+  const { resource_name } = filterData.value;
+  // 后端直接把时间按整数解析：只在两端都是有效秒数时成对传，不传空字符串
   const data = {
     offset: 0,
     limit: 10000,
-    ...filterData.value,
+    resource_name: resource_name || undefined,
+    ...toTimeRangeQuery(filterData.value),
   };
   const results = await getApiTestHistoryList(apigwId.value, data);
 

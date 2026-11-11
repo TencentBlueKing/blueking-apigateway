@@ -85,6 +85,11 @@ import PublishEventSlider from '@/components/release/publish-event-slider/Index.
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
 import AgTable from '@/components/base/ag-table/Index.vue';
 import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
+import type { ITimeRangeFilter } from '@/types/common';
+
+interface IReleaseRecordFilter extends ITimeRangeFilter {
+  keyword: string
+}
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
@@ -92,7 +97,7 @@ const router = useRouter();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 
-const filterData = ref({
+const filterData = ref<IReleaseRecordFilter>({
   keyword: '',
   time_start: '',
   time_end: '',
@@ -105,10 +110,21 @@ const {
   shortcutSelectedIndex,
   handleChange,
   handleClear,
+  resetSelection,
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(filterData);
+} = useDatePicker(filterData, {
+  presets: [
+    'today',
+    {
+      id: 'last-7d',
+      text: t('近7天'),
+    },
+    'last-15d',
+    'last-30d',
+  ],
+});
 
 const dateKey = ref('dateKey');
 
@@ -138,7 +154,7 @@ const deployId = ref<string>();
 const logDetailsRef = ref();
 const programmableLogDetailsRef = ref();
 
-let timerId: any = null;
+let timerId: ReturnType<typeof setInterval> | undefined;
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
@@ -332,8 +348,7 @@ const handleClearFilter = () => {
     time_start: '',
     time_end: '',
   };
-  dateValue.value = [];
-  shortcutSelectedIndex.value = -1;
+  resetSelection();
   dateKey.value = String(+new Date());
   tableRef.value!.fetchData(filterData.value, { resetPage: true });
 };
