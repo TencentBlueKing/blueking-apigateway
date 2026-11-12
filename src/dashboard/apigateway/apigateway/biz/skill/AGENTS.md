@@ -46,7 +46,9 @@ runs from `bin/post_migrate`.
 - The resource definition (the released OpenAPI schema) is the only source of
   parameters and responses; the declaration references it and does not redefine
   it. Parameter locations and types come only from the definition; nothing is
-  guessed from the HTTP method.
+  guessed from the HTTP method. The step snippet copies `ResourceParam.schema`
+  minus its top-level `description` and `x-` keys; `ResourceParam.type` is only
+  for type comparisons, never for rebuilding the schema.
   Inputs and outputs declare a required `type` in the resource-definition
   notation (`string`, `array<object>`, `integer|string`); `example` and
   `default` must match it. An input's `type` must equal every typed parameter
@@ -141,7 +143,9 @@ shipped declaration. `errors` and warnings must be empty. For
 bk-sops and devops the fixture records the parameters and response fields those
 declarations map; `task_id` is a path
 parameter and `X-DEVOPS-UID` is a header, and the other GET parameters are query,
-POST parameters body. It is not a copy of the live OpenAPI document. After an
+POST parameters body. It is not a copy of the live OpenAPI document. A fixture
+parameter normally gives `type`; it gives `schema` instead when the golden must
+show a nested published schema (`global_var_list` of `execute_job_plan`). After an
 intentional template change, regenerate `expected/` from the renderer and review
 the diff; the rendered snippet must stay valid OpenAPI 3.1. Command output is
 covered by `tests/apps/skill/management/commands/test_sync_platform_skills.py`.

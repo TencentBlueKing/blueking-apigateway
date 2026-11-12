@@ -74,7 +74,9 @@ class TestReleasedResourceProvider:
             definition.data.oauth2_public_client_enabled,
             definition.data.oauth2_personal_client_enabled,
         ) == (True, True, True, False, False)
-        assert definition.params == [ResourceParam(name="task_id", location="path", type="integer", required=True)]
+        assert definition.params == [
+            ResourceParam(name="task_id", location="path", type="integer", required=True, schema={"type": "integer"})
+        ]
         assert definition.responses == [ResponseField(field="result", type="boolean")]
         assert definition.warnings == []
         assert definition.errors == []

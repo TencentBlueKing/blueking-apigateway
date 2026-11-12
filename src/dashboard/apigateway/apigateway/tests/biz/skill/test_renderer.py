@@ -112,6 +112,24 @@ class TestRenderSkillBody:
         ) in input_section
         assert "| `global_var_list` | array<object> |" in input_section
 
+    def test_param_schema_copied_from_openapi(self, resources_data):
+        execute = next(item for item in resources_data["resources"] if item["resource"] == "execute_job_plan")
+        scope = execute["params"][0]
+        scope["schema"] = {"type": "string", "enum": ["biz", "biz_set"], "x-from": "源 schema 的扩展"}
+        global_var_list = next(item for item in execute["params"] if item["name"] == "global_var_list")
+
+        properties = _body_properties(
+            _render("job-plan-run-and-log", StaticResourceProvider.from_dict(resources_data)), 0
+        )
+
+        assert properties["bk_scope_type"] == {
+            "type": "string",
+            "enum": ["biz", "biz_set"],
+            "description": scope["description"],
+            "x-from": "${{ inputs.bk_scope_type }}",
+        }
+        assert properties["global_var_list"]["items"] == global_var_list["schema"]["items"]
+
     def test_output_type_comes_from_declaration(self, static_provider):
         output_section = (
             _render("job-plan-run-and-log", static_provider).split("## 输出", 1)[1].split("## 执行步骤", 1)[0]

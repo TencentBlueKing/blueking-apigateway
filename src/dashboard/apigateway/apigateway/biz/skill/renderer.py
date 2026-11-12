@@ -280,6 +280,19 @@ def _type_schema(type_text: str) -> _Flow:
     return _Flow(type=type_text)
 
 
+def _flow(value: Any, block: bool = False) -> Any:
+    """复制 schema：含 properties 或块格式子节点（恰为 dict / list）的按块输出，其余写成一行"""
+    if isinstance(value, dict):
+        items = {key: _flow(item, key == "properties") for key, item in value.items()}
+        if block or "properties" in items or any(type(item) in (dict, list) for item in items.values()):
+            return items
+        return _Flow(items)
+    if isinstance(value, list):
+        elements = [_flow(item) for item in value]
+        return elements if any(type(item) in (dict, list) for item in elements) else _FlowList(elements)
+    return value
+
+
 def _binding_fields(orchestration: SkillOrchestration, value: Any, param: ResourceParam) -> Dict[str, Any]:
     parsed = parse_ref(value)
     fields: Dict[str, Any] = {"x-value": parsed.value} if parsed.kind == "value" else {"x-from": value}
@@ -391,7 +404,8 @@ def _get_param(resource: SkillResource, name: str) -> ResourceParam:
 def _build_params(
     orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[str]]:
-    """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性"""
+    """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性。
+    参数 schema 照抄已发布的定义，嵌套字段、required、enum 等约束都保留。"""
 
     def order(name: str) -> Tuple[int, int]:
         location = _get_param(resource, name).location
@@ -404,10 +418,13 @@ def _build_params(
     for name in sorted(step.with_, key=order):
         spec = _get_param(resource, name)
         required = spec.required or spec.location == "path"
-        schema: Optional[_Flow] = _type_schema(spec.type) if spec.type else None
+        # 顶层说明统一用 spec.description 写在参数上；顶层 x- 扩展会和绑定写法（x-from、x-each 等）混在一起
+        schema = _flow(
+            {key: value for key, value in spec.schema.items() if key != "description" and not key.startswith("x-")}
+        )
         binding = _binding_fields(orchestration, step.with_[name], spec)
         if spec.location == "body":
-            prop: Dict[str, Any] = dict(schema or {})
+            prop: Dict[str, Any] = dict(schema)
             if spec.description:
                 prop["description"] = spec.description
             prop.update(binding)

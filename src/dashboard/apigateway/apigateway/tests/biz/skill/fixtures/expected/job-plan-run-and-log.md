@@ -92,7 +92,26 @@ run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_
                x-from: ${{ inputs.job_plan_id }}
              global_var_list:
                type: array
-               items: {type: object}
+               items:
+                 type: object
+                 anyOf: [{required: [id]}, {required: [name]}]
+                 properties:
+                   id: {type: integer, description: 全局变量 ID}
+                   name: {type: string, description: 全局变量名}
+                   value: {type: string, description: 字符、密码、数组、命名空间变量的值}
+                   server:
+                     type: object
+                     description: 主机变量的值
+                     properties:
+                       host_id_list: {type: array, items: {type: integer}}
+                       ip_list:
+                         type: array
+                         items:
+                           type: object
+                           required: [bk_cloud_id, ip]
+                           properties:
+                             bk_cloud_id: {type: integer}
+                             ip: {type: string}
                description: 全局变量。元素字段：id 或 name 二选一作为标识；value 为字符、密码、数组、命名空间变量值；server 为主机变量值（host_id_list / ip_list / dynamic_group_list / topo_node_list）。未传的变量用方案默认值
                x-from: ${{ inputs.global_var_list }}
                x-omit-if-unset: true

@@ -17,6 +17,7 @@
 #
 """内存中的资源，测试用。fixture 先还原成发布数据和 OpenAPI schema，再走 build_skill_resource。"""
 
+import copy
 import json
 from typing import Any, Dict, Iterable
 
@@ -83,12 +84,14 @@ def released_resource_payload(item: Dict[str, Any], resource_id: int) -> Dict[st
 
 
 def fixture_resource_schema(resource: Dict[str, Any]) -> Dict[str, Any]:
-    """fixture 的 params / response -> 该资源的 OpenAPI schema。"""
+    """fixture 的 params / response -> 该资源的 OpenAPI schema。参数写了 schema 时原样使用，否则由 type 生成。"""
     parameters = []
     body_properties = {}
     body_required = []
     for item in resource.get("params", []):
-        param_schema = _fixture_type_schema(item.get("type") or "")
+        param_schema = (
+            copy.deepcopy(item["schema"]) if "schema" in item else _fixture_type_schema(item.get("type") or "")
+        )
         if item.get("description"):
             param_schema["description"] = item["description"]
         if item["in"] == "body":

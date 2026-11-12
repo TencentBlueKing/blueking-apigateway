@@ -78,12 +78,65 @@ SCHEMA = {
 
 def test_convert_schema_params():
     assert convert_schema_params(SCHEMA) == [
-        ResourceParam(name="bk_biz_id", location="path", type="integer", required=True, description="业务 ID"),
-        ResourceParam(name="keyword", location="query", type="string"),
-        ResourceParam(name="X-Trace", location="header", type="string"),
-        ResourceParam(name="name", location="body", type="string", required=True, description="任务名"),
-        ResourceParam(name="hosts", location="body", type="array<integer>"),
+        ResourceParam(
+            name="bk_biz_id",
+            location="path",
+            type="integer",
+            required=True,
+            description="业务 ID",
+            schema={"type": "integer"},
+        ),
+        ResourceParam(name="keyword", location="query", type="string", schema={"type": "string"}),
+        ResourceParam(name="X-Trace", location="header", type="string", schema={"type": "string"}),
+        ResourceParam(
+            name="name",
+            location="body",
+            type="string",
+            required=True,
+            description="任务名",
+            schema={"type": "string", "description": "任务名"},
+        ),
+        ResourceParam(
+            name="hosts",
+            location="body",
+            type="array<integer>",
+            schema={"type": "array", "items": {"type": "integer"}},
+        ),
     ]
+
+
+def test_param_keeps_published_schema():
+    """嵌套对象数组、子字段必填、枚举都留在 schema 里，type 只是从它推导出的类型写法"""
+    var_schema = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": False,
+            "properties": {
+                "name": {"type": "string"},
+                "kind": {"type": "string", "enum": ["string", "host"]},
+                "server": {
+                    "type": "object",
+                    "properties": {"host_id_list": {"type": "array", "items": {"type": "integer"}}},
+                },
+            },
+        },
+    }
+    scope_schema = {"type": "string", "enum": ["biz", "biz_set"], "description": "资源范围类型"}
+    schema = {
+        "parameters": [{"name": "bk_scope_type", "in": "query", "schema": scope_schema}],
+        "requestBody": {
+            "content": {
+                "application/json": {"schema": {"type": "object", "properties": {"global_var_list": var_schema}}}
+            }
+        },
+    }
+
+    scope, var_list = convert_schema_params(schema)
+
+    assert (scope.type, scope.description, scope.schema) == ("string", "资源范围类型", scope_schema)
+    assert (var_list.type, var_list.schema) == ("array<object>", var_schema)
 
 
 def test_non_json_request_body_is_not_converted():
@@ -104,7 +157,7 @@ def test_non_json_request_body_is_not_converted():
 
     assert has_non_json_request_body(schema)
     assert convert_schema_params(schema) == [
-        ResourceParam(name="task_id", location="path", type="integer", required=True),
+        ResourceParam(name="task_id", location="path", type="integer", required=True, schema={"type": "integer"}),
     ]
 
 
@@ -122,7 +175,7 @@ def test_json_request_body_preferred_over_other_content_types():
 
     assert not has_non_json_request_body(schema)
     assert convert_schema_params(schema) == [
-        ResourceParam(name="name", location="body", type="string", required=True),
+        ResourceParam(name="name", location="body", type="string", required=True, schema={"type": "string"}),
     ]
 
 

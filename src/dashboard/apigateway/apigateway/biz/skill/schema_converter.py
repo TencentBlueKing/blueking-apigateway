@@ -21,7 +21,7 @@
 响应字段用相对响应体的字段路径表示，数组层级写成 `[]`，如 `data.items[].id`。
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 JSON_CONTENT_TYPE = "application/json"
@@ -34,6 +34,7 @@ class ResourceParam:
     type: str = ""
     required: bool = False
     description: str = ""
+    schema: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -57,7 +58,8 @@ def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
             location=item["in"],
             type=schema_type_text(item.get("schema") or {}),
             required=bool(item.get("required", False)),
-            description=item.get("description") or "",
+            description=item.get("description") or (item.get("schema") or {}).get("description") or "",
+            schema=item.get("schema") or {},
         )
         for item in schema.get("parameters") or []
         if item.get("name") and item.get("in") in ("path", "query", "header")
@@ -73,6 +75,7 @@ def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
                 type=schema_type_text(prop),
                 required=name in required,
                 description=prop.get("description") or "",
+                schema=prop,
             )
         )
     return params
