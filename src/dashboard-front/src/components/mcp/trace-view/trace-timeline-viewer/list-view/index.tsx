@@ -85,13 +85,11 @@ export default defineComponent({
   emits: ['itemClick', 'getCrossAppInfo', 'toggleCollapse'],
 
   setup(props: any, { emit }: any) {
-    const route = useRoute();
     const { traceTree: trace, spanGroupTree } = useTrace();
     const spanBarCurrentStore = useSpanBarCurrentInject();
     const focusMatchesStore = useFocusMatchesInject();
     const childrenHiddenStore = useChildrenHiddenInject();
 
-    const span_id = ref('');
     const wrapperElm = ref<HTMLElement | TNil>(null);
     const itemHolderElm = ref<HTMLElement | TNil>(null);
     const knownHeights = ref(new Map());

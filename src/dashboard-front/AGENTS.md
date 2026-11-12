@@ -27,17 +27,17 @@
 |---------|---------------------------|------------|
 | 框架      | Vue 3 (Composition API)   | ^3.5       |
 | 构建工具    | Vite (Rolldown)           | 8.3        |
-| 类型系统    | TypeScript                | ~5.8       |
+| 类型系统    | TypeScript                | ^5.9       |
 | 状态管理    | Pinia                     | ^3.0       |
 | 路由      | Vue Router                | ^4.5       |
-| 国际化     | vue-i18n (Composition 模式) | ^11.1      |
-| HTTP 请求 | Axios                     | ^1.11      |
-| 主 UI 库  | bkui-vue (蓝鲸 UI)          | 2.0.2-beta |
+| 国际化     | vue-i18n (Composition 模式) | ^11.4      |
+| HTTP 请求 | Axios                     | 1.21.1     |
+| 主 UI 库  | bkui-vue (蓝鲸 UI)          | 3.0.10     |
 | 辅助 UI 库 | tdesign-vue-next（高级表格）    | ^1.18      |
 | 原子化 CSS | UnoCSS + Tailwind v3 预设   | ^66.3      |
 | 代码编辑器   | Monaco Editor             | ^0.52      |
 | 图表      | ECharts                   | ^5.6       |
-| 工具库     | @vueuse/*                 | ^13-14     |
+| 工具库     | @vueuse/*                 | ^14.4      |
 
 ## 常用命令
 
@@ -59,14 +59,29 @@ pnpm build-only
 # 仅类型检查
 pnpm type-check    # vue-tsc --build
 
-# 代码检查
+# 代码检查（CI 会跑 lint:ci 和 lint:ci:oxlint，提交时 lint-staged 也会对暂存文件跑 oxlint 和 eslint）
 pnpm lint:eslint
+pnpm lint:ci:oxlint
 
 # 预览生产构建
 pnpm preview
 ```
 
 > **注意：项目未配置测试框架，没有单元测试或 E2E 测试。**
+
+### 暂缓升级的依赖
+
+以下依赖暂不升级或替换，升级前需先确认原因已解决：
+
+- `tdesign-vue-next`（保持 1.18）：项目版本满足 `@blueking/tdesign-ui` 的范围后两者会合并为同一份，
+  合并为 1.20.11 时 `ag-table` 的单选筛选失效（选中不生效、不触发 `filter-change`）。
+  根因在 `ag-table` 的 `handleRadioFilterClick` 依赖弹层 DOM 和时序
+- `@blueking/bk-user-selector`（保持 0.1.1）：0.1.2 起硬依赖 bkui-vue 2，会把 bkui-vue 2 部分打包进来
+- `@blueking/login-userinfo`（保持 0.0.13）：0.0.14 起内嵌整个 tippy.js，首屏 chunk 增加约 36 KB
+- bkui-vue 在 `lib/tag-input`、`lib/timeline` 内嵌了 DOMPurify 3.2.6，`overrides` 改不了产物，需等 bkui-vue 升级
+- `stylelint`（保持 17）：`stylelint-config-standard-scss` 最新的 17.x 只支持 stylelint 17
+- `mavon-editor`（暂不替换）：md-editor-v3 打开编辑器时需下载约 884 KB（gzip 304 KB），是 mavon 的 2 倍多；
+  如需替换，优先考虑基于项目现有 markdown 渲染器的轻量编辑器
 
 ## 目录结构
 

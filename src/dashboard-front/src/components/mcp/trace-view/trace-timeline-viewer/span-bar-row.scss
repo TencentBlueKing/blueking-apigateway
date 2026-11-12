@@ -270,12 +270,9 @@
   }
 
   .span-bar-row-error-icon {
-    padding: 1px;
-    margin-right: 6px;
-    font-size: 12px;
-    color: #fff;
-    background-color: #db2828;
-    border-radius: 6.5px;
+    flex-shrink: 0;
+    margin: 0 2px;
+    cursor: default;
   }
 
   .span-bar-row-arrow-icon {

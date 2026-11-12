@@ -21,7 +21,10 @@
     class="flex items-center"
     v-bind="$attrs"
   >
-    <span :class="`mr-10px w-6px h-6px rounded-50% ${bgColor}`" />
+    <span
+      class="mr-10px w-6px h-6px rounded-50%"
+      :class="bgColor"
+    />
     <span>{{ text }}</span>
   </div>
 </template>

@@ -95,7 +95,10 @@
                 </template>
               </OAuthSwitcher>
               <!-- 资源选择表格 -->
-              <BkFormItem :class="`resource-table-form-item ${activeTab}`">
+              <BkFormItem
+                class="resource-table-form-item"
+                :class="activeTab"
+              >
                 <template #label>
                   <div class="resource-form-item-label">
                     <div

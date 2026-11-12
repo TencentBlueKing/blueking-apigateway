@@ -32,13 +32,13 @@
       }"
       @click="() => handleSelect(lang)"
     >
-      {{ useChangeCase(lang, 'capitalCase') }}
+      {{ startCase(lang) }}
     </BkButton>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useChangeCase } from '@vueuse/integrations/useChangeCase';
+import startCase from 'lodash-es/startCase';
 import { useEnv } from '@/stores';
 
 interface IProps {

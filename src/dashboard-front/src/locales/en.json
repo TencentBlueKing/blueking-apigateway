@@ -2777,5 +2777,8 @@
   "bk_cors_allow_credential_desc": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
   "设置的请求头": "Headers to set",
   "删除的请求头": "Headers to remove",
-  "请求头设置或删除至少需要配置一个": "At least one operation is required when setting or removing request headers."
+  "请求头设置或删除至少需要配置一个": "At least one operation is required when setting or removing request headers.",
+  "调用异常": "Call error",
+  "该调用返回错误，status_code：{code}": "This call returned an error, status_code: {code}",
+  "折叠的子调用中存在异常，展开后可查看": "A collapsed child call has an error. Expand to view it."
 }

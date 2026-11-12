@@ -41,7 +41,7 @@
   </div>
 </template>
 
-<script  lang="ts" setup>
+<script lang="ts" setup>
 import { t } from '@/locales';
 import ObservabilityTimeInterval from '@/views/mcp-server/components/ObservabilityTimeInterval.vue';
 

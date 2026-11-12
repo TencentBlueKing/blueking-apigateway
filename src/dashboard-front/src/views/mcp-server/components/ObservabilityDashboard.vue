@@ -21,7 +21,8 @@
     <div
       v-for="com of componentList"
       :key="com.name"
-      :class="`p-24px pb-0 box-border ${com.name?.toLowerCase()}_wrapper`"
+      class="p-24px pb-0 box-border"
+      :class="`${com.name?.toLowerCase()}_wrapper`"
     >
       <Component
         :is="dashboardFormCompMap[com.name as keyof typeof dashboardFormCompMap]"

@@ -53,6 +53,11 @@ jobs:
       run: pnpm run lint:ci
       working-directory: src/dashboard-front
 
+    # eslint-plugin-oxlint 关闭了与 oxlint 重复的 ESLint 规则，这部分检查只由 oxlint 负责
+    - name: Oxlint
+      run: pnpm run lint:ci:oxlint
+      working-directory: src/dashboard-front
+
     # 构建期问题（Rolldown 报错、依赖互操作等）类型检查发现不了，CI 需实际构建一次
     - name: Build
       run: pnpm run build-only

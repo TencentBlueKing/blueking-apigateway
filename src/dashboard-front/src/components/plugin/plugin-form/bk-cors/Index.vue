@@ -169,7 +169,7 @@ const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const ORIGIN_PATTERN = /^(?:\*|\*\*|null|https?:\/\/[-a-zA-Z0-9:[\].\/?&=]+)(?:,\s*https?:\/\/[-a-zA-Z0-9:[\].\/?&=]+)*$/;
+const ORIGIN_PATTERN = /^(?:\*|\*\*|null|https?:\/\/[-a-zA-Z0-9:[\]./?&=]+)(?:,\s*https?:\/\/[-a-zA-Z0-9:[\]./?&=]+)*$/;
 const ORIGIN_REGEX_PATTERN = /^\^?[-a-zA-Z0-9:/[\]{}().*+?|\\]+\$?$/;
 const METHODS_PATTERN = /^(?:\*|\*\*|(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(?:,\s*(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$/;
 const HEADERS_PATTERN = /^(\*|\*\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$/;

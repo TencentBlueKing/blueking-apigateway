@@ -120,7 +120,8 @@
             <BkCollapsePanel name="stage-config">
               <template #header>
                 <div
-                  :class="`flex items-center panel-header ${!activeKey?.includes('stage-config') ? 'mb-0!' : ''}`"
+                  class="flex items-center panel-header"
+                  :class="{ 'mb-0!': !activeKey?.includes('stage-config') }"
                 >
                   <AngleUpFill
                     :class="[

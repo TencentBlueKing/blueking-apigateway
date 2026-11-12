@@ -47,7 +47,8 @@
       @click="toggleExpand"
     >
       <i
-        :class="[`apigateway-icon text-20px ${isExpanded ? 'icon-ag-arrows-up' : 'icon-ag-arrows-down'}`]"
+        class="apigateway-icon text-20px"
+        :class="isExpanded ? 'icon-ag-arrows-up' : 'icon-ag-arrows-down'"
       />
       <span>{{ i18n.global.t(isExpanded ? collapseText : expandText) }}</span>
     </BkButton>

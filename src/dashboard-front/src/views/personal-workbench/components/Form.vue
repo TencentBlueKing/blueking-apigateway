@@ -94,6 +94,7 @@
 
 <script setup lang="tsx">
 import { DatePicker } from 'bkui-vue';
+import { cloneDeep } from 'lodash-es';
 import type { FilterValue } from '@blueking/tdesign-ui';
 import { t } from '@/locales';
 import {
@@ -119,7 +120,8 @@ interface IEmits {
 
 const formData = defineModel<FilterValue | IPersonalWorkbenchFilter>('formData', {
   type: Object,
-  default: DEFAULT_FORM_DATA,
+  // 对象默认值需用工厂函数，避免各实例共享并修改同一个常量
+  default: () => cloneDeep(DEFAULT_FORM_DATA),
 });
 
 const {

@@ -102,7 +102,7 @@ const isShow = defineModel('isShow', {
 
 const formData = defineModel('formData', {
   type: Object,
-  default: { content: '' },
+  default: () => ({ content: '' }),
 });
 
 const {
