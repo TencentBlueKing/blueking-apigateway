@@ -370,9 +370,7 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import * as echarts from 'echarts';
-import 'echarts/lib/chart/bar';
-import 'echarts/lib/component/tooltip';
+import { type ECharts, createChart } from '@/utils/echarts';
 import {
   merge,
   trim,
@@ -420,7 +418,6 @@ import type {
   IExtractApiReturn,
   IExtractListApiResults,
 } from '@/services/types/utils.ts';
-import type { EChartsType } from 'echarts';
 import {
   getBucketRange,
   toTimeRangeSeconds,
@@ -439,7 +436,7 @@ const queryHistory = useStorage('access-log-query-history', []);
 
 const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
-const chartInstance = ref<EChartsType | null>(null);
+const chartInstance = ref<ECharts | null>(null);
 const chartContainer = ref<HTMLDivElement | null>(null);
 // 柱状图各桶起点（秒），框选时按下标换算时间，不解析坐标轴文本
 const chartTimeline = shallowRef<number[]>([]);
@@ -1207,7 +1204,7 @@ const initData = async () => {
 };
 
 const initChart = async () => {
-  chartInstance.value = markRaw(echarts.init(chartContainer.value));
+  chartInstance.value = markRaw(createChart(chartContainer.value));
   window.addEventListener('resize', chartResize);
 
   chartInstance.value?.on('datazoom', (event: any) => {

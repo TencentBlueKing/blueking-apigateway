@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import MarkdownIt from 'markdown-it';
+import MarkdownIt, { type Env } from 'markdown-it';
 import hljs from 'highlight.js/lib/common';
 
 export interface IMarkdownHeading {
@@ -29,7 +29,8 @@ export interface IRenderedMarkdown {
   headings: IMarkdownHeading[]
 }
 
-interface IMarkdownRenderEnv {
+// markdown-it 15 的 env 类型带索引签名，需继承 Env 才能传给 render
+interface IMarkdownRenderEnv extends Env {
   headings: IMarkdownHeading[]
 }
 

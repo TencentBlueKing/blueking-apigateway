@@ -1160,14 +1160,15 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
           let paths = JSONPath.toPathArray(err.json_path)
             .slice(1);
           // 找到 jsonpath 指向的值
-          let pathValue = JSONPath(err.json_path, editorJsonObj, undefined, undefined)[0] ?? null;
+          // jsonpath-plus 11 起返回 unknown，默认 wrap 模式下是匹配结果数组
+          let pathValue = (JSONPath(err.json_path, editorJsonObj) as unknown[])[0] ?? null;
           // 当获取 json_path 指向的值失败时，检查是不是因为 json_path 中有大写的 http method
           if (pathValue === null) {
             const httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
             // 把 json_path 中的大写 method 规范化为小写的
             if (paths.some(item => httpMethods.includes(item))) {
               paths = paths.map(item => (httpMethods.includes(item) ? item.toLowerCase() : item));
-              pathValue = JSONPath(`$.${paths.join('.')}`, editorJsonObj, undefined, undefined)[0] ?? null;
+              pathValue = (JSONPath(`$.${paths.join('.')}`, editorJsonObj) as unknown[])[0] ?? null;
             }
           }
           // 提取后端错误消息中第一个用引号包起来的字符串，它常常就是代码错误所在

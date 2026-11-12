@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts" setup>
-import * as echarts from 'echarts';
+import { type ECharts, createChart } from '@/utils/echarts';
 
 interface IProp {
   mountId: string
@@ -51,7 +51,7 @@ const {
 // 无数据或数据全为 0 时视为空态
 const isEmpty = computed(() => !data.length || data.every(value => !value));
 
-let chartInstance: echarts.ECharts | null = null;
+let chartInstance: ECharts | null = null;
 const option = {
   xAxis: {
     type: 'category',
@@ -64,6 +64,8 @@ const option = {
       '6',
     ],
     boundaryGap: false,
+    // 卡片里的迷你折线图不展示刻度文字。ECharts 6 会把轴标签收进画布并压缩绘图区，需显式隐藏
+    axisLabel: { show: false },
     axisTick: { // 坐标轴刻度相关设置。
       show: false,
     },
@@ -151,7 +153,7 @@ const renderChart = () => {
       return;
     }
     if (!chartInstance) {
-      chartInstance = echarts.init(chartDom as HTMLDivElement);
+      chartInstance = createChart(chartDom as HTMLDivElement);
     }
     chartInstance.setOption(option);
   });
