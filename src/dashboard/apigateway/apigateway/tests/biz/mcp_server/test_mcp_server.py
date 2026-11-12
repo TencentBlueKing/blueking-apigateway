@@ -27,6 +27,7 @@ from django.utils import translation
 
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
@@ -1707,6 +1708,90 @@ class TestMCPServerHandler:
 
         assert result.count() == 0
 
+    def test_apply_category_filter_uncategorized(self, fake_gateway, fake_stage):
+        """未分类匹配没有任何启用常规分类的 MCPServer"""
+        MCPServerCategory.objects.all().delete()
+
+        official_cat = G(MCPServerCategory, name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True)
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+        inactive_cat = G(MCPServerCategory, name="InactiveCat", is_active=False)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        server_official_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_only.categories.add(official_cat)
+
+        server_inactive_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_inactive_only.categories.add(inactive_cat)
+
+        server_uncategorized = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_uncategorized.categories.add(uncategorized_cat)
+
+        # 显式关联未分类但同时属于常规分类，不算未分类
+        server_uncategorized_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_uncategorized_devops.categories.add(uncategorized_cat, devops_cat)
+
+        server_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_devops.categories.add(devops_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        uncategorized_ids = {
+            server_none.id,
+            server_official_only.id,
+            server_inactive_only.id,
+            server_uncategorized.id,
+        }
+
+        result = MCPServerHandler.apply_category_filter(queryset, [UNCATEGORIZED_MCP_CATEGORY_NAME])
+        assert set(result.values_list("id", flat=True)) == uncategorized_ids
+
+    def test_apply_category_filter_uncategorized_or_logic(self, fake_gateway, fake_stage):
+        """未分类与常规分类使用 OR 逻辑"""
+        MCPServerCategory.objects.all().delete()
+
+        G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+        monitor_cat = G(MCPServerCategory, name="Monitoring", is_active=True)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        server_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_devops.categories.add(devops_cat)
+
+        server_monitor = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_monitor.categories.add(monitor_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(queryset, [UNCATEGORIZED_MCP_CATEGORY_NAME, "DevOps"])
+
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_none.id in result_ids
+        assert server_devops.id in result_ids
+        assert server_monitor.id not in result_ids
+
+    def test_apply_category_filter_uncategorized_and_logic_with_special(self, fake_gateway, fake_stage):
+        """未分类与 Official 使用 AND 逻辑"""
+        MCPServerCategory.objects.all().delete()
+
+        official_cat = G(MCPServerCategory, name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        server_official_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_only.categories.add(official_cat)
+
+        server_official_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_devops.categories.add(official_cat, devops_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(
+            queryset, [OFFICIAL_MCP_CATEGORY_NAME, UNCATEGORIZED_MCP_CATEGORY_NAME]
+        )
+
+        assert set(result.values_list("id", flat=True)) == {server_official_only.id}
+
     # ========== build_list_queryset 测试 ==========
 
     def test_build_list_queryset_basic(self, fake_gateway, fake_stage):
@@ -1819,6 +1904,39 @@ class TestMCPServerHandler:
         result_ids = set(result.values_list("id", flat=True))
         assert server_with_cat.id in result_ids
         assert server_no_cat.id not in result_ids
+
+    def test_build_list_queryset_with_category_uncategorized(self, fake_gateway, fake_stage):
+        """单分类筛选 Uncategorized 时按未分类语义匹配，而非显式关联"""
+        MCPServerCategory.objects.all().delete()
+
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        server_no_cat = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 显式关联未分类但同时属于常规分类，不算未分类
+        server_uncategorized_devops = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_uncategorized_devops.categories.add(uncategorized_cat, devops_cat)
+
+        result = MCPServerHandler.build_list_queryset(category=UNCATEGORIZED_MCP_CATEGORY_NAME)
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_no_cat.id in result_ids
+        assert server_uncategorized_devops.id not in result_ids
 
     def test_build_list_queryset_with_categories(self, fake_gateway, fake_stage):
         """按多个分类过滤"""
