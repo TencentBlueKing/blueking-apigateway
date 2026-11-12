@@ -28,6 +28,8 @@ import re
 from typing import Annotated, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import yaml
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from pydantic import (
     AfterValidator,
     BaseModel,
@@ -59,14 +61,14 @@ from .constants import (
 from .refs import INPUT_NAME, parse_ref
 
 _ERROR_MESSAGES = {
-    "extra_forbidden": "未知字段",
-    "missing": "缺少必填字段",
-    "string_type": "应为字符串",
-    "bool_type": "应为布尔值",
-    "list_type": "应为数组",
-    "dict_type": "应为对象",
-    "model_type": "应为对象",
-    "model_attributes_type": "应为对象",
+    "extra_forbidden": gettext_lazy("未知字段"),
+    "missing": gettext_lazy("缺少必填字段"),
+    "string_type": gettext_lazy("应为字符串"),
+    "bool_type": gettext_lazy("应为布尔值"),
+    "list_type": gettext_lazy("应为数组"),
+    "dict_type": gettext_lazy("应为对象"),
+    "model_type": gettext_lazy("应为对象"),
+    "model_attributes_type": gettext_lazy("应为对象"),
 }
 
 
@@ -122,15 +124,16 @@ def _check_ref(value: Any) -> Any:
 def _check_type(value: str) -> str:
     if not is_type_text(value):
         raise ValueError(
-            f"类型写法不合规：{value!r}，应为 {'、'.join(_JSON_TYPE_CHECKS)} 之一，"
-            "或 array<类型>、string|integer 这样的组合"
+            _("类型写法不合规：{value}，应为 {types} 之一，或 array<类型>、string|integer 这样的组合").format(
+                value=repr(value), types=", ".join(_JSON_TYPE_CHECKS)
+            )
         )
     return value
 
 
 def _check_semver(value: str) -> str:
     if len(value) > SKILL_VERSION_MAX_LENGTH or not SEMVER_PATTERN.fullmatch(value):
-        raise ValueError(f"不是 Semver：{value}")
+        raise ValueError(_("不是 Semver：{value}").format(value=value))
     return value
 
 
@@ -153,13 +156,15 @@ def _check_date(value: str) -> str:
             raise ValueError
         datetime.datetime.fromisoformat(value)
     except ValueError:
-        raise ValueError(f"应为 YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS（不带时区）：{value}") from None
+        raise ValueError(
+            _("应为 YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS（不带时区）：{value}").format(value=value)
+        ) from None
     return value.replace("T", " ")
 
 
 def _check_text_not_empty(value: str) -> str:
     if not value.strip():
-        raise ValueError("为空")
+        raise ValueError(_("为空"))
     return value
 
 
@@ -188,9 +193,9 @@ class SkillInput(_DeclarationModel):
     @model_validator(mode="after")
     def _check_values_type(self) -> "SkillInput":
         if not value_matches_type(self.example, self.type):
-            raise ValueError(f"example 与类型 {self.type} 不符")
+            raise ValueError(_("example 与类型 {type} 不符").format(type=self.type))
         if self.has_default and not value_matches_type(self.default, self.type):
-            raise ValueError(f"default 与类型 {self.type} 不符")
+            raise ValueError(_("default 与类型 {type} 不符").format(type=self.type))
         return self
 
     @property
@@ -214,7 +219,7 @@ class SkillOutput(_DeclarationModel):
     @classmethod
     def _check_value(cls, value: str) -> str:
         if parse_ref(value).kind == "value":
-            raise ValueError("应为 ${{ inputs.<输入名> }} 或 ${{ steps.<步骤 id>.outputs.<字段路径> }}")
+            raise ValueError(_("应为 ${{ inputs.<输入名> }} 或 ${{ steps.<步骤 id>.outputs.<字段路径> }}"))
         return value
 
 
@@ -222,14 +227,14 @@ def split_uses(uses: str) -> Tuple[str, str, str]:
     """`<网关>/<资源>@<环境>` -> (gateway, stage, resource)；不合规时抛 ValueError"""
     match = _USES_PATTERN.match(uses)
     if not match:
-        raise ValueError(f"应为 <网关>/<资源>@<环境>：{uses}")
+        raise ValueError(_("应为 <网关>/<资源>@<环境>：{uses}").format(uses=uses))
     gateway, resource, stage = match.groups()
     if not GATEWAY_NAME_PATTERN.fullmatch(gateway):
-        raise ValueError(f"网关名不合规：{gateway}")
+        raise ValueError(_("网关名不合规：{gateway}").format(gateway=gateway))
     if not RESOURCE_NAME_PATTERN.fullmatch(resource):
-        raise ValueError(f"资源名不合规：{resource}")
+        raise ValueError(_("资源名不合规：{resource}").format(resource=resource))
     if not STAGE_NAME_PATTERN.fullmatch(stage):
-        raise ValueError(f"环境名不合规：{stage}")
+        raise ValueError(_("环境名不合规：{stage}").format(stage=stage))
     return gateway, stage, resource
 
 
@@ -246,7 +251,7 @@ class SkillStep(_DeclarationModel):
     @classmethod
     def _check_id(cls, value: str) -> str:
         if not SKILL_STEP_NAME_PATTERN.fullmatch(value):
-            raise ValueError(f"步骤 id 不合规：{value}")
+            raise ValueError(_("步骤 id 不合规：{value}").format(value=value))
         return value
 
     @field_validator("uses")
@@ -259,7 +264,7 @@ class SkillStep(_DeclarationModel):
     @classmethod
     def _check_not_empty(cls, value: Optional[str]) -> Optional[str]:
         if value is not None and not value.strip():
-            raise ValueError("为空")
+            raise ValueError(_("为空"))
         return value
 
     @property
@@ -289,7 +294,7 @@ class SkillGuide(_DeclarationModel):
     @classmethod
     def _check_not_empty(cls, value: str) -> str:
         if not value:
-            raise ValueError("为空（没有内容写「无」）")
+            raise ValueError(_("为空（没有内容写「无」）"))
         return value
 
 
@@ -305,7 +310,7 @@ class SkillOrchestration(_DeclarationModel):
     def _check_input_names(cls, value: Dict[str, SkillInput]) -> Dict[str, SkillInput]:
         invalid = [name for name in value if not _INPUT_NAME_PATTERN.fullmatch(name)]
         if invalid:
-            raise ValueError(f"输入名不合规：{'、'.join(invalid)}")
+            raise ValueError(_("输入名不合规：{names}").format(names=", ".join(invalid)))
         return value
 
     @field_validator("outputs")
@@ -313,7 +318,7 @@ class SkillOrchestration(_DeclarationModel):
     def _check_outputs_not_empty(cls, value: Dict[str, SkillOutput]) -> Dict[str, SkillOutput]:
         # 可编排的资源都有响应字段，总有可汇报的结果
         if not value:
-            raise ValueError("至少需要一个，写用户最终需要的结果")
+            raise ValueError(_("至少需要一个，写用户最终需要的结果"))
         return value
 
     @field_validator("steps")
@@ -322,7 +327,7 @@ class SkillOrchestration(_DeclarationModel):
         ids = [step.id for step in value]
         duplicated = sorted({step_id for step_id in ids if ids.count(step_id) > 1})
         if duplicated:
-            raise ValueError(f"步骤 id 重复：{'、'.join(duplicated)}")
+            raise ValueError(_("步骤 id 重复：{ids}").format(ids=", ".join(duplicated)))
         return value
 
     @model_validator(mode="after")
@@ -335,7 +340,11 @@ class SkillOrchestration(_DeclarationModel):
         }
         unbound = [name for name in self.inputs if name not in bound]
         if unbound:
-            raise ValueError(f"输入没有绑定到任何步骤的 with，类型无从校验、说明无从取得：{'、'.join(unbound)}")
+            raise ValueError(
+                _("输入没有绑定到任何步骤的 with，类型无从校验、说明无从取得：{names}").format(
+                    names=", ".join(unbound)
+                )
+            )
         return self
 
     def get_input(self, name: str) -> Optional[SkillInput]:
@@ -370,7 +379,7 @@ class SkillDeclaration(_DeclarationModel):
     @classmethod
     def _check_name(cls, value: str) -> str:
         if len(value) > SKILL_NAME_MAX_LENGTH or not SKILL_NAME_PATTERN.fullmatch(value):
-            raise ValueError(f"不合规：{value}")
+            raise ValueError(_("不合规：{value}").format(value=value))
         return value
 
     @field_validator("display_name")
@@ -378,10 +387,10 @@ class SkillDeclaration(_DeclarationModel):
     def _check_display_name(cls, value: str) -> str:
         value = value.strip()
         if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
-            raise ValueError(f"长度应为 1–{SKILL_DISPLAY_NAME_MAX_LENGTH}")
+            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
         # 展示名会写成 SKILL.md 的一级标题，中间换行会拆开这一行
         if "\n" in value or "\r" in value:
-            raise ValueError("不能包含换行")
+            raise ValueError(_("不能包含换行"))
         return value
 
     @field_validator("display_name_en")
@@ -391,43 +400,53 @@ class SkillDeclaration(_DeclarationModel):
             return None
         value = value.strip()
         if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
-            raise ValueError(f"长度应为 1–{SKILL_DISPLAY_NAME_MAX_LENGTH}")
+            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
         return value
 
     @field_validator("description")
     @classmethod
     def _check_description(cls, value: str) -> str:
         if not 1 <= len(value) <= SKILL_DESCRIPTION_MAX_LENGTH:
-            raise ValueError(f"长度应为 1–{SKILL_DESCRIPTION_MAX_LENGTH}")
+            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DESCRIPTION_MAX_LENGTH))
         return value
 
     @field_validator("tags")
     @classmethod
     def _check_tags(cls, value: List[str]) -> List[str]:
         if not value:
-            raise ValueError("至少需要一个标签")
+            raise ValueError(_("至少需要一个标签"))
         normalized = [normalize_tag_name(tag) for tag in value]
         for tag, name in zip(value, normalized):
             if not 1 <= len(name) <= SKILL_TAG_NAME_MAX_LENGTH:
-                raise ValueError(f"标签名长度应为 1–{SKILL_TAG_NAME_MAX_LENGTH}：{tag!r}")
+                raise ValueError(
+                    _("标签名长度应为 1–{max_length}：{tag}").format(
+                        max_length=SKILL_TAG_NAME_MAX_LENGTH, tag=repr(tag)
+                    )
+                )
         for index, name in enumerate(normalized):
             if name in normalized[:index]:
-                raise ValueError(f"标签规范化后重复：{name}")
+                raise ValueError(_("标签规范化后重复：{name}").format(name=name))
         return value
 
     @field_validator("changelog")
     @classmethod
     def _check_changelog(cls, value: List[SkillChangelogEntry], info: ValidationInfo) -> List[SkillChangelogEntry]:
         if not value:
-            raise ValueError("至少需要一条，第一条为当前版本")
+            raise ValueError(_("至少需要一条，第一条为当前版本"))
         # version 不合规时不在 info.data 里，已单独报错
         version = info.data.get("version")
         if version and value[0].version.lower() != version.lower():
-            raise ValueError(f"第一条应为当前版本 {version}，实际为 {value[0].version}")
+            raise ValueError(
+                _("第一条应为当前版本 {version}，实际为 {actual}").format(version=version, actual=value[0].version)
+            )
         # 发版按 major.minor.patch 递增（见 writer.check_new_version），核心版本相同的两条不会都发出去
         for newer, older in zip(value, value[1:]):
             if semver_core(older.version) >= semver_core(newer.version):
-                raise ValueError(f"应按版本从新到旧排列且不重复：{newer.version} 之后是 {older.version}")
+                raise ValueError(
+                    _("应按版本从新到旧排列且不重复：{newer} 之后是 {older}").format(
+                        newer=newer.version, older=older.version
+                    )
+                )
         return value
 
     @property
@@ -453,7 +472,9 @@ def parse_declaration(data: Union[str, Dict[str, Any]]) -> SkillDeclaration:
         try:
             data = yaml.safe_load(data)
         except yaml.YAMLError as err:
-            raise SkillDeclarationError([f"YAML 解析失败：{' '.join(str(err).split())}"]) from None
+            raise SkillDeclarationError(
+                [_("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))]
+            ) from None
 
     try:
         return SkillDeclaration.model_validate(data)
@@ -462,11 +483,11 @@ def parse_declaration(data: Union[str, Dict[str, Any]]) -> SkillDeclaration:
 
 
 def _format_error(error: Dict[str, Any]) -> str:
-    path = _format_loc(error["loc"]) or "声明"
+    path = _format_loc(error["loc"]) or _("声明")
     if error["type"] == "value_error":
         message = str(error["ctx"]["error"])
     else:
-        message = _ERROR_MESSAGES.get(error["type"], error["msg"])
+        message = str(_ERROR_MESSAGES.get(error["type"], error["msg"]))
     return f"{path}: {message}"
 
 

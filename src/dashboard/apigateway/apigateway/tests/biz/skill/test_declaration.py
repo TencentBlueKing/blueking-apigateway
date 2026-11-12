@@ -20,6 +20,7 @@ import datetime
 
 import pytest
 import yaml
+from django.utils.translation import override
 
 from apigateway.biz.skill.declaration import SkillDeclarationError, normalize_tag_name, parse_declaration
 from apigateway.tests.biz.skill.conftest import DECLARATIONS_DIR, GOLDEN_NAMES
@@ -429,3 +430,12 @@ class TestOrchestrationRules:
         errors = _errors(job_plan_data)
 
         assert errors == [f"orchestration.steps[0].{field}: 未知字段"]
+
+    def test_errors_translated(self, job_plan_data):
+        job_plan_data["orchestration"]["steps"][0]["if"] = 1
+        job_plan_data["version"] = "v1"
+
+        with override("en"):
+            errors = _errors(job_plan_data)
+
+        assert errors == ["version: not a Semver: v1", "orchestration.steps[0].if: unknown field"]

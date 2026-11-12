@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from django.conf import settings
+from django.utils.translation import gettext as _
 
 from apigateway.apps.skill.constants import SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata
@@ -69,6 +70,11 @@ def sync_platform_skill(path: Path, provider: ResourceProvider, dry_run: bool = 
     except Exception as err:  # pylint: disable=broad-except
         logger.exception("sync platform skill %s failed", path)
         result.reasons.append(f"{type(err).__name__}: {err}")
+        return result
+    if result.status == SkillSyncStatusEnum.SKIPPED.value:
+        # 跳过时只有「已有该版本」会带 metadata_id，这是每次部署的常态；其余跳过需要声明作者或网关负责人处理
+        level = logging.INFO if result.metadata_id else logging.WARNING
+        logger.log(level, "skip platform skill %s: %s", result.name, "; ".join(result.reasons))
     return result
 
 
@@ -89,7 +95,9 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
         return
     result.name = declaration.name
     if path.stem != declaration.name:
-        result.reasons.append(f"文件名 {path.stem} 与声明的 name {declaration.name} 不一致")
+        result.reasons.append(
+            _("文件名 {file_name} 与声明的 name {name} 不一致").format(file_name=path.stem, name=declaration.name)
+        )
         return
     _localize_gateway_names(declaration)
 
@@ -100,7 +108,7 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
         try:
             check_new_version(metadata, declaration.version)
         except SkillVersionExistsError:
-            result.reasons.append(f"版本 {declaration.version} 已存在")
+            result.reasons.append(_("版本 {version} 已存在").format(version=declaration.version))
             result.metadata_id = metadata.id
             return
         except SkillVersionNotNewerError as err:
@@ -111,14 +119,11 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
     result.warnings += validation.warnings
     if validation.missing_resources:
         result.reasons += [
-            (
-                f"{item.gateway}.{item.resource}（环境 {item.stage}）不可编排："
-                "请检查网关和环境已启用、环境已发布、当前版本存在该资源，且已配置 OpenAPI 请求参数和响应参数；"
-                "下次部署重试"
+            _("{gateway}.{resource}（环境 {stage}）不可编排：{reason}").format(
+                gateway=item.gateway, resource=item.resource, stage=item.stage, reason=item.reason
             )
             for item in validation.missing_resources
         ]
-        logger.warning("skip platform skill %s: %s", declaration.name, "；".join(result.reasons))
         return
     if validation.errors:
         result.reasons += validation.errors
@@ -129,7 +134,7 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
 
     if dry_run:
         result.status = SkillSyncStatusEnum.RELEASED.value if metadata else SkillSyncStatusEnum.CREATED.value
-        result.reasons.append("dry-run，未写库")
+        result.reasons.append(_("dry-run，未写库"))
     else:
         saved = save_skill_version(
             declaration,

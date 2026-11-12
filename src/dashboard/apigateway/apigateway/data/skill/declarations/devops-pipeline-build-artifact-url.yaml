@@ -1,4 +1,4 @@
-name: pipeline-build-artifact-url
+name: devops-pipeline-build-artifact-url
 display_name: 获取流水线构建产物下载链接
 display_name_en: Get Pipeline Build Artifact Download URL
 description: 在蓝盾（BK-CI、devops）流水线中定位最近一次、最近一次成功或指定构建号的构建，确认构建成功后列出产物，并生成临时下载链接。只读，不触发构建。用户想拿流水线打出来的包或文件时使用，例如“拿一下最新构建的包”“流水线产物下载地址”“第 128 次构建的安装包”“把 my-game 最近一次成功的 apk 链接发我”，即使没有提到“蓝盾”或“产物”也应使用。

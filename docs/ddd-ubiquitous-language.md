@@ -181,7 +181,7 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | 网关 SDK / Gateway SDK | `GatewaySDK` | 可关联资源版本的 SDK 制品，包版本与 publish_id、APISIX 版本区分。 |
 | 操作审计事件 / Audit Event | `AuditEventLog` | 操作者、对象、动作与前后数据，与发布事件、访问日志、trace 区分。 |
 | MCP 服务 / MCP Server | `MCPServer`；name 全局唯一；gateway/stage | 将所选环境 API 暴露为工具；跟随 Stage 的 Release，不独立绑定版本。 |
-| MCP 工具 / MCP Tool | resource_names/tool_names | 版本普通资源的协议映射，不创建新 Resource；resource_name@tool_name 表达别名，默认使用资源名。别名不改变资源身份或权限归属。MCP 协议的 resources 与网关 Resource、MCP Tool 不是同一概念。 |
+| MCP 工具 / MCP Tool | resource_names/tool_names | 版本普通资源的协议映射，不创建新 Resource；resource_name@tool_name 表达别名，默认使用资源名。 |
 | MCP 提示模板 / MCP Prompt | `MCPServerExtend(type=prompts)` | 服务扩展中的提示模板，与工具、后端 provider、API 请求体区分。 |
 | MCP 协议类型 / MCP Protocol Type | protocol_type | SSE / Streamable HTTP，与 Backend.type、Resource.kind 区分。 |
 | MCP 原始响应模式 / Raw Response Mode | raw_response_enabled | 工具结果返回原始 API 响应体，不改变身份、授权或版本选择。 |
@@ -196,6 +196,9 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 内置 Skill 绑定启用中网关、启用中环境当前发布版本里的普通资源（旧快照缺 kind 按 standard）。已写入的版本是当时资源定义的快照，之后的网关发布不改写它。
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
+mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
+MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
+SKILL.md frontmatter 遵循 Agent Skills 规范，只有 name、description、metadata；metadata 只有 type、version、author、datetime、source。display_name、code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、
 [OpenAPI 模型](../src/dashboard/apigateway/apigateway/apps/openapi/models.py)、

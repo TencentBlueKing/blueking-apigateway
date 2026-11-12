@@ -18,10 +18,15 @@
 """内存中的资源，测试用。fixture 先还原成发布数据和 OpenAPI schema，再走 build_skill_resource。"""
 
 import json
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable
 
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.skill.resource_loader import ResourceProvider, SkillResource, build_skill_resource
+from apigateway.biz.skill.resource_loader import (
+    ResourceProvider,
+    SkillResource,
+    SkillResourceUnavailableError,
+    build_skill_resource,
+)
 from apigateway.core.constants import ResourceKindEnum
 
 
@@ -34,18 +39,23 @@ class StaticResourceProvider(ResourceProvider):
         """`{"resources": [...]}`，每项含 gateway、stage、resource、method、path、description、auth、params、response"""
         resources = []
         for index, item in enumerate(data["resources"], start=1):
-            resource = build_skill_resource(
-                item["gateway"],
-                item["stage"],
-                ReleasedResourceData.from_data(released_resource_payload(item, index)),
-                fixture_resource_schema(item),
-            )
-            if resource is not None:
-                resources.append(resource)
+            try:
+                resource = build_skill_resource(
+                    item["gateway"],
+                    item["stage"],
+                    ReleasedResourceData.from_data(released_resource_payload(item, index)),
+                    fixture_resource_schema(item),
+                )
+            except SkillResourceUnavailableError:
+                continue
+            resources.append(resource)
         return cls(resources)
 
-    def get_resource(self, gateway: str, stage: str, resource: str) -> Optional[SkillResource]:
-        return self._resources.get((gateway, stage, resource))
+    def get_resource(self, gateway: str, stage: str, resource: str) -> SkillResource:
+        found = self._resources.get((gateway, stage, resource))
+        if found is None:
+            raise SkillResourceUnavailableError(f"fixture 中没有资源 {resource}")
+        return found
 
 
 def released_resource_payload(item: Dict[str, Any], resource_id: int) -> Dict[str, Any]:

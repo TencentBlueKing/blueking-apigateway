@@ -20,6 +20,7 @@ from pathlib import Path
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 # Agent Skills 规范名：小写字母、数字、单个连字符，1–64，不以连字符开头或结尾；步骤名同规则
 SKILL_NAME_PATTERN = re.compile(r"^(?!.*--)[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
@@ -40,6 +41,6 @@ SKILL_BODY_TEMPLATE_NAME = "SKILL.md.j2"
 class SkillSyncStatusEnum(StructuredEnum):
     """内置 Skill 单条注入的结果"""
 
-    CREATED = EnumField("created", label="新建")
-    RELEASED = EnumField("released", label="发布")
-    SKIPPED = EnumField("skipped", label="跳过")
+    CREATED = EnumField("created", label=_("新建"))
+    RELEASED = EnumField("released", label=_("发布"))
+    SKIPPED = EnumField("skipped", label=_("跳过"))

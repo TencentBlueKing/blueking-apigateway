@@ -17,14 +17,18 @@
 #
 import pytest
 from ddf import G
+from django.utils.translation import override
 
-from apigateway.biz.skill.resource_loader import ReleasedResourceProvider
+from apigateway.biz.skill.resource_loader import ReleasedResourceProvider, SkillResourceUnavailableError
 from apigateway.biz.skill.schema_converter import ResourceParam, ResponseField
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.tests.biz.skill.conftest import release_resources
 
 pytestmark = pytest.mark.django_db
+
+NO_REQUEST = "OpenAPI schema 未定义请求参数"
+NO_RESPONSE = "OpenAPI schema 的响应未定义字段"
 
 RESOURCE = {
     "resource": "get_task_status",
@@ -44,6 +48,12 @@ SCHEMA = {
         }
     },
 }
+
+
+def _assert_unavailable(gateway: str, stage: str, resource: str, reason: str) -> None:
+    with pytest.raises(SkillResourceUnavailableError) as err:
+        ReleasedResourceProvider().get_resource(gateway, stage, resource)
+    assert str(err.value) == reason
 
 
 class TestReleasedResourceProvider:
@@ -72,27 +82,32 @@ class TestReleasedResourceProvider:
     def test_no_schema(self):
         release_resources("bk-sops", "prod", [RESOURCE])
 
-        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+        with pytest.raises(SkillResourceUnavailableError) as err:
+            ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
-        assert definition is None
+        assert str(err.value) == f"{NO_REQUEST}; {NO_RESPONSE}"
 
     @pytest.mark.parametrize(
-        "schema",
+        "schema, reason",
         [
-            pytest.param({}, id="empty"),
-            pytest.param({"none_schema": True}, id="no-request-params-no-response"),
-            pytest.param({"parameters": SCHEMA["parameters"]}, id="request-only"),
-            pytest.param({"responses": SCHEMA["responses"]}, id="response-only"),
+            pytest.param({}, f"{NO_REQUEST}; {NO_RESPONSE}", id="empty"),
+            pytest.param({"none_schema": True}, NO_RESPONSE, id="no-request-params-no-response"),
+            pytest.param({"parameters": SCHEMA["parameters"]}, NO_RESPONSE, id="request-only"),
+            pytest.param({"responses": SCHEMA["responses"]}, NO_REQUEST, id="response-only"),
             pytest.param(
                 {"parameters": SCHEMA["parameters"], "responses": {"204": {"description": "ok"}}},
+                NO_RESPONSE,
                 id="response-without-fields",
             ),
         ],
     )
-    def test_requires_request_and_response(self, schema):
+    def test_requires_request_and_response(self, schema, reason):
         release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
 
-        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+        with pytest.raises(SkillResourceUnavailableError) as err:
+            ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert str(err.value) == reason
 
     def test_declared_no_request_params_with_response(self):
         schema = {"none_schema": True, "responses": SCHEMA["responses"]}
@@ -143,52 +158,69 @@ class TestReleasedResourceProvider:
         ]
 
     @pytest.mark.parametrize(
-        "gateway, stage, resource",
+        "gateway, stage, resource, reason",
         [
-            ("bk-other", "prod", "get_task_status"),
-            ("bk-sops", "test", "get_task_status"),
-            ("bk-sops", "prod", "get_task_list"),
+            ("bk-other", "prod", "get_task_status", "网关 bk-other 不存在"),
+            ("bk-sops", "test", "get_task_status", "环境 test 不存在"),
+            ("bk-sops", "prod", "get_task_list", "当前发布版本中没有资源 get_task_list"),
         ],
     )
-    def test_missing(self, gateway, stage, resource):
-        release_resources("bk-sops", "prod", [RESOURCE])
+    def test_missing(self, gateway, stage, resource, reason):
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
 
-        assert ReleasedResourceProvider().get_resource(gateway, stage, resource) is None
+        _assert_unavailable(gateway, stage, resource, reason)
 
     def test_stage_without_release(self):
-        gateway = release_resources("bk-sops", "prod", [RESOURCE])
+        gateway = release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
         G(Stage, gateway=gateway, name="test", status=StageStatusEnum.ACTIVE.value)
 
-        assert ReleasedResourceProvider().get_resource("bk-sops", "test", "get_task_status") is None
+        _assert_unavailable("bk-sops", "test", "get_task_status", "环境 test 未发布")
 
     def test_inactive_gateway(self):
-        gateway = release_resources("bk-sops", "prod", [RESOURCE])
+        gateway = release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
         gateway.status = GatewayStatusEnum.INACTIVE.value
         gateway.save(update_fields=["status"])
 
-        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+        _assert_unavailable("bk-sops", "prod", "get_task_status", "网关 bk-sops 未启用")
 
     def test_inactive_stage(self):
-        gateway = release_resources("bk-sops", "prod", [RESOURCE])
+        gateway = release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
         Stage.objects.filter(gateway=gateway, name="prod").update(status=StageStatusEnum.INACTIVE.value)
 
-        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+        _assert_unavailable("bk-sops", "prod", "get_task_status", "环境 prod 未启用")
 
     def test_ai_resource(self):
-        release_resources("bk-sops", "prod", [{**RESOURCE, "kind": ResourceKindEnum.AI.value}])
+        release_resources(
+            "bk-sops", "prod", [{**RESOURCE, "kind": ResourceKindEnum.AI.value}], schemas={"get_task_status": SCHEMA}
+        )
 
-        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+        _assert_unavailable("bk-sops", "prod", "get_task_status", "资源是 AI 资源，不能编排")
 
     def test_disabled_stage(self):
-        release_resources("bk-sops", "prod", [{**RESOURCE, "disabled_stages": ["prod"]}])
+        release_resources(
+            "bk-sops", "prod", [{**RESOURCE, "disabled_stages": ["prod"]}], schemas={"get_task_status": SCHEMA}
+        )
 
-        assert ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status") is None
+        _assert_unavailable("bk-sops", "prod", "get_task_status", "资源在环境 prod 已禁用")
+
+    def test_reason_translated(self):
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
+
+        with override("en"):
+            _assert_unavailable(
+                "bk-sops", "prod", "get_task_list", "resource get_task_list is not in the currently released version"
+            )
 
     def test_cached_per_stage(self, django_assert_num_queries):
-        release_resources("bk-sops", "prod", [RESOURCE])
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": SCHEMA})
         provider = ReleasedResourceProvider()
         provider.get_resource("bk-sops", "prod", "get_task_status")
+        with pytest.raises(SkillResourceUnavailableError):
+            provider.get_resource("bk-sops", "test", "get_task_status")
 
         with django_assert_num_queries(0):
             provider.get_resource("bk-sops", "prod", "get_task_status")
-            provider.get_resource("bk-sops", "prod", "get_task_list")
+            with pytest.raises(SkillResourceUnavailableError, match="get_task_list"):
+                provider.get_resource("bk-sops", "prod", "get_task_list")
+            with pytest.raises(SkillResourceUnavailableError, match="环境 test 不存在"):
+                provider.get_resource("bk-sops", "test", "get_task_list")

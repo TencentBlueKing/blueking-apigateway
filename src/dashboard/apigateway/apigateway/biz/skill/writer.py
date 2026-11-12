@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from django.db import transaction
+from django.utils.translation import gettext as _
 
 from apigateway.apps.skill.constants import SkillStatusEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
@@ -49,10 +50,14 @@ def check_new_version(metadata: SkillMetadata, version: str) -> None:
     预发布、构建后缀不参与比较：1.0.0-rc1 不高于 1.0.0。
     """
     if SkillVersion.objects.filter(metadata=metadata, version=version.lower()).exists():
-        raise SkillVersionExistsError(f"{metadata.name} 已有版本 {version}")
+        raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
     current = metadata.current_version
     if current and semver_core(version) <= semver_core(current.version):
-        raise SkillVersionNotNewerError(f"{metadata.name} 的版本 {version} 不高于当前版本 {current.version}")
+        raise SkillVersionNotNewerError(
+            _("{name} 的版本 {version} 不高于当前版本 {current}").format(
+                name=metadata.name, version=version, current=current.version
+            )
+        )
 
 
 @dataclass

@@ -76,7 +76,7 @@ class Migration(migrations.Migration):
                 ('created_by', models.CharField(blank=True, max_length=32, null=True)),
                 ('updated_by', models.CharField(blank=True, max_length=32, null=True)),
                 ('version', models.CharField(help_text='版本号，保存时转为小写', max_length=64)),
-                ('changelog', models.TextField(blank=True, default='', help_text='版本说明')),
+                ('changelog', models.JSONField(blank=True, default=dict, help_text='版本说明：version、date、content')),
                 ('orchestration', models.JSONField(default=dict, help_text='发版时的编排内容')),
                 ('artifact', models.JSONField(default=dict, help_text='冻结的 Skill 包文件内容')),
                 ('metadata', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='versions', to='skill.skillmetadata')),

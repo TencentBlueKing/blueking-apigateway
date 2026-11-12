@@ -28,6 +28,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import yaml
+from django.utils.translation import gettext as _
 from jinja2 import FileSystemLoader, StrictUndefined, Template
 from jinja2.sandbox import SandboxedEnvironment
 
@@ -61,10 +62,10 @@ class RenderResult:
 
 def render_skill_body(declaration: SkillDeclaration, provider: ResourceProvider) -> RenderResult:
     """渲染正文；调用方需先完成校验，没有 error、编排引用的资源都存在时才能渲染"""
-    resources = load_resources(declaration.orchestration, provider)
-    missing = [".".join(key) for key, resource in resources.items() if resource is None]
+    resources, missing = load_resources(declaration.orchestration, provider)
     if missing:
-        raise SkillRenderError(f"资源不存在，不能渲染：{'、'.join(missing)}")
+        details = "; ".join(f"{item.gateway}.{item.resource}@{item.stage}: {item.reason}" for item in missing)
+        raise SkillRenderError(_("资源不可编排，不能渲染：{details}").format(details=details))
 
     context = _SkillBodyContext(declaration, resources).build()  # type: ignore[arg-type]
     body = _get_template().render(**context)
@@ -72,7 +73,9 @@ def render_skill_body(declaration: SkillDeclaration, provider: ResourceProvider)
     result = RenderResult(body=body)
     lines = len(body.splitlines())
     if lines > SKILL_BODY_MAX_LINES:
-        result.warnings.append(f"SKILL.md 正文 {lines} 行，超过 {SKILL_BODY_MAX_LINES} 行")
+        result.warnings.append(
+            _("SKILL.md 正文 {lines} 行，超过 {max_lines} 行").format(lines=lines, max_lines=SKILL_BODY_MAX_LINES)
+        )
     return result
 
 
@@ -377,7 +380,11 @@ def _get_param(resource: SkillResource, name: str) -> ResourceParam:
     """参数必须在资源定义中，位置和类型以定义为准；不在定义中的参数校验已报 error"""
     param = resource.get_param(name)
     if param is None:
-        raise SkillRenderError(f"{resource.gateway}.{resource.data.name} 的资源定义中没有参数 {name}，不能渲染")
+        raise SkillRenderError(
+            _("{gateway}.{resource} 的资源定义中没有参数 {name}，不能渲染").format(
+                gateway=resource.gateway, resource=resource.data.name, name=name
+            )
+        )
     return param
 
 

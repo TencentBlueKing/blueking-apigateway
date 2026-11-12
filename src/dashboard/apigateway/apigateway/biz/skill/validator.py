@@ -26,7 +26,10 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Set, Tuple
 
+from django.utils.translation import gettext as _
+
 from .refs import each_array, parse_ref
+from .resource_loader import SkillResourceUnavailableError
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
@@ -41,6 +44,7 @@ class MissingResource:
     gateway: str
     stage: str
     resource: str
+    reason: str
 
 
 @dataclass
@@ -52,23 +56,27 @@ class ValidationResult:
 
 def load_resources(
     orchestration: SkillOrchestration, provider: ResourceProvider
-) -> Dict[ResourceKey, Optional[SkillResource]]:
-    """按步骤顺序查询编排用到的资源，每个资源只查一次"""
+) -> Tuple[Dict[ResourceKey, Optional[SkillResource]], List[MissingResource]]:
+    """按步骤顺序查询编排用到的资源，每个资源只查一次；不可编排的资源记为 None，原因放进 missing"""
     resources: Dict[ResourceKey, Optional[SkillResource]] = {}
+    missing: List[MissingResource] = []
     for step in orchestration.steps:
-        if step.key not in resources:
+        if step.key in resources:
+            continue
+        try:
             resources[step.key] = provider.get_resource(*step.key)
-    return resources
+        except SkillResourceUnavailableError as err:
+            resources[step.key] = None
+            missing.append(MissingResource(*step.key, reason=str(err)))
+    return resources, missing
 
 
 def validate_declaration(declaration: SkillDeclaration, provider: ResourceProvider) -> ValidationResult:
-    """缺失的资源放进 missing_resources，不算 error 也不算 warning，涉及它的字段级检查跳过"""
+    """不可编排的资源放进 missing_resources，不算 error 也不算 warning，涉及它的字段级检查跳过"""
     result = ValidationResult()
-    resources = load_resources(declaration.orchestration, provider)
-    for key, resource in resources.items():
-        if resource is None:
-            result.missing_resources.append(MissingResource(*key))
-        else:
+    resources, result.missing_resources = load_resources(declaration.orchestration, provider)
+    for resource in resources.values():
+        if resource is not None:
             result.errors += resource.errors
             result.warnings += resource.warnings
 
@@ -109,15 +117,21 @@ class _RefChecker:
     def _check_ref(self, value: Any, where: str) -> None:
         parsed = parse_ref(value)
         if parsed.kind == "input" and self.orchestration.get_input(parsed.name) is None:
-            self.result.errors.append(f"{where}：输入 {parsed.name} 不存在")
+            self.result.errors.append(_("{where}：输入 {name} 不存在").format(where=where, name=parsed.name))
         elif parsed.kind == "step":
             if parsed.step not in self.step_resources:
-                self.result.errors.append(f"{where}：引用的步骤 {parsed.step} 不在当前步骤之前")
+                self.result.errors.append(
+                    _("{where}：引用的步骤 {step} 不在当前步骤之前").format(where=where, step=parsed.step)
+                )
                 return
             resource = self.step_resources[parsed.step]
             # 资源不存在，或资源定义本身已报 error 时，不再把每个字段都报成缺失
             if resource and not resource.errors and not resource.has_response_field(parsed.path):
-                self.result.errors.append(f"{where}：{resource.data.name} 的响应定义中没有 {parsed.path}")
+                self.result.errors.append(
+                    _("{where}：{resource} 的响应定义中没有 {path}").format(
+                        where=where, resource=resource.data.name, path=parsed.path
+                    )
+                )
 
     def _check_params(self, step: SkillStep, resource: SkillResource) -> None:
         """必填参数和路径参数都要写进 with；逐个调用时每次不同的取值写成带 `[]` 的步骤引用，筛选条件写在步骤说明里"""
@@ -127,14 +141,18 @@ class _RefChecker:
             if (param.required or param.location == "path") and param.name not in step.with_
         ]
         if missing:
-            self.result.errors.append(f"{step.id}：资源定义中必填的参数没有写进 with：{'、'.join(missing)}")
+            self.result.errors.append(
+                _("{step}：资源定义中必填的参数没有写进 with：{params}").format(
+                    step=step.id, params=", ".join(missing)
+                )
+            )
 
         arrays: Set[str] = set()
         for name, value in step.with_.items():
             param = resource.get_param(name)
             # 不在定义中的参数没有位置和类型，渲染只能靠猜，而版本写入后不能改
             if param is None:
-                self.result.errors.append(f"{step.id}：参数 {name} 不在资源定义中")
+                self.result.errors.append(_("{step}：参数 {name} 不在资源定义中").format(step=step.id, name=name))
                 continue
             array = each_array(value, param.type)
             if array:
@@ -145,13 +163,19 @@ class _RefChecker:
             item = self.orchestration.get_input(parsed.name)
             if item and (param.required or param.location == "path") and item.omit_if_unset:
                 self.result.errors.append(
-                    f"{step.id}.with.{name}：参数 {name} 在资源定义中必填，输入 {parsed.name} 却是选填且没有默认值"
+                    _("{step}.with.{name}：参数 {name} 在资源定义中必填，输入 {input} 却是选填且没有默认值").format(
+                        step=step.id, name=name, input=parsed.name
+                    )
                 )
         if arrays:
             self.each_steps.add(step.id)
         # 每次调用取同一个元素的各个字段，数组不同就说不清第几次调用取哪个元素
         if len(arrays) > 1:
-            self.result.errors.append(f"{step.id}：逐个调用的参数须取自同一个数组：{'、'.join(sorted(arrays))}")
+            self.result.errors.append(
+                _("{step}：逐个调用的参数须取自同一个数组：{arrays}").format(
+                    step=step.id, arrays=", ".join(sorted(arrays))
+                )
+            )
 
     def _check_input_types(self) -> None:
         """输入声明的类型须与每个绑定参数的类型相同；定义里没写类型的参数不参与比较"""
@@ -160,15 +184,23 @@ class _RefChecker:
             declared = self.orchestration.inputs[name].type
             mismatched = [binding for binding in bindings if binding.param.type and binding.param.type != declared]
             if mismatched:
-                detail = "、".join(f"{item.step}.with.{item.param.name}（{item.param.type}）" for item in mismatched)
-                self.result.errors.append(f"inputs.{name}：类型 {declared} 与绑定参数不一致：{detail}")
+                detail = ", ".join(f"{item.step}.with.{item.param.name} ({item.param.type})" for item in mismatched)
+                self.result.errors.append(
+                    _("inputs.{name}：类型 {type} 与绑定参数不一致：{detail}").format(
+                        name=name, type=declared, detail=detail
+                    )
+                )
 
     def _check_output_types(self) -> None:
         """输出声明的类型须与来源推出的类型相同；推不出（来源字段没写类型、资源缺失或有 error）时不比较"""
         for name, output in self.orchestration.outputs.items():
             expected = self._source_type(output.value)
             if expected and expected != output.type:
-                self.result.errors.append(f"outputs.{name}：类型 {output.type} 与来源不一致，应为 {expected}")
+                self.result.errors.append(
+                    _("outputs.{name}：类型 {type} 与来源不一致，应为 {expected}").format(
+                        name=name, type=output.type, expected=expected
+                    )
+                )
 
     def _source_type(self, value: Any) -> str:
         """取自输入时为输入类型；取自响应时为字段类型，路径里每个 `[]` 和逐个调用的来源步骤各包一层 array"""
@@ -183,7 +215,7 @@ class _RefChecker:
         if not type_text:
             return ""
         depth = parsed.path.count("[]") + (1 if parsed.step in self.each_steps else 0)
-        for _ in range(depth):
+        for _index in range(depth):
             type_text = f"array<{type_text}>"
         return type_text
 

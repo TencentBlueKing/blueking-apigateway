@@ -47,7 +47,11 @@ class TestValidateDeclaration:
 
         result = _validate(job_plan_data, StaticResourceProvider.from_dict(resources_data))
 
-        assert result.missing_resources == [MissingResource("jobv3-cloud", "prod", "get_job_instance_status")]
+        assert result.missing_resources == [
+            MissingResource(
+                "jobv3-cloud", "prod", "get_job_instance_status", reason="fixture 中没有资源 get_job_instance_status"
+            )
+        ]
         assert result.errors == []
         # 缺失资源相关的字段级检查跳过，不产生 warning
         assert result.warnings == []
@@ -126,7 +130,7 @@ class TestValidateDeclaration:
 
         assert result.errors == [
             "collect-log：逐个调用的参数须取自同一个数组："
-            "steps.wait-result.outputs.data.other_list、steps.wait-result.outputs.data.step_instance_list"
+            "steps.wait-result.outputs.data.other_list, steps.wait-result.outputs.data.step_instance_list"
         ]
 
     def test_array_param_from_all_elements_is_not_each(self, resources_data, job_plan_data):
@@ -154,18 +158,18 @@ class TestValidateDeclaration:
         [
             (
                 lambda data: _with(data, 1).update(bk_scope_id="${{ inputs.job_plan_id }}"),
-                "inputs.job_plan_id：类型 integer 与绑定参数不一致：wait-result.with.bk_scope_id（string）",
+                "inputs.job_plan_id：类型 integer 与绑定参数不一致：wait-result.with.bk_scope_id (string)",
             ),
             (
                 lambda data: data["orchestration"]["inputs"]["job_plan_id"].update(type="string", example="1024"),
-                "inputs.job_plan_id：类型 string 与绑定参数不一致：run-plan.with.job_plan_id（integer）",
+                "inputs.job_plan_id：类型 string 与绑定参数不一致：run-plan.with.job_plan_id (integer)",
             ),
             (
                 lambda data: data["orchestration"]["inputs"]["bk_scope_id"].update(type="integer|string"),
                 (
                     "inputs.bk_scope_id：类型 integer|string 与绑定参数不一致："
-                    "run-plan.with.bk_scope_id（string）、wait-result.with.bk_scope_id（string）、"
-                    "collect-log.with.bk_scope_id（string）"
+                    "run-plan.with.bk_scope_id (string), wait-result.with.bk_scope_id (string), "
+                    "collect-log.with.bk_scope_id (string)"
                 ),
             ),
             (

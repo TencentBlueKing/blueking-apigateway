@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+
 import pytest
 import yaml
 
@@ -27,6 +29,7 @@ from apigateway.tests.biz.skill.conftest import release_fixture_gateway, release
 pytestmark = pytest.mark.django_db
 
 JOB_PLAN = "job-plan-run-and-log"
+SYNCER_LOGGER = "apigateway.biz.skill.syncer"
 
 
 TE_GATEWAY_NAMES = {"jobv3-cloud": "jobv3-cloud", "bk-job": "jobv3-cloud"}
@@ -89,6 +92,10 @@ def _statuses(results):
     return [(result.name, result.status) for result in results]
 
 
+def _syncer_logs(caplog):
+    return [(record.levelname, record.getMessage()) for record in caplog.records if record.name == SYNCER_LOGGER]
+
+
 class TestSyncPlatformSkills:
     def test_created(self, declarations_dir, write_declaration, job_plan_data):
         write_declaration(job_plan_data)
@@ -144,11 +151,31 @@ class TestSyncPlatformSkills:
 
         results = _sync(declarations_dir)
 
+        reason = "jobv3-cloud.not_released（环境 prod）不可编排：当前发布版本中没有资源 not_released"
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
-        assert "jobv3-cloud.not_released（环境 prod）不可编排" in results[0].reasons[0]
-        assert "已配置 OpenAPI 请求参数和响应参数" in results[0].reasons[0]
-        assert f"skip platform skill {JOB_PLAN}" in caplog.text
+        assert results[0].reasons == [reason]
+        assert f"skip platform skill {JOB_PLAN}: {reason}" in caplog.text
         assert not SkillMetadata.objects.exists()
+
+    def test_skip_reasons_logged(self, caplog, declarations_dir, write_declaration, job_plan_data):
+        job_plan_data["orchestration"]["steps"][0]["with"]["unknown"] = "${{ inputs.bk_scope_id }}"
+        write_declaration(job_plan_data)
+
+        _sync(declarations_dir)
+
+        assert _syncer_logs(caplog) == [
+            ("WARNING", f"skip platform skill {JOB_PLAN}: run-plan：参数 unknown 不在资源定义中")
+        ]
+
+    def test_version_exists_logged_as_info(self, caplog, declarations_dir, write_declaration, job_plan_data):
+        caplog.set_level(logging.INFO, logger=SYNCER_LOGGER)
+        write_declaration(job_plan_data)
+        _sync(declarations_dir)
+        caplog.clear()
+
+        _sync(declarations_dir)
+
+        assert _syncer_logs(caplog) == [("INFO", f"skip platform skill {JOB_PLAN}: 版本 1.0.0 已存在")]
 
     def test_rejected_does_not_stop_others(self, declarations_dir, write_declaration, job_plan_data):
         write_declaration({"name": "Bad_Name"}, file_name="a-bad")
@@ -253,6 +280,8 @@ class TestSyncPlatformSkills:
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert results[0].warnings == []
-        assert len(results[0].reasons) == 3
-        assert all("已配置 OpenAPI 请求参数和响应参数" in reason for reason in results[0].reasons)
+        assert results[0].reasons == [
+            f"jobv3-cloud.{name}（环境 prod）不可编排：OpenAPI schema 未定义请求参数; OpenAPI schema 的响应未定义字段"
+            for name in ("execute_job_plan", "get_job_instance_status", "batch_get_job_instance_ip_log")
+        ]
         assert not SkillMetadata.objects.exists()

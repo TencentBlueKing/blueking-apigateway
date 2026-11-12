@@ -103,9 +103,9 @@ class TestSyncPlatformSkillsCommand:
     def test_default_dir_skips_without_released_resources(self):
         names = sorted(path.stem for path in SKILL_DECLARATIONS_DIR.glob("*.yaml"))
         assert names == [
+            "devops-pipeline-app-build-detail",
+            "devops-pipeline-build-artifact-url",
             "job-plan-run-and-log",
-            "pipeline-app-build-detail",
-            "pipeline-build-artifact-url",
             "sops-create-and-start",
             "sops-task-list-and-status",
         ]

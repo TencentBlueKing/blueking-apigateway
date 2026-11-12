@@ -30,6 +30,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from django.utils.translation import gettext as _
+
 _EXPR_PATTERN = re.compile(r"^\$\{\{\s*(.*?)\s*\}\}$")
 INPUT_NAME = r"[A-Za-z_][A-Za-z0-9_-]*"
 _FIELD_NAME = r"[A-Za-z_][A-Za-z0-9_-]*(?:\[\d*\])*"
@@ -55,7 +57,7 @@ def parse_ref(value: Any) -> ParsedRef:
     if isinstance(value, str) and _EXPR_MARK in value:
         match = _EXPR_PATTERN.match(value)
         if not match or _EXPR_MARK in match.group(1) or "}}" in match.group(1):
-            raise ValueError(f"`${{{{ }}}}` 必须占满整个字符串，不能和其他文字拼接：{value}")
+            raise ValueError(_("`${{{{ }}}}` 必须占满整个字符串，不能和其他文字拼接：{value}").format(value=value))
         expr = match.group(1)
         input_match = _INPUT_REF_PATTERN.match(expr)
         if input_match:
@@ -63,9 +65,11 @@ def parse_ref(value: Any) -> ParsedRef:
         step_match = _STEP_REF_PATTERN.match(expr)
         if step_match:
             return ParsedRef(kind="step", step=step_match.group(1), path=step_match.group(2))
-        raise ValueError(f"只能引用 inputs.<输入名> 或 steps.<步骤 id>.outputs.<字段路径>：{value}")
+        raise ValueError(
+            _("只能引用 inputs.<输入名> 或 steps.<步骤 id>.outputs.<字段路径>：{value}").format(value=value)
+        )
     if _contains_expr(value):
-        raise ValueError(f"`${{{{ }}}}` 只能作为整个取值，不能写在对象或数组里：{value}")
+        raise ValueError(_("`${{{{ }}}}` 只能作为整个取值，不能写在对象或数组里：{value}").format(value=value))
     return ParsedRef(kind="value", value=value)
 
 
