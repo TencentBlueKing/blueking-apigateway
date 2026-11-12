@@ -39,7 +39,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 | 参数 | 类型 | 必填 | 说明 | 编排提示 | 示例 | 默认值 |
 | --- | --- | --- | --- | --- | --- | --- |
 {% for item in inputs %}
-| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.required | yn }} | {{ item.description | md_cell }} | {{ item.hint | md_cell }} | {{ item.example | code_cell }} | {{ item.default | code_cell }} |
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.required | yn }} | {{ item.description | md_cell }} | {{ item.hint | md_cell }} | {{ item.example | code_cell }} | {{ item.default | code_cell if item.has_default else "-" }} |
 {% endfor %}
 
 ## 输出

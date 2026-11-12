@@ -289,3 +289,37 @@ class TestValidateDeclaration:
         result = _validate(job_plan_data, static_provider)
 
         assert (result.errors, result.warnings) == ([], [])
+
+    @pytest.mark.parametrize(
+        "path, output_type, expected",
+        [
+            ("data.tags[0]", "string", None),
+            ("data.tags[]", "array<string>", None),
+            ("data.scores[1]", "number", None),
+            ("data.scores[]", "array<number>", None),
+            ("data.tags[0]", "integer", "outputs.job_instance_id：类型 integer 与来源不一致，应为 string"),
+            (
+                "data.tags[0].name",
+                "string",
+                "outputs.job_instance_id：execute_job_plan 的响应定义中没有 data.tags[0].name",
+            ),
+            (
+                "data.tags[0][0]",
+                "string",
+                "outputs.job_instance_id：execute_job_plan 的响应定义中没有 data.tags[0][0]",
+            ),
+        ],
+    )
+    def test_primitive_array_element(self, resources_data, job_plan_data, path, output_type, expected):
+        execute = next(item for item in resources_data["resources"] if item["resource"] == "execute_job_plan")
+        execute["response"] += [
+            {"field": "data.tags", "type": "array<string>"},
+            {"field": "data.scores", "type": "array<number>"},
+        ]
+        job_plan_data["orchestration"]["outputs"]["job_instance_id"].update(
+            type=output_type, value=f"${{{{ steps.run-plan.outputs.{path} }}}}"
+        )
+
+        result = _validate(job_plan_data, StaticResourceProvider.from_dict(resources_data))
+
+        assert result.errors == ([expected] if expected else [])

@@ -57,8 +57,9 @@ runs from `bin/post_migrate`.
   must equal the type derived from its source: an input's `type`, or the
   response field's type wrapped in one `array<…>` per `[]` in the path and one
   more when the source step is a per-item call (`failed_host_logs` is
-  `array<object>` while one call's `data` is `object`). A response field
-  without a type is not compared. An input's `description` is an optional orchestration
+  `array<object>` while one call's `data` is `object`). An element of an array
+  field (`data.tags[0]`, `data.tags[]`) is a response field typed as the array's
+  item type. A response field without a type is not compared. An input's `description` is an optional orchestration
   hint (drafting rules, value strategy) and must not restate the OpenAPI
   description. `outputs` must have at least one entry: every orchestrable
   resource has response fields, so there is always a result to report.

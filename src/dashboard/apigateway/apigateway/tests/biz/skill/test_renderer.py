@@ -42,6 +42,22 @@ def _body_properties(body: str, index: int) -> dict:
     return yaml.safe_load(textwrap.dedent(block))["requestBody"]["content"]["application/json"]["schema"]["properties"]
 
 
+def _validate_call(block: str) -> dict:
+    """YAML 调用说明须是合法的 OpenAPI 3.1 operation，返回解析后的调用说明"""
+    call = yaml.safe_load(textwrap.dedent(block))
+    assert all(call[key] for key in ("gateway_name", "stage_name", "resource_name", "method", "path"))
+
+    operation = {key: call[key] for key in ("parameters", "requestBody", "responses") if key in call}
+    validate(
+        {
+            "openapi": "3.1.0",
+            "info": {"title": call["resource_name"], "version": "1.0.0"},
+            "paths": {call["path"]: {call["method"].lower(): operation}},
+        }
+    )
+    return call
+
+
 class TestRenderSkillBody:
     @pytest.mark.parametrize("name", GOLDEN_NAMES)
     def test_golden(self, static_provider, name):
@@ -56,17 +72,7 @@ class TestRenderSkillBody:
 
         assert blocks
         for _, block in blocks:
-            call = yaml.safe_load(textwrap.dedent(block))
-            assert all(call[key] for key in ("gateway_name", "stage_name", "resource_name", "method", "path"))
-
-            operation = {key: call[key] for key in ("parameters", "requestBody", "responses") if key in call}
-            validate(
-                {
-                    "openapi": "3.1.0",
-                    "info": {"title": name, "version": "1.0.0"},
-                    "paths": {call["path"]: {call["method"].lower(): operation}},
-                }
-            )
+            _validate_call(block)
 
     def test_oauth2_client_columns(self, resources_data):
         for resource in resources_data["resources"]:
@@ -267,3 +273,39 @@ class TestRenderSkillBody:
         assert "作业是否结束" in wait_result
         assert "步骤列表，含状态码 12 强制终止失败和其他说明" in wait_result
         assert "step_ip_result_list:" in wait_result
+
+    def test_union_type_object_with_properties(self, resources_data):
+        execute = next(item for item in resources_data["resources"] if item["resource"] == "execute_job_plan")
+        execute["response"] += [
+            {"field": "detail", "type": "object|null", "description": "详情"},
+            {"field": "detail.id", "type": "integer"},
+        ]
+
+        body = _render("job-plan-run-and-log", StaticResourceProvider.from_dict(resources_data))
+        call = _validate_call(YAML_BLOCK_PATTERN.findall(body)[0][1])
+
+        assert call["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["detail"] == {
+            "type": ["object", "null"],
+            "description": "详情",
+            "properties": {"id": {"type": "integer"}},
+        }
+
+    @pytest.mark.parametrize(
+        "patch, expected",
+        [
+            ({"default": "biz"}, "`biz`"),
+            ({"default": ""}, '`""`'),
+            ({"type": "string|null", "default": None}, "`null`"),
+            ({}, "-"),
+        ],
+    )
+    def test_input_default_cell(self, static_provider, patch, expected):
+        data = load_declaration_data("job-plan-run-and-log")
+        scope_type = data["orchestration"]["inputs"]["bk_scope_type"]
+        scope_type.pop("default")
+        scope_type.update(patch)
+
+        body = render_skill_body(parse_declaration(data), static_provider).body
+        row = next(line for line in body.splitlines() if line.startswith("| `bk_scope_type` |"))
+
+        assert row.endswith(f"| `biz` | {expected} |")

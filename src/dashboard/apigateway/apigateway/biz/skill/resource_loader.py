@@ -22,6 +22,7 @@
 都视为资源不可编排，抛 SkillResourceUnavailableError 并带上具体原因。
 """
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -70,17 +71,23 @@ class SkillResource:
         return next((param for param in self.params if param.name == name), None)
 
     def has_response_field(self, path: str) -> bool:
-        """path 是响应中的字段，或某些字段的对象 / 数组前缀"""
+        """path 是响应中的字段，或某些字段的对象 / 数组前缀，或数组字段的元素（如 `data.tags[]`）"""
         normed = norm_path(path)
-        return any(
+        if any(
             item.field == normed or item.field.startswith(normed + ".") or item.field.startswith(normed + "[")
             for item in self.responses
-        )
+        ):
+            return True
+        return normed.endswith("[]") and self.response_type(normed[:-2]).startswith("array")
 
     def response_type(self, path: str) -> str:
-        """path 对应响应字段的类型写法；没有这一条字段或字段没写类型时为空"""
+        """path 对应响应字段的类型写法；数组元素取数组的元素类型；没有这一条字段或字段没写类型时为空"""
         normed = norm_path(path)
-        return next((item.type for item in self.responses if item.field == normed), "")
+        type_text = next((item.type for item in self.responses if item.field == normed), "")
+        if not type_text and normed.endswith("[]"):
+            match = re.fullmatch(r"array<(.+)>", self.response_type(normed[:-2]))
+            type_text = match.group(1) if match else ""
+        return type_text
 
 
 class ResourceProvider(ABC):

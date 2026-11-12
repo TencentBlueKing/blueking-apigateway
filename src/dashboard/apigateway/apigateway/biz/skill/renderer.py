@@ -106,9 +106,8 @@ def md_cell(value: Any) -> str:
 
 
 def code_cell(value: Any) -> str:
-    if value is None or value == "":
-        return "-"
-    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    """JSON 值写成行内代码；非空字符串不加引号，null、空字符串写成 `null`、`""`，与表示未配置的 - 区分"""
+    text = value if isinstance(value, str) and value else json.dumps(value, ensure_ascii=False)
     return f"`{text}`"
 
 
@@ -180,6 +179,7 @@ class _SkillBodyContext:
                 "hint": item.description,
                 "example": item.example,
                 "default": item.default,
+                "has_default": item.has_default,
             }
             for name, item in self.orchestration.inputs.items()
         ]
@@ -363,7 +363,7 @@ class _ResponseNode:
                 schema["description"] = self.description
             return schema
         if self.properties:
-            schema = {"type": self.type or "object"}
+            schema = dict(_type_schema(self.type or "object"))
             if self.description:
                 schema["description"] = self.description
             schema["properties"] = {name: child.to_schema() for name, child in self.properties.items()}
