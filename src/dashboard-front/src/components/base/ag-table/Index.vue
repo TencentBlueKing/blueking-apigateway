@@ -413,33 +413,38 @@ const selectionColumns = computed(() => [{
       >
         {{
           default: () => (
-            <Checkbox
-              modelValue={isChecked}
-              class="custom-ag-table-checkbox"
-              disabled={isDisabled}
-              onChange={(isCheck: boolean, e: MouseEvent) => {
-                e?.stopPropagation();
+            <span
+              class="inline-flex align-middle"
+              onClick={(e: MouseEvent) => e.stopPropagation()}
+            >
+              <Checkbox
+                modelValue={isChecked}
+                class="custom-ag-table-checkbox"
+                disabled={isDisabled}
+                onChange={(isCheck: boolean, e: MouseEvent) => {
+                  e?.stopPropagation();
 
-                if (isDisabled) return;
+                  if (isDisabled) return;
 
-                // 这里可以增加disabled逻辑
-                handleCustomSelectChange({
-                  isCheck,
-                  tableRowKey,
-                  row,
-                });
-                const selectionTable = filteredTableData.value;
-                const checkedIds = selectionsRowKeys.value.filter((id: number | string) =>
-                  selectionTable.some(item => item[tableRowKey] === id),
-                );
-                isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+                  // 这里可以增加disabled逻辑
+                  handleCustomSelectChange({
+                    isCheck,
+                    tableRowKey,
+                    row,
+                  });
+                  const selectionTable = filteredTableData.value;
+                  const checkedIds = selectionsRowKeys.value.filter((id: number | string) =>
+                    selectionTable.some(item => item[tableRowKey] === id),
+                  );
+                  isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
 
-                emit('selection-change', {
-                  selectionsRowKeys: checkedIds,
-                  selections: selections.value,
-                });
-              }}
-            />
+                  emit('selection-change', {
+                    selectionsRowKeys: checkedIds,
+                    selections: selections.value,
+                  });
+                }}
+              />
+            </span>
           ),
           content: () => (
             <div>
