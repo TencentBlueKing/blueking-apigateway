@@ -227,7 +227,8 @@ class _SkillBodyContext:
 
         return {
             "places": [place for place in NOTATION_PLACES if place in locations],
-            "body": "body" in locations,
+            "body": "body" in locations
+            or any(self.resources[step.key].body_required for step in self.orchestration.steps),
             "index": any(re.search(r"\[\d+\]", ref) for ref in refs),
             "all": any("[]" in ref for ref in array_refs),
             "step": any(parse_ref(ref).kind == "step" for ref in refs),
@@ -455,13 +456,14 @@ def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: S
     }
     if params:
         call["parameters"] = params
-    if body:
+    # 请求体必须发送时，没有绑定任何属性也要写出 requestBody，调用方发 {}
+    if body or resource.body_required:
         body_schema: Dict[str, Any] = {"type": "object"}
         if body_required:
             body_schema["required"] = _FlowList(body_required)
         body_schema["properties"] = body
         call["requestBody"] = {
-            "required": bool(body_required),
+            "required": resource.body_required or bool(body_required),
             "content": {"application/json": {"schema": body_schema}},
         }
     if resource.responses:

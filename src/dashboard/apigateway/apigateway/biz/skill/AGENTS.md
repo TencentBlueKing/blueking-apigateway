@@ -71,8 +71,12 @@ runs from `bin/post_migrate`.
   come from the same array. An array parameter bound to `[]` still receives the
   collected array. `refs.each_array` owns this rule for the validator and the
   renderer.
+  `requestBody.required` comes from the definition and is independent of its
+  properties: a required body is rendered even when no property is bound, and
+  the caller sends `{}`.
   The declaration is rejected when a referenced resource's request body is not
-  `application/json` (the body is always rendered as JSON), when a required or
+  `application/json` (the body is always rendered as JSON), when a resource has
+  parameters of the same name in different locations (`with` binds by name), when a required or
   path parameter is missing from `with`, when a step maps a parameter missing
   from the definition, when a `${{ steps.* }}` reference names a response field
   missing from the definition, when an input's `type` differs from a bound

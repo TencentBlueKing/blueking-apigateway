@@ -7,7 +7,7 @@
 执行步骤里每次调用是一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 是 Skill 生成器根据步骤 `uses` 和资源定义写入的调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构，但整段说明不是 OpenAPI 文档。
 
 - `parameters` 按 `in` 放：`path` 替换路径里的 `{参数名}`，`query` 放查询串，`header` 放请求头。
-- `requestBody` 的 `properties` 组成 JSON 正文。没有 `requestBody` 就不发正文。
+- `requestBody` 的 `properties` 组成 JSON 正文，`properties` 为空时发 `{}`。没有 `requestBody` 就不发正文。
 - 片段里没列的参数不要传，步骤说明明确要求传的除外。`x-omit-if-unset: true` 的参数取自选填输入，用户没给时整个参数不传。
 - `x-value` 是固定值，按 JSON 原样传。
 - `x-from: ${{ inputs.<名> }}` 换成用户输入。`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 换成该步骤响应体里的值。`[0]` 是数组第一个元素，`[]` 是每个元素的该字段组成的数组。

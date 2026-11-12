@@ -290,6 +290,22 @@ class TestRenderSkillBody:
             "properties": {"id": {"type": "integer"}},
         }
 
+    def test_required_body_without_bound_properties(self, static_provider):
+        static_provider.get_resource("jobv3-cloud", "prod", "get_job_instance_status").body_required = True
+
+        body = _render("job-plan-run-and-log", static_provider)
+        call = _validate_call(YAML_BLOCK_PATTERN.findall(body)[1][1])
+
+        assert call["requestBody"] == {
+            "required": True,
+            "content": {"application/json": {"schema": {"type": "object", "properties": {}}}},
+        }
+
+    def test_optional_body_without_bound_properties_is_omitted(self, static_provider):
+        body = _render("job-plan-run-and-log", static_provider)
+
+        assert "requestBody" not in yaml.safe_load(textwrap.dedent(YAML_BLOCK_PATTERN.findall(body)[1][1]))
+
     @pytest.mark.parametrize(
         "patch, expected",
         [

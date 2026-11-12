@@ -159,6 +159,43 @@ class TestReleasedResourceProvider:
             "bk-sops.get_task_status：请求体不是 application/json，SKILL.md 只能描述 JSON 请求体"
         ]
 
+    @pytest.mark.parametrize("required, expected", [(True, True), (False, False), (None, False)])
+    def test_body_required_independent_of_properties(self, required, expected):
+        request_body = {
+            "content": {"application/json": {"schema": {"type": "object", "properties": {"note": {"type": "string"}}}}}
+        }
+        if required is not None:
+            request_body["required"] = required
+        schema = {**SCHEMA, "requestBody": request_body}
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.body_required is expected
+        assert [param.required for param in definition.params if param.location == "body"] == [False]
+
+    @pytest.mark.parametrize(
+        "extra, locations",
+        [
+            pytest.param({"name": "task_id", "in": "query", "schema": {"type": "integer"}}, "path, query", id="query"),
+            pytest.param(
+                {"requestBody": {"content": {"application/json": {"schema": {"properties": {"task_id": {}}}}}}},
+                "path, body",
+                id="body",
+            ),
+        ],
+    )
+    def test_same_name_in_different_locations_is_error(self, extra, locations):
+        if "requestBody" in extra:
+            schema = {**SCHEMA, **extra}
+        else:
+            schema = {**SCHEMA, "parameters": SCHEMA["parameters"] + [extra]}
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.errors == [f"bk-sops.get_task_status：参数 task_id 同时出现在 {locations}，with 无法区分"]
+
     @pytest.mark.parametrize(
         "gateway, stage, resource, reason",
         [

@@ -3939,6 +3939,13 @@ msgstr ""
 
 #: apigateway/biz/skill/resource_loader.py
 #, python-brace-format
+msgid "{gateway}.{resource}：参数 {name} 同时出现在 {locations}，with 无法区分"
+msgstr ""
+"{gateway}.{resource}: parameter {name} appears in {locations}, with cannot "
+"tell them apart"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
 msgid "当前发布版本中没有资源 {resource}"
 msgstr "resource {resource} is not in the currently released version"
 

@@ -56,6 +56,8 @@ class SkillResource:
     stage: str
     data: ReleasedResourceData
     params: List[ResourceParam] = field(default_factory=list)
+    # requestBody.required：请求体必须发送，与其中属性是否必填无关
+    body_required: bool = False
     responses: List[ResponseField] = field(default_factory=list)
     # 读取资源时发现的非阻断问题（如资源未公开），由校验原样输出
     warnings: List[str] = field(default_factory=list)
@@ -127,6 +129,19 @@ def build_skill_resource(
         )
     else:
         resource.params = convert_schema_params(schema)
+        resource.body_required = bool((schema.get("requestBody") or {}).get("required"))
+
+    # with 按参数名绑定，同名参数出现在多个位置时无法区分绑定的是哪一个
+    locations: Dict[str, List[str]] = {}
+    for param in resource.params:
+        locations.setdefault(param.name, []).append(param.location)
+    for name, places in locations.items():
+        if len(places) > 1:
+            resource.errors.append(
+                _("{gateway}.{resource}：参数 {name} 同时出现在 {locations}，with 无法区分").format(
+                    gateway=gateway, resource=data.name, name=name, locations=", ".join(places)
+                )
+            )
     return resource
 
 
