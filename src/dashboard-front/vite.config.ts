@@ -11,7 +11,7 @@ import TurboConsole from 'unplugin-turbo-console/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd());
   return {
     server: {
@@ -42,7 +42,8 @@ export default defineConfig(({ mode }) => {
         viteOptimizeDeps: true,
       }),
       UnoCSS(),
-      TurboConsole({}),
+      // 仅开发时启用：生产构建下它的功能全部关闭，但仍会逐个解析源文件，白白拖慢构建
+      command === 'serve' && TurboConsole({}),
       basicSsl(),
     ],
     resolve: {
@@ -59,10 +60,10 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       manifest: true,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
-          main: path.resolve(__dirname, 'index.html'),
-          default: path.resolve(__dirname, 'default.html'),
+          main: path.resolve(import.meta.dirname, 'index.html'),
+          default: path.resolve(import.meta.dirname, 'default.html'),
         },
       },
     },

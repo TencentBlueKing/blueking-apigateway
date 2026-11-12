@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 

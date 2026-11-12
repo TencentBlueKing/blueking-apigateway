@@ -6,7 +6,9 @@
     "forceConsistentCasingInFileNames": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // 仅用于类型检查提速，不要同步到 vite.config.ts 的 alias，说明见该文件
+      "tdesign-icons-vue-next": ["./src/types/shims/tdesign-icons-vue-next.d.ts"]
     }
   }
 }

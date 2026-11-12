@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import { copy } from '@/utils';
 import { getESBSDKDoc } from '@/services/source/docs/esb';
 import { getGatewaySDKDoc } from '@/services/source/docs/gateway';

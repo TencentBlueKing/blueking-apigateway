@@ -96,7 +96,7 @@
 <script lang="ts" setup>
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { copy as copyToClipboard } from '@/utils';
-import highlightJs from 'highlight.js';
+import highlightJs from 'highlight.js/lib/common';
 
 const { t } = useI18n();
 

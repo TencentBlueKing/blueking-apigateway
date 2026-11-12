@@ -26,7 +26,7 @@
 | 分类      | 技术                        | 版本         |
 |---------|---------------------------|------------|
 | 框架      | Vue 3 (Composition API)   | ^3.5       |
-| 构建工具    | Vite                      | 7.3        |
+| 构建工具    | Vite (Rolldown)           | 8.3        |
 | 类型系统    | TypeScript                | ~5.8       |
 | 状态管理    | Pinia                     | ^3.0       |
 | 路由      | Vue Router                | ^4.5       |
@@ -41,7 +41,10 @@
 
 ## 常用命令
 
-** 注意应首先使用 `pnpm` 执行命令，没有 `pnpm` 再使用 `npm`
+** 优先使用 `pnpm`（版本见 `package.json` 的 `packageManager`），CI 与 Dockerfile 均以 `pnpm-lock.yaml` 为准执行 `pnpm install --frozen-lockfile`；
+也可使用 `npm`（需加 `--force`，bkui-vue 的 peer 依赖与 highlight.js 版本冲突），但 npm 解析出的依赖树与 pnpm 不完全一致，
+排查构建或运行问题时以 pnpm 为准。两份 lockfile 都要提交：改动依赖后执行 `npm install --package-lock-only --force`
+同步 `package-lock.json`，CI 会检查它是否与 `package.json` 同步
 
 ```bash
 # 开发（Vite 开发服务器，端口 8888，启用 SSL）
@@ -105,7 +108,7 @@ src/dashboard-front/
 ├── tsconfig.json               # TypeScript 配置入口
 ├── uno.config.ts               # UnoCSS 配置
 ├── vite.config.ts              # Vite 配置
-├── Dockerfile                  # 多阶段构建（Node 20 → Nginx）
+├── Dockerfile                  # 多阶段构建（Node 24 + pnpm → Nginx）
 └── package.json                # 依赖与脚本
 ```
 

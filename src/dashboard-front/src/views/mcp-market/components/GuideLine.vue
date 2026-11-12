@@ -96,7 +96,7 @@ import {
   getCustomServerGuideDoc,
 } from '@/services/source/gateway/mcp-server/server';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
 import CustomMdGuideSlider from '@/views/mcp-server/components/CustomMdGuideSlider.vue';
 

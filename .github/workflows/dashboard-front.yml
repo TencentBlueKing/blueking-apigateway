@@ -20,22 +20,40 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    # 与 Dockerfile 一致使用 pnpm，版本取自 package.json 的 packageManager
+    - name: Use pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        package_json_file: src/dashboard-front/package.json
+
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: 'src/dashboard-front/package.json'
+        cache: 'pnpm'
+        cache-dependency-path: 'src/dashboard-front/pnpm-lock.yaml'
         registry-url: https://registry.npmjs.org/
 
     - name: Install dependencies
-      run: npm i --force
+      run: pnpm install --frozen-lockfile
+      working-directory: src/dashboard-front
+
+    # 本地允许使用 npm，package-lock.json 需与 package.json 保持同步（以 pnpm-lock.yaml 为准，npm 仅作备选）
+    - name: Check package-lock.json is in sync
+      run: |
+        npm install --package-lock-only --ignore-scripts --force
+        git diff --exit-code -- package-lock.json || { echo "package-lock.json 未同步，请执行 npm install --package-lock-only --force 后提交"; exit 1; }
       working-directory: src/dashboard-front
 
     - name: Type check
-      run: npm run type-check
+      run: pnpm run type-check
       working-directory: src/dashboard-front
 
     - name: ESLint
-      run: npm run lint:ci
+      run: pnpm run lint:ci
+      working-directory: src/dashboard-front
+
+    # 构建期问题（Rolldown 报错、依赖互操作等）类型检查发现不了，CI 需实际构建一次
+    - name: Build
+      run: pnpm run build-only
       working-directory: src/dashboard-front
