@@ -19,7 +19,7 @@ import pytest
 import yaml
 
 from apigateway.apps.skill.constants import SkillTypeEnum
-from apigateway.apps.skill.models import SkillMetadata, SkillVersion
+from apigateway.apps.skill.models import SkillMetadata, SkillVersion, SkillVersionRelation
 from apigateway.biz.skill import SkillSyncStatusEnum, sync_platform_skills
 from apigateway.biz.skill.renderer import render_skill_body
 from apigateway.tests.biz.skill.conftest import release_fixture_gateway, release_resources, set_version
@@ -27,6 +27,40 @@ from apigateway.tests.biz.skill.conftest import release_fixture_gateway, release
 pytestmark = pytest.mark.django_db
 
 JOB_PLAN = "job-plan-run-and-log"
+
+
+TE_GATEWAY_NAMES = {"jobv3-cloud": "jobv3-cloud", "bk-job": "jobv3-cloud"}
+EE_GATEWAY_NAMES = {"jobv3-cloud": "bk-job", "bk-job": "bk-job"}
+
+
+@pytest.fixture(autouse=True)
+def te_edition(settings):
+    """fixture 资源和声明用的是内部名 jobv3-cloud"""
+    settings.EDITION_GATEWAY_NAMES = TE_GATEWAY_NAMES
+
+
+def _rename_gateway(resources_data, old, new):
+    return {
+        **resources_data,
+        "resources": [
+            {**item, "gateway": new} if item["gateway"] == old else item for item in resources_data["resources"]
+        ],
+    }
+
+
+def _use_gateway(data, gateway):
+    for step in data["orchestration"]["steps"]:
+        step["uses"] = f"{gateway}/{step['uses'].split('/', 1)[1]}"
+    data["tags"] = [gateway if tag == "jobv3-cloud" else tag for tag in data["tags"]]
+    return data
+
+
+def _relation_gateways(metadata_id):
+    return set(SkillVersionRelation.objects.filter(metadata_id=metadata_id).values_list("gateway_name", flat=True))
+
+
+def _tag_names(metadata_id):
+    return list(SkillMetadata.objects.get(id=metadata_id).tags.order_by("id").values_list("name", flat=True))
 
 
 @pytest.fixture
@@ -180,6 +214,32 @@ class TestSyncPlatformSkills:
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
         assert results[0].reasons == ["文件名 other-file 与声明的 name job-plan-run-and-log 不一致"]
         assert not SkillMetadata.objects.exists()
+
+    def test_ee_localizes_internal_gateway_name(self, settings, tmp_path, resources_data, job_plan_data):
+        settings.EDITION_GATEWAY_NAMES = EE_GATEWAY_NAMES
+        release_fixture_gateway(_rename_gateway(resources_data, "jobv3-cloud", "bk-job"), "bk-job")
+        declarations_dir = tmp_path / "declarations"
+        declarations_dir.mkdir()
+        (declarations_dir / f"{JOB_PLAN}.yaml").write_text(
+            yaml.safe_dump(job_plan_data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+
+        results = sync_platform_skills(declarations_dir)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.CREATED.value)]
+        assert _relation_gateways(results[0].metadata_id) == {"bk-job"}
+        assert "bk-job" in _tag_names(results[0].metadata_id)
+        assert "jobv3-cloud" not in _tag_names(results[0].metadata_id)
+
+    def test_te_localizes_external_gateway_name(self, declarations_dir, write_declaration, job_plan_data):
+        write_declaration(_use_gateway(job_plan_data, "bk-job"))
+
+        results = _sync(declarations_dir)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.CREATED.value)]
+        assert _relation_gateways(results[0].metadata_id) == {"jobv3-cloud"}
+        assert "jobv3-cloud" in _tag_names(results[0].metadata_id)
+        assert "bk-job" not in _tag_names(results[0].metadata_id)
 
     def test_no_openapi_schema_skipped(self, tmp_path, resources_data, job_plan_data):
         resources = [item for item in resources_data["resources"] if item["gateway"] == "jobv3-cloud"]

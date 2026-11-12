@@ -28,7 +28,7 @@ from apigateway.apps.skill.constants import SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata
 
 from .constants import SkillSyncStatusEnum
-from .declaration import SkillDeclarationError, parse_declaration
+from .declaration import SkillDeclaration, SkillDeclarationError, parse_declaration
 from .renderer import render_skill_body
 from .resource_loader import ReleasedResourceProvider, ResourceProvider
 from .validator import validate_declaration
@@ -72,6 +72,15 @@ def sync_platform_skill(path: Path, provider: ResourceProvider, dry_run: bool = 
     return result
 
 
+def _localize_gateway_names(declaration: SkillDeclaration) -> None:
+    """内外版名字不同的网关，换成当前版本的网关名"""
+    names = settings.EDITION_GATEWAY_NAMES
+    for step in declaration.orchestration.steps:
+        gateway, rest = step.uses.split("/", 1)
+        step.uses = f"{names.get(gateway, gateway)}/{rest}"
+    declaration.tags = [names.get(tag, tag) for tag in declaration.tags]
+
+
 def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSyncResult) -> None:
     try:
         declaration = parse_declaration(path.read_text(encoding="utf-8"))
@@ -82,6 +91,7 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
     if path.stem != declaration.name:
         result.reasons.append(f"文件名 {path.stem} 与声明的 name {declaration.name} 不一致")
         return
+    _localize_gateway_names(declaration)
 
     metadata = SkillMetadata.objects.filter(
         type=SkillTypeEnum.PLATFORM.value, gateway__isnull=True, name=declaration.name

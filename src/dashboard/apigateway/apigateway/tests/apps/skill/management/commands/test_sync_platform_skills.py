@@ -35,6 +35,12 @@ from apigateway.tests.biz.skill.conftest import (
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def te_edition(settings):
+    """fixture 资源和声明用的是内部名 jobv3-cloud"""
+    settings.EDITION_GATEWAY_NAMES = {"jobv3-cloud": "jobv3-cloud", "bk-job": "jobv3-cloud"}
+
+
 def _call(*args) -> str:
     out = StringIO()
     call_command("sync_platform_skills", *args, stdout=out, no_color=True)
