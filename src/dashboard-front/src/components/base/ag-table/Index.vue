@@ -278,7 +278,7 @@ const slots = useSlots();
 // 行高缓存的读取与 use-table-setting 的写入必须用同一个标识，
 // 因此表格自定义了 cacheIdentifier 时要一并传给 useMaxTableLimit
 const { maxTableLimit, clientHeight } = useMaxTableLimit({
-  ...(maxLimitConfig ?? {}),
+  ...maxLimitConfig,
   className: maxLimitConfig?.className ?? cacheIdentifier,
   // 行高缓存缺失时以组件默认行高兜底，避免按 tdesign 默认 medium 计算导致可展示条数偏多
   defaultRowSize: maxLimitConfig?.defaultRowSize ?? defaultRowSize,

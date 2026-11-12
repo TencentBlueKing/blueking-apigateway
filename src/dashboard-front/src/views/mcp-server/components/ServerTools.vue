@@ -29,7 +29,10 @@
       <!--  左栏，API 列表  -->
       <template #aside>
         <BkLoading :loading="serverToolLoading">
-          <div :class="`${toolCollapseMargin} left-aside-wrap`">
+          <div
+            class="left-aside-wrap"
+            :class="toolCollapseMargin"
+          >
             <!--  筛选器  -->
             <header class="left-aside-header">
               <header class="title">

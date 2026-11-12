@@ -26,7 +26,7 @@ export default defineConfig(({ mode, command }) => {
         template: {
           compilerOptions: {
           // 多租户名称展示标签不要解析为组件
-            isCustomElement: tag => tag === 'bk-user-display-name' || tag === 'status-tag',
+            isCustomElement: tag => tag === 'bk-user-display-name',
           },
         },
       }),
@@ -52,11 +52,6 @@ export default defineConfig(({ mode, command }) => {
         // 'bkui-vue': 'bkui-vue/dist/index.esm.js',
         'bkui-lib': 'bkui-vue/lib',
       },
-    },
-    // CI/Docker 资源受限环境下，less 预处理器在 worker 线程池中编译容易超时报 "[less] timed-out"，
-    // 设为 0 表示不创建 worker，改为在主线程编译，规避超时问题
-    css: {
-      preprocessorMaxWorkers: 0,
     },
     build: {
       manifest: true,

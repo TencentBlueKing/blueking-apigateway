@@ -17,7 +17,10 @@
  */
 
 <template>
-  <div :class="`p-16px personal-workbench-table ${applyStatus}`">
+  <div
+    class="p-16px personal-workbench-table"
+    :class="applyStatus"
+  >
     <BasicForm
       ref="basicFormRef"
       v-model:form-data="filterData"

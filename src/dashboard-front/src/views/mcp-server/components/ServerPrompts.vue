@@ -30,7 +30,10 @@
       @collapse-change="handlePromptCollapseChange"
     >
       <template #aside>
-        <div :class="`${promptCollapseMargin} left-aside-wrap`">
+        <div
+          class="left-aside-wrap"
+          :class="promptCollapseMargin"
+        >
           <main
             class="mcp-prompt-list custom-scroll-bar"
             :style="{ height: setPageMaxH }"

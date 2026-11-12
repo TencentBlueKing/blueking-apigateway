@@ -49,8 +49,6 @@ import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
 import 'highlight.js/styles/github.css';
 // 多租户组件样式
 import '@blueking/bk-user-selector/vue3/vue3.css';
-// status tag 业务组件
-import('@blueking/status-tag');
 
 const app = createApp(App);
 

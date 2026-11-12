@@ -399,8 +399,9 @@ const generateChartLegend = () => {
   // 需要隐藏legend的instance
   const hiddenLegend = ['requests'] as const;
 
-  const option = myChart.value?.getOption() as EChartsOption;
-  if ((option?.series as SeriesOption[]).length < 1
+  const option = myChart.value?.getOption() as EChartsOption | undefined;
+  if (!option
+    || !(option.series as SeriesOption[] | undefined)?.length
     || hiddenLegend.includes(instanceId as typeof hiddenLegend[number])
   ) {
     chartLegend.value[instanceId] = null;

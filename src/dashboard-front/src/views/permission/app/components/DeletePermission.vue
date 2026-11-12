@@ -59,7 +59,7 @@ interface IEmits {
 const curPermission = defineModel('permissions', {
   type: Object as PropType<IPermission>,
   required: true,
-  default: {},
+  default: () => ({}) as IPermission,
 });
 const {
   dialogParams = {

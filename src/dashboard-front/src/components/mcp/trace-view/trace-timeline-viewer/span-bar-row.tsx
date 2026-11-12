@@ -18,12 +18,13 @@
 
 import type { SetupContext } from 'vue';
 import { Divider, PopConfirm, Popover } from 'bkui-vue';
-import { type IOptions, bkTooltips } from 'bkui-vue/lib/directives';
+import { bkTooltips } from 'bkui-vue/lib/directives';
 import { debounce } from 'lodash-es';
 import {
   type ViewedBoundsFunctionType,
   createViewedBoundsFunc,
   formatDuration,
+  isErrorSpan,
 } from '@/components/mcp/trace-view/trace-timeline-viewer/utils';
 import {
   useChildrenHiddenInject,
@@ -377,6 +378,31 @@ export default defineComponent({
                         class="service-icon"
                         color="#4d4f56"
                       />
+                    )}
+                    {showErrorIcon && (
+                      <Popover
+                        v-slots={{
+                          content: () => (
+                            <div class="span-row-content-popover">
+                              <div class="span-row-content-popover-title">{t('调用异常')}</div>
+                              <div class="span-row-content-popover-main">
+                                {isErrorSpan(span as ISpan)
+                                  ? t('该调用返回错误，status_code：{code}', { code: (span as Record<string, any>)?.detail?.status ?? '--' })
+                                  : t('折叠的子调用中存在异常，展开后可查看')}
+                              </div>
+                            </div>
+                          ),
+                        }}
+                        extCls="span-error-icon"
+                        placement="top"
+                        popoverDelay={[300, 0]}
+                      >
+                        <ag-icon
+                          name="exclamation-circle-fill"
+                          class="error-icon span-bar-row-error-icon"
+                          color="#ea3636"
+                        />
+                      </Popover>
                     )}
                     <span
                       ref="svcNameEl"

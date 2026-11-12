@@ -131,7 +131,7 @@ export default defineComponent({
         // 按字符粗略估算
         let width = 0;
         for (const char of text) {
-          width += /[\x00-\x7F]/.test(char) ? 7 : 12;
+          width += (char.codePointAt(0) ?? 0) <= 0x7F ? 7 : 12;
         }
         const fallbackWidth = width + 14 + 4; // icon + gap
         textWidthCache.set(text, fallbackWidth);
