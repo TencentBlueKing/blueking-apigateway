@@ -1,7 +1,7 @@
 # Skill Generation and Injection
 
 Paths below start at `apigateway/apigateway/`. Shared terms (declaration, resource
-definition, patch snapshot) live in the DDD glossary. Callers outside `biz/` use
+definition) live in the DDD glossary. Callers outside `biz/` use
 only the names exported from `biz/skill/__init__.py`.
 
 Flow: `declaration.parse_declaration` → `validator.validate_declaration` →
@@ -76,7 +76,9 @@ runs from `bin/post_migrate`.
   the caller sends `{}`.
   The declaration is rejected when a referenced resource's request body is not
   `application/json` (the body is always rendered as JSON), when a resource has
-  parameters of the same name in different locations (`with` binds by name), when a required or
+  parameters of the same name in different locations (`with` binds by name), when
+  its method is `ANY`, when a `{name}` in its path has no path parameter of that
+  name in the definition, when a required or
   path parameter is missing from `with`, when a step maps a parameter missing
   from the definition, when a `${{ steps.* }}` reference names a response field
   missing from the definition, when an input's `type` differs from a bound

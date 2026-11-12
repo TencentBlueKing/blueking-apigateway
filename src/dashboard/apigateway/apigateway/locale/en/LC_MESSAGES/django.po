@@ -3930,6 +3930,20 @@ msgstr ""
 
 #: apigateway/biz/skill/resource_loader.py
 #, python-brace-format
+msgid "{gateway}.{resource}：方法为 ANY，SKILL.md 无法确定调用方法"
+msgstr ""
+"{gateway}.{resource}: the method is ANY, SKILL.md cannot determine which "
+"method to call"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "{gateway}.{resource}：路径中的 {names} 在资源定义中没有对应的 path 参数"
+msgstr ""
+"{gateway}.{resource}: {names} in the path has no matching path parameter in "
+"the resource definition"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
 msgid ""
 "{gateway}.{resource}：请求体不是 application/json，SKILL.md 只能描述 JSON 请"
 "求体"

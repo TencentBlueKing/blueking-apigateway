@@ -113,7 +113,9 @@ class TestReleasedResourceProvider:
 
     def test_declared_no_request_params_with_response(self):
         schema = {"none_schema": True, "responses": SCHEMA["responses"]}
-        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+        release_resources(
+            "bk-sops", "prod", [{**RESOURCE, "path": "/get_task_status/"}], schemas={"get_task_status": schema}
+        )
 
         definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
@@ -195,6 +197,21 @@ class TestReleasedResourceProvider:
         definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
         assert definition.errors == [f"bk-sops.get_task_status：参数 task_id 同时出现在 {locations}，with 无法区分"]
+
+    def test_any_method_is_error(self):
+        release_resources("bk-sops", "prod", [{**RESOURCE, "method": "ANY"}], schemas={"get_task_status": SCHEMA})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.errors == ["bk-sops.get_task_status：方法为 ANY，SKILL.md 无法确定调用方法"]
+
+    def test_path_placeholder_without_path_param_is_error(self):
+        schema = {**SCHEMA, "parameters": [{"name": "task_id", "in": "query", "schema": {"type": "integer"}}]}
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.errors == ["bk-sops.get_task_status：路径中的 task_id 在资源定义中没有对应的 path 参数"]
 
     @pytest.mark.parametrize(
         "gateway, stage, resource, reason",

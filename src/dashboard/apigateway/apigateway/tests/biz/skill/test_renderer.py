@@ -290,6 +290,22 @@ class TestRenderSkillBody:
             "properties": {"id": {"type": "integer"}},
         }
 
+    def test_untyped_param_and_response_field(self, resources_data):
+        for resource in resources_data["resources"]:
+            if resource["resource"] == "get_job_instance_status":
+                param = next(item for item in resource["params"] if item["name"] == "return_ip_result")
+                param.pop("type")
+                param.pop("description")
+                resource["response"].append({"field": "extra", "description": "未写类型的字段"})
+
+        body = _render("job-plan-run-and-log", StaticResourceProvider.from_dict(resources_data))
+        call = _validate_call(YAML_BLOCK_PATTERN.findall(body)[1][1])
+
+        param = next(item for item in call["parameters"] if item["name"] == "return_ip_result")
+        assert param["schema"] == {}
+        properties = call["responses"]["200"]["content"]["application/json"]["schema"]["properties"]
+        assert properties["extra"] == {"description": "未写类型的字段"}
+
     def test_required_body_without_bound_properties(self, static_provider):
         static_provider.get_resource("jobv3-cloud", "prod", "get_job_instance_status").body_required = True
 

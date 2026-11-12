@@ -64,7 +64,7 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 {{ description }}
 
-每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。
+每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段列出本 Skill 绑定的参数，步骤说明明确要求传的其他参数按说明传；`responses` 列出该资源已发布 OpenAPI 的响应字段。
 {%- if notation.places %}
 参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
   {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}

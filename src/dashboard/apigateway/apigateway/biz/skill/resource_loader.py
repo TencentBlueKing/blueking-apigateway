@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from django.utils.translation import gettext as _
 
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
+from apigateway.core.constants import HTTP_METHOD_ANY, GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.service.resource_version import get_resource_id_to_schema_by_resource_version, has_openapi_schema
 
@@ -121,6 +121,12 @@ def build_skill_resource(
         resource.warnings.append(
             _("{gateway}.{resource}：资源未公开，调用方无法申请权限").format(gateway=gateway, resource=data.name)
         )
+    if data.method == HTTP_METHOD_ANY:
+        resource.errors.append(
+            _("{gateway}.{resource}：方法为 ANY，SKILL.md 无法确定调用方法").format(
+                gateway=gateway, resource=data.name
+            )
+        )
     if has_non_json_request_body(schema):
         resource.errors.append(
             _("{gateway}.{resource}：请求体不是 application/json，SKILL.md 只能描述 JSON 请求体").format(
@@ -130,6 +136,14 @@ def build_skill_resource(
     else:
         resource.params = convert_schema_params(schema)
         resource.body_required = bool((schema.get("requestBody") or {}).get("required"))
+        path_params = {param.name for param in resource.params if param.location == "path"}
+        unmatched = [name for name in re.findall(r"\{([^{}]+)\}", data.path) if name not in path_params]
+        if unmatched:
+            resource.errors.append(
+                _("{gateway}.{resource}：路径中的 {names} 在资源定义中没有对应的 path 参数").format(
+                    gateway=gateway, resource=data.name, names=", ".join(unmatched)
+                )
+            )
 
     # with 按参数名绑定，同名参数出现在多个位置时无法区分绑定的是哪一个
     locations: Dict[str, List[str]] = {}

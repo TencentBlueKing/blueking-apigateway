@@ -56,7 +56,7 @@
 
 run-plan 返回的 `data.job_instance_id` 贯穿后两步；三个接口的 `bk_scope_type`、`bk_scope_id` 必须相同。
 
-每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段只列本 Skill 要传的参数，`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
+每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段列出本 Skill 绑定的参数，步骤说明明确要求传的其他参数按说明传；`responses` 列出该资源已发布 OpenAPI 的响应字段。参数位置看 `in`：`query` 放查询串；`requestBody` 里的字段组成 JSON 正文。
 
 取值：`x-from: ${{ inputs.<输入名> }}` 来自输入；`x-from: ${{ steps.<步骤 id>.outputs.<字段路径> }}` 来自该步骤的响应体；`x-each: true` 表示逐个调用：对 `[]` 前的数组每个元素调用一次，取该元素的这个字段，同一步的 `x-each` 参数取同一个元素，只调用哪些元素看该步说明；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传。
 

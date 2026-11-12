@@ -341,18 +341,17 @@ class _ResponseNode:
             inner = type_text[6:-1] if type_text.startswith("array<") and type_text.endswith(">") else ""
             if inner:
                 item.apply(inner, "")
-            elif not item.type and not item.properties:
-                item.type = "object"
             return
         if self.properties or self.item is not None:
             if not self.type:
                 self.type = "object"
             return
-        self.type = type_text or "object"
+        # 定义里没写类型的字段不补类型
+        self.type = type_text
 
     def to_schema(self) -> Any:
         if self.item is not None or self.type == "array":
-            items = self.item.to_schema() if self.item is not None else _Flow(type="object")
+            items = self.item.to_schema() if self.item is not None else _Flow()
             if isinstance(items, dict) and "properties" in items:
                 schema: Dict[str, Any] = {"type": "array"}
                 if self.description:
@@ -369,7 +368,7 @@ class _ResponseNode:
                 schema["description"] = self.description
             schema["properties"] = {name: child.to_schema() for name, child in self.properties.items()}
             return schema
-        schema = _type_schema(self.type or "object")
+        schema = _type_schema(self.type) if self.type else _Flow()
         if self.description:
             schema["description"] = self.description
         return schema
@@ -438,8 +437,8 @@ def _build_params(
             item["required"] = True
         if spec.description:
             item["description"] = spec.description
-        if schema:
-            item["schema"] = schema
+        # OpenAPI 3.1 的 Parameter 必须有 schema 或 content，定义里没写类型时为 {}
+        item["schema"] = schema
         item.update(binding)
         params.append(item)
     return params, body, body_required
