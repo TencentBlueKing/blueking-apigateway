@@ -778,7 +778,7 @@ class MCPServerHandler:
 
         # 兼容单分类筛选
         if category:
-            queryset = queryset.filter(categories__name=category, categories__is_active=True)
+            queryset = MCPServerHandler.apply_category_filter(queryset, [category])
 
         # 多分类筛选（AND/OR 逻辑）
         if categories:

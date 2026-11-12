@@ -30,6 +30,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.mcp_server.constants import (
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -1970,6 +1971,44 @@ class TestMCPServerListApiCategory:
         names = [item["name"] for item in result["data"]["results"]]
         assert "mcp-with-category" in names
         assert "mcp-without-category" not in names
+
+    def test_list_with_uncategorized_filter(self, request_view, fake_gateway):
+        MCPServerCategory.objects.all().delete()
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="mcp-without-category",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        mcp2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="mcp-uncategorized-devops",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        mcp2.categories.add(uncategorized_cat, devops_cat)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"category": UNCATEGORIZED_MCP_CATEGORY_NAME},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        names = [item["name"] for item in result["data"]["results"]]
+        assert "mcp-without-category" in names
+        assert "mcp-uncategorized-devops" not in names
 
 
 class TestMCPServerBatchQueryApi:

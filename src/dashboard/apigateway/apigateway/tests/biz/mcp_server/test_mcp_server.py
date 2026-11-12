@@ -1905,6 +1905,39 @@ class TestMCPServerHandler:
         assert server_with_cat.id in result_ids
         assert server_no_cat.id not in result_ids
 
+    def test_build_list_queryset_with_category_uncategorized(self, fake_gateway, fake_stage):
+        """单分类筛选 Uncategorized 时按未分类语义匹配，而非显式关联"""
+        MCPServerCategory.objects.all().delete()
+
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        server_no_cat = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 显式关联未分类但同时属于常规分类，不算未分类
+        server_uncategorized_devops = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_uncategorized_devops.categories.add(uncategorized_cat, devops_cat)
+
+        result = MCPServerHandler.build_list_queryset(category=UNCATEGORIZED_MCP_CATEGORY_NAME)
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_no_cat.id in result_ids
+        assert server_uncategorized_devops.id not in result_ids
+
     def test_build_list_queryset_with_categories(self, fake_gateway, fake_stage):
         """按多个分类过滤"""
         MCPServerCategory.objects.all().delete()
