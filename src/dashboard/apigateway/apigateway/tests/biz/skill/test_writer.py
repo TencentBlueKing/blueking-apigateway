@@ -21,7 +21,7 @@ import pytest
 from django.db.models import F
 
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
-from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersionRelation
+from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
 from apigateway.biz.skill.declaration import parse_declaration
 from apigateway.biz.skill.writer import SkillVersionExistsError, SkillVersionNotNewerError, save_skill_version
 from apigateway.tests.biz.skill.conftest import set_version
@@ -31,9 +31,14 @@ pytestmark = pytest.mark.django_db
 OPERATOR = "admin"
 
 
-def _save(data: dict, body: str = "# body\n"):
+def _save(data: dict, body: str = "# body\n", overwrite_existing: bool = False):
     return save_skill_version(
-        parse_declaration(data), body, skill_type=SkillTypeEnum.PLATFORM.value, gateway=None, operator=OPERATOR
+        parse_declaration(data),
+        body,
+        skill_type=SkillTypeEnum.PLATFORM.value,
+        gateway=None,
+        operator=OPERATOR,
+        overwrite_existing=overwrite_existing,
     )
 
 
@@ -101,6 +106,49 @@ class TestSaveSkillVersion:
 
         with pytest.raises(SkillVersionExistsError):
             _save(job_plan_data)
+
+    def test_overwrite_current_version(self, job_plan_data):
+        first = _save(set_version(job_plan_data, "1.0.0-rc1"))
+        SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
+        created_time = first.version.created_time
+
+        set_version(job_plan_data, "1.0.0-RC1").update(display_name="覆盖后的名字", tags=["job"])
+        job_plan_data["orchestration"]["steps"] = job_plan_data["orchestration"]["steps"][:1]
+        second = _save(job_plan_data, body="# overwritten\n", overwrite_existing=True)
+
+        assert second.overwritten
+        assert not second.created
+        assert second.version.id == first.version.id
+        version = SkillVersion.objects.get(id=first.version.id)
+        assert version.version == "1.0.0-rc1"
+        assert version.artifact == {"SKILL.md": "# overwritten\n"}
+        assert version.changelog["content"] == "发布 1.0.0-RC1"
+        assert version.created_time == created_time
+        assert version.created_by == OPERATOR
+        metadata = SkillMetadata.objects.get(id=first.metadata.id)
+        assert metadata.current_version_id == first.version.id
+        assert metadata.display_name == "覆盖后的名字"
+        assert metadata.download_count == 5
+        assert list(metadata.tags.values_list("name", flat=True)) == ["job"]
+        assert metadata.versions.count() == 1
+        assert SkillConfig.objects.get(metadata=metadata).orchestration == version.orchestration
+        assert list(SkillVersionRelation.objects.filter(version=version).values_list("resource_name", flat=True)) == [
+            "execute_job_plan"
+        ]
+
+    def test_overwrite_does_not_replace_historical_version(self, job_plan_data):
+        first = _save(job_plan_data)
+        _save(set_version(job_plan_data, "1.1.0"), body="# v2\n")
+        set_version(job_plan_data, "1.0.0")
+
+        with pytest.raises(SkillVersionExistsError):
+            _save(job_plan_data, body="# old\n", overwrite_existing=True)
+
+        first.version.refresh_from_db()
+        assert first.version.artifact == {"SKILL.md": "# body\n"}
+        metadata = SkillMetadata.objects.get(id=first.metadata.id)
+        assert metadata.current_version.version == "1.1.0"
+        assert metadata.versions.count() == 2
 
     @pytest.mark.parametrize("version", ["1.0.1", "1.1.0-rc1", "1.0.9+build"])
     def test_not_newer_than_current(self, job_plan_data, version):

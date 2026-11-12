@@ -188,12 +188,12 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | Skill 元数据 / Skill Metadata | `SkillMetadata`；`(type, gateway, name)` 唯一 | 编排网关 API 的 Skill；type 为 platform（内置，gateway 为空）或 gateway（属于某个网关）。name 是 Agent Skills 规范名，即 SKILL.md 的 name 和包目录名，在同一来源内唯一：同一网关内由唯一约束保证；内置 Skill 的 gateway 为空，数据库约束拦不住，由内置 Skill 注入保证；display_name / display_name_en 是展示名。 |
 | Skill ID | `SkillMetadata.code`（property） | 不入库，读取时由 type、网关名、name 拼出：`p_{name}` 或 `g_{网关名}_{name}`，即对外的 skill_id。 |
 | Skill 编排 / Skill Orchestration | `SkillConfig.orchestration` | 可编辑草稿，按 GitHub Actions composite action 的骨架写：每个 step 用 `uses` 调一个网关 API，`with` 传参，`${{ }}` 引用输入和之前步骤的响应；`description` 是给 AI 读的自然语言，执行条件、轮询、逐个调用都写在里面。 |
-| Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文，创建后不改。version 保存时转为小写，大小写不同视为同一版本。`created_time` 是下载包 `metadata.datetime` 的事实来源，输出为 RFC 3339 UTC 秒精度；与 ResourceVersion 区分。 |
+| Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文。version 保存时转为小写，大小写不同视为同一版本。内置 Skill 注入在版本号与当前版本一致时覆盖这一版的正文、编排、changelog 和关联资源，不新增行，`created_time` 保持不变；其他写入创建后不改。`created_time` 是下载包 `metadata.datetime` 的事实来源，输出为 RFC 3339 UTC 秒精度；与 ResourceVersion 区分。 |
 | Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 steps[].uses 里的网关名、资源名，供检索；按名称引用，不是外键。 |
-| 内置 Skill 声明 / Platform Skill Declaration | `data/skill/declarations/{name}.yaml`；`SkillDeclaration` | 随代码发布的内置 Skill 源文件；部署时注入为 platform 类型的 SkillMetadata 与 SkillVersion，同版本不重复写入。 |
+| 内置 Skill 声明 / Platform Skill Declaration | `data/skill/declarations/{name}.yaml`；`SkillDeclaration` | 随代码发布的内置 Skill 源文件；部署时注入为 platform 类型的 SkillMetadata 与 SkillVersion。版本号与当前版本一致时覆盖当前版本，不另建一行；已存在但不是当前版本，或低于当前版本的声明跳过。 |
 | Skill 资源定义 / Skill Resource Definition | `SkillResource`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API。它包装目标环境当前发布的 ReleasedResourceData（方法、路径、说明和全部认证，含 OAuth2）；参数和响应由该版本 OpenAPI schema 转换得到。不是 Resource 或 ReleasedResource 本身。 |
 
-内置 Skill 绑定启用中网关、启用中环境当前发布版本里的普通资源（旧快照缺 kind 按 standard）。已写入的版本是当时资源定义的快照，之后的网关发布不改写它。
+内置 Skill 绑定启用中网关、启用中环境当前发布版本里的普通资源（旧快照缺 kind 按 standard）。已写入的版本是注入当时资源定义的快照，网关之后的发布不改写它。再次注入且版本号与当前版本一致时，用这次注入时的资源定义覆盖这一版。
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。

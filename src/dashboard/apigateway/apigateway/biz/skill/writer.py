@@ -46,8 +46,9 @@ class SkillVersionNotNewerError(Exception):
 def check_new_version(metadata: SkillMetadata, version: str) -> None:
     """新版本必须不存在（大小写不敏感），且按 major.minor.patch 高于当前版本
 
-    低版本若成为当前版本，之后更高的版本会因「已存在」被跳过，当前版本就停在低版本上。
-    预发布、构建后缀不参与比较：1.0.0-rc1 不高于 1.0.0。
+    低版本若成为当前版本，之后再注入更高的版本时，那个版本已存在但不是当前版本，会被跳过，
+    当前版本就停在低版本上。预发布、构建后缀不参与比较：1.0.0-rc1 不高于 1.0.0。
+    与当前版本号一致的覆盖不走这里，由 save_skill_version(overwrite_existing=True) 处理。
     """
     if SkillVersion.objects.filter(metadata=metadata, version=version.lower()).exists():
         raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
@@ -65,6 +66,7 @@ class SavedSkillVersion:
     metadata: SkillMetadata
     version: SkillVersion
     created: bool
+    overwritten: bool = False
 
 
 @transaction.atomic
@@ -74,11 +76,15 @@ def save_skill_version(
     skill_type: str,
     gateway: Optional[Gateway],
     operator: str,
+    overwrite_existing: bool = False,
 ) -> SavedSkillVersion:
-    """按 (type, gateway, name) 找到或新建 metadata，追加一个版本并设为当前版本
+    """按 (type, gateway, name) 找到或新建 metadata，写入版本并设为当前版本
 
     内置 Skill 的 gateway 为空，唯一约束拦不住同名，同名由这里在事务内先查再建保证；
     调用方需保证同一来源的写入串行执行。
+    overwrite_existing 为真且声明版本与当前版本一致（大小写不敏感）时，覆盖这一版的
+    changelog、编排、正文和关联资源，不新增版本行，created_time 保持不变。
+    已存在但不是当前版本的版本仍拒绝写入。
     """
     metadata = (
         SkillMetadata.objects.select_for_update()
@@ -86,10 +92,18 @@ def save_skill_version(
         .first()
     )
     created = metadata is None
+    existing_version: Optional[SkillVersion] = None
     if metadata is None:
         metadata = SkillMetadata(type=skill_type, gateway=gateway, name=declaration.name, created_by=operator)
     else:
-        check_new_version(metadata, declaration.version)
+        if overwrite_existing and metadata.current_version_id is not None:
+            existing_version = (
+                SkillVersion.objects.select_for_update()
+                .filter(id=metadata.current_version_id, metadata=metadata, version=declaration.version.lower())
+                .first()
+            )
+        if existing_version is None:
+            check_new_version(metadata, declaration.version)
 
     metadata.display_name = declaration.display_name
     metadata.display_name_en = declaration.display_name_en
@@ -104,15 +118,24 @@ def save_skill_version(
     orchestration = declaration.orchestration_data()
     _save_config(metadata, orchestration, operator)
 
-    version = SkillVersion.objects.create(
-        metadata=metadata,
-        version=declaration.version,
-        changelog=declaration.current_changelog.model_dump(mode="json"),
-        orchestration=orchestration,
-        artifact={SKILL_FILE_NAME: body},
-        created_by=operator,
-        updated_by=operator,
-    )
+    if existing_version is None:
+        version = SkillVersion.objects.create(
+            metadata=metadata,
+            version=declaration.version,
+            changelog=declaration.current_changelog.model_dump(mode="json"),
+            orchestration=orchestration,
+            artifact={SKILL_FILE_NAME: body},
+            created_by=operator,
+            updated_by=operator,
+        )
+    else:
+        version = existing_version
+        version.changelog = declaration.current_changelog.model_dump(mode="json")
+        version.orchestration = orchestration
+        version.artifact = {SKILL_FILE_NAME: body}
+        version.updated_by = operator
+        version.save(update_fields=["changelog", "orchestration", "artifact", "updated_by", "updated_time"])
+        version.relations.all().delete()
     SkillVersionRelation.objects.bulk_create(
         [
             SkillVersionRelation(
@@ -125,7 +148,9 @@ def save_skill_version(
     metadata.current_version = version
     metadata.status = SkillStatusEnum.PUBLISHED.value
     metadata.save(update_fields=["current_version", "status", "updated_time"])
-    return SavedSkillVersion(metadata=metadata, version=version, created=created)
+    return SavedSkillVersion(
+        metadata=metadata, version=version, created=created, overwritten=existing_version is not None
+    )
 
 
 def _get_or_create_tags(names: List[str]) -> List[SkillTag]:

@@ -72,7 +72,7 @@ def sync_platform_skill(path: Path, provider: ResourceProvider, dry_run: bool = 
         result.reasons.append(f"{type(err).__name__}: {err}")
         return result
     if result.status == SkillSyncStatusEnum.SKIPPED.value:
-        # 跳过时只有「已有该版本」会带 metadata_id，这是每次部署的常态；其余跳过需要声明作者或网关负责人处理
+        # 版本已存在但不是当前版本时带 metadata_id，记为信息；其余跳过记为警告
         level = logging.INFO if result.metadata_id else logging.WARNING
         logger.log(level, "skip platform skill %s: %s", result.name, "; ".join(result.reasons))
     return result
@@ -104,16 +104,22 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
     metadata = SkillMetadata.objects.filter(
         type=SkillTypeEnum.PLATFORM.value, gateway__isnull=True, name=declaration.name
     ).first()
+    overwrite_existing = False
     if metadata:
-        try:
-            check_new_version(metadata, declaration.version)
-        except SkillVersionExistsError:
-            result.reasons.append(_("版本 {version} 已存在").format(version=declaration.version))
-            result.metadata_id = metadata.id
-            return
-        except SkillVersionNotNewerError as err:
-            result.reasons.append(str(err))
-            return
+        current = metadata.current_version
+        # 与当前版本号一致时继续往下走，写库时覆盖这一版
+        if current is not None and current.version == declaration.version.lower():
+            overwrite_existing = True
+        else:
+            try:
+                check_new_version(metadata, declaration.version)
+            except SkillVersionExistsError:
+                result.reasons.append(_("版本 {version} 已存在").format(version=declaration.version))
+                result.metadata_id = metadata.id
+                return
+            except SkillVersionNotNewerError as err:
+                result.reasons.append(str(err))
+                return
 
     validation = validate_declaration(declaration, provider)
     result.warnings += validation.warnings
@@ -142,6 +148,7 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
             skill_type=SkillTypeEnum.PLATFORM.value,
             gateway=None,
             operator=settings.GATEWAY_DEFAULT_CREATOR,
+            overwrite_existing=overwrite_existing,
         )
         result.status = SkillSyncStatusEnum.CREATED.value if saved.created else SkillSyncStatusEnum.RELEASED.value
         result.metadata_id = saved.metadata.id

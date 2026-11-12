@@ -112,15 +112,57 @@ class TestSyncPlatformSkills:
 
     def test_same_version_then_new_version(self, declarations_dir, write_declaration, job_plan_data):
         write_declaration(job_plan_data)
-        _sync(declarations_dir)
+        first = _sync(declarations_dir)
+        version_id = SkillMetadata.objects.get(id=first[0].metadata_id).current_version_id
 
-        assert _statuses(_sync(declarations_dir)) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
+        job_plan_data["display_name"] = "改过的名字"
+        write_declaration(job_plan_data)
+        overwritten = _sync(declarations_dir)
+
+        assert _statuses(overwritten) == [(JOB_PLAN, SkillSyncStatusEnum.RELEASED.value)]
+        metadata = SkillMetadata.objects.get(id=overwritten[0].metadata_id)
+        assert metadata.display_name == "改过的名字"
+        assert metadata.current_version_id == version_id
+        assert metadata.versions.count() == 1
+        assert metadata.current_version.artifact["SKILL.md"].startswith("# 改过的名字")
 
         write_declaration(set_version(job_plan_data, "1.1.0"))
         results = _sync(declarations_dir)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.RELEASED.value)]
         assert SkillVersion.objects.filter(metadata_id=results[0].metadata_id).count() == 2
+
+    def test_same_version_invalid_declaration_does_not_overwrite(
+        self, declarations_dir, write_declaration, job_plan_data
+    ):
+        write_declaration(job_plan_data)
+        _sync(declarations_dir)
+
+        job_plan_data["display_name"] = "不会写入"
+        job_plan_data["orchestration"]["steps"][0]["with"]["unknown"] = "${{ inputs.bk_scope_id }}"
+        write_declaration(job_plan_data)
+        results = _sync(declarations_dir)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
+        metadata = SkillMetadata.objects.get(name=JOB_PLAN)
+        assert metadata.display_name == "执行作业方案并收集日志"
+        assert metadata.current_version.artifact["SKILL.md"].startswith("# 执行作业方案并收集日志")
+
+    def test_older_existing_version_still_skipped(self, declarations_dir, write_declaration, job_plan_data):
+        write_declaration(job_plan_data)
+        _sync(declarations_dir)
+        write_declaration(set_version(job_plan_data, "1.1.0"))
+        _sync(declarations_dir)
+
+        write_declaration(set_version(job_plan_data, "1.0.0"))
+        results = _sync(declarations_dir)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.SKIPPED.value)]
+        assert results[0].reasons == ["版本 1.0.0 已存在"]
+        metadata = SkillMetadata.objects.get(name=JOB_PLAN)
+        assert metadata.current_version.version == "1.1.0"
+        assert metadata.versions.count() == 2
+        assert metadata.versions.get(version="1.0.0").artifact["SKILL.md"].startswith("# 执行作业方案并收集日志")
 
     def test_lower_version_rejected(self, declarations_dir, write_declaration, job_plan_data):
         write_declaration(set_version(job_plan_data, "1.1.0"))
@@ -167,12 +209,26 @@ class TestSyncPlatformSkills:
             ("WARNING", f"skip platform skill {JOB_PLAN}: run-plan：参数 unknown 不在资源定义中")
         ]
 
-    def test_version_exists_logged_as_info(self, caplog, declarations_dir, write_declaration, job_plan_data):
+    def test_same_version_is_not_logged_as_skip(self, caplog, declarations_dir, write_declaration, job_plan_data):
         caplog.set_level(logging.INFO, logger=SYNCER_LOGGER)
         write_declaration(job_plan_data)
         _sync(declarations_dir)
         caplog.clear()
 
+        results = _sync(declarations_dir)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.RELEASED.value)]
+        assert _syncer_logs(caplog) == []
+
+    def test_older_existing_version_logged_as_info(self, caplog, declarations_dir, write_declaration, job_plan_data):
+        caplog.set_level(logging.INFO, logger=SYNCER_LOGGER)
+        write_declaration(job_plan_data)
+        _sync(declarations_dir)
+        write_declaration(set_version(job_plan_data, "1.1.0"))
+        _sync(declarations_dir)
+        caplog.clear()
+
+        write_declaration(set_version(job_plan_data, "1.0.0"))
         _sync(declarations_dir)
 
         assert _syncer_logs(caplog) == [("INFO", f"skip platform skill {JOB_PLAN}: 版本 1.0.0 已存在")]
@@ -224,6 +280,20 @@ class TestSyncPlatformSkills:
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.CREATED.value)]
         assert not SkillMetadata.objects.exists()
+
+    def test_dry_run_same_version_does_not_write(self, declarations_dir, write_declaration, job_plan_data):
+        write_declaration(job_plan_data)
+        _sync(declarations_dir)
+
+        job_plan_data["display_name"] = "不会写入"
+        write_declaration(job_plan_data)
+        results = _sync(declarations_dir, dry_run=True)
+
+        assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.RELEASED.value)]
+        assert results[0].reasons == ["dry-run，未写库"]
+        metadata = SkillMetadata.objects.get(name=JOB_PLAN)
+        assert metadata.display_name == "执行作业方案并收集日志"
+        assert metadata.versions.count() == 1
 
     def test_name_filter(self, declarations_dir, write_declaration, job_plan_data):
         write_declaration(job_plan_data)

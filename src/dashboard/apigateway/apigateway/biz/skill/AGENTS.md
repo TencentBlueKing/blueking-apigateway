@@ -46,7 +46,7 @@ runs from `bin/post_migrate`.
 - The resource definition (the released OpenAPI schema) is the only source of
   parameters and responses; the declaration references it and does not redefine
   it. Parameter locations and types come only from the definition; nothing is
-  guessed from the HTTP method, because a version is immutable once written.
+  guessed from the HTTP method.
   Inputs and outputs declare a required `type` in the resource-definition
   notation (`string`, `array<object>`, `integer|string`); `example` and
   `default` must match it. An input's `type` must equal every typed parameter
@@ -80,24 +80,30 @@ runs from `bin/post_migrate`.
   field checks for that resource.
   Warnings are only for non-blocking resource facts, such as a non-public
   resource.
-- A version is immutable once written; the same version (case-insensitive) is
-  skipped, not overwritten. A new version must be higher than the current one by
-  `major.minor.patch` (pre-release and build suffixes are ignored), otherwise it
-  is rejected: a lower version made current would leave the higher one skipped
-  as "already exists" on every later deploy. `writer.check_new_version` owns
-  this rule for both the injection pre-check and the write transaction.
+- The same declaration version (case-insensitive) as the current version is
+  overwritten in place: changelog, orchestration, SKILL.md body, relations,
+  metadata, tags and config. The version row and its `created_time` stay, so
+  the download package datetime does not change. A version that already exists
+  but is not current is still skipped. A new version must be higher than the
+  current one by `major.minor.patch` (pre-release and build suffixes are
+  ignored), otherwise it is rejected: a lower version made current would leave
+  the higher one skipped as "already exists" on every later deploy.
+  `writer.check_new_version` owns the reject rule. Platform injection passes
+  `overwrite_existing=True` to `save_skill_version`; other callers still reject
+  a duplicate version.
 - `changelog` is a list of `{version, date, content}` entries, newest first;
   the first entry must be the declaration `version`, and versions strictly
   decrease by `major.minor.patch`. `date` is `YYYY-MM-DD` or
   `YYYY-MM-DD HH:MM:SS` without a time zone or fractional seconds; unquoted
   YAML dates/timestamps are accepted and a `T` separator is stored as a space.
   `SkillVersion.changelog` stores only that version's entry as JSON.
-- A written version is a snapshot of the resource definitions at injection time.
-  Gateway releases do not re-render or update built-in Skills, and nothing yet
-  detects drift. After a referenced resource changes, bump the declaration
-  `version` and redeploy, or run `sync_platform_skills`. Do not auto-generate
-  versions on release: they would collide with versions bumped in the
-  repository, and hand-written step text would not be reviewed.
+- A written version snapshots the resource definitions at injection time.
+  Gateway releases do not re-render built-in Skills. The next injection
+  overwrites the current version, including a refreshed snapshot of those
+  definitions. Bump `version` only when the change should be published as a
+  new version. Do not auto-generate versions on release: they would collide
+  with versions bumped in the repository, and hand-written step text would
+  not be reviewed.
 - Update `SkillMetadata` with `save(update_fields=...)` so concurrent
   `download_count` increments are kept.
 - Injection reads only the database and repository files; it never calls
