@@ -67,7 +67,7 @@
 </template>
 
 <script lang="ts" setup>
-import * as echarts from 'echarts';
+import { createChart } from '@/utils/echarts';
 import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
 import { useChartIntervalOption } from '@/hooks';
@@ -120,7 +120,7 @@ const tableEmptyConf = ref<{
 
 onMounted(() => {
   const chartDom = document.getElementById(instanceId);
-  myChart.value = echarts.init(chartDom as HTMLDivElement);
+  myChart.value = createChart(chartDom as HTMLDivElement);
 
   window.addEventListener('resize', chartResize);
 });

@@ -22,9 +22,8 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import './styles/index.scss';
-// 引入 iconcool / bk-icon-font 样式
+// 引入 iconcool / bk-icon-font 样式（SVG 雪碧图 iconcool.js 在文件末尾异步加载）
 import './assets/bk_icon_font/style.css';
-import './assets/bk_icon_font/iconcool.js';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
@@ -32,8 +31,6 @@ import bkui from 'bkui-vue';
 import 'bkui-vue/dist/style.css';
 // 全局通知组件样式
 import '@blueking/notice-component/dist/style.css';
-// 版本发布通知组件样式
-import '@blueking/release-note/vue3/vue3.css';
 // UnoCSS
 import 'virtual:uno.css';
 import '@unocss/reset/tailwind-compat.css';
@@ -77,3 +74,16 @@ Promise.race([
 ]).then(() => {
   app.mount('#app');
 });
+
+// iconcool 的 SVG 雪碧图约 84 KB（gzip），只有 AgIcon 的 svg 模式、插件图标等少数地方用到，
+// 空闲时再加载，不占首屏。加载后插入 body，已渲染的 <use> 引用会自动显示。
+// 加载失败时记录错误，刷新页面后重新加载。
+const loadIconSprite = () => import('./assets/bk_icon_font/iconcool.js').catch((error) => {
+  console.error('SVG 图标雪碧图加载失败', error);
+});
+if (typeof window.requestIdleCallback === 'function') {
+  window.requestIdleCallback(loadIconSprite, { timeout: 2000 });
+}
+else {
+  setTimeout(loadIconSprite, 0);
+}

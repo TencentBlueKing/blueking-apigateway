@@ -41,11 +41,7 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import * as echarts from 'echarts';
-import 'echarts/lib/chart/bar';
-import 'echarts/lib/component/tooltip';
-import 'echarts/lib/component/toolbox';
-import 'echarts/lib/component/dataZoom';
+import { type ECharts, createChart } from '@/utils/echarts';
 import { debounce, merge } from 'lodash-es';
 import { t } from '@/locales';
 import { useChartIntervalOption } from '@/hooks';
@@ -80,7 +76,7 @@ const { getChartIntervalOption } = useChartIntervalOption();
 
 const chartBoxRef = ref<HTMLDivElement | null>(null);
 // ECharts 实例
-const chartInstance = ref<echarts.ECharts | null>(null);
+const chartInstance = ref<ECharts | null>(null);
 // 图表数据（series + timeline）
 const chartData = ref<{
   series: number[]
@@ -361,7 +357,7 @@ const initChart = async () => {
     isChartInit = true;
 
     chartInstance.value = markRaw(
-      echarts.init(chartBox, null, {
+      createChart(chartBox, {
         width: offsetWidth,
         height: offsetHeight,
       }),

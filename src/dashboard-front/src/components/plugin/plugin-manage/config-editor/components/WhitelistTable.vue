@@ -328,7 +328,8 @@
 </template>
 
 <script lang="ts" setup>
-import { json2Yaml, yaml2Json } from '@/utils';
+import { json2Yaml } from '@/utils/json2Yaml';
+import { yaml2Json } from '@/utils/yaml2Json';
 import { throttle } from 'lodash-es';
 import { InfoBox, Message } from 'bkui-vue';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';

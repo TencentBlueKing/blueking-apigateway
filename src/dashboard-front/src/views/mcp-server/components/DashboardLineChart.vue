@@ -65,7 +65,7 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import * as echarts from 'echarts';
+import { type ECharts, createChart } from '@/utils/echarts';
 import { merge } from 'lodash-es';
 import { t } from '@/locales';
 import type {
@@ -131,7 +131,7 @@ const { searchParams } = useObservabilityDashboard();
 // 本图最近一次同步的查询参数，只用于判断空状态类型；不回写共享查询状态
 const chartParams = shallowRef<IObservabilitySearchParams>({ ...searchParams.value });
 
-const myChart = shallowRef<echarts.ECharts | undefined>();
+const myChart = shallowRef<ECharts | undefined>();
 const chartLegend = ref<Record<string, ILegendItem[] | null>>({});
 const tableEmptyConf = ref<{
   emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
@@ -255,7 +255,8 @@ const getChartOption = (): EChartsOption => {
     xAxis: {
       type: 'time',
       scale: true,
-      boundaryGap: false,
+      // 时间轴的 boundaryGap 只接受数组，ECharts 6 的类型不再允许 false
+      boundaryGap: [0, 0],
       axisLabel: {
         color: '#666666',
         fontSize: 12,
@@ -495,7 +496,7 @@ onMounted(() => {
     }
 
     myChart.value?.dispose();
-    myChart.value = echarts.init(chartDom);
+    myChart.value = createChart(chartDom);
     renderChart();
   };
 

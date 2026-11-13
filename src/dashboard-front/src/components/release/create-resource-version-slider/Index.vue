@@ -249,7 +249,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import semver from 'semver';
+import semverValid from 'semver/functions/valid';
 import {
   Spinner,
   Success,
@@ -353,7 +353,7 @@ const rules = {
         if (value?.indexOf('v') !== -1) {
           return false;
         }
-        if (semver.valid(value) === null) {
+        if (semverValid(value) === null) {
           return false;
         }
         return true;

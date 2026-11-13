@@ -28,16 +28,16 @@
 | 框架      | Vue 3 (Composition API)   | ^3.5       |
 | 构建工具    | Vite (Rolldown)           | 8.3        |
 | 类型系统    | TypeScript                | ^5.9       |
-| 状态管理    | Pinia                     | ^3.0       |
-| 路由      | Vue Router                | ^4.5       |
+| 状态管理    | Pinia                     | ^4.1       |
+| 路由      | Vue Router                | ^5.5       |
 | 国际化     | vue-i18n (Composition 模式) | ^11.4      |
 | HTTP 请求 | Axios                     | 1.21.1     |
 | 主 UI 库  | bkui-vue (蓝鲸 UI)          | 3.0.10     |
 | 辅助 UI 库 | tdesign-vue-next（高级表格）    | ^1.18      |
 | 原子化 CSS | UnoCSS + Tailwind v3 预设   | ^66.3      |
 | 代码编辑器   | Monaco Editor             | ^0.52      |
-| 图表      | ECharts                   | ^5.6       |
-| 工具库     | @vueuse/*                 | ^14.4      |
+| 图表      | ECharts（按需引入）            | ^6.1       |
+| 工具库     | @vueuse/*                 | ^15.0      |
 
 ## 常用命令
 
@@ -80,6 +80,10 @@ pnpm preview
 - `@blueking/login-userinfo`（保持 0.0.13）：0.0.14 起内嵌整个 tippy.js，首屏 chunk 增加约 36 KB
 - bkui-vue 在 `lib/tag-input`、`lib/timeline` 内嵌了 DOMPurify 3.2.6，`overrides` 改不了产物，需等 bkui-vue 升级
 - `stylelint`（保持 17）：`stylelint-config-standard-scss` 最新的 17.x 只支持 stylelint 17
+- `vue-tsc`（保持 3.2.9）：3.3.x（验证到 3.3.14）会把模板中的部分属性访问误报为缺少 `.value`
+- `js-yaml`（保持 4.x）：5.0 重写了 API，默认 schema 不再支持 `<<` 合并键，空输入会抛错，
+  会改变 Swagger/OpenAPI 导入的解析结果；4.x 仍在维护
+- `@blueking/date-picker`（保持 2.0.0-beta.48）：4.x 要求 bkui-vue 2，并额外依赖 vue-tippy
 - `mavon-editor`（暂不替换）：md-editor-v3 打开编辑器时需下载约 884 KB（gzip 304 KB），是 mavon 的 2 倍多；
   如需替换，优先考虑基于项目现有 markdown 渲染器的轻量编辑器
 
@@ -617,3 +621,10 @@ Pre-commit 钩子自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `eslint 
    **文件下载**：后端返回 `application/octet-stream` 时，响应拦截器自动下载文件，此时 `http` 的返回值为 `undefined`；
    导出类接口需传 `responseType: 'blob'`，通常配合 `catchError: true` 由调用方处理错误（错误响应体为 Blob）。
 6. **Feature Flag**：通过 `useFeatureFlag` Store 管理功能开关，控制菜单和功能的显隐。
+7. **ECharts 按需引入**：图表实例通过 `@/utils/echarts` 的 `createChart` 创建，不要 `import * as echarts from 'echarts'`
+   （会打入整包，图表页多约 100 KB gzip）。用到新的图表类型或组件时，需在 `src/utils/echarts.ts` 的 `use()` 中注册。
+   默认使用 v5 主题，保持 ECharts 5 的样式。ECharts 6 会把轴标签收进画布并压缩绘图区，不需要显示的轴标签要显式设置
+   `axisLabel: { show: false }`。
+8. **首屏体积**：`main.ts`、顶部导航和 `utils/index.ts` 统一导出的内容都会进首屏。只在少数场景用到的大组件或大库
+   （如版本日志 `@blueking/release-note`、`js-yaml`）用动态 `import()` 按需加载，或在使用处按文件路径引入。
+   iconcool 的 SVG 雪碧图在空闲时异步加载，`AgIcon` 的 `svg` 模式图标会稍晚出现，首屏立即可见的图标优先用字体模式。

@@ -42,7 +42,7 @@
       <span
         text
         class="info-item"
-        @click="showVersionLog"
+        @click="showVersionLog()"
       >
         {{ t('版本日志') }}
       </span>
@@ -69,7 +69,9 @@
         {{ t('开源社区') }}
       </BkLink>
     </template>
-    <ReleaseNote
+    <component
+      :is="ReleaseNote"
+      v-if="ReleaseNote"
       v-model:show="showSyncReleaseNote"
       :list="syncReleaseList"
     />
@@ -77,21 +79,52 @@
 </template>
 
 <script setup lang="ts">
-import semver from 'semver';
-import ReleaseNote from '@blueking/release-note';
+import type { Component } from 'vue';
+import semverCompare from 'semver/functions/compare';
 
 import { getVersionLog } from '@/services/source/platform/version-log';
 import { useEnv } from '@/stores';
+import { messageError } from '@/utils';
 
 const { t } = useI18n();
 const envStore = useEnv();
 
-const showVersionLog = () => {
-  showSyncReleaseNote.value = true;
-};
-
+// 版本日志组件约 26 KB（gzip），首次打开时再加载，不放进首屏
+const ReleaseNote = shallowRef<Component | null>(null);
 const showSyncReleaseNote = ref(false);
 const syncReleaseList = ref<any[]>([]);
+
+// Vite 可能跳过加载失败的样式请求。保留本页的加载结果，刷新后再尝试。
+let releaseNoteLoad: Promise<boolean> | undefined;
+
+const loadReleaseNote = async () => {
+  try {
+    const [module] = await Promise.all([
+      import('@blueking/release-note'),
+      import('@blueking/release-note/vue3/vue3.css'),
+    ]);
+    ReleaseNote.value = module.default;
+    // 先以关闭状态挂载，让组件监听到 show 从 false 变为 true。
+    await nextTick();
+    return true;
+  }
+  catch (error) {
+    console.error('版本日志组件加载失败', error);
+    return false;
+  }
+};
+
+const showVersionLog = async (notifyOnFailure = true) => {
+  releaseNoteLoad ??= loadReleaseNote();
+  if (!await releaseNoteLoad) {
+    if (notifyOnFailure) {
+      messageError(t('静态文件加载失败，请刷新页面重试'));
+    }
+    return false;
+  }
+  showSyncReleaseNote.value = true;
+  return true;
+};
 
 onMounted(async () => {
   const list = await getVersionLog();
@@ -105,11 +138,11 @@ onMounted(async () => {
 
   const latestVersion = list[0].version;
   const localLatestVersion = localStorage.getItem('latest-version');
-  if (!localLatestVersion
-    || semver.compare(localLatestVersion.replace(/^V/, ''), latestVersion.replace(/^V/, '')) === -1
-  ) {
+  const hasNewVersion = !localLatestVersion
+    || semverCompare(localLatestVersion.replace(/^V/, ''), latestVersion.replace(/^V/, '')) === -1;
+  if (hasNewVersion && await showVersionLog(false)) {
+    await nextTick();
     localStorage.setItem('latest-version', latestVersion);
-    showVersionLog();
   }
 });
 
