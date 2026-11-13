@@ -661,6 +661,7 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
     enable_websocket = serializers.BooleanField(read_only=True, help_text="是否启用 WebSocket")
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
     schema = serializers.DictField(read_only=True, help_text="资源的 OpenAPI Schema 定义")
+    has_openapi_schema = serializers.BooleanField(read_only=True, help_text="是否已声明请求参数")
     doc = serializers.DictField(read_only=True, help_text="资源文档信息", allow_null=True)
     auth_config = AuthConfigOutputSLZ(read_only=True, help_text="认证配置")
 

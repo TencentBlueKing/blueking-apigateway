@@ -914,6 +914,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
             "is_deprecated": resource_data.is_deprecated,
             "deprecated_note": resource_data.deprecated_note,
             "schema": resource_schema or {},
+            "has_openapi_schema": ResourceOpenAPISchemaHandler.has_openapi_schema(resource_schema),
             "doc": doc_info,
             "auth_config": {
                 "user_verified_required": resource_data.verified_user_required,

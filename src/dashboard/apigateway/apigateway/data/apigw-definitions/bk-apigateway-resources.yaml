@@ -2768,6 +2768,9 @@ paths:
                   schema:
                     type: object
                     description: OpenAPI Schema 定义
+                  has_openapi_schema:
+                    type: boolean
+                    description: 是否已声明请求参数，包括声明无请求参数（指定环境已发布版本）
                   doc:
                     type: object
                     properties:
