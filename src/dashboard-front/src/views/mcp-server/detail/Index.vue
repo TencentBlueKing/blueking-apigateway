@@ -395,6 +395,8 @@ const fetchServer = async () => {
   server.value = await getServer(gatewayId, serverId.value);
 };
 
+const guideTab = ref('default');
+
 const fetchGuide = async () => {
   const { content } = await getServerGuideDoc(gatewayId, serverId.value);
   markdownStr.value = content;
@@ -406,6 +408,20 @@ const fetchCustomGuide = async () => {
   isExistCustomGuide.value = markdownStr.value.length > 0;
 };
 
+// 并发获取默认指引与自定义指引，按当前展示的 tab 决定渲染内容，
+// 避免两个请求各自写入 markdownStr 时后完成者覆盖先完成者（无自定义文档时会清空内容导致空白）
+const fetchGuideContent = async () => {
+  const [defaultRes, customRes] = await Promise.all([
+    getServerGuideDoc(gatewayId, serverId.value),
+    getCustomServerGuideDoc(gatewayId, serverId.value),
+  ]);
+  const customContent = customRes?.content ?? '';
+  isExistCustomGuide.value = customContent.length > 0;
+  markdownStr.value = guideTab.value === 'custom' && isExistCustomGuide.value
+    ? customContent
+    : defaultRes?.content ?? '';
+};
+
 const fetchMcpAIConfigList = async () => {
   const res = await getMcpServerConfigs(gatewayId, serverId.value);
   mcpConfigList.value = res?.configs ?? [];
@@ -414,13 +430,14 @@ const fetchMcpAIConfigList = async () => {
 const handleUpdated = async () => {
   await Promise.all([
     fetchServer(),
-    fetchGuide(),
-    fetchCustomGuide(),
+    fetchGuideContent(),
+    fetchMcpAIConfigList(),
   ]);
   updateCount();
 };
 
 const handleGuideChange = (tabName: string) => {
+  guideTab.value = tabName;
   const tabMap: Record<string, () => Promise<void>> = {
     default: () => {
       return fetchGuide();
@@ -438,7 +455,7 @@ watch(
     if (id && mcpId) {
       serverId.value = Number(mcpId);
       if (gatewayId === Number(id)) {
-        Promise.allSettled([handleUpdated(), fetchMcpAIConfigList()]);
+        Promise.allSettled([handleUpdated()]);
       }
     }
   },
