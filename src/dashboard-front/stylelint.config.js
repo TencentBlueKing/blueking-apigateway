@@ -3,7 +3,7 @@ export default {
   extends: ['stylelint-config-standard-scss'],
   plugins: ['stylelint-order'],
   rules: {
-    'media-feature-range-notation': 'prefix',
+    'media-feature-range-notation': null,
     'function-no-unknown': [
       true,
       { ignoreFunctions: ['extend', 'v-bind'] },
@@ -14,7 +14,7 @@ export default {
     ],
     'selector-pseudo-class-no-unknown': [
       true,
-      { ignorePseudoClasses: ['/deep/'] },
+      { ignorePseudoClasses: ['/deep/', '/global/'] },
     ],
     'import-notation': 'string',
     'selector-class-pattern': '^[a-z][a-z0-9_-]+$',

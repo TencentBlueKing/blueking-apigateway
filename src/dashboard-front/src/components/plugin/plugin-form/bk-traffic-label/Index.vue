@@ -592,7 +592,7 @@ defineExpose<{ getValue: () => Promise<ITrafficLabelConfig> }>({ getValue: () =>
     padding-left: 16px;
     font-weight: normal;
     color: #313238;
-    background-color: #fafbfd;
+    background-color: #f0f1f5;
     border-bottom: 1px solid #dcdee5;
 
     &:hover {
@@ -609,6 +609,7 @@ defineExpose<{ getValue: () => Promise<ITrafficLabelConfig> }>({ getValue: () =>
     }
 
     .table-body-row {
+      background-color: #fff;
       border-bottom: 1px solid #dcdee5;
 
       .table-body-row-cell {
@@ -669,7 +670,7 @@ defineExpose<{ getValue: () => Promise<ITrafficLabelConfig> }>({ getValue: () =>
 
 .tb-btn {
   font-size: 14px;
-  color: #c4c6cc;
+  color: #979ba5;
   cursor: pointer;
 
   &:hover {

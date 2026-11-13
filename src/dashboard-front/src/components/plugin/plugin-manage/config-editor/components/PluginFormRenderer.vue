@@ -8,31 +8,35 @@
     <template v-else-if="definition">
       <BkAlert
         v-if="definition.notice"
-        class="mb-16px"
+        :key="code"
+        class="mb-24px"
         theme="warning"
         :title="t(definition.notice)"
+        closable
       />
-      <Component
-        :is="editor.component"
-        v-if="editor?.kind === 'custom'"
-        :key="formVersion"
-        ref="formRef"
-        :data="formData"
-      />
-      <Component
-        :is="editor.component"
-        v-else-if="editor?.kind === 'whitelist'"
-        :key="formVersion"
-        ref="formRef"
-        class="white-list"
-        :type="type"
-        :yaml-str="whitelistYaml"
-      />
-      <div
-        v-else-if="editor?.kind === 'none'"
-        class="color-#63656e text-14px"
-      >
-        {{ t('该插件无需任何参数') }}
+      <div class="plugin-form-panel">
+        <Component
+          :is="editor.component"
+          v-if="editor?.kind === 'custom'"
+          :key="formVersion"
+          ref="formRef"
+          :data="formData"
+        />
+        <Component
+          :is="editor.component"
+          v-else-if="editor?.kind === 'whitelist'"
+          :key="formVersion"
+          ref="formRef"
+          class="white-list"
+          :type="type"
+          :yaml-str="whitelistYaml"
+        />
+        <div
+          v-else-if="editor?.kind === 'none'"
+          class="color-#63656e text-14px"
+        >
+          {{ t('该插件无需任何参数') }}
+        </div>
       </div>
     </template>
   </div>
@@ -118,3 +122,12 @@ defineExpose({
   isReady,
 });
 </script>
+
+<style lang="scss" scoped>
+.plugin-form-panel {
+  padding: 16px;
+  overflow-x: auto;
+  background-color: #f5f7fa;
+  border-radius: 2px;
+}
+</style>
