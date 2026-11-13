@@ -91,15 +91,15 @@ class Command(BaseCommand):
         for result in results:
             line = f"[{labels[result.status]}] {result.name}"
             if result.reasons:
-                line += "：" + "；".join(result.reasons)
+                line += ": " + "; ".join(result.reasons)
             self.stdout.write(self._style(result.status)(line))
             for warning in result.warnings:
                 self.stdout.write(self.style.WARNING(f"  warning: {warning}"))
 
         counts = Counter(result.status for result in results)
-        summary = "，".join(f"{labels[status]} {counts[status]}" for status in labels if counts[status])
+        summary = ", ".join(f"{labels[status]} {counts[status]}" for status in labels if counts[status])
         prefix = "dry-run " if options["dry_run"] else ""
-        self.stdout.write(f"{prefix}total {len(results)}：{summary or '无'}")
+        self.stdout.write(f"{prefix}total {len(results)}: {summary or 'none'}")
 
     def _style(self, status: str):
         if status in (SkillSyncStatusEnum.CREATED.value, SkillSyncStatusEnum.RELEASED.value):

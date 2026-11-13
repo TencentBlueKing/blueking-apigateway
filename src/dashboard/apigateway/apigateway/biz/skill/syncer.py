@@ -122,7 +122,7 @@ def _sync(
     if metadata:
         current = metadata.current_version
         # 与当前版本号一致时继续往下走，写库时覆盖这一版
-        if current is not None and current.version == declaration.version.lower():
+        if current is not None and current.version == declaration.version:
             overwrite_existing = True
         else:
             try:

@@ -27,7 +27,7 @@ from apigateway.apps.skill.constants import SkillStatusEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
 
 from .constants import SKILL_FILE_NAME
-from .declaration import semver_core
+from .declaration import parse_version
 
 if TYPE_CHECKING:
     from apigateway.core.models import Gateway
@@ -44,16 +44,16 @@ class SkillVersionNotNewerError(Exception):
 
 
 def check_new_version(metadata: SkillMetadata, version: str) -> None:
-    """新版本必须不存在（大小写不敏感），且按 major.minor.patch 高于当前版本
+    """新版本必须不存在，且按 major.minor.patch 高于当前版本
 
     低版本若成为当前版本，之后再注入更高的版本时，那个版本已存在但不是当前版本，会被跳过，
-    当前版本就停在低版本上。预发布、构建后缀不参与比较：1.0.0-rc1 不高于 1.0.0。
+    当前版本就停在低版本上。
     与当前版本号一致的覆盖不走这里，由 save_skill_version(overwrite_existing=True) 处理。
     """
-    if SkillVersion.objects.filter(metadata=metadata, version=version.lower()).exists():
+    if SkillVersion.objects.filter(metadata=metadata, version=version).exists():
         raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
     current = metadata.current_version
-    if current and semver_core(version) <= semver_core(current.version):
+    if current and parse_version(version) <= parse_version(current.version):
         raise SkillVersionNotNewerError(
             _("{name} 的版本 {version} 不高于当前版本 {current}").format(
                 name=metadata.name, version=version, current=current.version
@@ -82,7 +82,7 @@ def save_skill_version(
 
     内置 Skill 的 gateway 为空，唯一约束拦不住同名，同名由这里在事务内先查再建保证；
     调用方需保证同一来源的写入串行执行。
-    overwrite_existing 为真且声明版本与当前版本一致（大小写不敏感）时，覆盖这一版的
+    overwrite_existing 为真且声明版本与当前版本一致时，覆盖这一版的
     changelog、编排、正文和关联资源，不新增版本行，created_time 保持不变。
     已存在但不是当前版本的版本仍拒绝写入。
     """
@@ -99,7 +99,7 @@ def save_skill_version(
         if overwrite_existing and metadata.current_version_id is not None:
             existing_version = (
                 SkillVersion.objects.select_for_update()
-                .filter(id=metadata.current_version_id, metadata=metadata, version=declaration.version.lower())
+                .filter(id=metadata.current_version_id, metadata=metadata, version=declaration.version)
                 .first()
             )
         if existing_version is None:

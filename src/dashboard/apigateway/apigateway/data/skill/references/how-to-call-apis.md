@@ -44,18 +44,27 @@ bk-cli api <gateway> <METHOD> '<path>' --stage <stage> \
 {{ gateway_url_template }}
 ```
 
-接口清单是 bk-sops、prod、`GET /get_task_list/{bk_biz_id}/`，业务 ID 为 2 时：
+接口清单是 bk-sops、prod、`GET /get_task_list/{bk_biz_id}/`，业务 ID 为 2 时，按调用方提供的凭据选一种写法。
+
+使用 access_token：
 
 ```bash
-curl -H 'X-Bkapi-Authorization: {"bk_app_code":"<应用 ID>","bk_app_secret":"<应用密钥>","bk_token":"<用户 token>"}' \
+curl -H 'X-Bkapi-Authorization: {"access_token":"<access_token>"}' \
   '{{ example_url }}'
 ```
 
-不同网关支持的认证方式和凭据字段可能不同，应以目标网关的调用文档为准。下面仅说明默认蓝鲸认证下 `X-Bkapi-Authorization` 的常见字段，值是 JSON：
+使用个人令牌：
 
-- 「用户认证」为「是」：带 `bk_token`，或带已有的 `access_token`，二选一。
-- 「应用认证」为「是」：带 `bk_app_code` 和 `bk_app_secret`。
-- 某一列为「否」时，不要放对应字段。
+```bash
+curl -H 'Authorization: Bearer <个人令牌>' \
+  '{{ example_url }}'
+```
+
+不同网关支持的认证方式可能不同，应以目标网关的调用文档为准。默认蓝鲸认证下：
+
+- access_token：放在 `X-Bkapi-Authorization` 里，值是 JSON，只带 `access_token` 一个字段，不要和 `bk_app_code`、`bk_app_secret`、`bk_token` 混传。「用户认证」为「是」时用带用户身份的 access_token；只要求「应用认证」时用应用身份的 access_token 即可。
+- 个人令牌：只有接口清单里「OAuth2 personal client」为「是」的资源可用，放在 `Authorization: Bearer <个人令牌>`，不带 `X-Bkapi-Authorization`。
+- 一次调用只用一种凭据。
 
 有 `requestBody` 时把其中的字段作为 JSON 正文，并加上 `Content-Type: application/json`。`in: query` 的参数拼在 URL 上，`in: header` 的参数作为同名请求头。
 

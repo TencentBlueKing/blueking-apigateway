@@ -89,13 +89,15 @@ runs from `bin/post_migrate`.
   field checks for that resource.
   Warnings are only for non-blocking resource facts, such as a non-public
   resource.
-- The same declaration version (case-insensitive) as the current version is
+- Versions are plain `major.minor.patch` (`apps/skill/constants.SKILL_VERSION_PATTERN`):
+  no pre-release or build suffix, no leading zeros, so they compare strictly as
+  integer triples.
+- The same declaration version as the current version is
   overwritten in place: changelog, orchestration, SKILL.md body, relations,
   metadata, tags and config. The version row and its `created_time` stay, so
   the download package datetime does not change. A version that already exists
   but is not current is still skipped. A new version must be higher than the
-  current one by `major.minor.patch` (pre-release and build suffixes are
-  ignored), otherwise it is rejected: a lower version made current would leave
+  current one, otherwise it is rejected: a lower version made current would leave
   the higher one skipped as "already exists" on every later deploy.
   `writer.check_new_version` owns the reject rule. Platform injection passes
   `overwrite_existing=True` to `save_skill_version`; other callers still reject

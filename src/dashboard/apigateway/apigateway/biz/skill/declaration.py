@@ -50,8 +50,9 @@ from apigateway.apps.skill.constants import (
     SKILL_NAME_MAX_LENGTH,
     SKILL_TAG_NAME_MAX_LENGTH,
     SKILL_VERSION_MAX_LENGTH,
+    SKILL_VERSION_PATTERN,
 )
-from apigateway.common.constants import GATEWAY_NAME_PATTERN, SEMVER_PATTERN
+from apigateway.common.constants import GATEWAY_NAME_PATTERN
 from apigateway.core.constants import RESOURCE_NAME_PATTERN, STAGE_NAME_PATTERN
 
 from .constants import (
@@ -111,9 +112,9 @@ def value_matches_type(value: Any, text: str) -> bool:
     return any(_JSON_TYPE_CHECKS[part](value) for part in text.split("|"))
 
 
-def semver_core(version: str) -> Tuple[int, ...]:
-    """major.minor.patch；预发布、构建后缀不参与比较"""
-    return tuple(int(part) for part in re.split(r"[-+]", version, maxsplit=1)[0].split("."))
+def parse_version(version: str) -> Tuple[int, ...]:
+    """major.minor.patch 转成整数元组，用于比较大小"""
+    return tuple(int(part) for part in version.split("."))
 
 
 def _check_ref(value: Any) -> Any:
@@ -131,9 +132,9 @@ def _check_type(value: str) -> str:
     return value
 
 
-def _check_semver(value: str) -> str:
-    if len(value) > SKILL_VERSION_MAX_LENGTH or not SEMVER_PATTERN.fullmatch(value):
-        raise ValueError(_("不是 Semver：{value}").format(value=value))
+def _check_version(value: str) -> str:
+    if len(value) > SKILL_VERSION_MAX_LENGTH or not SKILL_VERSION_PATTERN.fullmatch(value):
+        raise ValueError(_("版本号应为 major.minor.patch，如 1.0.0：{value}").format(value=value))
     return value
 
 
@@ -170,7 +171,7 @@ def _check_text_not_empty(value: str) -> str:
 
 ParamValue = Annotated[Any, AfterValidator(_check_ref)]
 TypeText = Annotated[StrictStr, AfterValidator(_check_type)]
-SemverText = Annotated[StrictStr, AfterValidator(_check_semver)]
+VersionText = Annotated[StrictStr, AfterValidator(_check_version)]
 DateText = Annotated[StrictStr, BeforeValidator(_date_to_text), AfterValidator(_check_date)]
 
 
@@ -359,7 +360,7 @@ class SkillOrchestration(_DeclarationModel):
 
 
 class SkillChangelogEntry(_DeclarationModel):
-    version: SemverText
+    version: VersionText
     date: DateText
     content: Annotated[StrictStr, AfterValidator(_check_text_not_empty)]
 
@@ -370,7 +371,7 @@ class SkillDeclaration(_DeclarationModel):
     display_name_en: Optional[StrictStr] = None
     description: StrictStr
     tags: List[StrictStr]
-    version: SemverText
+    version: VersionText
     # 从新到旧，第一条是当前版本
     changelog: List[SkillChangelogEntry]
     orchestration: SkillOrchestration
@@ -435,13 +436,12 @@ class SkillDeclaration(_DeclarationModel):
             raise ValueError(_("至少需要一条，第一条为当前版本"))
         # version 不合规时不在 info.data 里，已单独报错
         version = info.data.get("version")
-        if version and value[0].version.lower() != version.lower():
+        if version and value[0].version != version:
             raise ValueError(
                 _("第一条应为当前版本 {version}，实际为 {actual}").format(version=version, actual=value[0].version)
             )
-        # 发版按 major.minor.patch 递增（见 writer.check_new_version），核心版本相同的两条不会都发出去
         for newer, older in zip(value, value[1:]):
-            if semver_core(older.version) >= semver_core(newer.version):
+            if parse_version(older.version) >= parse_version(newer.version):
                 raise ValueError(
                     _("应按版本从新到旧排列且不重复：{newer} 之后是 {older}").format(
                         newer=newer.version, older=older.version

@@ -3668,8 +3668,8 @@ msgid "Skill 编排"
 msgstr "Skill orchestration"
 
 #: apigateway/apps/skill/models.py
-msgid "版本号，保存时转为小写"
-msgstr "Version, stored in lowercase"
+msgid "版本号，格式为 major.minor.patch"
+msgstr "Version in major.minor.patch format"
 
 #: apigateway/apps/skill/models.py
 msgid "版本说明：version、date、content"
@@ -3738,8 +3738,8 @@ msgstr ""
 
 #: apigateway/biz/skill/declaration.py
 #, python-brace-format
-msgid "不是 Semver：{value}"
-msgstr "not a Semver: {value}"
+msgid "版本号应为 major.minor.patch，如 1.0.0：{value}"
+msgstr "version should be major.minor.patch, such as 1.0.0: {value}"
 
 #: apigateway/biz/skill/declaration.py
 #, python-brace-format

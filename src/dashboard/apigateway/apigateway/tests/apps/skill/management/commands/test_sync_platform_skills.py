@@ -75,10 +75,10 @@ class TestSyncPlatformSkillsCommand:
         output = _call("--dir", str(declarations_dir))
 
         lines = output.splitlines()
-        assert lines[0].startswith("[跳过] broken：")
-        assert lines[1].startswith("[跳过] job-plan-missing：")
+        assert lines[0].startswith("[跳过] broken: ")
+        assert lines[1].startswith("[跳过] job-plan-missing: ")
         assert lines[2] == "[新建] job-plan-run-and-log"
-        assert "total 3：新建 1，跳过 2" in output
+        assert "total 3: 新建 1, 跳过 2" in output
         assert "changed metadata ids" not in output
         assert SkillMetadata.objects.filter(name="job-plan-run-and-log").exists()
 
@@ -92,8 +92,8 @@ class TestSyncPlatformSkillsCommand:
         )
 
         assert output.splitlines() == [
-            "[新建] job-plan-run-and-log：dry-run，未写库",
-            "dry-run total 1：新建 1",
+            "[新建] job-plan-run-and-log: dry-run，未写库",
+            "dry-run total 1: 新建 1",
         ]
         assert not SkillMetadata.objects.exists()
 
@@ -113,9 +113,9 @@ class TestSyncPlatformSkillsCommand:
 
         output = _call()
 
-        lines = [line.split("：", 1)[0] for line in output.splitlines() if line.startswith("[")]
+        lines = [line.split(": ", 1)[0] for line in output.splitlines() if line.startswith("[")]
         assert lines == [f"[跳过] {name}" for name in names]
-        assert "total 5：跳过 5" in output
+        assert "total 5: 跳过 5" in output
         assert "changed metadata ids" not in output
         assert not SkillMetadata.objects.exists()
 

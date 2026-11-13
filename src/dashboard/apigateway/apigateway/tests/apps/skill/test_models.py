@@ -273,14 +273,6 @@ class TestSkillVersion:
         with pytest.raises(IntegrityError), transaction.atomic():
             SkillVersion.objects.create(metadata=fake_skill_version.metadata, version=fake_skill_version.version)
 
-    def test_version_saved_as_lowercase(self, fake_skill_metadata):
-        version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0-Alpha")
-
-        version.refresh_from_db()
-        assert version.version == "1.0.0-alpha"
-        with pytest.raises(IntegrityError), transaction.atomic():
-            SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0-ALPHA")
-
 
 class TestSkillVersionRelation:
     def test_unique_version_gateway_resource(self, fake_skill_version):

@@ -138,14 +138,10 @@ class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
     """
 
     metadata = models.ForeignKey(SkillMetadata, on_delete=models.CASCADE, related_name="versions")
-    version = models.CharField(max_length=SKILL_VERSION_MAX_LENGTH, help_text=_("版本号，保存时转为小写"))
+    version = models.CharField(max_length=SKILL_VERSION_MAX_LENGTH, help_text=_("版本号"))
     changelog = models.JSONField(default=dict, blank=True, help_text=_("版本说明：version、date、content"))
     orchestration = models.JSONField(default=dict, help_text=_("发版时的编排内容"))
     artifact = models.JSONField(default=dict, help_text=_("冻结的 Skill 包文件内容"))
-
-    def save(self, *args, **kwargs):
-        self.version = self.version.lower()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"<SkillVersion: {self.pk}/{self.metadata_id}/{self.version}>"

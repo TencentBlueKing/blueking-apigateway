@@ -101,6 +101,12 @@ class TestTopLevelRules:
             ("version", "1.0"),
             ("version", 1.0),
             ("version", "1.0.0\n"),
+            ("version", "v1.0.0"),
+            ("version", "01.0.0"),
+            ("version", "1.0.0.0"),
+            ("version", "1.0.0-rc1"),
+            ("version", "1.0.0+build"),
+            ("version", "1١.0.0"),
             ("tags", []),
             ("tags", ["JOB", " job "]),
             ("tags", ["x" * 65]),
@@ -151,9 +157,9 @@ class TestTopLevelRules:
             (
                 [
                     {"version": "1.0.0", "date": "2026-11-11", "content": "x"},
-                    {"version": "1.0.0-rc1", "date": "2026-11-10", "content": "x"},
+                    {"version": "1.0.0", "date": "2026-11-10", "content": "x"},
                 ],
-                "应按版本从新到旧排列且不重复：1.0.0 之后是 1.0.0-rc1",
+                "应按版本从新到旧排列且不重复：1.0.0 之后是 1.0.0",
             ),
             (
                 [
@@ -176,6 +182,7 @@ class TestTopLevelRules:
         "field, value",
         [
             ("version", "1.0"),
+            ("version", "1.0.0-rc1"),
             ("date", "2026/11/11"),
             ("date", "2026-02-30"),
             ("date", "20261111"),
@@ -438,4 +445,7 @@ class TestOrchestrationRules:
         with override("en"):
             errors = _errors(job_plan_data)
 
-        assert errors == ["version: not a Semver: v1", "orchestration.steps[0].if: unknown field"]
+        assert errors == [
+            "version: version should be major.minor.patch, such as 1.0.0: v1",
+            "orchestration.steps[0].if: unknown field",
+        ]

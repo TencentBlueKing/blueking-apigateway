@@ -85,14 +85,14 @@ class TestSaveSkillVersion:
         first = _save(job_plan_data)
         SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
 
-        set_version(job_plan_data, "1.1.0-RC1").update(display_name="新名字", tags=["job"])
+        set_version(job_plan_data, "1.1.0").update(display_name="新名字", tags=["job"])
         second = _save(job_plan_data, body="# v2\n")
 
         metadata = SkillMetadata.objects.get(id=first.metadata.id)
         assert not second.created
         assert second.metadata.id == first.metadata.id
-        assert second.version.version == "1.1.0-rc1"
-        assert second.version.changelog["version"] == "1.1.0-RC1"
+        assert second.version.version == "1.1.0"
+        assert second.version.changelog["version"] == "1.1.0"
         assert metadata.current_version_id == second.version.id
         assert metadata.display_name == "新名字"
         assert metadata.download_count == 5
@@ -101,18 +101,18 @@ class TestSaveSkillVersion:
         assert metadata.versions.count() == 2
 
     def test_same_version(self, job_plan_data):
-        _save(set_version(job_plan_data, "1.0.0-rc1"))
-        set_version(job_plan_data, "1.0.0-RC1")
+        _save(job_plan_data)
 
         with pytest.raises(SkillVersionExistsError):
             _save(job_plan_data)
 
     def test_overwrite_current_version(self, job_plan_data):
-        first = _save(set_version(job_plan_data, "1.0.0-rc1"))
+        first = _save(set_version(job_plan_data, "1.0.0"))
         SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
         created_time = first.version.created_time
 
-        set_version(job_plan_data, "1.0.0-RC1").update(display_name="覆盖后的名字", tags=["job"])
+        job_plan_data["changelog"][0]["content"] = "覆盖 1.0.0"
+        job_plan_data.update(display_name="覆盖后的名字", tags=["job"])
         job_plan_data["orchestration"]["steps"] = job_plan_data["orchestration"]["steps"][:1]
         second = _save(job_plan_data, body="# overwritten\n", overwrite_existing=True)
 
@@ -120,9 +120,9 @@ class TestSaveSkillVersion:
         assert not second.created
         assert second.version.id == first.version.id
         version = SkillVersion.objects.get(id=first.version.id)
-        assert version.version == "1.0.0-rc1"
+        assert version.version == "1.0.0"
         assert version.artifact == {"SKILL.md": "# overwritten\n"}
-        assert version.changelog["content"] == "发布 1.0.0-RC1"
+        assert version.changelog["content"] == "覆盖 1.0.0"
         assert version.created_time == created_time
         assert version.created_by == OPERATOR
         metadata = SkillMetadata.objects.get(id=first.metadata.id)
@@ -150,7 +150,7 @@ class TestSaveSkillVersion:
         assert metadata.current_version.version == "1.1.0"
         assert metadata.versions.count() == 2
 
-    @pytest.mark.parametrize("version", ["1.0.1", "1.1.0-rc1", "1.0.9+build"])
+    @pytest.mark.parametrize("version", ["1.0.1", "1.0.10", "0.99.99"])
     def test_not_newer_than_current(self, job_plan_data, version):
         first = _save(set_version(job_plan_data, "1.1.0"))
         set_version(job_plan_data, version)
