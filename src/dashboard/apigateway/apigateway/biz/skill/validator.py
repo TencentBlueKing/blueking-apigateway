@@ -57,7 +57,11 @@ class ValidationResult:
 def load_resources(
     orchestration: SkillOrchestration, provider: ResourceProvider
 ) -> Tuple[Dict[ResourceKey, Optional[SkillResource]], List[MissingResource]]:
-    """按步骤顺序查询编排用到的资源，每个资源只查一次；不可编排的资源记为 None，原因放进 missing"""
+    """按步骤顺序查询编排用到的资源，每个资源只查一次；不可编排的资源记为 None，原因放进 missing
+
+    例如：三步都用 bk-sops 的 prod，其中 get_task_status 用了两次 -> 查询两个资源；
+    prod 未发布 -> 两个资源都为 None，missing 里两条原因都是「环境 prod 未发布」
+    """
     resources: Dict[ResourceKey, Optional[SkillResource]] = {}
     missing: List[MissingResource] = []
     for step in orchestration.steps:
@@ -72,7 +76,12 @@ def load_resources(
 
 
 def validate_declaration(declaration: SkillDeclaration, provider: ResourceProvider) -> ValidationResult:
-    """不可编排的资源放进 missing_resources，不算 error 也不算 warning，涉及它的字段级检查跳过"""
+    """对照资源定义校验声明；不可编排的资源放进 missing_resources，不算 error 也不算 warning，涉及它的字段级检查跳过
+
+    例如：
+        with 里的参数 foo 不在资源定义中 -> errors 有「<步骤 id>：参数 foo 不在资源定义中」
+        资源未公开 -> warnings 有一条，errors 为空
+    """
     result = ValidationResult()
     resources, result.missing_resources = load_resources(declaration.orchestration, provider)
     for resource in resources.values():
@@ -101,6 +110,7 @@ class _RefChecker:
         self.each_steps: Set[str] = set()
 
     def check(self) -> None:
+        """依次检查每步 with 的引用和参数、输出的引用，最后比对输入、输出的类型；问题写进 result.errors"""
         for step in self.orchestration.steps:
             for name, value in step.with_.items():
                 self._check_ref(value, f"{step.id}.with.{name}")
@@ -115,6 +125,13 @@ class _RefChecker:
         self._check_output_types()
 
     def _check_ref(self, value: Any, where: str) -> None:
+        """引用的输入要存在，引用的步骤要在当前步骤之前，引用的响应字段要在该步骤资源的定义里
+
+        例如：
+            "${{ inputs.biz }}"，没有输入 biz -> error「<where>：输入 biz 不存在」
+            第 1 步引用 "${{ steps.wait.outputs.data }}"，wait 是第 2 步 -> error「引用的步骤 wait 不在当前步骤之前」
+            固定值 -> 不检查
+        """
         parsed = parse_ref(value)
         if parsed.kind == "input" and self.orchestration.get_input(parsed.name) is None:
             self.result.errors.append(_("{where}：输入 {name} 不存在").format(where=where, name=parsed.name))
@@ -134,7 +151,13 @@ class _RefChecker:
                 )
 
     def _check_params(self, step: SkillStep, resource: SkillResource) -> None:
-        """必填参数和路径参数都要写进 with；逐个调用时每次不同的取值写成带 `[]` 的步骤引用，筛选条件写在步骤说明里"""
+        """必填参数和路径参数都要写进 with；逐个调用时每次不同的取值写成带 `[]` 的步骤引用，筛选条件写在步骤说明里
+
+        例如：
+            path 参数 task_id 没写进 with -> error「资源定义中必填的参数没有写进 with：task_id」
+            必填参数取自选填且没有默认值的输入 -> error
+            一步里两个参数分别取自 data[].id 和 items[].id -> error「逐个调用的参数须取自同一个数组」
+        """
         missing = [
             param.name
             for param in resource.params
@@ -178,7 +201,10 @@ class _RefChecker:
             )
 
     def _check_input_types(self) -> None:
-        """输入声明的类型须与每个绑定参数的类型相同；定义里没写类型的参数不参与比较"""
+        """输入声明的类型须与每个绑定参数的类型相同；定义里没写类型的参数不参与比较
+
+        例如：输入 bk_biz_id 声明为 string，绑定的参数在定义中是 integer -> error
+        """
         resources = {key: resource for key, resource in self.resources.items() if resource and not resource.errors}
         for name, bindings in input_bindings(self.orchestration, resources).items():
             declared = self.orchestration.inputs[name].type
@@ -192,7 +218,10 @@ class _RefChecker:
                 )
 
     def _check_output_types(self) -> None:
-        """输出声明的类型须与来源推出的类型相同；推不出（来源字段没写类型、资源缺失或有 error）时不比较"""
+        """输出声明的类型须与来源推出的类型相同；推不出（来源字段没写类型、资源缺失或有 error）时不比较
+
+        例如：输出取自 integer 字段 data.task_id 却声明为 string -> error「类型 string 与来源不一致，应为 integer」
+        """
         for name, output in self.orchestration.outputs.items():
             expected = self._source_type(output.value)
             if expected and expected != output.type:
@@ -203,7 +232,14 @@ class _RefChecker:
                 )
 
     def _source_type(self, value: Any) -> str:
-        """取自输入时为输入类型；取自响应时为字段类型，路径里每个 `[]` 和逐个调用的来源步骤各包一层 array"""
+        """取自输入时为输入类型；取自响应时为字段类型，路径里每个 `[]` 和逐个调用的来源步骤各包一层 array
+
+        例如：
+            "${{ inputs.bk_biz_id }}"，输入类型 integer -> "integer"
+            "${{ steps.list.outputs.data[].id }}"，id 为 integer -> "array<integer>"
+            "${{ steps.logs.outputs.data }}"，logs 是逐个调用、data 为 object -> "array<object>"
+            来源字段没写类型 -> ""
+        """
         parsed = parse_ref(value)
         if parsed.kind == "input":
             item = self.orchestration.get_input(parsed.name)
@@ -229,7 +265,12 @@ class InputBinding:
 def input_bindings(
     orchestration: SkillOrchestration, resources: Mapping[ResourceKey, Optional[SkillResource]]
 ) -> Dict[str, List[InputBinding]]:
-    """每个输入按步骤顺序绑定到的资源参数；资源或参数不存在的绑定不算"""
+    """每个输入按步骤顺序绑定到的资源参数；资源或参数不存在的绑定不算
+
+    例如：输入 job_instance_id 被第 2、3 步的 with 引用 ->
+        {"job_instance_id": [InputBinding(step="wait", param=...), InputBinding(step="logs", param=...)]}；
+        没被引用的输入对应空列表
+    """
     bindings: Dict[str, List[InputBinding]] = {name: [] for name in orchestration.inputs}
     for step in orchestration.steps:
         resource = resources.get(step.key)

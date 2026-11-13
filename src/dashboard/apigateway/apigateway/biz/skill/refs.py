@@ -53,7 +53,14 @@ class ParsedRef:
 
 
 def parse_ref(value: Any) -> ParsedRef:
-    """解析取值；`${{ }}` 写法不对时抛 ValueError"""
+    """解析取值；`${{ }}` 写法不对时抛 ValueError
+
+    例如：
+        "${{ inputs.bk_biz_id }}" -> ParsedRef(kind="input", name="bk_biz_id")
+        "${{ steps.list-tasks.outputs.data[0].id }}" -> ParsedRef(kind="step", step="list-tasks", path="data[0].id")
+        {"a": 1} -> ParsedRef(kind="value", value={"a": 1})
+        "id-${{ inputs.bk_biz_id }}" -> ValueError（引用和文字拼接）
+    """
     if isinstance(value, str) and _EXPR_MARK in value:
         match = _EXPR_PATTERN.match(value)
         if not match or _EXPR_MARK in match.group(1) or "}}" in match.group(1):
@@ -74,12 +81,21 @@ def parse_ref(value: Any) -> ParsedRef:
 
 
 def is_ref(value: Any) -> bool:
+    """取值是否引用了输入或步骤响应；固定值返回 False
+
+    例如："${{ inputs.bk_biz_id }}" -> True；2 -> False
+    """
     return parse_ref(value).kind != "value"
 
 
 def each_array(value: Any, type_text: str) -> str:
     """逐个调用的数组：非数组参数取自带 `[]` 的步骤响应字段时，返回最后一个 `[]` 之前的 `steps.<id>.outputs.<路径>`；
     其他取值返回空串。type_text 是参数在资源定义中的类型写法，没写类型按非数组处理
+
+    例如：
+        ("${{ steps.list-tasks.outputs.data[].id }}", "integer") -> "steps.list-tasks.outputs.data"
+        ("${{ steps.list-tasks.outputs.data[].id }}", "array<integer>") -> ""（数组参数收集整个数组）
+        ("${{ inputs.task_id }}", "integer") -> ""
     """
     parsed = parse_ref(value)
     if parsed.kind != "step" or "[]" not in parsed.path:
@@ -90,11 +106,18 @@ def each_array(value: Any, type_text: str) -> str:
 
 
 def norm_path(path: str) -> str:
-    """把 [0]、[n] 统一成资源定义里的 []"""
+    """把 [0]、[n] 统一成资源定义里的 []，用于和响应字段路径比对
+
+    例如："data[0].tags[1]" -> "data[].tags[]"
+    """
     return re.sub(r"\[\d*\]", "[]", path)
 
 
 def _contains_expr(value: Any) -> bool:
+    """固定值里是否嵌着 `${{`，用于拒绝写在对象、数组里的引用
+
+    例如：{"id": "${{ inputs.task_id }}"} -> True；["a", 1] -> False
+    """
     if isinstance(value, str):
         return _EXPR_MARK in value
     if isinstance(value, dict):

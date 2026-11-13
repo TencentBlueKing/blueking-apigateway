@@ -67,13 +67,21 @@ class SkillResource:
 
     @property
     def key(self) -> Tuple[str, str, str]:
+        """(gateway, stage, resource)，与 SkillStep.key 对应"""
         return self.gateway, self.stage, self.data.name
 
     def get_param(self, name: str) -> Optional[ResourceParam]:
+        """按名字取资源定义中的参数，没有时返回 None"""
         return next((param for param in self.params if param.name == name), None)
 
     def has_response_field(self, path: str) -> bool:
-        """path 是响应中的字段，或某些字段的对象 / 数组前缀，或数组字段的元素（如 `data.tags[]`）"""
+        """path 是响应中的字段，或某些字段的对象 / 数组前缀，或数组字段的元素
+
+        例如：响应字段为 data.items[].id、data.tags（array<string>）时
+            "data.items[0].id"、"data"、"data.items" -> True
+            "data.tags[]" -> True（数组元素）
+            "data.name" -> False
+        """
         normed = norm_path(path)
         if any(
             item.field == normed or item.field.startswith(normed + ".") or item.field.startswith(normed + "[")
@@ -83,7 +91,13 @@ class SkillResource:
         return normed.endswith("[]") and self.response_type(normed[:-2]).startswith("array")
 
     def response_type(self, path: str) -> str:
-        """path 对应响应字段的类型写法；数组元素取数组的元素类型；没有这一条字段或字段没写类型时为空"""
+        """path 对应响应字段的类型写法；数组元素取数组的元素类型；没有这一条字段或字段没写类型时为空
+
+        例如：响应字段 data.tags 为 array<string>、data.extra 没写类型时
+            "data.tags" -> "array<string>"
+            "data.tags[0]" -> "string"
+            "data.extra"、"data.name" -> ""
+        """
         normed = norm_path(path)
         type_text = next((item.type for item in self.responses if item.field == normed), "")
         if not type_text and normed.endswith("[]"):
@@ -95,14 +109,27 @@ class SkillResource:
 class ResourceProvider(ABC):
     @abstractmethod
     def get_resource(self, gateway: str, stage: str, resource: str) -> SkillResource:
-        """资源不可编排时抛 SkillResourceUnavailableError"""
+        """取一个可编排资源；资源不可编排时抛 SkillResourceUnavailableError，消息是具体原因
+
+        例如：线上实现读当前发布版本；测试里用静态数据实现，见 tests/biz/skill/static_provider.py
+        """
         raise NotImplementedError()
 
 
 def build_skill_resource(
     gateway: str, stage: str, data: ReleasedResourceData, schema: Dict[str, Any]
 ) -> SkillResource:
-    """当前环境禁用该资源，或 schema 没有同时定义请求参数和响应字段时，抛 SkillResourceUnavailableError。"""
+    """发布数据加版本化 OpenAPI schema -> SkillResource
+
+    当前环境禁用该资源，或 schema 没有同时定义请求参数和响应字段时，抛 SkillResourceUnavailableError；
+    其他问题不阻断读取，写进 errors（方法为 ANY、请求体不是 JSON、路径占位符缺参数、同名参数跨位置）
+    或 warnings（资源未公开）。
+
+    例如：
+        GET /get_task_status/{task_id}/，schema 定义了 path 参数 task_id 和响应字段 -> errors、warnings 都为空
+        schema 只有响应、没有请求参数 -> SkillResourceUnavailableError("OpenAPI schema 未定义请求参数")
+        method 为 ANY -> 正常返回，errors 里有一条「方法为 ANY」
+    """
     if stage in data.disabled_stages:
         raise SkillResourceUnavailableError(_("资源在环境 {stage} 已禁用").format(stage=stage))
 
@@ -174,6 +201,11 @@ class ReleasedResourceProvider(ResourceProvider):
         self._stages: Dict[Tuple[str, str], _StageResources] = {}
 
     def get_resource(self, gateway: str, stage: str, resource: str) -> SkillResource:
+        """从环境当前发布的版本取资源；网关、环境不可用，资源不在版本里或是 AI 资源时抛 SkillResourceUnavailableError
+
+        例如：bk-sops 的 prod 已发布且版本里有标准资源 get_task_status -> SkillResource；
+        prod 未发布 -> SkillResourceUnavailableError("环境 prod 未发布")
+        """
         stage_resources = self._get_stage_resources(gateway, stage)
         if stage_resources.unavailable:
             raise SkillResourceUnavailableError(stage_resources.unavailable)
@@ -185,12 +217,18 @@ class ReleasedResourceProvider(ResourceProvider):
         return build_skill_resource(gateway, stage, data, stage_resources.schemas.get(data.id) or {})
 
     def _get_stage_resources(self, gateway_name: str, stage_name: str) -> _StageResources:
+        """按 (网关, 环境) 缓存 _load_stage_resources 的结果，同一实例内同一环境只查一次库"""
         key = (gateway_name, stage_name)
         if key not in self._stages:
             self._stages[key] = self._load_stage_resources(gateway_name, stage_name)
         return self._stages[key]
 
     def _load_stage_resources(self, gateway_name: str, stage_name: str) -> _StageResources:
+        """查库读取环境当前发布版本的全部资源和 OpenAPI schema；网关、环境不可用时只记 unavailable 原因
+
+        例如：网关存在且启用、环境 prod 已发布 -> resources 按资源名索引，schemas 按资源 ID 索引；
+        网关未启用 -> unavailable 为「网关 bk-sops 未启用」，resources 为空
+        """
         gateway = Gateway.objects.filter(name=gateway_name).first()
         if not gateway:
             return _StageResources(unavailable=_("网关 {gateway} 不存在").format(gateway=gateway_name))

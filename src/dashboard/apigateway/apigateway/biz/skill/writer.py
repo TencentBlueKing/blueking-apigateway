@@ -49,6 +49,11 @@ def check_new_version(metadata: SkillMetadata, version: str) -> None:
     低版本若成为当前版本，之后再注入更高的版本时，那个版本已存在但不是当前版本，会被跳过，
     当前版本就停在低版本上。
     与当前版本号一致的覆盖不走这里，由 save_skill_version(overwrite_existing=True) 处理。
+
+    例如：已有 1.0.0、1.1.0，当前版本 1.1.0 时
+        "1.2.0" -> 通过
+        "1.0.0" -> SkillVersionExistsError
+        "1.0.10" -> SkillVersionNotNewerError
     """
     if SkillVersion.objects.filter(metadata=metadata, version=version).exists():
         raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
@@ -85,6 +90,11 @@ def save_skill_version(
     overwrite_existing 为真且声明版本与当前版本一致时，覆盖这一版的
     changelog、编排、正文和关联资源，不新增版本行，created_time 保持不变。
     已存在但不是当前版本的版本仍拒绝写入。
+
+    例如：
+        首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源
+        再写入 1.1.0 -> 新增版本行并设为当前版本，download_count 等统计不变
+        overwrite_existing 为真时再写入 1.1.0 -> overwritten 为真，版本行和 created_time 不变
     """
     metadata = (
         SkillMetadata.objects.select_for_update()
@@ -154,10 +164,18 @@ def save_skill_version(
 
 
 def _get_or_create_tags(names: List[str]) -> List[SkillTag]:
+    """按名字取标签，不存在的新建；标签在所有 Skill 之间共用
+
+    例如：["运维", "job"]，「运维」已存在 -> 复用它，新建「job」
+    """
     return [SkillTag.objects.get_or_create(name=name)[0] for name in names]
 
 
 def _save_config(metadata: SkillMetadata, orchestration: dict, operator: str) -> None:
+    """写入或更新 Skill 当前的编排；每个 Skill 只有一条 SkillConfig
+
+    例如：首次注入时新建，created_by、updated_by 都是 operator；之后发版只更新 orchestration 和 updated_by
+    """
     SkillConfig.objects.update_or_create(
         metadata=metadata,
         defaults={"orchestration": orchestration, "updated_by": operator},
@@ -166,6 +184,11 @@ def _save_config(metadata: SkillMetadata, orchestration: dict, operator: str) ->
 
 
 def _get_relation_pairs(declaration: SkillDeclaration) -> List[Tuple[str, str]]:
+    """步骤用到的 (网关名, 资源名)，按步骤顺序去重，写入 SkillVersionRelation 供检索
+
+    例如：三步依次用 execute_job_plan、get_job_instance_status、get_job_instance_status ->
+        [("jobv3-cloud", "execute_job_plan"), ("jobv3-cloud", "get_job_instance_status")]
+    """
     pairs: List[Tuple[str, str]] = []
     for step in declaration.orchestration.steps:
         pair = (step.gateway, step.resource)

@@ -31,6 +31,20 @@ runs from `bin/post_migrate`.
 - New declaration field or rule: `declaration.py`; reference checks against
   resources go in `validator._RefChecker`.
 
+## Docstrings
+
+Every function and method in this package has a docstring that says what it
+does, followed by a `例如：` block of typical cases:
+
+- Conversions and predicates: 2–4 `输入 -> 输出` lines.
+- Validators (`_check_*`): the rule, then an accepted and a rejected value.
+- Functions with side effects or that drive a flow: what they do, when they
+  run, and a typical scenario in words.
+- Trivial properties and lookups: one line, no example. `__init__` needs none.
+
+pytest runs with `-p no:doctest`, so examples are not executed; update them
+together with the code.
+
 ## Constraints
 
 - Built-in injection must not break deployment: one bad declaration only affects

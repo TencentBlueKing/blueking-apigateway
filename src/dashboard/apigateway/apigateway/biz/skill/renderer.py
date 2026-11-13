@@ -61,7 +61,11 @@ class RenderResult:
 
 
 def render_skill_body(declaration: SkillDeclaration, provider: ResourceProvider) -> RenderResult:
-    """渲染正文；调用方需先完成校验，没有 error、编排引用的资源都存在时才能渲染"""
+    """渲染正文；调用方需先完成校验，没有 error、编排引用的资源都存在时才能渲染
+
+    例如：syncer 校验通过后调用，返回的 body 写入 SkillVersion.artifact["SKILL.md"]；
+    正文超过 SKILL_BODY_MAX_LINES 行时只加 warning，不报错
+    """
     resources, missing = load_resources(declaration.orchestration, provider)
     if missing:
         details = "; ".join(f"{item.gateway}.{item.resource}@{item.stage}: {item.reason}" for item in missing)
@@ -81,6 +85,7 @@ def render_skill_body(declaration: SkillDeclaration, provider: ResourceProvider)
 
 @lru_cache(maxsize=1)
 def _get_template() -> Template:
+    """加载 SKILL.md.j2 并注册过滤器；进程内只加载一次"""
     # 输出是 Markdown，不能做 HTML 转义
     env = SandboxedEnvironment(  # noqa: S701
         loader=FileSystemLoader(str(SKILL_TEMPLATES_DIR)),
@@ -98,6 +103,14 @@ def _get_template() -> Template:
 
 
 def md_cell(value: Any) -> str:
+    r"""表格单元格文本：空值写成 -，非字符串写成 JSON 行内代码，转义 | 并把换行换成空格
+
+    例如：
+        None、"" -> "-"
+        "1|2" -> "1\|2"
+        2 -> "`2`"
+        {"a": 1} -> '`{"a": 1}`'
+    """
     if value is None or value == "":
         return "-"
     if not isinstance(value, str):
@@ -106,16 +119,31 @@ def md_cell(value: Any) -> str:
 
 
 def code_cell(value: Any) -> str:
-    """JSON 值写成行内代码；非空字符串不加引号，null、空字符串写成 `null`、`""`，与表示未配置的 - 区分"""
+    """JSON 值写成行内代码；非空字符串不加引号，null、空字符串写成 `null`、`""`，与表示未配置的 - 区分
+
+    例如：
+        "abc" -> "`abc`"
+        "" -> '`""`'
+        None -> "`null`"
+        [1, 2] -> "`[1, 2]`"
+    """
     text = value if isinstance(value, str) and value else json.dumps(value, ensure_ascii=False)
     return f"`{text}`"
 
 
 def yn(flag: bool) -> str:
+    """布尔值写成「是」「否」，用于接口清单的认证、权限列
+
+    例如：True -> "是"；False -> "否"
+    """
     return "是" if flag else "否"
 
 
 def backtick(value: str) -> str:
+    """包成行内代码
+
+    例如："bk_biz_id" -> "`bk_biz_id`"
+    """
     return f"`{value}`"
 
 
@@ -129,6 +157,7 @@ class _SkillBodyContext:
         self.resources = resources
 
     def build(self) -> Dict[str, Any]:
+        """模板上下文；键名对应 SKILL.md.j2 里的变量"""
         orchestration = self.orchestration
         return {
             "display_name": self.declaration.display_name,
@@ -168,7 +197,11 @@ class _SkillBodyContext:
         return rows
 
     def _inputs(self) -> List[Dict[str, Any]]:
-        """说明取自绑定参数的 OpenAPI 定义，声明里的说明单列为编排提示"""
+        """输入表的行：说明取自绑定参数的 OpenAPI 定义，声明里的说明单列为编排提示
+
+        例如：输入 bk_scope_id 绑定的两个参数说明为「资源范围 ID」「资源范围 ID，与 bk_scope_type 对应」时，
+        description 只保留后一条，hint 是声明里该输入的 description
+        """
         bindings = input_bindings(self.orchestration, self.resources)
         return [
             {
@@ -185,6 +218,11 @@ class _SkillBodyContext:
         ]
 
     def _steps(self) -> List[Dict[str, Any]]:
+        """执行步骤表和每步正文：序号、标题、说明和 YAML 调用说明
+
+        例如：第 1 步 id 为 run、资源为 execute_job_plan、name 为「执行方案」时，
+        标题为「1. run / execute_job_plan：执行方案」
+        """
         steps = []
         for index, step in enumerate(self.orchestration.steps, 1):
             resource = self.resources[step.key]
@@ -205,7 +243,11 @@ class _SkillBodyContext:
         return steps
 
     def _notation(self) -> Dict[str, Any]:
-        """本 Skill 的取值和 OpenAPI 片段里实际出现的写法，说明里只写这些"""
+        """本 Skill 的取值和 OpenAPI 片段里实际出现的写法，说明里只写这些
+
+        例如：所有 with 都绑定 query 参数、没有固定值时，places 为 ["query"]、value 为 False，
+        正文就不写 path、header 和 x-value 的说明
+        """
         values: List[Any] = []
         locations: Set[str] = set()
         # 逐个调用的 `[]` 取当前元素，其余 `[]` 组成数组，说明分开写
@@ -239,7 +281,10 @@ class _SkillBodyContext:
 
 
 def _distinct_descriptions(descriptions: Iterable[str]) -> List[str]:
-    """去掉空的、重复的，以及被另一条完整包含的说明（如「资源范围 ID」之于「资源范围 ID，与……对应」）"""
+    """去掉空的、重复的，以及被另一条完整包含的说明
+
+    例如：["资源范围 ID", "", "资源范围 ID，与 bk_scope_type 对应", "资源范围 ID"] -> ["资源范围 ID，与 bk_scope_type 对应"]
+    """
     items = list(dict.fromkeys(text for text in descriptions if text))
     return [text for text in items if not any(text != other and text in other for other in items)]
 
@@ -257,9 +302,14 @@ class _FlowList(list):
 
 class _OpenAPIDumper(yaml.SafeDumper):
     def increase_indent(self, flow=False, indentless=False):
+        """列表项比父键多缩进一级，PyYAML 默认的 `- ` 与父键对齐
+
+        例如：输出 "parameters:\\n  - name: id"，而不是 "parameters:\\n- name: id"
+        """
         return super().increase_indent(flow, False)
 
     def ignore_aliases(self, data):
+        """同一个对象出现多次时照写，不生成 &id001、*id001 锚点"""
         return True
 
 
@@ -272,7 +322,13 @@ _OpenAPIDumper.add_representer(
 
 
 def _type_schema(type_text: str) -> _Flow:
-    """资源定义里的类型写法（string、array<string>、array|integer|string）-> JSON Schema"""
+    """资源定义里的类型写法 -> JSON Schema
+
+    例如：
+        "string" -> {type: string}
+        "array<string>" -> {type: array, items: {type: string}}
+        "integer|string" -> {type: [integer, string]}
+    """
     match = re.fullmatch(r"array<(.+)>", type_text)
     if match:
         return _Flow(type="array", items=_type_schema(match.group(1)))
@@ -282,7 +338,12 @@ def _type_schema(type_text: str) -> _Flow:
 
 
 def _flow(value: Any, block: bool = False) -> Any:
-    """复制 schema：含 properties 或块格式子节点（恰为 dict / list）的按块输出，其余写成一行"""
+    """复制 schema：含 properties 或块格式子节点（恰为 dict / list）的按块输出，其余写成一行
+
+    例如：
+        {"type": "string", "enum": ["a", "b"]} -> 一行 {type: string, enum: [a, b]}
+        {"type": "object", "properties": {"id": {"type": "integer"}}} -> 外层按块输出，id 写成一行 {type: integer}
+    """
     if isinstance(value, dict):
         items = {key: _flow(item, key == "properties") for key, item in value.items()}
         if block or "properties" in items or any(type(item) in (dict, list) for item in items.values()):
@@ -295,6 +356,14 @@ def _flow(value: Any, block: bool = False) -> Any:
 
 
 def _binding_fields(orchestration: SkillOrchestration, value: Any, param: ResourceParam) -> Dict[str, Any]:
+    """参数取值 -> 调用说明里的绑定字段：固定值写 x-value，引用写 x-from，逐个调用加 x-each，
+    选填且没有默认值的输入加 x-omit-if-unset
+
+    例如：
+        2 -> {"x-value": 2}
+        "${{ inputs.keyword }}"，keyword 选填、没有 default -> {"x-from": "${{ inputs.keyword }}", "x-omit-if-unset": True}
+        "${{ steps.list-tasks.outputs.data[].id }}"，参数为 integer -> {"x-from": "...", "x-each": True}
+    """
     parsed = parse_ref(value)
     fields: Dict[str, Any] = {"x-value": parsed.value} if parsed.kind == "value" else {"x-from": value}
     if each_array(value, param.type):
@@ -314,6 +383,11 @@ class _ResponseNode:
         self.item: Optional[_ResponseNode] = None
 
     def place(self, path: str, type_text: str, description: str) -> None:
+        """把一个响应字段放进树里；缺少的父节点补成 object，带 [] 的段按数组处理
+
+        例如：依次放入 ("data", "object", "任务")、("data.items[].id", "integer", "") 后，
+        data 是说明为「任务」的 object，data.items 是数组，元素是含 integer 字段 id 的 object
+        """
         node = self
         parts = [part for part in norm_path(path).split(".") if part]
         for index, part in enumerate(parts):
@@ -334,6 +408,12 @@ class _ResponseNode:
             node = child
 
     def apply(self, type_text: str, description: str) -> None:
+        """给节点写上类型和说明；array<x> 把 x 写到元素节点，已有子字段的节点保持 object
+
+        例如：
+            apply("array<string>", "标签") -> 数组节点，说明「标签」，元素类型 string
+            已有子字段的节点 apply("string", "") -> 仍为 object
+        """
         if description:
             self.description = description
         if type_text == "array" or type_text.startswith("array<"):
@@ -350,6 +430,12 @@ class _ResponseNode:
         self.type = type_text
 
     def to_schema(self) -> Any:
+        """节点 -> JSON Schema；含 properties 的按块输出，叶子写成一行，没有类型的字段只写说明
+
+        例如：
+            类型 integer、说明「ID」的叶子 -> {type: integer, description: ID}
+            没有类型、说明「扩展字段」的叶子 -> {description: 扩展字段}
+        """
         if self.item is not None or self.type == "array":
             items = self.item.to_schema() if self.item is not None else _Flow()
             if isinstance(items, dict) and "properties" in items:
@@ -374,6 +460,7 @@ class _ResponseNode:
         return schema
 
     def _ensure_array(self) -> _ResponseNode:
+        """把节点标成数组并返回元素节点；元素节点已存在时复用，同一数组的多个子字段落在同一个元素上"""
         self.type = "array"
         if self.item is None:
             self.item = _ResponseNode()
@@ -381,7 +468,11 @@ class _ResponseNode:
 
 
 def _response_schema(resource: SkillResource) -> Dict[str, Any]:
-    """用资源定义里的全部响应字段还原 JSON Schema。"""
+    """用资源定义里的全部响应字段还原 JSON Schema
+
+    例如：响应字段只有 ("data.task_id", "integer", "任务 ID") ->
+        {type: object, properties: {data: {type: object, properties: {task_id: {type: integer, description: 任务 ID}}}}}
+    """
     root = _ResponseNode()
     root.type = "object"
     for item in resource.responses:
@@ -390,7 +481,10 @@ def _response_schema(resource: SkillResource) -> Dict[str, Any]:
 
 
 def _get_param(resource: SkillResource, name: str) -> ResourceParam:
-    """参数必须在资源定义中，位置和类型以定义为准；不在定义中的参数校验已报 error"""
+    """按名字取资源定义中的参数，位置和类型以定义为准；不在定义中时抛 SkillRenderError，校验阶段已报 error
+
+    例如：get_task_status 定义了 path 参数 task_id -> 返回该参数；取 foo -> SkillRenderError
+    """
     param = resource.get_param(name)
     if param is None:
         raise SkillRenderError(
@@ -405,9 +499,17 @@ def _build_params(
     orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[str]]:
     """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性。
-    参数 schema 照抄已发布的定义，嵌套字段、required、enum 等约束都保留。"""
+    参数 schema 照抄已发布的定义，嵌套字段、required、enum 等约束都保留。
+
+    例如：with 绑定 body 参数 name、query 参数 limit、path 参数 task_id 时，
+    parameters 依次为 task_id（required）、limit，body 为 {"name": {...}}
+    """
 
     def order(name: str) -> Tuple[int, int]:
+        """排序键：(位置序号, path 参数在路径中的下标)
+
+        例如：路径 /tasks/{bk_biz_id}/{task_id}/ 里 bk_biz_id 排在 task_id 前，query 参数排在所有 path 参数后
+        """
         location = _get_param(resource, name).location
         position = resource.data.path.find("{" + name + "}") if location == "path" else 0
         return PARAM_LOCATION_ORDER.get(location, 9), position
@@ -445,6 +547,12 @@ def _build_params(
 
 
 def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource) -> str:
+    """一步的 YAML 调用说明：调用目标、parameters、requestBody 和 responses
+
+    例如：bk-sops/get_task_status@prod 绑定 task_id 时，依次写出 gateway_name、stage_name、resource_name、
+    method、path，parameters 里一项 task_id（in: path），responses 写已发布的响应字段；
+    请求体必须发送时即使没有绑定字段也写出 requestBody
+    """
     params, body, body_required = _build_params(orchestration, step, resource)
     call: Dict[str, Any] = {
         "gateway_name": step.gateway,

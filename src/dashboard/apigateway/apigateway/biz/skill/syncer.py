@@ -58,6 +58,9 @@ def sync_platform_skills(
     """逐条处理目录下的声明文件；name 按文件名（不含扩展名，与声明的 name 相同）只处理一条
 
     gateway_names：声明中的网关名 -> 当前版本的网关名，不在其中的网关名保持不变
+
+    例如：sync_platform_skills 命令部署时调用，目录下 5 个声明返回 5 条结果；
+    name="job-plan-run-and-log" 时只处理 job-plan-run-and-log.yaml
     """
     paths = sorted(Path(declarations_dir).glob(DECLARATION_FILE_PATTERN))
     if name:
@@ -73,6 +76,10 @@ def sync_platform_skill(
     dry_run: bool = False,
     gateway_names: Optional[Dict[str, str]] = None,
 ) -> SkillSyncResult:
+    """注入一个声明文件并返回结果；任何异常都只记进本条结果，不影响其他声明，也不让部署失败
+
+    例如：声明引用的资源在环境里未发布 -> status 为 skipped，reasons 写明哪个资源不可编排、原因是什么
+    """
     result = SkillSyncResult(name=path.stem, status=SkillSyncStatusEnum.SKIPPED.value)
     try:
         _sync(path, provider, dry_run, gateway_names or {}, result)
@@ -88,7 +95,11 @@ def sync_platform_skill(
 
 
 def _localize_gateway_names(declaration: SkillDeclaration, names: Dict[str, str]) -> None:
-    """内外版名字不同的网关，换成当前版本的网关名"""
+    """内外版名字不同的网关，换成当前版本的网关名；就地修改 steps[].uses 和 tags
+
+    例如：names 为 {"bk-job": "jobv3-cloud"} 时，uses "bk-job/execute_job_plan@prod" 改为
+    "jobv3-cloud/execute_job_plan@prod"，标签 "bk-job" 改为 "jobv3-cloud"
+    """
     for step in declaration.orchestration.steps:
         gateway, rest = step.uses.split("/", 1)
         step.uses = f"{names.get(gateway, gateway)}/{rest}"
@@ -102,6 +113,13 @@ def _sync(
     gateway_names: Dict[str, str],
     result: SkillSyncResult,
 ) -> None:
+    """解析、校验、渲染并写入一条声明，把状态和原因写进 result；任一步不通过时停在这一步
+
+    例如：
+        版本与当前版本相同 -> 覆盖当前版本，status 为 released
+        版本已存在但不是当前版本 -> status 为 skipped，result.metadata_id 有值
+        dry_run 为真 -> 只校验和渲染，reasons 为「dry-run，未写库」
+    """
     try:
         declaration = parse_declaration(path.read_text(encoding="utf-8"))
     except SkillDeclarationError as err:

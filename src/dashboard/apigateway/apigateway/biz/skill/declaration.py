@@ -97,6 +97,14 @@ _JSON_TYPE_CHECKS: Dict[str, Callable[[Any], bool]] = {
 
 
 def is_type_text(text: str) -> bool:
+    """是否为合规的类型写法：基本类型、array<类型>，或用 | 连接的不重复基本类型
+
+    例如：
+        "string" -> True
+        "array<integer|string>" -> True
+        "string|string" -> False（重复）
+        "list" -> False（不是基本类型）
+    """
     match = _ARRAY_TYPE_PATTERN.match(text)
     if match:
         return is_type_text(match.group(1))
@@ -105,7 +113,14 @@ def is_type_text(text: str) -> bool:
 
 
 def value_matches_type(value: Any, text: str) -> bool:
-    """YAML/JSON 值是否符合类型写法；text 须已通过 is_type_text"""
+    """YAML/JSON 值是否符合类型写法；text 须已通过 is_type_text
+
+    例如：
+        (1, "integer") -> True
+        (True, "integer") -> False（布尔值不算整数）
+        ([1, "a"], "array<integer|string>") -> True
+        (None, "string|null") -> True
+    """
     match = _ARRAY_TYPE_PATTERN.match(text)
     if match:
         return isinstance(value, list) and all(value_matches_type(item, match.group(1)) for item in value)
@@ -113,16 +128,28 @@ def value_matches_type(value: Any, text: str) -> bool:
 
 
 def parse_version(version: str) -> Tuple[int, ...]:
-    """major.minor.patch 转成整数元组，用于比较大小"""
+    """major.minor.patch 转成整数元组，用于比较大小；version 须已通过 _check_version
+
+    例如：
+        "1.10.0" -> (1, 10, 0)，大于 "1.9.0" -> (1, 9, 0)
+    """
     return tuple(int(part) for part in version.split("."))
 
 
 def _check_ref(value: Any) -> Any:
+    """with 的取值须是合规的引用或固定值，见 refs.parse_ref
+
+    例如：合规 "${{ inputs.bk_biz_id }}"、2；不合规 "id-${{ inputs.bk_biz_id }}"（引用和文字拼接）
+    """
     parse_ref(value)
     return value
 
 
 def _check_type(value: str) -> str:
+    """输入、输出的 type 须是合规的类型写法，见 is_type_text
+
+    例如：合规 "array<string>"；不合规 "list"、"string|string"
+    """
     if not is_type_text(value):
         raise ValueError(
             _("类型写法不合规：{value}，应为 {types} 之一，或 array<类型>、string|integer 这样的组合").format(
@@ -133,13 +160,23 @@ def _check_type(value: str) -> str:
 
 
 def _check_version(value: str) -> str:
+    """版本号须为 major.minor.patch，不带预发布、构建后缀和前导零
+
+    例如：合规 "1.10.0"；不合规 "1.0"、"v1.0.0"、"01.0.0"、"1.0.0-rc1"
+    """
     if len(value) > SKILL_VERSION_MAX_LENGTH or not SKILL_VERSION_PATTERN.fullmatch(value):
         raise ValueError(_("版本号应为 major.minor.patch，如 1.0.0：{value}").format(value=value))
     return value
 
 
 def _date_to_text(value: Any) -> Any:
-    # YAML 会把不加引号的 2026-11-11、2026-11-11 10:30:00 解析成 date、datetime
+    """YAML 把不加引号的日期解析成 date、datetime，这里转回文本交给 _check_date；其他值原样返回
+
+    例如：
+        date(2026, 11, 11) -> "2026-11-11"
+        datetime(2026, 11, 11, 10, 30) -> "2026-11-11 10:30:00"
+        带时区的 datetime -> "2026-11-11T10:30:00+08:00"，随后被 _check_date 拒绝
+    """
     if isinstance(value, datetime.datetime):
         # 带时区或毫秒的转成 isoformat 文本，交给格式检查报错
         if value.tzinfo is None and not value.microsecond:
@@ -151,7 +188,12 @@ def _date_to_text(value: Any) -> Any:
 
 
 def _check_date(value: str) -> str:
-    """YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS，不带时区；日期和时间之间的 T 统一成空格"""
+    """YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS，不带时区；日期和时间之间的 T 统一成空格
+
+    例如：
+        "2026-11-11T10:30:00" -> "2026-11-11 10:30:00"
+        不合规 "2026/11/11"、"2026-11-11 10:30"、"2026-02-30"
+    """
     try:
         if not _DATE_PATTERN.fullmatch(value):
             raise ValueError
@@ -164,6 +206,10 @@ def _check_date(value: str) -> str:
 
 
 def _check_text_not_empty(value: str) -> str:
+    """去掉空白后不能为空
+
+    例如：合规 "发布 1.0.0"；不合规 ""、"  "
+    """
     if not value.strip():
         raise ValueError(_("为空"))
     return value
@@ -193,6 +239,10 @@ class SkillInput(_DeclarationModel):
 
     @model_validator(mode="after")
     def _check_values_type(self) -> "SkillInput":
+        """example 和显式写了的 default 须符合 type
+
+        例如：type 为 integer 时 example: 2 合规，example: "2" 不合规
+        """
         if not value_matches_type(self.example, self.type):
             raise ValueError(_("example 与类型 {type} 不符").format(type=self.type))
         if self.has_default and not value_matches_type(self.default, self.type):
@@ -201,6 +251,7 @@ class SkillInput(_DeclarationModel):
 
     @property
     def has_default(self) -> bool:
+        """是否显式写了 default；写成 default: null 也算"""
         return "default" in self.model_fields_set
 
     @property
@@ -219,13 +270,22 @@ class SkillOutput(_DeclarationModel):
     @field_validator("value")
     @classmethod
     def _check_value(cls, value: str) -> str:
+        """输出须引用输入或步骤响应字段，不能是固定值
+
+        例如：合规 "${{ steps.run.outputs.data.job_instance_id }}"；不合规 "固定文本"
+        """
         if parse_ref(value).kind == "value":
             raise ValueError(_("应为 ${{ inputs.<输入名> }} 或 ${{ steps.<步骤 id>.outputs.<字段路径> }}"))
         return value
 
 
 def split_uses(uses: str) -> Tuple[str, str, str]:
-    """`<网关>/<资源>@<环境>` -> (gateway, stage, resource)；不合规时抛 ValueError"""
+    """`<网关>/<资源>@<环境>` -> (gateway, stage, resource)；不合规时抛 ValueError
+
+    例如：
+        "bk-sops/get_task_status@prod" -> ("bk-sops", "prod", "get_task_status")
+        "bk-sops/get_task_status" -> ValueError（缺少环境）
+    """
     match = _USES_PATTERN.match(uses)
     if not match:
         raise ValueError(_("应为 <网关>/<资源>@<环境>：{uses}").format(uses=uses))
@@ -251,6 +311,10 @@ class SkillStep(_DeclarationModel):
     @field_validator("id")
     @classmethod
     def _check_id(cls, value: str) -> str:
+        """步骤 id 规则同 Skill 名：小写字母、数字、单个连字符，不以连字符开头或结尾
+
+        例如：合规 "list-tasks"；不合规 "List_Tasks"、"list--tasks"
+        """
         if not SKILL_STEP_NAME_PATTERN.fullmatch(value):
             raise ValueError(_("步骤 id 不合规：{value}").format(value=value))
         return value
@@ -258,30 +322,42 @@ class SkillStep(_DeclarationModel):
     @field_validator("uses")
     @classmethod
     def _check_uses(cls, value: str) -> str:
+        """uses 须为 `<网关>/<资源>@<环境>`，见 split_uses
+
+        例如：合规 "bk-sops/get_task_status@prod"；不合规 "bk-sops/get_task_status"
+        """
         split_uses(value)
         return value
 
     @field_validator("name", "description")
     @classmethod
     def _check_not_empty(cls, value: Optional[str]) -> Optional[str]:
+        """name 可以不写，description 必写；写了就不能只有空白
+
+        例如：合规 不写 name；不合规 description: "  "
+        """
         if value is not None and not value.strip():
             raise ValueError(_("为空"))
         return value
 
     @property
     def key(self) -> Tuple[str, str, str]:
+        """uses 拆出的 (gateway, stage, resource)，用作资源索引的键"""
         return split_uses(self.uses)
 
     @property
     def gateway(self) -> str:
+        """uses 里的网关名"""
         return self.key[0]
 
     @property
     def stage(self) -> str:
+        """uses 里的环境名"""
         return self.key[1]
 
     @property
     def resource(self) -> str:
+        """uses 里的资源名"""
         return self.key[2]
 
 
@@ -294,6 +370,10 @@ class SkillGuide(_DeclarationModel):
     @field_validator("not_for", "constraints", "errors", "example")
     @classmethod
     def _check_not_empty(cls, value: str) -> str:
+        """四项都必须有内容；没有可写的写「无」
+
+        例如：合规 not_for: "无"；不合规 not_for: ""
+        """
         if not value:
             raise ValueError(_("为空（没有内容写「无」）"))
         return value
@@ -309,6 +389,10 @@ class SkillOrchestration(_DeclarationModel):
     @field_validator("inputs")
     @classmethod
     def _check_input_names(cls, value: Dict[str, SkillInput]) -> Dict[str, SkillInput]:
+        """输入名以字母或下划线开头，后跟字母、数字、下划线、连字符，见 refs.INPUT_NAME
+
+        例如：合规 "bk_biz_id"、"task-id"；不合规 "1st"、"业务"
+        """
         invalid = [name for name in value if not _INPUT_NAME_PATTERN.fullmatch(name)]
         if invalid:
             raise ValueError(_("输入名不合规：{names}").format(names=", ".join(invalid)))
@@ -317,7 +401,10 @@ class SkillOrchestration(_DeclarationModel):
     @field_validator("outputs")
     @classmethod
     def _check_outputs_not_empty(cls, value: Dict[str, SkillOutput]) -> Dict[str, SkillOutput]:
-        # 可编排的资源都有响应字段，总有可汇报的结果
+        """至少一个输出；可编排的资源都有响应字段，总有可汇报的结果
+
+        例如：不合规 outputs: {}
+        """
         if not value:
             raise ValueError(_("至少需要一个，写用户最终需要的结果"))
         return value
@@ -325,6 +412,10 @@ class SkillOrchestration(_DeclarationModel):
     @field_validator("steps")
     @classmethod
     def _check_step_ids(cls, value: List[SkillStep]) -> List[SkillStep]:
+        """步骤 id 不能重复
+
+        例如：不合规 两个步骤的 id 都是 "list-tasks"
+        """
         ids = [step.id for step in value]
         duplicated = sorted({step_id for step_id in ids if ids.count(step_id) > 1})
         if duplicated:
@@ -333,6 +424,10 @@ class SkillOrchestration(_DeclarationModel):
 
     @model_validator(mode="after")
     def _check_inputs_bound(self) -> "SkillOrchestration":
+        """每个输入至少被一个步骤的 with 引用，类型和说明都要从绑定的参数取
+
+        例如：声明了输入 bk_biz_id，但没有任何 with 写 ${{ inputs.bk_biz_id }} 时报错
+        """
         bound = {
             parse_ref(value).name
             for step in self.steps
@@ -349,9 +444,17 @@ class SkillOrchestration(_DeclarationModel):
         return self
 
     def get_input(self, name: str) -> Optional[SkillInput]:
+        """按名字取输入，没有时返回 None"""
         return self.inputs.get(name)
 
     def is_omittable_input_ref(self, value: Any) -> bool:
+        """取值是否引用了选填且没有默认值的输入；这类参数在用户没给时整个不传
+
+        例如：
+            "${{ inputs.keyword }}"，keyword 选填、没有 default -> True
+            "${{ inputs.bk_biz_id }}"，bk_biz_id 必填 -> False
+            "${{ steps.list-tasks.outputs.data }}" 或固定值 -> False
+        """
         parsed = parse_ref(value)
         if parsed.kind != "input":
             return False
@@ -379,6 +482,10 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("name")
     @classmethod
     def _check_name(cls, value: str) -> str:
+        """Agent Skills 规范名：小写字母、数字、单个连字符，1–64 个字符，不以连字符开头或结尾
+
+        例如：合规 "job-plan-run-and-log"；不合规 "Bad_Name"、"-job"
+        """
         if len(value) > SKILL_NAME_MAX_LENGTH or not SKILL_NAME_PATTERN.fullmatch(value):
             raise ValueError(_("不合规：{value}").format(value=value))
         return value
@@ -386,6 +493,10 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("display_name")
     @classmethod
     def _check_display_name(cls, value: str) -> str:
+        """去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH，不能含换行；返回去掉空白后的值
+
+        例如：" 执行作业方案 " -> "执行作业方案"；不合规 "   "、中间有换行的文本
+        """
         value = value.strip()
         if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
             raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
@@ -397,6 +508,10 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("display_name_en")
     @classmethod
     def _check_display_name_en(cls, value: Optional[str]) -> Optional[str]:
+        """可以不写；写了时去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH
+
+        例如：" Run job plan " -> "Run job plan"；不合规 "   "
+        """
         if value is None:
             return None
         value = value.strip()
@@ -407,6 +522,10 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("description")
     @classmethod
     def _check_description(cls, value: str) -> str:
+        """长度为 1 到 SKILL_DESCRIPTION_MAX_LENGTH
+
+        例如：不合规 ""、超过 1024 个字符的文本
+        """
         if not 1 <= len(value) <= SKILL_DESCRIPTION_MAX_LENGTH:
             raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DESCRIPTION_MAX_LENGTH))
         return value
@@ -414,6 +533,10 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("tags")
     @classmethod
     def _check_tags(cls, value: List[str]) -> List[str]:
+        """至少一个标签；规范化（去首尾空白、转小写）后长度不超限、不重复
+
+        例如：合规 ["job", "写操作"]；不合规 []、["JOB", " job "]（规范化后重复）
+        """
         if not value:
             raise ValueError(_("至少需要一个标签"))
         normalized = [normalize_tag_name(tag) for tag in value]
@@ -432,6 +555,10 @@ class SkillDeclaration(_DeclarationModel):
     @field_validator("changelog")
     @classmethod
     def _check_changelog(cls, value: List[SkillChangelogEntry], info: ValidationInfo) -> List[SkillChangelogEntry]:
+        """至少一条；第一条是当前版本，之后按版本号从新到旧严格递减
+
+        例如：version 为 1.1.0 时，合规 [1.1.0, 1.0.0]；不合规 [1.0.0, 1.1.0]、[1.1.0, 1.1.0]
+        """
         if not value:
             raise ValueError(_("至少需要一条，第一条为当前版本"))
         # version 不合规时不在 info.data 里，已单独报错
@@ -451,10 +578,12 @@ class SkillDeclaration(_DeclarationModel):
 
     @property
     def current_changelog(self) -> SkillChangelogEntry:
+        """当前版本的 changelog，即第一条"""
         return self.changelog[0]
 
     @property
     def normalized_tags(self) -> List[str]:
+        """规范化后的标签，见 normalize_tag_name"""
         return [normalize_tag_name(tag) for tag in self.tags]
 
     def orchestration_data(self) -> Dict[str, Any]:
@@ -463,11 +592,20 @@ class SkillDeclaration(_DeclarationModel):
 
 
 def normalize_tag_name(name: str) -> str:
+    """标签名去首尾空白并转小写，用于去重和入库
+
+    例如：" Job " -> "job"
+    """
     return name.strip().lower()
 
 
 def parse_declaration(data: Union[str, Dict[str, Any]]) -> SkillDeclaration:
-    """YAML 文本或 dict -> 声明；不合规时抛 SkillDeclarationError，errors 里每条带字段路径"""
+    """YAML 文本或 dict -> 声明；不合规时抛 SkillDeclarationError，errors 里每条带字段路径
+
+    例如：
+        data/skill/declarations/ 下的声明文本 -> SkillDeclaration
+        version 写成 "1.0" -> errors 为 ["version: 版本号应为 major.minor.patch，如 1.0.0：1.0"]
+    """
     if isinstance(data, str):
         try:
             data = yaml.safe_load(data)
@@ -483,6 +621,12 @@ def parse_declaration(data: Union[str, Dict[str, Any]]) -> SkillDeclaration:
 
 
 def _format_error(error: Dict[str, Any]) -> str:
+    """pydantic 的一条错误 -> 「字段路径: 说明」；自定义校验取 ValueError 原文，内置错误按 _ERROR_MESSAGES 翻译
+
+    例如：
+        loc 为 ("orchestration", "steps", 0, "if")、type 为 extra_forbidden -> "orchestration.steps[0].if: 未知字段"
+        模型级校验 loc 为空 -> "声明: <说明>"
+    """
     path = _format_loc(error["loc"]) or _("声明")
     if error["type"] == "value_error":
         message = str(error["ctx"]["error"])
@@ -492,6 +636,10 @@ def _format_error(error: Dict[str, Any]) -> str:
 
 
 def _format_loc(loc: Tuple[Union[str, int], ...]) -> str:
+    """pydantic 的错误位置 -> 字段路径，数组下标写成 [n]
+
+    例如：("orchestration", "steps", 0, "with", "id") -> "orchestration.steps[0].with.id"
+    """
     text = ""
     for part in loc:
         if isinstance(part, int):

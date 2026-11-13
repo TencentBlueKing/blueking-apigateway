@@ -45,13 +45,26 @@ class ResponseField:
 
 
 def has_non_json_request_body(schema: Dict[str, Any]) -> bool:
-    """有请求体，但没有 application/json。这种请求体不转成 body 参数。"""
+    """有请求体，但没有 application/json。这种请求体不转成 body 参数。
+
+    例如：
+        requestBody.content 只有 multipart/form-data -> True
+        requestBody.content 含 application/json，或没有 requestBody -> False
+    """
     content = (schema.get("requestBody") or {}).get("content") or {}
     return bool(content) and JSON_CONTENT_TYPE not in content
 
 
 def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
-    """parameters 转成 path / query / header 参数，requestBody 的 JSON 对象顶层属性转成 body 参数"""
+    """parameters 转成 path / query / header 参数，requestBody 的 JSON 对象顶层属性转成 body 参数
+
+    例如：
+        parameters 为 [{"name": "task_id", "in": "path", "required": True, "schema": {"type": "integer"}}]
+            -> ResourceParam(name="task_id", location="path", type="integer", required=True, ...)
+        requestBody 的 JSON schema 为 {"required": ["name"], "properties": {"name": {"type": "string"}}}
+            -> ResourceParam(name="name", location="body", type="string", required=True, ...)
+        in 为 cookie 的参数 -> 忽略
+    """
     params = [
         ResourceParam(
             name=item["name"],
@@ -82,7 +95,12 @@ def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
 
 
 def convert_schema_responses(schema: Dict[str, Any]) -> List[ResponseField]:
-    """取第一个 2xx 响应的 JSON schema，展开成字段路径；数组元素的字段写成 `<数组>[].<字段>`"""
+    """取第一个 2xx 响应的 JSON schema，展开成字段路径；数组元素的字段写成 `<数组>[].<字段>`
+
+    例如：200 响应为 {"properties": {"data": {"type": "array", "items": {"properties": {"id": {"type": "integer"}}}}}}
+        -> [ResponseField("data", "array<object>"), ResponseField("data[].id", "integer")]
+        没有 2xx 响应 -> []
+    """
     responses = schema.get("responses") or {}
     success_codes = sorted(code for code in responses if str(code).startswith("2"))
     if not success_codes:
@@ -94,7 +112,15 @@ def convert_schema_responses(schema: Dict[str, Any]) -> List[ResponseField]:
 
 
 def schema_type_text(schema: Dict[str, Any]) -> str:
-    """JSON Schema -> 资源定义里的类型写法：string、array<string>、integer|string"""
+    """JSON Schema -> 资源定义里的类型写法
+
+    例如：
+        {"type": "string"} -> "string"
+        {"type": "array", "items": {"type": "integer"}} -> "array<integer>"
+        {"type": ["integer", "string"]} -> "integer|string"
+        {"properties": {...}}（没写 type） -> "object"
+        {} -> ""
+    """
     schema_type = schema.get("type")
     if isinstance(schema_type, list):
         return "|".join(schema_type)
@@ -107,13 +133,20 @@ def schema_type_text(schema: Dict[str, Any]) -> str:
 
 
 def _json_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
-    """只取 application/json。请求体没有 JSON 时不退回其他 content type，避免被渲染成 JSON。"""
+    """只取 application/json 的 schema。请求体没有 JSON 时不退回其他 content type，避免被渲染成 JSON。
+
+    例如：{"content": {"application/json": {"schema": {"type": "object"}}}} -> {"type": "object"}；
+    只有 multipart/form-data -> {}
+    """
     content = container.get("content") or {}
     return ((content.get(JSON_CONTENT_TYPE) or {}).get("schema")) or {}
 
 
 def _get_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
-    """响应：没有 application/json 时退回第一个 content type。"""
+    """取响应的 schema：优先 application/json，没有时退回第一个 content type
+
+    例如：只有 text/plain 的 schema {"type": "string"} -> {"type": "string"}；没有 content -> {}
+    """
     content = container.get("content") or {}
     if not content:
         return {}
@@ -122,6 +155,11 @@ def _get_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _collect_fields(schema: Dict[str, Any], prefix: str, fields: List[ResponseField]) -> None:
+    """递归展开 properties，把字段路径追加到 fields；数组字段继续展开元素，路径加 []
+
+    例如：prefix 为 "data"，schema 为 {"properties": {"tags": {"type": "array", "items": {"type": "string"}}}}
+        -> 追加 ResponseField("data.tags", "array<string>")；元素没有 properties，不再追加
+    """
     for name, raw_prop in (schema.get("properties") or {}).items():
         prop = raw_prop or {}
         path = f"{prefix}.{name}" if prefix else name
