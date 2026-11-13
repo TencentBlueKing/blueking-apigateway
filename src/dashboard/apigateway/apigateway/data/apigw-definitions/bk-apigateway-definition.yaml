@@ -38,8 +38,8 @@ stages:
 
     mcp_servers:
       - name: "context"
-        title: "蓝鲸 API 网关 Context"
-        description: "提供网关上下文相关的工具接口"
+        title: "蓝鲸网关-Context"
+        description: "提供蓝鲸网关上所有公开网关/API详情查询工具"
         resource_names:
           - v2_open_list_gateways
           - v2_open_list_gateway_resources
@@ -60,7 +60,7 @@ stages:
           - "DevOps"
 
       - name: "debugger"
-        title: "蓝鲸 API 网关 Debugger"
+        title: "蓝鲸网关-问题排查"
         description: "提供调试相关的工具接口"
         resource_names:
           - v2_open_tools_time_get_datetime
