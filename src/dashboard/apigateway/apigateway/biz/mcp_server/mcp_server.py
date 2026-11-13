@@ -306,15 +306,18 @@ class MCPServerHandler:
     def _sync_mcp_server_categories(instance: MCPServer, category_names: Optional[List[str]]):
         """同步 MCP Server 分类，None 表示不操作，空列表表示清空
 
-        Official/Featured 由平台管理：非官方网关传入的特殊分类不生效，已绑定的特殊分类保留
+        Official/Featured 仅官方网关可设置，非官方网关传入的特殊分类会被忽略
         """
         if category_names is None:
             return
 
-        categories = list(MCPServerCategory.objects.filter(name__in=category_names))
+        if not category_names:
+            instance.categories.clear()
+            return
+
+        categories = MCPServerCategory.objects.filter(name__in=category_names)
         if not instance.gateway.is_official:
-            categories = [c for c in categories if not c.is_special_category]
-            categories.extend(c for c in instance.categories.all() if c.is_special_category)
+            categories = [category for category in categories if not category.is_special_category]
         instance.categories.set(categories)
 
     @staticmethod

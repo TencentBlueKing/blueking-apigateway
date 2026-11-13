@@ -1925,7 +1925,7 @@ class TestSyncApiCategory:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试更新 MCPServer 时同步分类：普通分类被替换，已绑定的特殊分类保留"""
+        """测试更新 MCPServer 时同步分类：以声明为准替换，已绑定的特殊分类也被移除"""
         make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
@@ -1985,7 +1985,7 @@ class TestSyncApiCategory:
 
         # 验证分类已更新
         mcp_server.refresh_from_db()
-        assert set(mcp_server.categories.values_list("id", flat=True)) == {category1.id, category2.id}
+        assert set(mcp_server.categories.values_list("id", flat=True)) == {category2.id}
 
     def test_mcp_server_sync_update_without_category_names(
         self,

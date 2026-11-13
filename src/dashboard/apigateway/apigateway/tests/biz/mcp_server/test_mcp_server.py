@@ -2408,13 +2408,13 @@ class TestMCPServerHandler:
     @pytest.mark.parametrize(
         "is_official, category_names, expected",
         [
-            (False, ["Official", "DevOps"], {"Featured", "DevOps"}),
-            (False, [], {"Featured"}),
+            (False, ["Official", "DevOps"], {"DevOps"}),
+            (False, [], set()),
             (True, ["Official", "DevOps"], {"Official", "DevOps"}),
         ],
     )
     def test_sync_mcp_server_categories_special(self, fake_gateway, fake_stage, is_official, category_names, expected):
-        """非官方网关传入的特殊分类不生效且保留已绑定的特殊分类，官方网关按声明写入"""
+        """非官方网关传入的特殊分类被忽略，已绑定的特殊分类按声明同步移除；官方网关按声明写入"""
         fake_gateway.is_official = is_official
         fake_gateway.save()
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
