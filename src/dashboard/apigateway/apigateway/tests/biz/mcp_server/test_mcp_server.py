@@ -2315,7 +2315,9 @@ class TestMCPServerHandler:
         mock_sync.assert_called_once_with(mcp_server_id)
 
     def test_save_mcp_servers_with_categories(self, fake_gateway, fake_stage):
-        """创建时同步分类"""
+        """官方网关创建时同步特殊分类"""
+        fake_gateway.is_official = True
+        fake_gateway.save()
         MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
 
         with (
@@ -2387,21 +2389,42 @@ class TestMCPServerHandler:
     def test_sync_mcp_server_categories_set(self, fake_gateway, fake_stage):
         """设置分类"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        MCPServerCategory.objects.get_or_create(name="Featured", defaults={"display_name": "精选"})
+        MCPServerCategory.objects.get_or_create(name="DevOps", defaults={"display_name": "运维"})
 
-        MCPServerHandler._sync_mcp_server_categories(mcp_server, ["Featured"])
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, ["DevOps"])
 
-        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Featured"]
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["DevOps"]
 
     def test_sync_mcp_server_categories_clear(self, fake_gateway, fake_stage):
         """传空列表清除分类"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        cat, _ = MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
+        cat, _ = MCPServerCategory.objects.get_or_create(name="DevOps", defaults={"display_name": "运维"})
         mcp_server.categories.add(cat)
 
         MCPServerHandler._sync_mcp_server_categories(mcp_server, [])
 
         assert mcp_server.categories.count() == 0
+
+    @pytest.mark.parametrize(
+        "is_official, category_names, expected",
+        [
+            (False, ["Official", "DevOps"], {"Featured", "DevOps"}),
+            (False, [], {"Featured"}),
+            (True, ["Official", "DevOps"], {"Official", "DevOps"}),
+        ],
+    )
+    def test_sync_mcp_server_categories_special(self, fake_gateway, fake_stage, is_official, category_names, expected):
+        """非官方网关传入的特殊分类不生效且保留已绑定的特殊分类，官方网关按声明写入"""
+        fake_gateway.is_official = is_official
+        fake_gateway.save()
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        for name in ["Official", "Featured", "DevOps"]:
+            MCPServerCategory.objects.get_or_create(name=name, defaults={"display_name": name})
+        mcp_server.categories.add(MCPServerCategory.objects.get(name="Featured"))
+
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, category_names)
+
+        assert set(mcp_server.categories.values_list("name", flat=True)) == expected
 
     def test_sync_mcp_server_categories_none_noop(self, fake_gateway, fake_stage):
         """传 None 不操作"""
