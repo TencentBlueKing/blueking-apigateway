@@ -34,6 +34,14 @@ def test_get_plugin_metadata_config_uses_local_concurrency_policy():
     assert config["bk-concurrency-limit"]["policy"] == "local"
 
 
+def test_get_plugin_metadata_config_includes_request_size_fields():
+    log_format = get_plugin_metadata_config(Env())["file-logger"]["log_format"]
+
+    assert log_format["request_size"] == "$request_length"
+    assert log_format["content_length"] == "$content_length"
+    assert log_format["response_size"] == "$body_bytes_sent"
+
+
 def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch):
     env = Env()
     kwargs = {

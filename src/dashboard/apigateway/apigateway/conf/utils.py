@@ -58,6 +58,10 @@ def get_plugin_metadata_config(env: Env) -> dict:
                 # "headers": "-",
                 "params": "$args",
                 "body": "$bk_log_request_body",
+                # 请求总长度（字节），包含请求行、请求头和已接收的请求体
+                "request_size": "$request_length",
+                # Content-Length 变量（字节），不保证等于实际完整接收的请求体大小
+                "content_length": "$content_length",
                 "app_code": "$bk_app_code",
                 "client_ip": "$remote_addr",
                 "request_id": "$bk_request_id",
