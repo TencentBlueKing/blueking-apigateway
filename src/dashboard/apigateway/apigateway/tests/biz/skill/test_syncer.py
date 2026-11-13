@@ -36,12 +36,6 @@ TE_GATEWAY_NAMES = {"jobv3-cloud": "jobv3-cloud", "bk-job": "jobv3-cloud"}
 EE_GATEWAY_NAMES = {"jobv3-cloud": "bk-job", "bk-job": "bk-job"}
 
 
-@pytest.fixture(autouse=True)
-def te_edition(settings):
-    """fixture 资源和声明用的是内部名 jobv3-cloud"""
-    settings.EDITION_GATEWAY_NAMES = TE_GATEWAY_NAMES
-
-
 def _rename_gateway(resources_data, old, new):
     return {
         **resources_data,
@@ -312,8 +306,7 @@ class TestSyncPlatformSkills:
         assert results[0].reasons == ["文件名 other-file 与声明的 name job-plan-run-and-log 不一致"]
         assert not SkillMetadata.objects.exists()
 
-    def test_ee_localizes_internal_gateway_name(self, settings, tmp_path, resources_data, job_plan_data):
-        settings.EDITION_GATEWAY_NAMES = EE_GATEWAY_NAMES
+    def test_ee_localizes_internal_gateway_name(self, tmp_path, resources_data, job_plan_data):
         release_fixture_gateway(_rename_gateway(resources_data, "jobv3-cloud", "bk-job"), "bk-job")
         declarations_dir = tmp_path / "declarations"
         declarations_dir.mkdir()
@@ -321,7 +314,7 @@ class TestSyncPlatformSkills:
             yaml.safe_dump(job_plan_data, allow_unicode=True, sort_keys=False), encoding="utf-8"
         )
 
-        results = sync_platform_skills(declarations_dir)
+        results = sync_platform_skills(declarations_dir, gateway_names=EE_GATEWAY_NAMES)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.CREATED.value)]
         assert _relation_gateways(results[0].metadata_id) == {"bk-job"}
@@ -331,7 +324,7 @@ class TestSyncPlatformSkills:
     def test_te_localizes_external_gateway_name(self, declarations_dir, write_declaration, job_plan_data):
         write_declaration(_use_gateway(job_plan_data, "bk-job"))
 
-        results = _sync(declarations_dir)
+        results = _sync(declarations_dir, gateway_names=TE_GATEWAY_NAMES)
 
         assert _statuses(results) == [(JOB_PLAN, SkillSyncStatusEnum.CREATED.value)]
         assert _relation_gateways(results[0].metadata_id) == {"jobv3-cloud"}

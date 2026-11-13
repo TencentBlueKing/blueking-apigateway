@@ -117,8 +117,9 @@ runs from `bin/post_migrate`.
   `download_count` increments are kept.
 - Injection reads only the database and repository files; it never calls
   gateways or external systems.
-- Built-in declarations may use either edition's gateway name; `syncer` maps
-  `uses` and `tags` via `settings.EDITION_GATEWAY_NAMES`.
+- Built-in declarations may use either edition's gateway name; the
+  `sync_platform_skills` command builds the name mapping for `settings.EDITION`
+  and passes it as `gateway_names`; `syncer` maps `uses` and `tags` with it.
 - Rendering is deterministic: no timestamps or environment URLs in the body.
 - The stored artifact is the body only; `SKILL.md.j2` does not render frontmatter.
   A download package's frontmatter follows the Agent Skills spec and contains

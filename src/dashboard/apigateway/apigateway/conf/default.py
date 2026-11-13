@@ -78,18 +78,6 @@ IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 # te 还是 ee
 EDITION = env.str("EDITION", "ee")
 
-# 内外版网关名不同：(内部名, 外部名)，te 用内部名，其他版本用外部名
-# EDITION_GATEWAY_NAMES：内部名、外部名 -> 当前版本的网关名
-EDITION_GATEWAY_NAMES = {
-    name: internal if EDITION == "te" else external
-    for internal, external in [
-        ("jobv3-cloud", "bk-job"),
-        ("paasv3", "bkpaas3"),
-        ("bkaidev", "bk-aidev"),
-    ]
-    for name in (internal, external)
-}
-
 # 是否开启多租户模式
 ENABLE_MULTI_TENANT_MODE = env.bool("ENABLE_MULTI_TENANT_MODE", default=False)
 
@@ -602,7 +590,7 @@ AI_BKAUTH_ENABLED = env.bool("AI_BKAUTH_ENABLED", False)
 # BKAIDev 平台配置（AI 开发平台）
 # ==============================================================================
 # BKAIDEV 网关名
-BKAIDEV_GATEWAY_NAME = env.str("BKAIDEV_GATEWAY_NAME", EDITION_GATEWAY_NAMES["bkaidev"])
+BKAIDEV_GATEWAY_NAME = env.str("BKAIDEV_GATEWAY_NAME", "bkaidev")
 # BKAIDev 平台 API URL 前缀
 BKAIDEV_URL_PREFIX = (
     BK_API_URL_TMPL.format(api_name=BKAIDEV_GATEWAY_NAME) + "/" + env.str("BKAIDEV_GATEWAY_STAGE", "prod")

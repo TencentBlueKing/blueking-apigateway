@@ -17,7 +17,9 @@
 #
 from collections import Counter
 from pathlib import Path
+from typing import Dict
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apigateway.biz.skill import (
@@ -26,6 +28,22 @@ from apigateway.biz.skill import (
     SkillSyncStatusEnum,
     sync_platform_skills,
 )
+
+# 内外版网关名不同：(内部名, 外部名)，te 用内部名，其他版本用外部名
+EDITION_GATEWAY_NAME_PAIRS = [
+    ("jobv3-cloud", "bk-job"),
+    ("paasv3", "bkpaas3"),
+    ("bkaidev", "bk-aidev"),
+]
+
+
+def get_edition_gateway_names(edition: str) -> Dict[str, str]:
+    """内部名、外部名 -> 当前版本的网关名"""
+    return {
+        name: internal if edition == "te" else external
+        for internal, external in EDITION_GATEWAY_NAME_PAIRS
+        for name in (internal, external)
+    }
 
 
 class Command(BaseCommand):
@@ -63,6 +81,7 @@ class Command(BaseCommand):
             declarations_dir,
             name=name or None,
             dry_run=options["dry_run"],
+            gateway_names=get_edition_gateway_names(settings.EDITION),
         )
         if name and not results:
             self.stdout.write(f"No skill declaration named {name} in {declarations_dir}.")

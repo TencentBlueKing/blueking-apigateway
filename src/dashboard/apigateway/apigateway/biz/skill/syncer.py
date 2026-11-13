@@ -20,7 +20,7 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from django.conf import settings
 from django.utils.translation import gettext as _
@@ -53,20 +53,29 @@ def sync_platform_skills(
     declarations_dir: Path,
     name: Optional[str] = None,
     dry_run: bool = False,
+    gateway_names: Optional[Dict[str, str]] = None,
 ) -> List[SkillSyncResult]:
-    """逐条处理目录下的声明文件；name 按文件名（不含扩展名，与声明的 name 相同）只处理一条"""
+    """逐条处理目录下的声明文件；name 按文件名（不含扩展名，与声明的 name 相同）只处理一条
+
+    gateway_names：声明中的网关名 -> 当前版本的网关名，不在其中的网关名保持不变
+    """
     paths = sorted(Path(declarations_dir).glob(DECLARATION_FILE_PATTERN))
     if name:
         paths = [path for path in paths if path.stem == name]
 
     provider = ReleasedResourceProvider()
-    return [sync_platform_skill(path, provider, dry_run) for path in paths]
+    return [sync_platform_skill(path, provider, dry_run, gateway_names) for path in paths]
 
 
-def sync_platform_skill(path: Path, provider: ResourceProvider, dry_run: bool = False) -> SkillSyncResult:
+def sync_platform_skill(
+    path: Path,
+    provider: ResourceProvider,
+    dry_run: bool = False,
+    gateway_names: Optional[Dict[str, str]] = None,
+) -> SkillSyncResult:
     result = SkillSyncResult(name=path.stem, status=SkillSyncStatusEnum.SKIPPED.value)
     try:
-        _sync(path, provider, dry_run, result)
+        _sync(path, provider, dry_run, gateway_names or {}, result)
     except Exception as err:  # pylint: disable=broad-except
         logger.exception("sync platform skill %s failed", path)
         result.reasons.append(f"{type(err).__name__}: {err}")
@@ -78,16 +87,21 @@ def sync_platform_skill(path: Path, provider: ResourceProvider, dry_run: bool = 
     return result
 
 
-def _localize_gateway_names(declaration: SkillDeclaration) -> None:
+def _localize_gateway_names(declaration: SkillDeclaration, names: Dict[str, str]) -> None:
     """内外版名字不同的网关，换成当前版本的网关名"""
-    names = settings.EDITION_GATEWAY_NAMES
     for step in declaration.orchestration.steps:
         gateway, rest = step.uses.split("/", 1)
         step.uses = f"{names.get(gateway, gateway)}/{rest}"
     declaration.tags = [names.get(tag, tag) for tag in declaration.tags]
 
 
-def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSyncResult) -> None:
+def _sync(
+    path: Path,
+    provider: ResourceProvider,
+    dry_run: bool,
+    gateway_names: Dict[str, str],
+    result: SkillSyncResult,
+) -> None:
     try:
         declaration = parse_declaration(path.read_text(encoding="utf-8"))
     except SkillDeclarationError as err:
@@ -99,7 +113,7 @@ def _sync(path: Path, provider: ResourceProvider, dry_run: bool, result: SkillSy
             _("文件名 {file_name} 与声明的 name {name} 不一致").format(file_name=path.stem, name=declaration.name)
         )
         return
-    _localize_gateway_names(declaration)
+    _localize_gateway_names(declaration, gateway_names)
 
     metadata = SkillMetadata.objects.filter(
         type=SkillTypeEnum.PLATFORM.value, gateway__isnull=True, name=declaration.name

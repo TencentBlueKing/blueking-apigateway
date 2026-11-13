@@ -24,7 +24,8 @@ import pytest
 import yaml
 from django.core.management import call_command
 
-from apigateway.apps.skill.models import SkillMetadata
+from apigateway.apps.skill.management.commands.sync_platform_skills import get_edition_gateway_names
+from apigateway.apps.skill.models import SkillMetadata, SkillVersionRelation
 from apigateway.biz.skill import SKILL_DECLARATIONS_DIR
 from apigateway.tests.biz.skill.conftest import (
     DECLARATIONS_DIR,
@@ -38,7 +39,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def te_edition(settings):
     """fixture 资源和声明用的是内部名 jobv3-cloud"""
-    settings.EDITION_GATEWAY_NAMES = {"jobv3-cloud": "jobv3-cloud", "bk-job": "jobv3-cloud"}
+    settings.EDITION = "te"
 
 
 def _call(*args) -> str:
@@ -127,3 +128,33 @@ class TestSyncPlatformSkillsCommand:
         )
 
         assert output == f"No skill declaration named missing-skill in {declarations_dir}.\n"
+
+    def test_ee_localizes_gateway_name(self, settings, declarations_dir):
+        settings.EDITION = "ee"
+        resources_data = json.loads((FIXTURES_DIR / "resources.json").read_text(encoding="utf-8"))
+        resources_data["resources"] = [
+            {**item, "gateway": "bk-job"} if item["gateway"] == "jobv3-cloud" else item
+            for item in resources_data["resources"]
+        ]
+        release_fixture_gateway(resources_data, "bk-job")
+
+        output = _call("--dir", str(declarations_dir), "--name", "job-plan-run-and-log")
+
+        assert output.splitlines()[0] == "[新建] job-plan-run-and-log"
+        metadata = SkillMetadata.objects.get(name="job-plan-run-and-log")
+        relations = SkillVersionRelation.objects.filter(metadata=metadata)
+        assert set(relations.values_list("gateway_name", flat=True)) == {"bk-job"}
+
+
+@pytest.mark.parametrize(
+    "edition, expected",
+    [
+        ("te", {"jobv3-cloud": "jobv3-cloud", "bk-job": "jobv3-cloud", "bkaidev": "bkaidev", "bk-aidev": "bkaidev"}),
+        ("ee", {"jobv3-cloud": "bk-job", "bk-job": "bk-job", "bkaidev": "bk-aidev", "bk-aidev": "bk-aidev"}),
+    ],
+)
+def test_get_edition_gateway_names(edition, expected):
+    names = get_edition_gateway_names(edition)
+
+    assert {name: names[name] for name in expected} == expected
+    assert names["paasv3"] == names["bkpaas3"] == ("paasv3" if edition == "te" else "bkpaas3")
