@@ -103,11 +103,17 @@ class TestGatewaySyncInputSLZ:
         ("name", "is_valid"),
         [
             ("bkiam", True),
+            ("bcs-api-gateway", True),
+            ("cw-aitsm", True),
             ("bkpaas3", True),
             ("paasv3", True),
             ("bk-test", True),
             ("bkiam-test", False),
             ("bkiamx", False),
+            ("bcs-api-gateway-test", False),
+            ("bcs-api-gatewayx", False),
+            ("cw-aitsm-test", False),
+            ("cw-aitsmx", False),
         ],
     )
     def test_official_gateway_name_exceptions_are_exact(self, official_config, name, is_valid):
