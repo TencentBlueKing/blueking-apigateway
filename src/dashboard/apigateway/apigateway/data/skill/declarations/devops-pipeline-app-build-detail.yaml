@@ -1,0 +1,107 @@
+name: devops-pipeline-app-build-detail
+display_name: 查看流水线构建历史和详情
+display_name_en: View Pipeline Build History and Details
+description: 只读。用蓝盾（BK-CI、devops）应用态接口按项目和流水线查构建历史，再取其中一条的构建详情，返回构建 ID、构建号、状态和失败插件。不触发构建，不生成下载链接。网关只认证应用，不使用用户 bk_token；每次请求的头里还要带 X-DEVOPS-UID。用户想看某条流水线最近一次或指定构建号的执行情况时使用，例如“用应用身份看 my-game 这条流水线最近一次构建详情”“第 128 次构建现在什么状态”，即使没有提到“蓝盾”也应使用。要下载产物或启动构建时不要使用。
+tags:
+- 蓝盾
+- devops
+- 只读
+- 构建详情
+version: 1.0.0
+changelog:
+- version: 1.0.0
+  date: 2026-11-11 11:00:00
+  content: |-
+    首个官方版本：v4_app_build_list → v4_app_build_detail。
+orchestration:
+  description: locate-build 只取一条，`data.records[0].id` 是 fetch-detail 的 `buildId`。两步的 `projectId`、`pipelineId` 相同，请求头 `X-DEVOPS-UID` 也相同。不传 `updateTimeDesc` 时列表按构建号降序，第一条就是符合条件的最近一次构建。
+  inputs:
+    project_id:
+      type: string
+      required: true
+      example: my-game
+    pipeline_id:
+      type: string
+      required: true
+      description: 形如 `p-` 开头的 32 位字符串
+      example: p-4b3a4baf5472466aa575973da87505b4
+    devops_uid:
+      type: string
+      required: true
+      description: 网关不收用户 bk_token，蓝盾用这个头识别操作者。用户没给时先问，不要用应用 ID 或当前登录名猜测
+      example: zhangsan
+    build_num:
+      type: integer
+      required: false
+      description: 传入时 buildNoStart、buildNoEnd 都用它；不传则取符合其他条件的最近一次构建
+      example: 128
+    build_status:
+      type: array<string>
+      required: false
+      description: 用户说“最近一次成功的”时传 `["SUCCEED"]`；指定了构建号时不传
+      example:
+      - SUCCEED
+  outputs:
+    build_id:
+      type: string
+      description: 构建 ID
+      value: ${{ steps.locate-build.outputs.data.records[0].id }}
+    build_num:
+      type: integer
+      description: 构建号
+      value: ${{ steps.fetch-detail.outputs.data.buildNum }}
+    build_status:
+      type: string
+      description: 构建状态，如 SUCCEED、FAILED、CANCELED、RUNNING
+      value: ${{ steps.fetch-detail.outputs.data.status }}
+    error_info:
+      type: array<object>
+      description: 失败插件、任务名和错误信息。成功时为空
+      value: ${{ steps.fetch-detail.outputs.data.errorInfoList }}
+  steps:
+  - id: locate-build
+    name: 查构建历史
+    uses: devops/v4_app_build_list@prod
+    description: 查构建历史，只取一条。不传 updateTimeDesc，按构建号降序，第一条就是符合条件的最近一次构建。给了 build_num 时 buildNoStart、buildNoEnd 都传它；没给则都不传。data.records 为空时停止。X-DEVOPS-UID 放请求头，不放 query：bk-cli 用 --header 'X-DEVOPS-UID:<devops_uid>'，直接 HTTP 时放同名 Header。认证只带 bk_app_code 和 bk_app_secret，不要带 bk_token。
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      X-DEVOPS-UID: ${{ inputs.devops_uid }}
+      buildNoStart: ${{ inputs.build_num }}
+      buildNoEnd: ${{ inputs.build_num }}
+      status: ${{ inputs.build_status }}
+      page: 1
+      pageSize: 1
+  - id: fetch-detail
+    name: 查构建详情
+    uses: devops/v4_app_build_detail@prod
+    description: 用 locate-build 的构建 ID 查详情。projectId、pipelineId、X-DEVOPS-UID 与上一步相同，X-DEVOPS-UID 仍然只放请求头。本步只读，状态是 RUNNING 或 QUEUE 时把当前状态告诉用户，不要轮询，也不要触发新构建。FAILED、CANCELED 时列出 errorInfoList 里的 atomCode、taskName、errorMsg。
+    with:
+      projectId: ${{ inputs.project_id }}
+      pipelineId: ${{ inputs.pipeline_id }}
+      buildId: ${{ steps.locate-build.outputs.data.records[0].id }}
+      X-DEVOPS-UID: ${{ inputs.devops_uid }}
+  guide:
+    not_for: |-
+      - 要下载产物：用「获取流水线构建产物下载链接」。那是用户态接口，要用户登录，不走本 Skill 的应用认证。
+      - 启动或重试流水线：本 Skill 不调用 build_start。
+      - 用户态、已经登录、不需要单独的 X-DEVOPS-UID：不要改用本 Skill 的应用态接口。
+    constraints: |-
+      - 两个接口都只读，不需要向用户确认。一次只看一条构建。
+      - 调用方式里 GET 的非路径参数默认放 query。X-DEVOPS-UID 是例外，两步都只放请求头。
+      - 网关权限在开发者中心申请 v4_app_build_list 和 v4_app_build_detail。项目是否把这个应用加入成员，由蓝盾项目侧决定，通过了网关权限仍可能被项目拒绝。
+      - 回复保留构建号、构建 ID、状态；失败时保留插件和错误信息。不要贴出 model 里的整棵流水线编排。
+    errors: |-
+      - 响应体 `status` 不为 0：把 `message` 告诉用户并停止。
+      - 外壳 `status` 为 403 且 `headers` 里的 `X-Bkapi-Error-Code` 为 `1640301`：应用没有网关接口权限，按 references/permissions.md 申请这两个资源。
+      - 提示项目无权限、应用不在项目成员中：到蓝盾项目里给该应用授权，不要重复申请网关权限。
+      - 缺少 X-DEVOPS-UID 或蓝盾报用户不存在：向用户要蓝盾用户名后重试这一次，不要改走用户 bk_token。
+      - `data.records` 为空：确认项目英文名、流水线 ID 和构建号。
+    example: |-
+      用户：用应用身份看 my-game 流水线 p-4b3a4baf5472466aa575973da87505b4 最近一次成功构建的详情，用户名 zhangsan。
+
+      build_status 传 ["SUCCEED"]。不传 build_num。
+
+      1. v4_app_build_list（page 1，pageSize 1，请求头 X-DEVOPS-UID=zhangsan）→ `data.records[0].id = b-2c97…0d29`，`buildNum = 128`，`status = SUCCEED`。
+      2. v4_app_build_detail（buildId b-2c97…0d29，同一个请求头）→ `data.status = SUCCEED`，`errorInfoList` 为空。
+      3. 回复：my-game 流水线最近一次成功构建是 #128（b-2c97…0d29），状态 SUCCEED。

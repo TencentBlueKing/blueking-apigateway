@@ -1,0 +1,118 @@
+{#
+SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version.artifact["SKILL.md"]。
+上下文由 biz/skill/renderer.py 提供。环境开启 trim_blocks、lstrip_blocks：独占一行的块标签不留空行；
+行尾的块标签会吞掉换行，行内条件用 {%- 拼接多行。
+#}
+{% set place_texts = {
+    "path": "`path` 替换路径里的 `{参数名}`",
+    "query": "`query` 放查询串",
+    "header": "`header` 放请求头",
+} %}
+{% set ref_input = "${{ inputs.<输入名> }}" %}
+{% set ref_step = "${{ steps.<步骤 id>.outputs.<字段路径> }}" %}
+# {{ display_name }}
+
+## 不适用场景
+
+{{ guide.not_for }}
+
+## 前置条件
+
+按 [references/permissions.md](references/permissions.md) 申请权限。接口清单里「需申请权限」为「是」的资源，申请通过后才能调用；为「否」的不必申请网关接口权限。业务侧权限（业务、模板、方案、流水线）由各系统自己校验，缺少时按「异常处理」提示用户申请。
+
+## 接口清单
+
+每个接口一行。认证和是否要申请权限以这张表为准；参数位置和取值见「执行步骤」里每一步的 YAML 调用说明。
+
+| 资源 | 网关 | 环境 | 方法 | 路径 | 说明 | 用户认证 | 应用认证 | 需申请权限 | OAuth2 public client | OAuth2 personal client |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+{% for res in resources %}
+| `{{ res.resource }}` | {{ res.gateway }} | {{ res.stage }} | {{ res.method }} | `{{ res.path }}` | {{ res.description | md_cell }} | {{ res.user_verified_required | yn }} | {{ res.app_verified_required | yn }} | {{ res.resource_perm_required | yn }} | {{ res.oauth2_public_client_enabled | yn }} | {{ res.oauth2_personal_client_enabled | yn }} |
+{% endfor %}
+
+认证凭据不在执行步骤中配置、不向用户索取，由调用方按目标网关支持的认证方式注入。
+
+## 输入
+
+必填缺失时先问用户，不要猜测。编排提示里写了拟定规则的，按规则拟定并写进回复，不要为拟定值再问一次。选填缺失时用默认值；没有默认值就不传。类型与接口定义一致，说明取自接口定义。
+
+| 参数 | 类型 | 必填 | 说明 | 编排提示 | 示例 | 默认值 |
+| --- | --- | --- | --- | --- | --- | --- |
+{% for item in inputs %}
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.required | yn }} | {{ item.description | md_cell }} | {{ item.hint | md_cell }} | {{ item.example | code_cell }} | {{ item.default | code_cell if item.has_default else "-" }} |
+{% endfor %}
+
+## 输出
+
+完成后按下表组织回复，字段取值只来自「来源」列，不要编造。字段结构见来源步骤 YAML 调用说明里的 `responses`。
+
+| 字段 | 类型 | 说明 | 来源 |
+| --- | --- | --- | --- |
+{% for item in outputs %}
+| `{{ item.name }}` | {{ item.type | md_cell }} | {{ item.description | md_cell }} | `{{ item.source }}` |
+{% endfor %}
+
+## 执行步骤
+
+来源和取值里的 `steps.<步骤 id>` 指该步骤调用的响应体，对应关系如下。
+
+| 步骤 | id | 名称 | 资源 |
+| --- | --- | --- | --- |
+{% for step in steps %}
+| {{ step.index }} | `{{ step.id }}` | {{ step.name | md_cell }} | `{{ step.resource }}` |
+{% endfor %}
+
+{{ description }}
+
+每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段列出本 Skill 绑定的参数，步骤说明明确要求传的其他参数按说明传；`responses` 列出该资源已发布 OpenAPI 的响应字段。
+{%- if notation.places %}
+参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
+  {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}
+{%- elif notation.body %}
+`requestBody` 里的字段组成 JSON 正文。
+{%- endif %}
+
+
+取值：`x-from: {{ ref_input }}` 来自输入
+{%- if notation.step %}；`x-from: {{ ref_step }}` 来自该步骤的响应体
+  {%- if notation.index %}，`[0]` 是数组第一个元素{% endif %}
+  {%- if notation.all %}，`[]` 是数组每个元素的该字段组成的数组{% endif %}
+{%- endif %}
+{%- if notation.each %}；`x-each: true` 表示逐个调用：对 `[]` 前的数组每个元素调用一次，取该元素的这个字段，同一步的 `x-each` 参数取同一个元素，只调用哪些元素看该步说明{% endif %}
+{%- if notation.value %}；`x-value` 是固定值，按 JSON 原样传{% endif %}
+{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}。
+
+{% for step in steps %}
+{{ step.title }}
+
+{% filter indent(3, first=True) %}
+{{ step.description }}
+
+```yaml
+{{ step.call }}
+```
+{% endfilter %}
+
+{% endfor %}
+## 运行约束
+
+{% if has_write %}
+会改动线上状态的接口按用户原话选一种模式，整次只选一次。用户已经说出执行意图时直接执行，不要再问选哪种模式，也不要逐步再确认：
+
+- 直接执行：用户要求现在就做（「跑一下」「执行」「启动」「直接执行」「不用再问」），且必填参数齐全。按拟定规则补上的值写进最终回复，不要为拟定值再问一次。
+- 确认后执行：用户说先确认、先别执行，或必填参数有歧义。只问一次，列出将使用的参数，得到确认后再调用写接口。
+
+{% endif %}
+{{ guide.constraints }}
+
+## 调用方式
+
+按 [references/how-to-call-apis.md](references/how-to-call-apis.md) 把上面的取值代进调用。步骤里不写命令。
+
+## 异常处理
+
+{{ guide.errors }}
+
+## 示例
+
+{{ guide.example }}

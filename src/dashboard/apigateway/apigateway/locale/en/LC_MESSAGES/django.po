@@ -3594,3 +3594,478 @@ msgstr "The fallback strategy only supports an array of http_429 and http_5xx."
 #: apigateway/apis/web/ai_backend/adapter.py
 msgid "认证凭据掩码无法恢复，请重新输入认证凭据。"
 msgstr "The masked credential cannot be restored. Please enter the credential again."
+
+#: apigateway/apps/skill/constants.py
+msgid "平台内置"
+msgstr "Built-in"
+
+#: apigateway/apps/skill/constants.py
+msgid "未发布"
+msgstr "Unpublished"
+
+#: apigateway/apps/skill/constants.py
+msgid "已发布"
+msgstr "Published"
+
+#: apigateway/apps/skill/constants.py
+msgid "已下架"
+msgstr "Offline"
+
+#: apigateway/apps/skill/models.py
+msgid "标签名称"
+msgstr "Tag name"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 标签"
+msgstr "Skill tag"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 来源类型"
+msgstr "Skill source type"
+
+#: apigateway/apps/skill/models.py
+msgid "所属网关，内置 Skill 为空"
+msgstr "Owning gateway, empty for built-in skills"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 名称，即 SKILL.md 的 name"
+msgstr "Skill name, i.e. the name in SKILL.md"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 展示名"
+msgstr "Skill display name"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 描述"
+msgstr "Skill description"
+
+#: apigateway/apps/skill/models.py
+msgid "扩展元数据"
+msgstr "Extended metadata"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 状态"
+msgstr "Skill status"
+
+#: apigateway/apps/skill/models.py
+msgid "下载数"
+msgstr "Downloads"
+
+#: apigateway/apps/skill/models.py
+msgid "当前版本"
+msgstr "Current version"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 元数据"
+msgstr "Skill metadata"
+
+#: apigateway/apps/skill/models.py
+msgid "编排内容"
+msgstr "Orchestration"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 编排"
+msgstr "Skill orchestration"
+
+#: apigateway/apps/skill/models.py
+msgid "版本号，格式为 major.minor.patch"
+msgstr "Version in major.minor.patch format"
+
+#: apigateway/apps/skill/models.py
+msgid "版本说明：version、date、content"
+msgstr "Changelog: version, date, content"
+
+#: apigateway/apps/skill/models.py
+msgid "发版时的编排内容"
+msgstr "Orchestration at release time"
+
+#: apigateway/apps/skill/models.py
+msgid "冻结的 Skill 包文件内容"
+msgstr "Frozen Skill package files"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 版本"
+msgstr "Skill version"
+
+#: apigateway/apps/skill/models.py
+msgid "资源名"
+msgstr "Resource name"
+
+#: apigateway/apps/skill/models.py
+msgid "Skill 版本关联资源"
+msgstr "Skill version resource"
+
+#: apigateway/biz/skill/constants.py
+msgid "新建"
+msgstr "Created"
+
+#: apigateway/biz/skill/constants.py
+msgid "跳过"
+msgstr "Skipped"
+
+#: apigateway/biz/skill/declaration.py
+msgid "未知字段"
+msgstr "unknown field"
+
+#: apigateway/biz/skill/declaration.py
+msgid "缺少必填字段"
+msgstr "required field is missing"
+
+#: apigateway/biz/skill/declaration.py
+msgid "应为字符串"
+msgstr "should be a string"
+
+#: apigateway/biz/skill/declaration.py
+msgid "应为布尔值"
+msgstr "should be a boolean"
+
+#: apigateway/biz/skill/declaration.py
+msgid "应为数组"
+msgstr "should be an array"
+
+#: apigateway/biz/skill/declaration.py
+msgid "应为对象"
+msgstr "should be an object"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid ""
+"类型写法不合规：{value}，应为 {types} 之一，或 array<类型>、string|integer 这"
+"样的组合"
+msgstr ""
+"invalid type notation: {value}, should be one of {types}, or a combination "
+"such as array<type> or string|integer"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "版本号应为 major.minor.patch，如 1.0.0：{value}"
+msgstr "version should be major.minor.patch, such as 1.0.0: {value}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "应为 YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS（不带时区）：{value}"
+msgstr "should be YYYY-MM-DD or YYYY-MM-DD HH:MM:SS (without time zone): {value}"
+
+#: apigateway/biz/skill/declaration.py
+msgid "为空"
+msgstr "is empty"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "example 与类型 {type} 不符"
+msgstr "example does not match type {type}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "default 与类型 {type} 不符"
+msgstr "default does not match type {type}"
+
+#: apigateway/biz/skill/declaration.py
+msgid ""
+"应为 ${{ inputs.<输入名> }} 或 ${{ steps.<步骤 id>.outputs.<字段路径> }}"
+msgstr ""
+"should be ${{ inputs.<input name> }} or ${{ steps.<step id>.outputs.<field "
+"path> }}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "应为 <网关>/<资源>@<环境>：{uses}"
+msgstr "should be <gateway>/<resource>@<stage>: {uses}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "网关名不合规：{gateway}"
+msgstr "invalid gateway name: {gateway}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "资源名不合规：{resource}"
+msgstr "invalid resource name: {resource}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "环境名不合规：{stage}"
+msgstr "invalid stage name: {stage}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "步骤 id 不合规：{value}"
+msgstr "invalid step id: {value}"
+
+#: apigateway/biz/skill/declaration.py
+msgid "为空（没有内容写「无」）"
+msgstr "is empty (write \"无\" if there is nothing to say)"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "输入名不合规：{names}"
+msgstr "invalid input names: {names}"
+
+#: apigateway/biz/skill/declaration.py
+msgid "至少需要一个，写用户最终需要的结果"
+msgstr "at least one is required; write the result the user finally needs"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "步骤 id 重复：{ids}"
+msgstr "duplicate step ids: {ids}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "输入没有绑定到任何步骤的 with，类型无从校验、说明无从取得：{names}"
+msgstr ""
+"inputs not bound in any step's with, so their types cannot be checked and "
+"their descriptions cannot be derived: {names}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "不合规：{value}"
+msgstr "invalid: {value}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "长度应为 1–{max_length}"
+msgstr "length should be 1–{max_length}"
+
+#: apigateway/biz/skill/declaration.py
+msgid "不能包含换行"
+msgstr "must not contain line breaks"
+
+#: apigateway/biz/skill/declaration.py
+msgid "至少需要一个标签"
+msgstr "at least one tag is required"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "标签名长度应为 1–{max_length}：{tag}"
+msgstr "tag name length should be 1–{max_length}: {tag}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "标签规范化后重复：{name}"
+msgstr "duplicate tag after normalization: {name}"
+
+#: apigateway/biz/skill/declaration.py
+msgid "至少需要一条，第一条为当前版本"
+msgstr "at least one entry is required, and the first one is the current version"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "第一条应为当前版本 {version}，实际为 {actual}"
+msgstr "the first entry should be the current version {version}, got {actual}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "应按版本从新到旧排列且不重复：{newer} 之后是 {older}"
+msgstr ""
+"entries should be ordered from newest to oldest without duplicates: {older} "
+"comes after {newer}"
+
+#: apigateway/biz/skill/declaration.py
+#, python-brace-format
+msgid "YAML 解析失败：{error}"
+msgstr "failed to parse YAML: {error}"
+
+#: apigateway/biz/skill/declaration.py
+msgid "声明"
+msgstr "declaration"
+
+#: apigateway/biz/skill/refs.py
+#, python-brace-format
+msgid "`${{{{ }}}}` 必须占满整个字符串，不能和其他文字拼接：{value}"
+msgstr ""
+"`${{{{ }}}}` must take up the whole string and cannot be joined with other "
+"text: {value}"
+
+#: apigateway/biz/skill/refs.py
+#, python-brace-format
+msgid "只能引用 inputs.<输入名> 或 steps.<步骤 id>.outputs.<字段路径>：{value}"
+msgstr ""
+"can only reference inputs.<input name> or steps.<step id>.outputs.<field "
+"path>: {value}"
+
+#: apigateway/biz/skill/refs.py
+#, python-brace-format
+msgid "`${{{{ }}}}` 只能作为整个取值，不能写在对象或数组里：{value}"
+msgstr ""
+"`${{{{ }}}}` can only be a whole value, not inside an object or array: "
+"{value}"
+
+#: apigateway/biz/skill/renderer.py
+#, python-brace-format
+msgid "资源不可编排，不能渲染：{details}"
+msgstr "resources cannot be orchestrated, unable to render: {details}"
+
+#: apigateway/biz/skill/renderer.py
+#, python-brace-format
+msgid "SKILL.md 正文 {lines} 行，超过 {max_lines} 行"
+msgstr "SKILL.md body has {lines} lines, exceeding {max_lines} lines"
+
+#: apigateway/biz/skill/renderer.py
+#, python-brace-format
+msgid "{gateway}.{resource} 的资源定义中没有参数 {name}，不能渲染"
+msgstr ""
+"parameter {name} is not in the resource definition of {gateway}.{resource}, "
+"unable to render"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "资源在环境 {stage} 已禁用"
+msgstr "the resource is disabled in stage {stage}"
+
+#: apigateway/biz/skill/resource_loader.py
+msgid "OpenAPI schema 未定义请求参数"
+msgstr "the OpenAPI schema does not define request parameters"
+
+#: apigateway/biz/skill/resource_loader.py
+msgid "OpenAPI schema 的响应未定义字段"
+msgstr "the OpenAPI schema response does not define any fields"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "{gateway}.{resource}：资源未公开，调用方无法申请权限"
+msgstr ""
+"{gateway}.{resource}: the resource is not public, callers cannot apply for "
+"permission"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "{gateway}.{resource}：方法为 ANY，SKILL.md 无法确定调用方法"
+msgstr ""
+"{gateway}.{resource}: the method is ANY, SKILL.md cannot determine which "
+"method to call"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "{gateway}.{resource}：路径中的 {names} 在资源定义中没有对应的 path 参数"
+msgstr ""
+"{gateway}.{resource}: {names} in the path has no matching path parameter in "
+"the resource definition"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid ""
+"{gateway}.{resource}：请求体不是 application/json，SKILL.md 只能描述 JSON 请"
+"求体"
+msgstr ""
+"{gateway}.{resource}: the request body is not application/json, SKILL.md "
+"can only describe JSON request bodies"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "{gateway}.{resource}：参数 {name} 同时出现在 {locations}，with 无法区分"
+msgstr ""
+"{gateway}.{resource}: parameter {name} appears in {locations}, with cannot "
+"tell them apart"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "当前发布版本中没有资源 {resource}"
+msgstr "resource {resource} is not in the currently released version"
+
+#: apigateway/biz/skill/resource_loader.py
+msgid "资源是 AI 资源，不能编排"
+msgstr "the resource is an AI resource and cannot be orchestrated"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "网关 {gateway} 不存在"
+msgstr "gateway {gateway} does not exist"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "网关 {gateway} 未启用"
+msgstr "gateway {gateway} is not active"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "环境 {stage} 不存在"
+msgstr "stage {stage} does not exist"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "环境 {stage} 未启用"
+msgstr "stage {stage} is not active"
+
+#: apigateway/biz/skill/resource_loader.py
+#, python-brace-format
+msgid "环境 {stage} 未发布"
+msgstr "stage {stage} has not been released"
+
+#: apigateway/biz/skill/syncer.py
+#, python-brace-format
+msgid "文件名 {file_name} 与声明的 name {name} 不一致"
+msgstr "file name {file_name} does not match the declared name {name}"
+
+#: apigateway/biz/skill/syncer.py
+#, python-brace-format
+msgid "版本 {version} 已存在"
+msgstr "version {version} already exists"
+
+#: apigateway/biz/skill/syncer.py
+#, python-brace-format
+msgid "{gateway}.{resource}（环境 {stage}）不可编排：{reason}"
+msgstr "{gateway}.{resource} (stage {stage}) cannot be orchestrated: {reason}"
+
+#: apigateway/biz/skill/syncer.py
+msgid "dry-run，未写库"
+msgstr "dry-run, nothing written to the database"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{where}：输入 {name} 不存在"
+msgstr "{where}: input {name} does not exist"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{where}：引用的步骤 {step} 不在当前步骤之前"
+msgstr "{where}: the referenced step {step} is not before the current step"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{where}：{resource} 的响应定义中没有 {path}"
+msgstr "{where}: {path} is not in the response definition of {resource}"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{step}：资源定义中必填的参数没有写进 with：{params}"
+msgstr "{step}: required parameters in the resource definition are missing from with: {params}"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{step}：参数 {name} 不在资源定义中"
+msgstr "{step}: parameter {name} is not in the resource definition"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid ""
+"{step}.with.{name}：参数 {name} 在资源定义中必填，输入 {input} 却是选填且没有"
+"默认值"
+msgstr ""
+"{step}.with.{name}: parameter {name} is required in the resource definition, "
+"but input {input} is optional without a default value"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{step}：逐个调用的参数须取自同一个数组：{arrays}"
+msgstr "{step}: per-item parameters must come from the same array: {arrays}"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "inputs.{name}：类型 {type} 与绑定参数不一致：{detail}"
+msgstr "inputs.{name}: type {type} does not match the bound parameters: {detail}"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "outputs.{name}：类型 {type} 与来源不一致，应为 {expected}"
+msgstr "outputs.{name}: type {type} does not match its source, should be {expected}"
+
+#: apigateway/biz/skill/writer.py
+#, python-brace-format
+msgid "{name} 已有版本 {version}"
+msgstr "{name} already has version {version}"
+
+#: apigateway/biz/skill/writer.py
+#, python-brace-format
+msgid "{name} 的版本 {version} 不高于当前版本 {current}"
+msgstr "version {version} of {name} is not higher than the current version {current}"

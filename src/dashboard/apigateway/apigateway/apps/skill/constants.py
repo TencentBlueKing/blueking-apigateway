@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
@@ -44,4 +45,5 @@ SKILL_NAME_MAX_LENGTH = 64
 SKILL_DISPLAY_NAME_MAX_LENGTH = 64
 SKILL_DESCRIPTION_MAX_LENGTH = 1024
 SKILL_VERSION_MAX_LENGTH = 64
+SKILL_VERSION_PATTERN = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 SKILL_TAG_NAME_MAX_LENGTH = 64

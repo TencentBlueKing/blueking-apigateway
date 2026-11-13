@@ -1,0 +1,208 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+import pytest
+
+from apigateway.biz.skill.schema_converter import (
+    ResourceParam,
+    ResponseField,
+    convert_schema_params,
+    convert_schema_responses,
+    has_non_json_request_body,
+    schema_type_text,
+)
+
+pytestmark = pytest.mark.no_meta_schema
+
+SCHEMA = {
+    "parameters": [
+        {"name": "bk_biz_id", "in": "path", "required": True, "schema": {"type": "integer"}, "description": "业务 ID"},
+        {"name": "keyword", "in": "query", "schema": {"type": "string"}},
+        {"name": "X-Trace", "in": "header", "schema": {"type": "string"}},
+        {"name": "sid", "in": "cookie", "schema": {"type": "string"}},
+    ],
+    "requestBody": {
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                        "name": {"type": "string", "description": "任务名"},
+                        "hosts": {"type": "array", "items": {"type": "integer"}},
+                    },
+                }
+            }
+        }
+    },
+    "responses": {
+        "400": {"description": "bad"},
+        "201": {"description": "created"},
+        "200": {
+            "description": "ok",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "result": {"type": "boolean"},
+                            "data": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {"id": {"type": ["integer", "string"], "description": "任务 ID"}},
+                                },
+                            },
+                        },
+                    }
+                }
+            },
+        },
+    },
+}
+
+
+def test_convert_schema_params():
+    assert convert_schema_params(SCHEMA) == [
+        ResourceParam(
+            name="bk_biz_id",
+            location="path",
+            type="integer",
+            required=True,
+            description="业务 ID",
+            schema={"type": "integer"},
+        ),
+        ResourceParam(name="keyword", location="query", type="string", schema={"type": "string"}),
+        ResourceParam(name="X-Trace", location="header", type="string", schema={"type": "string"}),
+        ResourceParam(
+            name="name",
+            location="body",
+            type="string",
+            required=True,
+            description="任务名",
+            schema={"type": "string", "description": "任务名"},
+        ),
+        ResourceParam(
+            name="hosts",
+            location="body",
+            type="array<integer>",
+            schema={"type": "array", "items": {"type": "integer"}},
+        ),
+    ]
+
+
+def test_param_keeps_published_schema():
+    """嵌套对象数组、子字段必填、枚举都留在 schema 里，type 只是从它推导出的类型写法"""
+    var_schema = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": False,
+            "properties": {
+                "name": {"type": "string"},
+                "kind": {"type": "string", "enum": ["string", "host"]},
+                "server": {
+                    "type": "object",
+                    "properties": {"host_id_list": {"type": "array", "items": {"type": "integer"}}},
+                },
+            },
+        },
+    }
+    scope_schema = {"type": "string", "enum": ["biz", "biz_set"], "description": "资源范围类型"}
+    schema = {
+        "parameters": [{"name": "bk_scope_type", "in": "query", "schema": scope_schema}],
+        "requestBody": {
+            "content": {
+                "application/json": {"schema": {"type": "object", "properties": {"global_var_list": var_schema}}}
+            }
+        },
+    }
+
+    scope, var_list = convert_schema_params(schema)
+
+    assert (scope.type, scope.description, scope.schema) == ("string", "资源范围类型", scope_schema)
+    assert (var_list.type, var_list.schema) == ("array<object>", var_schema)
+
+
+def test_non_json_request_body_is_not_converted():
+    schema = {
+        "parameters": [{"name": "task_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["file"],
+                        "properties": {"file": {"type": "string", "description": "文件"}},
+                    }
+                }
+            }
+        },
+    }
+
+    assert has_non_json_request_body(schema)
+    assert convert_schema_params(schema) == [
+        ResourceParam(name="task_id", location="path", type="integer", required=True, schema={"type": "integer"}),
+    ]
+
+
+def test_json_request_body_preferred_over_other_content_types():
+    schema = {
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string"}}}},
+                "application/json": {
+                    "schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+                },
+            }
+        }
+    }
+
+    assert not has_non_json_request_body(schema)
+    assert convert_schema_params(schema) == [
+        ResourceParam(name="name", location="body", type="string", required=True, schema={"type": "string"}),
+    ]
+
+
+def test_convert_schema_responses():
+    assert convert_schema_responses(SCHEMA) == [
+        ResponseField(field="result", type="boolean"),
+        ResponseField(field="data", type="array<object>"),
+        ResponseField(field="data[].id", type="integer|string", description="任务 ID"),
+    ]
+
+
+@pytest.mark.parametrize("schema", [{}, {"responses": {"404": {}}}, {"responses": {"200": {"description": "ok"}}}])
+def test_convert_empty(schema):
+    assert convert_schema_params(schema) == []
+    assert convert_schema_responses(schema) == []
+
+
+@pytest.mark.parametrize(
+    "schema, expected",
+    [
+        ({"type": "string"}, "string"),
+        ({"type": ["integer", "null"]}, "integer|null"),
+        ({"type": "array", "items": {"type": "string"}}, "array<string>"),
+        ({"type": "array"}, "array"),
+        ({"properties": {}}, "object"),
+        ({}, ""),
+    ],
+)
+def test_schema_type_text(schema, expected):
+    assert schema_type_text(schema) == expected

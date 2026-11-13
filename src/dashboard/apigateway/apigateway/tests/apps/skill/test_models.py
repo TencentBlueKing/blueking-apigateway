@@ -258,7 +258,7 @@ class TestSkillVersion:
     def test_defaults(self, fake_skill_metadata):
         version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0")
 
-        assert version.changelog == ""
+        assert version.changelog == {}
         assert version.orchestration == {}
         assert version.artifact == {}
 
@@ -272,14 +272,6 @@ class TestSkillVersion:
     def test_unique_metadata_version(self, fake_skill_version):
         with pytest.raises(IntegrityError), transaction.atomic():
             SkillVersion.objects.create(metadata=fake_skill_version.metadata, version=fake_skill_version.version)
-
-    def test_version_saved_as_lowercase(self, fake_skill_metadata):
-        version = SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0-Alpha")
-
-        version.refresh_from_db()
-        assert version.version == "1.0.0-alpha"
-        with pytest.raises(IntegrityError), transaction.atomic():
-            SkillVersion.objects.create(metadata=fake_skill_metadata, version="1.0.0-ALPHA")
 
 
 class TestSkillVersionRelation:

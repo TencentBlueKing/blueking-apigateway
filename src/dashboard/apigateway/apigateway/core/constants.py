@@ -313,6 +313,8 @@ HOST_WITHOUT_SCHEME_PATTERN = re.compile(
     + DOMAIN_WITH_IPV6_PATTERN.pattern
 )
 
+# 资源名：字母开头，字母、数字、下划线，最长 256
+RESOURCE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,255}$")
 # 资源路径转换为名称正则
 PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 

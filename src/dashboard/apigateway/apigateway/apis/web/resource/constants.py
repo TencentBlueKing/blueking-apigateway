@@ -30,6 +30,3 @@ PATH_VAR_PATTERN = re.compile(r"\{(.*?)\}")
 NORMAL_PATH_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,29}$")
 # 环境中包含环境变量，如 {env.prefix}
 STAGE_PATH_VAR_NAME_PATTERN = re.compile(r"^%s$" % STAGE_VAR_REFERENCE_PATTERN.pattern)
-
-# 资源正则
-RESOURCE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,255}$")
