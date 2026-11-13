@@ -988,10 +988,12 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         if not category_names:
             return category_names
 
-        existing_names = set(MCPServerCategory.objects.filter(name__in=category_names).values_list("name", flat=True))
+        existing_names = set(
+            MCPServerCategory.objects.filter(name__in=category_names, is_active=True).values_list("name", flat=True)
+        )
         invalid_names = set(category_names) - existing_names
         if invalid_names:
-            raise serializers.ValidationError(f"分类不存在: {', '.join(invalid_names)}")
+            raise serializers.ValidationError(f"分类不存在或已停用: {', '.join(invalid_names)}")
 
         return category_names
 

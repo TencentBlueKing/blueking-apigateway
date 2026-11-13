@@ -1721,9 +1721,10 @@ class TestSyncApiCategory:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试创建 MCPServer 时同步分类"""
+        """测试官方网关创建 MCPServer 时同步特殊分类"""
         make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
+        fake_gateway.is_official = True
         fake_stage.name = "test"
         fake_gateway.save()
         fake_stage.save()
@@ -1924,7 +1925,7 @@ class TestSyncApiCategory:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试更新 MCPServer 时同步分类"""
+        """测试更新 MCPServer 时同步分类：以声明为准替换，已绑定的特殊分类也被移除"""
         make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
@@ -1984,9 +1985,7 @@ class TestSyncApiCategory:
 
         # 验证分类已更新
         mcp_server.refresh_from_db()
-        assert mcp_server.categories.count() == 1
-        assert not mcp_server.categories.filter(id=category1.id).exists()
-        assert mcp_server.categories.filter(id=category2.id).exists()
+        assert set(mcp_server.categories.values_list("id", flat=True)) == {category2.id}
 
     def test_mcp_server_sync_update_without_category_names(
         self,
@@ -2097,6 +2096,94 @@ class TestSyncApiCategory:
         assert resp.status_code == 400
         result = resp.json()
         assert "分类不存在" in str(result["error"])
+
+    def test_mcp_server_sync_ignores_special_categories_on_normal_gateway(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """非官方网关传入的 Official/Featured 不生效"""
+        make_resource_schema_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_gateway.is_official = False
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        for name in ["Official", "Featured", "Monitoring"]:
+            MCPServerCategory.objects.get_or_create(name=name, defaults={"display_name": name})
+
+        data = {
+            "mcp_servers": [
+                {
+                    "name": "special-category-server",
+                    "resource_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "special category",
+                    "status": 1,
+                    "category_names": ["Official", "Featured", "Monitoring"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        mcp_server = MCPServer.objects.get(id=resp.json()["data"][0]["id"])
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Monitoring"]
+
+    def test_mcp_server_sync_with_inactive_category_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """传入已停用的分类，返回错误"""
+        make_resource_schema_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        MCPServerCategory.objects.update_or_create(
+            name="Monitoring", defaults={"display_name": "监控告警", "is_active": False}
+        )
+
+        data = {
+            "mcp_servers": [
+                {
+                    "name": "inactive-category-server",
+                    "resource_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "inactive category",
+                    "status": 1,
+                    "category_names": ["Monitoring"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 400
+        assert "已停用" in str(resp.json()["error"])
+        assert not MCPServer.objects.filter(name__endswith="inactive-category-server").exists()
 
 
 class TestSyncApiToolNames:

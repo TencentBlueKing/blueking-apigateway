@@ -37,7 +37,7 @@ mcp_servers 参数说明
 | `oauth2_public_client_enabled`     | bool                   | 否  | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权，默认不开启                     |
 | `oauth2_personal_client_enabled`     | bool                   | 否  | 是否开启 OAuth2 个人客户端模式，开启后将会对 bk_app_code=personal 的应用进行授权，默认不开启                     |
 | `raw_response_enabled`     | bool                   | 否  | 是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息，默认不开启                     |
-| `category_names`   | array[string]          | 否  | MCP Server 分类名称列表，不传则不更新分类。当前支持的分类：`Uncategorized`（未分类）、`Official`（官方资源）、`Featured`（精选推荐）、`Monitoring`（监控告警）、`ConfigManagement`（配置管理）、`DevOps`（持续交付）、`Emergency`（故障管理）、`Database`（数据服务）、`Automation`（运维自动化）、`Observability`（可观测性）、`Security`（安全合规）、`ResourceOptimize`（资源优化）、`ChaosEngineering`（混沌工程）、`Network`（网络管理）                                                              |
+| `category_names`   | array[string]          | 否  | MCP Server 分类名称列表，不传则不更新分类；仅支持已启用的分类。`Official`、`Featured` 仅官方网关可设置，非官方网关传入会被忽略。当前支持的分类：`Uncategorized`（未分类）、`Official`（官方资源）、`Featured`（精选推荐）、`Monitoring`（监控告警）、`ConfigManagement`（配置管理）、`DevOps`（持续交付）、`Emergency`（故障管理）、`Database`（数据服务）、`Automation`（运维自动化）、`Observability`（可观测性）、`Security`（安全合规）、`ResourceOptimize`（资源优化）、`ChaosEngineering`（混沌工程）、`Network`（网络管理）                                                              |
 
 
 ### 请求参数示例

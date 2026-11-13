@@ -304,7 +304,10 @@ class MCPServerHandler:
 
     @staticmethod
     def _sync_mcp_server_categories(instance: MCPServer, category_names: Optional[List[str]]):
-        """同步 MCP Server 分类，None 表示不操作，空列表表示清空"""
+        """同步 MCP Server 分类，None 表示不操作，空列表表示清空
+
+        Official/Featured 仅官方网关可设置，非官方网关传入的特殊分类会被忽略
+        """
         if category_names is None:
             return
 
@@ -312,8 +315,10 @@ class MCPServerHandler:
             instance.categories.clear()
             return
 
-        existing_categories = MCPServerCategory.objects.filter(name__in=category_names)
-        instance.categories.set(existing_categories)
+        categories = MCPServerCategory.objects.filter(name__in=category_names)
+        if not instance.gateway.is_official:
+            categories = [category for category in categories if not category.is_special_category]
+        instance.categories.set(categories)
 
     @staticmethod
     def _virtual_app_code(mcp_server_id: int, app_code: str) -> str:
