@@ -36,6 +36,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply, MCPServerCategory
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
@@ -1933,6 +1934,93 @@ class TestGatewayResourceListApiFields:
         assert response.status_code == 200
         assert len(result["data"]) == 1
         assert set(result["data"][0].keys()) == {"id", "name"}
+
+
+class TestGatewayResourceListApiOpenAPISchema:
+    @pytest.mark.parametrize(
+        "has_openapi_schema, expected_name",
+        [
+            ("true", "get_user_info"),
+            ("false", "create_order"),
+        ],
+    )
+    def test_list_with_has_openapi_schema(
+        self, request_to_view, request_factory, fake_gateway, has_openapi_schema, expected_name
+    ):
+        resource_with_schema = G(
+            Resource,
+            gateway=fake_gateway,
+            name="get_user_info",
+            description="获取用户信息",
+            method="GET",
+            path="/api/v1/users/",
+            is_public=True,
+        )
+        G(OpenAPIResourceSchema, resource=resource_with_schema, schema={"none_schema": True})
+
+        G(
+            Resource,
+            gateway=fake_gateway,
+            name="create_order",
+            description="创建订单",
+            method="POST",
+            path="/api/v1/orders/",
+            is_public=True,
+        )
+
+        request = request_factory.get("", data={"has_openapi_schema": has_openapi_schema})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.resources.list",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert len(result["data"]) == 1
+        assert result["data"][0]["name"] == expected_name
+
+    def test_list_with_fields_has_openapi_schema(self, request_to_view, request_factory, fake_gateway):
+        resource_with_schema = G(
+            Resource,
+            gateway=fake_gateway,
+            name="get_user_info",
+            description="获取用户信息",
+            method="GET",
+            path="/api/v1/users/",
+            is_public=True,
+        )
+        G(OpenAPIResourceSchema, resource=resource_with_schema, schema={"none_schema": True})
+
+        G(
+            Resource,
+            gateway=fake_gateway,
+            name="create_order",
+            description="创建订单",
+            method="POST",
+            path="/api/v1/orders/",
+            is_public=True,
+        )
+
+        request = request_factory.get("", data={"fields": "name,has_openapi_schema"})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.resources.list",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert {item["name"]: item["has_openapi_schema"] for item in result["data"]} == {
+            "get_user_info": True,
+            "create_order": False,
+        }
 
 
 class TestMCPServerListApiCategory:

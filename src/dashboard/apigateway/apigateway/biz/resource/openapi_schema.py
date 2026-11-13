@@ -18,6 +18,10 @@
 #
 from typing import Optional
 
+from django.db.models import Q, QuerySet
+
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
+
 
 class ResourceOpenAPISchemaHandler:
     @staticmethod
@@ -34,3 +38,11 @@ class ResourceOpenAPISchemaHandler:
             return True
 
         return False
+
+    @staticmethod
+    def get_resource_ids_with_openapi_schema(gateway_id: int) -> QuerySet:
+        """获取网关下编辑区已配置 openapi schema 的资源 ID，判定条件与 has_openapi_schema 一致"""
+        return OpenAPIResourceSchema.objects.filter(
+            Q(schema__none_schema=True) | Q(schema__has_key="requestBody") | Q(schema__has_key="parameters"),
+            resource__gateway_id=gateway_id,
+        ).values_list("resource_id", flat=True)

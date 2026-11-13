@@ -598,6 +598,7 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
 
     is_deprecated = serializers.BooleanField(default=False, read_only=True, help_text="是否弃用")
     deprecated_note = serializers.CharField(default="", allow_blank=True, read_only=True, help_text="弃用说明")
+    has_openapi_schema = serializers.SerializerMethodField(help_text="是否已声明请求参数")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceListOutputSLZ"
@@ -609,6 +610,10 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
     def get_labels(self, obj):
         """获取标签列表"""
         return self.context.get("labels", {}).get(obj.id, [])
+
+    def get_has_openapi_schema(self, obj) -> bool:
+        """是否已声明请求参数，包括声明无请求参数"""
+        return obj.id in self.context.get("resource_ids_with_openapi_schema", set())
 
     def get_auth_config(self, obj):
         """获取认证配置"""
@@ -656,6 +661,7 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
     enable_websocket = serializers.BooleanField(read_only=True, help_text="是否启用 WebSocket")
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
     schema = serializers.DictField(read_only=True, help_text="资源的 OpenAPI Schema 定义")
+    has_openapi_schema = serializers.BooleanField(read_only=True, help_text="是否已声明请求参数")
     doc = serializers.DictField(read_only=True, help_text="资源文档信息", allow_null=True)
     auth_config = AuthConfigOutputSLZ(read_only=True, help_text="认证配置")
 
@@ -869,6 +875,11 @@ class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
 class GatewayResourceListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字，模糊匹配资源 name、description 或标签名称"
+    )
+    has_openapi_schema = serializers.BooleanField(
+        required=False,
+        allow_null=True,
+        help_text="按是否已声明请求参数过滤，包括声明无请求参数；不传则不过滤",
     )
     fields = serializers.CharField(
         required=False,

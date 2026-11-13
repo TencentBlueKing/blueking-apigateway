@@ -49,6 +49,7 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
+from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
@@ -783,6 +784,7 @@ class GatewayResourceListApi(generics.ListAPIView):
         - 只返回公开的资源
         - 支持 fields 参数指定返回字段，如 fields=id,name
         - 支持 keyword 模糊搜索 name、description 和标签名称
+        - 支持 has_openapi_schema 按是否已声明请求参数过滤
         """
         slz = GatewayResourceListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -799,6 +801,15 @@ class GatewayResourceListApi(generics.ListAPIView):
                 | Q(resourcelabel__api_label__name__icontains=slz.validated_data["keyword"])
             ).distinct()
 
+        resource_ids_with_openapi_schema = ResourceOpenAPISchemaHandler.get_resource_ids_with_openapi_schema(
+            request.gateway.id
+        )
+        has_openapi_schema = slz.validated_data.get("has_openapi_schema")
+        if has_openapi_schema is True:
+            queryset = queryset.filter(id__in=resource_ids_with_openapi_schema)
+        elif has_openapi_schema is False:
+            queryset = queryset.exclude(id__in=resource_ids_with_openapi_schema)
+
         resources = list(queryset)
         fields_str = slz.validated_data.get("fields")
 
@@ -809,6 +820,9 @@ class GatewayResourceListApi(generics.ListAPIView):
             context={
                 "labels": get_resource_id_to_labels(resource_ids),
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
+                "resource_ids_with_openapi_schema": set(
+                    resource_ids_with_openapi_schema.filter(resource_id__in=resource_ids)
+                ),
             },
         )
 
@@ -900,6 +914,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
             "is_deprecated": resource_data.is_deprecated,
             "deprecated_note": resource_data.deprecated_note,
             "schema": resource_schema or {},
+            "has_openapi_schema": ResourceOpenAPISchemaHandler.has_openapi_schema(resource_schema),
             "doc": doc_info,
             "auth_config": {
                 "user_verified_required": resource_data.verified_user_required,
