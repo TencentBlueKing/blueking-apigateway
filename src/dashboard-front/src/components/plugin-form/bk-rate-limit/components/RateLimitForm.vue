@@ -46,6 +46,7 @@
         <component
           :is="getComponent(propSchema['ui:component']?.name)"
           v-model="item[prop]"
+          v-bind="prop === 'bk_app_code' ? { syncCommittedValue: true } : {}"
           :disabled="disabled"
           :label="propSchema.title"
           :value="item['default']?.[prop] ?? item[prop]"

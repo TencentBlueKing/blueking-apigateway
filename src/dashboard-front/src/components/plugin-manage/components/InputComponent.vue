@@ -24,11 +24,13 @@
     :property="property"
   >
     <BkInput
-      v-model="currentValue"
+      :model-value="currentValue"
       :disabled="disabled"
       :maxlength="max"
       :show-word-limit="showWordLimit"
-      @input="handleInput"
+      @input="!syncCommittedValue && emitValue($event)"
+      @update:model-value="updateCurrentValue"
+      @compositionend="handleCompositionEnd"
     />
   </BkFormItem>
 </template>
@@ -41,6 +43,7 @@ interface IProps {
   disabled?: boolean
   required?: boolean
   showWordLimit?: boolean
+  syncCommittedValue?: boolean
   max?: number
   labelWidth?: number
   rules?: Array<{
@@ -51,11 +54,6 @@ interface IProps {
   }>
 }
 
-interface IEmits {
-  (e: 'input', value: string): void
-  (e: 'update:value', value: string): void
-}
-
 const {
   label = '',
   value = '',
@@ -64,21 +62,41 @@ const {
   disabled = false,
   required = false,
   showWordLimit = false,
+  syncCommittedValue = false,
   rules = [],
 } = defineProps<IProps>();
 
-const emit = defineEmits<IEmits>();
+const emit = defineEmits<{
+  'input': [value: string]
+  'update:value': [value: string]
+}>();
 
-const currentValue = ref('');
+const currentValue = shallowRef('');
 
-watch(() => value, (newVal: any) => {
-  if (newVal) {
-    currentValue.value = newVal;
+watch(() => value, (newValue) => {
+  if (syncCommittedValue || newValue) {
+    currentValue.value = newValue;
   }
 }, { immediate: true });
 
-const handleInput = (val: string) => {
-  emit('input', val);
-  emit('update:value', val);
+const emitValue = (newValue: string) => {
+  emit('input', newValue);
+  emit('update:value', newValue);
+};
+
+const updateCurrentValue = (newValue: string) => {
+  if (newValue === currentValue.value) return;
+
+  currentValue.value = newValue;
+  if (syncCommittedValue) {
+    emitValue(newValue);
+  }
+};
+
+const handleCompositionEnd = (event: CompositionEvent) => {
+  if (syncCommittedValue && event.target instanceof HTMLInputElement) {
+    // Match BkInput's trimming when composition ends without a final input event.
+    updateCurrentValue(event.target.value.trim());
+  }
 };
 </script>
