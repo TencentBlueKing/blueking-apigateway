@@ -17,134 +17,132 @@
  */
 
 <template>
-  <div class="plugin-info">
-    <main
-      class="plugin-form-content"
-      :class="{ 'pr-20px': showExample }"
-    >
-      <div
-        v-if="!isAdd && isStage"
-        class="info-alert mb-20px"
-      >
+  <BkResizeLayout
+    class="plugin-info"
+    :border="false"
+    :placement="isNarrow ? 'bottom' : 'right'"
+    :initial-divide="showExample ? exampleSize : 0"
+    :min="showExample ? minExampleSize : 0"
+    :max="maxExampleSize"
+    :disabled="!showExample"
+    :class="{ 'is-example-hidden': !showExample }"
+    @after-resize="handleExampleResize"
+  >
+    <template #main>
+      <div class="plugin-form-content">
         <BkAlert
+          v-if="!isAdd && isStage"
+          class="mb-24px"
           theme="warning"
           :title="t('修改插件配置将会直接影响线上环境，请谨慎操作')"
         />
-      </div>
-      <div class="info-header">
-        <header class="choose-plugin">
-          <div
-            v-if="PLUGIN_ICONS.includes(choosePlugin)"
-            class="cur-icon"
-          >
-            <svg class="icon svg-icon">
-              <use
-                :xlink:href="`#icon-ag-plugin-${choosePlugin}`"
-                fill="#3a84f6"
-              />
-            </svg>
-          </div>
-          <div
-            v-else-if="PLUGIN_ICONS_MIN.includes(choosePlugin)"
-            class="cur-icon"
-          >
-            <svg class="icon svg-icon small">
-              <use
-                :xlink:href="`#icon-ag-plugin-${choosePlugin}`"
-                fill="#3a84f6"
-              />
-            </svg>
-          </div>
-          <div
-            v-else
-            class="cur-icon"
-          >
-            {{ pluginCodeFirst(curPluginInfo?.code) }}
-          </div>
-          <div
-            v-show="isAdd"
-            @click="showChoosePlugin = true"
-          >
-            {{ t('切换插件') }}
+        <header
+          ref="pluginHeader"
+          class="info-header"
+          :class="{ 'is-switching': isSwitching }"
+        >
+          <PluginIcon :code="choosePlugin" />
+          <div class="plugin-summary">
+            <div class="plugin-summary-heading">
+              <span class="plugin-name">{{ curPluginInfo?.name }}</span>
+              <ul class="plugin-metadata">
+                <li>{{ t('版本：') }} V1.0.0</li>
+                <li>
+                  {{ t('已绑环境：') }}
+                  <span>{{ curPluginInfo?.related_scope_count?.stage ?? '--' }}</span>
+                </li>
+                <li>
+                  {{ t('已绑资源：') }}
+                  <span>{{ curPluginInfo?.related_scope_count?.resource ?? '--' }}</span>
+                </li>
+              </ul>
+            </div>
+            <p
+              v-if="curPluginInfo?.notes"
+              class="plugin-description"
+            >
+              {{ curPluginInfo.notes }}
+            </p>
+            <div class="plugin-links">
+              <AgIconButton
+                text
+                theme="primary"
+                icon="jump"
+                @click="handleDocClick"
+              >
+                {{ t('说明文档') }}
+              </AgIconButton>
+              <AgIconButton
+                v-if="exampleHtml"
+                text
+                theme="primary"
+                icon="bulk-edit"
+                :aria-expanded="showExample"
+                @click="toggleShowExample"
+              >
+                {{ t('填写示例') }}
+              </AgIconButton>
+            </div>
           </div>
           <BkSelect
-            v-show="showChoosePlugin"
-            ref="pluginSelectRef"
+            v-if="isAdd"
             v-model="choosePlugin"
+            class="plugin-switch"
             :clearable="false"
+            :filterable="false"
+            :input-search="false"
+            :show-selected-icon="false"
             :disabled="isSubmitting"
-            class="choose-plugin-select"
+            :scroll-height="332"
+            :popover-options="switchPopoverOptions"
             @change="handleChoosePlugin"
-            @blur="() => showChoosePlugin = false"
+            @toggle="isSwitching = $event"
           >
+            <template #trigger>
+              <BkButton
+                theme="primary"
+                size="small"
+                :disabled="isSubmitting"
+                :aria-expanded="isSwitching"
+              >
+                {{ t('切换插件') }}
+              </BkButton>
+            </template>
             <BkOption
               v-for="item in pluginList"
               :id="item.code"
               :key="item.code"
               :name="item.name"
               :disabled="isBound(item)"
-            />
+              class="plugin-switch-option"
+            >
+              <div class="plugin-switch-row">
+                <PluginIcon :code="item.code" />
+                <div class="plugin-switch-info">
+                  <div class="plugin-switch-name">
+                    {{ item.name }}
+                  </div>
+                  <div
+                    v-if="item.notes"
+                    class="plugin-switch-description"
+                  >
+                    {{ item.notes }}
+                  </div>
+                </div>
+              </div>
+            </BkOption>
           </BkSelect>
         </header>
-        <main class="cur-text">
-          <div class="cur-info">
-            <span class="cur-name">{{ curPluginInfo?.name }}</span>
-            <ul class="cur-binding-info">
-              <li>
-                {{ t('当前版本：') }}
-                <span class="cur-version">{{ t('1.0.0') }}</span>
-              </li>
-              <li>
-                {{ t('已绑定的资源：') }}
-                <span :class="[curPluginInfo?.related_scope_count?.resource === 0 ? 'empty' : 'bound',]">
-                  {{ curPluginInfo?.related_scope_count?.resource }}
-                </span>
-              </li>
-              <li>
-                {{ t('已绑定的环境：') }}
-                <span :class="[curPluginInfo?.related_scope_count?.stage === 0 ? 'empty' : 'bound',]">
-                  {{ curPluginInfo?.related_scope_count?.stage }}
-                </span>
-              </li>
-            </ul>
-          </div>
-          <div class="cur-describe">
-            {{ curPluginInfo?.notes }}
-          </div>
-        </main>
-        <aside class="plugin-example-btn">
-          <div class="flex flex-col items-start gap-12px">
-            <AgIconButton
-              text
-              theme="primary"
-              icon="bulk-edit"
-              @click="toggleShowExample"
-            >
-              {{ t('填写示例') }}
-            </AgIconButton>
-            <AgIconButton
-              text
-              theme="primary"
-              icon="jump"
-              @click="handleDocClick"
-            >
-              {{ t('说明文档') }}
-            </AgIconButton>
-          </div>
-        </aside>
-      </div>
-      <div class="info-form-container mt-20px">
         <PluginFormRenderer
           :key="editorKey"
           ref="editorRef"
+          class="plugin-config-form"
           :definition="pluginDefinition"
           :code="choosePlugin"
           :type="type"
           :initial-yaml="editPlugin?.yaml"
         />
-      </div>
-      <div class="info-btn mt-20px">
-        <div class="last-step">
+        <div class="plugin-form-actions">
           <BkPopConfirm
             v-if="isStage"
             :title="t(
@@ -161,7 +159,6 @@
           >
             <BkButton
               theme="primary"
-              class="default-btn"
               :disabled="!canSubmit"
               :loading="isSubmitting"
             >
@@ -171,7 +168,6 @@
           <BkButton
             v-else
             theme="primary"
-            class="default-btn"
             :disabled="!canSubmit"
             :loading="isSubmitting"
             @click="handleAdd"
@@ -180,14 +176,12 @@
           </BkButton>
           <BkButton
             v-if="isAdd"
-            class="prev-btn ml-8px"
             :disabled="isSubmitting"
             @click="handlePre"
           >
             {{ t('上一步') }}
           </BkButton>
           <BkButton
-            class="default-btn ml-8px"
             :disabled="isSubmitting"
             @click="handleCancel"
           >
@@ -195,40 +189,44 @@
           </BkButton>
         </div>
       </div>
-    </main>
-    <!--  右侧插件使用示例  -->
-    <aside
-      v-if="showExample"
-      class="plugin-example-content"
-    >
-      <header class="example-content-header">
-        <span class="header-title">{{ t('插件配置示例') }}</span>
-        <AgIcon
-          class="close-btn"
-          size="24"
-          name="icon-close"
-          @click="toggleShowExample"
-        />
-      </header>
-      <main class="example-main">
+    </template>
+    <template #aside>
+      <aside
+        v-if="showExample"
+        class="plugin-example-content"
+      >
+        <header class="example-content-header">
+          <span>{{ t('插件配置示例') }}</span>
+          <BkButton
+            text
+            class="example-close"
+            :aria-label="t('关闭')"
+            @click="toggleShowExample"
+          >
+            <AgIcon
+              name="icon-close"
+              size="24"
+              aria-hidden="true"
+            />
+          </BkButton>
+        </header>
         <pre
           v-bk-xss-html="exampleHtml"
           class="example-pre"
         />
-      </main>
-    </aside>
-  </div>
+      </aside>
+    </template>
+  </BkResizeLayout>
 </template>
 
 <script setup lang="ts">
 import { snakeCase } from 'lodash-es';
-import type { ComponentPublicInstance } from 'vue';
 import { createPlugin, updatePluginConfig } from '@/services/source/gateway/plugin';
 import type { IPluginConfigRetrieveOutput } from '@/services/types/responses/gateways';
 import { Message } from 'bkui-vue';
 import { useEnv, useStage } from '@/stores';
-import { onClickOutside } from '@vueuse/core';
-import { PLUGIN_ICONS, PLUGIN_ICONS_MIN } from '@/constants';
+import { useElementSize, useWindowSize } from '@vueuse/core';
+import PluginIcon from '../components/PluginIcon.vue';
 import PluginFormRenderer from './components/PluginFormRenderer.vue';
 import { getPluginDefinition, getPluginExample } from './definitions';
 import { PluginEditorError } from './form-adapter';
@@ -282,13 +280,30 @@ const stageStore = useStage();
 const envStore = useEnv();
 
 const choosePlugin = ref(curPlugin?.code ?? '');
-const showChoosePlugin = ref(false);
+const isSwitching = ref(false);
+const exampleWidth = ref(400);
+const exampleHeight = ref(240);
 const isSubmitting = ref(false);
 const editorRef = useTemplateRef<InstanceType<typeof PluginFormRenderer>>('editorRef');
-const pluginSelectRef = useTemplateRef<ComponentPublicInstance & { isFocus?: boolean }>('pluginSelectRef');
+const pluginHeader = useTemplateRef<HTMLElement>('pluginHeader');
+const { width: headerWidth } = useElementSize(pluginHeader, undefined, { box: 'border-box' });
+const { width: viewportWidth, height: viewportHeight } = useWindowSize();
 
 const isAdd = computed(() => type === 'add');
 const isStage = computed(() => scopeInfo.scopeType === 'stage');
+const isNarrow = computed(() => viewportWidth.value < 960);
+const minExampleSize = computed(() => isNarrow.value ? 120 : 260);
+const maxExampleSize = computed(() => isNarrow.value
+  ? Math.max(minExampleSize.value, Math.floor(viewportHeight.value * 0.5))
+  : Math.min(640, viewportWidth.value - 640));
+const exampleSize = computed(() => Math.min(
+  isNarrow.value ? exampleHeight.value : exampleWidth.value,
+  maxExampleSize.value,
+));
+const switchPopoverOptions = computed(() => ({
+  width: headerWidth.value,
+  floatingReference: pluginHeader.value,
+}));
 const selectedPlugin = computed(() => pluginList.find(plugin => plugin.code === choosePlugin.value));
 const curPluginInfo = computed(() => {
   if (curPlugin?.code === choosePlugin.value) {
@@ -318,7 +333,11 @@ watch(() => curPlugin?.code, (code) => {
   choosePlugin.value = code ?? '';
 });
 
-const pluginCodeFirst = (code?: string) => code?.charAt(3)?.toUpperCase();
+watch(exampleHtml, (example) => {
+  if (!example) {
+    showExample.value = false;
+  }
+});
 
 const isBound = (plugin: IPluginInfoItem) => bindingPlugins.some(item => item.code === plugin.code);
 
@@ -416,192 +435,239 @@ const handleDocClick = () => {
   }
 };
 
-onClickOutside(pluginSelectRef, () => {
-  if (pluginSelectRef.value?.isFocus === false) {
-    showChoosePlugin.value = false;
+const handleExampleResize = (size: number) => {
+  if (!Number.isFinite(size)) {
+    return;
   }
-});
+  if (isNarrow.value) {
+    exampleHeight.value = size;
+  }
+  else {
+    exampleWidth.value = size;
+  }
+};
 
 defineExpose({ clearValidate });
 </script>
 
 <style lang="scss" scoped>
 .plugin-info {
-  display: flex;
+  min-width: 0;
+  min-height: 0;
 
-  .plugin-form-content {
-    flex-grow: 1;
+  :deep(.bk-resize-layout-main) {
+    min-width: 0;
+    min-height: 0;
   }
 
-  .plugin-example-content {
-    width: 400px;
-    padding: 0 0 20px 20px;
-    border-left: 1px solid #dcdee5;
+  :deep(.bk-resize-layout-aside) {
     flex-shrink: 0;
-
-    .example-content-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-
-      .header-title {
-        height: 24px;
-        font-size: 16px;
-        line-height: 24px;
-        color: #313238;
-      }
-
-      .close-btn {
-        color: #979BA5;
-        cursor: pointer;
-
-        &:hover {
-          color: #63656e;
-        }
-      }
-    }
-
-    .example-main {
-
-      .example-pre {
-        overflow-x: auto;
-        font-family: inherit;
-        font-size: 14px;
-        line-height: 22px;
-        color: #4D4F56;
-        word-wrap: break-word;
-        white-space: pre-wrap;
-      }
-    }
   }
+
+  // 底部示例栏的拖拽辅助线在首次拖拽前也需要定位在容器内。
+
+  :deep(.bk-resize-proxy.bottom) {
+    bottom: 0;
+  }
+
+  &.is-example-hidden :deep(.bk-resize-layout-aside) {
+    display: none;
+  }
+}
+
+.plugin-form-content {
+  height: 100%;
+  padding: 24px;
+  overflow: auto;
 }
 
 .info-header {
   display: flex;
-  padding: 12px 24px;
+  padding: 16px;
   background-color: #f5f7fa;
   border-radius: 2px;
   align-items: flex-start;
-  gap: 24px;
+  gap: 16px;
 
-  .choose-plugin {
-    flex-shrink: 0;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-content: center;
-    gap: 4px;
-    font-size: 14px;
-    color: #3A84FF;
-    cursor: pointer;
-
-    .cur-icon {
-      display: flex;
-      width: 56px;
-      height: 56px;
-      font-size: 28px;
-      font-weight: 700;
-      line-height: 56px;
-      color: #3a84f6;
-      background: #EAEBF0;
-      border-radius: 50%;
-      justify-content: center;
-      align-items: center;
-
-      .svg-icon {
-        width: 56px;
-        height: 56px;
-
-        &.small {
-          width: 28px;
-          height: 28px;
-        }
-      }
-    }
-  }
-
-  .cur-text {
-    flex-grow: 1;
-
-    .cur-info {
-      display: flex;
-      margin-top: 12px;
-      margin-bottom: 10px;
-      align-items: center;
-
-      .cur-name {
-        margin-right: 24px;
-        font-size: 16px;
-        font-weight: 700;
-        color: #313238;
-      }
-
-      .cur-binding-info {
-        display: flex;
-        font-size: 12px;
-        color: #979ba5;
-        align-items: center;
-
-        li:not(:nth-last-child(1)) {
-          margin-right: 32px;
-        }
-
-        .cur-version {
-          font-weight: 700;
-          color: #313238;
-        }
-
-        .empty {
-          font-weight: 700;
-          color: #3a84ff;
-        }
-
-        .bound {
-          font-weight: 700;
-          color: #3a84ff;
-        }
-      }
-    }
-
-    .cur-describe {
-      font-size: 12px;
-      color: #63656E;
-    }
-  }
-
-  .plugin-example-btn {
-    margin-top: 16px;
-    font-size: 14px;
-    flex-shrink: 0;
+  &.is-switching {
+    background-color: #f0f5ff;
   }
 }
 
-.last-step {
-  font-size: 0;
+.plugin-summary {
+  min-width: 0;
+  flex: 1;
+}
 
-  .default-btn {
+.plugin-summary-heading,
+.plugin-metadata,
+.plugin-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.plugin-summary-heading {
+  min-height: 24px;
+  gap: 4px 24px;
+}
+
+.plugin-name,
+.plugin-switch-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 24px;
+  color: #313238;
+  overflow-wrap: anywhere;
+}
+
+.plugin-metadata {
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: #979ba5;
+  gap: 0 16px;
+
+  span {
+    color: #63656e;
+  }
+}
+
+.plugin-description,
+.plugin-switch-description {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: #4d4f56;
+  overflow-wrap: anywhere;
+}
+
+.plugin-links {
+  margin-top: 8px;
+  gap: 4px 16px;
+
+  :deep(.bk-button) {
+    height: 20px;
+    padding: 0;
+    font-size: 12px;
+    line-height: 20px;
+  }
+}
+
+.plugin-switch {
+  align-self: center;
+  flex: none;
+
+  :deep(.bk-button) {
+    min-width: 92px;
+  }
+}
+
+.plugin-switch-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.plugin-switch-row {
+  display: flex;
+  width: 100%;
+  min-height: 80px;
+  padding: 16px 4px;
+  border-bottom: 1px solid #eaebf0;
+  align-items: center;
+  gap: 16px;
+}
+
+.plugin-switch-option.is-selected .plugin-switch-name,
+.plugin-switch-option.is-selected .plugin-switch-description {
+  color: #1768ef;
+}
+
+.plugin-switch-option.is-disabled .plugin-switch-name,
+.plugin-switch-option.is-disabled .plugin-switch-description {
+  color: #979ba5;
+}
+
+.plugin-switch-description {
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-config-form {
+  margin-top: 24px;
+}
+
+.plugin-form-actions {
+  display: flex;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .bk-button {
     min-width: 88px;
   }
+}
 
-  .prev-btn {
-    min-width: 74px;
+.plugin-example-content {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background-color: #fff;
+  flex-direction: column;
+}
+
+.example-content-header {
+  display: flex;
+  min-height: 48px;
+  padding: 0 24px;
+  font-size: 14px;
+  color: #313238;
+  border-bottom: 1px solid #eaebf0;
+  align-items: center;
+  flex: none;
+  justify-content: space-between;
+}
+
+.example-close.bk-button {
+  padding: 0;
+  color: #979ba5;
+
+  &:hover {
+    color: #63656e;
   }
 }
 
-.choose-plugin-select {
-  position: absolute;
-  top: 85px;
-  left: 0;
-  z-index: 1;
-  width: 300px;
+.example-pre {
+  padding: 20px;
+  margin: 0;
+  overflow: auto;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: #313238;
+  white-space: pre-wrap;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
 
-  :deep(.bk-input) {
-    border: 1px solid #DCDEE5;
+@media (width <= 560px) {
 
-    .angle-up {
-      color: #DCDEE5;
-    }
+  .plugin-form-content {
+    padding: 16px;
+  }
+
+  .info-header {
+    flex-wrap: wrap;
+  }
+
+  .plugin-summary {
+    flex-basis: calc(100% - 64px);
+  }
+
+  .plugin-switch {
+    margin-left: 64px;
   }
 }
 </style>

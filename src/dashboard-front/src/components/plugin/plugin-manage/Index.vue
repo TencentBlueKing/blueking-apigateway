@@ -120,47 +120,50 @@
     <BkSideslider
       v-model:is-show="isVisible"
       :title="t('添加插件')"
+      ext-cls="plugin-management-slider"
       quick-close
-      ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
       @closed="handleClosePluginSlider"
     >
       <template #default>
-        <BkSteps
-          :cur-step="state.curStep"
-          :steps="state.plugintSteps"
-          controllable
-          ext-cls="plugin-add-steps"
-          @click="stepChanged"
-        />
-        <div class="plugin-add-container">
+        <div class="plugin-wizard">
+          <div class="plugin-steps-header">
+            <BkSteps
+              :cur-step="state.curStep"
+              :steps="pluginSteps"
+              controllable
+              class="plugin-steps"
+              @click="stepChanged"
+            />
+          </div>
           <!-- 选择插件 -->
           <div
             v-if="state.curStep === 1"
-            class="plugins px-20px"
+            class="plugins"
           >
-            <div class="pt-16px">
-              <BkAlert closable>
-                {{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}
-              </BkAlert>
-            </div>
+            <BkAlert
+              class="plugin-priority-alert"
+              closable
+            >
+              {{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}
+            </BkAlert>
             <div class="plugin-filter">
-              <div class="mb-8px flex justify-between text-12px">
-                <div class="flex">
-                  <div class="color-#313238 mr-12px mt-2px">
+              <div class="plugin-filter-heading">
+                <div class="plugin-filter-tags">
+                  <span class="plugin-filter-label">
                     {{ t('全部分类') }}
-                  </div>
-                  <div class="flex gap-8px">
-                    <BkTag
-                      v-for="(tag, index) in pluginTags"
-                      :key="index"
-                      :theme="selectedTag === tag ? 'info' : undefined"
-                      class="cursor-pointer"
-                      @click="() => handleTagClick(tag)"
-                    >
-                      {{ tag }}
-                    </BkTag>
-                  </div>
+                  </span>
+                  <BkButton
+                    v-for="tag in pluginTags"
+                    :key="tag"
+                    class="plugin-filter-tag"
+                    :class="{ 'is-active': selectedTag === tag }"
+                    :aria-pressed="selectedTag === tag"
+                    text
+                    @click="() => handleTagClick(tag)"
+                  >
+                    {{ tag }}
+                  </BkButton>
                 </div>
                 <BkButton
                   text
@@ -172,10 +175,13 @@
               </div>
               <BkInput
                 v-model="searchValue"
+                class="plugin-search-input"
                 clearable
                 type="search"
                 :placeholder="t('请输入插件关键字，按Enter搜索')"
                 @enter="handleSearch"
+                @search="handleSearch"
+                @clear="handleSearch"
               />
             </div>
             <BkLoading :loading="isPluginListLoading">
@@ -183,200 +189,203 @@
                 <div
                   v-for="item in pluginList"
                   :key="item.id"
-                  :class="[isBound(item) ? 'plugin disabled' : 'plugin ']"
+                  class="plugin-card"
+                  :class="{
+                    'is-bound': isBound(item),
+                    'is-selected': curChooseCode === item.code
+                  }"
                   @click="() => handleChoosePlugin(item)"
-                  @mouseenter="() => handlePluginHover((item.code))"
                 >
-                  <div class="plugin-head">
-                    <div
-                      v-if="PLUGIN_ICONS.includes(item.code || item.type)"
-                      class="plugin-icon"
-                    >
-                      <svg class="icon svg-icon">
-                        <use
-                          :xlink:href="`#icon-ag-plugin-${item.code || item.type}`"
-                          fill="#3a84f6"
-                        />
-                      </svg>
-                    </div>
-                    <div
-                      v-else-if="PLUGIN_ICONS_MIN.includes(item.code || item.type)"
-                      class="plugin-icon"
-                    >
-                      <svg class="icon svg-icon small">
-                        <use
-                          :xlink:href="`#icon-ag-plugin-${item.code || item.type}`"
-                          fill="#3a84f6"
-                        />
-                      </svg>
-                    </div>
-                    <div
-                      v-else
-                      class="plugin-icon"
-                    >
-                      {{ pluginCodeFirst(item.code || item.type) }}
-                    </div>
-                    <span
-                      v-show="isBound(item)"
-                      class="bindding-text"
-                    >
-                      {{ t('已添加') }}
-                    </span>
-                  </div>
-                  <p
-                    v-bk-tooltips="{
-                      content: t('插件已添加，不能再选择'),
-                      disabled: !isBound(item)
-                    }"
-                    class="plugin-name"
-                    :class="[isBound(item) ? 'added' : '']"
-                  >
-                    {{ item.name }}
-                  </p>
-                  <div class="binding">
-                    <ul class="binding-list">
-                      <li>
-                        {{ t('版本：') }}<span>V1.0.0</span>
-                      </li>
-                      <li>
-                        {{ t('已绑环境：') }}
-                        <BkPopover
-                          placement="top"
-                          theme="light"
-                          width="220"
-                          :disabled="item.related_scope_count.stage === 0"
-                        >
-                          <span :class="[item.related_scope_count.stage === 0 ? 'binding-empty' : 'binding-number',]">
-                            {{ item.related_scope_count.stage }}
-                          </span>
-                          <template #content>
-                            <div class="bingding-scope">
-                              <p class="scope-header font-bold">
-                                {{ t('已绑环境') }}
-                              </p>
-                              <ul class="scope-list mt-10px">
-                                <li
-                                  v-for="stageItem in curBindingScopeData.stages"
-                                  :key="stageItem.id"
-                                  class="scope-li mb-5px"
-                                  @mouseenter="handleScopeHover((stageItem.name))"
-                                  @mouseleave="handleScopeLeave"
-                                  @click="() => handleJumpStage(stageItem)"
-                                >
-                                  {{ stageItem.name }}
-                                  <AgIcon
-                                    v-if="stageItem.name === curHover"
-                                    class="icon ml-5px"
-                                    name="jump"
-                                  />
-                                </li>
-                              </ul>
-                            </div>
-                          </template>
-                        </BkPopover>
-                      </li>
-                      <li>
-                        {{ t('已绑资源：') }}
-                        <BkPopover
-                          placement="top"
-                          theme="light"
-                          width="420"
-                          :disabled="item.related_scope_count.resource === 0"
-                        >
-                          <span
-                            :class="[item.related_scope_count.resource === 0 ? 'binding-empty' : 'binding-number',]"
+                  <PluginIcon :code="item.code || item.type" />
+                  <div class="plugin-card-content">
+                    <div class="plugin-card-heading">
+                      <span
+                        v-if="isBound(item)"
+                        v-bk-tooltips="t('插件已添加，不能再选择')"
+                        class="plugin-name"
+                      >
+                        {{ item.name }}
+                      </span>
+                      <BkButton
+                        v-else
+                        class="plugin-name"
+                        text
+                        :aria-pressed="curChooseCode === item.code"
+                        @click.stop="() => handleChoosePlugin(item)"
+                      >
+                        {{ item.name }}
+                      </BkButton>
+                      <ul class="binding-list">
+                        <li>
+                          {{ t('版本：') }} V1.0.0
+                        </li>
+                        <li>
+                          {{ t('已绑环境：') }}
+                          <BkPopover
+                            placement="top"
+                            theme="light"
+                            width="220"
+                            :disabled="item.related_scope_count.stage === 0"
+                            @after-show="() => loadPluginBindings(item.code)"
                           >
-                            {{ item.related_scope_count.resource }}
-                          </span>
-                          <template #content>
-                            <div class="bingding-scope">
-                              <p class="scope-header font-bold">
-                                {{ t('已绑资源') }}
-                              </p>
-                              <ul class="scope-list mt-10px ">
-                                <li
-                                  v-for="resourceItem in curBindingScopeData.resources"
-                                  :key="resourceItem.id"
-                                  class="scope-li mb-5px"
-                                  @mouseenter="handleScopeHover((resourceItem.name))"
-                                  @mouseleave="handleScopeLeave"
-                                  @click="() => handleJumpResource(resourceItem)"
-                                >
-                                  {{ resourceItem.name }}
-                                  <AgIcon
-                                    v-if="resourceItem.name === curHover"
-                                    class="icon ml-5px"
-                                    name="jump"
-                                  />
-                                </li>
-                              </ul>
-                            </div>
-                          </template>
-                        </BkPopover>
-                      </li>
-                    </ul>
-                  </div>
-                  <div class="plugin-notes">
-                    {{ item.notes }}
-                  </div>
-                  <div class="mt-6px flex gap-8px">
-                    <BkTag
-                      v-for="(tag, index) in item.tags"
-                      :key="index"
+                            <span :class="[item.related_scope_count.stage === 0 ? 'binding-empty' : 'binding-number',]">
+                              {{ item.related_scope_count.stage }}
+                            </span>
+                            <template #content>
+                              <BkLoading
+                                class="bingding-scope"
+                                :loading="pluginBindings.get(item.code)?.loading"
+                              >
+                                <p class="scope-header font-bold">
+                                  {{ t('已绑环境') }}
+                                </p>
+                                <ul class="scope-list mt-10px">
+                                  <li
+                                    v-for="stageItem in pluginBindings.get(item.code)?.data?.stages"
+                                    :key="stageItem.id"
+                                    class="scope-li mb-5px"
+                                    @mouseenter="handleScopeHover((stageItem.name))"
+                                    @mouseleave="handleScopeLeave"
+                                    @click="() => handleJumpStage(stageItem)"
+                                  >
+                                    {{ stageItem.name }}
+                                    <AgIcon
+                                      v-if="stageItem.name === curHover"
+                                      class="icon ml-5px"
+                                      name="jump"
+                                    />
+                                  </li>
+                                </ul>
+                              </BkLoading>
+                            </template>
+                          </BkPopover>
+                        </li>
+                        <li>
+                          {{ t('已绑资源：') }}
+                          <BkPopover
+                            placement="top"
+                            theme="light"
+                            width="420"
+                            :disabled="item.related_scope_count.resource === 0"
+                            @after-show="() => loadPluginBindings(item.code)"
+                          >
+                            <span
+                              :class="[item.related_scope_count.resource === 0 ? 'binding-empty' : 'binding-number',]"
+                            >
+                              {{ item.related_scope_count.resource }}
+                            </span>
+                            <template #content>
+                              <BkLoading
+                                class="bingding-scope"
+                                :loading="pluginBindings.get(item.code)?.loading"
+                              >
+                                <p class="scope-header font-bold">
+                                  {{ t('已绑资源') }}
+                                </p>
+                                <ul class="scope-list mt-10px ">
+                                  <li
+                                    v-for="resourceItem in pluginBindings.get(item.code)?.data?.resources"
+                                    :key="resourceItem.id"
+                                    class="scope-li mb-5px"
+                                    @mouseenter="handleScopeHover((resourceItem.name))"
+                                    @mouseleave="handleScopeLeave"
+                                    @click="() => handleJumpResource(resourceItem)"
+                                  >
+                                    {{ resourceItem.name }}
+                                    <AgIcon
+                                      v-if="resourceItem.name === curHover"
+                                      class="icon ml-5px"
+                                      name="jump"
+                                    />
+                                  </li>
+                                </ul>
+                              </BkLoading>
+                            </template>
+                          </BkPopover>
+                        </li>
+                      </ul>
+                      <span
+                        v-if="isBound(item)"
+                        class="plugin-bound-label"
+                      >
+                        {{ t('已添加') }}
+                      </span>
+                    </div>
+                    <p
+                      v-if="item.notes"
+                      v-bk-tooltips="{
+                        content: item.notes,
+                        disabled: truncatedNotesId !== item.id,
+                        extCls: 'plugin-notes-tooltip',
+                      }"
+                      class="plugin-notes"
+                      @mouseenter="(event) => handleNotesHover(event, item.id)"
+                      @mouseleave="truncatedNotesId = undefined"
                     >
-                      {{ tag }}
-                    </BkTag>
+                      {{ item.notes }}
+                    </p>
+                    <div
+                      v-if="item.tags?.length"
+                      class="plugin-card-tags"
+                    >
+                      <BkTag
+                        v-for="tag in item.tags"
+                        :key="tag"
+                      >
+                        {{ tag }}
+                      </BkTag>
+                    </div>
                   </div>
                   <div
                     v-show="curChooseCode === item.code"
-                    class="plugin-chose"
+                    class="plugin-selected-mark"
+                    aria-hidden="true"
                   >
-                    <div class="icon apigateway-icon icon-ag-check-1 choose-icon" />
+                    <AgIcon
+                      class="choose-icon"
+                      name="check-1"
+                      size="20"
+                    />
                   </div>
                 </div>
               </div>
-              <div class="mt-82px">
+              <div
+                v-if="!pluginList.length"
+                class="mt-82px"
+              >
                 <AgTableEmpty
-                  v-if="!pluginList.length"
                   background="#f5f7fa"
                   :empty-type="tableEmptyConf.emptyType"
                   :abnormal="tableEmptyConf.isAbnormal"
-                  @refresh="handleSearch"
+                  @refresh="refreshPluginList"
                   @clear-filter="handleClearFilterKey"
                 />
               </div>
             </BkLoading>
           </div>
           <!-- 配置插件 -->
-          <div
+          <PluginConfigEditor
             v-else
-            class="px-40px py-20px"
+            ref="pluginEditorRef"
+            v-model:show-example="isExampleVisible"
+            class="plugin-wizard-editor"
+            :cur-plugin="curChoosePlugin"
+            :scope-info="curScopeInfo"
+            :edit-plugin="curEditPlugin"
+            :type="curType"
+            :plugin-list="allPlugins"
+            :binding-plugins="curBindingPlugins"
+            @choose-plugin="handleChoosePlugin"
+            @on-change="handleOperate"
+          />
+          <div
+            v-if="state.curStep === 1"
+            class="plugin-wizard-footer"
           >
-            <PluginConfigEditor
-              ref="pluginEditorRef"
-              v-model:show-example="isExampleVisible"
-              :cur-plugin="curChoosePlugin"
-              :scope-info="curScopeInfo"
-              :edit-plugin="curEditPlugin"
-              :type="curType"
-              :plugin-list="pluginList"
-              :binding-plugins="curBindingPlugins"
-              @choose-plugin="handleChoosePlugin"
-              @on-change="handleOperate"
-            />
-          </div>
-        </div>
-      </template>
-      <template
-        v-if="state.curStep === 1"
-        #footer
-      >
-        <div class="slider-footer">
-          <div class="fist-step">
             <BkButton
               theme="primary"
               :disabled="!curChoosePlugin"
-              @click="handelNext"
+              @click="handleNext"
             >
               {{ t('下一步') }}
             </BkButton>
@@ -392,22 +401,23 @@
     <BkSideslider
       v-model:is-show="isEditVisible"
       :title="t('修改插件')"
+      ext-cls="plugin-management-slider"
       quick-close
-      ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
       render-directive="if"
       @closed="handleClosePluginSlider"
     >
       <template #default>
-        <div class="px-40px py-20px">
+        <div class="plugin-wizard">
           <PluginConfigEditor
             ref="pluginEditorRef"
             v-model:show-example="isExampleVisible"
+            class="plugin-wizard-editor"
             :cur-plugin="curChoosePlugin"
             :scope-info="curScopeInfo"
             :edit-plugin="curEditPlugin"
             :type="curType"
-            :plugin-list="pluginList"
+            :plugin-list="allPlugins"
             @on-change="handleOperate"
           />
         </div>
@@ -437,16 +447,20 @@ import {
   getScopeBindingPluginList,
 } from '@/services/source/gateway/plugin';
 import ConfigDisplayTable from './config-display/Index.vue';
+import PluginIcon from './components/PluginIcon.vue';
+import type { IPluginBindingListOutput } from '@/services/types/responses/gateways';
 import { getStageStatus } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
-import {
-  PLUGIN_ICONS,
-  PLUGIN_ICONS_MIN,
-} from '@/constants';
+import { useWindowSize } from '@vueuse/core';
 
 interface IProps {
   resourceId?: number
   stageId?: number
+}
+
+interface IPluginBindingsEntry {
+  loading: boolean
+  data?: IPluginBindingListOutput
 }
 
 const {
@@ -464,6 +478,7 @@ const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
 const stageStore = useStage();
+const { width: viewportWidth } = useWindowSize();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
@@ -477,10 +492,13 @@ const curType = ref('');
 const isEditVisible = ref(false);
 const isAddSuccess = ref(false);
 const searchValue = ref('');
+const searchKeyword = ref('');
 const pluginList = ref([]);
+const allPlugins = ref([]);
 const pluginTags = ref<string[]>([]);
 const selectedTag = ref('');
-const curBindingScopeData = ref<any>({});
+const pluginBindings = shallowReactive(new Map<string, IPluginBindingsEntry>());
+const truncatedNotesId = ref<number>();
 const curHover = ref('');
 const curBindingPlugins = ref<any>([]);
 const curChoosePlugin = ref(null);
@@ -491,19 +509,7 @@ const curScopeInfo = reactive({
   scopeId: -1,
   apigwId: -1,
 });
-const state = reactive({
-  plugintSteps: [
-    {
-      title: t('选择插件'),
-      icon: 1,
-    },
-    {
-      title: t('配置插件'),
-      icon: 2,
-    },
-  ],
-  curStep: 1,
-});
+const state = reactive({ curStep: 1 });
 const tableEmptyConf = ref({
   emptyType: '',
   isAbnormal: false,
@@ -514,9 +520,14 @@ const isExampleVisible = ref(false);
 const activeIndex = ref<number[]>([]);
 
 const pluginDeleting = ref(false);
+let pluginListRequest = 0;
 
 // 控制插件 slider 宽度，会在展示插件使用示例时变宽
-const pluginSliderWidth = computed(() => isExampleVisible.value ? 1360 : 960);
+const pluginSliderWidth = computed(() => Math.min(viewportWidth.value, isExampleVisible.value ? 1360 : 960));
+const pluginSteps = computed(() => [
+  { title: t('选择插件') },
+  { title: t('配置插件') },
+]);
 
 // 当前环境信息
 const stageData = computed(() => {
@@ -544,15 +555,6 @@ const stageData = computed(() => {
 // 注意：stageData 来源于全局 store，可能残留其他网关/页面的环境数据，因此必须限定 scope 类型
 const isStageReleasing = computed(() => scopeType.value === 'stage' && getStageStatus(stageData.value) === 'doing');
 
-const pluginCodeFirst = computed(() => {
-  return function (code: string) {
-    if (code.startsWith('bk-')) {
-      return code.charAt(3).toUpperCase();
-    }
-    return code.charAt(0).toUpperCase();
-  };
-});
-
 const isBound = computed(() => {
   return function (obj: any) {
     return curBindingPlugins.value.some((item: { code: string }) => item.code === obj.code);
@@ -573,19 +575,13 @@ watch(
   },
 );
 
-watch([selectedTag, searchValue], () => {
-  const params = {
-    scope_type: scopeType.value,
-    scope_id: scopeId.value,
-  };
-  if (selectedTag.value) {
-    Object.assign(params, { tag: selectedTag.value });
-  }
-  if (searchValue.value) {
-    Object.assign(params, { keyword: searchValue.value });
-  }
-  getPluginListDetails(params);
-}, { deep: true });
+watch([selectedTag, searchKeyword], () => {
+  refreshPluginList();
+});
+
+watch([isVisible, gatewayId], () => {
+  pluginBindings.clear();
+}, { flush: 'sync' });
 
 // 监听是否成功添加
 watch(
@@ -601,6 +597,7 @@ watch(
 const stepChanged = (index: number) => {
   if (index === 1) {
     state.curStep = index;
+    isExampleVisible.value = false;
   }
   if (index === 2) {
     if (curChoosePlugin.value) {
@@ -618,7 +615,7 @@ const stepChanged = (index: number) => {
 const handleOperate = (operate: string) => {
   switch (operate) {
     case 'pre':
-      state.curStep = 1;
+      stepChanged(1);
       break;
     case 'addCancel':
       resetData();
@@ -641,17 +638,32 @@ const handleOperate = (operate: string) => {
   }
 };
 
-// hover插件获取其对应绑定的stage和resource数量
-const handlePluginHover = async (itemCode: string) => {
-  const flag = curBindingPlugins.value.some((item: { code: string }) => item.code === itemCode);
-  if (flag) return;
+const loadPluginBindings = async (code: string) => {
+  if (!isVisible.value || !gatewayId.value || !code || pluginBindings.has(code)) {
+    return;
+  }
+  const pending = { loading: true };
+  pluginBindings.set(code, pending);
   try {
-    const res = await getPluginBindingsList(gatewayId.value, itemCode);
-    curBindingScopeData.value = res;
+    const data = await getPluginBindingsList(gatewayId.value, code);
+    // 关闭抽屉、切换网关或停用插件后，忽略失效请求的结果。
+    if (pluginBindings.get(code) === pending) {
+      pluginBindings.set(code, {
+        loading: false,
+        data,
+      });
+    }
   }
-  catch (error) {
-    console.log('error', error);
+  catch {
+    if (pluginBindings.get(code) === pending) {
+      pluginBindings.delete(code);
+    }
   }
+};
+
+const handleNotesHover = (event: MouseEvent, id: number) => {
+  const notes = event.currentTarget as HTMLElement;
+  truncatedNotesId.value = notes.scrollHeight > notes.clientHeight ? id : undefined;
 };
 
 // hover已绑stage或resource数量
@@ -665,8 +677,8 @@ const handleScopeLeave = () => {
 
 const handleClearFilterKey = () => {
   searchValue.value = '';
+  searchKeyword.value = '';
   selectedTag.value = '';
-  // handleSearch();
 };
 
 // 编辑插件
@@ -706,8 +718,12 @@ const handleDeletePlugin = (item: any) => {
         return;
       }
       pluginDeleting.value = true;
+      const targetGatewayId = gatewayId.value;
       try {
-        await deletePluginConfig(gatewayId.value, scopeType.value, scopeId.value, code, config_id);
+        await deletePluginConfig(targetGatewayId, scopeType.value, scopeId.value, code, config_id);
+        if (targetGatewayId === gatewayId.value) {
+          pluginBindings.delete(code);
+        }
         Message({
           message: t('停用成功'),
           theme: 'success',
@@ -762,22 +778,19 @@ function init() {
   curScopeInfo.scopeType = scopeType.value;
   curScopeInfo.scopeId = scopeId.value;
   curScopeInfo.apigwId = gatewayId.value;
-  const params = {
-    scope_type: scopeType.value,
-    scope_id: scopeId.value,
-  };
-
+  allPlugins.value = [];
+  pluginListRequest++;
   if (!scopeId.value) return;
   getBindingDetails(true);
-  getPluginListDetails(params);
+  refreshPluginList();
 }
 
 const resetData = () => {
   curChoosePlugin.value = null;
   isVisible.value = false;
   state.curStep = 1;
-  searchValue.value = '';
-  selectedTag.value = '';
+  isExampleVisible.value = false;
+  handleClearFilterKey();
   curChooseCode.value = '';
 };
 
@@ -794,29 +807,53 @@ async function getBindingDetails(isLoading = false) {
 }
 
 // 获取可配置的插件列表
-const getPluginListDetails = async (params: {
-  scope_type: string
-  scope_id: number
-  keyword?: string
-  tag?: string
-}) => {
+const refreshPluginList = async () => {
+  if (scopeId.value <= 0) {
+    return;
+  }
+  const request = ++pluginListRequest;
+  const params = {
+    scope_type: scopeType.value,
+    scope_id: scopeId.value,
+    keyword: searchKeyword.value || undefined,
+    tag: selectedTag.value || undefined,
+  };
+  const isFiltered = !!(params.keyword || params.tag);
   try {
     isPluginListLoading.value = true;
-    const [pluginRes, tagRes] = await Promise.all([
-      // @ts-ignore
+    const [pluginRes, tagRes, allPluginRes] = await Promise.all([
       getPluginListData(gatewayId.value, params),
       getPluginTags(gatewayId.value),
+      isFiltered && !allPlugins.value.length
+        ? getPluginListData(gatewayId.value, {
+          scope_type: params.scope_type,
+          scope_id: params.scope_id,
+        })
+        : undefined,
     ]);
+    if (request !== pluginListRequest) {
+      return;
+    }
     pluginList.value = pluginRes.results || [];
+    if (!isFiltered || allPluginRes) {
+      allPlugins.value = (allPluginRes ?? pluginRes).results || [];
+    }
     pluginTags.value = tagRes.tags || [];
-    updateTableEmptyConfig();
+    tableEmptyConf.value = {
+      emptyType: isFiltered ? 'search-empty' : '',
+      isAbnormal: false,
+    };
   }
   catch {
-    pluginList.value = [];
-    tableEmptyConf.value.isAbnormal = true;
+    if (request === pluginListRequest) {
+      pluginList.value = [];
+      tableEmptyConf.value.isAbnormal = true;
+    }
   }
   finally {
-    isPluginListLoading.value = false;
+    if (request === pluginListRequest) {
+      isPluginListLoading.value = false;
+    }
   }
 };
 
@@ -839,25 +876,17 @@ const handleChoosePlugin = (obj: any) => {
 };
 
 // enter搜索
-const handleSearch = async (keyword?: string) => {
-  searchValue.value = keyword || '';
-  const params = {
-    keyword,
-    tag: selectedTag.value,
-    scope_type: scopeType.value,
-    scope_id: scopeId.value,
-  };
-  try {
-    await getPluginListDetails(params);
-    tableEmptyConf.value.isAbnormal = false;
+const handleSearch = () => {
+  const keyword = searchValue.value.trim();
+  if (searchKeyword.value === keyword) {
+    refreshPluginList();
+    return;
   }
-  catch {
-    tableEmptyConf.value.isAbnormal = false;
-  }
+  searchKeyword.value = keyword;
 };
 
 // 下一页
-const handelNext = () => {
+const handleNext = () => {
   state.curStep = 2;
 };
 
@@ -869,14 +898,6 @@ const handleCancel = () => {
 const handleClosePluginSlider = () => {
   isExampleVisible.value = false;
   pluginEditorRef.value?.clearValidate();
-};
-
-const updateTableEmptyConfig = () => {
-  if (searchValue.value || selectedTag.value) {
-    tableEmptyConf.value.emptyType = 'search-empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
 };
 
 const handleTagClick = (tag: string) => {
@@ -910,172 +931,304 @@ init();
   }
 }
 
-.plugin-add-steps {
-  width: 400px;
-  margin: 20px auto;
+.plugin-management-slider {
+
+  :deep(> .bk-modal-wrapper > .bk-modal-body) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :deep(> .bk-modal-wrapper > .bk-modal-body > .bk-modal-content) {
+    // 让 BKUI 的内联包装层参与 Flex 布局，消除行盒底部的基线间距。
+    display: flex;
+    min-height: 0;
+
+    // 列表、表单和示例各自滚动，覆盖 BKUI 在外层设置的内联样式。
+    overflow: visible !important;
+    flex: 1;
+    scrollbar-gutter: auto !important;
+
+    .bk-sideslider-content {
+      height: 100%;
+    }
+  }
 }
 
-.plugin-add-container {
-  min-height: calc(100vh - 170px) !important;
-  border-top: 1px solid #e3e3e5;
+.plugin-wizard {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.plugin-steps-header {
+  z-index: 1;
+  display: grid;
+  min-height: 52px;
+  padding: 13px 24px;
+  background-color: #fff;
+  border-bottom: 1px solid #eaebf0;
+  box-shadow: 0 2px 4px #1919290a;
+  flex: none;
+  place-items: center;
+}
+
+.plugin-steps {
+  width: min(400px, 100%);
+
+  :deep(.bk-step:not(:last-child) .bk-step-title::after) {
+    background-color: #3a84ff;
+    background-image: none;
+  }
+
+  :deep(.bk-step:not(.current, .done) .bk-step-indicator) {
+    color: #63656e;
+    background-color: #eaebf0;
+    border-color: #eaebf0;
+  }
+
+  :deep(.bk-step.done .bk-step-indicator) {
+    color: #3a84ff;
+    background-color: #e1ecff;
+    border-color: #e1ecff;
+  }
 }
 
 .plugins {
-  min-height: calc(100vh - 171px) !important;
-  background-color: #f5f7fb;
+  min-height: 0;
+  padding: 16px 24px 24px;
+  overflow-y: auto;
+  background-color: #f5f7fa;
+  flex: 1;
+}
 
-  .plugin-filter {
-    padding: 16px 24px;
-    background: #FFF;
-    border-radius: 2px;
-    box-shadow: 0 2px 4px 0 #1919290d;
-    margin-block: 16px;
+.plugin-wizard-editor {
+  min-height: 0;
+  flex: 1;
+}
 
-    .bk-input--default {
-      width: 100%;
-    }
+.plugin-wizard-footer {
+  display: flex;
+  min-height: 48px;
+  padding: 8px 24px;
+  background-color: #fafbfd;
+  border-top: 1px solid #eaebf0;
+  align-items: center;
+  flex: none;
+  gap: 8px;
+
+  .bk-button {
+    min-width: 88px;
+  }
+}
+
+.plugin-priority-alert {
+  font-size: 14px;
+  background-color: #f0f5ff;
+  box-shadow: 0 2px 4px #1919290d;
+
+  :deep(.bk-alert-wraper) {
+    padding: 12px;
+  }
+}
+
+.plugin-filter {
+  padding: 16px;
+  margin: 16px 0;
+  background-color: #fff;
+  border-radius: 2px;
+}
+
+.plugin-filter-heading,
+.plugin-filter-tags,
+.plugin-card-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plugin-filter-heading {
+  margin-bottom: 8px;
+  justify-content: space-between;
+
+  > .bk-button {
+    font-size: 12px;
+  }
+}
+
+.plugin-search-input {
+  border-radius: 3px;
+
+  :deep(.bk-input--suffix-icon) {
+    font-size: 16px;
+    color: #979ba5;
+  }
+}
+
+.plugin-filter-label {
+  margin-right: 4px;
+  font-size: 12px;
+  color: #313238;
+}
+
+.plugin-filter-tag.bk-button {
+  height: 18px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #63656e;
+  background-color: #eaebf0;
+  border-radius: 2px;
+
+  &:hover,
+  &.is-active {
+    color: #1768ef;
+    background-color: #e1ecff;
+  }
+}
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plugin-card {
+  position: relative;
+  display: flex;
+  padding: 16px;
+  cursor: pointer;
+  background-color: #fff;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px #1919290d;
+  align-items: flex-start;
+  gap: 16px;
+
+  &:hover:not(.is-bound),
+  &:focus-within:not(.is-bound) {
+    background-color: #fafbfd;
+    border-color: #a3c5fd;
   }
 
-  .plugin-list {
-    display: flex;
-    flex-wrap: wrap;
+  &.is-selected:not(.is-bound) {
+    background-color: #f0f5ff;
+    border-color: #a3c5fd;
+  }
 
-    .plugin {
-      position: relative;
-      width: 32%;
-      padding: 24px 20px 20px 24px;
-      margin-right: 18px;
-      margin-bottom: 20px;
-      overflow: hidden;
-      cursor: pointer;
-      background-color: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 4px 0 #1919290d;
+  &.is-bound {
+    cursor: not-allowed;
+    background-color: #fafbfd;
 
-      &:hover {
-        box-shadow: 0 2px 4px 0 rgb(25 25 41 / 25.1%);
-      }
-
-      .plugin-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-
-        .plugin-icon {
-          display: flex;
-          width: 48px;
-          height: 48px;
-          overflow: hidden;
-          font-size: 24px;
-          font-weight: 700;
-          line-height: 48px;
-          color: #3a84f6;
-          background-color: #e2edfd;
-          border-radius: 50%;
-          align-items: center;
-          justify-content: center;
-
-          .svg-icon {
-            width: 48px;
-            height: 48px;
-
-            &.small {
-              width: 24px;
-              height: 24px;
-            }
-          }
-        }
-
-        .bindding-text {
-          font-size: 12px;
-          color: #c4c6cc;
-        }
-      }
-
-      .plugin-name {
-        font-size: 14px;
-        font-weight: 700;
-        color: #313238;
-
-        &.added {
-          position: relative;
-          z-index: 2;
-          display: inline-block;
-          cursor: not-allowed;
-          opacity: 50%;
-        }
-      }
-
-      .binding {
-
-        .binding-list {
-          display: flex;
-          margin: 4px 0 12px;
-          font-size: 12px;
-          color: #979ba5;
-          justify-content: space-between;
-
-          .binding-empty {
-            font-weight: 700;
-            color: #64666a;
-          }
-
-          .binding-number {
-            font-weight: 700;
-            color: #4482e4;
-          }
-
-        }
-      }
-
-      .plugin-notes {
-        font-size: 12px;
-        line-height: 22px;
-        color: #63656e;
-      }
-
-      .plugin-chose {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 0;
-        height: 0;
-        border-top: 45px solid #3B83FC;
-        border-left: 45px solid transparent;
-
-        .choose-icon {
-          position: absolute;
-          top: -41px;
-          right: 7px;
-          width: 20px;
-          height: 20px;
-          font-size: 26px;
-          line-height: 20px;
-          color: #fff;
-          text-align: center;
-          border-radius: 50%;
-        }
-      }
+    .plugin-card-content {
+      opacity: 60%;
     }
+  }
+}
 
-    .plugin:nth-child(3n) {
-      margin-right: 0;
-    }
+.plugin-card-content {
+  min-width: 0;
+  flex: 1;
+}
 
-    .disabled::after {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      cursor: not-allowed;
-      background-color: rgb(250 252 254 / 50%);
-      border-radius: 12px;
-      content: "";
-      user-select: none;
-    }
+.plugin-card-heading,
+.binding-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.plugin-card-heading {
+  min-height: 24px;
+  gap: 4px 24px;
+
+  .is-selected & {
+    padding-right: 32px;
+  }
+}
+
+.plugin-name,
+.plugin-name.bk-button {
+  height: auto;
+  max-width: 100%;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 24px;
+  color: #313238;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.binding-list {
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: #979ba5;
+  gap: 0 16px;
+
+  .binding-empty {
+    color: #63656e;
+  }
+
+  .binding-number {
+    color: #3a84ff;
+  }
+}
+
+.plugin-bound-label {
+  margin-left: auto;
+  font-size: 12px;
+  color: #979ba5;
+}
+
+.plugin-notes {
+  display: -webkit-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 20px;
+  color: #4d4f56;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+:global(.bk-popper.plugin-notes-tooltip) {
+  max-width: min(640px, calc(100vw - 32px));
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.plugin-card-tags {
+  margin-top: 8px;
+
+  :deep(.bk-tag) {
+    height: 18px;
+    margin: 0;
+    line-height: 18px;
+    background-color: #eaebf0;
+  }
+}
+
+.plugin-selected-mark {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 50px;
+  height: 50px;
+  color: #fff;
+  pointer-events: none;
+  background-color: #3a84ff;
+  border-top-right-radius: 2px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+
+  .choose-icon {
+    position: absolute;
+    top: 3px;
+    right: 3px;
   }
 }
 
@@ -1107,37 +1260,6 @@ init();
     }
   }
 
-}
-
-.plugin-add-slider {
-
-  :deep(.bk-modal-content) {
-    // height: calc(100vh - 106px) !important;
-    // height: calc(100% - 126px) !important;
-    overflow-y: auto;
-  }
-
-  :deep(.bk-sideslider-footer) {
-    height: 48px !important;
-  }
-
-  .slider-footer {
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-
-    .fist-step {
-      font-size: 0;
-
-      .bk-button {
-        min-width: 88px;
-
-        &:not(&:first-child) {
-          margin-left: 8px;
-        }
-      }
-    }
-  }
 }
 
 .binding-plugins {
