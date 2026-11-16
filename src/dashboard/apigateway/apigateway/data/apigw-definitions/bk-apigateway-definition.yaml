@@ -99,6 +99,8 @@ grant_permissions:
       - v2_inner_list_app_resource_permissions
       - v2_inner_list_resource_permission_apply_records
       - v2_inner_retrieve_resource_permission_apply_record
+      - v2_inner_cancel_resource_permission_apply_record
+      - v2_inner_delete_resource_permission_apply_record
       # monitor related
       - v2_inner_list_app_alarm_records
       - v2_inner_list_app_request_logs
@@ -118,6 +120,8 @@ grant_permissions:
       - v2_inner_list_mcp_server_app_permissions
       - v2_inner_list_mcp_server_permission_apply_records
       - v2_inner_retrieve_mcp_server_permission_apply_record
+      - v2_inner_cancel_mcp_server_permission_apply_record
+      - v2_inner_delete_mcp_server_permission_apply_record
   # bk_lesscode
   - bk_app_code: bk_lesscode
     grant_dimension: "resource"
