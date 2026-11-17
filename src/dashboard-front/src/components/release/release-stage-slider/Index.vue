@@ -302,7 +302,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import dayjs from 'dayjs';
 import { Divider, Message } from 'bkui-vue';
 import { usePopInfoBox } from '@/hooks';
@@ -310,6 +309,12 @@ import { getStageList } from '@/services/source/gateway/stage';
 import type { IStageListItem } from '@/types/stage';
 import { getVersionDiff, getVersionList } from '@/services/source/gateway/resource-version';
 import { createRelease } from '@/services/source/gateway/release';
+import type { IReleaseInputSLZ } from '@/services/types/body/post/gateways';
+import type {
+  IMCPServerStageReleaseCheckOutput,
+  IResourceVersionDiffOutput,
+  IResourceVersionListOutput,
+} from '@/services/types/responses/gateways';
 import { checkMcpServerStageRelease } from '@/services/source/gateway/mcp-server/server';
 import VersionDiff from '@/components/release/version-diff/Index.vue';
 import PublishEventSlider from '@/components/release/publish-event-slider/Index.vue';
@@ -320,20 +325,17 @@ interface FormData {
   comment: string
 }
 
-type VersionType = {
-  id: number
-  version: string
-  isLatestVersion: boolean
-};
+type VersionOption = IResourceVersionListOutput & { isLatestVersion: boolean };
+type VersionSelection = Pick<IResourceVersionListOutput, 'id'> & Partial<Pick<IResourceVersionListOutput, 'schema_version'>>;
 
 interface IProps {
   currentAssets?: IStageListItem
-  version?: any
+  version?: Pick<IResourceVersionListOutput, 'id'>
 }
 
 const {
-  currentAssets = {},
-  version = {},
+  currentAssets = undefined,
+  version = undefined,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -346,7 +348,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-const mcpCheckData = ref({
+const mcpCheckData = ref<IMCPServerStageReleaseCheckOutput>({
   has_related_changes: false,
   deleted_resource_count: 0,
   details: [],
@@ -355,7 +357,7 @@ const mcpCheckData = ref({
 const chooseVersionComment = ref('');
 
 const isShow = ref(false);
-const versionList = ref<VersionType[]>([]);
+const versionList = ref<VersionOption[]>([]);
 const versionListLoading = ref(false);
 const diffLoading = ref(false);
 const formRef = ref();
@@ -370,7 +372,7 @@ const formData = reactive<FormData>({
   comment: '',
 });
 // 差异数据
-const diffData = ref({
+const diffData = ref<IResourceVersionDiffOutput>({
   add: [],
   delete: [],
   update: [],
@@ -400,7 +402,7 @@ const rules = {
 };
 const publishId = ref();
 const publishLoading = ref(false);
-const chooseAssets = ref(currentAssets);
+const chooseAssets = ref<IStageListItem | undefined>(currentAssets);
 const stageList = ref<IStageListItem[]>([]);
 const mcpCheckColumns = [
   {
@@ -417,7 +419,7 @@ const apigwId = computed(() => +route.params.id);
 
 const resourceVersion = computed(() => {
   let version = '';
-  versionList.value?.forEach((item: any) => {
+  versionList.value?.forEach((item) => {
     if (item.id === formData.resource_version_id) {
       version = item.version;
     }
@@ -435,7 +437,7 @@ const isNextBtnDisabled = computed(() => {
     return true;
   }
 
-  const currentResource = versionList.value.find((version: any) => version.id === formData.resource_version_id);
+  const currentResource = versionList.value.find(version => version.id === formData.resource_version_id);
   if (currentResource) {
     return currentResource.schema_version === '1.0';
   }
@@ -443,14 +445,14 @@ const isNextBtnDisabled = computed(() => {
 });
 
 const curVersionId = computed(() => {
-  const version = versionList.value?.filter((item: any) => item.id === chooseAssets.value?.resource_version?.id)?.[0];
+  const version = versionList.value.find(item => item.id === chooseAssets.value?.resource_version?.id);
   return version?.id;
 });
 
 watch(
   isShow,
-  async (val: any) => {
-    if (val) {
+  async () => {
+    if (isShow.value) {
       await getStageData();
       await getResourceVersions();
       if (currentAssets?.id) {
@@ -466,10 +468,10 @@ watch(
       }
 
       if (version?.id) {
-        const curVersion = versionList.value.find((item: any) => item.id === version?.id);
+        const curVersion = versionList.value.find(item => item.id === version.id);
         if (curVersion) {
-          formData.resource_version_id = curVersion?.id;
-          handleVersionChange({ id: version?.id });
+          formData.resource_version_id = curVersion.id;
+          handleVersionChange({ id: curVersion.id });
         }
       }
     }
@@ -482,17 +484,17 @@ watch(
 
 watch(
   () => formData.stage_id,
-  (v: any) => {
-    if (v && stageList.value?.length) {
-      chooseAssets.value = stageList.value?.filter((item: any) => item.id === v)[0];
+  () => {
+    if (formData.stage_id && stageList.value?.length) {
+      chooseAssets.value = stageList.value.find(item => item.id === formData.stage_id);
     }
   },
 );
 
 watch(
   () => formData.resource_version_id,
-  (v: any) => {
-    const choVersion = versionList.value.filter((item: any) => item.id === v)[0];
+  () => {
+    const choVersion = versionList.value.find(item => item.id === formData.resource_version_id);
     if (choVersion) {
       chooseVersionComment.value = choVersion.comment;
     }
@@ -502,8 +504,8 @@ watch(
 watch(
   () => [formData.resource_version_id, formData.stage_id],
   () => {
-    const curVersion = versionList.value.filter((item: any) => item.id === chooseAssets.value?.resource_version?.id)[0];
-    const choVersion = versionList.value.filter((item: any) => item.id === formData.resource_version_id)[0];
+    const curVersion = versionList.value.find(item => item.id === chooseAssets.value?.resource_version?.id);
+    const choVersion = versionList.value.find(item => item.id === formData.resource_version_id);
     if (curVersion && choVersion) {
       const curDate = dayjs(curVersion.created_time);
       const chooseDate = dayjs(choVersion.created_time);
@@ -546,12 +548,18 @@ const showPublishConfirmInfoBox = () => {
 };
 
 const handlePublish = async () => {
+  const { stage_id, resource_version_id, comment } = formData;
+  if (!stage_id || !resource_version_id) {
+    return;
+  }
+  const params: IReleaseInputSLZ = {
+    stage_id,
+    resource_version_id,
+    comment,
+  };
+
   publishLoading.value = true;
   try {
-    const params = {
-      stage_id: chooseAssets.value.id,
-      ...formData,
-    };
     const res = await createRelease(apigwId.value, params);
 
     publishId.value = res?.id;
@@ -633,11 +641,10 @@ const getResourceVersions = async () => {
       offset: 0,
       limit: 1000,
     });
-    // @ts-ignore
-    response.results.forEach((item: VersionType, index: number) => {
-      item.isLatestVersion = index === 0;
-    });
-    versionList.value = response.results;
+    versionList.value = response.results.map((item, index) => ({
+      ...item,
+      isLatestVersion: index === 0,
+    }));
   }
   finally {
     versionListLoading.value = false;
@@ -659,7 +666,7 @@ const getMcpServersDel = async () => {
   });
 };
 
-const handleVersionChange = async (payload: any) => {
+const handleVersionChange = async (payload: VersionSelection) => {
   // 检查是否为 v1 版本，是的话不能发布，禁止选中
   if (payload.id === curVersionId.value || payload.schema_version === '1.0') return;
   if (!formData.stage_id) return;
@@ -675,7 +682,7 @@ const handleVersionChange = async (payload: any) => {
   }
 
   const query = {
-    source_resource_version_id: chooseAssets.value.resource_version?.id,
+    source_resource_version_id: chooseAssets.value?.resource_version?.id,
     target_resource_version_id: payload.id,
   };
   diffLoading.value = true;
@@ -685,7 +692,7 @@ const handleVersionChange = async (payload: any) => {
   finally {
     diffLoading.value = false;
   }
-  formData.resource_version_id = payload?.id;
+  formData.resource_version_id = payload.id;
   selectVersionRef.value?.hidePopover();
   getMcpServersDel();
 };

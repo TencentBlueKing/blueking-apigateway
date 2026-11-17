@@ -43,7 +43,7 @@ import type { IHealthCheck } from '@/types/backend';
 import { isPlainObject } from 'lodash-es';
 
 interface IProps {
-  checks?: IHealthCheck
+  checks?: Partial<IHealthCheck>
   disabled?: boolean
 }
 
@@ -86,14 +86,15 @@ watch(isActiveEnabled, () => {
 
 defineExpose({
   getValue: () => {
-    const checks = {};
-    if (isActiveEnabled.value) {
-      Object.assign(checks, { active: activeChecksRef.value!.getValue() });
+    const active = isActiveEnabled.value ? activeChecksRef.value?.getValue() : undefined;
+    const passive = isPassiveEnabled.value ? passiveChecksRef.value?.getValue() : undefined;
+    if (!active && !passive) {
+      return undefined;
     }
-    if (isPassiveEnabled.value) {
-      Object.assign(checks, { passive: passiveChecksRef.value!.getValue() });
-    }
-    return Object.keys(checks).length > 0 ? checks : undefined;
+    return {
+      ...(active && { active }),
+      ...(passive && { passive }),
+    };
   },
 });
 

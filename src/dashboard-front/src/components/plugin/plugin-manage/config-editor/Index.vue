@@ -231,7 +231,7 @@ import PluginFormRenderer from './components/PluginFormRenderer.vue';
 import { getPluginDefinition, getPluginExample } from './definitions';
 import { PluginEditorError } from './form-adapter';
 
-interface IPluginInfoItem {
+export interface IPluginInfoItem {
   code: string
   name: string
   id?: number

@@ -743,7 +743,7 @@
 
     <EditBasicInfoDialog
       v-model="createGatewayShow"
-      :init-data="(basicInfoDetailData as ParamType)"
+      :init-data="basicInfoDetailData"
       @done="getBasicInfo()"
     />
     <EditAPIDoc
@@ -788,7 +788,7 @@ import EditMember from './components/EditMember.vue';
 import EditRelatedAppCodes from './components/EditRelatedAppCodes.vue';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
-import EditBasicInfoDialog, { type ParamType } from './components/EditBasicInfoDialog.vue';
+import EditBasicInfoDialog from './components/EditBasicInfoDialog.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import {
   useEnv,

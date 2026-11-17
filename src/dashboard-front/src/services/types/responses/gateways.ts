@@ -184,7 +184,7 @@ export interface IBackendListOutput {
 }
 
 export interface IStandardBackendConfigOutput {
-  checks?: IHealthCheck
+  checks?: Partial<IHealthCheck>
   hosts: {
     scheme: string
     host: string
@@ -873,10 +873,11 @@ export interface IPluginTypeListOutput {
   name: string
   code: string
   is_public: boolean
+  description: string
   notes: string
-  related_scope_count: string
-  is_bound: string
-  tags: string
+  related_scope_count: Record<'stage' | 'resource', number>
+  is_bound: boolean
+  tags: string[]
 }
 
 /**
@@ -928,7 +929,7 @@ export interface IScopePluginConfigListOutput {
     [key: string]: string | null
   }
   config_id: number
-  related_scope_count: string
+  related_scope_count: IPluginTypeListOutput['related_scope_count']
 }
 
 /**
@@ -1166,8 +1167,11 @@ export interface IResourceVersionListOutput {
   schema_version: string
   created_time: string
   created_by: string
-  released_stages: string
-  sdk_count: string
+  released_stages: {
+    id: number
+    name: string
+  }[]
+  sdk_count: number
 }
 
 /**

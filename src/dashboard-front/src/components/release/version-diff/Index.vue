@@ -485,7 +485,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import ResourceDiffDetail from './components/ResourceDiffDetail.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
@@ -494,6 +493,8 @@ import { getVersionDiff, getVersionList } from '@/services/source/gateway/resour
 import type { IDiffData, IVersionItem } from '@/types/resource-version';
 import { getBackendServiceList } from '@/services/source/gateway/backend';
 import { useGateway } from '@/stores';
+import type { IBackendListOutput } from '@/services/types/responses/gateways';
+import type { ITableEmptyType } from '@/types/common';
 
 interface IProps {
   versionList?: IVersionItem[]
@@ -509,7 +510,7 @@ interface IProps {
 interface ILocalVersionItem extends IVersionItem {
   name?: string
   resource_version_display?: string
-  stage_text?: string
+  stage_text?: string[]
 }
 
 const {
@@ -529,10 +530,10 @@ const gatewayStore = useGateway();
 // 网关id
 const apigwId = computed(() => +route.params.id);
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: ITableEmptyType
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: 'empty',
   isAbnormal: false,
 });
 
@@ -569,7 +570,7 @@ const diffTypeList = reactive([
   },
 ]);
 
-const backendsList = ref([]);
+const backendsList = ref<IBackendListOutput[]>([]);
 
 const hasResult = computed(() => {
   const addItem = diffData.add.some((item: any) => checkMatch(item, 'add'));
@@ -640,7 +641,6 @@ watch(
 width.value = window.innerWidth <= 1280 ? 1000 : 1240;
 
 const handleToggle = (item: IDiffData['add'][number] | IDiffData['update'][number] | IDiffData['delete'][number]) => {
-  // @ts-ignore
   item.isExpanded = !item.isExpanded;
 };
 
@@ -732,7 +732,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = 'empty';
 };
 
 const handleClearFilterKey = async () => {
@@ -766,45 +766,40 @@ const getDiffData = async () => {
 
   try {
     const res = await getVersionDiff(apigwId.value, {
-      // @ts-ignore
-      source_resource_version_id: String(localSourceId.value).replace(
-        'current',
-        '',
-      ),
-      // @ts-ignore
-      target_resource_version_id: String(localTargetId.value).replace(
-        'current',
-        '',
-      ),
+      source_resource_version_id: String(localSourceId.value).replace('current', ''),
+      target_resource_version_id: String(localTargetId.value).replace('current', ''),
     });
 
-    res.add.forEach((item: any) => {
-      item.isExpanded = false;
-    });
-    res.delete.forEach((item: any) => {
-      item.isExpanded = false;
-    });
-    res.update.forEach((item: any) => {
-      item.isExpanded = false;
-
+    const update = res.update.map((item) => {
       if (item?.source?.diff?.proxy?.backend_id) {
-        const curBackend: any = backendsList.value?.find((backend: any) => {
+        const curBackend = backendsList.value.find((backend) => {
           return backend.id === item.source.diff.proxy.backend_id;
         });
         item.source.diff.proxy.backend_name = curBackend?.name || '';
       }
 
       if (item?.target?.diff?.proxy?.backend_id) {
-        const curBackend: any = backendsList.value?.find((backend: any) => {
+        const curBackend = backendsList.value.find((backend) => {
           return backend.id === item.target.diff.proxy.backend_id;
         });
         item.target.diff.proxy.backend_name = curBackend?.name || '';
       }
+      return {
+        ...item,
+        isExpanded: false,
+      };
     });
-
-    diffData.add = res.add;
-    diffData.delete = res.delete;
-    diffData.update = res.update;
+    Object.assign(diffData, {
+      add: res.add.map(item => ({
+        ...item,
+        isExpanded: false,
+      })),
+      delete: res.delete.map(item => ({
+        ...item,
+        isExpanded: false,
+      })),
+      update,
+    } satisfies IDiffData);
   }
   finally {
     setTimeout(() => {
@@ -829,10 +824,7 @@ const getApigwVersions = async () => {
       ...response.results.map(item => ({
         ...item,
         resource_version_display: item.comment ? `${item.version}(${item.comment})` : item.version,
-        // @ts-ignore
-        stage_text: item.released_stages.map((item: any) => {
-          return item.name;
-        }),
+        stage_text: item.released_stages.map(stage => stage.name),
       })),
     ];
   }

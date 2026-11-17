@@ -1,5 +1,6 @@
 import type { IMCPTabType } from '@/types/mcp-server';
 import type { IAuthConfig } from '@/types/resource';
+import type { IHealthCheck } from '@/types/backend';
 
 // POST /gateways/ - 创建网关
 export interface IGatewayCreateInputSLZ {
@@ -40,41 +41,6 @@ export interface IAICompletionInputSLZ {
   }
 }
 
-export interface IHealthCheck {
-  active: {
-    type: 'http' | 'https' | 'tcp'
-    timeout: number
-    concurrency: number
-    http_path?: string
-    https_verify_certificate?: boolean
-    healthy: {
-      http_statuses?: number[]
-      successes: number
-      interval: number
-    }
-    unhealthy: {
-      http_statuses?: number[]
-      http_failures?: number
-      tcp_failures?: number
-      timeouts: number
-      interval: number
-    }
-  }
-  passive: {
-    type: 'http' | 'https' | 'tcp'
-    healthy: {
-      http_statuses?: number[]
-      successes: number
-    }
-    unhealthy: {
-      http_statuses?: number[]
-      http_failures?: number
-      tcp_failures?: number
-      timeouts: number
-    }
-  }
-}
-
 export interface IStandardBackendConfigInput {
   type?: string
   timeout: number
@@ -86,7 +52,7 @@ export interface IStandardBackendConfigInput {
     host: string
     weight?: number
   }[]
-  checks?: IHealthCheck
+  checks?: Partial<IHealthCheck>
   stage_id: number
 }
 

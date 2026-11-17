@@ -427,8 +427,7 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
-import PluginConfigEditor from './config-editor/Index.vue';
+import PluginConfigEditor, { type IPluginInfoItem } from './config-editor/Index.vue';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import {
   InfoBox,
@@ -448,7 +447,14 @@ import {
 } from '@/services/source/gateway/plugin';
 import ConfigDisplayTable from './config-display/Index.vue';
 import PluginIcon from './components/PluginIcon.vue';
-import type { IPluginBindingListOutput } from '@/services/types/responses/gateways';
+import type {
+  IPluginBindingListOutput,
+  IPluginConfigRetrieveOutput,
+  IPluginTypeListOutput,
+  IScopePluginConfigListOutput,
+} from '@/services/types/responses/gateways';
+import type { IGatewaysPluginsListQuery } from '@/services/types/query/gateways';
+import type { ITableEmptyType } from '@/types/common';
 import { getStageStatus } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 import { useWindowSize } from '@vueuse/core';
@@ -462,6 +468,8 @@ interface IPluginBindingsEntry {
   loading: boolean
   data?: IPluginBindingListOutput
 }
+
+type PluginListItem = IPluginTypeListOutput & { type?: string };
 
 const {
   resourceId = 0,
@@ -483,35 +491,38 @@ const { width: viewportWidth } = useWindowSize();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const pluginEditorRef = ref<InstanceType<typeof PluginConfigEditor>>();
-const scopeType = ref('');
+const scopeType = ref<IGatewaysPluginsListQuery['scope_type'] | ''>('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);
 const isPluginListLoading = ref(false);
 const isVisible = ref(false);
-const curType = ref('');
+const curType = ref<'add' | 'edit'>('add');
 const isEditVisible = ref(false);
 const isAddSuccess = ref(false);
 const searchValue = ref('');
 const searchKeyword = ref('');
-const pluginList = ref([]);
-const allPlugins = ref([]);
+const pluginList = ref<PluginListItem[]>([]);
+const allPlugins = ref<PluginListItem[]>([]);
 const pluginTags = ref<string[]>([]);
 const selectedTag = ref('');
 const pluginBindings = shallowReactive(new Map<string, IPluginBindingsEntry>());
 const truncatedNotesId = ref<number>();
 const curHover = ref('');
-const curBindingPlugins = ref<any>([]);
-const curChoosePlugin = ref(null);
+const curBindingPlugins = ref<IScopePluginConfigListOutput[]>([]);
+const curChoosePlugin = ref<IPluginInfoItem | null>(null);
 const curChooseCode = ref('');
-const curEditPlugin = ref<any>({});
+const curEditPlugin = ref<IPluginConfigRetrieveOutput | null>(null);
 const curScopeInfo = reactive({
   scopeType: '',
   scopeId: -1,
   apigwId: -1,
 });
 const state = reactive({ curStep: 1 });
-const tableEmptyConf = ref({
-  emptyType: '',
+const tableEmptyConf = ref<{
+  emptyType: ITableEmptyType
+  isAbnormal: boolean
+}>({
+  emptyType: 'empty',
   isAbnormal: false,
 });
 // PluginConfigEditor 中的插件示例是否可见
@@ -529,31 +540,12 @@ const pluginSteps = computed(() => [
   { title: t('配置插件') },
 ]);
 
-// 当前环境信息
-const stageData = computed(() => {
-  if (stageStore.curStageData.id !== null) {
-    return stageStore.curStageData;
-  }
-  return {
-    name: '',
-    description: '',
-    description_en: '',
-    status: 1,
-    created_time: '',
-    release: {
-      status: '',
-      created_time: null,
-      created_by: '',
-    },
-    resource_version: '',
-    new_resource_version: '',
-    publish_validate_msg: '',
-  };
-});
-
 // 仅"环境配置插件"需要校验是否存在正在发布中的版本；资源配置插件不做该校验
 // 注意：stageData 来源于全局 store，可能残留其他网关/页面的环境数据，因此必须限定 scope 类型
-const isStageReleasing = computed(() => scopeType.value === 'stage' && getStageStatus(stageData.value) === 'doing');
+const isStageReleasing = computed(() => {
+  const stage = stageStore.curStageData;
+  return scopeType.value === 'stage' && stage?.id != null && getStageStatus(stage) === 'doing';
+});
 
 const isBound = computed(() => {
   return function (obj: any) {
@@ -697,7 +689,7 @@ const handleEditPlugin = async (item: any) => {
     code,
     config_id,
   );
-  curChoosePlugin.value = curEditItem;
+  curChoosePlugin.value = curEditItem ?? null;
   isEditVisible.value = true;
 };
 
@@ -808,12 +800,13 @@ async function getBindingDetails(isLoading = false) {
 
 // 获取可配置的插件列表
 const refreshPluginList = async () => {
-  if (scopeId.value <= 0) {
+  const currentScopeType = scopeType.value;
+  if (scopeId.value <= 0 || !currentScopeType) {
     return;
   }
   const request = ++pluginListRequest;
-  const params = {
-    scope_type: scopeType.value,
+  const params: IGatewaysPluginsListQuery = {
+    scope_type: currentScopeType,
     scope_id: scopeId.value,
     keyword: searchKeyword.value || undefined,
     tag: selectedTag.value || undefined,
@@ -840,7 +833,7 @@ const refreshPluginList = async () => {
     }
     pluginTags.value = tagRes.tags || [];
     tableEmptyConf.value = {
-      emptyType: isFiltered ? 'search-empty' : '',
+      emptyType: isFiltered ? 'search-empty' : 'empty',
       isAbnormal: false,
     };
   }
@@ -866,7 +859,7 @@ const handlePluginAdd = () => {
 };
 
 // 选择插件
-const handleChoosePlugin = (obj: any) => {
+const handleChoosePlugin = (obj: IPluginInfoItem) => {
   const flag = curBindingPlugins.value.some((item: { code: string }) => item.code === obj.code);
   if (flag) {
     return;
