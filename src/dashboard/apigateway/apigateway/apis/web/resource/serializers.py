@@ -44,7 +44,7 @@ from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
-from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
+from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS, with_resource_auth_derived_fields
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
@@ -165,7 +165,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
         return self.context["plugin_counts"].get(obj.id, 0)
 
     def get_auth_config(self, obj):
-        return self.context["auth_configs"][obj.id]
+        return with_resource_auth_derived_fields(self.context["auth_configs"][obj.id])
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
@@ -539,7 +539,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
         }
 
     def get_auth_config(self, obj):
-        return self.context["auth_config"]
+        return with_resource_auth_derived_fields(self.context["auth_config"])
 
     def get_backend(self, obj):
         return {

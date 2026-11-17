@@ -291,6 +291,14 @@ class ResourceKindEnum(StructuredEnum):
     AI = EnumField("ai", "模型代理 API")
 
 
+class ResourceAuthTypeEnum(StructuredEnum):
+    """资源认证类型，由 auth_verified_required / app_verified_required 推导，只读"""
+
+    USER = EnumField("user", "用户认证")
+    APP = EnumField("app", "应用认证")
+    NONE = EnumField("none", "无需认证")
+
+
 class BackendTypeEnum(StructuredEnum):
     HTTP = EnumField("http", label="HTTP")
     GRPC = EnumField("grpc", label="GRPC")

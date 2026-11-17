@@ -18,9 +18,10 @@
 #
 from typing import Any, Dict, List, Literal, Optional, Set, Text, Tuple, Union
 
-from pydantic import BaseModel, Field, Json, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, Json, ValidationInfo, computed_field, field_validator
 
 from apigateway.core.constants import ResourceKindEnum
+from apigateway.service.contexts import derive_resource_auth_type
 
 
 def _values_equal(source: Any, target: Any) -> bool:
@@ -62,7 +63,9 @@ class DiffMixin:
         source_diff_data = {}
         target_diff_data = {}
 
-        for key in getattr(type(self), "model_fields", {}):
+        model_type = type(self)
+        keys = [*getattr(model_type, "model_fields", {}), *getattr(model_type, "model_computed_fields", {})]
+        for key in keys:
             diff_method = getattr(self, f"diff_{key}", None)
             if diff_method is not None:
                 source_diff_value, target_diff_value = diff_method(target)
@@ -151,6 +154,21 @@ class ResourceAuthConfig(BaseModel, DiffMixin):
     resource_perm_required: bool
     oauth2_public_client_enabled: bool = False
     oauth2_personal_client_enabled: bool = False
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def auth_type(self) -> str:
+        return derive_resource_auth_type(
+            {
+                "auth_verified_required": self.auth_verified_required,
+                "app_verified_required": self.app_verified_required,
+            }
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def oauth2_app_delegated_enabled(self) -> bool:
+        return self.auth_verified_required and self.app_verified_required
 
 
 class ResourceAuth(BaseModel, DiffMixin):

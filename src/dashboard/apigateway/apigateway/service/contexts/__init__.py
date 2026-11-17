@@ -17,10 +17,13 @@
 #
 from .gateway_auth import GatewayAuthConfig, GatewayAuthContext
 from .resource_auth import (
+    RESOURCE_AUTH_DERIVED_FIELDS,
     RESOURCE_OAUTH2_CLIENT_FIELDS,
     ResourceAuthContext,
     build_resource_auth_config,
+    derive_resource_auth_type,
     strip_resource_oauth2_client_config,
+    with_resource_auth_derived_fields,
 )
 
 __all__ = [
@@ -29,10 +32,13 @@ __all__ = [
     # class
     "GatewayAuthConfig",
     "GatewayAuthContext",
+    "RESOURCE_AUTH_DERIVED_FIELDS",
     "RESOURCE_OAUTH2_CLIENT_FIELDS",
     "ResourceAuthContext",
     # functions
     "build_resource_auth_config",
+    "derive_resource_auth_type",
     "strip_resource_oauth2_client_config",
+    "with_resource_auth_derived_fields",
     # others
 ]
