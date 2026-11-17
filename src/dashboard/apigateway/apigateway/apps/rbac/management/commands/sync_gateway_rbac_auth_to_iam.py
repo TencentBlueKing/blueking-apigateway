@@ -42,6 +42,8 @@ class _RunSummary:
     grants: int
     revokes: int
     unchanged: int
+    skipped_missing: int
+    excluded_members: int
 
 
 class Command(BaseCommand):
@@ -182,6 +184,8 @@ class Command(BaseCommand):
         grants = 0
         revokes = 0
         unchanged = 0
+        skipped_missing = 0
+        excluded_members = 0
         total = len(gateway_ids)
 
         for index, gateway_id in enumerate(gateway_ids, start=1):
@@ -212,16 +216,17 @@ class Command(BaseCommand):
             grants += result.grant_count
             revokes += result.revoke_count
             unchanged += result.unchanged
+            skipped_missing += result.skipped_missing
+            excluded_members += result.excluded_members
             change_count = result.change_count
             changes, changes_logged = self._format_changes(result)
-            grant_field = "grants_processed" if apply else "grants_planned"
-            revoke_field = "revokes_processed" if apply else "revokes_planned"
             self.stdout.write(
                 f"event=iam-rbac-sync-gateway run_id={run_id} mode={mode} "
                 f"gateway_index={index} gateways_total={total} "
-                f"status=success outcome={'changed' if change_count else 'no-change'} "
+                "status=success "
                 f"gateway_id={result.gateway_id} gateway_name={result.gateway_name} "
-                f"{grant_field}={result.grant_count} {revoke_field}={result.revoke_count} "
+                f"grants_planned={result.grant_count} revokes_planned={result.revoke_count} "
+                f"skipped_missing={result.skipped_missing} excluded_members={result.excluded_members} "
                 f"already_consistent={result.unchanged} changes={json.dumps(changes, ensure_ascii=False)} "
                 f"changes_logged={changes_logged} changes_omitted={change_count - changes_logged} "
                 f"duration_ms={int((time.monotonic() - gateway_started_at) * 1000)}"
@@ -235,6 +240,8 @@ class Command(BaseCommand):
             grants=grants,
             revokes=revokes,
             unchanged=unchanged,
+            skipped_missing=skipped_missing,
+            excluded_members=excluded_members,
         )
 
     @staticmethod
@@ -252,13 +259,12 @@ class Command(BaseCommand):
     def _write_summary(self, summary: _RunSummary, *, mode: str, run_id: str, duration_ms: int) -> None:
         failure_count = summary.failed
         status = "success" if failure_count == 0 else "failed" if summary.succeeded == 0 else "partial-failure"
-        grant_field = "grants_processed" if mode == "apply" else "grants_planned"
-        revoke_field = "revokes_processed" if mode == "apply" else "revokes_planned"
         self.stdout.write(
             f"event=iam-rbac-sync-summary run_id={run_id} mode={mode} status={status} "
             f"gateways_total={summary.gateways} gateways_succeeded={summary.succeeded} "
-            f"gateways_failed={failure_count} {grant_field}={summary.grants} "
-            f"{revoke_field}={summary.revokes} already_consistent={summary.unchanged} "
+            f"gateways_failed={failure_count} grants_planned={summary.grants} revokes_planned={summary.revokes} "
+            f"skipped_missing={summary.skipped_missing} excluded_members={summary.excluded_members} "
+            f"already_consistent={summary.unchanged} "
             f"failed_gateway_changes={'none' if failure_count == 0 else 'unknown'} duration_ms={duration_ms}"
         )
 

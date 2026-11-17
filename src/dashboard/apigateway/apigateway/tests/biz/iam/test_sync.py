@@ -152,7 +152,7 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(
 
 def test_reconcile_dry_run_does_not_write_iam(fake_gateway, mocker):
     _mock_iam(mocker, {})
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
@@ -189,7 +189,7 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(settings, fake_gatewa
         "select_for_update",
         wraps=Gateway.objects.select_for_update,
     )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -200,7 +200,16 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(settings, fake_gatewa
     select_for_update.assert_called_once_with()
     assert [len(call.args[0]) for call in add.call_args_list] == [20, 5]
     assert all(call.args[1] == "admin" for call in add.call_args_list)
-    assert all(call.kwargs == {"tenant_id": "system"} for call in add.call_args_list)
+    assert all(
+        call.kwargs
+        == {
+            "tenant_id": "system",
+            "skip_missing_users": True,
+            "gateway_id": fake_gateway.id,
+            "gateway_name": fake_gateway.name,
+        }
+        for call in add.call_args_list
+    )
     assert result.applied is True
 
 
@@ -302,7 +311,7 @@ def test_reconcile_filters_configured_users_when_applying_plan(fake_gateway, moc
             ],
         },
     )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
@@ -311,7 +320,8 @@ def test_reconcile_filters_configured_users_when_applying_plan(fake_gateway, moc
         operator="bk_apigateway",
     )
 
-    assert [item.username for item in result.grants] == ["admin", "alice", "bk_admin"]
+    assert [item.username for item in result.grants] == ["alice"]
+    assert result.excluded_members == 2
     assert [item.username for item in result.revokes] == ["extra"]
     assert [payload["subject"]["id"] for payload in add.call_args.args[0]] == ["alice"]
     assert [payload["subject"]["id"] for payload in revoke.call_args.args[0]] == ["extra"]
@@ -335,7 +345,7 @@ def test_reconcile_filters_custom_exclusions_at_iam_write_boundary(fake_gateway,
             ],
         },
     )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
@@ -344,8 +354,9 @@ def test_reconcile_filters_custom_exclusions_at_iam_write_boundary(fake_gateway,
         operator="bk_apigateway",
     )
 
-    assert [item.username for item in result.grants] == ["desired-excluded"]
-    assert [item.username for item in result.revokes] == ["actual-excluded"]
+    assert result.grants == ()
+    assert result.excluded_members == 2
+    assert result.revokes == ()
     add.assert_not_called()
     revoke.assert_not_called()
 

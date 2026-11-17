@@ -294,8 +294,8 @@ def test_sync_gateway_rbac_auth_to_iam_reports_one_readable_line_per_gateway(set
     gateway_lines = [line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-gateway" in line]
     assert gateway_lines == [
         f"event=iam-rbac-sync-gateway run_id=run-readable mode=dry-run gateway_index=1 gateways_total=1 "
-        f"status=success outcome=changed gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
-        "grants_planned=1 revokes_planned=0 already_consistent=1 "
+        f"status=success gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
+        "grants_planned=1 revokes_planned=0 skipped_missing=0 excluded_members=0 already_consistent=1 "
         'changes="grant(username=user-0,role=operator,reason=missing-in-iam,'
         'expires_at=2030-03-17T17:46:40Z)" changes_logged=1 changes_omitted=0 duration_ms=0'
     ]
@@ -369,7 +369,7 @@ def test_sync_gateway_rbac_auth_to_iam_apply_writes_iam_without_preflight(settin
         "apigateway.biz.iam.authorization.iter_authorization_subjects",
         return_value=iter([]),
     )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     call_command(
@@ -427,7 +427,8 @@ def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settin
     assert 'write_result=unknown error="IAM unavailable"' in failure_line
     assert (
         "event=iam-rbac-sync-summary run_id=run-failed mode=apply status=failed gateways_total=1 "
-        "gateways_succeeded=0 gateways_failed=1 grants_processed=0 revokes_processed=0 "
+        "gateways_succeeded=0 gateways_failed=1 grants_planned=0 revokes_planned=0 "
+        "skipped_missing=0 excluded_members=0 "
         "already_consistent=0 failed_gateway_changes=unknown"
     ) in output.getvalue()
 

@@ -101,11 +101,20 @@ def grant_gateway_authorizations(
     gateway: Gateway,
     authorizations: list[AuthorizationPayload],
     operated_by: str,
-) -> None:
+    *,
+    skip_missing_users: bool = False,
+) -> int:
     authorizations = _filter_excluded_gateway_authorizations(gateway, authorizations, "grant")
     if not authorizations:
-        return
-    add_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
+        return 0
+    return add_authorization(
+        authorizations,
+        operated_by,
+        tenant_id=_get_gateway_iam_tenant_id(gateway),
+        skip_missing_users=skip_missing_users,
+        gateway_id=gateway.id,
+        gateway_name=gateway.name,
+    )
 
 
 def revoke_gateway_authorizations(
