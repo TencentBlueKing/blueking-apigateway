@@ -503,7 +503,12 @@ class TestGatewayHandler:
         revoke_authorization.assert_called_once()
         add_authorization.assert_called_once()
         assert revoke_authorization.call_args.kwargs == {"tenant_id": "system"}
-        assert add_authorization.call_args.kwargs == {"tenant_id": "system"}
+        assert add_authorization.call_args.kwargs == {
+            "tenant_id": "system",
+            "skip_missing_users": False,
+            "gateway_id": fake_gateway.id,
+            "gateway_name": fake_gateway.name,
+        }
         assert Gateway.objects.filter(id=fake_gateway.id).exists()
 
     def test_delete_gateway_revokes_iam_when_operated_by_is_omitted(self, settings, mocker, fake_gateway):
