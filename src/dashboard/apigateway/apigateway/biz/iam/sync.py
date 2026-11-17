@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
 from django.db import transaction
@@ -26,7 +26,6 @@ from apigateway.apps.rbac.models import GatewayMember
 from apigateway.components.bkiam import (
     DEFAULT_PAGE_SIZE,
     AuthorizationSubjectQueryPayload,
-    AuthorizationWriteResult,
     chunked,
 )
 from apigateway.core.models import Gateway
@@ -35,6 +34,7 @@ from .authorization import (
     build_gateway_authorization,
     build_gateway_revoke_authorization,
     grant_gateway_authorizations,
+    is_gateway_iam_authorization_excluded,
     iter_gateway_authorization_subjects,
     revoke_gateway_authorizations,
 )
@@ -76,16 +76,8 @@ class GatewayIAMSyncResult:
     revokes: tuple[GatewayIAMSyncItem, ...]
     unchanged: int
     applied: bool = False
-    grant_write_result: AuthorizationWriteResult = field(default_factory=AuthorizationWriteResult)
-    revoke_write_result: AuthorizationWriteResult = field(default_factory=AuthorizationWriteResult)
-
-    @property
-    def has_warnings(self) -> bool:
-        return self.grant_write_result.has_warnings or self.revoke_write_result.has_warnings
-
-    @property
-    def needs_retry(self) -> bool:
-        return self.grant_write_result.needs_retry or self.revoke_write_result.needs_retry
+    skipped_missing: int = 0
+    excluded_members: int = 0
 
     @property
     def grant_count(self) -> int:
@@ -133,7 +125,8 @@ class GatewayIAMAuthorizationSynchronizer:
             # member writes take the same lock before reading GatewayMember.
             gateway = Gateway.objects.select_for_update().get(pk=gateway_id)
             plan = self._build_reconciliation_plan(gateway, username=username)
-            return self._apply_plan(gateway, plan, operator)
+            skipped_missing = self._apply_plan(gateway, plan, operator)
+            return replace(plan, applied=True, skipped_missing=skipped_missing)
 
     def _build_reconciliation_plan(self, gateway: Gateway, *, username: str | None) -> GatewayIAMSyncResult:
         now = timezone.now()
@@ -142,7 +135,14 @@ class GatewayIAMAuthorizationSynchronizer:
         if username is not None:
             desired = {key: item for key, item in desired.items() if item.username == username}
             actual = {key: item for key, item in actual.items() if item.username == username}
-        return self._build_result(gateway, desired, actual)
+        excluded = {
+            username
+            for username, _role in desired.keys() | actual.keys()
+            if is_gateway_iam_authorization_excluded(username)
+        }
+        desired = {key: item for key, item in desired.items() if item.username not in excluded}
+        actual = {key: item for key, item in actual.items() if item.username not in excluded}
+        return replace(self._build_result(gateway, desired, actual), excluded_members=len(excluded))
 
     def _get_desired_authorizations(
         self,
@@ -253,7 +253,7 @@ class GatewayIAMAuthorizationSynchronizer:
             unchanged=unchanged,
         )
 
-    def _apply_plan(self, gateway: Gateway, plan: GatewayIAMSyncResult, operator: str) -> GatewayIAMSyncResult:
+    def _apply_plan(self, gateway: Gateway, plan: GatewayIAMSyncResult, operator: str) -> int:
         revoke_payloads = [
             build_gateway_revoke_authorization(item.username, item.role, plan.gateway_id) for item in plan.revokes
         ]
@@ -267,15 +267,9 @@ class GatewayIAMAuthorizationSynchronizer:
             for item in plan.grants
         ]
 
-        revoke_result = AuthorizationWriteResult()
-        grant_result = AuthorizationWriteResult()
         for revoke_batch in chunked(revoke_payloads):
-            revoke_result += revoke_gateway_authorizations(gateway, revoke_batch, operator)
+            revoke_gateway_authorizations(gateway, revoke_batch, operator)
+        skipped_missing = 0
         for grant_batch in chunked(grant_payloads):
-            grant_result += grant_gateway_authorizations(gateway, grant_batch, operator)
-        return replace(
-            plan,
-            applied=not (grant_result.needs_retry or revoke_result.needs_retry),
-            grant_write_result=grant_result,
-            revoke_write_result=revoke_result,
-        )
+            skipped_missing += grant_gateway_authorizations(gateway, grant_batch, operator, skip_missing_users=True)
+        return skipped_missing

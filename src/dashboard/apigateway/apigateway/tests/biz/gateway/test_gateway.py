@@ -33,7 +33,6 @@ from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
-from apigateway.components.bkiam import AuthorizationWriteResult
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -495,10 +494,7 @@ class TestGatewayHandler:
             role=GatewayRoleEnum.ADMINISTRATOR.value,
         )
         revoke_authorization = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
-        add_authorization = mocker.patch(
-            "apigateway.biz.iam.authorization.add_authorization",
-            side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
-        )
+        add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
         mocker.patch.object(Gateway, "delete", side_effect=RuntimeError("delete failed"))
 
         with pytest.raises(RuntimeError, match="delete failed"):
@@ -507,11 +503,7 @@ class TestGatewayHandler:
         revoke_authorization.assert_called_once()
         add_authorization.assert_called_once()
         assert revoke_authorization.call_args.kwargs == {"tenant_id": "system"}
-        assert add_authorization.call_args.kwargs == {
-            "tenant_id": "system",
-            "gateway_id": fake_gateway.id,
-            "gateway_name": fake_gateway.name,
-        }
+        assert add_authorization.call_args.kwargs == {"tenant_id": "system"}
         assert Gateway.objects.filter(id=fake_gateway.id).exists()
 
     def test_delete_gateway_revokes_iam_when_operated_by_is_omitted(self, settings, mocker, fake_gateway):
