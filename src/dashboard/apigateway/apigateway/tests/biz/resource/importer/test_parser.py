@@ -89,6 +89,37 @@ class TestResourceDataConvertor:
         assert result[1].backend == backend_2
         assert result[1].backend_config.path == "/backend/test2"
 
+    @pytest.mark.parametrize(
+        "is_public, auth_config, expected_perm, expected_allow_apply",
+        [
+            (True, {}, True, True),
+            (False, {}, True, False),
+            (True, {"app_verified_required": False, "resource_perm_required": True}, False, False),
+        ],
+    )
+    def test_convert_normalizes_auth_hierarchy(
+        self, fake_gateway, is_public, auth_config, expected_perm, expected_allow_apply
+    ):
+        G(Backend, gateway=fake_gateway, name="default")
+
+        result = ResourceDataConvertor(
+            fake_gateway,
+            [
+                {
+                    "name": "sync_echo",
+                    "method": "GET",
+                    "path": "/sync-echo",
+                    "is_public": is_public,
+                    "allow_apply_permission": True,
+                    "auth_config": auth_config,
+                    "backend_config": {"method": "GET", "path": "/echo"},
+                }
+            ],
+        ).convert()
+
+        assert result[0].auth_config.resource_perm_required is expected_perm
+        assert result[0].allow_apply_permission is expected_allow_apply
+
     def test_convert__error(self, fake_resource):
         resources = [
             {

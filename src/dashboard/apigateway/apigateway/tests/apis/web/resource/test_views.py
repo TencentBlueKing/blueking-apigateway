@@ -620,6 +620,74 @@ class TestResourceRetrieveUpdateDestroyApi:
         fake_resource.refresh_from_db()
         assert fake_resource.oauth2_public_client_enabled is True
 
+    def test_update_preserves_omitted_auth_and_public_settings(self, request_view, fake_resource):
+        self._prepare_update_target(fake_resource)
+        ResourceAuthContext().save(
+            fake_resource.id,
+            {
+                "skip_auth_verification": False,
+                "auth_verified_required": True,
+                "app_verified_required": False,
+                "resource_perm_required": False,
+            },
+        )
+        Resource.objects.filter(id=fake_resource.id).update(is_public=False, allow_apply_permission=False)
+        fake_resource.refresh_from_db()
+        data = self._make_update_data(fake_resource, {})
+        data["description"] = "changed"
+        data.pop("is_public")
+        data.pop("allow_apply_permission")
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=data,
+        )
+
+        assert response.status_code == 204, response.json()
+        auth_config = ResourceAuthContext().get_config(fake_resource.id)
+        assert auth_config["auth_verified_required"] is True
+        assert auth_config["app_verified_required"] is False
+        assert auth_config["resource_perm_required"] is False
+        fake_resource.refresh_from_db()
+        assert fake_resource.description == "changed"
+        assert fake_resource.is_public is False
+        assert fake_resource.allow_apply_permission is False
+
+    def test_update_normalizes_auth_hierarchy_and_ignores_derived_fields(self, request_view, fake_resource):
+        self._prepare_update_target(fake_resource)
+        data = self._make_update_data(
+            fake_resource,
+            {
+                "auth_type": "none",
+                "oauth2_app_delegated_enabled": True,
+                "auth_verified_required": True,
+                "app_verified_required": False,
+                "resource_perm_required": True,
+            },
+        )
+        data["is_public"] = True
+        data["allow_apply_permission"] = True
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=data,
+        )
+
+        assert response.status_code == 204, response.json()
+        assert ResourceAuthContext().get_config(fake_resource.id) == {
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+            "app_verified_required": False,
+            "resource_perm_required": False,
+        }
+        fake_resource.refresh_from_db()
+        assert fake_resource.is_public is True
+        assert fake_resource.allow_apply_permission is False
+
     def test_destroy(self, request_view, fake_resource):
         fake_gateway = fake_resource.gateway
 
@@ -727,6 +795,40 @@ class TestResourceBatchUpdateDestroyApi:
         resource = Resource.objects.get(id=fake_resource.id)
         assert resource.is_public == data["is_public"]
         assert resource.allow_apply_permission == data["allow_apply_permission"]
+
+    def test_update_writes_allow_apply_permission_only_for_resources_checking_permission(
+        self, request_view, fake_resource, fake_resource1
+    ):
+        ResourceHandler.save_auth_config(fake_resource1.id, {"resource_perm_required": False})
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway.id},
+            data={
+                "ids": [fake_resource.id, fake_resource1.id],
+                "is_public": True,
+                "allow_apply_permission": True,
+            },
+        )
+
+        assert resp.status_code == 204
+        assert Resource.objects.get(id=fake_resource.id).allow_apply_permission is True
+        assert Resource.objects.get(id=fake_resource1.id).allow_apply_permission is False
+        assert Resource.objects.get(id=fake_resource1.id).is_public is True
+
+    def test_update_disables_allow_apply_permission_when_not_public(self, request_view, fake_resource):
+        resp = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway.id},
+            data={"ids": [fake_resource.id], "is_public": False, "allow_apply_permission": True},
+        )
+
+        assert resp.status_code == 204
+        resource = Resource.objects.get(id=fake_resource.id)
+        assert resource.is_public is False
+        assert resource.allow_apply_permission is False
 
     def test_update_bumps_updated_time(self, request_view, fake_resource):
         stale_updated_time = timezone.now() - timedelta(minutes=5)

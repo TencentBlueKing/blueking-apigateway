@@ -191,6 +191,16 @@ class ResourceHandler:
         return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}
 
     @staticmethod
+    def filter_resource_perm_required_ids(resource_ids: List[int]) -> Set[int]:
+        """筛选应用认证与校验应用权限都开启的资源，即可以开启“允许申请权限”的资源"""
+        auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
+        return {
+            resource_id
+            for resource_id, config in auth_configs.items()
+            if config.get("app_verified_required") and config.get("resource_perm_required")
+        }
+
+    @staticmethod
     def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
         return list(Resource.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
 
