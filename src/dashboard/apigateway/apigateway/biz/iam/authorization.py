@@ -107,14 +107,11 @@ def grant_gateway_authorizations(
     authorizations = _filter_excluded_gateway_authorizations(gateway, authorizations, "grant")
     if not authorizations:
         return 0
-    if not skip_missing_users:
-        add_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
-        return 0
     return add_authorization(
         authorizations,
         operated_by,
         tenant_id=_get_gateway_iam_tenant_id(gateway),
-        skip_missing_users=True,
+        skip_missing_users=skip_missing_users,
         gateway_id=gateway.id,
         gateway_name=gateway.name,
     )

@@ -29,7 +29,11 @@ from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.rbac.tasks import _renew_gateway_member_iam_authorizations
 from apigateway.biz.gateway import GatewayMemberInput, add_gateway_members
-from apigateway.biz.iam import GatewayIAMAuthorizationSynchronizer
+from apigateway.biz.iam import (
+    GatewayIAMAuthorizationSynchronizer,
+    build_gateway_authorization,
+    grant_gateway_authorizations,
+)
 from apigateway.common.error_codes import APIError
 from apigateway.core.models import Gateway
 
@@ -63,6 +67,18 @@ def test_member_write_rolls_back_for_missing_iam_user(fake_gateway, missing_iam)
     with pytest.raises(APIError, match="some subject not found"):
         add_gateway_members(fake_gateway, [GatewayMemberInput(username="missing", role="operator")], "admin")
     assert not GatewayMember.objects.filter(gateway=fake_gateway, username="missing").exists()
+
+
+def test_strict_partial_missing_warning_keeps_gateway_context(fake_gateway, missing_iam, caplog):
+    authorizations = [
+        build_gateway_authorization(username, "administrator", fake_gateway.id, None)
+        for username in ["missing", "alice"]
+    ]
+
+    grant_gateway_authorizations(fake_gateway, authorizations, "admin")
+
+    assert missing_iam.call_count == 2
+    assert f"gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} missing_users=['missing']" in caplog.text
 
 
 def test_renewal_keeps_expiry_and_reports_failed_batch_for_missing_iam_user(fake_gateway, missing_iam):
