@@ -20,10 +20,12 @@ from multiprocessing import Pool
 from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from apigateway.controller.publisher import publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
-from apigateway.core.models import Gateway
+from apigateway.core.models import Gateway, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +63,44 @@ class Command(BaseCommand):
         parser.add_argument(
             "--gateway-names", dest="gateway_names", nargs="*", help="gateway names, default is all micro apis"
         )
+        parser.add_argument(
+            "--released-since",
+            dest="released_since",
+            help=(
+                "only sync gateways having release history created at or after this time, "
+                "ISO 8601 such as 2026-11-17T10:00:00+08:00; a naive time uses settings.TIME_ZONE"
+            ),
+        )
+        parser.add_argument(
+            "--dry-run",
+            dest="dry_run",
+            action="store_true",
+            help="print matched gateway names separated by spaces, without publishing",
+        )
 
-    def handle(self, gateway_names: Optional[List[str]], *args, **options):
+    def handle(
+        self,
+        *args,
+        gateway_names: Optional[List[str]] = None,
+        released_since: Optional[str] = None,
+        dry_run: bool = False,
+        **options,
+    ):
         gateways = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value)
         if gateway_names:
             gateways = gateways.filter(name__in=gateway_names)
+        if released_since:
+            since = self._parse_released_since(released_since)
+            # 包含版本发布以外来源的发布（如插件、后端服务变更触发的发布）
+            gateways = gateways.filter(
+                id__in=ReleaseHistory.objects.filter(created_time__gte=since).values("gateway_id")
+            )
+
+        if dry_run:
+            names = sorted(gateways.values_list("name", flat=True))
+            self.stderr.write(f"{len(names)} gateways matched")
+            self.stdout.write(" ".join(names))
+            return
 
         failed_gateway_names = []
         with Pool(POOL_SIZE) as pool:
@@ -76,3 +111,15 @@ class Command(BaseCommand):
             raise CommandError("failed gateway: {}".format(", ".join(failed_gateway_names)))
 
         print("syncing gateway succeeded")
+
+    @staticmethod
+    def _parse_released_since(value: str):
+        try:
+            since = parse_datetime(value)
+        except ValueError:
+            since = None
+        if since is None:
+            raise CommandError(f"invalid --released-since: {value}")
+        if timezone.is_naive(since):
+            since = timezone.make_aware(since)
+        return since

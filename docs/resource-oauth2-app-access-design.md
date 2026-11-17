@@ -492,7 +492,18 @@ challenge_on_missing_credential = support_public or support_personal
 4. **确认恢复完成**：第 3 步的每个环境都发布成功；在每个数据面上抽查这些环境的路由，确认不再包含 `support_app` 和新的 401 配置。有失败或抽查不通过的环境，保持新插件不降级，先处理该环境。
 5. **降级数据面插件**（仅在需要时），之后恢复 Dashboard 操作。
 
-第 3 步建议在实现时提供管理命令或脚本，按时间 T 列出待恢复的环境并批量重新发布，不依赖人工逐个操作。
+第 3 步使用管理命令 `sync_releases_to_gateway_parallel`（旧版本 Dashboard 已有该命令和 `--gateway-names` 参数；本期新增 `--released-since`、`--dry-run`）：
+
+```bash
+# 2 之前、仍在新版本 Dashboard 上（此时已停止编辑和发布，列表不会再变化）：
+# 列出 T 之后有发布记录（任意来源）的启用网关，输出为空格分隔的网关名
+python manage.py sync_releases_to_gateway_parallel --released-since "<T，如 2026-11-17T10:00:00+08:00>" --dry-run > gateways.txt
+
+# 2 之后、在旧版本 Dashboard 上：用旧转换器重新发布这些网关所有环境的当前生效版本到其绑定的全部数据面
+python manage.py sync_releases_to_gateway_parallel --gateway-names $(cat gateways.txt)
+```
+
+按网关重新发布覆盖该网关全部环境和绑定数据面，范围大于“T 之后发布过的（网关、环境、数据面）”，但对未变化的环境是幂等的。命令对失败的网关返回非零并列出网关名，按第 4 步处理。
 
 ## 8. MCP 边界
 
