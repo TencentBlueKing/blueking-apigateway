@@ -405,7 +405,7 @@ def add_authorization(
     """
     批量授予角色授权。
 
-    返回跳过的 missing 授权项数；仅对账命令允许跳过全部 missing 的批次。
+    返回跳过的 missing 授权项数；对账、自动同步和续期允许跳过全部 missing 的批次。
 
     调用接口: add_authorization (POST)
     路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/
