@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from dataclasses import replace
 from datetime import timedelta
 from io import StringIO
 from types import SimpleNamespace
@@ -30,6 +31,7 @@ from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.iam import GatewayIAMModelSyncResult, GatewayIAMSyncItem, GatewayIAMSyncResult
 from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
+from apigateway.components.bkiam import AuthorizationWriteResult
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -142,6 +144,7 @@ def _sync_result(gateway, *, applied=False, grant_count=0):
         revokes=(),
         unchanged=1,
         applied=applied,
+        grant_write_result=AuthorizationWriteResult(succeeded=grant_count if applied else 0),
     )
 
 
@@ -294,11 +297,13 @@ def test_sync_gateway_rbac_auth_to_iam_reports_one_readable_line_per_gateway(set
     gateway_lines = [line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-gateway" in line]
     assert gateway_lines == [
         f"event=iam-rbac-sync-gateway run_id=run-readable mode=dry-run gateway_index=1 gateways_total=1 "
-        f"status=success outcome=changed gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
-        "grants_planned=1 revokes_planned=0 already_consistent=1 "
+        f"status=success outcome=planned gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
+        "grants_planned=1 revokes_planned=0 already_consistent=1 changes_scope=planned "
         'changes="grant(username=user-0,role=operator,reason=missing-in-iam,'
         'expires_at=2030-03-17T17:46:40Z)" changes_logged=1 changes_omitted=0 duration_ms=0'
     ]
+    assert "grants_succeeded=" not in output.getvalue()
+    assert "授权项计划新增/更新 1 项" in output.getvalue()
 
 
 def test_sync_gateway_rbac_auth_to_iam_limits_logged_changes(settings, mocker, fake_gateway):
@@ -369,7 +374,10 @@ def test_sync_gateway_rbac_auth_to_iam_apply_writes_iam_without_preflight(settin
         "apigateway.biz.iam.authorization.iter_authorization_subjects",
         return_value=iter([]),
     )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch(
+        "apigateway.biz.iam.authorization.add_authorization",
+        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
+    )
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     call_command(
@@ -427,7 +435,9 @@ def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settin
     assert 'write_result=unknown error="IAM unavailable"' in failure_line
     assert (
         "event=iam-rbac-sync-summary run_id=run-failed mode=apply status=failed gateways_total=1 "
-        "gateways_succeeded=0 gateways_failed=1 grants_processed=0 revokes_processed=0 "
+        "gateways_succeeded=0 gateways_with_warnings=0 gateways_unchanged=0 gateways_failed=1 "
+        "grants_planned=0 revokes_planned=0 grants_succeeded=0 grants_skipped_missing=0 "
+        "grants_skipped_excluded=0 grants_retry_failed=0 revokes_succeeded=0 revokes_skipped_excluded=0 "
         "already_consistent=0 failed_gateway_changes=unknown"
     ) in output.getvalue()
 
@@ -483,6 +493,139 @@ def test_sync_gateway_rbac_auth_to_iam_initial_skips_after_completion(settings, 
         "reason=initial-sync-already-completed\n"
     )
     synchronizer.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "usernames, retry_ok, excluded, succeeded, missing, excluded_count, failed, completed",
+    [
+        (["admin"], None, False, 0, 1, 0, 0, False),
+        (["admin", "alice"], True, False, 1, 1, 0, 0, False),
+        (["admin", "alice"], False, False, 0, 1, 0, 1, False),
+        (["alice"], None, False, 1, 0, 0, 0, True),
+        (["admin"], None, True, 0, 0, 1, 0, True),
+    ],
+)
+def test_initial_sync_reports_actual_outcomes_and_only_marks_complete_when_no_retry_is_needed(
+    settings,
+    mocker,
+    fake_gateway,
+    usernames,
+    retry_ok,
+    excluded,
+    succeeded,
+    missing,
+    excluded_count,
+    failed,
+    completed,
+):
+    _enable_iam(settings)
+    settings.ENABLE_MULTI_TENANT_MODE = excluded
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin"})
+    GatewayMember.objects.filter(gateway=fake_gateway).delete()
+    for username in usernames:
+        G(GatewayMember, gateway=fake_gateway, username=username, role="administrator")
+    mocker.patch("apigateway.biz.iam.authorization.iter_authorization_subjects", return_value=[])
+    responses = []
+    if "admin" in usernames and not excluded:
+        responses.append(
+            (
+                False,
+                {
+                    "error": "some subject not found",
+                    "status_code": 400,
+                    "response_data": {"error": {"code": "INVALID_REQUEST", "data": {"missing_users": ["admin"]}}},
+                },
+            )
+        )
+        if retry_ok is not None:
+            responses.append(
+                (True, {"data": None}) if retry_ok else (False, {"error": "IAM unavailable", "status_code": 500})
+            )
+    elif not excluded:
+        responses.append((True, {"data": None}))
+    post = mocker.patch("apigateway.components.bkiam.http_post", side_effect=responses)
+    output = StringIO()
+
+    call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, gateway_delay=0, stdout=output)
+
+    summary = next(line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-summary" in line)
+    assert f"grants_succeeded={succeeded}" in summary
+    assert f"grants_skipped_missing={missing}" in summary
+    assert f"grants_skipped_excluded={excluded_count}" in summary
+    assert f"grants_retry_failed={failed}" in summary
+    assert f"gateways_with_warnings={int(bool(missing or excluded_count or failed))}" in summary
+    assert "gateways_failed=0" in summary
+    assert GatewayIAMSyncContext().is_initial_sync_completed() is completed
+    assert post.call_count == len(responses)
+    assert "授权项" in output.getvalue()
+    if not completed:
+        assert "status=completed-with-warnings" in summary
+        assert "reason=incomplete-authorizations" in output.getvalue()
+
+
+def test_initial_sync_retries_after_missing_user_is_fixed(settings, mocker, fake_gateway):
+    _enable_iam(settings)
+    settings.ENABLE_MULTI_TENANT_MODE = False
+    GatewayMember.objects.filter(gateway=fake_gateway).delete()
+    G(GatewayMember, gateway=fake_gateway, username="alice", role="administrator")
+    mocker.patch("apigateway.biz.iam.authorization.iter_authorization_subjects", return_value=[])
+    post = mocker.patch(
+        "apigateway.components.bkiam.http_post",
+        side_effect=[
+            (
+                False,
+                {
+                    "error": "missing alice",
+                    "status_code": 400,
+                    "response_data": {
+                        "error": {"code": "INVALID_REQUEST", "data": {"missing_users": ["alice"]}},
+                    },
+                },
+            ),
+            (True, {"data": None}),
+        ],
+    )
+
+    call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, gateway_delay=0)
+    assert not GatewayIAMSyncContext().is_initial_sync_completed()
+    call_command("sync_gateway_rbac_auth_to_iam", initial=True, all=True, apply=True, gateway_delay=0)
+    assert GatewayIAMSyncContext().is_initial_sync_completed()
+    assert post.call_count == 2
+
+
+def test_sync_summary_separates_gateway_outcomes_and_unknown_failed_writes(settings, mocker, fake_gateway):
+    _enable_iam(settings)
+    for _ in range(3):
+        G(Gateway)
+    gateways = list(Gateway.objects.order_by("id"))
+    warning_result = replace(
+        _sync_result(gateways[1], grant_count=2),
+        grant_write_result=AuthorizationWriteResult(succeeded=1, skipped_missing=1),
+    )
+    reconcile = mocker.patch(
+        "apigateway.apps.rbac.management.commands.sync_gateway_rbac_auth_to_iam.GatewayIAMAuthorizationSynchronizer"
+    ).return_value.reconcile_gateway
+    reconcile.side_effect = [
+        _sync_result(gateways[0], applied=True, grant_count=2),
+        warning_result,
+        _sync_result(gateways[2], applied=True),
+        RuntimeError("query IAM failed"),
+    ]
+    output = StringIO()
+
+    with pytest.raises(CommandError, match="1/4 个网关失败"):
+        call_command("sync_gateway_rbac_auth_to_iam", all=True, apply=True, gateway_delay=0, stdout=output)
+
+    summary = next(line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-summary" in line)
+    assert "status=partial-failure" in summary
+    assert (
+        "gateways_total=4 gateways_succeeded=1 gateways_with_warnings=1 gateways_unchanged=1 gateways_failed=1"
+        in summary
+    )
+    assert "grants_planned=4" in summary
+    assert "grants_succeeded=3 grants_skipped_missing=1" in summary
+    assert "failed_gateway_changes=unknown" in summary
+    assert "异常失败网关的写入结果未知，不计入上述授权项统计" in output.getvalue()
 
 
 def test_add_global_gateway_administrators_apply_succeeds_when_iam_disabled(settings, mocker):

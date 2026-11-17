@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 
 from django.db import transaction
@@ -26,6 +26,7 @@ from apigateway.apps.rbac.models import GatewayMember
 from apigateway.components.bkiam import (
     DEFAULT_PAGE_SIZE,
     AuthorizationSubjectQueryPayload,
+    AuthorizationWriteResult,
     chunked,
 )
 from apigateway.core.models import Gateway
@@ -75,6 +76,16 @@ class GatewayIAMSyncResult:
     revokes: tuple[GatewayIAMSyncItem, ...]
     unchanged: int
     applied: bool = False
+    grant_write_result: AuthorizationWriteResult = field(default_factory=AuthorizationWriteResult)
+    revoke_write_result: AuthorizationWriteResult = field(default_factory=AuthorizationWriteResult)
+
+    @property
+    def has_warnings(self) -> bool:
+        return self.grant_write_result.has_warnings or self.revoke_write_result.has_warnings
+
+    @property
+    def needs_retry(self) -> bool:
+        return self.grant_write_result.needs_retry or self.revoke_write_result.needs_retry
 
     @property
     def grant_count(self) -> int:
@@ -122,8 +133,7 @@ class GatewayIAMAuthorizationSynchronizer:
             # member writes take the same lock before reading GatewayMember.
             gateway = Gateway.objects.select_for_update().get(pk=gateway_id)
             plan = self._build_reconciliation_plan(gateway, username=username)
-            self._apply_plan(gateway, plan, operator)
-            return replace(plan, applied=True)
+            return self._apply_plan(gateway, plan, operator)
 
     def _build_reconciliation_plan(self, gateway: Gateway, *, username: str | None) -> GatewayIAMSyncResult:
         now = timezone.now()
@@ -243,7 +253,7 @@ class GatewayIAMAuthorizationSynchronizer:
             unchanged=unchanged,
         )
 
-    def _apply_plan(self, gateway: Gateway, plan: GatewayIAMSyncResult, operator: str) -> None:
+    def _apply_plan(self, gateway: Gateway, plan: GatewayIAMSyncResult, operator: str) -> GatewayIAMSyncResult:
         revoke_payloads = [
             build_gateway_revoke_authorization(item.username, item.role, plan.gateway_id) for item in plan.revokes
         ]
@@ -257,7 +267,15 @@ class GatewayIAMAuthorizationSynchronizer:
             for item in plan.grants
         ]
 
+        revoke_result = AuthorizationWriteResult()
+        grant_result = AuthorizationWriteResult()
         for revoke_batch in chunked(revoke_payloads):
-            revoke_gateway_authorizations(gateway, revoke_batch, operator)
+            revoke_result += revoke_gateway_authorizations(gateway, revoke_batch, operator)
         for grant_batch in chunked(grant_payloads):
-            grant_gateway_authorizations(gateway, grant_batch, operator)
+            grant_result += grant_gateway_authorizations(gateway, grant_batch, operator)
+        return replace(
+            plan,
+            applied=not (grant_result.needs_retry or revoke_result.needs_retry),
+            grant_write_result=grant_result,
+            revoke_write_result=revoke_result,
+        )
