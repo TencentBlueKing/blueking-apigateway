@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""Keep missing-user tolerance confined to the reconciliation command."""
+"""Cover missing-user tolerance for reconciliation and automation."""
 
 from datetime import timedelta
 from io import StringIO
@@ -28,7 +28,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.rbac.iam_context import GatewayIAMSyncContext
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.rbac.tasks import _renew_gateway_member_iam_authorizations
-from apigateway.biz.gateway import GatewayMemberInput, add_gateway_members
+from apigateway.biz.gateway import GatewayHandler, GatewayMemberInput, add_gateway_members
 from apigateway.biz.iam import (
     GatewayIAMAuthorizationSynchronizer,
     build_gateway_authorization,
@@ -81,18 +81,94 @@ def test_strict_partial_missing_warning_keeps_gateway_context(fake_gateway, miss
     assert f"gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} missing_users=['missing']" in caplog.text
 
 
-def test_renewal_keeps_expiry_and_reports_failed_batch_for_missing_iam_user(fake_gateway, missing_iam):
+@pytest.mark.parametrize("with_valid_member", [False, True])
+def test_renewal_skips_missing_iam_users(fake_gateway, missing_iam, with_valid_member, caplog):
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
     now = timezone.now()
     member = G(GatewayMember, gateway=fake_gateway, username="missing", role="operator", expires=now)
+    if with_valid_member:
+        G(GatewayMember, gateway=fake_gateway, username="alice", role="operator", expires=now)
+    renewed_expires = now + timedelta(days=365)
 
-    failed = _renew_gateway_member_iam_authorizations(
-        fake_gateway.id, now + timedelta(days=30), now + timedelta(days=365)
-    )
+    failed = _renew_gateway_member_iam_authorizations(fake_gateway.id, now + timedelta(days=30), renewed_expires)
 
     member.refresh_from_db()
-    assert failed == 1
-    assert member.expires == now
+    assert failed == 0
+    assert member.expires == renewed_expires
+    assert not GatewayMember.objects.filter(gateway=fake_gateway).exclude(expires=renewed_expires).exists()
+    assert missing_iam.call_count == 1 + int(with_valid_member)
+    assert "missing_users=['missing']" in caplog.text
+
+
+@pytest.mark.parametrize("view_name", ["openapi.gateway.sync", "openapi.v2.sync.gateway.sync"])
+@pytest.mark.parametrize("create", [False, True])
+@pytest.mark.parametrize("with_valid_member", [False, True])
+def test_automation_sync_skips_missing_iam_users(
+    mocker, request_view, fake_gateway, default_data_plane, missing_iam, view_name, create, with_valid_member, caplog
+):
+    mocker.patch(
+        "apigateway.apis.open.permissions.OpenAPIGatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    mocker.patch(
+        "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    fake_gateway.name = "existing-automation-sync"
+    fake_gateway.save(update_fields=["name"])
+    GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
+    gateway_name = "automation-sync" if create else fake_gateway.name
+    maintainers = ["missing", "alice"] if with_valid_member else ["missing"]
+
+    response = request_view(
+        method="POST",
+        view_name=view_name,
+        path_params={"gateway_name": gateway_name},
+        gateway=None if create else fake_gateway,
+        app=mocker.Mock(app_code="test-app"),
+        data={"description": "synced", "maintainers": maintainers},
+    )
+
+    assert response.status_code == 200, response.json()
+    gateway = Gateway.objects.get(name=gateway_name)
+    assert gateway.description == "synced"
+    assert set(maintainers) <= set(GatewayMember.objects.list_gateway_administrators(gateway.id))
+    assert missing_iam.call_count == 1 + int(with_valid_member)
+    assert f"gateway_id={gateway.id} gateway_name={gateway.name}" in caplog.text
+    assert "missing_users=['missing']" in caplog.text
+
+
+@pytest.mark.parametrize("view_name", ["openapi.gateway.sync", "openapi.v2.sync.gateway.sync"])
+@pytest.mark.parametrize("create", [False, True])
+def test_automation_sync_rolls_back_for_other_iam_errors(
+    mocker, request_view, fake_gateway, default_data_plane, missing_iam, view_name, create
+):
+    mocker.patch(
+        "apigateway.apis.open.permissions.OpenAPIGatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    mocker.patch(
+        "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission", return_value=True
+    )
+    fake_gateway.name = "existing-automation-sync"
+    fake_gateway.save(update_fields=["name"])
+    original_description = fake_gateway.description
+    missing_iam.side_effect = lambda **kwargs: (False, {"status_code": 503, "error": "IAM unavailable"})
+    gateway_name = "automation-sync" if create else fake_gateway.name
+
+    response = request_view(
+        method="POST",
+        view_name=view_name,
+        path_params={"gateway_name": gateway_name},
+        gateway=None if create else fake_gateway,
+        app=mocker.Mock(app_code="test-app"),
+        data={"description": "synced", "maintainers": ["alice"]},
+    )
+
+    assert response.status_code == 500, response.json()
+    if create:
+        assert not Gateway.objects.filter(name=gateway_name).exists()
+    else:
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.description == original_description
+        assert not GatewayMember.objects.filter(gateway=fake_gateway, username="alice").exists()
 
 
 @pytest.mark.parametrize(

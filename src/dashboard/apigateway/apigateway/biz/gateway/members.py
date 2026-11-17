@@ -84,6 +84,7 @@ def _sync_external_member_state(
     operated_by: str,
     *,
     sync_paas: bool,
+    skip_missing_users: bool = False,
 ) -> None:
     after = _get_gateway_member_snapshot(gateway.id)
     if before == after:
@@ -99,7 +100,9 @@ def _sync_external_member_state(
 
     try:
         if settings.BK_IAM_V4_ENABLED:
-            apply_gateway_member_snapshots_to_iam(gateway, before, after, operated_by)
+            apply_gateway_member_snapshots_to_iam(
+                gateway, before, after, operated_by, skip_missing_users=skip_missing_users
+            )
     except Exception:
         if paas_synced:
             try:
@@ -118,6 +121,8 @@ def replace_gateway_administrators(
     gateway: Gateway,
     usernames: Iterable[str],
     operated_by: str,
+    *,
+    skip_missing_users: bool = False,
 ) -> list[str]:
     """Replace all gateway administrators."""
     target_usernames = set(usernames)
@@ -131,7 +136,9 @@ def replace_gateway_administrators(
         target_usernames,
         operated_by,
     )
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
+    _sync_external_member_state(
+        locked_gateway, before, operated_by, sync_paas=False, skip_missing_users=skip_missing_users
+    )
     return result
 
 
@@ -140,6 +147,8 @@ def add_gateway_administrators(
     gateway: Gateway,
     usernames: Iterable[str],
     operated_by: str,
+    *,
+    skip_missing_users: bool = False,
 ) -> list[str]:
     """Add gateway administrators without removing existing ones."""
     locked_gateway = _lock_gateway(gateway)
@@ -149,7 +158,9 @@ def add_gateway_administrators(
         set(usernames),
         operated_by,
     )
-    _sync_external_member_state(locked_gateway, before, operated_by, sync_paas=False)
+    _sync_external_member_state(
+        locked_gateway, before, operated_by, sync_paas=False, skip_missing_users=skip_missing_users
+    )
     return result
 
 
