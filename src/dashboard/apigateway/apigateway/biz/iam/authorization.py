@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Iterator, Mapping, TypeVar
 
@@ -31,7 +31,6 @@ from apigateway.components.bkiam import (
     AuthorizationPayload,
     AuthorizationSubjectItem,
     AuthorizationSubjectQueryPayload,
-    AuthorizationWriteResult,
     DirectAuthPayload,
     RevokeAuthorizationPayload,
     add_authorization,
@@ -102,30 +101,34 @@ def grant_gateway_authorizations(
     gateway: Gateway,
     authorizations: list[AuthorizationPayload],
     operated_by: str,
-) -> AuthorizationWriteResult:
-    filtered = _filter_excluded_gateway_authorizations(gateway, authorizations, "grant")
-    excluded_count = len(authorizations) - len(filtered)
-    if not filtered:
-        return AuthorizationWriteResult(skipped_excluded=excluded_count)
-    result = add_authorization(
-        filtered,
+    *,
+    skip_missing_users: bool = False,
+) -> int:
+    authorizations = _filter_excluded_gateway_authorizations(gateway, authorizations, "grant")
+    if not authorizations:
+        return 0
+    if not skip_missing_users:
+        add_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
+        return 0
+    return add_authorization(
+        authorizations,
         operated_by,
         tenant_id=_get_gateway_iam_tenant_id(gateway),
+        skip_missing_users=True,
         gateway_id=gateway.id,
         gateway_name=gateway.name,
     )
-    return replace(result, skipped_excluded=excluded_count)
 
 
 def revoke_gateway_authorizations(
     gateway: Gateway,
     authorizations: list[RevokeAuthorizationPayload],
     operated_by: str,
-) -> AuthorizationWriteResult:
-    filtered = _filter_excluded_gateway_authorizations(gateway, authorizations, "revoke")
-    if filtered:
-        revoke_authorization(filtered, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
-    return AuthorizationWriteResult(succeeded=len(filtered), skipped_excluded=len(authorizations) - len(filtered))
+) -> None:
+    authorizations = _filter_excluded_gateway_authorizations(gateway, authorizations, "revoke")
+    if not authorizations:
+        return
+    revoke_authorization(authorizations, operated_by, tenant_id=_get_gateway_iam_tenant_id(gateway))
 
 
 def iter_gateway_authorization_subjects(

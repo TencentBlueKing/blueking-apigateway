@@ -22,7 +22,6 @@ import pytest
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.iam.sync import GatewayIAMAuthorizationSynchronizer
-from apigateway.components.bkiam import AuthorizationWriteResult
 from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
@@ -153,10 +152,7 @@ def test_reconcile_consumes_all_authorizations_for_every_known_role(
 
 def test_reconcile_dry_run_does_not_write_iam(fake_gateway, mocker):
     _mock_iam(mocker, {})
-    add = mocker.patch(
-        "apigateway.biz.iam.authorization.add_authorization",
-        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
-    )
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
@@ -193,10 +189,7 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(settings, fake_gatewa
         "select_for_update",
         wraps=Gateway.objects.select_for_update,
     )
-    add = mocker.patch(
-        "apigateway.biz.iam.authorization.add_authorization",
-        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
-    )
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
         fake_gateway.id,
@@ -208,11 +201,16 @@ def test_reconcile_apply_locks_gateway_and_batches_changes(settings, fake_gatewa
     assert [len(call.args[0]) for call in add.call_args_list] == [20, 5]
     assert all(call.args[1] == "admin" for call in add.call_args_list)
     assert all(
-        call.kwargs == {"tenant_id": "system", "gateway_id": fake_gateway.id, "gateway_name": fake_gateway.name}
+        call.kwargs
+        == {
+            "tenant_id": "system",
+            "skip_missing_users": True,
+            "gateway_id": fake_gateway.id,
+            "gateway_name": fake_gateway.name,
+        }
         for call in add.call_args_list
     )
     assert result.applied is True
-    assert result.grant_write_result == AuthorizationWriteResult(succeeded=25)
 
 
 def test_reconcile_apply_failure_leaves_local_member_unchanged(fake_gateway, mocker):
@@ -313,10 +311,7 @@ def test_reconcile_filters_configured_users_when_applying_plan(fake_gateway, moc
             ],
         },
     )
-    add = mocker.patch(
-        "apigateway.biz.iam.authorization.add_authorization",
-        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
-    )
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
@@ -325,14 +320,11 @@ def test_reconcile_filters_configured_users_when_applying_plan(fake_gateway, moc
         operator="bk_apigateway",
     )
 
-    assert [item.username for item in result.grants] == ["admin", "alice", "bk_admin"]
+    assert [item.username for item in result.grants] == ["alice"]
+    assert result.excluded_members == 2
     assert [item.username for item in result.revokes] == ["extra"]
     assert [payload["subject"]["id"] for payload in add.call_args.args[0]] == ["alice"]
     assert [payload["subject"]["id"] for payload in revoke.call_args.args[0]] == ["extra"]
-    assert result.grant_write_result == AuthorizationWriteResult(succeeded=1, skipped_excluded=2)
-    assert result.revoke_write_result == AuthorizationWriteResult(succeeded=1)
-    assert result.has_warnings
-    assert not result.needs_retry
 
 
 def test_reconcile_filters_custom_exclusions_at_iam_write_boundary(fake_gateway, mocker, settings):
@@ -353,10 +345,7 @@ def test_reconcile_filters_custom_exclusions_at_iam_write_boundary(fake_gateway,
             ],
         },
     )
-    add = mocker.patch(
-        "apigateway.biz.iam.authorization.add_authorization",
-        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
-    )
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(
@@ -365,56 +354,11 @@ def test_reconcile_filters_custom_exclusions_at_iam_write_boundary(fake_gateway,
         operator="bk_apigateway",
     )
 
-    assert [item.username for item in result.grants] == ["desired-excluded"]
-    assert [item.username for item in result.revokes] == ["actual-excluded"]
+    assert result.grants == ()
+    assert result.excluded_members == 2
+    assert result.revokes == ()
     add.assert_not_called()
     revoke.assert_not_called()
-    assert result.grant_write_result == AuthorizationWriteResult(skipped_excluded=1)
-    assert result.revoke_write_result == AuthorizationWriteResult(skipped_excluded=1)
-    assert result.applied
-    assert not result.needs_retry
-
-
-@pytest.mark.parametrize("retry_fails", [False, True])
-def test_reconcile_aggregates_actual_outcomes_across_batches(settings, mocker, fake_gateway, retry_fails):
-    settings.ENABLE_MULTI_TENANT_MODE = False
-    settings.BK_API_URL_TMPL = "https://{api_name}.example.com"
-    GatewayMember.objects.filter(gateway=fake_gateway).delete()
-    usernames = [f"user-{index:02d}" for index in range(25)]
-    GatewayMember.objects.bulk_create(
-        [GatewayMember(gateway=fake_gateway, username=username, role="administrator") for username in usernames]
-    )
-    _mock_iam(mocker, {})
-    missing = usernames[20:21] if retry_fails else usernames[:20]
-    failure = (
-        False,
-        {
-            "error": "missing users",
-            "status_code": 400,
-            "response_data": {
-                "error": {"code": "INVALID_REQUEST", "data": {"missing_users": missing}},
-            },
-        },
-    )
-    responses = (
-        [(True, {"data": None}), failure, (False, {"error": "IAM unavailable", "status_code": 500})]
-        if retry_fails
-        else [failure, (True, {"data": None})]
-    )
-    post = mocker.patch("apigateway.components.bkiam.http_post", side_effect=responses)
-
-    result = GatewayIAMAuthorizationSynchronizer().reconcile_gateway(fake_gateway.id, apply=True, operator="admin")
-
-    assert result.grant_count == 25
-    assert result.grant_write_result == (
-        AuthorizationWriteResult(succeeded=20, skipped_missing=1, failed=4)
-        if retry_fails
-        else AuthorizationWriteResult(succeeded=5, skipped_missing=20)
-    )
-    assert not result.applied
-    assert result.needs_retry
-    assert post.call_count == len(responses)
-    assert GatewayMember.objects.filter(gateway=fake_gateway).count() == 25
 
 
 def test_reconcile_syncs_admin_when_multi_tenant_disabled(fake_gateway, mocker, settings):

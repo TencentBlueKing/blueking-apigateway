@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from dataclasses import dataclass
 from typing import Any, Iterator, NotRequired, TypedDict, TypeVar
 
 from django.conf import settings
@@ -38,32 +37,6 @@ REQUEST_TIMEOUT = 3
 # 与 biz.iam.constants.BK_IAM_V4_SYSTEM_ID 保持一致；component 不能依赖 biz。
 BK_IAM_V4_SYSTEM_ID = "bk_apigateway"
 _T = TypeVar("_T")
-
-
-@dataclass(frozen=True)
-class AuthorizationWriteResult:
-    """Authorization item counts; failed retries have no confirmed write result."""
-
-    succeeded: int = 0
-    skipped_missing: int = 0
-    skipped_excluded: int = 0
-    failed: int = 0
-
-    @property
-    def needs_retry(self) -> bool:
-        return bool(self.skipped_missing or self.failed)
-
-    @property
-    def has_warnings(self) -> bool:
-        return bool(self.skipped_missing or self.skipped_excluded or self.failed)
-
-    def __add__(self, other: AuthorizationWriteResult) -> AuthorizationWriteResult:
-        return AuthorizationWriteResult(
-            succeeded=self.succeeded + other.succeeded,
-            skipped_missing=self.skipped_missing + other.skipped_missing,
-            skipped_excluded=self.skipped_excluded + other.skipped_excluded,
-            failed=self.failed + other.failed,
-        )
 
 
 class SubjectPayload(TypedDict):
@@ -420,31 +393,19 @@ def direct_auth(payload: DirectAuthPayload, tenant_id: str) -> bool:
     return data["allowed"]
 
 
-def _get_missing_users(resp_data: dict) -> list[str]:
-    if resp_data.get("status_code") != 400:
-        return []
-    try:
-        error = resp_data["response_data"]["error"]
-        if error["code"] != "INVALID_REQUEST":
-            return []
-        missing_users = error["data"]["missing_users"]
-    except KeyError, TypeError:
-        return []
-    if not isinstance(missing_users, list) or not all(isinstance(username, str) for username in missing_users):
-        return []
-    return missing_users
-
-
 def add_authorization(
     authorizations: list[AuthorizationPayload],
     operator: str,
     tenant_id: str,
     *,
-    gateway_id: int,
-    gateway_name: str,
-) -> AuthorizationWriteResult:
+    skip_missing_users: bool = False,
+    gateway_id: int | None = None,
+    gateway_name: str | None = None,
+) -> int:
     """
     批量授予角色授权。
+
+    返回跳过的 missing 授权项数；仅对账命令允许跳过全部 missing 的批次。
 
     调用接口: add_authorization (POST)
     路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/
@@ -470,19 +431,43 @@ def add_authorization(
             tenant_id=tenant_id,
         )
     except APIError:
-        missing_users = _get_missing_users(captured.get("resp_data") or {})
+        # 如果返回的错误码是 400，并且错误信息中包含 missing_users，需要重试
+        # {
+        #     "error": "status_code is 400, not 2xx! ...",
+        #     "status_code": 400,
+        #     "response_data": {
+        #         "error": {
+        #             "code": "INVALID_REQUEST",
+        #             "message": "some subject not found",
+        #             "data": {"missing_users": ["user-a", "user-b"]},
+        #         }
+        #     },
+        # }
+        resp_data = captured.get("resp_data") or {}
+        try:
+            error = resp_data["response_data"]["error"]
+            missing_users = error["data"]["missing_users"]
+        except KeyError:
+            error = {}
+            missing_users = []
         retry_payload = [item for item in payload if item["subject"]["id"] not in missing_users]
-        if not missing_users or len(retry_payload) == len(payload):
+        if not (
+            resp_data.get("status_code") == 400
+            and error.get("code") == "INVALID_REQUEST"
+            and missing_users
+            and len(retry_payload) < len(payload)
+        ):
             raise
         if not retry_payload:
+            if not skip_missing_users:
+                raise
             logger.warning(
-                "skip bkiam authorizations: no users remain after excluding missing users, "
-                "gateway_id=%s gateway_name=%s missing_users=%s",
+                "skip bkiam authorizations: all users are missing, gateway_id=%s gateway_name=%s missing_users=%s",
                 gateway_id,
                 gateway_name,
                 missing_users,
             )
-            return AuthorizationWriteResult(skipped_missing=len(payload))
+            return len(payload)
         logger.warning(
             "retry bkiam authorizations without missing users, gateway_id=%s gateway_name=%s missing_users=%s",
             gateway_id,
@@ -499,21 +484,13 @@ def add_authorization(
             )
         except APIError:
             logger.exception(
-                "retry bkiam authorizations failed, gateway_id=%s gateway_name=%s "
-                "tenant_id=%s operator=%s missing_users=%s",
-                gateway_id,
-                gateway_name,
+                "retry bkiam authorizations failed, tenant_id=%s operator=%s missing_users=%s",
                 tenant_id,
                 operator,
                 missing_users,
             )
-            return AuthorizationWriteResult(
-                skipped_missing=len(payload) - len(retry_payload), failed=len(retry_payload)
-            )
-        return AuthorizationWriteResult(
-            succeeded=len(retry_payload), skipped_missing=len(payload) - len(retry_payload)
-        )
-    return AuthorizationWriteResult(succeeded=len(payload))
+        return len(payload) - len(retry_payload)
+    return 0
 
 
 def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:
