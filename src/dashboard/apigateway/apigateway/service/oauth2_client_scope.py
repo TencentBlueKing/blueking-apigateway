@@ -1,4 +1,4 @@
-"""Queries for OAuth2 personal/public client scope selection."""
+"""Queries for OAuth2 client scope selection (public/personal clients and BlueKing app clients)."""
 
 from typing import Any, Sequence
 
@@ -10,18 +10,30 @@ from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource
 
-OAUTH2_CLIENT_TYPE_FIELD_MAP = {
+OAUTH2_RESOURCE_CLIENT_TYPE_FIELD_MAP = {
     "public": "oauth2_public_client_enabled",
     "personal": "oauth2_personal_client_enabled",
+    "app_delegated": "oauth2_app_delegated_enabled",
+    "app_only": "oauth2_app_only_enabled",
 }
-OAUTH2_CLIENT_TYPES = tuple(OAUTH2_CLIENT_TYPE_FIELD_MAP)
+OAUTH2_RESOURCE_CLIENT_TYPES = tuple(OAUTH2_RESOURCE_CLIENT_TYPE_FIELD_MAP)
+# ReleasedResource 的应用通道列不含网关开关，查询时需按网关当前值过滤
+OAUTH2_RESOURCE_APP_CLIENT_TYPES = frozenset({"app_delegated", "app_only"})
+
+# MCP Server 没有应用通道开关：app_delegated 返回全部可见 MCP Server，且不提供 app_only
+OAUTH2_MCP_SERVER_CLIENT_TYPE_FIELD_MAP: dict[str, str | None] = {
+    "public": "oauth2_public_client_enabled",
+    "personal": "oauth2_personal_client_enabled",
+    "app_delegated": None,
+}
+OAUTH2_MCP_SERVER_CLIENT_TYPES = tuple(OAUTH2_MCP_SERVER_CLIENT_TYPE_FIELD_MAP)
 
 
 def _get_oauth2_released_resources(
     oauth_client_type: str,
     resource_name: str = "",
 ) -> QuerySet[ReleasedResource]:
-    field_name = OAUTH2_CLIENT_TYPE_FIELD_MAP[oauth_client_type]
+    field_name = OAUTH2_RESOURCE_CLIENT_TYPE_FIELD_MAP[oauth_client_type]
     current_release = Release.objects.filter(
         gateway_id=OuterRef("gateway_id"),
         resource_version_id=OuterRef("resource_version_id"),
@@ -31,12 +43,15 @@ def _get_oauth2_released_resources(
         is_public=True,
         **{field_name: True},
     )
+    if oauth_client_type in OAUTH2_RESOURCE_APP_CLIENT_TYPES:
+        queryset = queryset.filter(gateway__oauth2_app_enabled=True)
     if resource_name:
         queryset = queryset.filter(resource_name__contains=resource_name)
 
-    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_RESOURCE_CLIENT_TYPE_FIELD_MAP:
     # SELECT rr.*
     # FROM core_released_resource AS rr
+    # /* INNER JOIN core_api AS owner_api ON owner_api.id = rr.api_id */
     # WHERE rr.is_public = TRUE
     #   AND rr.<oauth2_enabled_field> = TRUE
     #   AND EXISTS (
@@ -45,8 +60,10 @@ def _get_oauth2_released_resources(
     #       WHERE rel.api_id = rr.api_id
     #         AND rel.resource_version_id = rr.resource_version_id
     #   )
+    #   /* AND owner_api.oauth2_app_enabled = TRUE */
     #   /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */;
-    # The commented predicate is included only when resource_name is provided.
+    # The owner_api join/predicate is included only for app_delegated/app_only;
+    # the resource_name predicate only when resource_name is provided.
     return queryset
 
 
@@ -54,15 +71,16 @@ def _get_oauth2_mcp_servers(
     oauth_client_type: str,
     mcp_server_name: str = "",
 ) -> QuerySet[MCPServer]:
-    field_name = OAUTH2_CLIENT_TYPE_FIELD_MAP[oauth_client_type]
+    field_name = OAUTH2_MCP_SERVER_CLIENT_TYPE_FIELD_MAP[oauth_client_type]
     queryset = MCPServer.objects.filter(
         gateway__status=GatewayStatusEnum.ACTIVE.value,
         gateway__is_public=True,
         stage__status=StageStatusEnum.ACTIVE.value,
         status=MCPServerStatusEnum.ACTIVE.value,
         is_public=True,
-        **{field_name: True},
     )
+    if field_name:
+        queryset = queryset.filter(**{field_name: True})
     if mcp_server_name:
         queryset = queryset.filter(name__contains=mcp_server_name)
     return queryset
@@ -92,10 +110,11 @@ def get_oauth2_resource_scope_gateways(
         eligible_for_gateway.values("gateway_id").annotate(value=Count("resource_id", distinct=True)).values("value")
     )
 
-    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_RESOURCE_CLIENT_TYPE_FIELD_MAP:
     # -- Query 1: materialize the selective gateway ID list.
     # SELECT DISTINCT rr.api_id
     # FROM core_released_resource AS rr
+    # /* INNER JOIN core_api AS owner_api ON owner_api.id = rr.api_id */
     # WHERE rr.is_public = TRUE
     #   AND rr.<oauth2_enabled_field> = TRUE
     #   AND EXISTS (
@@ -104,6 +123,7 @@ def get_oauth2_resource_scope_gateways(
     #       WHERE rel.api_id = rr.api_id
     #         AND rel.resource_version_id = rr.resource_version_id
     #   )
+    #   /* AND owner_api.oauth2_app_enabled = TRUE */
     #   /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */;
     #
     # -- Query 2: filter, count, and page only the materialized gateways.
@@ -111,6 +131,7 @@ def get_oauth2_resource_scope_gateways(
     #        (
     #            SELECT COUNT(DISTINCT rr.resource_id)
     #            FROM core_released_resource AS rr
+    #            /* INNER JOIN core_api AS owner_api ON owner_api.id = rr.api_id */
     #            WHERE rr.api_id = api.id
     #              AND rr.is_public = TRUE
     #              AND rr.<oauth2_enabled_field> = TRUE
@@ -120,6 +141,7 @@ def get_oauth2_resource_scope_gateways(
     #                  WHERE rel.api_id = rr.api_id
     #                    AND rel.resource_version_id = rr.resource_version_id
     #              )
+    #              /* AND owner_api.oauth2_app_enabled = TRUE */
     #              /* AND rr.resource_name LIKE CONCAT('%', %(resource_name)s, '%') */
     #        ) AS scope_count
     # FROM core_api AS api
@@ -133,7 +155,8 @@ def get_oauth2_resource_scope_gateways(
     #   /* AND (api.name LIKE CONCAT('%', %(gateway_name)s, '%')
     #        OR api.display_name LIKE CONCAT('%', %(gateway_name)s, '%')) */
     # ORDER BY api.name, api.id;
-    # Commented predicates are included only when their corresponding argument is provided.
+    # owner_api join/predicate is included only for app_delegated/app_only; other commented
+    # predicates only when their corresponding argument is provided.
     return queryset.annotate(scope_count=Subquery(scope_count)).order_by("name", "id")
 
 
@@ -194,7 +217,8 @@ def get_oauth2_mcp_server_scope_gateways(
     eligible_for_gateway = eligible_mcp_servers.filter(gateway_id=OuterRef("pk"))
     scope_count = eligible_for_gateway.values("gateway_id").annotate(value=Count("id", distinct=True)).values("value")
 
-    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_CLIENT_TYPE_FIELD_MAP:
+    # Equivalent SQL; <oauth2_enabled_field> is resolved from OAUTH2_MCP_SERVER_CLIENT_TYPE_FIELD_MAP
+    # (the mcp.<oauth2_enabled_field> predicate is omitted for app_delegated):
     # -- Query 1: materialize the selective gateway ID list.
     # SELECT DISTINCT mcp.gateway_id
     # FROM mcp_server AS mcp

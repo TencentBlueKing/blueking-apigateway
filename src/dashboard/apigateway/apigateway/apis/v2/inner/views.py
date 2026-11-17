@@ -281,6 +281,7 @@ class _GatewayReleasedResourceApiMixin:
         )
 
     def serialize_released_resources(self, resources, fields):
+        oauth2_app_enabled = self.request.gateway.oauth2_app_enabled
         items = [
             {
                 "id": resource.resource_id,
@@ -288,6 +289,8 @@ class _GatewayReleasedResourceApiMixin:
                 "is_public": resource.is_public,
                 "oauth2_public_client_enabled": resource.oauth2_public_client_enabled,
                 "oauth2_personal_client_enabled": resource.oauth2_personal_client_enabled,
+                "oauth2_app_delegated_enabled": oauth2_app_enabled and resource.oauth2_app_delegated_enabled,
+                "oauth2_app_only_enabled": oauth2_app_enabled and resource.oauth2_app_only_enabled,
                 "description": (resource.data or {}).get("description", ""),
                 "description_en": (resource.data or {}).get("description_en"),
                 "is_deprecated": (resource.data or {}).get("is_deprecated", False),
@@ -545,8 +548,14 @@ class GatewayPermissionResourceListApi(generics.ListAPIView):
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
 
-        # 过滤掉不允许主动申请权限的资源
-        resources = list(filter(lambda x: x["allow_apply_permission"], resources))
+        # 只保留允许主动申请权限、且实际校验应用权限的资源；兼容层级约束落地前的存量数据
+        resources = [
+            resource
+            for resource in resources
+            if resource["allow_apply_permission"]
+            and resource["app_verified_required"]
+            and resource["resource_perm_required"]
+        ]
 
         resource_permissions = ResourcePermissionBuilder(
             self.request.gateway,

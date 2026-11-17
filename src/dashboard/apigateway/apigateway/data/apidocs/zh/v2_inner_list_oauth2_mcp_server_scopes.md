@@ -2,7 +2,7 @@
 
 查询 bkauth 生成个人 Token 或公开客户端 Token 时可选择的 MCP Server 授权范围。结果按网关聚合和分页。
 
-仅返回公开且启用的网关、Stage 和 MCP Server，并根据 `oauth_client_type` 检查对应的 OAuth2 开关。多租户模式下只返回全租户网关和请求租户所属的单租户网关。
+仅返回公开且启用的网关、Stage 和 MCP Server，并根据 `oauth_client_type` 检查对应的 OAuth2 开关；`app_delegated` 不检查开关，返回全部满足可见条件的 MCP Server，也不受所属网关 OAuth 应用通道开关影响。多租户模式下只返回全租户网关和请求租户所属的单租户网关。
 
 
 ### 输入参数
@@ -11,7 +11,7 @@
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
-| oauth_client_type | string | 是 | OAuth2 客户端类型：`personal` 或 `public` |
+| oauth_client_type | string | 是 | OAuth2 客户端类型：`personal`、`public` 或 `app_delegated`（蓝鲸应用代用户 token）；不支持 `app_only` |
 | gateway_name | string | 否 | 网关名称，包含匹配，最长 64 个字符 |
 | mcp_server_name | string | 否 | MCP Server 名称，包含匹配，最长 64 个字符 |
 | limit | int | 否 | 每页网关数量，范围 1～1000，默认 10 |

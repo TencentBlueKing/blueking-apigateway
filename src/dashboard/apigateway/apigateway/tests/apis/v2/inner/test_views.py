@@ -376,6 +376,7 @@ class TestGatewayPermissionResourceListApi:
                     "name": resource.name,
                     "description": resource.description or "",
                     "description_en": resource.description_en,
+                    "app_verified_required": True,
                     "resource_perm_required": True,
                     "allow_apply_permission": True,
                 }
@@ -399,6 +400,41 @@ class TestGatewayPermissionResourceListApi:
         assert (
             approval_urls[fake_resource_echo.id] == f"https://dashboard.example.com/{fake_gateway.id}/permission/apply"
         )
+
+    def test_list_only_includes_resources_checking_app_permission(self, request_view, fake_gateway, mocker):
+        def _resource(resource_id, *, app_verified_required, resource_perm_required, allow_apply_permission):
+            return {
+                "id": resource_id,
+                "name": f"resource_{resource_id}",
+                "description": "",
+                "description_en": None,
+                "app_verified_required": app_verified_required,
+                "resource_perm_required": resource_perm_required,
+                "allow_apply_permission": allow_apply_permission,
+            }
+
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.ResourceVersionHandler.get_released_public_resources",
+            return_value=[
+                _resource(1, app_verified_required=True, resource_perm_required=True, allow_apply_permission=True),
+                # 层级约束落地前的存量数据：未校验应用认证或应用权限，但仍标记允许申请
+                _resource(2, app_verified_required=False, resource_perm_required=True, allow_apply_permission=True),
+                _resource(3, app_verified_required=True, resource_perm_required=False, allow_apply_permission=True),
+                _resource(4, app_verified_required=True, resource_perm_required=True, allow_apply_permission=False),
+            ],
+        )
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.permission.resource.list",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["data"]] == [1]
 
 
 class TestMCPServerPermissionListApi:
