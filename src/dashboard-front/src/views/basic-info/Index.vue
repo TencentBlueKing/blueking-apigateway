@@ -278,6 +278,14 @@
               </div>
               <div class="pannel-content-item">
                 <div class="label">
+                  {{ `${t('认证协议')}：` }}
+                </div>
+                <div class="value">
+                  {{ gatewayStore.isResourceAuthV2 ? t('蓝鲸认证 V2') : t('蓝鲸认证 V1') }}
+                </div>
+              </div>
+              <div class="pannel-content-item">
+                <div class="label">
                   {{ `${t('访问域名')}：` }}
                 </div>
                 <div class="value url">
@@ -949,10 +957,11 @@ const delTips = computed(() => {
   });
 });
 
-// 展示名有独立的编辑入口，保存其他字段时省略，避免覆盖后端按语言返回的展示名
+// 展示名和认证协议在基本信息弹窗中更新，其他入口保存时省略。
 const buildUpdatePayload = (data: object) => {
   const payload = cloneDeep(data) as Record<string, any>;
   delete payload.display_name;
+  delete payload.oauth2_app_enabled;
   return payload as IGatewayUpdateInputSLZ;
 };
 

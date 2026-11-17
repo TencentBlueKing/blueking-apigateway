@@ -31,6 +31,7 @@ export interface IGatewayUpdateInputSLZ {
   }
   developers?: string[] // 网关开发者
   is_public?: boolean // 是否公开，true：公开，false：不公开
+  oauth2_app_enabled?: boolean // 是否启用 OAuth 应用通道
   bk_app_codes?: string[] // 网关相关的应用列表
   related_app_codes?: string[] // 管理网关的应用列表
   is_deprecated?: boolean
@@ -145,6 +146,7 @@ export interface IGatewayRetrieveOutput {
   created_time: string | null
   updated_time: string | null
   public_key: string
+  oauth2_app_enabled?: boolean // 旧版网关详情可能未返回此字段
   is_official: boolean
   allow_update_gateway_auth: boolean
   api_domain: string

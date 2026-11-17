@@ -160,6 +160,7 @@ import type { IResourceImportCheckInputSLZ } from '@/services/types/gateway/reso
 import { useGateway } from '@/stores';
 import type { ActionType, IAuthConfig, ILocalImportedResource, IPublicConfig, ResourceChangeType } from '@/types/resource';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
+import { canAllowApplyPermission, normalizeAuthConfig } from '@/utils/auth-config';
 import ResourceImportEditor from './components/ResourceImportEditor.vue';
 import ResourceImportPreview from './components/ResourceImportPreview.vue';
 import ResourceImportResult from './components/ResourceImportResult.vue';
@@ -359,15 +360,26 @@ const handleRecoverAllRes = () => {
 };
 
 const applyAuthConfig = (action: ActionType, config: IAuthConfig) => {
+  const authConfig = normalizeAuthConfig(config);
   previewGroups.value[action].forEach((row) => {
-    row.auth_config = { ...config };
+    // V1 批量表单没有公开客户端选项，保留各资源已有的设置。
+    row.auth_config = {
+      ...authConfig,
+      oauth2_public_client_enabled: gatewayStore.isResourceAuthV2
+        ? authConfig.oauth2_public_client_enabled
+        : authConfig.auth_verified_required && !!row.auth_config?.oauth2_public_client_enabled,
+    };
+    if (!row.is_public || !authConfig.resource_perm_required) {
+      row.allow_apply_permission = false;
+    }
   });
 };
 
 const applyPublicConfig = (action: ActionType, config: IPublicConfig) => {
   previewGroups.value[action].forEach((row) => {
     row.is_public = config.is_public;
-    row.allow_apply_permission = config.allow_apply_permission && config.is_public;
+    row.allow_apply_permission = config.allow_apply_permission
+      && canAllowApplyPermission(config.is_public, row.auth_config);
   });
 };
 

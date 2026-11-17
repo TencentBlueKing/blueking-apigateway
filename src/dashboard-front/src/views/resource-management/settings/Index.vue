@@ -255,9 +255,9 @@
                 show-settings
                 :api-method="getTableData"
                 :columns="columns"
-                :unchecked-column="['oauth2_personal_client_enabled']"
                 :max-height="tableMaxHeight"
                 :hidden-column="hiddenColumns"
+                :unchecked-column="['user_auth_method', 'oauth2_personal_client_enabled']"
                 :show-selection="isShowSelection"
                 :show-first-full-row="selectedRows.length > 0"
                 :filter-value="getFilterValue"
@@ -501,6 +501,7 @@ import type {
 import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { isAfter24h } from '@/utils';
+import { getAuthTypeLabel, getUserAuthMethodLabels, isAuthConfigEmpty } from '@/utils/auth-config';
 import {
   useFeatureFlag,
   useGateway,
@@ -746,9 +747,14 @@ const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway)
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const hiddenColumns = computed(() => {
   const hideCols = [];
-  const hidePersonalClient = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT;
   if (!gatewayStore.isAIGateway) hideCols.push('kind');
-  if (hidePersonalClient) hideCols.push('oauth2_personal_client_enabled');
+  if (gatewayStore.isResourceAuthV2) {
+    hideCols.push('oauth2_personal_client_enabled');
+  }
+  else {
+    hideCols.push('auth_config', 'user_auth_method');
+    if (!featureFlagStore.flags.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT) hideCols.push('oauth2_personal_client_enabled');
+  }
 
   return hideCols;
 });
@@ -781,7 +787,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'name',
       title: t('资源名称'),
-      minWidth: 170,
+      minWidth: 150,
       fixed: 'left',
       cell: (h, { row }) => (
         <div
@@ -829,11 +835,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           >
             { row.name || '--' }
           </div>
-          {(
-            row.auth_config?.auth_verified_required === false
-            && row.auth_config?.app_verified_required === false
-            && row.auth_config?.oauth2_personal_client_enabled === false
-          )
+          {!gatewayStore.isResourceAuthV2 && isAuthConfigEmpty(row.auth_config)
             ? (
               <ag-icon
                 v-bk-tooltips={{
@@ -886,7 +888,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'backend.name',
       title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
-      minWidth: 130,
+      width: 120,
       ellipsis: true,
     },
     {
@@ -909,8 +911,60 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'path',
       title: t('前端请求路径'),
-      minWidth: 250,
+      minWidth: 170,
       ellipsis: true,
+    },
+    {
+      colKey: 'auth_config',
+      title: t('认证方式'),
+      width: 110,
+      ellipsis: true,
+      cell: (h, { row }) => {
+        const label = getAuthTypeLabel(row.auth_config, t, gatewayStore.isResourceAuthV2);
+        if (label === '--') return label;
+        if (isAuthConfigEmpty(row.auth_config)) {
+          return (
+            <bk-tag
+              v-bk-tooltips={{
+                content: t('网关不校验调用方身份，请确认接口可以完全公开。'),
+              }}
+              theme="warning"
+            >
+              {label}
+            </bk-tag>
+          );
+        }
+        return (
+          <bk-tag theme="info">
+            {label}
+          </bk-tag>
+        );
+      },
+    },
+    {
+      colKey: 'user_auth_method',
+      title: t('用户认证方式'),
+      minWidth: 240,
+      ellipsis: false,
+      className: 'auth-config-col',
+      cell: (h, { row }) => {
+        const methods = getUserAuthMethodLabels(row.auth_config, t);
+        if (!methods.length) {
+          return '--';
+        }
+        return (
+          <div class="auth-config-tags">
+            {methods.map(method => (
+              <bk-tag
+                key={method}
+                size="small"
+              >
+                {method}
+              </bk-tag>
+            ))}
+          </div>
+        );
+      },
     },
     {
       title: t('个人令牌'),
@@ -935,6 +989,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'plugin_count',
       title: t('插件数'),
+      width: 70,
       cell: (h, { row }) => (
         <bk-button
           text
@@ -949,7 +1004,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'docs',
       title: t('文档'),
-      width: 80,
+      width: 70,
       ellipsis: true,
       cell: (h, { row }) => (
         <div>
@@ -978,7 +1033,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'label_ids',
       title: t('标签'),
-      width: 160,
+      width: 150,
       filter: {
         type: 'multiple',
         showConfirmAndReset: true,
@@ -996,9 +1051,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 {
                   row.labels?.length
                     ? (
-                      <AgOverflowTags
-                        data={row.labels.map((label: any) => label.name)}
-                      />
+                      <div class="min-w-0 flex-1">
+                        <AgOverflowTags
+                          data={row.labels.map((label: any) => label.name)}
+                        />
+                      </div>
                     )
                     : <span>--</span>
                 }
@@ -1030,13 +1087,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'updated_time',
       title: t('更新时间'),
-      width: 260,
+      width: 160,
       ellipsis: true,
       sorter: true,
     },
     {
       colKey: 'act',
       title: t('操作'),
+      width: 90,
       fixed: 'right',
       cell: (h, { row }) => (
         <div class="flex">
@@ -2040,6 +2098,28 @@ onMounted(() => {
   .bk-resize-layout {
     height: 100%;
   }
+}
+
+:deep(.auth-config-col) {
+  overflow: visible !important;
+  white-space: normal !important;
+  vertical-align: middle;
+
+  .t-table__ellipsis,
+  .t-text-ellipsis {
+    display: block;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+}
+
+:deep(.auth-config-tags) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 0;
 }
 
 .nest-dropdown {

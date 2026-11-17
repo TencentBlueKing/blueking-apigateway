@@ -200,46 +200,26 @@
                           </BkCol>
                           <BkCol :span="10">
                             <div class="ag-value">
-                              {{ getResourceAuthText(resource) }}
+                              {{ getAuthTypeLabel(getAuthConfig(resource), t, gatewayStore.isResourceAuthV2) }}
                             </div>
                           </BkCol>
                         </BkRow>
 
-                        <!-- 只有打开“用户认证”才展示 oauth2 相关配置 -->
-                        <template v-if="getAuthConfig(resource).auth_verified_required">
-                          <!-- 2026.08.10 暂不支持 oauth2_public_client_enabled，先隐藏 -->
-                          <!--                          <BkRow> -->
-                          <!--                            <BkCol :span="4"> -->
-                          <!--                <label class="ag-key">{{ t('OAuth2 公开客户端模式') }}:</label> -->
-                          <!--                            </BkCol> -->
-                          <!--                            <BkCol :span="10"> -->
-                          <!--                              <div class="ag-value"> -->
-                          <!--      {{ getAuthConfig(resource).oauth2_public_client_enabled ? t('是') : t('否') }} -->
-                          <!--                              </div> -->
-                          <!--                            </BkCol> -->
-                          <!--                          </BkRow> -->
+                        <!-- 只有打开“用户认证”才展示用户认证方式 -->
+                        <template v-if="getAuthConfig(resource)?.auth_verified_required">
                           <BkRow>
                             <BkCol :span="4">
-                              <label class="ag-key">{{ t('个人令牌') }}:</label>
+                              <label class="ag-key">
+                                {{ gatewayStore.isResourceAuthV2 ? t('用户认证方式') : t('个人令牌') }}:
+                              </label>
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ getAuthConfig(resource).oauth2_personal_client_enabled ? t('是') : t('否') }}
+                                {{ getUserAuthMethodsLabel(getAuthConfig(resource), t, gatewayStore.isResourceAuthV2) }}
                               </div>
                             </BkCol>
                           </BkRow>
                         </template>
-
-                        <BkRow>
-                          <BkCol :span="4">
-                            <label class="ag-key">{{ t('校验应用权限') }}:</label>
-                          </BkCol>
-                          <BkCol :span="10">
-                            <div class="ag-value">
-                              {{ getPermRequiredText(resource) }}
-                            </div>
-                          </BkCol>
-                        </BkRow>
 
                         <BkRow>
                           <BkCol :span="4">
@@ -248,11 +228,28 @@
                           <BkCol :span="10">
                             <div class="ag-value">
                               {{ resource.is_public ? t('是') : t('否') }}
-                              {{
-                                resource.allow_apply_permission
-                                  ? `(${t('允许申请权限')})`
-                                  : `(${t('不允许申请权限')})`
-                              }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow v-if="canAllowApplyPermission(resource.is_public, getAuthConfig(resource))">
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t('允许申请权限') }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.allow_apply_permission ? t('是') : t('否') }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow v-if="getAuthConfig(resource)">
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t('校验应用权限') }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ getAuthConfig(resource)?.resource_perm_required ? t('是') : t('否') }}
                             </div>
                           </BkCol>
                         </BkRow>
@@ -489,20 +486,18 @@ import { getVersionDetail } from '@/services/source/gateway/resource-version';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { useGateway } from '@/stores';
 import { getMethodsTheme } from '@/utils';
+import {
+  canAllowApplyPermission,
+  getAuthTypeLabel,
+  getUserAuthMethodsLabel,
+  parseResourceAuthConfig,
+} from '@/utils/auth-config';
 import ConfigDisplayTable from '@/components/plugin/plugin-manage/config-display/Index.vue';
 import RequestParams from '../../components/request-params-v2/Index.vue';
 import ResponseParams from '../../components/response-params-v2/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
-
-interface IAuthConfig {
-  app_verified_required: boolean
-  auth_verified_required: boolean
-  resource_perm_required: boolean
-  // oauth2_public_client_enabled: boolean
-  oauth2_personal_client_enabled: boolean
-}
 
 interface IProps {
   id: number | undefined
@@ -668,38 +663,7 @@ const getInfo = async () => {
   resourceTrunkConfig.index += resourceTrunkConfig.chunkSize;
 };
 
-const getAuthConfig = (resource: any): IAuthConfig => {
-  try {
-    return JSON.parse(resource.contexts?.resource_auth?.config);
-  }
-  catch {
-    return {
-      app_verified_required: false,
-      auth_verified_required: false,
-      resource_perm_required: false,
-      // oauth2_public_client_enabled: false,
-      oauth2_personal_client_enabled: false,
-    };
-  }
-};
-
-const getResourceAuthText = (resource: any) => {
-  const authConfig = getAuthConfig(resource);
-  const tmpArr: string[] = [];
-
-  if (authConfig.app_verified_required) {
-    tmpArr.push(`${t('应用认证')}`);
-  }
-  if (authConfig.auth_verified_required) {
-    tmpArr.push(`${t('用户认证')}`);
-  }
-  return tmpArr.join(', ');
-};
-
-const getPermRequiredText = (resource: any) => {
-  const authConfig = getAuthConfig(resource);
-  return authConfig.resource_perm_required ? t('校验') : t('不校验');
-};
+const getAuthConfig = (resource: any) => parseResourceAuthConfig(resource.contexts?.resource_auth?.config);
 
 const getLabels = async () => {
   labels.value = await getLabelList(apigwId.value);

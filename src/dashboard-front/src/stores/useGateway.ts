@@ -64,6 +64,7 @@ export const useGateway = defineStore('useGateway', {
     isProgrammableGateway: state => state.currentGateway?.kind === 1,
     // 网关是否为 AI 网关 kind === 2
     isAIGateway: state => state.currentGateway?.kind === 2,
+    isResourceAuthV2: state => state.currentGateway?.oauth2_app_enabled === true,
   },
   actions: {
     // 设置网关id

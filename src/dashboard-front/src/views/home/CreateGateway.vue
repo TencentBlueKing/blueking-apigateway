@@ -342,6 +342,11 @@
           }}</span>
         </BkFormItem>
 
+        <GatewayAuthProtocol
+          v-if="isEdit"
+          v-model="formData.oauth2_app_enabled"
+        />
+
         <template v-if="featureFlagStore.isTenantMode && !isEdit">
           <template v-if="userStore.info.tenant_id === 'system'">
             <BkFormItem
@@ -478,6 +483,7 @@ import type { IGatewayCreateInputSLZ } from '@/services/types/gateway/gateway.ts
 import { toGatewayFormData, toGatewayUpdatePayload } from '@/utils/gateway-form';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
 import UserSelector from '@/components/user/user-selector/Index.vue';
+import GatewayAuthProtocol from '@/components/gateway-auth-protocol/Index.vue';
 import bareGit from '@/images/bare_git.png';
 import apiIcon from '@/images/api.png';
 import aiIcon from '@/images/ai.png';
@@ -920,7 +926,7 @@ const handleConfirmCreate = async () => {
     if (id) {
       const payload = toGatewayUpdatePayload(
         data,
-        defaultFormData.value.display_name,
+        defaultFormData.value,
         featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED ?? false,
       );
       await patchGateway(id, payload);

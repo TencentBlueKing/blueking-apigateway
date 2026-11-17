@@ -97,7 +97,6 @@
             <div class="pb-24px">
               <!--  新增资源 table  -->
               <PendingResourceTable
-                v-model:temp-auth-config="tempAuthConfig"
                 v-model:temp-public-config="tempPublicConfig"
                 action="add"
                 :table-data="tableDataToAdd"
@@ -155,7 +154,6 @@
             <div class="pb-24px">
               <!--  更新资源 table  -->
               <PendingResourceTable
-                v-model:temp-auth-config="tempAuthConfig"
                 v-model:temp-public-config="tempPublicConfig"
                 action="update"
                 :table-data="tableDataToUpdate"
@@ -260,6 +258,7 @@
 <script setup lang="ts">
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import type { ActionType, IAuthConfig, ILocalImportedResource, IPublicConfig } from '@/types/resource';
+import { DEFAULT_AUTH_CONFIG } from '@/utils/auth-config';
 import ResourceDocSlider from '../../../components/ResourceDocSlider.vue';
 import type { IImportDocConfig, IImportPreviewGroups } from '../types';
 import ExcludedResourceTable from './ExcludedResourceTable.vue';
@@ -292,11 +291,7 @@ const editingResource = ref<ILocalImportedResource>({
   description: '',
   label_ids: [],
   labels: [],
-  auth_config: {
-    auth_verified_required: true,
-    app_verified_required: true,
-    resource_perm_required: true,
-  },
+  auth_config: { ...DEFAULT_AUTH_CONFIG },
   is_public: true,
   allow_apply_permission: true,
   _localId: -1,
@@ -304,11 +299,6 @@ const editingResource = ref<ILocalImportedResource>({
 });
 const isSliderShow = ref(false);
 const isPluginsSliderShow = ref(false);
-const tempAuthConfig = ref({
-  app_verified_required: false,
-  auth_verified_required: false,
-  resource_perm_required: false,
-});
 const tempPublicConfig = ref({
   is_public: false,
   allow_apply_permission: false,
@@ -373,11 +363,8 @@ const handleShowPluginsSlider = (resource: ILocalImportedResource) => {
   isPluginsSliderShow.value = true;
 };
 
-const handleConfirmAuthConfigPopConfirm = (action: ActionType) => {
-  if (!tempAuthConfig.value.app_verified_required) {
-    tempAuthConfig.value.resource_perm_required = false;
-  }
-  emit('update-auth-config', action, tempAuthConfig.value);
+const handleConfirmAuthConfigPopConfirm = (action: ActionType, config: IAuthConfig) => {
+  emit('update-auth-config', action, config);
 };
 
 const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {

@@ -344,7 +344,7 @@
                     <AgIcon
                       class="choose-icon"
                       name="check-1"
-                      size="20"
+                      size="26"
                     />
                   </div>
                 </div>
