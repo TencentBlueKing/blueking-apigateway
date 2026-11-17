@@ -218,20 +218,38 @@ class ReleaseManager(models.Manager):
         return ids[0]
 
 
-def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+def _load_released_resource_auth_config(resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
         raw_config = resource["contexts"]["resource_auth"]["config"]
         config = json.loads(raw_config) if isinstance(raw_config, str) else raw_config
     except KeyError, TypeError, ValueError:
-        return False, False
+        return None
 
     if not isinstance(config, dict):
+        return None
+    return config
+
+
+def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+    config = _load_released_resource_auth_config(resource)
+    if config is None:
         return False, False
 
     return (
         config.get("oauth2_public_client_enabled") is True,
         config.get("oauth2_personal_client_enabled") is True,
     )
+
+
+def get_released_resource_oauth2_app_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+    """Return (app_delegated_enabled, app_only_enabled) derived from U/A, excluding the gateway switch."""
+    config = _load_released_resource_auth_config(resource)
+    if config is None:
+        return False, False
+
+    user_required = config.get("auth_verified_required") is True
+    app_required = config.get("app_verified_required") is True
+    return user_required and app_required, not user_required and app_required
 
 
 class ReleasedResourceManager(models.Manager):
@@ -259,6 +277,7 @@ class ReleasedResourceManager(models.Manager):
         resource_to_add = []
         for resource in resource_version.data:
             oauth2_public_enabled, oauth2_personal_enabled = get_released_resource_oauth2_flags(resource)
+            oauth2_app_delegated_enabled, oauth2_app_only_enabled = get_released_resource_oauth2_app_flags(resource)
             resource_to_add.append(
                 self.model(
                     gateway_id=resource_version.gateway_id,
@@ -270,6 +289,8 @@ class ReleasedResourceManager(models.Manager):
                     is_public=resource.get("is_public") is True,
                     oauth2_public_client_enabled=oauth2_public_enabled,
                     oauth2_personal_client_enabled=oauth2_personal_enabled,
+                    oauth2_app_delegated_enabled=oauth2_app_delegated_enabled,
+                    oauth2_app_only_enabled=oauth2_app_only_enabled,
                     data=resource,
                 )
             )

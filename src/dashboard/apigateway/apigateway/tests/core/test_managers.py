@@ -27,7 +27,7 @@ from apigateway.core.constants import (
     GatewayKindEnum,
     StageStatusEnum,
 )
-from apigateway.core.managers import get_released_resource_oauth2_flags
+from apigateway.core.managers import get_released_resource_oauth2_app_flags, get_released_resource_oauth2_flags
 from apigateway.core.models import (
     Gateway,
     Release,
@@ -80,6 +80,28 @@ def test_get_released_resource_oauth2_flags(config, expected):
 
 def test_get_released_resource_oauth2_flags_with_missing_config():
     assert get_released_resource_oauth2_flags({}) == (False, False)
+
+
+@pytest.mark.parametrize(
+    "config, expected",
+    [
+        ({"auth_verified_required": True, "app_verified_required": True}, (True, False)),
+        ({"auth_verified_required": False, "app_verified_required": True}, (False, True)),
+        ({"auth_verified_required": True, "app_verified_required": False}, (False, False)),
+        ({"auth_verified_required": False, "app_verified_required": False}, (False, False)),
+        ({"auth_verified_required": "true", "app_verified_required": 1}, (False, False)),
+        ("not-json", (False, False)),
+    ],
+)
+def test_get_released_resource_oauth2_app_flags(config, expected):
+    raw_config = config if isinstance(config, str) else json.dumps(config)
+    resource = {"contexts": {"resource_auth": {"config": raw_config}}}
+
+    assert get_released_resource_oauth2_app_flags(resource) == expected
+
+
+def test_get_released_resource_oauth2_app_flags_with_missing_config():
+    assert get_released_resource_oauth2_app_flags({}) == (False, False)
 
 
 class TestStageManager:
@@ -429,6 +451,32 @@ class TestReleasedResourceManager:
         assert released.is_public is False
         assert released.oauth2_public_client_enabled is False
         assert released.oauth2_personal_client_enabled is False
+
+    @pytest.mark.parametrize(
+        "user_required, app_required, expected",
+        [
+            (True, True, (True, False)),
+            (False, True, (False, True)),
+            (True, False, (False, False)),
+            (False, False, (False, False)),
+        ],
+    )
+    def test_save_released_resource_projects_oauth2_app_fields(
+        self, fake_resource_version, user_required, app_required, expected
+    ):
+        fake_resource_version.data = [
+            self._make_resource_snapshot(
+                auth_config=json.dumps(
+                    {"auth_verified_required": user_required, "app_verified_required": app_required}
+                )
+            )
+        ]
+        fake_resource_version.save(update_fields=["_data"])
+
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+
+        released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
+        assert (released.oauth2_app_delegated_enabled, released.oauth2_app_only_enabled) == expected
 
     def test_filter_latest_released_resources(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway)
