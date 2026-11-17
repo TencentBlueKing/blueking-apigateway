@@ -141,7 +141,9 @@ def test_apply_gateway_member_snapshots_revokes_before_granting(mocker, tenant_g
     )
     grant = mocker.patch(
         "apigateway.biz.iam.authorization.add_authorization",
-        side_effect=lambda payload, operator, *, tenant_id: calls.append(("grant", payload, operator, tenant_id)),
+        side_effect=lambda payload, operator, *, tenant_id, **kwargs: calls.append(
+            ("grant", payload, operator, tenant_id)
+        ),
     )
     expires = timezone.now() + timedelta(days=100)
     before = {
@@ -167,7 +169,12 @@ def test_apply_gateway_member_snapshots_revokes_before_granting(mocker, tenant_g
         ("changed", "administrator"),
     }
     assert revoke.call_args.kwargs == {"tenant_id": "tenant-a"}
-    assert grant.call_args.kwargs == {"tenant_id": "tenant-a"}
+    assert grant.call_args.kwargs == {
+        "tenant_id": "tenant-a",
+        "skip_missing_users": False,
+        "gateway_id": tenant_gateway.id,
+        "gateway_name": tenant_gateway.name,
+    }
 
 
 def test_apply_gateway_member_snapshots_chunks_to_twenty(mocker, tenant_gateway):

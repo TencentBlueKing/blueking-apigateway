@@ -224,7 +224,7 @@ def test_add_authorization_retries_once_without_missing_users(mocker, mock_heade
     )
     caplog.set_level("WARNING", logger="apigateway.components.bkiam")
 
-    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") == 1
 
     assert [item.kwargs["data"] for item in mock_post.call_args_list] == [[kept, missing], [kept]]
     assert "missing_users=['jsorwan', 'lorryxywu']" in caplog.text
@@ -243,7 +243,7 @@ def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog)
     )
     caplog.set_level("ERROR", logger="apigateway.components.bkiam")
 
-    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") == 1
 
     assert mock_post.call_count == 2
     assert mock_post.call_args_list[1].kwargs["data"] == [kept]
@@ -371,7 +371,7 @@ def test_write_endpoints_ignore_success_data(mocker, mock_headers, response):
     revoke = {key: value for key, value in authorization.items() if key != "expired_at"}
 
     assert bkiam.update_system({"managers": ["admin"]}) is None
-    assert bkiam.add_authorization([authorization], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.add_authorization([authorization], operator="admin", tenant_id="tenant-a") == 0
     assert bkiam.revoke_authorization([revoke], operator="admin", tenant_id="tenant-a") is None
 
 

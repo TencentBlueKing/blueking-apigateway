@@ -269,7 +269,12 @@ def test_member_write_uses_gateway_maintainer_tenant(
 
     add_gateway_administrators(fake_gateway, ["new-admin"], "operator-user")
 
-    assert add_authorization.call_args.kwargs == {"tenant_id": expected_tenant_id}
+    assert add_authorization.call_args.kwargs == {
+        "tenant_id": expected_tenant_id,
+        "skip_missing_users": False,
+        "gateway_id": fake_gateway.id,
+        "gateway_name": fake_gateway.name,
+    }
 
 
 def test_member_write_skips_excluded_user_locally_and_iam(settings, fake_gateway, mocker):
