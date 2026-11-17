@@ -297,6 +297,7 @@ class GatewayHandler:
             username=username,
             source=source,
             data_plane_ids=data_plane_ids,
+            skip_missing_users=True,
         )
         return saver.save()
 
@@ -560,6 +561,8 @@ class GatewaySaver:
         username: str = "",
         source: Optional[CallSourceTypeEnum] = None,
         data_plane_ids: Optional[List[int]] = None,
+        *,
+        skip_missing_users: bool = False,
     ):
         self.bk_app_code = bk_app_code
         self.username = username
@@ -568,6 +571,7 @@ class GatewaySaver:
         self._gateway_data = data
         self._source = source
         self._data_plane_ids = data_plane_ids
+        self._skip_missing_users = skip_missing_users
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -610,7 +614,12 @@ class GatewaySaver:
         maintainers = self._gateway_data.maintainers
         if not maintainers:
             maintainers = [self.username or settings.GATEWAY_DEFAULT_CREATOR]
-        replace_gateway_administrators(gateway, maintainers, self.username or settings.GATEWAY_DEFAULT_CREATOR)
+        replace_gateway_administrators(
+            gateway,
+            maintainers,
+            self.username or settings.GATEWAY_DEFAULT_CREATOR,
+            skip_missing_users=self._skip_missing_users,
+        )
 
         # 3. save related data
         GatewayHandler.save_related_data(
@@ -677,7 +686,9 @@ class GatewaySaver:
         gateway.save()
         # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据
         if self._gateway_data.maintainers:
-            add_gateway_administrators(gateway, self._gateway_data.maintainers, self.username)
+            add_gateway_administrators(
+                gateway, self._gateway_data.maintainers, self.username, skip_missing_users=self._skip_missing_users
+            )
 
         # 2. update auth config
         GatewayHandler.save_auth_config(

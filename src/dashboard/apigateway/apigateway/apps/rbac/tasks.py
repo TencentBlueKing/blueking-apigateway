@@ -74,7 +74,7 @@ def _renew_gateway_member_iam_authorizations(
             for member in batch_members
         ]
         try:
-            grant_gateway_authorizations(gateway, authorizations, operator)
+            grant_gateway_authorizations(gateway, authorizations, operator, skip_missing_users=True)
         except Exception:
             failed_batches += 1
             logger.exception(

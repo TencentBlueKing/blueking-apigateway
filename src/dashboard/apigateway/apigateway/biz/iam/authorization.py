@@ -189,6 +189,8 @@ def _grant(
     snapshot: GatewayMemberSnapshot,
     usernames: Iterable[str],
     operated_by: str,
+    *,
+    skip_missing_users: bool = False,
 ) -> None:
     now = timezone.now()
     payloads = [
@@ -202,7 +204,7 @@ def _grant(
         for username in sorted(usernames)
     ]
     for payload_chunk in chunked(payloads):
-        grant_gateway_authorizations(gateway, payload_chunk, operated_by)
+        grant_gateway_authorizations(gateway, payload_chunk, operated_by, skip_missing_users=skip_missing_users)
 
 
 def _restore_gateway_member_snapshot(
@@ -229,6 +231,8 @@ def apply_gateway_member_snapshots_to_iam(
     before: GatewayMemberSnapshot,
     after: GatewayMemberSnapshot,
     operated_by: str,
+    *,
+    skip_missing_users: bool = False,
 ) -> None:
     """Apply a local member delta and compensate IAM back to ``before`` on failure."""
     usernames = before.keys() | after.keys()
@@ -248,7 +252,7 @@ def apply_gateway_member_snapshots_to_iam(
 
     try:
         _revoke(gateway, authorizations_to_revoke, operated_by)
-        _grant(gateway, after, usernames_to_grant, operated_by)
+        _grant(gateway, after, usernames_to_grant, operated_by, skip_missing_users=skip_missing_users)
     except Exception:
         try:
             _restore_gateway_member_snapshot(gateway, before, after, operated_by)
