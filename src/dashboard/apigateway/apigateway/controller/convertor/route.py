@@ -20,6 +20,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
+from apigateway.apps.data_plane.constants import is_apisix_version_supported_for_oauth2_resource
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
@@ -217,18 +218,29 @@ class RouteConvertor(GatewayResourceConvertor):
         )
 
     def _build_oauth2_plugins(self, resource: Dict[str, Any]) -> Dict[str, Plugin]:
+        if not is_apisix_version_supported_for_oauth2_resource(self._apisix_version):
+            return {}
+
         resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
-        support_public = resource_auth_config.get("oauth2_public_client_enabled", False)
-        support_personal = resource_auth_config.get("oauth2_personal_client_enabled", False)
-        if not support_public and not support_personal:
+        user_verified_required = resource_auth_config.get("auth_verified_required", True)
+        app_verified_required = resource_auth_config.get("app_verified_required", True)
+        support_public = bool(user_verified_required and resource_auth_config.get("oauth2_public_client_enabled"))
+        support_personal = bool(user_verified_required and resource_auth_config.get("oauth2_personal_client_enabled"))
+        # 网关开关读取发布时的当前值，不来自资源版本快照
+        support_app = bool(self.gateway.oauth2_app_enabled and app_verified_required)
+        if not (support_public or support_personal or support_app):
             return {}
 
         return {
-            "bk-oauth2-protected-resource": Plugin(),
+            # 仅应用通道时，缺少凭证交给旧认证流程，不返回 401
+            "bk-oauth2-protected-resource": Plugin(
+                challenge_on_missing_credential=support_public or support_personal,
+            ),
             "bk-oauth2-verify": Plugin(),
             "bk-oauth2-appcode-validate": Plugin(
                 support_public=support_public,
                 support_personal=support_personal,
+                support_app=support_app,
             ),
             "bk-oauth2-audience-validate": Plugin(),
         }

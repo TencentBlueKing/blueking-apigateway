@@ -96,6 +96,7 @@ class TestRouteConvertor:
         """Mock release data"""
         mock_data = mocker.Mock()
         mock_data.gateway.name = "test-gateway"
+        mock_data.gateway.oauth2_app_enabled = True
         mock_data.stage.name = "test-stage"
         mock_data.stage.vars = {"env": "test"}
         mock_data.resource_configs = []
@@ -335,62 +336,125 @@ class TestRouteConvertor:
 
         assert "bk-resource-header-rewrite" in route.plugins
 
+    @staticmethod
+    def _oauth2_plugins(route):
+        return {
+            code: route.plugins[code].model_dump(exclude_none=True)
+            for code in OAUTH2_PLUGIN_CODES
+            if code in route.plugins
+        }
+
+    @staticmethod
+    def _convertor_for(mock_release_data, resource_kind, apisix_version=APISIX_VERSION_3_16):
+        backend_service_mapping = (
+            {1: "standard-service"} if resource_kind == ResourceKindEnum.STANDARD.value else {10: "ai-service"}
+        )
+        return RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping=backend_service_mapping,
+            publish_id=123,
+            apisix_version=apisix_version,
+        )
+
     @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
     @pytest.mark.parametrize(
-        "support_public, support_personal",
+        ("auth_config", "gateway_oauth2_app_enabled", "expected"),
         [
-            (False, False),
-            (True, False),
-            (False, True),
-            (True, True),
+            # 用户认证 + 应用认证：代用户 token 走应用通道，缺少凭证交给旧流程
+            (
+                {"auth_verified_required": True, "app_verified_required": True},
+                True,
+                {"support_public": False, "support_personal": False, "support_app": True, "challenge": False},
+            ),
+            # 旧默认配置（字段缺省时 U、A 视为 true）
+            (
+                {},
+                True,
+                {"support_public": False, "support_personal": False, "support_app": True, "challenge": False},
+            ),
+            # 仅应用认证：应用 token 走应用通道
+            (
+                {"auth_verified_required": False, "app_verified_required": True},
+                True,
+                {"support_public": False, "support_personal": False, "support_app": True, "challenge": False},
+            ),
+            # public 开启：缺少凭证返回 401
+            (
+                {"auth_verified_required": True, "app_verified_required": True, "oauth2_public_client_enabled": True},
+                True,
+                {"support_public": True, "support_personal": False, "support_app": True, "challenge": True},
+            ),
+            # personal 开启、应用认证关闭
+            (
+                {
+                    "auth_verified_required": True,
+                    "app_verified_required": False,
+                    "oauth2_personal_client_enabled": True,
+                },
+                True,
+                {"support_public": False, "support_personal": True, "support_app": False, "challenge": True},
+            ),
+            # 网关关闭应用通道，public 不受影响
+            (
+                {
+                    "auth_verified_required": True,
+                    "app_verified_required": True,
+                    "oauth2_public_client_enabled": True,
+                    "oauth2_personal_client_enabled": True,
+                },
+                False,
+                {"support_public": True, "support_personal": True, "support_app": False, "challenge": True},
+            ),
+            # 网关关闭应用通道，且无 public/personal：不注入
+            ({"auth_verified_required": True, "app_verified_required": True}, False, None),
+            ({"auth_verified_required": False, "app_verified_required": True}, False, None),
+            # 用户认证但不要求应用认证、无 public/personal：不注入
+            ({"auth_verified_required": True, "app_verified_required": False}, True, None),
+            # 无需认证：不注入
+            ({"auth_verified_required": False, "app_verified_required": False}, True, None),
         ],
     )
     def test_convert_route_injects_oauth2_plugins(
         self,
         mock_release_data,
         resource_kind,
-        support_public,
-        support_personal,
+        auth_config,
+        gateway_oauth2_app_enabled,
+        expected,
     ):
+        mock_release_data.gateway.oauth2_app_enabled = gateway_oauth2_app_enabled
         resource = _standard_resource() if resource_kind == ResourceKindEnum.STANDARD.value else _ai_resource()
-        resource["contexts"]["resource_auth"]["config"] = json.dumps(
-            {
-                "oauth2_public_client_enabled": support_public,
-                "oauth2_personal_client_enabled": support_personal,
-            }
-        )
-        backend_service_mapping = (
-            {1: "standard-service"} if resource_kind == ResourceKindEnum.STANDARD.value else {10: "ai-service"}
-        )
-        convertor = RouteConvertor(
-            release_data=mock_release_data,
-            backend_service_mapping=backend_service_mapping,
-            publish_id=123,
-            apisix_version=APISIX_VERSION_3_16,
-        )
+        resource["contexts"]["resource_auth"]["config"] = json.dumps(auth_config)
+        convertor = self._convertor_for(mock_release_data, resource_kind)
 
-        route = convertor._convert_http_route(resource)
-        oauth2_plugins = {
-            code: route.plugins[code].model_dump(exclude_none=True)
-            for code in OAUTH2_PLUGIN_CODES
-            if code in route.plugins
-        }
+        oauth2_plugins = self._oauth2_plugins(convertor._convert_http_route(resource))
 
-        if not support_public and not support_personal:
+        if expected is None:
             assert oauth2_plugins == {}
             return
 
         assert oauth2_plugins == {
-            "bk-oauth2-protected-resource": {},
+            "bk-oauth2-protected-resource": {"challenge_on_missing_credential": expected["challenge"]},
             "bk-oauth2-verify": {},
             "bk-oauth2-appcode-validate": {
-                "support_public": support_public,
-                "support_personal": support_personal,
+                "support_public": expected["support_public"],
+                "support_personal": expected["support_personal"],
+                "support_app": expected["support_app"],
             },
             "bk-oauth2-audience-validate": {},
         }
 
-    def test_generated_oauth2_plugin_overwrites_historical_resource_binding(self, convertor, mock_release_data):
+    @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
+    def test_convert_route_skips_oauth2_plugins_on_old_data_plane(self, mock_release_data, resource_kind):
+        resource = _standard_resource() if resource_kind == ResourceKindEnum.STANDARD.value else _ai_resource()
+        resource["contexts"]["resource_auth"]["config"] = json.dumps(
+            {"auth_verified_required": True, "app_verified_required": True, "oauth2_public_client_enabled": True}
+        )
+        convertor = self._convertor_for(mock_release_data, resource_kind, apisix_version=APISIX_VERSION_3_13)
+
+        assert self._oauth2_plugins(convertor._convert_http_route(resource)) == {}
+
+    def test_generated_oauth2_plugin_overwrites_historical_resource_binding(self, mock_release_data):
         resource = _standard_resource()
         resource["contexts"]["resource_auth"]["config"] = json.dumps(
             {
@@ -405,12 +469,14 @@ class TestRouteConvertor:
                 "resource",
             )
         ]
+        convertor = self._convertor_for(mock_release_data, ResourceKindEnum.STANDARD.value)
 
         route = convertor._convert_http_route(resource)
 
         assert route.plugins["bk-oauth2-appcode-validate"].model_dump(exclude_none=True) == {
             "support_public": True,
             "support_personal": False,
+            "support_app": True,
         }
 
     @pytest.mark.parametrize(
