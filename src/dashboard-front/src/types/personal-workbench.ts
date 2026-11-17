@@ -16,18 +16,15 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { IResource } from '@/types/permission';
+import type { IPersonalWorkbenchListQuery, IPersonalWorkbenchListResponse } from '@/services/types/me/workbench.ts';
 import type { ITimeRangeFilter } from '@/types/common';
-import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
+import type { IResource } from '@/types/permission';
 
 // 个人工作台 —> MCP Server 列表/ gateway tab选项
 export type ITabKey = 'gateway' | 'mcp';
 
 // 个人工作台 —> MCP Server 列表/ gateway 审批状态
 export type IApplyStatus = '' | 'approved' | 'rejected';
-
-// 个人工作台 —> 我的待办、我的已办、我的申请
-export type IApprovalStatus = 'pending' | 'applied' | 'handled';
 
 //  个人工作台 —> 接口响应内容和自定义UI界面变量
 export type IPersonalWorkbenchUIState = IPersonalWorkbenchListResponse & {
@@ -39,29 +36,8 @@ export type IPersonalWorkbenchUIState = IPersonalWorkbenchListResponse & {
   selection?: IResource[]
 };
 
-// 个人工作台 —> MCP Server 列表/ gateway 列表请求参数
-export interface IPersonalWorkbenchListQuery {
-  limit?: number
-  offset?: number
-  keyword?: string
-  /** 开始时间（Unix 秒），>= time_start；两端各自生效，同时传时起点不得晚于终点 */
-  time_start?: number
-  /** 结束时间（Unix 秒），<= time_end */
-  time_end?: number
-  applied_by?: string | string[]
-  bk_app_code?: string
-  gateway_id?: string | number
-  mcp_server_id?: string | number
-  grant_dimension?: string
-}
-
 // 个人工作台 —> 筛选表单状态：时间未选择时为空字符串，请求前用 toTimeRangeQuery 转为接口参数
 export type IPersonalWorkbenchFilter = Omit<IPersonalWorkbenchListQuery, 'time_start' | 'time_end'> & ITimeRangeFilter;
-
-// 个人工作台 - 下拉筛选选项列表请求参数
-export interface IPersonalWorkbenchFilterOptionQuery {
-  type: IApprovalStatus
-}
 
 // 个人工作台 —> MCP Server 列表/ gateway 审批参数
 export interface IFomDataQuery {
@@ -77,7 +53,7 @@ export interface IFomDataQuery {
 // 个人工作台 —> MCP Server 列表/ gateway tab选项
 export interface IPermission {
   bk_app_code: string
-  grant_dimension: string
+  grant_dimension?: string
   isSelectAll: boolean
   resources?: IResource[]
   selection?: IResource[]

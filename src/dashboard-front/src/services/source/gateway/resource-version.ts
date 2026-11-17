@@ -17,21 +17,21 @@
  */
 
 import http from '@/services/http';
+import type { IBatchDeleteIdsInput } from '@/services/types/gateway/common.ts';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type {
-  IResourceVersionDiffOutput,
-  IResourceVersionListOutput,
-  IResourceVersionRetrieveOutput,
-} from '@/services/types/responses/gateways.ts';
 import type {
   IGatewaysResourceVersionsDiffReadQuery,
   IGatewaysResourceVersionsListQuery,
   IGatewaysResourceVersionsReadQuery,
-} from '@/services/types/query/gateways.ts';
-import type {
+  INeedNewResourceVersionOutput,
+  INextResourceVersionOutput,
   IResourceVersionCreateInputSLZ,
+  IResourceVersionDiffOutput,
+  IResourceVersionDocExportInputSLZ,
   IResourceVersionExportInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
+  IResourceVersionListOutput,
+  IResourceVersionRetrieveOutput,
+} from '@/services/types/gateway/resource-version.ts';
 
 const path = '/gateways';
 
@@ -41,14 +41,14 @@ const path = '/gateways';
  * @param data 资源版本信息
  */
 export const createResourceVersion = (gatewayId: number, data: IResourceVersionCreateInputSLZ) =>
-  http.post(`${path}/${gatewayId}/resource-versions/`, data);
+  http.post<void>(`${path}/${gatewayId}/resource-versions/`, data);
 
 /**
  * 获取建议的版本
  * @param gatewayId 网关id
  */
 export const getNextVersion = (gatewayId: number) =>
-  http.get<{ version: string }>(`${path}/${gatewayId}/resource-versions/next-version/`);
+  http.get<INextResourceVersionOutput>(`${path}/${gatewayId}/resource-versions/next-version/`);
 
 /**
  * 获取资源版本列表
@@ -72,10 +72,7 @@ export const getVersionDetail = (gatewayId: number, id: number, params: IGateway
  * @param gatewayId 网关id
  */
 export const checkNeedNewVersion = (gatewayId: number) =>
-  http.get<{
-    msg: string | null
-    need_new_version: boolean
-  }>(`${path}/${gatewayId}/resource-versions/need-new-version/`, undefined, { catchError: true });
+  http.get<INeedNewResourceVersionOutput>(`${path}/${gatewayId}/resource-versions/need-new-version/`, undefined, { catchError: true });
 
 /**
  * 对比两个资源版本（或资源版本与编辑区）的差异
@@ -92,7 +89,7 @@ export const getVersionDiff = (gatewayId: number, data: IGatewaysResourceVersion
  */
 export const exportVersion = (gatewayId: number, data: IResourceVersionExportInputSLZ) => {
   const { id, ...payload } = data;
-  return http.post(`${path}/${gatewayId}/resource-versions/${id}/export/`, payload, {
+  return http.post<void>(`${path}/${gatewayId}/resource-versions/${id}/export/`, payload, {
     responseType: 'blob',
     catchError: true,
   });
@@ -105,13 +102,10 @@ export const exportVersion = (gatewayId: number, data: IResourceVersionExportInp
  */
 export const exportVersionDocs = (
   gatewayId: number,
-  data: {
-    id?: number
-    file_type: string
-  },
+  data: IResourceVersionDocExportInputSLZ & { id?: number },
 ) => {
   const { id, ...payload } = data;
-  return http.post(`${path}/${gatewayId}/resource-versions/${id}/export-docs/`, payload, {
+  return http.post<void>(`${path}/${gatewayId}/resource-versions/${id}/export-docs/`, payload, {
     responseType: 'blob',
     catchError: true,
   });
@@ -123,12 +117,12 @@ export const exportVersionDocs = (
  * @param id 资源版本id
  */
 export const deleteResourceVersion = (gatewayId: number, id: number) =>
-  http.delete(`${path}/${gatewayId}/resource-versions/${id}/`);
+  http.delete<void>(`${path}/${gatewayId}/resource-versions/${id}/`);
 
 /**
  * 批量删除资源版本
  * @param gatewayId 网关id
  * @param params 资源版本id列表
  */
-export const batchDeleteResourceVersions = (gatewayId: number, params: { ids: number[] }) =>
-  http.delete(`${path}/${gatewayId}/resource-versions/batch/`, params);
+export const batchDeleteResourceVersions = (gatewayId: number, params: IBatchDeleteIdsInput) =>
+  http.delete<void>(`${path}/${gatewayId}/resource-versions/batch/`, params);

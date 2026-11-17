@@ -17,13 +17,13 @@
  */
 
 import http from '@/services/http';
-import type { IGatewayMemberUpdateInputSLZ } from '@/services/types/body/patch/gateway-members';
-import type { IGatewayMemberCreateInputSLZ } from '@/services/types/body/post/gateway-members';
 import type {
-  GatewayMemberRole,
   IGatewayMemberBatchCreateOutput,
+  IGatewayMemberCreateInputSLZ,
   IGatewayMemberOutput,
-} from '@/services/types/responses/gateway-members';
+  IGatewayMemberUpdateInputSLZ,
+  IGatewayUserRoleOutput,
+} from '@/services/types/gateway/member.ts';
 
 const path = '/gateways';
 
@@ -64,4 +64,4 @@ export const deleteGatewayMember = (gatewayId: number, memberId: number) =>
  * @param gatewayId 网关id
  */
 export const getMyGatewayRole = (gatewayId: number) =>
-  http.get<{ role: GatewayMemberRole }>(`${path}/${gatewayId}/me/role/`);
+  http.get<IGatewayUserRoleOutput>(`${path}/${gatewayId}/me/role/`);

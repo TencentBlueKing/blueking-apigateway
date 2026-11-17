@@ -114,7 +114,7 @@ src/dashboard-front/
 │   ├── services/
 │   │   ├── http/               # Axios 封装（缓存、CSRF、中间件）
 │   │   ├── source/             # API 接口函数，按作用域分目录（见「API 服务层」）
-│   │   └── types/              # 接口出入参类型（query / body / responses）
+│   │   └── types/              # 按业务模块组织的接口查询、请求体和响应类型
 │   ├── stores/                 # 11 个 Pinia Store
 │   ├── styles/                 # 全局 SCSS 样式
 │   ├── types/                  # 领域类型与视图类型（见「类型系统」）
@@ -304,9 +304,13 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 
 | 位置                                  | 内容                                                                |
 |-------------------------------------|-------------------------------------------------------------------|
-| `services/source/**`                | 只保留接口签名用到的入参类型（如 `IAuthData`、`IObservabilitySearchParams`）          |
-| `services/types/{query,body,responses}/` | 接口出入参类型，按后端 URL 命名（如 `IGatewaysStagesListQuery`、`IStageListOutput`） |
+| `services/source/**`                | API 服务函数，引用对应业务模块的 DTO                                                |
+| `services/types/**`                 | 按业务模块组织的接口出入参类型（如 `gateway/stage.ts` 中的 `IGatewaysStagesListQuery`、`IStageListOutput`） |
 | `src/types/`                        | 领域类型与视图类型，供多个页面、组件、Store 复用                                       |
+
+DTO 文件路径与对应的 `services/source/` 业务模块一致。将查询参数、请求体和响应声明放入同一模块，类型名保留
+Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方法使用时，复用同一个声明。分页等通用类型见
+`services/types/utils.ts`，表单、表格等视图状态放在 `src/types/`。
 
 `src/types/` 文件：
 
@@ -334,7 +338,7 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 ### 时间与日期
 
 后端时间参数一律是 Unix **整数秒**，前端以后端现有行为为准，各接口的开闭区间、成对规则写在
-`services/types/query/` 对应字段的注释里；前端不对开闭区间做 ±1 秒补偿。
+`services/types/` 下对应模块的查询类型注释里；前端不对开闭区间做 ±1 秒补偿。
 
 - **转换与校验**：`@/utils/time-range`。`toTimeRangeSeconds` 把 Date、Dayjs、毫秒数或 `YYYY-MM-DD HH:mm:ss` 文本
   转为秒级区间，无效时返回 `null`；`toTimeRangeQuery` 把筛选状态转为接口参数（两端成对传或都不传）；
@@ -479,7 +483,7 @@ const { t } = useI18n();   // 组合式 API（自动导入）
   用 `@/services/http` 导出的 `withExtraQuery(url, extraStr)` 追加，它会在检索串为空时原样返回地址。
   注意 `http.delete` 会把 params 放进请求体；如果后端从查询串读取参数，需要拼在 URL 上（参考 `gateway/permission.ts` 的
   `deleteApiPermission`）。
-- **类型**：接口文件只放接口函数和签名用到的入参类型，其余类型按「类型系统」放到 `services/types/` 或 `src/types/`。
+- **类型**：在 `services/types/` 对应模块中声明接口出入参，并由服务函数引用。领域类型与视图类型放在 `src/types/`。
 - **无副作用**：不要修改调用方传入的对象，也不要在接口函数里触发下载。`application/octet-stream` 响应由
   `http/middleware/response.ts` 统一下载，调用方 `await` 之后提示结果即可。
 
@@ -487,9 +491,11 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 // src/services/source/gateway/xxx.ts
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IXxxListOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysXxxListQuery } from '@/services/types/query/gateways.ts';
-import type { IXxxInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IGatewaysXxxListQuery,
+  IXxxInputSLZ,
+  IXxxListOutput,
+} from '@/services/types/gateway/xxx.ts';
 
 const path = '/gateways';
 

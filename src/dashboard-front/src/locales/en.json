@@ -2067,6 +2067,7 @@
   "日志详情分析": "Log Analysis",
   "状态分析": "Doc Translation",
   "问问AI": "Ask AI",
+  "AI 未返回内容，请重试": "AI returned no content. Please try again.",
   "编辑 {n}": "Edit {n}",
   "结果预览": "Preview",
   "工具数量": "Tools",

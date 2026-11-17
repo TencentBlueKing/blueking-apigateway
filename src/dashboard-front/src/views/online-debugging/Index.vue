@@ -542,10 +542,11 @@ import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import { useEnv, useGateway, useResourceDebugging } from '@/stores';
 import { getReleasedResourceSchema, getReleasedStageResources } from '@/services/source/gateway/release';
 import { createApiTest } from '@/services/source/gateway/api-test';
+import type { IAPITestAuthorization, IAPITestInputSLZ } from '@/services/types/gateway/api-test.ts';
 import { getGatewayDetail } from '@/services/source/gateway/gateway';
 import { getStageList } from '@/services/source/gateway/stage';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
-import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewayRetrieveOutput } from '@/services/types/gateway/gateway.ts';
 
 interface IProps { gatewayId?: number }
 
@@ -1411,7 +1412,7 @@ const cancelUserAuthEdit = () => {
 const getKeyValue = (list: any[]) => {
   if (!list?.length) return {};
 
-  const obj: any = {};
+  const obj: Record<string, string> = {};
   list.forEach((item: any) => {
     if (item.name) {
       obj[item.name] = item.value;
@@ -1421,7 +1422,7 @@ const getKeyValue = (list: any[]) => {
   return obj;
 };
 
-const checkFormData = (data: any) => {
+const checkFormData = (data: IAPITestInputSLZ & { authorization: IAPITestAuthorization }) => {
   const pathValues = Object.values(data.path_params);
   const pathKeys = Object.keys(data.path_params);
   // const reg = /^[\w{}/.-]*$/;
@@ -1434,7 +1435,7 @@ const checkFormData = (data: any) => {
   //   form.value.validate();
   //   return false;
   // }
-  if (pathKeys?.length && pathValues.some((val: any) => !val?.length)) {
+  if (pathKeys?.length && pathValues.some(val => !val?.length)) {
     Message({
       theme: 'error',
       message: t('请输入完整的路径参数'),
@@ -1461,24 +1462,29 @@ const formatPayload = () => {
   const { raw } = payload.body;
   // formData: formDataList, urlencoded,
 
-  const data: any = {};
-  data.stage_id = stage.value;
-  data.resource_id = curResource.value?.id;
-  data.method = curResource.value?.method;
-  data.query_params = getKeyValue(query);
-  data.path_params = getKeyValue(path);
-  data.headers = getKeyValue(headers);
-  data.body = raw;
+  const stageId = stage.value;
+  const resourceId = curResource.value?.id;
+  const method = curResource.value?.method;
+  if (stageId === undefined || !resourceId || !method) {
+    return false;
+  }
 
-  // 用户认证
   const { userAuthType } = formData.value;
   const userAuthValue = (formData.value.userAuthValue || '').trim();
   const useCookiesAuth = (userAuthType || 'use_cookies') === 'use_cookies';
-  // 资源未开启用户认证时，不携带 Cookie 认证信息
-  data.use_user_from_cookies = Boolean(curResource.value?.verified_user_required) && useCookiesAuth;
-
-  data.use_test_app = isDefaultAppAuth.value;
-  data.authorization = { ...formData.value?.authorization };
+  const data = {
+    stage_id: stageId,
+    resource_id: resourceId,
+    method,
+    query_params: getKeyValue(query),
+    path_params: getKeyValue(path),
+    headers: getKeyValue(headers),
+    body: raw,
+    // 资源未开启用户认证时，不携带 Cookie 认证信息
+    use_user_from_cookies: Boolean(curResource.value?.verified_user_required) && useCookiesAuth,
+    use_test_app: isDefaultAppAuth.value,
+    authorization: { ...formData.value?.authorization },
+  } satisfies IAPITestInputSLZ;
 
   // 默认应用认证数据过滤
   if (isDefaultAppAuth.value) {
@@ -1925,7 +1931,7 @@ init();
 
   .my-menu-header {
     display: flex;
-    padding: 0px 24px 7px;
+    padding: 0 24px 7px;
     cursor: pointer;
     align-items: center;
 

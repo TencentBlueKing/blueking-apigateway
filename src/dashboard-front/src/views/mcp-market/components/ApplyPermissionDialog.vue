@@ -99,10 +99,8 @@ import {
 } from 'bkui-vue';
 import { marketplacePermissionApply } from '@/services/source/mcp-marketplace';
 import { getUserApplicationList } from '@/services/source/me/application';
-import type {
-  IMarketplacePermissionApplyOutput,
-} from '@/services/types/responses/mcp-marketplace.ts';
-import type { IUserApplicationOutput } from '@/services/types/responses/me';
+import type { IMarketplacePermissionApplyOutput } from '@/services/types/mcp-marketplace.ts';
+import type { IUserApplicationOutput } from '@/services/types/me/application.ts';
 import { useEnv } from '@/stores';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 

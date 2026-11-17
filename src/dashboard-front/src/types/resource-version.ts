@@ -20,7 +20,7 @@
 * 资源版本相关类型
 *  */
 
-import type { IResourceVersionDiffOutput } from '@/services/types/responses/gateways';
+import type { IResourceVersionDiffOutput } from '@/services/types/gateway/resource-version.ts';
 
 export interface IVersionItem {
   id: number | string

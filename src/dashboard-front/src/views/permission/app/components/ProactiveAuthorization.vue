@@ -179,9 +179,8 @@ import { Form, Input, Transfer } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
-import { type IResource } from '@/types/permission';
+import type { IAuthData, IResource } from '@/types/permission';
 import {
-  type IAuthData,
   authApiPermission,
   authResourcePermission,
 } from '@/services/source/gateway/permission';

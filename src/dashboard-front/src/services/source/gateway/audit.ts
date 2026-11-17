@@ -17,8 +17,7 @@
  */
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysAuditsLogsListQuery } from '@/services/types/query/gateways.ts';
+import type { IAuditEventLogOutput, IGatewaysAuditsLogsListQuery } from '@/services/types/gateway/audit.ts';
 
 const path = '/gateways';
 

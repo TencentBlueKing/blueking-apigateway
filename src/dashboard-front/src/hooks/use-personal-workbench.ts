@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ITabKey } from '@/services/types/query/personal-workbench.ts';
+import type { ITabKey } from '@/types/personal-workbench.ts';
 import { getPendingCount } from '@/services/source/me/workbench';
 
 // tab切换选项

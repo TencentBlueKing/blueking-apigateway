@@ -211,8 +211,11 @@ import {
 } from '@/services/source/gateway/mcp-server/permission';
 import type { IPermissionApprovalAction, IPermissionApprovalFilterValue } from '@/types/mcp-server';
 import { getServers } from '@/services/source/gateway/mcp-server/server';
-import type { IGatewaysMcpServersAppPermissionApplyListQuery } from '@/services/types/query/gateways.ts';
-import type { IMCPServerAppPermissionApplyListOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysMcpServersAppPermissionApplyListQuery,
+  IMCPServerAppPermissionApplyListOutput,
+} from '@/services/types/gateway/mcp-server/permission.ts';
+import type { IMCPServerListOutput } from '@/services/types/gateway/mcp-server/server.ts';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { locale, t } from '@/locales';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
@@ -625,17 +628,11 @@ const getMcpList = async (customLimit?: number) => {
 getMcpList();
 
 const getApplicant = async () => {
-  // 如果是多租户模式或者应用权限tab，不展示申请人筛选
-  if (featureFlagStore.isTenantMode || isAppPerm.value) {
+  const { mcp_server_id, state } = filterData.value;
+  if (featureFlagStore.isTenantMode || (state !== 'processed' && state !== 'unprocessed')) {
     return;
   }
-  const response = await getMcpAppPermissionApplicants(
-    gatewayId,
-    filterData.value.mcp_server_id || '-',
-    {
-      state: filterData.value.state,
-    } as IGatewaysMcpServersAppPermissionApplyListQuery,
-  );
+  const response = await getMcpAppPermissionApplicants(gatewayId, mcp_server_id || '-', { state });
   applicantList.value = response?.applicants || [];
 };
 

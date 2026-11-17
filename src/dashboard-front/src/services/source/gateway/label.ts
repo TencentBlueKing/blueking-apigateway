@@ -21,9 +21,11 @@
 *  */
 
 import http from '@/services/http';
-import type { IGatewayLabelOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysLabelsListQuery } from '@/services/types/query/gateways.ts';
-import type { IGatewayLabelInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IGatewayLabelInputSLZ,
+  IGatewayLabelOutput,
+  IGatewaysLabelsListQuery,
+} from '@/services/types/gateway/label.ts';
 
 const path = '/gateways';
 
@@ -41,14 +43,14 @@ export const getLabelList = (gatewayId: number, query: IGatewaysLabelsListQuery 
  * @param data 标签名称
  */
 export const createLabel = (gatewayId: number, data: IGatewayLabelInputSLZ) =>
-  http.post(`${path}/${gatewayId}/labels/`, data);
+  http.post<IGatewayLabelOutput>(`${path}/${gatewayId}/labels/`, data);
 
 /**
  * 删除标签
  * @param gatewayId 网关id
  * @param labelsId 标签id
  */
-export const deleteLabel = (gatewayId: number, labelsId: number) => http.delete(`${path}/${gatewayId}/labels/${labelsId}/`);
+export const deleteLabel = (gatewayId: number, labelsId: number) => http.delete<void>(`${path}/${gatewayId}/labels/${labelsId}/`);
 
 /**
  * 更新标签
@@ -57,4 +59,4 @@ export const deleteLabel = (gatewayId: number, labelsId: number) => http.delete(
  * @param data 标签数据
  */
 export const updateLabel = (gatewayId: number, labelsId: number, data: IGatewayLabelInputSLZ) =>
-  http.put(`${path}/${gatewayId}/labels/${labelsId}/`, data);
+  http.put<void>(`${path}/${gatewayId}/labels/${labelsId}/`, data);

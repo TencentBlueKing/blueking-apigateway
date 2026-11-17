@@ -216,8 +216,12 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
-import type { IChartDataLoading, IChartDataType, IStatisticsType } from '@/types/observability';
-import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
+import type {
+  IChartDataLoading,
+  IChartDataType,
+  IObservabilitySearchParams,
+  IStatisticsType,
+} from '@/types/observability';
 import LineChart from '@/views/mcp-server/components/DashboardLineChart.vue';
 
 interface IProps {

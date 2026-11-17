@@ -263,11 +263,8 @@ import {
   getSystemComponentDoc,
 } from '@/services/source/docs/esb';
 import type { ComponentPublicInstance } from 'vue';
-import type {
-  IDocsEsbBoardsSystemsListResponse as IBoard,
-  IDocsGatewaysStagesListResponse as IStage,
-  ISystemSLZ as ISystem,
-} from '@/services/types/responses/docs';
+import type { IDocsEsbBoardsSystemsListResponse as IBoard, ISystemSLZ as ISystem } from '@/services/types/docs/esb.ts';
+import type { IDocsGatewaysStagesListResponse as IStage } from '@/services/types/docs/gateway.ts';
 import type { INavItem } from '../components/DocDetailSideNav.vue';
 import type { ISdkItem } from '../components/DocSdkSection.vue';
 import { type DocTab, docTabKey } from '../utils/doc-context';

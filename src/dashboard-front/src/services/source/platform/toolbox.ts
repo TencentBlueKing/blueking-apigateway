@@ -25,8 +25,8 @@ import type {
   IMCPServerChainLogListOutput,
   IMCPServerLogChainOutput,
   IMCPServerLogQuerySummaryOutput,
-  IRequestLogOutput,
-} from '@/services/types/responses/gateways.ts';
+} from '@/services/types/gateway/mcp-server/log.ts';
+import type { IRequestLogOutput } from '@/services/types/gateway/access-log.ts';
 
 const path = '/gateways';
 

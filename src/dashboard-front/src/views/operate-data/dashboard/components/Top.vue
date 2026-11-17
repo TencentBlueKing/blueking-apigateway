@@ -107,7 +107,7 @@
 <script setup lang="ts">
 import { useStage } from '@/stores';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
-import type { IGatewaysMetricsQueryRangeListQuery } from '@/services/types/query/gateways';
+import type { IGatewaysMetricsQueryRangeListQuery } from '@/services/types/gateway/metrics.ts';
 
 type MetricsStep = NonNullable<IGatewaysMetricsQueryRangeListQuery['step']>;
 

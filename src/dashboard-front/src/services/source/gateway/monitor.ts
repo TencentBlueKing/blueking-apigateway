@@ -18,16 +18,14 @@
 import http from '@/services/http';
 import type {
   IAlarmRecordListOutput,
+  IAlarmStrategyInputSLZ,
   IAlarmStrategyListOutput,
   IAlarmStrategyRetrieveOutput,
-} from '@/services/types/responses/gateways.ts';
-import type { ICountAndResults } from '@/services/types/utils.ts';
-import type {
+  IAlarmStrategyUpdateStatusInputSLZ,
   IGatewaysMonitorsAlarmRecordsListQuery,
   IGatewaysMonitorsAlarmStrategiesListQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IAlarmStrategyInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type { IAlarmStrategyUpdateStatusInputSLZ } from '@/services/types/body/patch/gateways.ts';
+} from '@/services/types/gateway/monitor.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
 
 const path = '/gateways';
 
@@ -53,7 +51,7 @@ export const getStrategyDetail = (gatewayId: number, id: number) =>
  * @param params 创建参数
  */
 export const createStrategy = (gatewayId: number, params: IAlarmStrategyInputSLZ) =>
-  http.post(`${path}/${gatewayId}/monitors/alarm/strategies/`, params);
+  http.post<void>(`${path}/${gatewayId}/monitors/alarm/strategies/`, params);
 
 /**
  *  更新告警策略
@@ -62,7 +60,7 @@ export const createStrategy = (gatewayId: number, params: IAlarmStrategyInputSLZ
  * @param params 更新参数
  */
 export const updateStrategy = (gatewayId: number, id: number, params: IAlarmStrategyInputSLZ) =>
-  http.put(`${path}/${gatewayId}/monitors/alarm/strategies/${id}/`, params);
+  http.put<void>(`${path}/${gatewayId}/monitors/alarm/strategies/${id}/`, params);
 
 /**
  *  删除单个告警策略
@@ -70,7 +68,7 @@ export const updateStrategy = (gatewayId: number, id: number, params: IAlarmStra
  * @param id 告警策略id
  */
 export const deleteStrategy = (gatewayId: number, id: number) =>
-  http.delete(`${path}/${gatewayId}/monitors/alarm/strategies/${id}/`);
+  http.delete<void>(`${path}/${gatewayId}/monitors/alarm/strategies/${id}/`);
 
 /**
  *  更新告警策略状态（启用 / 停用）
@@ -79,7 +77,7 @@ export const deleteStrategy = (gatewayId: number, id: number) =>
  * @param params 更新状态参数
  */
 export const patchStrategyStatus = (gatewayId: number, id: number, params: IAlarmStrategyUpdateStatusInputSLZ) =>
-  http.patch(`${path}/${gatewayId}/monitors/alarm/strategies/${id}/status/`, params);
+  http.patch<void>(`${path}/${gatewayId}/monitors/alarm/strategies/${id}/status/`, params);
 
 /**
  *  获取告警记录列表

@@ -511,9 +511,8 @@ import { refDebounced } from '@vueuse/core';
 import type {
   IMCPServerRemotePromptsOutput,
   IMCPServerRetrieveOutput,
-  IStageListOutput,
-} from '@/services/types/responses/gateways';
-import type { IMCPServerCreateInputSLZ } from '@/services/types/body/post/gateways';
+} from '@/services/types/gateway/mcp-server/server.ts';
+import type { IStageListOutput } from '@/services/types/gateway/stage.ts';
 import { usePopInfoBox, useSidebar } from '@/hooks';
 import { HTTP_METHODS } from '@/constants';
 import {
@@ -1502,7 +1501,7 @@ const handleSubmit = async (): Promise<void> => {
     if (hiddenCategoriesList.value.length) {
       categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map(item => item.id)];
     }
-    let params: Partial<IMCPServerCreateInputSLZ> = {
+    const config = {
       resource_names: toolSelections.value.map(item => item.name),
       tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
@@ -1519,7 +1518,8 @@ const handleSubmit = async (): Promise<void> => {
         protocol_type,
         labels,
       } = formData.value;
-      params = Object.assign(params, {
+      const params = {
+        ...config,
         description,
         is_public,
         oauth2_public_client_enabled,
@@ -1528,7 +1528,7 @@ const handleSubmit = async (): Promise<void> => {
         protocol_type,
         labels,
         title,
-      });
+      };
       await patchServer(gatewayId.value!, serverId!, params);
       Message({
         theme: 'success',
@@ -1536,8 +1536,8 @@ const handleSubmit = async (): Promise<void> => {
       });
     }
     else {
-      params = {
-        ...params,
+      const params = {
+        ...config,
         ...formData.value,
         name: mcpServerName.value,
       };

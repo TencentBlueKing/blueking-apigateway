@@ -129,9 +129,11 @@ import { useFeatureFlag, useGateway } from '@/stores';
 import { useMcpPermission } from '@/hooks';
 import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import type { IMCPServerAppPermissionListOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysMcpServersPermissionsListQuery } from '@/services/types/query/gateways.ts';
-import type { IMCPServerAppPermissionCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IGatewaysMcpServersPermissionsListQuery,
+  IMCPServerAppPermissionCreateInputSLZ,
+  IMCPServerAppPermissionListOutput,
+} from '@/services/types/gateway/mcp-server/permission.ts';
 import {
   getMcpAppPermissionList,
   grantMcpAppPermission,

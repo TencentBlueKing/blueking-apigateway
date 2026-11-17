@@ -51,8 +51,11 @@ import type { ITableMethod } from '@/types/common';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import { getServers } from '@/services/source/gateway/mcp-server/server';
 import type { IMCPFilterParams, IMCPServerCategory, IMCPServerWithUIState } from '@/types/mcp-server';
-import type { IGatewaysMcpServersListQuery } from '@/services/types/query/gateways.ts';
-import type { IMCPServerFilterOptionsOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysMcpServersListQuery,
+  IMCPServerFilterOptionsOutput,
+  IMCPServerListOutput,
+} from '@/services/types/gateway/mcp-server/server.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useMcpAuthRisk } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';

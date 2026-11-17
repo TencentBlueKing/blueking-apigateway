@@ -18,8 +18,10 @@
 import http from '@/services/http';
 import type {
   IAICompletionInputSLZ,
+  IAICompletionOutput,
   IBatchTranslateInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
+  IBatchTranslateOutput,
+} from '@/services/types/gateway/ai.ts';
 
 const path = '/gateways';
 
@@ -29,7 +31,7 @@ const path = '/gateways';
  * @param data 参数
  */
 export const getAICompletion = (gatewayId: number, data: IAICompletionInputSLZ) =>
-  http.post(`${path}/${gatewayId}/ai/completion/`, data);
+  http.post<IAICompletionOutput>(`${path}/${gatewayId}/ai/completion/`, data);
 
 /**
  *  批量AI翻译资源文档
@@ -37,4 +39,4 @@ export const getAICompletion = (gatewayId: number, data: IAICompletionInputSLZ) 
  * @param data 参数
  */
 export const batchResourceDocAITranslate = (gatewayId: number, data: IBatchTranslateInputSLZ) =>
-  http.post(`${path}/${gatewayId}/ai/batch-translate/`, data);
+  http.post<IBatchTranslateOutput>(`${path}/${gatewayId}/ai/batch-translate/`, data);

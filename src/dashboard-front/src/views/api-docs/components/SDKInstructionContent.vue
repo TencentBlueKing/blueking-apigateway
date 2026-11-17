@@ -59,7 +59,7 @@ import { copy } from '@/utils';
 import { getESBSDKDoc } from '@/services/source/docs/esb';
 import { getGatewaySDKDoc } from '@/services/source/docs/gateway';
 import { docTabKey } from '../utils/doc-context';
-import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs';
+import type { IDocsSdksDocReadQuery } from '@/services/types/docs/gateway.ts';
 import { useEnv } from '@/stores';
 import 'highlight.js/styles/github.css';
 

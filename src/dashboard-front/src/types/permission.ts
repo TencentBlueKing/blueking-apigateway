@@ -74,3 +74,11 @@ export interface IPermissionExportParams {
   resource_permission_ids?: number[]
   gateway_permission_ids?: number[]
 }
+
+export interface IAuthData {
+  bk_app_code: string
+  expire_type: string
+  expire_days: number | null
+  resource_ids: number[]
+  dimension: string
+}

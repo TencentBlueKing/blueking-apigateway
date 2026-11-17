@@ -17,7 +17,7 @@
  */
 
 import http from '@/services/http';
-import type { IUserApplicationOutput } from '@/services/types/responses/me';
+import type { IUserApplicationOutput } from '@/services/types/me/application.ts';
 
 // 获取当前用户可管理的蓝鲸应用列表
 export const getUserApplicationList = () =>

@@ -509,8 +509,7 @@ import {
 } from '@/stores';
 import { usePopInfoBox, useTableFilterChange } from '@/hooks';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateways.ts';
-import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysResourcesListQuery, IResourceListPageOutput } from '@/services/types/gateway/resource.ts';
 import { exportDocs } from '@/services/source/gateway/resource-doc';
 import { getLabelList } from '@/services/source/gateway/label';
 import {
@@ -1842,7 +1841,7 @@ const handleShowVersion = async () => {
   try {
     const res = await checkNeedNewVersion(gatewayId);
     versionConfigs.needNewVersion = res.need_new_version;
-    versionConfigs.versionMessage = res.msg ?? '';
+    versionConfigs.versionMessage = res.need_new_version ? res.msg : '';
   }
   catch (error: any) {
     versionConfigs.needNewVersion = false;

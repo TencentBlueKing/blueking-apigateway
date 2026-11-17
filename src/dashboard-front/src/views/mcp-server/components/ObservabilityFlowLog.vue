@@ -105,10 +105,10 @@ import { t } from '@/locales';
 import { useGateway } from '@/stores';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import {
-  type IObservabilityBasicForm,
   exportMcpLogs,
   getMcpLogTimechart,
 } from '@/services/source/gateway/mcp-server/log';
+import type { IObservabilityBasicForm } from '@/types/observability';
 import ObservabilityBasicForm from '@/views/mcp-server/components/ObservabilityBasicForm.vue';
 import FlowLogChart from '@/views/mcp-server/components/FlowLogChart.vue';
 import FlowLogDetailTable from '@/views/mcp-server/components/FlowLogDetailTable.vue';

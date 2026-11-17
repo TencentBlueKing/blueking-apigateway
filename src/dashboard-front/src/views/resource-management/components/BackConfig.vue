@@ -306,8 +306,8 @@ import type {
   IAIBackendConfigOutput,
   IBackendListOutput,
   IBackendRetrieveOutput,
-} from '@/services/types/responses/gateways.ts';
-import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
+  IGatewaysBackendsListQuery,
+} from '@/services/types/gateway/backend.ts';
 
 type IServiceConfig = IBackendRetrieveOutput['configs'][number];
 

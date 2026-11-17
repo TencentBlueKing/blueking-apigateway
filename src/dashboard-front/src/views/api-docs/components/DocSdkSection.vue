@@ -113,7 +113,7 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/common';
 import { getESBSDKDoc } from '@/services/source/docs/esb';
 import { getGatewaySDKDoc } from '@/services/source/docs/gateway';
-import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs';
+import type { IDocsSdksDocReadQuery } from '@/services/types/docs/gateway.ts';
 import type { ISdk, ISdkDoc } from './SDKDetail.vue';
 import { docTabKey } from '../utils/doc-context';
 import DocDetailField from './DocDetailField.vue';

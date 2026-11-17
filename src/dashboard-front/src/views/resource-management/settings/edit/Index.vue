@@ -104,7 +104,7 @@ const init = async () => {
 
 const getResourceDetails = async () => {
   const res = await getResourceDetail(gatewayId.value, resourceId.value);
-  const { none_schema } = ((res?.schema as unknown) as Record<string, any> | null) ?? {};
+  const { none_schema } = res?.schema ?? {};
 
   // 判断是否无请求参数
   if (none_schema) {

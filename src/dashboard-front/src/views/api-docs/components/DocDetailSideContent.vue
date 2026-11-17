@@ -141,10 +141,8 @@
 import DocDetailField from './DocDetailField.vue';
 import DocDetailMaintainerAction from './DocDetailMaintainerAction.vue';
 import DocSdkSection, { type ISdkItem } from './DocSdkSection.vue';
-import type {
-  IDocsEsbBoardsSystemsReadResponse,
-  IDocsGatewaysReadResponse,
-} from '@/services/types/responses/docs';
+import type { IDocsEsbBoardsSystemsReadResponse } from '@/services/types/docs/esb.ts';
+import type { IDocsGatewaysReadResponse } from '@/services/types/docs/gateway.ts';
 import { docTabKey } from '../utils/doc-context';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useBkUserDisplayName } from '@/hooks';

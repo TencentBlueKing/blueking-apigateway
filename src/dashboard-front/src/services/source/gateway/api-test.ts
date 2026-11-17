@@ -24,8 +24,10 @@ import http from '@/services/http';
 import type {
   IAPIDebugHistoriesListOutput,
   IAPIDebugHistoriesRetrieveOutput,
-} from '@/services/types/responses/gateways.ts';
-import type { IGatewaysTestsHistoriesListQuery } from '@/services/types/query/gateways.ts';
+  IAPITestInputSLZ,
+  IAPITestOutput,
+  IGatewaysTestsHistoriesListQuery,
+} from '@/services/types/gateway/api-test.ts';
 
 const path = '/gateways';
 
@@ -34,8 +36,8 @@ const path = '/gateways';
  * @param gatewayId 网关id
  * @param data 请求数据
  */
-export const createApiTest = (gatewayId: number, data: Record<string, unknown>) =>
-  http.post(`${path}/${gatewayId}/tests/`, data);
+export const createApiTest = (gatewayId: number, data: IAPITestInputSLZ) =>
+  http.post<IAPITestOutput>(`${path}/${gatewayId}/tests/`, data);
 
 /**
  *  在线调试历史记录列表

@@ -16,25 +16,23 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '@/services/http';
+import type { ICreatedIdOutput } from '@/services/types/gateway/common.ts';
 import type {
   IDisplayNameCheckResult,
   IGatewayCheckNameAvailableOutput,
   IGatewayCheckRepoAuthOutput,
+  IGatewayCreateInputSLZ,
   IGatewayDevGuidelineOutput,
+  IGatewayDisplayNameCheckInput,
   IGatewayListOutput,
   IGatewayReleasingStatusOutput,
   IGatewayRetrieveOutput,
-} from '@/services/types/responses/gateways.ts';
-import type { ICountAndResults } from '@/services/types/utils.ts';
-import type {
-  IGatewaysCheckNameAvailableReadQuery,
-  IGatewaysListQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type {
   IGatewayUpdateInputSLZ,
   IGatewayUpdateStatusInputSLZ,
-} from '@/services/types/body/patch/gateways.ts';
+  IGatewaysCheckNameAvailableReadQuery,
+  IGatewaysListQuery,
+} from '@/services/types/gateway/gateway.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
 
 const path = '/gateways';
 
@@ -57,13 +55,13 @@ export const getGatewayDetail = (gatewayId: number) =>
  * @param param 新建参数
  */
 export const createGateway = (param: IGatewayCreateInputSLZ) =>
-  http.post(`${path}/`, param);
+  http.post<ICreatedIdOutput>(`${path}/`, param);
 
 /**
  * 删除网关
  * @param gatewayId 网关id
  */
-export const deleteGateway = (gatewayId: number) => http.delete(`${path}/${gatewayId}/`);
+export const deleteGateway = (gatewayId: number) => http.delete<void>(`${path}/${gatewayId}/`);
 
 /**
  * 部分更新网关信息
@@ -71,7 +69,7 @@ export const deleteGateway = (gatewayId: number) => http.delete(`${path}/${gatew
  * @param data 需要更新的字段
  */
 export const patchGateway = (gatewayId: number, data: IGatewayUpdateInputSLZ) =>
-  http.patch(`${path}/${gatewayId}/`, data);
+  http.patch<void>(`${path}/${gatewayId}/`, data);
 
 /**
  * 更新网关基本信息
@@ -79,7 +77,7 @@ export const patchGateway = (gatewayId: number, data: IGatewayUpdateInputSLZ) =>
  * @param data 网关基本信息
  */
 export const updateGateway = (gatewayId: number, data: IGatewayUpdateInputSLZ) =>
-  http.put(`${path}/${gatewayId}/`, data);
+  http.put<void>(`${path}/${gatewayId}/`, data);
 
 /**
  * 检查网关名称是否可用
@@ -93,7 +91,7 @@ export const checkNameAvailable = (param: IGatewaysCheckNameAvailableReadQuery) 
  * @param displayName 网关展示名
  */
 export const checkDisplayNameAvailable = (displayName: string) =>
-  http.post<IDisplayNameCheckResult>(`${path}/check-display-name-available/`, { display_name: displayName });
+  http.post<IDisplayNameCheckResult>(`${path}/check-display-name-available/`, { display_name: displayName } satisfies IGatewayDisplayNameCheckInput);
 
 /**
  * 编辑网关时检查展示名是否可用，网关 ID 仅放在 URL 中，用于排除自身
@@ -101,7 +99,7 @@ export const checkDisplayNameAvailable = (displayName: string) =>
  * @param displayName 网关展示名
  */
 export const checkDisplayNameAvailableForUpdate = (gatewayId: number, displayName: string) =>
-  http.post<IDisplayNameCheckResult>(`${path}/${gatewayId}/check-display-name-available/`, { display_name: displayName });
+  http.post<IDisplayNameCheckResult>(`${path}/${gatewayId}/check-display-name-available/`, { display_name: displayName } satisfies IGatewayDisplayNameCheckInput);
 
 /**
  * 检查当前用户是否已授权代码仓库（可编程网关）
@@ -122,7 +120,7 @@ export const getGuideDocs = (gatewayId: number) =>
  * @param data 状态参数
  */
 export const updateGatewayStatus = (gatewayId: number, data: IGatewayUpdateStatusInputSLZ) =>
-  http.put(`${path}/${gatewayId}/status/`, data);
+  http.put<void>(`${path}/${gatewayId}/status/`, data);
 
 /**
  * 获取网关的发布中状态

@@ -116,20 +116,20 @@ import type { IResource } from '@/types/permission';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IApplyStatus,
-  IApprovalStatus,
   IFomDataQuery,
   IPermission,
   IPersonalWorkbenchFilter,
-  IPersonalWorkbenchListQuery,
   IPersonalWorkbenchUIState,
   ITabKey,
-} from '@/services/types/query/personal-workbench.ts';
+} from '@/types/personal-workbench.ts';
 import type {
+  IApprovalStatus,
   IPersonalWorkbenchFilterOptionResponse,
+  IPersonalWorkbenchListQuery,
   IPersonalWorkbenchListResponse,
-} from '@/services/types/responses/personal-workbench.ts';
-import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
+} from '@/services/types/me/workbench.ts';
+import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/gateway/permission.ts';
+import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/gateway/mcp-server/permission.ts';
 import {
   cancelGatewayApplied,
   cancelMcpApplied,

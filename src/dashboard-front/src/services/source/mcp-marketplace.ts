@@ -21,29 +21,21 @@
 *  */
 
 import http from '@/services/http';
+import type { IMCPServerBatchConfigInput, IMcpClientConfig } from '@/services/types/mcp-client-config.ts';
 import type {
+  IMCPMarketplaceCategoriesGetQuery,
+  IMCPMarketplaceServersGetQuery,
   IMCPServerCategoryOutput,
   IMCPServerConfigListOutput,
   IMCPServerListOutput,
   IMCPServerRetrieveOutput,
   IMCPServerToolDocOutput,
+  IMarketplacePermissionApplyInput,
   IMarketplacePermissionApplyOutput,
-  IMcpClientConfig,
-} from '@/services/types/responses/mcp-marketplace.ts';
+} from '@/services/types/mcp-marketplace.ts';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type {
-  IMCPMarketplaceCategoriesGetQuery,
-  IMCPMarketplaceServersGetQuery,
-  IMcpBatchConfigQuery,
-} from '@/services/types/query/mcp-marketplace.ts';
 
 const path = '/mcp-marketplace';
-
-/** MCP 市场权限申请请求体 */
-export interface IMarketplacePermissionApplyInput {
-  bk_app_code: string
-  reason: string
-}
 
 /**
  *  获取 MCP 市场的 MCPServer 列表
@@ -84,8 +76,8 @@ export const getMarketplaceServerConfigs = (mcp_server_id: number) =>
  * @param {String} data.client_type 客户端类型
  * @param {Number[]} data.mcp_server_ids  McpServerID组
  */
-export const getMarketplaceBatchConfigs = (data: IMcpBatchConfigQuery): Promise<IMcpClientConfig> =>
-  http.post(`${path}/batch-configs/`, data);
+export const getMarketplaceBatchConfigs = (data: IMCPServerBatchConfigInput) =>
+  http.post<IMcpClientConfig>(`${path}/batch-configs/`, data);
 
 /**
  *  发起 MCPServer 权限申请

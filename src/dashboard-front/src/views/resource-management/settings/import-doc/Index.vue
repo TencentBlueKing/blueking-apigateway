@@ -336,7 +336,7 @@ import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { useSelection } from '@/hooks';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
 import type { UploadRequestOptions } from 'bkui-vue/lib/upload/upload.type';
-import type { IDocArchiveParseOutput } from '@/services/types/responses/gateways';
+import type { IDocArchiveParseOutput } from '@/services/types/gateway/resource-doc.ts';
 import { useEnv } from '@/stores';
 
 interface IArchiveUploadResponse {
@@ -362,11 +362,11 @@ const docType = ref('archive');
 const curView = ref('import'); // 当前页面
 const tableData = ref<any[]>([]);
 const checkData = ref<any[]>([]);
-const language = ref('zh');
+const language = ref<'zh' | 'en'>('zh');
 const isDataLoading = ref(false);
 const isImportLoading = ref(false);
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
-const zipFile = ref<File | string>('');
+const zipFile = ref<File>();
 const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>(); // 实例化
 
 // 上传文件大小限制，单位 mb
@@ -411,9 +411,7 @@ const setEditValue = () => {
 
 // 通过统一请求层上传，每次请求时读取最新的 CSRF Token
 const handleArchiveUpload = async ({ file }: UploadRequestOptions): Promise<IArchiveUploadResponse> => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const data = await parseDocArchive(gatewayId, formData);
+  const data = await parseDocArchive(gatewayId, { file });
   return {
     code: 0,
     data,
@@ -457,11 +455,11 @@ const handleCheckData = async () => {
   }
   try {
     isDataLoading.value = true;
-    const parmas: any = {
+    const params = {
       content: editorText.value,
       doc_language: language.value,
     };
-    const res = await checkResourceImport(gatewayId, parmas);
+    const res = await checkResourceImport(gatewayId, params);
     tableData.value = res;
     curView.value = 'resources';
     checkData.value = tableData.value;
@@ -484,28 +482,31 @@ const handleImportDoc = async () => {
       language: e.language || e.doc?.language,
       resource_name: e.resource?.name || e.name,
     }));
-    // 压缩包需要的参数
-    const formData = new FormData();
-    formData.append('file', zipFile.value);
-    // formData.append('selected_resource_docs', JSON.stringify(selections.value));
-    formData.append('selected_resource_docs', JSON.stringify(resourceDocs));
-    const paramsSwagger = {
-      swagger: editorText.value,
-      selected_resource_docs: resourceDocs,
-      language: language.value,
-    };
-    const params = docType.value === 'archive' ? formData : paramsSwagger;
-    const fetchUrl: any = docType.value === 'archive' ? importDocsByArchive : importDocsBySwagger;
+    if (docType.value === 'archive') {
+      if (!zipFile.value) return;
+      await importDocsByArchive(gatewayId, {
+        file: zipFile.value,
+        selected_resource_docs: resourceDocs,
+      });
+    }
+    else {
+      await importDocsBySwagger(gatewayId, {
+        swagger: editorText.value,
+        selected_resource_docs: resourceDocs,
+        language: language.value,
+      });
+    }
     const message = docType.value === 'archive' ? '资源文档' : '资源';
-    await fetchUrl(gatewayId, params);
     Message({
       theme: 'success',
       message: t(`${message}导入成功`),
     });
-    isImportLoading.value = false;
     goBack();
   }
   catch {
+    // 请求失败由统一请求层提示。
+  }
+  finally {
     isImportLoading.value = false;
   }
 };

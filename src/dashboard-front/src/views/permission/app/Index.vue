@@ -143,10 +143,9 @@
 import { cloneDeep } from 'lodash-es';
 import { Button, Message } from 'bkui-vue';
 import { type ISearchItem, type ISearchValue } from 'bkui-vue/lib/search-select/utils.d';
-import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateways';
+import type { IGatewaysResourcesListQuery } from '@/services/types/gateway/resource.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import {
-  type IAuthData,
   batchDeletePermission,
   batchUpdatePermission,
   deleteApiPermission,
@@ -158,7 +157,7 @@ import {
 import { getResourceList } from '@/services/source/gateway/resource';
 import { useFeatureFlag, useGateway, usePermission } from '@/stores';
 import type { IDropList, ITableMethod } from '@/types/common';
-import type { IPermission, IPermissionExportParams, IResource } from '@/types/permission';
+import type { IAuthData, IPermission, IPermissionExportParams, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
 import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';

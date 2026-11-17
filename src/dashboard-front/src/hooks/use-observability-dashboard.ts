@@ -19,8 +19,13 @@
 import type { InjectionKey } from 'vue';
 import { useGateway } from '@/stores';
 import { queryMcpMetricsInstant, queryMcpMetricsRange } from '@/services/source/gateway/mcp-server/metrics';
-import type { IChartDataLoading, IChartDataType, IStatisticsType } from '@/types/observability';
-import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
+import type { IMCPServerMetricsRangeQuery } from '@/services/types/gateway/mcp-server/metrics.ts';
+import type {
+  IChartDataLoading,
+  IChartDataType,
+  IObservabilitySearchParams,
+  IStatisticsType,
+} from '@/types/observability';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 
 /** 时序图指标常量 */
@@ -131,12 +136,15 @@ const createObservabilityDashboard = () => {
    * 通用请求处理函数
    */
   const requestHandler = async <T>(
-    fetchFn: (apigwId: number, params: IObservabilitySearchParams) => Promise<T>,
-    params: Partial<IObservabilitySearchParams>,
+    fetchFn: (apigwId: number, params: IMCPServerMetricsRangeQuery) => Promise<T>,
+    params: IMCPServerMetricsRangeQuery,
     errorMsg: string,
   ): Promise<T | null> => {
     try {
-      const result = await fetchFn(gatewayId.value, filterSimpleEmpty(params));
+      const result = await fetchFn(gatewayId.value, {
+        ...filterSimpleEmpty(params),
+        metrics: params.metrics,
+      });
       return result;
     }
     catch (error) {

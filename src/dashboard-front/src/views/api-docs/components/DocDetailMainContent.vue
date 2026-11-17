@@ -210,11 +210,11 @@
 <script setup lang="ts">
 import DocDetailSideNav, { type INavItem } from './DocDetailSideNav.vue';
 import DocAuthSection from './DocAuthSection.vue';
+import type { IDocsEsbBoardsSystemsComponentsListResponse } from '@/services/types/docs/esb.ts';
 import type {
-  IDocsEsbBoardsSystemsComponentsListResponse,
   IDocsGatewaysResourcesDocReadResponse,
   IDocsGatewaysResourcesListResponse,
-} from '@/services/types/responses/docs';
+} from '@/services/types/docs/gateway.ts';
 import type { IDocBasics } from './DocDetailSideContent.vue';
 import { docTabKey } from '../utils/doc-context';
 import { copy } from '@/utils';
@@ -227,9 +227,8 @@ export interface IDocApi extends Pick<IDocsGatewaysResourcesListResponse,
     'method' | 'path' | 'resource_perm_required' | 'allow_apply_permission' | 'labels' | 'is_deprecated' | 'deprecated_note'>>,
   Partial<Pick<IDocsEsbBoardsSystemsComponentsListResponse, 'component_permission_required'>> {}
 
-export type IDocContent = Omit<IDocsGatewaysResourcesDocReadResponse, 'updated_time'> & {
-  updated_time: string | null
-};
+export type IDocContent = Omit<IDocsGatewaysResourcesDocReadResponse, 'is_deprecated' | 'deprecated_note'>
+  & Partial<Pick<IDocsGatewaysResourcesDocReadResponse, 'is_deprecated' | 'deprecated_note'>>;
 
 interface IProps {
   api?: IDocApi | null

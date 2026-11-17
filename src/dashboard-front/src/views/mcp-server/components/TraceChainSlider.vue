@@ -99,7 +99,7 @@ const getTraceChainDetail = async () => {
 
   try {
     const promiseList = [
-      getMcpLogDetail(apiGatewayId as number, requestId, {} as any),
+      getMcpLogDetail(apiGatewayId as number, requestId),
       getMcpLogChain(apiGatewayId as number, requestId),
     ];
     const results = await Promise.allSettled(promiseList);

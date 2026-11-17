@@ -17,20 +17,16 @@
  */
 import http from '@/services/http';
 import type {
-  IStageBackendListOutput,
-  IStageListOutput,
-  IStageRetrieveOutput,
-  IStageVarsOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
   IGatewaysStagesBackendsListQuery,
   IGatewaysStagesListQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IStageInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type {
+  IStageBackendListOutput,
+  IStageInputSLZ,
+  IStageListOutput,
+  IStageRetrieveOutput,
   IStageStatusInputSLZ,
+  IStageVarsOutput,
   IStageVarsSLZ,
-} from '@/services/types/body/patch/gateways.ts';
+} from '@/services/types/gateway/stage.ts';
 
 const path = '/gateways';
 
@@ -56,7 +52,7 @@ export const getStageDetail = (gatewayId: number, stageId: number) =>
  * @param data 环境配置
  */
 export const createStage = (gatewayId: number, data: IStageInputSLZ) =>
-  http.post(`${path}/${gatewayId}/stages/`, data);
+  http.post<void>(`${path}/${gatewayId}/stages/`, data);
 
 /**
  * 删除环境
@@ -64,7 +60,7 @@ export const createStage = (gatewayId: number, data: IStageInputSLZ) =>
  * @param stageId 环境id
  */
 export const deleteStage = (gatewayId: number, stageId: number) =>
-  http.delete(`${path}/${gatewayId}/stages/${stageId}/`);
+  http.delete<void>(`${path}/${gatewayId}/stages/${stageId}/`);
 
 /**
  * 更新环境
@@ -73,7 +69,7 @@ export const deleteStage = (gatewayId: number, stageId: number) =>
  * @param data 环境配置
  */
 export const updateStage = (gatewayId: number, stageId: number, data: IStageInputSLZ) =>
-  http.put(`${path}/${gatewayId}/stages/${stageId}/`, data);
+  http.put<void>(`${path}/${gatewayId}/stages/${stageId}/`, data);
 
 /**
  * 更新环境状态（启用 / 停用）
@@ -82,7 +78,7 @@ export const updateStage = (gatewayId: number, stageId: number, data: IStageInpu
  * @param params 状态参数
  */
 export const updateStageStatus = (gatewayId: number, stageId: number, params: IStageStatusInputSLZ) =>
-  http.put(`${path}/${gatewayId}/stages/${stageId}/status/`, params);
+  http.put<void>(`${path}/${gatewayId}/stages/${stageId}/status/`, params);
 
 /**
  * 获取环境绑定的后端服务配置
@@ -112,4 +108,4 @@ export const getStageVars = (gatewayId: number, stageId: number) =>
  * @param data 环境变量
  */
 export const updateStageVars = (gatewayId: number, stageId: number, data: IStageVarsSLZ) =>
-  http.put(`${path}/${gatewayId}/stages/${stageId}/vars/`, data);
+  http.put<void>(`${path}/${gatewayId}/stages/${stageId}/vars/`, data);

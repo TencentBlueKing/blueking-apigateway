@@ -21,6 +21,7 @@
 *  */
 
 import http from '@/services/http';
+import type { ITenantUserOutput, ITenantUsersQuery, IUserLanguageInput } from '@/services/types/external/bk-user.ts';
 import { useEnv } from '@/stores';
 
 /**
@@ -29,14 +30,11 @@ import { useEnv } from '@/stores';
  * @param tenant_id 租户id，为空时使用 default
  */
 export const getTenantUsers = (
-  params: { keyword: string },
+  params: ITenantUsersQuery,
   tenant_id: string,
 ) => {
   const envStore = useEnv();
-  return http.get<{
-    bk_username: string
-    display_name: string
-  }[]>(
+  return http.get<ITenantUserOutput[]>(
     `${envStore.env.BK_USER_WEB_API_URL}/api/v3/open-web/tenant/users/-/search/`,
     params,
     { headers: { 'X-Bk-Tenant-Id': tenant_id || 'default' } },
@@ -51,7 +49,7 @@ export const getTenantUsers = (
  */
 export const updateUserLanguage = (
   url: string,
-  params: { language: string },
+  params: IUserLanguageInput,
   tenant_id: string | null,
 ) =>
-  http.put(url, params, tenant_id ? { headers: { 'X-Bk-Tenant-Id': tenant_id || '' } } : {});
+  http.put<unknown>(url, params, tenant_id ? { headers: { 'X-Bk-Tenant-Id': tenant_id || '' } } : {});

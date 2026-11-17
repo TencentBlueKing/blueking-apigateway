@@ -108,7 +108,7 @@
 <script setup lang="ts">
 import { searchAPI } from '@/services/source/docs/esb';
 import type { IExtractApiReturn } from '@/services/types/utils';
-import type { IDocsEsbBoardsSystemsListResponse as IBoard } from '@/services/types/responses/docs';
+import type { IDocsEsbBoardsSystemsListResponse as IBoard } from '@/services/types/docs/esb.ts';
 
 type ISearchResult = IExtractApiReturn<typeof searchAPI>[number];
 

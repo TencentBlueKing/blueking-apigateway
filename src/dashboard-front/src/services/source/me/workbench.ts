@@ -18,12 +18,13 @@
 
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IPersonalWorkbenchFilterOptionQuery, IPersonalWorkbenchListQuery } from '@/services/types/query/personal-workbench.ts';
 import type {
+  IPersonalWorkbenchFilterOptionQuery,
   IPersonalWorkbenchFilterOptionResponse,
+  IPersonalWorkbenchListQuery,
   IPersonalWorkbenchListResponse,
   IPersonalWorkbenchPendingCountResponse,
-} from '@/services/types/responses/personal-workbench.ts';
+} from '@/services/types/me/workbench.ts';
 
 const path = '/me/workbench';
 
@@ -80,28 +81,28 @@ export const getMcpHandledList = (params: IPersonalWorkbenchListQuery) =>
  * @param id 申请单 ID
  */
 export const cancelGatewayApplied = (id: number) =>
-  http.post(`${path}/permissions/gateway/applied/${id}/cancel/`);
+  http.post<void>(`${path}/permissions/gateway/applied/${id}/cancel/`);
 
 /**
  * 个人工作台 - 我的申请 - 删除 API 网关权限申请（仅已撤销的申请可删除）
  * @param id 申请单 ID
  */
 export const deleteGatewayApplied = (id: number) =>
-  http.delete(`${path}/permissions/gateway/applied/${id}/`);
+  http.delete<void>(`${path}/permissions/gateway/applied/${id}/`);
 
 /**
  * 个人工作台 - 我的申请 - 撤销 MCP Server 权限申请（仅待审批的申请可撤销）
  * @param id 申请单 ID
  */
 export const cancelMcpApplied = (id: number) =>
-  http.post(`${path}/permissions/mcp/applied/${id}/cancel/`);
+  http.post<void>(`${path}/permissions/mcp/applied/${id}/cancel/`);
 
 /**
  * 个人工作台 - 我的申请 - 删除 MCP Server 权限申请（仅已撤销的申请可删除）
  * @param id 申请单 ID
  */
 export const deleteMcpApplied = (id: number) =>
-  http.delete(`${path}/permissions/mcp/applied/${id}/`);
+  http.delete<void>(`${path}/permissions/mcp/applied/${id}/`);
 
 /**
  * 个人工作台 - 网关下拉筛选选项列表

@@ -53,6 +53,7 @@
 import { getAICompletion } from '@/services/source/gateway/ai';
 import { useGateway } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
+import { Message } from 'bkui-vue';
 import MarkdownIt from 'markdown-it';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import hljs from 'highlight.js/lib/common';
@@ -75,6 +76,7 @@ const {
 } = defineProps<IProps>();
 
 const gatewayStore = useGateway();
+const { t } = useI18n();
 
 const response = ref('');
 const markdownHTML = ref('');
@@ -114,15 +116,23 @@ const getResponse = async () => {
   try {
     loading.value = true;
     response.value = '';
-    const res = await getAICompletion(apigwId.value, {
+    markdownHTML.value = '';
+    const { content } = await getAICompletion(apigwId.value, {
       inputs: {
         input: message,
         type: messageType,
         enable_streaming: false,
       },
     });
-    response.value = res.content || '';
-    markdownHTML.value = md.render(res.content);
+    if (content === null) {
+      Message({
+        theme: 'warning',
+        message: t('AI 未返回内容，请重试'),
+      });
+      return;
+    }
+    response.value = content;
+    markdownHTML.value = md.render(content);
   }
   finally {
     loading.value = false;

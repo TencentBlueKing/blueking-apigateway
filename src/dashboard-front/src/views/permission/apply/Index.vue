@@ -147,9 +147,9 @@ import {
 } from '@/stores';
 import type { IApprovalListItem, IResource } from '@/types/permission';
 import type { ITableMethod } from '@/types/common';
-import type { IApplyStatus, IFomDataQuery } from '@/services/types/query/personal-workbench.ts';
-import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
+import type { IApplyStatus, IFomDataQuery } from '@/types/personal-workbench.ts';
+import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/gateway/permission.ts';
+import type { IResourceListPageOutput } from '@/services/types/gateway/resource.ts';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_STATUS_MAP } from '@/enums';

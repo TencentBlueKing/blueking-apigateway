@@ -267,7 +267,10 @@ import {
 import { getStageList } from '@/services/source/gateway/stage';
 import { useGetStageList } from '@/hooks';
 import VersionDiff from '@/components/release/version-diff/Index.vue';
-import type { IResourceVersionDiffOutput, IResourceVersionListOutput } from '@/services/types/responses/gateways';
+import type {
+  IResourceVersionDiffOutput,
+  IResourceVersionListOutput,
+} from '@/services/types/gateway/resource-version.ts';
 import type { IStageListItem } from '@/types/stage';
 
 const emit = defineEmits<{ done: [void] }>();

@@ -778,7 +778,7 @@ import {
 } from '@/services/source/gateway/gateway';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
+import type { IGatewayUpdateInputSLZ } from '@/services/types/gateway/gateway.ts';
 import EditDesc from './components/EditDesc.vue';
 import { cloneDeep } from 'lodash-es';
 import MarkdownIt from 'markdown-it';

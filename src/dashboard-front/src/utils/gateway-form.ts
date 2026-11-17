@@ -1,5 +1,4 @@
-import type { IGatewayUpdateInputSLZ } from '@/services/types/body/patch/gateways';
-import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways';
+import type { IGatewayRetrieveOutput, IGatewayUpdateInputSLZ } from '@/services/types/gateway/gateway.ts';
 
 export type GatewayFormSource = Partial<Pick<IGatewayRetrieveOutput,
   'id' | 'name' | 'display_name' | 'description' | 'maintainers' | 'developers' | 'is_public' | 'kind'

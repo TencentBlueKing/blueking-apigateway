@@ -25,7 +25,7 @@
  * 由该处读取本策略拼装而成。
  */
 
-import type { GatewayMemberRole } from '@/services/types/responses/gateway-members';
+import type { GatewayMemberRole } from '@/services/types/gateway/member.ts';
 
 export type MemberRole = GatewayMemberRole;
 
