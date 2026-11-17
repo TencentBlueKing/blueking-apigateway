@@ -102,6 +102,8 @@ class GatewayData(BaseModel):
     # 上层如需修改，需明确指定配置值
     allow_auth_from_params: Optional[bool] = Field(default=None)
     allow_delete_sensitive_params: Optional[bool] = Field(default=None)
+    # 默认值 None：新建网关按开启处理，更新网关时保留当前值
+    oauth2_app_enabled: Optional[bool] = Field(default=None)
 
     tenant_mode: Optional[str] = Field(default=None)
     tenant_id: Optional[str] = Field(default=None)
@@ -608,6 +610,7 @@ class GatewaySaver:
             is_public=self._gateway_data.is_public,
             kind=self._gateway_data.kind,
             is_official=_is_official_gateway_type(self._gateway_data.gateway_type),
+            oauth2_app_enabled=self._gateway_data.oauth2_app_enabled is not False,
             tenant_mode=self._gateway_data.tenant_mode,
             tenant_id=self._gateway_data.tenant_id,
             created_by=self.username,
@@ -687,6 +690,8 @@ class GatewaySaver:
         gateway.is_public = self._gateway_data.is_public
         if self._gateway_data.gateway_type is not None:
             gateway.is_official = _is_official_gateway_type(self._gateway_data.gateway_type)
+        if self._gateway_data.oauth2_app_enabled is not None:
+            gateway.oauth2_app_enabled = self._gateway_data.oauth2_app_enabled
         gateway.updated_by = self.username
         gateway.save()
         # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据

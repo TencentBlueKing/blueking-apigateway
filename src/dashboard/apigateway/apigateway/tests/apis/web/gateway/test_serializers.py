@@ -357,6 +357,7 @@ class TestGatewayRetrieveOutputSLZ:
             "status": fake_gateway.status,
             "kind": fake_gateway.kind,
             "is_public": fake_gateway.is_public,
+            "oauth2_app_enabled": True,
             "created_by": fake_gateway.created_by,
             "created_time": DateTimeField().to_representation(fake_gateway.created_time),
             "updated_time": DateTimeField().to_representation(fake_gateway.updated_time),

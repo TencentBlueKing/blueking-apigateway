@@ -283,6 +283,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "status",
             "kind",
             "is_public",
+            "oauth2_app_enabled",
             "created_by",
             "created_time",
             "updated_time",
@@ -319,6 +320,9 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             },
             "is_public": {
                 "help_text": "是否公开，true: 公开，false: 不公开",
+            },
+            "oauth2_app_enabled": {
+                "help_text": "是否开启 OAuth 应用通道（代用户 token 与应用 token）",
             },
             "created_by": {
                 "help_text": "创建人",
@@ -420,6 +424,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             "extra_info",
             "developers",
             "is_public",
+            "oauth2_app_enabled",
             "bk_app_codes",
             "related_app_codes",
             "is_deprecated",
@@ -433,6 +438,10 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             },
             "is_public": {
                 "help_text": "是否公开，true：公开，false：不公开",
+            },
+            "oauth2_app_enabled": {
+                "required": False,
+                "help_text": "是否开启 OAuth 应用通道（代用户 token 与应用 token），重新发布后在数据面生效",
             },
         }
 

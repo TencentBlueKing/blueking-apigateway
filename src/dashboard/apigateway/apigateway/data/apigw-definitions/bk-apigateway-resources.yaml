@@ -5682,6 +5682,10 @@ paths:
                     - ai
                   default: normal
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
+                oauth2_app_enabled:
+                  type: boolean
+                  description: 是否开启 OAuth 应用通道（Bearer 入口接受代用户 token 与应用 token）；新建时默认 true，更新时不传则保留原值；修改后需重新发布才在数据面生效
+                  example: true
             example:
               display_name: 示例网关
               display_name_en: Example Gateway
@@ -5690,6 +5694,7 @@ paths:
               is_public: true
               is_official: false
               kind: normal
+              oauth2_app_enabled: true
       responses:
         '200':
           description: 成功同步网关
