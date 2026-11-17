@@ -14,7 +14,7 @@ export interface IGatewayUpdateInputSLZ {
     }
   }
   extra_info?: {
-    language?: 'python' | 'go' // 语言
+    language?: 'python' | 'go' | '' // 语言，允许留空
     repository?: string // 仓库
   }
   developers?: string[] // 网关开发者

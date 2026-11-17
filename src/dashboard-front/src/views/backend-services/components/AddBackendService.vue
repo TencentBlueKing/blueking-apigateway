@@ -145,7 +145,7 @@
                       v-for="(stage, index) in stageConfig"
                       :key="stage.id"
                       :name="stage.id"
-                      :title="stage.configs?.stage?.name || stage.name"
+                      :title="stage.name"
                       icon="right-shape"
                     >
                       <template #content>
@@ -378,7 +378,6 @@
 </template>
 
 <script lang="ts" setup>
-// @ts-nocheck
 import {
   cloneDeep,
   isEqual,
@@ -405,18 +404,23 @@ import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
 import ServicePublishDialog from '@/views/backend-services/components/ServicePublishDialog.vue';
+import type { IStandardBackendConfigInput } from '@/services/types/body/post/gateways';
+import type { IBackendRetrieveOutput, IStandardBackendConfigOutput } from '@/services/types/responses/gateways';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 interface ILocalStageConfig {
   id: number
-  description?: string | null
+  description: string
   name: string
-  // stage_id: number
-  configs: Parameters<typeof createBackendService>[1]['configs'][number]
+  configs: IStandardBackendConfigInput
 }
 
+type StandardBackendDetail = Omit<IBackendRetrieveOutput, 'configs'> & {
+  configs: IStandardBackendConfigOutput[]
+};
+
 interface IProps {
-  editId?: number | string
+  editId?: number
   disabled?: boolean
   base: {
     name: string
@@ -441,12 +445,7 @@ const baseInfo = ref({
   name: '',
   description: '',
 });
-const curServiceDetail = ref<IExtractApiReturn<typeof getBackendServiceDetail>>({
-  id: 0,
-  name: '',
-  description: '',
-  configs: [],
-});
+const curServiceDetail = ref<StandardBackendDetail | null>(null);
 const initData = ref();
 const stageConfig = ref<ILocalStageConfig[]>([]);
 const activeIndex = ref<number[]>([]);
@@ -454,7 +453,7 @@ const stageList = ref<IExtractApiReturn<typeof getStageList>>([]);
 const stageConfigRef = ref<any[]>([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
-const nameRef = ref<InstanceType<typeof Input>>();
+const nameRef = useTemplateRef<InstanceType<typeof Input> & { focus: () => void }>('nameRef');
 const baseInfoEl = useTemplateRef<InstanceType<typeof Form> & IFormMethod>(
   'baseInfoRef',
 );
@@ -628,6 +627,11 @@ const handleCancel = () => {
 };
 
 const handleConfirm = async () => {
+  const backendId = editId;
+  const backendDetail = curServiceDetail.value;
+  if (backendId && !backendDetail) {
+    return;
+  }
   let emptyHostIndex = -1;
   // 基础信息校验
   try {
@@ -635,7 +639,9 @@ const handleConfirm = async () => {
   }
   catch {
     nameRef.value?.focus();
-    handleScrollView(nameRef?.value?.$el);
+    if (nameRef.value) {
+      handleScrollView(nameRef.value.$el);
+    }
     return;
   }
   // 逐个stage服务配置的校验
@@ -657,28 +663,26 @@ const handleConfirm = async () => {
     }
     return;
   }
-  const finalConfigs = stageConfig.value.map((item: ILocalStageConfig, index: number) => {
-    // @ts-expect-error stage.id 在编辑模式下存在
-    const id = !editId ? item.id : item.configs.stage.id;
-    const results = {
+  const finalConfigs = stageConfig.value.map((item, index): IStandardBackendConfigInput => {
+    const config: IStandardBackendConfigInput = {
       timeout: item.configs.timeout,
       loadbalance: item.configs.loadbalance,
       hosts: item.configs.hosts,
-      stage_id: id,
+      stage_id: item.id,
     };
     if (item.configs.hash_on) {
-      Object.assign(results, { hash_on: item.configs.hash_on });
+      config.hash_on = item.configs.hash_on;
     }
     if (item.configs.key) {
-      Object.assign(results, { key: item.configs.key });
+      config.key = item.configs.key;
     }
-    if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && healthChecksRef.value?.[index]) {
-      const checks = healthChecksRef.value[index].getValue();
+    if (featureFlagStore.flags.ENABLE_HEALTH_CHECK) {
+      const checks = healthChecksRef.value?.[index]?.getValue();
       if (checks) {
-        Object.assign(results, { checks: healthChecksRef.value[index].getValue() });
+        config.checks = checks;
       }
     }
-    return results;
+    return config;
   });
   const { name, description } = baseInfo.value;
   const params = {
@@ -686,18 +690,16 @@ const handleConfirm = async () => {
     description,
     configs: finalConfigs,
   };
-  if (editId) {
+  if (backendId && backendDetail) {
     const detailContent = {
-      name: curServiceDetail.value.name,
-      description: curServiceDetail.value.description,
-      configs: curServiceDetail.value.configs.map((item: IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number]) => {
-        return {
-          timeout: item.timeout,
-          loadbalance: item.loadbalance,
-          hosts: item.hosts,
-          stage_id: item.stage.id,
-        };
-      }),
+      name: backendDetail.name,
+      description: backendDetail.description,
+      configs: backendDetail.configs.map(item => ({
+        timeout: item.timeout,
+        loadbalance: item.loadbalance,
+        hosts: item.hosts,
+        stage_id: item.stage.id,
+      })),
     };
     // 如果内容一致无需调用编辑接口
     if (isEqual(detailContent, params)) {
@@ -708,10 +710,10 @@ const handleConfirm = async () => {
   isSaveLoading.value = true;
   try {
     let res: { updated_stages?: { name: string }[] } = {};
-    res = editId
-      ? await updateBackendService(apigwId.value, curServiceDetail.value.id, params)
+    res = backendId
+      ? await updateBackendService(apigwId.value, backendId, params)
       : await createBackendService(apigwId.value, params);
-    if (isPublish.value && editId) {
+    if (isPublish.value && backendId) {
       sliderConfig.isShow = false;
       if (res?.updated_stages?.length) {
         publishDialog = Object.assign(publishDialog, {
@@ -728,7 +730,7 @@ const handleConfirm = async () => {
     }
     else {
       Message({
-        message: t(!editId ? '新建成功' : '更新成功'),
+        message: t(!backendId ? '新建成功' : '更新成功'),
         theme: 'success',
       });
       sliderConfig.isShow = false;
@@ -742,12 +744,13 @@ const handleConfirm = async () => {
 };
 
 const setInit = () => {
+  curServiceDetail.value = null;
   stageConfig.value = stageList.value.map((item: IExtractApiReturn<typeof getStageList>[number]) => {
     const { name, id, description } = item;
     return {
       name,
       id,
-      description,
+      description: description ?? '',
       configs: {
         loadbalance: 'roundrobin',
         timeout: 30,
@@ -786,26 +789,35 @@ const getStageListData = async () => {
   stageList.value = [...res];
 };
 
-const getInfo = async () => {
-  const res = await getBackendServiceDetail(apigwId.value, editId);
-  curServiceDetail.value = cloneDeep(res);
-  stageConfig.value = res.configs.map((item: IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number]) => {
-    return {
-      id: item.stage.id,
-      name: item.stage.name,
-      description: null,
-      configs: {
-        stage_id: item.stage.id,
-        ...item,
-      },
-    };
+const getInfo = async (backendId: number) => {
+  const { configs, ...detail } = await getBackendServiceDetail(apigwId.value, backendId);
+  if (
+    editId !== backendId
+    || detail.kind === 'ai'
+    || !configs.every((config): config is IStandardBackendConfigOutput => 'hosts' in config)
+  ) {
+    return false;
+  }
+  curServiceDetail.value = cloneDeep({
+    ...detail,
+    configs,
   });
+  stageConfig.value = configs.map(({ stage, ...config }) => ({
+    id: stage.id,
+    name: stage.name,
+    description: '',
+    configs: {
+      ...config,
+      stage_id: stage.id,
+    },
+  }));
   const sliderParams = {
     curServiceDetail: curServiceDetail.value,
     stageConfig: stageConfig.value,
     baseInfo: baseInfo.value,
   };
   initData.value = cloneDeep(sliderParams);
+  return true;
 };
 
 const handleLoadBalanceChange = (value: string, stageId: number) => {
@@ -842,9 +854,15 @@ const handleHashOnKeyChange = (config: any) => {
 };
 
 const show = async () => {
+  const backendId = editId;
   await getStageListData();
-  if (editId) {
-    await getInfo();
+  if (editId !== backendId) {
+    return;
+  }
+  if (backendId) {
+    if (!await getInfo(backendId)) {
+      return;
+    }
   }
   else {
     setInit();

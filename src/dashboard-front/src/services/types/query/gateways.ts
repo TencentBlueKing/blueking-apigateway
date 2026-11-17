@@ -527,10 +527,10 @@ export interface IGatewaysResourceVersionsListQuery {
 
 /** /gateways/{gateway_id}/resource-versions/diff/ [GET] */
 export interface IGatewaysResourceVersionsDiffReadQuery {
-  /** 对比源的版本号id */
-  source_resource_version_id: number | null
-  /** 对比目标的版本号id */
-  target_resource_version_id: number | null
+  /** 对比源的资源版本 ID，可传数字、数字字符串或空字符串。发布预览也可省略。 */
+  source_resource_version_id?: number | string | null
+  /** 对比目标的资源版本 ID，可传数字或数字字符串。空字符串表示使用资源编辑区。 */
+  target_resource_version_id: number | string | null
 }
 
 /** /gateways/{gateway_id}/resource-versions/programmable/next-deploy-version/ [GET] */

@@ -70,7 +70,7 @@
         required
       >
         <BkSelect
-          v-model="formData.extra_info!.language"
+          v-model="formData.extra_info.language"
           disabled
           class="bk-select"
         >
@@ -101,7 +101,7 @@
           required
         >
           <BkInput
-            v-model="formData.extra_info!.repository"
+            v-model="formData.extra_info.repository"
             disabled
           />
         </BkFormItem>
@@ -200,66 +200,34 @@
 </template>
 
 <script lang="ts" setup>
-// @ts-nocheck
 import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { getEnvVars } from '@/services/source/platform/setting';
 import { checkRepoAuthorization, patchGateway } from '@/services/source/gateway/gateway';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 import type { IFormMethod } from '@/types/common';
-import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
 import {
   useEnv,
   useFeatureFlag,
-  useUserInfo,
 } from '@/stores';
 import { useGatewayDisplayNameCheck } from '@/hooks';
+import { type GatewayFormSource, toGatewayFormData, toGatewayUpdatePayload } from '@/utils/gateway-form';
 
-export type ParamType = IGatewayCreateInputSLZ & {
-  id?: number
-  tenant_mode?: string
-  tenant_id?: string
-};
-
-interface IProps { initData?: ParamType }
+interface IProps { initData?: GatewayFormSource }
 
 const isShow = defineModel<boolean>({ default: false });
 
-const {
-  initData = {
-    kind: 0,
-    extra_info: {
-      language: 'python',
-      repository: '',
-    },
-  },
-} = defineProps<IProps>();
+const { initData = undefined } = defineProps<IProps>();
 
 const emit = defineEmits<{ done: [void] }>();
 
 const { t } = useI18n();
-const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const formData = ref<ParamType>({
-  name: '',
-  display_name: '',
-  description: '',
-  is_public: true,
-  kind: 0,
-  maintainers: [userStore.info.username],
-  extra_info: {
-    language: 'python',
-    repository: '',
-  },
-  programmable_gateway_git_info: {
-    repository: '',
-    account: '',
-    password: '',
-  },
-});
+const defaultFormData = ref(toGatewayFormData(initData));
+const formData = ref(cloneDeep(defaultFormData.value));
 const submitLoading = ref(false);
 const repositoryUrl = ref('');
 // 代码仓库授权状态：null=未检测，true=已授权，false=未授权
@@ -267,24 +235,6 @@ const isRepoAuthorized = ref<boolean | null>(null);
 const authUrl = ref('');
 // 授权状态轮询定时器
 let authPollingTimer: ReturnType<typeof setInterval> | null = null;
-
-const defaultFormData = ref({
-  name: '',
-  display_name: '',
-  description: '',
-  is_public: true,
-  kind: 0,
-  maintainers: [userStore.info.username],
-  extra_info: {
-    language: 'python',
-    repository: '',
-  },
-  programmable_gateway_git_info: {
-    repository: '',
-    account: '',
-    password: '',
-  },
-});
 
 const isNameAvailable = ref(true);
 
@@ -369,49 +319,10 @@ const handleCompare = (callback: (data: any) => void) => {
 };
 
 watch(
-  () => featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE,
-  () => {
-    if (featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE) {
-      formData.value = Object.assign(formData.value, {
-        tenant_id: userStore.info.tenant_id || 'system',
-        tenant_mode: ['system'].includes(userStore.info.tenant_id) ? 'global' : 'single',
-      });
-      defaultFormData.value = Object.assign(defaultFormData.value, {
-        tenant_id: userStore.info.tenant_id || 'system',
-        tenant_mode: ['system'].includes(userStore.info.tenant_id) ? 'global' : 'single',
-      });
-    }
-    else {
-      formData.value = Object.assign(formData.value, {
-        tenant_id: 'default',
-        tenant_mode: 'single',
-      });
-      defaultFormData.value = Object.assign(defaultFormData.value, {
-        tenant_id: 'default',
-        tenant_mode: 'single',
-      });
-    }
-  },
-  { immediate: true },
-);
-
-watch(
-  () => userStore.info.username,
-  () => {
-    if (userStore.info.username && !formData.value.maintainers?.length) {
-      formData.value.maintainers = [userStore.info.username];
-    }
-  },
-  { immediate: true },
-);
-
-watch(
   () => initData,
   () => {
-    if (initData) {
-      formData.value = cloneDeep(initData);
-      defaultFormData.value = cloneDeep(initData);
-    }
+    defaultFormData.value = toGatewayFormData(initData);
+    formData.value = cloneDeep(defaultFormData.value);
   },
 );
 
@@ -473,21 +384,18 @@ const handleConfirmCreate = async () => {
       return;
     }
 
+    const data = cloneDeep(formData.value);
+    if (!data.id) {
+      return;
+    }
+
     submitLoading.value = true;
-    const payload = cloneDeep(formData.value);
-    // 展示名有独立编辑入口；未实际修改时不提交该字段，避免用按当前语言返回的展示名覆盖后端默认（中文）展示名
-    if (payload.display_name === defaultFormData.value.display_name) {
-      delete (payload as Record<string, any>).display_name;
-    }
-    if (payload.kind !== 1) {
-      payload.extra_info = undefined;
-    }
-
-    if (!featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED) {
-      payload.bk_app_codes = undefined;
-    }
-
-    await patchGateway(payload.id!, payload);
+    const payload = toGatewayUpdatePayload(
+      data,
+      defaultFormData.value.display_name,
+      featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED ?? false,
+    );
+    await patchGateway(data.id, payload);
 
     Message({
       message: t('编辑成功'),

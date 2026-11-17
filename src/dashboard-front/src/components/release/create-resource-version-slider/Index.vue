@@ -248,7 +248,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import semverValid from 'semver/functions/valid';
 import {
   Spinner,
@@ -268,12 +267,8 @@ import {
 import { getStageList } from '@/services/source/gateway/stage';
 import { useGetStageList } from '@/hooks';
 import VersionDiff from '@/components/release/version-diff/Index.vue';
-
-type VersionType = {
-  id: number
-  version: string
-  isLatestVersion: boolean
-};
+import type { IResourceVersionDiffOutput, IResourceVersionListOutput } from '@/services/types/responses/gateways';
+import type { IStageListItem } from '@/types/stage';
 
 const emit = defineEmits<{ done: [void] }>();
 
@@ -297,7 +292,7 @@ const { getStagesStatus } = useGetStageList();
 const isShow = ref(false);
 // 弹窗dialog
 const dialogShow = ref(false);
-const versionList = ref<any>([]);
+const versionList = ref<IResourceVersionListOutput[]>([]);
 const formRef = ref();
 const diffSourceId = ref('');
 const diffTargetId = ref('');
@@ -305,9 +300,9 @@ const loading = ref(false);
 const createError = ref(false);
 const hasDuplicateVersionError = ref(false);
 const duplicateVersionErrorMsg = ref('');
-const releaseSidesliderRef = ref();
-const versionData = ref<any>();
-const stageData = ref<any>();
+const releaseSidesliderRef = useTemplateRef('releaseSidesliderRef');
+const versionData = ref<IResourceVersionListOutput>();
+const stageData = ref<IStageListItem>();
 
 interface FormData {
   version: string
@@ -320,7 +315,7 @@ const formData = reactive<FormData>({
   comment: '',
 });
 // 差异数据
-const diffData = ref({
+const diffData = ref<IResourceVersionDiffOutput>({
   add: [],
   delete: [],
   update: [],
@@ -394,11 +389,10 @@ const handleBuildVersion = async () => {
     else {
       // createError.value = true;
       InfoBox({
-        'ext-cls': 'version-publish-error-infobox',
-        'infoType': 'danger',
-        'title': t('版本生成失败'),
-        'subTitle': t('版本号创建失败，请联系管理员'),
-        'confirmText': t('关闭'),
+        infoType: 'danger',
+        title: t('版本生成失败'),
+        subTitle: t('版本号创建失败，请联系管理员'),
+        confirmText: t('关闭'),
       });
     }
   }
@@ -473,15 +467,18 @@ const handlePublish = async () => {
       offset: 0,
       limit: 10,
     });
-    // @ts-ignore
-    const newVersion = results.filter((item: VersionType) => item.version === formData.version)[0];
+    const newVersion = results.find(item => item.version === formData.version);
     if (newVersion?.id) {
       versionData.value = newVersion;
     }
     const stages = await getStageList(apigwId.value);
     const [defaultStage] = stages;
     stageData.value = defaultStage;
-    releaseSidesliderRef.value.showReleaseSideslider();
+    const releaseSlider = releaseSidesliderRef.value;
+    if (!releaseSlider) {
+      throw new Error('Release stage slider is unavailable');
+    }
+    releaseSlider.showReleaseSideslider();
     handleCancel();
   }
   catch {
