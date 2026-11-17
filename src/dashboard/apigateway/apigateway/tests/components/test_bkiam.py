@@ -15,9 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+import logging
 from unittest.mock import call
 
 import pytest
+import requests
 
 from apigateway.common.error_codes import APIError, error_codes
 from apigateway.components import bkiam
@@ -26,6 +29,11 @@ from apigateway.components import bkiam
 @pytest.fixture(autouse=True)
 def _bkiam_settings(settings):
     settings.BK_API_URL_TMPL = "https://{api_name}.example.com"
+
+
+@pytest.fixture
+def gateway_context():
+    return {"gateway_id": 127, "gateway_name": "test-gateway"}
 
 
 @pytest.fixture
@@ -148,7 +156,7 @@ def test_direct_auth_malformed_success_json_raises(mocker, mock_headers):
         )
 
 
-def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_headers):
+def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_headers, gateway_context):
     mock_post = mocker.patch("apigateway.components.bkiam.http_post", return_value=(True, {"data": None}))
     mock_delete = mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, {"data": None}))
     authorization = {
@@ -160,7 +168,7 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
     }
     revoke = {key: value for key, value in authorization.items() if key != "expired_at"}
 
-    bkiam.add_authorization([authorization], operator="admin", tenant_id="tenant-a")
+    bkiam.add_authorization([authorization], **gateway_context, operator="admin", tenant_id="tenant-a")
     bkiam.revoke_authorization([revoke], operator="admin", tenant_id="tenant-a")
 
     common = {
@@ -177,12 +185,12 @@ def test_authorization_writes_add_operator_and_enforce_batch_size(mocker, mock_h
     mock_delete.assert_called_once_with(data=[revoke], **common)
 
     with pytest.raises(bkiam.BkIamParameterError, match="at most 20"):
-        bkiam.add_authorization([authorization] * 21, operator="admin", tenant_id="tenant-a")
+        bkiam.add_authorization([authorization] * 21, **gateway_context, operator="admin", tenant_id="tenant-a")
 
     oversized_resources = dict(authorization)
     oversized_resources["resources"] = [{"type": "gateway", "id": str(index)} for index in range(21)]
     with pytest.raises(bkiam.BkIamParameterError, match="resources per authorization"):
-        bkiam.add_authorization([oversized_resources], operator="admin", tenant_id="tenant-a")
+        bkiam.add_authorization([oversized_resources], **gateway_context, operator="admin", tenant_id="tenant-a")
 
 
 def _user_authorization(username: str) -> dict:
@@ -212,7 +220,7 @@ def _missing_users_failure(*usernames: str):
     )
 
 
-def test_add_authorization_retries_once_without_missing_users(mocker, mock_headers, caplog):
+def test_add_authorization_retries_once_without_missing_users(mocker, mock_headers, caplog, gateway_context):
     kept = _user_authorization("alice")
     missing = _user_authorization("jsorwan")
     mock_post = mocker.patch(
@@ -224,14 +232,16 @@ def test_add_authorization_retries_once_without_missing_users(mocker, mock_heade
     )
     caplog.set_level("WARNING", logger="apigateway.components.bkiam")
 
-    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.add_authorization(
+        [kept, missing], **gateway_context, operator="admin", tenant_id="tenant-a"
+    ) == bkiam.AuthorizationWriteResult(succeeded=1, skipped_missing=1)
 
     assert [item.kwargs["data"] for item in mock_post.call_args_list] == [[kept, missing], [kept]]
     assert "missing_users=['jsorwan', 'lorryxywu']" in caplog.text
     assert mock_post.call_count == 2
 
 
-def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog):
+def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog, gateway_context):
     kept = _user_authorization("alice")
     missing = _user_authorization("jsorwan")
     mock_post = mocker.patch(
@@ -243,7 +253,9 @@ def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog)
     )
     caplog.set_level("ERROR", logger="apigateway.components.bkiam")
 
-    assert bkiam.add_authorization([kept, missing], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.add_authorization(
+        [kept, missing], **gateway_context, operator="admin", tenant_id="tenant-a"
+    ) == bkiam.AuthorizationWriteResult(skipped_missing=1, failed=1)
 
     assert mock_post.call_count == 2
     assert mock_post.call_args_list[1].kwargs["data"] == [kept]
@@ -254,27 +266,123 @@ def test_add_authorization_retry_failure_is_logged(mocker, mock_headers, caplog)
     assert "status_code is 500" in caplog.text
 
 
-def test_add_authorization_raises_when_every_subject_is_missing(mocker, mock_headers):
+def test_add_authorization_skips_when_every_subject_is_missing(mocker, mock_headers, caplog, gateway_context):
     missing = _user_authorization("jsorwan")
     mock_post = mocker.patch(
         "apigateway.components.bkiam.http_post",
         return_value=_missing_users_failure("jsorwan"),
     )
 
-    with pytest.raises(APIError, match="status_code is 400"):
-        bkiam.add_authorization([missing], operator="admin", tenant_id="tenant-a")
+    assert bkiam.add_authorization(
+        [missing], **gateway_context, operator="admin", tenant_id="tenant-a"
+    ) == bkiam.AuthorizationWriteResult(skipped_missing=1)
 
     mock_post.assert_called_once()
+    assert "skip bkiam authorizations" in caplog.text
+    assert "missing_users=['jsorwan']" in caplog.text
 
 
-def test_add_authorization_raises_for_other_errors(mocker, mock_headers):
+@pytest.mark.parametrize("usernames", [["admin"], ["admin", "alice"]])
+def test_add_authorization_missing_users_warns_with_gateway_context(
+    mocker, mock_headers, caplog, gateway_context, usernames
+):
+    missing_response = requests.Response()
+    missing_response.status_code = 400
+    missing_response._content = json.dumps(_missing_users_failure("admin")[1]["response_data"]).encode()
+    success_response = requests.Response()
+    success_response.status_code = 200
+    success_response._content = b'{"data": null}'
+    mock_post = mocker.patch(
+        "apigateway.components.http.session.post", side_effect=[missing_response, success_response]
+    )
+    caplog.set_level(logging.WARNING)
+
+    bkiam.add_authorization(
+        [_user_authorization(username) for username in usernames],
+        **gateway_context,
+        operator="admin",
+        tenant_id="tenant-a",
+    )
+
+    assert mock_post.call_count == len(usernames)
+    authorization_logs = [record for record in caplog.records if record.name == "apigateway.components.bkiam"]
+    assert len(authorization_logs) == 1
+    assert authorization_logs[0].levelno == logging.WARNING
+    assert "gateway_id=127 gateway_name=test-gateway missing_users=['admin']" in caplog.text
+    if len(usernames) == 2:
+        assert "retry bkiam authorizations without missing users" in caplog.text
+        assert mock_post.call_args.kwargs["json"] == [_user_authorization("alice")]
+    else:
+        assert "skip bkiam authorizations: no users remain" in caplog.text
+
+
+@pytest.mark.parametrize("retry_status", [400, 500])
+def test_add_authorization_retry_errors_remain_errors_and_are_swallowed(
+    mocker, mock_headers, caplog, gateway_context, retry_status
+):
+    first_response = requests.Response()
+    first_response.status_code = 400
+    first_response._content = json.dumps(_missing_users_failure("admin")[1]["response_data"]).encode()
+    retry_response = requests.Response()
+    retry_response.status_code = retry_status
+    retry_response._content = json.dumps(_missing_users_failure("alice")[1]["response_data"]).encode()
+    mock_post = mocker.patch("apigateway.components.http.session.post", side_effect=[first_response, retry_response])
+    caplog.set_level(logging.WARNING)
+
+    assert bkiam.add_authorization(
+        [_user_authorization("admin"), _user_authorization("alice")],
+        **gateway_context,
+        operator="admin",
+        tenant_id="tenant-a",
+    ) == bkiam.AuthorizationWriteResult(skipped_missing=1, failed=1)
+
+    assert mock_post.call_count == 2
+    assert mock_post.call_args.kwargs["json"] == [_user_authorization("alice")]
+    authorization_logs = [record for record in caplog.records if record.name == "apigateway.components.bkiam"]
+    assert [record.levelno for record in authorization_logs] == [logging.WARNING, logging.ERROR]
+    assert "retry bkiam authorizations failed" in caplog.text
+    assert "gateway_id=127 gateway_name=test-gateway" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "status, body",
+    [
+        (500, {"error": {"code": "INVALID_REQUEST", "data": {"missing_users": ["alice"]}}}),
+        (400, {"error": {"code": "OTHER_ERROR", "data": {"missing_users": ["alice"]}}}),
+        (400, {"error": {"code": "INVALID_REQUEST", "data": {"missing_users": ["unrelated"]}}}),
+        (400, {"error": {"code": "INVALID_REQUEST", "data": {"missing_users": "alice"}}}),
+        (400, {"error": {"code": "INVALID_REQUEST", "data": None}}),
+        (400, []),
+    ],
+)
+def test_add_authorization_unrecoverable_errors_still_raise_and_log_errors(
+    mocker, mock_headers, caplog, gateway_context, status, body
+):
+    response = requests.Response()
+    response.status_code = status
+    response._content = json.dumps(body).encode()
+    mock_post = mocker.patch("apigateway.components.http.session.post", return_value=response)
+    caplog.set_level(logging.WARNING)
+
+    with pytest.raises(APIError):
+        bkiam.add_authorization(
+            [_user_authorization("alice")], **gateway_context, operator="admin", tenant_id="tenant-a"
+        )
+
+    mock_post.assert_called_once()
+    assert [record.levelno for record in caplog.records] == [logging.ERROR, logging.ERROR]
+
+
+def test_add_authorization_raises_for_other_errors(mocker, mock_headers, gateway_context):
     mock_post = mocker.patch(
         "apigateway.components.bkiam.http_post",
         return_value=(False, {"error": "status_code is 500, not 2xx!", "status_code": 500}),
     )
 
     with pytest.raises(APIError, match="status_code is 500"):
-        bkiam.add_authorization([_user_authorization("alice")], operator="admin", tenant_id="tenant-a")
+        bkiam.add_authorization(
+            [_user_authorization("alice")], **gateway_context, operator="admin", tenant_id="tenant-a"
+        )
 
     mock_post.assert_called_once()
 
@@ -357,7 +465,7 @@ def test_model_endpoints_use_exact_paths_and_return_data(mocker, mock_headers):
         {"code": 0, "message": "ok", "data": None},
     ],
 )
-def test_write_endpoints_ignore_success_data(mocker, mock_headers, response):
+def test_write_endpoints_ignore_success_data(mocker, mock_headers, response, gateway_context):
     mocker.patch("apigateway.components.bkiam.http_put", return_value=(True, response))
     mocker.patch("apigateway.components.bkiam.http_post", return_value=(True, response))
     mocker.patch("apigateway.components.bkiam.http_delete", return_value=(True, response))
@@ -371,7 +479,9 @@ def test_write_endpoints_ignore_success_data(mocker, mock_headers, response):
     revoke = {key: value for key, value in authorization.items() if key != "expired_at"}
 
     assert bkiam.update_system({"managers": ["admin"]}) is None
-    assert bkiam.add_authorization([authorization], operator="admin", tenant_id="tenant-a") is None
+    assert bkiam.add_authorization(
+        [authorization], **gateway_context, operator="admin", tenant_id="tenant-a"
+    ) == bkiam.AuthorizationWriteResult(succeeded=1)
     assert bkiam.revoke_authorization([revoke], operator="admin", tenant_id="tenant-a") is None
 
 

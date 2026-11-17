@@ -33,6 +33,7 @@ from apigateway.biz.gateway import (
 )
 from apigateway.biz.gateway import members as gateway_members
 from apigateway.common.error_codes import APIError
+from apigateway.components.bkiam import AuthorizationWriteResult
 from apigateway.core.constants import GatewayKindEnum
 
 pytestmark = pytest.mark.django_db
@@ -265,11 +266,18 @@ def test_member_write_uses_gateway_maintainer_tenant(
     fake_gateway.tenant_mode = tenant_mode
     fake_gateway.tenant_id = gateway_tenant_id
     fake_gateway.save(update_fields=["tenant_mode", "tenant_id"])
-    add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add_authorization = mocker.patch(
+        "apigateway.biz.iam.authorization.add_authorization",
+        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
+    )
 
     add_gateway_administrators(fake_gateway, ["new-admin"], "operator-user")
 
-    assert add_authorization.call_args.kwargs == {"tenant_id": expected_tenant_id}
+    assert add_authorization.call_args.kwargs == {
+        "tenant_id": expected_tenant_id,
+        "gateway_id": fake_gateway.id,
+        "gateway_name": fake_gateway.name,
+    }
 
 
 def test_member_write_skips_excluded_user_locally_and_iam(settings, fake_gateway, mocker):
@@ -277,7 +285,10 @@ def test_member_write_skips_excluded_user_locally_and_iam(settings, fake_gateway
     settings.ENABLE_MULTI_TENANT_MODE = True
     settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
     GatewayMember.objects.filter(gateway=fake_gateway).delete()
-    add_authorization = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add_authorization = mocker.patch(
+        "apigateway.biz.iam.authorization.add_authorization",
+        side_effect=lambda payloads, *args, **kwargs: AuthorizationWriteResult(succeeded=len(payloads)),
+    )
 
     assert add_gateway_administrators(fake_gateway, ["admin"], "operator-user") == []
     assert not GatewayMember.objects.filter(gateway=fake_gateway, username="admin").exists()
