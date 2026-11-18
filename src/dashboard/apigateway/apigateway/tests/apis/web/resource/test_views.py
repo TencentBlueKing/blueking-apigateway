@@ -797,9 +797,10 @@ class TestResourceBatchUpdateDestroyApi:
         assert resource.allow_apply_permission == data["allow_apply_permission"]
 
     def test_update_writes_allow_apply_permission_only_for_resources_checking_permission(
-        self, request_view, fake_resource, fake_resource1
+        self, mocker, request_view, fake_resource, fake_resource1
     ):
         ResourceHandler.save_auth_config(fake_resource1.id, {"resource_perm_required": False})
+        mock_record = mocker.patch("apigateway.apis.web.resource.views.Auditor.record_resource_op_success")
 
         resp = request_view(
             method="PUT",
@@ -816,6 +817,12 @@ class TestResourceBatchUpdateDestroyApi:
         assert Resource.objects.get(id=fake_resource.id).allow_apply_permission is True
         assert Resource.objects.get(id=fake_resource1.id).allow_apply_permission is False
         assert Resource.objects.get(id=fake_resource1.id).is_public is True
+        data_after = mock_record.call_args.kwargs["data_after"]
+        assert data_after["allow_apply_permission"] is True
+        assert data_after["allow_apply_permission_result"] == {
+            "true": [fake_resource.id],
+            "false": [fake_resource1.id],
+        }
 
     def test_update_disables_allow_apply_permission_when_not_public(self, request_view, fake_resource):
         resp = request_view(
