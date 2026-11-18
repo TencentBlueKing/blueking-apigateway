@@ -8,7 +8,7 @@ from django.core.management import CommandError, call_command
 
 from apigateway.controller.management.commands.sync_releases_to_gateway_parallel import sync_gateway
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import Gateway, ReleaseHistory
+from apigateway.core.models import Gateway, Release, ReleaseHistory
 
 pytestmark = pytest.mark.django_db
 
@@ -86,6 +86,51 @@ class TestCommand:
         )
 
         assert stdout.getvalue().strip() == "released-at"
+
+    def test_dry_run_includes_gateways_distributed_without_release_history(self, released_gateways):
+        since = released_gateways["since"]
+
+        def _gateway_with_release(name, updated_time):
+            gateway = G(Gateway, name=name, status=GatewayStatusEnum.ACTIVE.value)
+            release = G(Release, gateway=gateway)
+            Release.objects.filter(id=release.id).update(updated_time=updated_time)
+            return gateway
+
+        # CLI_SYNC 只更新 Release.updated_time，不写 ReleaseHistory
+        _gateway_with_release("cli-synced-after", since + datetime.timedelta(minutes=5))
+        _gateway_with_release("cli-synced-before", since - datetime.timedelta(minutes=5))
+        # 两个条件同时命中只出现一次
+        Release.objects.filter(
+            id=G(Release, gateway=released_gateways["after"]).id,
+        ).update(updated_time=since + datetime.timedelta(minutes=5))
+        stdout = StringIO()
+
+        call_command(
+            "sync_releases_to_gateway_parallel",
+            "--released-since",
+            since.isoformat(),
+            "--dry-run",
+            stdout=stdout,
+            stderr=StringIO(),
+        )
+
+        assert stdout.getvalue().strip() == "cli-synced-after released-after released-at"
+
+    def test_dry_run_prints_empty_output_when_nothing_matches(self, released_gateways):
+        stdout = StringIO()
+        stderr = StringIO()
+
+        call_command(
+            "sync_releases_to_gateway_parallel",
+            "--released-since",
+            (released_gateways["since"] + datetime.timedelta(days=1)).isoformat(),
+            "--dry-run",
+            stdout=stdout,
+            stderr=stderr,
+        )
+
+        assert stdout.getvalue().strip() == ""
+        assert "0 gateways matched" in stderr.getvalue()
 
     def test_naive_released_since_uses_current_timezone(self, settings, released_gateways):
         settings.TIME_ZONE = "Asia/Shanghai"

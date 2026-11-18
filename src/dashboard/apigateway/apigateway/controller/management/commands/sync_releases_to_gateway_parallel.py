@@ -20,12 +20,13 @@ from multiprocessing import Pool
 from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from apigateway.controller.publisher import publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
-from apigateway.core.models import Gateway, ReleaseHistory
+from apigateway.core.models import Gateway, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
@@ -67,15 +68,18 @@ class Command(BaseCommand):
             "--released-since",
             dest="released_since",
             help=(
-                "only sync gateways having release history created at or after this time, "
-                "ISO 8601 such as 2026-11-17T10:00:00+08:00; a naive time uses settings.TIME_ZONE"
+                "only sync gateways having release history created, or a release distributed, at or after "
+                "this time, ISO 8601 such as 2026-11-17T10:00:00+08:00; a naive time uses settings.TIME_ZONE"
             ),
         )
         parser.add_argument(
             "--dry-run",
             dest="dry_run",
             action="store_true",
-            help="print matched gateway names separated by spaces, without publishing",
+            help=(
+                "print matched gateway names separated by spaces, without publishing; "
+                "the output is empty when nothing matches"
+            ),
         )
 
     def handle(
@@ -91,9 +95,11 @@ class Command(BaseCommand):
             gateways = gateways.filter(name__in=gateway_names)
         if released_since:
             since = self._parse_released_since(released_since)
-            # 包含版本发布以外来源的发布（如插件、后端服务变更触发的发布）
+            # ReleaseHistory 覆盖版本发布及插件、后端服务变更触发的发布；
+            # CLI_SYNC 等下发不写 ReleaseHistory，但下发成功会更新 Release.updated_time
             gateways = gateways.filter(
-                id__in=ReleaseHistory.objects.filter(created_time__gte=since).values("gateway_id")
+                Q(id__in=ReleaseHistory.objects.filter(created_time__gte=since).values("gateway_id"))
+                | Q(id__in=Release.objects.filter(updated_time__gte=since).values("gateway_id"))
             )
 
         if dry_run:
