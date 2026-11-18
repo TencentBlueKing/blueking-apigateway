@@ -20,7 +20,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
 
-from bkapi_client_core.esb import Operation
 from bkapi_client_core.exceptions import BKAPIError
 from bkapi_component.open.shortcuts import get_client_by_username
 from django.conf import settings
@@ -64,13 +63,7 @@ class CMSIComponent(BaseCMSIComponent):
         return self._call_api("send_weixin", params, username)
 
     def send_im(self, tenant_id: str, params: dict, username: str = "") -> Tuple[bool, str]:
-        client = get_client_by_username(username)
-        client.cmsi.register("send_rtx", Operation(method="POST", path="/api/c/compapi/v2/cmsi/send_rtx/"))
-        try:
-            client.cmsi.send_rtx(params)
-        except BKAPIError as err:
-            return False, _("发送消息失败，{err}").format(err=err)
-        return True, ""
+        return self._call_api("send_rtx", params, username)
 
 
 class BKCMSIGateway(BaseCMSIComponent):
