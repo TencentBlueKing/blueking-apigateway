@@ -36,10 +36,9 @@ sections 5.5 and 5.6.
   not proof that a call works.
 - `inner` permission-resources list (`_is_listed_permission_resource`):
   resources with `resource_perm_required` need `allow_apply_permission` and
-  `app_verified_required`. Resources without it are listed with
-  `permission_level=unlimited` when `user_verified_required` or
-  `app_verified_required` is set, even if `allow_apply_permission=false`, and
-  omitted when neither is set. The developer center uses this list for search,
+  `app_verified_required`. Every other public resource, including ones that
+  need no authentication, is listed with `permission_level=unlimited`, even if
+  `allow_apply_permission=false`. The developer center uses this list for search,
   so do not narrow it back to "appliable only". The v1 open list deliberately
   keeps filtering on `allow_apply_permission`.
 

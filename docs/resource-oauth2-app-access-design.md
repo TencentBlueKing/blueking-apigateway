@@ -410,8 +410,7 @@ lookup / list 接口输出：
 | --- | --- | --- |
 | `P=1`，`A=1` 且 `allow_apply_permission=true` | 返回 | 沿用现有取值（`normal` 等） |
 | `P=1`，但 `A=0` 或 `allow_apply_permission=false` | 不返回 | — |
-| `P=0`，且 `U=1` 或 `A=1`（仅用户认证、应用态但不校验应用权限） | 返回，即使 `allow_apply_permission=false` | `unlimited`，表示无需申请权限；调用时仍须满足资源的认证要求 |
-| `U=0`、`A=0`（无需认证） | 不返回 | — |
+| `P=0`（仅用户认证、应用态但不校验应用权限、无需认证） | 返回，即使 `allow_apply_permission=false` | `unlimited`，表示无需申请权限；调用时仍须满足资源的认证要求 |
 
 - `P=1` 一行兼容 3.2 落地前不满足层级约束的存量数据。响应结构不变，同步更新 [v2_inner_list_gateway_permission_resources.md](../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_permission_resources.md)。
 - v1 资源列表（`apis/open/permission`）PaaS 已不再依赖，保留按 `allow_apply_permission` 筛选，在接口注释中说明与 v2 的差异：存量 `P=0` 资源经归一化（`allow_apply_permission` 写为 false）并重新发布后，可能从 v1 列表退出。
@@ -662,7 +661,7 @@ fi
 | MCP scope `app_delegated` | 返回全部可见 MCP Server，不按开关筛选，不受所属网关开关影响 |
 | MCP scope `app_only` | 不支持（参数校验失败） |
 | MCP lookup/list | 不含 app 字段 |
-| v2 申请列表 | `P=1` 且 A=1、允许申请的资源返回；`P=0` 且 U=1 或 A=1 的资源返回 `unlimited`；未公开、`P=1` 但不允许申请、U=0 且 A=0 的资源不出现（5.6） |
+| v2 申请列表 | `P=1` 且 A=1、允许申请的资源返回；`P=0` 的资源（含无需认证）返回 `unlimited`；未公开、`P=1` 但不允许申请的资源不出现（5.6） |
 | v1 申请列表 | 仍只按 `allow_apply_permission` 筛选 |
 | 批量更新部分资源不满足层级 | 审计 `allow_apply_permission_result` 按 true/false 分组记录资源 ID |
 | 转换器：仅应用认证的资源 | 注入 OAuth2 插件，`support_app=true`，不返回 401 challenge |

@@ -532,12 +532,12 @@ def _is_listed_permission_resource(resource: Dict[str, Any]) -> bool:
     """开发者中心按此列表展示、检索可调用的资源
 
     - 校验应用权限的资源：只列出允许主动申请且要求应用认证的资源（兼容层级约束落地前的存量数据）
-    - 不校验应用权限、但要求用户或应用认证的资源：即使不允许申请也列出，permission_level 为 unlimited，
+    - 不校验应用权限的资源（含无需认证）：即使不允许申请也列出，permission_level 为 unlimited，
       提示调用方无需申请权限；调用时仍须满足资源的认证要求
     """
     if resource["resource_perm_required"]:
         return bool(resource["allow_apply_permission"] and resource["app_verified_required"])
-    return bool(resource.get("user_verified_required") or resource["app_verified_required"])
+    return True
 
 
 @method_decorator(

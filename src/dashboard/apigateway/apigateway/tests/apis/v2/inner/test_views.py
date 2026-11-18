@@ -425,7 +425,7 @@ class TestGatewayPermissionResourceListApi:
                 _resource(4, user=True, app=True, perm=True, allow_apply=False),
                 # 仅用户认证：以 unlimited 列出
                 _resource(5, user=True, app=False, perm=False, allow_apply=False),
-                # 无需认证：不列出
+                # 无需认证：以 unlimited 列出
                 _resource(6, user=False, app=False, perm=False, allow_apply=False),
                 _resource(7, user=False, app=True, perm=False, allow_apply=False),
             ],
@@ -445,6 +445,7 @@ class TestGatewayPermissionResourceListApi:
             (1, "normal"),
             (3, "unlimited"),
             (5, "unlimited"),
+            (6, "unlimited"),
             (7, "unlimited"),
         ]
 
