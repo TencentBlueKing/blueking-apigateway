@@ -50,6 +50,7 @@
 
     <AgTable
       ref="tableRef"
+      cache-identifier="StageReleaseRecord"
       show-settings
       show-cell-empty-content
       :api-method="getTableData"

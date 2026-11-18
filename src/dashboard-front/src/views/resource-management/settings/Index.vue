@@ -252,6 +252,7 @@
               <AgTable
                 ref="tableRef"
                 v-model:table-data="tableData"
+                cache-identifier="ResourceSetting"
                 show-settings
                 :api-method="getTableData"
                 :columns="columns"
@@ -1936,7 +1937,7 @@ const handleVersionCreated = () => {
 
 onBeforeRouteLeave((to) => {
   if (to.name === 'ResourceEdit') {
-    const { current, pageSize } = tableRef.value!.getPagination() as any;
+    const { current, pageSize } = tableRef.value!.getPagination();
     resourceSettingStore.setPagination({
       current,
       pageSize,

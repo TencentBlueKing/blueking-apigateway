@@ -21,6 +21,7 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="MCPServerObservability"
       class="flow-log-detail-table"
       table-row-key="tempUniqueId"
       show-settings

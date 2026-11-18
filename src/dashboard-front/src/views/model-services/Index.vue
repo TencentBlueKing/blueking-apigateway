@@ -44,6 +44,7 @@
     <div class="model-service-content">
       <AgTable
         ref="tableRef"
+        cache-identifier="ModelService"
         show-settings
         resizable
         :api-method="getTableData"

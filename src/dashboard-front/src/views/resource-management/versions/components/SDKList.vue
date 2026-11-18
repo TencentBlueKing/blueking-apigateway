@@ -43,6 +43,7 @@
       <div class="w-full">
         <AgTable
           ref="tableRef"
+          cache-identifier="ResourceVersionSDK"
           show-settings
           resizable
           :api-method="getTableData"

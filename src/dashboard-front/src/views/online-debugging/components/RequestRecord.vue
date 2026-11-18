@@ -56,6 +56,7 @@
           <AgTable
             ref="tableRef"
             v-model:table-data="tableData"
+            cache-identifier="OnlineDebugging"
             row-class-name="cursor-pointer"
             :columns="columns"
             resizable

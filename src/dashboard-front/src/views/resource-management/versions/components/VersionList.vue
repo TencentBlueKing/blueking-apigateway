@@ -63,6 +63,7 @@
         <AgTable
           ref="tableRef"
           v-model:table-data="tableData"
+          cache-identifier="ResourceVersion"
           :immediate="false"
           resizable
           show-settings

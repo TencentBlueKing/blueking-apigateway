@@ -47,6 +47,7 @@
     <div class="backend-service-content">
       <AgTable
         ref="tableRef"
+        cache-identifier="BackendService"
         show-settings
         resizable
         :api-method="getTableData"

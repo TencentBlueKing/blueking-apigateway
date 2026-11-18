@@ -80,13 +80,14 @@
         ref="permissionTableRef"
         v-model:table-data="tableData"
         v-model:selected-row-keys="selectedRowKeys"
+        cache-identifier="PermissionApply"
         show-settings
         show-selection
         :expand-icon="false"
         :expandable="expandableConfig"
         :expanded-row-keys="expandableConfig.expandedRowKeys"
         :show-first-full-row="selections.length > 0"
-        :disabled-check-selection="disabledSelection"
+        :disabled-check-selection="isITSMApproval"
         :max-limit-config="{ allocatedHeight: 240, mode: 'tdesign'}"
         :filter-value="filterValue"
         :api-method="getTableData"
@@ -98,6 +99,9 @@
         @clear-filter="handleClearFilter"
         @request-done="handleRequestDone"
       >
+        <template #selectionPopoverContent>
+          {{ t('单据接入了 ITSM，ITSM 不支持批量审批') }}
+        </template>
         <template #expandedRow="{row}">
           <AgTable
             v-model:table-data="row.resources"
@@ -163,7 +167,6 @@ import AgTable from '@/components/base/ag-table/Index.vue';
 interface IApprovalListItemExt extends IApprovalListItem {
   id: number
   grant_dimension: string
-  selectionTip: string
   isExpand?: boolean
   resources?: IResource[]
   selection?: IResource[]
@@ -180,7 +183,7 @@ const permissionStore = usePermission();
 const featureFlagStore = useFeatureFlag();
 const { t } = useI18n();
 
-const permissionTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
+const permissionTableRef = useTemplateRef<ITableMethod>('permissionTableRef');
 const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
 const tableData = ref<any[]>([]);
 const selections = ref<any[]>([]);
@@ -460,7 +463,10 @@ const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getPermissionApplyList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 // 获取资源列表数据
@@ -485,12 +491,6 @@ const handleRequestDone = () => {
 
 const isITSMApproval = (row: TableRowData) => {
   return isEnabledITSMApply.value && Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
-};
-
-const disabledSelection = (row: TableRowData) => {
-  const isDisabled = isITSMApproval(row);
-  row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
-  return isDisabled;
 };
 
 // 批量审批

@@ -43,6 +43,7 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
+        cache-identifier="MonitorAlarmStrategy"
         show-settings
         resizable
         :filter-value="filterData"
@@ -96,7 +97,7 @@ type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const tableColumns = shallowRef<any[]>([
   {
     title: t('告警策略名称'),
@@ -263,7 +264,10 @@ const apigwId = computed(() => gatewayStore.apigwId);
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getStrategyList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const getList = () => {

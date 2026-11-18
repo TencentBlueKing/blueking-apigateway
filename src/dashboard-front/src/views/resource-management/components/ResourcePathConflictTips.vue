@@ -83,8 +83,6 @@
             :immediate="false"
             :show-pagination="false"
             :show-settings="false"
-            :cache-identifier="TABLE_CACHE_IDENTIFIER"
-            :cache-settings-in-local-storage="false"
             expand-on-row-click
             :expanded-row-keys="expandedRowKeys"
             @expand-change="handleExpandChange"
@@ -203,9 +201,6 @@ const detailOverflow = ref<Record<number, Partial<Record<IDetailField, boolean>>
 const DEFAULT_VISIBLE_CARDS = 12;
 // 紧凑表最大高度，超出后表格内部滚动
 const TABLE_MAX_HEIGHT = 360;
-// 与主表同处一个路由，表格设置的缓存 key 会退化成路由名而互相串用，
-// 主表隐藏的列会把紧凑表的列一起隐藏掉，因此这里单独给一个标识
-const TABLE_CACHE_IDENTIFIER = 'resource-path-conflicts';
 // 冲突资源不超过该数量时不收起，直接展示明细
 const COLLAPSE_THRESHOLD = 3;
 // 明细卡片 tooltip 的最大宽度
@@ -448,16 +443,6 @@ defineExpose({ refresh: fetchConflicts });
     overflow: hidden;
     background-color: #FFF;
     border-radius: 2px;
-
-    :deep([data-colkey='__col_setting__']),
-    :deep(.t-table__cell--fixed-right) {
-      display: none;
-    }
-
-    :deep(colgroup col:last-child) {
-      width: 0 !important;
-      min-width: 0 !important;
-    }
   }
 
   :deep(.conflict-count) {

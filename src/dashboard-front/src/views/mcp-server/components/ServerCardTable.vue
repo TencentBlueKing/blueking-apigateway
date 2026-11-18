@@ -21,13 +21,14 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="MCPServer"
       show-settings
       show-selection
       resizable
       :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign' }"
       :immediate="false"
       :show-first-full-row="mcpSelections.size > 0"
-      :disabled-check-selection="disabledSelection"
+      :disabled-check-selection="isServerSelectionDisabled"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
@@ -38,7 +39,11 @@
       @filter-change="handleFilterChange"
       @sort-change="handleSortChange"
       @selection-change="handleSelectionChange"
-    />
+    >
+      <template #selectionPopoverContent>
+        {{ t('已停用的MCP无法批量操作') }}
+      </template>
+    </AgTable>
   </div>
 </template>
 
@@ -113,7 +118,7 @@ const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
 const router = useRouter();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const tableData = ref<IMCPServer[]>([]);
 
 // 设置面板中默认不勾选的列
@@ -523,10 +528,10 @@ const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: t
 
 /**
  * 获取表格数据
- * @param params - 请求参数，默认值为空对象
- * @returns 接口返回的表格数据，兜底返回空数组
+ * @param params 分页参数与当前筛选条件
+ * @returns 分页结果
  */
-const getTableData = async (params: IMCPFilterParams): Promise<ICountAndResults<IMCPServerListOutput>> => {
+const getTableData = async (params: Partial<IMCPFilterParams>): Promise<ICountAndResults<IMCPServerListOutput>> => {
   const requestParams = { ...params };
   const fieldsToJoin = ['categories'];
   fieldsToJoin.forEach((field) => {
@@ -539,13 +544,7 @@ const getTableData = async (params: IMCPFilterParams): Promise<ICountAndResults<
   return res;
 };
 
-const disabledSelection = (row: IMCPServer): boolean => {
-  if (!row.status) {
-    row.selectionTip = t('已停用的MCP无法批量操作');
-  }
-
-  return !row.status;
-};
+const isServerSelectionDisabled = (row: IMCPServer) => !row.status;
 
 const handleNavObservability = (row: IMCPServer) => {
   router.push({

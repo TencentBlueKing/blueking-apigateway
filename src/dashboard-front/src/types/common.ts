@@ -17,6 +17,7 @@
  */
 
 import type { IRange } from 'monaco-editor';
+import type { PrimaryTable, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { GatewayPermissionKey } from '@/constants/gateway-permission';
 
 // 导航栏菜单
@@ -120,24 +121,18 @@ export type ErrorReasonType = {
   range?: IRange // 源码范围，可能为空
 };
 
-// 表格组件导出内容
-export type ITableMethod = {
-  loading: boolean
-  TDesignTableRef: Ref
-  setPagination: () => void
-  getPagination: () => void
-  resetPaginationTheme: () => void
-  setPaginationTheme: () => void
-  fetchData: () => void
-  refresh: () => void
-};
+// 模板 ref 指向的 AgTable 实例，公开方法的签名由组件的 defineExpose 推导。
+export type ITableMethod = InstanceType<typeof import('@/components/base/ag-table/Index.vue').default>;
 
-// tdesign-table设置
-export type ITableSettings = {
-  columns: string[]
-  fontSize: 'large' | 'medium' | undefined
-  rowSize: 'large' | 'medium' | 'small' | undefined
-};
+export interface ITableSelection {
+  /** 已取得的选中行，顺序与 selectionsRowKeys 一致。 */
+  selections: TableRowData[]
+  /** 包括父页面传入、数据尚未加载的选中行键。 */
+  selectionsRowKeys: NonNullable<PrimaryTableProps['selectedRowKeys']>
+}
+
+// 设置变更事件使用 columns，v-model:settings 使用 checked
+export type ITableSettings = Parameters<NonNullable<InstanceType<typeof PrimaryTable>['$props']['onBkUiSettingsChange']>>[0];
 
 // 表单实例函数
 export type IFormMethod = {

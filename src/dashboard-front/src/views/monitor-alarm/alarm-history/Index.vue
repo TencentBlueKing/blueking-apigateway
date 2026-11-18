@@ -85,6 +85,7 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
+        cache-identifier="MonitorAlarmHistory"
         show-settings
         resizable
         :filter-value="filterData"
@@ -192,7 +193,7 @@ const gatewayStore = useGateway();
 const accessLogStore = useAccessLog();
 const { alarmStatus } = accessLogStore;
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
 const scrollLoading = ref(false);
@@ -332,7 +333,10 @@ function getList() {
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getRecordList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue | any) => {
