@@ -32,7 +32,7 @@ sections 5.5 and 5.6.
 - Released-resource lookup/list output `oauth2_app_*_enabled` as projection
   column AND current gateway switch, the same semantics as scope.
 - The projection already excludes resources bound with
-  `bk-access-token-source(source=bearer)` (see `core/AGENTS.md`).
+  `bk-access-token-source` (see `core/AGENTS.md`).
 - Scope is the union over every stage's current release: if one resource is
   delegated in one stage and app-only in another, it appears under both types,
   and lookup shows the mode of the version it reads. The target stage's route

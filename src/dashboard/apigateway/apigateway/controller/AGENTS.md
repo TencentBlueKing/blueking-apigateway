@@ -57,18 +57,21 @@ sections 4 and 7.
 support_public   = U and oauth2_public_client_enabled
 support_personal = U and oauth2_personal_client_enabled
 support_app      = gateway.oauth2_app_enabled and A
-                   and not bound bk-access-token-source with effective source=bearer
+                   and not bound bk-access-token-source (any source)
 inject           = (support_public or support_personal or support_app) and apisix >= 3.16
 challenge_on_missing_credential = support_public or support_personal
 ```
 
 - Read `gateway.oauth2_app_enabled` from `ReleaseData.gateway` at publish time;
   it is not part of the resource version snapshot.
-- Evaluate the bearer-source rule on the plugin bindings of the release being
-  published (`ReleaseData.get_resource_plugins`). A missing `source` means
-  APISIX's default `bearer`; `api_key` does not block the app channel. With
+- Evaluate the `bk-access-token-source` rule on the plugin bindings of the
+  release being published (`ReleaseData.get_resource_plugins`). Any binding
+  blocks the app channel: it runs before `bk-oauth2-verify`, and both
+  `source=bearer` (consumes `Authorization`) and strict `api_key` (400 without
+  `X-API-KEY`) break Bearer-only calls. The plugin is no longer public and has
+  very few users, so do not split the rule by config again. With
   personal/public enabled, the plugins are still injected with `support_app=false`.
-  `core.managers.released_resource_uses_bearer_access_token_source` applies
+  `core.managers.released_resource_binds_access_token_source` applies
   the same rule to the `ReleasedResource` projection used by scope and lookup;
   keep the two in sync.
 - Do not emit a token type. APISIX picks delegated vs app tokens from

@@ -225,7 +225,7 @@ class RouteConvertor(GatewayResourceConvertor):
         support_app = bool(
             self.gateway.oauth2_app_enabled
             and app_verified_required
-            and not self._uses_bearer_access_token_source(resource_plugins)
+            and not self._binds_access_token_source(resource_plugins)
         )
         if not (support_public or support_personal or support_app):
             return {}
@@ -245,12 +245,12 @@ class RouteConvertor(GatewayResourceConvertor):
         }
 
     @staticmethod
-    def _uses_bearer_access_token_source(resource_plugins: List["PluginData"]) -> bool:
-        # bk-access-token-source(source=bearer) 先于 bk-oauth2-verify 消费 Authorization，
-        # 与真实应用 Bearer 冲突；source 省略时按插件默认值 bearer 处理
+    def _binds_access_token_source(resource_plugins: List["PluginData"]) -> bool:
+        # bk-access-token-source 先于 bk-oauth2-verify 执行：source=bearer 会消费 Authorization，
+        # source=api_key 且 allow_fallback=false 时缺少 X-API-KEY 直接 400，都与真实应用 Bearer 冲突；
+        # 插件已不公开、使用方很少，绑定即不开放应用通道
         return any(
             plugin_data.type_code == PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value
-            and plugin_data.config.get("source", "bearer") == "bearer"
             for plugin_data in resource_plugins
         )
 

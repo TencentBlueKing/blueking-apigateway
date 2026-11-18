@@ -458,21 +458,25 @@ class TestRouteConvertor:
     @pytest.mark.parametrize(
         ("token_source_config", "personal_enabled", "expected"),
         [
-            # 绑定 source=bearer：屏蔽应用通道
+            # 绑定即屏蔽应用通道，不区分 source、allow_fallback
             ({"source": "bearer"}, False, None),
-            # source 省略：按插件默认值 bearer 处理
             ({}, False, None),
+            ({"source": "api_key", "allow_fallback": False}, False, None),
+            ({"source": "api_key", "allow_fallback": True}, False, None),
             # 已开启 personal：按原条件下发，仅关闭应用通道
             ({"source": "bearer"}, True, {"support_personal": True, "support_app": False, "challenge": True}),
             ({}, True, {"support_personal": True, "support_app": False, "challenge": True}),
-            # source=api_key 或未绑定：沿用原注入规则
-            ({"source": "api_key"}, False, {"support_personal": False, "support_app": True, "challenge": False}),
-            ({"source": "api_key"}, True, {"support_personal": True, "support_app": True, "challenge": True}),
+            (
+                {"source": "api_key", "allow_fallback": False},
+                True,
+                {"support_personal": True, "support_app": False, "challenge": True},
+            ),
+            # 未绑定：沿用原注入规则
             (None, False, {"support_personal": False, "support_app": True, "challenge": False}),
             (None, True, {"support_personal": True, "support_app": True, "challenge": True}),
         ],
     )
-    def test_convert_route_disables_app_channel_for_bearer_access_token_source(
+    def test_convert_route_disables_app_channel_for_access_token_source(
         self,
         mock_release_data,
         resource_kind,
