@@ -61,7 +61,7 @@
 | data.results[].is_public | bool | 资源是否公开 |
 | data.results[].oauth2_public_client_enabled | bool | 资源是否允许 OAuth2 公共客户端访问 |
 | data.results[].oauth2_personal_client_enabled | bool | 资源是否允许 OAuth2 个人客户端访问 |
-| data.results[].oauth2_app_delegated_enabled | bool | 资源是否接受蓝鲸应用的用户委托 token：用户认证且应用认证，且未绑定以 Bearer 为来源（`source=bearer` 或省略）的 bk-access-token-source 插件，且网关当前开启 OAuth 应用通道 |
-| data.results[].oauth2_app_only_enabled | bool | 资源是否接受蓝鲸应用的应用 token：仅应用认证，且未绑定以 Bearer 为来源（`source=bearer` 或省略）的 bk-access-token-source 插件，且网关当前开启 OAuth 应用通道 |
+| data.results[].oauth2_app_delegated_enabled | bool | 资源是否接受蓝鲸应用的用户委托 token：用户认证且应用认证，且网关当前开启 OAuth 应用通道 |
+| data.results[].oauth2_app_only_enabled | bool | 资源是否接受蓝鲸应用的应用 token：仅应用认证，且网关当前开启 OAuth 应用通道 |
 
 网关不存在或对当前租户不可见时返回 `404`；网关不存在当前发布版本时返回空分页结果。
