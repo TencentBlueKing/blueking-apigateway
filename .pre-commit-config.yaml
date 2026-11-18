@@ -28,6 +28,12 @@ repos:
         entry: bash -c 'cd src/dashboard && uv run --locked bash -c "cd apigateway && lint-imports --config=../pyproject.toml"'
         files: src/dashboard/
         pass_filenames: false
+      - id: dashboard-semgrep
+        name: dashboard-semgrep
+        language: system
+        entry: make -C src/dashboard lint-semgrep
+        files: ^(src/dashboard/|\.pre-commit-config\.yaml$|\.github/workflows/dashboard\.yml$)
+        pass_filenames: false
   - repo: local
     hooks:
       - id: black

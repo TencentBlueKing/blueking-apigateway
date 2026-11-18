@@ -24,7 +24,10 @@ uv run make edition-ee
 uv run make lint-check
 ```
 
-`lint-check` runs Ruff checks, mypy, import-linter, and API consistency checks.
+`lint-check` runs Ruff checks, mypy, import-linter, API consistency checks, and
+Semgrep project rules. Run `make lint-semgrep` for the rules alone and
+`make test-semgrep` for their regression tests; [.semgrep/README.md](.semgrep/README.md)
+owns their scope and commands.
 It does not check Ruff formatting; use `uv run ruff format --check` on affected
 Python paths when formatting evidence is needed. `uv run make lint` formats and
 auto-fixes files, so use it only when those changes are intended.
