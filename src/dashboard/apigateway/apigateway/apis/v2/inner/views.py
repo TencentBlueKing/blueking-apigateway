@@ -19,7 +19,7 @@
 import logging
 import operator
 import re
-from typing import Dict
+from typing import Any, Dict
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
@@ -528,6 +528,18 @@ class GatewayMaintainerDeleteApi(generics.GenericAPIView):
         return OKJsonResponse(data=output_slz.data)
 
 
+def _is_listed_permission_resource(resource: Dict[str, Any]) -> bool:
+    """开发者中心按此列表展示、检索可调用的资源
+
+    - 校验应用权限的资源：只列出允许主动申请且要求应用认证的资源（兼容层级约束落地前的存量数据）
+    - 不校验应用权限、但要求用户或应用认证的资源：即使不允许申请也列出，permission_level 为 unlimited，
+      提示调用方无需申请权限；调用时仍须满足资源的认证要求
+    """
+    if resource["resource_perm_required"]:
+        return bool(resource["allow_apply_permission"] and resource["app_verified_required"])
+    return bool(resource.get("user_verified_required") or resource["app_verified_required"])
+
+
 @method_decorator(
     name="get",
     decorator=extend_schema(
@@ -548,14 +560,7 @@ class GatewayPermissionResourceListApi(generics.ListAPIView):
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
 
-        # 只保留允许主动申请权限、且实际校验应用权限的资源；兼容层级约束落地前的存量数据
-        resources = [
-            resource
-            for resource in resources
-            if resource["allow_apply_permission"]
-            and resource["app_verified_required"]
-            and resource["resource_perm_required"]
-        ]
+        resources = [resource for resource in resources if _is_listed_permission_resource(resource)]
 
         resource_permissions = ResourcePermissionBuilder(
             self.request.gateway,

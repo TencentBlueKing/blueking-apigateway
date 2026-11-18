@@ -401,26 +401,33 @@ class TestGatewayPermissionResourceListApi:
             approval_urls[fake_resource_echo.id] == f"https://dashboard.example.com/{fake_gateway.id}/permission/apply"
         )
 
-    def test_list_only_includes_resources_checking_app_permission(self, request_view, fake_gateway, mocker):
-        def _resource(resource_id, *, app_verified_required, resource_perm_required, allow_apply_permission):
+    def test_list_filters_resources_by_app_permission_check(self, request_view, fake_gateway, mocker):
+        def _resource(resource_id, *, user, app, perm, allow_apply):
             return {
                 "id": resource_id,
                 "name": f"resource_{resource_id}",
                 "description": "",
                 "description_en": None,
-                "app_verified_required": app_verified_required,
-                "resource_perm_required": resource_perm_required,
-                "allow_apply_permission": allow_apply_permission,
+                "user_verified_required": user,
+                "app_verified_required": app,
+                "resource_perm_required": perm,
+                "allow_apply_permission": allow_apply,
             }
 
         mocker.patch(
             "apigateway.apis.v2.inner.views.ResourceVersionHandler.get_released_public_resources",
             return_value=[
-                _resource(1, app_verified_required=True, resource_perm_required=True, allow_apply_permission=True),
-                # 层级约束落地前的存量数据：未校验应用认证或应用权限，但仍标记允许申请
-                _resource(2, app_verified_required=False, resource_perm_required=True, allow_apply_permission=True),
-                _resource(3, app_verified_required=True, resource_perm_required=False, allow_apply_permission=True),
-                _resource(4, app_verified_required=True, resource_perm_required=True, allow_apply_permission=False),
+                _resource(1, user=True, app=True, perm=True, allow_apply=True),
+                # 层级约束落地前的存量数据：未校验应用认证，但仍校验应用权限
+                _resource(2, user=True, app=False, perm=True, allow_apply=True),
+                # 应用认证、不校验应用权限：允许申请与否都以 unlimited 列出
+                _resource(3, user=True, app=True, perm=False, allow_apply=True),
+                _resource(4, user=True, app=True, perm=True, allow_apply=False),
+                # 仅用户认证：以 unlimited 列出
+                _resource(5, user=True, app=False, perm=False, allow_apply=False),
+                # 无需认证：不列出
+                _resource(6, user=False, app=False, perm=False, allow_apply=False),
+                _resource(7, user=False, app=True, perm=False, allow_apply=False),
             ],
         )
 
@@ -434,7 +441,12 @@ class TestGatewayPermissionResourceListApi:
         )
 
         assert response.status_code == 200
-        assert [item["id"] for item in response.json()["data"]] == [1]
+        assert [(item["id"], item["permission_level"]) for item in response.json()["data"]] == [
+            (1, "normal"),
+            (3, "unlimited"),
+            (5, "unlimited"),
+            (7, "unlimited"),
+        ]
 
 
 class TestMCPServerPermissionListApi:
