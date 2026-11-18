@@ -26,6 +26,7 @@ from django.db import models
 
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import (
+    BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE,
     DEFAULT_STAGE_NAME,
     ResourceKindEnum,
     StageStatusEnum,
@@ -241,10 +242,35 @@ def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, 
     )
 
 
+def released_resource_uses_bearer_access_token_source(resource: Dict[str, Any]) -> bool:
+    """资源快照是否绑定了 source=bearer 的 bk-access-token-source（source 省略时按插件默认值 bearer）
+
+    须与 controller 生成路由时屏蔽应用通道的判断（RouteConvertor._uses_bearer_access_token_source）保持一致
+    """
+    plugins = resource.get("plugins")
+    if not isinstance(plugins, list):
+        return False
+
+    for binding in plugins:
+        if not isinstance(binding, dict) or binding.get("type") != BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE:
+            continue
+        config = binding.get("config")
+        source = config.get("source", "bearer") if isinstance(config, dict) else "bearer"
+        if source == "bearer":
+            return True
+    return False
+
+
 def get_released_resource_oauth2_app_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
-    """Return (app_delegated_enabled, app_only_enabled) derived from U/A, excluding the gateway switch."""
+    """Return (app_delegated_enabled, app_only_enabled) derived from U/A, excluding the gateway switch.
+
+    A resource bound with bk-access-token-source(source=bearer) gets no app channel route, so both are false.
+    """
     config = _load_released_resource_auth_config(resource)
     if config is None:
+        return False, False
+
+    if released_resource_uses_bearer_access_token_source(resource):
         return False, False
 
     user_required = config.get("auth_verified_required") is True

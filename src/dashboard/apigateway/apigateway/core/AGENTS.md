@@ -20,6 +20,14 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
 - `Gateway.oauth2_app_enabled` (`db_default=True`) is the writable gateway
   switch. `ReleasedResource.oauth2_app_delegated_enabled` (U && A) and
   `oauth2_app_only_enabled` (!U && A) are projections with `db_default=False`.
+  Both are false when the snapshot's `plugins` bind `bk-access-token-source`
+  with effective `source=bearer`
+  (`released_resource_uses_bearer_access_token_source`). This mirrors the
+  controller rule that drops `support_app`; change both together. `core`
+  cannot import `apps`, so the plugin type lives in
+  `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE`, pinned by a test.
+- The Web read-only `auth_config.oauth2_app_delegated_enabled` stays U && A and
+  ignores the bearer-source rule.
 - The projection columns hold only values derived from the snapshot, never the
   gateway switch: a `ReleasedResource` row is written once per resource version
   and shared by every stage that releases it. Consumers AND the switch at query

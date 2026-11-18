@@ -21,9 +21,11 @@ import json
 import pytest
 from django_dynamic_fixture import G
 
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.biz.stage import StageHandler
 from apigateway.core import constants
 from apigateway.core.constants import (
+    BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE,
     GatewayKindEnum,
     StageStatusEnum,
 )
@@ -102,6 +104,33 @@ def test_get_released_resource_oauth2_app_flags(config, expected):
 
 def test_get_released_resource_oauth2_app_flags_with_missing_config():
     assert get_released_resource_oauth2_app_flags({}) == (False, False)
+
+
+def test_bk_access_token_source_plugin_type_matches_plugin_enum():
+    assert PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value == BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE
+
+
+@pytest.mark.parametrize(
+    "plugins, expected",
+    [
+        ([{"type": "bk-access-token-source", "config": {"source": "bearer"}}], (False, False)),
+        ([{"type": "bk-access-token-source", "config": {}}], (False, False)),
+        ([{"type": "bk-access-token-source", "config": None}], (False, False)),
+        ([{"type": "bk-access-token-source", "config": {"source": "api_key"}}], (True, False)),
+        ([{"type": "bk-cors", "config": {}}], (True, False)),
+        ([], (True, False)),
+        ("invalid", (True, False)),
+    ],
+)
+def test_get_released_resource_oauth2_app_flags_with_bearer_access_token_source(plugins, expected):
+    resource = {
+        "contexts": {
+            "resource_auth": {"config": json.dumps({"auth_verified_required": True, "app_verified_required": True})}
+        },
+        "plugins": plugins,
+    }
+
+    assert get_released_resource_oauth2_app_flags(resource) == expected
 
 
 class TestStageManager:
@@ -488,16 +517,20 @@ class TestReleasedResourceManager:
             resource["id"] = resource_id
             return resource
 
+        bearer_source = _snapshot(104, True, True)
+        bearer_source["plugins"] = [{"type": "bk-access-token-source", "config": {"source": "bearer"}}]
         fake_resource_version.data = [
             _snapshot(101, True, True),
             _snapshot(102, False, True),
             _snapshot(103, True, False),
+            bearer_source,
         ]
         fake_resource_version.save(update_fields=["_data"])
         ReleasedResource.objects.save_released_resource(fake_resource_version)
-        # 旧版 Dashboard 写入的行：两列取数据库默认值 false
+        # 旧版 Dashboard 写入的行：两列取数据库默认值 false；104 模拟按旧规则（未考虑 bearer 来源）算出的值
         queryset = ReleasedResource.objects.filter(resource_version_id=fake_resource_version.id)
         queryset.update(oauth2_app_delegated_enabled=False, oauth2_app_only_enabled=False)
+        queryset.filter(resource_id=104).update(oauth2_app_delegated_enabled=True)
 
         def _flags():
             return {
@@ -505,11 +538,11 @@ class TestReleasedResourceManager:
                 for row in queryset.order_by("resource_id")
             }
 
-        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id, dry_run=True) == 2
-        assert _flags() == {101: (False, False), 102: (False, False), 103: (False, False)}
+        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id, dry_run=True) == 3
+        assert _flags() == {101: (False, False), 102: (False, False), 103: (False, False), 104: (True, False)}
 
-        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id) == 2
-        assert _flags() == {101: (True, False), 102: (False, True), 103: (False, False)}
+        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id) == 3
+        assert _flags() == {101: (True, False), 102: (False, True), 103: (False, False), 104: (False, False)}
 
         assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id) == 0
 

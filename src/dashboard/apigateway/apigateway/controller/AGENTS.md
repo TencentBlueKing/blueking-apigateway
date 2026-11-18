@@ -68,6 +68,9 @@ challenge_on_missing_credential = support_public or support_personal
   published (`ReleaseData.get_resource_plugins`). A missing `source` means
   APISIX's default `bearer`; `api_key` does not block the app channel. With
   personal/public enabled, the plugins are still injected with `support_app=false`.
+  `core.managers.released_resource_uses_bearer_access_token_source` applies
+  the same rule to the `ReleasedResource` projection used by scope and lookup;
+  keep the two in sync.
 - Do not emit a token type. APISIX picks delegated vs app tokens from
   `bk-resource-context.verified_user_required`, so new token types only need a
   plugin upgrade.

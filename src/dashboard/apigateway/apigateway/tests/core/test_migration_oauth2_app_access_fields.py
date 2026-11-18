@@ -109,8 +109,11 @@ def test_oauth2_app_access_fields_backfill_db_defaults_and_reverse():
             (3, _auth_config(True, False)),
             (4, "not-json"),
         ]
+        rows.append((5, _auth_config(True, True)))
         for resource_id, auth_config in rows:
             data = _resource_data(resource_id, auth_config)
+            if resource_id == 5:
+                data["plugins"] = [{"type": "bk-access-token-source", "config": {"source": "bearer"}}]
             old_released_resource_model.objects.create(
                 gateway_id=gateway.id,
                 resource_version_id=resource_id,
@@ -132,7 +135,7 @@ def test_oauth2_app_access_fields_backfill_db_defaults_and_reverse():
             new_released_resource_model.objects.order_by("resource_id").values_list(
                 "oauth2_app_delegated_enabled", "oauth2_app_only_enabled"
             )
-        ) == [(True, False), (False, True), (False, False), (False, False)]
+        ) == [(True, False), (False, True), (False, False), (False, False), (False, False)]
         assert _constraint_names(connection, new_released_resource_model._meta.db_table) >= INDEX_NAMES
 
         # Rolled-back Dashboard code does not know the new columns; database defaults must fill them.
