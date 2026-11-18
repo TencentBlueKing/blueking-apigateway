@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 from django.db import connections
 from django.db.migrations.executor import MigrationExecutor
+from django.db.migrations.recorder import MigrationRecorder
 
 pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
@@ -40,26 +41,50 @@ def _auth_config(user_required, app_required):
     return json.dumps({"auth_verified_required": user_required, "app_verified_required": app_required})
 
 
-def test_backfill_flushes_full_batches_and_skips_rows_without_app_channel(mocker, monkeypatch):
+class _FakeReleasedResourceManager:
+    """Supports filter(id__gt=...).order_by("id").only(...)[:n] used by the keyset pagination"""
+
+    def __init__(self, rows):
+        self.rows = rows
+        self.queries = []
+        self.flushed = []
+        self._last_id = 0
+
+    def filter(self, id__gt):
+        self._last_id = id__gt
+        return self
+
+    def order_by(self, *fields):
+        return self
+
+    def only(self, *fields):
+        return self
+
+    def __getitem__(self, item):
+        self.queries.append(self._last_id)
+        rows = [row for row in self.rows if row.id > self._last_id]
+        return rows[item]
+
+    def bulk_update(self, objects, fields, batch_size):
+        self.flushed.append([obj.id for obj in objects])
+
+
+def test_backfill_pages_by_primary_key_and_skips_rows_without_app_channel(mocker, monkeypatch):
     resources = [
-        SimpleNamespace(data=_resource_data(1, _auth_config(True, True))),
-        SimpleNamespace(data=_resource_data(2, _auth_config(False, True))),
-        SimpleNamespace(data=_resource_data(3, _auth_config(True, False))),
-        SimpleNamespace(data=_resource_data(4, _auth_config(True, True))),
+        SimpleNamespace(id=1, data=_resource_data(1, _auth_config(True, True))),
+        SimpleNamespace(id=2, data=_resource_data(2, _auth_config(False, True))),
+        SimpleNamespace(id=3, data=_resource_data(3, _auth_config(True, False))),
+        SimpleNamespace(id=5, data=_resource_data(5, _auth_config(True, True))),
     ]
-    manager = mocker.Mock()
-    manager.only.return_value.order_by.return_value.iterator.return_value = iter(resources)
-    flushed = []
-    manager.bulk_update.side_effect = lambda objects, fields, batch_size: flushed.append(
-        [obj.data["id"] for obj in objects]
-    )
+    manager = _FakeReleasedResourceManager(resources)
     apps = mocker.Mock()
     apps.get_model.return_value = type("ReleasedResource", (), {"objects": manager})
     monkeypatch.setattr(MIGRATION_MODULE, "BATCH_SIZE", 2)
 
     MIGRATION_MODULE.backfill_released_resource_app_flags(apps, mocker.Mock())
 
-    assert flushed == [[1, 2], [4]]
+    assert manager.queries == [0, 2, 5]
+    assert manager.flushed == [[1, 2], [5]]
     assert (resources[0].oauth2_app_delegated_enabled, resources[0].oauth2_app_only_enabled) == (True, False)
     assert (resources[1].oauth2_app_delegated_enabled, resources[1].oauth2_app_only_enabled) == (False, True)
     assert not hasattr(resources[2], "oauth2_app_delegated_enabled")
@@ -131,6 +156,37 @@ def test_oauth2_app_access_fields_backfill_db_defaults_and_reverse():
         executor.migrate(MIGRATE_FROM)
         assert APP_FLAG_FIELDS.isdisjoint(_column_names(connection, new_released_resource_model._meta.db_table))
         assert "oauth2_app_enabled" not in _column_names(connection, new_gateway_model._meta.db_table)
+    finally:
+        executor = MigrationExecutor(connection)
+        executor.migrate(latest_migrations)
+
+
+def test_oauth2_app_access_fields_rerun_after_partial_ddl():
+    connection = connections["default"]
+    executor = MigrationExecutor(connection)
+    latest_migrations = executor.loader.graph.leaf_nodes()
+
+    try:
+        executor.migrate(MIGRATE_FROM)
+        executor = MigrationExecutor(connection)
+        executor.migrate(MIGRATE_TO)
+
+        # Simulate a non-atomic run that failed after the first column and index were created.
+        model = executor.loader.project_state(MIGRATE_TO).apps.get_model("core", "ReleasedResource")
+        only_index = next(idx for idx in model._meta.indexes if idx.name == "rr_oauth_app_only_scope_idx")
+        with connection.schema_editor() as schema_editor:
+            schema_editor.remove_index(model, only_index)
+            schema_editor.remove_field(model, model._meta.get_field("oauth2_app_only_enabled"))
+        MigrationRecorder(connection).record_unapplied(*MIGRATE_TO[0])
+
+        table = model._meta.db_table
+        assert "oauth2_app_only_enabled" not in _column_names(connection, table)
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(MIGRATE_TO)
+
+        assert _column_names(connection, table) >= APP_FLAG_FIELDS
+        assert _constraint_names(connection, table) >= INDEX_NAMES
     finally:
         executor = MigrationExecutor(connection)
         executor.migrate(latest_migrations)
