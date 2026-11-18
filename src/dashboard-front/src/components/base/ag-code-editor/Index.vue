@@ -118,8 +118,6 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null; // 编辑器实�
 const monacoEditor = ref();
 // 编辑器装饰器（高亮效果等）
 let decorations: monaco.editor.IEditorDecorationsCollection | null = null;
-// 编辑器下划波浪线
-let markers: monaco.editor.IMarkerData[] = [];
 // 可切换字号范围
 const fontSizeOptions = [14, 20, 24];
 // 可切换行高范围
@@ -241,76 +239,41 @@ const emitChange = (emitValue: any, event: any) => {
 };
 
 // 更改光标位置
-const setCursorPos = ({ lineNumber = null as number | null, toBottom = false }) => {
-  const model = editor!.getModel();
+const setCursorPos = ({ lineNumber, column, toBottom = false }: Partial<monaco.IPosition> & { toBottom?: boolean }) => {
+  const model = editor?.getModel();
+  if (!editor || !model) return;
 
-  if (!model) return;
+  const targetLine = toBottom ? model.getLineCount() : lineNumber;
+  if (!targetLine) return;
 
-  let _lineNumber = lineNumber;
-
-  // 如果直接跳转到底部, 获取最后一行的行号
-  if (toBottom === true) _lineNumber = model.getLineCount();
-
-  // @ts-ignore
-  const lastColumnNumber = model.getLineLastNonWhitespaceColumn(_lineNumber);
-  editor!.focus();
-  editor!.setPosition(new monaco.Position(_lineNumber!, lastColumnNumber));
-  editor!.revealLineInCenter(_lineNumber!);
+  const target = new monaco.Position(targetLine, column ?? model.getLineLastNonWhitespaceColumn(targetLine));
+  editor.focus();
+  editor.setPosition(target);
+  editor.revealPositionInCenter(target);
 };
 
-const genLineDecorations = (decorationOptions: any[]) => {
-  const decoOptions = decorationOptions.filter((o: any) => o.position)
-    .map((o: any) => ({
-      range: {
-        startLineNumber: o.position.lineNumber,
-        endLineNumber: o.position.lineNumber,
-        startColumn: o.position.column,
-        endColumn: o.position.column,
-      },
-      options: {
-        isWholeLine: true, // 整行高亮
-        className:
-          'line-highlight-error', // 当前行装饰用类名
-        glyphMarginClassName:
-          'apigateway-icon icon-ag-exclamation-circle-fill f14', // 当前行左侧装饰(glyph)用类名
-      },
-    }));
-  decorations = editor!.createDecorationsCollection(decoOptions);
+const setLineDecorations = (ranges: monaco.IRange[]) => {
+  decorations?.set(ranges.map(({ startLineNumber, startColumn }) => ({
+    range: new monaco.Range(startLineNumber, startColumn, startLineNumber, startColumn),
+    options: {
+      isWholeLine: true,
+      className: 'line-highlight-error',
+      glyphMarginClassName: 'apigateway-icon icon-ag-exclamation-circle-fill f14',
+    },
+  })));
 };
 
-const setDecorations = () => {
-  if (decorations) {
-    decorations.set([]);
+const setMarkers = (errors: Omit<monaco.editor.IMarkerData, 'severity'>[]) => {
+  const model = editor?.getModel();
+  if (model) {
+    monaco.editor.setModelMarkers(model, 'owner', errors.map(error => ({
+      ...error,
+      severity: monaco.MarkerSeverity.Error,
+    })));
   }
 };
 
-const clearDecorations = () => {
-  decorations?.clear();
-};
-
-const genMarkers = (errors: any[]) => {
-  errors.forEach((error: any) => {
-    markers.push({
-      severity: monaco.MarkerSeverity.Error,
-      message: error.message,
-      startLineNumber: error.position?.lineNumber ?? 0,
-      startColumn: error.position?.column ?? 0,
-      endLineNumber: error.position?.lineNumber ?? 0,
-      endColumn: editor!.getModel()?.getLineLastNonWhitespaceColumn(error.position?.lineNumber) ?? 1,
-    });
-  });
-};
-
-const setMarkers = () => {
-  monaco.editor.setModelMarkers(editor!.getModel()!, 'owner', markers);
-};
-
-const clearMarkers = () => {
-  markers = [];
-  setMarkers();
-};
-
-const getModel = () => editor!.getModel();
+const getModel = () => editor?.getModel();
 
 const showFindPanel = () => {
   editor!.trigger('', 'actions.find', null);
@@ -367,12 +330,8 @@ const updateOptions = (options: any) => {
 defineExpose({
   setValue,
   setCursorPos,
-  setDecorations,
-  clearDecorations,
-  genLineDecorations,
+  setLineDecorations,
   setMarkers,
-  clearMarkers,
-  genMarkers,
   getModel,
   getValue,
   showFindPanel,
