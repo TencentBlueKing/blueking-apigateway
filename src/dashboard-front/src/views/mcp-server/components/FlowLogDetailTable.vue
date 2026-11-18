@@ -131,7 +131,8 @@ import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 // 图标组件
 import { CopyShape, EnlargeLine, InfoLine, NarrowLine } from 'bkui-vue/lib/icon';
 // 服务请求
-import { type IObservabilitySearchParams, getMcpLogList } from '@/services/source/gateway/mcp-server/log';
+import { getMcpLogList } from '@/services/source/gateway/mcp-server/log';
+import type { IMCPServerLogQuery } from '@/services/types/gateway/mcp-server/log.ts';
 import type { IFlowLogTable } from '@/types/observability';
 // 工具函数
 import { copy } from '@/utils';
@@ -425,7 +426,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
  * 获取日志列表
  * @param params 筛选参数
  */
-const getList = (params: IObservabilitySearchParams) => {
+const getList = (params: IMCPServerLogQuery) => {
   tableRef.value?.fetchData(params, { resetPage: true });
 };
 
@@ -441,7 +442,7 @@ const getPagination = () => {
  * @param params 筛选参数
  * @param extraStr 额外参数
  */
-const getTableData = async (params: IObservabilitySearchParams = {}, extraStr?: string) => {
+const getTableData = async (params: IMCPServerLogQuery = {}, extraStr?: string) => {
   try {
     const res = await getMcpLogList(apiGatewayId as number, params as any, extraStr);
     const { fields = [], count = 0 } = res ?? {};

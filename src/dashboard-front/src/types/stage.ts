@@ -20,6 +20,6 @@
 * 环境相关类型
 *  */
 
-import type { IStageListOutput } from '@/services/types/responses/gateways';
+import type { IStageListOutput } from '@/services/types/gateway/stage.ts';
 
 export type IStageListItem = IStageListOutput;

@@ -23,19 +23,17 @@
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
-  IPluginBindingListOutput,
-  IPluginConfigRetrieveOutput,
-  IPluginTypeListOutput,
-  IPluginTypeTagsOutput,
-  IScopePluginConfigListOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
   IGatewaysPluginsBindingsListQuery,
   IGatewaysPluginsListQuery,
   IGatewaysPluginsReadQuery,
   IGatewaysPluginsTagsListQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IPluginConfigBaseSLZ } from '@/services/types/body/post/gateways.ts';
+  IPluginBindingListOutput,
+  IPluginConfigBaseSLZ,
+  IPluginConfigRetrieveOutput,
+  IPluginTypeListOutput,
+  IPluginTypeTagsOutput,
+  IScopePluginConfigListOutput,
+} from '@/services/types/gateway/plugin.ts';
 
 const path = '/gateways';
 
@@ -90,7 +88,7 @@ export const createPlugin = (
   code: string,
   data: IPluginConfigBaseSLZ,
 ) =>
-  http.post(`${path}/${gatewayId}/plugins/${scopeType}/${scopeId}/${code}/configs/`, data);
+  http.post<IPluginConfigRetrieveOutput>(`${path}/${gatewayId}/plugins/${scopeType}/${scopeId}/${code}/configs/`, data);
 
 /**
  * 获取插件的配置
@@ -120,7 +118,7 @@ export const updatePluginConfig = (
   id: number,
   data: IPluginConfigBaseSLZ,
 ) =>
-  http.put(`${path}/${gatewayId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`, data);
+  http.put<void>(`${path}/${gatewayId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`, data);
 
 /**
  * 删除插件的配置
@@ -131,4 +129,4 @@ export const updatePluginConfig = (
  * @param id 插件id
  */
 export const deletePluginConfig = (gatewayId: number, scopeType: string, scopeId: number, code: string, id: number) =>
-  http.delete(`${path}/${gatewayId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);
+  http.delete<void>(`${path}/${gatewayId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);

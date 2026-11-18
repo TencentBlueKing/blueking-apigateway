@@ -193,8 +193,8 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
         title: t('后端请求方法'),
         colKey: 'backend_method',
         cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
-          <bk-tag theme={(METHOD_THEMES as any)[(row.backend?.config.method ?? row.method)!]}>
-            {row.backend?.config.method ?? row.method}
+          <bk-tag theme={(METHOD_THEMES as any)[(row.backend?.config?.method ?? row.method)!]}>
+            {row.backend?.config?.method ?? row.method}
           </bk-tag>
         ),
       },

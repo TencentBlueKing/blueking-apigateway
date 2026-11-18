@@ -494,7 +494,7 @@ const handleExportDownload = async () => {
     if (exportDialogConfig.value.exportFileDocType === 'docs') {
       await exportVersionDocs(apigwId.value, params as {
         id?: number
-        file_type: string
+        file_type: 'zip' | 'tgz'
       });
     }
     else {

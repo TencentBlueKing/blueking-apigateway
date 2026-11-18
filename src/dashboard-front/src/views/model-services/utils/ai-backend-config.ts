@@ -2,13 +2,11 @@ import { t } from '@/locales';
 import type {
   AIBackendFallbackItemInput,
   IAIBackendConfigInput,
-  IAIBackendInstanceInput,
-  IBackendTestConnectionInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
-import type {
   IAIBackendConfigOutput,
+  IAIBackendInstanceInput,
   IAIBackendInstanceOutput,
-} from '@/services/types/responses/gateways.ts';
+  IBackendTestConnectionInputSLZ,
+} from '@/services/types/gateway/backend.ts';
 
 export type AIBackendOptionMode = 'table' | 'text';
 export type AIBackendEndpointScheme = 'http' | 'https';

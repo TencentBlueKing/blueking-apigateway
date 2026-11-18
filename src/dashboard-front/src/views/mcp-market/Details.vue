@@ -357,7 +357,7 @@ import { getMarketplaceServerConfigs, getMcpServerDetails } from '@/services/sou
 import type { IMCPMarketCategory } from '@/types/mcp-marketplace';
 import type { IMCPAIConfig } from '@/types/mcp-server';
 import type { getServer } from '@/services/source/gateway/mcp-server/server';
-import type { IMCPServerRetrieveOutput } from '@/services/types/responses/mcp-marketplace.ts';
+import type { IMCPServerRetrieveOutput } from '@/services/types/mcp-marketplace.ts';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import Guideline from './components/GuideLine.vue';

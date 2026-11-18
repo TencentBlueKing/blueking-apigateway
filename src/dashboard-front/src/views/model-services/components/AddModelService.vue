@@ -208,8 +208,7 @@ import {
   updateBackendService,
 } from '@/services/source/gateway/backend';
 import { getStageList } from '@/services/source/gateway/stage';
-import type { IBackendInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type { IAIBackendConfigOutput } from '@/services/types/responses/gateways.ts';
+import type { IAIBackendConfigOutput, IBackendInputSLZ } from '@/services/types/gateway/backend.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { useGateway } from '@/stores';
 import type { IFormMethod } from '@/types/common';

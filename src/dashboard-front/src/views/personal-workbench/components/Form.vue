@@ -104,7 +104,7 @@ import {
 } from '@/stores';
 import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
-import type { IPersonalWorkbenchFilter, IPersonalWorkbenchUIState } from '@/services/types/query/personal-workbench.ts';
+import type { IPersonalWorkbenchFilter, IPersonalWorkbenchUIState } from '@/types/personal-workbench.ts';
 import BkUserSelector from '@blueking/bk-user-selector';
 import StaffSelector from '@/components/user/staff-selector';
 

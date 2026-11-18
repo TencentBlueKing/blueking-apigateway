@@ -81,7 +81,7 @@ import type {
 } from 'echarts/types/dist/shared';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
+import type { IObservabilitySearchParams } from '@/types/observability';
 import type { ISeriesItemType } from '@/types/metrics';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 

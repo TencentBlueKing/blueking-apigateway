@@ -18,19 +18,7 @@
 
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type {
-  IMCPServerCategoryOutput,
-  IMCPServerConfigListOutput,
-  IMCPServerFilterOptionsOutput,
-  IMCPServerGuidelineOutput,
-  IMCPServerListOutput,
-  IMCPServerRemotePromptsOutput,
-  IMCPServerRetrieveOutput,
-  IMCPServerStageReleaseCheckOutput,
-  IMCPServerToolDocOutput,
-  IMCPServerToolOutput,
-  IMCPServerUserCustomDocOutput,
-} from '@/services/types/responses/gateways.ts';
+import type { ICreatedIdOutput } from '@/services/types/gateway/common.ts';
 import type {
   IGatewaysMcpServersCategoriesListQuery,
   IGatewaysMcpServersFilterOptionsListQuery,
@@ -38,15 +26,25 @@ import type {
   IGatewaysMcpServersRemotePromptsListQuery,
   IGatewaysMcpServersStageReleaseCheckReadQuery,
   IGatewaysMcpServersToolsListQuery,
-} from '@/services/types/query/gateways.ts';
-import type {
+  IMCPServerCategoryOutput,
+  IMCPServerConfigListOutput,
   IMCPServerCreateInputSLZ,
+  IMCPServerFilterOptionsOutput,
+  IMCPServerGuidelineOutput,
+  IMCPServerListOutput,
   IMCPServerRemotePromptsBatchInputSLZ,
+  IMCPServerRemotePromptsBatchOutput,
+  IMCPServerRemotePromptsOutput,
+  IMCPServerRetrieveOutput,
+  IMCPServerStageReleaseCheckOutput,
+  IMCPServerToolDocOutput,
+  IMCPServerToolOutput,
+  IMCPServerUpdateInputSLZ,
+  IMCPServerUpdateStatusInputSLZ,
   IMCPServerUserCustomDocInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
-import type { IMCPServerUpdateStatusInputSLZ } from '@/services/types/body/patch/gateways.ts';
-import type { IMcpBatchConfigQuery } from '@/services/types/query/mcp-marketplace.ts';
-import type { IMcpClientConfig } from '@/services/types/responses/mcp-marketplace.ts';
+  IMCPServerUserCustomDocOutput,
+} from '@/services/types/gateway/mcp-server/server.ts';
+import type { IMCPServerBatchConfigInput, IMcpClientConfig } from '@/services/types/mcp-client-config.ts';
 import type { IMCPAIConfig } from '@/types/mcp-server';
 
 const path = '/gateways';
@@ -60,26 +58,26 @@ export const getServer = (gatewayId: number, serverId: number) =>
   http.get<IMCPServerRetrieveOutput>(`${path}/${gatewayId}/mcp-servers/${serverId}/`);
 
 // 创建
-export const createServer = (gatewayId: number, data: Partial<IMCPServerCreateInputSLZ>) =>
-  http.post(`${path}/${gatewayId}/mcp-servers/`, data);
+export const createServer = (gatewayId: number, data: IMCPServerCreateInputSLZ) =>
+  http.post<ICreatedIdOutput>(`${path}/${gatewayId}/mcp-servers/`, data);
 
 // 部分更新
 export const patchServer = (
   gatewayId: number,
   serverId: number,
-  data: Partial<IMCPServerCreateInputSLZ>,
-) => http.patch(`${path}/${gatewayId}/mcp-servers/${serverId}/`, data);
+  data: IMCPServerUpdateInputSLZ,
+) => http.patch<void>(`${path}/${gatewayId}/mcp-servers/${serverId}/`, data);
 
 // 删除
 export const deleteServer = (gatewayId: number, serverId: number) =>
-  http.delete(`${path}/${gatewayId}/mcp-servers/${serverId}/`);
+  http.delete<void>(`${path}/${gatewayId}/mcp-servers/${serverId}/`);
 
 // 更新 MCPServer 状态，如启用、停用
 export const patchServerStatus = (
   gatewayId: number,
   serverId: number,
   data: IMCPServerUpdateStatusInputSLZ,
-) => http.patch(`${path}/${gatewayId}/mcp-servers/${serverId}/status/`, data);
+) => http.patch<void>(`${path}/${gatewayId}/mcp-servers/${serverId}/status/`, data);
 
 // 工具列表
 export const getServerTools = (
@@ -115,7 +113,7 @@ export const addCustomServerGuideDoc = (
   gatewayId: number,
   mcp_server_id: number,
   data: IMCPServerUserCustomDocInputSLZ,
-) => http.post(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
+) => http.post<void>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
 
 /**
  * 更新 MCPServer 用户自定义文档
@@ -128,7 +126,7 @@ export const updateCustomServerGuideDoc = (
   mcp_server_id: number,
   data: IMCPServerUserCustomDocInputSLZ,
 ) =>
-  http.put(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
+  http.put<void>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
 
 /**
  * 删除 MCPServer 用户自定义文档
@@ -136,7 +134,7 @@ export const updateCustomServerGuideDoc = (
  * @param {Number} mcp_server_id mcpServer id
  */
 export const deleteCustomServerGuideDoc = (gatewayId: number, mcp_server_id: number) =>
-  http.delete(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
+  http.delete<void>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
 
 /**
  * 获取 MCPServer 已关联的 Prompts 配置
@@ -151,7 +149,7 @@ export const getServerPrompts = (gatewayId: number, query: IGatewaysMcpServersRe
  * @param {Number[]} data.ids 当前PromptID组
  */
 export const getServerPromptsDetail = (gatewayId: number, data: IMCPServerRemotePromptsBatchInputSLZ) =>
-  http.post<IMCPServerRemotePromptsOutput>(`${path}/${gatewayId}/mcp-servers/-/remote-prompts/batch/`, data);
+  http.post<IMCPServerRemotePromptsBatchOutput>(`${path}/${gatewayId}/mcp-servers/-/remote-prompts/batch/`, data);
 
 /**
  * 获取 MCPServer 搜索过滤选项（环境、标签、分类）
@@ -182,9 +180,9 @@ export const getMcpServerConfigs = (gatewayId: number, mcp_server_id: number): P
  */
 export const getMcpServerBatchConfigs = (
   gatewayId: number,
-  data: IMcpBatchConfigQuery,
-): Promise<IMcpClientConfig> =>
-  http.post(`${path}/${gatewayId}/mcp-servers/-/batch-configs/`, data);
+  data: IMCPServerBatchConfigInput,
+) =>
+  http.post<IMcpClientConfig>(`${path}/${gatewayId}/mcp-servers/-/batch-configs/`, data);
 
 /**
  *  环境发布前检查对应环境 MCP Server 是否存在资源变更

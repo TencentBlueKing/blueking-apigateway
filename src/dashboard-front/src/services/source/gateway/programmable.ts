@@ -24,21 +24,21 @@ import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IDeployHistoryListOutput,
-  IGetDeployEventsByDeployIdOutput,
-  IGetDeployEventsByHistoryIdOutput,
-  IProgrammableStageDeployOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
   IGatewaysReleasesProgrammableDeployHistoriesListQuery,
   IGatewaysResourceVersionsProgrammableNextDeployVersionReadQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IProgrammableDeployCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
+  IGetDeployEventsByDeployIdOutput,
+  IGetDeployEventsByHistoryIdOutput,
+  IProgrammableDeployCreateInputSLZ,
+  IProgrammableDeployOutput,
+  IProgrammableStageDeployOutput,
+} from '@/services/types/gateway/programmable.ts';
+import type { INextResourceVersionOutput } from '@/services/types/gateway/resource-version.ts';
 
 const path = '/gateways';
 
 // 发布
 export const deployReleases = (gatewayId: number, data: IProgrammableDeployCreateInputSLZ) =>
-  http.post(`${path}/${gatewayId}/releases/programmable/deploy/`, data, { catchError: true });
+  http.post<IProgrammableDeployOutput>(`${path}/${gatewayId}/releases/programmable/deploy/`, data, { catchError: true });
 
 // 获取环境详情
 export const getProgrammableStageDetail = (gatewayId: number, stageId: number) => http.get<IProgrammableStageDeployOutput>(`${path}/${gatewayId}/stages/${stageId}/programmable/`);
@@ -48,7 +48,7 @@ export const getStageNextVersion = (
   gatewayId: number,
   params: IGatewaysResourceVersionsProgrammableNextDeployVersionReadQuery,
 ) =>
-  http.get<{ version: string }>(`${path}/${gatewayId}/resource-versions/programmable/next-deploy-version/`, params);
+  http.get<INextResourceVersionOutput>(`${path}/${gatewayId}/resource-versions/programmable/next-deploy-version/`, params);
 
 // 查询部署中的发布事件
 export const getDeployEvents = (gatewayId: number, deploy_id: string) =>

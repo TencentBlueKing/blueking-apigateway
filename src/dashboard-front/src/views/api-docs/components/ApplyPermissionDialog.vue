@@ -94,7 +94,7 @@
 import { type Form, InfoBox } from 'bkui-vue';
 import { applyDocsResourcePermission } from '@/services/source/docs/gateway';
 import { getUserApplicationList } from '@/services/source/me/application';
-import type { IUserApplicationOutput } from '@/services/types/responses/me';
+import type { IUserApplicationOutput } from '@/services/types/me/application.ts';
 import { useEnv } from '@/stores';
 
 interface IProps {

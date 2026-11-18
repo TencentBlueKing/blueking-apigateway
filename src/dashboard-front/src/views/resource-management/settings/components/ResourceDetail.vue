@@ -940,8 +940,7 @@ import { getLabelList } from '@/services/source/gateway/label';
 import AIInstanceNameList from '@/views/model-services/components/AIInstanceNameList.vue';
 import { getAIBackendConfigView } from '@/views/model-services/utils/ai-backend-config.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
-import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
+import type { IBackendListOutput, IGatewaysBackendsListQuery } from '@/services/types/gateway/backend.ts';
 import { Input as BkInput, PopConfirm as BkPopConfirm, Message } from 'bkui-vue';
 import { copy } from '@/utils';
 import { METHOD_THEMES } from '@/enums';
@@ -1072,7 +1071,7 @@ const getResourceDetails = async () => {
   formData.value = res;
 
   nextTick(() => {
-    formData.value.label_ids = (res as any)?.labels?.map((item: any) => item.id);
+    formData.value.label_ids = res?.labels?.map(item => item.id);
 
     formData.value.path_copy = res?.path;
     formData.value.match_subpath_copy = res?.match_subpath;

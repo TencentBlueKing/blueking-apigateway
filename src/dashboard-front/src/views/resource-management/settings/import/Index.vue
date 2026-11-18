@@ -784,7 +784,7 @@ import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { getStrFromFile, messageError } from '@/utils';
 import { checkResourceImport, importResource } from '@/services/source/gateway/resource';
-import type { IResourceImportCheckInputSLZ } from '@/services/types/body/post/gateways';
+import type { IResourceImportCheckInputSLZ } from '@/services/types/gateway/resource.ts';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
 import {
   AngleUpFill,

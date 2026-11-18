@@ -448,12 +448,12 @@ import {
 import ConfigDisplayTable from './config-display/Index.vue';
 import PluginIcon from './components/PluginIcon.vue';
 import type {
+  IGatewaysPluginsListQuery,
   IPluginBindingListOutput,
   IPluginConfigRetrieveOutput,
   IPluginTypeListOutput,
   IScopePluginConfigListOutput,
-} from '@/services/types/responses/gateways';
-import type { IGatewaysPluginsListQuery } from '@/services/types/query/gateways';
+} from '@/services/types/gateway/plugin.ts';
 import type { ITableEmptyType } from '@/types/common';
 import { getStageStatus } from '@/utils';
 import { useRouteParams } from '@vueuse/router';

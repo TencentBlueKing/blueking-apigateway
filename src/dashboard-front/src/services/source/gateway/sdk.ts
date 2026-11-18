@@ -18,9 +18,11 @@
 
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IGatewaySDKListOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysSdksListQuery } from '@/services/types/query/gateways.ts';
-import type { IGatewaySDKGenerateInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IGatewaySDKGenerateInputSLZ,
+  IGatewaySDKListOutput,
+  IGatewaysSdksListQuery,
+} from '@/services/types/gateway/sdk.ts';
 
 const path = '/gateways';
 
@@ -38,4 +40,4 @@ export const getSDKList = (gatewayId: number, data: IGatewaysSdksListQuery = {})
  * @param data 生成参数
  */
 export const createSDK = (gatewayId: number, data: IGatewaySDKGenerateInputSLZ) =>
-  http.post(`${path}/${gatewayId}/sdks/`, data);
+  http.post<IGatewaySDKListOutput>(`${path}/${gatewayId}/sdks/`, data);

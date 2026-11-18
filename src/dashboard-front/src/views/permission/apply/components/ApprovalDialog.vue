@@ -62,7 +62,7 @@
 import { Form } from 'bkui-vue';
 import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
-import type { IFomDataQuery, IPermission } from '@/services/types/query/personal-workbench.ts';
+import type { IFomDataQuery, IPermission } from '@/types/personal-workbench.ts';
 
 type IDialogConfig = {
   isShow: boolean

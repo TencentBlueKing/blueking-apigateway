@@ -16,34 +16,24 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '@/services/http';
-import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
+  IAppPermissionApplyApprovalInputSLZ,
   IAppPermissionApplyListOutput,
+  IAppPermissionBatchDeleteInput,
+  IAppPermissionDeleteQuery,
+  IAppPermissionExportInputSLZ,
+  IAppPermissionInputSLZ,
   IAppPermissionListOutput,
   IAppPermissionRecordListOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
+  IAppPermissionRenewInputSLZ,
   IGatewaysPermissionsAppPermissionApplyListQuery,
   IGatewaysPermissionsAppPermissionRecordsListQuery,
   IGatewaysPermissionsAppPermissionsBkAppCodesListQuery,
   IGatewaysPermissionsAppPermissionsListQuery,
-} from '@/services/types/query/gateways.ts';
-import type {
-  IAppPermissionApplyApprovalInputSLZ,
-  IAppPermissionExportInputSLZ,
-  IAppPermissionInputSLZ,
-  IAppPermissionRenewInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
+} from '@/services/types/gateway/permission.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
 
 const path = '/gateways';
-
-export interface IAuthData {
-  bk_app_code: string
-  expire_type: string
-  expire_days: number | null
-  resource_ids: number[]
-  dimension: string
-}
 
 /**
  *  获取权限申请单列表
@@ -65,7 +55,7 @@ export const getPermissionApplyList = (
  * @param params 审批参数
  */
 export const updatePermissionStatus = (gatewayId: number, params: IAppPermissionApplyApprovalInputSLZ) =>
-  http.post(`${path}/${gatewayId}/permissions/app-permission-apply/approval/`, params);
+  http.post<void>(`${path}/${gatewayId}/permissions/app-permission-apply/approval/`, params);
 
 /**
  *  获取权限审批记录列表
@@ -87,7 +77,7 @@ export const getPermissionRecordList = (
  * @param params 授权参数
  */
 export const authApiPermission = (gatewayId: number, params: IAppPermissionInputSLZ) =>
-  http.post(`${path}/${gatewayId}/permissions/app-gateway-permissions/`, params);
+  http.post<void>(`${path}/${gatewayId}/permissions/app-gateway-permissions/`, params);
 
 /**
  *  删除网关权限
@@ -95,8 +85,8 @@ export const authApiPermission = (gatewayId: number, params: IAppPermissionInput
  * @param gatewayId 网关id
  * @param params.ids 网关权限id列表
  */
-export const deleteApiPermission = (gatewayId: number, params: { ids: number[] }) =>
-  http.delete(`${path}/${gatewayId}/permissions/app-gateway-permissions/delete/?ids=${params.ids}`);
+export const deleteApiPermission = (gatewayId: number, params: IAppPermissionDeleteQuery) =>
+  http.delete<void>(`${path}/${gatewayId}/permissions/app-gateway-permissions/delete/?ids=${params.ids}`);
 
 /**
  *  获取权限列表
@@ -111,8 +101,8 @@ export const getPermissionList = (gatewayId: number, params: IGatewaysPermission
  * @param gatewayId 网关id
  * @param params 授权参数
  */
-export const authResourcePermission = (gatewayId: number, params: IAuthData) =>
-  http.post(`${path}/${gatewayId}/permissions/app-resource-permissions/`, params);
+export const authResourcePermission = (gatewayId: number, params: IAppPermissionInputSLZ) =>
+  http.post<void>(`${path}/${gatewayId}/permissions/app-resource-permissions/`, params);
 
 /**
  *  获取有资源权限的应用列表
@@ -131,8 +121,8 @@ export const getResourcePermissionAppList = (
  * @param gatewayId 网关id
  * @param params.ids 资源权限id列表
  */
-export const deleteResourcePermission = (gatewayId: number, params: { ids: number[] }) =>
-  http.delete(`${path}/${gatewayId}/permissions/app-resource-permissions/delete/?ids=${params.ids}`);
+export const deleteResourcePermission = (gatewayId: number, params: IAppPermissionDeleteQuery) =>
+  http.delete<void>(`${path}/${gatewayId}/permissions/app-resource-permissions/delete/?ids=${params.ids}`);
 
 /**
  *  导出应用权限
@@ -140,7 +130,7 @@ export const deleteResourcePermission = (gatewayId: number, params: { ids: numbe
  * @param params 导出参数
  */
 export const exportPermissionList = (gatewayId: number, params: IAppPermissionExportInputSLZ) =>
-  http.post(`${path}/${gatewayId}/permissions/app-permissions/export/`, params, {
+  http.post<void>(`${path}/${gatewayId}/permissions/app-permissions/export/`, params, {
     responseType: 'blob',
     catchError: true,
   });
@@ -151,15 +141,12 @@ export const exportPermissionList = (gatewayId: number, params: IAppPermissionEx
  * @param params 续期参数
  */
 export const batchUpdatePermission = (gatewayId: number, params: IAppPermissionRenewInputSLZ) =>
-  http.post(`${path}/${gatewayId}/permissions/app-permissions/renew/`, params);
+  http.post<void>(`${path}/${gatewayId}/permissions/app-permissions/renew/`, params);
 
 /**
  *  批量删除权限
  * @param gatewayId 网关id
  * @param params 删除参数，按资源维度、网关维度分别传权限id
  */
-export const batchDeletePermission = (gatewayId: number, params: {
-  resource_dimension_ids?: number[]
-  gateway_dimension_ids?: number[]
-}) =>
-  http.delete(`${path}/${gatewayId}/permissions/app-permissions/batch/`, params);
+export const batchDeletePermission = (gatewayId: number, params: IAppPermissionBatchDeleteInput) =>
+  http.delete<void>(`${path}/${gatewayId}/permissions/app-permissions/batch/`, params);

@@ -90,7 +90,7 @@ import i18n from '@/locales';
 import { isEqual } from 'lodash-es';
 import highlightjs from 'highlight.js/lib/common';
 import { useJsonTransformer } from '@/hooks/use-json-transformer';
-import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
+import type { IAuditEventLogOutput } from '@/services/types/gateway/audit.ts';
 import { useAccessLog } from '@/stores';
 
 const isShow = defineModel<boolean>({

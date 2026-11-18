@@ -232,10 +232,10 @@ import ComponentSearcher from './components/ComponentSearcher.vue';
 import type {
   IDocsEsbBoardsSdksListResponse,
   IDocsEsbBoardsSystemsListResponse,
-  IDocsGatewaysListResponse,
   ISystemCategorySLZ,
   ISystemSLZ,
-} from '@/services/types/responses/docs';
+} from '@/services/types/docs/esb.ts';
+import type { IDocsGatewaysListResponse } from '@/services/types/docs/gateway.ts';
 import type { ISdkItem } from './components/DocSdkSection.vue';
 import { type DocTab, docTabKey } from './utils/doc-context';
 import { AngleUpFill } from 'bkui-vue/lib/icon';

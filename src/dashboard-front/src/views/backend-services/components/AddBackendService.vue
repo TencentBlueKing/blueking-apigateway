@@ -404,8 +404,11 @@ import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
 import ServicePublishDialog from '@/views/backend-services/components/ServicePublishDialog.vue';
-import type { IStandardBackendConfigInput } from '@/services/types/body/post/gateways';
-import type { IBackendRetrieveOutput, IStandardBackendConfigOutput } from '@/services/types/responses/gateways';
+import type {
+  IBackendRetrieveOutput,
+  IStandardBackendConfigInput,
+  IStandardBackendConfigOutput,
+} from '@/services/types/gateway/backend.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 interface ILocalStageConfig {
@@ -709,8 +712,7 @@ const handleConfirm = async () => {
   }
   isSaveLoading.value = true;
   try {
-    let res: { updated_stages?: { name: string }[] } = {};
-    res = backendId
+    const res = backendId
       ? await updateBackendService(apigwId.value, backendId, params)
       : await createBackendService(apigwId.value, params);
     if (isPublish.value && backendId) {

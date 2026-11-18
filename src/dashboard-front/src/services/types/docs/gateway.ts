@@ -1,84 +1,55 @@
 import type { DocMaintainers } from '@/types/gateway';
 
-// /docs/esb/boards/{board}/sdks/
-export interface IDocsEsbBoardsSdksListResponse {
-  board_label: string
-  sdk_name: string
-  sdk_description: string
-  sdk_version_number: string
-  sdk_download_url: string
-  sdk_install_command: string
+// GET /docs/gateways/
+export interface IDocsGatewaysListQuery {
+  limit?: number
+  offset?: number
+  keyword?: string
+  show_plugin_gateway?: boolean
 }
 
-// /docs/esb/boards/{board}/sdks/doc/
-export interface IDocsEsbBoardsSdksDocReadResponse {
-  content: string
+// GET /docs/gateways/{gateway_name}/resources/
+export interface IDocsGatewaysResourcesListQuery {
+  limit?: number
+  offset?: number
+  stage_name: string
 }
 
-// /docs/esb/boards/{board}/sdks/latest/
-export interface IDocsEsbBoardsSdksLatestReadResponse {
-  board_label: string
-  sdk_name: string
-  sdk_description: string
-  sdk_version_number: string
-  sdk_download_url: string
-  sdk_install_command: string
+// GET /docs/gateways/{gateway_name}/resources/{resource_name}/doc/
+export interface IDocsGatewaysResourcesDocReadQuery {
+  stage_name: string
+  source?: string
 }
 
-// /docs/esb/boards/{board}/sdks/usage-example/
-export interface IDocsEsbBoardsSdksUsageExampleReadResponse {
-  content: string
+// GET /docs/gateways/{gateway_name}/sdks/usage-example/
+export interface IDocsGatewaysSdksUsageExampleReadQuery {
+  language: 'unknown' | 'python' | 'golang' | 'java'
+  stage_name: string
+  resource_name: string
+  resource_id?: number
+  source?: string
 }
 
-// /docs/esb/boards/{board}/systems/
-export interface IDocsEsbBoardsSystemsListResponse {
-  board: string
-  board_label: string
-  categories: ISystemCategorySLZ[]
+// GET /docs/gateways/{gateway_name}/stages/
+export interface IDocsGatewaysStagesListQuery {
+  limit?: number
+  offset?: number
 }
 
-export interface ISystemCategorySLZ {
-  id: string
-  name: string
-  systems: ISystemSLZ[]
+// GET /docs/sdks/doc/
+export interface IDocsSdksDocReadQuery {
+  language: 'unknown' | 'python' | 'golang' | 'java'
 }
 
-export interface ISystemSLZ {
-  name: string
-  description: string | null
+// GET /docs/gateways/{gateway_name}/
+export interface IDocsGatewaysReadQuery {
+  source?: string
 }
 
-// /docs/esb/boards/{board}/systems/{system_name}/
-export interface IDocsEsbBoardsSystemsReadResponse {
-  name: string
-  description: string
-  comment: string | null
-  maintainers: string[]
-}
-
-// /docs/esb/boards/{board}/systems/{system_name}/components/
-export interface IDocsEsbBoardsSystemsComponentsListResponse {
-  id: number
-  name: string
-  description: string
-  verified_app_required: boolean
-  verified_user_required: boolean
-  component_permission_required: boolean
-}
-
-// /docs/esb/boards/{board}/systems/{system_name}/components/search/
-export interface IDocsEsbBoardsSystemsComponentsSearchListResponse {
-  id: number
-  name: string
-  description: string
-  system_name: string
-}
-
-// /docs/esb/boards/{board}/systems/{system_name}/components/{component_name}/doc/
-export interface IDocsEsbBoardsSystemsComponentsDocReadResponse {
-  type: string
-  content: string
-  updated_time: string | null
+export interface IDocsPermissionApplyInput {
+  bk_app_code: string
+  reason: string
+  resource_name: string
 }
 
 // /docs/gateways/
@@ -118,8 +89,8 @@ export interface IDocsGatewaysResourcesListResponse {
     id: number
     name: string
   }[]
-  is_deprecated?: boolean
-  deprecated_note?: string
+  is_deprecated: boolean
+  deprecated_note: string
 }
 
 export interface IDocsResourceDocPlugin {
@@ -158,13 +129,16 @@ export interface IDocsOpenAPISchema {
 }
 
 export type DocsDocSource = 'import' | 'custom' | 'openapi';
+
 export type DocsDocRenderMode = 'auto' | 'schema_first' | 'markdown_first';
 
 // /docs/gateways/{gateway_name}/resources/{resource_name}/doc/
 export interface IDocsGatewaysResourcesDocReadResponse {
   type: string
   content: string
-  updated_time: string
+  updated_time: string | null
+  is_deprecated: boolean
+  deprecated_note: string
   source?: DocsDocSource
   render_mode?: DocsDocRenderMode
   plugins?: IDocsResourceDocPlugin[]

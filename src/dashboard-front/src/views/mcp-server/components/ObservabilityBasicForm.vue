@@ -160,7 +160,7 @@ import {
   intersectTimeRange,
   toTimeRangeSeconds,
 } from '@/utils/time-range';
-import type { IObservabilityBasicForm } from '@/services/source/gateway/mcp-server/log';
+import type { IObservabilityBasicForm } from '@/types/observability';
 import { getMcpAppPermissionAppCodes } from '@/services/source/gateway/mcp-server/permission';
 import { getServers } from '@/services/source/gateway/mcp-server/server';
 import QueryStatement from '@/views/mcp-server/components/QueryStatement.vue';

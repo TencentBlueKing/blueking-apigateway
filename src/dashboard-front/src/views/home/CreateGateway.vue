@@ -474,7 +474,7 @@ import { useGatewayDisplayNameCheck, usePopInfoBox } from '@/hooks';
 import { Form, Message, Tag } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import type { IFormMethod } from '@/types/common';
-import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
+import type { IGatewayCreateInputSLZ } from '@/services/types/gateway/gateway.ts';
 import { toGatewayFormData, toGatewayUpdatePayload } from '@/utils/gateway-form';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
 import UserSelector from '@/components/user/user-selector/Index.vue';

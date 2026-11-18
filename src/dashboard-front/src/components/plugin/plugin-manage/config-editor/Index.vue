@@ -222,7 +222,7 @@
 <script setup lang="ts">
 import { snakeCase } from 'lodash-es';
 import { createPlugin, updatePluginConfig } from '@/services/source/gateway/plugin';
-import type { IPluginConfigRetrieveOutput } from '@/services/types/responses/gateways';
+import type { IPluginConfigRetrieveOutput } from '@/services/types/gateway/plugin.ts';
 import { Message } from 'bkui-vue';
 import { useEnv, useStage } from '@/stores';
 import { useElementSize, useWindowSize } from '@vueuse/core';

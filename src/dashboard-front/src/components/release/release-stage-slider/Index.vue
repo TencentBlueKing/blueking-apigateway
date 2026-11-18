@@ -309,12 +309,12 @@ import { getStageList } from '@/services/source/gateway/stage';
 import type { IStageListItem } from '@/types/stage';
 import { getVersionDiff, getVersionList } from '@/services/source/gateway/resource-version';
 import { createRelease } from '@/services/source/gateway/release';
-import type { IReleaseInputSLZ } from '@/services/types/body/post/gateways';
+import type { IReleaseInputSLZ } from '@/services/types/gateway/release.ts';
+import type { IMCPServerStageReleaseCheckOutput } from '@/services/types/gateway/mcp-server/server.ts';
 import type {
-  IMCPServerStageReleaseCheckOutput,
   IResourceVersionDiffOutput,
   IResourceVersionListOutput,
-} from '@/services/types/responses/gateways';
+} from '@/services/types/gateway/resource-version.ts';
 import { checkMcpServerStageRelease } from '@/services/source/gateway/mcp-server/server';
 import VersionDiff from '@/components/release/version-diff/Index.vue';
 import PublishEventSlider from '@/components/release/publish-event-slider/Index.vue';

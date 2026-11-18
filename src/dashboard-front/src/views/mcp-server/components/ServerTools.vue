@@ -263,7 +263,7 @@ import { useGateway } from '@/stores';
 import { getServer, getServerToolDoc, getServerTools } from '@/services/source/gateway/mcp-server/server';
 import type { IMCPServerTool } from '@/types/mcp-server';
 import { getMcpServerToolDoc } from '@/services/source/mcp-marketplace';
-import type { IMCPServerToolOutput } from '@/services/types/responses/gateways.ts';
+import type { IMCPServerToolOutput } from '@/services/types/gateway/mcp-server/server.ts';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/common';

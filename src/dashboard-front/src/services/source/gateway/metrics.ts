@@ -22,18 +22,16 @@
 
 import http from '@/services/http';
 import type {
-  IMetricInstantOutput,
-  IMetricRangeOutput,
-  IMetricSummaryCallerOutput,
-  IMetricSummaryOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
   IGatewaysMetricsQueryInstantListQuery,
   IGatewaysMetricsQueryRangeListQuery,
   IGatewaysMetricsQuerySummaryCallerListQuery,
   IGatewaysMetricsQuerySummaryExportListQuery,
   IGatewaysMetricsQuerySummaryListQuery,
-} from '@/services/types/query/gateways.ts';
+  IMetricInstantOutput,
+  IMetricRangeOutput,
+  IMetricSummaryCallerOutput,
+  IMetricSummaryOutput,
+} from '@/services/types/gateway/metrics.ts';
 
 const path = '/gateways';
 
@@ -67,7 +65,7 @@ export const getMetricsSummary = (gatewayId: number, params: IGatewaysMetricsQue
  * @param data 导出参数
  */
 export const exportMetricsSummary = (gatewayId: number, data: IGatewaysMetricsQuerySummaryExportListQuery) =>
-  http.get<unknown>(`${path}/${gatewayId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
+  http.get<void>(`${path}/${gatewayId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
 
 /**
  *  查询调用方列表

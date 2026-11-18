@@ -168,11 +168,8 @@
 <script lang="ts" setup>
 import { copy } from '@/utils';
 import { HelpFill } from 'bkui-vue/lib/icon';
-import type {
-  IDocsEsbBoardsSdksListResponse,
-  IDocsGatewaySDK,
-  IDocsGatewaysSdksListResponse,
-} from '@/services/types/responses/docs';
+import type { IDocsEsbBoardsSdksListResponse } from '@/services/types/docs/esb.ts';
+import type { IDocsGatewaySDK, IDocsGatewaysSdksListResponse } from '@/services/types/docs/gateway.ts';
 
 // 展示层同时兼容网关 SDK 与组件 SDK 的字段命名。
 export interface ISdk extends Partial<IDocsGatewaySDK>, Partial<IDocsEsbBoardsSdksListResponse> {}

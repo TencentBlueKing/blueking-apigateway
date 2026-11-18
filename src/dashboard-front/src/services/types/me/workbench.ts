@@ -18,12 +18,39 @@
 
 import type { IResource } from '@/types/permission';
 
+// 个人工作台 —> 我的待办、我的已办、我的申请
+export type IApprovalStatus = 'pending' | 'applied' | 'handled';
+
+// 个人工作台 —> MCP Server 列表/ gateway 列表请求参数
+export interface IPersonalWorkbenchListQuery {
+  limit?: number
+  offset?: number
+  keyword?: string
+  /** 开始时间（Unix 秒），>= time_start；两端各自生效，同时传时起点不得晚于终点 */
+  time_start?: number
+  /** 结束时间（Unix 秒），<= time_end */
+  time_end?: number
+  applied_by?: string | string[]
+  bk_app_code?: string
+  gateway_id?: string | number
+  mcp_server_id?: string | number
+  grant_dimension?: string
+}
+
+// 个人工作台 - 下拉筛选选项列表请求参数
+export interface IPersonalWorkbenchFilterOptionQuery {
+  type: IApprovalStatus
+}
+
 // 个人工作台 - 下拉筛选选项列表返回参数
 export interface IPersonalWorkbenchFilterOptionResponse {
   id: number
   name: string
   display_name?: string
   title?: string
+  gateway_id?: number
+  gateway_name?: string
+  gateway_display_name?: string
 }
 
 // 个人工作台 - 我的待办数量统计返回参数
@@ -37,21 +64,23 @@ export interface IPersonalWorkbenchPendingCountResponse {
 export interface IPersonalWorkbenchListResponse {
   id: number
   bk_app_code: string
-  gateway_name: string
+  gateway_id?: number
+  gateway_name?: string
   gateway_display_name?: string
-  grant_dimension: string
-  grant_dimension_display: string
+  grant_dimension?: string
+  grant_dimension_display?: string
   expire_days: number
-  expire_days_display: string
+  expire_days_display?: string
   reason: string
   applied_by: string
-  created_time: string
+  created_time?: string
   status: string
+  status_display?: string
   itsm_ticket_id?: string
   itsm_ticket_url?: string
   applied_time?: string
   handled_by?: string
-  handled_time: string
+  handled_time?: string | null
   comment?: string
   mcp_server?: {
     id: number

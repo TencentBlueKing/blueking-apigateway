@@ -493,7 +493,7 @@ import { getVersionDiff, getVersionList } from '@/services/source/gateway/resour
 import type { IDiffData, IVersionItem } from '@/types/resource-version';
 import { getBackendServiceList } from '@/services/source/gateway/backend';
 import { useGateway } from '@/stores';
-import type { IBackendListOutput } from '@/services/types/responses/gateways';
+import type { IBackendListOutput } from '@/services/types/gateway/backend.ts';
 import type { ITableEmptyType } from '@/types/common';
 
 interface IProps {

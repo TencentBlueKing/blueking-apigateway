@@ -113,7 +113,7 @@ import { getTenantUsers } from '@/services/source/external/bk-user';
 import { getAuditLogList } from '@/services/source/gateway/audit';
 import type { IAuditLog } from '@/types/audit-log';
 import AgTable from '@/components/base/ag-table/Index.vue';
-import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
+import type { IAuditEventLogOutput } from '@/services/types/gateway/audit.ts';
 import Detail from './detail/Index.vue';
 
 const { t, locale } = useI18n();
