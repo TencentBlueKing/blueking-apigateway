@@ -454,6 +454,66 @@ class TestRouteConvertor:
 
         assert self._oauth2_plugins(convertor._convert_http_route(resource)) == {}
 
+    @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
+    @pytest.mark.parametrize(
+        ("token_source_config", "personal_enabled", "expected"),
+        [
+            # 绑定 source=bearer：屏蔽应用通道
+            ({"source": "bearer"}, False, None),
+            # source 省略：按插件默认值 bearer 处理
+            ({}, False, None),
+            # 已开启 personal：按原条件下发，仅关闭应用通道
+            ({"source": "bearer"}, True, {"support_personal": True, "support_app": False, "challenge": True}),
+            ({}, True, {"support_personal": True, "support_app": False, "challenge": True}),
+            # source=api_key 或未绑定：沿用原注入规则
+            ({"source": "api_key"}, False, {"support_personal": False, "support_app": True, "challenge": False}),
+            ({"source": "api_key"}, True, {"support_personal": True, "support_app": True, "challenge": True}),
+            (None, False, {"support_personal": False, "support_app": True, "challenge": False}),
+            (None, True, {"support_personal": True, "support_app": True, "challenge": True}),
+        ],
+    )
+    def test_convert_route_disables_app_channel_for_bearer_access_token_source(
+        self,
+        mock_release_data,
+        resource_kind,
+        token_source_config,
+        personal_enabled,
+        expected,
+    ):
+        resource = _standard_resource() if resource_kind == ResourceKindEnum.STANDARD.value else _ai_resource()
+        resource["contexts"]["resource_auth"]["config"] = json.dumps(
+            {
+                "auth_verified_required": True,
+                "app_verified_required": True,
+                "oauth2_personal_client_enabled": personal_enabled,
+            }
+        )
+        if token_source_config is not None:
+            mock_release_data.get_resource_plugins.return_value = [
+                PluginData("bk-access-token-source", token_source_config, "resource")
+            ]
+        convertor = self._convertor_for(mock_release_data, resource_kind)
+
+        route = convertor._convert_http_route(resource)
+        oauth2_plugins = self._oauth2_plugins(route)
+
+        if token_source_config is not None:
+            assert route.plugins["bk-access-token-source"].model_dump(exclude_none=True) == token_source_config
+        if expected is None:
+            assert oauth2_plugins == {}
+            return
+
+        assert oauth2_plugins == {
+            "bk-oauth2-protected-resource": {"challenge_on_missing_credential": expected["challenge"]},
+            "bk-oauth2-verify": {},
+            "bk-oauth2-appcode-validate": {
+                "support_public": False,
+                "support_personal": expected["support_personal"],
+                "support_app": expected["support_app"],
+            },
+            "bk-oauth2-audience-validate": {},
+        }
+
     def test_generated_oauth2_plugin_overwrites_historical_resource_binding(self, mock_release_data):
         resource = _standard_resource()
         resource["contexts"]["resource_auth"]["config"] = json.dumps(

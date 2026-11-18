@@ -21,6 +21,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from apigateway.apps.data_plane.constants import is_apisix_version_supported_for_oauth2_resource
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
@@ -33,7 +34,7 @@ from .constants import MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
 from .utils import truncate_string
 
 if TYPE_CHECKING:
-    from apigateway.controller.release_data import ReleaseData
+    from apigateway.controller.release_data import PluginData, ReleaseData
 
 logger = logging.getLogger(__name__)
 
@@ -107,13 +108,9 @@ class RouteConvertor(GatewayResourceConvertor):
             "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
         }
 
-        plugins.update(
-            {
-                plugin_data.name: Plugin(**plugin_data.config)
-                for plugin_data in self._release_data.get_resource_plugins(resource["id"])
-            }
-        )
-        plugins.update(self._build_oauth2_plugins(resource))
+        resource_plugins = self._release_data.get_resource_plugins(resource["id"])
+        plugins.update({plugin_data.name: Plugin(**plugin_data.config) for plugin_data in resource_plugins})
+        plugins.update(self._build_oauth2_plugins(resource, resource_plugins))
         uris, priority = self._convert_uris(
             path=resource["path"],
             match_subpath=match_subpath,
@@ -152,13 +149,9 @@ class RouteConvertor(GatewayResourceConvertor):
         plugins: Dict[str, Plugin] = {
             "bk-resource-context": self._build_resource_context_plugin(resource),
         }
-        plugins.update(
-            {
-                plugin_data.name: Plugin(**plugin_data.config)
-                for plugin_data in self._release_data.get_resource_plugins(resource["id"])
-            }
-        )
-        plugins.update(self._build_oauth2_plugins(resource))
+        resource_plugins = self._release_data.get_resource_plugins(resource["id"])
+        plugins.update({plugin_data.name: Plugin(**plugin_data.config) for plugin_data in resource_plugins})
+        plugins.update(self._build_oauth2_plugins(resource, resource_plugins))
 
         return Route(
             id=f"{self.gateway_name}.{self.stage_name}.{resource['id']}",
@@ -217,7 +210,9 @@ class RouteConvertor(GatewayResourceConvertor):
             },
         )
 
-    def _build_oauth2_plugins(self, resource: Dict[str, Any]) -> Dict[str, Plugin]:
+    def _build_oauth2_plugins(
+        self, resource: Dict[str, Any], resource_plugins: List["PluginData"]
+    ) -> Dict[str, Plugin]:
         if not is_apisix_version_supported_for_oauth2_resource(self._apisix_version):
             return {}
 
@@ -227,7 +222,11 @@ class RouteConvertor(GatewayResourceConvertor):
         support_public = bool(user_verified_required and resource_auth_config.get("oauth2_public_client_enabled"))
         support_personal = bool(user_verified_required and resource_auth_config.get("oauth2_personal_client_enabled"))
         # 网关开关读取发布时的当前值，不来自资源版本快照
-        support_app = bool(self.gateway.oauth2_app_enabled and app_verified_required)
+        support_app = bool(
+            self.gateway.oauth2_app_enabled
+            and app_verified_required
+            and not self._uses_bearer_access_token_source(resource_plugins)
+        )
         if not (support_public or support_personal or support_app):
             return {}
 
@@ -244,6 +243,16 @@ class RouteConvertor(GatewayResourceConvertor):
             ),
             "bk-oauth2-audience-validate": Plugin(),
         }
+
+    @staticmethod
+    def _uses_bearer_access_token_source(resource_plugins: List["PluginData"]) -> bool:
+        # bk-access-token-source(source=bearer) 先于 bk-oauth2-verify 消费 Authorization，
+        # 与真实应用 Bearer 冲突；source 省略时按插件默认值 bearer 处理
+        return any(
+            plugin_data.type_code == PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value
+            and plugin_data.config.get("source", "bearer") == "bearer"
+            for plugin_data in resource_plugins
+        )
 
     def _build_bk_proxy_rewrite_config(self, resource_proxy: Dict[str, Any]) -> Dict[str, Any]:
         # dashboard only make method+path here
