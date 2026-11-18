@@ -46,6 +46,50 @@ models, or general-purpose domain workflows.
   Preserve publish-only checks and revoke bypasses, propagating `revoke_flag`
   through transformer and convertors.
 
+## OAuth2 plugin injection
+
+`convertor/route.py::_build_oauth2_plugins` is shared by standard and AI routes;
+keep both on it. Design and decisions:
+[resource-oauth2-app-access-design.md](../../../../../docs/resource-oauth2-app-access-design.md)
+sections 4 and 7.
+
+```text
+support_public   = U and oauth2_public_client_enabled
+support_personal = U and oauth2_personal_client_enabled
+support_app      = gateway.oauth2_app_enabled and A
+                   and not bound bk-access-token-source with effective source=bearer
+inject           = (support_public or support_personal or support_app) and apisix >= 3.16
+challenge_on_missing_credential = support_public or support_personal
+```
+
+- Read `gateway.oauth2_app_enabled` from `ReleaseData.gateway` at publish time;
+  it is not part of the resource version snapshot.
+- Evaluate the bearer-source rule on the plugin bindings of the release being
+  published (`ReleaseData.get_resource_plugins`). A missing `source` means
+  APISIX's default `bearer`; `api_key` does not block the app channel. With
+  personal/public enabled, the plugins are still injected with `support_app=false`.
+- Do not emit a token type. APISIX picks delegated vs app tokens from
+  `bk-resource-context.verified_user_required`, so new token types only need a
+  plugin upgrade.
+- `resource_version_uses_oauth2` (the publish gate) stays limited to
+  public/personal: app-channel-only resources degrade to the legacy entry on old
+  data planes and must not block publishing.
+- New-plugin defaults equal the pre-change behavior (`support_app=false`,
+  `challenge_on_missing_credential=true`), so emitting those values is the
+  same as omitting them.
+
+### Rollback candidate command
+
+`management/commands/sync_releases_to_gateway_parallel.py --released-since T`
+selects gateways with `ReleaseHistory.created_time >= T` **or**
+`Release.updated_time >= T`. CLI and some ops publishes write no
+`ReleaseHistory` but still update `Release.updated_time`. `--dry-run` prints
+names to stdout, which is empty when nothing matches, and the count to stderr.
+The old Dashboard's `--gateway-names` with an empty list syncs every gateway,
+so runbooks must check for an empty list before calling it. The DB candidates
+alone are not the restore scope: the design doc 7.4 also requires scanning raw
+etcd routes.
+
 ## Coverage
 
 Tests mirror `tests/controller/`. Conversion changes cover standard behavior

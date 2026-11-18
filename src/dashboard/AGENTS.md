@@ -67,6 +67,11 @@ Useful paths:
 - `apigateway/apigateway/data/apigw-definitions/` and `data/apidocs/zh/`:
   gateway resource YAML and OpenAPI Markdown.
 - `scripts/check_api_consistency.py`, `scripts/config.yaml`: API contract checks.
+- Repository-root `docs/resource-oauth2-app-access-design.md`: resource
+  authentication policy and OAuth2 app channel (derivation, publishing,
+  scope/lookup, rollout and rollback). Local rules are in `controller/`,
+  `core/` and `apis/v2/` guides; APISIX behavior is in
+  `blueking-apigateway-apisix/src/apisix/AGENTS.md`.
 
 ## Credential handling
 

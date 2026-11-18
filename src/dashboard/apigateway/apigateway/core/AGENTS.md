@@ -15,6 +15,33 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
   connectivity, publication, tests and API documentation at their owning layers.
   Verify each producer/consumer against this branch before changing the contract.
 
+## OAuth2 app channel storage
+
+- `Gateway.oauth2_app_enabled` (`db_default=True`) is the writable gateway
+  switch. `ReleasedResource.oauth2_app_delegated_enabled` (U && A) and
+  `oauth2_app_only_enabled` (!U && A) are projections with `db_default=False`.
+- The projection columns hold only values derived from the snapshot, never the
+  gateway switch: a `ReleasedResource` row is written once per resource version
+  and shared by every stage that releases it. Consumers AND the switch at query
+  time.
+- `get_released_resource_oauth2_app_flags` is the single derivation, shared by
+  migration `0059`, `ReleasedResourceManager.save_released_resource` and
+  `refresh_oauth2_app_flags`. Change all of them together.
+- The `db_default`s are what lets a rolled-back Dashboard keep `0059`; do not
+  drop them.
+- `0059` is non-atomic. Its DDL uses `SeparateDatabaseAndState` and checks for
+  the column or index before creating it. The backfill pages by primary key and
+  reads only `id` and `data`. Keep it re-runnable after a partial failure.
+- After a rollback that kept `0059`, the old Dashboard writes new projections
+  with `false`. On the next upgrade, run
+  `sync_released_resource --all --oauth2-app-flags` (`--dry-run` first). It
+  refreshes rows in place and creates missing ones. Do not use `--force` for
+  this: it deletes rows before rebuilding, so scope and lookup briefly return
+  nothing.
+
+Migration tests (`tests/core/test_migration_*.py`) are excluded from
+`make test-fast`; run them with `make test-migrations` (see `TESTING.md`).
+
 Tests mirror `tests/core/`. Cover model/manager constraints, kinds, configuration,
 encryption and masking as affected; changes to a core contract also need the
 identified API/service/controller consumer tests.
