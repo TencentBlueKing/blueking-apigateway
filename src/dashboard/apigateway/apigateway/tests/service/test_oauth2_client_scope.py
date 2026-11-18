@@ -319,6 +319,20 @@ def test_resource_scope_app_client_types_require_gateway_switch(oauth_client_typ
     assert scope_map[disabled_gateway.id] == []
 
 
+def test_resource_scope_unions_app_channels_across_stages():
+    # 同一资源在两个环境发布了不同认证配置：scope 取各环境的并集，实际能否调用由目标环境的路由决定
+    gateway = _make_gateway("scope-cross-stage-gateway")
+    _make_released_resource(gateway, resource_id=1, name="cross_stage_resource", app_delegated_enabled=True)
+    _make_released_resource(gateway, resource_id=1, name="cross_stage_resource", app_only_enabled=True)
+
+    for oauth_client_type in ["app_delegated", "app_only"]:
+        gateways = list(get_oauth2_resource_scope_gateways(oauth_client_type=oauth_client_type))
+        scope_map = get_oauth2_resource_scope_map(gateway_ids=[gateway.id], oauth_client_type=oauth_client_type)
+
+        assert [(item.id, item.scope_count) for item in gateways] == [(gateway.id, 1)]
+        assert [item["name"] for item in scope_map[gateway.id]] == ["cross_stage_resource"]
+
+
 def test_resource_scope_public_and_personal_ignore_gateway_switch():
     gateway = _make_gateway("app_channel_off_public_gateway", oauth2_app_enabled=False)
     _make_released_resource(gateway, resource_id=1, name="public_resource", public_enabled=True)
