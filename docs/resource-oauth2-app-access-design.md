@@ -472,9 +472,9 @@ bk_gateway:
 ```
 
 - 按顺序匹配，第一条 `prefix_pattern` 命中的规则决定结果；`format_pattern` 存在时用于本地格式校验，不存在时直接交给 bkauth 自省。
-- 请求时按需匹配：执行到某条规则时才交给 `ngx.re.find`，`jo` 选项缓存编译结果。非法 `prefix_pattern` 记录 error 日志并跳过该规则；非法 `format_pattern` 记录 error 日志并按“格式不符”处理（fail closed，401）。
-- 规则缺失（nil）时的行为见 4.1。部署验收需确认规则非空、有效，并覆盖存量 personal/public token 和后端自有 Bearer（7.5）。
-- 加载时校验：`bk-oauth2-protected-resource.init()` 在每个 worker 加载时检查规则（是否为列表、每项是否为对象、两个正则是否为字符串且可编译），每个问题记一条 error，规则未配置时记一条 warn。只记日志，不阻止启动，也不改变请求时的匹配结果和 error 日志。
+- 请求时按需匹配：执行到某条规则时才交给 `ngx.re.find`，`jo` 选项缓存编译结果。非法 `prefix_pattern` 记录 error 日志并跳过该规则；`format_pattern` 是字符串但无法编译时记录 error 日志并按“格式不符”处理（fail closed，401）；`format_pattern` 不是字符串时视为未配置格式校验，直接交给 bkauth 自省。
+- 规则缺失（nil）时的行为见 4.1。规则不是列表（布尔、字符串、数字、对象）时，请求阶段按未配置处理，与 nil 相同。部署验收需确认规则非空、有效，并覆盖存量 personal/public token 和后端自有 Bearer（7.5）。
+- 加载时校验：`bk-oauth2-protected-resource.init()` 在每个 worker 加载时检查规则（是否为列表、每项是否为对象、两个正则是否为字符串且可编译），每个问题记一条 error，没有可用规则（未配置或不是列表）时再记一条 warn。只记日志，不阻止启动，也不改变请求时的匹配结果和 error 日志。
 
 ### 7.2 Dashboard 下发
 
@@ -707,7 +707,9 @@ fi
 | `bkr_` refresh token 当作 Bearer 使用 | 自省拒绝，401，不回退 |
 | 修改前缀配置 | 重新加载配置后生效，不需要改插件代码 |
 | 非法 `prefix_pattern` | 记录 error，跳过该规则，继续匹配后续规则 |
-| 非法 `format_pattern` | 记录 error，按格式不符返回 401 |
+| `format_pattern` 是字符串但无法编译 | 记录 error，按格式不符返回 401 |
+| `format_pattern` 不是字符串 | 视为未配置格式校验，交给 bkauth 自省 |
+| `bearer_token_rules` 不是列表（布尔、字符串、数字、对象） | 请求阶段按未配置处理（同 nil），加载时记 error 和 warn |
 | 插件加载：规则非法（非列表、非对象、正则非字符串或不可编译） | 每个问题记一条 error，启动不受影响；规则未配置记 warn |
 | 未配置 `bearer_token_rules`：只开启应用通道的路由收到任意 Bearer | 走旧流程，按资源要求认证 |
 | 未配置 `bearer_token_rules`：personal/public 路由收到任意 Bearer | 进入 OAuth2 流程（与改造前一致） |
