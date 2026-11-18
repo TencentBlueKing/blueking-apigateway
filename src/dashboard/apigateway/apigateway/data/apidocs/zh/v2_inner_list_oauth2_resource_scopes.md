@@ -2,7 +2,7 @@
 
 查询 bkauth 生成个人 Token 或公开客户端 Token 时可选择的 API 资源授权范围。结果按网关聚合和分页。
 
-资源范围是当前所有 `Release` 引用的资源版本合集。仅当同一份资源快照同时满足 `is_public=true` 和 `oauth_client_type` 对应的 OAuth2 开关时，该资源才会返回；`app_delegated`、`app_only` 还要求资源所属网关当前开启 OAuth 应用通道（`oauth2_app_enabled=true`），网关开关切换后立即生效，数据面需要重新发布后才生效。相同网关下的资源按资源 ID 去重；多个有效快照同时存在时，展示 `resource_version_id` 最大的快照。
+资源范围是当前所有 `Release` 引用的资源版本合集。仅当同一份资源快照同时满足 `is_public=true` 和 `oauth_client_type` 对应的 OAuth2 开关时，该资源才会返回；`app_delegated`、`app_only` 还要求资源所属网关当前开启 OAuth 应用通道（`oauth2_app_enabled=true`），网关开关切换后立即生效，数据面需要重新发布后才生效；绑定以 Bearer 为来源（`source=bearer` 或省略）的 bk-access-token-source 插件的资源不会出现在 `app_delegated`、`app_only` 中。结果是各环境当前发布版本的并集：同一资源在不同环境发布了不同认证配置时，可能同时出现在 `app_delegated` 和 `app_only` 中，实际能否调用以目标环境为准。相同网关下的资源按资源 ID 去重；多个有效快照同时存在时，展示 `resource_version_id` 最大的快照。
 
 该接口不按 Stage 过滤，也不使用 `disabled_stages`。多租户模式下只返回全租户网关和请求租户所属的单租户网关。
 
