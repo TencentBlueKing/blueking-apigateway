@@ -6,7 +6,7 @@
 
 读者：Dashboard 后端、APISIX 插件、Dashboard 前端开发者，以及 bkauth 对接方
 
-前置调研：[SaaS 用户委托 Token 接入网关调研](saas-oauth-token-integration-research.md)。本方案在其“方案二”基础上收敛，差异见 [3.4](#34-与调研方案的关系)。
+前置调研：《SaaS 用户委托 Token 接入网关调研》（内部文档，不随本仓库提交）。本方案在其“方案二”基础上收敛，差异见 [3.4](#34-与调研方案的关系)。
 
 ## 1. 结论
 
