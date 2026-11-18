@@ -115,10 +115,20 @@ export interface IAppPermissionApplyListOutput {
   reason: string
   expire_days: number
   grant_dimension: string
+  itsm_ticket_id?: string
+  itsm_ticket_url?: string
   created_time: string | null
   expire_days_display: string
   grant_dimension_display: string
   applied_by: string
+}
+
+export interface IAppPermissionHandledResource {
+  id?: number
+  name: string
+  method?: string
+  path?: string
+  apply_status: string
 }
 
 /**
@@ -136,11 +146,13 @@ export interface IAppPermissionRecordListOutput {
   comment: string
   reason: string
   expire_days: number
-  gateway_name: string
-  resource_ids: string
-  handled_resources: string
+  gateway_name?: string
+  resource_ids: number[]
+  handled_resources: IAppPermissionHandledResource[]
   expire_days_display: string
   grant_dimension_display: string
+  itsm_ticket_id?: string
+  itsm_ticket_url?: string
 }
 
 /**
@@ -149,12 +161,13 @@ export interface IAppPermissionRecordListOutput {
 export interface IAppPermissionListOutput {
   id: number
   bk_app_code: string
-  resource_id: string
+  resource_id: number
   resource_name: string
   resource_path: string
   resource_method: string
   expires: string
   grant_dimension: string
   grant_type: string
-  renewable: string
+  renewable: boolean
+  handled_by?: string
 }

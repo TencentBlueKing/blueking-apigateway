@@ -265,6 +265,7 @@
                 ref="tableRef"
                 v-model:table-data="tableData"
                 v-model:settings="settings"
+                cache-identifier="AccessLog"
                 table-row-key="request_id"
                 show-settings
                 expand-on-row-click
@@ -301,7 +302,7 @@
                         </dt>
                         <dd class="value">
                           <span
-                            v-if="field === 'response_body' && row.status === '200'"
+                            v-if="field === 'response_body' && Number(row.status) === 200"
                             class="respond"
                           >
                             <InfoLine class="respond-icon" /><span>{{ t('状态码为 200 时不记录响应正文') }}</span>
@@ -412,9 +413,14 @@ import ResourceSearcher from '@/views/operate-data/dashboard/components/Resource
 import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
 import AiChatSlider from '@/components/ai/ai-chat-slider/Index.vue';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
-import type { ITableMethod } from '@/types/common';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type IAgTableInstance,
+  type ITableColumn,
+  type TableRow,
+} from '@/components/base/ag-table';
+import type { IRequestLogOutput } from '@/services/types/gateway/access-log';
 import type {
+  ICountAndResults,
   IExtractApiReturn,
   IExtractListApiResults,
 } from '@/services/types/utils.ts';
@@ -422,6 +428,13 @@ import {
   getBucketRange,
   toTimeRangeSeconds,
 } from '@/utils/time-range';
+
+interface IAccessLogRow extends IRequestLogOutput {
+  bk_username?: string | null
+  response_size?: number | null
+  llm_summary?: Record<string, unknown> | null
+  [key: string]: any
+}
 
 type IStageItem = IExtractApiReturn<typeof getStageList>[number];
 type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
@@ -464,13 +477,13 @@ const tableEmptyConf = ref<{
   isAbnormal: false,
 });
 
-const tableData = ref<any[]>([]);
+const tableData = ref<IAccessLogRow[]>([]);
 const expandedFields = ref<{
   label: string
   field: string
 }[]>([]);
 const pageCount = ref<number>(0);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<IAccessLogRow>>('tableRef');
 const settings = shallowRef({
   checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
   fields: [
@@ -745,7 +758,7 @@ const getResources = async () => {
   }
 };
 
-const tableColumns = shallowRef<any[]>([
+const tableColumns = shallowRef<ITableColumn<IAccessLogRow>[]>([
   {
     title: t('请求ID'),
     colKey: 'request_id',
@@ -757,7 +770,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 180,
-    cell: (h: any, { row }: { row: Record<string, any> }) => {
+    cell: (_h, { row }) => {
       return formatValue(row.timestamp, 'timestamp');
     },
   },
@@ -886,7 +899,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'error',
     ellipsis: true,
     width: 120,
-    cell: (h: any, { row }: { row: Record<string, any> }) => {
+    cell: (_h, { row }) => {
       return row.error || '--';
     },
   },
@@ -946,7 +959,7 @@ const getList = () => {
   tableRef.value?.fetchData(params, { resetPage: true });
 };
 
-const getTableData = async (params: Record<string, any> = {}) => {
+const getTableData = async (params: Record<string, any> = {}): Promise<ICountAndResults<IAccessLogRow>> => {
   // setSearchTimeRange();
   const { path } = getPayload();
   const results = await getAccessLogList(apigwId.value, params, path);
@@ -954,7 +967,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
   expandedFields.value = results?.fields || [];
   pageCount.value = results?.count || 0;
 
-  return results;
+  return results as ICountAndResults<IAccessLogRow>;
 };
 
 const getApigwAccessLogChart = async () => {
@@ -990,7 +1003,7 @@ const getSearchData = async () => {
   }
 };
 
-const handleRowCopy = (field: string, row: any) => {
+const handleRowCopy = (field: string, row: IAccessLogRow) => {
   let copyStr = `${field}: ${row[field]}`;
   if (field === 'llm_summary') {
     copyStr = `${field}: ${JSON.stringify(row[field], null, 2)}`;
@@ -998,7 +1011,7 @@ const handleRowCopy = (field: string, row: any) => {
   copy(copyStr);
 };
 
-const handleInclude = (field: string, row: any) => {
+const handleInclude = (field: string, row: IAccessLogRow) => {
   const fieldStr = `${field}:${row[field]}`;
   includeObj.value?.push(fieldStr);
   includeObj.value = Array.from(new Set(includeObj.value));
@@ -1011,7 +1024,7 @@ const handleInclude = (field: string, row: any) => {
   getSearchData();
 };
 
-const handleExclude = (field: string, row: any) => {
+const handleExclude = (field: string, row: IAccessLogRow) => {
   const fieldStr = `${field}:${row[field]}`;
 
   excludeObj.value?.push(fieldStr);
@@ -1111,8 +1124,8 @@ const handleDownload = async (event: Event) => {
   }
 };
 
-const handleClickCopyLink = async ({ request_id }: any) => {
-  const params = { request_id };
+const handleClickCopyLink = async ({ request_id }: IAccessLogRow) => {
+  const params = { request_id: request_id ?? '' };
   isShareLoading.value = true;
   try {
     const { link } = await getAccessLogShareLink(apigwId.value, params);
@@ -1186,8 +1199,9 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.emptyType = '';
 };
 
-const getRowClass = ({ row }: { row: Record<string, any> }) => {
-  return !(row.status >= 200 && row.status < 300) || row.error ? 'exception hover:cursor-pointer' : 'hover:cursor-pointer';
+const getRowClass = ({ row }: { row: TableRow<IAccessLogRow> }) => {
+  const isSuccess = row.status !== null && row.status >= 200 && row.status < 300;
+  return !isSuccess || row.error ? 'exception hover:cursor-pointer' : 'hover:cursor-pointer';
 };
 
 const chartResize = () => {
@@ -1228,7 +1242,7 @@ const initChart = async () => {
   });
 };
 
-const handleAIChatClick = (row: any) => {
+const handleAIChatClick = (row: IAccessLogRow) => {
   const res: Record<string, any> = {};
   expandedFields.value.forEach(({ label, field }: {
     label: string

@@ -50,6 +50,7 @@
 
     <AgTable
       ref="tableRef"
+      cache-identifier="StageReleaseRecord"
       show-settings
       show-cell-empty-content
       :api-method="getTableData"
@@ -75,17 +76,21 @@
 
 <script lang="tsx" setup>
 import { useDatePicker } from '@/hooks';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { getReleaseHistories } from '@/services/source/gateway/release';
 import { getDeployHistories } from '@/services/source/gateway/programmable';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type { IReleaseHistoryListOutput } from '@/services/types/gateway/release.ts';
+import type { IDeployHistoryListOutput } from '@/services/types/gateway/programmable.ts';
 import type { IEventResponse } from '@/types/programmable';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { t } from '@/locales';
 import PublishEventSlider from '@/components/release/publish-event-slider/Index.vue';
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type IAgTableInstance, type ITableColumn } from '@/components/base/ag-table';
 import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
 import type { ITimeRangeFilter } from '@/types/common';
+
+type IReleaseRecordRow = IReleaseHistoryListOutput | IDeployHistoryListOutput;
 
 interface IReleaseRecordFilter extends ITimeRangeFilter {
   keyword: string
@@ -128,7 +133,7 @@ const {
 
 const dateKey = ref('dateKey');
 
-const tableRef = useTemplateRef('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<IReleaseRecordRow>>('tableRef');
 
 const publishSourceEnum = {
   gateway_enable: t('网关启用'),
@@ -158,9 +163,9 @@ let timerId: ReturnType<typeof setInterval> | undefined;
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
-const columns = computed(() => {
+const columns = computed<ITableColumn<IReleaseRecordRow>[]>(() => {
   // 普通网关列
-  const normalGatewayColumns: PrimaryTableProps['columns'] = [
+  const normalGatewayColumns: ITableColumn<IReleaseRecordRow>[] = [
     {
       title: t('已发布的环境'),
       colKey: 'stage.name',
@@ -170,7 +175,7 @@ const columns = computed(() => {
       colKey: 'type',
       title: t('类型'),
       ellipsis: true,
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         <span>{getTextFromEnum(publishSourceEnum, row.source)}</span>
       ),
     },
@@ -179,7 +184,7 @@ const columns = computed(() => {
       title: t('版本号'),
       ellipsis: true,
       width: 200,
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         <span
           v-bk-tooltips={{
             content: t('去版本列表'),
@@ -188,14 +193,14 @@ const columns = computed(() => {
           class="color-#3a84ff cursor-pointer"
           onClick={() => goVersionList(row)}
         >
-          {row.resource_version_display}
+          {'resource_version_display' in row ? row.resource_version_display : ''}
         </span>
       ),
     },
     {
       colKey: 'status',
       title: t('操作状态'),
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         <bk-tag theme={getStatusTheme(row?.status)}>
           {getTextFromEnum(publishStatusEnum, row?.status)}
         </bk-tag>
@@ -209,7 +214,7 @@ const columns = computed(() => {
     {
       colKey: 'created_by',
       title: t('操作人'),
-      cell: (h: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         return (
           !featureFlagStore.isEnableDisplayName
             ? <span>{row.created_by || '--'}</span>
@@ -225,9 +230,9 @@ const columns = computed(() => {
     {
       colKey: 'actions',
       title: t('操作'),
-      fixed: 'right' as const,
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
-        <bk-button text theme="primary" onClick={() => showLogs(row.id)}>
+      fixed: 'right',
+      cell: (_h, { row }) => (
+        <bk-button text theme="primary" onClick={() => 'id' in row && showLogs(row.id)}>
           {t('发布日志')}
         </bk-button>
       ),
@@ -235,7 +240,7 @@ const columns = computed(() => {
   ];
 
   // 可编程网关列
-  const programmableGatewayColumns: PrimaryTableProps['columns'] = [
+  const programmableGatewayColumns: ITableColumn<IReleaseRecordRow>[] = [
     {
       title: t('已发布的环境'),
       colKey: 'stage.name',
@@ -245,7 +250,7 @@ const columns = computed(() => {
       colKey: 'type',
       title: t('类型'),
       ellipsis: true,
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         <span>{getTextFromEnum(publishSourceEnum, row.source)}</span>
       ),
     },
@@ -257,12 +262,15 @@ const columns = computed(() => {
     {
       title: 'commit_id',
       colKey: 'commit_id',
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
-        <div v-bk-tooltips={row?.commit_id}>
-          { row?.commit_id ? (row.commit_id.length > 8 ? `${row.commit_id.slice(0, 8)}...` : row.commit_id) : '--' }
-          <AgCopyButton class="ml-4px" source={row?.commit_id} />
-        </div>
-      ),
+      cell: (_h, { row }) => {
+        const commitId = 'commit_id' in row ? row.commit_id : '';
+        return (
+          <div v-bk-tooltips={commitId}>
+            { commitId ? (commitId.length > 8 ? `${commitId.slice(0, 8)}...` : commitId) : '--' }
+            <AgCopyButton class="ml-4px" source={commitId} />
+          </div>
+        );
+      },
     },
     {
       title: t('版本号'),
@@ -273,7 +281,7 @@ const columns = computed(() => {
     {
       colKey: 'deployStatus',
       title: t('部署状态'),
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         <bk-tag theme={getStatusTheme(row?.status)}>
           {getTextFromEnum(publishStatusEnum, row?.status)}
         </bk-tag>
@@ -288,7 +296,7 @@ const columns = computed(() => {
       colKey: 'created_by',
       title: t('操作人'),
       ellipsis: true,
-      cell: (h: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         return (
           !featureFlagStore.isEnableDisplayName
             ? <span>{row.created_by || '--'}</span>
@@ -299,12 +307,15 @@ const columns = computed(() => {
     {
       colKey: 'actions',
       title: t('操作'),
-      fixed: 'right' as const,
-      cell: (_: unknown, { row }: { row: TableRowData }) => (
-        <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id, row)}>
-          {t('发布日志')}
-        </bk-button>
-      ),
+      fixed: 'right',
+      cell: (_h, { row }) => {
+        const rowDeployId = 'deploy_id' in row ? row.deploy_id : '';
+        return (
+          <bk-button text theme="primary" disabled={!rowDeployId} onClick={() => showLogs(rowDeployId, row)}>
+            {t('发布日志')}
+          </bk-button>
+        );
+      },
     },
   ];
 
@@ -322,16 +333,16 @@ watch(filterData, () => {
   tableRef.value!.fetchData(filterData.value);
 }, { deep: true });
 
-const getTableData = async (params: Record<string, any> = {}) =>
-  isProgrammableGateway.value
+const getTableData = async (params: Record<string, any> = {}): Promise<ICountAndResults<IReleaseRecordRow>> =>
+  (isProgrammableGateway.value
     ? getDeployHistories(apigwId.value, params)
-    : getReleaseHistories(apigwId.value, params);
+    : getReleaseHistories(apigwId.value, params)) as Promise<ICountAndResults<IReleaseRecordRow>>;
 
-const showLogs = (id: number | string, row?: TableRowData) => {
+const showLogs = (id: number | string, row?: IReleaseRecordRow) => {
   // 可编程网关
   if (isProgrammableGateway.value) {
     deployId.value = id as string;
-    currentHistory.value = row as IEventResponse;
+    currentHistory.value = row as unknown as IEventResponse;
     programmableLogDetailsRef.value?.showSideslider();
   }
   else {
@@ -353,10 +364,11 @@ const handleClearFilter = () => {
   tableRef.value!.fetchData(filterData.value, { resetPage: true });
 };
 
-const goVersionList = (data: any) => {
+const goVersionList = (data: IReleaseRecordRow) => {
+  if (!('resource_version_display' in data)) return;
   router.push({
     name: 'ResourceVersion',
-    query: { version: data?.resource_version_display },
+    query: { version: data.resource_version_display },
   });
 };
 

@@ -85,6 +85,7 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
+        cache-identifier="MonitorAlarmHistory"
         show-settings
         resizable
         :filter-value="filterData"
@@ -172,14 +173,18 @@
 </template>
 
 <script lang="tsx" setup>
-import type { ITableMethod } from '@/types/common';
 import { useAccessLog, useGateway } from '@/stores';
 import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
-import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getRecordList, getStrategyList } from '@/services/source/gateway/monitor';
-import type { IAlarmRecord } from '@/types/monitor';
+import type { IAlarmRecordListOutput } from '@/services/types/gateway/monitor';
 import type { IExtractListApiResults } from '@/services/types/utils';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type RowEventContext,
+  type TableRow,
+} from '@/components/base/ag-table';
 
 type IStrategyOptionItem = {
   id: number
@@ -192,18 +197,22 @@ const gatewayStore = useGateway();
 const accessLogStore = useAccessLog();
 const { alarmStatus } = accessLogStore;
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<IAlarmRecordListOutput>>('tableRef');
 const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
 const scrollLoading = ref(false);
-const tableData = ref([]);
+const tableData = ref<IAlarmRecordListOutput[]>([]);
 const alarmStrategyOption = ref<IStrategyOptionItem[]>([]);
 const initParams = reactive({
   limit: 10,
   offset: 0,
   order_by: 'name' as const,
 });
-let sliderConfig = reactive({
+let sliderConfig = reactive<{
+  isShow: boolean
+  title: string
+  data: Partial<IAlarmRecordListOutput>
+}>({
   isShow: false,
   title: t('告警详情'),
   data: {
@@ -229,7 +238,7 @@ const {
 } = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const apigwId = computed(() => gatewayStore.apigwId);
-const tableColumns = computed((): any[] => ([
+const tableColumns = computed<ITableColumn<IAlarmRecordListOutput>[]>(() => ([
   {
     title: t('告警ID'),
     colKey: 'id',
@@ -250,19 +259,19 @@ const tableColumns = computed((): any[] => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStrategyOption.value,
     },
-    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h, { row }) => {
       if (row.alarm_strategy_names?.length) {
         return (
           <div class="lh-1">
             <span
               v-bk-tooltips={{
-                content: row.alarm_strategy_names?.join('; '),
+                content: row.alarm_strategy_names.join('; '),
                 placement: 'top',
               }}
               class="strategy-names"
             >
               {
-                row.alarm_strategy_names!.map((strategy, index) => {
+                row.alarm_strategy_names.map((strategy, index) => {
                   if (index < 4) {
                     return (
                       <span class="ag-label">
@@ -270,7 +279,7 @@ const tableColumns = computed((): any[] => ([
                       </span>
                     );
                   }
-                  if (index === row.alarm_strategy_names!.length - 1 && index > 3) {
+                  if (index === row.alarm_strategy_names.length - 1 && index > 3) {
                     return <span class="ag-label">...</span>;
                   }
                 })
@@ -286,7 +295,7 @@ const tableColumns = computed((): any[] => ([
     title: t('告警内容'),
     colKey: 'message',
     ellipsis: true,
-    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h, { row }) => {
       return (
         <span>
           { row.message || '--' }
@@ -303,7 +312,7 @@ const tableColumns = computed((): any[] => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStatus,
     },
-    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h, { row }) => {
       return (
         <span>
           <span class={['m-r-4px', 'ag-outline-dot', row.status]} />
@@ -314,7 +323,7 @@ const tableColumns = computed((): any[] => ([
             }}
             class="status-text"
           >
-            { getAlarmStatusText(row.status ?? '') }
+            { getAlarmStatusText(row.status) }
           </span>
         </span>
       );
@@ -332,10 +341,13 @@ function getList() {
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getRecordList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue | any) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   filterData.value = Object.assign(filterData.value, filterItem);
 };
 
@@ -357,7 +369,7 @@ const handlePickSuccess = () => {
 };
 
 // 获取状态name
-const getAlarmStatusText = (status: string) => {
+const getAlarmStatusText = (status?: string) => {
   const curStatus = alarmStatus.find((item: any) => item.value === status) ?? {} as any;
   return curStatus.label ?? '--';
 };
@@ -402,7 +414,7 @@ const handleToggle = (value: boolean) => {
 };
 
 // 鼠标点击
-const handleRowClick = ({ row }: { row: IAlarmRecord }) => {
+const handleRowClick = ({ row }: RowEventContext<TableRow<IAlarmRecordListOutput>>) => {
   sliderConfig = Object.assign(sliderConfig, {
     isShow: true,
     data: row,

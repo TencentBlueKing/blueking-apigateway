@@ -75,11 +75,11 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="AuditLog"
       table-row-key="event_id"
       :is-exist-unique-key="false"
       show-settings
       resizable
-      :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
@@ -97,9 +97,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import type { ITableMethod } from '@/types/common';
 import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import {
@@ -112,7 +110,11 @@ import {
 import { getTenantUsers } from '@/services/source/external/bk-user';
 import { getAuditLogList } from '@/services/source/gateway/audit';
 import type { IAuditLog } from '@/types/audit-log';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+} from '@/components/base/ag-table';
 import type { IAuditEventLogOutput } from '@/services/types/gateway/audit.ts';
 import Detail from './detail/Index.vue';
 
@@ -146,7 +148,7 @@ const defaultSearchData: IAuditLog = {
 const showDetails = ref<boolean>(false);
 const details = ref<IAuditEventLogOutput | null>(null);
 const tableData = ref<IAuditEventLogOutput[]>([]);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<IAuditEventLogOutput>>('tableRef');
 const filterData = ref<IAuditLog>(cloneDeep(defaultSearchData));
 
 const apigwId = computed(() => gatewayStore.apigwId);
@@ -234,7 +236,7 @@ const getOpObjectTypeText = (type: string) => {
   return name ?? '--';
 };
 
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<ITableColumn<IAuditEventLogOutput>[]>([
   {
     title: t('操作对象'),
     colKey: 'op_object_type',
@@ -332,7 +334,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'actions',
     width: 120,
     cell: (_h, { row }) => (
-      <bk-button text theme="primary" onClick={() => showDiff(row as IAuditEventLogOutput)}>
+      <bk-button text theme="primary" onClick={() => showDiff(row)}>
         {t('查看详情')}
       </bk-button>
     ),
@@ -343,7 +345,10 @@ const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: t
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getAuditLogList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const handleClearFilter = () => {
@@ -359,7 +364,7 @@ const showDiff = (row: IAuditEventLogOutput) => {
 };
 
 // 处理表头筛选联动搜索框
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   const columnFilters: Record<string, string> = {};
   for (const key of tableFilterKeys) {
     if (key in filterItem) {

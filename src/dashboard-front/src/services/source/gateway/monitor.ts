@@ -85,4 +85,4 @@ export const patchStrategyStatus = (gatewayId: number, id: number, params: IAlar
  * @param params 查询参数
  */
 export const getRecordList = (gatewayId: number, params: IGatewaysMonitorsAlarmRecordsListQuery = {}) =>
-  http.get<IAlarmRecordListOutput>(`${path}/${gatewayId}/monitors/alarm/records/`, params);
+  http.get<ICountAndResults<IAlarmRecordListOutput>>(`${path}/${gatewayId}/monitors/alarm/records/`, params);

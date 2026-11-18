@@ -19,7 +19,7 @@
 <template>
   <div class="resource-container page-wrapper-padding">
     <BkAlert
-      v-if="!versionCount && !gatewayStore.isProgrammableGateway"
+      v-if="!isFirstRequest && !versionCount && !gatewayStore.isProgrammableGateway"
       theme="warning"
       :title="t(`如需生成新版本，请前往'资源配置'页面操作`)"
       class="mb-20px"
@@ -63,12 +63,12 @@
         <AgTable
           ref="tableRef"
           v-model:table-data="tableData"
+          cache-identifier="ResourceVersion"
           :immediate="false"
           resizable
           show-settings
           show-selection
           :show-first-full-row="selections.length > 0"
-          :max-limit-config="{ allocatedHeight: 267, mode: 'tdesign'}"
           :api-method="getTableData"
           :columns="columns"
           @clear-filter="handleClearFilterKey"
@@ -156,10 +156,17 @@ import {
 import ReleaseStageSlider from '@/components/release/release-stage-slider/Index.vue';
 import ExportResourceDialog from '../../components/ExportResourceDialog.vue';
 import { orderBy } from 'lodash-es';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/base/ag-table/Index.vue';
-import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type { IResourceVersionListOutput } from '@/services/types/gateway/resource-version.ts';
+import AgTable, {
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableSelection,
+} from '@/components/base/ag-table';
+
+interface IVersionRow extends IResourceVersionListOutput {
+  isReleaseMenuShow?: boolean
+}
 
 interface IProps { version?: string }
 
@@ -173,8 +180,8 @@ const featureFlagStore = useFeatureFlag();
 
 const filterData = ref({ keyword: version });
 const diffDisabled = ref(true);
-const tableData = ref<any[]>([]);
-const selections = ref<any[]>([]);
+const tableData = ref<IVersionRow[]>([]);
+const selections = ref<IVersionRow[]>([]);
 const versionCount = ref(0);
 const isFirstRequest = ref(true);
 
@@ -213,7 +220,7 @@ const diffSliderConf = reactive({
   title: t('版本资源对比'),
 });
 
-const tableRef = ref();
+const tableRef = useTemplateRef<IAgTableInstance<IVersionRow>>('tableRef');
 const diffSourceId = ref();
 const diffTargetId = ref();
 const resourceDetailShow = ref(false);
@@ -240,14 +247,14 @@ const versionCountAlert = computed(() => {
 });
 
 // 批量删除按钮禁用状态：当选中项中有 deletable 为 false 的成员时禁用
-const batchDeleteDisabled = computed(() => selections.value.some((item: any) => item.deletable === false));
+const batchDeleteDisabled = computed(() => selections.value.some(item => item.deletable === false));
 
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IVersionRow>[]>(() => [
   {
     colKey: 'version',
     title: t('版本号'),
     ellipsis: true,
-    cell: (h: any, { row }: any) => (
+    cell: (_h, { row }) => (
       <bk-button
         text
         theme="primary"
@@ -261,8 +268,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'released_stages',
     title: t('生效环境'),
     ellipsis: true,
-    cell: (h: any, { row }: any) =>
-      <span>{ row.released_stages?.map((item: any) => item.name).join(', ') || '--' }</span>,
+    cell: (_h, { row }) =>
+      <span>{ row.released_stages?.map(item => item.name).join(', ') || '--' }</span>,
   },
   {
     colKey: 'created_time',
@@ -273,7 +280,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'sdk',
     title: 'SDK',
-    cell: (h: any, { row }: any) => (
+    cell: (_h, { row }) => (
       <div>
         {
           row.sdk_count > 0
@@ -294,33 +301,19 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'created_by',
     title: t('创建者'),
-    cell: (h: any, { row }: any) => (
-      <div>
-        {
-          !featureFlagStore.isEnableDisplayName
-            ? (
-              <EditMember
-                mode="detail"
-                field="created_by"
-                content={[row?.created_by]}
-              />
-            )
-            : (
-              <TenantUserEditor
-                mode="detail"
-                field="created_by"
-                content={[row?.created_by]}
-              />
-            )
-        }
-      </div>
-    ),
+    ellipsis: true,
+    cell: (_h, { row }) => {
+      if (!row?.created_by) return <span>--</span>;
+      return !featureFlagStore.isEnableDisplayName
+        ? <span>{row.created_by}</span>
+        : <span><bk-user-display-name user-id={row.created_by} /></span>;
+    },
   },
   {
     colKey: 'actions',
     title: t('操作'),
     width: 250,
-    cell: (h: any, { row }: any) => (
+    cell: (_h, { row }) => (
       <div class="flex gap-10px">
         {
           featureFlagStore.flags.ALLOW_UPLOAD_SDK_TO_REPOSITORY
@@ -391,11 +384,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           v-bk-tooltips={{
             content: t(
               '已发布到环境【{stage}】或生成了 SDK，无法删除',
-              { stage: row.released_stages?.map((item: any) => item.name).join(', ') || '--' },
+              { stage: row.released_stages?.map(item => item.name).join(', ') || '--' },
             ),
             disabled: row.deletable,
           }}
-          onClick={() => handleDelete(row as any)}
+          onClick={() => handleDelete(row)}
         >
           {t('删除')}
         </bk-button>
@@ -452,9 +445,10 @@ watch(
   { deep: true },
 );
 
-const getTableData = async (params: Record<string, any> = {}) => getVersionList(apigwId.value, params);
+const getTableData = async (params: Record<string, any> = {}): Promise<ICountAndResults<IVersionRow>> =>
+  getVersionList(apigwId.value, params);
 
-const handleSelectionChange = (payload: any) => {
+const handleSelectionChange = (payload: ITableSelection<IVersionRow>) => {
   selections.value = payload.selections;
 };
 
@@ -541,13 +535,13 @@ const changeTab = () => {
 };
 
 // 过滤当前资源版本下的sdk
-const jumpSdk = (row: any) => {
+const jumpSdk = (row: IVersionRow) => {
   resourceVersionStore.setResourceFilter(row);
   resourceVersionStore.setTabActive('sdk');
 };
 
 // 选择要发布的环境
-const showRelease = async (row: any) => {
+const showRelease = async (row: IVersionRow) => {
   try {
     const res = await getStageList(apigwId.value);
     if (res?.length) {
@@ -570,7 +564,7 @@ const showRelease = async (row: any) => {
 };
 
 // 展示发布弹窗
-const handleClickStage = (stage: any, row: any) => {
+const handleClickStage = (stage: any, row: IVersionRow) => {
   if (getStageStatus(stage) === 'doing') {
     return Message({
       theme: 'warning',

@@ -215,7 +215,9 @@ export interface IMcpSpanDetail {
 }
 
 // trace瀑布图详情组装数据
-export type ITraceDetail = IGatewayLog & IHttpSpanDetail & IMcpSpanDetail & ITraceLog;
+export type ITraceDetail = IGatewayLog & IHttpSpanDetail & IMcpSpanDetail & ITraceLog & {
+  latency?: string
+};
 
 // 查询条件泛型
 export interface IObservabilityBasicForm {

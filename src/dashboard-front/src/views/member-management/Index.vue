@@ -68,7 +68,6 @@
         local-page
         table-row-key="id"
         :show-settings="false"
-        :max-limit-config="{ allocatedHeight: 220, mode: 'tdesign' }"
         :columns="columns"
         :table-empty-type="keyword ? 'search-empty' : 'empty'"
         @clear-filter="keyword = ''"
@@ -96,8 +95,7 @@ import { Message } from 'bkui-vue';
 import { usePopInfoBox } from '@/hooks';
 import { deleteGatewayMember, getGatewayMemberList } from '@/services/source/gateway/member';
 import { useFeatureFlag, useGateway, useGatewayRoleStore, useUserInfo } from '@/stores';
-import AgTable from '@/components/base/ag-table/Index.vue';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
+import AgTable, { type ITableColumn } from '@/components/base/ag-table';
 import AddMember from './components/AddMember.vue';
 import EditMember from './components/EditMember.vue';
 import CheckPermissionModel from './components/CheckPermissionModel.vue';
@@ -153,65 +151,55 @@ const roleTabs = computed(() => [
   },
 ]);
 
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IMember>[]>(() => [
   {
     title: t('用户名'),
     colKey: 'username',
     width: 220,
-    cell: (_h: unknown, { row }: { row: TableRowData }) => {
-      const member = row as unknown as IMember;
-      return featureFlagStore.isEnableDisplayName
-        ? <span><bk-user-display-name user-id={member.username} /></span>
-        : <span>{member.username}</span>;
-    },
+    cell: (_h, { row }) => (
+      featureFlagStore.isEnableDisplayName
+        ? <span><bk-user-display-name user-id={row.username} /></span>
+        : <span>{row.username}</span>
+    ),
   },
   {
     title: t('角色'),
     colKey: 'role',
     width: 220,
-    cell: (_h: unknown, { row }: { row: TableRowData }) => {
-      const member = row as unknown as IMember;
-      return (
-        <bk-tag theme={member.role === 'administrator' ? 'success' : 'warning'}>
-          {getRoleLabel(member.role)}
-        </bk-tag>
-      );
-    },
+    cell: (_h, { row }) => (
+      <bk-tag theme={row.role === 'administrator' ? 'success' : 'warning'}>
+        {getRoleLabel(row.role)}
+      </bk-tag>
+    ),
   },
   {
     title: t('权限描述'),
     colKey: 'description',
     ellipsis: true,
-    cell: (_h: unknown, { row }: { row: TableRowData }) => {
-      const member = row as unknown as IMember;
-      return getRoleDescription(member.role);
-    },
+    cell: (_h, { row }) => getRoleDescription(row.role),
   },
   {
     title: t('操作'),
     colKey: 'operation',
     width: 180,
-    cell: (_h: unknown, { row }: { row: TableRowData }) => {
-      const member = row as unknown as IMember;
-      return (
-        <div class="member-actions">
-          <bk-button
-            text
-            theme="primary"
-            onClick={() => handleChangeRole(member)}
-          >
-            {t('变更角色')}
-          </bk-button>
-          <bk-button
-            text
-            theme="primary"
-            onClick={() => handleDelete(member)}
-          >
-            {t('删除成员')}
-          </bk-button>
-        </div>
-      );
-    },
+    cell: (_h, { row }) => (
+      <div class="member-actions">
+        <bk-button
+          text
+          theme="primary"
+          onClick={() => handleChangeRole(row)}
+        >
+          {t('变更角色')}
+        </bk-button>
+        <bk-button
+          text
+          theme="primary"
+          onClick={() => handleDelete(row)}
+        >
+          {t('删除成员')}
+        </bk-button>
+      </div>
+    ),
   },
 ]);
 

@@ -20,9 +20,10 @@
   <AgTable
     ref="tableRef"
     :table-data="tableData"
-    :columns="columns as PrimaryTableProps['columns']"
+    :columns="columns"
     table-row-key="name"
     local-page
+    :auto-height="false"
     :resizable="false"
     v-bind="$attrs"
   />
@@ -30,8 +31,7 @@
 
 <script setup lang="tsx">
 import { type ILocalImportedResource } from '@/types/resource';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type IAgTableInstance, type ITableColumn } from '@/components/base/ag-table';
 import { useTextGetter } from '@/hooks';
 import { useResourcePreviewColumns } from '../use-resource-preview-columns';
 
@@ -64,17 +64,17 @@ const {
 
 const { t } = useI18n();
 
-const tableRef = useTemplateRef('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<ILocalImportedResource>>('tableRef');
 
 const sharedColumns = useResourcePreviewColumns(() => isAiGateway);
 
-const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>(() => [
+const columns = computed<ITableColumn<ILocalImportedResource>[]>(() => [
   ...sharedColumns.value.identity,
   {
     title: t('认证方式'),
     colKey: 'auth_config',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span
         v-bk-tooltips={{
           content: `${getAuthConfigText(row?.auth_config)}`,
@@ -89,7 +89,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: t('校验应用权限'),
     colKey: 'resource_perm_required',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span class={{ 'color-#ffb400': getPermRequiredText(row?.auth_config) === t('是') }}>
         {getPermRequiredText(row?.auth_config)}
       </span>
@@ -99,7 +99,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: t('是否公开'),
     colKey: 'is_public',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span class={{ 'color-#ffb400': getPublicSettingText(row.is_public) === t('是') }}>
         {getPublicSettingText(row.is_public)}
       </span>
@@ -109,7 +109,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: t('允许申请权限'),
     colKey: 'allow_apply_permission',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span class={{ 'color-#ffb400': getAllowApplyPermissionText(row.allow_apply_permission) === t('是') }}>
         {getAllowApplyPermissionText(row.allow_apply_permission)}
       </span>
@@ -120,7 +120,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: t('资源文档'),
     colKey: 'doc',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       showDoc
         ? (
           <bk-button text theme="primary" disabled={readonly} onClick={() => handleShowResourceDoc(row)}>
@@ -136,7 +136,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     colKey: 'plugin_configs',
     width: 85,
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <bk-button
         theme="primary"
         text
@@ -151,18 +151,20 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     ),
   },
   ...(!readonly
-    ? [{
-      title: t('操作'),
-      colKey: 'act',
-      fixed: 'right' as const,
-      width: 100,
-      ellipsis: true,
-      cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
-        <bk-button text theme="primary" onClick={() => toggleRowUnchecked(row)}>
-          {t('恢复导入')}
-        </bk-button>
-      ),
-    }]
+    ? [
+      {
+        title: t('操作'),
+        colKey: 'act',
+        fixed: 'right',
+        width: 100,
+        ellipsis: true,
+        cell: (_h, { row }) => (
+          <bk-button text theme="primary" onClick={() => toggleRowUnchecked(row)}>
+            {t('恢复导入')}
+          </bk-button>
+        ),
+      },
+    ] satisfies ITableColumn<ILocalImportedResource>[]
     : []),
 ]);
 

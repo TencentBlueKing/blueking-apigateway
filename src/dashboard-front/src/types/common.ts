@@ -18,6 +18,13 @@
 
 import type { IRange } from 'monaco-editor';
 import type { GatewayPermissionKey } from '@/constants/gateway-permission';
+import type {
+  IAgTableInstance,
+  ITableEmptyType,
+  ITableSelection,
+  ITableSettings,
+  TableRowData,
+} from '@/components/base/ag-table';
 
 // 导航栏菜单
 export interface IHeaderNav {
@@ -120,23 +127,13 @@ export type ErrorReasonType = {
   range?: IRange // 源码范围，可能为空
 };
 
-// 表格组件导出内容
-export type ITableMethod = {
-  loading: boolean
-  TDesignTableRef: Ref
-  setPagination: () => void
-  getPagination: () => void
-  resetPaginationTheme: () => void
-  setPaginationTheme: () => void
-  fetchData: () => void
-  refresh: () => void
-};
+// 模板 ref 指向的 AgTable 实例（泛型化后通过显式暴露接口推导，避免 InstanceType 失效）。
+export type ITableMethod<TRow extends TableRowData = TableRowData> = IAgTableInstance<TRow>;
 
-// tdesign-table设置
-export type ITableSettings = {
-  columns: string[]
-  fontSize: 'large' | 'medium' | undefined
-  rowSize: 'large' | 'medium' | 'small' | undefined
+export type {
+  ITableEmptyType,
+  ITableSelection,
+  ITableSettings,
 };
 
 // 表单实例函数
@@ -178,8 +175,6 @@ export interface IMavonEditorProps {
   scrollStyle?: boolean
   toolbarsFlag?: boolean
 }
-
-export type ITableEmptyType = 'empty' | 'search-empty' | 'searchEmpty' | 'error';
 
 export type IMethodFilterItem = {
   label: string

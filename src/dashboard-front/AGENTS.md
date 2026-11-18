@@ -67,7 +67,7 @@ pnpm lint:ci:oxlint
 pnpm preview
 ```
 
-> **注意：项目未配置测试框架，没有单元测试或 E2E 测试。**
+AgTable 的组件回归用例使用实际 BKUI、TDesign 和无头 Chromium。执行 `pnpm test:ag-table`，可通过 `CHROME_BIN` 指定浏览器可执行文件。
 
 ### 暂缓升级的依赖
 
@@ -75,7 +75,7 @@ pnpm preview
 
 - `tdesign-vue-next`（保持 1.18）：项目版本满足 `@blueking/tdesign-ui` 的范围后两者会合并为同一份，
   合并为 1.20.11 时 `ag-table` 的单选筛选失效（选中不生效、不触发 `filter-change`）。
-  根因在 `ag-table` 的 `handleRadioFilterClick` 依赖弹层 DOM 和时序
+  单选确认依赖弹层 DOM 和选中时序，适配集中在 `ag-table/use-tdesign-table-adapter.ts`，升级时运行 `pnpm test:ag-table`
 - `@blueking/bk-user-selector`（保持 0.1.1）：0.1.2 起硬依赖 bkui-vue 2，会把 bkui-vue 2 部分打包进来
 - `@blueking/login-userinfo`（保持 0.0.13）：0.0.14 起内嵌整个 tippy.js，首屏 chunk 增加约 36 KB
 - bkui-vue 在 `lib/tag-input`、`lib/timeline` 内嵌了 DOMPurify 3.2.6，`overrides` 改不了产物，需等 bkui-vue 升级
@@ -106,7 +106,7 @@ src/dashboard-front/
 │   ├── constants/              # 常量定义（插件示例、HTTP 头等）
 │   ├── directives/             # 自定义指令（clickOutSide、bkTooltips）
 │   ├── enums/                  # TypeScript 枚举
-│   ├── hooks/                  # 19 个组合式函数
+│   ├── hooks/                  # 共享组合式函数
 │   ├── images/                 # Logo 和图片资源
 │   ├── layout/                 # 5 个布局组件（my-gateway、platform-tools 等）
 │   ├── locales/                # 国际化翻译（cn.json、en.json）
@@ -235,6 +235,14 @@ services/source/
 - **`base/`**：与业务无关的基础组件，统一使用 `ag-` 前缀，不调用业务接口。包括 `ag-icon`、`ag-icon-button`、
   `ag-copy-button`、`ag-table`、`ag-table-empty`、`ag-sideslider`、`ag-dropdown`、`ag-code-editor`（Monaco）、
   `ag-markdown-editor`（mavon-editor 懒加载）、`ag-markdown-viewer`、`ag-expandable-text`、`ag-status-dot`、`ag-overflow-tags`
+- `base/ag-table/` 下的 `use-table-data-source.ts` 统一管理静态数据、本地分页和远程请求。
+  `selection/use-row-selection.ts` 管理行选择，`selection/row-selection-column.tsx` 渲染表头和行复选框。
+  `settings/use-table-settings.ts` 合并页面列定义和用户设置，`settings/table-preferences.ts` 读写偏好并兼容旧版行高。
+  `use-table-layout.ts` 默认根据真实 DOM 剩余高度或外部固定 `maxHeight` 动态计算内容区最大高度并估算首屏条数（传 `:auto-height="false"` 或 `max-height="none"` 可关闭）。
+  `AgTable` 采用 `<script setup generic="TRow extends TableRowData = TableRowData">`，对外统一从 `@/components/base/ag-table` 导入组件与泛型类型（`ITableColumn<TRow>`、`TableRow<TRow>`、`IAgTableInstance<TRow>`、`defineTableColumns` 及筛选/排序/展开/行事件相关类型）：列定义声明为 `ITableColumn<TRow>[]` 或通过 `defineTableColumns<TRow>(...)` 推导 `row` 与 `colKey`，模板引用统一使用 `useTemplateRef<IAgTableInstance<TRow>>('tableRef')`（泛型组件不要使用 `InstanceType<typeof AgTable>`）。完整 Props / Emits / Slots / Expose、类型清单与场景代码示例见 `src/components/base/ag-table/README.md`，新增或改造表格页面前请先阅读该文档。
+  `AgTable` 不直接依赖路由或 Pinia Store（通知栏高度经 `context.ts` 的 `AG_TABLE_CONTEXT_KEY` 在 `main.ts` 注入）；
+  开启 `show-settings` 并需要持久化列偏好时，调用方应显式传入稳定的 `cache-identifier`（键格式为 `table-settings-<cacheIdentifier>`，未传时仅在内存生效）。
+  生产构建经 `vite.config.ts` 注入 `__APP_BUILD_ID__`，应用启动时通过 `pruneTablePreferences` 清空旧构建残留的表格偏好缓存（开发模式固定为 `'dev'`，重启开发服务器不清空）。
 - **命名**：目录名使用 kebab-case 并与组件名一致，入口为 `Index.vue`；私有子组件放在该目录的 `components/` 下，
   文件名使用 PascalCase。`ag-` 前缀只用于 `base/`，业务组件使用领域名词命名
 - **`user/`**：`user-selector`（人员选择入口，按多租户模式切换 `BkUserSelector` / `staff-selector`，
@@ -260,14 +268,11 @@ services/source/
 | `use-selection-data`        | 表格选择状态          |
 | `use-sidebar`               | 抽屉/侧边栏状态        |
 | `use-gate-way-data`         | 网关列表（含搜索）       |
-| `use-max-table-limit`       | 视窗自适应分页         |
 | `use-date-picker`           | 日期范围选择          |
-| `use-tdesign-selection`     | TDesign 表格选择    |
 | `use-table-filter-change`   | TDesign 筛选逻辑    |
 | `use-table-sort-change`     | TDesign 排序逻辑    |
 | `use-stage-data`            | 环境数据状态          |
 | `use-text-getter`           | 文本内容获取          |
-| `use-table-setting`         | 表格列显隐控制         |
 | `use-sticky-bottom`         | 粘性底部            |
 | `use-operation-lock`        | 防止并发操作          |
 | `use-bk-user-display-name`  | 多租户用户名显示        |

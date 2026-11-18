@@ -44,6 +44,7 @@
     <div class="model-service-content">
       <AgTable
         ref="tableRef"
+        cache-identifier="ModelService"
         show-settings
         resizable
         :api-method="getTableData"
@@ -60,11 +61,11 @@
 </template>
 
 <script setup lang="tsx">
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { Message } from 'bkui-vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type IAgTableInstance, type ITableColumn } from '@/components/base/ag-table';
 import { usePopInfoBox } from '@/hooks';
 import { deleteBackendService, getBackendServiceList } from '@/services/source/gateway/backend';
+import type { IBackendListOutput } from '@/services/types/gateway/backend.ts';
 import { useGateway } from '@/stores';
 import AddModelService from './components/AddModelService.vue';
 
@@ -77,7 +78,7 @@ const filterData = ref({
   name: '',
 });
 
-const tableRef = useTemplateRef('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<IBackendListOutput>>('tableRef');
 const addModelServiceEl = useTemplateRef<InstanceType<typeof AddModelService> & {
   show: (serviceId?: number) => Promise<void>
   showClone: (serviceId: number) => Promise<void>
@@ -87,12 +88,12 @@ const addModelServiceEl = useTemplateRef<InstanceType<typeof AddModelService> & 
 
 const gatewayId = computed(() => gatewayStore.apigwId);
 
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IBackendListOutput>[]>(() => [
   {
     title: t('名称'),
     colKey: 'name',
     ellipsis: true,
-    cell: (h: any, { row }: { row: any }) => (
+    cell: (_h, { row }) => (
       <span
         class="color-#3a84ff cursor-pointer"
         onClick={() => handleEdit(row)}
@@ -105,10 +106,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('描述'),
     colKey: 'description',
     ellipsis: true,
-    cell: (h: any, { row }: { row: any }) => <span>{ row.description || '--' }</span>,
+    cell: (_h, { row }) => <span>{ row.description || '--' }</span>,
   },
   {
     colKey: 'resource_count',
+    displayTitle: t('关联的资源'),
     title: () => (
       <span
         v-bk-tooltips={t('当前【资源配置编辑区】及所有【已发布环境】关联的资源数')}
@@ -117,7 +119,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         {t('关联的资源')}
       </span>
     ),
-    cell: (h: any, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return !row.resource_count || gatewayStore.isProgrammableGateway
         ? (
           <span>
@@ -145,7 +147,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'operation',
     fixed: 'right',
     width: 210,
-    cell: (h: any, { row }: { row: any }) => (
+    cell: (_h, { row }) => (
       <div class="flex">
         <bk-button
           text
@@ -253,11 +255,11 @@ const handleAdd = () => {
   addModelServiceEl.value?.show();
 };
 
-const handleEdit = (row: TableRowData) => {
+const handleEdit = (row: IBackendListOutput) => {
   addModelServiceEl.value?.show(row.id);
 };
 
-const handleClone = (row: TableRowData) => {
+const handleClone = (row: IBackendListOutput) => {
   addModelServiceEl.value?.showClone(row.id);
 };
 
@@ -279,7 +281,7 @@ const handleResource = (id: number) => {
   router.push(params);
 };
 
-const handleDelete = (row: TableRowData) => {
+const handleDelete = (row: IBackendListOutput) => {
   if (row.resource_count || row.name === 'default') {
     return;
   }

@@ -11,6 +11,7 @@
     "preview": "node replace-index-html.js index.dev.html && vite preview",
     "build-only": "node replace-index-html.js index.prod.html && vite build",
     "type-check": "vue-tsc --build",
+    "test:ag-table": "node tests/ag-table/run.mjs",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
     "lint:ci": "eslint .",
