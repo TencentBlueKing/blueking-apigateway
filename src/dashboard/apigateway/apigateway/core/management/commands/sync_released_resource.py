@@ -33,10 +33,50 @@ class Command(BaseCommand):
         parser.add_argument("--all", dest="_all", action="store_true")
         parser.add_argument("--force", dest="force", action="store_true", help="force")
         parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="dry run")
+        parser.add_argument(
+            "--oauth2-app-flags",
+            dest="oauth2_app_flags",
+            action="store_true",
+            help=(
+                "recompute oauth2_app_delegated_enabled/oauth2_app_only_enabled of existing rows from their "
+                "resource snapshot in place, and create missing rows; repeatable, no delete"
+            ),
+        )
 
-    def handle(self, gateway_id: int, _all: bool, force: bool, dry_run: bool, **options) -> None:
+    def handle(
+        self, gateway_id: int, _all: bool, force: bool, dry_run: bool, oauth2_app_flags: bool = False, **options
+    ) -> None:
         gateway_ids = self._get_gateway_ids(_all, gateway_id)
+        if oauth2_app_flags:
+            self._refresh_oauth2_app_flags(gateway_ids, dry_run)
+            return
         self._sync_released_resource(gateway_ids, force, dry_run)
+
+    def _refresh_oauth2_app_flags(self, gateway_ids: List[int], dry_run: bool) -> None:
+        total = 0
+        for resource_version in ResourceVersion.objects.filter(
+            id__in=self._get_released_resource_version_ids(gateway_ids)
+        ).only("id", "gateway_id"):
+            if not ReleasedResource.objects.filter(resource_version_id=resource_version.id).exists():
+                self.stdout.write(
+                    f"create gateway[id={resource_version.gateway_id}] resource_version[id={resource_version.id}]"
+                )
+                if not dry_run:
+                    # only() 未加载 data，保存投影时需要完整版本
+                    ReleasedResource.objects.save_released_resource(
+                        ResourceVersion.objects.get(id=resource_version.id)
+                    )
+                continue
+
+            count = ReleasedResource.objects.refresh_oauth2_app_flags(resource_version.id, dry_run=dry_run)
+            if count:
+                total += count
+                self.stdout.write(
+                    f"refresh gateway[id={resource_version.gateway_id}] "
+                    f"resource_version[id={resource_version.id}] rows={count}"
+                )
+
+        self.stdout.write(f"{'would refresh' if dry_run else 'refreshed'} {total} rows")
 
     def _sync_released_resource(self, gateway_ids: List[int], force: bool, dry_run: bool) -> None:
         resource_version_ids = self._get_released_resource_version_ids(gateway_ids)

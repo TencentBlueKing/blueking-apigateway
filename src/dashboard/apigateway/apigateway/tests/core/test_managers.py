@@ -478,6 +478,41 @@ class TestReleasedResourceManager:
         released = ReleasedResource.objects.get(resource_version_id=fake_resource_version.id, resource_id=101)
         assert (released.oauth2_app_delegated_enabled, released.oauth2_app_only_enabled) == expected
 
+    def test_refresh_oauth2_app_flags_recomputes_stale_rows(self, fake_resource_version):
+        def _snapshot(resource_id, user_required, app_required):
+            resource = self._make_resource_snapshot(
+                auth_config=json.dumps(
+                    {"auth_verified_required": user_required, "app_verified_required": app_required}
+                )
+            )
+            resource["id"] = resource_id
+            return resource
+
+        fake_resource_version.data = [
+            _snapshot(101, True, True),
+            _snapshot(102, False, True),
+            _snapshot(103, True, False),
+        ]
+        fake_resource_version.save(update_fields=["_data"])
+        ReleasedResource.objects.save_released_resource(fake_resource_version)
+        # 旧版 Dashboard 写入的行：两列取数据库默认值 false
+        queryset = ReleasedResource.objects.filter(resource_version_id=fake_resource_version.id)
+        queryset.update(oauth2_app_delegated_enabled=False, oauth2_app_only_enabled=False)
+
+        def _flags():
+            return {
+                row.resource_id: (row.oauth2_app_delegated_enabled, row.oauth2_app_only_enabled)
+                for row in queryset.order_by("resource_id")
+            }
+
+        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id, dry_run=True) == 2
+        assert _flags() == {101: (False, False), 102: (False, False), 103: (False, False)}
+
+        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id) == 2
+        assert _flags() == {101: (True, False), 102: (False, True), 103: (False, False)}
+
+        assert ReleasedResource.objects.refresh_oauth2_app_flags(fake_resource_version.id) == 0
+
     def test_filter_latest_released_resources(self, fake_gateway):
         r1 = G(Resource, gateway=fake_gateway)
         r2 = G(Resource, gateway=fake_gateway)
