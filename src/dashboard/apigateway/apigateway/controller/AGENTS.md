@@ -87,9 +87,11 @@ challenge_on_missing_credential = support_public or support_personal
 selects gateways with `ReleaseHistory.created_time >= T` **or**
 `Release.updated_time >= T`. CLI and some ops publishes write no
 `ReleaseHistory` but still update `Release.updated_time`. `--dry-run` prints
-names to stdout, which is empty when nothing matches, and the count to stderr.
-The old Dashboard's `--gateway-names` with an empty list syncs every gateway,
-so runbooks must check for an empty list before calling it. The DB candidates
+names to stdout and the count to stderr. When nothing matches, stdout must stay
+0 bytes: Django's `OutputWrapper` appends a newline even to `""`, so do not
+write an empty string. The old Dashboard's `--gateway-names` with an empty list
+syncs every gateway, so the runbook counts the parsed names instead of testing
+file size; `test_restore_runbook_*` runs the exact snippet from the design doc. The DB candidates
 alone are not the restore scope: the design doc 7.4 also requires scanning raw
 etcd routes.
 

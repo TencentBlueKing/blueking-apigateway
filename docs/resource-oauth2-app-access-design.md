@@ -577,10 +577,11 @@ challenge_on_missing_credential = support_public or support_personal
 python manage.py sync_releases_to_gateway_parallel --released-since "<T，如 2026-11-17T10:00:00+08:00>" --dry-run > gateways.txt
 # 与第 3 步 etcd 扫描得到的网关合并去重后写回 gateways.txt
 
-# 第 5 步，在旧版本 Dashboard 上。旧命令的 --gateway-names 收到空列表时会同步全部网关，
-# 所以必须先判断清单是否为空：
-if [ -s gateways.txt ]; then
-  python manage.py sync_releases_to_gateway_parallel --gateway-names $(cat gateways.txt)
+# 第 5 步，在旧版本 Dashboard 上（bash）。旧命令的 --gateway-names 收到空列表时会同步全部网关，
+# 所以按解析出的网关名数量判断，空文件或只有空白字符时都不调用：
+read -r -d '' -a gateway_names < gateways.txt || true
+if [ "${#gateway_names[@]}" -gt 0 ]; then
+  python manage.py sync_releases_to_gateway_parallel --gateway-names "${gateway_names[@]}"
 else
   echo "no gateway to restore"
 fi
@@ -588,7 +589,7 @@ fi
 
 按网关重新发布覆盖该网关全部环境和绑定数据面，范围大于实际受影响的（网关、环境、数据面），但对未变化的环境是幂等的。命令对失败的网关返回非零并列出网关名，按第 6 步处理。
 
-回滚验收覆盖：只有 CLI 重发、没有新增 `ReleaseHistory` 的网关；新字段已写入 etcd、数据库无更新的情况（由第 3 步扫描发现）；清单为空。
+回滚验收覆盖：只有 CLI 重发、没有新增 `ReleaseHistory` 的网关；新字段已写入 etcd、数据库无更新的情况（由第 3 步扫描发现）；清单为空文件或只有空白字符。
 
 ### 7.5 上线运维验收
 
@@ -728,7 +729,7 @@ fi
 | 回滚演练：新 Dashboard 发布后回滚 Dashboard，并用旧 Dashboard 重新发布 | etcd 路由不含 `support_app` 和 `challenge_on_missing_credential`；旧插件下 query/body 认证调用正常 |
 | 回滚候选：只有 CLI 重发、无新增 `ReleaseHistory` 的网关 | `--released-since` 通过 `Release.updated_time` 列出 |
 | 回滚候选：新字段已写入 etcd、数据库无更新 | 由 etcd 原始路由扫描发现（7.4 第 3 步） |
-| 回滚候选：清单为空 | `--dry-run` 输出为空，不调用旧命令（避免空 `--gateway-names` 走全量） |
+| 回滚候选：清单为空 | `--dry-run` 的 stdout 为 0 字节；回滚脚本对空文件、只有空白字符的文件都不调用旧命令（避免空 `--gateway-names` 走全量） |
 | 再次升级补算：旧 Dashboard 回滚期间首次发布的版本 | `sync_released_resource --all --oauth2-app-flags` 后两列等于推导值，应为 false 的仍为 false；scope、lookup 读到新值；可重复执行 |
 
 ## 11. 待确认

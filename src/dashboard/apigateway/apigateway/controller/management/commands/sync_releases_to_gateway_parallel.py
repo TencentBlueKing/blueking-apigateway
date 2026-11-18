@@ -105,7 +105,9 @@ class Command(BaseCommand):
         if dry_run:
             names = sorted(gateways.values_list("name", flat=True))
             self.stderr.write(f"{len(names)} gateways matched")
-            self.stdout.write(" ".join(names))
+            # OutputWrapper 会给空字符串补换行；空候选时 stdout 必须为空，否则回滚脚本可能把空清单传给旧命令而全量同步
+            if names:
+                self.stdout.write(" ".join(names))
             return
 
         failed_gateway_names = []

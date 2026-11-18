@@ -1,5 +1,9 @@
 import datetime
+import os
+import shutil
+import subprocess
 from io import StringIO
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -11,6 +15,16 @@ from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release, ReleaseHistory
 
 pytestmark = pytest.mark.django_db
+
+# 与设计文档 7.4 回滚第 5 步的脚本保持逐字一致
+RESTORE_RUNBOOK_SNIPPET = """read -r -d '' -a gateway_names < gateways.txt || true
+if [ "${#gateway_names[@]}" -gt 0 ]; then
+  python manage.py sync_releases_to_gateway_parallel --gateway-names "${gateway_names[@]}"
+else
+  echo "no gateway to restore"
+fi
+"""
+DESIGN_DOC = Path(__file__).resolve().parents[8] / "docs" / "resource-oauth2-app-access-design.md"
 
 
 class TestSyncGateway:
@@ -129,7 +143,7 @@ class TestCommand:
             stderr=stderr,
         )
 
-        assert stdout.getvalue().strip() == ""
+        assert stdout.getvalue() == ""
         assert "0 gateways matched" in stderr.getvalue()
 
     def test_naive_released_since_uses_current_timezone(self, settings, released_gateways):
@@ -167,3 +181,44 @@ class TestCommand:
 
         _, gateways = pool.map.call_args.args
         assert sorted(gateway.name for gateway in gateways) == ["released-after", "released-at"]
+
+
+class TestRestoreRunbook:
+    def test_restore_runbook_snippet_matches_design_doc(self):
+        if not DESIGN_DOC.exists():
+            pytest.skip("design doc is not available outside the repository checkout")
+
+        assert RESTORE_RUNBOOK_SNIPPET in DESIGN_DOC.read_text(encoding="utf-8")
+
+    @pytest.mark.skipif(shutil.which("bash") is None, reason="bash is required")
+    @pytest.mark.parametrize(
+        "content, expected_args",
+        [
+            ("", None),
+            (" \n\t\n", None),
+            ("gw-a gw-b\n", "manage.py sync_releases_to_gateway_parallel --gateway-names gw-a gw-b"),
+        ],
+    )
+    def test_restore_runbook_skips_empty_gateway_list(self, tmp_path, content, expected_args):
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        fake_python = bin_dir / "python"
+        fake_python.write_text('#!/bin/sh\necho "$@" > called.txt\n')
+        fake_python.chmod(0o755)
+        (tmp_path / "gateways.txt").write_text(content)
+
+        result = subprocess.run(
+            ["bash", "-c", RESTORE_RUNBOOK_SNIPPET],
+            cwd=tmp_path,
+            env={**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        called = tmp_path / "called.txt"
+        if expected_args is None:
+            assert not called.exists()
+            assert result.stdout == "no gateway to restore\n"
+        else:
+            assert called.read_text().strip() == expected_args
