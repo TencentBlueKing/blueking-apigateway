@@ -11,7 +11,7 @@
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
-| oauth_client_type | string | 是 | OAuth2 客户端类型：`personal`、`public` 或 `app_delegated`（蓝鲸应用代用户 token）；不支持 `app_only` |
+| oauth_client_type | string | 是 | OAuth2 客户端类型：`personal`、`public` 或 `app_delegated`（蓝鲸应用的用户委托 token）；不支持 `app_only` |
 | gateway_name | string | 否 | 网关名称，包含匹配，最长 64 个字符 |
 | mcp_server_name | string | 否 | MCP Server 名称，包含匹配，最长 64 个字符 |
 | limit | int | 否 | 每页网关数量，范围 1～1000，默认 10 |

@@ -360,7 +360,7 @@ class TestRouteConvertor:
     @pytest.mark.parametrize(
         ("auth_config", "gateway_oauth2_app_enabled", "expected"),
         [
-            # 用户认证 + 应用认证：代用户 token 走应用通道，缺少凭证交给旧流程
+            # 用户认证 + 应用认证：用户委托 token 走应用通道，缺少凭证交给旧流程
             (
                 {"auth_verified_required": True, "app_verified_required": True},
                 True,

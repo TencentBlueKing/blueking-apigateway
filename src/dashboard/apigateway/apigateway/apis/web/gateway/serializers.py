@@ -322,7 +322,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
                 "help_text": "是否公开，true: 公开，false: 不公开",
             },
             "oauth2_app_enabled": {
-                "help_text": "是否开启 OAuth 应用通道（代用户 token 与应用 token）",
+                "help_text": "是否开启 OAuth 应用通道（用户委托 token 与应用 token）",
             },
             "created_by": {
                 "help_text": "创建人",
@@ -441,7 +441,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             },
             "oauth2_app_enabled": {
                 "required": False,
-                "help_text": "是否开启 OAuth 应用通道（代用户 token 与应用 token），重新发布后在数据面生效",
+                "help_text": "是否开启 OAuth 应用通道（用户委托 token 与应用 token），重新发布后在数据面生效",
             },
         }
 

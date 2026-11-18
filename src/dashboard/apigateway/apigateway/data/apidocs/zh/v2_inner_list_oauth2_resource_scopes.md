@@ -13,7 +13,7 @@
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
-| oauth_client_type | string | 是 | OAuth2 客户端类型：`personal`、`public`、`app_delegated`（蓝鲸应用代用户 token，对应用户认证且应用认证的资源）或 `app_only`（蓝鲸应用的应用 token，对应仅应用认证的资源） |
+| oauth_client_type | string | 是 | OAuth2 客户端类型：`personal`、`public`、`app_delegated`（蓝鲸应用的用户委托 token，对应用户认证且应用认证的资源）或 `app_only`（蓝鲸应用的应用 token，对应仅应用认证的资源） |
 | gateway_name | string | 否 | 网关名称，包含匹配，最长 64 个字符 |
 | resource_name | string | 否 | 资源名称，包含匹配，最长 256 个字符 |
 | limit | int | 否 | 每页网关数量，范围 1～1000，默认 10 |

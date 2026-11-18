@@ -238,7 +238,7 @@ class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializ
     oauth2_public_client_enabled = serializers.BooleanField(read_only=True)
     oauth2_personal_client_enabled = serializers.BooleanField(read_only=True)
     oauth2_app_delegated_enabled = serializers.BooleanField(
-        read_only=True, help_text="是否接受代用户 token（用户认证且应用认证，且网关开启 OAuth 应用通道）"
+        read_only=True, help_text="是否接受用户委托 token（用户认证且应用认证，且网关开启 OAuth 应用通道）"
     )
     oauth2_app_only_enabled = serializers.BooleanField(
         read_only=True, help_text="是否接受应用 token（仅应用认证，且网关开启 OAuth 应用通道）"

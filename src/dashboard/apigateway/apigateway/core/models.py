@@ -115,7 +115,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     is_public = models.BooleanField(default=False)
     is_official = models.BooleanField(default=False)
-    # OAuth 应用通道：Bearer 入口是否接受代用户 token 与应用 token；重新发布后在数据面生效
+    # OAuth 应用通道：Bearer 入口是否接受用户委托 token 与应用 token；重新发布后在数据面生效
     # db_default 保证回滚到旧版本代码后，不带该列的写入仍然成功
     oauth2_app_enabled = models.BooleanField(default=True, db_default=True)
 
@@ -638,7 +638,7 @@ class ReleasedResource(TimestampedModelMixin):
     is_public = models.BooleanField(default=False)
     oauth2_public_client_enabled = models.BooleanField(default=False)
     oauth2_personal_client_enabled = models.BooleanField(default=False)
-    # 由资源认证配置推导，不含网关开关：代用户 token 为 U && A，应用 token 为 !U && A
+    # 由资源认证配置推导，不含网关开关：用户委托 token 为 U && A，应用 token 为 !U && A
     oauth2_app_delegated_enabled = models.BooleanField(default=False, db_default=False)
     oauth2_app_only_enabled = models.BooleanField(default=False, db_default=False)
     data = JSONField(help_text="resource data in resource version")

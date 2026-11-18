@@ -156,7 +156,7 @@ operator 同步/加载探测事件 -> core-api -> MySQL PublishEvent
 | OAuth2 内置应用 / OAuth2 Built-in Application | public/personal 及 enabled 字段 | 内置客户端模式授权，由发布与权限协调流程维护。 |
 | 资源认证策略 / Resource Auth Policy | 资源认证 Context 的 `auth_verified_required`（用户认证 U）、`app_verified_required`（应用认证 A）、`resource_perm_required`（校验应用权限 P）；资源顶层 `allow_apply_permission`、`is_public` | 每个资源一套策略，旧认证头入口与 OAuth2 Bearer 入口共用。层级约束：P 依赖 A，允许申请权限依赖公开与 P；上层关闭时下层保存为 false，不记忆原值。 |
 | 资源认证类型 / Resource Auth Type | `auth_config.auth_type`；只读推导 | U → `user`；非 U 且 A → `app`；否则 `none`。只用于接口输出与展示，写入时忽略，不进快照。 |
-| OAuth 应用通道 / OAuth2 App Channel | 网关开关 `Gateway.oauth2_app_enabled`（可写，默认开启）；资源推导 `auth_config.oauth2_app_delegated_enabled`（只读，U && A，不含网关开关）；已发布投影 `ReleasedResource.oauth2_app_delegated_enabled`（U && A）、`oauth2_app_only_enabled`（非 U 且 A） | 真实蓝鲸应用持 bkauth Bearer 调用：代用户 token（scope `app_delegated`）只用于要求用户的资源，应用 token（scope `app_only`）只用于仅应用认证的资源。网关开关同时控制两者：发布时读取当前值、重新发布后在数据面生效，scope/lookup 按当前值立即过滤。绑定 `bk-access-token-source`（有效 `source=bearer`）的资源在路由下发时不开放应用通道，已发布投影两列同为 false。与 public/personal 内置应用区分；MCP Server 没有应用通道开关。 |
+| OAuth 应用通道 / OAuth2 App Channel | 网关开关 `Gateway.oauth2_app_enabled`（可写，默认开启）；资源推导 `auth_config.oauth2_app_delegated_enabled`（只读，U && A，不含网关开关）；已发布投影 `ReleasedResource.oauth2_app_delegated_enabled`（U && A）、`oauth2_app_only_enabled`（非 U 且 A） | 真实蓝鲸应用持 bkauth Bearer 调用：用户委托 token（scope `app_delegated`）只用于要求用户的资源，应用 token（scope `app_only`）只用于仅应用认证的资源。网关开关同时控制两者：发布时读取当前值、重新发布后在数据面生效，scope/lookup 按当前值立即过滤。绑定 `bk-access-token-source`（有效 `source=bearer`）的资源在路由下发时不开放应用通道，已发布投影两列同为 false。与 public/personal 内置应用区分；MCP Server 没有应用通道开关。 |
 | 公开可见 / Public Visibility | 各对象 `is_public` | 对象各自的公开范围，不能统一解释为匿名、免认证或免授权。 |
 
 权限由 dashboard 写入；core-api DAO/缓存是运行时表示，缓存可能滞后。

@@ -5684,7 +5684,7 @@ paths:
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
                 oauth2_app_enabled:
                   type: boolean
-                  description: 是否开启 OAuth 应用通道（Bearer 入口接受代用户 token 与应用 token）；新建时默认 true，更新时不传则保留原值；修改后需重新发布才在数据面生效
+                  description: 是否开启 OAuth 应用通道（Bearer 入口接受用户委托 token 与应用 token）；新建时默认 true，更新时不传则保留原值；修改后需重新发布才在数据面生效
                   example: true
             example:
               display_name: 示例网关
@@ -7079,7 +7079,7 @@ paths:
                               description: 资源是否允许 OAuth2 个人客户端访问
                             oauth2_app_delegated_enabled:
                               type: boolean
-                              description: 资源是否接受蓝鲸应用的代用户 token（用户认证且应用认证，且网关当前开启 OAuth 应用通道）
+                              description: 资源是否接受蓝鲸应用的用户委托 token（用户认证且应用认证，且网关当前开启 OAuth 应用通道）
                             oauth2_app_only_enabled:
                               type: boolean
                               description: 资源是否接受蓝鲸应用的应用 token（仅应用认证，且网关当前开启 OAuth 应用通道）
@@ -7166,7 +7166,7 @@ paths:
                           description: 资源是否允许 OAuth2 个人客户端访问
                         oauth2_app_delegated_enabled:
                           type: boolean
-                          description: 资源是否接受蓝鲸应用的代用户 token（用户认证且应用认证，且网关当前开启 OAuth 应用通道）
+                          description: 资源是否接受蓝鲸应用的用户委托 token（用户认证且应用认证，且网关当前开启 OAuth 应用通道）
                         oauth2_app_only_enabled:
                           type: boolean
                           description: 资源是否接受蓝鲸应用的应用 token（仅应用认证，且网关当前开启 OAuth 应用通道）
