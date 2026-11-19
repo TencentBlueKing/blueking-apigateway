@@ -13,12 +13,25 @@ LEGACY_RESPONSE = """\
 from apigateway.utils.responses import V1OKJsonResponse
 response = V1OKJsonResponse(data={})
 """
+GATEWAY_EXCEPTION_FILES_RULE = "002-restrict-gateway-not-exist-files"
+GATEWAY_EXCEPTION_CLASS_RULE = "003-restrict-gateway-not-exist-class"
+SOURCE_ROOT = "src/dashboard/apigateway/apigateway"
+SYNC_VIEW_FILES = (
+    f"{SOURCE_ROOT}/apis/open/gateway/views.py",
+    f"{SOURCE_ROOT}/apis/v2/sync/views.py",
+)
+SYNC_VIEW = """\
+@decorate(name="post")
+class GatewaySyncApi(BaseView):
+    allow_gateway_not_exist = True
+"""
 
 
 class TestSemgrepRules(unittest.TestCase):
     def scan(self, files):
         with tempfile.TemporaryDirectory(prefix="dashboard-semgrep-") as directory:
             root = Path(directory)
+            subprocess.run(["git", "init", "--quiet", str(root)], check=True, capture_output=True)
             for name, source in files.items():
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -97,5 +110,73 @@ drf = Response({})
 unrelated = V1OKJsonResponse()
 """
         status, findings = self.scan({"apigateway/apigateway/apis/web/demo/views.py": source})
+        self.assertEqual(status, 0)
+        self.assertEqual(findings, [])
+
+    def test_gateway_exception_only_allows_the_two_approved_views(self):
+        status, findings = self.scan(dict.fromkeys(SYNC_VIEW_FILES, SYNC_VIEW))
+        self.assertEqual(status, 0)
+        self.assertEqual(findings, [])
+
+    def test_gateway_exception_blocks_other_files_and_explicit_writes(self):
+        sources = {
+            "declaration": "class OtherApi(BaseView):\n    allow_gateway_not_exist = True\n",
+            "annotation": "class OtherApi(BaseView):\n    allow_gateway_not_exist: bool = True\n",
+            "attribute": "view.allow_gateway_not_exist = True\n",
+            "setattr": 'setattr(view, "allow_gateway_not_exist", True)\n',
+            "as_view": "OtherApi.as_view(allow_gateway_not_exist=True)\n",
+            "nosemgrep": "allow_gateway_not_exist = True  # nosemgrep: 002-restrict-gateway-not-exist-files\n",
+        }
+        files = {f"{SOURCE_ROOT}/apis/web/demo/{name}.py": source for name, source in sources.items()}
+        files.update(
+            dict.fromkeys(
+                [
+                    f"{SOURCE_ROOT}/apis/open/other/views.py",
+                    f"{SOURCE_ROOT}/apis/v2/inner/views.py",
+                    f"{SOURCE_ROOT}/editions/ee/apis/v2/sync/views.py",
+                ],
+                SYNC_VIEW,
+            )
+        )
+        status, findings = self.scan(files)
+        self.assertEqual(status, 1)
+        self.assertCountEqual([finding["path"] for finding in findings], files)
+        self.assertEqual({finding["check_id"] for finding in findings}, {GATEWAY_EXCEPTION_FILES_RULE})
+
+    def test_gateway_exception_checks_other_code_in_approved_files(self):
+        other_code = """\
+class OtherApi(BaseView):
+    allow_gateway_not_exist = True
+
+view.allow_gateway_not_exist = True
+setattr(view, "allow_gateway_not_exist", True)
+OtherApi.as_view(allow_gateway_not_exist=True)
+"""
+        status, findings = self.scan(dict.fromkeys(SYNC_VIEW_FILES, SYNC_VIEW + other_code))
+        self.assertEqual(status, 1)
+        self.assertCountEqual([finding["path"] for finding in findings], list(SYNC_VIEW_FILES) * 4)
+        self.assertEqual({finding["check_id"] for finding in findings}, {GATEWAY_EXCEPTION_CLASS_RULE})
+
+    def test_gateway_exception_allows_disabled_flags_reads_and_test_fixtures(self):
+        safe_code = """\
+class OtherApi(BaseView):
+    allow_gateway_not_exist = False
+
+view.allow_gateway_not_exist = False
+setattr(view, "allow_gateway_not_exist", False)
+OtherApi.as_view(allow_gateway_not_exist=False)
+flag = getattr(view, "allow_gateway_not_exist", False)
+"""
+        files = dict.fromkeys((*SYNC_VIEW_FILES, f"{SOURCE_ROOT}/apis/web/demo/views.py"), safe_code)
+        files.update(
+            dict.fromkeys(
+                [
+                    f"{SOURCE_ROOT}/tests/apis/web/test_views.py",
+                    f"{SOURCE_ROOT}/apis/web/demo/migrations/0001_initial.py",
+                ],
+                SYNC_VIEW,
+            )
+        )
+        status, findings = self.scan(files)
         self.assertEqual(status, 0)
         self.assertEqual(findings, [])
