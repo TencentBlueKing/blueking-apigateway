@@ -162,34 +162,22 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
 
 **bkauth Bearer**：指 `Authorization: Bearer <token>` 且 token 带有 bkauth 的固定前缀。网关只拦截 bkauth Bearer；其他 Bearer（后端自有 token 等）不进入新认证链路，按普通请求头处理并原样透传给后端。前缀只用于判断“是否交给 bkauth 自省”，token 的身份、模式、应用仍以 bkauth 自省结果为准，不从 token 字符串推断（与调研文档 5.1 一致）。
 
-已确认的两种前缀，在 APISIX 侧做成配置（见 7.1）：
+APISIX 默认识别 `^bk[oprs]_` 和 `^tai_pat_` 两种前缀，可通过配置覆盖（见 7.1）。
 
-| 前缀 | 形式 | 完整格式 |
-| --- | --- | --- |
-| `bk` + 类型码 + `_` | 4 个字符，类型码为 `o`/`p`/`r`/`s` 之一 | `bk[oprs]_[0-9A-Za-z]{36}` |
-| `tai_pat_` | 固定字符串；bkauth 对接外部认证太湖签发，走同一个 bkauth 自省接口 | 前缀之后的格式未约定，不做本地格式校验 |
-
-匹配规则：
-
-1. **是否拦截按前缀判断**：token 以 `bk[oprs]_` 或 `tai_pat_` 开头，即视为 bkauth Bearer。
-2. **格式不符直接拒绝**：前缀命中、但不符合已知的完整格式（如 `bk[oprs]_` 后不是 36 位字母数字）时，直接返回 401，不调用 bkauth 自省，也不回退旧流程。
-3. **类型码不决定身份**：网关不按类型码区分 personal/public/app，仍以自省返回的 `bk_app_code`、用户委托模式为准。
-
-按前缀而不是完整格式判断是否拦截，是为了让带 bkauth 前缀的残缺 token 得到明确的拒绝，而不是被当作后端自有 token 静默透传。
+命中任一前缀就交给 bkauth 自省。bkauth 对格式异常的 token 返回 HTTP 200 和 `active=false`，网关随后返回 401 `invalid_token` 和 Bearer challenge。网关按自省结果判定 token 的身份和模式。
 
 **已注入 OAuth2 插件的路由**（`support_public`、`support_personal`、`support_app` 至少一个为真，且数据面版本支持）：
 
 ```text
 有 X-Bkapi-Authorization  → 旧流程（优先级不变）
-只开启了应用通道且未配置 bearer_token_rules → 任何 Bearer 都交给旧流程（规则漏配兜底，见下）
-有 bkauth Bearer          → OAuth2 流程；格式不符或自省失败直接拒绝，不回退 Cookie 或旧凭证
+有 bkauth Bearer          → OAuth2 流程；自省未通过时拒绝，不回退 Cookie 或旧凭证
 以上都没有                → 有符合条件的登录态 cookie（仅用户认证资源）：旧流程
 （含非 bkauth Bearer、      路由开启了 personal/public：返回 401 和 WWW-Authenticate（现状，供 MCP 客户端发现授权入口）
   解析不出 token 的空 Bearer） 只开启了应用通道：交给旧流程（旧流程可读 query/body 参数和登录态 cookie）
 ```
 
 - 非 bkauth Bearer 视同没有 OAuth2 凭证：不阻止登录态 cookie 分支，也不被网关删除。`Authorization: Bearer` 后面没有 token 时同样视同无凭证，可以继续尝试符合条件的 cookie。
-- 规则配置路径为 `bk_gateway.bk_oauth2.bearer_token_rules`（7.1）。**未配置（nil）时**，为兼容旧行为，插件把所有可解析的 Bearer 都当作 bkauth Bearer；只开启应用通道的路由（`challenge_on_missing_credential=false`）此时不拦截任何 Bearer，交给旧流程继续执行资源要求的认证和权限校验，应用通道在规则下发前等同关闭。personal/public 路由仍拦截全部 Bearer（与改造前一致）。正常部署由 Helm 保证规则非空且有效，空列表 `[]` 视为“已配置但不拦截任何 Bearer”。
+- 规则配置路径为 `bk_gateway.bk_oauth2.bearer_token_rules`（7.1）。缺配置或配置为空列表时，各类 OAuth2 路由都使用默认前缀。非空配置列表覆盖默认值。
 - 同一新版插件和规则下，显式下发 `challenge_on_missing_credential: true`、`support_app: false` 与省略这两个字段等价。
 - 网关消费的 OAuth2 凭证（命中规则并完成校验的 Bearer）不传给后端。客户端应只携带一种网关认证凭证：请求进入旧入口，或路由未挂 OAuth2 插件时，未被消费的 Bearer 会原样透传后端。这是现有透传边界，本期不改；已确认没有业务依赖 bkauth Bearer 透传给后端。
 - “只开启应用通道时交给旧流程”是必须的。旧的默认配置（应用＋用户认证）和仅应用认证的资源都会开启应用通道，如果沿用现在的 401，允许从请求参数取认证信息的网关上，把凭证放在 query/body 里的调用都会失败，缺少凭证时的错误码也会变化。仅应用认证的资源不能开启 personal/public，因此总是交给旧流程。
@@ -219,7 +207,7 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
 放行需要满足以下条件：
 
 1. bkauth 自省有效、未过期、必需字段完整。
-2. 按 bkauth 自省字段判定 token 模式：`sub`、`client_id` 和原始 `username` 都是非空字符串时为用户委托 token，允许 `sub == client_id`。仅当 `sub`、`client_id` 是相同的非空字符串，且 `username` 为原始空字符串 `""` 时，判为应用 token。其他组合为 `unknown`。当前 `bkauth.lua` 把 `sub` 映射为 `bk_username`，应用 token 的 `sub` 同样非空，所以不能再用“`bk_username` 非空”判断是否带用户，需要保留原始 `username`、`client_id`。
+2. 按 bkauth 自省字段判定 token 模式：`sub`、`client_id` 和原始 `username` 都是非空字符串时为用户委托 token，允许 `sub == client_id`。仅当 `sub`、`client_id` 是相同的非空字符串，且 `username` 为原始空字符串 `""` 时，判为应用 token。其他组合为 `unknown`。当前 `bkauth.lua` 把 `sub` 映射为 `bk_username`，应用 token 的 `sub` 同样非空，所以不能再用“`bk_username` 非空”判断是否带用户，需要使用 bkauth 适配层提供的 `username`、`client_id`。
 3. `bk_app_code` 是真实应用（不是 `public`/`personal`/空），且路由 `support_app=true`（已包含网关开关）。
 4. token 模式与资源要求匹配：
    - 资源要求用户（`verified_user_required=true`）：只接受用户委托 token，且必须有有效用户，不受免用户认证名单和 `skip_auth_verification` 影响；应用 token 拒绝。
@@ -453,30 +441,28 @@ python manage.py sync_released_resource --all --oauth2-app-flags
 
 | 插件 | 改动 |
 | --- | --- |
-| `bk-components/bkauth.lua` | 保留 `sub`（`bk_username`）、`client_id` 及原始 `username`（`bk_login_name`）。显式空字符串与缺字段分别处理 |
+| `bk-components/bkauth.lua` | 保留 `sub`（`bk_username`）、`client_id` 及字符串 `username`（`bk_login_name`）。保留显式空字符串，缺字段或非字符串统一为 `nil` |
 | `bk-oauth2-verify` | 按 4.2 识别用户委托/应用/`unknown` 模式并写入 `bk_oauth2_token_mode`；应用 token 不设置用户；删除已消费的 `Authorization`，避免透传后端 |
 | `bk-oauth2-appcode-validate` | 新增 `support_app`（默认 false）：真实 app_code；按路由 `verified_user_required` 决定接受的模式——要求用户时只接受用户委托 token 且有有效用户，不要求用户时只接受应用 token；`unknown` 拒绝；失败 401（4.2） |
 | `bk-oauth2-audience-validate` | 在客户端和 token 模式校验之后、通用认证检查之前校验 audience。失败返回 `401 invalid_token` |
 | `bk-auth-validate` | 保持通用应用和用户检查。真实应用 OAuth2 的模式和有效用户要求由前置的 appcode 插件校验，旧链路的豁免配置无法绕过该检查 |
-| `bk-oauth2-protected-resource` | 只把命中规则的 Bearer 识别为 OAuth2 凭证，其他 Bearer 视同无 OAuth2 凭证；新增 `challenge_on_missing_credential`（默认 true），区分“缺少凭证时返回 401”和“交给旧流程”；规则缺失且为 false 时不拦截 Bearer（4.1）；新增 `init()` 加载时校验规则 |
+| `bk-oauth2-protected-resource` | 只把命中规则的 Bearer 识别为 OAuth2 凭证，其他 Bearer 视同无 OAuth2 凭证；新增 `challenge_on_missing_credential`（默认 true），区分“缺少凭证时返回 401”和“交给旧流程”；初始化时校验并记录生效规则 |
 | `bk-permission` | 不改，继续受 `resource_perm_required` 控制 |
-| `bk-core` | `config.get_oauth2_bearer_token_rules`、`oauth2.classify_bearer_token`、`oauth2.validate_bkauth_bearer_token_rules` |
+| `bk-core` | `config.get_oauth2_bearer_token_rules`、`oauth2.is_bkauth_bearer_token`、`oauth2.validate_bkauth_bearer_token_rules` |
 
-部署配置路径为 `bk_gateway.bk_oauth2.bearer_token_rules`，由 Helm 下发，不在代码中硬编码：
+部署配置路径为 `bk_gateway.bk_oauth2.bearer_token_rules`，可以通过 Helm 下发。缺配置或配置为空列表时，APISIX 使用下面的默认前缀。
 
 ```yaml
 bk_gateway:
   bk_oauth2:
     bearer_token_rules:
       - prefix_pattern: "^bk[oprs]_"
-        format_pattern: "^bk[oprs]_[0-9A-Za-z]{36}$"
       - prefix_pattern: "^tai_pat_"
 ```
 
-- 按顺序匹配，第一条 `prefix_pattern` 命中的规则决定结果；`format_pattern` 存在时用于本地格式校验，不存在时直接交给 bkauth 自省。
-- 请求侧使用加载后保存的规则，调用 `ngx.re.find` 执行匹配。非法 `prefix_pattern` 在加载时记录 error 并跳过该规则。提供的 `format_pattern` 必须是可编译的字符串，否则加载时记录 error，命中该前缀的 token 按格式不符返回 401。
-- 规则缺失（nil）时的行为见 4.1。规则不是列表（布尔、字符串、数字、对象）时，请求阶段按未配置处理，与 nil 相同。部署验收需确认规则非空、有效，并覆盖存量 personal/public token 和后端自有 Bearer（7.5）。
-- 加载时校验：`bk-oauth2-protected-resource.init()` 一次读取规则，检查列表、规则对象和正则，并保存处理结果。缺配置记一条 warn，非列表和空列表各记一条 error。规则项的配置错误在加载时记录，插件继续启动。
+- `bk-oauth2-protected-resource.init()` 一次读取规则并校验。非法列表类型记录一条 error，生效规则为空。列表内的非法项分别记录 error 并跳过，剩余合法规则生效。校验完成后输出一条日志，记录实际生效的规则。
+- APISIX 的 YAML 解析会把 `[]` 和 `{}` 都转成空表，两者均使用默认前缀。
+- 请求复用已加载的规则，通过 `ngx.re.find` 匹配前缀。命中任一规则即交给 bkauth 自省。
 
 ### 7.2 Dashboard 下发
 
@@ -519,9 +505,9 @@ challenge_on_missing_credential = support_public or support_personal
 
 “旧配置＋新插件”对 personal/public 路由**不等同 `master`**（PR-1，已确认接受）：
 
-- 命中规则的 Bearer 进入 OAuth2 链，格式或自省失败时拒绝，不回退 cookie 或旧凭证（与现状一致）。
+- 命中规则的 Bearer 进入 OAuth2 链，自省未通过时拒绝，不回退 cookie 或旧凭证。
 - 未命中规则的 Bearer 视同缺少 OAuth2 凭证：符合条件的 cookie 仍可完成认证并保留后端自有 Bearer；没有可用旧入口时仍返回 401 挑战。现状是这类 Bearer 一律进入自省并被拒绝。
-- 未配置 `bearer_token_rules` 时，personal/public 路由把所有可解析的 Bearer 都当作 bkauth Bearer，与现状一致；所以数据面必须带上 Helm 规则，并按实际配置验证存量 personal/public token 和后端自有 Bearer。
+- 未配置 `bearer_token_rules` 或配置为空列表时，personal/public 路由使用默认规则。按实际生效的前缀验证存量 personal/public token 和后端自有 Bearer。
 
 “不兼容”指：新转换器对网关开关开启且 A=1 的资源（包括旧默认配置和仅应用认证）注入 OAuth2 插件，并带上 `support_app` 和“缺少凭证时交给旧流程”的配置。旧插件忽略这两个字段，于是：
 
@@ -532,7 +518,7 @@ challenge_on_missing_credential = support_public or support_personal
 上线顺序：
 
 1. Dashboard 停止编辑和发布，同时暂停运维 CLI 重发（如 `sync_releases_to_gateway_parallel`），确认在途下发任务结束。
-2. **先升级所有数据面插件。** 此时 etcd 中都是旧配置，处于“旧配置＋新插件”（行为差异见上）。逐个确认承接流量的实例已运行本次镜像，并加载了有效的 Helm 规则 `bk_gateway.bk_oauth2.bearer_token_rules`。APISIX 内核同为 3.18，以实际运行的镜像确认插件版本。
+2. **先升级所有数据面插件。** 此时 etcd 中都是旧配置，处于“旧配置＋新插件”（行为差异见上）。逐个确认承接流量的实例已运行本次镜像，并通过初始化日志核对生效的默认或自定义前缀规则。APISIX 内核同为 3.18，以实际运行的镜像确认插件版本。
 3. 确认所有数据面都运行新镜像后，执行迁移 `0059` 并升级 Dashboard。
 4. 恢复 Dashboard 操作和 CLI；各网关在下一次发布时切换为新配置。
 
@@ -605,11 +591,11 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 
 ### 7.5 上线运维验收
 
-1. **首次升级（D2 / R1）**：按 7.3 的顺序。暂停常规发布和运维 CLI 重发并等在途任务结束；先升数据面，逐个确认承接流量的实例运行本次镜像并加载有效的 Helm 规则；随后执行迁移、升级 Dashboard，再恢复发布。
+1. **首次升级（D2 / R1）**：按 7.3 的顺序。暂停常规发布和运维 CLI 重发并等在途任务结束；先升数据面，逐个确认承接流量的实例运行本次镜像并通过初始化日志核对生效的前缀规则；随后执行迁移、升级 Dashboard，再恢复发布。
 2. **回滚期间（PR-3 / PR-4）**：先回滚 Dashboard 并保留 `0059`，按 7.4 恢复并核验路由，再按需降级插件。仍使用新插件时，已有 personal/public 路由按 7.3 分流。bkauth 已接入新 scope 时，同步暂停新 scope 入口。
 3. **再次升级（PR-4）**：降级过 APISIX 时按首次升级顺序恢复；旧 Dashboard 实例和发布任务全部退出后补算投影，再重发回滚期间由旧 Dashboard 下发过的网关。验收顺序为“升级并执行 0059 → 保留迁移回滚 → 旧代码首次发布新版本 → 再次升级并补算 → 重发”，核对用户委托 token、应用 token 两类标记，确认 scope、lookup 读到重新计算的值，应为 false 的资源仍为 false，重发后应用 Bearer 实际调用成功。
 4. **升级后（D4 / D9 / Δ4）**：保持 `bk-apigateway.oauth2_app_enabled=true`，抽测 MCP 用户态和应用态入口。目标环境重发并确认 APISIX 加载后，抽测旧认证头、query/body、personal/public 和新增应用 Bearer。scope 或 lookup 可能先于路由显示能力，验收以实际调用为准。
-5. **bkauth 自省与格式校验性能（D7）**：确认自省容量和现有限流，首批重发后观察自省 QPS、延迟、错误率。单独用实际 Helm 规则测前缀与格式校验开销，隔离自省网络耗时，观察吞吐、CPU 和 P99 延迟。
+5. **bkauth 自省性能（D7）**：确认自省容量和现有限流，首批重发后观察自省 QPS、延迟、错误率。需要衡量网关匹配开销时，隔离自省网络耗时，使用实际生效的前缀规则测量吞吐、CPU 和 P99 延迟。
 6. **MySQL 性能（I11 / I12）**：用接近生产的数据量演练 `0059` 的索引构建耗时和锁等待。保留应用通道索引，对 `app_delegated`、`app_only` 的查网关和查资源语句做 `EXPLAIN`，重点看分页前的候选网关扫描量和实际使用的索引。
 
 ## 8. MCP 边界
@@ -714,18 +700,15 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 开启 personal 的路由：只带非 bkauth Bearer | 401 和 WWW-Authenticate（视同无凭证） |
 | 开启 personal 的路由：非 bkauth Bearer＋有效登录态 cookie（仅用户认证） | 走 cookie 分支，Bearer 透传后端 |
 | 带 bkauth 前缀但无效、过期的 token | 拒绝，不回退旧流程 |
-| `bkp_` 等前缀命中但长度或字符不符 | 401，不调用自省，不回退 |
+| `bkp_` 等前缀命中但 token 格式异常 | bkauth 自省返回 HTTP 200 和 `active=false`，网关返回 401 `invalid_token`，不回退 |
 | `bkx_...`（类型码不在 `oprs`）、`bk_...`、`tai_` 等相近但不命中的 Bearer | 视为非 bkauth Bearer，走旧流程并透传 |
 | `tai_pat_` 前缀的 token | 交给 bkauth 自省，按自省结果走 personal/public/app 同一校验链 |
 | `bkr_` refresh token 当作 Bearer 使用 | 自省拒绝，401，不回退 |
 | 修改前缀配置 | 重新加载配置后生效，不需要改插件代码 |
 | 非法 `prefix_pattern` | 记录 error，跳过该规则，继续匹配后续规则 |
-| `format_pattern` 是字符串但无法编译 | 记录 error，按格式不符返回 401 |
-| 提供了非字符串 `format_pattern` | 加载时记一条 error，命中前缀的 token 按格式不符返回 401 |
-| `bearer_token_rules` 不是列表（布尔、字符串、数字、对象） | 加载时记一条 error，请求阶段按未配置处理（同 nil） |
-| 插件加载：规则非法（非列表、非对象、正则非字符串或不可编译） | 每个问题记一条 error，启动不受影响；规则未配置记 warn |
-| 未配置 `bearer_token_rules`：只开启应用通道的路由收到任意 Bearer | 走旧流程，按资源要求认证 |
-| 未配置 `bearer_token_rules`：personal/public 路由收到任意 Bearer | 进入 OAuth2 流程（与改造前一致） |
+| `bearer_token_rules` 不是列表（布尔、字符串、数字、非空对象） | 加载时记录 error，无前缀可匹配 |
+| 插件加载 | 校验完成后记录一条生效规则日志 |
+| 未配置 `bearer_token_rules` 或配置为空列表 | 各类 OAuth2 路由使用两个默认前缀 |
 | 存量 personal/public token | 符合当前规则，调用结果与改造前一致 |
 | 低于 3.16 的数据面（转换器单测，当前环境无此版本） | 不注入 OAuth2 插件，发布不被只开启应用通道的资源阻塞 |
 | MCP 用户态入口：有 MCP Server 权限的应用的用户委托 token，aud 为 `mcp:{name}` | 通过 |
@@ -782,7 +765,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | `tai_pat_` token 的来源，是否走同一个 bkauth 自省接口、返回字段是否一致 | bkauth 对接外部认证太湖签发；与 bkauth token 走相同的认证接口，返回字段一致 | 复用同一校验链（4.2），网关不单独处理；前缀之后的格式未约定，不配置本地格式校验，由自省判定 |
 | 类型码 `r` 是否是 refresh token，自省是否拒绝其作为 access token | 是 | `bkr_` 命中前缀后交给自省，由自省拒绝，网关不单独处理 |
 
-已确认（2026-11-19 评审）：应用自身 token 的自省 `username` 是空字符串 `""`，SaaS 用户委托 token 的 `sub` 可能等于 `client_id`。
+已确认（2026-11-19 评审）：应用自身 token 的自省 `username` 是空字符串 `""`，SaaS 用户委托 token 的 `sub` 可能等于 `client_id`。bkauth 对格式异常的 token 返回 HTTP 200 和 `active=false`。
 
 已确认（网关运维，2026-11-17）：
 
@@ -819,7 +802,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 
 ### 升级要求
 
-- 数据面插件与 Dashboard 必须同时升级，上线期间 Dashboard 停止编辑和发布，并暂停运维 CLI 重发。先升级所有数据面（APISIX 3.18）到包含新插件的镜像，并确认加载了 Helm 下发的 `bk_gateway.bk_oauth2.bearer_token_rules`，再升级 Dashboard，否则旧默认配置的资源在发布后可能出现 401。
+- 数据面插件与 Dashboard 必须同时升级，上线期间 Dashboard 停止编辑和发布，并暂停运维 CLI 重发。先升级所有数据面（APISIX 3.18）到包含新插件的镜像，并通过初始化日志确认生效的前缀规则，再升级 Dashboard，否则旧默认配置的资源在发布后可能出现 401。
 - 升级后配置不会自动改写已有路由，各网关需重新发布才生效。
 - 回滚时先回滚 Dashboard（保留迁移 0059），按 7.4 找出并用旧 Dashboard 重新发布受影响的环境，核验 etcd 与 APISIX 加载结果后才能降级数据面插件；不能只回滚数据面镜像或资源版本。只需关闭个别网关时，关闭网关开关并重新发布即可。
 - 回滚后再次升级，需执行 `sync_released_resource --all --oauth2-app-flags` 补算已发布资源投影（第 6 节），并重发回滚期间由旧 Dashboard 下发过的网关（7.4 第 7 步）。
@@ -835,7 +818,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 命名 | `app_` 前缀表示真实蓝鲸应用作为客户端，后缀区分是否带用户：`oauth2_app_delegated_enabled` / scope `app_delegated`（用户委托 token），`oauth2_app_only_enabled` / scope `app_only`（应用 token）；网关开关 `Gateway.oauth2_app_enabled` 覆盖两者；不按 OAuth2 grant 类型命名 |
 | 应用通道注入 | `support_app = 网关开关 && A && 未绑定 bk-access-token-source`，覆盖用户认证与仅应用认证；接受的 token 模式由 `verified_user_required` 决定，Dashboard 不下发 token 类型，将来扩展只升级插件 |
 | 旧路由＋新插件（PR-1） | 接受相对 `master` 的变化：personal/public 路由按 bkauth 规则分流，未命中规则的 Bearer 视同无凭证；网关开关只关闭真实应用 token |
-| 规则缺失兜底（D1） | 未配置 `bearer_token_rules` 时，只开启应用通道的路由不拦截 Bearer，交给旧流程 |
+| 默认前缀（D1 / #208 复评） | 缺配置或空列表启用 `^bk[oprs]_`、`^tai_pat_`。命中后由 bkauth 自省 |
 | 失败响应（I3 / #208 评审） | 客户端准入、真实应用 token 模式和 audience 校验失败返回 `401 invalid_token`，优先于通用认证错误。旧链路和 OAuth2 准入通过后的通用认证错误保持原有响应 |
 | 模式判定（I5 / #208 评审） | 按 4.2 判定 `delegated`、`app` 或 `unknown`。真实应用的 `unknown` 返回 401 |
 | 回滚恢复范围（PR-3） | `ReleaseHistory` ∪ `Release.updated_time` 的数据库候选，再并上 etcd 原始路由扫描（显式字段，false 也计入）；核验 etcd 与 APISIX 加载后才降级插件；空清单不调用旧命令 |
@@ -858,7 +841,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 非公开对象 | scope 只列公开对象；非公开对象手填，用现有 lookup 接口校验；资源 lookup 新增 `oauth2_app_delegated_enabled`、`oauth2_app_only_enabled`，MCP lookup 不新增 |
 | 导出 | 格式不变 |
 | 全部 OAuth2 关闭时的 Bearer | 不注入插件，网关不识别、不拦截，只走旧链路；`Authorization` 透传后端 |
-| 拦截哪些 Bearer | 只拦截前缀为 `bk[oprs]_` 或 `tai_pat_` 的 token（APISIX 侧配置）；前缀命中但格式不符直接拒绝；其他 Bearer 走旧配置并透传后端；无效 bkauth token 不回退旧流程 |
+| 拦截哪些 Bearer | 只拦截前缀为 `bk[oprs]_` 或 `tai_pat_` 的 token（APISIX 默认规则，可覆盖）；命中后由 bkauth 自省；未命中时走无 OAuth2 凭证的逻辑；无效 bkauth token 不回退旧流程 |
 | token 模式识别 | `sub`/`client_id`/`username` 双信号判定用户委托与应用模式；要求用户的资源只接受用户委托 token，仅应用认证的资源只接受应用 token；两者都校验 audience |
 | AI 资源、多租户、后端 JWT | AI 资源同规则；租户沿用现有插件；JWT 不区分调用来源 |
 | 上线方式 | 数据面与 Dashboard 同时上线，期间 Dashboard 停止操作；不设全局开关；先升级数据面，再升级 Dashboard；不设压测门禁 |
