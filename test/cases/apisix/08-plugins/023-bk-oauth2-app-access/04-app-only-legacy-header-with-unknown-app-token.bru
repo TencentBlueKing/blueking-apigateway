@@ -1,0 +1,26 @@
+meta {
+  name: app-only-legacy-header-with-unknown-app-token
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/app_p1
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Authorization: Bearer bko_e2einactive0000000000000000000000000
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the bearer token is passed to the backend", function() {
+    expect(res.getBody().headers["Authorization"]).to.eql("Bearer bko_e2einactive0000000000000000000000000");
+  });
+}

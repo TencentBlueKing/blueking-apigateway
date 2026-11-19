@@ -1,0 +1,21 @@
+meta {
+  name: app-only-unknown-app-token
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/app_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer bko_e2einactive0000000000000000000000000
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+}

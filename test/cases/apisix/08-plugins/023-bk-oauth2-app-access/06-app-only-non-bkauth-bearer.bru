@@ -1,0 +1,21 @@
+meta {
+  name: app-only-non-bkauth-bearer
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/app_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer backend-owned-opaque-token
+}
+
+assert {
+  res.status: eq 400
+  res.body.code_name: eq INVALID_ARGS
+  res.headers['www-authenticate']: isUndefined
+}
