@@ -216,10 +216,10 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
 
 ### 4.2 Bearer 入口的用户委托 token 与应用 token 校验
 
-按顺序全部满足才放行：
+放行需要满足以下条件：
 
 1. bkauth 自省有效、未过期、必需字段完整。
-2. 按调研文档 5.2 的双信号判定 token 模式：`sub` 不等于 `client_id` 且原始 `username` 非空为用户委托 token（用户委托）；`sub` 等于 `client_id` 且 `username` 为空为应用 token；其他字段组合一律拒绝。当前 `bkauth.lua` 把 `sub` 映射为 `bk_username`，应用 token 的 `sub` 同样非空，所以不能再用“`bk_username` 非空”判断是否带用户，需要保留原始 `username`、`client_id`。
+2. 按 bkauth 自省字段判定 token 模式：`sub`、`client_id` 和原始 `username` 都是非空字符串时为用户委托 token，允许 `sub == client_id`。仅当 `sub`、`client_id` 是相同的非空字符串，且 `username` 为原始空字符串 `""` 时，判为应用 token。其他组合为 `unknown`。当前 `bkauth.lua` 把 `sub` 映射为 `bk_username`，应用 token 的 `sub` 同样非空，所以不能再用“`bk_username` 非空”判断是否带用户，需要保留原始 `username`、`client_id`。
 3. `bk_app_code` 是真实应用（不是 `public`/`personal`/空），且路由 `support_app=true`（已包含网关开关）。
 4. token 模式与资源要求匹配：
    - 资源要求用户（`verified_user_required=true`）：只接受用户委托 token，且必须有有效用户，不受免用户认证名单和 `skip_auth_verification` 影响；应用 token 拒绝。
@@ -227,10 +227,10 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
 5. audience 覆盖当前资源（`gateway:{网关}/api:{资源}` 或通配）。应用 token 同样校验。MCP 入口另外接受 `mcp:{name}` / `mcp:*`（第 8 节）。
 6. `resource_perm_required=true` 时，按真实 app_code 查网关级/资源级权限（与旧入口同一份数据）。
 
-- 模式判定的边界：`sub`、`client_id`、`username` 缺失、为空、为 JSON `null` 或不是字符串时都视为空，模式归为 `unknown`。职责划分为：`bk-oauth2-verify` 获取自省结果、识别模式并写上下文 `bk_oauth2_token_mode`；`bk-oauth2-appcode-validate` 拒绝真实应用的 `unknown`。`unknown` 的拒绝**只针对真实应用**，personal/public 沿用现有校验，不看 token 模式（bkauth 已确认 personal/public token 不会同时满足 `sub == client_id` 且 `username` 为空）。
+- 模式判定的边界：`sub` 或 `client_id` 缺失、为空或不是字符串，或者 `username` 缺失、为 JSON `null` 或其他非字符串时，模式归为 `unknown`。职责划分为：`bk-oauth2-verify` 获取自省结果、识别模式并写上下文 `bk_oauth2_token_mode`；`bk-oauth2-appcode-validate` 拒绝真实应用的 `unknown`。`unknown` 的拒绝**只针对真实应用**，personal/public 沿用现有校验，不看 token 模式（bkauth 已确认 personal/public token 不会同时满足 `sub == client_id` 且 `username` 为空）。
 - 应用身份以自省返回的 `bk_app_code` 为准；`client_id` 只参与模式判定，两者各自保留原语义。
 - 失败响应：
-  - token 模式与资源要求不匹配（两个方向）、真实应用的 `unknown`、应用码不被允许：`401` ＋ `WWW-Authenticate: Bearer ... error="invalid_token"`，`error_description` 和响应体的 `reason` 写明原因，例如 “the resource requires a user, only OAuth2 delegated tokens are allowed: bk_app_code=..., token_mode=app”。`bk-auth-validate`（优先级 17680）先于 `bk-oauth2-appcode-validate`（17678）执行，所以“要求用户的资源收到应用 token”由前者拦截，两者共用同一文案。
+  - token 模式与资源要求不匹配（两个方向）、真实应用的 `unknown`、应用码不被允许：`401` ＋ `WWW-Authenticate: Bearer ... error="invalid_token"`，`error_description` 和响应体的 `reason` 写明原因，例如 “the resource requires a user, only OAuth2 delegated tokens are allowed: bk_app_code=..., token_mode=app”。`bk-auth-validate`（优先级 17680）先于 `bk-oauth2-appcode-validate`（17678）执行，因此通用用户校验失败时由前者返回错误。应用通道同时关闭时，也按插件执行顺序返回先遇到的错误。
   - audience 不匹配：仍为 `403`（`invalid_audience`）。
   - 旧认证链路、personal/public 缺少用户：保持原有 `400`/`500`，不改。
 - 应用 token 不带用户：`bk-oauth2-verify` 不得把 `sub`（等于 `client_id`）当作用户名写入上下文，后端收到的网关 JWT 中用户为空且未认证，与旧入口只带应用凭证的调用一致。
@@ -452,13 +452,13 @@ python manage.py sync_released_resource --all --oauth2-app-flags
 
 | 插件 | 改动 |
 | --- | --- |
-| `bk-components/bkauth.lua` | 保留原始 `sub`（`bk_username`）、`client_id`、`username`（`bk_login_name`），不改变现有字段映射 |
-| `bk-oauth2-verify` | 识别用户委托/应用/`unknown` 模式写入 `bk_oauth2_token_mode`；非字符串或 `null` 字段视为空；应用 token 不设置用户；删除已消费的 `Authorization`，避免透传后端 |
+| `bk-components/bkauth.lua` | 保留 `sub`（`bk_username`）、`client_id` 及原始 `username`（`bk_login_name`）。显式空字符串与缺字段分别处理 |
+| `bk-oauth2-verify` | 按 4.2 识别用户委托/应用/`unknown` 模式并写入 `bk_oauth2_token_mode`；应用 token 不设置用户；删除已消费的 `Authorization`，避免透传后端 |
 | `bk-oauth2-appcode-validate` | 新增 `support_app`（默认 false）：真实 app_code；按路由 `verified_user_required` 决定接受的模式——要求用户时只接受用户委托 token 且有有效用户，不要求用户时只接受应用 token；`unknown` 拒绝；失败 401（4.2） |
 | `bk-auth-validate` | 真实应用的 OAuth2 token 忽略免用户认证名单和 `skip_user_verification`；要求用户的资源缺少有效用户时返回 401 ＋ `WWW-Authenticate`，与 appcode-validate 同一文案；旧链路和 personal/public 保持 400/500 |
 | `bk-oauth2-protected-resource` | 只把命中规则的 Bearer 识别为 OAuth2 凭证，其他 Bearer 视同无 OAuth2 凭证；新增 `challenge_on_missing_credential`（默认 true），区分“缺少凭证时返回 401”和“交给旧流程”；规则缺失且为 false 时不拦截 Bearer（4.1）；新增 `init()` 加载时校验规则 |
 | `bk-permission` | 不改，继续受 `resource_perm_required` 控制 |
-| `bk-core` | `config.get_oauth2_bearer_token_rules`、`oauth2.match_bkauth_bearer_token`、`oauth2.has_bkauth_bearer_token_rules`、`oauth2.get_user_required_token_reject_reason`、`oauth2.validate_bkauth_bearer_token_rules` |
+| `bk-core` | `config.get_oauth2_bearer_token_rules`、`oauth2.classify_bearer_token`、`oauth2.get_user_required_token_reject_reason`、`oauth2.validate_bkauth_bearer_token_rules` |
 
 部署配置路径为 `bk_gateway.bk_oauth2.bearer_token_rules`，由 Helm 下发，不在代码中硬编码：
 
@@ -472,9 +472,9 @@ bk_gateway:
 ```
 
 - 按顺序匹配，第一条 `prefix_pattern` 命中的规则决定结果；`format_pattern` 存在时用于本地格式校验，不存在时直接交给 bkauth 自省。
-- 请求时按需匹配：执行到某条规则时才交给 `ngx.re.find`，`jo` 选项缓存编译结果。非法 `prefix_pattern` 记录 error 日志并跳过该规则；`format_pattern` 是字符串但无法编译时记录 error 日志并按“格式不符”处理（fail closed，401）；`format_pattern` 不是字符串时视为未配置格式校验，直接交给 bkauth 自省。
+- 请求侧使用加载后保存的规则，调用 `ngx.re.find` 执行匹配。非法 `prefix_pattern` 在加载时记录 error 并跳过该规则。提供的 `format_pattern` 必须是可编译的字符串，否则加载时记录 error，命中该前缀的 token 按格式不符返回 401。
 - 规则缺失（nil）时的行为见 4.1。规则不是列表（布尔、字符串、数字、对象）时，请求阶段按未配置处理，与 nil 相同。部署验收需确认规则非空、有效，并覆盖存量 personal/public token 和后端自有 Bearer（7.5）。
-- 加载时校验：`bk-oauth2-protected-resource.init()` 在每个 worker 加载时检查规则（是否为列表、每项是否为对象、两个正则是否为字符串且可编译），每个问题记一条 error，没有可用规则（未配置或不是列表）时再记一条 warn。只记日志，不阻止启动，也不改变请求时的匹配结果和 error 日志。
+- 加载时校验：`bk-oauth2-protected-resource.init()` 一次读取规则，检查列表、规则对象和正则，并保存处理结果。缺配置记一条 warn，非列表和空列表各记一条 error。规则项的配置错误在加载时记录，插件继续启动。
 
 ### 7.2 Dashboard 下发
 
@@ -691,7 +691,8 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 无权应用的用户委托 token（白名单开启） | 拒绝 |
 | 白名单关闭，任意应用的用户委托 token | 通过 |
 | 用户认证资源：应用 token | 401 ＋ `WWW-Authenticate`，原因为只接受用户委托 token（完整插件链验证） |
-| 自省 `client_id`、`sub` 或 `username` 缺失、为空、为 `null` 或非字符串的真实应用 token | 模式为 `unknown`，401；personal/public 不受影响 |
+| 用户认证资源：`sub == client_id`，`username` 为非空字符串，其他校验通过 | 判为用户委托 token，放行 |
+| 真实应用 token 的 `sub` 或 `client_id` 缺失、为空或不是字符串，或 `username` 缺失、为 `null` 或其他非字符串 | 模式为 `unknown`，401；personal/public 不受影响 |
 | 用户认证资源：免用户认证应用、skip 命中的用户委托 token | 仍要求有效用户 |
 | 仅应用认证资源：有权应用的应用 token，aud 命中 | 通过；后端 JWT 中用户为空且未认证，不出现 `client_id` 作为用户名 |
 | 仅应用认证资源：无权应用的应用 token（白名单开启） | 拒绝 |
@@ -699,7 +700,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 仅应用认证资源：用户委托 token | 401 ＋ `WWW-Authenticate`，原因为只接受应用 token（完整插件链验证） |
 | 仅应用认证资源：query/body 应用凭证、`X-Bkapi-Authorization`、非 bkauth Bearer | 走旧流程，结果与改造前一致，非 bkauth Bearer 透传 |
 | OAuth 授权关闭时的用户委托 token | 拒绝；personal/public 不受影响 |
-| 网关关闭开关并重新发布后的用户委托 token、应用 token | 拒绝；旧认证头与 personal/public 不受影响 |
+| 网关关闭开关并重新发布后的用户委托 token、应用 token | 拒绝；同时不满足用户要求时由 `bk-auth-validate` 先返回用户校验错误。旧认证头与 personal/public 不受影响 |
 | 多租户：用户委托 token 应用租户与网关租户不匹配 | 由现有多租户插件拒绝 |
 | 只开启应用通道的路由：query/body 认证参数、无凭证 | 走旧流程，结果与改造前一致 |
 | 开启 personal/public 的路由：无凭证 | 401 和 WWW-Authenticate（不变） |
@@ -718,8 +719,8 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 修改前缀配置 | 重新加载配置后生效，不需要改插件代码 |
 | 非法 `prefix_pattern` | 记录 error，跳过该规则，继续匹配后续规则 |
 | `format_pattern` 是字符串但无法编译 | 记录 error，按格式不符返回 401 |
-| `format_pattern` 不是字符串 | 视为未配置格式校验，交给 bkauth 自省 |
-| `bearer_token_rules` 不是列表（布尔、字符串、数字、对象） | 请求阶段按未配置处理（同 nil），加载时记 error 和 warn |
+| 提供了非字符串 `format_pattern` | 加载时记一条 error，命中前缀的 token 按格式不符返回 401 |
+| `bearer_token_rules` 不是列表（布尔、字符串、数字、对象） | 加载时记一条 error，请求阶段按未配置处理（同 nil） |
 | 插件加载：规则非法（非列表、非对象、正则非字符串或不可编译） | 每个问题记一条 error，启动不受影响；规则未配置记 warn |
 | 未配置 `bearer_token_rules`：只开启应用通道的路由收到任意 Bearer | 走旧流程，按资源要求认证 |
 | 未配置 `bearer_token_rules`：personal/public 路由收到任意 Bearer | 进入 OAuth2 流程（与改造前一致） |
@@ -749,11 +750,11 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 问题 | 负责方 | 影响 |
 | --- | --- | --- |
 | 用户委托 token 的 audience 能否带上 `gateway:{网关}/api:{资源}` | bkauth | 不能则 audience 校验全部拒绝 |
-| 是否为普通蓝鲸应用签发应用 token（`client_credentials` grant）；其 audience 能否按 `app_only` scope 选择并带上 `gateway:{网关}/api:{资源}`；自省是否满足 `sub` 等于 `client_id`、`username` 为空 | bkauth | 决定本期仅应用认证资源的 Bearer 调用能否打通 |
+| 是否为普通蓝鲸应用签发应用 token（`client_credentials` grant）；签发后验证自省字段符合 4.2，确认其 audience 能否按 `app_only` scope 选择并带上 `gateway:{网关}/api:{资源}` | bkauth | 决定本期仅应用认证资源的 Bearer 调用能否打通 |
 | 应用 token 调用 MCP 应用态入口时带哪种 audience：`mcp:{name}` / `mcp:*`，或 `bk-apigateway` 网关范围 audience（MCP scope 不新增 `app_only`） | bkauth | 两者网关都接受（第 8 节）；都拿不到则 MCP 应用态入口的 Bearer 调用被 audience 校验拒绝 |
 | 签发约定：`gateway:*`、`gateway:bk-apigateway/api:*` 这类宽 audience 也覆盖所有 MCP 入口，MCP Server 权限由 mcp-proxy 判断 | bkauth | 授权页需向用户说明宽 audience 的覆盖面 |
 | scope 是各环境的并集，同一资源可能同时出现在 `app_delegated` 和 `app_only` 下；lookup 只显示所读版本的模式 | bkauth | 授权页不能假设两种类型互斥（5.5） |
-| 用户委托/应用模式的判定字段（`sub`、`client_id`、`username`）是否稳定；个人令牌（含 `tai_pat_`）是否总带 `client_id` | bkauth | 决定 4.2 第 2 步能否覆盖存量 token；缺字段的个人令牌可能被误判为应用模式而拒绝 |
+| 用户委托/应用模式的判定字段（`sub`、`client_id`、`username`）是否稳定；个人令牌（含 `tai_pat_`）是否总带 `client_id` | bkauth | 确认存量 token 的自省字段；personal/public 仍按各自规则校验 |
 | `app_delegated` / `app_only` scope 规模与授权页分页；scope 类型取值对齐 | bkauth | 5.5 |
 | 网关开关在 scope 上立即生效、数据面需重新发布的时间差；非公开对象手填与资源 lookup 新字段 | bkauth | 5.5 |
 | 是否签发 `gateway:*` / `mcp:*` 通配 audience | bkauth | 通配 audience 覆盖面 |
@@ -768,7 +769,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | I6 | `client_id` 与 `bk_app_code` 各自保留语义，应用身份以自省返回的 `bk_app_code` 为准 |
 | I10 | `auth_verified_required`、`app_verified_required` 在资源快照中始终存在，缺省差异无需处理 |
 | I14 | 保留 personal/public 必须开启用户认证的规则；现网无违反该规则的历史快照 |
-| Δ3 | bkauth 确认 personal/public token 不会同时满足 `sub == client_id` 且 `username` 为空，沿用当前模式判定 |
+| Δ3 | bkauth 确认 personal/public token 不会同时满足 `sub == client_id` 且 `username` 为空，沿用 personal/public 的校验规则 |
 | D4 / D8 | 已确认没有业务依赖 bkauth Bearer 透传给后端 |
 
 已确认（bkauth，2026-11-17）：
@@ -778,6 +779,8 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 存量 personal/public token 是否都符合 `bk[oprs]_[0-9A-Za-z]{36}` 或 `tai_pat_` | 是 | 前缀匹配不影响存量 personal/public 调用 |
 | `tai_pat_` token 的来源，是否走同一个 bkauth 自省接口、返回字段是否一致 | bkauth 对接外部认证太湖签发；与 bkauth token 走相同的认证接口，返回字段一致 | 复用同一校验链（4.2），网关不单独处理；前缀之后的格式未约定，不配置本地格式校验，由自省判定 |
 | 类型码 `r` 是否是 refresh token，自省是否拒绝其作为 access token | 是 | `bkr_` 命中前缀后交给自省，由自省拒绝，网关不单独处理 |
+
+已确认（2026-11-19 评审）：应用自身 token 的自省 `username` 是空字符串 `""`，SaaS 用户委托 token 的 `sub` 可能等于 `client_id`。
 
 已确认（网关运维，2026-11-17）：
 
@@ -832,12 +835,12 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 旧路由＋新插件（PR-1） | 接受相对 `master` 的变化：personal/public 路由按 bkauth 规则分流，未命中规则的 Bearer 视同无凭证；网关开关只关闭真实应用 token |
 | 规则缺失兜底（D1） | 未配置 `bearer_token_rules` 时，只开启应用通道的路由不拦截 Bearer，交给旧流程 |
 | 失败响应（I3） | token 模式不匹配两个方向、真实应用 `unknown` 都返回 401 ＋ `WWW-Authenticate`；audience 不匹配 403；旧链路与 personal/public 不变 |
-| 模式判定（I5） | `sub`/`client_id`/`username` 缺失、空、`null`、非字符串都归为 `unknown`；verify 识别，validate 拒绝真实应用的 `unknown` |
+| 模式判定（I5 / #208 评审） | 按 4.2 判定 `delegated`、`app` 或 `unknown`。真实应用的 `unknown` 返回 401 |
 | 回滚恢复范围（PR-3） | `ReleaseHistory` ∪ `Release.updated_time` 的数据库候选，再并上 etcd 原始路由扫描（显式字段，false 也计入）；核验 etcd 与 APISIX 加载后才降级插件；空清单不调用旧命令 |
 | 再次升级（PR-4） | `sync_released_resource --oauth2-app-flags` 原地补算投影，可重复执行，不删除投影 |
 | 0059（I11） | 主键分页回填；保留 `db_default`；DDL 用普通 `AddField`/`AddIndex`，不再先探测再执行 |
 | v2 申请列表（I7 / I8） | 所有 `P=0` 的公开资源（含无需认证）都返回 `unlimited`；v1 不变，注释说明差异 |
-| 规则加载时校验（R2） | 插件 `init()` 校验规则并记日志，不阻止启动、不改请求时行为；请求时 error 日志保留 |
+| 规则加载时校验（R2 / #208 评审） | 插件 `init()` 校验并保存规则，按 7.1 记录配置问题，插件继续启动 |
 | 投影与 `bk-access-token-source`（PR-2 / PR-7） | 绑定该插件即不开放应用通道，不区分 `source`、`allow_fallback`（严格 API Key 会在 OAuth2 校验前返回 400）；规则同时作用于路由与投影推导，scope、lookup、回填、补算一致；Web 只读字段仍为 U && A |
 | 跨环境 scope（PR-5） | 接受各环境并集；不承诺两种类型互斥，实际以目标环境路由为准 |
 | MCP audience（PR-6） | 不改代码：MCP 入口同时接受 `mcp:*` 类和网关范围 audience，MCP Server 权限由 mcp-proxy 负责；同步 bkauth 签发约定 |
