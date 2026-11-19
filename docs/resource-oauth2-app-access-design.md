@@ -54,8 +54,8 @@ Authorization: Bearer ─┘
 | --- | --- | --- |
 | `bk-oauth2-protected-resource` | 有旧头即走旧流程；两种头都没有时返回 401（仅用户认证且带登录态 cookie 例外） | 标记 OAuth2 流程 |
 | `bk-auth-verify` / `bk-oauth2-verify` | 旧流程校验 app_code+secret、SSM access_token、JWT、登录态 | bkauth 自省；`app.verified` 恒为 true |
-| `bk-oauth2-appcode-validate` | 跳过 | 只放行 `public`/`personal` |
 | `bk-auth-validate` | 按 `verified_app_required`/`verified_user_required` 校验 | 同样执行 |
+| `bk-oauth2-appcode-validate` | 跳过 | 只放行 `public`/`personal` |
 | `bk-permission` | 按 app_code 查权限，受 `resource_perm_required` 控制 | 同样执行 |
 
 结论：
@@ -225,14 +225,15 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
    - 资源要求用户（`verified_user_required=true`）：只接受用户委托 token，且必须有有效用户，不受免用户认证名单和 `skip_auth_verification` 影响；应用 token 拒绝。
    - 资源不要求用户（仅应用认证）：只接受应用 token；用户委托 token 拒绝。
 5. audience 覆盖当前资源（`gateway:{网关}/api:{资源}` 或通配）。应用 token 同样校验。MCP 入口另外接受 `mcp:{name}` / `mcp:*`（第 8 节）。
-6. `resource_perm_required=true` 时，按真实 app_code 查网关级/资源级权限（与旧入口同一份数据）。
+6. OAuth2 校验通过后，`bk-auth-validate` 按资源配置检查应用和用户。
+7. `resource_perm_required=true` 时，按真实 app_code 查网关级/资源级权限（与旧入口同一份数据）。
 
 - 模式判定的边界：`sub` 或 `client_id` 缺失、为空或不是字符串，或者 `username` 缺失、为 JSON `null` 或其他非字符串时，模式归为 `unknown`。职责划分为：`bk-oauth2-verify` 获取自省结果、识别模式并写上下文 `bk_oauth2_token_mode`；`bk-oauth2-appcode-validate` 拒绝真实应用的 `unknown`。`unknown` 的拒绝**只针对真实应用**，personal/public 沿用现有校验，不看 token 模式（bkauth 已确认 personal/public token 不会同时满足 `sub == client_id` 且 `username` 为空）。
 - 应用身份以自省返回的 `bk_app_code` 为准；`client_id` 只参与模式判定，两者各自保留原语义。
 - 失败响应：
-  - token 模式与资源要求不匹配（两个方向）、真实应用的 `unknown`、应用码不被允许：`401` ＋ `WWW-Authenticate: Bearer ... error="invalid_token"`，`error_description` 和响应体的 `reason` 写明原因，例如 “the resource requires a user, only OAuth2 delegated tokens are allowed: bk_app_code=..., token_mode=app”。`bk-auth-validate`（优先级 17680）先于 `bk-oauth2-appcode-validate`（17678）执行，因此通用用户校验失败时由前者返回错误。应用通道同时关闭时，也按插件执行顺序返回先遇到的错误。
-  - audience 不匹配：仍为 `403`（`invalid_audience`）。
-  - 旧认证链路、personal/public 缺少用户：保持原有 `400`/`500`，不改。
+  - token 模式与资源要求不匹配（两个方向）、真实应用的 `unknown`、应用码不被允许：`401` ＋ `WWW-Authenticate: Bearer ... error="invalid_token"`，`error_description` 和响应体的 `reason` 写明原因，例如 “the resource requires a user, only OAuth2 delegated tokens are allowed: bk_app_code=..., token_mode=app”。`bk-oauth2-appcode-validate`（17685）先检查客户端准入和 token 模式，`bk-oauth2-audience-validate`（17684）再检查 audience，随后执行 `bk-auth-validate`（17680）。多项同时失败时，返回最先失败的检查结果。
+  - audience 不匹配：返回 `401 invalid_token`，并附带 `WWW-Authenticate`。
+  - 旧认证链路，以及通过 OAuth2 入口校验的 personal/public 调用，缺少用户时仍按通用检查返回 `400`/`500`。
 - 应用 token 不带用户：`bk-oauth2-verify` 不得把 `sub`（等于 `client_id`）当作用户名写入上下文，后端收到的网关 JWT 中用户为空且未认证，与旧入口只带应用凭证的调用一致。
 - `bk[oprs]_` 与 `tai_pat_` 两类 token 走同一条校验链，网关不按前缀区别对待。
 - 多租户：沿用现有多租户插件，按自省得到的 `bk_app_code` 校验应用租户，不新增逻辑。
@@ -455,10 +456,11 @@ python manage.py sync_released_resource --all --oauth2-app-flags
 | `bk-components/bkauth.lua` | 保留 `sub`（`bk_username`）、`client_id` 及原始 `username`（`bk_login_name`）。显式空字符串与缺字段分别处理 |
 | `bk-oauth2-verify` | 按 4.2 识别用户委托/应用/`unknown` 模式并写入 `bk_oauth2_token_mode`；应用 token 不设置用户；删除已消费的 `Authorization`，避免透传后端 |
 | `bk-oauth2-appcode-validate` | 新增 `support_app`（默认 false）：真实 app_code；按路由 `verified_user_required` 决定接受的模式——要求用户时只接受用户委托 token 且有有效用户，不要求用户时只接受应用 token；`unknown` 拒绝；失败 401（4.2） |
-| `bk-auth-validate` | 真实应用的 OAuth2 token 忽略免用户认证名单和 `skip_user_verification`；要求用户的资源缺少有效用户时返回 401 ＋ `WWW-Authenticate`，与 appcode-validate 同一文案；旧链路和 personal/public 保持 400/500 |
+| `bk-oauth2-audience-validate` | 在客户端和 token 模式校验之后、通用认证检查之前校验 audience。失败返回 `401 invalid_token` |
+| `bk-auth-validate` | 保持通用应用和用户检查。真实应用 OAuth2 的模式和有效用户要求由前置的 appcode 插件校验，旧链路的豁免配置无法绕过该检查 |
 | `bk-oauth2-protected-resource` | 只把命中规则的 Bearer 识别为 OAuth2 凭证，其他 Bearer 视同无 OAuth2 凭证；新增 `challenge_on_missing_credential`（默认 true），区分“缺少凭证时返回 401”和“交给旧流程”；规则缺失且为 false 时不拦截 Bearer（4.1）；新增 `init()` 加载时校验规则 |
 | `bk-permission` | 不改，继续受 `resource_perm_required` 控制 |
-| `bk-core` | `config.get_oauth2_bearer_token_rules`、`oauth2.classify_bearer_token`、`oauth2.get_user_required_token_reject_reason`、`oauth2.validate_bkauth_bearer_token_rules` |
+| `bk-core` | `config.get_oauth2_bearer_token_rules`、`oauth2.classify_bearer_token`、`oauth2.validate_bkauth_bearer_token_rules` |
 
 部署配置路径为 `bk_gateway.bk_oauth2.bearer_token_rules`，由 Helm 下发，不在代码中硬编码：
 
@@ -494,7 +496,7 @@ challenge_on_missing_credential = support_public or support_personal
 | 绑定（任意 `source`、`allow_fallback`），已开启 personal/public | `support_app=false` | 按 personal/public 原有条件下发 |
 | 未绑定 | 按网关开关、A 和数据面版本判断 | 按原有注入逻辑 |
 
-- 标准资源和 AI 资源同一条件；APISIX 插件优先级不变。
+- 标准资源和 AI 资源使用同一注入条件。APISIX 校验顺序见 4.2。
 - 资源表单仍可勾选“OAuth 授权”。屏蔽同时作用于路由下发和 `ReleasedResource` 投影：`core.managers.released_resource_binds_access_token_source` 按资源快照的 `plugins` 做同一判断，两列都为 false，scope、lookup 不列出。Web 只读的 `auth_config.oauth2_app_delegated_enabled` 仍按 U && A 推导，不受影响。
 - 只有一处推导：controller 的 `support_app` 直接复用 `core.managers.get_released_resource_oauth2_app_flags`（A && 未绑定），与投影列一致；`core` 不能依赖 `apps`，插件类型常量 `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE` 由单测锁定与 `PluginTypeCodeEnum` 一致。
 
@@ -647,7 +649,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 文档 | `data/apidocs/zh/` 下 `v2_sync_gateway.md`、`v2_inner_list_oauth2_resource_scopes.md`、`v2_inner_list_oauth2_mcp_server_scopes.md`、`v2_inner_lookup_gateway_released_resources.md`、`v2_inner_list_gateway_released_resources.md`、`v2_inner_list_gateway_permission_resources.md`；仓库根 `docs/ddd-ubiquitous-language.md`；相关模块的 `AGENTS.md` |
 | 前端 | 不在 #3543 范围；表单与提示文案按 3.1、4.4 另行交接 |
 | mcp-proxy | 不改 |
-| APISIX（#208） | `bk-core/config.lua`、`bk-core/oauth2.lua`、`bk-components/bkauth.lua`、`bk-oauth2-protected-resource`（含 `init()` 规则校验）、`bk-oauth2-verify`、`bk-oauth2-appcode-validate`、`bk-auth-validate`，以及对应 Busted、test-nginx（含完整插件链 `t/bk-oauth2-token-mode-chain.t`）和 `ci/run-test-nginx.sh` 的测试规则；`bk-oauth2-audience-validate` 不改，补 MCP 路径网关范围 audience 的单测 |
+| APISIX（#208） | `bk-core/config.lua`、`bk-core/oauth2.lua`、`bk-components/bkauth.lua`、`bk-oauth2-protected-resource`（含 `init()` 规则校验）、`bk-oauth2-verify`、`bk-oauth2-appcode-validate`、`bk-oauth2-audience-validate`，以及对应 Busted、test-nginx（含完整插件链 `t/bk-oauth2-token-mode-chain.t`）和 `ci/run-test-nginx.sh` 的测试规则，并覆盖 MCP 路径的网关范围 audience |
 
 上表 Dashboard 路径相对 `src/dashboard/apigateway/apigateway/`。
 
@@ -696,11 +698,11 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 用户认证资源：免用户认证应用、skip 命中的用户委托 token | 仍要求有效用户 |
 | 仅应用认证资源：有权应用的应用 token，aud 命中 | 通过；后端 JWT 中用户为空且未认证，不出现 `client_id` 作为用户名 |
 | 仅应用认证资源：无权应用的应用 token（白名单开启） | 拒绝 |
-| 仅应用认证资源：应用 token 的 aud 不含该资源 | 403（`invalid_audience`） |
+| 仅应用认证资源：应用 token 的 aud 不含该资源 | 401（`invalid_token`） |
 | 仅应用认证资源：用户委托 token | 401 ＋ `WWW-Authenticate`，原因为只接受应用 token（完整插件链验证） |
 | 仅应用认证资源：query/body 应用凭证、`X-Bkapi-Authorization`、非 bkauth Bearer | 走旧流程，结果与改造前一致，非 bkauth Bearer 透传 |
 | OAuth 授权关闭时的用户委托 token | 拒绝；personal/public 不受影响 |
-| 网关关闭开关并重新发布后的用户委托 token、应用 token | 拒绝；同时不满足用户要求时由 `bk-auth-validate` 先返回用户校验错误。旧认证头与 personal/public 不受影响 |
+| 网关关闭开关并重新发布后的用户委托 token、应用 token | 拒绝。如果路由因启用 personal/public 仍下发 OAuth2 插件，优先返回应用通道未开启。旧认证头与获准的 personal/public 不受开关影响 |
 | 多租户：用户委托 token 应用租户与网关租户不匹配 | 由现有多租户插件拒绝 |
 | 只开启应用通道的路由：query/body 认证参数、无凭证 | 走旧流程，结果与改造前一致 |
 | 开启 personal/public 的路由：无凭证 | 401 和 WWW-Authenticate（不变） |
@@ -834,7 +836,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 应用通道注入 | `support_app = 网关开关 && A && 未绑定 bk-access-token-source`，覆盖用户认证与仅应用认证；接受的 token 模式由 `verified_user_required` 决定，Dashboard 不下发 token 类型，将来扩展只升级插件 |
 | 旧路由＋新插件（PR-1） | 接受相对 `master` 的变化：personal/public 路由按 bkauth 规则分流，未命中规则的 Bearer 视同无凭证；网关开关只关闭真实应用 token |
 | 规则缺失兜底（D1） | 未配置 `bearer_token_rules` 时，只开启应用通道的路由不拦截 Bearer，交给旧流程 |
-| 失败响应（I3） | token 模式不匹配两个方向、真实应用 `unknown` 都返回 401 ＋ `WWW-Authenticate`；audience 不匹配 403；旧链路与 personal/public 不变 |
+| 失败响应（I3 / #208 评审） | 客户端准入、真实应用 token 模式和 audience 校验失败返回 `401 invalid_token`，优先于通用认证错误。旧链路和 OAuth2 准入通过后的通用认证错误保持原有响应 |
 | 模式判定（I5 / #208 评审） | 按 4.2 判定 `delegated`、`app` 或 `unknown`。真实应用的 `unknown` 返回 401 |
 | 回滚恢复范围（PR-3） | `ReleaseHistory` ∪ `Release.updated_time` 的数据库候选，再并上 etcd 原始路由扫描（显式字段，false 也计入）；核验 etcd 与 APISIX 加载后才降级插件；空清单不调用旧命令 |
 | 再次升级（PR-4） | `sync_released_resource --oauth2-app-flags` 原地补算投影，可重复执行，不删除投影 |
