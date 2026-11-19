@@ -432,7 +432,7 @@ lookup / list 接口输出：
 
 - `Gateway` 新列依靠数据库默认值把存量网关置为开启，不需要回填。
 - `ReleasedResource` 两个新列由迁移 `0059_oauth2_app_access_fields` 回填：非原子，按主键 keyset 分页（`id > last_id ORDER BY id LIMIT 1000`，只取 `id`、`data`），避免 MySQL 客户端缓冲全量快照 JSON；从 `data.contexts.resource_auth.config` 推导 `auth_verified_required and app_verified_required`、`not auth_verified_required and app_verified_required`；快照 `data.plugins` 绑定 `bk-access-token-source` 时两者都为 false（7.2）；两者都为 false 的行不写。
-- `0059` 的三个加列和两个索引用 `SeparateDatabaseAndState`：数据库侧先探测列、索引是否存在再执行，state 侧仍为 `AddField`/`AddIndex`。非原子迁移中途失败后可直接重跑；反向迁移也只删除存在的列和索引。上线前用接近生产的数据量演练索引构建耗时和锁等待（7.5）。
+- `0059` 的三个加列和两个索引使用普通的 `AddField`/`AddIndex`；迁移非原子只为让回填按批提交。上线前用接近生产的数据量演练索引构建耗时和锁等待（7.5）。
 - 发布写入、`0059` 回填、`sync_released_resource --oauth2-app-flags` 补算都调用 `get_released_resource_oauth2_app_flags`，推导结果一致。
 - 不修改任何存量认证配置，不做 `Resource` 层面的数据迁移。
 - 两个新列都必须带数据库级默认值。0056 的列只有 Django 侧 `default=False`，数据库列是 NOT NULL 且无默认值；如果新列也这样，回滚到旧 Dashboard 后，旧代码创建 `Gateway`、写 `ReleasedResource` 时不带该列，会因为 NOT NULL 写入失败，导致创建网关或发布失败。有了数据库默认值，回滚 Dashboard 时可以不执行反向迁移，新列保留即可。
@@ -639,7 +639,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | Web 接口：资源 | `apis/web/resource/serializers.py`（只读推导字段、批量更新的层级约束）、`views.py`（批量更新审计记录实际写入结果）；版本详情 `apis/web/resource_version/serializers.py` |
 | Web 接口：网关 | `apis/web/gateway/serializers.py`、`biz/gateway/gateway.py`（网关开关读写） |
 | 同步/导入 | `apis/v2/sync/serializers.py`（网关同步新增开关）；`apigw-definitions/bk-apigateway-resources.yaml`（接口定义）；openapi schema 不改 |
-| 存储与发布投影 | `core/models.py`（`Gateway`、`ReleasedResource` 新列）、`core/constants.py`、迁移 `0059`（`db_default`、可重跑 DDL、主键分页回填）、`core/managers.py`（投影写入与推导、排除绑定 `bk-access-token-source` 的资源、`refresh_oauth2_app_flags`） |
+| 存储与发布投影 | `core/models.py`（`Gateway`、`ReleasedResource` 新列）、`core/constants.py`、迁移 `0059`（`db_default`、主键分页回填）、`core/managers.py`（投影写入与推导、排除绑定 `bk-access-token-source` 的资源、`refresh_oauth2_app_flags`） |
 | 运维命令 | `controller/management/commands/sync_releases_to_gateway_parallel.py`（`--released-since` 取 `ReleaseHistory` ∪ `Release.updated_time`、`--dry-run`）；`core/management/commands/sync_released_resource.py`（`--oauth2-app-flags` 原地补算） |
 | scope、lookup 与申请列表 | `service/oauth2_client_scope.py`、`service/gateway_released_resource.py`、`apis/v2/inner/serializers.py`、`views.py`（资源 lookup/list 新增两个输出字段、v2 申请列表规则 5.6）；`apis/open/permission/views.py`（v1 差异注释） |
 | 下发 | `controller/convertor/route.py`（读取网关开关、`support_app`、`bk-access-token-source` 屏蔽、`challenge_on_missing_credential`）、`fixtures/plugins.yaml` |
@@ -736,7 +736,6 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 新插件＋不带新字段的旧路由配置：personal/public 路由 | 命中规则的 Bearer 与改造前一致；未命中规则的 Bearer 视同无凭证，有符合条件的 cookie 时走 cookie 认证，否则 401 挑战（7.3） |
 | 同一新插件和规则下显式下发 `challenge_on_missing_credential: true`、`support_app: false` | 与省略这两个字段相同 |
 | 迁移后用旧版 Dashboard 代码发布 | `ReleasedResource` 写入成功，新列取数据库默认值 false |
-| `0059` 中途失败（部分列、索引已建）后重跑 | 成功，列与索引齐全 |
 | 回滚演练：新 Dashboard 发布后回滚 Dashboard，并用旧 Dashboard 重新发布 | etcd 路由不含 `support_app` 和 `challenge_on_missing_credential`；旧插件下 query/body 认证调用正常 |
 | 回滚候选：只有 CLI 重发、无新增 `ReleaseHistory` 的网关 | `--released-since` 通过 `Release.updated_time` 列出 |
 | 回滚候选：新字段已写入 etcd、数据库无更新 | 由 etcd 原始路由扫描发现（7.4 第 3 步） |
@@ -836,7 +835,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 模式判定（I5） | `sub`/`client_id`/`username` 缺失、空、`null`、非字符串都归为 `unknown`；verify 识别，validate 拒绝真实应用的 `unknown` |
 | 回滚恢复范围（PR-3） | `ReleaseHistory` ∪ `Release.updated_time` 的数据库候选，再并上 etcd 原始路由扫描（显式字段，false 也计入）；核验 etcd 与 APISIX 加载后才降级插件；空清单不调用旧命令 |
 | 再次升级（PR-4） | `sync_released_resource --oauth2-app-flags` 原地补算投影，可重复执行，不删除投影 |
-| 0059（I11） | 主键分页回填；DDL 先探测再执行，可中断重跑；保留 `db_default` |
+| 0059（I11） | 主键分页回填；保留 `db_default`；DDL 用普通 `AddField`/`AddIndex`，不再先探测再执行 |
 | v2 申请列表（I7 / I8） | 所有 `P=0` 的公开资源（含无需认证）都返回 `unlimited`；v1 不变，注释说明差异 |
 | 规则加载时校验（R2） | 插件 `init()` 校验规则并记日志，不阻止启动、不改请求时行为；请求时 error 日志保留 |
 | 投影与 `bk-access-token-source`（PR-2 / PR-7） | 绑定该插件即不开放应用通道，不区分 `source`、`allow_fallback`（严格 API Key 会在 OAuth2 校验前返回 400）；规则同时作用于路由与投影推导，scope、lookup、回填、补算一致；Web 只读字段仍为 U && A |

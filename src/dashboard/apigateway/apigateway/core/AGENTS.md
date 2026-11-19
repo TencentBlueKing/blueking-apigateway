@@ -38,9 +38,9 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
   (`support_app`).
 - The `db_default`s are what lets a rolled-back Dashboard keep `0059`; do not
   drop them.
-- `0059` is non-atomic. Its DDL uses `SeparateDatabaseAndState` and checks for
-  the column or index before creating it. The backfill pages by primary key and
-  reads only `id` and `data`. Keep it re-runnable after a partial failure.
+- `0059` uses plain `AddField`/`AddIndex`. It is non-atomic so the backfill
+  commits batch by batch; the backfill pages by primary key and reads only `id`
+  and `data`.
 - After a rollback that kept `0059`, the old Dashboard writes new projections
   with `false`. On the next upgrade, run
   `sync_released_resource --all --oauth2-app-flags` (`--dry-run` first). It

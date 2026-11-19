@@ -24,85 +24,10 @@ from apigateway.core.managers import get_released_resource_oauth2_app_flags
 
 BATCH_SIZE = 1000
 APP_FLAG_FIELDS = ["oauth2_app_delegated_enabled", "oauth2_app_only_enabled"]
-APP_SCOPE_INDEXES = {
-    "rr_oauth_app_dlg_scope_idx": "oauth2_app_delegated_enabled",
-    "rr_oauth_app_only_scope_idx": "oauth2_app_only_enabled",
-}
-
-# The migration is not atomic: a partial failure may leave some DDL applied.
-# Every database step checks the current schema first so the migration can be re-run.
-
-
-def _column_names(schema_editor, model):
-    with schema_editor.connection.cursor() as cursor:
-        return {
-            column.name
-            for column in schema_editor.connection.introspection.get_table_description(cursor, model._meta.db_table)
-        }
-
-
-def _constraint_names(schema_editor, model):
-    with schema_editor.connection.cursor() as cursor:
-        return set(schema_editor.connection.introspection.get_constraints(cursor, model._meta.db_table))
-
-
-def _make_boolean_field(model, field_name, default):
-    # db_default lets rolled-back Dashboard code, which does not know the column, still insert rows
-    field = models.BooleanField(default=default, db_default=default)
-    field.set_attributes_from_name(field_name)
-    field.model = model
-    return field
-
-
-def _make_index(name):
-    return models.Index(
-        fields=[APP_SCOPE_INDEXES[name], "is_public", "gateway", "resource_version_id", "resource_id"],
-        name=name,
-    )
-
-
-def _add_field_operation(model_name, field_name, default):
-    def forwards(apps, schema_editor):
-        model = apps.get_model("core", model_name)
-        if field_name not in _column_names(schema_editor, model):
-            schema_editor.add_field(model, _make_boolean_field(model, field_name, default))
-
-    def backwards(apps, schema_editor):
-        model = apps.get_model("core", model_name)
-        if field_name in _column_names(schema_editor, model):
-            schema_editor.remove_field(model, _make_boolean_field(model, field_name, default))
-
-    return migrations.SeparateDatabaseAndState(
-        database_operations=[migrations.RunPython(forwards, backwards)],
-        state_operations=[
-            migrations.AddField(
-                model_name=model_name.lower(),
-                name=field_name,
-                field=models.BooleanField(db_default=default, default=default),
-            ),
-        ],
-    )
-
-
-def _add_index_operation(name):
-    def forwards(apps, schema_editor):
-        model = apps.get_model("core", "ReleasedResource")
-        if name not in _constraint_names(schema_editor, model):
-            schema_editor.add_index(model, _make_index(name))
-
-    def backwards(apps, schema_editor):
-        model = apps.get_model("core", "ReleasedResource")
-        if name in _constraint_names(schema_editor, model):
-            schema_editor.remove_index(model, _make_index(name))
-
-    return migrations.SeparateDatabaseAndState(
-        database_operations=[migrations.RunPython(forwards, backwards)],
-        state_operations=[migrations.AddIndex(model_name="releasedresource", index=_make_index(name))],
-    )
 
 
 def backfill_released_resource_app_flags(apps, schema_editor):
-    """Page by primary key so MySQL does not buffer every snapshot JSON; safe to re-run"""
+    """Page by primary key so MySQL does not buffer every snapshot JSON"""
     ReleasedResource = apps.get_model("core", "ReleasedResource")
     last_id = 0
     while True:
@@ -128,21 +53,43 @@ def backfill_released_resource_app_flags(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # commit the backfill batch by batch instead of updating every ReleasedResource in one transaction
     atomic = False
 
     dependencies = [
         ("core", "0058_resource_deprecation"),
     ]
 
+    # db_default lets rolled-back Dashboard code, which does not know the columns, still insert rows
     operations = [
-        _add_field_operation("Gateway", "oauth2_app_enabled", True),
-        _add_field_operation("ReleasedResource", "oauth2_app_delegated_enabled", False),
-        _add_field_operation("ReleasedResource", "oauth2_app_only_enabled", False),
-        migrations.RunPython(
-            backfill_released_resource_app_flags,
-            migrations.RunPython.noop,
-            atomic=False,
+        migrations.AddField(
+            model_name="gateway",
+            name="oauth2_app_enabled",
+            field=models.BooleanField(db_default=True, default=True),
         ),
-        _add_index_operation("rr_oauth_app_dlg_scope_idx"),
-        _add_index_operation("rr_oauth_app_only_scope_idx"),
+        migrations.AddField(
+            model_name="releasedresource",
+            name="oauth2_app_delegated_enabled",
+            field=models.BooleanField(db_default=False, default=False),
+        ),
+        migrations.AddField(
+            model_name="releasedresource",
+            name="oauth2_app_only_enabled",
+            field=models.BooleanField(db_default=False, default=False),
+        ),
+        migrations.RunPython(backfill_released_resource_app_flags, migrations.RunPython.noop),
+        migrations.AddIndex(
+            model_name="releasedresource",
+            index=models.Index(
+                fields=["oauth2_app_delegated_enabled", "is_public", "gateway", "resource_version_id", "resource_id"],
+                name="rr_oauth_app_dlg_scope_idx",
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="releasedresource",
+            index=models.Index(
+                fields=["oauth2_app_only_enabled", "is_public", "gateway", "resource_version_id", "resource_id"],
+                name="rr_oauth_app_only_scope_idx",
+            ),
+        ),
     ]

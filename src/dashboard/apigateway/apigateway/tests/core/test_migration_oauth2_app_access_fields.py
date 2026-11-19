@@ -23,7 +23,6 @@ from types import SimpleNamespace
 import pytest
 from django.db import connections
 from django.db.migrations.executor import MigrationExecutor
-from django.db.migrations.recorder import MigrationRecorder
 
 pytestmark = [pytest.mark.migration, pytest.mark.django_db(transaction=True)]
 
@@ -177,37 +176,6 @@ def test_oauth2_app_access_fields_backfill_db_defaults_and_reverse():
         executor.migrate(MIGRATE_FROM)
         assert APP_FLAG_FIELDS.isdisjoint(_column_names(connection, new_released_resource_model._meta.db_table))
         assert "oauth2_app_enabled" not in _column_names(connection, new_gateway_model._meta.db_table)
-    finally:
-        executor = MigrationExecutor(connection)
-        executor.migrate(latest_migrations)
-
-
-def test_oauth2_app_access_fields_rerun_after_partial_ddl():
-    connection = connections["default"]
-    executor = MigrationExecutor(connection)
-    latest_migrations = executor.loader.graph.leaf_nodes()
-
-    try:
-        executor.migrate(MIGRATE_FROM)
-        executor = MigrationExecutor(connection)
-        executor.migrate(MIGRATE_TO)
-
-        # Simulate a non-atomic run that failed after the first column and index were created.
-        model = executor.loader.project_state(MIGRATE_TO).apps.get_model("core", "ReleasedResource")
-        only_index = next(idx for idx in model._meta.indexes if idx.name == "rr_oauth_app_only_scope_idx")
-        with connection.schema_editor() as schema_editor:
-            schema_editor.remove_index(model, only_index)
-            schema_editor.remove_field(model, model._meta.get_field("oauth2_app_only_enabled"))
-        MigrationRecorder(connection).record_unapplied(*MIGRATE_TO[0])
-
-        table = model._meta.db_table
-        assert "oauth2_app_only_enabled" not in _column_names(connection, table)
-
-        executor = MigrationExecutor(connection)
-        executor.migrate(MIGRATE_TO)
-
-        assert _column_names(connection, table) >= APP_FLAG_FIELDS
-        assert _constraint_names(connection, table) >= INDEX_NAMES
     finally:
         executor = MigrationExecutor(connection)
         executor.migrate(latest_migrations)
