@@ -436,7 +436,7 @@
     description_en: OAuth2 audience validate plugin
     is_public: false
     scope: resource
-    priority: 17677
+    priority: 17684
     _tags: "认证,Authentication"
     schema: null
 - model: schema.schema
@@ -476,7 +476,7 @@
     description_en: OAuth2 app code validate plugin
     is_public: false
     scope: resource
-    priority: 17678
+    priority: 17685
     _tags: "认证,Authentication"
     schema:
     - bk-oauth2-appcode-validate
