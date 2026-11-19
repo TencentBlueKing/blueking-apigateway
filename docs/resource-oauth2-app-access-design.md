@@ -716,7 +716,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | MCP 用户态入口：用户委托 token 的 aud 不含该 Server | 网关拒绝 |
 | MCP 应用态入口：有 MCP Server 权限的应用的应用 token，aud 为 `mcp:{name}` | 通过 |
 | MCP 应用态入口：用户委托 token | 网关拒绝 |
-| MCP 入口：aud 为 `gateway:*`、`gateway:bk-apigateway/api:*` 或该入口资源 | 网关放行，由 mcp-proxy 校验 MCP Server 权限；其他网关的 aud 403 |
+| MCP 入口：aud 为 `gateway:*`、`gateway:bk-apigateway/api:*` 或该入口资源 | 网关放行，由 mcp-proxy 校验 MCP Server 权限；其他网关的 aud 401（`invalid_token`） |
 | MCP 应用态入口：旧认证头调用 | 行为不变 |
 | 新插件＋不带新字段的旧路由配置：无 OAuth2 插件的路由 | 与改造前一致 |
 | 新插件＋不带新字段的旧路由配置：personal/public 路由 | 命中规则的 Bearer 与改造前一致；未命中规则的 Bearer 视同无凭证，有符合条件的 cookie 时走 cookie 认证，否则 401 挑战（7.3） |
