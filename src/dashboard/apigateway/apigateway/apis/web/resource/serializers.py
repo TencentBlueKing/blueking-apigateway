@@ -58,6 +58,10 @@ if TYPE_CHECKING:
     from apigateway.apps.plugin.models import PluginConfig
 
 RESOURCE_AUTH_REQUIREMENT_FIELDS = ("auth_verified_required", "app_verified_required", "resource_perm_required")
+RESOURCE_AUTH_CONFIG_HELP_TEXT = (
+    "认证配置。oauth2_app_delegated_enabled 为只读字段，仅表示编辑态同时要求用户认证和应用认证，"
+    "不考虑网关 OAuth 应用通道开关和 bk-access-token-source 插件绑定。"
+)
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):
@@ -98,7 +102,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     backend = serializers.SerializerMethodField(help_text="后端服务")
     has_updated = serializers.SerializerMethodField(help_text="相对上次发布，是否有更新，true：有更新，false：无更新")
     plugin_count = serializers.SerializerMethodField(help_text="插件数量")
-    auth_config = serializers.SerializerMethodField(help_text="认证配置")
+    auth_config = serializers.SerializerMethodField(help_text=RESOURCE_AUTH_CONFIG_HELP_TEXT)
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceListOutputSLZ"
@@ -487,7 +491,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
 
 class ResourceOutputSLZ(serializers.ModelSerializer):
-    auth_config = serializers.SerializerMethodField(help_text="认证配置")
+    auth_config = serializers.SerializerMethodField(help_text=RESOURCE_AUTH_CONFIG_HELP_TEXT)
     backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
     schema = serializers.SerializerMethodField(help_text="参数协议")
