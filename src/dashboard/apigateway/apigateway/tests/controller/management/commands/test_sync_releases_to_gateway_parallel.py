@@ -1,7 +1,10 @@
 import datetime
+import json
+import multiprocessing
 import os
 import shutil
 import subprocess
+import sys
 from io import StringIO
 from pathlib import Path
 from unittest import mock
@@ -19,7 +22,12 @@ pytestmark = pytest.mark.django_db
 # 与设计文档 7.4 回滚第 5 步的脚本保持逐字一致
 RESTORE_RUNBOOK_SNIPPET = """read -r -d '' -a gateway_names < gateways.txt || true
 if [ "${#gateway_names[@]}" -gt 0 ]; then
-  python manage.py sync_releases_to_gateway_parallel --gateway-names "${gateway_names[@]}"
+  GATEWAY_NAMES="${gateway_names[*]}" python manage.py shell -c '
+import multiprocessing, os
+multiprocessing.set_start_method("fork", force=True)
+from django.core.management import call_command
+call_command("sync_releases_to_gateway_parallel", gateway_names=os.environ["GATEWAY_NAMES"].split())
+'
 else
   echo "no gateway to restore"
 fi
@@ -191,34 +199,57 @@ class TestRestoreRunbook:
         assert RESTORE_RUNBOOK_SNIPPET in DESIGN_DOC.read_text(encoding="utf-8")
 
     @pytest.mark.skipif(shutil.which("bash") is None, reason="bash is required")
+    @pytest.mark.skipif("fork" not in multiprocessing.get_all_start_methods(), reason="fork is required")
     @pytest.mark.parametrize(
-        "content, expected_args",
+        "content, expected_gateways",
         [
             ("", None),
             (" \n\t\n", None),
-            ("gw-a gw-b\n", "manage.py sync_releases_to_gateway_parallel --gateway-names gw-a gw-b"),
+            ("gw-a gw-b\n", ["gw-a", "gw-b"]),
         ],
     )
-    def test_restore_runbook_skips_empty_gateway_list(self, tmp_path, content, expected_args):
+    def test_restore_runbook_invokes_command_only_for_selected_gateways(self, tmp_path, content, expected_gateways):
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
         fake_python = bin_dir / "python"
-        fake_python.write_text('#!/bin/sh\necho "$@" > called.txt\n')
+        fake_python.write_text('#!/bin/sh\nexec "$RUNBOOK_TEST_PYTHON" "$@"\n')
         fake_python.chmod(0o755)
+        (tmp_path / "manage.py").write_text(
+            """import json
+import multiprocessing
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+assert sys.argv[1:3] == ["shell", "-c"]
+with patch("django.core.management.call_command") as call_command:
+    exec(sys.argv[3])
+    args, kwargs = call_command.call_args
+    Path("called.json").write_text(json.dumps([multiprocessing.get_start_method(), args, kwargs]))
+"""
+        )
         (tmp_path / "gateways.txt").write_text(content)
 
         result = subprocess.run(
             ["bash", "-c", RESTORE_RUNBOOK_SNIPPET],
             cwd=tmp_path,
-            env={**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+            env={
+                **os.environ,
+                "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+                "RUNBOOK_TEST_PYTHON": sys.executable,
+            },
             capture_output=True,
             text=True,
             check=True,
         )
 
-        called = tmp_path / "called.txt"
-        if expected_args is None:
+        called = tmp_path / "called.json"
+        if expected_gateways is None:
             assert not called.exists()
             assert result.stdout == "no gateway to restore\n"
         else:
-            assert called.read_text().strip() == expected_args
+            assert json.loads(called.read_text()) == [
+                "fork",
+                ["sync_releases_to_gateway_parallel"],
+                {"gateway_names": expected_gateways},
+            ]
