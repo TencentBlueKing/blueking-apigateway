@@ -493,6 +493,8 @@ class TestRouteConvertor:
             }
         )
         if token_source_config is not None:
+            # ReleaseData 从同一份快照的 plugins 构造 PluginData
+            resource["plugins"] = [{"type": "bk-access-token-source", "config": token_source_config}]
             mock_release_data.get_resource_plugins.return_value = [
                 PluginData("bk-access-token-source", token_source_config, "resource")
             ]
@@ -522,6 +524,8 @@ class TestRouteConvertor:
         resource = _standard_resource()
         resource["contexts"]["resource_auth"]["config"] = json.dumps(
             {
+                "auth_verified_required": True,
+                "app_verified_required": True,
                 "oauth2_public_client_enabled": True,
                 "oauth2_personal_client_enabled": False,
             }

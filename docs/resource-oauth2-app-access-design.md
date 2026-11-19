@@ -486,7 +486,7 @@ inject = (support_public or support_personal or support_app) and apisix_version 
 challenge_on_missing_credential = support_public or support_personal
 ```
 
-`binds_access_token_source`：按**本次发布的资源版本**中的有效插件绑定（`ReleaseData.get_resource_plugins`）判断，资源绑定了 `bk-access-token-source` 即为真，不区分 `source` 和 `allow_fallback`。该插件（优先级 18735）先于 `bk-oauth2-verify`（18732）执行：`source=bearer` 时它把 `Authorization: Bearer` 转换为旧凭证，与新增应用通道争用同一个头；`source=api_key` 且 `allow_fallback=false` 时，只带 Bearer 的请求缺少 `X-API-KEY`，被它直接返回 400。该插件已不公开、使用方为个位数，不再按配置细分，绑定即只关闭新增应用通道：
+`binds_access_token_source`：按**本次发布的资源版本**快照中资源的 `plugins` 绑定判断，资源绑定了 `bk-access-token-source` 即为真，不区分 `source` 和 `allow_fallback`。该插件（优先级 18735）先于 `bk-oauth2-verify`（18732）执行：`source=bearer` 时它把 `Authorization: Bearer` 转换为旧凭证，与新增应用通道争用同一个头；`source=api_key` 且 `allow_fallback=false` 时，只带 Bearer 的请求缺少 `X-API-KEY`，被它直接返回 400。该插件已不公开、使用方为个位数，不再按配置细分，绑定即只关闭新增应用通道：
 
 | 资源绑定情况 | 新应用通道 | 四个 OAuth2 插件 |
 | --- | --- | --- |
@@ -496,7 +496,7 @@ challenge_on_missing_credential = support_public or support_personal
 
 - 标准资源和 AI 资源同一条件；APISIX 插件优先级不变。
 - 资源表单仍可勾选“OAuth 授权”。屏蔽同时作用于路由下发和 `ReleasedResource` 投影：`core.managers.released_resource_binds_access_token_source` 按资源快照的 `plugins` 做同一判断，两列都为 false，scope、lookup 不列出。Web 只读的 `auth_config.oauth2_app_delegated_enabled` 仍按 U && A 推导，不受影响。
-- 两处判断须同步修改：controller 读取本次发布的 `PluginData`，core 读取快照中的绑定；`core` 不能依赖 `apps`，插件类型常量 `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE` 由单测锁定与 `PluginTypeCodeEnum` 一致。
+- 只有一处推导：controller 的 `support_app` 直接复用 `core.managers.get_released_resource_oauth2_app_flags`（A && 未绑定），与投影列一致；`core` 不能依赖 `apps`，插件类型常量 `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE` 由单测锁定与 `PluginTypeCodeEnum` 一致。
 
 - `support_app` 覆盖用户认证（U=1）与仅应用认证（U=0）两种资源；插件结合 `bk-resource-context` 中已有的 `verified_user_required` 决定接受用户委托 token 还是应用 token，Dashboard 不下发 token 类型。
 - 网关开关由 `ReleaseData.gateway` 读取当前值，不来自资源版本快照。

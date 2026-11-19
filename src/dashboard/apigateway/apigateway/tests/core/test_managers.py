@@ -92,6 +92,8 @@ def test_get_released_resource_oauth2_flags_with_missing_config():
         ({"auth_verified_required": True, "app_verified_required": False}, (False, False)),
         ({"auth_verified_required": False, "app_verified_required": False}, (False, False)),
         ({"auth_verified_required": "true", "app_verified_required": 1}, (False, False)),
+        ({}, (True, False)),
+        ({"auth_verified_required": False}, (False, True)),
         ("not-json", (False, False)),
     ],
 )

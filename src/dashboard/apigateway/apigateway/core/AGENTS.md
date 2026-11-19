@@ -22,8 +22,8 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
   `oauth2_app_only_enabled` (!U && A) are projections with `db_default=False`.
   Both are false when the snapshot's `plugins` bind `bk-access-token-source`
   with any `source` or `allow_fallback`
-  (`released_resource_binds_access_token_source`). This mirrors the
-  controller rule that drops `support_app`; change both together. `core`
+  (`released_resource_binds_access_token_source`). The controller derives
+  `support_app` from the same function. `core`
   cannot import `apps`, so the plugin type lives in
   `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE`, pinned by a test.
 - The Web read-only `auth_config.oauth2_app_delegated_enabled` stays U && A and
@@ -33,8 +33,9 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
   and shared by every stage that releases it. Consumers AND the switch at query
   time.
 - `get_released_resource_oauth2_app_flags` is the single derivation, shared by
-  migration `0059`, `ReleasedResourceManager.save_released_resource` and
-  `refresh_oauth2_app_flags`. Change all of them together.
+  migration `0059`, `ReleasedResourceManager.save_released_resource`,
+  `refresh_oauth2_app_flags` and `RouteConvertor._build_oauth2_plugins`
+  (`support_app`).
 - The `db_default`s are what lets a rolled-back Dashboard keep `0059`; do not
   drop them.
 - `0059` is non-atomic. Its DDL uses `SeparateDatabaseAndState` and checks for

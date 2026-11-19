@@ -64,16 +64,15 @@ challenge_on_missing_credential = support_public or support_personal
 
 - Read `gateway.oauth2_app_enabled` from `ReleaseData.gateway` at publish time;
   it is not part of the resource version snapshot.
-- Evaluate the `bk-access-token-source` rule on the plugin bindings of the
-  release being published (`ReleaseData.get_resource_plugins`). Any binding
-  blocks the app channel: it runs before `bk-oauth2-verify`, and both
-  `source=bearer` (consumes `Authorization`) and strict `api_key` (400 without
-  `X-API-KEY`) break Bearer-only calls. The plugin is no longer public and has
-  very few users, so do not split the rule by config again. With
-  personal/public enabled, the plugins are still injected with `support_app=false`.
-  `core.managers.released_resource_binds_access_token_source` applies
-  the same rule to the `ReleasedResource` projection used by scope and lookup;
-  keep the two in sync.
+- Take `A and not bound bk-access-token-source` from
+  `core.managers.get_released_resource_oauth2_app_flags(resource)`, the same
+  derivation as the `ReleasedResource` projection used by scope and lookup; do
+  not re-implement it here. Any binding blocks the app channel: it runs before
+  `bk-oauth2-verify`, and both `source=bearer` (consumes `Authorization`) and
+  strict `api_key` (400 without `X-API-KEY`) break Bearer-only calls. The plugin
+  is no longer public and has very few users, so do not split the rule by config
+  again. With personal/public enabled, the plugins are still injected with
+  `support_app=false`.
 - Do not emit a token type. APISIX picks delegated vs app tokens from
   `bk-resource-context.verified_user_required`, so new token types only need a
   plugin upgrade.

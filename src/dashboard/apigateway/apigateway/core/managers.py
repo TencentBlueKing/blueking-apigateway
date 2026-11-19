@@ -245,7 +245,9 @@ def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, 
 def released_resource_binds_access_token_source(resource: Dict[str, Any]) -> bool:
     """资源快照是否绑定了 bk-access-token-source（不区分 source、allow_fallback）
 
-    须与 controller 生成路由时屏蔽应用通道的判断（RouteConvertor._binds_access_token_source）保持一致
+    该插件先于 bk-oauth2-verify 执行：source=bearer 会消费 Authorization，source=api_key 且
+    allow_fallback=false 时缺少 X-API-KEY 直接 400，都与真实应用 Bearer 冲突；插件已不公开、使用方很少，
+    绑定即不开放应用通道
     """
     plugins = resource.get("plugins")
     if not isinstance(plugins, list):
@@ -260,6 +262,7 @@ def get_released_resource_oauth2_app_flags(resource: Dict[str, Any]) -> tuple[bo
     """Return (app_delegated_enabled, app_only_enabled) derived from U/A, excluding the gateway switch.
 
     A resource bound with bk-access-token-source gets no app channel route, so both are false.
+    Shared by the ReleasedResource projection columns and RouteConvertor's support_app.
     """
     config = _load_released_resource_auth_config(resource)
     if config is None:
@@ -268,8 +271,9 @@ def get_released_resource_oauth2_app_flags(resource: Dict[str, Any]) -> tuple[bo
     if released_resource_binds_access_token_source(resource):
         return False, False
 
-    user_required = config.get("auth_verified_required") is True
-    app_required = config.get("app_verified_required") is True
+    # 缺省按 true，与 bk-resource-context 下发给数据面的 verified_*_required 一致
+    user_required = config.get("auth_verified_required", True) is True
+    app_required = config.get("app_verified_required", True) is True
     return user_required and app_required, not user_required and app_required
 
 
