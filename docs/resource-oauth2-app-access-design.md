@@ -436,7 +436,7 @@ lookup / list 接口输出：
 - 发布写入、`0059` 回填、`sync_released_resource --oauth2-app-flags` 补算都调用 `get_released_resource_oauth2_app_flags`，推导结果一致。
 - 不修改任何存量认证配置，不做 `Resource` 层面的数据迁移。
 - 两个新列都必须带数据库级默认值。0056 的列只有 Django 侧 `default=False`，数据库列是 NOT NULL 且无默认值；如果新列也这样，回滚到旧 Dashboard 后，旧代码创建 `Gateway`、写 `ReleasedResource` 时不带该列，会因为 NOT NULL 写入失败，导致创建网关或发布失败。有了数据库默认值，回滚 Dashboard 时可以不执行反向迁移，新列保留即可。
-- 保留 `0059` 回滚的副作用：旧 Dashboard 在回滚期间首次发布新版本时，新建投影的两个新列取数据库默认值 false；再次升级不会重跑已完成的迁移，普通重发看到已有投影也会跳过。因此再次升级后必须补算（7.4 第 7 步）：
+- 保留 `0059` 回滚的副作用：旧 Dashboard 在回滚期间首次发布新版本时，新建投影的两个新列取数据库默认值 false；再次升级不会重跑已完成的迁移，普通重发看到已有投影也会跳过。因此再次升级后必须补算，并重发回滚期间由旧 Dashboard 下发过的网关（7.4 第 7 步）：
 
 ```bash
 # 从每个当前生效版本的资源快照重新推导两个新列，只更新不一致的行；缺投影的版本补建。可重复执行，不删除投影
@@ -564,12 +564,12 @@ challenge_on_missing_credential = support_public or support_personal
 1. **暂停新增下发**：Dashboard 停止编辑和发布，暂停运维 CLI 重发，确认在途下发任务结束。时间 T 取新版 Dashboard **最早可能开始下发**的时间（不是升级完成时间）。
 2. **生成数据库候选**（仍在新版 Dashboard 上）：按网关取 `ReleaseHistory.created_time >= T` 与 `Release.updated_time >= T` 的并集。CLI 和部分运维命令不写 `ReleaseHistory`，但成功下发会更新 `Release.updated_time`；`publish_id=-1` 可用于排查来源，两者都不能唯一识别一次 CLI 发布。
 3. **独立扫描 etcd 原始路由**：扫描相关控制面和所有相关数据面 etcd 的原始路由配置，不能只依赖数据库候选。识别路由插件中**显式存在**的 `support_app` 或 `challenge_on_missing_credential`，值为 `false` 也计入；从路由标签取网关和环境，数据面取扫描目标。恢复范围 = 第 2 步候选 ∪ 本步扫描结果。
-4. **回滚 Dashboard 到旧版本**，保留已完成的 `0059`，不执行反向迁移（新列带数据库默认值，见第 6 节）。旧转换器不会生成 `support_app` 和 `challenge_on_missing_credential`。若 bkauth 已接入新 scope 类型，同步暂停新 scope 入口。
-5. **用旧 Dashboard 重发恢复范围**内各环境的当前生效版本。
+4. **回滚 Dashboard 到旧版本**，保留已完成的 `0059`，不执行反向迁移（新列带数据库默认值，见第 6 节）。旧转换器不会生成 `support_app` 和 `challenge_on_missing_credential`。若 bkauth 已接入新 scope 类型，同步暂停新 scope 入口。同一发布中其他保留的迁移也要满足“新列有数据库默认值”，否则旧代码写入失败：例如 `0058_resource_deprecation` 的 `deprecated_note` 只有 Django 侧默认值，回滚到 v1.25.0 后旧 Dashboard 同步或创建资源会报 `Field 'deprecated_note' doesn't have a default value`。
+5. **用旧 Dashboard 重发恢复范围**内各环境的当前生效版本。v1.25.0 镜像使用 Python 3.14，`multiprocessing` 默认启动方式为 forkserver，`sync_releases_to_gateway_parallel` 的子进程会因 `AppRegistryNotReady` 卡住，需按下方片段强制使用 fork。
 6. **核验后再降级插件**：再次扫描控制面和数据面 etcd，确认新版字段已清除，且 APISIX 已加载恢复后的路由；有失败或核验不通过的环境，保持新插件，先处理该环境。之后按需降级数据面插件，恢复 Dashboard 操作。若继续使用新插件，已有 personal/public 路由按 7.3 分流。
-7. **再次升级时**：如降级过 APISIX，按 7.3 的首次升级顺序恢复；等旧 Dashboard 实例和发布任务全部退出后，执行第 6 节的 `sync_released_resource --all --oauth2-app-flags` 补算投影，再验收 scope 和 lookup。
+7. **再次升级时**：如降级过 APISIX，按 7.3 的首次升级顺序恢复；等旧 Dashboard 实例和发布任务全部退出后，执行第 6 节的 `sync_released_resource --all --oauth2-app-flags` 补算投影，再重发回滚期间由旧 Dashboard 下发过的网关（候选取 `--released-since T2`，T2 为旧 Dashboard 最早可能开始下发的时间，第 5 步的重发也在其中）。这些网关在 etcd 中仍是旧转换器生成的路由，补算后 scope、lookup 已显示应用通道，但数据面要重发后才生效。最后验收 scope、lookup 和实际调用。
 
-第 2、5 步使用管理命令 `sync_releases_to_gateway_parallel`（旧版本 Dashboard 已有该命令和 `--gateway-names` 参数；本期新增 `--released-since`、`--dry-run`）：
+第 2、5、7 步使用管理命令 `sync_releases_to_gateway_parallel`（旧版本 Dashboard 已有该命令和 `--gateway-names` 参数；本期新增 `--released-since`、`--dry-run`）：
 
 ```bash
 # 第 2 步，仍在新版本 Dashboard 上（此时已暂停下发，列表不会再变化）：
@@ -578,13 +578,23 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T，如 20
 # 与第 3 步 etcd 扫描得到的网关合并去重后写回 gateways.txt
 
 # 第 5 步，在旧版本 Dashboard 上（bash）。旧命令的 --gateway-names 收到空列表时会同步全部网关，
-# 所以按解析出的网关名数量判断，空文件或只有空白字符时都不调用：
+# 所以按解析出的网关名数量判断，空文件或只有空白字符时都不调用。
+# 直接执行该命令会在 forkserver 子进程中卡住，经 manage.py shell 强制 fork 后调用：
 read -r -d '' -a gateway_names < gateways.txt || true
 if [ "${#gateway_names[@]}" -gt 0 ]; then
-  python manage.py sync_releases_to_gateway_parallel --gateway-names "${gateway_names[@]}"
+  GATEWAY_NAMES="${gateway_names[*]}" python manage.py shell -c '
+import multiprocessing, os
+multiprocessing.set_start_method("fork", force=True)
+from django.core.management import call_command
+call_command("sync_releases_to_gateway_parallel", gateway_names=os.environ["GATEWAY_NAMES"].split())
+'
 else
   echo "no gateway to restore"
 fi
+
+# 第 7 步，在新版本 Dashboard 上补算投影之后：
+python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry-run > gateways.txt
+# 再用与第 5 步相同的片段重发 gateways.txt 中的网关
 ```
 
 按网关重新发布覆盖该网关全部环境和绑定数据面，范围大于实际受影响的（网关、环境、数据面），但对未变化的环境是幂等的。命令对失败的网关返回非零并列出网关名，按第 6 步处理。
@@ -595,7 +605,7 @@ fi
 
 1. **首次升级（D2 / R1）**：按 7.3 的顺序。暂停常规发布和运维 CLI 重发并等在途任务结束；先升数据面，逐个确认承接流量的实例运行本次镜像并加载有效的 Helm 规则；随后执行迁移、升级 Dashboard，再恢复发布。
 2. **回滚期间（PR-3 / PR-4）**：先回滚 Dashboard 并保留 `0059`，按 7.4 恢复并核验路由，再按需降级插件。仍使用新插件时，已有 personal/public 路由按 7.3 分流。bkauth 已接入新 scope 时，同步暂停新 scope 入口。
-3. **再次升级（PR-4）**：降级过 APISIX 时按首次升级顺序恢复；旧 Dashboard 实例和发布任务全部退出后补算投影。验收顺序为“升级并执行 0059 → 保留迁移回滚 → 旧代码首次发布新版本 → 再次升级并补算”，核对用户委托 token、应用 token 两类标记，确认 scope、lookup 读到重新计算的值，应为 false 的资源仍为 false。
+3. **再次升级（PR-4）**：降级过 APISIX 时按首次升级顺序恢复；旧 Dashboard 实例和发布任务全部退出后补算投影，再重发回滚期间由旧 Dashboard 下发过的网关。验收顺序为“升级并执行 0059 → 保留迁移回滚 → 旧代码首次发布新版本 → 再次升级并补算 → 重发”，核对用户委托 token、应用 token 两类标记，确认 scope、lookup 读到重新计算的值，应为 false 的资源仍为 false，重发后应用 Bearer 实际调用成功。
 4. **升级后（D4 / D9 / Δ4）**：保持 `bk-apigateway.oauth2_app_enabled=true`，抽测 MCP 用户态和应用态入口。目标环境重发并确认 APISIX 加载后，抽测旧认证头、query/body、personal/public 和新增应用 Bearer。scope 或 lookup 可能先于路由显示能力，验收以实际调用为准。
 5. **bkauth 自省与格式校验性能（D7）**：确认自省容量和现有限流，首批重发后观察自省 QPS、延迟、错误率。单独用实际 Helm 规则测前缀与格式校验开销，隔离自省网络耗时，观察吞吐、CPU 和 P99 延迟。
 6. **MySQL 性能（I11 / I12）**：用接近生产的数据量演练 `0059` 的索引构建耗时和锁等待。保留应用通道索引，对 `app_delegated`、`app_only` 的查网关和查资源语句做 `EXPLAIN`，重点看分页前的候选网关扫描量和实际使用的索引。
@@ -731,7 +741,7 @@ fi
 | 回滚候选：只有 CLI 重发、无新增 `ReleaseHistory` 的网关 | `--released-since` 通过 `Release.updated_time` 列出 |
 | 回滚候选：新字段已写入 etcd、数据库无更新 | 由 etcd 原始路由扫描发现（7.4 第 3 步） |
 | 回滚候选：清单为空 | `--dry-run` 的 stdout 为 0 字节；回滚脚本对空文件、只有空白字符的文件都不调用旧命令（避免空 `--gateway-names` 走全量） |
-| 再次升级补算：旧 Dashboard 回滚期间首次发布的版本 | `sync_released_resource --all --oauth2-app-flags` 后两列等于推导值，应为 false 的仍为 false；scope、lookup 读到新值；可重复执行 |
+| 再次升级补算：旧 Dashboard 回滚期间首次发布的版本 | `sync_released_resource --all --oauth2-app-flags` 后两列等于推导值，应为 false 的仍为 false；scope、lookup 读到新值；可重复执行；按 `--released-since T2` 重发后应用 Bearer 调用成功 |
 
 ## 11. 待确认
 
@@ -808,7 +818,7 @@ fi
 - 数据面插件与 Dashboard 必须同时升级，上线期间 Dashboard 停止编辑和发布，并暂停运维 CLI 重发。先升级所有数据面（APISIX 3.18）到包含新插件的镜像，并确认加载了 Helm 下发的 `bk_gateway.bk_oauth2.bearer_token_rules`，再升级 Dashboard，否则旧默认配置的资源在发布后可能出现 401。
 - 升级后配置不会自动改写已有路由，各网关需重新发布才生效。
 - 回滚时先回滚 Dashboard（保留迁移 0059），按 7.4 找出并用旧 Dashboard 重新发布受影响的环境，核验 etcd 与 APISIX 加载结果后才能降级数据面插件；不能只回滚数据面镜像或资源版本。只需关闭个别网关时，关闭网关开关并重新发布即可。
-- 回滚后再次升级，需执行 `sync_released_resource --all --oauth2-app-flags` 补算已发布资源投影（第 6 节）。
+- 回滚后再次升级，需执行 `sync_released_resource --all --oauth2-app-flags` 补算已发布资源投影（第 6 节），并重发回滚期间由旧 Dashboard 下发过的网关（7.4 第 7 步）。
 - 平台保持 `bk-apigateway` 网关的 OAuth 应用通道开启，否则 MCP 入口的 Bearer 调用不可用。
 
 ## 附录：决策记录
