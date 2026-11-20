@@ -32,7 +32,7 @@ else
   echo "no gateway to restore"
 fi
 """
-DESIGN_DOC = Path(__file__).resolve().parents[8] / "docs" / "resource-oauth2-app-access-design.md"
+DESIGN_DOC = Path(__file__).resolve().parents[8] / "docs" / "design" / "resource-oauth2-app-access-design.md"
 
 
 class TestSyncGateway:

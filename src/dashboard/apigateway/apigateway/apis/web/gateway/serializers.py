@@ -388,6 +388,12 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
+    _model_fields_by_property = {
+        "doc_maintainers": "_doc_maintainers",
+        "extra_info": "_extra_info",
+        "developers": "_developers",
+    }
+
     display_name = serializers.CharField(
         max_length=GATEWAY_DISPLAY_NAME_MAX_LENGTH, required=False, allow_blank=True, allow_null=True
     )
@@ -455,7 +461,13 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         maintainers = validated_data.pop("maintainers", None)
-        instance = super().update(instance, validated_data)
+        update_fields = ["updated_time"]
+        for name, value in validated_data.items():
+            setattr(instance, name, value)
+            update_fields.append(self._model_fields_by_property.get(name, name))
+        instance.save(update_fields=update_fields)
+        if "oauth2_app_enabled" not in validated_data:
+            instance.refresh_from_db(fields=["oauth2_app_enabled"])
         if maintainers is not None:
             replace_gateway_administrators(instance, maintainers, validated_data.get("updated_by") or "")
         return instance
@@ -473,6 +485,13 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：停用，1：启用",
             },
         }
+
+    def update(self, instance, validated_data):
+        for name, value in validated_data.items():
+            setattr(instance, name, value)
+        instance.save(update_fields=["updated_time", *validated_data])
+        instance.refresh_from_db(fields=["oauth2_app_enabled"])
+        return instance
 
 
 class GatewayTenantAppInfoTenant(serializers.Serializer):

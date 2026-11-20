@@ -50,7 +50,7 @@ models, or general-purpose domain workflows.
 
 `convertor/route.py::_build_oauth2_plugins` is shared by standard and AI routes;
 keep both on it. Design and decisions:
-[resource-oauth2-app-access-design.md](../../../../../docs/resource-oauth2-app-access-design.md)
+[resource-oauth2-app-access-design.md](../../../../../docs/design/resource-oauth2-app-access-design.md)
 sections 4 and 7.
 
 ```text

@@ -322,34 +322,6 @@ class ReleasedResourceManager(models.Manager):
         # 异步同时(多个stage同时发布同一版本)更新会存在一些冲突问题
         self.bulk_create(resource_to_add, batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE, ignore_conflicts=True)
 
-    def refresh_oauth2_app_flags(self, resource_version_id: int, dry_run: bool = False) -> int:
-        """按每行资源快照重新推导应用通道投影列，只更新与推导结果不一致的行，可重复执行
-
-        旧版 Dashboard 写入的行没有这两列，取数据库默认值 false；再次升级后用于补算
-        """
-        to_update = []
-        queryset = self.filter(resource_version_id=resource_version_id).only(
-            "id", "data", "oauth2_app_delegated_enabled", "oauth2_app_only_enabled"
-        )
-        for released_resource in queryset.iterator(chunk_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE):
-            delegated_enabled, app_only_enabled = get_released_resource_oauth2_app_flags(released_resource.data)
-            if (
-                released_resource.oauth2_app_delegated_enabled == delegated_enabled
-                and released_resource.oauth2_app_only_enabled == app_only_enabled
-            ):
-                continue
-            released_resource.oauth2_app_delegated_enabled = delegated_enabled
-            released_resource.oauth2_app_only_enabled = app_only_enabled
-            to_update.append(released_resource)
-
-        if to_update and not dry_run:
-            self.bulk_update(
-                to_update,
-                ["oauth2_app_delegated_enabled", "oauth2_app_only_enabled"],
-                batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE,
-            )
-        return len(to_update)
-
     def get_released_resource(self, gateway_id: int, resource_version_id: int, resource_name: str) -> Optional[dict]:
         released_resource = self.filter(
             gateway_id=gateway_id,

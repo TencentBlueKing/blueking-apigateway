@@ -688,6 +688,31 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert fake_resource.is_public is True
         assert fake_resource.allow_apply_permission is False
 
+    def test_update_normalizes_unchanged_legacy_auth_settings(self, request_view, fake_resource):
+        self._prepare_update_target(fake_resource)
+        auth_config = {
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+            "app_verified_required": False,
+            "resource_perm_required": True,
+        }
+        ResourceAuthContext().save(fake_resource.id, auth_config)
+        fake_resource.is_public = True
+        fake_resource.allow_apply_permission = True
+        fake_resource.save(update_fields=["is_public", "allow_apply_permission"])
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_resource.gateway_id, "id": fake_resource.id},
+            data=self._make_update_data(fake_resource, auth_config),
+        )
+
+        assert response.status_code == 204, response.json()
+        assert ResourceAuthContext().get_config(fake_resource.id)["resource_perm_required"] is False
+        fake_resource.refresh_from_db()
+        assert fake_resource.allow_apply_permission is False
+
     def test_destroy(self, request_view, fake_resource):
         fake_gateway = fake_resource.gateway
 

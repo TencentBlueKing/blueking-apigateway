@@ -32,15 +32,16 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
   gateway switch: a `ReleasedResource` row is written once per resource version
   and shared by every stage that releases it. Consumers AND the switch at query
   time.
-- `get_released_resource_oauth2_app_flags` is the single derivation, shared by
-  migration `0059`, `ReleasedResourceManager.save_released_resource`,
-  `refresh_oauth2_app_flags` and `RouteConvertor._build_oauth2_plugins`
-  (`support_app`).
+- `get_released_resource_oauth2_app_flags` is shared by
+  `ReleasedResourceManager.save_released_resource`, the
+  `sync_released_resource --oauth2-app-flags` command and
+  `RouteConvertor._build_oauth2_plugins` (`support_app`). Migration `0059`
+  keeps its snapshot rules in the migration file.
 - The `db_default`s are what lets a rolled-back Dashboard keep `0059`; do not
   drop them.
-- `0059` uses plain `AddField`/`AddIndex`. It is non-atomic so the backfill
-  commits batch by batch; the backfill pages by primary key and reads only `id`
-  and `data`.
+- `0059` checks for each column and index before adding it. It is non-atomic so
+  the backfill commits batch by batch; the backfill pages by primary key and
+  reads only `id` and `data`.
 - After a rollback that kept `0059`, the old Dashboard writes new projections
   with `false`. On the next upgrade, run
   `sync_released_resource --all --oauth2-app-flags` (`--dry-run` first). It

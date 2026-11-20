@@ -529,6 +529,21 @@ class TestGatewayAPIDocMaintainerSLZ:
 
 class TestGatewayUpdateInputSLZ:
     @pytest.mark.parametrize(
+        ("serializer", "data"),
+        [(GatewayUpdateInputSLZ, {"description": "edited"}), (GatewayUpdateStatusInputSLZ, {"status": 0})],
+    )
+    def test_omitting_app_channel_preserves_a_later_update(self, fake_gateway, serializer, data):
+        slz = serializer(instance=fake_gateway, data=data, partial=True)
+        slz.is_valid(raise_exception=True)
+        Gateway.objects.filter(pk=fake_gateway.pk).update(oauth2_app_enabled=False)
+
+        slz.save(updated_by="editor")
+
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.updated_by == "editor"
+        assert fake_gateway.oauth2_app_enabled is False
+
+    @pytest.mark.parametrize(
         "data, expected",
         [
             (

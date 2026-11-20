@@ -179,3 +179,45 @@ def test_oauth2_app_access_fields_backfill_db_defaults_and_reverse():
     finally:
         executor = MigrationExecutor(connection)
         executor.migrate(latest_migrations)
+
+
+@pytest.mark.parametrize("missing_column", [True, False])
+def test_oauth2_app_access_fields_retries_partial_ddl(mocker, missing_column):
+    connection = connections["default"]
+    executor = MigrationExecutor(connection)
+    model = executor.loader.project_state(MIGRATE_TO).apps.get_model("core", "ReleasedResource")
+    app_only_column = model._meta.get_field("oauth2_app_only_enabled")
+    indexes = [index for index in model._meta.indexes if index.name in INDEX_NAMES]
+    missing_indexes = (
+        indexes if missing_column else [index for index in indexes if index.name.endswith("only_scope_idx")]
+    )
+    migration = executor.loader.get_migration(*MIGRATE_TO[0])
+    original_state = executor.loader.project_state(MIGRATE_FROM)
+    table = model._meta.db_table
+
+    # Leave some of the DDL in place while retrying from the previous migration state.
+    with connection.schema_editor(atomic=False) as editor:
+        for index in missing_indexes:
+            editor.remove_index(model, index)
+        if missing_column:
+            editor.remove_field(model, app_only_column)
+    try:
+        with connection.schema_editor(atomic=False) as editor:
+            add_field = mocker.spy(editor, "add_field")
+            add_index = mocker.spy(editor, "add_index")
+            migration.apply(original_state, editor)
+        assert [call.args[1].column for call in add_field.call_args_list] == (
+            [app_only_column.column] if missing_column else []
+        )
+        assert [call.args[1].name for call in add_index.call_args_list] == [index.name for index in missing_indexes]
+        assert _column_names(connection, table) >= APP_FLAG_FIELDS
+        assert _constraint_names(connection, table) >= INDEX_NAMES
+    finally:
+        # Restore the test database even when the attempted retry raises.
+        with connection.schema_editor(atomic=False) as editor:
+            if app_only_column.column not in _column_names(connection, table):
+                editor.add_field(model, app_only_column)
+            existing_indexes = _constraint_names(connection, table)
+            for index in indexes:
+                if index.name not in existing_indexes:
+                    editor.add_index(model, index)

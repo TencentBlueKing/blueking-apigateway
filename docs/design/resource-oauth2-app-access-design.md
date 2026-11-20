@@ -42,13 +42,13 @@ Authorization: Bearer ─┘
 | 配置 | 存储位置 |
 | --- | --- |
 | `auth_verified_required`、`app_verified_required`、`resource_perm_required` | 资源认证 `Context`（`resource_auth`）的 JSON 配置 |
-| `oauth2_public_client_enabled`、`oauth2_personal_client_enabled` | `Resource` 列；发布时合入快照里的认证配置（[resource_auth.py](../src/dashboard/apigateway/apigateway/service/contexts/resource_auth.py)） |
+| `oauth2_public_client_enabled`、`oauth2_personal_client_enabled` | `Resource` 列；发布时合入快照里的认证配置（[resource_auth.py](../../src/dashboard/apigateway/apigateway/service/contexts/resource_auth.py)） |
 | `is_public`、`allow_apply_permission` | `Resource` 列 |
 | 发布态 public/personal | `ReleasedResource` 冗余列及索引（迁移 `0056`） |
 
 ### 2.2 数据面认证链
 
-资源开启 public 或 personal 时，[RouteConvertor](../src/dashboard/apigateway/apigateway/controller/convertor/route.py) 为路由注入四个 OAuth2 插件。请求依次经过：
+资源开启 public 或 personal 时，[RouteConvertor](../../src/dashboard/apigateway/apigateway/controller/convertor/route.py) 为路由注入四个 OAuth2 插件。请求依次经过：
 
 | 插件 | 旧认证头 | Bearer |
 | --- | --- | --- |
@@ -97,11 +97,11 @@ resource_perm_required = app_verified_required and 提交值
 allow_apply_permission = is_public and resource_perm_required and 提交值
 ```
 
-上层为 false 时，下层在保存时强制写为 false，不报错。现有导入解析已对 `app_verified_required=false` 强制 `resource_perm_required=false`（[parser.py](../src/dashboard/apigateway/apigateway/biz/openapi/parser.py) `_adapt_auth_config`），本方案把同样的规则延伸到 `allow_apply_permission`，并覆盖 Web 创建、Web 更新、资源批量更新、同步和导入。
+上层为 false 时，下层在保存时强制写为 false，不报错。现有导入解析已对 `app_verified_required=false` 强制 `resource_perm_required=false`（[parser.py](../../src/dashboard/apigateway/apigateway/biz/openapi/parser.py) `_adapt_auth_config`），本方案把同样的规则延伸到 `allow_apply_permission`，并覆盖 Web 创建、Web 单资源更新、同步和导入。批量更新仅归一化允许申请状态。
 
 - 下层被强制写为 false 后不记忆原值。例如关闭 `is_public` 再打开，`allow_apply_permission` 仍为 false，需要用户重新勾选。
-- 存量不满足层级的数据不做迁移；在下一次 Web 编辑、批量更新或同步时归一化。运行时仍按存储值执行。
-- 归一化的可见影响：存量数据首次编辑、同步或导入时，可能因归一化在预览、资源版本 diff 和导出中出现差异（例如 `P=1, A=0` 变为 `P=0`）。数据面以实际发布并加载的版本为准，未重新发布前仍按旧版本执行。
+- 存量不满足层级的数据不做迁移。Web 单资源保存先归一化再比较改动，原样提交也可能修正存量配置。批量更新只根据公开状态及已有认证设置归一化允许申请，不改应用权限校验。
+- 归一化的可见影响：存量数据首次编辑、同步或导入时，可能因归一化在预览、资源版本 diff 和导出中出现差异（例如 `P=1, A=0` 变为 `P=0`）。存量 `A=0, P=1` 归一化为 `P=0` 后，重新发布并加载该版本时，数据面停止应用权限校验。
 - 资源批量更新的审计在 `data_after` 中同时记录请求值 `allow_apply_permission` 和实际写入结果 `allow_apply_permission_result: {"true": [资源 ID], "false": [资源 ID]}`，仍为一条批量审计。
 
 字段语义（D6 / D10 / I9）：
@@ -152,7 +152,7 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
 
 资源表单：网关关闭时，“OAuth 授权”照常展示并可编辑，因为它仍决定旧入口是否要求应用身份；同时提示“网关已关闭 OAuth 应用通道，Bearer 调用不可用；此开关仍控制旧版调用方式是否校验应用身份”。
 
-命名区分：网关字段为 `Gateway.oauth2_app_enabled`（可写，覆盖用户委托 token 和应用 token）；资源字段为 `auth_config.oauth2_app_delegated_enabled`（只读推导，值为 U && A，不含网关开关）。实现时同步写入 [DDD 统一概念词汇](ddd-ubiquitous-language.md)。
+命名区分：网关字段为 `Gateway.oauth2_app_enabled`（可写，覆盖用户委托 token 和应用 token）；资源字段为 `auth_config.oauth2_app_delegated_enabled`（只读推导，值为 U && A，不含网关开关）。实现时同步写入 [DDD 统一概念词汇](../ddd-ubiquitous-language.md)。
 
 ## 4. 运行时行为
 
@@ -228,7 +228,7 @@ APISIX 默认识别 `^bk[oprs]_` 和 `^tai_pat_` 两种前缀，可通过配置�
 - AI 资源（`kind=ai`）与标准资源适用同一套规则。
 - 后端收到的网关 JWT 不区分用户委托 token 调用与旧认证头调用。
 
-personal、public 的现有校验和内置权限协调（[oauth2_builtin.py](../src/dashboard/apigateway/apigateway/controller/tasks/oauth2_builtin.py)）不变。
+personal、public 的现有校验和内置权限协调（[oauth2_builtin.py](../../src/dashboard/apigateway/apigateway/controller/tasks/oauth2_builtin.py)）不变。
 
 ### 4.3 旧认证头
 
@@ -307,9 +307,9 @@ personal、public 的现有校验和内置权限协调（[oauth2_builtin.py](../
 | Web 创建 | true | false |
 | Web 更新 | 保留当前存储值 | 保留当前存储值（现状） |
 
-Web 更新“保留当前存储值”同时修复一个存量问题：现在省略 `app_verified_required`、`resource_perm_required` 时会被 Pydantic 默认值写成 true（[biz/resource/models.py](../src/dashboard/apigateway/apigateway/biz/resource/models.py)、[savers.py](../src/dashboard/apigateway/apigateway/biz/resource/savers.py) `_save_auth_configs`）。
+Web 更新“保留当前存储值”同时修复一个存量问题：现在省略 `app_verified_required`、`resource_perm_required` 时会被 Pydantic 默认值写成 true（[biz/resource/models.py](../../src/dashboard/apigateway/apigateway/biz/resource/models.py)、[savers.py](../../src/dashboard/apigateway/apigateway/biz/resource/savers.py) `_save_auth_configs`）。
 
-资源批量更新（`ResourceBatchUpdateInputSLZ`）同时提交 `is_public`、`allow_apply_permission`：对每个资源按提交的 `is_public` 和该资源当前的 `resource_perm_required` 归一化 `allow_apply_permission`，不满足时静默写 false。
+资源批量更新（`ResourceBatchUpdateInputSLZ`）同时提交 `is_public`、`allow_apply_permission`：对每个资源按提交的 `is_public` 和该资源当前的 `app_verified_required`、`resource_perm_required` 归一化 `allow_apply_permission`，不满足时静默写 false。认证配置里的应用权限校验字段保留原值。
 
 新表单提交约定（前端）：表单把界面选项映射为旧字段，总是提交全部字段，不依赖缺省值。
 
@@ -328,15 +328,15 @@ Web 更新“保留当前存储值”同时修复一个存量问题：现在省�
 
 资源同步与导入：
 
-- `x-bk-apigateway-resource.authConfig` **格式不变，不新增字段**；[openapi_2.0/3.0/3.1 schema](../src/dashboard/apigateway/apigateway/biz/openapi/schemas/) 不改。
+- `x-bk-apigateway-resource.authConfig` **格式不变，不新增字段**；[openapi_2.0/3.0/3.1 schema](../../src/dashboard/apigateway/apigateway/biz/openapi/schemas/) 不改。
 - 只带旧字段的存量 yaml 行为不变；省略时仍按旧默认值 true 处理，即“用户认证＋OAuth 授权开启＋白名单开启”。
 - 同步仍是声明式的；省略 `oauth2PublicClientEnabled`/`oauth2PersonalClientEnabled` 仍按 false 处理（现状）。
 - `_adapt_auth_config` 的层级处理延伸到 `allowApplyPermission`（同时要求 `isPublic`），按 5.2 执行。
 
-网关同步（[v2 sync](../src/dashboard/apigateway/apigateway/apis/v2/sync/serializers.py) `GatewaySyncInputSLZ`）：
+网关同步（[v2 sync](../../src/dashboard/apigateway/apigateway/apis/v2/sync/serializers.py) `GatewaySyncInputSLZ`）：
 
 - 新增可选字段 `oauth2_app_enabled`（boolean）。
-- 未传时：新建网关为 true；已有网关保留当前值，避免同步把管理员在页面上关闭的开关重新打开。
+- 显式传入时按请求值更新。未传时新建网关为 true；已有网关的更新语句不写开关列，保留数据库中的当前值。
 - 旧版 open 同步接口（`apis/open/gateway`）不新增该字段。
 
 ### 5.4 导出
@@ -345,7 +345,7 @@ Web 更新“保留当前存储值”同时修复一个存量问题：现在省�
 
 ### 5.5 bkauth scope 与 lookup 接口
 
-`GET /api/v2/inner/oauth2/client-scopes/resources/`（[OAuth2ResourceScopeListApi](../src/dashboard/apigateway/apigateway/apis/v2/inner/views.py)）的 `oauth_client_type` 新增 `app_delegated` 和 `app_only`：
+`GET /api/v2/inner/oauth2/client-scopes/resources/`（[OAuth2ResourceScopeListApi](../../src/dashboard/apigateway/apigateway/apis/v2/inner/views.py)）的 `oauth_client_type` 新增 `app_delegated` 和 `app_only`：
 
 ```text
 oauth_client_type=app_delegated → 当前生效版本中 is_public=true 且 oauth2_app_delegated_enabled=true（U && A）的资源，
@@ -361,7 +361,7 @@ oauth_client_type=app_only      → 当前生效版本中 is_public=true 且 oau
 - `ReleasedResource` 每个资源版本只写一次（`save_released_resource` 在已存在且非 `force` 时直接返回），并由发布该版本的所有环境共用，所以新列只能存资源快照的推导值（U、A 与是否绑定 `bk-access-token-source`），不能写入网关开关。网关开关在 scope 查询时按当前值过滤。
 - 因此网关开关在 scope 上立即生效，在数据面上要等重新发布：关闭后、重新发布前，scope 不再列出但数据面仍接受；开启后、重新发布前，scope 已列出但数据面仍拒绝。
 
-MCP scope 接口 `GET /api/v2/inner/oauth2/client-scopes/mcp-servers/`（[OAuth2MCPServerScopeListApi](../src/dashboard/apigateway/apigateway/apis/v2/inner/views.py)）同样新增 `oauth_client_type=app_delegated`：
+MCP scope 接口 `GET /api/v2/inner/oauth2/client-scopes/mcp-servers/`（[OAuth2MCPServerScopeListApi](../../src/dashboard/apigateway/apigateway/apis/v2/inner/views.py)）同样新增 `oauth_client_type=app_delegated`：
 
 ```text
 oauth_client_type=app_delegated → 所有满足现有可见条件的 MCP Server（网关启用且公开、环境启用、Server 启用且公开），不按开关筛选
@@ -380,7 +380,7 @@ lookup / list 接口输出：
 | `GatewayReleasedResourceLookupApi`、已发布资源列表（共用 `GatewayReleasedResourceOutputSLZ` 与 `RELEASED_RESOURCE_FIELDS`） | 新增 `oauth2_app_delegated_enabled`、`oauth2_app_only_enabled`，值为对应 `ReleasedResource` 新列 && 网关开关当前值，与 scope 口径一致 |
 | `MCPServerLookupApi`、MCP Server 列表 | 不新增字段；bkauth 约定用户委托 token 对 MCP Server 始终可用 |
 
-同步更新 [v2_inner_list_oauth2_resource_scopes.md](../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_oauth2_resource_scopes.md)、[v2_inner_list_oauth2_mcp_server_scopes.md](../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_oauth2_mcp_server_scopes.md)、[v2_inner_lookup_gateway_released_resources.md](../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_lookup_gateway_released_resources.md)、[v2_inner_list_gateway_released_resources.md](../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_released_resources.md)。
+同步更新 [v2_inner_list_oauth2_resource_scopes.md](../../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_oauth2_resource_scopes.md)、[v2_inner_list_oauth2_mcp_server_scopes.md](../../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_oauth2_mcp_server_scopes.md)、[v2_inner_lookup_gateway_released_resources.md](../../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_lookup_gateway_released_resources.md)、[v2_inner_list_gateway_released_resources.md](../../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_released_resources.md)。
 
 需要提前告知 bkauth：
 
@@ -397,7 +397,7 @@ lookup / list 接口输出：
 
 ### 5.6 开发者中心可申请资源列表
 
-开发者中心用 v2 inner 资源列表（[GatewayPermissionResourceListApi](../src/dashboard/apigateway/apigateway/apis/v2/inner/views.py)）展示和检索接口，不只是“可申请”列表。已发布的公开资源按下表返回：
+开发者中心用 v2 inner 资源列表（[GatewayPermissionResourceListApi](../../src/dashboard/apigateway/apigateway/apis/v2/inner/views.py)）展示和检索接口，不只是“可申请”列表。已发布的公开资源按下表返回：
 
 | 资源 | 是否返回 | `permission_level` |
 | --- | --- | --- |
@@ -405,7 +405,7 @@ lookup / list 接口输出：
 | `P=1`，但 `A=0` 或 `allow_apply_permission=false` | 不返回 | — |
 | `P=0`（仅用户认证、应用态但不校验应用权限、无需认证） | 返回，即使 `allow_apply_permission=false` | `unlimited`，表示无需申请权限；调用时仍须满足资源的认证要求 |
 
-- `P=1` 一行兼容 3.2 落地前不满足层级约束的存量数据。响应结构不变，同步更新 [v2_inner_list_gateway_permission_resources.md](../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_permission_resources.md)。
+- `P=1` 一行兼容 3.2 落地前不满足层级约束的存量数据。响应结构不变，同步更新 [v2_inner_list_gateway_permission_resources.md](../../src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_permission_resources.md)。
 - v1 资源列表（`apis/open/permission`）PaaS 已不再依赖，保留按 `allow_apply_permission` 筛选，在接口注释中说明与 v2 的差异：存量 `P=0` 资源经归一化（`allow_apply_permission` 写为 false）并重新发布后，可能从 v1 列表退出。
 
 ## 6. 存储与迁移
@@ -421,8 +421,8 @@ lookup / list 接口输出：
 
 - `Gateway` 新列依靠数据库默认值把存量网关置为开启，不需要回填。
 - `ReleasedResource` 两个新列由迁移 `0059_oauth2_app_access_fields` 回填：非原子，按主键 keyset 分页（`id > last_id ORDER BY id LIMIT 1000`，只取 `id`、`data`），避免 MySQL 客户端缓冲全量快照 JSON；从 `data.contexts.resource_auth.config` 推导 `auth_verified_required and app_verified_required`、`not auth_verified_required and app_verified_required`；快照 `data.plugins` 绑定 `bk-access-token-source` 时两者都为 false（7.2）；两者都为 false 的行不写。
-- `0059` 的三个加列和两个索引使用普通的 `AddField`/`AddIndex`；迁移非原子只为让回填按批提交。上线前用接近生产的数据量演练索引构建耗时和锁等待（7.5）。
-- 发布写入、`0059` 回填、`sync_released_resource --oauth2-app-flags` 补算都调用 `get_released_resource_oauth2_app_flags`，推导结果一致。
+- `0059` 加列和建索引前检查数据库结构。非原子迁移中断后可重跑，已完成的 DDL 会跳过，回填可重新执行。上线前用接近生产的数据量演练索引构建耗时和锁等待（7.5）。
+- `0059` 在迁移内固定本次快照推导规则。发布写入和 `sync_released_resource --oauth2-app-flags` 补算继续共享运行时推导函数。
 - 不修改任何存量认证配置，不做 `Resource` 层面的数据迁移。
 - 两个新列都必须带数据库级默认值。0056 的列只有 Django 侧 `default=False`，数据库列是 NOT NULL 且无默认值；如果新列也这样，回滚到旧 Dashboard 后，旧代码创建 `Gateway`、写 `ReleasedResource` 时不带该列，会因为 NOT NULL 写入失败，导致创建网关或发布失败。有了数据库默认值，回滚 Dashboard 时可以不执行反向迁移，新列保留即可。
 - 保留 `0059` 回滚的副作用：旧 Dashboard 在回滚期间首次发布新版本时，新建投影的两个新列取数据库默认值 false；再次升级不会重跑已完成的迁移，普通重发看到已有投影也会跳过。因此再次升级后必须补算，并重发回滚期间由旧 Dashboard 下发过的网关（7.4 第 7 步）：
@@ -434,6 +434,8 @@ python manage.py sync_released_resource --all --oauth2-app-flags
 ```
 
   不用 `--force`：它先删除再重建投影，期间 scope、lookup 会读到空结果，也会与正常发布竞争。
+
+  已知限制：补算只扫描当前有环境引用的版本。若旧 Dashboard 在回滚期间写入投影，随后删除最后一个引用环境，保留下来的历史投影会被跳过。该版本后来重新发布时，已有投影仍可能显示为 false。等版本生效后，再用同一命令补算该网关，核验 scope 和 lookup。
 
 ## 7. 数据面与发布
 
@@ -490,7 +492,7 @@ challenge_on_missing_credential = support_public or support_personal
 - 网关开关由 `ReleaseData.gateway` 读取当前值，不来自资源版本快照。
 - `RouteConvertor` 已按数据面持有 `apisix_version`，按数据面决定是否注入。标准路由与 AI 路由（`_convert_ai_route`）使用同一套注入逻辑。
 - 发布门禁 `resource_version_uses_oauth2` 仍只针对 public/personal：只开启应用通道的资源在旧数据面上降级为“只有旧入口”，不阻塞发布。
-- 同步更新插件 schema fixture（[plugins.yaml](../src/dashboard/apigateway/apigateway/fixtures/plugins.yaml)）。
+- 同步更新插件 schema fixture（[plugins.yaml](../../src/dashboard/apigateway/apigateway/fixtures/plugins.yaml)）。
 
 ### 7.3 上线方式
 
@@ -600,7 +602,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 
 ## 8. MCP 边界
 
-`bk-apigateway` 网关的 MCP 入口定义在 [bk-apigateway-resources.yaml](../src/dashboard/apigateway/apigateway/data/apigw-definitions/bk-apigateway-resources.yaml)：
+`bk-apigateway` 网关的 MCP 入口定义在 [bk-apigateway-resources.yaml](../../src/dashboard/apigateway/apigateway/data/apigw-definitions/bk-apigateway-resources.yaml)：
 
 | 入口 | 认证配置 | 推导结果 |
 | --- | --- | --- |
@@ -612,7 +614,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 - **用户态入口接受用户委托 token，应用态入口接受应用 token，都不允许关闭。** 这些是系统内置资源，认证配置由定义文件固定，不提供关闭入口；按 3.3、7.2 推导即为开启，与其他资源同一规则，不需要额外字段或特殊判断。用户态入口拒绝应用 token，应用态入口拒绝用户委托 token（4.2）。
 - **不受业务网关开关影响。** 业务网关的开关只控制该网关自己的业务 API。MCP Server 走 `bk-apigateway` 网关的独立入口，按 MCP Server 权限授权；MCP Server 所属网关关闭开关，不影响该 Server 的应用通道：mcp-proxy 不区分调用来源，本期也不改 JWT 和 mcp-proxy。
 - **平台运维保持 `bk-apigateway.oauth2_app_enabled=true`。** 关闭它会同时关闭所有 MCP 入口的用户委托 token 和应用 token 调用。
-- **入口不校验资源权限，权限由 mcp-proxy 判断。** 入口 `resource_perm_required=false`；请求到达 mcp-proxy 后，`MCPServerPermissionMiddleware` 按网关 JWT 中的 app_code 查询 `MCPServerAppPermission` 并检查有效期（[mcp_permission.go](../src/mcp-proxy/pkg/middleware/mcp_permission.go)）。用户委托 token 和应用 token 的 app_code 都是真实应用，与旧认证头调用走同一份 MCP Server 授权，mcp-proxy 不需要改。
+- **入口不校验资源权限，权限由 mcp-proxy 判断。** 入口 `resource_perm_required=false`；请求到达 mcp-proxy 后，`MCPServerPermissionMiddleware` 按网关 JWT 中的 app_code 查询 `MCPServerAppPermission` 并检查有效期（[mcp_permission.go](../../src/mcp-proxy/pkg/middleware/mcp_permission.go)）。用户委托 token 和应用 token 的 app_code 都是真实应用，与旧认证头调用走同一份 MCP Server 授权，mcp-proxy 不需要改。
 - **audience 接受 `mcp:{name}` / `mcp:*`，也接受网关范围 audience**（`gateway:*`、`gateway:bk-apigateway/api:*`、`gateway:bk-apigateway/api:{入口资源}`），由现有 `bk-oauth2-audience-validate` 校验，两种入口相同。这是有意的设计：MCP 入口本身是 `bk-apigateway` 网关的资源，网关范围 audience 自然覆盖它；能否访问具体 MCP Server 由 mcp-proxy 的 MCP Server 权限决定，网关不做细分。APISIX 单测锁定了该行为；如要收紧，须同时修改 bkauth 签发规则和 mcp-proxy。
 - bkauth 签发约定：MCP scope 不新增 `app_only`；应用 token 调用 MCP 应用态入口可带 `mcp:{name}` / `mcp:*`，或经资源 scope 获得的 `bk-apigateway` 网关范围 audience。签发 `gateway:*` 等宽 audience 时，等同允许调用所有 MCP 入口（第 11 节）。
 - **第二跳不变。** mcp-proxy 调用工具 API 时继续使用虚拟应用的 inner JWT，与旧认证头调用一致；本期不引入调研文档第 9 节的“委托来源”字段。
@@ -627,7 +629,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | Web 接口：资源 | `apis/web/resource/serializers.py`（只读推导字段、批量更新的层级约束）、`views.py`（批量更新审计记录实际写入结果）；版本详情 `apis/web/resource_version/serializers.py` |
 | Web 接口：网关 | `apis/web/gateway/serializers.py`、`biz/gateway/gateway.py`（网关开关读写） |
 | 同步/导入 | `apis/v2/sync/serializers.py`（网关同步新增开关）；`apigw-definitions/bk-apigateway-resources.yaml`（接口定义）；openapi schema 不改 |
-| 存储与发布投影 | `core/models.py`（`Gateway`、`ReleasedResource` 新列）、`core/constants.py`、迁移 `0059`（`db_default`、主键分页回填）、`core/managers.py`（投影写入与推导、排除绑定 `bk-access-token-source` 的资源、`refresh_oauth2_app_flags`） |
+| 存储与发布投影 | `core/models.py`（`Gateway`、`ReleasedResource` 新列）、`core/constants.py`、迁移 `0059`（`db_default`、主键分页回填）、`core/managers.py`（投影写入与推导、排除绑定 `bk-access-token-source` 的资源）、`core/management/commands/sync_released_resource.py`（原地补算） |
 | 运维命令 | `controller/management/commands/sync_releases_to_gateway_parallel.py`（`--released-since` 取 `ReleaseHistory` ∪ `Release.updated_time`、`--dry-run`）；`core/management/commands/sync_released_resource.py`（`--oauth2-app-flags` 原地补算） |
 | scope、lookup 与申请列表 | `service/oauth2_client_scope.py`、`service/gateway_released_resource.py`、`apis/v2/inner/serializers.py`、`views.py`（资源 lookup/list 新增两个输出字段、v2 申请列表规则 5.6）；`apis/open/permission/views.py`（v1 差异注释） |
 | 下发 | `controller/convertor/route.py`（读取网关开关、`support_app`、`bk-access-token-source` 屏蔽、`challenge_on_missing_credential`）、`fixtures/plugins.yaml` |
@@ -823,7 +825,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 模式判定（I5 / #208 评审） | 按 4.2 判定 `delegated`、`app` 或 `unknown`。真实应用的 `unknown` 返回 401 |
 | 回滚恢复范围（PR-3） | `ReleaseHistory` ∪ `Release.updated_time` 的数据库候选，再并上 etcd 原始路由扫描（显式字段，false 也计入）；核验 etcd 与 APISIX 加载后才降级插件；空清单不调用旧命令 |
 | 再次升级（PR-4） | `sync_released_resource --oauth2-app-flags` 原地补算投影，可重复执行，不删除投影 |
-| 0059（I11） | 主键分页回填；保留 `db_default`；DDL 用普通 `AddField`/`AddIndex`，不再先探测再执行 |
+| 0059（I11） | 主键分页回填；保留 `db_default`；重复执行时跳过已存在的列和索引；迁移内冻结推导规则 |
 | v2 申请列表（I7 / I8） | 所有 `P=0` 的公开资源（含无需认证）都返回 `unlimited`；v1 不变，注释说明差异 |
 | 规则加载时校验（R2 / #208 评审） | 插件 `init()` 校验并保存规则，按 7.1 记录配置问题，插件继续启动 |
 | 投影与 `bk-access-token-source`（PR-2 / PR-7） | 绑定该插件即不开放应用通道，不区分 `source`、`allow_fallback`（严格 API Key 会在 OAuth2 校验前返回 400）；规则同时作用于路由与投影推导，scope、lookup、回填、补算一致；Web 只读字段仍为 U && A |
@@ -832,7 +834,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 外部依赖 | 第 11 节各项不阻塞合并，上线前确认；联调最后在 Minikube 完成 |
 | 批量更新审计（I13） | 同时记录请求值和按 true/false 分组的实际写入结果 |
 | 权限 | 复用现有应用权限，`resource_perm_required` 决定是否校验，不因 OAuth 强制开启 |
-| 层级 | 应用认证 → 校验应用权限 → 允许申请权限；允许申请还要求 `is_public`；覆盖 Web、批量更新、同步、导入；存量数据不迁移 |
+| 层级 | 应用认证 → 校验应用权限 → 允许申请权限；允许申请还要求 `is_public`；覆盖 Web 单资源、同步、导入；批量更新只归一化允许申请；存量数据不迁移 |
 | `app_verified_required` | 保留，不新增 `Resource` 列 |
 | 写入字段 | `auth_type`、`oauth2_app_delegated_enabled` 只读；写入只用旧字段，同步 yaml 不新增字段，无新旧字段冲突规则 |
 | 未传与显式 false | 同步、导入与 Web 创建用旧默认值，Web 更新保留当前存储值 |

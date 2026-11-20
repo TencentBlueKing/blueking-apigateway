@@ -21,7 +21,7 @@ from .resource_auth import (
     RESOURCE_OAUTH2_CLIENT_FIELDS,
     ResourceAuthContext,
     build_resource_auth_config,
-    derive_resource_auth_type,
+    get_resource_auth_type,
     strip_resource_oauth2_client_config,
     with_resource_auth_derived_fields,
 )
@@ -37,7 +37,7 @@ __all__ = [
     "ResourceAuthContext",
     # functions
     "build_resource_auth_config",
-    "derive_resource_auth_type",
+    "get_resource_auth_type",
     "strip_resource_oauth2_client_config",
     "with_resource_auth_derived_fields",
     # others

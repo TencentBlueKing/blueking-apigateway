@@ -99,6 +99,19 @@ class TestGatewayData:
 
 
 class TestGatewaySaver:
+    def test_sync_omitting_app_channel_preserves_a_later_update(self, fake_gateway):
+        saver = GatewaySaver(
+            fake_gateway.pk,
+            GatewayData(name=fake_gateway.name, status=fake_gateway.status, description="synced"),
+        )
+        Gateway.objects.filter(pk=fake_gateway.pk).update(oauth2_app_enabled=False)
+
+        saver.save()
+
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.description == "synced"
+        assert fake_gateway.oauth2_app_enabled is False
+
     def test_save(self, unique_gateway_name, default_data_plane):
         # create
         saver = GatewaySaver(

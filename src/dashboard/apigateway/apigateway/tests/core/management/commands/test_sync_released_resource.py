@@ -46,12 +46,14 @@ def _resource(resource_id, user_required, app_required):
 class TestOAuth2AppFlags:
     def test_refreshes_stale_rows_and_creates_missing_projection(self, fake_gateway, fake_stage):
         stale_version = G(ResourceVersion, gateway=fake_gateway)
-        stale_version.data = [_resource(1, True, True), _resource(2, False, True)]
+        blocked_resource = _resource(4, True, True)
+        blocked_resource["plugins"] = [{"type": "bk-access-token-source", "config": {"source": "api_key"}}]
+        stale_version.data = [_resource(1, True, True), _resource(2, False, True), blocked_resource]
         stale_version.save()
         ReleasedResource.objects.save_released_resource(stale_version)
-        ReleasedResource.objects.filter(resource_version_id=stale_version.id).update(
-            oauth2_app_delegated_enabled=False, oauth2_app_only_enabled=False
-        )
+        stale_rows = ReleasedResource.objects.filter(resource_version_id=stale_version.id)
+        stale_rows.update(oauth2_app_delegated_enabled=False, oauth2_app_only_enabled=False)
+        stale_rows.filter(resource_id=4).update(oauth2_app_delegated_enabled=True)
         G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=stale_version)
 
         missing_version = G(ResourceVersion, gateway=fake_gateway)
@@ -66,8 +68,8 @@ class TestOAuth2AppFlags:
             row.resource_id: (row.oauth2_app_delegated_enabled, row.oauth2_app_only_enabled)
             for row in ReleasedResource.objects.filter(gateway=fake_gateway)
         }
-        assert flags == {1: (True, False), 2: (False, True), 3: (True, False)}
-        assert "refreshed 2 rows" in stdout.getvalue()
+        assert flags == {1: (True, False), 2: (False, True), 3: (True, False), 4: (False, False)}
+        assert "refreshed 3 rows" in stdout.getvalue()
 
         stdout = StringIO()
         call_command("sync_released_resource", "--gateway-id", fake_gateway.id, "--oauth2-app-flags", stdout=stdout)

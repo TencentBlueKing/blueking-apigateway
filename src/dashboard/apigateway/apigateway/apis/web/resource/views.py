@@ -288,13 +288,20 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         ):
             schema_changed = True
 
-        if self._check_if_changed(dict(slz.validated_data), instance) or schema_changed:
-            saver = ResourcesSaver.from_resources(
-                gateway=request.gateway,
-                resources=[slz.validated_data],
-                username=request.user.username,
-            )
-
+        saver = ResourcesSaver.from_resources(
+            gateway=request.gateway,
+            resources=[slz.validated_data],
+            username=request.user.username,
+        )
+        resource_data = saver.resource_data_list[0]
+        # 原样提交存量配置也会按层级关闭无效的权限校验或允许申请。
+        # 如果关闭了权限校验，重新发布后数据面会跳过该校验。
+        input_data = {
+            **slz.validated_data,
+            "auth_config": resource_data.auth_config.model_dump(),
+            "allow_apply_permission": resource_data.allow_apply_permission,
+        }
+        if self._check_if_changed(input_data, instance) or schema_changed:
             resources = saver.save()
             instance = resources[0]
 

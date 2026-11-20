@@ -37,7 +37,7 @@ RESOURCE_AUTH_DERIVED_FIELDS = (
 )
 
 
-def derive_resource_auth_type(config: dict) -> str:
+def get_resource_auth_type(config: dict) -> str:
     if config.get("auth_verified_required", True):
         return ResourceAuthTypeEnum.USER.value
     if config.get("app_verified_required", True):
@@ -48,7 +48,7 @@ def derive_resource_auth_type(config: dict) -> str:
 def with_resource_auth_derived_fields(config: dict) -> dict:
     """Return a copy of the auth config with the read-only fields derived from the legacy fields."""
     result = dict(config)
-    result["auth_type"] = derive_resource_auth_type(config)
+    result["auth_type"] = get_resource_auth_type(config)
     result["oauth2_app_delegated_enabled"] = bool(
         config.get("auth_verified_required", True) and config.get("app_verified_required", True)
     )

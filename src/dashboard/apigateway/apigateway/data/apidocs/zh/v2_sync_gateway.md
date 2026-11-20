@@ -22,7 +22,7 @@
 | is_public   | boolean  | 否  | 网关是否公开，默认公开 |
 | is_official | boolean  | 否  | `true` 为官方网关，`false` 为普通网关；新建时默认 `false`，更新时不传则保留原值 |
 | kind        | string   | 否  | 网关类型：`normal`（默认）或 `ai`；仅创建时生效 |
-| oauth2_app_enabled | boolean | 否 | 是否开启 OAuth 应用通道（Bearer 入口接受用户委托 token 与应用 token）；新建时默认 `true`，更新时不传则保留原值；修改后需重新发布才在数据面生效 |
+| oauth2_app_enabled | boolean | 否 | 是否开启 OAuth 应用通道（Bearer 入口接受用户委托 token 与应用 token）。建议设为 `true`，以使用完整的 bkauth OAuth2 token 认证。新建时默认 `true`，更新时不传则保留当前值。修改后需重新发布才在数据面生效 |
 
 
 两个展示名字段分别唯一，不区分大小写，并会去除首尾空白。

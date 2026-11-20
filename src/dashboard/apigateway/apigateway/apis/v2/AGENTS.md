@@ -19,7 +19,7 @@ infer authorization from sharing a gateway-shaped URL.
 
 ## Inner OAuth2 contracts (bkauth and developer center)
 
-Design: [resource-oauth2-app-access-design.md](../../../../../../docs/resource-oauth2-app-access-design.md)
+Design: [resource-oauth2-app-access-design.md](../../../../../../docs/design/resource-oauth2-app-access-design.md)
 sections 5.5 and 5.6.
 
 - Resource scope `oauth_client_type` accepts `public`, `personal`,
