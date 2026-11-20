@@ -54,6 +54,7 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="MCPServerDetail"
       :api-method="getTableData"
       :columns="tableColumns"
       :filter-value="filterData"

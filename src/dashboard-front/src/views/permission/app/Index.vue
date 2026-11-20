@@ -81,6 +81,7 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
+        cache-identifier="PermissionApp"
         resizable
         show-settings
         show-selection
@@ -173,7 +174,7 @@ const gatewayStore = useGateway();
 const permissionStore = usePermission();
 const featureFlagStore = useFeatureFlag();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const tableColumns = shallowRef<any[]>([
   {
     title: t('蓝鲸应用 ID'),
@@ -466,7 +467,10 @@ watch(
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getPermissionList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 function getList() {

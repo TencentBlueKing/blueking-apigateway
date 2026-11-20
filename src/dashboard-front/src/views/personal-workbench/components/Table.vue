@@ -43,7 +43,7 @@
       :expandable="expandableConfig"
       :expanded-row-keys="expandableConfig.expandedRowKeys"
       :show-first-full-row="selectedRows.length > 0"
-      :disabled-check-selection="disabledSelection"
+      :disabled-check-selection="isITSMApproval"
       :max-limit-config="{ allocatedHeight: 300, mode: 'tdesign' }"
       :filter-value="filterData"
       :api-method="getTableData"
@@ -56,6 +56,9 @@
       @selection-change="handleSelectionChange"
       @clear-filter="handleClearFilter"
     >
+      <template #selectionPopoverContent>
+        {{ t('单据接入了 ITSM，ITSM 不支持批量审批') }}
+      </template>
       <template #expandedRow="{ row }">
         <BkLoading
           :loading="lastExpandRow?.isLoading"
@@ -111,7 +114,7 @@ import { Button, Message, Popover } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
 import { locale, t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { ITableEmptyType, ITableMethod } from '@/types/common';
+import type { ITableEmptyType, ITableMethod, ITableSelection } from '@/types/common';
 import type { IResource } from '@/types/permission';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
@@ -172,8 +175,8 @@ const featureFlagStore = useFeatureFlag();
 const { getMyPendingData } = usePersonalWorkbench();
 
 const basicFormRef = useTemplateRef<InstanceType<typeof BasicForm>>('basicFormRef');
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const childTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('childTableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
+const childTableRef = useTemplateRef<ITableMethod>('childTableRef');
 const tableData = ref<IPersonalWorkbenchListResponse[]>([]);
 const selectedRows = ref<IPersonalWorkbenchUIState[]>([]);
 const selectedRowKeys = ref<(string | number)[]>([]);
@@ -839,12 +842,6 @@ const handleDeleteApply = (row: TableRowData) => {
   });
 };
 
-const disabledSelection = (row: TableRowData) => {
-  const isDisabled = isITSMApproval(row);
-  row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
-  return isDisabled;
-};
-
 // 批量网关审批提交
 const handleGatewayApproveReject = async () => {
   try {
@@ -972,25 +969,14 @@ const handleRowClick = ({ e, row }: {
   }, 300);
 };
 
-const handleSelectionChange = ({
-  selections,
-  selectionsRowKeys,
-}: {
-  selections: TableRowData[]
-  selectionsRowKeys: (string | number)[]
-}) => {
+const handleSelectionChange = ({ selections, selectionsRowKeys }: ITableSelection) => {
   selectedRows.value = selections as IPersonalWorkbenchUIState[];
   selectedRowKeys.value = selectionsRowKeys;
 };
 
 const handleChildSelectionChange = (
   row: TableRowData,
-  { selections,
-    selectionsRowKeys }:
-  {
-    selections: TableRowData[]
-    selectionsRowKeys: (string | number)[]
-  },
+  { selections, selectionsRowKeys }: ITableSelection,
 ) => {
   const selectedIds = selectionsRowKeys as number[];
   const total = row.resources?.length ?? 0;
@@ -1152,16 +1138,7 @@ const getRowClass = ({ row }: { row: TableRowData }) => {
   return '';
 };
 
-// 搜索McpServer列表
-const debounceSearch = debounce(async () => {
-  await getList();
-  // 处理非清除筛选条件后勾选数据回显
-  if (lastExpandRow.value?.selection?.length) {
-    setTimeout(() => {
-      childTableRef.value?.setSelectionData(lastExpandRow.value?.selection);
-    }, 200);
-  }
-}, 200);
+const debounceSearch = debounce(getList, 200);
 
 watch(() => filterData, () => {
   tableEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value))?.length > 0 ? 'searchEmpty' : 'empty';

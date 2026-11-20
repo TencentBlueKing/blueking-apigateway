@@ -236,7 +236,7 @@ const {
   handleExport,
 } = useMcpPermission();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const tableEmptyType = ref<ITableEmptyType>('empty');
 const filterData = ref<FilterValue | IPermissionApprovalFilterValue>({
   bk_app_code: '',
@@ -310,7 +310,6 @@ const curAction = ref<IPermissionApprovalAction>({
 });
 const cacheIdentifier = ref('permission-apply-unprocessed');
 
-let filterTimer: number | null = null;
 const filterFields = ['bk_app_code', 'mcp_server_id', 'grant_type'] as string[];
 const rules = {
   comment: [
@@ -676,22 +675,8 @@ const handleTabChange = (name: string) => {
 
 const handleFilterIconClick = () => {
   mcpServerName.value = '';
-  if (filterTimer) clearTimeout(filterTimer);
-
-  // 因为popup执行机制是异步的，所以延迟执行, 这里适配表格filter无法滚动加载和搜索未抛出事件
-  filterTimer = setTimeout(() => {
-    const filterPopup = document.querySelector('.mcp-server-filter-popup');
-
-    if (filterPopup) {
-      const MCP_FILTER_ALL_LIMIT = 10000;
-      const { count } = mcpServerPagination.value;
-      const totalCount = Math.max(count, MCP_FILTER_ALL_LIMIT);
-
-      getMcpList(totalCount);
-    }
-
-    filterTimer = null;
-  }, 200);
+  const limit = Math.max(mcpServerPagination.value.count, 10000);
+  getMcpList(limit);
 };
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {

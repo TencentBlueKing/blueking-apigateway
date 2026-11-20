@@ -388,7 +388,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'apigwOperatingData',
     enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
     title: t('运行数据'),
-    icon: 'runtime-data',
+    icon: 'keguancexing',
     permission: 'runtime',
     children: [
       {
@@ -983,10 +983,10 @@ onMounted(() => {
       .submenu-header-content {
 
         .bk-badge-main {
-          vertical-align: top;
           position: relative;
-          left: 4px;
           top: -6px;
+          left: 4px;
+          vertical-align: top;
 
           .bk-badge {
             width: 6px;
@@ -1003,21 +1003,21 @@ onMounted(() => {
       .bk-menu-item {
 
         .item-content {
-          min-width: 0;
           position: relative;
           display: flex;
-          align-items: center;
+          min-width: 0;
           overflow: hidden;
+          align-items: center;
 
           .bk-badge-main {
-            flex-shrink: 0;
-            margin-left: 4px;
             position: relative;
             top: -6px;
+            margin-left: 4px;
+            flex-shrink: 0;
 
             .bk-badge {
-              min-width: 18px;
               height: 18px;
+              min-width: 18px;
               padding: 0 2px;
               font-size: 12px;
               line-height: 14px;

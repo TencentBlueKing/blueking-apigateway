@@ -265,6 +265,7 @@
                 ref="tableRef"
                 v-model:table-data="tableData"
                 v-model:settings="settings"
+                cache-identifier="AccessLog"
                 table-row-key="request_id"
                 show-settings
                 expand-on-row-click
@@ -470,7 +471,7 @@ const expandedFields = ref<{
   field: string
 }[]>([]);
 const pageCount = ref<number>(0);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const settings = shallowRef({
   checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
   fields: [

@@ -13,7 +13,14 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 // https://vite.dev/config/
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd());
+  // 生产构建每次生成新的构建标识，用于启动时清空旧构建残留的表格偏好缓存；开发服务器保持稳定标识避免重启清缓存
+  const appBuildId = command === 'build'
+    ? (process.env.APP_BUILD_ID || Date.now().toString(36))
+    : 'dev';
   return {
+    define: {
+      __APP_BUILD_ID__: JSON.stringify(appBuildId),
+    },
     server: {
       host: env.VITE_DEV_SERVER_HOST,
       port: 8888,

@@ -28,21 +28,16 @@ export * from './use-gate-way-data';
 export * from './use-sidebar';
 // 通用表格列表数据
 export * from './use-query-list';
-// 获取页面最大可视化区域limit
-export * from './use-max-table-limit';
 // 设置通用表格复选框勾选处理函数
 export * from './use-selection-data';
 // datepicker 时间选择器 hooks 适用于列表筛选
 export * from './use-date-picker';
-// 设置tdesgin表格复选框通用函数
-export * from './use-tdesign-selection';
 // 设置tdesgin表格筛选通用函数
 export * from './use-table-filter-change';
 // 设置tdesgin表格排序通用函数
 export * from './use-table-sort-change';
 export * from './use-stage-data';
 export * from './use-text-getter';
-export * from './use-table-setting';
 export * from './use-sticky-bottom';
 // 操作锁
 export * from './use-operation-lock';

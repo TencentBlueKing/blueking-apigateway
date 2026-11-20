@@ -68,6 +68,7 @@
         <main class="docs-list">
           <AgTable
             ref="tableRef"
+            cache-identifier="ApiDocs"
             show-settings
             resizable
             default-row-size="large"

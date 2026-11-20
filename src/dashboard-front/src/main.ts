@@ -42,6 +42,9 @@ import directive from '@/directives';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 import AgIconButton from '@/components/base/ag-icon-button/Index.vue';
 import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
+import { AG_TABLE_CONTEXT_KEY } from '@/components/base/ag-table/context';
+import { pruneTablePreferences } from '@/components/base/ag-table/settings/table-preferences';
+import { useFeatureFlag } from '@/stores';
 //  highlight.js github代码高亮风格
 import 'highlight.js/styles/github.css';
 // 多租户组件样式
@@ -58,10 +61,17 @@ app.use(createPinia())
   // 全局组件
   .component('AgIcon', AgIcon)
   .component('AgIconButton', AgIconButton)
-  .component('AgCopyButton', AgCopyButton);
+  .component('AgCopyButton', AgCopyButton)
+  // 向基础表格组件注入应用级运行时信息，避免 base/ 组件直接依赖 stores/router
+  .provide(AG_TABLE_CONTEXT_KEY, {
+    getNoticeHeight: () => (useFeatureFlag().isEnabledNotice ? 40 : 0),
+  });
+
+// 每次新构建首次访问时清空旧构建残留的表格设置偏好缓存
+pruneTablePreferences(__APP_BUILD_ID__);
 
 // 等首次导航完成后再挂载：否则挂载时 currentRoute 仍是初始 location，
-// 依赖当前路由信息的逻辑（如 use-table-setting 的表格列缓存标识）会取到空值。
+// 依赖当前路由信息的页面与导航状态会先拿到空值。
 // 超时兜底：isReady 只在 resolve/reject 后 settle，若守卫内请求异常挂起会阻塞挂载，
 // 超过阈值则先挂载外壳（内容区仍由 App.vue 的 userLoaded 门控，路由就绪后状态会响应式补齐）。
 const ROUTER_READY_TIMEOUT = 10_000;

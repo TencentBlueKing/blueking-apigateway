@@ -39,10 +39,11 @@
       <AgTable
         ref="resourceTableRef"
         v-model:table-data="tableData"
+        cache-identifier="StageOverview"
         :columns="columns"
         table-row-key="id"
         show-settings
-        :filter-row="null"
+        :filter-value="filterValue"
         local-page
         resizable
         :row-class-name="getRowClassName"
@@ -74,7 +75,7 @@ import { useGateway, useStage } from '@/stores';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { ITableEmptyType } from '@/types/common';
+import type { ITableEmptyType, ITableMethod } from '@/types/common';
 import { getStageList } from '@/services/source/gateway/stage';
 import type { IStageListItem } from '@/types/stage';
 import { getLabelList } from '@/services/source/gateway/label';
@@ -105,7 +106,7 @@ const gatewayStore = useGateway();
 const stageStore = useStage();
 
 const filterValue = ref<Record<string, any>>({ keyword: '' });
-const resourceTableRef = ref();
+const resourceTableRef = useTemplateRef<ITableMethod>('resourceTableRef');
 const currentStage = ref<any>(null);
 const currentResource = ref<any>({});
 const resourceDetailsRef = ref();
@@ -450,7 +451,6 @@ const getTableData = async () => {
 const resetFilterAndPage = () => {
   filterValue.value = { keyword: '' };
   nextTick(() => {
-    resourceTableRef.value?.TDesignTableRef?.clearFilter?.();
     resourceTableRef.value?.setPagination({
       current: 1,
       pageSize: 10,
@@ -506,11 +506,11 @@ const handleClearQueries = () => {
 };
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
-  Object.assign(
-    filterValue.value,
-    filters,
-    { method: filters.method?.filter((item: string | undefined) => !!item) || [] },
-  );
+  filterValue.value = {
+    ...filterValue.value,
+    ...filters,
+    method: filters.method?.filter((item: string | undefined) => !!item) || [],
+  };
 };
 
 const hasNoVerification = (row: any) => {

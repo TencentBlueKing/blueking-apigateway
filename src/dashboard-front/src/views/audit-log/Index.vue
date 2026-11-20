@@ -75,6 +75,7 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="AuditLog"
       table-row-key="event_id"
       :is-exist-unique-key="false"
       show-settings
@@ -146,7 +147,7 @@ const defaultSearchData: IAuditLog = {
 const showDetails = ref<boolean>(false);
 const details = ref<IAuditEventLogOutput | null>(null);
 const tableData = ref<IAuditEventLogOutput[]>([]);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<ITableMethod>('tableRef');
 const filterData = ref<IAuditLog>(cloneDeep(defaultSearchData));
 
 const apigwId = computed(() => gatewayStore.apigwId);
@@ -343,7 +344,10 @@ const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: t
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getAuditLogList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const handleClearFilter = () => {

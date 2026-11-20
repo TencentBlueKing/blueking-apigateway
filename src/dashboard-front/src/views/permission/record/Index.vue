@@ -74,6 +74,7 @@
       <AgTable
         ref="permissionTableRef"
         v-model:table-data="tableData"
+        cache-identifier="PermissionRecord"
         show-settings
         resizable
         :expand-icon="false"
@@ -298,7 +299,7 @@ const resourceInfoColumn = shallowRef<any[]>([
     },
   },
 ]);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
+const tableRef = useTemplateRef<ITableMethod>('permissionTableRef');
 const tableData = ref<any[]>([]);
 const filterData = ref<Record<string, any>>({
   bk_app_code: '',
@@ -469,7 +470,10 @@ function getList() {
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getPermissionRecordList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const handleFilterChange = (filterItem: any) => {
