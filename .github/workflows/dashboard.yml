@@ -3,10 +3,10 @@ name: dashboard ci
 on:
   push:
     branches: [ master, pre_*, pre/*, ft_*, release/* ]
-    paths: ['src/dashboard/**']
+    paths: ['src/dashboard/**', '.pre-commit-config.yaml', '.github/workflows/dashboard.yml']
   pull_request:
     branches: [ master, pre_*, pre/*, ft_*, release/* ]
-    paths: ['src/dashboard/**']
+    paths: ['src/dashboard/**', '.pre-commit-config.yaml', '.github/workflows/dashboard.yml']
 
 jobs:
   build:
@@ -34,6 +34,10 @@ jobs:
 
     - name: Install the project
       run: cd src/dashboard && export UV_PROJECT_ENVIRONMENT="${pythonLocation}" && uv sync --locked --all-extras --dev
+
+    - name: Test Semgrep rules
+      run: make test-semgrep
+      working-directory: src/dashboard
 
     - name: Lint
       run: make edition-ee && make lint-check

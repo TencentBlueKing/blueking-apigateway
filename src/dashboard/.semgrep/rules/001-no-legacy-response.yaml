@@ -1,0 +1,17 @@
+rules:
+  - id: 001-no-legacy-response
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Modern Web/v2 APIs must not use legacy V1 response classes.
+      Use OKJsonResponse / FailJsonResponse or the surface's standard DRF response.
+    paths:
+      include:
+        - "**/apis/web/**"
+        - "**/apis/v2/**"
+      exclude:
+        - "**/tests/**"
+        - "**/migrations/**"
+    pattern-either:
+      - pattern: apigateway.utils.responses.V1OKJsonResponse
+      - pattern: apigateway.utils.responses.V1FailJsonResponse
