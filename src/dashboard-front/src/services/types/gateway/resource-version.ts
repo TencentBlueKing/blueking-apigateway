@@ -59,31 +59,51 @@ export interface IResourceVersionListOutput {
   sdk_count: number
 }
 
-/**
- * GET /gateways/{gateway_id}/resource-versions/diff/
- */
+// 后端 diff 只包含变化字段；值可以是 false、null、空集合或嵌套配置。
+export type ResourceVersionDiff = Record<string, unknown>;
+
+export interface IResourceVersionPlugin {
+  id: number
+  name: string
+  type: string
+  config: Record<string, any>
+}
+
+/** 版本比较接口返回的资源快照；旧快照的可选字段在展示层补齐。 */
+export interface IResourceVersionDiffResource {
+  id: number
+  name: string
+  method: string
+  path: string
+  kind?: 'standard' | 'ai'
+  description?: string | null
+  match_subpath?: boolean
+  enable_websocket?: boolean
+  is_public?: boolean
+  allow_apply_permission?: boolean
+  api_labels?: (number | string)[]
+  contexts?: {
+    resource_auth?: {
+      config?: string | Record<string, boolean>
+    }
+  }
+  proxy?: {
+    type: 'http' | 'mock'
+    backend_id?: number | null
+    config?: string | Record<string, any>
+  }
+  plugins?: IResourceVersionPlugin[]
+  doc_updated_time?: Record<string, string>
+  diff?: ResourceVersionDiff | null
+}
+
+/** GET /gateways/{gateway_id}/resource-versions/diff/ */
 export interface IResourceVersionDiffOutput {
-  add: {
-    id: number
-    name: string
-    method: string
-    path: string
-    diff: {
-      [key: string]: string | null
-    } | null
-  }[]
-  delete: {
-    id: number
-    name: string
-    method: string
-    path: string
-    diff: {
-      [key: string]: string | null
-    } | null
-  }[]
+  add: IResourceVersionDiffResource[]
+  delete: IResourceVersionDiffResource[]
   update: {
-    source: Record<string, any>
-    target: Record<string, any>
+    source: IResourceVersionDiffResource
+    target: IResourceVersionDiffResource
   }[]
 }
 

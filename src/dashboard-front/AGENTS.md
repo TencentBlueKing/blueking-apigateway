@@ -67,7 +67,7 @@ pnpm lint:ci:oxlint
 pnpm preview
 ```
 
-> **注意：项目未配置测试框架，没有单元测试或 E2E 测试。**
+> **注意：项目未配置通用测试框架或 E2E 测试。资源版本 diff 使用 Node 内置测试工具，执行 `pnpm test:version-diff`。**
 
 ### 暂缓升级的依赖
 

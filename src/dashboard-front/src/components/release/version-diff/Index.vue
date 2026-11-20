@@ -245,215 +245,209 @@
         >
           <!-- 新增 -->
           <div
-            v-for="addItem in diffData.add"
+            v-for="addItem in filteredDiffData.add"
             :key="addItem.id"
             class="diff-item"
           >
-            <template v-if="checkMatch(addItem, 'add')">
-              <div class="source-box">
-                <div
-                  class="metadata pl-10px"
-                  @click="() => handleToggle(addItem)"
-                >
-                  <AgIcon
-                    v-if="!addItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span class="resource-title">--</span>
-                </div>
-                <div class="resource-box">
-                  <BkException
-                    v-show="addItem.isExpanded"
-                    class="exception-part"
-                    type="empty"
-                    scene="part"
-                  >
-                    {{ t('此版本无该资源') }}
-                  </BkException>
-                </div>
+            <div class="source-box">
+              <div
+                class="metadata pl-10px"
+                @click="() => handleToggle(addItem)"
+              >
+                <AgIcon
+                  v-if="!addItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span class="resource-title">--</span>
               </div>
-              <div class="target-box">
-                <div
-                  class="metadata success"
-                  @click="() => handleToggle(addItem)"
+              <div class="resource-box">
+                <BkException
+                  v-show="addItem.isExpanded"
+                  class="exception-part"
+                  type="empty"
+                  scene="part"
                 >
-                  <AgIcon
-                    v-if="!addItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(addItem)"
-                    class="resource-title"
-                    :title="`【${addItem?.method}】${addItem?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="addItem.isExpanded"
-                    :cur-resource="addItem"
-                    :backends-list="backendsList"
-                  />
-                </div>
+                  {{ t('此版本无该资源') }}
+                </BkException>
               </div>
-            </template>
+            </div>
+            <div class="target-box">
+              <div
+                class="metadata success"
+                @click="() => handleToggle(addItem)"
+              >
+                <AgIcon
+                  v-if="!addItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(addItem)"
+                  class="resource-title"
+                  :title="`【${addItem?.method}】${addItem?.path}`"
+                />
+              </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="addItem.isExpanded"
+                  :cur-resource="addItem"
+                  :backends-list="backendsList"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- 删除 -->
           <div
-            v-for="deleteItem in diffData.delete"
+            v-for="deleteItem in filteredDiffData.delete"
             :key="deleteItem.id"
             class="diff-item"
           >
-            <template v-if="checkMatch(deleteItem, 'delete')">
-              <div class="source-box">
-                <div
-                  class="metadata"
-                  @click="() => handleToggle(deleteItem)"
-                >
-                  <AgIcon
-                    v-if="!deleteItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(deleteItem)"
-                    class="resource-title"
-                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <!-- <bk-transition :name="animation"> -->
-                  <ResourceDiffDetail
-                    v-show="deleteItem.isExpanded"
-                    :cur-resource="deleteItem"
-                    :backends-list="backendsList"
-                  />
-                  <!-- </bk-transition> -->
-                </div>
+            <div class="source-box">
+              <div
+                class="metadata"
+                @click="() => handleToggle(deleteItem)"
+              >
+                <AgIcon
+                  v-if="!deleteItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(deleteItem)"
+                  class="resource-title"
+                  :title="`【${deleteItem?.method}】${deleteItem?.path}`"
+                />
               </div>
-              <div class="target-box">
-                <div
-                  class="metadata danger"
-                  @click="() => handleToggle(deleteItem)"
-                >
-                  <AgIcon
-                    v-if="!deleteItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(deleteItem)"
-                    class="resource-title"
-                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="deleteItem.isExpanded"
-                    style="opacity: 35%"
-                    :cur-resource="deleteItem"
-                    :backends-list="backendsList"
-                  />
-                </div>
+              <div class="resource-box">
+                <!-- <bk-transition :name="animation"> -->
+                <ResourceDiffDetail
+                  v-show="deleteItem.isExpanded"
+                  :cur-resource="deleteItem"
+                  :backends-list="backendsList"
+                />
+                <!-- </bk-transition> -->
               </div>
-            </template>
+            </div>
+            <div class="target-box">
+              <div
+                class="metadata danger"
+                @click="() => handleToggle(deleteItem)"
+              >
+                <AgIcon
+                  v-if="!deleteItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(deleteItem)"
+                  class="resource-title"
+                  :title="`【${deleteItem?.method}】${deleteItem?.path}`"
+                />
+              </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="deleteItem.isExpanded"
+                  style="opacity: 35%"
+                  :cur-resource="deleteItem"
+                  :backends-list="backendsList"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- 更新 -->
           <div
-            v-for="updateItem in diffData.update"
+            v-for="updateItem in filteredDiffData.update"
             :key="`${updateItem.source.id}:${updateItem.target.id}`"
             class="diff-item"
           >
-            <template v-if="checkMatch(updateItem.source, 'update') || checkMatch(updateItem.target, 'update')">
-              <div class="source-box">
-                <div
-                  class="metadata"
-                  @click="() => handleToggle(updateItem)"
-                >
-                  <AgIcon
-                    v-if="!updateItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(updateItem.source)"
-                    class="resource-title"
-                    :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="updateItem.isExpanded"
-                    class="source-version"
-                    :cur-resource="updateItem.source"
-                    :backends-list="backendsList"
-                    :diff-data="updateItem.target.diff"
-                    :only-show-diff="searchParams.onlyUpdated"
-                    is-source
-                  />
-                </div>
+            <div class="source-box">
+              <div
+                class="metadata"
+                @click="() => handleToggle(updateItem)"
+              >
+                <AgIcon
+                  v-if="!updateItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(updateItem.source)"
+                  class="resource-title"
+                  :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
+                />
               </div>
-              <div class="target-box">
-                <div
-                  class="metadata warning"
-                  @click="() => handleToggle(updateItem)"
-                >
-                  <AgIcon
-                    v-if="!updateItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(updateItem.target)"
-                    class="resource-title"
-                    :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
-                  />
-                </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="updateItem.isExpanded"
+                  class="source-version"
+                  :cur-resource="updateItem.source"
+                  :backends-list="backendsList"
+                  :diff-data="updateItem.target.diff"
+                  :only-show-diff="searchParams.onlyUpdated"
+                  is-source
+                />
+              </div>
+            </div>
+            <div class="target-box">
+              <div
+                class="metadata warning"
+                @click="() => handleToggle(updateItem)"
+              >
+                <AgIcon
+                  v-if="!updateItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(updateItem.target)"
+                  class="resource-title"
+                  :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
+                />
+              </div>
 
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="updateItem.isExpanded"
-                    :cur-resource="updateItem.target"
-                    :backends-list="backendsList"
-                    :diff-data="updateItem.source.diff"
-                    :only-show-diff="searchParams.onlyUpdated"
-                  />
-                </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="updateItem.isExpanded"
+                  :cur-resource="updateItem.target"
+                  :backends-list="backendsList"
+                  :diff-data="updateItem.source.diff"
+                  :only-show-diff="searchParams.onlyUpdated"
+                />
               </div>
-            </template>
+            </div>
           </div>
 
           <template v-if="!hasResult && !isDataLoading">
@@ -486,6 +480,7 @@
 
 <script setup lang="ts">
 import ResourceDiffDetail from './components/ResourceDiffDetail.vue';
+import { filterDiffData } from './resource-diff';
 import { Spinner } from 'bkui-vue/lib/icon';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { getLabelList } from '@/services/source/gateway/label';
@@ -572,15 +567,14 @@ const diffTypeList = reactive([
 
 const backendsList = ref<IBackendListOutput[]>([]);
 
+// 筛选结果同时用于渲染和空状态，避免两个入口重复判断或结果不一致。
+const filteredDiffData = computed(() => filterDiffData(diffData, {
+  ...searchParams,
+  keyword: searchKeyword.value,
+}));
+
 const hasResult = computed(() => {
-  const addItem = diffData.add.some((item: any) => checkMatch(item, 'add'));
-
-  const deleteItem = diffData.delete.some((item: any) => checkMatch(item, 'delete'));
-
-  const updateItem = diffData.update.some((item: any) =>
-    checkMatch(item.source, 'update') || checkMatch(item.target, 'update'));
-
-  return addItem || deleteItem || updateItem || isDataLoading.value;
+  return Object.values(filteredDiffData.value).some(items => items.length > 0) || isDataLoading.value;
 });
 
 const hasFilter = computed(() =>
@@ -658,29 +652,6 @@ const handleSwitch = async () => {
     localSourceId.value,
   ];
   await getDiffData();
-};
-
-const checkMatch = (item: any, type: string) => {
-  if (searchParams.diffType && searchParams.diffType !== type) {
-    return false;
-  }
-  // 检查是否匹配搜索关键词
-  const keyword = searchKeyword.value.toLowerCase();
-  const method = item?.method?.toLowerCase() ?? '';
-  const path = item?.path?.toLowerCase() ?? '';
-  const backendPath = item?.proxy?.config?.path?.toLowerCase() ?? '';
-  const name = item?.name?.toLowerCase() ?? '';
-  const isKeywordMatched = method.indexOf(keyword) > -1
-    || path.indexOf(keyword) > -1
-    || backendPath.indexOf(keyword) > -1
-    || name.indexOf(keyword) > -1;
-
-  // 检查是否满足文档更新时间过滤
-  const shouldBlockDocTimeDiffOnly = type === 'update' && searchParams.hideOnlyDiffInDocUpdatedTime;
-  const hasOnlyDocTimeDiff = Object.keys(item.diff || {}).length === 1 && item.diff.doc_updated_time;
-  const shouldShow = shouldBlockDocTimeDiffOnly ? !hasOnlyDocTimeDiff : true;
-
-  return isKeywordMatched && shouldShow;
 };
 
 const renderTitle = (item: any) => {
@@ -770,25 +741,6 @@ const getDiffData = async () => {
       target_resource_version_id: String(localTargetId.value).replace('current', ''),
     });
 
-    const update = res.update.map((item) => {
-      if (item?.source?.diff?.proxy?.backend_id) {
-        const curBackend = backendsList.value.find((backend) => {
-          return backend.id === item.source.diff.proxy.backend_id;
-        });
-        item.source.diff.proxy.backend_name = curBackend?.name || '';
-      }
-
-      if (item?.target?.diff?.proxy?.backend_id) {
-        const curBackend = backendsList.value.find((backend) => {
-          return backend.id === item.target.diff.proxy.backend_id;
-        });
-        item.target.diff.proxy.backend_name = curBackend?.name || '';
-      }
-      return {
-        ...item,
-        isExpanded: false,
-      };
-    });
     Object.assign(diffData, {
       add: res.add.map(item => ({
         ...item,
@@ -798,7 +750,10 @@ const getDiffData = async () => {
         ...item,
         isExpanded: false,
       })),
-      update,
+      update: res.update.map(item => ({
+        ...item,
+        isExpanded: false,
+      })),
     } satisfies IDiffData);
   }
   finally {

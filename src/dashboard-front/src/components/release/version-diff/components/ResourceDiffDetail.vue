@@ -26,22 +26,21 @@
       class="title always-visible"
       :class="{
         'ag-diff':
-          checkDiff('localData.name') ||
-          checkDiff('localData.path') ||
-          checkDiff('localData.description') ||
-          checkDiff('localData.api_labels') ||
+          checkDiff('name') ||
+          checkDiff('path') ||
+          checkDiff('description') ||
+          checkDiff('api_labels') ||
           checkDiff(
-            'localData.contexts.resource_auth.config.auth_verified_required'
+            'contexts.resource_auth.config.auth_verified_required'
           ) ||
           checkDiff(
-            'localData.contexts.resource_auth.config.app_verified_required'
+            'contexts.resource_auth.config.app_verified_required'
           ) ||
-          checkDiff('localData.is_public') ||
+          checkDiff('is_public') ||
           checkDiff(
-            'localData.contexts.resource_auth.config.resource_perm_required'
+            'contexts.resource_auth.config.resource_perm_required'
           ) ||
-          checkDiff('localData.is_public') ||
-          checkDiff('localData.allow_apply_permission'),
+          checkDiff('allow_apply_permission'),
       }"
     >
       {{ t('基本信息') }}
@@ -53,7 +52,7 @@
     >
       <BkRow
         class="always-visible"
-        :class="{ 'ag-diff': checkDiff('localData.name') }"
+        :class="{ 'ag-diff': checkDiff('name') }"
       >
         <BkCol :span="5">
           <label class="ag-key">{{ t('资源名称') }}:</label>
@@ -65,7 +64,7 @@
         </BkCol>
       </BkRow>
 
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.path') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('path') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('资源地址') }}:</label>
         </BkCol>
@@ -76,7 +75,7 @@
         </BkCol>
       </BkRow>
 
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.description') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('description') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('描述') }}:</label>
         </BkCol>
@@ -87,7 +86,7 @@
         </BkCol>
       </BkRow>
 
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.api_labels') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('api_labels') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('标签') }}:</label>
         </BkCol>
@@ -118,10 +117,10 @@
         :class="{
           'ag-diff':
             checkDiff(
-              'localData.contexts.resource_auth.config.auth_verified_required'
+              'contexts.resource_auth.config.auth_verified_required'
             ) ||
             checkDiff(
-              'localData.contexts.resource_auth.config.app_verified_required'
+              'contexts.resource_auth.config.app_verified_required'
             ),
         }"
       >
@@ -138,7 +137,7 @@
       <BkRow
         :class="{
           'ag-diff': checkDiff(
-            'localData.contexts.resource_auth.config.oauth2_personal_client_enabled'
+            'contexts.resource_auth.config.oauth2_personal_client_enabled'
           ),
         }"
       >
@@ -155,7 +154,7 @@
       <BkRow
         :class="{
           'ag-diff': checkDiff(
-            'localData.contexts.resource_auth.config.resource_perm_required'
+            'contexts.resource_auth.config.resource_perm_required'
           ),
         }"
       >
@@ -176,8 +175,8 @@
       <BkRow
         :class="{
           'ag-diff':
-            checkDiff('localData.is_public') ||
-            checkDiff('localData.allow_apply_permission'),
+            checkDiff('is_public') ||
+            checkDiff('allow_apply_permission'),
         }"
       >
         <BkCol :span="5">
@@ -199,7 +198,8 @@
     <p
       class="title mt-15px"
       :class="{
-        'ag-diff': checkDiff('localData.method') || checkDiff('localData.path'),
+        'ag-diff': checkDiff('method') || checkDiff('path') ||
+          checkDiff('match_subpath') || checkDiff('enable_websocket'),
       }"
     >
       {{ t('请求配置') }}
@@ -209,7 +209,7 @@
       :col="15"
       :margin="6"
     >
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.method') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('method') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('请求方法') }}:</label>
         </BkCol>
@@ -220,7 +220,7 @@
         </BkCol>
       </BkRow>
 
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.path') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('path') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('请求路径') }}:</label>
         </BkCol>
@@ -231,7 +231,7 @@
         </BkCol>
       </BkRow>
       <template v-if="localData.kind !== 'ai'">
-        <BkRow :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
+        <BkRow :class="{ 'ag-diff': checkDiff('match_subpath') }">
           <BkCol :span="5">
             <label class="ag-key">{{ t('匹配所有子路径') }}:</label>
           </BkCol>
@@ -242,7 +242,7 @@
           </BkCol>
         </BkRow>
 
-        <BkRow :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
+        <BkRow :class="{ 'ag-diff': checkDiff('enable_websocket') }">
           <BkCol :span="5">
             <label class="ag-key">{{ t('启用 WebSocket') }}:</label>
           </BkCol>
@@ -258,7 +258,7 @@
     <template v-if="localData.kind !== 'ai'">
       <p
         :class="{
-          'ag-diff': checkDiff('localData.openapi_schema'),
+          'ag-diff': checkDiff('openapi_schema'),
         }"
         class="title mt-15px"
       >
@@ -269,13 +269,13 @@
         :margin="6"
         class="ag-kv-box"
       >
-        <BkRow :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
+        <BkRow :class="{ 'ag-diff': checkDiff('openapi_schema') }">
           <BkCol :span="5">
             <label class="ag-key">&nbsp;</label>
           </BkCol>
           <BkCol :span="10">
             <div class="ag-value">
-              {{ isSource ? '--' : (checkDiff('localData.openapi_schema') ? t('有更新') : '--') }}
+              {{ isSource ? '--' : (checkDiff('openapi_schema') ? t('有更新') : '--') }}
             </div>
           </BkCol>
         </BkRow>
@@ -285,13 +285,7 @@
     <template v-if="localData.proxy?.backend_id && localData.kind !== 'ai'">
       <p
         class="title mt-16px"
-        :class="{
-          'ag-diff':
-            checkDiff('localData.proxy.backend_name') ||
-            checkDiff('localData.proxy.config.method') ||
-            checkDiff('localData.proxy.config.timeout') ||
-            checkDiff('localData.proxy.config.path'),
-        }"
+        :class="{ 'ag-diff': checkDiff('proxy') }"
       >
         {{ t('后端配置') }}
       </p>
@@ -299,10 +293,10 @@
         class="ag-kv-box"
         :col="15"
         :margin="6"
-        :class="{ 'box-diff': checkDiff('localData.proxy.type') }"
+        :class="{ 'box-diff': checkDiff('proxy.type') }"
       >
         <BkRow
-          :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }"
+          :class="{ 'ag-diff': checkDiff('proxy.backend_id') }"
         >
           <BkCol :span="5">
             <label class="ag-key">{{ t('后端服务:') }}</label>
@@ -316,7 +310,7 @@
 
         <template v-if="localData.proxy.type === 'http'">
           <BkRow
-            :class="{ 'ag-diff': checkDiff('localData.proxy.config.method') }"
+            :class="{ 'ag-diff': checkDiff('proxy.config.method') }"
           >
             <BkCol :span="5">
               <label class="ag-key">{{ t('请求方法') }}:</label>
@@ -330,7 +324,7 @@
 
           <BkRow
             :class="{
-              'ag-diff': checkDiff('localData.proxy.config.timeout'),
+              'ag-diff': checkDiff('proxy.config.timeout'),
             }"
           >
             <BkCol :span="5">
@@ -344,7 +338,7 @@
           </BkRow>
 
           <BkRow
-            :class="{ 'ag-diff': checkDiff('localData.proxy.config.path') }"
+            :class="{ 'ag-diff': checkDiff('proxy.config.path') }"
           >
             <BkCol :span="5">
               <label class="ag-key">{{ t('请求路径:') }}</label>
@@ -359,7 +353,7 @@
 
         <template v-if="localData.proxy.type === 'mock'">
           <BkRow
-            :class="{ 'ag-diff': checkDiff('localData.proxy.config.code') }"
+            :class="{ 'ag-diff': checkDiff('proxy.config.code') }"
           >
             <BkCol :span="5">
               <label class="ag-key">Status Code:</label>
@@ -372,7 +366,7 @@
           </BkRow>
 
           <BkRow
-            :class="{ 'ag-diff': checkDiff('localData.proxy.config.body') }"
+            :class="{ 'ag-diff': checkDiff('proxy.config.body') }"
           >
             <BkCol :span="5">
               <label class="ag-key">Response Body:</label>
@@ -391,13 +385,13 @@
           </BkRow>
 
           <BkRow
-            :class="{ 'ag-diff': checkDiff('localData.proxy.config.headers') }"
+            :class="{ 'ag-diff': checkDiff('proxy.config.headers') }"
           >
             <BkCol :span="5">
               <label class="ag-key">Headers:</label>
             </BkCol>
             <BkCol :span="10">
-              <div v-if="isEmptyObject(localData.proxy.config.headers)">
+              <div v-if="hasHeaders">
                 <ul class="ag-list">
                   <li
                     v-for="(headerItem, index) in localData.proxy.config
@@ -416,7 +410,10 @@
     </template>
 
     <template v-if="localData.kind === 'ai'">
-      <p class="title mt-16px">
+      <p
+        class="title mt-16px"
+        :class="{ 'ag-diff': checkDiff('proxy.backend_id') }"
+      >
         {{ t('模型服务配置') }}
       </p>
       <BkContainer
@@ -424,7 +421,7 @@
         :col="15"
         :margin="6"
       >
-        <BkRow :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }">
+        <BkRow :class="{ 'ag-diff': checkDiff('proxy.backend_id') }">
           <BkCol :span="5">
             <label class="ag-key">{{ t('模型服务') }}:</label>
           </BkCol>
@@ -439,7 +436,7 @@
 
     <p
       class="title mt-15px"
-      :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }"
+      :class="{ 'ag-diff': checkDiff('doc_updated_time') }"
     >
       {{ t('文档') }}
     </p>
@@ -448,7 +445,7 @@
       :col="15"
       :margin="6"
     >
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time.zh') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('doc_updated_time.zh') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
         </BkCol>
@@ -458,7 +455,7 @@
           </div>
         </BkCol>
       </BkRow>
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time.en') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('doc_updated_time.en') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
         </BkCol>
@@ -478,7 +475,7 @@
       >
         <div
           class="plugin-diff"
-          :class="getPluginDiffClass(plugin)"
+          :class="getPluginDiffClass(plugin.type, curResource.diff, diffData, isSource)"
         >
           <p class="plugin-title mt-15px">
             {{ t('插件:{name}', { name: plugin.name }) }}
@@ -499,12 +496,22 @@
 <script setup lang="ts">
 import ConfigDisplayTable from '@/components/plugin/plugin-manage/config-display/Index.vue';
 import { useGateway } from '@/stores';
+import {
+  createDiffIndex,
+  getPluginDiffClass,
+  normalizeResource,
+} from '../resource-diff';
+import type {
+  IResourceVersionDiffResource,
+  ResourceVersionDiff,
+} from '@/services/types/gateway/resource-version';
+import type { IBackendListOutput } from '@/services/types/gateway/backend';
 
 interface IProps {
-  curResource?: any
-  diffData?: any
+  curResource?: IResourceVersionDiffResource | null
+  diffData?: ResourceVersionDiff | null
   onlyShowDiff?: boolean
-  backendsList?: any[]
+  backendsList?: IBackendListOutput[]
   // 是否作为旧版本资源展示
   isSource?: boolean
 }
@@ -520,32 +527,12 @@ const {
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
-const diffMap = ref<any>({});
-const localData = ref<any>({
-  name: '',
-  disabled_stages: [],
-  config: {},
-  proxy: {
-    type: '',
-    config: { transform_headers: { add: [] } },
-  },
-  useDefaultTimeout: true,
-  useDefaultHeader: true,
-  useDefaultHost: true,
-  contexts: { resource_auth: { config: {} } },
-});
+// 展示值与差异索引独立派生，资源、另一侧差异或后端列表变化时自动更新。
+const localData = computed(() => normalizeResource(curResource, backendsList));
+const diffIndex = computed(() => createDiffIndex(curResource?.diff, diffData));
+const checkDiff = (path: string) => diffIndex.value.has(path);
 
-const isEmptyObject = (data: any) => {
-  if (data) {
-    const keys = Object.keys(data);
-    return !!keys.length;
-  }
-  return false;
-};
-
-const isString = (str: any) => {
-  return typeof str === 'string';
-};
+const hasHeaders = computed(() => Object.keys(localData.value.proxy.config.headers ?? {}).length > 0);
 
 const getResourceAuth = (auth: any) => {
   if (!auth) return '--';
@@ -560,157 +547,8 @@ const getResourceAuth = (auth: any) => {
   return tmpArr.join(', ');
 };
 
-const initLocalData = async () => {
-  const data = JSON.parse(JSON.stringify(curResource));
-
-  if (data.contexts.resource_auth.config) {
-    if (isString(data.contexts.resource_auth.config)) {
-      data.contexts.resource_auth.config = JSON.parse(data.contexts.resource_auth.config);
-    }
-  }
-  else {
-    data.config = {};
-  }
-
-  if (data.proxy.config) {
-    if (isString(data.proxy.config)) {
-      data.proxy.config = JSON.parse(data.proxy.config);
-    }
-  }
-  else {
-    data.proxy.config = {};
-  }
-
-  if (data.proxy.type === 'http') {
-    data.useDefaultTimeout = !data.proxy.config.timeout;
-    data.useDefaultHost = JSON.stringify(data.proxy.config.upstreams) === '{}';
-    data.useDefaultHeader = JSON.stringify(data.proxy.config.transform_headers) === '{}';
-  }
-  localData.value = data;
-
-  const backendId = localData.value?.proxy?.backend_id;
-  if (backendId) {
-    const curBackend: any = backendsList.find((item: any) => item.id === backendId);
-    if (curBackend) {
-      localData.value.proxy.backend_name = curBackend.name;
-    }
-  }
-};
-
-const initDiff = () => {
-  diffMap.value = {};
-
-  if (!diffData) {
-    return false;
-  }
-
-  findAllDiff(diffData);
-
-  // 处理后端配置使用默认配置情况
-  if (diffMap.value['localData.proxy.config.timeout']) {
-    diffMap.value['localData.useDefaultTimeout'] = true;
-  }
-
-  if (diffMap.value['localData.proxy.config.upstreams'] === '{}') {
-    diffMap.value['localData.useDefaultHost'] = true;
-  }
-
-  if (diffMap.value['localData.proxy.config.transform_headers'] === '{}') {
-    diffMap.value['localData.useDefaultHeader'] = true;
-  }
-
-  // 处理安全设置禁用环境
-  const keys = Object.keys(diffMap.value);
-  if (keys.some(item => item.startsWith('localData.disabled_stages'))) {
-    diffMap.value['localData.disabled_stages'] = true;
-  }
-
-  // 处理文档更新时间
-  if (curResource?.diff?.doc_updated_time?.zh && !diffMap.value['localData.doc_updated_time.zh']) {
-    diffMap.value['localData.doc_updated_time.zh'] = '';
-  }
-  if (curResource?.diff?.doc_updated_time?.en && !diffMap.value['localData.doc_updated_time.en']) {
-    diffMap.value['localData.doc_updated_time.en'] = '';
-  }
-};
-
-const findAllDiff = (value: any, prePath = 'localData') => {
-  if (Array.isArray(value)) {
-    if (value.length) {
-      value.forEach((item) => {
-        const path = `${prePath}`;
-        findAllDiff(item, path);
-      });
-    }
-    else {
-      diffMap.value[prePath] = '[]';
-    }
-  }
-  else if (value !== null && typeof value === 'object') {
-    if (JSON.stringify(value) === '{}') {
-      diffMap.value[prePath] = '{}';
-    }
-    else {
-      for (const key of Object.keys(value)) {
-        const path = `${prePath}.${key}`;
-        findAllDiff(value[key], path);
-      }
-    }
-  }
-  else {
-    diffMap.value[prePath] = value;
-  }
-};
-
-const checkDiff = (path: any) => {
-  const keys = Object.keys(diffMap.value);
-  return keys.some(item => item.startsWith(path));
-};
-
-const getPluginDiffClass = (plugin: any) => {
-  // 检查传入的 plugin 是否记录在 diffMap 中
-  const diffMapPluginKey = `localData.plugins.${plugin.code || plugin.type}`;
-  const isPluginUpdated = Object.keys(diffMap.value).some(item => item.startsWith(diffMapPluginKey));
-
-  // 插件在 diffMap 中，属于更新的内容，给予 item-updated 样式
-  if (isPluginUpdated) {
-    return 'item-updated';
-  }
-
-  // 插件不在 diffMap 中，检查传入的 plugin 是否存在于 curResource.diff.plugins 中
-  // 如果存在，说明属于新增或删除的插件，如果不存在说明没有变动
-  const diffPlugins = curResource?.diff?.plugins ?? {};
-  const isPluginAddedOrDeleted = Object.keys(diffPlugins)
-    .some((pluginCode: string) => pluginCode === (plugin.type || plugin.code));
-
-  // 属于新增或删除的插件
-  if (isPluginAddedOrDeleted) {
-    // 传入了 isSource，表示当前 resource 作为旧数据展示，插件的变动属于被删除的内容，给予 item-deleted 样式
-    if (isSource) {
-      return 'item-deleted';
-    }
-
-    // 当前 resource 作为新数据展示，插件的变动属于新添加的内容，给予 item-deleted 样式
-    return 'item-added';
-  }
-
-  // 插件没有变更，设置一个标记用的 class，不改变样式
-  return 'no-diff';
-};
-
 // 网关标签
 const labels = computed(() => gatewayStore.labels || []);
-
-watch(
-  () => curResource,
-  () => {
-    initDiff();
-    initLocalData();
-  },
-);
-
-initDiff();
-initLocalData();
 </script>
 
 <style lang="scss" scoped>
