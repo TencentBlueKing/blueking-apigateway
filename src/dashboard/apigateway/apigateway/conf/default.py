@@ -744,14 +744,14 @@ BKAUTH_SESSION_TIMEOUT = 60
 # 启用多租户模式
 BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
 
-# 验证用户信息的网关 API(租户版本) => 走网关，不走 esb
-# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-login
-if EDITION == "ee":
+# EE 可通过 USE_LOGIN_V3_URL 使用 bk-login v3 网关 API 验证用户信息
+USE_LOGIN_V3_URL = env.bool("USE_LOGIN_V3_URL", default=False)
+if EDITION == "ee" and USE_LOGIN_V3_URL:
     BKAUTH_USER_INFO_APIGW_URL = (
         BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
     )
 else:
-    # 只在 te 生效，并且会被 te_default.py 中的值覆盖
+    # 使用 v2 接口验证用户信息，TE 可在 te_default.py 中覆盖
     BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
     BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 
