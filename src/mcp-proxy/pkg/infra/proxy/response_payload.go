@@ -19,8 +19,10 @@
 package proxy
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -31,8 +33,9 @@ const truncatedSuffix = "...(truncated)"
 // amount of metadata. It is intentionally allocation-light: the raw body is never decoded into
 // a Go object graph, so this type stays O(rawBody) in memory regardless of payload shape.
 //
-// Two presentation methods are layered on top:
-//   - marshalEnvelope / marshalRawResponse: produce the wire bytes returned to MCP clients.
+// Presentation helpers are layered on top:
+//   - marshalEnvelope: returns a JSON string for successful envelope responses.
+//   - marshalEnvelopeBytes / marshalRawResponse: retain JSON bytes for APIError and raw-response paths.
 //   - EnvelopePreview: produces a bounded, JSON-safe preview used by audit and API logs.
 type toolResponsePayload struct {
 	statusCode        int
@@ -193,32 +196,55 @@ func (p *toolResponsePayload) EnvelopePreview(traceID, xRequestID string, limit 
 	return string(out)
 }
 
-func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byte, error) {
+type toolResponseEnvelope struct {
+	StatusCode   int             `json:"status_code"`
+	RequestID    string          `json:"request_id"`
+	TraceID      string          `json:"trace_id"`
+	XRequestID   string          `json:"x_request_id"`
+	ResponseBody json.RawMessage `json:"response_body"`
+}
+
+// encodeEnvelope shares JSON options and validation/error handling across both output forms.
+// Callers remove the trailing newline added by Encoder to preserve the original wire text.
+func (p *toolResponsePayload) encodeEnvelope(out io.Writer, traceID, xRequestID string) error {
 	responseBody, err := p.bodyAsJSONValue()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	envelope := struct {
-		StatusCode   int             `json:"status_code"`
-		RequestID    string          `json:"request_id"`
-		TraceID      string          `json:"trace_id"`
-		XRequestID   string          `json:"x_request_id"`
-		ResponseBody json.RawMessage `json:"response_body"`
-	}{
+	envelope := toolResponseEnvelope{
 		StatusCode:   p.statusCode,
 		RequestID:    p.upstreamRequestID,
 		TraceID:      traceID,
 		XRequestID:   xRequestID,
 		ResponseBody: responseBody,
 	}
-	out, err := json.Marshal(envelope)
-	if err != nil {
+	if err := json.NewEncoder(out).Encode(envelope); err != nil {
 		if p != nil && len(p.rawBody) > 0 && p.isDeclaredJSON {
-			return nil, p.invalidDeclaredJSONBodyError(err)
+			return p.invalidDeclaredJSONBodyError(err)
 		}
+		return err
+	}
+	return nil
+}
+
+func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) (string, error) {
+	// Encode directly into the string retained by TextContent, avoiding a full
+	// []byte-to-string copy. Encoder still buffers the complete JSON internally.
+	var out strings.Builder
+	if err := p.encodeEnvelope(&out, traceID, xRequestID); err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(out.String(), "\n"), nil
+}
+
+func (p *toolResponsePayload) marshalEnvelopeBytes(traceID, xRequestID string) ([]byte, error) {
+	// APIError needs JSON bytes; keep this buffer separate from the string output
+	// to avoid copying a complete envelope from string back into []byte.
+	var out bytes.Buffer
+	if err := p.encodeEnvelope(&out, traceID, xRequestID); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return bytes.TrimSuffix(out.Bytes(), []byte("\n")), nil
 }
 
 // marshalRawResponse returns the complete MCP tool response for raw_response_enabled mode.
