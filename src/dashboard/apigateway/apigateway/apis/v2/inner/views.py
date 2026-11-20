@@ -19,7 +19,7 @@
 import logging
 import operator
 import re
-from typing import Dict
+from typing import Any, Dict
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
@@ -281,6 +281,7 @@ class _GatewayReleasedResourceApiMixin:
         )
 
     def serialize_released_resources(self, resources, fields):
+        oauth2_app_enabled = self.request.gateway.oauth2_app_enabled
         items = [
             {
                 "id": resource.resource_id,
@@ -288,6 +289,8 @@ class _GatewayReleasedResourceApiMixin:
                 "is_public": resource.is_public,
                 "oauth2_public_client_enabled": resource.oauth2_public_client_enabled,
                 "oauth2_personal_client_enabled": resource.oauth2_personal_client_enabled,
+                "oauth2_app_delegated_enabled": oauth2_app_enabled and resource.oauth2_app_delegated_enabled,
+                "oauth2_app_only_enabled": oauth2_app_enabled and resource.oauth2_app_only_enabled,
                 "description": (resource.data or {}).get("description", ""),
                 "description_en": (resource.data or {}).get("description_en"),
                 "is_deprecated": (resource.data or {}).get("is_deprecated", False),
@@ -525,6 +528,18 @@ class GatewayMaintainerDeleteApi(generics.GenericAPIView):
         return OKJsonResponse(data=output_slz.data)
 
 
+def _is_listed_permission_resource(resource: Dict[str, Any]) -> bool:
+    """开发者中心按此列表展示、检索可调用的资源
+
+    - 校验应用权限的资源：只列出允许主动申请且要求应用认证的资源（兼容层级约束落地前的存量数据）
+    - 不校验应用权限的资源（含无需认证）：即使不允许申请也列出，permission_level 为 unlimited，
+      提示调用方无需申请权限；调用时仍须满足资源的认证要求
+    """
+    if resource["resource_perm_required"]:
+        return bool(resource["allow_apply_permission"] and resource["app_verified_required"])
+    return True
+
+
 @method_decorator(
     name="get",
     decorator=extend_schema(
@@ -545,8 +560,7 @@ class GatewayPermissionResourceListApi(generics.ListAPIView):
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
 
-        # 过滤掉不允许主动申请权限的资源
-        resources = list(filter(lambda x: x["allow_apply_permission"], resources))
+        resources = [resource for resource in resources if _is_listed_permission_resource(resource)]
 
         resource_permissions = ResourcePermissionBuilder(
             self.request.gateway,

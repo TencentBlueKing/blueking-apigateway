@@ -622,6 +622,66 @@ class TestSyncApi:
         assert Gateway.objects.get(name=gateway_name).kind == GatewayKindEnum.AI.value
 
     @pytest.mark.parametrize(
+        ("data", "expected"),
+        [
+            ({}, True),
+            ({"oauth2_app_enabled": True}, True),
+            ({"oauth2_app_enabled": False}, False),
+        ],
+    )
+    def test_gateway_sync_creates_gateway_with_oauth2_app_enabled(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane, data, expected
+    ):
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data=data,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert Gateway.objects.get(name=unique_gateway_name).oauth2_app_enabled is expected
+
+    @pytest.mark.parametrize(
+        ("data", "expected"),
+        [
+            # 未传时保留管理员在页面上关闭的开关
+            ({"description": "updated"}, False),
+            ({"oauth2_app_enabled": True}, True),
+            ({"oauth2_app_enabled": False}, False),
+        ],
+    )
+    def test_gateway_sync_updates_oauth2_app_enabled_only_when_provided(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        unique_gateway_name,
+        disable_app_permission,
+        default_data_plane,
+        data,
+        expected,
+    ):
+        fake_gateway.name = unique_gateway_name
+        fake_gateway.oauth2_app_enabled = False
+        fake_gateway.save(update_fields=["name", "oauth2_app_enabled"])
+        GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.oauth2_app_enabled is expected
+
+    @pytest.mark.parametrize(
         ("data", "expected_is_official", "expected_api_type"),
         [
             ({"api_type": 1}, True, 1),

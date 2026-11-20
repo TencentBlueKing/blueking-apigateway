@@ -137,3 +137,25 @@ def test_multiple_version_page_uses_four_queries(django_assert_num_queries):
         queryset = get_gateway_released_resources(gateway_id=gateway.id)
         assert queryset.count() == 1
         assert [(item.resource_id, item.resource_name) for item in queryset[:10]] == [(1, "new_name")]
+
+
+def test_oauth2_flags_are_loaded_without_extra_queries(django_assert_num_queries):
+    gateway = G(Gateway, name="oauth2-flags-query-budget-gateway")
+    version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+    _release(gateway, version, "prod")
+    _make_released_resource(gateway, version, resource_id=1, name="first")
+    _make_released_resource(gateway, version, resource_id=2, name="second")
+
+    with django_assert_num_queries(2):
+        resources = list(get_gateway_released_resources(gateway_id=gateway.id))
+        flags = [
+            (
+                item.oauth2_public_client_enabled,
+                item.oauth2_personal_client_enabled,
+                item.oauth2_app_delegated_enabled,
+                item.oauth2_app_only_enabled,
+            )
+            for item in resources
+        ]
+
+    assert flags == [(False, False, False, False), (False, False, False, False)]

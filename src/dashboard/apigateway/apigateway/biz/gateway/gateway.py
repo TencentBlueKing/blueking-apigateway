@@ -102,6 +102,8 @@ class GatewayData(BaseModel):
     # 上层如需修改，需明确指定配置值
     allow_auth_from_params: Optional[bool] = Field(default=None)
     allow_delete_sensitive_params: Optional[bool] = Field(default=None)
+    # 默认值 None：新建网关按开启处理，更新网关时保留当前值
+    oauth2_app_enabled: Optional[bool] = Field(default=None)
 
     tenant_mode: Optional[str] = Field(default=None)
     tenant_id: Optional[str] = Field(default=None)
@@ -612,6 +614,7 @@ class GatewaySaver:
             is_public=self._gateway_data.is_public,
             kind=self._gateway_data.kind,
             is_official=_is_official_gateway_type(self._gateway_data.gateway_type),
+            oauth2_app_enabled=self._gateway_data.oauth2_app_enabled is not False,
             tenant_mode=self._gateway_data.tenant_mode,
             tenant_id=self._gateway_data.tenant_id,
             created_by=self.username,
@@ -685,9 +688,11 @@ class GatewaySaver:
 
     def _update_gateway(self):
         gateway = self._gateway
+        update_fields = ["display_name_en", "description", "description_en", "is_public", "updated_by", "updated_time"]
 
         if "display_name" in self._gateway_data.model_fields_set:
             gateway.display_name = normalize_display_name(self._gateway_data.display_name, name=gateway.name)
+            update_fields.append("display_name")
         gateway.display_name_en = normalize_display_name_en(self._gateway_data.display_name_en)
 
         # 1. update gateway
@@ -696,8 +701,15 @@ class GatewaySaver:
         gateway.is_public = self._gateway_data.is_public
         if self._gateway_data.gateway_type is not None:
             gateway.is_official = _is_official_gateway_type(self._gateway_data.gateway_type)
+            update_fields.append("is_official")
+        if self._gateway_data.oauth2_app_enabled is not None:
+            gateway.oauth2_app_enabled = self._gateway_data.oauth2_app_enabled
+            update_fields.append("oauth2_app_enabled")
         gateway.updated_by = self.username
-        gateway.save()
+        # 同步未传开关时不能把先前读到的值写回，页面可能已经修改过。
+        gateway.save(update_fields=update_fields)
+        if self._gateway_data.oauth2_app_enabled is None:
+            gateway.refresh_from_db(fields=["oauth2_app_enabled"])
         # 更新网关时，仅在显式提供维护者时新增网关管理员，不删除，以防止删除已更新的管理员数据
         if self._gateway_data.maintainers:
             add_gateway_administrators(

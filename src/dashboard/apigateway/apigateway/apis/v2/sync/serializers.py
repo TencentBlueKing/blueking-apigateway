@@ -140,6 +140,10 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     is_official = serializers.BooleanField(required=False)
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    oauth2_app_enabled = serializers.BooleanField(
+        required=False,
+        help_text="是否开启 OAuth 应用通道；不传时新建网关为 true，已有网关保留当前值",
+    )
     kind = serializers.ChoiceField(
         choices=GatewaySyncKindEnum.get_choices(),
         default=GatewaySyncKindEnum.NORMAL.value,
@@ -171,6 +175,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "is_official",
             "user_config",
             "allow_delete_sensitive_params",
+            "oauth2_app_enabled",
             "data_planes",
             "kind",
         ]

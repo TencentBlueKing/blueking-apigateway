@@ -51,6 +51,7 @@ class TestGatewayData:
                     "user_config": None,
                     "allow_auth_from_params": None,
                     "allow_delete_sensitive_params": None,
+                    "oauth2_app_enabled": None,
                     "tenant_id": None,
                     "tenant_mode": None,
                     "kind": GatewayKindEnum.NORMAL.value,
@@ -69,6 +70,7 @@ class TestGatewayData:
                     "not_exist_key": "",
                     "allow_auth_from_params": False,
                     "allow_delete_sensitive_params": True,
+                    "oauth2_app_enabled": None,
                     "tenant_mode": "single",
                     "tenant_id": "default",
                 },
@@ -83,6 +85,7 @@ class TestGatewayData:
                     "user_config": {"foo": "bar"},
                     "allow_auth_from_params": False,
                     "allow_delete_sensitive_params": True,
+                    "oauth2_app_enabled": None,
                     "tenant_mode": "single",
                     "tenant_id": "default",
                     "kind": GatewayKindEnum.NORMAL.value,
@@ -96,6 +99,19 @@ class TestGatewayData:
 
 
 class TestGatewaySaver:
+    def test_sync_omitting_app_channel_preserves_a_later_update(self, fake_gateway):
+        saver = GatewaySaver(
+            fake_gateway.pk,
+            GatewayData(name=fake_gateway.name, status=fake_gateway.status, description="synced"),
+        )
+        Gateway.objects.filter(pk=fake_gateway.pk).update(oauth2_app_enabled=False)
+
+        saver.save()
+
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.description == "synced"
+        assert fake_gateway.oauth2_app_enabled is False
+
     def test_save(self, unique_gateway_name, default_data_plane):
         # create
         saver = GatewaySaver(
@@ -116,6 +132,35 @@ class TestGatewaySaver:
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
         assert gateway.is_official is False
+
+    def test_save_oauth2_app_enabled(self, unique_gateway_name, default_data_plane):
+        gateway = GatewaySaver(
+            None, GatewayData(name=unique_gateway_name, status=1, tenant_mode="single", tenant_id="default")
+        ).save()
+        assert gateway.oauth2_app_enabled is True
+
+        gateway = GatewaySaver(
+            gateway.id,
+            GatewayData(
+                name=unique_gateway_name, status=1, oauth2_app_enabled=False, tenant_mode="single", tenant_id="default"
+            ),
+        ).save()
+        assert Gateway.objects.get(id=gateway.id).oauth2_app_enabled is False
+
+        # 未传时保留当前值
+        gateway = GatewaySaver(
+            gateway.id, GatewayData(name=unique_gateway_name, status=1, tenant_mode="single", tenant_id="default")
+        ).save()
+        assert Gateway.objects.get(id=gateway.id).oauth2_app_enabled is False
+
+        other_name = f"{unique_gateway_name}-other"
+        gateway = GatewaySaver(
+            None,
+            GatewayData(
+                name=other_name, status=1, oauth2_app_enabled=False, tenant_mode="single", tenant_id="default"
+            ),
+        ).save()
+        assert gateway.oauth2_app_enabled is False
 
     def test_create(self, settings, unique_gateway_name, default_data_plane):
         settings.DEFAULT_USER_AUTH_TYPE = "default"

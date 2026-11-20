@@ -154,6 +154,9 @@ operator 同步/加载探测事件 -> core-api -> MySQL PublishEvent
 | 运行时权限查询 / Runtime Permission Query | core-api `AppPermissionService.Query` | 通过 Stage 的 Release/ResourceVersion 将资源名映射为 ID，不能只查当前草稿。 |
 | MCP 服务应用权限 / MCP Server App Permission | `MCPServerAppPermission`；`(bk_app_code, mcp_server)` | 特定 MCP Server 的应用授权，与工具 API 调用授权是两个检查边界。 |
 | OAuth2 内置应用 / OAuth2 Built-in Application | public/personal 及 enabled 字段 | 内置客户端模式授权，由发布与权限协调流程维护。 |
+| 资源认证策略 / Resource Auth Policy | 资源认证 Context 的 `auth_verified_required`（用户认证 U）、`app_verified_required`（应用认证 A）、`resource_perm_required`（校验应用权限 P）；资源顶层 `allow_apply_permission`、`is_public` | 每个资源一套策略，旧认证头入口与 OAuth2 Bearer 入口共用。层级约束：P 依赖 A，允许申请权限依赖公开与 P；上层关闭时下层保存为 false，不记忆原值。 |
+| 资源认证场景 / Resource Authentication Mode | 由用户认证 U 与应用认证 A 表达 | U 开启时属于用户认证，A 可同时开启。仅 A 开启时属于应用认证，两者都关闭时无需认证。 |
+| OAuth 应用通道 / OAuth2 App Channel | 网关开关 `Gateway.oauth2_app_enabled`（可写，默认开启）；已发布投影 `ReleasedResource.oauth2_app_delegated_enabled`（U && A）、`oauth2_app_only_enabled`（非 U 且 A） | 真实蓝鲸应用持 bkauth Bearer 调用：用户委托 token（scope `app_delegated`）只用于要求用户的资源，应用 token（scope `app_only`）只用于仅应用认证的资源。网关开关同时控制两者：发布时读取当前值、重新发布后在数据面生效，scope/lookup 按当前值立即过滤。与 public/personal 内置应用区分；MCP Server 没有应用通道开关。 |
 | 公开可见 / Public Visibility | 各对象 `is_public` | 对象各自的公开范围，不能统一解释为匿名、免认证或免授权。 |
 
 权限由 dashboard 写入；core-api DAO/缓存是运行时表示，缓存可能滞后。
@@ -164,7 +167,10 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 [RBAC 模型](../src/dashboard/apigateway/apigateway/apps/rbac/models.py)、
 [角色动作](../src/dashboard/apigateway/apigateway/apps/rbac/constants.py)、
 [core-api 权限查询](../src/core-api/pkg/service/app_permission.go)、
-[OAuth2 权限协调](../src/dashboard/apigateway/apigateway/controller/tasks/oauth2_builtin.py)。
+[OAuth2 权限协调](../src/dashboard/apigateway/apigateway/controller/tasks/oauth2_builtin.py)、
+[资源认证推导](../src/dashboard/apigateway/apigateway/service/contexts/resource_auth.py)、
+[OAuth2 scope 查询](../src/dashboard/apigateway/apigateway/service/oauth2_client_scope.py)、
+[OAuth2 插件下发](../src/dashboard/apigateway/apigateway/controller/convertor/route.py)。
 
 ## 6. 插件、接口制品与 MCP
 

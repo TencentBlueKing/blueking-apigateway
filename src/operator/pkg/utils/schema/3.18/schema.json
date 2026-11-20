@@ -8247,7 +8247,7 @@
       "version": 0.1
     },
     "bk-oauth2-audience-validate": {
-      "priority": 17677,
+      "priority": 17684,
       "schema": {
         "$comment": "this is a mark for our injected plugin schema",
         "properties": {

@@ -59,7 +59,7 @@ from apigateway.service.mcp import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
 )
-from apigateway.service.oauth2_client_scope import OAUTH2_CLIENT_TYPES
+from apigateway.service.oauth2_client_scope import OAUTH2_MCP_SERVER_CLIENT_TYPES, OAUTH2_RESOURCE_CLIENT_TYPES
 from apigateway.utils import time
 
 from .helpers import build_gateway_permission_approval_url
@@ -75,6 +75,8 @@ RELEASED_RESOURCE_FIELDS = frozenset(
         "is_public",
         "oauth2_public_client_enabled",
         "oauth2_personal_client_enabled",
+        "oauth2_app_delegated_enabled",
+        "oauth2_app_only_enabled",
     }
 )
 MCP_SERVER_LIST_FIELDS = frozenset(
@@ -235,6 +237,12 @@ class GatewayReleasedResourceOutputSLZ(_SelectableFieldsOutputSLZMixin, serializ
     is_public = serializers.BooleanField(read_only=True)
     oauth2_public_client_enabled = serializers.BooleanField(read_only=True)
     oauth2_personal_client_enabled = serializers.BooleanField(read_only=True)
+    oauth2_app_delegated_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否接受用户委托 token（用户认证且应用认证，且网关开启 OAuth 应用通道）"
+    )
+    oauth2_app_only_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否接受应用 token（仅应用认证，且网关开启 OAuth 应用通道）"
+    )
     description = SerializerTranslatedField(
         translated_fields={"en": "description_en"},
         allow_blank=True,
@@ -1123,7 +1131,7 @@ class AppRequestLogPaginatedOutputSLZ(serializers.Serializer):
 
 
 class OAuth2MCPServerScopeListInputSLZ(serializers.Serializer):
-    oauth_client_type = serializers.ChoiceField(choices=OAUTH2_CLIENT_TYPES)
+    oauth_client_type = serializers.ChoiceField(choices=OAUTH2_MCP_SERVER_CLIENT_TYPES)
     gateway_name = serializers.CharField(required=False, allow_blank=True, max_length=64)
     mcp_server_name = serializers.CharField(required=False, allow_blank=True, max_length=64)
 
@@ -1132,7 +1140,7 @@ class OAuth2MCPServerScopeListInputSLZ(serializers.Serializer):
 
 
 class OAuth2ResourceScopeListInputSLZ(serializers.Serializer):
-    oauth_client_type = serializers.ChoiceField(choices=OAUTH2_CLIENT_TYPES)
+    oauth_client_type = serializers.ChoiceField(choices=OAUTH2_RESOURCE_CLIENT_TYPES)
     gateway_name = serializers.CharField(required=False, allow_blank=True, max_length=64)
     resource_name = serializers.CharField(required=False, allow_blank=True, max_length=256)
 

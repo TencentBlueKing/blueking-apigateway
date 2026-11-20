@@ -353,13 +353,13 @@ class GatewayRetrieveUpdateDestroyApi(RequestGatewayObjectMixin, generics.Retrie
         slz.is_valid(raise_exception=True)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+        related_app_codes = slz.validated_data.pop("related_app_codes", None)
 
         slz.save(updated_by=request.user.username)
 
         if bk_app_codes is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
-        related_app_codes = slz.validated_data.pop("related_app_codes", None)
         if related_app_codes is not None:
             GatewayRelatedAppHandler.update_related_app_codes(request.gateway, related_app_codes)
 

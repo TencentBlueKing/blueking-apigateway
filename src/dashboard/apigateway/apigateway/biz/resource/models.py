@@ -39,6 +39,13 @@ class ResourceAuthConfig(BaseModel):
             raise ValueError("OAuth2 public/personal clients require user authentication")
         return self
 
+    @model_validator(mode="after")
+    def normalize_resource_perm_required(self):
+        # 层级约束：校验应用权限依赖应用认证；上层关闭时下层静默写为 false
+        if not self.app_verified_required:
+            self.resource_perm_required = False
+        return self
+
 
 class ResourceBackendConfig(BaseModel):
     method: str
@@ -91,6 +98,13 @@ class ResourceData(BaseModel):
                 raise ValueError("standard resource requires backend_config")
         else:
             raise ValueError(f"unsupported resource kind: {self.kind}")
+        return self
+
+    @model_validator(mode="after")
+    def normalize_allow_apply_permission(self):
+        # 层级约束：允许申请权限依赖“公开”与“校验应用权限”；不记忆原值
+        if not (self.is_public and self.auth_config.resource_perm_required):
+            self.allow_apply_permission = False
         return self
 
     @model_validator(mode="after")
