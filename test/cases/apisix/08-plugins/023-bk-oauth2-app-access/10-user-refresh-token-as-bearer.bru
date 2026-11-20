@@ -1,0 +1,21 @@
+meta {
+  name: user-refresh-token-as-bearer
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ua_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer bkr_e2einactive0000000000000000000000000
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+}

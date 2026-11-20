@@ -1,0 +1,28 @@
+meta {
+  name: app-token-on-user-resource
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ua_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{oauth2_app_only_token}}
+}
+
+script:pre-request {
+  // needs a real bkauth token issued to the test_bk_app_code app; skipped when the env var is empty
+  if (!bru.getEnvVar("oauth2_app_only_token")) {
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+}
