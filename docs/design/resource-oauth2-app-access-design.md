@@ -26,8 +26,7 @@ Authorization: Bearer ─┘
   - **用户委托 token**（delegated）：用户授权应用代其访问后，bkauth 签发给该应用的 token，同时带有应用和用户身份，用于用户认证且开启“OAuth 授权”的资源；
   - **应用 token**（app-only）：应用以自身身份获取的 token（`client_credentials` grant），不带用户，用于仅应用认证的资源。
 - 两者统称 OAuth 应用通道（下称应用通道）。资源开启应用认证（A=1）时，路由注入 OAuth2 插件；接受哪一类 token 由资源是否要求用户决定。
-- 资源不新增存储字段。`oauth2_app_delegated_enabled` 等价于“用户认证且 `app_verified_required=true`”，`app_verified_required` 继续保留。
-- 接口上的 `auth_type`、`oauth2_app_delegated_enabled` 都是**只读推导字段**；Web、同步、导入的写入仍只使用旧字段，同步 yaml 格式不变。
+- 资源认证配置沿用现有字段。Web 读取和写入、同步及导入均沿用现有格式。
 - 只在已发布投影 `ReleasedResource` 上新增两列冗余字段：`oauth2_app_delegated_enabled`（U && A）和 `oauth2_app_only_enabled`（!U && A），供 bkauth 的 scope 接口按索引筛选。
 - 新增网关级开关 `Gateway.oauth2_app_enabled`，默认开启，网关管理员可按网关关闭应用通道（见 [3.5](#35-网关级开关)）。它控制 Bearer 入口是否接受用户委托 token 和应用 token，不改变资源认证配置和旧入口行为。
 - 兼容范围：兼容旧格式导入、旧认证头调用方式；**不冻结资源修改前的认证要求**。在表单里关闭“OAuth 授权”，旧认证头调用也随之不再要求应用身份、不再校验应用权限。
@@ -70,19 +69,19 @@ Authorization: Bearer ─┘
 
 新表单：认证类型单选（无需认证 / 用户认证 / 应用认证）；用户认证下可多选“个人令牌”“公开客户端”“OAuth 授权”，“OAuth 授权”下有“开启应用白名单”；应用认证下有“开启应用白名单”；“是否公开”下有“允许申请权限”。
 
-| 认证类型 `auth_type` | 子选项 | `auth_verified_required` | `app_verified_required` | `resource_perm_required` | Bearer 入口接受 | 对应的旧配置 |
+| 表单认证场景 | 子选项 | `auth_verified_required` | `app_verified_required` | `resource_perm_required` | Bearer 入口接受 | 对应的旧配置 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `user` | OAuth 授权开启 | true | true | 白名单开关 | 用户委托 token（必须带用户）＋勾选的 personal/public | 应用＋用户认证（旧默认值） |
-| `user` | OAuth 授权关闭 | true | false | false | 只接受勾选的 personal/public | 仅用户认证 |
-| `user` | 三项都不勾 | true | false | false | 不开放；只能用旧方式带用户身份调用 | 仅用户认证 |
-| `app` | — | false | true | 白名单开关 | 应用 token（不接受用户委托 token） | 仅应用认证 |
-| `none` | — | false | false | false | 不开放 | 不认证 |
+| 用户认证 | OAuth 授权开启 | true | true | 白名单开关 | 用户委托 token（必须带用户）＋勾选的 personal/public | 应用＋用户认证（旧默认值） |
+| 用户认证 | OAuth 授权关闭 | true | false | false | 只接受勾选的 personal/public | 仅用户认证 |
+| 用户认证 | 三项都不勾 | true | false | false | 不开放；只能用旧方式带用户身份调用 | 仅用户认证 |
+| 应用认证 | — | false | true | 白名单开关 | 应用 token（不接受用户委托 token） | 仅应用认证 |
+| 无需认证 | — | false | false | false | 不开放 | 不认证 |
 
 “Bearer 入口接受用户委托 token / 应用 token”以网关开关开启为前提；网关关闭时，所有资源的 Bearer 入口都不接受这两类 token，表中其他列不变（3.5）。
 
 表单在“应用认证”下增加提示：“支持旧版应用凭证和 Bearer 应用 token 调用。”不增加开关，由 A 推导。
 
-`oauth2_personal_client_enabled`、`oauth2_public_client_enabled` 只能在 `auth_type=user` 时开启（与现有校验一致）。
+`oauth2_personal_client_enabled`、`oauth2_public_client_enabled` 只能在资源要求用户认证时开启（与现有校验一致）。
 
 ### 3.2 层级约束
 
@@ -113,10 +112,7 @@ allow_apply_permission = is_public and resource_perm_required and 提交值
 ### 3.3 推导规则
 
 ```text
-auth_type                    = user  if auth_verified_required
-                               app   if not auth_verified_required and app_verified_required
-                               none  otherwise
-oauth2_app_delegated_enabled = auth_verified_required and app_verified_required       # 资源侧，只读；用户委托 token
+oauth2_app_delegated_enabled = auth_verified_required and app_verified_required       # 已发布投影；用户委托 token
 oauth2_app_only_enabled      = not auth_verified_required and app_verified_required   # 仅已发布投影；应用 token
 support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified_required
                                and not 资源绑定 bk-access-token-source   # 7.2
@@ -152,7 +148,7 @@ support_app（数据面）         = Gateway.oauth2_app_enabled and app_verified
 
 资源表单：网关关闭时，“OAuth 授权”照常展示并可编辑，因为它仍决定旧入口是否要求应用身份；同时提示“网关已关闭 OAuth 应用通道，Bearer 调用不可用；此开关仍控制旧版调用方式是否校验应用身份”。
 
-命名区分：网关字段为 `Gateway.oauth2_app_enabled`（可写，覆盖用户委托 token 和应用 token）；资源字段为 `auth_config.oauth2_app_delegated_enabled`（只读推导，值为 U && A，不含网关开关）。实现时同步写入 [DDD 统一概念词汇](../ddd-ubiquitous-language.md)。
+网关开关为 `Gateway.oauth2_app_enabled`，同时控制用户委托 token 与应用 token。已发布投影记录资源版本的认证要求，scope 和 lookup 查询时结合网关开关。术语见 [DDD 统一概念词汇](../ddd-ubiquitous-language.md)。
 
 ## 4. 运行时行为
 
@@ -192,7 +188,7 @@ APISIX 默认识别 `^bk[oprs]_` 和 `^tai_pat_` 两种前缀，可通过配置�
 | 仅应用认证 | 不注入插件，Bearer 透传后端 | 注入插件；bkauth Bearer 被网关消费并按应用 token 校验，不再透传；非 bkauth Bearer 透传 |
 | 上述两类且绑定 `bk-access-token-source` | 由该插件读取 Bearer 或 `X-API-KEY` | 不开放应用通道（7.2），行为不变 |
 
-**未注入 OAuth2 插件的路由**（三者都为假，例如 `auth_type` 为 `none`、用户认证下三项全关，或网关关闭开关且资源未开启 personal/public）：
+**未注入 OAuth2 插件的路由**（三者都为假，例如无需认证、用户认证下三项全关，或网关关闭开关且资源未开启 personal/public）：
 
 - 网关不识别、不拦截 Bearer，只有旧认证链路。`Authorization` 头按普通请求头处理，原样透传给后端（`bk-delete-sensitive` 只删除 `X-Bkapi-Authorization`）。
 - 认证结果完全由旧链路决定。例如“仅用户认证”的资源收到过期 Bearer 和有效登录态 cookie，会按 cookie 认证通过，Bearer 透传给后端。
@@ -259,12 +255,10 @@ personal、public 的现有校验和内置权限协调（[oauth2_builtin.py](../
 
 ### 5.1 Web 接口：读取
 
-资源列表、详情、版本详情中的 `auth_config` 新增两个只读推导字段，原有字段原样返回：
+资源列表、详情的 `auth_config` 原样返回现有认证字段：
 
 ```json
 {
-  "auth_type": "user",
-  "oauth2_app_delegated_enabled": true,
   "oauth2_personal_client_enabled": false,
   "oauth2_public_client_enabled": false,
   "auth_verified_required": true,
@@ -273,13 +267,13 @@ personal、public 的现有校验和内置权限协调（[oauth2_builtin.py](../
 }
 ```
 
-- 资源侧 `oauth2_app_delegated_enabled` 值为 U && A，不含网关开关；前端结合网关详情中的开关展示提示（3.5）。
+- 资源版本详情仍从 `contexts.resource_auth.config` 读取认证配置，版本差异展示变化的认证字段。
 - `allow_apply_permission`、`is_public` 仍在资源顶层。
 - 网关详情新增 `oauth2_app_enabled`。
 
 ### 5.2 写入：归一化规则（Web 与同步共用）
 
-写入只使用旧字段。`auth_type`、`oauth2_app_delegated_enabled` 是只读字段，Web 和同步写入时忽略，不影响存储。因此不存在新旧字段冲突。
+Web、同步和导入沿用现有认证字段。
 
 字段对应（Web 用 snake_case，同步用 camelCase）：
 
@@ -485,7 +479,7 @@ challenge_on_missing_credential = support_public or support_personal
 | 未绑定 | 按网关开关、A 和数据面版本判断 | 按原有注入逻辑 |
 
 - 标准资源和 AI 资源使用同一注入条件。APISIX 校验顺序见 4.2。
-- 资源表单仍可勾选“OAuth 授权”。屏蔽同时作用于路由下发和 `ReleasedResource` 投影：`core.managers.released_resource_binds_access_token_source` 按资源快照的 `plugins` 做同一判断，两列都为 false，scope、lookup 不列出。Web 只读的 `auth_config.oauth2_app_delegated_enabled` 仍按 U && A 推导，不受影响。
+- 资源表单仍可勾选“OAuth 授权”。屏蔽同时作用于路由下发和 `ReleasedResource` 投影：`core.managers.released_resource_binds_access_token_source` 按资源快照的 `plugins` 做同一判断，两列都为 false，scope、lookup 不列出。
 - 只有一处推导：controller 的 `support_app` 直接复用 `core.managers.get_released_resource_oauth2_app_flags`（A && 未绑定），与投影列一致；`core` 不能依赖 `apps`，插件类型常量 `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE` 由单测锁定与 `PluginTypeCodeEnum` 一致。
 
 - `support_app` 覆盖用户认证（U=1）与仅应用认证（U=0）两种资源；插件结合 `bk-resource-context` 中已有的 `verified_user_required` 决定接受用户委托 token 还是应用 token，Dashboard 不下发 token 类型。
@@ -606,8 +600,8 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 
 | 入口 | 认证配置 | 推导结果 |
 | --- | --- | --- |
-| 用户态 `/api/v2/mcp-servers/{name}/sse`、`/sse/message`、`/mcp` | A=1、U=1、`resourcePermissionRequired=false`，public/personal 开启 | `auth_type=user`，app 默认开启 |
-| 应用态 `/api/v2/mcp-servers/{name}/application/...` | A=1、U=0、`resourcePermissionRequired=false` | `auth_type=app`，接受应用 token |
+| 用户态 `/api/v2/mcp-servers/{name}/sse`、`/sse/message`、`/mcp` | A=1、U=1、`resourcePermissionRequired=false`，public/personal 开启 | 默认开启用户委托 token 通道 |
+| 应用态 `/api/v2/mcp-servers/{name}/application/...` | A=1、U=0、`resourcePermissionRequired=false` | 接受应用 token |
 
 本期处理：
 
@@ -619,21 +613,20 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 - bkauth 签发约定：MCP scope 不新增 `app_only`；应用 token 调用 MCP 应用态入口可带 `mcp:{name}` / `mcp:*`，或经资源 scope 获得的 `bk-apigateway` 网关范围 audience。签发 `gateway:*` 等宽 audience 时，等同允许调用所有 MCP 入口（第 11 节）。
 - **第二跳不变。** mcp-proxy 调用工具 API 时继续使用虚拟应用的 inner JWT，与旧认证头调用一致；本期不引入调研文档第 9 节的“委托来源”字段。
 - **MCP Server 模型不新增应用通道开关，后续也不计划新增。** 所有者要禁止某应用调用，只能不给该应用授予 MCP Server 权限。bkauth 的 MCP scope 对 `app_delegated` 返回全部可见 MCP Server（5.5）。
-- 应用态入口是 `auth_type=app`，按 3.1 注入插件并接受应用 token；没有 bkauth Bearer 时交给旧流程，旧认证头调用不变。
+- 应用态入口只要求应用认证，按 3.1 注入插件并接受应用 token；没有 bkauth Bearer 时交给旧流程，旧认证头调用不变。
 
 ## 9. 改动清单
 
 | 范围 | 文件 |
 | --- | --- |
-| 推导与校验 | `biz/resource/models.py`、`service/contexts/resource_auth.py`、`service/contexts/__init__.py`、`biz/resource/resource.py`（只读推导、层级约束含 `is_public`） |
-| Web 接口：资源 | `apis/web/resource/serializers.py`（只读推导字段、批量更新的层级约束）、`views.py`（批量更新审计记录实际写入结果）；版本详情 `apis/web/resource_version/serializers.py` |
+| 资源认证配置 | `biz/resource/models.py`、`biz/resource/resource.py`（层级约束及批量更新的申请资格） |
+| Web 接口：资源 | `apis/web/resource/serializers.py`（更新时合并已存字段）、`views.py`（保存前归一化、批量更新允许申请与审计） |
 | Web 接口：网关 | `apis/web/gateway/serializers.py`、`biz/gateway/gateway.py`（网关开关读写） |
 | 同步/导入 | `apis/v2/sync/serializers.py`（网关同步新增开关）；`apigw-definitions/bk-apigateway-resources.yaml`（接口定义）；openapi schema 不改 |
 | 存储与发布投影 | `core/models.py`（`Gateway`、`ReleasedResource` 新列）、`core/constants.py`、迁移 `0059`（`db_default`、主键分页回填）、`core/managers.py`（投影写入与推导、排除绑定 `bk-access-token-source` 的资源）、`core/management/commands/sync_released_resource.py`（原地补算） |
 | 运维命令 | `controller/management/commands/sync_releases_to_gateway_parallel.py`（`--released-since` 取 `ReleaseHistory` ∪ `Release.updated_time`、`--dry-run`）；`core/management/commands/sync_released_resource.py`（`--oauth2-app-flags` 原地补算） |
 | scope、lookup 与申请列表 | `service/oauth2_client_scope.py`、`service/gateway_released_resource.py`、`apis/v2/inner/serializers.py`、`views.py`（资源 lookup/list 新增两个输出字段、v2 申请列表规则 5.6）；`apis/open/permission/views.py`（v1 差异注释） |
 | 下发 | `controller/convertor/route.py`（读取网关开关、`support_app`、`bk-access-token-source` 屏蔽、`challenge_on_missing_credential`）、`fixtures/plugins.yaml` |
-| 版本差异 | `biz/resource_version/diff.py`（展示推导字段） |
 | 文档 | `data/apidocs/zh/` 下 `v2_sync_gateway.md`、`v2_inner_list_oauth2_resource_scopes.md`、`v2_inner_list_oauth2_mcp_server_scopes.md`、`v2_inner_lookup_gateway_released_resources.md`、`v2_inner_list_gateway_released_resources.md`、`v2_inner_list_gateway_permission_resources.md`；仓库根 `docs/ddd-ubiquitous-language.md`；相关模块的 `AGENTS.md` |
 | 前端 | 不在 #3543 范围；表单与提示文案按 3.1、4.4 另行交接 |
 | mcp-proxy | 不改 |
@@ -645,9 +638,8 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 
 | 场景 | 预期 |
 | --- | --- |
-| 存量四种旧配置读取 | `auth_type`、`oauth2_app_delegated_enabled` 按 3.1 推导 |
+| Web 资源列表、详情、版本详情和差异 | 返回现有认证字段 |
 | 新表单四种映射＋personal/public 组合保存后再读取 | 往返一致 |
-| Web、同步提交 `auth_type`、`oauth2_app_delegated_enabled` | 忽略，不影响存储 |
 | U=false 且开启 personal 或 public | 400 |
 | A=false 时传 `resource_perm_required=true` | 保存为 false |
 | P=false 或 `is_public=false` 时传 `allow_apply_permission=true`（Web、同步） | 保存为 false |
@@ -785,7 +777,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 - 新增“OAuth 授权”：蓝鲸应用经用户授权后，可用 `Authorization: Bearer <token>` 以该用户身份调用资源。权限沿用现有应用权限，不需要重新申请。
 - 仅应用认证的资源支持蓝鲸应用以应用 token（`client_credentials` grant）通过 `Authorization: Bearer <token>` 调用，权限沿用现有应用权限。
 - 新增网关级“OAuth 应用通道”开关，默认开启，网关管理员可按网关关闭；网关同步 API 支持该字段。
-- 同步 API 和资源导入的格式不变；资源接口新增只读字段 `auth_type`、`oauth2_app_delegated_enabled`。
+- Web 资源接口、同步 API 和资源导入沿用现有认证字段。
 - bkauth 内部资源 scope 接口支持 `oauth_client_type=app_delegated`、`app_only`，MCP scope 接口支持 `app_delegated`；已发布资源 lookup/list 接口新增 `oauth2_app_delegated_enabled`、`oauth2_app_only_enabled`。
 
 ### 行为变化
@@ -814,7 +806,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 
 | 决策 | 结论 |
 | --- | --- |
-| 事实来源 | 新表单/新模型；表单映射为旧字段写入，接口上的新字段由旧字段推导 |
+| 事实来源 | 资源认证策略沿用现有字段，新表单按 3.1 映射 |
 | 兼容边界 | 兼容旧格式与旧调用方式，不冻结修改前的认证要求 |
 | 应用通道的语义 | 用户委托 token：应用经用户授权后以该用户身份访问，必须认证用户、认证应用；应用 token：应用以自身身份访问，只用于仅应用认证的资源 |
 | 命名 | `app_` 前缀表示真实蓝鲸应用作为客户端，后缀区分是否带用户：`oauth2_app_delegated_enabled` / scope `app_delegated`（用户委托 token），`oauth2_app_only_enabled` / scope `app_only`（应用 token）；网关开关 `Gateway.oauth2_app_enabled` 覆盖两者；不按 OAuth2 grant 类型命名 |
@@ -828,7 +820,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 0059（I11） | 主键分页回填；保留 `db_default`；重复执行时跳过已存在的列和索引；迁移内冻结推导规则 |
 | v2 申请列表（I7 / I8） | 所有 `P=0` 的公开资源（含无需认证）都返回 `unlimited`；v1 不变，注释说明差异 |
 | 规则加载时校验（R2 / #208 评审） | 插件 `init()` 校验并保存规则，按 7.1 记录配置问题，插件继续启动 |
-| 投影与 `bk-access-token-source`（PR-2 / PR-7） | 绑定该插件即不开放应用通道，不区分 `source`、`allow_fallback`（严格 API Key 会在 OAuth2 校验前返回 400）；规则同时作用于路由与投影推导，scope、lookup、回填、补算一致；Web 只读字段仍为 U && A |
+| 投影与 `bk-access-token-source`（PR-2 / PR-7） | 绑定该插件即不开放应用通道，不区分 `source`、`allow_fallback`（严格 API Key 会在 OAuth2 校验前返回 400）；规则同时作用于路由与投影推导，scope、lookup、回填、补算一致 |
 | 跨环境 scope（PR-5） | 接受各环境并集；不承诺两种类型互斥，实际以目标环境路由为准 |
 | MCP audience（PR-6） | 不改代码：MCP 入口同时接受 `mcp:*` 类和网关范围 audience，MCP Server 权限由 mcp-proxy 负责；同步 bkauth 签发约定 |
 | 外部依赖 | 第 11 节各项不阻塞合并，上线前确认；联调最后在 Minikube 完成 |
@@ -836,7 +828,7 @@ python manage.py sync_releases_to_gateway_parallel --released-since "<T2>" --dry
 | 权限 | 复用现有应用权限，`resource_perm_required` 决定是否校验，不因 OAuth 强制开启 |
 | 层级 | 应用认证 → 校验应用权限 → 允许申请权限；允许申请还要求 `is_public`；覆盖 Web 单资源、同步、导入；批量更新只归一化允许申请；存量数据不迁移 |
 | `app_verified_required` | 保留，不新增 `Resource` 列 |
-| 写入字段 | `auth_type`、`oauth2_app_delegated_enabled` 只读；写入只用旧字段，同步 yaml 不新增字段，无新旧字段冲突规则 |
+| Web 与同步字段 | 资源认证设置沿用现有字段，同步 YAML 格式不变 |
 | 未传与显式 false | 同步、导入与 Web 创建用旧默认值，Web 更新保留当前存储值 |
 | 网关开关 | `Gateway.oauth2_app_enabled`，默认开启；网关管理员在页面和 v2 网关同步 API 修改；重新发布后在数据面生效；控制 Bearer 入口的用户委托 token 和应用 token |
 | bkauth scope | 资源：`app_delegated` 按 `ReleasedResource.oauth2_app_delegated_enabled`（U && A）、`app_only` 按 `oauth2_app_only_enabled`（!U && A），都叠加网关开关当前值；MCP：只新增 `app_delegated`，返回全部可见 MCP Server，不按开关筛选；不按应用权限过滤 |

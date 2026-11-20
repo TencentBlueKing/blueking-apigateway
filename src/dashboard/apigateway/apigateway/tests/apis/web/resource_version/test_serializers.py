@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import json
 
 import arrow
 from django_dynamic_fixture import G
@@ -168,11 +167,6 @@ class TestResourceVersionRetrieveOutputSLZ:
                         },
                     },
                     "contexts": fake_resource_version_v1.data[0]["contexts"],
-                    "auth_config": {
-                        **json.loads(fake_resource_version_v1.data[0]["contexts"]["resource_auth"]["config"]),
-                        "auth_type": "user",
-                        "oauth2_app_delegated_enabled": True,
-                    },
                     "plugins": [],
                     "has_openapi_schema": False,
                     "openapi_schema": {},
@@ -245,11 +239,6 @@ class TestResourceVersionRetrieveOutputSLZ:
                         },
                     },
                     "contexts": fake_resource_version_v2.data[0]["contexts"],
-                    "auth_config": {
-                        **json.loads(fake_resource_version_v2.data[0]["contexts"]["resource_auth"]["config"]),
-                        "auth_type": "user",
-                        "oauth2_app_delegated_enabled": True,
-                    },
                     "plugins": [
                         {
                             "id": echo_plugin_stage_binding.id,

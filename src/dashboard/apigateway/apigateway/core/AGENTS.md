@@ -26,8 +26,6 @@ Keep model-local behavior in `models.py` and reusable single-model queries in
   `support_app` from the same function. `core`
   cannot import `apps`, so the plugin type lives in
   `core.constants.BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE`, pinned by a test.
-- The Web read-only `auth_config.oauth2_app_delegated_enabled` stays U && A and
-  ignores the `bk-access-token-source` rule.
 - The projection columns hold only values derived from the snapshot, never the
   gateway switch: a `ReleasedResource` row is written once per resource version
   and shared by every stage that releases it. Consumers AND the switch at query

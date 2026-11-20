@@ -487,9 +487,9 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
-        for name, value in validated_data.items():
-            setattr(instance, name, value)
-        instance.save(update_fields=["updated_time", *validated_data])
+        instance.status = validated_data["status"]
+        instance.updated_by = validated_data.get("updated_by", instance.updated_by)
+        instance.save(update_fields=["status", "updated_by", "updated_time"])
         instance.refresh_from_db(fields=["oauth2_app_enabled"])
         return instance
 

@@ -16,8 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-
 from rest_framework import serializers
 
 from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
@@ -29,7 +27,6 @@ from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import ResourceKindEnum, ResourceVersionSchemaEnum, ResourceVersionTypeEnum
-from apigateway.service.contexts import with_resource_auth_derived_fields
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -68,7 +65,6 @@ class ResourceInfoSLZ(serializers.Serializer):
     proxy = serializers.SerializerMethodField(help_text="后端配置")
 
     contexts = serializers.DictField(help_text="资源认证等相关配置")
-    auth_config = serializers.SerializerMethodField(help_text="认证配置，含只读推导字段 auth_type 等")
 
     plugins = serializers.SerializerMethodField(help_text="绑定插件")
 
@@ -83,11 +79,6 @@ class ResourceInfoSLZ(serializers.Serializer):
 
     def get_doc_updated_time(self, obj):
         return self.context["resource_doc_updated_time"].get(obj["id"], "")
-
-    def get_auth_config(self, obj):
-        raw_config = obj.get("contexts", {}).get("resource_auth", {}).get("config") or "{}"
-        config = json.loads(raw_config) if isinstance(raw_config, str) else dict(raw_config)
-        return with_resource_auth_derived_fields(config)
 
     def get_proxy(self, obj):
         proxy = {

@@ -227,16 +227,16 @@ class TestResourceListCreateApi:
         assert resp.status_code == 200
         assert len(result["data"]["results"]) == expected
         resources = {resource["id"]: resource for resource in result["data"]["results"]}
+        for resource in resources.values():
+            assert {"auth_type", "oauth2_app_delegated_enabled"}.isdisjoint(resource["auth_config"])
         if resource_1.id in resources:
             assert resources[resource_1.id]["auth_config"]["oauth2_public_client_enabled"] is True
             assert resources[resource_1.id]["auth_config"]["oauth2_personal_client_enabled"] is False
-            assert resources[resource_1.id]["auth_config"]["auth_type"] == "user"
-            assert resources[resource_1.id]["auth_config"]["oauth2_app_delegated_enabled"] is True
+            assert resources[resource_1.id]["auth_config"]["auth_verified_required"] is True
         if resource_2.id in resources:
             assert resources[resource_2.id]["auth_config"]["oauth2_public_client_enabled"] is False
             assert resources[resource_2.id]["auth_config"]["oauth2_personal_client_enabled"] is True
-            assert resources[resource_2.id]["auth_config"]["auth_type"] == "app"
-            assert resources[resource_2.id]["auth_config"]["oauth2_app_delegated_enabled"] is False
+            assert resources[resource_2.id]["auth_config"]["auth_verified_required"] is False
 
     @pytest.mark.parametrize(
         "data",
@@ -471,8 +471,8 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert result["data"]["id"] == fake_resource.id
         assert result["data"]["auth_config"]["oauth2_public_client_enabled"] is True
         assert result["data"]["auth_config"]["oauth2_personal_client_enabled"] is True
-        assert result["data"]["auth_config"]["auth_type"] == "user"
-        assert result["data"]["auth_config"]["oauth2_app_delegated_enabled"] is True
+        assert result["data"]["auth_config"]["auth_verified_required"] is True
+        assert {"auth_type", "oauth2_app_delegated_enabled"}.isdisjoint(result["data"]["auth_config"])
 
     def test_retrieve_with_released_stages(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway

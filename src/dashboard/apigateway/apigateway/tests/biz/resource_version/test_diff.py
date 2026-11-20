@@ -572,7 +572,7 @@ def test_resource_auth_diff_includes_oauth2_client_switches(field):
     assert target_diff["contexts"]["resource_auth"]["config"][field] is True
 
 
-def test_resource_auth_diff_includes_derived_auth_type():
+def test_resource_auth_diff_only_includes_changed_auth_fields():
     def make_resource(auth_verified_required):
         return {
             "id": 1,
@@ -600,13 +600,9 @@ def test_resource_auth_diff_includes_derived_auth_type():
 
     assert source_diff["contexts"]["resource_auth"]["config"] == {
         "auth_verified_required": True,
-        "auth_type": "user",
-        "oauth2_app_delegated_enabled": True,
     }
     assert target_diff["contexts"]["resource_auth"]["config"] == {
         "auth_verified_required": False,
-        "auth_type": "app",
-        "oauth2_app_delegated_enabled": False,
     }
 
 

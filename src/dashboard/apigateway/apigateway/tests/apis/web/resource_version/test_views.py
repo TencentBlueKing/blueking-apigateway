@@ -202,11 +202,6 @@ class TestResourceVersionRetrieveDestroyApi:
                         },
                     },
                     "contexts": fake_resource_version_v2.data[0]["contexts"],
-                    "auth_config": {
-                        **json.loads(fake_resource_version_v2.data[0]["contexts"]["resource_auth"]["config"]),
-                        "auth_type": "user",
-                        "oauth2_app_delegated_enabled": True,
-                    },
                     "plugins": [],
                     "has_openapi_schema": False,
                     "openapi_schema": {},
@@ -566,8 +561,6 @@ class TestResourceVersionDiffApi:
                                     "resource_perm_required": True,
                                     "oauth2_public_client_enabled": False,
                                     "oauth2_personal_client_enabled": False,
-                                    "auth_type": "user",
-                                    "oauth2_app_delegated_enabled": True,
                                 }
                             }
                         },

@@ -44,11 +44,7 @@ from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
-from apigateway.service.contexts import (
-    RESOURCE_OAUTH2_CLIENT_FIELDS,
-    ResourceAuthContext,
-    with_resource_auth_derived_fields,
-)
+from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS, ResourceAuthContext
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
@@ -58,10 +54,6 @@ if TYPE_CHECKING:
     from apigateway.apps.plugin.models import PluginConfig
 
 RESOURCE_AUTH_REQUIREMENT_FIELDS = ("auth_verified_required", "app_verified_required", "resource_perm_required")
-RESOURCE_AUTH_CONFIG_HELP_TEXT = (
-    "认证配置。oauth2_app_delegated_enabled 为只读字段，仅表示编辑态同时要求用户认证和应用认证，"
-    "不考虑网关 OAuth 应用通道开关和 bk-access-token-source 插件绑定。"
-)
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):
@@ -102,7 +94,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     backend = serializers.SerializerMethodField(help_text="后端服务")
     has_updated = serializers.SerializerMethodField(help_text="相对上次发布，是否有更新，true：有更新，false：无更新")
     plugin_count = serializers.SerializerMethodField(help_text="插件数量")
-    auth_config = serializers.SerializerMethodField(help_text=RESOURCE_AUTH_CONFIG_HELP_TEXT)
+    auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceListOutputSLZ"
@@ -175,7 +167,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
         return self.context["plugin_counts"].get(obj.id, 0)
 
     def get_auth_config(self, obj):
-        return with_resource_auth_derived_fields(self.context["auth_configs"][obj.id])
+        return self.context["auth_configs"][obj.id]
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
@@ -491,7 +483,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
 
 class ResourceOutputSLZ(serializers.ModelSerializer):
-    auth_config = serializers.SerializerMethodField(help_text=RESOURCE_AUTH_CONFIG_HELP_TEXT)
+    auth_config = serializers.SerializerMethodField(help_text="认证配置")
     backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
     schema = serializers.SerializerMethodField(help_text="参数协议")
@@ -556,7 +548,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
         }
 
     def get_auth_config(self, obj):
-        return with_resource_auth_derived_fields(self.context["auth_config"])
+        return self.context["auth_config"]
 
     def get_backend(self, obj):
         return {

@@ -21,7 +21,7 @@ from typing import Dict, List
 from django.utils.functional import cached_property
 
 from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ResourceAuthTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from apigateway.core.models import Resource
 
 from .context import BaseContext
@@ -30,29 +30,6 @@ RESOURCE_OAUTH2_CLIENT_FIELDS = (
     "oauth2_public_client_enabled",
     "oauth2_personal_client_enabled",
 )
-# 只读推导字段：只出现在接口输出中，写入时忽略，不进入存储与版本快照
-RESOURCE_AUTH_DERIVED_FIELDS = (
-    "auth_type",
-    "oauth2_app_delegated_enabled",
-)
-
-
-def get_resource_auth_type(config: dict) -> str:
-    if config.get("auth_verified_required", True):
-        return ResourceAuthTypeEnum.USER.value
-    if config.get("app_verified_required", True):
-        return ResourceAuthTypeEnum.APP.value
-    return ResourceAuthTypeEnum.NONE.value
-
-
-def with_resource_auth_derived_fields(config: dict) -> dict:
-    """Return a copy of the auth config with the read-only fields derived from the legacy fields."""
-    result = dict(config)
-    result["auth_type"] = get_resource_auth_type(config)
-    result["oauth2_app_delegated_enabled"] = bool(
-        config.get("auth_verified_required", True) and config.get("app_verified_required", True)
-    )
-    return result
 
 
 def build_resource_auth_config(resource: Resource, context_config: dict) -> dict:
