@@ -388,8 +388,9 @@ const handleCommit = async () => {
     loading.value = true;
 
     const payload: any = { ...data };
-    // 展示名有独立编辑入口，保存文档信息时省略，避免覆盖后端按语言返回的展示名
+    // 展示名和认证协议在基本信息弹窗中更新，保存文档联系人时省略。
     delete payload.display_name;
+    delete payload.oauth2_app_enabled;
 
     const { type, contacts, service_account } = docForm.value;
     if (type === 'user') {

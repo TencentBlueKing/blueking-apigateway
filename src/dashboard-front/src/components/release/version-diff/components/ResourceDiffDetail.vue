@@ -30,18 +30,13 @@
           checkDiff('localData.path') ||
           checkDiff('localData.description') ||
           checkDiff('localData.api_labels') ||
-          checkDiff(
-            'localData.contexts.resource_auth.config.auth_verified_required'
-          ) ||
-          checkDiff(
-            'localData.contexts.resource_auth.config.app_verified_required'
-          ) ||
+          authTypeChanged ||
           checkDiff('localData.is_public') ||
           checkDiff(
             'localData.contexts.resource_auth.config.resource_perm_required'
           ) ||
-          checkDiff('localData.is_public') ||
-          checkDiff('localData.allow_apply_permission'),
+          userAuthMethodsChanged ||
+          applyPermissionChanged,
       }"
     >
       {{ t('基本信息') }}
@@ -115,82 +110,66 @@
       </BkRow>
 
       <BkRow
-        :class="{
-          'ag-diff':
-            checkDiff(
-              'localData.contexts.resource_auth.config.auth_verified_required'
-            ) ||
-            checkDiff(
-              'localData.contexts.resource_auth.config.app_verified_required'
-            ),
-        }"
+        :class="{ 'ag-diff': authTypeChanged }"
       >
         <BkCol :span="5">
           <label class="ag-key">{{ t('认证方式') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ getResourceAuth(localData.contexts.resource_auth.config) }}
+            {{ getAuthTypeLabel(authConfig, t, gatewayStore.isResourceAuthV2) }}
           </div>
         </BkCol>
       </BkRow>
 
       <BkRow
-        :class="{
-          'ag-diff': checkDiff(
-            'localData.contexts.resource_auth.config.oauth2_personal_client_enabled'
-          ),
-        }"
+        :class="{ 'ag-diff': userAuthMethodsChanged }"
       >
         <BkCol :span="5">
-          <label class="ag-key">{{ t('个人令牌') }}:</label>
+          <label class="ag-key">{{ gatewayStore.isResourceAuthV2 ? t('用户认证方式') : t('个人令牌') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ localData.contexts.resource_auth.config.oauth2_personal_client_enabled ? t('开启') : t('关闭') }}
+            {{ getUserAuthMethodsLabel(authConfig, t, gatewayStore.isResourceAuthV2) }}
           </div>
         </BkCol>
       </BkRow>
 
-      <BkRow
-        :class="{
-          'ag-diff': checkDiff(
-            'localData.contexts.resource_auth.config.resource_perm_required'
-          ),
-        }"
-      >
-        <BkCol :span="5">
-          <label class="ag-key">{{ t('校验应用权限') }}:</label>
-        </BkCol>
-        <BkCol :span="10">
-          <div class="ag-value">
-            {{
-              localData.contexts.resource_auth.config.resource_perm_required
-                ? t('校验')
-                : t('不校验')
-            }}
-          </div>
-        </BkCol>
-      </BkRow>
-
-      <BkRow
-        :class="{
-          'ag-diff':
-            checkDiff('localData.is_public') ||
-            checkDiff('localData.allow_apply_permission'),
-        }"
-      >
+      <BkRow :class="{ 'ag-diff': checkDiff('localData.is_public') }">
         <BkCol :span="5">
           <label class="ag-key">{{ t('是否公开') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
             {{ localData.is_public ? t('是') : t('否') }}
-            {{
-              localData.allow_apply_permission
-                ? `(${t('允许申请权限')})`
-                : `(${t('不允许申请权限')})`
-            }}
+          </div>
+        </BkCol>
+      </BkRow>
+
+      <BkRow
+        v-if="canApplyPermission || applyPermissionChanged"
+        :class="{ 'ag-diff': applyPermissionChanged }"
+      >
+        <BkCol :span="5">
+          <label class="ag-key">{{ t('允许申请权限') }}:</label>
+        </BkCol>
+        <BkCol :span="10">
+          <div class="ag-value">
+            {{ canApplyPermission && localData.allow_apply_permission ? t('是') : t('否') }}
+          </div>
+        </BkCol>
+      </BkRow>
+
+      <BkRow
+        v-if="showResourcePermission"
+        :class="{ 'ag-diff': resourcePermissionChanged }"
+      >
+        <BkCol :span="5">
+          <label class="ag-key">{{ t('校验应用权限') }}:</label>
+        </BkCol>
+        <BkCol :span="10">
+          <div class="ag-value">
+            {{ authConfig?.resource_perm_required ? t('是') : t('否') }}
           </div>
         </BkCol>
       </BkRow>
@@ -499,6 +478,13 @@
 <script setup lang="ts">
 import ConfigDisplayTable from '@/components/plugin/plugin-manage/config-display/Index.vue';
 import { useGateway } from '@/stores';
+import {
+  canAllowApplyPermission,
+  canConfigureResourcePerm,
+  getAuthTypeLabel,
+  getUserAuthMethodsLabel,
+  parseResourceAuthConfig,
+} from '@/utils/auth-config';
 
 interface IProps {
   curResource?: any
@@ -547,30 +533,8 @@ const isString = (str: any) => {
   return typeof str === 'string';
 };
 
-const getResourceAuth = (auth: any) => {
-  if (!auth) return '--';
-  const tmpArr: string[] = [];
-
-  if (auth.app_verified_required) {
-    tmpArr.push(`${t('应用认证')}`);
-  }
-  if (auth.auth_verified_required) {
-    tmpArr.push(`${t('用户认证')}`);
-  }
-  return tmpArr.join(', ');
-};
-
 const initLocalData = async () => {
   const data = JSON.parse(JSON.stringify(curResource));
-
-  if (data.contexts.resource_auth.config) {
-    if (isString(data.contexts.resource_auth.config)) {
-      data.contexts.resource_auth.config = JSON.parse(data.contexts.resource_auth.config);
-    }
-  }
-  else {
-    data.config = {};
-  }
 
   if (data.proxy.config) {
     if (isString(data.proxy.config)) {
@@ -666,6 +630,36 @@ const checkDiff = (path: any) => {
   const keys = Object.keys(diffMap.value);
   return keys.some(item => item.startsWith(path));
 };
+
+const authConfig = computed(() => parseResourceAuthConfig(localData.value.contexts?.resource_auth?.config));
+const userRequiredChanged = computed(() => checkDiff('localData.contexts.resource_auth.config.auth_verified_required'));
+const appRequiredChanged = computed(() => checkDiff('localData.contexts.resource_auth.config.app_verified_required'));
+const authTypeChanged = computed(() => userRequiredChanged.value || (
+  appRequiredChanged.value && (!gatewayStore.isResourceAuthV2 || !authConfig.value?.auth_verified_required)
+));
+const userAuthMethodsChanged = computed(() =>
+  checkDiff('localData.contexts.resource_auth.config.oauth2_personal_client_enabled')
+  || (gatewayStore.isResourceAuthV2 && (
+    checkDiff('localData.contexts.resource_auth.config.oauth2_public_client_enabled')
+    || userRequiredChanged.value
+    || (authConfig.value?.auth_verified_required && appRequiredChanged.value)
+  )),
+);
+const canApplyPermission = computed(() => canAllowApplyPermission(localData.value.is_public, authConfig.value));
+const resourcePermissionChanged = computed(() =>
+  checkDiff('localData.contexts.resource_auth.config.resource_perm_required'),
+);
+const applyPermissionChanged = computed(() =>
+  checkDiff('localData.allow_apply_permission')
+  || checkDiff('localData.is_public')
+  || resourcePermissionChanged.value,
+);
+const showResourcePermission = computed(() =>
+  canConfigureResourcePerm(authConfig.value)
+  || authConfig.value?.resource_perm_required
+  || resourcePermissionChanged.value
+  || appRequiredChanged.value,
+);
 
 const getPluginDiffClass = (plugin: any) => {
   // 检查传入的 plugin 是否记录在 diffMap 中

@@ -141,6 +141,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
           oauth2PersonalClientEnabled: false
+          oauth2PublicClientEnabled: false
         descriptionEn: None
       `,
 };

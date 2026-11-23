@@ -36,6 +36,25 @@
       </template>
     </BkCollapsePanel>
 
+    <!-- 认证方式面板 -->
+    <BkCollapsePanel name="authConfig">
+      <template #header>
+        <div class="panel-header">
+          <AngleUpFill :class="getIconClass('authConfig')" />
+          <div class="title">
+            {{ t('认证方式') }}
+          </div>
+        </div>
+      </template>
+      <template #content>
+        <AuthConfig
+          ref="authConfigRef"
+          :detail="resourceDetail"
+          :editing-existing="!!resourceDetail.id && !isClone"
+        />
+      </template>
+    </BkCollapsePanel>
+
     <!-- 请求配置面板 -->
     <BkCollapsePanel name="frontConfig">
       <template #header>
@@ -71,7 +90,7 @@
           ref="backConfigRef"
           service-label="模型服务"
           is-model-proxy
-          :app-verified-required="baseInfoRef?.formData?.auth_config?.app_verified_required ?? true"
+          :app-verified-required="authConfigRef?.formData?.auth_config?.app_verified_required ?? true"
           :detail="resourceDetail"
           :front-config="frontConfig"
           @service-init="getServiceInit"
@@ -84,6 +103,7 @@
 <script setup lang="ts">
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
+import AuthConfig from '@/views/resource-management/components/AuthConfig.vue';
 import BaseInfo from '@/views/resource-management/components/BaseInfo.vue';
 import BackConfig from '@/views/resource-management/components/BackConfig.vue';
 import FrontConfig from '@/views/resource-management/components/FrontConfig.vue';
@@ -120,6 +140,7 @@ const {
 const emits = defineEmits<IEmits>();
 
 const baseInfoRef = ref<InstanceType<typeof BaseInfo>>();
+const authConfigRef = ref<InstanceType<typeof AuthConfig>>();
 const backConfigRef = ref<InstanceType<typeof BackConfig>>();
 const frontConfigRef = ref<InstanceType<typeof FrontConfig>>();
 
@@ -136,6 +157,7 @@ const handleFrontConfigChange = (config: typeof frontConfig) => {
 };
 
 defineExpose({
+  authConfigRef,
   baseInfoRef,
   backConfigRef,
   frontConfigRef,

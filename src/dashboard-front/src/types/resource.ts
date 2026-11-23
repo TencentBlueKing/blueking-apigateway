@@ -28,6 +28,8 @@ interface IAuthConfig {
   oauth2_personal_client_enabled?: boolean
 }
 
+type IResourceAuthFormConfig = Required<IAuthConfig>;
+
 interface IBackendConfig {
   method: TRequestMethod
   path: string
@@ -111,6 +113,7 @@ export type {
   IBackend,
   IBackendConfig,
   IAuthConfig,
+  IResourceAuthFormConfig,
   IPluginConfig,
   IPublicConfig,
   IImportedResource,

@@ -38,13 +38,17 @@
 <script lang="tsx" setup>
 import {
   type ActionType,
-  type IAuthConfig,
   type ILocalImportedResource,
   type IPublicConfig,
+  type IResourceAuthFormConfig,
 } from '@/types/resource';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import AgTable from '@/components/base/ag-table/Index.vue';
 import { useTextGetter } from '@/hooks';
+import { useGateway } from '@/stores';
+import { DEFAULT_AUTH_CONFIG, applyAuthKind } from '@/utils/auth-config';
+import ResourceAuthSelector from '@/views/resource-management/components/ResourceAuthSelector.vue';
+import LegacyResourceAuthSelector from '@/views/resource-management/components/LegacyResourceAuthSelector.vue';
 import { useResourcePreviewColumns } from '../use-resource-preview-columns';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import type { IImportDocConfig } from '../types';
@@ -56,8 +60,6 @@ interface IProps {
   docConfig?: IImportDocConfig
   isAiGateway?: boolean
 }
-
-const tempAuthConfig = defineModel<IAuthConfig>('tempAuthConfig', { required: true });
 
 const tempPublicConfig = defineModel<IPublicConfig>('tempPublicConfig', { required: true });
 
@@ -77,7 +79,7 @@ const emit = defineEmits<{
   'show-row-plugin': [row: ILocalImportedResource]
   'show-row-edit': [row: ILocalImportedResource]
   'toggle-row-unchecked': [row: ILocalImportedResource]
-  'confirm-auth-config': [action: ActionType]
+  'confirm-auth-config': [action: ActionType, config: IResourceAuthFormConfig]
   'confirm-pub-config': [action: ActionType]
   'confirm-doc-config': [docConfig: IImportDocConfig]
   'clear-filter': [action: ActionType]
@@ -91,7 +93,13 @@ const {
 } = useTextGetter();
 
 const { t } = useI18n();
+const gatewayStore = useGateway();
+const allowNoAuth = computed(() => !!gatewayStore.currentGateway?.allow_update_gateway_auth);
 
+const defaultBulkAuthConfig = () => gatewayStore.isResourceAuthV2
+  ? { ...DEFAULT_AUTH_CONFIG }
+  : applyAuthKind(DEFAULT_AUTH_CONFIG, '');
+const tempAuthConfig = ref(defaultBulkAuthConfig());
 const localDocConfig = ref({ ...docConfig });
 
 const tableRef = useTemplateRef('tableRef');
@@ -219,17 +227,12 @@ const toggleRowUnchecked = (row: ILocalImportedResource) => {
 
 // 批量修改认证方式确认后
 const handleConfirmAuthConfig = () => {
-  emit('confirm-auth-config', action);
+  emit('confirm-auth-config', action, tempAuthConfig.value);
 };
 
 // 批量修改认证方式取消后
 const handleCancelAuthConfig = () => {
-  tempAuthConfig.value = {
-    app_verified_required: false,
-    auth_verified_required: false,
-    resource_perm_required: false,
-    oauth2_personal_client_enabled: false,
-  };
+  tempAuthConfig.value = defaultBulkAuthConfig();
 };
 
 // 点击清空搜索条件后
@@ -260,62 +263,27 @@ const handleConfirmDocConfig = () => {
 };
 
 const renderAuthConfigColLabel = () => {
+  const AuthSelector = gatewayStore.isResourceAuthV2 ? ResourceAuthSelector : LegacyResourceAuthSelector;
   return (
     <div>
       <div class="auth-config-col-label">
         <span>{t('认证方式')}</span>
         <bk-pop-confirm
-          width="430"
+          width={gatewayStore.isResourceAuthV2 ? 620 : 430}
           trigger="click"
           title={<span style="font-size: 16px;color: #313238;">{t('批量修改认证方式')}</span>}
           content={(
-            <div class="multi-edit-popconfirm-wrap auth-config" style="margin-bottom: -12px;">
-              <bk-form model={tempAuthConfig.value} labelWidth="110" labelPosition="right">
-                <bk-form-item label={t('认证方式')} required={true} style="margin-bottom: 12px;">
-                  <bk-checkbox
-                    v-model={tempAuthConfig.value.app_verified_required}
-                  >
-                    <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
-                      {t('应用认证')}
-                    </span>
-                  </bk-checkbox>
-                  <bk-checkbox class="ml-40px" v-model={tempAuthConfig.value.auth_verified_required}>
-                    <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸用户身份信息') }}>
-                      {t('用户认证')}
-                    </span>
-                  </bk-checkbox>
-                </bk-form-item>
-                {tempAuthConfig.value.auth_verified_required
-                  ? (
-                    <bk-form-item
-                      label={t('个人令牌')}
-                      description={t('开启后，用户可以用个人令牌调用本接口，请求会带上该用户的身份。')}
-                      style="margin-bottom: 12px;"
-                    >
-                      <bk-switcher
-                        v-model={tempAuthConfig.value.oauth2_personal_client_enabled}
-                        theme="primary"
-                        size="small"
-                      />
-                    </bk-form-item>
-                  )
-                  : ''}
-                {tempAuthConfig.value.app_verified_required
-                  ? (
-                    <bk-form-item
-                      label={t('检验应用权限')}
-                      description={t('蓝鲸应用需申请资源访问权限')}
-                      style="margin-bottom: 12px;"
-                    >
-                      <bk-switcher
-                        v-model={tempAuthConfig.value.resource_perm_required}
-                        theme="primary"
-                        size="small"
-                      />
-                    </bk-form-item>
-                  )
-                  : ''}
-              </bk-form>
+            <div class="multi-edit-popconfirm-wrap" style="margin-bottom: -12px;">
+              <AuthSelector
+                {...{
+                  'authConfig': tempAuthConfig.value,
+                  'onUpdate:authConfig': (value: IResourceAuthFormConfig) => {
+                    tempAuthConfig.value = value;
+                  },
+                }}
+                {...(gatewayStore.isResourceAuthV2 && { allowNoAuth: allowNoAuth.value })}
+                compact
+              />
             </div>
           )}
           onConfirm={() => handleConfirmAuthConfig()}
