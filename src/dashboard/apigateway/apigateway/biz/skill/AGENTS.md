@@ -76,7 +76,11 @@ together with the code.
   text (`string`, `array<object>`, `integer|string`, `array<string>|null`);
   `example` and `default` must match it. An input's `type` must equal every typed parameter
   it is bound to in `with`, and its interface description comes from those
-  parameters, so every input must be bound at least once. An output's `type`
+  parameters, so every input must be bound at least once.
+  Request bodies and responses are read only from `application/json`
+  (`charset` and other parameters ignored); neither falls back to another
+  content type. A first 2xx response with content but no `application/json`
+  makes the resource unavailable with its own reason. An output's `type`
   must equal the type derived from its source: an input's `type`, or the
   response field's type wrapped in one `array<…>` per `[]` in the path and one
   more when the source step is a per-item call (`failed_host_logs` is

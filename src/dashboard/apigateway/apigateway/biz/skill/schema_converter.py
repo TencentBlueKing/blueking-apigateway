@@ -229,15 +229,26 @@ def convert_schema_params(schema: Dict[str, Any]) -> List[ResourceParam]:
 
 
 def get_response_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
-    """第一个 2xx 响应的 schema，原样返回；没有 2xx 响应时为 {}
+    """第一个 2xx 响应的 application/json schema，原样返回；没有 2xx 响应或它没有 JSON 内容时为 {}
 
-    例如：responses 有 200 和 400 -> 200 的 application/json schema；只有 400 -> {}
+    例如：
+        responses 有 200 和 400 -> 200 的 application/json schema
+        200 只有 text/plain -> {}
+        只有 400 -> {}
     """
-    responses = schema.get("responses") or {}
-    success_codes = sorted(code for code in responses if str(code).startswith("2"))
-    if not success_codes:
-        return {}
-    return _get_content_schema(responses[success_codes[0]] or {})
+    return _json_content_schema(_first_success_response(schema))
+
+
+def has_non_json_response(schema: Dict[str, Any]) -> bool:
+    """第一个 2xx 响应有内容，但没有 application/json
+
+    例如：
+        200 只有 text/xml 或 */* -> True
+        200 有 application/json; charset=utf-8 -> False
+        200 没有 content、没有 2xx 响应 -> False
+    """
+    content = _first_success_response(schema).get("content") or {}
+    return bool(content) and _json_media(content) is None
 
 
 def convert_schema_responses(schema: Dict[str, Any]) -> List[ResponseField]:
@@ -265,25 +276,23 @@ def _param_serialization(param: Dict[str, Any]) -> Dict[str, Any]:
     return serialization
 
 
+def _first_success_response(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """按状态码排序后的第一个 2xx 响应对象；没有时为 {}
+
+    例如：responses 有 201 和 200 -> 200 的响应对象；只有 400 -> {}
+    """
+    responses = schema.get("responses") or {}
+    success_codes = sorted(code for code in responses if str(code).startswith("2"))
+    return (responses[success_codes[0]] or {}) if success_codes else {}
+
+
 def _json_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
-    """只取 application/json 的 schema。请求体没有 JSON 时不退回其他 content type，避免被渲染成 JSON。
+    """只取 application/json 的 schema；请求体和响应都不退回其他 content type，调用说明只按 JSON 写
 
     例如：{"content": {"application/json": {"schema": {"type": "object"}}}} -> {"type": "object"}；
-    只有 multipart/form-data -> {}
+    只有 multipart/form-data 或 text/plain -> {}
     """
     return (_json_media(container.get("content") or {}) or {}).get("schema") or {}
-
-
-def _get_content_schema(container: Dict[str, Any]) -> Dict[str, Any]:
-    """取响应的 schema：优先 application/json，没有时退回第一个 content type
-
-    例如：只有 text/plain 的 schema {"type": "string"} -> {"type": "string"}；没有 content -> {}
-    """
-    content = container.get("content") or {}
-    if not content:
-        return {}
-    media = _json_media(content) or next(iter(content.values()))
-    return (media or {}).get("schema") or {}
 
 
 def _json_media(content: Dict[str, Any]) -> Optional[Dict[str, Any]]:

@@ -3906,6 +3906,10 @@ msgid "OpenAPI schema 的响应未定义字段"
 msgstr "the OpenAPI schema response does not define any fields"
 
 #: apigateway/biz/skill/resource_loader.py
+msgid "OpenAPI schema 的 2xx 响应不是 application/json"
+msgstr "the 2xx response of the OpenAPI schema is not application/json"
+
+#: apigateway/biz/skill/resource_loader.py
 #, python-brace-format
 msgid "{gateway}.{resource}：资源未公开，调用方无法申请权限"
 msgstr ""

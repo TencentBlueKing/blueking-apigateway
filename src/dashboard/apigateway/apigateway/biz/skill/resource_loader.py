@@ -43,6 +43,7 @@ from .schema_converter import (
     convert_schema_responses,
     get_response_schema,
     has_non_json_object_body,
+    has_non_json_response,
 )
 
 
@@ -123,6 +124,25 @@ class ResourceProvider(ABC):
         raise NotImplementedError()
 
 
+def _undefined_definitions(schema: Dict[str, Any], responses: List[ResponseField]) -> List[str]:
+    """schema 缺的请求参数定义、响应定义；都有时为空列表
+
+    例如：
+        只有 parameters -> ["OpenAPI schema 的响应未定义字段"]
+        none_schema 加 JSON 响应字段 -> []
+        有 parameters，200 响应只有 */* -> ["OpenAPI schema 的 2xx 响应不是 application/json"]
+    """
+    undefined = []
+    # 显式声明「无请求参数」（none_schema）也算定义了请求参数
+    if not has_openapi_schema(schema):
+        undefined.append(_("OpenAPI schema 未定义请求参数"))
+    if has_non_json_response(schema):
+        undefined.append(_("OpenAPI schema 的 2xx 响应不是 application/json"))
+    elif not responses:
+        undefined.append(_("OpenAPI schema 的响应未定义字段"))
+    return undefined
+
+
 def build_skill_resource(
     gateway: str, stage: str, data: ReleasedResourceData, schema: Dict[str, Any]
 ) -> SkillResource:
@@ -135,18 +155,14 @@ def build_skill_resource(
     例如：
         GET /get_task_status/{task_id}/，schema 定义了 path 参数 task_id 和响应字段 -> errors、warnings 都为空
         schema 只有响应、没有请求参数 -> SkillResourceUnavailableError("OpenAPI schema 未定义请求参数")
+        200 响应只有 text/xml -> SkillResourceUnavailableError("OpenAPI schema 的 2xx 响应不是 application/json")
         method 为 ANY -> 正常返回，errors 里有一条「方法为 ANY」
     """
     if stage in data.disabled_stages:
         raise SkillResourceUnavailableError(_("资源在环境 {stage} 已禁用").format(stage=stage))
 
     responses = convert_schema_responses(schema)
-    undefined = []
-    # 显式声明「无请求参数」（none_schema）也算定义了请求参数
-    if not has_openapi_schema(schema):
-        undefined.append(_("OpenAPI schema 未定义请求参数"))
-    if not responses:
-        undefined.append(_("OpenAPI schema 的响应未定义字段"))
+    undefined = _undefined_definitions(schema, responses)
     if undefined:
         raise SkillResourceUnavailableError("; ".join(undefined))
 

@@ -31,6 +31,7 @@ T = SchemaType.from_schema
 
 NO_REQUEST = "OpenAPI schema 未定义请求参数"
 NO_RESPONSE = "OpenAPI schema 的响应未定义字段"
+NON_JSON_RESPONSE = "OpenAPI schema 的 2xx 响应不是 application/json"
 
 RESOURCE = {
     "resource": "get_task_status",
@@ -119,6 +120,21 @@ class TestReleasedResourceProvider:
                 {"parameters": SCHEMA["parameters"], "responses": {"204": {"description": "ok"}}},
                 NO_RESPONSE,
                 id="response-without-fields",
+            ),
+            pytest.param(
+                {
+                    "parameters": SCHEMA["parameters"],
+                    "responses": {
+                        "200": {
+                            "description": "ok",
+                            "content": {
+                                "*/*": {"schema": {"type": "object", "properties": {"result": {"type": "boolean"}}}}
+                            },
+                        }
+                    },
+                },
+                NON_JSON_RESPONSE,
+                id="non-json-response",
             ),
         ],
     )

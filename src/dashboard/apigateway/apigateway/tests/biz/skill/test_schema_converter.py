@@ -25,6 +25,7 @@ from apigateway.biz.skill.schema_converter import (
     convert_schema_responses,
     get_response_schema,
     has_non_json_object_body,
+    has_non_json_response,
 )
 
 pytestmark = pytest.mark.no_meta_schema
@@ -251,6 +252,41 @@ def test_get_response_schema_is_published_schema():
     response = SCHEMA["responses"]["200"]["content"]["application/json"]["schema"]
 
     assert get_response_schema(SCHEMA) is response
+
+
+@pytest.mark.parametrize(
+    "content, non_json",
+    [
+        ({"text/xml": {"schema": {"type": "object", "properties": {"id": {"type": "integer"}}}}}, True),
+        ({"*/*": {"schema": {"type": "object", "properties": {"id": {"type": "integer"}}}}}, True),
+        ({"text/plain": {"schema": {"type": "string"}}}, True),
+        ({}, False),
+    ],
+)
+def test_response_without_json_content(content, non_json):
+    schema = {"responses": {"200": {"description": "ok", "content": content}}}
+
+    assert get_response_schema(schema) == {}
+    assert convert_schema_responses(schema) == []
+    assert has_non_json_response(schema) is non_json
+
+
+def test_response_json_preferred_and_charset_ignored():
+    body = {"type": "object", "properties": {"id": {"type": "integer"}}}
+    schema = {
+        "responses": {
+            "201": {"content": {"application/json": {"schema": {"type": "object"}}}},
+            "200": {
+                "content": {
+                    "application/xml": {"schema": {"type": "string"}},
+                    "application/json; charset=utf-8": {"schema": body},
+                }
+            },
+        }
+    }
+
+    assert get_response_schema(schema) is body
+    assert not has_non_json_response(schema)
 
 
 def test_nullable_array_items_are_expanded():
