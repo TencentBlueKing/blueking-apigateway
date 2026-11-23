@@ -1,0 +1,29 @@
+src/dashboard/apigateway/apigateway/tests/biz/mcp_server/test_mcp_server.py
+  s_07d3141e2826d4::t_c73de566c7edf8 2411-2412,2417
+src/dashboard/apigateway/apigateway/biz/mcp_server/mcp_server.py
+  s_07d3141e2826d4::t_7acd8a1ac3fbdf 309,315,318
+  s_07d3141e2826d4::t_532b74ae8003eb 314,316-317,320
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_sync_stage_mcp_servers.md
+  s_07d3141e2826d4::t_c467c37e192d7c 40
+src/dashboard/apigateway/apigateway/tests/apis/v2/sync/test_views.py
+  s_07d3141e2826d4::t_a8dd39848112bc 1988
+  s_07d3141e2826d4::t_093230a911ee4a 1928
+src/dashboard/apigateway/apigateway/data/apigw-definitions/bk-apigateway-resources.yaml
+  s_07d3141e2826d4::t_58a9b5fce4041b 5567
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "576adc24e4d38cf7fa62be91e180f3c14129e5bb",
+  "prompts": {},
+  "sessions": {
+    "s_07d3141e2826d4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e4244ee6-19d0-49ca-ae0d-474403fed82e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
