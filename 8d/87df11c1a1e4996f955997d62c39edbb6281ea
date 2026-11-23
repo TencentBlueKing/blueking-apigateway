@@ -1,0 +1,167 @@
+src/dashboard/apigateway/apigateway/tests/biz/skill/conftest.py
+  s_369437aa3cec84::t_99666dc4c406ae 46,48
+src/dashboard/apigateway/apigateway/biz/skill/refs.py
+  s_369437aa3cec84::t_18f7366611ac7c 94,96,99-101,106
+  s_369437aa3cec84::t_f4fea4da430a22 31,35-36
+  s_369437aa3cec84::t_cbaddd1ab13c0b 37
+src/dashboard/apigateway/apigateway/biz/skill/renderer.py
+  s_3789a195e1d237::t_8c81df67912708 381-382
+  s_3789a195e1d237::t_f70b1f1efc8fe6 120-121,127
+  s_3789a195e1d237::t_607e2a3d37121e 130
+  s_369437aa3cec84::t_189fd1807dc2f7 40
+  s_3789a195e1d237::t_f65733379317ad 341
+  s_369437aa3cec84::t_1b6c903f81fbaf 27
+  s_369437aa3cec84::t_08466f0419c2c4 417,421
+  s_369437aa3cec84::t_781405e392dce3 394
+src/dashboard/apigateway/apigateway/locale/en/LC_MESSAGES/django.po
+  s_3789a195e1d237::t_af3b060cda51cb 4039-4040
+  s_3789a195e1d237::t_2991756b2386f0 4041
+  s_3789a195e1d237::t_455099874cfb6d 3932-3933,3935-3936
+  s_3789a195e1d237::t_895c5d46866508 4037-4038
+src/dashboard/apigateway/apigateway/biz/skill/schema_converter.py
+  s_369437aa3cec84::t_d62ca426e92d59 26
+  s_3789a195e1d237::t_7120c9fddd08df 158
+  s_3789a195e1d237::t_81937fe14e4304 255-256,258-259,261-265
+  s_3789a195e1d237::t_b63a1bc89bf04a 274,285,289-297
+  s_3789a195e1d237::t_dbc8a79dd10247 179
+  s_369437aa3cec84::t_1aee6d4e5367c9 304,310-312
+  s_3789a195e1d237::t_b89311aa31b5b2 29-30,159
+  s_369437aa3cec84::t_b404f750c4f397 93-113
+  s_369437aa3cec84::t_52e46729292520 20-21
+  s_3789a195e1d237::t_a892ae46340060 174-175,180,183-185
+  s_3789a195e1d237::t_1b5cbb02d8e003 198
+  s_369437aa3cec84::t_c75061d10538e7 231-232,234,239-241,243-249,251
+  s_369437aa3cec84::t_5f7383c8c29c94 32-39,61-92,114-148,160-164,170,186-189
+  s_3789a195e1d237::t_1fcae52f346af4 210
+  s_3789a195e1d237::t_b767befc9ccbb4 305
+  s_369437aa3cec84::t_014e874ce5648a 197,200
+  s_369437aa3cec84::t_2541de4e978190 40-59
+  s_369437aa3cec84::t_9001630b77ea50 60
+  s_3789a195e1d237::t_d2c4d2302c903d 298-299
+src/dashboard/apigateway/apigateway/biz/skill/validator.py
+  s_3789a195e1d237::t_e9949917df63a1 190-194
+  s_3789a195e1d237::t_caf47e869265c3 161
+  s_369437aa3cec84::t_fa831b474de2fe 22-23,187-188,222,224,248-249
+  s_369437aa3cec84::t_2aab7650bd26b0 34,189,221,223,229,240,247,252-255,260,263-266,269-270
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_writer.py
+  s_369437aa3cec84::t_bac43327a8cc12 144
+  s_369437aa3cec84::t_8c71077c96f723 50-74
+  s_369437aa3cec84::t_c76252149a6f16 26-31
+src/dashboard/apigateway/apigateway/biz/skill/declaration.py
+  s_369437aa3cec84::t_b43f949b2cd8d7 434-436,448
+  s_369437aa3cec84::t_b533ad07aca356 28
+  s_369437aa3cec84::t_84ae26239266df 106,108,110-112,115,117
+  s_369437aa3cec84::t_0ac2e31163f49d 62
+  s_369437aa3cec84::t_784a51fa297584 234-237
+  s_369437aa3cec84::t_534545be785671 524-525,527-528,530
+  s_369437aa3cec84::t_692f7986c84d2f 205,207,211-214
+  s_369437aa3cec84::t_3cb7cd0a5614c8 215
+  s_369437aa3cec84::t_7c857b1f657f8f 238
+src/dashboard/apigateway/apigateway/apps/skill/models.py
+  s_369437aa3cec84::t_b1590a89b24395 136
+src/dashboard/apigateway/apigateway/biz/skill/resource_loader.py
+  s_369437aa3cec84::t_79ea796fd40999 63-64
+  s_3789a195e1d237::t_d03ff82c88b76f 132
+  s_369437aa3cec84::t_ae504053fc76b3 95-98,100-101,104-106,109-113
+  s_3789a195e1d237::t_fbbceb8293de30 168-170
+  s_3789a195e1d237::t_aa70c334287e1a 45
+  s_369437aa3cec84::t_6dca44f742941b 41,44
+  s_369437aa3cec84::t_b4b52e2e16a870 153-155
+  s_3789a195e1d237::t_a57732094c918c 166
+src/dashboard/apigateway/apigateway/biz/skill/syncer.py
+  s_369437aa3cec84::t_004d14b32723e0 36
+  s_369437aa3cec84::t_f31485ef6be823 139,141-149
+  s_369437aa3cec84::t_e1794268e4b356 178
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_declaration.py
+  s_369437aa3cec84::t_63b3fe77518873 352-365
+  s_369437aa3cec84::t_892f92c13eeecb 180-181,185
+  s_369437aa3cec84::t_8f22c25693e502 134,137-138,148-149,160-163
+  s_369437aa3cec84::t_dab1cfc8f7b198 375-383,385-386
+  s_369437aa3cec84::t_98dce5886ffcf2 414-421
+  s_369437aa3cec84::t_96814444eb9675 164
+  s_369437aa3cec84::t_537a603139d482 198,200,202-203,205
+  s_369437aa3cec84::t_168347e6027605 384
+src/dashboard/apigateway/apigateway/tests/biz/skill/fixtures/expected/job-plan-run-and-log.md
+  s_369437aa3cec84::t_4f6358fc6f55af 59,61
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_renderer.py
+  s_3789a195e1d237::t_3fd8c53186379b 139-142,146-152,154-155
+  s_3789a195e1d237::t_beb3b3b7be4ef6 367
+  s_3789a195e1d237::t_5448ff57a30155 143-145,153
+  s_369437aa3cec84::t_8b2f3d19380bfb 308-317,319-328
+  s_369437aa3cec84::t_e763736b2fdda5 318
+src/dashboard/apigateway/apigateway/tests/biz/skill/static_provider.py
+  s_3789a195e1d237::t_6179d62cb64181 88-89
+  s_3789a195e1d237::t_a3dad6a6050d1f 31
+  s_3789a195e1d237::t_16821310458229 111
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_validator.py
+  s_369437aa3cec84::t_4aa651ab05d2b6 21,353,359-363
+  s_3789a195e1d237::t_27e1bd21f5e85b 221,225-230
+  s_369437aa3cec84::t_a4826871f03e17 354-358,364-375
+  s_369437aa3cec84::t_747cab186d99a5 222-224,233,306
+  s_3789a195e1d237::t_dce4a5aa887d5c 195-210
+  s_369437aa3cec84::t_6cc306e7a973a5 376-377
+src/dashboard/apigateway/apigateway/biz/skill/AGENTS.md
+  s_3789a195e1d237::t_bffa35bb788752 85-87
+  s_3789a195e1d237::t_b2f0a5c556c577 64
+  s_369437aa3cec84::t_280f42ad85ccf6 67-77
+  s_3789a195e1d237::t_4294815ad6a41a 103
+  s_3789a195e1d237::t_9da3d62f2493ae 109-110
+  s_369437aa3cec84::t_c85fc328ddeaa0 127-132,135
+  s_3789a195e1d237::t_ce2c07a4fecdb2 65-66
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_resource_loader.py
+  s_3789a195e1d237::t_3c79de420d9127 180
+  s_369437aa3cec84::t_9e51612ee3febb 23,30
+  s_369437aa3cec84::t_c17c91bc67d34f 80,82,142
+  s_3789a195e1d237::t_032bf9052996e2 191
+  s_3789a195e1d237::t_8a3a91090f7750 183-190
+  s_369437aa3cec84::t_e7ccbff5218a61 83,87-101
+  s_369437aa3cec84::t_d47dd97d8f137e 31
+  s_369437aa3cec84::t_97c7301454c29f 102
+  s_3789a195e1d237::t_f96731051ef7ca 181-182
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_schema_converter.py
+  s_369437aa3cec84::t_87f1b1112fa619 223
+  s_369437aa3cec84::t_e3089d2b2ffa1a 295-312
+  s_369437aa3cec84::t_655455c53d7f56 23,26,32
+  s_369437aa3cec84::t_7a767760ea90f7 243-246,250-255,257-264,272,275-294,313-337
+  s_369437aa3cec84::t_c17c91bc67d34f 91-92,192,210,222
+  s_3789a195e1d237::t_a07090b45e1755 27,190,208,221,236,239
+  s_3789a195e1d237::t_3bbd9c0a390e6d 152-158,162-168,171
+  s_3789a195e1d237::t_a89c16b5e6a991 159-161,169-170
+  s_3789a195e1d237::t_9375e36c6a6a6d 214-220,224-235,237-238,240-241,247-249,256
+  s_369437aa3cec84::t_1276d4b47da519 148-149
+  s_369437aa3cec84::t_c695f16172cbe3 108-117,119
+  s_369437aa3cec84::t_672d6b5cd5d5fa 33
+src/dashboard/apigateway/apigateway/data/skill/templates/SKILL.md.j2
+  s_369437aa3cec84::t_679cea77d8820c 62
+  s_369437aa3cec84::t_4477cada67afc4 64
+  s_369437aa3cec84::t_32c7ea199b9a7f 63
+src/dashboard/apigateway/apigateway/biz/skill/writer.py
+  s_369437aa3cec84::t_c316fd5fa76f18 130,138
+  s_369437aa3cec84::t_a82b7744b91b36 46-47,49-51,54-55,59-61,70
+  s_369437aa3cec84::t_61b7a795232423 92-93,98,100,111
+  s_369437aa3cec84::t_5d4cabd7836c39 156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8d87df11c1a1e4996f955997d62c39edbb6281ea",
+  "prompts": {},
+  "sessions": {
+    "s_369437aa3cec84": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cdc82640-7443-4e5a-900d-cf446bc4d9cf",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    },
+    "s_3789a195e1d237": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3b3d282a-0d1b-418e-b05f-1a5d3ad8b9f5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
