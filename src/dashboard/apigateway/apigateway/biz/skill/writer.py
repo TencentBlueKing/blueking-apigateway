@@ -43,27 +43,31 @@ class SkillVersionNotNewerError(Exception):
     pass
 
 
-def check_new_version(metadata: SkillMetadata, version: str) -> None:
-    """新版本必须不存在，且按 major.minor.patch 高于当前版本
+def check_version(metadata: SkillMetadata, version: str, overwrite_existing: bool = False) -> Optional[SkillVersion]:
+    """判断 version 能否写入：返回要覆盖的当前版本，写入新版本时返回 None，不能写入时抛异常
 
-    低版本若成为当前版本，之后再注入更高的版本时，那个版本已存在但不是当前版本，会被跳过，
-    当前版本就停在低版本上。
-    与当前版本号一致的覆盖不走这里，由 save_skill_version(overwrite_existing=True) 处理。
+    overwrite_existing 为真且 version 与当前版本一致时覆盖当前版本；否则新版本必须不存在，
+    且按 major.minor.patch 高于当前版本。低版本若成为当前版本，之后再注入更高的版本时，
+    那个版本已存在但不是当前版本，会被跳过，当前版本就停在低版本上。
 
     例如：已有 1.0.0、1.1.0，当前版本 1.1.0 时
-        "1.2.0" -> 通过
+        "1.2.0" -> None（写入新版本）
+        "1.1.0"，overwrite_existing=True -> 当前版本 1.1.0；overwrite_existing=False -> SkillVersionExistsError
         "1.0.0" -> SkillVersionExistsError
         "1.0.10" -> SkillVersionNotNewerError
     """
+    current = metadata.current_version
+    if overwrite_existing and current is not None and current.version == version:
+        return current
     if SkillVersion.objects.filter(metadata=metadata, version=version).exists():
         raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
-    current = metadata.current_version
     if current and parse_version(version) <= parse_version(current.version):
         raise SkillVersionNotNewerError(
             _("{name} 的版本 {version} 不高于当前版本 {current}").format(
                 name=metadata.name, version=version, current=current.version
             )
         )
+    return None
 
 
 @dataclass
@@ -71,7 +75,6 @@ class SavedSkillVersion:
     metadata: SkillMetadata
     version: SkillVersion
     created: bool
-    overwritten: bool = False
 
 
 @transaction.atomic
@@ -86,16 +89,15 @@ def save_skill_version(
     """按 (type, gateway, name) 找到或新建 metadata，写入版本并设为当前版本
 
     内置 Skill 的 gateway 为空，唯一约束拦不住同名，同名由这里在事务内先查再建保证；
-    调用方需保证同一来源的写入串行执行。
-    overwrite_existing 为真且声明版本与当前版本一致时，覆盖这一版的
-    changelog、编排、正文和关联资源，不新增版本行，created_time 保持不变。
-    已存在但不是当前版本的版本仍拒绝写入。
+    调用方需保证同一来源的写入串行执行。能否写入、是否覆盖当前版本由 check_version 判断，
+    覆盖时更新这一版的 changelog、编排、正文和关联资源，不新增版本行，created_time 保持不变。
 
     例如：
         首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源
         再写入 1.1.0 -> 新增版本行并设为当前版本，download_count 等统计不变
-        overwrite_existing 为真时再写入 1.1.0 -> overwritten 为真，版本行和 created_time 不变
+        overwrite_existing 为真时再写入 1.1.0 -> 版本行和 created_time 不变
     """
+    # 锁住 metadata 行，同一 Skill 的写入在这里串行，check_version 的结论在事务内不会变
     metadata = (
         SkillMetadata.objects.select_for_update()
         .filter(type=skill_type, gateway=gateway, name=declaration.name)
@@ -106,14 +108,7 @@ def save_skill_version(
     if metadata is None:
         metadata = SkillMetadata(type=skill_type, gateway=gateway, name=declaration.name, created_by=operator)
     else:
-        if overwrite_existing and metadata.current_version_id is not None:
-            existing_version = (
-                SkillVersion.objects.select_for_update()
-                .filter(id=metadata.current_version_id, metadata=metadata, version=declaration.version)
-                .first()
-            )
-        if existing_version is None:
-            check_new_version(metadata, declaration.version)
+        existing_version = check_version(metadata, declaration.version, overwrite_existing)
 
     metadata.display_name = declaration.display_name
     metadata.display_name_en = declaration.display_name_en
@@ -132,7 +127,7 @@ def save_skill_version(
         version = SkillVersion.objects.create(
             metadata=metadata,
             version=declaration.version,
-            changelog=declaration.current_changelog.model_dump(mode="json"),
+            changelog=declaration.changelog_data(),
             orchestration=orchestration,
             artifact={SKILL_FILE_NAME: body},
             created_by=operator,
@@ -140,7 +135,7 @@ def save_skill_version(
         )
     else:
         version = existing_version
-        version.changelog = declaration.current_changelog.model_dump(mode="json")
+        version.changelog = declaration.changelog_data()
         version.orchestration = orchestration
         version.artifact = {SKILL_FILE_NAME: body}
         version.updated_by = operator
@@ -158,9 +153,7 @@ def save_skill_version(
     metadata.current_version = version
     metadata.status = SkillStatusEnum.PUBLISHED.value
     metadata.save(update_fields=["current_version", "status", "updated_time"])
-    return SavedSkillVersion(
-        metadata=metadata, version=version, created=created, overwritten=existing_version is not None
-    )
+    return SavedSkillVersion(metadata=metadata, version=version, created=created)
 
 
 def _get_or_create_tags(names: List[str]) -> List[SkillTag]:

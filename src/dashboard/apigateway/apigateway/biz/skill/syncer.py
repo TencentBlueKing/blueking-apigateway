@@ -33,7 +33,7 @@ from .declaration import SkillDeclaration, SkillDeclarationError, parse_declarat
 from .renderer import render_skill_body
 from .resource_loader import ReleasedResourceProvider, ResourceProvider
 from .validator import validate_declaration
-from .writer import SkillVersionExistsError, SkillVersionNotNewerError, check_new_version, save_skill_version
+from .writer import SkillVersionExistsError, SkillVersionNotNewerError, check_version, save_skill_version
 
 logger = logging.getLogger(__name__)
 
@@ -136,22 +136,17 @@ def _sync(
     metadata = SkillMetadata.objects.filter(
         type=SkillTypeEnum.PLATFORM.value, gateway__isnull=True, name=declaration.name
     ).first()
-    overwrite_existing = False
+    # 先判断一次，不能写入的版本不必校验和渲染；写库时在事务内按同一规则再判断
     if metadata:
-        current = metadata.current_version
-        # 与当前版本号一致时继续往下走，写库时覆盖这一版
-        if current is not None and current.version == declaration.version:
-            overwrite_existing = True
-        else:
-            try:
-                check_new_version(metadata, declaration.version)
-            except SkillVersionExistsError:
-                result.reasons.append(_("版本 {version} 已存在").format(version=declaration.version))
-                result.metadata_id = metadata.id
-                return
-            except SkillVersionNotNewerError as err:
-                result.reasons.append(str(err))
-                return
+        try:
+            check_version(metadata, declaration.version, overwrite_existing=True)
+        except SkillVersionExistsError:
+            result.reasons.append(_("版本 {version} 已存在").format(version=declaration.version))
+            result.metadata_id = metadata.id
+            return
+        except SkillVersionNotNewerError as err:
+            result.reasons.append(str(err))
+            return
 
     validation = validate_declaration(declaration, provider)
     result.warnings += validation.warnings
@@ -180,7 +175,7 @@ def _sync(
             skill_type=SkillTypeEnum.PLATFORM.value,
             gateway=None,
             operator=settings.GATEWAY_DEFAULT_CREATOR,
-            overwrite_existing=overwrite_existing,
+            overwrite_existing=True,
         )
         result.status = SkillSyncStatusEnum.CREATED.value if saved.created else SkillSyncStatusEnum.RELEASED.value
         result.metadata_id = saved.metadata.id

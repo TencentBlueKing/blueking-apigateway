@@ -22,10 +22,9 @@
 """
 
 import json
-import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple
 
 import yaml
 from django.utils.translation import gettext as _
@@ -38,7 +37,7 @@ from .constants import (
     SKILL_TEMPLATES_DIR,
     WRITE_METHODS,
 )
-from .refs import each_array, norm_path, parse_ref
+from .refs import each_array, parse_ref
 from .validator import ResourceKey, input_bindings, load_resources
 
 if TYPE_CHECKING:
@@ -47,7 +46,6 @@ if TYPE_CHECKING:
     from .schema_converter import ResourceParam
 
 PARAM_LOCATION_ORDER = {"path": 0, "query": 1, "header": 2, "body": 3}
-NOTATION_PLACES = ("path", "query", "header")
 
 
 class SkillRenderError(Exception):
@@ -119,15 +117,17 @@ def md_cell(value: Any) -> str:
 
 
 def code_cell(value: Any) -> str:
-    """JSON 值写成行内代码；非空字符串不加引号，null、空字符串写成 `null`、`""`，与表示未配置的 - 区分
+    r"""表格单元格里的 JSON 值，写成行内代码；非空字符串不加引号，null、空字符串写成 `null`、`""`，与表示未配置的 - 区分。
+    行内代码里的 | 也会拆开表格，同样转义
 
     例如：
         "abc" -> "`abc`"
         "" -> '`""`'
         None -> "`null`"
-        [1, 2] -> "`[1, 2]`"
+        "a|b" -> "`a\|b`"
     """
     text = value if isinstance(value, str) and value else json.dumps(value, ensure_ascii=False)
+    text = text.replace("|", "\\|")
     return f"`{text}`"
 
 
@@ -170,7 +170,6 @@ class _SkillBodyContext:
                 for name, item in orchestration.outputs.items()
             ],
             "steps": self._steps(),
-            "notation": self._notation(),
             "has_write": any(resource.data.method in WRITE_METHODS for resource in self.resources.values()),
         }
 
@@ -242,43 +241,6 @@ class _SkillBodyContext:
             )
         return steps
 
-    def _notation(self) -> Dict[str, Any]:
-        """本 Skill 的取值和 OpenAPI 片段里实际出现的写法，说明里只写这些
-
-        例如：所有 with 都绑定 query 参数、没有固定值时，places 为 ["query"]、value 为 False，
-        正文就不写 path、header 和 x-value 的说明
-        """
-        values: List[Any] = []
-        locations: Set[str] = set()
-        # 逐个调用的 `[]` 取当前元素，其余 `[]` 组成数组，说明分开写
-        each = False
-        array_refs: List[Any] = []
-        for step in self.orchestration.steps:
-            resource = self.resources[step.key]
-            for name, value in step.with_.items():
-                param = _get_param(resource, name)
-                locations.add(param.location)
-                values.append(value)
-                if each_array(value, param.type):
-                    each = True
-                elif parse_ref(value).kind != "value":
-                    array_refs.append(value)
-        outputs = [output.value for output in self.orchestration.outputs.values()]
-        array_refs += outputs
-        refs = [value for value in values if parse_ref(value).kind != "value"] + outputs
-
-        return {
-            "places": [place for place in NOTATION_PLACES if place in locations],
-            "body": "body" in locations
-            or any(self.resources[step.key].body_required for step in self.orchestration.steps),
-            "index": any(re.search(r"\[\d+\]", ref) for ref in refs),
-            "all": any("[]" in ref for ref in array_refs),
-            "step": any(parse_ref(ref).kind == "step" for ref in refs),
-            "value": any(parse_ref(value).kind == "value" for value in values),
-            "omit": any(self.orchestration.is_omittable_input_ref(value) for value in values),
-            "each": each,
-        }
-
 
 def _distinct_descriptions(descriptions: Iterable[str]) -> List[str]:
     """去掉空的、重复的，以及被另一条完整包含的说明
@@ -321,22 +283,6 @@ _OpenAPIDumper.add_representer(
 )
 
 
-def _type_schema(type_text: str) -> _Flow:
-    """资源定义里的类型写法 -> JSON Schema
-
-    例如：
-        "string" -> {type: string}
-        "array<string>" -> {type: array, items: {type: string}}
-        "integer|string" -> {type: [integer, string]}
-    """
-    match = re.fullmatch(r"array<(.+)>", type_text)
-    if match:
-        return _Flow(type="array", items=_type_schema(match.group(1)))
-    if "|" in type_text:
-        return _Flow(type=_FlowList(type_text.split("|")))
-    return _Flow(type=type_text)
-
-
 def _flow(value: Any, block: bool = False) -> Any:
     """复制 schema：含 properties 或块格式子节点（恰为 dict / list）的按块输出，其余写成一行
 
@@ -373,113 +319,6 @@ def _binding_fields(orchestration: SkillOrchestration, value: Any, param: Resour
     return fields
 
 
-class _ResponseNode:
-    """把扁平的响应字段路径还原成嵌套 schema，父字段说明和子字段都保留。"""
-
-    def __init__(self) -> None:
-        self.type = ""
-        self.description = ""
-        self.properties: Dict[str, _ResponseNode] = {}
-        self.item: Optional[_ResponseNode] = None
-
-    def place(self, path: str, type_text: str, description: str) -> None:
-        """把一个响应字段放进树里；缺少的父节点补成 object，带 [] 的段按数组处理
-
-        例如：依次放入 ("data", "object", "任务")、("data.items[].id", "integer", "") 后，
-        data 是说明为「任务」的 object，data.items 是数组，元素是含 integer 字段 id 的 object
-        """
-        node = self
-        parts = [part for part in norm_path(path).split(".") if part]
-        for index, part in enumerate(parts):
-            is_array = part.endswith("[]")
-            name = part[:-2] if is_array else part
-            child = node.properties.setdefault(name, _ResponseNode())
-            if is_array:
-                item = child._ensure_array()
-                if index == len(parts) - 1:
-                    child.apply(type_text, description)
-                node = item
-                continue
-            if index == len(parts) - 1:
-                child.apply(type_text, description)
-                return
-            if not child.type:
-                child.type = "object"
-            node = child
-
-    def apply(self, type_text: str, description: str) -> None:
-        """给节点写上类型和说明；array<x> 把 x 写到元素节点，已有子字段的节点保持 object
-
-        例如：
-            apply("array<string>", "标签") -> 数组节点，说明「标签」，元素类型 string
-            已有子字段的节点 apply("string", "") -> 仍为 object
-        """
-        if description:
-            self.description = description
-        if type_text == "array" or type_text.startswith("array<"):
-            item = self._ensure_array()
-            inner = type_text[6:-1] if type_text.startswith("array<") and type_text.endswith(">") else ""
-            if inner:
-                item.apply(inner, "")
-            return
-        if self.properties or self.item is not None:
-            if not self.type:
-                self.type = "object"
-            return
-        # 定义里没写类型的字段不补类型
-        self.type = type_text
-
-    def to_schema(self) -> Any:
-        """节点 -> JSON Schema；含 properties 的按块输出，叶子写成一行，没有类型的字段只写说明
-
-        例如：
-            类型 integer、说明「ID」的叶子 -> {type: integer, description: ID}
-            没有类型、说明「扩展字段」的叶子 -> {description: 扩展字段}
-        """
-        if self.item is not None or self.type == "array":
-            items = self.item.to_schema() if self.item is not None else _Flow()
-            if isinstance(items, dict) and "properties" in items:
-                schema: Dict[str, Any] = {"type": "array"}
-                if self.description:
-                    schema["description"] = self.description
-                schema["items"] = items
-                return schema
-            schema = _Flow(type="array", items=items)
-            if self.description:
-                schema["description"] = self.description
-            return schema
-        if self.properties:
-            schema = dict(_type_schema(self.type or "object"))
-            if self.description:
-                schema["description"] = self.description
-            schema["properties"] = {name: child.to_schema() for name, child in self.properties.items()}
-            return schema
-        schema = _type_schema(self.type) if self.type else _Flow()
-        if self.description:
-            schema["description"] = self.description
-        return schema
-
-    def _ensure_array(self) -> _ResponseNode:
-        """把节点标成数组并返回元素节点；元素节点已存在时复用，同一数组的多个子字段落在同一个元素上"""
-        self.type = "array"
-        if self.item is None:
-            self.item = _ResponseNode()
-        return self.item
-
-
-def _response_schema(resource: SkillResource) -> Dict[str, Any]:
-    """用资源定义里的全部响应字段还原 JSON Schema
-
-    例如：响应字段只有 ("data.task_id", "integer", "任务 ID") ->
-        {type: object, properties: {data: {type: object, properties: {task_id: {type: integer, description: 任务 ID}}}}}
-    """
-    root = _ResponseNode()
-    root.type = "object"
-    for item in resource.responses:
-        root.place(item.field, item.type, item.description)
-    return root.to_schema()
-
-
 def _get_param(resource: SkillResource, name: str) -> ResourceParam:
     """按名字取资源定义中的参数，位置和类型以定义为准；不在定义中时抛 SkillRenderError，校验阶段已报 error
 
@@ -499,7 +338,7 @@ def _build_params(
     orchestration: SkillOrchestration, step: SkillStep, resource: SkillResource
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[str]]:
     """按 path、query、header、body 的顺序（path 参数按在路径里出现的顺序）生成 parameters 和 body 属性。
-    参数 schema 照抄已发布的定义，嵌套字段、required、enum 等约束都保留。
+    参数 schema 照抄已发布的定义，嵌套字段、required、enum 等约束都保留；定义里写了的 style、explode、allowReserved 也照抄。
 
     例如：with 绑定 body 参数 name、query 参数 limit、path 参数 task_id 时，
     parameters 依次为 task_id（required）、limit，body 为 {"name": {...}}
@@ -539,6 +378,8 @@ def _build_params(
             item["required"] = True
         if spec.description:
             item["description"] = spec.description
+        # 数组、对象取值的拼接方式（如 explode: false 时逗号分隔）只写在这里，丢掉后调用方会按默认方式拼接
+        item.update(spec.serialization)
         # OpenAPI 3.1 的 Parameter 必须有 schema 或 content，定义里没写类型时为 {}
         item["schema"] = schema
         item.update(binding)
@@ -550,7 +391,7 @@ def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: S
     """一步的 YAML 调用说明：调用目标、parameters、requestBody 和 responses
 
     例如：bk-sops/get_task_status@prod 绑定 task_id 时，依次写出 gateway_name、stage_name、resource_name、
-    method、path，parameters 里一项 task_id（in: path），responses 写已发布的响应字段；
+    method、path，parameters 里一项 task_id（in: path），responses 照抄已发布的第一个 2xx 响应 schema；
     请求体必须发送时即使没有绑定字段也写出 requestBody
     """
     params, body, body_required = _build_params(orchestration, step, resource)
@@ -573,11 +414,11 @@ def _render_call(orchestration: SkillOrchestration, step: SkillStep, resource: S
             "required": resource.body_required or bool(body_required),
             "content": {"application/json": {"schema": body_schema}},
         }
-    if resource.responses:
+    if resource.response_schema:
         call["responses"] = {
             "200": {
                 "description": "已发布接口的响应字段",
-                "content": {"application/json": {"schema": _response_schema(resource)}},
+                "content": {"application/json": {"schema": _flow(resource.response_schema)}},
             }
         }
 

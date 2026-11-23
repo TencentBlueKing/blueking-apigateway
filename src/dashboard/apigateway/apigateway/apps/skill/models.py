@@ -133,7 +133,7 @@ class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
 
     内置 Skill 注入在版本号与当前版本一致时覆盖 changelog、orchestration、artifact 和关联资源，不新增行。
     其他写入创建后不再修改这三项。
-    changelog: {"version": "1.0.0", "date": "2026-11-11 11:00:00", "content": "<说明>"}，声明 changelog 里本版本那一条
+    changelog: {"version": "1.0.0", "date": "2026-11-11 11:00:00", "content": "<说明>"}，声明的 version 加上声明 changelog 的 date、content
     artifact: {"SKILL.md": "<正文>"}，键为包内相对路径，值为正文（含一级标题，不含 frontmatter）
     """
 

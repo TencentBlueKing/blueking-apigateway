@@ -3,11 +3,6 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 上下文由 biz/skill/renderer.py 提供。环境开启 trim_blocks、lstrip_blocks：独占一行的块标签不留空行；
 行尾的块标签会吞掉换行，行内条件用 {%- 拼接多行。
 #}
-{% set place_texts = {
-    "path": "`path` 替换路径里的 `{参数名}`",
-    "query": "`query` 放查询串",
-    "header": "`header` 放请求头",
-} %}
 {% set ref_input = "${{ inputs.<输入名> }}" %}
 {% set ref_step = "${{ steps.<步骤 id>.outputs.<字段路径> }}" %}
 # {{ display_name }}
@@ -64,23 +59,9 @@ SKILL.md 正文模板（不含 frontmatter），渲染结果写入 skill_version
 
 {{ description }}
 
-每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段列出本 Skill 绑定的参数，步骤说明明确要求传的其他参数按说明传；`responses` 列出该资源已发布 OpenAPI 的响应字段。
-{%- if notation.places %}
-参数位置看 `in`：{% for place in notation.places %}{% if not loop.first %}，{% endif %}{{ place_texts[place] }}{% endfor %}
-  {%- if notation.body %}；`requestBody` 里的字段组成 JSON 正文。{% else %}。{% endif %}
-{%- elif notation.body %}
-`requestBody` 里的字段组成 JSON 正文。
-{%- endif %}
+每步写成一段 YAML 调用说明。`gateway_name`、`stage_name`、`resource_name`、`method`、`path` 表示调用目标；`parameters`、`requestBody`、`responses` 沿用 OpenAPI 3.1 对象结构。片段列出本 Skill 绑定的参数，步骤说明明确要求传的其他参数按说明传；`responses` 照抄该资源已发布 OpenAPI 的响应定义。参数位置看 `in`：`path` 替换路径里的 `{参数名}`，`query` 放查询串，`header` 放请求头；`requestBody` 里的字段组成 JSON 正文。
 
-
-取值：`x-from: {{ ref_input }}` 来自输入
-{%- if notation.step %}；`x-from: {{ ref_step }}` 来自该步骤的响应体
-  {%- if notation.index %}，`[0]` 是数组第一个元素{% endif %}
-  {%- if notation.all %}，`[]` 是数组每个元素的该字段组成的数组{% endif %}
-{%- endif %}
-{%- if notation.each %}；`x-each: true` 表示逐个调用：对 `[]` 前的数组每个元素调用一次，取该元素的这个字段，同一步的 `x-each` 参数取同一个元素，只调用哪些元素看该步说明{% endif %}
-{%- if notation.value %}；`x-value` 是固定值，按 JSON 原样传{% endif %}
-{%- if notation.omit %}；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传{% endif %}。
+取值：`x-from: {{ ref_input }}` 来自输入；`x-from: {{ ref_step }}` 来自该步骤的响应体，`[0]` 是数组第一个元素，`[]` 是数组每个元素的该字段组成的数组；`x-each: true` 表示逐个调用：对 `[]` 前的数组每个元素调用一次，取该元素的这个字段，同一步的 `x-each` 参数取同一个元素，只调用哪些元素看该步说明；`x-value` 是固定值，按 JSON 原样传；`x-omit-if-unset: true` 表示取自选填输入，用户没给时整个参数不传。
 
 {% for step in steps %}
 {{ step.title }}

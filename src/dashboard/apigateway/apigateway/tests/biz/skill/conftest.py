@@ -43,9 +43,9 @@ def load_declaration_data(name: str) -> dict:
 
 
 def set_version(data: dict, version: str) -> dict:
-    """改 version，changelog 换成只有这个版本的一条，满足「第一条是当前版本」"""
+    """改 version，changelog 换成这个版本的说明"""
     data["version"] = version
-    data["changelog"] = [{"version": version, "date": "2026-11-12", "content": f"发布 {version}"}]
+    data["changelog"] = {"date": "2026-11-12", "content": f"发布 {version}"}
     return data
 
 

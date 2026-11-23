@@ -38,9 +38,11 @@ from .refs import norm_path
 from .schema_converter import (
     ResourceParam,
     ResponseField,
+    SchemaType,
     convert_schema_params,
     convert_schema_responses,
-    has_non_json_request_body,
+    get_response_schema,
+    has_non_json_object_body,
 )
 
 
@@ -58,6 +60,8 @@ class SkillResource:
     params: List[ResourceParam] = field(default_factory=list)
     # requestBody.required：请求体必须发送，与其中属性是否必填无关
     body_required: bool = False
+    # 第一个 2xx 响应的 schema 原样保留，用于渲染；responses 是它展开的字段路径，只用于查找引用的字段
+    response_schema: Dict[str, Any] = field(default_factory=dict)
     responses: List[ResponseField] = field(default_factory=list)
     # 读取资源时发现的非阻断问题（如资源未公开），由校验原样输出
     warnings: List[str] = field(default_factory=list)
@@ -88,22 +92,25 @@ class SkillResource:
             for item in self.responses
         ):
             return True
-        return normed.endswith("[]") and self.response_type(normed[:-2]).startswith("array")
+        if not normed.endswith("[]"):
+            return False
+        parent = self.response_type(normed[:-2])
+        return parent is not None and parent.is_array
 
-    def response_type(self, path: str) -> str:
-        """path 对应响应字段的类型写法；数组元素取数组的元素类型；没有这一条字段或字段没写类型时为空
+    def response_type(self, path: str) -> Optional[SchemaType]:
+        """path 对应响应字段的类型；数组元素取数组的元素类型；没有这一条字段或字段没写类型时为 None
 
         例如：响应字段 data.tags 为 array<string>、data.extra 没写类型时
-            "data.tags" -> "array<string>"
-            "data.tags[0]" -> "string"
-            "data.extra"、"data.name" -> ""
+            "data.tags" -> array<string>
+            "data.tags[0]" -> string
+            "data.extra"、"data.name" -> None
         """
         normed = norm_path(path)
-        type_text = next((item.type for item in self.responses if item.field == normed), "")
-        if not type_text and normed.endswith("[]"):
-            match = re.fullmatch(r"array<(.+)>", self.response_type(normed[:-2]))
-            type_text = match.group(1) if match else ""
-        return type_text
+        field_type = next((item.type for item in self.responses if item.field == normed), None)
+        if field_type is None and normed.endswith("[]"):
+            parent = self.response_type(normed[:-2])
+            field_type = parent.items if parent is not None and parent.is_array else None
+        return field_type
 
 
 class ResourceProvider(ABC):
@@ -122,7 +129,7 @@ def build_skill_resource(
     """发布数据加版本化 OpenAPI schema -> SkillResource
 
     当前环境禁用该资源，或 schema 没有同时定义请求参数和响应字段时，抛 SkillResourceUnavailableError；
-    其他问题不阻断读取，写进 errors（方法为 ANY、请求体不是 JSON、路径占位符缺参数、同名参数跨位置）
+    其他问题不阻断读取，写进 errors（方法为 ANY、请求体不是 JSON 对象、路径占位符缺参数、同名参数跨位置）
     或 warnings（资源未公开）。
 
     例如：
@@ -143,7 +150,9 @@ def build_skill_resource(
     if undefined:
         raise SkillResourceUnavailableError("; ".join(undefined))
 
-    resource = SkillResource(gateway=gateway, stage=stage, data=data, responses=responses)
+    resource = SkillResource(
+        gateway=gateway, stage=stage, data=data, response_schema=get_response_schema(schema), responses=responses
+    )
     if not data.is_public:
         resource.warnings.append(
             _("{gateway}.{resource}：资源未公开，调用方无法申请权限").format(gateway=gateway, resource=data.name)
@@ -154,11 +163,11 @@ def build_skill_resource(
                 gateway=gateway, resource=data.name
             )
         )
-    if has_non_json_request_body(schema):
+    if has_non_json_object_body(schema):
         resource.errors.append(
-            _("{gateway}.{resource}：请求体不是 application/json，SKILL.md 只能描述 JSON 请求体").format(
-                gateway=gateway, resource=data.name
-            )
+            _(
+                "{gateway}.{resource}：请求体不是 JSON 对象，SKILL.md 只能描述顶层为对象的 application/json 请求体"
+            ).format(gateway=gateway, resource=data.name)
         )
     else:
         resource.params = convert_schema_params(schema)

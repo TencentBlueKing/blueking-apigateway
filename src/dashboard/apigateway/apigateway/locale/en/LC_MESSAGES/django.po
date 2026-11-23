@@ -3846,22 +3846,6 @@ msgid "标签规范化后重复：{name}"
 msgstr "duplicate tag after normalization: {name}"
 
 #: apigateway/biz/skill/declaration.py
-msgid "至少需要一条，第一条为当前版本"
-msgstr "at least one entry is required, and the first one is the current version"
-
-#: apigateway/biz/skill/declaration.py
-#, python-brace-format
-msgid "第一条应为当前版本 {version}，实际为 {actual}"
-msgstr "the first entry should be the current version {version}, got {actual}"
-
-#: apigateway/biz/skill/declaration.py
-#, python-brace-format
-msgid "应按版本从新到旧排列且不重复：{newer} 之后是 {older}"
-msgstr ""
-"entries should be ordered from newest to oldest without duplicates: {older} "
-"comes after {newer}"
-
-#: apigateway/biz/skill/declaration.py
 #, python-brace-format
 msgid "YAML 解析失败：{error}"
 msgstr "failed to parse YAML: {error}"
@@ -3945,11 +3929,11 @@ msgstr ""
 #: apigateway/biz/skill/resource_loader.py
 #, python-brace-format
 msgid ""
-"{gateway}.{resource}：请求体不是 application/json，SKILL.md 只能描述 JSON 请"
-"求体"
+"{gateway}.{resource}：请求体不是 JSON 对象，SKILL.md 只能描述顶层为对象的 "
+"application/json 请求体"
 msgstr ""
-"{gateway}.{resource}: the request body is not application/json, SKILL.md "
-"can only describe JSON request bodies"
+"{gateway}.{resource}: the request body is not a JSON object, SKILL.md can "
+"only describe application/json request bodies whose top level is an object"
 
 #: apigateway/biz/skill/resource_loader.py
 #, python-brace-format
@@ -4049,6 +4033,11 @@ msgstr ""
 #, python-brace-format
 msgid "{step}：逐个调用的参数须取自同一个数组：{arrays}"
 msgstr "{step}: per-item parameters must come from the same array: {arrays}"
+
+#: apigateway/biz/skill/validator.py
+#, python-brace-format
+msgid "{step}.with.{name}：参数类型 {type} 与来源类型 {source} 不一致"
+msgstr "{step}.with.{name}: parameter type {type} does not match source type {source}"
 
 #: apigateway/biz/skill/validator.py
 #, python-brace-format

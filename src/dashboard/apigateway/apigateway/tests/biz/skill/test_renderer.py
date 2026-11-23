@@ -136,6 +136,23 @@ class TestRenderSkillBody:
         }
         assert properties["global_var_list"]["items"] == global_var_list["schema"]["items"]
 
+    def test_param_serialization_copied_from_openapi(self, resources_data):
+        status = next(item for item in resources_data["resources"] if item["resource"] == "get_job_instance_status")
+        scope_id = next(item for item in status["params"] if item["name"] == "bk_scope_id")
+        scope_id.update(style="form", explode=False)
+        # Swagger 2.0 导入的 query 参数可能带 style: simple，照抄会让调用说明通不过 OpenAPI 校验
+        scope_type = next(item for item in status["params"] if item["name"] == "bk_scope_type")
+        scope_type.update(style="simple")
+
+        blocks = YAML_BLOCK_PATTERN.findall(
+            _render("job-plan-run-and-log", StaticResourceProvider.from_dict(resources_data))
+        )
+        params = {item["name"]: item for item in _validate_call(blocks[1][1])["parameters"]}
+
+        assert (params["bk_scope_id"]["style"], params["bk_scope_id"]["explode"]) == ("form", False)
+        assert "style" not in params["bk_scope_type"]
+        assert "explode" not in params["bk_scope_type"]
+
     def test_output_type_comes_from_declaration(self, static_provider):
         output_section = (
             _render("job-plan-run-and-log", static_provider).split("## 输出", 1)[1].split("## 执行步骤", 1)[0]
@@ -204,8 +221,6 @@ class TestRenderSkillBody:
         assert properties["step_instance_id"]["x-each"] is True
         assert "x-each" not in properties["job_instance_id"]
         assert "`x-each: true` 表示逐个调用" in body
-        # 只有逐个调用用到 `[]`，不写「组成的数组」
-        assert "组成的数组" not in body
 
     def test_array_param_from_all_elements(self, resources_data):
         data = load_declaration_data("job-plan-run-and-log")
@@ -290,6 +305,27 @@ class TestRenderSkillBody:
             "properties": {"id": {"type": "integer"}},
         }
 
+    def test_responses_copy_published_schema(self, static_provider):
+        """enum、format、oneOf 和可空数组的元素结构都照抄，不经过扁平字段还原"""
+        resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
+        extra = {
+            "status": {"type": "string", "enum": ["RUNNING", "FINISHED"]},
+            "created_at": {"type": "string", "format": "date-time"},
+            "value": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+            "tags": {"type": ["array", "null"], "items": {"type": "string"}},
+            "hosts": {
+                "type": ["array", "null"],
+                "items": {"type": "object", "properties": {"id": {"type": "integer"}}},
+            },
+        }
+        resource.response_schema["properties"].update(extra)
+
+        body = _render("job-plan-run-and-log", static_provider)
+        call = _validate_call(YAML_BLOCK_PATTERN.findall(body)[0][1])
+
+        properties = call["responses"]["200"]["content"]["application/json"]["schema"]["properties"]
+        assert {name: properties[name] for name in extra} == extra
+
     def test_untyped_param_and_response_field(self, resources_data):
         for resource in resources_data["resources"]:
             if resource["resource"] == "get_job_instance_status":
@@ -328,6 +364,7 @@ class TestRenderSkillBody:
             ({"default": "biz"}, "`biz`"),
             ({"default": ""}, '`""`'),
             ({"type": "string|null", "default": None}, "`null`"),
+            ({"default": "biz|biz_set"}, "`biz\\|biz_set`"),
             ({}, "-"),
         ],
     )

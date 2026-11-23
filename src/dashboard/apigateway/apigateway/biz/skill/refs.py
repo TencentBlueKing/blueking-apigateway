@@ -28,9 +28,12 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from django.utils.translation import gettext as _
+
+if TYPE_CHECKING:
+    from .schema_converter import SchemaType
 
 _EXPR_PATTERN = re.compile(r"^\$\{\{\s*(.*?)\s*\}\}$")
 INPUT_NAME = r"[A-Za-z_][A-Za-z0-9_-]*"
@@ -88,19 +91,19 @@ def is_ref(value: Any) -> bool:
     return parse_ref(value).kind != "value"
 
 
-def each_array(value: Any, type_text: str) -> str:
+def each_array(value: Any, param_type: Optional[SchemaType]) -> str:
     """逐个调用的数组：非数组参数取自带 `[]` 的步骤响应字段时，返回最后一个 `[]` 之前的 `steps.<id>.outputs.<路径>`；
-    其他取值返回空串。type_text 是参数在资源定义中的类型写法，没写类型按非数组处理
+    其他取值返回空串。param_type 是参数在资源定义中的类型，没写类型按非数组处理
 
     例如：
-        ("${{ steps.list-tasks.outputs.data[].id }}", "integer") -> "steps.list-tasks.outputs.data"
-        ("${{ steps.list-tasks.outputs.data[].id }}", "array<integer>") -> ""（数组参数收集整个数组）
-        ("${{ inputs.task_id }}", "integer") -> ""
+        ("${{ steps.list-tasks.outputs.data[].id }}", integer) -> "steps.list-tasks.outputs.data"
+        ("${{ steps.list-tasks.outputs.data[].id }}", array<integer>) -> ""（数组参数收集整个数组）
+        ("${{ inputs.task_id }}", integer) -> ""
     """
     parsed = parse_ref(value)
     if parsed.kind != "step" or "[]" not in parsed.path:
         return ""
-    if any(part == "array" or part.startswith("array<") for part in type_text.split("|")):
+    if param_type is not None and param_type.is_array:
         return ""
     return f"steps.{parsed.step}.outputs.{parsed.path.rsplit('[]', 1)[0]}"
 

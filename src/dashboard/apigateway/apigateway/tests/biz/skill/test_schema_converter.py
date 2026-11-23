@@ -20,13 +20,16 @@ import pytest
 from apigateway.biz.skill.schema_converter import (
     ResourceParam,
     ResponseField,
+    SchemaType,
     convert_schema_params,
     convert_schema_responses,
-    has_non_json_request_body,
-    schema_type_text,
+    get_response_schema,
+    has_non_json_object_body,
 )
 
 pytestmark = pytest.mark.no_meta_schema
+
+T = SchemaType.from_schema
 
 SCHEMA = {
     "parameters": [
@@ -81,17 +84,15 @@ def test_convert_schema_params():
         ResourceParam(
             name="bk_biz_id",
             location="path",
-            type="integer",
             required=True,
             description="业务 ID",
             schema={"type": "integer"},
         ),
-        ResourceParam(name="keyword", location="query", type="string", schema={"type": "string"}),
-        ResourceParam(name="X-Trace", location="header", type="string", schema={"type": "string"}),
+        ResourceParam(name="keyword", location="query", schema={"type": "string"}),
+        ResourceParam(name="X-Trace", location="header", schema={"type": "string"}),
         ResourceParam(
             name="name",
             location="body",
-            type="string",
             required=True,
             description="任务名",
             schema={"type": "string", "description": "任务名"},
@@ -99,14 +100,23 @@ def test_convert_schema_params():
         ResourceParam(
             name="hosts",
             location="body",
-            type="array<integer>",
             schema={"type": "array", "items": {"type": "integer"}},
         ),
     ]
 
 
+def test_param_type_from_schema():
+    assert [str(param.type) for param in convert_schema_params(SCHEMA)] == [
+        "integer",
+        "string",
+        "string",
+        "string",
+        "array<integer>",
+    ]
+
+
 def test_param_keeps_published_schema():
-    """嵌套对象数组、子字段必填、枚举都留在 schema 里，type 只是从它推导出的类型写法"""
+    """嵌套对象数组、子字段必填、枚举都留在 schema 里，type 只是从它推导出的类型"""
     var_schema = {
         "type": "array",
         "items": {
@@ -135,8 +145,30 @@ def test_param_keeps_published_schema():
 
     scope, var_list = convert_schema_params(schema)
 
-    assert (scope.type, scope.description, scope.schema) == ("string", "资源范围类型", scope_schema)
-    assert (var_list.type, var_list.schema) == ("array<object>", var_schema)
+    assert (str(scope.type), scope.description, scope.schema) == ("string", "资源范围类型", scope_schema)
+    assert (str(var_list.type), var_list.schema) == ("array<object>", var_schema)
+
+
+def test_param_serialization_kept():
+    array_schema = {"type": "array", "items": {"type": "string"}}
+    schema = {
+        "parameters": [
+            {"name": "status", "in": "query", "style": "form", "explode": False, "schema": array_schema},
+            {"name": "path", "in": "query", "allowReserved": True, "schema": {"type": "string"}},
+            {"name": "keyword", "in": "query", "schema": {"type": "string"}},
+            # Swagger 2.0 导入的 collectionFormat=csv 被转成 simple，query 不允许，丢掉 style
+            {"name": "ids", "in": "query", "style": "simple", "explode": False, "schema": array_schema},
+            {"name": "X-Tags", "in": "header", "style": "simple", "schema": array_schema},
+        ],
+    }
+
+    assert [param.serialization for param in convert_schema_params(schema)] == [
+        {"style": "form", "explode": False},
+        {"allowReserved": True},
+        {},
+        {"explode": False},
+        {"style": "simple"},
+    ]
 
 
 def test_non_json_request_body_is_not_converted():
@@ -155,9 +187,9 @@ def test_non_json_request_body_is_not_converted():
         },
     }
 
-    assert has_non_json_request_body(schema)
+    assert has_non_json_object_body(schema)
     assert convert_schema_params(schema) == [
-        ResourceParam(name="task_id", location="path", type="integer", required=True, schema={"type": "integer"}),
+        ResourceParam(name="task_id", location="path", required=True, schema={"type": "integer"}),
     ]
 
 
@@ -173,17 +205,63 @@ def test_json_request_body_preferred_over_other_content_types():
         }
     }
 
-    assert not has_non_json_request_body(schema)
+    assert not has_non_json_object_body(schema)
     assert convert_schema_params(schema) == [
-        ResourceParam(name="name", location="body", type="string", required=True, schema={"type": "string"}),
+        ResourceParam(name="name", location="body", required=True, schema={"type": "string"}),
     ]
 
 
+def test_json_content_type_with_parameters():
+    body = {"type": "object", "properties": {"name": {"type": "string"}}}
+    schema = {
+        "requestBody": {"content": {"application/json; charset=utf-8": {"schema": body}}},
+        "responses": {"200": {"content": {"application/json;charset=UTF-8": {"schema": body}}}},
+    }
+
+    assert not has_non_json_object_body(schema)
+    assert convert_schema_params(schema) == [ResourceParam(name="name", location="body", schema={"type": "string"})]
+    assert convert_schema_responses(schema) == [ResponseField(field="name", type=T({"type": "string"}))]
+
+
+@pytest.mark.parametrize(
+    "body_schema, expected",
+    [
+        ({"type": "array", "items": {"type": "object", "properties": {"id": {"type": "integer"}}}}, True),
+        ({"type": "string"}, True),
+        ({"type": "object", "properties": {"id": {"type": "integer"}}}, False),
+        ({"properties": {"id": {"type": "integer"}}}, False),
+        (None, False),
+    ],
+)
+def test_has_non_json_object_body(body_schema, expected):
+    schema = {"requestBody": {"content": {"application/json": {"schema": body_schema}}}} if body_schema else {}
+
+    assert has_non_json_object_body(schema) is expected
+
+
 def test_convert_schema_responses():
-    assert convert_schema_responses(SCHEMA) == [
-        ResponseField(field="result", type="boolean"),
-        ResponseField(field="data", type="array<object>"),
-        ResponseField(field="data[].id", type="integer|string", description="任务 ID"),
+    assert [(item.field, str(item.type), item.description) for item in convert_schema_responses(SCHEMA)] == [
+        ("result", "boolean", ""),
+        ("data", "array<object>", ""),
+        ("data[].id", "integer|string", "任务 ID"),
+    ]
+
+
+def test_get_response_schema_is_published_schema():
+    response = SCHEMA["responses"]["200"]["content"]["application/json"]["schema"]
+
+    assert get_response_schema(SCHEMA) is response
+
+
+def test_nullable_array_items_are_expanded():
+    data_schema = {"type": ["array", "null"], "items": {"properties": {"id": {"type": "integer"}}}}
+    schema = {
+        "responses": {"200": {"content": {"application/json": {"schema": {"properties": {"data": data_schema}}}}}}
+    }
+
+    assert [(item.field, str(item.type)) for item in convert_schema_responses(schema)] == [
+        ("data", "array<object>|null"),
+        ("data[].id", "integer"),
     ]
 
 
@@ -191,18 +269,69 @@ def test_convert_schema_responses():
 def test_convert_empty(schema):
     assert convert_schema_params(schema) == []
     assert convert_schema_responses(schema) == []
+    assert get_response_schema(schema) == {}
 
 
-@pytest.mark.parametrize(
-    "schema, expected",
-    [
-        ({"type": "string"}, "string"),
-        ({"type": ["integer", "null"]}, "integer|null"),
-        ({"type": "array", "items": {"type": "string"}}, "array<string>"),
-        ({"type": "array"}, "array"),
-        ({"properties": {}}, "object"),
-        ({}, ""),
-    ],
-)
-def test_schema_type_text(schema, expected):
-    assert schema_type_text(schema) == expected
+class TestSchemaType:
+    @pytest.mark.parametrize(
+        "schema, expected",
+        [
+            ({"type": "string"}, "string"),
+            ({"type": ["null", "integer"]}, "integer|null"),
+            ({"type": "array", "items": {"type": "string"}}, "array<string>"),
+            ({"type": ["array", "null"], "items": {"type": "string"}}, "array<string>|null"),
+            ({"type": "array", "items": {"type": ["string", "integer"]}}, "array<integer|string>"),
+            ({"type": "array"}, "array"),
+            ({"properties": {}}, "object"),
+        ],
+    )
+    def test_text(self, schema, expected):
+        assert str(T(schema)) == expected
+
+    @pytest.mark.parametrize("schema", [{}, {"type": []}, {"oneOf": [{"type": "string"}]}])
+    def test_untyped(self, schema):
+        assert T(schema) is None
+
+    @pytest.mark.parametrize(
+        "text",
+        ["string", "integer|null", "array", "array<object>", "array<integer|string>|null", "array<array<string>>"],
+    )
+    def test_parse_round_trip(self, text):
+        assert str(SchemaType.parse(text)) == text
+
+    def test_parse_matches_schema(self):
+        assert SchemaType.parse("null|array<string>") == T({"type": ["array", "null"], "items": {"type": "string"}})
+        assert SchemaType.parse("string|integer") == T({"type": ["integer", "string"]})
+
+    @pytest.mark.parametrize(
+        "text", ["", "list", "Integer", "array<>", "string|string", "array|array<string>", "array<object", "a>|b"]
+    )
+    def test_parse_invalid(self, text):
+        with pytest.raises(ValueError):
+            SchemaType.parse(text)
+
+    def test_union_order_ignored(self):
+        assert T({"type": ["integer", "string"]}) == T({"type": ["string", "integer"]})
+        assert T({"type": "array", "items": {"type": "integer"}}) != T({"type": "array"})
+
+    def test_array_of(self):
+        assert SchemaType.array_of(T({"type": "integer"})) == T({"type": "array", "items": {"type": "integer"}})
+
+    @pytest.mark.parametrize(
+        "schema, value, expected",
+        [
+            ({"type": "integer"}, 1, True),
+            ({"type": "integer"}, True, False),
+            ({"type": "integer"}, 1.5, False),
+            ({"type": "number"}, 1, True),
+            ({"type": ["string", "null"]}, None, True),
+            ({"type": "string"}, None, False),
+            ({"type": "array", "items": {"type": "integer"}}, [1, 2], True),
+            ({"type": "array", "items": {"type": "integer"}}, [1, "a"], False),
+            ({"type": "array"}, [1, "a"], True),
+            ({"type": "object"}, {}, True),
+            ({"type": "file"}, "x", True),
+        ],
+    )
+    def test_matches(self, schema, value, expected):
+        assert T(schema).matches(value) is expected

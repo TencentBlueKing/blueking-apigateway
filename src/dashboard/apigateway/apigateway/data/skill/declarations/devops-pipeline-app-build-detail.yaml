@@ -9,7 +9,6 @@ tags:
 - 构建详情
 version: 1.0.0
 changelog:
-- version: 1.0.0
   date: 2026-11-11 11:00:00
   content: |-
     首个官方版本：v4_app_build_list → v4_app_build_detail。

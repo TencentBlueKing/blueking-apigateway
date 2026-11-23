@@ -23,7 +23,12 @@ from django.db.models import F
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
 from apigateway.biz.skill.declaration import parse_declaration
-from apigateway.biz.skill.writer import SkillVersionExistsError, SkillVersionNotNewerError, save_skill_version
+from apigateway.biz.skill.writer import (
+    SkillVersionExistsError,
+    SkillVersionNotNewerError,
+    check_version,
+    save_skill_version,
+)
 from apigateway.tests.biz.skill.conftest import set_version
 
 pytestmark = pytest.mark.django_db
@@ -40,6 +45,31 @@ def _save(data: dict, body: str = "# body\n", overwrite_existing: bool = False):
         operator=OPERATOR,
         overwrite_existing=overwrite_existing,
     )
+
+
+class TestCheckVersion:
+    @pytest.fixture
+    def metadata(self, job_plan_data):
+        _save(set_version(job_plan_data, "1.0.0"))
+        return _save(set_version(job_plan_data, "1.1.0")).metadata
+
+    def test_new_version(self, metadata):
+        assert check_version(metadata, "1.2.0") is None
+
+    def test_overwrite_current(self, metadata):
+        assert check_version(metadata, "1.1.0", overwrite_existing=True) == metadata.current_version
+
+    @pytest.mark.parametrize(
+        "version, overwrite_existing, error",
+        [
+            ("1.1.0", False, SkillVersionExistsError),
+            ("1.0.0", True, SkillVersionExistsError),
+            ("1.0.10", True, SkillVersionNotNewerError),
+        ],
+    )
+    def test_rejected(self, metadata, version, overwrite_existing, error):
+        with pytest.raises(error):
+            check_version(metadata, version, overwrite_existing=overwrite_existing)
 
 
 class TestSaveSkillVersion:
@@ -111,12 +141,11 @@ class TestSaveSkillVersion:
         SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
         created_time = first.version.created_time
 
-        job_plan_data["changelog"][0]["content"] = "覆盖 1.0.0"
+        job_plan_data["changelog"]["content"] = "覆盖 1.0.0"
         job_plan_data.update(display_name="覆盖后的名字", tags=["job"])
         job_plan_data["orchestration"]["steps"] = job_plan_data["orchestration"]["steps"][:1]
         second = _save(job_plan_data, body="# overwritten\n", overwrite_existing=True)
 
-        assert second.overwritten
         assert not second.created
         assert second.version.id == first.version.id
         version = SkillVersion.objects.get(id=first.version.id)

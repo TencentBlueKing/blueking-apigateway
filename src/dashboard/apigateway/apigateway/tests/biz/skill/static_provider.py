@@ -28,6 +28,7 @@ from apigateway.biz.skill.resource_loader import (
     SkillResourceUnavailableError,
     build_skill_resource,
 )
+from apigateway.biz.skill.schema_converter import PARAM_SERIALIZATION_KEYS
 from apigateway.core.constants import ResourceKindEnum
 
 
@@ -84,7 +85,8 @@ def released_resource_payload(item: Dict[str, Any], resource_id: int) -> Dict[st
 
 
 def fixture_resource_schema(resource: Dict[str, Any]) -> Dict[str, Any]:
-    """fixture 的 params / response -> 该资源的 OpenAPI schema。参数写了 schema 时原样使用，否则由 type 生成。"""
+    """fixture 的 params / response -> 该资源的 OpenAPI schema。参数写了 schema 时原样使用，否则由 type 生成；
+    style、explode、allowReserved 写在参数上。"""
     parameters = []
     body_properties = {}
     body_required = []
@@ -106,6 +108,7 @@ def fixture_resource_schema(resource: Dict[str, Any]) -> Dict[str, Any]:
                 "required": bool(item.get("required")),
                 "description": item.get("description") or "",
                 "schema": param_schema,
+                **{key: item[key] for key in PARAM_SERIALIZATION_KEYS if key in item},
             }
         )
 

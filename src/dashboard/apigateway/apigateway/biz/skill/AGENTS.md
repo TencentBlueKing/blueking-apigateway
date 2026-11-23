@@ -61,11 +61,20 @@ together with the code.
   parameters and responses; the declaration references it and does not redefine
   it. Parameter locations and types come only from the definition; nothing is
   guessed from the HTTP method. The step snippet copies `ResourceParam.schema`
-  minus its top-level `description` and `x-` keys; `ResourceParam.type` is only
-  for type comparisons, never for rebuilding the schema.
-  Inputs and outputs declare a required `type` in the resource-definition
-  notation (`string`, `array<object>`, `integer|string`); `example` and
-  `default` must match it. An input's `type` must equal every typed parameter
+  minus its top-level `description` and `x-` keys, and the parameter's
+  `style`/`explode`/`allowReserved` (`ResourceParam.serialization`; drops the
+  invalid query `style: simple` that Swagger 2.0 import writes);
+  `responses` copies `SkillResource.response_schema` (the published first 2xx
+  `application/json` schema) unchanged; `SkillResource.responses` is the
+  flattened field list used only to look up reference paths and their types.
+  `ResourceParam.type` and `ResponseField.type` are only for type comparisons,
+  never for rebuilding a schema.
+  Types are `schema_converter.SchemaType`: `from_schema` reads a schema,
+  `SchemaType.parse` is the only parser of the declared text, `str()` prints it
+  (union names sorted, `null` last) and `==` is the only comparison, so union
+  order does not matter. Inputs and outputs declare a required `type` in that
+  text (`string`, `array<object>`, `integer|string`, `array<string>|null`);
+  `example` and `default` must match it. An input's `type` must equal every typed parameter
   it is bound to in `with`, and its interface description comes from those
   parameters, so every input must be bound at least once. An output's `type`
   must equal the type derived from its source: an input's `type`, or the
@@ -73,7 +82,9 @@ together with the code.
   more when the source step is a per-item call (`failed_host_logs` is
   `array<object>` while one call's `data` is `object`). An element of an array
   field (`data.tags[0]`, `data.tags[]`) is a response field typed as the array's
-  item type. A response field without a type is not compared. An input's `description` is an optional orchestration
+  item type. A response field without a type is not compared. A parameter
+  bound to `${{ steps.* }}` must match its source type; per-item compares one
+  element. An input's `description` is an optional orchestration
   hint (drafting rules, value strategy) and must not restate the OpenAPI
   description. `outputs` must have at least one entry: every orchestrable
   resource has response fields, so there is always a result to report.
@@ -89,14 +100,14 @@ together with the code.
   properties: a required body is rendered even when no property is bound, and
   the caller sends `{}`.
   The declaration is rejected when a referenced resource's request body is not
-  `application/json` (the body is always rendered as JSON), when a resource has
+  a top-level object in `application/json` (`charset` is ignored), when a resource has
   parameters of the same name in different locations (`with` binds by name), when
   its method is `ANY`, when a `{name}` in its path has no path parameter of that
   name in the definition, when a required or
   path parameter is missing from `with`, when a step maps a parameter missing
   from the definition, when a `${{ steps.* }}` reference names a response field
-  missing from the definition, when an input's `type` differs from a bound
-  parameter's type, when a required or path parameter is mapped from an
+  missing from the definition, when an input's `type` or a step reference's
+  source type differs from the bound parameter's type, when a required or path parameter is mapped from an
   optional input without a default, when a step's per-item parameters come
   from different arrays, or when an output's `type` differs from its source. Resource-level problems go
   in `SkillResource.errors`; the validator reports them as errors and skips
@@ -113,15 +124,15 @@ together with the code.
   but is not current is still skipped. A new version must be higher than the
   current one, otherwise it is rejected: a lower version made current would leave
   the higher one skipped as "already exists" on every later deploy.
-  `writer.check_new_version` owns the reject rule. Platform injection passes
-  `overwrite_existing=True` to `save_skill_version`; other callers still reject
-  a duplicate version.
-- `changelog` is a list of `{version, date, content}` entries, newest first;
-  the first entry must be the declaration `version`, and versions strictly
-  decrease by `major.minor.patch`. `date` is `YYYY-MM-DD` or
+  `writer.check_version` owns the overwrite/skip/reject rule; `syncer` calls it
+  before rendering and `save_skill_version` calls it again under the metadata
+  row lock. Platform injection passes `overwrite_existing=True`; other callers
+  still reject a duplicate version.
+- `changelog` is one `{date, content}` mapping describing the declaration
+  `version`; history lives in git. `date` is `YYYY-MM-DD` or
   `YYYY-MM-DD HH:MM:SS` without a time zone or fractional seconds; unquoted
   YAML dates/timestamps are accepted and a `T` separator is stored as a space.
-  `SkillVersion.changelog` stores only that version's entry as JSON.
+  `SkillVersion.changelog` stores `{version, date, content}` as JSON.
 - A written version snapshots the resource definitions at injection time.
   Gateway releases do not re-render built-in Skills. The next injection
   overwrites the current version, including a refreshed snapshot of those

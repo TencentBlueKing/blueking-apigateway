@@ -25,7 +25,7 @@
 
 import datetime
 import re
-from typing import Annotated, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Annotated, Any, Dict, List, Optional, Tuple, Union
 
 import yaml
 from django.utils.translation import gettext as _
@@ -39,7 +39,6 @@ from pydantic import (
     StrictBool,
     StrictStr,
     ValidationError,
-    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -60,6 +59,7 @@ from .constants import (
     SKILL_STEP_NAME_PATTERN,
 )
 from .refs import INPUT_NAME, parse_ref
+from .schema_converter import TYPE_NAMES, SchemaType
 
 _ERROR_MESSAGES = {
     "extra_forbidden": gettext_lazy("未知字段"),
@@ -81,50 +81,7 @@ class SkillDeclarationError(Exception):
 
 _USES_PATTERN = re.compile(r"^([^/@]+)/([^/@]+)@([^/@]+)$")
 _INPUT_NAME_PATTERN = re.compile(rf"^{INPUT_NAME}$")
-_ARRAY_TYPE_PATTERN = re.compile(r"^array<(.+)>$")
 _DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2})?$")
-
-# 类型写法同资源定义（schema_converter.schema_type_text）：基本类型、array<类型>、基本类型|基本类型
-_JSON_TYPE_CHECKS: Dict[str, Callable[[Any], bool]] = {
-    "string": lambda value: isinstance(value, str),
-    "integer": lambda value: isinstance(value, int) and not isinstance(value, bool),
-    "number": lambda value: isinstance(value, (int, float)) and not isinstance(value, bool),
-    "boolean": lambda value: isinstance(value, bool),
-    "object": lambda value: isinstance(value, dict),
-    "array": lambda value: isinstance(value, list),
-    "null": lambda value: value is None,
-}
-
-
-def is_type_text(text: str) -> bool:
-    """是否为合规的类型写法：基本类型、array<类型>，或用 | 连接的不重复基本类型
-
-    例如：
-        "string" -> True
-        "array<integer|string>" -> True
-        "string|string" -> False（重复）
-        "list" -> False（不是基本类型）
-    """
-    match = _ARRAY_TYPE_PATTERN.match(text)
-    if match:
-        return is_type_text(match.group(1))
-    parts = text.split("|")
-    return len(set(parts)) == len(parts) and all(part in _JSON_TYPE_CHECKS for part in parts)
-
-
-def value_matches_type(value: Any, text: str) -> bool:
-    """YAML/JSON 值是否符合类型写法；text 须已通过 is_type_text
-
-    例如：
-        (1, "integer") -> True
-        (True, "integer") -> False（布尔值不算整数）
-        ([1, "a"], "array<integer|string>") -> True
-        (None, "string|null") -> True
-    """
-    match = _ARRAY_TYPE_PATTERN.match(text)
-    if match:
-        return isinstance(value, list) and all(value_matches_type(item, match.group(1)) for item in value)
-    return any(_JSON_TYPE_CHECKS[part](value) for part in text.split("|"))
 
 
 def parse_version(version: str) -> Tuple[int, ...]:
@@ -146,16 +103,18 @@ def _check_ref(value: Any) -> Any:
 
 
 def _check_type(value: str) -> str:
-    """输入、输出的 type 须是合规的类型写法，见 is_type_text
+    """输入、输出的 type 须是合规的类型写法，见 SchemaType.parse
 
-    例如：合规 "array<string>"；不合规 "list"、"string|string"
+    例如：合规 "array<string>"、"array<object>|null"；不合规 "list"、"string|string"
     """
-    if not is_type_text(value):
+    try:
+        SchemaType.parse(value)
+    except ValueError:
         raise ValueError(
             _("类型写法不合规：{value}，应为 {types} 之一，或 array<类型>、string|integer 这样的组合").format(
-                value=repr(value), types=", ".join(_JSON_TYPE_CHECKS)
+                value=repr(value), types=", ".join(sorted(TYPE_NAMES))
             )
-        )
+        ) from None
     return value
 
 
@@ -243,11 +202,16 @@ class SkillInput(_DeclarationModel):
 
         例如：type 为 integer 时 example: 2 合规，example: "2" 不合规
         """
-        if not value_matches_type(self.example, self.type):
+        if not self.schema_type.matches(self.example):
             raise ValueError(_("example 与类型 {type} 不符").format(type=self.type))
-        if self.has_default and not value_matches_type(self.default, self.type):
+        if self.has_default and not self.schema_type.matches(self.default):
             raise ValueError(_("default 与类型 {type} 不符").format(type=self.type))
         return self
+
+    @property
+    def schema_type(self) -> SchemaType:
+        """type 解析成的类型，用于比较和取值检查"""
+        return SchemaType.parse(self.type)
 
     @property
     def has_default(self) -> bool:
@@ -266,6 +230,11 @@ class SkillOutput(_DeclarationModel):
     type: TypeText
     description: StrictStr
     value: StrictStr
+
+    @property
+    def schema_type(self) -> SchemaType:
+        """type 解析成的类型，用于和来源类型比较"""
+        return SchemaType.parse(self.type)
 
     @field_validator("value")
     @classmethod
@@ -462,8 +431,9 @@ class SkillOrchestration(_DeclarationModel):
         return bool(item and item.omit_if_unset)
 
 
-class SkillChangelogEntry(_DeclarationModel):
-    version: VersionText
+class SkillChangelog(_DeclarationModel):
+    """当前版本的版本说明；历史版本的说明在各自的 SkillVersion 和仓库历史里"""
+
     date: DateText
     content: Annotated[StrictStr, AfterValidator(_check_text_not_empty)]
 
@@ -475,8 +445,7 @@ class SkillDeclaration(_DeclarationModel):
     description: StrictStr
     tags: List[StrictStr]
     version: VersionText
-    # 从新到旧，第一条是当前版本
-    changelog: List[SkillChangelogEntry]
+    changelog: SkillChangelog
     orchestration: SkillOrchestration
 
     @field_validator("name")
@@ -552,34 +521,13 @@ class SkillDeclaration(_DeclarationModel):
                 raise ValueError(_("标签规范化后重复：{name}").format(name=name))
         return value
 
-    @field_validator("changelog")
-    @classmethod
-    def _check_changelog(cls, value: List[SkillChangelogEntry], info: ValidationInfo) -> List[SkillChangelogEntry]:
-        """至少一条；第一条是当前版本，之后按版本号从新到旧严格递减
+    def changelog_data(self) -> Dict[str, Any]:
+        """写入 SkillVersion.changelog 的内容：当前版本号加上声明里的 date、content
 
-        例如：version 为 1.1.0 时，合规 [1.1.0, 1.0.0]；不合规 [1.0.0, 1.1.0]、[1.1.0, 1.1.0]
+        例如：version 1.0.0，changelog {date: 2026-11-11, content: 首个版本} ->
+            {"version": "1.0.0", "date": "2026-11-11", "content": "首个版本"}
         """
-        if not value:
-            raise ValueError(_("至少需要一条，第一条为当前版本"))
-        # version 不合规时不在 info.data 里，已单独报错
-        version = info.data.get("version")
-        if version and value[0].version != version:
-            raise ValueError(
-                _("第一条应为当前版本 {version}，实际为 {actual}").format(version=version, actual=value[0].version)
-            )
-        for newer, older in zip(value, value[1:]):
-            if parse_version(older.version) >= parse_version(newer.version):
-                raise ValueError(
-                    _("应按版本从新到旧排列且不重复：{newer} 之后是 {older}").format(
-                        newer=newer.version, older=older.version
-                    )
-                )
-        return value
-
-    @property
-    def current_changelog(self) -> SkillChangelogEntry:
-        """当前版本的 changelog，即第一条"""
-        return self.changelog[0]
+        return {"version": self.version, **self.changelog.model_dump(mode="json")}
 
     @property
     def normalized_tags(self) -> List[str]:

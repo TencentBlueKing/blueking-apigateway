@@ -18,6 +18,7 @@
 import pytest
 
 from apigateway.biz.skill.declaration import parse_declaration
+from apigateway.biz.skill.schema_converter import ResponseField, SchemaType
 from apigateway.biz.skill.validator import MissingResource, validate_declaration
 from apigateway.tests.biz.skill.conftest import GOLDEN_NAMES, load_declaration_data
 from apigateway.tests.biz.skill.static_provider import StaticResourceProvider
@@ -191,6 +192,22 @@ class TestValidateDeclaration:
                 ),
                 "outputs.job_instance_id：execute_job_plan 的响应定义中没有 missing",
             ),
+            (
+                lambda data: _with(data, 1).update(job_instance_id="${{ steps.run-plan.outputs.result }}"),
+                "wait-result.with.job_instance_id：参数类型 integer 与来源类型 boolean 不一致",
+            ),
+            (
+                lambda data: _with(data, 2).update(
+                    step_instance_id="${{ steps.wait-result.outputs.data.step_instance_list[].name }}"
+                ),
+                "collect-log.with.step_instance_id：参数类型 integer 与来源类型 string 不一致",
+            ),
+            (
+                lambda data: _with(data, 2).update(
+                    host_id_list="${{ steps.wait-result.outputs.data.step_instance_list[].name }}"
+                ),
+                "collect-log.with.host_id_list：参数类型 array<integer> 与来源类型 array<string> 不一致",
+            ),
         ],
     )
     def test_field_errors(self, static_provider, job_plan_data, patch, expected):
@@ -201,9 +218,19 @@ class TestValidateDeclaration:
         assert expected in result.errors, result.errors
         assert result.warnings == []
 
+    def test_union_type_order_ignored(self, static_provider, job_plan_data):
+        static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan").get_param("job_plan_id").schema = {
+            "type": ["integer", "string"]
+        }
+        job_plan_data["orchestration"]["inputs"]["job_plan_id"]["type"] = "string|integer"
+
+        result = _validate(job_plan_data, static_provider)
+
+        assert (result.errors, result.warnings) == ([], [])
+
     def test_untyped_param_not_compared(self, static_provider, job_plan_data):
         resource = static_provider.get_resource("jobv3-cloud", "prod", "get_job_instance_status")
-        resource.get_param("bk_scope_id").type = ""
+        resource.get_param("bk_scope_id").schema = {}
         _with(job_plan_data, 1)["bk_scope_id"] = "${{ inputs.job_plan_id }}"
 
         result = _validate(job_plan_data, static_provider)
@@ -276,7 +303,7 @@ class TestValidateDeclaration:
 
     def test_untyped_response_field_not_compared(self, static_provider, job_plan_data):
         resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
-        next(item for item in resource.responses if item.field == "data.job_instance_id").type = ""
+        next(item for item in resource.responses if item.field == "data.job_instance_id").type = None
         job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = "string"
 
         result = _validate(job_plan_data, static_provider)
@@ -321,5 +348,30 @@ class TestValidateDeclaration:
         )
 
         result = _validate(job_plan_data, StaticResourceProvider.from_dict(resources_data))
+
+        assert result.errors == ([expected] if expected else [])
+
+    @pytest.mark.parametrize(
+        "path, output_type, expected",
+        [
+            ("data.tags", "array<string>|null", None),
+            ("data.tags[0]", "string", None),
+            (
+                "data.tags",
+                "array<string>",
+                "outputs.job_instance_id：类型 array<string> 与来源不一致，应为 array<string>|null",
+            ),
+        ],
+    )
+    def test_nullable_array(self, static_provider, job_plan_data, path, output_type, expected):
+        resource = static_provider.get_resource("jobv3-cloud", "prod", "execute_job_plan")
+        resource.responses.append(
+            ResponseField(field="data.tags", type=SchemaType.parse("array<string>|null"), description="标签")
+        )
+        job_plan_data["orchestration"]["outputs"]["job_instance_id"].update(
+            type=output_type, value=f"${{{{ steps.run-plan.outputs.{path} }}}}"
+        )
+
+        result = _validate(job_plan_data, static_provider)
 
         assert result.errors == ([expected] if expected else [])

@@ -20,12 +20,14 @@ from ddf import G
 from django.utils.translation import override
 
 from apigateway.biz.skill.resource_loader import ReleasedResourceProvider, SkillResourceUnavailableError
-from apigateway.biz.skill.schema_converter import ResourceParam, ResponseField
+from apigateway.biz.skill.schema_converter import ResourceParam, ResponseField, SchemaType
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.tests.biz.skill.conftest import release_resources
 
 pytestmark = pytest.mark.django_db
+
+T = SchemaType.from_schema
 
 NO_REQUEST = "OpenAPI schema 未定义请求参数"
 NO_RESPONSE = "OpenAPI schema 的响应未定义字段"
@@ -75,11 +77,28 @@ class TestReleasedResourceProvider:
             definition.data.oauth2_personal_client_enabled,
         ) == (True, True, True, False, False)
         assert definition.params == [
-            ResourceParam(name="task_id", location="path", type="integer", required=True, schema={"type": "integer"})
+            ResourceParam(name="task_id", location="path", required=True, schema={"type": "integer"})
         ]
-        assert definition.responses == [ResponseField(field="result", type="boolean")]
+        assert definition.responses == [ResponseField(field="result", type=T({"type": "boolean"}))]
+        assert definition.response_schema == SCHEMA["responses"]["200"]["content"]["application/json"]["schema"]
         assert definition.warnings == []
         assert definition.errors == []
+
+    def test_nullable_array_response_lookup(self):
+        tags = {"type": ["array", "null"], "items": {"type": "string", "enum": ["a", "b"]}}
+        schema = {
+            **SCHEMA,
+            "responses": {"200": {"content": {"application/json": {"schema": {"properties": {"tags": tags}}}}}},
+        }
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert str(definition.response_type("tags")) == "array<string>|null"
+        assert str(definition.response_type("tags[0]")) == "string"
+        assert definition.has_response_field("tags[]")
+        assert not definition.has_response_field("tags[].name")
+        assert definition.response_schema["properties"]["tags"] == tags
 
     def test_no_schema(self):
         release_resources("bk-sops", "prod", [RESOURCE])
@@ -120,7 +139,7 @@ class TestReleasedResourceProvider:
         definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
 
         assert definition.params == []
-        assert definition.responses == [ResponseField(field="result", type="boolean")]
+        assert definition.responses == [ResponseField(field="result", type=T({"type": "boolean"}))]
         assert definition.errors == []
 
     def test_oauth2_clients_from_auth_config(self):
@@ -158,7 +177,18 @@ class TestReleasedResourceProvider:
 
         assert definition.warnings == []
         assert definition.errors == [
-            "bk-sops.get_task_status：请求体不是 application/json，SKILL.md 只能描述 JSON 请求体"
+            "bk-sops.get_task_status：请求体不是 JSON 对象，SKILL.md 只能描述顶层为对象的 application/json 请求体"
+        ]
+
+    def test_non_object_json_body_is_error(self):
+        body = {"type": "array", "items": {"type": "integer"}}
+        schema = {**SCHEMA, "requestBody": {"required": True, "content": {"application/json": {"schema": body}}}}
+        release_resources("bk-sops", "prod", [RESOURCE], schemas={"get_task_status": schema})
+
+        definition = ReleasedResourceProvider().get_resource("bk-sops", "prod", "get_task_status")
+
+        assert definition.errors == [
+            "bk-sops.get_task_status：请求体不是 JSON 对象，SKILL.md 只能描述顶层为对象的 application/json 请求体"
         ]
 
     @pytest.mark.parametrize("required, expected", [(True, True), (False, False), (None, False)])

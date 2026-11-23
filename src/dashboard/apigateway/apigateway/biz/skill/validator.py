@@ -19,7 +19,8 @@
 
 资源定义（目标环境当前发布版本的 OpenAPI schema）是参数和响应的唯一依据，声明只引用、不重新定义：
 输入声明的类型必须与 with 绑定的参数一致。必填参数没有写进 with、参数不在定义中、引用的响应字段不在定义中、
-输入类型与绑定参数不一致、必填参数取自可能不传的输入、同一步逐个调用的参数取自不同数组、输出类型与来源不一致，都是 error。
+输入类型与绑定参数不一致、取自步骤响应的参数类型与来源不一致、必填参数取自可能不传的输入、同一步逐个调用的参数取自不同数组、
+输出类型与来源不一致，都是 error。
 结构和字段规则已在解析声明时检查，见 declaration.py。步骤 description 是自然语言，不校验。
 """
 
@@ -30,6 +31,7 @@ from django.utils.translation import gettext as _
 
 from .refs import each_array, parse_ref
 from .resource_loader import SkillResourceUnavailableError
+from .schema_converter import SchemaType
 
 if TYPE_CHECKING:
     from .declaration import SkillDeclaration, SkillOrchestration, SkillStep
@@ -156,6 +158,7 @@ class _RefChecker:
         例如：
             path 参数 task_id 没写进 with -> error「资源定义中必填的参数没有写进 with：task_id」
             必填参数取自选填且没有默认值的输入 -> error
+            参数取自步骤响应时类型须与来源相同，逐个调用比较单个元素：integer 参数取自 boolean 字段 result -> error
             一步里两个参数分别取自 data[].id 和 items[].id -> error「逐个调用的参数须取自同一个数组」
         """
         missing = [
@@ -181,6 +184,14 @@ class _RefChecker:
             if array:
                 arrays.add(array)
             parsed = parse_ref(value)
+            if parsed.kind == "step":
+                source = self._source_type(value, each_item=bool(array))
+                if param.type and source and source != param.type:
+                    self.result.errors.append(
+                        _("{step}.with.{name}：参数类型 {type} 与来源类型 {source} 不一致").format(
+                            step=step.id, name=name, type=param.type, source=source
+                        )
+                    )
             if parsed.kind != "input":
                 continue
             item = self.orchestration.get_input(parsed.name)
@@ -207,13 +218,15 @@ class _RefChecker:
         """
         resources = {key: resource for key, resource in self.resources.items() if resource and not resource.errors}
         for name, bindings in input_bindings(self.orchestration, resources).items():
-            declared = self.orchestration.inputs[name].type
-            mismatched = [binding for binding in bindings if binding.param.type and binding.param.type != declared]
+            declared = self.orchestration.inputs[name]
+            mismatched = [
+                binding for binding in bindings if binding.param.type and binding.param.type != declared.schema_type
+            ]
             if mismatched:
                 detail = ", ".join(f"{item.step}.with.{item.param.name} ({item.param.type})" for item in mismatched)
                 self.result.errors.append(
                     _("inputs.{name}：类型 {type} 与绑定参数不一致：{detail}").format(
-                        name=name, type=declared, detail=detail
+                        name=name, type=declared.type, detail=detail
                     )
                 )
 
@@ -224,36 +237,37 @@ class _RefChecker:
         """
         for name, output in self.orchestration.outputs.items():
             expected = self._source_type(output.value)
-            if expected and expected != output.type:
+            if expected and expected != output.schema_type:
                 self.result.errors.append(
                     _("outputs.{name}：类型 {type} 与来源不一致，应为 {expected}").format(
                         name=name, type=output.type, expected=expected
                     )
                 )
 
-    def _source_type(self, value: Any) -> str:
-        """取自输入时为输入类型；取自响应时为字段类型，路径里每个 `[]` 和逐个调用的来源步骤各包一层 array
+    def _source_type(self, value: Any, each_item: bool = False) -> Optional[SchemaType]:
+        """取自输入时为输入类型；取自响应时为字段类型，路径里每个 `[]` 和逐个调用的来源步骤各包一层 array。
+        each_item 为 True 时取逐个调用每次传入的单个元素，即字段本身的类型
 
         例如：
-            "${{ inputs.bk_biz_id }}"，输入类型 integer -> "integer"
-            "${{ steps.list.outputs.data[].id }}"，id 为 integer -> "array<integer>"
-            "${{ steps.logs.outputs.data }}"，logs 是逐个调用、data 为 object -> "array<object>"
-            来源字段没写类型 -> ""
+            "${{ inputs.bk_biz_id }}"，输入类型 integer -> integer
+            "${{ steps.list.outputs.data[].id }}"，id 为 integer -> array<integer>；each_item=True -> integer
+            "${{ steps.logs.outputs.data }}"，logs 是逐个调用、data 为 object -> array<object>
+            来源字段没写类型 -> None
         """
         parsed = parse_ref(value)
         if parsed.kind == "input":
             item = self.orchestration.get_input(parsed.name)
-            return item.type if item else ""
+            return item.schema_type if item else None
         resource = self.step_resources.get(parsed.step)
         if parsed.kind != "step" or resource is None or resource.errors:
-            return ""
-        type_text = resource.response_type(parsed.path)
-        if not type_text:
-            return ""
+            return None
+        source = resource.response_type(parsed.path)
+        if source is None or each_item:
+            return source
         depth = parsed.path.count("[]") + (1 if parsed.step in self.each_steps else 0)
         for _index in range(depth):
-            type_text = f"array<{type_text}>"
-        return type_text
+            source = SchemaType.array_of(source)
+        return source
 
 
 @dataclass(frozen=True)

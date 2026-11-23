@@ -131,43 +131,22 @@ class TestTopLevelRules:
         assert parse_declaration(job_plan_data).normalized_tags == ["job", "写操作"]
         assert normalize_tag_name("  Job ") == "job"
 
-    def test_changelog_current_entry(self, job_plan_data):
+    def test_changelog_data(self, job_plan_data):
         declaration = parse_declaration(job_plan_data)
 
-        # YAML 里不加引号的日期会被解析成 date，统一转成文本
-        assert declaration.current_changelog.model_dump() == {
+        # YAML 里不加引号的日期会被解析成 date，统一转成文本；版本号取声明的 version
+        assert declaration.changelog_data() == {
             "version": "1.0.0",
             "date": "2026-11-11 11:00:00",
             "content": "首个官方版本：execute_job_plan → get_job_instance_status → batch_get_job_instance_ip_log。",
         }
 
-    def test_changelog_history(self, job_plan_data):
-        job_plan_data["version"] = "1.1.0"
-        job_plan_data["changelog"].insert(0, {"version": "1.1.0", "date": "2026-11-12", "content": "新增输出"})
-
-        assert [entry.version for entry in parse_declaration(job_plan_data).changelog] == ["1.1.0", "1.0.0"]
-
     @pytest.mark.parametrize(
         "changelog, message",
         [
             (None, "缺少必填字段"),
-            ([], "至少需要一条，第一条为当前版本"),
-            ("首个版本", "应为数组"),
-            ([{"version": "1.1.0", "date": "2026-11-11", "content": "x"}], "第一条应为当前版本 1.0.0，实际为 1.1.0"),
-            (
-                [
-                    {"version": "1.0.0", "date": "2026-11-11", "content": "x"},
-                    {"version": "1.0.0", "date": "2026-11-10", "content": "x"},
-                ],
-                "应按版本从新到旧排列且不重复：1.0.0 之后是 1.0.0",
-            ),
-            (
-                [
-                    {"version": "1.0.0", "date": "2026-11-11", "content": "x"},
-                    {"version": "1.1.0", "date": "2026-11-10", "content": "x"},
-                ],
-                "应按版本从新到旧排列且不重复：1.0.0 之后是 1.1.0",
-            ),
+            ("首个版本", "应为对象"),
+            ([{"date": "2026-11-11", "content": "x"}], "应为对象"),
         ],
     )
     def test_invalid_changelog(self, job_plan_data, changelog, message):
@@ -178,11 +157,14 @@ class TestTopLevelRules:
 
         assert _errors(job_plan_data) == [f"changelog: {message}"]
 
+    def test_changelog_has_no_version(self, job_plan_data):
+        job_plan_data["changelog"]["version"] = "1.0.0"
+
+        assert _errors(job_plan_data) == ["changelog.version: 未知字段"]
+
     @pytest.mark.parametrize(
         "field, value",
         [
-            ("version", "1.0"),
-            ("version", "1.0.0-rc1"),
             ("date", "2026/11/11"),
             ("date", "2026-02-30"),
             ("date", "20261111"),
@@ -195,12 +177,12 @@ class TestTopLevelRules:
             ("content", " "),
         ],
     )
-    def test_invalid_changelog_entry(self, job_plan_data, field, value):
-        job_plan_data["changelog"][0][field] = value
+    def test_invalid_changelog_field(self, job_plan_data, field, value):
+        job_plan_data["changelog"][field] = value
 
         errors = _errors(job_plan_data)
 
-        assert any(error.startswith(f"changelog[0].{field}") for error in errors), errors
+        assert any(error.startswith(f"changelog.{field}") for error in errors), errors
 
     @pytest.mark.parametrize(
         "date_yaml, expected",
@@ -213,14 +195,14 @@ class TestTopLevelRules:
         ],
     )
     def test_changelog_date_with_time(self, job_plan_data, date_yaml, expected):
-        job_plan_data["changelog"][0]["date"] = yaml.safe_load(f"date: {date_yaml}")["date"]
+        job_plan_data["changelog"]["date"] = yaml.safe_load(f"date: {date_yaml}")["date"]
 
-        assert parse_declaration(job_plan_data).current_changelog.date == expected
+        assert parse_declaration(job_plan_data).changelog.date == expected
 
-    def test_changelog_entry_fields_required(self, job_plan_data):
-        job_plan_data["changelog"][0] = {"version": "1.0.0"}
+    def test_changelog_fields_required(self, job_plan_data):
+        job_plan_data["changelog"] = {}
 
-        assert _errors(job_plan_data) == ["changelog[0].date: 缺少必填字段", "changelog[0].content: 缺少必填字段"]
+        assert _errors(job_plan_data) == ["changelog.date: 缺少必填字段", "changelog.content: 缺少必填字段"]
 
     def test_display_name_en_null(self, job_plan_data):
         job_plan_data["display_name_en"] = None
@@ -367,7 +349,20 @@ class TestOrchestrationRules:
 
     @pytest.mark.parametrize(
         "type_text",
-        ["", "str", "Integer", "array<>", "array<str>", "string|", "string|string", "list<string>", "array<object", 1],
+        [
+            "",
+            "str",
+            "Integer",
+            "array<>",
+            "array<str>",
+            "string|",
+            "string|string",
+            "list<string>",
+            "array<object",
+            "array|array<string>",
+            "integer|string>",
+            1,
+        ],
     )
     def test_invalid_type(self, job_plan_data, type_text):
         job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = type_text
@@ -377,7 +372,18 @@ class TestOrchestrationRules:
         assert len(errors) == 1
         assert errors[0].startswith("orchestration.outputs.job_instance_id.type: "), errors
 
-    @pytest.mark.parametrize("type_text", ["integer|null", "array", "array<array<string>>", "number", "object"])
+    @pytest.mark.parametrize(
+        "type_text",
+        [
+            "integer|null",
+            "array",
+            "array<array<string>>",
+            "number",
+            "object",
+            "array<object>|null",
+            "array<integer|string>",
+        ],
+    )
     def test_valid_output_type(self, job_plan_data, type_text):
         job_plan_data["orchestration"]["outputs"]["job_instance_id"]["type"] = type_text
 
@@ -405,7 +411,14 @@ class TestOrchestrationRules:
 
     @pytest.mark.parametrize(
         "type_text, example",
-        [("integer|null", None), ("number", 1), ("array", [1, "a"]), ("array<integer>", []), ("object", {})],
+        [
+            ("integer|null", None),
+            ("number", 1),
+            ("array", [1, "a"]),
+            ("array<integer>", []),
+            ("object", {}),
+            ("array<integer>|null", None),
+        ],
     )
     def test_value_match_type(self, job_plan_data, type_text, example):
         item = job_plan_data["orchestration"]["inputs"]["job_plan_id"]
