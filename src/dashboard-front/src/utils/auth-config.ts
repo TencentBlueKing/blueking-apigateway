@@ -1,0 +1,145 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
+import type { IAuthConfig, IResourceAuthFormConfig } from '@/types/resource';
+
+type ResourceAuthInput = Partial<IAuthConfig> | string | null | undefined;
+type Translate = (key: string) => string;
+export type UserAuthMethod = 'personal' | 'public' | 'oauth';
+export type AuthKind = 'user' | 'app' | '';
+
+export const DEFAULT_AUTH_CONFIG: IResourceAuthFormConfig = {
+  auth_verified_required: true,
+  app_verified_required: true,
+  resource_perm_required: true,
+  oauth2_personal_client_enabled: false,
+  oauth2_public_client_enabled: false,
+};
+
+export const parseResourceAuthConfig = (input: ResourceAuthInput): Partial<IAuthConfig> | null => {
+  try {
+    const config = typeof input === 'string' ? JSON.parse(input) : input;
+    return config && typeof config === 'object' && !Array.isArray(config) ? config : null;
+  }
+  catch {
+    return null;
+  }
+};
+
+export const getUserAuthMethods = (input: ResourceAuthInput): UserAuthMethod[] => {
+  const config = parseResourceAuthConfig(input);
+  if (!config?.auth_verified_required) return [];
+
+  const methods: UserAuthMethod[] = [];
+  if (config.oauth2_personal_client_enabled) methods.push('personal');
+  if (config.oauth2_public_client_enabled) methods.push('public');
+  if (config.app_verified_required) methods.push('oauth');
+  return methods;
+};
+
+export const canConfigureResourcePerm = (input: ResourceAuthInput): boolean =>
+  !!parseResourceAuthConfig(input)?.app_verified_required;
+
+export const getAuthKind = (config: Partial<IAuthConfig> | null | undefined): AuthKind => {
+  if (config?.auth_verified_required) return 'user';
+  if (config?.app_verified_required) return 'app';
+  return '';
+};
+
+export const applyUserAuthMethods = (
+  config: IResourceAuthFormConfig,
+  methods: UserAuthMethod[],
+): IResourceAuthFormConfig => {
+  const useOAuth = methods.includes('oauth');
+  return {
+    ...config,
+    auth_verified_required: true,
+    app_verified_required: useOAuth,
+    resource_perm_required: useOAuth && (!config.app_verified_required || config.resource_perm_required),
+    oauth2_personal_client_enabled: methods.includes('personal'),
+    oauth2_public_client_enabled: methods.includes('public'),
+  };
+};
+
+export const applyAuthKind = (
+  config: IResourceAuthFormConfig,
+  kind: AuthKind,
+  userMethods: UserAuthMethod[] = ['oauth'],
+): IResourceAuthFormConfig => {
+  if (kind === getAuthKind(config)) return config;
+  if (kind === 'user') return applyUserAuthMethods(config, userMethods);
+  const requireApp = kind === 'app';
+  return {
+    ...config,
+    auth_verified_required: false,
+    app_verified_required: requireApp,
+    resource_perm_required: requireApp && (!config.app_verified_required || config.resource_perm_required),
+    oauth2_personal_client_enabled: false,
+    oauth2_public_client_enabled: false,
+  };
+};
+
+export const normalizeAuthConfig = (input?: ResourceAuthInput): IResourceAuthFormConfig => {
+  const config = {
+    ...DEFAULT_AUTH_CONFIG,
+    ...parseResourceAuthConfig(input),
+  };
+  return {
+    ...config,
+    resource_perm_required: config.app_verified_required && config.resource_perm_required,
+    oauth2_personal_client_enabled: config.auth_verified_required && !!config.oauth2_personal_client_enabled,
+    oauth2_public_client_enabled: config.auth_verified_required && !!config.oauth2_public_client_enabled,
+  };
+};
+
+export const isAuthConfigEmpty = (input: ResourceAuthInput): boolean => {
+  const config = parseResourceAuthConfig(input);
+  return config?.auth_verified_required === false && config.app_verified_required === false;
+};
+
+export const getAuthTypeLabel = (input: ResourceAuthInput, t: Translate, isV2: boolean): string => {
+  const config = parseResourceAuthConfig(input);
+  if (!config) return '--';
+  if (!isV2 && config.auth_verified_required && config.app_verified_required) {
+    return [t('用户认证'), t('应用认证')].join('、');
+  }
+  if (config.auth_verified_required) return t('用户认证');
+  if (config.app_verified_required) return t('应用认证');
+  return isAuthConfigEmpty(config) ? t('不认证') : '--';
+};
+
+const USER_AUTH_METHOD_LABELS = {
+  personal: '个人令牌',
+  public: '公开客户端',
+  oauth: 'OAuth 授权',
+} as const;
+
+export const getUserAuthMethodLabels = (input: ResourceAuthInput, t: Translate): string[] =>
+  getUserAuthMethods(input).map(method => t(USER_AUTH_METHOD_LABELS[method]));
+
+export const getUserAuthMethodsLabel = (input: ResourceAuthInput, t: Translate, isV2: boolean): string => {
+  if (isV2) return getUserAuthMethodLabels(input, t).join('、') || '--';
+  const config = parseResourceAuthConfig(input);
+  if (!config) return '--';
+  return config.oauth2_personal_client_enabled ? t('开启') : t('关闭');
+};
+
+export const canAllowApplyPermission = (isPublic: boolean, input: ResourceAuthInput): boolean => {
+  const config = parseResourceAuthConfig(input);
+  return Boolean(isPublic && config?.app_verified_required && config.resource_perm_required);
+};

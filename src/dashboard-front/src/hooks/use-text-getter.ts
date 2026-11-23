@@ -16,41 +16,27 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+import { useGateway } from '@/stores';
+import type { IAuthConfig } from '@/types/resource';
+import { getAuthTypeLabel, getUserAuthMethodLabels } from '@/utils/auth-config';
+
 /**
  * 自定义钩子函数，用于获取文本信息
  */
 export function useTextGetter() {
   const { t } = useI18n();
+  const gatewayStore = useGateway();
 
   /**
    * 获取认证配置的文本描述
    * @param {string | object | null | undefined} authConfig - 认证配置
    * @returns {string} - 认证配置的文本描述
    */
-  const getAuthConfigText = (authConfig: string | object | null | undefined) => {
-    if (!authConfig) return '--';
-    let auth;
-
-    try {
-      if (typeof authConfig === 'string') {
-        auth = JSON.parse(authConfig);
-      }
-      else {
-        auth = authConfig;
-      }
-      const tmpArr: string[] = [];
-
-      if (auth?.app_verified_required) {
-        tmpArr.push(`${t('应用认证')}`);
-      }
-      if (auth?.auth_verified_required) {
-        tmpArr.push(`${t('用户认证')}`);
-      }
-      return tmpArr.join(', ') || '--';
-    }
-    catch {
-      return '--';
-    }
+  const getAuthConfigText = (authConfig: IAuthConfig | string | null | undefined) => {
+    const type = getAuthTypeLabel(authConfig, t, gatewayStore.isResourceAuthV2);
+    if (!gatewayStore.isResourceAuthV2) return type;
+    const methods = getUserAuthMethodLabels(authConfig, t);
+    return methods.length ? `${type}（${methods.join('、')}）` : type;
   };
 
   /**

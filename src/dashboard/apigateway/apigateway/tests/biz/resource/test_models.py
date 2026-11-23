@@ -47,6 +47,25 @@ class TestResourceAuthConfig:
         with pytest.raises(ValidationError, match="require user authentication"):
             ResourceAuthConfig(auth_verified_required=False, **oauth2_config)
 
+    @pytest.mark.parametrize(
+        "app_verified_required, resource_perm_required, expected",
+        [
+            (True, True, True),
+            (True, False, False),
+            (False, True, False),
+            (False, False, False),
+        ],
+    )
+    def test_resource_perm_required_requires_app_verification(
+        self, app_verified_required, resource_perm_required, expected
+    ):
+        config = ResourceAuthConfig(
+            app_verified_required=app_verified_required,
+            resource_perm_required=resource_perm_required,
+        )
+
+        assert config.resource_perm_required is expected
+
 
 class TestResourceBackendConfig:
     @pytest.mark.parametrize(
@@ -108,6 +127,31 @@ class TestResourceBackendConfig:
 
 
 class TestResourceData:
+    @pytest.mark.parametrize(
+        "is_public, auth_config, allow_apply_permission, expected",
+        [
+            (True, {}, True, True),
+            (True, {}, False, False),
+            (False, {}, True, False),
+            (True, {"resource_perm_required": False}, True, False),
+            (True, {"app_verified_required": False, "resource_perm_required": True}, True, False),
+        ],
+    )
+    def test_allow_apply_permission_requires_public_and_resource_perm(
+        self, is_public, auth_config, allow_apply_permission, expected
+    ):
+        data = ResourceData(
+            name="echo",
+            method="GET",
+            path="/echo",
+            is_public=is_public,
+            allow_apply_permission=allow_apply_permission,
+            auth_config=ResourceAuthConfig(**auth_config),
+            backend_config={"method": "GET", "path": "/echo"},
+        )
+
+        assert data.allow_apply_permission is expected
+
     def test_ai_resource_accepts_backend_without_http_config(self):
         data = ResourceData(
             name="chat",

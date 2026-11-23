@@ -52,6 +52,25 @@
               </template>
             </BkCollapsePanel>
 
+            <BkCollapsePanel name="authConfig">
+              <template #header>
+                <div class="panel-header">
+                  <AngleUpFill
+                    :class="[activeIndex?.includes('authConfig') ? 'panel-header-show' : 'panel-header-hide']"
+                  />
+                  <div class="title">
+                    {{ t('认证方式') }}
+                  </div>
+                </div>
+              </template>
+              <template #content>
+                <AuthConfig
+                  ref="authConfigRef"
+                  :detail="resource"
+                />
+              </template>
+            </BkCollapsePanel>
+
             <BkCollapsePanel name="frontConfig">
               <template #header>
                 <div class="panel-header">
@@ -122,6 +141,7 @@
 </template>
 
 <script setup lang="ts">
+import AuthConfig from '@/views/resource-management/components/AuthConfig.vue';
 import BaseInfo from '@/views/resource-management/components/BaseInfo.vue';
 import FrontConfig from '@/views/resource-management/components/FrontConfig.vue';
 import BackConfig from '@/views/resource-management/components/BackConfig.vue';
@@ -146,8 +166,9 @@ const emits = defineEmits<{
 const { t } = useI18n();
 
 // 默认展开
-const activeIndex = ref(['baseInfo', 'frontConfig', 'backConfig']);
+const activeIndex = ref(['baseInfo', 'authConfig', 'frontConfig', 'backConfig']);
 const baseInfoRef = ref();
+const authConfigRef = ref();
 const frontConfigRef = ref();
 const backConfigRef = ref();
 const renderShow = ref(isSliderShow);
@@ -164,10 +185,12 @@ const handleSubmit = async () => {
     backConfigRef.value?.validate(),
   ]);
   const baseFormData = baseInfoRef.value.formData;
+  const authFormData = authConfigRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;
   const payload = {
     ...baseFormData,
+    ...authFormData,
     ...frontFormData,
     backend: { ...backFormData },
     _localId: resource?._localId,

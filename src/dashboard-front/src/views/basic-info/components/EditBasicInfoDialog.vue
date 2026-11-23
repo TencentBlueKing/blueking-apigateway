@@ -147,6 +147,8 @@
         }}</span>
       </BkFormItem>
 
+      <GatewayAuthProtocol v-model="formData.oauth2_app_enabled" />
+
       <BkFormItem
         v-if="featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED"
         :label="t('关联蓝鲸应用')"
@@ -205,6 +207,7 @@ import { cloneDeep } from 'lodash-es';
 import { getEnvVars } from '@/services/source/platform/setting';
 import { checkRepoAuthorization, patchGateway } from '@/services/source/gateway/gateway';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
+import GatewayAuthProtocol from '@/components/gateway-auth-protocol/Index.vue';
 import type { IFormMethod } from '@/types/common';
 import {
   useEnv,
@@ -392,7 +395,7 @@ const handleConfirmCreate = async () => {
     submitLoading.value = true;
     const payload = toGatewayUpdatePayload(
       data,
-      defaultFormData.value.display_name,
+      defaultFormData.value,
       featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED ?? false,
     );
     await patchGateway(data.id, payload);

@@ -180,80 +180,75 @@
               </div>
             </div>
           </div>
-          <!-- 认证方式：应用认证 / 检验权限、用户认证 / 个人令牌 -->
-          <div class="label-content-group wide auth-info">
+          <div class="label-content-group wide">
             <div class="label">
-              {{ t('认证方式') }}
+              {{ t('已使用的环境') }}
             </div>
             <div class="content">
-              <div class="auth-config">
-                <div class="auth-block">
-                  <div class="auth-view-row">
-                    <span class="auth-view-label">{{ t('应用认证') }}：</span>
-                    <BkTag
-                      size="small"
-                      :theme="formData.auth_config?.app_verified_required ? 'success' : 'default'"
-                    >
-                      {{ formData.auth_config?.app_verified_required ? t('开启') : t('关闭') }}
-                    </BkTag>
-                  </div>
-                  <div
-                    class="auth-child"
-                    :class="{ 'is-disabled': !formData.auth_config?.app_verified_required }"
-                  >
-                    <div class="auth-view-row">
-                      <span class="auth-view-label">{{ t('检验应用权限') }}：</span>
-                      <BkTag
-                        size="small"
-                        :theme="formData.auth_config?.resource_perm_required ? 'success' : 'default'"
-                      >
-                        {{ formData.auth_config?.resource_perm_required ? t('开启') : t('关闭') }}
-                      </BkTag>
-                    </div>
-                    <p
-                      v-if="!formData.auth_config?.app_verified_required"
-                      class="auth-hint"
-                    >
-                      {{ t('依赖「应用认证」。先勾选应用认证后才能开启。') }}
-                    </p>
-                  </div>
-                </div>
-                <div class="auth-block">
-                  <div class="auth-view-row">
-                    <span class="auth-view-label">{{ t('用户认证') }}：</span>
-                    <BkTag
-                      size="small"
-                      :theme="formData.auth_config?.auth_verified_required ? 'success' : 'default'"
-                    >
-                      {{ formData.auth_config?.auth_verified_required ? t('开启') : t('关闭') }}
-                    </BkTag>
-                  </div>
-                  <div
-                    class="auth-child"
-                    :class="{ 'is-disabled': !formData.auth_config?.auth_verified_required }"
-                  >
-                    <div class="auth-view-row">
-                      <span class="auth-view-label">{{ t('个人令牌') }}：</span>
-                      <BkTag
-                        size="small"
-                        :theme="formData.auth_config?.oauth2_personal_client_enabled ? 'success' : 'default'"
-                      >
-                        {{ formData.auth_config?.oauth2_personal_client_enabled ? t('开启') : t('关闭') }}
-                      </BkTag>
-                    </div>
-                    <p
-                      v-if="!formData.auth_config?.auth_verified_required"
-                      class="auth-hint"
-                    >
-                      {{ t('依赖「用户认证」。先勾选用户认证后才能开启。') }}
-                    </p>
-                  </div>
-                </div>
-                <BkAlert
-                  :theme="authSceneAlertTheme"
-                  :title="authSceneText"
-                />
-              </div>
+              <span>{{ formData.released_stages?.join(', ') || '--' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-30px">
+        <div class="title">
+          {{ t('认证方式') }}
+        </div>
+        <div class="label-content-grid">
+          <div class="label-content-group wide">
+            <div class="label">
+              {{ gatewayStore.isResourceAuthV2 ? t('认证类型') : t('认证方式') }}
+            </div>
+            <div class="content">
+              <BkTag
+                v-if="isAuthEmpty"
+                size="small"
+                theme="warning"
+              >
+                {{ authTypeLabel }}
+              </BkTag>
+              <span v-else>{{ authTypeLabel }}</span>
+            </div>
+          </div>
+          <div
+            v-if="authConfig?.auth_verified_required"
+            class="label-content-group wide"
+          >
+            <div class="label">
+              {{ gatewayStore.isResourceAuthV2 ? t('用户认证方式') : t('个人令牌') }}
+            </div>
+            <div class="content">
+              <span v-if="!gatewayStore.isResourceAuthV2">
+                {{ authConfig?.oauth2_personal_client_enabled ? t('开启') : t('关闭') }}
+              </span>
+              <template v-else-if="userAuthMethods.length">
+                <BkTag
+                  v-for="method in userAuthMethods"
+                  :key="method"
+                  size="small"
+                  class="mr-4px"
+                >
+                  {{ method }}
+                </BkTag>
+              </template>
+              <span v-else>--</span>
+            </div>
+          </div>
+          <div
+            v-if="canConfigureResourcePerm(authConfig)"
+            class="label-content-group wide"
+          >
+            <div class="label">
+              {{ t('校验应用权限') }}
+            </div>
+            <div class="content">
+              <BkTag
+                size="small"
+                :theme="authConfig?.resource_perm_required ? 'info' : 'default'"
+              >
+                {{ authConfig?.resource_perm_required ? t('开启') : t('关闭') }}
+              </BkTag>
             </div>
           </div>
           <div class="label-content-group wide auth-info">
@@ -261,46 +256,28 @@
               {{ t('是否公开') }}
             </div>
             <div class="content">
-              <div class="auth-config">
-                <div class="auth-block">
-                  <div class="auth-view-row">
-                    <BkTag
-                      size="small"
-                      :theme="formData.is_public ? 'success' : 'default'"
-                    >
-                      {{ formData.is_public ? t('公开') : t('不公开') }}
-                    </BkTag>
-                  </div>
-                  <div
-                    class="auth-child"
-                    :class="{ 'is-disabled': !canAllowApplyPermission }"
-                  >
-                    <div class="auth-view-row">
-                      <span class="auth-view-label">{{ t('允许申请权限') }}：</span>
-                      <BkTag
-                        size="small"
-                        :theme="formData.allow_apply_permission ? 'success' : 'default'"
-                      >
-                        {{ formData.allow_apply_permission ? t('开启') : t('关闭') }}
-                      </BkTag>
-                    </div>
-                    <p
-                      v-if="!canAllowApplyPermission"
-                      class="auth-hint"
-                    >
-                      {{ allowApplyPermissionHint }}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <BkTag
+                size="small"
+                :theme="formData.is_public ? 'success' : 'default'"
+              >
+                {{ formData.is_public ? t('公开') : t('不公开') }}
+              </BkTag>
             </div>
           </div>
-          <div class="label-content-group wide">
+          <div
+            v-if="canAllowApplyPermission(formData.is_public, formData.auth_config)"
+            class="label-content-group wide auth-info"
+          >
             <div class="label">
-              {{ t('已使用的环境') }}
+              {{ t('允许申请权限') }}
             </div>
             <div class="content">
-              <span>{{ formData.released_stages?.join(', ') || '--' }}</span>
+              <BkTag
+                size="small"
+                :theme="formData.allow_apply_permission ? 'info' : 'default'"
+              >
+                {{ formData.allow_apply_permission ? t('开启') : t('关闭') }}
+              </BkTag>
             </div>
           </div>
         </div>
@@ -943,6 +920,14 @@ import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IBackendListOutput, IGatewaysBackendsListQuery } from '@/services/types/gateway/backend.ts';
 import { Input as BkInput, PopConfirm as BkPopConfirm, Message } from 'bkui-vue';
 import { copy } from '@/utils';
+import {
+  canAllowApplyPermission,
+  canConfigureResourcePerm,
+  getAuthTypeLabel,
+  getUserAuthMethodLabels,
+  isAuthConfigEmpty,
+  parseResourceAuthConfig,
+} from '@/utils/auth-config';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
@@ -1015,60 +1000,15 @@ const truncatedDesc = computed(() => {
 });
 
 const isAIGateway = computed(() => gatewayStore?.currentGateway?.kind === 2);
-
-const canAllowApplyPermission = computed(() => (
-  !!formData.value.is_public && !!formData.value.auth_config?.resource_perm_required
-));
-
-const allowApplyPermissionHint = computed(() => {
-  if (!formData.value.is_public) {
-    return t('依赖「是否公开」。资源不公开时，用户无法查看接口文档和申请权限。');
-  }
-  if (!formData.value.auth_config?.resource_perm_required) {
-    return t('需要开启「检验应用权限」，才可以配置「允许申请权限」。');
-  }
-  return t('开启后，其他蓝鲸应用可在开发者中心申请本资源访问权限；关闭则只能由网关管理员主动授权。');
-});
-
-const authSceneText = computed(() => {
-  const appAuth = formData.value.auth_config?.app_verified_required;
-  const userAuth = formData.value.auth_config?.auth_verified_required;
-  const permRequired = formData.value.auth_config?.resource_perm_required;
-  const personalEnabled = formData.value.auth_config?.oauth2_personal_client_enabled;
-
-  if (!appAuth && !userAuth) {
-    return t('当前效果：不校验应用身份、也不校验用户身份。');
-  }
-  if (appAuth && !userAuth) {
-    return permRequired
-      ? t('当前效果：仅应用认证，且调用应用必须已获授权。不接受用户 Token / 个人令牌。')
-      : t('当前效果：仅应用认证，只接受应用密钥调用，不接受用户 Token / 个人令牌。');
-  }
-  if (!appAuth && userAuth) {
-    return personalEnabled
-      ? t('当前效果：只校验用户身份，并允许使用个人令牌。不校验调用方是哪个应用。')
-      : t('当前效果：只校验用户身份。不校验调用方是哪个应用。');
-  }
-  if (permRequired) {
-    return personalEnabled
-      ? t('当前效果：须同时具备应用身份和用户身份，应用须已获授权；允许使用个人令牌。')
-      : t('当前效果：须同时具备应用身份和用户身份，且应用须已获授权。');
-  }
-  return personalEnabled
-    ? t('当前效果：须同时具备应用身份和用户身份；允许使用个人令牌。')
-    : t('当前效果：须同时具备应用身份和用户身份。');
-});
-
-const authSceneAlertTheme = computed(() => (
-  !formData.value.auth_config?.app_verified_required && !formData.value.auth_config?.auth_verified_required
-    ? 'warning'
-    : 'info'
-));
+const authConfig = computed(() => parseResourceAuthConfig(formData.value.auth_config));
+const authTypeLabel = computed(() => getAuthTypeLabel(authConfig.value, t, gatewayStore.isResourceAuthV2));
+const isAuthEmpty = computed(() => isAuthConfigEmpty(authConfig.value));
+const userAuthMethods = computed(() => getUserAuthMethodLabels(authConfig.value, t));
 
 // 资源详情
 const getResourceDetails = async () => {
   const res = await getResourceDetail(gatewayId, resourceId);
-  formData.value = res;
+  formData.value = { ...res };
 
   nextTick(() => {
     formData.value.label_ids = res?.labels?.map(item => item.id);

@@ -44,7 +44,7 @@ from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
-from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
+from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS, ResourceAuthContext
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
@@ -52,6 +52,8 @@ from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
 
 if TYPE_CHECKING:
     from apigateway.apps.plugin.models import PluginConfig
+
+RESOURCE_AUTH_REQUIREMENT_FIELDS = ("auth_verified_required", "app_verified_required", "resource_perm_required")
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):
@@ -359,9 +361,16 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
     def validate(self, data):
         if self.instance:
+            # 更新时，未传的认证与公开配置保留当前存储值，而不是取创建时的缺省值
+            current_auth_config = ResourceAuthContext().get_config_for_resource(self.instance)
             auth_config = data["auth_config"]
+            for field_name in RESOURCE_AUTH_REQUIREMENT_FIELDS:
+                if field_name in current_auth_config:
+                    auth_config.setdefault(field_name, current_auth_config[field_name])
             for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS:
                 auth_config.setdefault(field_name, getattr(self.instance, field_name))
+            for field_name in ("is_public", "allow_apply_permission"):
+                data.setdefault(field_name, getattr(self.instance, field_name))
             ResourceAuthConfigSLZ._validate_auth_config(auth_config)
 
         self._validate_method(data["gateway"], data["path"], data["method"])

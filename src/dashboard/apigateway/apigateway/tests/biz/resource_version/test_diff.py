@@ -572,6 +572,40 @@ def test_resource_auth_diff_includes_oauth2_client_switches(field):
     assert target_diff["contexts"]["resource_auth"]["config"][field] is True
 
 
+def test_resource_auth_diff_only_includes_changed_auth_fields():
+    def make_resource(auth_verified_required):
+        return {
+            "id": 1,
+            "name": "resource",
+            "method": "GET",
+            "path": "/",
+            "proxy": {"type": "http", "config": json.dumps({"method": "GET", "path": "/", "timeout": 30})},
+            "contexts": {
+                "resource_auth": {
+                    "config": json.dumps(
+                        {
+                            "auth_verified_required": auth_verified_required,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
+                        }
+                    )
+                }
+            },
+            "doc_updated_time": {},
+        }
+
+    source_diff, target_diff = ResourceDifferHandler.model_validate(make_resource(True)).diff(
+        ResourceDifferHandler.model_validate(make_resource(False))
+    )
+
+    assert source_diff["contexts"]["resource_auth"]["config"] == {
+        "auth_verified_required": True,
+    }
+    assert target_diff["contexts"]["resource_auth"]["config"] == {
+        "auth_verified_required": False,
+    }
+
+
 class TestResourceProxyHTTPConfig:
     @pytest.mark.parametrize(
         "source, target, expected",

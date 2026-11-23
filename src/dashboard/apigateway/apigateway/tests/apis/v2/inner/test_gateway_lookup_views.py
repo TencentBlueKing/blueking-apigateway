@@ -31,6 +31,8 @@ def _make_snapshot(
     is_public=False,
     oauth2_public_client_enabled=False,
     oauth2_personal_client_enabled=False,
+    oauth2_app_delegated_enabled=False,
+    oauth2_app_only_enabled=False,
 ):
     return G(
         ReleasedResource,
@@ -43,6 +45,8 @@ def _make_snapshot(
         is_public=is_public,
         oauth2_public_client_enabled=oauth2_public_client_enabled,
         oauth2_personal_client_enabled=oauth2_personal_client_enabled,
+        oauth2_app_delegated_enabled=oauth2_app_delegated_enabled,
+        oauth2_app_only_enabled=oauth2_app_only_enabled,
         data={
             "id": resource_id,
             "name": name,
@@ -312,6 +316,7 @@ class TestGatewayReleasedResourceApi:
             is_public=True,
             oauth2_public_client_enabled=True,
             oauth2_personal_client_enabled=True,
+            oauth2_app_delegated_enabled=True,
         )
         _make_snapshot(gateway, old_version, resource_id=2, name="shared_old")
         latest = _make_snapshot(gateway, new_version, resource_id=2, name="shared_new")
@@ -337,6 +342,8 @@ class TestGatewayReleasedResourceApi:
                         "deprecated_note": "",
                         "oauth2_public_client_enabled": True,
                         "oauth2_personal_client_enabled": True,
+                        "oauth2_app_delegated_enabled": True,
+                        "oauth2_app_only_enabled": False,
                     },
                     {
                         "id": latest.resource_id,
@@ -347,6 +354,8 @@ class TestGatewayReleasedResourceApi:
                         "deprecated_note": "",
                         "oauth2_public_client_enabled": False,
                         "oauth2_personal_client_enabled": False,
+                        "oauth2_app_delegated_enabled": False,
+                        "oauth2_app_only_enabled": False,
                     },
                 ],
             }
@@ -386,6 +395,41 @@ class TestGatewayReleasedResourceApi:
             ]
         }
 
+    @pytest.mark.parametrize("oauth2_app_enabled", [True, False])
+    def test_app_channel_flags_follow_gateway_switch(self, request_view, oauth2_app_enabled):
+        gateway = G(Gateway, name="released-resource-app-flags", oauth2_app_enabled=oauth2_app_enabled)
+        version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
+        _release_version(gateway, version, "prod")
+        _make_snapshot(gateway, version, resource_id=1, name="delegated", oauth2_app_delegated_enabled=True)
+        _make_snapshot(gateway, version, resource_id=2, name="app_only", oauth2_app_only_enabled=True)
+
+        response = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.released_resource.lookup",
+            path_params={"gateway_name": gateway.name},
+            app=mock.MagicMock(app_code="bk_auth"),
+            data={
+                "names": "delegated,app_only",
+                "fields": "name,oauth2_app_delegated_enabled,oauth2_app_only_enabled",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "data": [
+                {
+                    "name": "app_only",
+                    "oauth2_app_delegated_enabled": False,
+                    "oauth2_app_only_enabled": oauth2_app_enabled,
+                },
+                {
+                    "name": "delegated",
+                    "oauth2_app_delegated_enabled": oauth2_app_enabled,
+                    "oauth2_app_only_enabled": False,
+                },
+            ]
+        }
+
     def test_excludes_inactive_stage_releases(self, request_view):
         gateway = G(Gateway, name="inactive-stage-released-resource")
         active_version = G(ResourceVersion, gateway=gateway, version="1.0.0", _data="[]")
@@ -416,6 +460,8 @@ class TestGatewayReleasedResourceApi:
                         "deprecated_note": "",
                         "oauth2_public_client_enabled": False,
                         "oauth2_personal_client_enabled": False,
+                        "oauth2_app_delegated_enabled": False,
+                        "oauth2_app_only_enabled": False,
                     },
                 ],
             }
@@ -446,6 +492,8 @@ class TestGatewayReleasedResourceApi:
                 "deprecated_note": "",
                 "oauth2_public_client_enabled": False,
                 "oauth2_personal_client_enabled": False,
+                "oauth2_app_delegated_enabled": False,
+                "oauth2_app_only_enabled": False,
             }
         ]
 

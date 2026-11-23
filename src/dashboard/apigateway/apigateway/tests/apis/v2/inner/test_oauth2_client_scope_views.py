@@ -89,6 +89,36 @@ def test_scope_list_rejects_missing_or_unknown_client_type(request_view, view_na
     assert response.status_code == 400
 
 
+def test_mcp_scope_list_rejects_app_only(request_view):
+    response = request_view(
+        method="GET",
+        view_name=MCP_SCOPE_VIEW,
+        app=mock.MagicMock(app_code="test"),
+        data={"oauth_client_type": "app_only"},
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    ("view_name", "oauth_client_type"),
+    [
+        (RESOURCE_SCOPE_VIEW, "app_delegated"),
+        (RESOURCE_SCOPE_VIEW, "app_only"),
+        (MCP_SCOPE_VIEW, "app_delegated"),
+    ],
+)
+def test_scope_list_accepts_app_client_types(request_view, view_name, oauth_client_type):
+    response = request_view(
+        method="GET",
+        view_name=view_name,
+        app=mock.MagicMock(app_code="test"),
+        data={"oauth_client_type": oauth_client_type},
+    )
+
+    assert response.status_code == 200, response.json()
+
+
 @pytest.mark.parametrize(
     "query",
     [
