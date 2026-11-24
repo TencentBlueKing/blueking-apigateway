@@ -22,8 +22,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/constant"
 )
+
+// SensitiveHeaderKeys lists header keys whose values must be masked in logs.
+var SensitiveHeaderKeys = map[string]struct{}{
+	constant.BkApiAuthorizationHeaderKey: {},
+	constant.BkGatewayJWTHeaderKey:       {},
+}
 
 // TruncateJSON 将任意对象序列化为 JSON 并截断到指定长度。
 // 当 json.Marshal 失败时，回退为 fmt.Sprintf 转成 string 后再截断。
@@ -44,15 +50,18 @@ func TruncateJSON(v any, maxLen int) string {
 	return s
 }
 
-// MaskSensitiveHeaders returns a copy with entire nonempty credential values masked.
+// MaskSensitiveHeaders returns a copy of headerInfo with sensitive values masked.
 func MaskSensitiveHeaders(headerInfo map[string]string) map[string]string {
-	sanitizer := NewLogSanitizer(config.DesensitizationConfig{})
 	masked := make(map[string]string, len(headerInfo))
-	for key, value := range headerInfo {
-		if sanitizer.Sensitive(key) && value != "" {
-			masked[key] = CredentialMask
+	for k, v := range headerInfo {
+		if _, ok := SensitiveHeaderKeys[k]; ok {
+			if len(v) > 6 {
+				masked[k] = v[:3] + "***" + v[len(v)-3:]
+			} else {
+				masked[k] = "***"
+			}
 		} else {
-			masked[key] = value
+			masked[k] = v
 		}
 	}
 	return masked

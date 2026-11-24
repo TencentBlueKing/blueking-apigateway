@@ -551,9 +551,10 @@ var _ = Describe("MCPProxy", func() {
 			}
 
 			Expect(completeLog).NotTo(BeNil())
-			Expect(completeLog["params"]).NotTo(Equal(util.HiddenLogBody))
-			Expect(json.Valid([]byte(completeLog["params"].(string)))).To(BeTrue())
-			Expect(completeLog["params"]).To(ContainSubstring("...(truncated)"))
+			Expect(completeLog["params"]).To(Equal(util.TruncateJSON(
+				arguments,
+				config.G.McpServer.LogTruncate.GetAuditLogMaxBodySize(),
+			)))
 			Expect(completeLog).To(HaveKeyWithValue("request_body_size", float64(len(canonicalArguments))))
 			Expect(completeLog).NotTo(HaveKey("request"))
 			Expect(upstreamBody).To(MatchJSON(`{"value":"` + strings.Repeat("x", 5000) + `"}`))
@@ -785,7 +786,7 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(auditStatus).To(Equal("failed"))
 			Expect(auditLatency).To(BeNumerically(">", 0))
-			Expect(auditResponse).To(MatchJSON(`{"category":"error_details_hidden"}`))
+			Expect(auditResponse).To(ContainSubstring("unexpected submit result type"))
 			Expect(auditResponseSize).To(Equal(int64(0)))
 			Expect(auditUpstreamReqID).To(BeEmpty())
 			Expect(result).NotTo(BeNil())
@@ -853,7 +854,7 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(status).To(Equal("failed"))
 			Expect(latency).To(BeNumerically(">", 0))
-			Expect(response).To(MatchJSON(`{"category":"error_details_hidden"}`))
+			Expect(response).To(Equal("decode arguments failed"))
 		})
 
 		It("marks panic as failed and keeps the panic available for outer recovery", func() {
@@ -944,7 +945,7 @@ var _ = Describe("MCPProxy", func() {
 			},
 		)
 
-		It("hides non-JSON error bodies in envelope preview", func() {
+		It("preserves non-JSON error body verbatim in envelope preview", func() {
 			payload := newToolResponsePayload(
 				500, "req-1", "text/html",
 				[]byte(`<html><body>upstream 500</body></html>`),
@@ -963,7 +964,7 @@ var _ = Describe("MCPProxy", func() {
 				"request_id": "req-1",
 				"trace_id": "",
 				"x_request_id": "",
-				"response_body": "正文已屏蔽：截断或格式未知，无法可靠脱敏"
+				"response_body": "<html><body>upstream 500</body></html>"
 			}`))
 			Expect(upstreamReq).To(Equal("req-1"))
 		})

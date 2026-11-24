@@ -32,6 +32,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/TencentBlueKing/gopkg/stringx"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/go-openapi/runtime"
@@ -552,7 +553,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 			"method", req.Method,
 			"url", req.URL.Path,
 			"duration", duration,
-			"error", util.CredentialMask,
+			"error", err,
 		)
 		return nil, err
 	}
@@ -594,11 +595,7 @@ func setHandlerRequestParams(
 	if handlerRequest.HeaderParam != nil {
 		for k, value := range handlerRequest.HeaderParam {
 			if err := req.SetHeaderParam(k, value); err != nil {
-				auditLog.Error(
-					"set header param err",
-					zap.String(k, value),
-					zap.String("error", util.SafeLogError(err)),
-				)
+				auditLog.Error("set header param err", zap.String(k, value), zap.Error(err))
 				return err
 			}
 			headerInfo[k] = value
@@ -607,11 +604,7 @@ func setHandlerRequestParams(
 	if handlerRequest.QueryParam != nil {
 		for k, values := range handlerRequest.QueryParam {
 			if err := req.SetQueryParam(k, values...); err != nil {
-				auditLog.Error(
-					"set query param err",
-					zap.Strings(k, values),
-					zap.String("error", util.SafeLogError(err)),
-				)
+				auditLog.Error("set query param err", zap.Strings(k, values), zap.Error(err))
 				return err
 			}
 		}
@@ -619,11 +612,7 @@ func setHandlerRequestParams(
 	if handlerRequest.PathParam != nil {
 		for k, value := range handlerRequest.PathParam {
 			if err := req.SetPathParam(k, value); err != nil {
-				auditLog.Error(
-					"set path param err",
-					zap.String(k, value),
-					zap.String("error", util.SafeLogError(err)),
-				)
+				auditLog.Error("set path param err", zap.String(k, value), zap.Error(err))
 				return err
 			}
 		}
@@ -633,7 +622,7 @@ func setHandlerRequestParams(
 			auditLog.Error(
 				"set body param err",
 				zap.ByteString("body", handlerRequest.BodyParam),
-				zap.String("error", util.SafeLogError(err)),
+				zap.Error(err),
 			)
 			return err
 		}
@@ -800,7 +789,7 @@ func handleToolCallError(
 
 	auditLog.Error("call tool err",
 		zap.Any("header", util.MaskSensitiveHeaders(headerInfo)),
-		zap.String("error", util.SafeLogError(err)),
+		zap.Error(err),
 		zap.String("latency", duration.String()),
 		zap.String("status", "failed"),
 		zap.Int64("response_body_size", 0),
@@ -868,7 +857,7 @@ func handleUnexpectedSubmitResult(
 			logTruncate.GetAuditLogMaxErrorResponseSize(),
 		)
 		if auditResponse != nil {
-			*auditResponse = responsePayload.auditEnvelopePreview(traceID, xRequestID, limit)
+			*auditResponse = responsePayload.EnvelopePreview(traceID, xRequestID, limit)
 		}
 		if auditResponseSize != nil {
 			*auditResponseSize = int64(len(responsePayload.rawBody))
@@ -894,7 +883,7 @@ func markAuditCallFailed(
 		*auditLatency = time.Since(start)
 	}
 	if auditResponse != nil && err != nil {
-		*auditResponse = util.SafeLogError(err)
+		*auditResponse = err.Error()
 	}
 }
 
@@ -951,7 +940,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				logging.GetAPILogger().Error("panic in tool handler",
 					zap.String("mcp_method", "tools/call"),
 					zap.String("tool_name", toolApiConfig.Name),
-					zap.String("panic", `{"category":"panic"}`),
+					zap.Any("panic", r),
 					zap.String("server_name", serverName),
 				)
 				if err == nil {
@@ -989,7 +978,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
-			auditLog.Error("sign inner jwt err", zap.String("error", util.SafeLogError(err)))
+			auditLog.Error("sign inner jwt err", zap.Error(err))
 			return nil, trace.WrapErrorWithTraceID(ctx, fmt.Errorf("sign inner jwt failed: %w", err))
 		}
 		logTruncate := config.G.McpServer.LogTruncate
@@ -1037,17 +1026,12 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		}()
 		requestPayload, err = newToolRequestPayload(arguments)
 		if err != nil {
-			requestBody = logging.AuditLogSanitizer().Preview(
-				"params",
-				arguments,
-				logTruncate.GetAuditLogMaxBodySize(),
-				truncatedSuffix,
-			)
-			requestBodySize = int64(len(arguments))
+			requestBody = util.TruncateJSON(arguments, logTruncate.GetAuditLogMaxBodySize())
+			requestBodySize = int64(len(requestBody))
 			auditLog.Error(
 				"marshal arguments err",
 				zap.Any("arguments", req.Params.Arguments),
-				zap.String("error", util.SafeLogError(err)),
+				zap.Error(err),
 			)
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
@@ -1057,7 +1041,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		handlerRequest, err := requestPayload.decodeHandlerRequest()
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
-				string(requestPayload.rawArguments)), zap.String("error", util.SafeLogError(err)))
+				string(requestPayload.rawArguments)), zap.Error(err))
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
@@ -1089,7 +1073,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 							constant.BkApiAuthorizationHeaderKey,
 							innerJwt,
 						),
-						zap.String("error", util.SafeLogError(err)),
+						zap.Error(err),
 					)
 					return err
 				}
@@ -1191,6 +1175,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		auditQueryParam = handlerRequest.QueryParam
 		auditPathParam = handlerRequest.PathParam
 		auditBodyParam = requestPayload.bodyAuditPreview(
+			handlerRequest.BodyParam,
 			logTruncate.GetAuditLogMaxBodySize(),
 		)
 
@@ -1205,7 +1190,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			// so failures retain full diagnostic context. Transport-level errors (DNS, dial,
 			// timeout) leave responsePayload nil and fall back to the error message.
 			if responsePayload != nil {
-				auditResponse = responsePayload.auditEnvelopePreview(
+				auditResponse = responsePayload.EnvelopePreview(
 					trace.GetTraceIDFromContext(ctx),
 					xRequestID,
 					pickToolCallLogLimit(
@@ -1217,7 +1202,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				auditResponseSize = int64(len(responsePayload.rawBody))
 				auditUpstreamReqID = responsePayload.upstreamRequestID
 			} else {
-				auditResponse = util.SafeLogError(err)
+				auditResponse = fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
 				auditResponseSize = 0
 			}
 			// nolint:nilerr
@@ -1226,7 +1211,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		duration := time.Since(start)
 		// 设置 audit log 变量，供 defer 中的 "call tool complete" 使用
 		// 注意：responsePayload 在 Reader 中已设置；Submit 成功路径必然非 nil。
-		auditResponse = responsePayload.auditEnvelopePreview(
+		auditResponse = responsePayload.EnvelopePreview(
 			trace.GetTraceIDFromContext(ctx),
 			xRequestID,
 			pickToolCallLogLimit(
@@ -1455,7 +1440,7 @@ func logToolCall(
 	}
 
 	if hasError {
-		fields = append(fields, zap.String("error", util.SafeLogError(err)))
+		fields = append(fields, zap.Error(err))
 	}
 
 	logger.Info("-", fields...)
@@ -1480,7 +1465,7 @@ func serializeToolCallRequest(
 		return "", 0
 	}
 	requestBodySize := int64(len(paramsBytes))
-	params := logging.APILogSanitizer().Preview("params", paramsBytes, logTruncate.GetAPILogRequestSize(), "")
+	params := stringx.Truncate(string(paramsBytes), logTruncate.GetAPILogRequestSize())
 	return params, requestBodySize
 }
 
@@ -1528,7 +1513,7 @@ func serializeToolCallResponse(
 	if hasError {
 		limit = logTruncate.GetAPILogErrorResponseSize()
 	}
-	response := logging.APILogSanitizer().Preview("response", resultBytes, limit, "")
+	response := stringx.Truncate(string(resultBytes), limit)
 	return response, responseBodySize, ""
 }
 

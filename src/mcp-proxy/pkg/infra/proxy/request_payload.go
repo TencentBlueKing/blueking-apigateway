@@ -21,9 +21,6 @@ package proxy
 import (
 	"bytes"
 	"encoding/json"
-	"sync"
-
-	"mcp_proxy/pkg/util"
 )
 
 // toolRequestPayload owns the canonical JSON bytes for one tools/call request.
@@ -32,8 +29,6 @@ import (
 type toolRequestPayload struct {
 	rawArguments     []byte
 	argumentsPresent bool
-	logCopies        payloadLogCopies
-	bodyPreviewOnce  sync.Once
 }
 
 func newToolRequestPayload(arguments json.RawMessage) (*toolRequestPayload, error) {
@@ -58,21 +53,14 @@ func (p *toolRequestPayload) decodeHandlerRequest() (*HandlerRequest, error) {
 }
 
 func (p *toolRequestPayload) auditPreview(limit int) string {
-	p.initializeLogCopies()
-	return safeLogPreview(p.logCopies.auditText, limit, truncatedSuffix)
+	return truncateRequestJSON(p.rawArguments, limit)
 }
 
-func (p *toolRequestPayload) bodyAuditPreview(limit int) string {
-	p.initializeLogCopies()
-	p.bodyPreviewOnce.Do(func() {
-		body := sanitizedBodyMember(p.logCopies.auditText, "body_param")
-		p.logCopies.auditBody = p.logCopies.audit.JSON("body", []byte(body))
-	})
-	return safeLogPreview(p.logCopies.auditBody, limit, truncatedSuffix)
-}
-
-func (p *toolRequestPayload) initializeLogCopies() {
-	p.logCopies.initialize(func(s *util.LogSanitizer) string { return s.JSON("params", p.rawArguments) })
+func (p *toolRequestPayload) bodyAuditPreview(body json.RawMessage, limit int) string {
+	if body == nil {
+		return truncateRequestJSON([]byte("null"), limit)
+	}
+	return truncateRequestJSON(body, limit)
 }
 
 func (p *toolRequestPayload) auditSize() int64 {
@@ -90,6 +78,16 @@ func (p *toolRequestPayload) apiLogPreview(limit int) (string, int64) {
 	if !p.argumentsPresent {
 		return "", 0
 	}
-	p.initializeLogCopies()
-	return safeLogPreview(p.logCopies.apiText, limit, ""), int64(len(p.rawArguments))
+	preview := p.rawArguments
+	if len(preview) > limit {
+		preview = preview[:limit]
+	}
+	return string(preview), int64(len(p.rawArguments))
+}
+
+func truncateRequestJSON(content []byte, limit int) string {
+	if len(content) > limit {
+		return string(content[:limit]) + truncatedSuffix
+	}
+	return string(content)
 }

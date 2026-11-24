@@ -47,23 +47,11 @@ logger:
     writer: file
     buffered: true
     settings: {name: core_api.log, size: 100, backups: 5, age: 7, path: ./}
-    # Default credential rules always apply. These lists append exact case-insensitive names.
-    desensitization:
-      enabled: false # controls only additional JSON paths below
-      sensitiveKeys: []
-      sensitiveHeaders: [] # e.g. [X-Custom-Auth]
-      fields: [] # e.g. [{key: params, jsonPath: [data.private]}]
   audit:
     level: info
     writer: file
     buffered: true
     settings: {name: core_api.log, size: 100, backups: 5, age: 7, path: ./}
-    # Default credential rules always apply. These lists append exact case-insensitive names.
-    desensitization:
-      enabled: false # controls only additional JSON paths below
-      sensitiveKeys: []
-      sensitiveHeaders: [] # e.g. [X-Custom-Auth]
-      fields: [] # e.g. [{key: params, jsonPath: [data.private]}]
 
 
 
@@ -90,7 +78,7 @@ mcpServer:
     maxIdleConns: 200
     maxIdleConnsPerHost: 20
     idleConnTimeoutSecond: 90
-  # Log preview limits in bytes, applied after masking. Unknown or over-budget bodies are hidden.
+  # Log truncation limits (string length, not bytes)
   logTruncate:
     # Audit log body size limit for tool call requests and body params
     auditLogMaxBodySize: 4096

@@ -23,15 +23,13 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"mcp_proxy/pkg/util"
 )
 
 const truncatedSuffix = "...(truncated)"
 
 // toolResponsePayload captures the upstream response of a tool call as raw bytes plus a small
-// amount of metadata. Wire rendering preserves the raw bytes. Log rendering separately owns
-// bounded sanitized copies, so credential masking never changes client payloads.
+// amount of metadata. It is intentionally allocation-light: the raw body is never decoded into
+// a Go object graph, so this type stays O(rawBody) in memory regardless of payload shape.
 //
 // Two presentation methods are layered on top:
 //   - marshalEnvelope / marshalRawResponse: produce the wire bytes returned to MCP clients.
@@ -42,7 +40,6 @@ type toolResponsePayload struct {
 	contentType       string
 	rawBody           []byte
 	isDeclaredJSON    bool
-	logCopies         payloadLogCopies
 }
 
 func newToolResponsePayload(
@@ -67,6 +64,16 @@ func isJSONContentType(contentType string) bool {
 	}
 	mediaType := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
 	return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")
+}
+
+func truncateBytesForLog(body []byte, limit int) string {
+	if limit <= 0 || len(body) == 0 {
+		return ""
+	}
+	if len(body) <= limit {
+		return string(body)
+	}
+	return string(body[:limit]) + truncatedSuffix
 }
 
 func isNoContentStatus(statusCode int) bool {
@@ -123,78 +130,65 @@ func (p *toolResponsePayload) bodyAsJSONValue() (json.RawMessage, error) {
 	return body, nil
 }
 
-// EnvelopePreview returns an API log envelope with only its sanitized body truncated.
+// previewBodyAsRawMessage returns a json.RawMessage that is always valid JSON, used as the
+// response_body field of EnvelopePreview. Decision table:
+//
+//	scenario                                | output form              | notes
+//	----------------------------------------|--------------------------|---------------------------
+//	empty body                              | "null"                   | e.g. 204 No Content
+//	valid JSON body that fits within limit  | raw JSON object/array    | matches client envelope
+//	valid JSON body that needs truncation   | JSON string (truncated)  | truncation breaks JSON
+//	non-JSON body (text/html, text/plain)   | JSON string              | content preserved verbatim
+//	invalid declared JSON body             | JSON string              | preview only; wire path returns error
+//	binary body (invalid UTF-8)             | JSON string with U+FFFD  | json.Marshal stdlib behavior
+//
+// Memory: O(min(len(rawBody), limit)) — independent of full rawBody size.
+func (p *toolResponsePayload) previewBodyAsRawMessage(limit int) json.RawMessage {
+	if len(p.rawBody) == 0 {
+		if p.rawBody != nil && !p.isDeclaredJSON {
+			return json.RawMessage(`""`)
+		}
+		return json.RawMessage("null")
+	}
+
+	canEmbedRawJSON := p.isDeclaredJSON && (limit <= 0 || len(p.rawBody) <= limit) && json.Valid(p.rawBody)
+	if canEmbedRawJSON {
+		return json.RawMessage(p.rawBody)
+	}
+
+	truncated := truncateBytesForLog(p.rawBody, limit)
+	encoded, err := json.Marshal(truncated)
+	if err != nil {
+		// Unreachable: json.Marshal on a Go string cannot fail.
+		return json.RawMessage("null")
+	}
+	return encoded
+}
+
+// EnvelopePreview returns a JSON string preview of the response envelope for log emission.
+// The envelope shape matches what is sent to MCP clients (status_code, request_id, trace_id,
+// x_request_id, response_body), so log readers can correlate audit entries with what the
+// client actually saw. The response_body is bounded by `limit` so large upstream payloads
+// do not blow up log storage.
+//
+// Returns an empty string if envelope marshaling unexpectedly fails.
 func (p *toolResponsePayload) EnvelopePreview(traceID, xRequestID string, limit int) string {
-	p.initializeLogCopies()
-	return p.logEnvelope(p.logCopies.api, p.logCopies.apiText, traceID, xRequestID, limit)
-}
-
-func (p *toolResponsePayload) auditEnvelopePreview(traceID, xRequestID string, limit int) string {
-	p.initializeLogCopies()
-	return p.logEnvelope(p.logCopies.audit, p.logCopies.auditText, traceID, xRequestID, limit)
-}
-
-func (p *toolResponsePayload) initializeLogCopies() {
-	p.logCopies.initialize(func(s *util.LogSanitizer) string {
-		if len(p.rawBody) == 0 {
-			if p.rawBody != nil && !p.isDeclaredJSON {
-				return `""`
-			}
-			return "null"
-		}
-		return s.JSON("response_body", p.rawBody)
-	})
-}
-
-func (p *toolResponsePayload) logEnvelope(
-	s *util.LogSanitizer,
-	safeBody, traceID, xRequestID string,
-	limit int,
-) string {
-	var body any = json.RawMessage(safeBody)
-	if safeBody == util.HiddenLogBody {
-		body = safeBody
-	}
-
 	envelope := struct {
-		StatusCode   int    `json:"status_code"`
-		RequestID    string `json:"request_id"`
-		TraceID      string `json:"trace_id"`
-		XRequestID   string `json:"x_request_id"`
-		ResponseBody any    `json:"response_body"`
-	}{p.statusCode, p.upstreamRequestID, traceID, xRequestID, body}
-	out, err := json.Marshal(envelope)
-	if err != nil {
-		return util.HiddenLogBody
-	}
-	// Apply response-envelope JSON paths before truncating its body member.
-	return previewLogEnvelope(s.JSON("response", out), limit)
-}
-
-func previewLogEnvelope(text string, limit int) string {
-	if text == util.HiddenLogBody {
-		return text
-	}
-	var envelope map[string]json.RawMessage
-	if json.Unmarshal([]byte(text), &envelope) != nil {
-		return util.HiddenLogBody
-	}
-	body := envelope["response_body"]
-	if limit > 0 && len(body) > limit && string(body) != `"`+util.HiddenLogBody+`"` {
-		var err error
-		preview := util.JSONLogPreview(string(body), limit)
-		var projected any = json.RawMessage(preview)
-		if preview == util.HiddenLogBody {
-			projected = preview
-		}
-		envelope["response_body"], err = json.Marshal(projected)
-		if err != nil {
-			return util.HiddenLogBody
-		}
+		StatusCode   int             `json:"status_code"`
+		RequestID    string          `json:"request_id"`
+		TraceID      string          `json:"trace_id"`
+		XRequestID   string          `json:"x_request_id"`
+		ResponseBody json.RawMessage `json:"response_body"`
+	}{
+		StatusCode:   p.statusCode,
+		RequestID:    p.upstreamRequestID,
+		TraceID:      traceID,
+		XRequestID:   xRequestID,
+		ResponseBody: p.previewBodyAsRawMessage(limit),
 	}
 	out, err := json.Marshal(envelope)
 	if err != nil {
-		return util.HiddenLogBody
+		return ""
 	}
 	return string(out)
 }

@@ -77,7 +77,7 @@ _STRUCTURE_FIELDS = {
     "path_param",
 }
 _INVALID_PERCENT = re.compile(r"%(?![0-9a-fA-F]{2})")
-# Supported URL-encoded wire grammar, shared with the MCP log sanitizer.
+# Supported URL-encoded grammar for fetched log fields.
 _FORM_COMPONENT = r"(?:[a-zA-Z0-9_.~*+\-]|%[0-9a-fA-F]{2})"
 _FORM_PAIR = re.compile(rf"{_FORM_COMPONENT}+={_FORM_COMPONENT}*")
 _QUERY_PAIR = re.compile(rf"{_FORM_COMPONENT}+(?:={_FORM_COMPONENT}*)?")

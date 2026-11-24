@@ -21,8 +21,6 @@ package proxy
 import (
 	"strings"
 
-	"mcp_proxy/pkg/util"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -88,16 +86,16 @@ var _ = Describe("toolResponsePayload", func() {
 			}`))
 		})
 
-		It("keeps JSON structure when the sanitized body needs truncation", func() {
+		It("falls back to JSON string when JSON body needs truncation", func() {
 			big := []byte(`{"items":[` + strings.Repeat(`1,`, 1000) + `0]}`)
 			payload := newToolResponsePayload(200, "", "application/json", big)
 			out := payload.EnvelopePreview("", "", 50)
-			// The body remains a valid object with a shortened array.
-			Expect(out).To(ContainSubstring(`"response_body":{`))
+			// response_body becomes a quoted string ending with the truncated suffix
+			Expect(out).To(ContainSubstring(`"response_body":"`))
 			Expect(out).To(ContainSubstring(truncatedSuffix))
 		})
 
-		It("hides non-JSON HTML body with envelope identifiers", func() {
+		It("preserves non-JSON HTML body as a JSON string", func() {
 			html := []byte(`<html><body>500 Internal Server Error</body></html>`)
 			payload := newToolResponsePayload(500, "upstream-req-1", "text/html", html)
 			out := payload.EnvelopePreview("trace-1", "x-req-1", 16384)
@@ -106,12 +104,12 @@ var _ = Describe("toolResponsePayload", func() {
 				"request_id": "upstream-req-1",
 				"trace_id": "trace-1",
 				"x_request_id": "x-req-1",
-				"response_body": "正文已屏蔽：截断或格式未知，无法可靠脱敏"
+				"response_body": "<html><body>500 Internal Server Error</body></html>"
 			}`))
 			Expect(out).NotTo(ContainSubstring(`"response_body":null`))
 		})
 
-		It("hides unknown plain text bodies", func() {
+		It("preserves non-JSON plain text body as a JSON string", func() {
 			payload := newToolResponsePayload(
 				500,
 				"",
@@ -119,21 +117,21 @@ var _ = Describe("toolResponsePayload", func() {
 				[]byte("upstream timeout"),
 			)
 			out := payload.EnvelopePreview("", "", 16384)
-			Expect(out).To(ContainSubstring(`"response_body":"正文已屏蔽：截断或格式未知，无法可靠脱敏"`))
+			Expect(out).To(ContainSubstring(`"response_body":"upstream timeout"`))
 		})
 
-		It("hides malformed declared JSON bodies", func() {
+		It("preserves malformed JSON body (Content-Type lied) as a JSON string", func() {
 			payload := newToolResponsePayload(500, "", "application/json", []byte(`{not valid json`))
 			out := payload.EnvelopePreview("", "", 16384)
-			Expect(out).To(ContainSubstring(`"response_body":"正文已屏蔽：截断或格式未知，无法可靠脱敏"`))
+			Expect(out).To(ContainSubstring(`"response_body":"{not valid json"`))
 			Expect(out).NotTo(ContainSubstring(`"response_body":null`))
 		})
 
-		It("hides unknown bodies regardless of preview limit", func() {
+		It("truncates non-JSON bodies that exceed the limit", func() {
 			huge := []byte(strings.Repeat("x", 5000))
 			payload := newToolResponsePayload(500, "", "text/plain", huge)
 			out := payload.EnvelopePreview("", "", 100)
-			Expect(out).To(ContainSubstring(util.HiddenLogBody))
+			Expect(out).To(ContainSubstring(truncatedSuffix))
 		})
 	})
 

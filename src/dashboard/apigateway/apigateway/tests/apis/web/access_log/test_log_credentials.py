@@ -29,7 +29,16 @@ pytestmark = pytest.mark.django_db
     "entry", ["access_list", "access_csv", "share", "toolbox", "open", "mcp_list", "mcp_csv", "mcp_chain"]
 )
 @pytest.mark.parametrize(
-    "body_kind", ["object", "array_strings", "array_data", "form_data", "unknown_equals", "array_fragment"]
+    "body_kind",
+    [
+        "object",
+        "array_strings",
+        "array_data",
+        "form_data",
+        "unknown_equals",
+        "array_fragment",
+        "legacy_truncated_preview",
+    ],
 )
 def test_log_credentials_at_public_outputs(entry, body_kind, request_view, fake_stage, mocker):
     gateway = fake_stage.gateway
@@ -56,9 +65,15 @@ def test_log_credentials_at_public_outputs(entry, body_kind, request_view, fake_
         "form_data": urlencode({"data": embedded}),
         "unknown_equals": '<input name="token" value="fixture-credential">',
         "array_fragment": json.dumps(['{"token":"fixture-credential']),
+        "legacy_truncated_preview": '{"bk_token":"fixture-credential...(truncated)',
     }[body_kind]
     if body_kind == "unknown_equals":
         source["response_body"] = source["body"]
+    if body_kind == "legacy_truncated_preview":
+        # Existing Proxy logs may truncate raw JSON or embed that preview in a valid envelope.
+        source["params"] = '{"body_param":{"bk_token":"fixture-credential'
+        source["response_body"] = source["body"]
+        source["response"] = json.dumps({"status_code": 200, "request_id": "req", "response_body": source["body"]})
     mocker.patch(
         "apigateway.service.es.BKLogESClient.execute_search",
         side_effect=lambda *args, **kwargs: {
@@ -91,9 +106,10 @@ def test_log_credentials_at_public_outputs(entry, body_kind, request_view, fake_
     assert response.status_code == 200
     content = b"".join(response.streaming_content).decode() if response.streaming else response.content.decode()
     assert "fixture-credential" not in unquote_plus(content)
+    expected_mask = "正文已屏蔽" if body_kind == "legacy_truncated_preview" else "***"
     if entry.endswith("csv"):
-        assert "***" in unquote_plus(content)
+        assert expected_mask in unquote_plus(content)
     else:
         result = response.json()["data"]
-        assert "***" in unquote_plus(json.dumps(result))
+        assert expected_mask in unquote_plus(json.dumps(result, ensure_ascii=False))
         assert "req" in json.dumps(result)

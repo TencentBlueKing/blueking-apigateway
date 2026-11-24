@@ -324,9 +324,10 @@ func BenchmarkReadLargeResponseBody(b *testing.B) {
 }
 
 // BenchmarkEnvelopePreview measures the cost of rendering the envelope preview used by
-// audit/API logs. It exercises a small JSON body, a large JSON body and an unknown HTML
-// body. The first preview pays for bounded sanitization; subsequent previews reuse the
-// sanitized body. Unknown or over-budget bodies use a constant hidden-body message.
+// audit/API logs. It exercises three regimes: a small JSON body that fits the limit (raw
+// embed), a large JSON body that requires truncation (string-encoded), and a non-JSON HTML
+// body (always string-encoded). Preview cost should be O(min(len(body), limit)) and remain
+// well below the cost of the upstream call itself.
 func BenchmarkEnvelopePreview(b *testing.B) {
 	cases := []struct {
 		name        string

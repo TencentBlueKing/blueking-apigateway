@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TencentBlueKing/gopkg/stringx"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.opentelemetry.io/otel/attribute"
@@ -66,10 +67,8 @@ func matchErrorCodeName(code int64) string {
 // Note: tools/call is skipped here because it is logged separately in the tool handler
 // (see genToolHandler in proxy.go), which has access to more detailed tool-specific information.
 func LoggingMiddleware(serverName string) mcp.Middleware {
-	return loggingMiddleware(serverName, logging.GetAPILogger())
-}
+	logger := logging.GetAPILogger()
 
-func loggingMiddleware(serverName string, logger *zap.Logger) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
 			// Skip logging for tools/call when successful - it is logged separately in the tool handler
@@ -83,7 +82,7 @@ func loggingMiddleware(serverName string, logger *zap.Logger) mcp.Middleware {
 					logger.Error("tools/call failed before reaching tool handler",
 						zap.String("mcp_method", method),
 						zap.String("server_name", serverName),
-						zap.String("error", util.SafeLogError(err)),
+						zap.Error(err),
 					)
 					logMCPRequest(ctx, logger, serverName, method, req, result, err, start)
 				}
@@ -98,7 +97,7 @@ func loggingMiddleware(serverName string, logger *zap.Logger) mcp.Middleware {
 					// Log the panic
 					logger.Error("panic in MCP handler",
 						zap.String("mcp_method", method),
-						zap.String("panic", `{"category":"panic"}`),
+						zap.Any("panic", r),
 						zap.String("server_name", serverName),
 					)
 					// Convert panic to error result
@@ -142,12 +141,7 @@ func logMCPRequest(
 	if req != nil {
 		if paramsBytes, marshalErr := json.Marshal(req.GetParams()); marshalErr == nil {
 			requestBodySize = int64(len(paramsBytes))
-			params = logging.APILogSanitizer().Preview(
-				"params",
-				paramsBytes,
-				logTruncate.GetAPILogRequestSize(),
-				"",
-			)
+			params = stringx.Truncate(string(paramsBytes), logTruncate.GetAPILogRequestSize())
 		}
 	}
 
@@ -159,19 +153,12 @@ func logMCPRequest(
 		if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 			responseBodySize = int64(len(resultBytes))
 			if hasError {
-				response = logging.APILogSanitizer().Preview(
-					"response",
-					resultBytes,
+				response = stringx.Truncate(
+					string(resultBytes),
 					logTruncate.GetAPILogErrorResponseSize(),
-					"",
 				)
 			} else {
-				response = logging.APILogSanitizer().Preview(
-					"response",
-					resultBytes,
-					logTruncate.GetAPILogResponseSize(),
-					"",
-				)
+				response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
 			}
 		}
 	}
@@ -277,7 +264,7 @@ func logMCPRequest(
 	}
 
 	if hasError {
-		fields = append(fields, zap.String("error", util.SafeLogError(err)))
+		fields = append(fields, zap.Error(err))
 		// Only report server-side errors to Sentry, skip client errors
 		// (parse_error, invalid_request, method_not_found, invalid_params)
 		if shouldReportToSentry(err) {
@@ -302,7 +289,7 @@ func logMCPRequest(
 					"params":        params,
 					"response":      response,
 					"latency":       duration.String(),
-					"error":         util.SafeLogError(err),
+					"error":         err.Error(),
 				},
 			)
 		}

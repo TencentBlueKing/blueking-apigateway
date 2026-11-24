@@ -20,7 +20,6 @@ package proxy
 
 import (
 	"encoding/json"
-	"mcp_proxy/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -53,17 +52,23 @@ var _ = Describe("toolRequestPayload", func() {
 		))
 	})
 
-	It("keeps short previews structurally valid or explicitly hidden", func() {
+	It("keeps the existing audit and API log truncation formats", func() {
 		arguments := json.RawMessage(`{"body_param":{"value":"abcdefghijklmnopqrstuvwxyz"}}`)
 		payload, err := newToolRequestPayload(arguments)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(payload.auditPreview(20)).To(Equal(util.HiddenLogBody))
+
+		Expect(payload.auditPreview(20)).To(Equal(
+			string(payload.rawArguments[:20]) + truncatedSuffix,
+		))
 		params, size := payload.apiLogPreview(20)
-		Expect(params).To(Equal(util.HiddenLogBody))
+		Expect(params).To(Equal(string(payload.rawArguments[:20])))
 		Expect(size).To(Equal(int64(len(payload.rawArguments))))
-		body := payload.bodyAuditPreview(64)
-		Expect(json.Valid([]byte(body))).To(BeTrue())
-		Expect(body).To(ContainSubstring("abcdefghijklmnopqrstuvwxyz"))
+
+		handlerRequest, err := payload.decodeHandlerRequest()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(payload.bodyAuditPreview(handlerRequest.BodyParam, 20)).To(Equal(
+			string(handlerRequest.BodyParam[:20]) + truncatedSuffix,
+		))
 	})
 
 	DescribeTable("preserves null request compatibility",
@@ -71,9 +76,9 @@ var _ = Describe("toolRequestPayload", func() {
 			payload, err := newToolRequestPayload(arguments)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = payload.decodeHandlerRequest()
+			handlerRequest, err := payload.decodeHandlerRequest()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(payload.bodyAuditPreview(100)).To(Equal("null"))
+			Expect(payload.bodyAuditPreview(handlerRequest.BodyParam, 100)).To(Equal("null"))
 		},
 		Entry("missing body_param", json.RawMessage(`{}`)),
 		Entry("explicit null body_param", json.RawMessage(`{"body_param":null}`)),
