@@ -31,6 +31,7 @@ assert {
   res.status: eq 401
   res.headers['www-authenticate']: contains resource_metadata
   res.body.code_name: eq UNAUTHORIZED
+  res.body.message: contains gateway mismatch
 }
 
 tests {

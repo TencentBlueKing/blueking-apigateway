@@ -70,19 +70,20 @@ docker run --rm apigateway_test:latest
 - APISIX 版本不低于 3.16，否则 Dashboard 不下发 OAuth2 插件
 - APISIX 配置了 `bk_gateway.hosts.bk-apigateway-api.tmpl`，401 响应的 `WWW-Authenticate` 才带 `resource_metadata`
 - `bk_gateway.bk_oauth2.bearer_token_rules` 可不配置，默认前缀为 `^bk[oprs]_`、`^tai_pat_`；如果覆盖，需要包含 `^bkp_`、`^bko_`、`^bkr_`
-- bkauth 自省接口可用：用例中的 `bko_`/`bkp_`/`bkr_` token 都是未注册的（包括格式不完整的 `bkp_short`），bkauth 需返回 200 且 `active=false`；返回非 200 时网关响应 503，相关用例会失败
+- bkauth 自省接口可用。对于用例内写死的未知 token（含 `bkp_short`），需返回 200 且 `active=false`。返回非 200 时网关响应 503，相关用例会失败。
 - `access_token` 环境变量是有效的旧版 access_token（与 `001-bk-auth` 相同）
 - 导入后约 30 秒数据面才加载新版本，需等待后再运行用例
 
-以下用例需要真实的 bkauth token，需用 `bru run` 运行；环境变量为空时用 `bru.runner.skipRequest()` 跳过：
+以下变量供需要有效 token 的用例使用。通过 `bru run` 运行时，默认跳过对应变量为空的用例。
 
 - `oauth2_app_delegated_token`：签发给 `test_bk_app_code` 的用户委托 token，audience 只覆盖 `gateway:oauth2-app/api:*`
 - `oauth2_app_only_token`：签发给 `test_bk_app_code` 的应用 token，audience 同上；不能覆盖 `smoke` 网关（`36-app-token-audience-mismatch` 用它验证 audience 不匹配）
+- `oauth2_app_no_permission_token`：签发给另一个应用的有效应用 token，audience 覆盖 `gateway:oauth2-app/api:app_p1`。该应用没有 `oauth2-app` 的网关授权或 `app_p1` 的资源授权。用例 37 应收到 403 `APP_NO_PERMISSION`。
 
-跳过时不会验证真实 token 的放行与拒绝。上线验收需提供 token，并设置 `oauth2_app_tokens_required=true`，缺少 token 时用例直接失败：
+可用本地 bkauth mock 的 active 响应验证网关链路。上线验收时，在私有 Bruno 环境文件中配置三个实际签发的 token 和 `oauth2_app_tokens_required: true`，缺少 token 时对应用例直接失败。在 `test/cases` 下运行：
 
-```
-bru run . -r --env e2e --env-var oauth2_app_delegated_token=<token> --env-var oauth2_app_only_token=<token> --env-var oauth2_app_tokens_required=true
+```bash
+bru run . -r --env-file environments/e2e.bru
 ```
 
 ## 规范
