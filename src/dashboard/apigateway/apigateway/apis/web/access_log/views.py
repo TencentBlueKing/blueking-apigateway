@@ -45,6 +45,7 @@ from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.time import SmartTimeRange
 
 from .serializers import (
     LogDetailQueryInputSLZ,
@@ -185,6 +186,12 @@ class LogExportApi(generics.RetrieveAPIView):
         if not stage_name:
             raise Http404
 
+        time_start, time_end = SmartTimeRange(
+            time_start=data.get("time_start"),
+            time_end=data.get("time_end"),
+            time_range=data.get("time_range"),
+        ).get_head_and_tail()
+
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
@@ -193,9 +200,8 @@ class LogExportApi(generics.RetrieveAPIView):
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
             exclude_conditions=data.get("exclude_conditions"),
-            time_start=data.get("time_start"),
-            time_end=data.get("time_end"),
-            time_range=data.get("time_range"),
+            time_start=time_start,
+            time_end=time_end,
         )
         total_count, logs = client.search_logs(
             offset=0,
@@ -211,8 +217,8 @@ class LogExportApi(generics.RetrieveAPIView):
         gateway = request.gateway
 
         # 格式化时间
-        time_start_dt = datetime.fromtimestamp(int(data.get("time_start")))
-        time_end_dt = datetime.fromtimestamp(int(data.get("time_end")))
+        time_start_dt = datetime.fromtimestamp(time_start)
+        time_end_dt = datetime.fromtimestamp(time_end)
 
         formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
