@@ -16,11 +16,61 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
+import { playwright } from '@vitest/browser-playwright';
+import { chromium } from 'playwright';
 import AutoImport from 'unplugin-auto-import/vite';
 import { configDefaults, defineConfig } from 'vitest/config';
+
+const rootDir = fileURLToPath(new URL('./', import.meta.url));
+
+/**
+ * 解析无头 Chromium 可执行文件路径：
+ * 1. 优先尊重显式环境变量 CHROME_BIN
+ * 2. 若 Playwright 管理的 Chromium 已安装，使用其默认路径（返回 undefined）
+ * 3. 否则自动回退到本机已安装的 Chrome / Chromium，免去本地重复下载
+ */
+const resolveBrowserExecutable = (): string | undefined => {
+  if (process.env.CHROME_BIN) {
+    return process.env.CHROME_BIN;
+  }
+
+  try {
+    const playwrightBinary = chromium.executablePath();
+    if (playwrightBinary && existsSync(playwrightBinary)) {
+      return undefined;
+    }
+  }
+  catch {
+    // 探测异常时继续回退到系统浏览器路径
+  }
+
+  if (process.platform === 'win32') {
+    const candidates = [
+      path.join(process.env.ProgramFiles || 'C:/Program Files', 'Google/Chrome/Application/chrome.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', 'Google/Chrome/Application/chrome.exe'),
+    ];
+    return candidates.find(candidate => existsSync(candidate));
+  }
+
+  if (process.platform === 'darwin') {
+    const chromeApp = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    return existsSync(chromeApp) ? chromeApp : undefined;
+  }
+
+  const linuxCandidates = [
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ];
+  return linuxCandidates.find(candidate => existsSync(candidate));
+};
+
+const browserExecutablePath = resolveBrowserExecutable();
 
 export default defineConfig({
   define: {
@@ -64,21 +114,7 @@ export default defineConfig({
     ],
   },
   test: {
-    // 默认提供轻量级浏览器全局对象（window、localStorage 等），纯 Node 用例可按需用 @vitest-environment node 覆盖
-    environment: 'happy-dom',
-    root: fileURLToPath(new URL('./', import.meta.url)),
-    server: {
-      deps: {
-        // 让依赖 bkui-vue 的蓝鲸系包统一走 Vite 管线解析别名与样式
-        inline: ['bkui-vue', /^@blueking\//],
-      },
-    },
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: [
-      ...configDefaults.exclude,
-      // 保留既有手写无头浏览器回归脚本，后续阶段再迁移至 Vitest Browser Mode
-      'tests/ag-table/**',
-    ],
+    root: rootDir,
     clearMocks: true,
     restoreMocks: true,
     coverage: {
@@ -99,5 +135,68 @@ export default defineConfig({
         'src/images/**',
       ],
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          // 默认提供轻量级浏览器全局对象（window、localStorage 等），纯 Node 用例可按需用 @vitest-environment node 覆盖
+          environment: 'happy-dom',
+          include: ['src/**/*.{test,spec}.{ts,tsx}'],
+          exclude: [
+            ...configDefaults.exclude,
+            'src/**/*.browser.{test,spec}.{ts,tsx}',
+          ],
+          server: {
+            deps: {
+              // 让依赖 bkui-vue 的蓝鲸系包统一走 Vite 管线解析别名与样式
+              inline: ['bkui-vue', /^@blueking\//],
+            },
+          },
+        },
+      },
+      {
+        extends: true,
+        optimizeDeps: {
+          // 预构建浏览器组件测试高频依赖，避免执行中途触发动态 optimizeDeps 重载导致导入中断
+          include: [
+            '@blueking/login-modal',
+            '@blueking/platform-config',
+            '@blueking/xss-filter',
+            'axios',
+            'bkui-vue',
+            'dayjs',
+            'dayjs/locale/en',
+            'dayjs/locale/zh-cn',
+            'dayjs/plugin/customParseFormat',
+            'dayjs/plugin/localeData',
+            'dayjs/plugin/relativeTime',
+            'dayjs/plugin/utc',
+            'lodash-es',
+            'lodash-es/memoize',
+            'pinia',
+            'vue-i18n',
+          ],
+        },
+        test: {
+          name: 'browser',
+          include: ['src/**/*.browser.{test,spec}.{ts,tsx}'],
+          exclude: [...configDefaults.exclude],
+          browser: {
+            enabled: true,
+            headless: true,
+            // 对齐桌面端标准视口，保障高度自适应表格等布局测试可复现
+            viewport: {
+              width: 1280,
+              height: 920,
+            },
+            provider: playwright({
+              launchOptions: browserExecutablePath ? { executablePath: browserExecutablePath } : undefined,
+            }),
+            instances: [{ browser: 'chromium' }],
+          },
+        },
+      },
+    ],
   },
 });
