@@ -20,6 +20,7 @@ import datetime
 import json
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -62,9 +63,9 @@ class Command(BaseCommand):
     help = """
     Export/import AppGatewayPermission and AppResourcePermission records.
 
-    Export: Query permissions with expires > expire_datetime and write to JSON file.
+    Export: Query permissions with expires=NULL (permanent) or expires > expire_datetime and write to JSON file.
             Records are filtered by ignore_bk_app_codes and ignore_gateway_names.
-            File format: [{"bk_app_code": "...", "gateway_name": "...", "resource_name": "*"|"<resource.name>", "expires": "ISO8601"}]
+            File format: [{"bk_app_code": "...", "gateway_name": "...", "resource_name": "*"|"<resource.name>", "expires": "ISO8601"|null}]
             Note: AppResourcePermission records with empty resource.name will be skipped.
 
     Import: Read JSON file and upsert permissions (grant_type=initialize for AppResourcePermission).
@@ -90,7 +91,7 @@ class Command(BaseCommand):
             "--expire-datetime",
             type=str,
             default=None,
-            help='For export: only include records with expires > this. Format "%%Y-%%m-%%d %%H:%%M:%%S" (e.g. 2026-01-19 11:00:00). Default: now.',
+            help='For export: include records with expires=NULL (permanent) or expires > this. Format "%%Y-%%m-%%d %%H:%%M:%%S" (e.g. 2026-01-19 11:00:00). Default: now.',
         )
         parser.add_argument(
             "--ignore-bk-app-codes",
@@ -109,7 +110,9 @@ class Command(BaseCommand):
         records = []
 
         # AppGatewayPermission
-        qs = AppGatewayPermission.objects.filter(expires__gt=expire_datetime).select_related("gateway")
+        qs = AppGatewayPermission.objects.filter(
+            Q(expires__isnull=True) | Q(expires__gt=expire_datetime)
+        ).select_related("gateway")
         for perm in qs:
             if perm.bk_app_code in ignore_bk_app_codes or perm.gateway.name in ignore_gateway_names:
                 continue
@@ -123,7 +126,9 @@ class Command(BaseCommand):
             )
 
         # AppResourcePermission
-        qs = AppResourcePermission.objects.filter(expires__gt=expire_datetime).select_related("gateway")
+        qs = AppResourcePermission.objects.filter(
+            Q(expires__isnull=True) | Q(expires__gt=expire_datetime)
+        ).select_related("gateway")
         for perm in qs:
             if perm.bk_app_code in ignore_bk_app_codes or perm.gateway.name in ignore_gateway_names:
                 continue
