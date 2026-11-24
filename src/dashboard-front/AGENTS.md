@@ -38,6 +38,7 @@
 | 代码编辑器   | Monaco Editor             | ^0.52      |
 | 图表      | ECharts（按需引入）            | ^6.1       |
 | 工具库     | @vueuse/*                 | ^15.0      |
+| 单元测试    | Vitest + happy-dom        | ^5.1       |
 
 ## 常用命令
 
@@ -59,6 +60,11 @@ pnpm build-only
 # 仅类型检查
 pnpm type-check    # vue-tsc --build
 
+# 单元测试（CI 会跑 test:unit，覆盖率报告输出到 coverage/）
+pnpm test:unit
+pnpm test:unit:watch
+pnpm test:unit:coverage
+
 # 代码检查（CI 会跑 lint:ci 和 lint:ci:oxlint，提交时 lint-staged 也会对暂存文件跑 oxlint 和 eslint）
 pnpm lint:eslint
 pnpm lint:ci:oxlint
@@ -66,6 +72,10 @@ pnpm lint:ci:oxlint
 # 预览生产构建
 pnpm preview
 ```
+
+单元测试位于各模块的 `__tests__/*.spec.ts`（同时匹配 `src/**/*.{test,spec}.{ts,tsx}`），默认在 `happy-dom` 环境下运行，
+由 `tsconfig.vitest.json` 独立承接类型检查；`vitest.config.ts` 已复用 Vue / TSX / AutoImport 与路径别名配置，
+纯 Node 用例可按文件通过 `// @vitest-environment node` 覆盖。
 
 AgTable 的组件回归用例使用实际 BKUI、TDesign 和无头 Chromium。执行 `pnpm test:ag-table`，可通过 `CHROME_BIN` 指定浏览器可执行文件。
 
@@ -125,8 +135,10 @@ src/dashboard-front/
 ├── eslint.config.ts            # ESLint 9 扁平化配置
 ├── stylelint.config.js         # SCSS/CSS 检查
 ├── tsconfig.json               # TypeScript 配置入口
+├── tsconfig.vitest.json        # 单元测试 TypeScript 配置
 ├── uno.config.ts               # UnoCSS 配置
 ├── vite.config.ts              # Vite 配置
+├── vitest.config.ts            # Vitest 单元测试配置
 ├── Dockerfile                  # 多阶段构建（Node 24 + pnpm → Nginx）
 └── package.json                # 依赖与脚本
 ```
