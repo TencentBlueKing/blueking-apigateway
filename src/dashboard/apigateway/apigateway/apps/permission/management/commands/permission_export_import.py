@@ -69,6 +69,7 @@ class Command(BaseCommand):
             Note: AppResourcePermission records with empty resource.name will be skipped.
 
     Import: Read JSON file and upsert permissions (grant_type=initialize for AppResourcePermission).
+            JSON null expiration is stored as 2100-01-01 UTC (permanent); existing NULL rows are not migrated.
             Skip records with missing gateway/resource and print errors.
 
     Examples:

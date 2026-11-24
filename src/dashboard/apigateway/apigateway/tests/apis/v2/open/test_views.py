@@ -22,6 +22,8 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import pytest
+from django.db import connection
+from django.utils import timezone
 from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
@@ -44,6 +46,7 @@ from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
+from apigateway.utils.time import NeverExpiresTime
 
 
 class TestGatewayListApi:
@@ -161,8 +164,13 @@ class TestGatewayRetrieveApi:
         assert result["data"]["kind"] == "ai"
 
 
+@pytest.fixture(params=[None, NeverExpiresTime.time], ids=["legacy-null", "permanent-sentinel"])
+def permission_expires(request):
+    return request.param
+
+
 @pytest.fixture
-def app_permissions(fake_gateway):
+def app_permissions(fake_gateway, permission_expires):
     """
     应用 test：fake_gateway 网关权限永久有效、other_gateway 网关权限已过期；
     fake_gateway r1、r2 资源权限永久有效、other_gateway r3 资源权限已过期
@@ -181,11 +189,17 @@ def app_permissions(fake_gateway):
     G(AppResourcePermission, gateway=fake_gateway, resource_id=r2.id, bk_app_code="test", expires=None)
     G(AppResourcePermission, gateway=other_gateway, resource_id=r3.id, bk_app_code="test", expires=expired)
     G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="other", expires=None)
+    if permission_expires is None:
+        # Historical NULL rows bypass Dashboard's normalization boundary.
+        with connection.cursor() as cursor:
+            for model in (AppGatewayPermission, AppResourcePermission):
+                table = connection.ops.quote_name(model._meta.db_table)
+                cursor.execute(f"UPDATE {table} SET expires = NULL WHERE api_id = %s", [fake_gateway.id])
     return other_gateway
 
 
 class TestCurrentAppPermissionListApi:
-    def test_list_gateway_dimension(self, request_view, fake_gateway, app_permissions):
+    def test_list_gateway_dimension(self, request_view, fake_gateway, app_permissions, permission_expires):
         resp = request_view(
             method="GET",
             view_name="openapi.v2.open.app.permissions.list",
@@ -200,10 +214,12 @@ class TestCurrentAppPermissionListApi:
         assert set(results) == {fake_gateway.name, app_permissions.name}
         assert results[fake_gateway.name]["bk_app_code"] == "test"
         assert results[fake_gateway.name]["resource_name"] == ""
-        assert results[fake_gateway.name]["expires"] is None
+        assert results[fake_gateway.name]["expires"] == (
+            timezone.localtime(permission_expires).strftime("%Y-%m-%d %H:%M:%S") if permission_expires else None
+        )
         assert results[app_permissions.name]["expires"] is not None
 
-    def test_list_resource_dimension(self, request_view, app_permissions):
+    def test_list_resource_dimension(self, request_view, app_permissions, permission_expires):
         resp = request_view(
             method="GET",
             view_name="openapi.v2.open.app.permissions.list",
@@ -215,7 +231,9 @@ class TestCurrentAppPermissionListApi:
         assert resp.status_code == 200
         results = {item["resource_name"]: item for item in result["data"]["results"]}
         assert set(results) == {"r1", "r2", "r3"}
-        assert results["r1"]["expires"] is None
+        assert results["r1"]["expires"] == (
+            timezone.localtime(permission_expires).strftime("%Y-%m-%d %H:%M:%S") if permission_expires else None
+        )
         assert results["r3"]["expires"] is not None
 
     @pytest.mark.parametrize(

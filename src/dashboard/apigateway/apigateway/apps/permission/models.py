@@ -45,7 +45,26 @@ def generate_expire_time() -> datetime.datetime:
     return to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
 
 
-class AppGatewayPermission(TimestampedModelMixin):
+class PermissionExpirationMixin(TimestampedModelMixin):
+    """Normalize permanent expiration only when the expiration column is written."""
+
+    class Meta:
+        abstract = True
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if update_fields is not None:
+            update_fields = frozenset(update_fields)
+        writes_expires = self._state.adding or (
+            "expires" in self.__dict__ if update_fields is None else "expires" in update_fields
+        )
+        if writes_expires and self.expires is None:
+            self.expires = NeverExpiresTime.time
+        return super().save(
+            force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields
+        )
+
+
+class AppGatewayPermission(PermissionExpirationMixin):
     """
     蓝鲸应用访问网关权限
     网关对应用授权网关所有资源的访问权限
@@ -91,7 +110,7 @@ class AppGatewayPermission(TimestampedModelMixin):
         return False
 
 
-class AppResourcePermission(TimestampedModelMixin):
+class AppResourcePermission(PermissionExpirationMixin):
     """
     蓝鲸应用访问网关资源权限
     """

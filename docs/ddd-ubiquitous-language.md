@@ -160,6 +160,10 @@ operator 同步/加载探测事件 -> core-api -> MySQL PublishEvent
 | 公开可见 / Public Visibility | 各对象 `is_public` | 对象各自的公开范围，不能统一解释为匿名、免认证或免授权。 |
 
 权限由 dashboard 写入；core-api DAO/缓存是运行时表示，缓存可能滞后。
+AppGatewayPermission/AppResourcePermission 的永久有效期使用 `NeverExpiresTime.time`（2100-01-01 UTC）。
+Dashboard 新建记录或写入 `expires` 时将 `None` 转成该哨兵；省略有效期仍使用原有 180 天默认值，具体到期时间原样保存。
+历史 `expires=NULL` 保留 Dashboard 永久语义：导出为 JSON null，恢复时写入哨兵；未写入 `expires` 的更新不改写历史 NULL。
+两列仍可空，不执行数据迁移；直接 SQL 可以写入 NULL，core-api 对存量 NULL 的运行时兼容性尚未验证。
 权限通常不以 Stage 为授权键，查询参数 Stage 用于选择快照。
 MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其 AppResourcePermission 由 dashboard MCP 权限流程同步。
 

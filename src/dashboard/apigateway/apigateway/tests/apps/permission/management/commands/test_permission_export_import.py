@@ -23,6 +23,7 @@ from io import StringIO
 import pytest
 from ddf import G
 from django.core.management import call_command
+from django.db import connection
 from django.utils import timezone
 
 from apigateway.apps.permission.constants import GrantTypeEnum
@@ -34,6 +35,16 @@ pytestmark = pytest.mark.django_db
 
 COMMAND_NAME = "permission_export_import"
 PERMISSION_MODELS = [AppGatewayPermission, AppResourcePermission]
+
+
+def make_permission(permission_model, **fields):
+    permission = G(permission_model, **fields)
+    if fields.get("expires") is None:
+        # Preserve coverage of historical NULL rows without using normalized Dashboard writes.
+        table = connection.ops.quote_name(permission_model._meta.db_table)
+        with connection.cursor() as cursor:
+            cursor.execute(f"UPDATE {table} SET expires = NULL WHERE id = %s", [permission.pk])
+    return permission
 
 
 @pytest.mark.parametrize("permission_model", PERMISSION_MODELS)
@@ -56,7 +67,7 @@ def test_export_import_preserves_active_permissions(permission_model, explicit_c
         "cutoff-app": cutoff,
     }
     for app_code, expires in expirations.items():
-        G(permission_model, gateway=gateway, bk_app_code=app_code, expires=expires, **permission_fields)
+        make_permission(permission_model, gateway=gateway, bk_app_code=app_code, expires=expires, **permission_fields)
 
     file_path = tmp_path / "permissions.json"
     export_options = {"expire_datetime": cutoff.strftime("%Y-%m-%d %H:%M:%S")} if explicit_cutoff else {}
@@ -88,7 +99,7 @@ def test_export_import_preserves_active_permissions(permission_model, explicit_c
     imported = {perm.bk_app_code: perm for perm in permission_model.objects.filter(gateway=target_gateway)}
     assert set(imported) == {"permanent-app", "future-app", "sentinel-app"}
     for app_code, perm in imported.items():
-        assert perm.expires == expirations[app_code]
+        assert perm.expires == (NeverExpiresTime.time if expirations[app_code] is None else expirations[app_code])
         if permission_model is AppResourcePermission:
             assert perm.resource_id == target_resource.id
             assert perm.grant_type == GrantTypeEnum.INITIALIZE.value
@@ -106,7 +117,12 @@ def test_export_import_preserves_active_permissions(permission_model, explicit_c
         ignore_gateway_names=gateway.name,
         **export_options,
     )
-    assert sorted(json.loads(file_path.read_text()), key=lambda record: record["bk_app_code"]) == expected_records
+    restored_records = [
+        {**record, "expires": NeverExpiresTime.time.isoformat() if record["expires"] is None else record["expires"]}
+        for record in expected_records
+    ]
+    assert sorted(json.loads(file_path.read_text()), key=lambda record: record["bk_app_code"]) == restored_records
+    assert permission_model.objects.get(gateway=gateway, bk_app_code="permanent-app").expires is None
 
 
 @pytest.mark.parametrize("permission_model", PERMISSION_MODELS)
@@ -121,7 +137,9 @@ def test_export_permanent_permissions_respects_ignore_lists(permission_model, ex
     ]:
         resource = G(Resource, gateway=permission_gateway, name=app_code)
         permission_fields = {"resource_id": resource.id} if permission_model is AppResourcePermission else {}
-        G(permission_model, gateway=permission_gateway, bk_app_code=app_code, expires=expires, **permission_fields)
+        make_permission(
+            permission_model, gateway=permission_gateway, bk_app_code=app_code, expires=expires, **permission_fields
+        )
 
     file_path = tmp_path / "permissions.json"
     call_command(
@@ -154,7 +172,7 @@ def test_export_null_resource_permission_skips_invalid_resource(invalid_resource
     else:
         resource.gateway = G(Gateway)
         resource.save(update_fields=["gateway"])
-    G(AppResourcePermission, gateway=gateway, resource_id=resource_id, expires=None)
+    make_permission(AppResourcePermission, gateway=gateway, resource_id=resource_id, expires=None)
 
     file_path = tmp_path / "permissions.json"
     errors = StringIO()

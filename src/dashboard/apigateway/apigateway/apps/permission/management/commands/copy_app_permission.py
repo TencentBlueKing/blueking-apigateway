@@ -19,6 +19,7 @@
 from django.core.management.base import BaseCommand
 
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
+from apigateway.utils.time import NeverExpiresTime
 
 
 class Command(BaseCommand):
@@ -36,7 +37,9 @@ class Command(BaseCommand):
                     "expires": src_perm.expires,
                 },
             )
-            if not created and src_perm.expires > dst_perm.expires:
+            if not created and (src_perm.expires or NeverExpiresTime.time) > (
+                dst_perm.expires or NeverExpiresTime.time
+            ):
                 dst_perm.expires = src_perm.expires
                 dst_perm.save(update_fields=["expires"])
 
@@ -51,7 +54,9 @@ class Command(BaseCommand):
                     "grant_type": src_perm.grant_type,
                 },
             )
-            if not created and src_perm.expires > dst_perm.expires:
+            if not created and (src_perm.expires or NeverExpiresTime.time) > (
+                dst_perm.expires or NeverExpiresTime.time
+            ):
                 dst_perm.expires = src_perm.expires
                 dst_perm.save(update_fields=["expires"])
 
@@ -64,7 +69,7 @@ class Command(BaseCommand):
                     f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, expires={src_perm.expires}"
                 )
             else:
-                if dst_perm.expires < src_perm.expires:
+                if (dst_perm.expires or NeverExpiresTime.time) < (src_perm.expires or NeverExpiresTime.time):
                     print(
                         f"update perm expires: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                         f"expires={src_perm.expires}"
@@ -89,7 +94,7 @@ class Command(BaseCommand):
                     f"resource_id={src_perm.resource_id}, expires={src_perm.expires}"
                 )
             else:
-                if dst_perm.expires < src_perm.expires:
+                if (dst_perm.expires or NeverExpiresTime.time) < (src_perm.expires or NeverExpiresTime.time):
                     print(
                         f"update perm expires: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
                         f"resource_id={src_perm.resource_id}, expires={src_perm.expires}"

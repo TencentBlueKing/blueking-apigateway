@@ -18,8 +18,9 @@
 #
 from typing import TYPE_CHECKING, Optional
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
+from django.db.models.utils import resolve_callables
 
 from apigateway.apps.permission.constants import (
     DEFAULT_PERMISSION_EXPIRE_DAYS,
@@ -28,13 +29,66 @@ from apigateway.apps.permission.constants import (
     GrantTypeEnum,
 )
 from apigateway.common.time import calculate_expires, calculate_renew_time
-from apigateway.utils.time import now_datetime
+from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 if TYPE_CHECKING:
     import datetime
 
 
-class AppGatewayPermissionManager(models.Manager):
+class PermissionQuerySet(models.QuerySet):
+    """Keep bulk writes consistent with the permission models' save boundary."""
+
+    def update(self, **kwargs):
+        if "expires" in kwargs and kwargs["expires"] is None:
+            kwargs["expires"] = NeverExpiresTime.time
+        return super().update(**kwargs)
+
+    def update_or_create(self, defaults=None, create_defaults=None, **kwargs):
+        update_defaults = defaults or {}
+        if create_defaults is None:
+            create_defaults = update_defaults
+        self._for_write = True
+        with transaction.atomic(using=self.db):
+            obj, created = self.select_for_update().get_or_create(create_defaults, **kwargs)
+            if created:
+                return obj, True
+            for name, value in resolve_callables(update_defaults):
+                setattr(obj, name, value)
+            update_fields = set(update_defaults)
+            if self.model._meta._non_pk_concrete_field_names.issuperset(update_fields):
+                # Django adds every DateTimeField to update_or_create's save fields.
+                # Add audit timestamps only, so omitted expires leaves legacy NULL intact.
+                for field in self.model._meta.local_concrete_fields:
+                    if getattr(field, "auto_now", False) or getattr(field, "auto_now_add", False):
+                        update_fields.add(field.name)
+                obj.save(using=self.db, update_fields=update_fields)
+            else:
+                obj.save(using=self.db)
+        return obj, False
+
+    def bulk_create(self, objs, *args, **kwargs):
+        objs = list(objs)
+        for obj in objs:
+            if obj.expires is None:
+                obj.expires = NeverExpiresTime.time
+        return super().bulk_create(objs, *args, **kwargs)
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        objs = tuple(objs)
+        fields = tuple(fields)
+        if "expires" in fields:
+            for obj in objs:
+                if obj.expires is None:
+                    obj.expires = NeverExpiresTime.time
+        return super().bulk_update(objs, fields, batch_size=batch_size)
+
+
+class PermissionManager(models.Manager):
+    def get_queryset(self):
+        return PermissionQuerySet(self.model, using=self._db, hints=self._hints)
+
+
+class AppGatewayPermissionManager(PermissionManager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
@@ -72,7 +126,7 @@ class AppGatewayPermissionManager(models.Manager):
         self.bulk_update(queryset, update_fields)
 
 
-class AppResourcePermissionManager(models.Manager):
+class AppResourcePermissionManager(PermissionManager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
