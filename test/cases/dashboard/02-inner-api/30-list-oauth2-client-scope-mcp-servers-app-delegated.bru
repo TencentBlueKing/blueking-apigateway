@@ -24,6 +24,6 @@ tests {
     var gateway = res.getBody().data.results.find(function(item) { return item.name === "httpbin"; });
     expect(gateway, "gateway httpbin is listed").to.exist;
     var names = gateway.mcp_servers.map(function(item) { return item.name; });
-    expect(names).to.include.members(["httpbin-mcp-server", "httpbin-mcp-server-sse"]);
+    expect(names).to.include.members(["httpbin-prod-httpbin-mcp-server", "httpbin-prod-httpbin-mcp-server-sse"]);
   });
 }
