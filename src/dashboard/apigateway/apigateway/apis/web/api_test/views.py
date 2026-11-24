@@ -91,6 +91,7 @@ class APITestApi(generics.CreateAPIView):
         sanitizer = DebugDataSanitizer()
         sanitizer.add_authorization(authorization)
         sanitizer.add_authorization(authorization_from_cookies)
+        sanitizer.add_authorization(data["query_params"])
         sanitizer.add_headers(data["headers"])
         sanitizer.add_headers(prepared_request_headers.headers)
 

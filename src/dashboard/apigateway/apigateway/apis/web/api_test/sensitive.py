@@ -147,6 +147,7 @@ class DebugDataSanitizer:
 
 def sanitize_history(request, response):
     sanitizer = DebugDataSanitizer()
+    sanitizer.add_authorization(request.get("query_params", {}))
     sanitizer.add_headers(request.get("headers", {}))
     response = dict(response)
     if isinstance(response.get("data"), dict):

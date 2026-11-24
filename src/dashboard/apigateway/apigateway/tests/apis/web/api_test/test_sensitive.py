@@ -17,7 +17,7 @@
 #
 import json
 import shlex
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus, urlencode
 
 import pytest
 
@@ -116,6 +116,27 @@ def test_history_removes_credentials_without_mutating_source(headers):
     assert clean_request["query_params"] == {"page": "2"}
     assert "old-token" not in json.dumps([clean_request, clean_response])
     assert "old-app-secret" not in json.dumps([clean_request, clean_response])
+    assert before == json.dumps([request, response])
+
+
+@pytest.mark.parametrize(
+    "secret_key", ["access_token", "BK_APP_SECRET", "app_secret", "bk_token", "bk_ticket", "skey"]
+)
+@pytest.mark.parametrize("secret", ["query-only-token", "query+token/with space="])
+def test_history_removes_query_credentials_without_mutating_source(secret_key, secret):
+    query_params = {secret_key: secret, "page": "2"}
+    url = f"http://example.com/?{urlencode(query_params)}"
+    request = {"headers": {}, "query_params": query_params, "body": secret}
+    response = {"error": f"request failed for {url}", "data": {"body": secret, "curl": shlex.join(["curl", url])}}
+    before = json.dumps([request, response])
+    clean_request, clean_response = sanitize_history(request, response)
+    assert clean_request["query_params"] == {secret_key: "***", "page": "2"}
+    assert clean_request["body"] == "***"
+    assert clean_response["error"] == f"request failed for http://example.com/?{secret_key}=***&page=2"
+    assert clean_response["data"]["body"] == "***"
+    assert f"{secret_key}=***&page=2" in clean_response["data"]["curl"]
+    for value in (secret, quote(secret, safe=""), quote_plus(secret)):
+        assert value not in json.dumps([clean_request, clean_response])
     assert before == json.dumps([request, response])
 
 
