@@ -23,6 +23,7 @@ from types import SimpleNamespace
 import pytest
 from ddf import G
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
@@ -61,6 +62,35 @@ def disable_app_permission(mocker):
         "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
+
+
+@pytest.mark.parametrize("size", [10 * 1024 * 1024 - 1, 10 * 1024 * 1024, 10 * 1024 * 1024 + 1])
+@pytest.mark.parametrize("filename", ["docs.zip", "docs.tgz"])
+def test_archive_upload_size_limit(request_view, fake_gateway, disable_app_permission, mocker, size, filename):
+    parser = mocker.patch("apigateway.apis.v2.sync.views.ArchiveParser.parse", return_value=[])
+    importer = mocker.patch("apigateway.apis.v2.sync.views.DocImporter.import_docs")
+
+    response = request_view(
+        method="POST",
+        view_name="openapi.v2.sync.resource_doc.import",
+        path_params={"gateway_name": fake_gateway.name},
+        gateway=fake_gateway,
+        format="multipart",
+        data={"file": SimpleUploadedFile(filename, b"x" * size)},
+    )
+
+    if size > 10 * 1024 * 1024:
+        assert response.status_code == 400
+        error = response.json()["error"]
+        assert error["code"] == "INVALID_ARGUMENT"
+        assert "file" in error["message"]
+        assert "10MB" in error["message"]
+        parser.assert_not_called()
+        importer.assert_not_called()
+    else:
+        assert response.status_code == 201
+        parser.assert_called_once()
+        importer.assert_called_once_with(docs=[])
 
 
 def _model_backend(name="openai-primary"):

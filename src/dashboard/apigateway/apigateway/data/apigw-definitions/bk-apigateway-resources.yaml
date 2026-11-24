@@ -5864,8 +5864,10 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: 资源文档的归档文件对象
+                  description: 资源文档的归档文件对象，最大 10MB（10,485,760 字节）
       responses:
+        '400':
+          description: 归档文件超过 10MB 或请求参数无效，错误码为 INVALID_ARGUMENT
         '201':
           description: 成功导入资源文档
           content:
