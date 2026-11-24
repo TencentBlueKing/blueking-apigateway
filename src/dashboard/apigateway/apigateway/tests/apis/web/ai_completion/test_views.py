@@ -17,6 +17,7 @@
 #
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import translation
 from django_dynamic_fixture import G
 
 from apigateway.apps.rbac.models import GatewayMember
@@ -41,8 +42,15 @@ def gateway_admin(fake_gateway):
 
 
 @pytest.mark.parametrize("selection", ["foreign", "mixed", "mixed_reverse", "missing"])
+@pytest.mark.parametrize(
+    "language, expected_message",
+    [
+        ("zh-cn", "文档不存在或不属于当前网关"),
+        ("en", "The document does not exist or does not belong to the current gateway."),
+    ],
+)
 def test_reject_invalid_ids_without_enqueue_or_translation(
-    request_view, fake_gateway, gateway_admin, documents, mocker, selection
+    request_view, fake_gateway, gateway_admin, documents, mocker, selection, language, expected_message
 ):
     local_doc, foreign_doc = documents
     ids = {
@@ -53,14 +61,16 @@ def test_reject_invalid_ids_without_enqueue_or_translation(
     }[selection]
     enqueue = mocker.patch("apigateway.apis.web.ai_completion.views.delay_on_commit")
     ai = mocker.patch("apigateway.apps.support.task.AIHandler.analyze_content")
-    response = request_view(
-        method="POST",
-        view_name="ai_completion.batch_translate",
-        path_params={"gateway_id": fake_gateway.id},
-        user=gateway_admin,
-        data={"doc_ids": ids},
-    )
+    with translation.override(language):
+        response = request_view(
+            method="POST",
+            view_name="ai_completion.batch_translate",
+            path_params={"gateway_id": fake_gateway.id},
+            user=gateway_admin,
+            data={"doc_ids": ids},
+        )
     assert response.status_code == 400, response.json()
+    assert expected_message in response.json()["error"]["message"]
     enqueue.assert_not_called()
     ai.assert_not_called()
     assert ResourceDoc.objects.count() == 2

@@ -414,6 +414,10 @@ msgstr "The port must be an integer between 1 and 65535."
 msgid "该主机或端口不允许使用。"
 msgstr "This host or port is not allowed."
 
+#: apigateway/apis/web/ai_completion/serializers.py:78
+msgid "文档不存在或不属于当前网关"
+msgstr "The document does not exist or does not belong to the current gateway."
+
 #: apigateway/apis/web/ai_completion/views.py:130
 msgid "网关下未找到需要翻译的文档"
 msgstr "No documents requiring translation were found under the gateway."
