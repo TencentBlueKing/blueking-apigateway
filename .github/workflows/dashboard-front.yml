@@ -58,6 +58,10 @@ jobs:
       run: pnpm run lint:ci:oxlint
       working-directory: src/dashboard-front
 
+    - name: Unit test
+      run: pnpm run test:unit
+      working-directory: src/dashboard-front
+
     # 构建期问题（Rolldown 报错、依赖互操作等）类型检查发现不了，CI 需实际构建一次
     - name: Build
       run: pnpm run build-only
