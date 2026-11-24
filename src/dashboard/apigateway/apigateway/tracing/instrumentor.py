@@ -43,10 +43,12 @@ def _get_result_code(value) -> int | str:
     return "[invalid]"
 
 
-def _set_request_id(span: Span, value):
+def _set_request_id(span: Span, value) -> bool:
     # Request IDs are opaque identifiers, never arbitrary response text or objects.
     if isinstance(value, str) and re.fullmatch(r"[a-zA-Z0-9_.:-]{1,128}", value):
         span.set_attribute("request_id", value)
+        return True
+    return False
 
 
 def requests_callback(span: Span, prepared_request: PreparedRequest, response: Response):
@@ -54,8 +56,9 @@ def requests_callback(span: Span, prepared_request: PreparedRequest, response: R
     if not span.is_recording():
         return
 
-    request_id = response.headers.get("x-bkapi-request-id") or response.headers.get("x-request-id")
-    _set_request_id(span, request_id)
+    has_request_id = _set_request_id(span, response.headers.get("x-bkapi-request-id")) or _set_request_id(
+        span, response.headers.get("x-request-id")
+    )
 
     # Session.send has read non-streaming bodies before this hook. Never consume
     # an unread stream solely for tracing; header request IDs are still available.
@@ -84,7 +87,7 @@ def requests_callback(span: Span, prepared_request: PreparedRequest, response: R
     if json_result.get("errors"):
         span.set_attribute("result_errors", "[redacted]")
 
-    if not request_id:
+    if not has_request_id:
         _set_request_id(span, json_result.get("request_id"))
 
 

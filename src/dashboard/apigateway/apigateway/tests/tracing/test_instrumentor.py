@@ -136,6 +136,43 @@ def test_request_id_sources(traced_request, headers, expected):
     assert span.attributes["request_id"] == expected
 
 
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        ({"x-bkapi-request-id": "invalid/id", "x-request-id": "valid-id"}, "valid-id"),
+        ({"x-bkapi-request-id": "x" * 129, "x-request-id": "valid-id"}, "valid-id"),
+        ({"x-request-id": "a1, a2"}, "body-id"),
+        ({"x-bkapi-request-id": "invalid/id"}, "body-id"),
+        ({"x-bkapi-request-id": "invalid/id", "x-request-id": "a1, a2"}, "body-id"),
+    ],
+)
+def test_invalid_header_request_id_falls_back(traced_request, headers, expected):
+    payload = {"code": 0, "request_id": "body-id"}
+    response, span = traced_request(payload, headers=headers)
+
+    assert response.json() == payload
+    assert span.status.status_code == StatusCode.OK
+    assert span.attributes["request_id"] == expected
+
+
+@pytest.mark.parametrize("secondary_id", ["stream-id", "a1, a2"])
+def test_streamed_response_only_falls_back_to_valid_headers(traced_request, mocker, secondary_id):
+    parse = mocker.patch.object(requests.Response, "json", side_effect=AssertionError("stream must remain unread"))
+    response, span = traced_request(
+        {"code": 1, "request_id": "body-id"},
+        stream=True,
+        headers={"x-bkapi-request-id": "invalid/id", "x-request-id": secondary_id},
+    )
+
+    assert not response._content_consumed
+    parse.assert_not_called()
+    assert "result_code" not in span.attributes
+    if secondary_id == "stream-id":
+        assert span.attributes["request_id"] == "stream-id"
+    else:
+        assert "request_id" not in span.attributes
+
+
 @pytest.mark.parametrize("body", [b"not JSON", b"[]", b"null", b'"text"'])
 def test_non_object_response_is_ignored(traced_request, body):
     response, span = traced_request(body=body, headers={"x-request-id": "request-1"})
