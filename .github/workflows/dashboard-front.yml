@@ -64,7 +64,16 @@ jobs:
 
     - name: Ensure Chromium for browser tests
       run: |
-        if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1 && ! command -v chromium-browser >/dev/null 2>&1; then
+        CHROME_PATH=""
+        for candidate in google-chrome chromium chromium-browser; do
+          if command -v "$candidate" >/dev/null 2>&1; then
+            CHROME_PATH="$(command -v "$candidate")"
+            break
+          fi
+        done
+        if [ -n "$CHROME_PATH" ]; then
+          echo "CHROME_BIN=$CHROME_PATH" >> "$GITHUB_ENV"
+        else
           pnpm exec playwright install chromium
         fi
       working-directory: src/dashboard-front
