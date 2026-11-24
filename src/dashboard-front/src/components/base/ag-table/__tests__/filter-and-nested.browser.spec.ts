@@ -22,6 +22,7 @@ import AgTable from '@/components/base/ag-table/Index.vue';
 import {
   FIXTURE_ROWS,
   type IMountedFixture,
+  cleanupFixtures,
   createDefaultColumns,
   findFilterPopup,
   mountIsolated,
@@ -41,10 +42,12 @@ describe('AgTable 单选筛选弹层与嵌套子表隔离', () => {
   });
 
   afterEach(() => {
-    while (fixtures.length) {
-      fixtures.pop()!.unmount();
+    try {
+      cleanupFixtures(fixtures);
     }
-    localStorage.clear();
+    finally {
+      localStorage.clear();
+    }
   });
 
   it('点击单选选项自动确认一次并关闭弹层，再次点击表头图标切换关闭不触发确认', async () => {
