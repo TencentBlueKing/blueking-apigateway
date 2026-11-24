@@ -27,6 +27,7 @@ import requests
 import responses
 from ddf import G
 
+from apigateway.apis.web.api_test.data_models import ApiDebugHistoryRequest
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.service.utils import get_resource_url
 from apigateway.tests.utils.testing import dummy_time
@@ -480,6 +481,61 @@ class TestAPITestAPIView:
 
 
 class TestAPIDebugHistoryApi:
+    @pytest.mark.parametrize("detail", [False, True])
+    @pytest.mark.parametrize("request_url", [None, ""])
+    def test_histories_preserve_empty_request_url(
+        self, detail, request_url, request_view, fake_gateway, fake_resource
+    ):
+        history_request = ApiDebugHistoryRequest(
+            request_url=request_url,
+            headers={"Authorization": "Bearer legacy-history-ticket"},
+            body=json.dumps({"echo": "issued-history-ticket", "name": "ordinary"}),
+        ).model_dump()
+        history = G(
+            APIDebugHistory,
+            gateway=fake_gateway,
+            resource_name=fake_resource.name,
+            request=history_request,
+            response={
+                "data": {
+                    "body": json.dumps(
+                        {"access_token": "issued-history-ticket", "echo": "issued-history-ticket", "count": 1}
+                    )
+                }
+            },
+        )
+        normal_history = G(
+            APIDebugHistory,
+            gateway=fake_gateway,
+            resource_name=fake_resource.name,
+            request=ApiDebugHistoryRequest(request_url="http://example.com/ordinary").model_dump(),
+            response={},
+        )
+        params = {"gateway_id": fake_gateway.id}
+        if detail:
+            params["id"] = history.id
+        response = request_view(
+            "GET",
+            "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list",
+            path_params=params,
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 200
+        data = response.json()["data"]
+        items = {item["id"]: item for item in ([data] if detail else data)}
+        item = items[history.id]
+        assert item["request"]["request_url"] == request_url
+        assert item["request"]["headers"] == {}
+        assert json.loads(item["request"]["body"]) == {"echo": "***", "name": "ordinary"}
+        assert json.loads(item["response"]["data"]["body"]) == {"access_token": "***", "echo": "***", "count": 1}
+        assert "legacy-history-ticket" not in response.content.decode()
+        assert "issued-history-ticket" not in response.content.decode()
+        if not detail:
+            assert set(items) == {history.id, normal_history.id}
+            assert items[normal_history.id]["request"]["request_url"] == "http://example.com/ordinary"
+        history.refresh_from_db()
+        assert history.request == history_request
+
     @pytest.mark.parametrize("detail", [False, True])
     @pytest.mark.parametrize("source", ["body", "cookie"])
     def test_old_response_only_credentials_are_hidden(self, detail, source, request_view, fake_gateway, fake_resource):

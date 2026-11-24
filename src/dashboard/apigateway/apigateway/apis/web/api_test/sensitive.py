@@ -167,6 +167,8 @@ class DebugDataSanitizer:
         return data
 
     def clean_url(self, url):
+        if url is None:
+            return None
         try:
             parsed = urlsplit(url)
         except ValueError:
