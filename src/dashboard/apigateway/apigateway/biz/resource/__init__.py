@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from .models import ResourceAuthConfig, ResourceAuthFilterType, ResourceBackendConfig, ResourceData
 from .openapi_schema import ResourceOpenAPISchemaHandler
 from .path_conflicts import find_resource_path_conflicts
 from .proxy import ProxyHandler
@@ -25,6 +25,7 @@ from .savers import ResourcesSaver
 __all__ = [
     # constant
     # Enum
+    "ResourceAuthFilterType",
     # class
     "ProxyHandler",
     "ResourceAuthConfig",

@@ -239,6 +239,79 @@ class TestResourceListCreateApi:
             assert resources[resource_2.id]["auth_config"]["auth_verified_required"] is False
 
     @pytest.mark.parametrize(
+        "query, expected_names, expected_count",
+        [
+            ({"auth_type": "none"}, ["none"], 1),
+            ({"auth_type": "app"}, ["app"], 1),
+            ({"auth_type": "personal"}, ["all_user_methods", "personal"], 2),
+            ({"auth_type": "public"}, ["all_user_methods", "public"], 2),
+            ({"auth_type": "oauth"}, ["all_user_methods", "oauth"], 2),
+            ({"auth_type": "personal,public"}, ["all_user_methods", "personal", "public"], 3),
+            ({"auth_type": "personal,public", "limit": 1, "offset": 1}, ["personal"], 3),
+            ({"auth_type": "app,oauth", "keyword": "oauth"}, ["oauth"], 1),
+            (
+                {"auth_type": ""},
+                ["all_user_methods", "app", "legacy", "none", "oauth", "personal", "public", "user"],
+                8,
+            ),
+        ],
+    )
+    def test_list_filter_by_auth_type(
+        self, request_view, fake_gateway, fake_backend, query, expected_names, expected_count
+    ):
+        auth_context = ResourceAuthContext()
+        for name, user, app, personal, public in [
+            ("none", False, False, False, False),
+            ("app", False, True, True, True),
+            ("user", True, False, False, False),
+            ("personal", True, False, True, False),
+            ("public", True, False, False, True),
+            ("oauth", True, True, False, False),
+            ("all_user_methods", True, True, True, True),
+            ("legacy", None, None, False, False),
+        ]:
+            resource = G(
+                Resource,
+                gateway=fake_gateway,
+                name=name,
+                path=f"/{name}/",
+                oauth2_personal_client_enabled=personal,
+                oauth2_public_client_enabled=public,
+            )
+            G(Proxy, resource=resource, backend=fake_backend)
+            if user is not None:
+                auth_context.save(
+                    resource.id,
+                    dict(
+                        ResourceHandler.get_default_auth_config(),
+                        auth_verified_required=user,
+                        app_verified_required=app,
+                    ),
+                )
+
+        response = request_view(
+            method="GET",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"order_by": "name", **query},
+        )
+
+        assert response.status_code == 200, response.json()
+        result = response.json()["data"]
+        assert result["count"] == expected_count
+        assert [resource["name"] for resource in result["results"]] == expected_names
+
+    def test_list_rejects_invalid_auth_type(self, request_view, fake_gateway):
+        response = request_view(
+            method="GET",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"auth_type": "app,invalid"},
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.parametrize(
         "data",
         [
             {
