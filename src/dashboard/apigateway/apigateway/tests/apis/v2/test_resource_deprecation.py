@@ -12,14 +12,7 @@ from unittest import mock
 
 import pytest
 
-from apigateway.core.models import Resource, ResourceVersion
-
-
-@pytest.fixture(autouse=True)
-def clear_resource_version_cache():
-    ResourceVersion.objects.get_resources.cache_clear()
-    yield
-    ResourceVersion.objects.get_resources.cache_clear()
+from apigateway.core.models import Resource
 
 
 @pytest.fixture

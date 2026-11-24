@@ -211,7 +211,6 @@ class TestResourceVersionManager:
         data[0].pop("kind", None)
         fake_resource_version_v2.data = data
         fake_resource_version_v2.save(update_fields=["_data"])
-        ResourceVersion.objects.get_resources.cache_clear()
 
         resources = ResourceVersion.objects.get_resources(
             fake_resource_version_v2.gateway_id,
@@ -221,7 +220,6 @@ class TestResourceVersionManager:
         assert resources[resource_id]["kind"] == constants.ResourceKindEnum.STANDARD.value
         assert resources[resource_id]["oauth2_public_client_enabled"] is False
         assert resources[resource_id]["oauth2_personal_client_enabled"] is False
-        ResourceVersion.objects.get_resources.cache_clear()
 
     def test_get_resources_includes_oauth2_client_switches(self, fake_resource_version_v2):
         data = fake_resource_version_v2.data
@@ -232,7 +230,6 @@ class TestResourceVersionManager:
         data[0]["contexts"]["resource_auth"]["config"] = json.dumps(auth_config)
         fake_resource_version_v2.data = data
         fake_resource_version_v2.save(update_fields=["_data"])
-        ResourceVersion.objects.get_resources.cache_clear()
 
         resources = ResourceVersion.objects.get_resources(
             fake_resource_version_v2.gateway_id,
@@ -241,7 +238,6 @@ class TestResourceVersionManager:
 
         assert resources[resource_id]["oauth2_public_client_enabled"] is True
         assert resources[resource_id]["oauth2_personal_client_enabled"] is True
-        ResourceVersion.objects.get_resources.cache_clear()
 
     def test_get_id_by_version(self, unique_id):
         gateway = G(Gateway)

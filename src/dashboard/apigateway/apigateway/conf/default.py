@@ -18,6 +18,7 @@
 #
 import hashlib
 import os
+import ssl
 from pathlib import Path
 from typing import List
 from urllib.parse import quote
@@ -393,9 +394,27 @@ REDIS_TLS_CERT_CA_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_CA_FILE", "")
 REDIS_TLS_CERT_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_FILE", "")
 REDIS_TLS_CERT_KEY_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_KEY_FILE", "")
 REDIS_TLS_CHECK_HOSTNAME = env.bool("BK_APIGW_REDIS_TLS_CHECK_HOSTNAME", True)
+# redis 部署模式：single / sentinel / cluster
+# 注意：cluster 模式下 celery 不能使用 redis，需要配置 rabbitmq 作为 broker，详见下方 celery 配置
+REDIS_MODE = env.str("BK_APIGW_REDIS_MODE", "") or "single"
+# sentinel / cluster 模式的节点地址（sentinel 模式为 sentinel 节点地址），格式：host1:port1,host2:port2
+REDIS_ADDRS = [addr.strip() for addr in env.list("BK_APIGW_REDIS_ADDRS", default=[])]
+# sentinel 节点自身的密码和 tls，与 redis 节点分开配置
+REDIS_SENTINEL_MASTER_NAME = env.str("BK_APIGW_REDIS_SENTINEL_MASTER_NAME", "mymaster")
+REDIS_SENTINEL_PASSWORD = env.str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "")
+REDIS_SENTINEL_TLS_ENABLED = env.bool("BK_APIGW_REDIS_SENTINEL_TLS_ENABLED", REDIS_TLS_ENABLED)
+
+if REDIS_MODE not in ("single", "sentinel", "cluster"):
+    raise ImproperlyConfigured(f"unsupported BK_APIGW_REDIS_MODE: {REDIS_MODE}, should be single / sentinel / cluster")
+if REDIS_MODE != "single" and not REDIS_ADDRS:
+    raise ImproperlyConfigured(f"BK_APIGW_REDIS_ADDRS is required in redis {REDIS_MODE} mode")
+if REDIS_MODE == "cluster" and REDIS_DB != 0:
+    raise ImproperlyConfigured("redis cluster only support db 0, please set BK_APIGW_REDIS_DB to 0")
 
 
 DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
+    "mode": REDIS_MODE,
+    "addrs": REDIS_ADDRS,
     "host": REDIS_HOST,
     "port": REDIS_PORT,
     "password": REDIS_PASSWORD,
@@ -406,6 +425,9 @@ DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "tls_cert_file": REDIS_TLS_CERT_FILE,
     "tls_cert_key_file": REDIS_TLS_CERT_KEY_FILE,
     "tls_check_hostname": REDIS_TLS_CHECK_HOSTNAME,
+    "sentinel_master_name": REDIS_SENTINEL_MASTER_NAME,
+    "sentinel_password": REDIS_SENTINEL_PASSWORD,
+    "sentinel_tls_enabled": REDIS_SENTINEL_TLS_ENABLED,
 }
 
 # redis lock 配置
@@ -444,7 +466,8 @@ RABBITMQ_PORT = env.str("BK_APIGW_RABBITMQ_PORT", "")
 RABBITMQ_HOST = env.str("BK_APIGW_RABBITMQ_HOST", "")
 RABBITMQ_USER = env.str("BK_APIGW_RABBITMQ_USER", "")
 RABBITMQ_PASSWORD = env.str("BK_APIGW_RABBITMQ_PASSWORD", "")
-if all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD]):
+RABBITMQ_ENABLED = all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD])
+if RABBITMQ_ENABLED:
     # this section not support tls, both rabbitmq and redis
     # KMS credentials are literal strings and may contain URL delimiters.
     # Keep the legacy URL construction unchanged when KMS is disabled.
@@ -480,6 +503,43 @@ else:
         broker_url = f"rediss://:{_redis_password}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}?{urllib.parse.urlencode(query_string_params)}"
         CELERY_BROKER_URL = broker_url
         CELERY_RESULT_BACKEND = broker_url
+
+# redis sentinel 模式：celery 通过 sentinel 获取 master 地址
+if REDIS_MODE == "sentinel":
+    _redis_password = quote(REDIS_PASSWORD, safe="")
+    CELERY_RESULT_BACKEND = ";".join(f"sentinel://:{_redis_password}@{addr}/{REDIS_DB}" for addr in REDIS_ADDRS)
+    _redis_ssl_options = {
+        "ssl_cert_reqs": ssl.CERT_REQUIRED,
+        "ssl_ca_certs": REDIS_TLS_CERT_CA_FILE or None,
+        "ssl_certfile": REDIS_TLS_CERT_FILE or None,
+        "ssl_keyfile": REDIS_TLS_CERT_KEY_FILE or None,
+        "ssl_check_hostname": REDIS_TLS_CHECK_HOSTNAME,
+    }
+    CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
+        "master_name": REDIS_SENTINEL_MASTER_NAME,
+        "sentinel_kwargs": {
+            "password": REDIS_SENTINEL_PASSWORD,
+            "socket_timeout": REDIS_CONNECTION_OPTIONS["socket_timeout"],
+            "socket_connect_timeout": REDIS_CONNECTION_OPTIONS["socket_connect_timeout"],
+            **({"ssl": True, **_redis_ssl_options} if REDIS_SENTINEL_TLS_ENABLED else {}),
+        },
+    }
+    # support tls
+    if REDIS_TLS_ENABLED:
+        CELERY_REDIS_BACKEND_USE_SSL = _redis_ssl_options
+
+    if not RABBITMQ_ENABLED:
+        CELERY_BROKER_URL = CELERY_RESULT_BACKEND
+        CELERY_BROKER_TRANSPORT_OPTIONS = {**REDIS_CONNECTION_OPTIONS, **CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS}
+        if REDIS_TLS_ENABLED:
+            CELERY_BROKER_USE_SSL = _redis_ssl_options
+elif REDIS_MODE == "cluster":
+    # celery（kombu）不支持 redis cluster：
+    # - broker 必须使用 rabbitmq，未配置时启动直接报错，避免运行时才发现任务无法投递
+    # - 任务都不保存结果（CELERY_TASK_IGNORE_RESULT = True），不需要 result backend
+    if not RABBITMQ_ENABLED:
+        raise ImproperlyConfigured("redis cluster mode requires rabbitmq as celery broker")
+    CELERY_RESULT_BACKEND = None
 
 # 清理任务相关配置
 CLEAN_TABLE_INTERVAL_DAYS = env.int("CLEAN_TABLE_INTERVAL_DAYS", 365)

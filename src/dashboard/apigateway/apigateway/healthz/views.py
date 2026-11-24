@@ -18,12 +18,11 @@
 
 import logging
 
-import redis
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.generic import View
 
-from apigateway.utils.redis_utils import get_redis_pool
+from apigateway.utils.redis_utils import new_redis_client
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 logger = logging.getLogger(__name__)
@@ -83,8 +82,9 @@ class HealthzView(View):
 
     def _check_redis(self):
         config = getattr(settings, "CHANNEL_REDIS_CONFIG", None)
-        client = redis.Redis(connection_pool=get_redis_pool(config))
+        client = None
         try:
+            client = new_redis_client(config)
             client.ping()
 
             key = "apigateway_healthz_check"
@@ -94,3 +94,7 @@ class HealthzView(View):
         except Exception:  # pylint: disable=broad-except
             logger.exception("healthz redis check failed")
             raise CheckError("check redis failed")
+        finally:
+            # 每次检查都会新建连接，检查完成后关闭，避免连接泄漏
+            if client is not None:
+                client.close()

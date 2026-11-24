@@ -77,6 +77,8 @@ def envelope(monkeypatch, tmp_path, private_key):
         "BK_APIGW_RABBITMQ_USER",
         "BK_APIGW_RABBITMQ_PASSWORD",
         "BKREPO_ENDPOINT_URL",
+        "BK_APIGW_REDIS_MODE",
+        "BK_APIGW_REDIS_SENTINEL_PASSWORD",
         "DEFAULT_PYPI_REPOSITORY_URL",
         "DEFAULT_PYPI_INDEX_URL",
         "DEFAULT_MAVEN_REPOSITORY_URL",
@@ -230,6 +232,21 @@ def test_complete_rabbitmq_config_requires_kms_credentials(monkeypatch, envelope
         assert broker.scheme == "amqp"
         assert broker.username == "rabbit-user"
         assert broker.password == "rabbit-password"
+
+
+def test_sentinel_password_is_optional(monkeypatch, envelope, credentials):
+    monkeypatch.setenv("BK_APIGW_REDIS_MODE", "sentinel")
+    envelope(credentials)
+    # sentinel 节点可以不设密码，KMS 中没有时不报错
+    assert kms.get_env().str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "") == ""
+
+    credentials["redis"]["sentinel"] = {"password": "sentinel@:密码"}
+    envelope(credentials)
+    assert kms.get_env().str("BK_APIGW_REDIS_SENTINEL_PASSWORD") == "sentinel@:密码"
+
+    # 非 sentinel 模式不读取 sentinel 密码
+    monkeypatch.setenv("BK_APIGW_REDIS_MODE", "single")
+    assert kms.get_env().str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "") == ""
 
 
 def test_pypi_download_index_needs_no_upload_credentials(monkeypatch, envelope, credentials):

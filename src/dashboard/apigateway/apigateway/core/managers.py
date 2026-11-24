@@ -21,10 +21,10 @@ import json
 import operator
 from typing import Any, Dict, List, Optional
 
-from cachetools import TTLCache, cached
 from django.db import models
 
-from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
+from apigateway.common.cache import cache_on_arguments
+from apigateway.common.constants import CACHE_TIME_24_HOURS
 from apigateway.core.constants import (
     BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE,
     DEFAULT_STAGE_NAME,
@@ -59,7 +59,8 @@ class ResourceVersionManager(models.Manager):
         """
         return self.filter(gateway_id=gateway_id).last()
 
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
+    # 处理逻辑调整时，需更新 namespace 使旧缓存失效
+    @cache_on_arguments(expiration_time=CACHE_TIME_24_HOURS, namespace="v1")
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
         resource_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:

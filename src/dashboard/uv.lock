@@ -51,7 +51,6 @@ dependencies = [
     { name = "bkapi-component-open" },
     { name = "bkpaas-auth" },
     { name = "blue-krill" },
-    { name = "cachetools" },
     { name = "celery" },
     { name = "certifi" },
     { name = "concurrent-log-handler" },
@@ -67,6 +66,7 @@ dependencies = [
     { name = "djangoql" },
     { name = "djangorestframework" },
     { name = "docutils" },
+    { name = "dogpile-cache" },
     { name = "drf-spectacular" },
     { name = "drf-spectacular-sidecar" },
     { name = "elasticsearch" },
@@ -138,7 +138,6 @@ dev = [
     { name = "responses" },
     { name = "rope" },
     { name = "ruff" },
-    { name = "types-cachetools" },
     { name = "types-docutils" },
     { name = "types-pymysql" },
     { name = "types-python-dateutil" },
@@ -161,7 +160,6 @@ requires-dist = [
     { name = "bkapi-component-open", specifier = "==2.1.0" },
     { name = "bkpaas-auth", specifier = "==4.4.0" },
     { name = "blue-krill", specifier = "==3.1.1" },
-    { name = "cachetools", specifier = "==7.1.8" },
     { name = "celery", specifier = "==5.6.3" },
     { name = "certifi", specifier = "==2026.7.22" },
     { name = "concurrent-log-handler", specifier = "==0.9.29" },
@@ -177,6 +175,7 @@ requires-dist = [
     { name = "djangoql", specifier = "==0.19.1" },
     { name = "djangorestframework", specifier = "==3.18.1" },
     { name = "docutils", specifier = ">=0.20.1" },
+    { name = "dogpile-cache", specifier = "==1.5.0" },
     { name = "drf-spectacular", specifier = "==0.30.0" },
     { name = "drf-spectacular-sidecar", specifier = "==2026.9.1" },
     { name = "elasticsearch", specifier = "==7.17.13" },
@@ -248,7 +247,6 @@ dev = [
     { name = "responses", specifier = "==0.26.3" },
     { name = "rope", specifier = "==1.14.0" },
     { name = "ruff", specifier = "==0.16.7" },
-    { name = "types-cachetools", specifier = "==7.0.0.20260713" },
     { name = "types-docutils", specifier = "==0.23.0.20260911" },
     { name = "types-pymysql", specifier = "==1.2.0.20260807" },
     { name = "types-python-dateutil", specifier = "==2.9.0.20260807" },
@@ -517,15 +515,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/19/54/0b026611c5bf4f6a01f069294a68108c51e8619167cb1b2cd6c1d5a2450e/blue_krill-3.1.1.tar.gz", hash = "sha256:01ad73b29ccabecf58ef26fb886240714cee9f3f046cbd6fffa61a3b734a879c", size = 63951, upload-time = "2026-06-30T11:32:10.353Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/3b/a155a9b7c4fd625c15df7efd8fa84aec27c7cc4e3bcc5539c5009d280dca/blue_krill-3.1.1-py3-none-any.whl", hash = "sha256:7b797ba24e4079ae6b142b37a4b4bbdf2b0047048ccfac20fbaac8fce2019e15", size = 97162, upload-time = "2026-06-30T11:32:08.218Z" },
-]
-
-[[package]]
-name = "cachetools"
-version = "7.1.8"
-source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/4b/39/9a4689914dd907915cee74733b95888fc1d8a21aad47a24a0a2deec73ac4/cachetools-7.1.8.tar.gz", hash = "sha256:1221d547a0b24b7f26fa891d40d488b5258beab9aebd8ed68c729be3af849c43", size = 40909, upload-time = "2026-08-31T19:02:53.985Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/3d/9487690d0e937854db587205c66bab3c3cf88d9f00ed380b74cb88cc94ee/cachetools-7.1.8-py3-none-any.whl", hash = "sha256:a81e3844acaa7355b6567f97bd67a94a14ec3a9bc2cbbdae45b9592cc036775b", size = 16842, upload-time = "2026-08-31T19:02:52.554Z" },
 ]
 
 [[package]]
@@ -869,6 +858,15 @@ wheels = [
 ]
 
 [[package]]
+name = "decorator"
+version = "5.3.2"
+source = { registry = "https://pypi.org/simple/" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/a2/dc08c667e7e51cb035ffab38ae98d7d0f249092591130db4f67dc26b0021/decorator-5.3.2.tar.gz", hash = "sha256:d9883f1b8259e3bfc42565d0bc6fdc760012008552aa449f75efd2d48319b82b", size = 62733, upload-time = "2026-11-21T05:12:51.05Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/bb/03ad4489fe19a410fe0065bbfb5424d28455eac9115e9cee7a56b6b1ec37/decorator-5.3.2-py3-none-any.whl", hash = "sha256:d3fb2a434ac31e231d14175ecbda823d83f26b7e45270cd7cd4d0350264b79e2", size = 11830, upload-time = "2026-11-21T05:12:50.003Z" },
+]
+
+[[package]]
 name = "distlib"
 version = "0.4.3"
 source = { registry = "https://pypi.org/simple/" }
@@ -1019,6 +1017,19 @@ source = { registry = "https://pypi.org/simple/" }
 sdist = { url = "https://files.pythonhosted.org/packages/1f/53/a5da4f2c5739cf66290fac1431ee52aff6851c7c8ffd8264f13affd7bcdd/docutils-0.20.1.tar.gz", hash = "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b", size = 2058365, upload-time = "2023-05-16T23:39:19.748Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/26/87/f238c0670b94533ac0353a4e2a1a771a0cc73277b88bff23d3ae35a256c1/docutils-0.20.1-py3-none-any.whl", hash = "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6", size = 572666, upload-time = "2023-05-16T23:39:15.976Z" },
+]
+
+[[package]]
+name = "dogpile-cache"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple/" }
+dependencies = [
+    { name = "decorator" },
+    { name = "stevedore" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e7/c8/301ff89746e76745b937606df4753c032787c59ecb37dd4d4250bddc8929/dogpile_cache-1.5.0.tar.gz", hash = "sha256:849c5573c9a38f155cd4173103c702b637ede0361c12e864876877d0cd125eec", size = 947962, upload-time = "2025-10-11T17:35:36.898Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/80/12235e5b75bb2c586733280854f131b86051e0bbdfb55349ff70d0f72cf9/dogpile_cache-1.5.0-py3-none-any.whl", hash = "sha256:dc7b47d37844db15e8fdc0243c1b58857a2ddc52a5118237a97127bac200e18d", size = 64447, upload-time = "2025-10-11T17:35:38.573Z" },
 ]
 
 [[package]]
@@ -3011,6 +3022,15 @@ wheels = [
 ]
 
 [[package]]
+name = "stevedore"
+version = "5.10.0"
+source = { registry = "https://pypi.org/simple/" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/ec/b628c3b1613fe9340de1c5daba957f5b152159ac350b6ce4ad3d2469f822/stevedore-5.10.0.tar.gz", hash = "sha256:6005f32c09dc3159802a61c04862770e439e32db22f6da78ba56e8a735466882", size = 520466, upload-time = "2026-11-12T11:47:05.38Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/78/918aaff2864a8829d061db40acb9da04c89e5c3a01d65932b34432ebd78b/stevedore-5.10.0-py3-none-any.whl", hash = "sha256:47c48dc09e75933106c1bba0a7690eef3b5acecdb807df6d47cc40b2532fa927", size = 56789, upload-time = "2026-11-12T11:47:04.273Z" },
+]
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 source = { registry = "https://pypi.org/simple/" }
@@ -3077,15 +3097,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/92/3c/58f808a359700f39a967dffede33efeac809262c03303fa3eec6afff8f49/twine-7.0.0.tar.gz", hash = "sha256:85cdb29c518efef867360ae4acd4b0dfd61c8654a22fca08e6f8539f05022177", size = 215032, upload-time = "2026-07-27T15:59:00.825Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/96/08/ddcdc06225eaad6de0e48e1002b06d919dbde20582d0662c7af51308e5d6/twine-7.0.0-py3-none-any.whl", hash = "sha256:b854164df26db268af05f49aa5c0344b10e27a494343ff05b1e0bad3b135f5a7", size = 43204, upload-time = "2026-07-27T15:58:59.26Z" },
-]
-
-[[package]]
-name = "types-cachetools"
-version = "7.0.0.20260713"
-source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/34/64/66d7efdb36ecf6826aca5415e59fe2df96e97d24157147e53acfbe8dda11/types_cachetools-7.0.0.20260713.tar.gz", hash = "sha256:f1acf079e9c66a81e096a897ef0b261a82117cf856834e37b4bd0c9a116a076a", size = 10199, upload-time = "2026-07-13T05:22:21.845Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/c7/d3525c9dbdc1be7786bad46655ef051b6e7993f656d304719ec40079c91c/types_cachetools-7.0.0.20260713-py3-none-any.whl", hash = "sha256:6db9bcc7a3840d39e91c04117d85a9d0937eacc9d14d12a873e2b01a2d24a71d", size = 9615, upload-time = "2026-07-13T05:22:20.76Z" },
 ]
 
 [[package]]

@@ -23,8 +23,6 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 CACHE_TIME_5_MINUTES = 5 * 60
 CACHE_TIME_24_HOURS = 24 * 3600
 
-CACHE_MAXSIZE = 2000
-
 
 class LanguageCodeEnum(StructuredEnum):
     EN = EnumField("en", "en")

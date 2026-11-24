@@ -19,9 +19,9 @@
 
 from typing import Dict, List, Tuple
 
-from cachetools import TTLCache, cached
 from django.conf import settings
 
+from apigateway.common.cache import cache_on_arguments
 from apigateway.common.tenant.constants import TENANT_MODE_SINGLE_DEFAULT_TENANT_ID, TenantModeEnum
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
@@ -105,7 +105,7 @@ def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
     return tenant_mode, tenant_id
 
 
-@cached(cache=TTLCache(maxsize=100, ttl=60))
+@cache_on_arguments(expiration_time=60)
 def get_app_tenant_info_cached(app_code: str) -> Tuple[str, str]:
     return get_app_tenant_info(app_code)
 
@@ -126,7 +126,7 @@ def list_apps_of_tenant(
     return result["count"], result["results"]
 
 
-@cached(cache=TTLCache(maxsize=100, ttl=300))
+@cache_on_arguments(expiration_time=300)
 def list_all_apps_of_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
     """get apps of specific tenant
 
@@ -158,7 +158,7 @@ def list_all_apps_of_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
     return all_results
 
 
-@cached(cache=TTLCache(maxsize=100, ttl=300))
+@cache_on_arguments(expiration_time=300)
 def list_available_apps_for_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
     """get apps of tenant global + specific tenant
 
