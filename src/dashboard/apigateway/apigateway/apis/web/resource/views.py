@@ -76,11 +76,11 @@ from .serializers import (
     ResourceInputSLZ,
     ResourceLabelUpdateInputSLZ,
     ResourceListOutputSLZ,
+    ResourceListQueryInputSLZ,
     ResourceOutputSLZ,
     ResourcePathConflictCheckInputSLZ,
     ResourcePathConflictCheckOutputSLZ,
     ResourcePathConflictListOutputSLZ,
-    ResourceQueryInputSLZ,
     ResourceWithVerifiedUserRequiredOutputSLZ,
 )
 
@@ -98,7 +98,7 @@ class BackendHostIsEmpty(Exception):
     name="get",
     decorator=extend_schema(
         description="获取资源列表，分页",
-        parameters=[ResourceQueryInputSLZ],
+        parameters=[ResourceListQueryInputSLZ],
         responses={status.HTTP_200_OK: ResourceListOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
     ),
@@ -116,7 +116,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
 
     def list(self, request, *args, **kwargs):
-        slz = ResourceQueryInputSLZ(data=request.query_params)
+        slz = ResourceListQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         queryset = ResourceHandler.filter_by_resource_filter_condition(
