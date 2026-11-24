@@ -1075,6 +1075,8 @@ class MCPServerRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class GetDatetimeApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
     def retrieve(self, request, *args, **kwargs):
         # get tz_name from request.params
         slz = GetDatetimeInputSLZ(data=request.query_params)
@@ -1105,6 +1107,8 @@ class GetDatetimeApi(generics.RetrieveAPIView):
     ),
 )
 class GetCurrentUnixTimestampApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
     def retrieve(self, request, *args, **kwargs):
         slz = GetCurrentUnixTimestampOutputSLZ({"unix_timestamp": int(time.time())})
         return OKJsonResponse(data=slz.data)
@@ -1120,6 +1124,8 @@ class GetCurrentUnixTimestampApi(generics.RetrieveAPIView):
     ),
 )
 class ParseDatetimeStrToTimestampApi(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
     def post(self, request, *args, **kwargs):
         slz = ParseDatetimeStrToTimestampInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
@@ -1150,6 +1156,8 @@ class ParseDatetimeStrToTimestampApi(generics.CreateAPIView):
     ),
 )
 class LogSearchByRequestIdApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
     def retrieve(self, request, *args, **kwargs):
         slz = LogSearchByRequestIdInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
