@@ -16,8 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import re
 import shlex
-from urllib.parse import quote, quote_plus
+from urllib.parse import quote, quote_plus, unquote_plus
 
 from django.conf import settings
 
@@ -47,6 +48,22 @@ class DebugDataSanitizer:
         for key, value in authorization.items():
             if key.lower() in SENSITIVE_KEYS:
                 self._add_secret(value)
+
+    def add_query_credentials(self, data):
+        # Old histories already masked query_params before saving, but their
+        # error URLs/curls could retain the values. Recover those values before
+        # cleaning any output so their echoes are also removed from the copy.
+        if isinstance(data, dict):
+            for value in data.values():
+                self.add_query_credentials(value)
+        elif isinstance(data, list):
+            for value in data:
+                self.add_query_credentials(value)
+        elif isinstance(data, str):
+            for key, value in re.findall(r"[?&]([^=&\s'\"<>#]+)=([^&\s'\"<>#)]*)", data):
+                if unquote_plus(key).lower() in SENSITIVE_KEYS:
+                    self._add_secret(value)
+                    self._add_secret(unquote_plus(value))
 
     def add_headers(self, headers):
         login_cookie_names = SENSITIVE_KEYS | {
@@ -148,6 +165,7 @@ class DebugDataSanitizer:
 def sanitize_history(request, response):
     sanitizer = DebugDataSanitizer()
     sanitizer.add_authorization(request.get("query_params", {}))
+    sanitizer.add_query_credentials([request, response])
     sanitizer.add_headers(request.get("headers", {}))
     response = dict(response)
     if isinstance(response.get("data"), dict):

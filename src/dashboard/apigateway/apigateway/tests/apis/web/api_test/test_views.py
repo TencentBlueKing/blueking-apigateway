@@ -579,6 +579,46 @@ class TestAPITestAPIView:
 
 class TestAPIDebugHistoryApi:
     @pytest.mark.parametrize("detail", [False, True])
+    @pytest.mark.parametrize("successful", [False, True])
+    @pytest.mark.parametrize("query_token", ["legacy-query-token", "legacy+token/with space="])
+    def test_masked_old_history_query_credentials_are_hidden(
+        self, detail, successful, query_token, request_view, fake_gateway, fake_resource
+    ):
+        query_params = {"access_token": "***", "page": "2"}
+        url = f"http://example.com/?{urlencode({'access_token': query_token, 'page': '2'})}"
+        stored_response = (
+            {"error": None, "data": {"curl": shlex.join(["curl", url]), "body": query_token}}
+            if successful
+            else {"error": f"request failed for {url}", "data": None}
+        )
+        history = G(
+            APIDebugHistory,
+            resource_name=fake_resource.name,
+            gateway=fake_gateway,
+            request={"headers": {}, "query_params": query_params},
+            response=stored_response,
+        )
+        params = {"gateway_id": fake_gateway.id}
+        if detail:
+            params["id"] = history.id
+        response = request_view(
+            "GET", "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list", path_params=params
+        )
+        assert response.status_code == 200
+        item = response.json()["data"] if detail else response.json()["data"][0]
+        assert item["request"]["query_params"] == query_params
+        if successful:
+            assert "access_token=***&page=2" in item["response"]["data"]["curl"]
+            assert item["response"]["data"]["body"] == "***"
+        else:
+            assert item["response"]["error"] == "request failed for http://example.com/?access_token=***&page=2"
+        for value in (query_token, quote(query_token, safe=""), quote_plus(query_token)):
+            assert value not in response.content.decode()
+        history.refresh_from_db()
+        assert history.request["query_params"] == query_params
+        assert history.response == stored_response
+
+    @pytest.mark.parametrize("detail", [False, True])
     def test_old_history_query_credentials_are_hidden(self, detail, request_view, fake_gateway, fake_resource):
         query_params = {"access_token": "old-query-token", "page": "2"}
         url = f"http://example.com/?{urlencode(query_params)}"
