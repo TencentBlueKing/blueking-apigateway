@@ -16,4 +16,6 @@ headers {
 
 assert {
   res.status: eq 400
+  res.body.error.code: eq INVALID_ARGUMENT
+  res.body.error.message: contains oauth_client_type
 }

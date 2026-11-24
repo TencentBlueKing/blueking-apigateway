@@ -1,0 +1,40 @@
+meta {
+  name: app-token-audience-mismatch
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_verify
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{oauth2_app_only_token}}
+}
+
+script:pre-request {
+  // the smoke gateway is synced without oauth2_app_enabled, so the app channel is on by default;
+  // the token audience only covers the oauth2-app gateway.
+  // needs a real bkauth token issued to the test_bk_app_code app;
+  // skipped when the env var is empty, unless oauth2_app_tokens_required is true
+  if (!bru.getEnvVar("oauth2_app_only_token")) {
+    if (String(bru.getEnvVar("oauth2_app_tokens_required")) === "true") {
+      throw new Error("oauth2_app_only_token is required");
+    }
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+}
+
+tests {
+  test("the audience does not cover the gateway", function() {
+    expect(res.getHeader("www-authenticate")).to.contain('error="invalid_token"');
+  });
+}

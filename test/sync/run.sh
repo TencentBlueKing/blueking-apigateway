@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 CURRENT_DIR=$(pwd)
 
 if [[ -z $1 ]]; then

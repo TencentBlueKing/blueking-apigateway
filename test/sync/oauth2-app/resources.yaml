@@ -126,6 +126,31 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
+  /ats_bearer:
+    get:
+      operationId: ats_bearer
+      description: 'user and app verified, bound bk-access-token-source with source bearer'
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /anything/ats_bearer
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-access-token-source
+          yaml: 'source: bearer'
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
   /none:
     get:
       operationId: none

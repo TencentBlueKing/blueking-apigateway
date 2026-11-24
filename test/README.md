@@ -62,21 +62,27 @@ docker run --rm apigateway_test:latest
 
 `sync/run.sh` 会导入两个网关：`oauth2-app`（应用通道开关打开）和 `oauth2-app-off`（开关关闭）。
 `oauth2_app_enabled` 只有 v2 同步接口支持，所以这两个网关使用 apigw-manager 5.x 导入。
-对应用例在 `cases/apisix/08-plugins/023-bk-oauth2-app-access/` 和 `cases/dashboard/02-inner-api/25~28`。
+对应用例在 `cases/apisix/08-plugins/023-bk-oauth2-app-access/` 和 `cases/dashboard/02-inner-api/25~31`。
+`smoke` 等用 apigw-manager 4.x 导入的网关没有传开关，默认开启应用通道，`001-bk-auth` 等现有用例同时验证旧凭证在这类路由上的兼容。
 
 环境要求：
 
-- APISIX 的 Helm values 配置了 `bk_gateway.bk_oauth2.bearer_token_rules`（例如 `^bk[oprs]_` 和 `^tai_pat_`）；未配置时应用通道不生效，相关用例会失败
-- bkauth 自省接口可用：用例中的 `bko_`/`bkp_`/`bkr_` token 都是未注册的，期望 bkauth 返回 inactive
+- APISIX 版本不低于 3.16，否则 Dashboard 不下发 OAuth2 插件
+- APISIX 配置了 `bk_gateway.hosts.bk-apigateway-api.tmpl`，401 响应的 `WWW-Authenticate` 才带 `resource_metadata`
+- `bk_gateway.bk_oauth2.bearer_token_rules` 可不配置，默认前缀为 `^bk[oprs]_`、`^tai_pat_`；如果覆盖，需要包含 `^bkp_`、`^bko_`、`^bkr_`
+- bkauth 自省接口可用：用例中的 `bko_`/`bkp_`/`bkr_` token 都是未注册的（包括格式不完整的 `bkp_short`），bkauth 需返回 200 且 `active=false`；返回非 200 时网关响应 503，相关用例会失败
+- `access_token` 环境变量是有效的旧版 access_token（与 `001-bk-auth` 相同）
 - 导入后约 30 秒数据面才加载新版本，需等待后再运行用例
 
-以下用例需要真实的 bkauth token，环境变量为空时跳过（`bru.runner.skipRequest()`）：
+以下用例需要真实的 bkauth token，需用 `bru run` 运行；环境变量为空时用 `bru.runner.skipRequest()` 跳过：
 
-- `oauth2_app_delegated_token`：签发给 `test_bk_app_code` 的用户委托 token，audience 覆盖 `gateway:oauth2-app/api:*`
-- `oauth2_app_only_token`：签发给 `test_bk_app_code` 的应用 token，audience 同上
+- `oauth2_app_delegated_token`：签发给 `test_bk_app_code` 的用户委托 token，audience 只覆盖 `gateway:oauth2-app/api:*`
+- `oauth2_app_only_token`：签发给 `test_bk_app_code` 的应用 token，audience 同上；不能覆盖 `smoke` 网关（`36-app-token-audience-mismatch` 用它验证 audience 不匹配）
+
+跳过时不会验证真实 token 的放行与拒绝。上线验收需提供 token，并设置 `oauth2_app_tokens_required=true`，缺少 token 时用例直接失败：
 
 ```
-bru run . -r --env e2e --env-var oauth2_app_delegated_token=<token> --env-var oauth2_app_only_token=<token>
+bru run . -r --env e2e --env-var oauth2_app_delegated_token=<token> --env-var oauth2_app_only_token=<token> --env-var oauth2_app_tokens_required=true
 ```
 
 ## 规范

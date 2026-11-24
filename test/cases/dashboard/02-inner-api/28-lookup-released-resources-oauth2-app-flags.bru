@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/oauth2-app/released-resources/-/lookup/?names=ua_p1,app_p1,u_personal,ats_apikey
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/oauth2-app/released-resources/-/lookup/?names=ua_p1,app_p1,u_personal,ua_personal,ats_apikey,ats_bearer
   body: none
   auth: none
 }
@@ -20,8 +20,10 @@ assert {
 }
 
 tests {
+  // [oauth2_app_delegated_enabled, oauth2_app_only_enabled, oauth2_personal_client_enabled]
   function flags(name) {
     var item = res.getBody().data.find(function(r) { return r.name === name; });
+    expect(item, "resource " + name + " is returned").to.exist;
     return [item.oauth2_app_delegated_enabled, item.oauth2_app_only_enabled, item.oauth2_personal_client_enabled];
   }
 
@@ -37,7 +39,12 @@ tests {
     expect(flags("u_personal")).to.eql([false, false, true]);
   });
 
+  test("user and app verified personal resource accepts delegated tokens and the personal client", function() {
+    expect(flags("ua_personal")).to.eql([true, false, true]);
+  });
+
   test("bk-access-token-source blocks the app channel", function() {
     expect(flags("ats_apikey")).to.eql([false, false, false]);
+    expect(flags("ats_bearer")).to.eql([false, false, false]);
   });
 }

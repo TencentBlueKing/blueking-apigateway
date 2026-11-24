@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/oauth2/client-scopes/resources/?oauth_client_type=app_only&keyword=oauth2-app&page_size=100
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/oauth2/client-scopes/resources/?oauth_client_type=app_only&gateway_name=oauth2-app&limit=100
   body: none
   auth: none
 }
@@ -20,9 +20,15 @@ assert {
 }
 
 tests {
+  // gateway_name matches by substring, so both oauth2-app and oauth2-app-off are in range
+  function findGateway(gatewayName) {
+    return res.getBody().data.results.find(function(item) { return item.name === gatewayName; });
+  }
+
   function resourceNames(gatewayName) {
-    var gateway = res.getBody().data.results.find(function(item) { return item.name === gatewayName; });
-    return gateway ? gateway.resources.map(function(item) { return item.name; }) : null;
+    var gateway = findGateway(gatewayName);
+    expect(gateway, "gateway " + gatewayName + " is listed").to.exist;
+    return gateway.resources.map(function(item) { return item.name; });
   }
 
   test("app-only resources are listed", function() {
@@ -31,10 +37,12 @@ tests {
 
   test("user-required, bk-access-token-source and no-auth resources are not listed", function() {
     var names = resourceNames("oauth2-app");
-    expect(names).to.not.include.any.members(["ua_p1", "ua_personal", "u_personal", "ats_apikey", "none"]);
+    ["ua_p1", "ua_personal", "u_personal", "ats_apikey", "ats_bearer", "none"].forEach(function(name) {
+      expect(names).to.not.include(name);
+    });
   });
 
   test("a gateway with the app channel switched off is not listed", function() {
-    expect(resourceNames("oauth2-app-off")).to.be.null;
+    expect(findGateway("oauth2-app-off")).to.be.undefined;
   });
 }

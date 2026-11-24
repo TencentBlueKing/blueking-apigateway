@@ -15,8 +15,12 @@ headers {
 }
 
 script:pre-request {
-  // needs a real bkauth token issued to the test_bk_app_code app; skipped when the env var is empty
+  // needs a real bkauth token issued to the test_bk_app_code app;
+  // skipped when the env var is empty, unless oauth2_app_tokens_required is true
   if (!bru.getEnvVar("oauth2_app_only_token")) {
+    if (String(bru.getEnvVar("oauth2_app_tokens_required")) === "true") {
+      throw new Error("oauth2_app_only_token is required");
+    }
     bru.runner.skipRequest();
   }
 }
