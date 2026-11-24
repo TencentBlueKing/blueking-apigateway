@@ -23,7 +23,9 @@ import {
   FIXTURE_ROWS,
   type IFixtureRow,
   type IMountedFixture,
+  cleanupFixtures,
   createDefaultColumns,
+  findVisible,
   mountIsolated,
   waitUntil,
 } from './helpers';
@@ -41,10 +43,12 @@ describe('AgTable 行选择、跨页多选与视图数据隔离', () => {
   });
 
   afterEach(() => {
-    while (fixtures.length) {
-      fixtures.pop()!.unmount();
+    try {
+      cleanupFixtures(fixtures);
     }
-    localStorage.clear();
+    finally {
+      localStorage.clear();
+    }
   });
 
   it('远程分页下支持自定义勾选、跨页保留混合类型 rowKey 与返回恢复勾选态', async () => {
@@ -309,7 +313,7 @@ describe('AgTable 行选择、跨页多选与视图数据隔离', () => {
         colKey: 'name',
         title: 'Name',
       }],
-      disabledCheckSelection: () => false,
+      disabledCheckSelection: (row: Record<string, any>) => row.status === 'locked',
       onSelectionChange: (val: any) => {
         selState.value = val;
       },
@@ -358,11 +362,33 @@ describe('AgTable 行选择、跨页多选与视图数据隔离', () => {
       && selState.value.selections[0]?.tool_name === 'edited_alias'
       && selState.value.selections[0]?.name === 'Latest Server Name', fixture.errors);
 
-    // 缺 key 行移入不弹出业务禁用提示 Popover
-    const noKeyCheckbox = fixture.container.querySelectorAll<HTMLElement>('tbody .custom-ag-table-checkbox')[1];
-    noKeyCheckbox.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-    await new Promise(resolve => setTimeout(resolve, 150));
-    expect(document.body.textContent).not.toContain('Business disabled tip');
+    // 正反例对照：先验证业务禁用行移入确实会弹出业务禁用提示，再验证缺 key 行移入不弹出该提示
+    selRows.value = [
+      {
+        id: 2,
+        name: 'Locked Row',
+        status: 'locked',
+      },
+      { name: 'No Key Row' },
+    ];
+    await waitUntil(() =>
+      fixture.container.querySelector('tbody')?.textContent?.includes('Locked Row'), fixture.errors);
+
+    const checkboxes = fixture.container.querySelectorAll<HTMLElement>('tbody .custom-ag-table-checkbox');
+    const lockedTrigger = checkboxes[0].parentElement!;
+    lockedTrigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    await waitUntil(() =>
+      findVisible('.bk-popover')?.textContent?.includes('Business disabled tip'), fixture.errors);
+
+    lockedTrigger.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    await waitUntil(() =>
+      !findVisible('.bk-popover')?.textContent?.includes('Business disabled tip'), fixture.errors);
+
+    const noKeyTrigger = checkboxes[1].parentElement!;
+    noKeyTrigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    // row-selection-column 中 Popover popoverDelay=100ms，等待 250ms 后确认仍无可见业务提示弹层
+    await new Promise(resolve => setTimeout(resolve, 250));
+    expect(findVisible('.bk-popover')?.textContent ?? '').not.toContain('Business disabled tip');
     expect(fixture.errors).toEqual([]);
   });
 

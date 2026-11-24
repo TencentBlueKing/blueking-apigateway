@@ -50,7 +50,7 @@
           <BkDropdownItem
             v-for="item in dropdownList"
             :key="item.value"
-            v-bk-tooltips="{ content: item?.tooltips, disabled: !item?.tooltips || !item.disabled }"
+            v-bk-tooltips="{ content: item?.tooltips ?? '', disabled: !item?.tooltips || !item.disabled }"
             :class="{ disabled: item.disabled }"
             @click="() => handleDropdownClick(item)"
           >
