@@ -20,6 +20,7 @@ import json
 
 import pytest
 from ddf import G
+from django.utils.translation import override
 from openapi_spec_validator.versions import get_spec_version
 
 from apigateway.apps.plugin.constants import PluginTypeScopeEnum
@@ -29,12 +30,85 @@ from apigateway.biz.openapi import OpenAPIImportManager
 from apigateway.biz.openapi.schema import openapi_validator_mapping
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.core.constants import DEFAULT_BACKEND_NAME
-from apigateway.core.models import Backend, Gateway
+from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.service.resource_version import BaseExporter, OpenAPIExportManager
 from apigateway.utils.yaml import yaml_loads
 
 
 class TestOpenAPIManger:
+    @pytest.mark.parametrize("language", ["zh-hans", "en"])
+    @pytest.mark.parametrize("delete_unspecified", [False, True])
+    @pytest.mark.parametrize(
+        "name, method, path",
+        [
+            pytest.param("get_foo", "GET", "/foo/new", id="same-name-changed-path"),
+            pytest.param("getFoo", "GET", "/foo/new", id="normalized-name"),
+            pytest.param("get_foo", "POST", "/foo", id="same-name-changed-method"),
+            pytest.param("get_foo", "POST", "/foo/new", id="same-name-changed-method-and-path"),
+        ],
+    )
+    def test_resource_name_conflict_explains_possible_causes(
+        self, fake_gateway, fake_default_backend, language, delete_unspecified, name, method, path
+    ):
+        existing = G(Resource, gateway=fake_gateway, name="get_foo", method="GET", path="/foo")
+        manager = OpenAPIImportManager(
+            fake_gateway,
+            {
+                "openapi": "3.0.0",
+                "info": {"title": "Resource import", "version": "1.0.0"},
+                "paths": {path: {method.lower(): {"operationId": name, "responses": {"200": {"description": "OK"}}}}},
+            },
+            need_delete_unspecified_resources=delete_unspecified,
+        )
+
+        with override(language):
+            errors = manager.validate()
+
+        resource_data = manager.get_resource_list()[0]
+        assert resource_data.resource is None
+        assert resource_data.metadata["is_created"] is True
+        assert errors
+        assert all(error.json_path == f"$.paths.{path}.{method.lower()}.operationId" for error in errors)
+        messages = " ".join(error.message for error in errors)
+        assert name in messages
+        if language == "en":
+            assert "identical to an existing resource name" in messages
+            assert "matches an existing resource name after normalization" in messages
+            assert "get_foo" in messages and "getFoo" in messages
+            assert "method or path was changed" in messages
+            assert "treated as a new resource during import" in messages
+            assert "Check operationId, method and path" in messages
+        else:
+            assert "名称与已有资源完全相同" in messages
+            assert "名称归一化后与已有资源相同" in messages
+            assert "get_foo" in messages and "getFoo" in messages
+            assert "请求方法（method）或请求路径（path）已修改" in messages
+            assert "导入时被识别为新增资源" in messages
+            assert "请检查 operationId、method 和 path" in messages
+        existing.refresh_from_db()
+        assert (existing.name, existing.method, existing.path) == ("get_foo", "GET", "/foo")
+
+    @pytest.mark.parametrize("language", ["zh-hans", "en"])
+    def test_same_name_and_method_path_import_updates_existing_resource(
+        self, fake_gateway, fake_default_backend, language
+    ):
+        existing = G(Resource, gateway=fake_gateway, name="get_foo", method="GET", path="/foo")
+        manager = OpenAPIImportManager(
+            fake_gateway,
+            {
+                "openapi": "3.0.0",
+                "info": {"title": "Resource import", "version": "1.0.0"},
+                "paths": {"/foo": {"get": {"operationId": "get_foo", "responses": {"200": {"description": "OK"}}}}},
+            },
+        )
+
+        with override(language):
+            assert manager.validate() == []
+
+        resource_data = manager.get_resource_list()[0]
+        assert resource_data.resource.id == existing.id
+        assert resource_data.metadata["is_created"] is False
+
     @pytest.mark.parametrize(
         "content, expected, error",
         [
