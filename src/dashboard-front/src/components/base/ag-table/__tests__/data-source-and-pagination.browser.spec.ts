@@ -23,6 +23,7 @@ import {
   FIXTURE_ROWS,
   type IFixtureRow,
   type IMountedFixture,
+  cleanupFixtures,
   createDefaultColumns,
   createDeferred,
   mountIsolated,
@@ -42,10 +43,12 @@ describe('AgTable 数据源模式、分页边界与异常重试', () => {
   });
 
   afterEach(() => {
-    while (fixtures.length) {
-      fixtures.pop()!.unmount();
+    try {
+      cleanupFixtures(fixtures);
     }
-    localStorage.clear();
+    finally {
+      localStorage.clear();
+    }
   });
 
   it('远程搜索去除空筛选条件，在途搜索时翻页保留 query，并支持多页大数据集稳定切换', async () => {

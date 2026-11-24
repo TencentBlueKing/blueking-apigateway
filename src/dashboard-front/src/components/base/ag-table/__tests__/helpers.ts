@@ -141,6 +141,21 @@ export function mountIsolated(
   };
 }
 
+/**
+ * 卸载所有已追踪的测试宿主，并在全部清理完成后统一断言运行与卸载阶段均未产生未捕获异常
+ */
+export function cleanupFixtures(fixtures: IMountedFixture[]) {
+  const errors: string[] = [];
+  while (fixtures.length) {
+    const fixture = fixtures.pop()!;
+    fixture.unmount();
+    if (fixture.errors.length) {
+      errors.push(...fixture.errors);
+    }
+  }
+  expect(errors).toEqual([]);
+}
+
 /** 查找当前在页面中可见的匹配元素（过滤隐藏的 TDesign Popup） */
 export const findVisible = <T extends HTMLElement = HTMLElement>(
   selector: string,
