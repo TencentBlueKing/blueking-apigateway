@@ -59,31 +59,62 @@ export interface IResourceVersionListOutput {
   sdk_count: number
 }
 
-/**
- * GET /gateways/{gateway_id}/resource-versions/diff/
- */
+/** 后端版本 diff 返回的差异对象，仅包含存在变更的字段；值可能为 false、0、null、空集合或嵌套对象。 */
+export type ResourceVersionDiff = Record<string, unknown>;
+
+/** 资源版本快照中的插件绑定配置 */
+export interface IResourceVersionPlugin {
+  id: number
+  name: string
+  type: string
+  config: Record<string, any>
+}
+
+/** 资源版本快照中的上下文配置（兼容历史 JSON 字符串与当前对象格式） */
+export interface IResourceVersionDiffContexts {
+  resource_auth?: {
+    config?: string | Record<string, boolean>
+  }
+}
+
+/** 资源版本快照中的后端代理配置（兼容历史 JSON 字符串与当前对象格式） */
+export interface IResourceVersionDiffProxy {
+  type: 'http' | 'mock'
+  backend_id?: number | null
+  config?: string | Record<string, any>
+}
+
+/** 版本比较接口返回的资源快照；旧快照缺失的可选字段由展示层归一化补齐。 */
+export interface IResourceVersionDiffResource {
+  id: number
+  name: string
+  method: string
+  path: string
+  kind?: 'standard' | 'ai'
+  description?: string | null
+  match_subpath?: boolean
+  enable_websocket?: boolean
+  is_deprecated?: boolean
+  deprecated_note?: string
+  is_public?: boolean
+  allow_apply_permission?: boolean
+  api_labels?: (number | string)[]
+  disabled_stages?: string[]
+  contexts?: IResourceVersionDiffContexts
+  proxy?: IResourceVersionDiffProxy
+  plugins?: IResourceVersionPlugin[]
+  openapi_schema?: Record<string, any>
+  doc_updated_time?: Record<string, string>
+  diff?: ResourceVersionDiff | null
+}
+
+/** GET /gateways/{gateway_id}/resource-versions/diff/ */
 export interface IResourceVersionDiffOutput {
-  add: {
-    id: number
-    name: string
-    method: string
-    path: string
-    diff: {
-      [key: string]: string | null
-    } | null
-  }[]
-  delete: {
-    id: number
-    name: string
-    method: string
-    path: string
-    diff: {
-      [key: string]: string | null
-    } | null
-  }[]
+  add: IResourceVersionDiffResource[]
+  delete: IResourceVersionDiffResource[]
   update: {
-    source: Record<string, any>
-    target: Record<string, any>
+    source: IResourceVersionDiffResource
+    target: IResourceVersionDiffResource
   }[]
 }
 
