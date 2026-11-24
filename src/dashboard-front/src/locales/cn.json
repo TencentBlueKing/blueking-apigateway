@@ -2474,7 +2474,7 @@
   "响应体积趋势 (avg bytes)": "响应体积趋势 (avg bytes)",
   "MCP Server 调用链查询": "MCP Server 调用链查询",
   "request_id 和 x_request_id 不存在": "request_id 和 x_request_id 不存在",
-  "根据 request_id 或 x_request_id 查询请求调用链": "根据 request_id 或 x_request_id 查询请求调用链",
+  "根据 X-Bkapi-Request-ID 查询请求调用链": "根据 X-Bkapi-Request-ID 查询请求调用链",
   "CLI 工具": "CLI 工具",
   "面向 Agent 和自动化场景的命令行工具，自动发现蓝鲸体系内所有公开 API，天然支持跨网关 API 发现和调用": "面向 Agent 和自动化场景的命令行工具，自动发现蓝鲸体系内所有公开 API，天然支持跨网关 API 发现和调用",
   "Agent 原生设计": "Agent 原生设计",
