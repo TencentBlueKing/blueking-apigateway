@@ -19,7 +19,20 @@
 package proxy
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"io"
+	"mcp_proxy/pkg/infra/logging"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,6 +42,85 @@ import (
 )
 
 var _ = Describe("Sanitized payload copies", func() {
+	It("keeps safe error categories without exposing network credentials", func() {
+		var out bytes.Buffer
+		logger := zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.AddSync(&out), zap.DebugLevel), logging.WithDesensitize(nil))
+		err := &url.Error{Op: "GET", URL: "https://credential-url:credential-password@example.com", Err: &net.DNSError{Err: "credential-error", Name: "credential-host", IsTimeout: true}}
+		result := handleToolCallError(context.Background(), err, &ToolConfig{Name: "demo"}, logger, nil, nil, time.Now())
+		Expect(result.IsError).To(BeTrue())
+		Expect(out.String()).NotTo(ContainSubstring("credential-"))
+		Expect(out.String()).To(ContainSubstring("timeout"))
+	})
+
+	It("keeps long sanitized previews useful after the final core validation", func() {
+		sanitizer := util.NewLogSanitizer(config.DesensitizationConfig{})
+		raw := json.RawMessage(`{"body_param":{"token":"credential-preview","message":"` + strings.Repeat("retained", 800) + `"}}`)
+		payload, err := newToolRequestPayload(raw)
+		Expect(err).NotTo(HaveOccurred())
+		for _, text := range []string{payload.auditPreview(256), payload.bodyAuditPreview(256)} {
+			Expect(json.Valid([]byte(text))).To(BeTrue())
+			Expect(text).NotTo(ContainSubstring("credential-preview"))
+			Expect(text).To(ContainSubstring("retained"))
+			Expect(len(text)).To(BeNumerically("<=", 256))
+			Expect(sanitizer.Sanitize("params", text)).NotTo(Equal(util.HiddenLogBody))
+		}
+		response := newToolResponsePayload(200, "req", "application/json", []byte(`{"token":"credential-preview","message":"`+strings.Repeat("retained", 800)+`"}`))
+		text := response.EnvelopePreview("trace", "x-req", 256)
+		final := sanitizer.Sanitize("response", text)
+		Expect(final).NotTo(Equal(util.HiddenLogBody))
+		Expect(final).To(ContainSubstring("retained"))
+		Expect(final).To(ContainSubstring(`"request_id":"req"`))
+		Expect(final).NotTo(ContainSubstring("credential-preview"))
+	})
+
+	It("writes valid long previews and safe status categories to API and Audit files", func() {
+		offsets := credentialLogOffsets()
+		arguments := json.RawMessage(`{"body_param":{"token":"credential-long-request","message":"` + strings.Repeat("retained", 800) + `"}}`)
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			raw, err := io.ReadAll(r.Body)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(raw)).To(ContainSubstring("credential-long-request"))
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Bkapi-Request-Id", "preview-req")
+			w.WriteHeader(502)
+			_, err = io.WriteString(w, `{"token":"credential-long-response","message":"`+strings.Repeat("retained", 800)+`"}`)
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		defer upstream.Close()
+		result := callTestToolHandler(upstream.URL, false, arguments)
+		Expect(result.IsError).To(BeTrue())
+		Expect(result.Content[0].(*mcp.TextContent).Text).To(ContainSubstring("credential-long-response"))
+		for _, log := range credentialReadLogs(offsets) {
+			Expect(log).NotTo(ContainSubstring("credential-long-"))
+			Expect(log).To(ContainSubstring("retained"))
+			var entry map[string]any
+			observed := false
+			for _, line := range strings.Split(log, "\n") {
+				if json.Unmarshal([]byte(line), &entry) != nil {
+					continue
+				}
+				response, ok := entry["response"].(string)
+				if !ok || response == "" {
+					continue
+				}
+				observed = true
+				Expect(json.Valid([]byte(response))).To(BeTrue())
+				Expect(response).To(ContainSubstring("retained"))
+				Expect(response).NotTo(ContainSubstring(util.HiddenLogBody))
+			}
+			Expect(observed).To(BeTrue())
+		}
+	})
+
+	It("retains envelope IDs when a preview limit cannot carry its JSON keys", func() {
+		payload := newToolResponsePayload(200, "req", "application/json", []byte(`{"long_member_name":"large-value"}`))
+		text := payload.EnvelopePreview("trace", "x-req", 1)
+		var envelope map[string]any
+		Expect(json.Unmarshal([]byte(text), &envelope)).To(Succeed())
+		Expect(envelope).To(HaveKeyWithValue("request_id", "req"))
+		Expect(envelope).To(HaveKeyWithValue("response_body", util.HiddenLogBody))
+	})
+
 	It("reuses the safe copy across previews with identical rules", func() {
 		copies := payloadLogCopies{}
 		builds := 0

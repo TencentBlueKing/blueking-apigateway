@@ -597,7 +597,7 @@ func setHandlerRequestParams(
 				auditLog.Error(
 					"set header param err",
 					zap.String(k, value),
-					zap.String("error", util.CredentialMask),
+					zap.String("error", util.SafeLogError(err)),
 				)
 				return err
 			}
@@ -610,7 +610,7 @@ func setHandlerRequestParams(
 				auditLog.Error(
 					"set query param err",
 					zap.Strings(k, values),
-					zap.String("error", util.CredentialMask),
+					zap.String("error", util.SafeLogError(err)),
 				)
 				return err
 			}
@@ -622,7 +622,7 @@ func setHandlerRequestParams(
 				auditLog.Error(
 					"set path param err",
 					zap.String(k, value),
-					zap.String("error", util.CredentialMask),
+					zap.String("error", util.SafeLogError(err)),
 				)
 				return err
 			}
@@ -633,7 +633,7 @@ func setHandlerRequestParams(
 			auditLog.Error(
 				"set body param err",
 				zap.ByteString("body", handlerRequest.BodyParam),
-				zap.String("error", util.CredentialMask),
+				zap.String("error", util.SafeLogError(err)),
 			)
 			return err
 		}
@@ -800,7 +800,7 @@ func handleToolCallError(
 
 	auditLog.Error("call tool err",
 		zap.Any("header", util.MaskSensitiveHeaders(headerInfo)),
-		zap.String("error", util.CredentialMask),
+		zap.String("error", util.SafeLogError(err)),
 		zap.String("latency", duration.String()),
 		zap.String("status", "failed"),
 		zap.Int64("response_body_size", 0),
@@ -894,7 +894,7 @@ func markAuditCallFailed(
 		*auditLatency = time.Since(start)
 	}
 	if auditResponse != nil && err != nil {
-		*auditResponse = util.HiddenLogBody
+		*auditResponse = util.SafeLogError(err)
 	}
 }
 
@@ -951,7 +951,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				logging.GetAPILogger().Error("panic in tool handler",
 					zap.String("mcp_method", "tools/call"),
 					zap.String("tool_name", toolApiConfig.Name),
-					zap.String("panic", util.CredentialMask),
+					zap.String("panic", `{"category":"panic"}`),
 					zap.String("server_name", serverName),
 				)
 				if err == nil {
@@ -989,7 +989,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
-			auditLog.Error("sign inner jwt err", zap.String("error", util.CredentialMask))
+			auditLog.Error("sign inner jwt err", zap.String("error", util.SafeLogError(err)))
 			return nil, trace.WrapErrorWithTraceID(ctx, fmt.Errorf("sign inner jwt failed: %w", err))
 		}
 		logTruncate := config.G.McpServer.LogTruncate
@@ -1047,7 +1047,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditLog.Error(
 				"marshal arguments err",
 				zap.Any("arguments", req.Params.Arguments),
-				zap.String("error", util.CredentialMask),
+				zap.String("error", util.SafeLogError(err)),
 			)
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
@@ -1057,7 +1057,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		handlerRequest, err := requestPayload.decodeHandlerRequest()
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
-				string(requestPayload.rawArguments)), zap.String("error", util.CredentialMask))
+				string(requestPayload.rawArguments)), zap.String("error", util.SafeLogError(err)))
 			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
@@ -1089,7 +1089,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 							constant.BkApiAuthorizationHeaderKey,
 							innerJwt,
 						),
-						zap.String("error", util.CredentialMask),
+						zap.String("error", util.SafeLogError(err)),
 					)
 					return err
 				}
@@ -1217,7 +1217,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				auditResponseSize = int64(len(responsePayload.rawBody))
 				auditUpstreamReqID = responsePayload.upstreamRequestID
 			} else {
-				auditResponse = util.HiddenLogBody
+				auditResponse = util.SafeLogError(err)
 				auditResponseSize = 0
 			}
 			// nolint:nilerr
@@ -1455,7 +1455,7 @@ func logToolCall(
 	}
 
 	if hasError {
-		fields = append(fields, zap.String("error", util.CredentialMask))
+		fields = append(fields, zap.String("error", util.SafeLogError(err)))
 	}
 
 	logger.Info("-", fields...)

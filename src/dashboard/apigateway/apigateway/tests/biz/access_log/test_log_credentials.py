@@ -17,7 +17,7 @@
 #
 import copy
 import json
-from urllib.parse import parse_qsl
+from urllib.parse import parse_qsl, unquote_plus, urlencode
 
 import pytest
 
@@ -261,3 +261,214 @@ def test_exhausted_embedded_body_preserves_following_envelope_metadata():
     }
     result = DataScrubber().scrub_sensitive_data([data])[0]["response"]
     assert result == {"response_body": HIDDEN, "request_id": "req", "status_code": 502}
+
+
+@pytest.mark.parametrize("field", ["body", "response_body"])
+@pytest.mark.parametrize("serialized", [False, True])
+@pytest.mark.parametrize("container", ["array", "array_data", "object_data"])
+def test_recognizable_nested_json_strings_are_masked_without_changing_representation(field, serialized, container):
+    embedded = json.dumps({"bk_token": "fixture-credential", "id": 1})
+    payload = {"array": [embedded], "array_data": [{"data": embedded}], "object_data": {"data": embedded}}[container]
+    original = {field: json.dumps(payload) if serialized else payload}
+    saved = copy.deepcopy(original)
+    scrubber = DataScrubber()
+    result = scrubber.scrub_sensitive_data([original])[0]
+    assert "fixture-credential" not in json.dumps(result)
+    body = json.loads(result[field]) if serialized else result[field]
+    text = body[0] if container == "array" else body[0]["data"] if container == "array_data" else body["data"]
+    assert isinstance(text, str)
+    assert json.loads(text) == {"bk_token": "***", "id": 1}
+    assert scrubber.scrub_sensitive_data([result])[0] == result
+    assert original == saved
+
+
+def test_nested_json_strings_in_forms_are_masked():
+    original = {"body": urlencode({"data": json.dumps({"bk_token": "fixture-credential", "id": 1})})}
+    result = DataScrubber().scrub_sensitive_data([original])[0]
+    assert json.loads(dict(parse_qsl(result["body"]))["data"]) == {"bk_token": "***", "id": 1}
+
+
+def test_nested_json_string_decode_budget_fails_closed():
+    text = json.dumps({"bk_token": "fixture-credential"})
+    for _ in range(6):
+        text = json.dumps(text)
+    result = DataScrubber().scrub_sensitive_data([{"body": [text]}])[0]
+    assert result["body"] == HIDDEN
+
+
+@pytest.mark.parametrize(
+    "fragment",
+    [
+        '{"token":"fixture-credential',
+        ' { "token": "fixture-credential',
+        '[{"token":"fixture-credential',
+        '["fixture-credential',
+        '[null, "fixture-credential',
+        '[1, "fixture-credential',
+        '"{\\"token\\":\\"fixture-credential',
+    ],
+)
+@pytest.mark.parametrize("nested_data", [False, True])
+def test_credible_nested_json_fragments_fail_closed(fragment, nested_data):
+    original = {"body": [{"data": fragment} if nested_data else fragment], "request_id": "req"}
+    result = DataScrubber().scrub_sensitive_data([original])[0]
+    assert result == {"body": HIDDEN, "request_id": "req"}
+
+
+def test_ordinary_structure_prefixed_prose_is_preserved():
+    payload = ["[WARN] retry", "{name} required", {"message": "[Beta] tool", "path": "dir/a.txt"}]
+    original = {"body": payload}
+    assert DataScrubber().scrub_sensitive_data([original])[0] == original
+
+
+@pytest.mark.parametrize("field", ["body", "body_param", "request_body", "response_body"])
+@pytest.mark.parametrize(
+    "text",
+    [
+        '<html><input name="token" value="fixture-credential"></html>',
+        '<item token="fixture-credential"/>',
+        "Authorization: Bearer token=fixture-credential",
+        "Content-Type: text/plain; token=fixture-credential",
+        "message=fixture-credential with spaces",
+        "value=fixture-credential/path",
+        "value=fixture-credential\n",
+        "=fixture-credential",
+        "token=fixture-credential&",
+    ],
+)
+def test_equals_does_not_make_unknown_text_a_supported_form(field, text):
+    result = DataScrubber().scrub_sensitive_data([{field: text}])[0]
+    assert result[field] == HIDDEN
+    assert "fixture-credential" not in unquote_plus(json.dumps(result))
+
+
+def test_strict_form_preserves_encoded_values_and_business_field_names():
+    value = "request=GET&response=ok&query=hello&result=success&message=hello+world&url=%2Fdemo%3Fa%3D1&token=x"
+    result = DataScrubber().scrub_sensitive_data([{"body": value}])[0]
+    assert parse_qsl(result["body"]) == [
+        ("request", "GET"),
+        ("response", "ok"),
+        ("query", "hello"),
+        ("result", "success"),
+        ("message", "hello world"),
+        ("url", "/demo?a=1"),
+        ("token", "***"),
+    ]
+
+
+@pytest.mark.parametrize("field", ["body", "params", "request", "response", "result"])
+@pytest.mark.parametrize("serialized", [False, True])
+def test_business_json_carrier_names_preserve_ordinary_scalars(serialized, field):
+    payload = {"query": "hello", "response": "ok", "result": "success", "request": "GET", "id": 1}
+    payload["nested"] = {"params": "hello", "path": "dir/a.txt", "message": "[WARN] retry"}
+    original = {field: json.dumps(payload) if serialized else payload}
+    result = DataScrubber().scrub_sensitive_data([original])[0][field]
+    assert (json.loads(result) if serialized else result) == payload
+
+
+@pytest.mark.parametrize("serialized", [False, True])
+def test_params_preserve_business_scalars_and_explicit_parameter_carriers(serialized):
+    params = {
+        "query": "hello",
+        "response": "ok",
+        "result": "success",
+        "query_param": "token=fixture-credential&id=1",
+        "header_param": '{"authorization":"fixture-credential"}',
+        "path_param": '{"secret":"fixture-credential","id":42}',
+        "body_param": '{"query":"hello","response":"ok","bk_token":"fixture-credential"}',
+    }
+    original = {"params": json.dumps(params) if serialized else params}
+    result = DataScrubber().scrub_sensitive_data([original])[0]["params"]
+    parsed = json.loads(result) if serialized else result
+    assert {key: parsed[key] for key in ("query", "response", "result")} == {
+        "query": "hello",
+        "response": "ok",
+        "result": "success",
+    }
+    assert parse_qsl(parsed["query_param"]) == [("token", "***"), ("id", "1")]
+    assert json.loads(parsed["header_param"]) == {"authorization": "***"}
+    assert json.loads(parsed["path_param"]) == {"secret": "***", "id": 42}
+    assert json.loads(parsed["body_param"]) == {"query": "hello", "response": "ok", "bk_token": "***"}
+
+
+def test_explicit_parameter_carriers_inside_business_body_are_scrubbed():
+    original = {"body": {"nested": {"query": "hello", "query_param": "token=fixture-credential&id=1"}}}
+    result = DataScrubber().scrub_sensitive_data([original])[0]["body"]["nested"]
+    assert result["query"] == "hello"
+    assert parse_qsl(result["query_param"]) == [("token", "***"), ("id", "1")]
+
+
+def test_real_envelopes_and_nested_body_fields_still_fail_closed():
+    payload = {
+        "query": "hello",
+        "response": "ok",
+        "nested": {"body": "token=fixture-credential broken", "response_body": "fixture-credential"},
+        "content": [{"type": "text", "text": "fixture-credential"}],
+    }
+    original = {"body": payload, "response": "fixture-credential", "query": "fixture-credential broken"}
+    result = DataScrubber().scrub_sensitive_data([original])[0]
+    assert result["body"] == {
+        "query": "hello",
+        "response": "ok",
+        "nested": {"body": HIDDEN, "response_body": HIDDEN},
+        "content": [{"type": "text", "text": HIDDEN}],
+    }
+    assert result["response"] == result["query"] == HIDDEN
+
+
+@pytest.mark.parametrize("field", ["params", "query", "query_param"])
+def test_explicit_query_allows_bare_flags_and_masks_credentials(field):
+    result = DataScrubber().scrub_sensitive_data([{field: "debug&id=1&token=fixture-credential&debug"}])[0]
+    assert parse_qsl(result[field], keep_blank_values=True) == [
+        ("debug", ""),
+        ("id", "1"),
+        ("token", "***"),
+        ("debug", ""),
+    ]
+
+
+@pytest.mark.parametrize("field", ["params", "query", "query_param"])
+@pytest.mark.parametrize("value", ["debug&id=100%", "debug&token=%FF", "%ZZ&id=1"])
+def test_explicit_query_flags_do_not_relax_percent_validation(field, value):
+    assert DataScrubber().scrub_sensitive_data([{field: value}])[0][field] == HIDDEN
+
+
+@pytest.mark.parametrize("kind", ["scrubber", "access", "mcp_list", "mcp_chain"])
+def test_bounded_projected_json_previews_survive_repeated_dashboard_scrubbing(kind):
+    projected_body = json.dumps(
+        {
+            "request_id": "req-body",
+            "message": "[WARN] " + "x" * 32 + "...(truncated)",
+            "data": json.dumps({"message": "{example} " + "y" * 32 + "...(truncated)", "bk_token": "***"}),
+        }
+    )
+    projected_response_body = json.dumps({"id": 42, "message": "z" * 32 + "...(truncated)", "password": "***"})
+    original = {
+        "request_id": "req",
+        "mcp_method": "tools/call",
+        "body": projected_body,
+        "params": json.dumps({"request_id": "req-params", "body": projected_body}),
+        "response": json.dumps(
+            {"request_id": "req-response", "status_code": 200, "response_body": projected_response_body}
+        ),
+    }
+    saved = copy.deepcopy(original)
+    scrubber = DataScrubber()
+    hit = {"_source": original, "sort": [1700000000000]}
+    if kind == "scrubber":
+        result = scrubber.scrub_sensitive_data([original])[0]
+    elif kind == "access":
+        result = LogSearchClient(request_id="req")._to_log_display(hit)
+    elif kind == "mcp_list":
+        result = MCPServerLogSearchClient(request_id="req")._to_log_display(hit)
+    else:
+        result = _parse_hits([hit])[0]
+    assert HIDDEN not in json.dumps(result, ensure_ascii=False)
+    assert {key: result[key] for key in original} == original
+    assert scrubber.scrub_sensitive_data([result])[0] == result
+    assert json.loads(result["params"])["request_id"] == "req-params"
+    assert json.loads(result["body"])["request_id"] == "req-body"
+    response = json.loads(result["response"])
+    assert response["request_id"] == "req-response"
+    assert json.loads(response["response_body"])["id"] == 42
+    assert original == saved

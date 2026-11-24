@@ -182,7 +182,12 @@ func previewLogEnvelope(text string, limit int) string {
 	body := envelope["response_body"]
 	if limit > 0 && len(body) > limit && string(body) != `"`+util.HiddenLogBody+`"` {
 		var err error
-		envelope["response_body"], err = json.Marshal(string(body[:limit]) + truncatedSuffix)
+		preview := util.JSONLogPreview(string(body), limit)
+		var projected any = json.RawMessage(preview)
+		if preview == util.HiddenLogBody {
+			projected = preview
+		}
+		envelope["response_body"], err = json.Marshal(projected)
 		if err != nil {
 			return util.HiddenLogBody
 		}

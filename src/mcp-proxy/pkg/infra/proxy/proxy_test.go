@@ -551,7 +551,9 @@ var _ = Describe("MCPProxy", func() {
 			}
 
 			Expect(completeLog).NotTo(BeNil())
-			Expect(completeLog["params"]).To(Equal(util.HiddenLogBody))
+			Expect(completeLog["params"]).NotTo(Equal(util.HiddenLogBody))
+			Expect(json.Valid([]byte(completeLog["params"].(string)))).To(BeTrue())
+			Expect(completeLog["params"]).To(ContainSubstring("...(truncated)"))
 			Expect(completeLog).To(HaveKeyWithValue("request_body_size", float64(len(canonicalArguments))))
 			Expect(completeLog).NotTo(HaveKey("request"))
 			Expect(upstreamBody).To(MatchJSON(`{"value":"` + strings.Repeat("x", 5000) + `"}`))
@@ -783,7 +785,7 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(auditStatus).To(Equal("failed"))
 			Expect(auditLatency).To(BeNumerically(">", 0))
-			Expect(auditResponse).To(Equal(util.HiddenLogBody))
+			Expect(auditResponse).To(MatchJSON(`{"category":"error_details_hidden"}`))
 			Expect(auditResponseSize).To(Equal(int64(0)))
 			Expect(auditUpstreamReqID).To(BeEmpty())
 			Expect(result).NotTo(BeNil())
@@ -851,7 +853,7 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(status).To(Equal("failed"))
 			Expect(latency).To(BeNumerically(">", 0))
-			Expect(response).To(Equal(util.HiddenLogBody))
+			Expect(response).To(MatchJSON(`{"category":"error_details_hidden"}`))
 		})
 
 		It("marks panic as failed and keeps the panic available for outer recovery", func() {

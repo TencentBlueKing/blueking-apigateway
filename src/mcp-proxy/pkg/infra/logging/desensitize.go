@@ -20,6 +20,8 @@
 package logging
 
 import (
+	"errors"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -38,12 +40,33 @@ func (r *Desensitize) With(fields []zapcore.Field) zapcore.Core {
 	return &Desensitize{core: r.core.With(r.fields(fields)), sanitizer: r.sanitizer}
 }
 
-// Check registers this core only when its underlying core accepts the entry.
+// Check retains all accepted output cores behind a boundary that sanitizes fields.
 func (r *Desensitize) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	if r.core.Check(entry, nil) != nil {
-		return ce.AddCore(entry, r)
+	if checked := r.core.Check(entry, nil); checked != nil {
+		output := &desensitizedCheckedCore{Desensitize: r, checked: checked}
+		ce = ce.AddCore(entry, output)
+		output.outer = ce
 	}
 	return ce
+}
+
+// desensitizedCheckedCore owns the registrations for one entry, including hooks
+// that register their underlying output separately during Check.
+type desensitizedCheckedCore struct {
+	*Desensitize
+	checked *zapcore.CheckedEntry
+	outer   *zapcore.CheckedEntry
+}
+
+func (r *desensitizedCheckedCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	checked := r.checked
+	// The logger adds caller/stack annotations and ErrorOutput after Check.
+	checked.Entry = entry
+	checked.ErrorOutput = r.outer.ErrorOutput
+	// CheckedEntry.Write returns the entry to a pool; do not retain it afterward.
+	r.checked, r.outer = nil, nil
+	checked.Write(r.fields(fields)...)
+	return nil
 }
 
 // Write emits only sanitized copies of structured fields.
@@ -61,17 +84,43 @@ func (r *Desensitize) fields(fields []zapcore.Field) []zapcore.Field {
 			out = append(out, field)
 			continue
 		}
+		switch field.Type {
+		case zapcore.BoolType, zapcore.Complex128Type, zapcore.Complex64Type, zapcore.DurationType,
+			zapcore.Float64Type, zapcore.Float32Type, zapcore.Int64Type, zapcore.Int32Type,
+			zapcore.Int16Type, zapcore.Int8Type, zapcore.TimeType, zapcore.TimeFullType,
+			zapcore.Uint64Type, zapcore.Uint32Type, zapcore.Uint16Type, zapcore.Uint8Type, zapcore.UintptrType:
+			// Scalars cannot contain credential text, but sensitive keys still
+			// apply regardless of scalar value.
+			if r.sanitizer.Sensitive(field.Key) {
+				out = append(out, zap.String(field.Key, util.CredentialMask))
+			} else {
+				out = append(out, field)
+			}
+			continue
+		}
 		var value any
 		switch field.Type {
 		case zapcore.StringType:
 			value = field.String
 		case zapcore.ErrorType:
+			err, ok := field.Interface.(error)
 			value = util.CredentialMask
+			if ok {
+				value = util.SafeLogError(err)
+			}
 		case zapcore.ObjectMarshalerType, zapcore.InlineMarshalerType, zapcore.ArrayMarshalerType,
 			zapcore.StringerType:
 			// Marshal into a disposable map, then sanitize the resulting field graph.
 			encoded := zapcore.NewMapObjectEncoder()
-			field.AddTo(encoded)
+			if field.Type == zapcore.InlineMarshalerType {
+				value, ok := field.Interface.(zapcore.ObjectMarshaler)
+				if !ok {
+					out = append(out, zap.String("body", util.HiddenLogBody))
+					continue
+				}
+				field.Interface = safeLogObject(value)
+			}
+			field.AddTo(safeLogObjectEncoder{ObjectEncoder: encoded})
 			if field.Type == zapcore.InlineMarshalerType {
 				safe := r.sanitizer.Sanitize("", encoded.Fields)
 				if values, ok := safe.(map[string]any); ok {
@@ -92,6 +141,50 @@ func (r *Desensitize) fields(fields []zapcore.Field) []zapcore.Field {
 		out = append(out, zap.Any(field.Key, r.sanitizer.Sanitize(field.Key, value)))
 	}
 	return out
+}
+
+// Mask diagnostic errors where a marshaler fails, before zap turns them into
+// ordinary fields such as detailsError. Successful business fields retain their names.
+func safeLogObject(value zapcore.ObjectMarshaler) zapcore.ObjectMarshaler {
+	return zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
+		if err := value.MarshalLogObject(safeLogObjectEncoder{ObjectEncoder: enc}); err != nil {
+			return errors.New(util.CredentialMask)
+		}
+		return nil
+	})
+}
+
+func safeLogArray(value zapcore.ArrayMarshaler) zapcore.ArrayMarshaler {
+	return zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		if err := value.MarshalLogArray(safeLogArrayEncoder{ArrayEncoder: enc}); err != nil {
+			return errors.New(util.CredentialMask)
+		}
+		return nil
+	})
+}
+
+type safeLogObjectEncoder struct{ zapcore.ObjectEncoder }
+
+// AddObject masks failures from a nested object marshaler.
+func (enc safeLogObjectEncoder) AddObject(key string, value zapcore.ObjectMarshaler) error {
+	return enc.ObjectEncoder.AddObject(key, safeLogObject(value))
+}
+
+// AddArray masks failures from a nested array marshaler.
+func (enc safeLogObjectEncoder) AddArray(key string, value zapcore.ArrayMarshaler) error {
+	return enc.ObjectEncoder.AddArray(key, safeLogArray(value))
+}
+
+type safeLogArrayEncoder struct{ zapcore.ArrayEncoder }
+
+// AppendObject masks failures from an object nested in an array.
+func (enc safeLogArrayEncoder) AppendObject(value zapcore.ObjectMarshaler) error {
+	return enc.ArrayEncoder.AppendObject(safeLogObject(value))
+}
+
+// AppendArray masks failures from an array nested in an array.
+func (enc safeLogArrayEncoder) AppendArray(value zapcore.ArrayMarshaler) error {
+	return enc.ArrayEncoder.AppendArray(safeLogArray(value))
 }
 
 // Sync flushes the underlying logger.

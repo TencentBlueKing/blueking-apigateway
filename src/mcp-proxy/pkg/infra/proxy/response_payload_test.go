@@ -88,12 +88,12 @@ var _ = Describe("toolResponsePayload", func() {
 			}`))
 		})
 
-		It("falls back to JSON string when JSON body needs truncation", func() {
+		It("keeps JSON structure when the sanitized body needs truncation", func() {
 			big := []byte(`{"items":[` + strings.Repeat(`1,`, 1000) + `0]}`)
 			payload := newToolResponsePayload(200, "", "application/json", big)
 			out := payload.EnvelopePreview("", "", 50)
-			// response_body becomes a quoted string ending with the truncated suffix
-			Expect(out).To(ContainSubstring(`"response_body":"`))
+			// The body remains a valid object with a shortened array.
+			Expect(out).To(ContainSubstring(`"response_body":{`))
 			Expect(out).To(ContainSubstring(truncatedSuffix))
 		})
 

@@ -18,6 +18,7 @@
 import copy
 import json
 from unittest.mock import MagicMock
+from urllib.parse import unquote_plus, urlencode
 
 import pytest
 
@@ -27,7 +28,10 @@ pytestmark = pytest.mark.django_db
 @pytest.mark.parametrize(
     "entry", ["access_list", "access_csv", "share", "toolbox", "open", "mcp_list", "mcp_csv", "mcp_chain"]
 )
-def test_log_credentials_at_public_outputs(entry, request_view, fake_stage, mocker):
+@pytest.mark.parametrize(
+    "body_kind", ["object", "array_strings", "array_data", "form_data", "unknown_equals", "array_fragment"]
+)
+def test_log_credentials_at_public_outputs(entry, body_kind, request_view, fake_stage, mocker):
     gateway = fake_stage.gateway
     source = {
         "request_id": "req",
@@ -44,6 +48,17 @@ def test_log_credentials_at_public_outputs(entry, request_view, fake_stage, mock
         "status": 200,
         "__ext_json": {"body": '{"bk_token":"fixture-credential"}'},
     }
+    embedded = json.dumps({"bk_token": "fixture-credential", "id": 1})
+    source["body"] = {
+        "object": source["body"],
+        "array_strings": json.dumps([embedded]),
+        "array_data": json.dumps([{"data": embedded}]),
+        "form_data": urlencode({"data": embedded}),
+        "unknown_equals": '<input name="token" value="fixture-credential">',
+        "array_fragment": json.dumps(['{"token":"fixture-credential']),
+    }[body_kind]
+    if body_kind == "unknown_equals":
+        source["response_body"] = source["body"]
     mocker.patch(
         "apigateway.service.es.BKLogESClient.execute_search",
         side_effect=lambda *args, **kwargs: {
@@ -75,10 +90,10 @@ def test_log_credentials_at_public_outputs(entry, request_view, fake_stage, mock
     response = request_view("GET", names[entry], path_params=paths, data=data, **kwargs)
     assert response.status_code == 200
     content = b"".join(response.streaming_content).decode() if response.streaming else response.content.decode()
-    assert "fixture-credential" not in content
+    assert "fixture-credential" not in unquote_plus(content)
     if entry.endswith("csv"):
-        assert "***" in content
+        assert "***" in unquote_plus(content)
     else:
         result = response.json()["data"]
-        assert "***" in json.dumps(result)
+        assert "***" in unquote_plus(json.dumps(result))
         assert "req" in json.dumps(result)

@@ -60,14 +60,8 @@ func (c *payloadLogCopies) initialize(build func(*util.LogSanitizer) string) {
 	})
 }
 
-func safeLogPreview(text string, limit int, suffix string) string {
-	if text == util.HiddenLogBody {
-		return text
-	}
-	if limit >= 0 && len(text) > limit {
-		return text[:limit] + suffix
-	}
-	return text
+func safeLogPreview(text string, limit int, _ string) string {
+	return util.JSONLogPreview(text, limit)
 }
 
 func sanitizedBodyMember(text, key string) string {

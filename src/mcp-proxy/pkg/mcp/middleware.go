@@ -83,7 +83,7 @@ func loggingMiddleware(serverName string, logger *zap.Logger) mcp.Middleware {
 					logger.Error("tools/call failed before reaching tool handler",
 						zap.String("mcp_method", method),
 						zap.String("server_name", serverName),
-						zap.String("error", util.CredentialMask),
+						zap.String("error", util.SafeLogError(err)),
 					)
 					logMCPRequest(ctx, logger, serverName, method, req, result, err, start)
 				}
@@ -98,7 +98,7 @@ func loggingMiddleware(serverName string, logger *zap.Logger) mcp.Middleware {
 					// Log the panic
 					logger.Error("panic in MCP handler",
 						zap.String("mcp_method", method),
-						zap.String("panic", util.CredentialMask),
+						zap.String("panic", `{"category":"panic"}`),
 						zap.String("server_name", serverName),
 					)
 					// Convert panic to error result
@@ -277,7 +277,7 @@ func logMCPRequest(
 	}
 
 	if hasError {
-		fields = append(fields, zap.String("error", util.CredentialMask))
+		fields = append(fields, zap.String("error", util.SafeLogError(err)))
 		// Only report server-side errors to Sentry, skip client errors
 		// (parse_error, invalid_request, method_not_found, invalid_params)
 		if shouldReportToSentry(err) {
@@ -302,7 +302,7 @@ func logMCPRequest(
 					"params":        params,
 					"response":      response,
 					"latency":       duration.String(),
-					"error":         util.CredentialMask,
+					"error":         util.SafeLogError(err),
 				},
 			)
 		}

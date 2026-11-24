@@ -61,8 +61,10 @@ MAX_INPUT_LENGTH = 1024 * 1024
 MAX_DEPTH = 32
 MAX_STRING_DECODES = 4
 MAX_NODES = 10000
-# Only these fields carry serialized payloads; HTTP paths and tool names are metadata.
-_BODY_FIELDS = {"body", "body_param", "response_body", "request_body", "request", "response", "result"}
+# Explicit body fields remain carriers inside otherwise ordinary business data.
+_BODY_FIELDS = {"body", "body_param", "response_body", "request_body"}
+_PARAMETER_FIELDS = {"query_param", "header_param", "path_param", "path_params"}
+_ENVELOPE_FIELDS = {"request", "response", "result"}
 _STRUCTURE_FIELDS = {
     "header",
     "headers",
@@ -75,6 +77,11 @@ _STRUCTURE_FIELDS = {
     "path_param",
 }
 _INVALID_PERCENT = re.compile(r"%(?![0-9a-fA-F]{2})")
+# Supported URL-encoded wire grammar, shared with the MCP log sanitizer.
+_FORM_COMPONENT = r"(?:[a-zA-Z0-9_.~*+\-]|%[0-9a-fA-F]{2})"
+_FORM_PAIR = re.compile(rf"{_FORM_COMPONENT}+={_FORM_COMPONENT}*")
+_QUERY_PAIR = re.compile(rf"{_FORM_COMPONENT}+(?:={_FORM_COMPONENT}*)?")
+_JSON_FRAGMENT = re.compile(r'^\s*(?:\{\s*"|\[\s*(?:[\[{"\-0-9]|(?:true|false|null)\b)|"\s*(?:\{|\[|\\"))')
 
 
 class UnsafeLogData(ValueError):
@@ -104,31 +111,41 @@ class LogDataScrubber:
 
     def _safe_field(self, key: str, value: Any) -> Any:
         try:
-            return self._field(key, value, 0, 0, [MAX_NODES, MAX_INPUT_LENGTH])
+            return self._field(key, value, 0, 0, [MAX_NODES, MAX_INPUT_LENGTH], record=True)
         except UnsafeLogData, ValueError, TypeError, RecursionError:
             return self.hidden_body()
 
-    def _field(self, key: str, value: Any, depth: int, decodes: int, budget: list[int]) -> Any:
+    def _field(
+        self, key: str, value: Any, depth: int, decodes: int, budget: list[int], *, record: bool = False
+    ) -> Any:
         if self.sensitive(key):
             return value if self._empty(value) else MASK
         name = key.lower()
-        if name in _BODY_FIELDS:
+        if name in _BODY_FIELDS or name == "__ext_json" or record and name in _ENVELOPE_FIELDS:
             return self._payload(
                 value,
                 depth,
                 decodes,
                 budget,
-                allow_form=name in {"body", "body_param", "request_body", "response_body"},
+                allow_form=name in _BODY_FIELDS,
+                record=name == "__ext_json",
             )
-        if name == "path" and isinstance(value, str) and value.lstrip().startswith(("{", "[")):
+        if record and name == "path" and isinstance(value, str) and value.lstrip().startswith(("{", "[")):
             return self._payload(value, depth, decodes, budget, allow_form=False)
-        if name in _STRUCTURE_FIELDS and isinstance(value, str):
-            return self._payload(value, depth, decodes, budget, allow_form=name in {"params", "query", "query_param"})
-        if name == "__ext_json" and isinstance(value, str):
-            return self._payload(value, depth, decodes, budget, allow_form=False)
+        if name in _PARAMETER_FIELDS or record and name in _STRUCTURE_FIELDS:
+            if isinstance(value, str):
+                return self._payload(
+                    value,
+                    depth,
+                    decodes,
+                    budget,
+                    allow_form=name in {"params", "query", "query_param"},
+                    allow_flags=True,
+                )
+            return self._walk(value, depth, decodes, budget)
         return self._walk(value, depth, decodes, budget)
 
-    def _walk(self, value: Any, depth: int, decodes: int, budget: list[int]) -> Any:
+    def _walk(self, value: Any, depth: int, decodes: int, budget: list[int], *, record: bool = False) -> Any:
         self._check(value, depth, budget)
         if isinstance(value, dict):
             result = {}
@@ -139,17 +156,39 @@ class LogDataScrubber:
                     if key.lower() == "text" and value.get("type") == "text":
                         result[key] = self._payload(item, depth + 1, decodes, budget, allow_form=False)
                     else:
-                        result[key] = self._field(key, item, depth + 1, decodes, budget)
+                        result[key] = self._field(key, item, depth + 1, decodes, budget, record=record)
                 except UnsafeLogData, ValueError, TypeError, RecursionError:
-                    if key.lower() not in _BODY_FIELDS | _STRUCTURE_FIELDS | {"text", "__ext_json"}:
+                    if not (
+                        key.lower() in _BODY_FIELDS | _PARAMETER_FIELDS | {"__ext_json"}
+                        or (record and key.lower() in _ENVELOPE_FIELDS | _STRUCTURE_FIELDS)
+                        or (key.lower() == "text" and value.get("type") == "text")
+                    ):
                         raise
                     budget[:] = saved_budget
                     self._check(self.hidden_body(), min(depth + 1, MAX_DEPTH), budget)
                     result[key] = self.hidden_body()
             return result
         if isinstance(value, list):
-            return [self._walk(item, depth + 1, decodes, budget) for item in value]
+            return [self._walk(item, depth + 1, decodes, budget, record=record) for item in value]
+        if isinstance(value, str) and value.lstrip().startswith(("{", "[", '"')):
+            return self._embedded_json(value, depth, decodes, budget)
         return value
+
+    def _embedded_json(self, value: str, depth: int, decodes: int, budget: list[int]) -> str:
+        """Mask serialized structures and hide credible fragments while retaining ordinary prose."""
+        try:
+            parsed = json.loads(value)
+        except ValueError:
+            if _JSON_FRAGMENT.match(value):
+                raise UnsafeLogData() from None
+            return value
+        except RecursionError:
+            raise UnsafeLogData() from None
+        if not isinstance(parsed, (dict, list, str)):
+            return value
+        if decodes >= MAX_STRING_DECODES:
+            raise UnsafeLogData()
+        return json.dumps(self._walk(parsed, depth + 1, decodes + 1, budget), ensure_ascii=False)
 
     @staticmethod
     def _check(value: Any, depth: int, budget: list[int]) -> None:
@@ -166,38 +205,68 @@ class LogDataScrubber:
             if budget[1] < 0:
                 raise UnsafeLogData()
 
-    def _payload(self, value: Any, depth: int, decodes: int, budget: list[int], *, allow_form: bool) -> Any:
+    def _payload(
+        self,
+        value: Any,
+        depth: int,
+        decodes: int,
+        budget: list[int],
+        *,
+        allow_form: bool,
+        allow_flags: bool = False,
+        record: bool = False,
+    ) -> Any:
         self._check(value, depth, budget)
         if self._empty(value) or value == MASK or value == self.hidden_body():
             return value
         if isinstance(value, (dict, list)):
-            return self._walk(value, depth, decodes, budget)
+            return self._walk(value, depth, decodes, budget, record=record)
         if not isinstance(value, str) or decodes >= MAX_STRING_DECODES:
             raise UnsafeLogData()
         text = value.strip()
         try:
             parsed = json.loads(text)
         except ValueError, RecursionError:
-            if allow_form and "=" in text and len(text.splitlines()) == 1 and not text.startswith(("{", "[", '"')):
-                return self.scrub_form(text, depth, decodes, budget)
+            if allow_form:
+                return self.scrub_form(value, depth, decodes, budget, allow_flags=allow_flags)
             raise UnsafeLogData() from None
         if isinstance(parsed, str):
             return json.dumps(
-                self._payload(parsed, depth + 1, decodes + 1, budget, allow_form=allow_form), ensure_ascii=False
+                self._payload(
+                    parsed,
+                    depth + 1,
+                    decodes + 1,
+                    budget,
+                    allow_form=allow_form,
+                    allow_flags=allow_flags,
+                    record=record,
+                ),
+                ensure_ascii=False,
             )
         if parsed is None:
             return "null"
         if not isinstance(parsed, (dict, list)):
             raise UnsafeLogData()
-        return json.dumps(self._walk(parsed, depth + 1, decodes + 1, budget), ensure_ascii=False)
+        return json.dumps(self._walk(parsed, depth + 1, decodes + 1, budget, record=record), ensure_ascii=False)
 
-    def scrub_form(self, value: str, depth: int = 0, decodes: int = 0, budget: list[int] | None = None) -> str:
+    def scrub_form(
+        self,
+        value: str,
+        depth: int = 0,
+        decodes: int = 0,
+        budget: list[int] | None = None,
+        *,
+        allow_flags: bool = False,
+    ) -> str:
         budget = budget if budget is not None else [MAX_NODES, MAX_INPUT_LENGTH]
         self._check(value, depth, budget)
         if _INVALID_PERCENT.search(value):
             raise UnsafeLogData()
+        pattern = _QUERY_PAIR if allow_flags else _FORM_PAIR
+        if not all(pattern.fullmatch(pair) for pair in value.split("&")):
+            raise UnsafeLogData()
         pairs = parse_qsl(
-            value, keep_blank_values=True, strict_parsing=True, errors="strict", max_num_fields=MAX_NODES
+            value, keep_blank_values=True, strict_parsing=not allow_flags, errors="strict", max_num_fields=MAX_NODES
         )
         return urlencode([(key, self._field(key, item, depth + 1, decodes, budget)) for key, item in pairs])
 
