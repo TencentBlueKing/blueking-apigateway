@@ -31,29 +31,29 @@ import type { IRequestLogOutput } from '@/services/types/gateway/access-log.ts';
 const path = '/gateways';
 
 /**
- *  根据 request_id 查询网关流水日志
- * @param requestId 请求id
+ *  根据 X-Bkapi-Request-ID 查询网关流水日志
+ * @param requestId 网关请求 ID
  */
 export const queryAccessLogByRequestId = (requestId: string) =>
   http.get<IRequestLogOutput>(`${path}/logs/query/${requestId}/`);
 
 /**
- *  根据 request_id 或 x_request_id 查询 MCP Server 日志（含上下游网关日志）
- * @param requestId 请求id 或全链路请求id
+ *  根据 X-Bkapi-Request-ID 查询 MCP Server 日志（含上下游网关日志）
+ * @param requestId 网关请求 ID
  */
 export const queryMcpLogByRequestId = (requestId: string) =>
   http.get<IMCPServerChainLogListOutput>(`${path}/mcp-server-logs/query/${requestId}/`);
 
 /**
- *  根据 request_id 或 x_request_id 查询 MCP Server 调用链汇总信息
- * @param requestId 请求id 或全链路请求id
+ *  根据 X-Bkapi-Request-ID 查询 MCP Server 调用链汇总信息
+ * @param requestId 网关请求 ID
  */
 export const queryMcpLogSummary = (requestId: string) =>
   http.get<IMCPServerLogQuerySummaryOutput>(`${path}/mcp-server-logs/query/${requestId}/summary/`);
 
 /**
- *  根据 request_id 或 x_request_id 查询 MCP Server 调用链路详情
- * @param requestId 请求id 或全链路请求id
+ *  根据 X-Bkapi-Request-ID 查询 MCP Server 调用链路详情
+ * @param requestId 网关请求 ID
  */
 export const queryMcpLogChain = (requestId: string) =>
   http.get<IMCPServerLogChainOutput>(`${path}/mcp-server-logs/query/${requestId}/chain/`);

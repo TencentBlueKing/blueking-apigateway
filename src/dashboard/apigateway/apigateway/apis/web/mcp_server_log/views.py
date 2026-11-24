@@ -258,18 +258,17 @@ class MCPServerLogChainApi(generics.RetrieveAPIView):
     name="get",
     decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogOutputSLZ(many=True)},
-        description="根据 request_id 或 x_request_id 查询 MCP Server 日志（工具箱，无需网关权限）",
+        description="根据 X-Bkapi-Request-ID 查询 MCP Server 日志（工具箱，无需网关权限）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
 class MCPServerLogQueryApi(generics.RetrieveAPIView):
-    """工具箱中根据 request_id 或 x_request_id 查询 MCP Server 日志
+    """工具箱中根据 X-Bkapi-Request-ID 查询 MCP Server 日志
 
     该接口注册在不带 gateway_id 的顶层路径，供平台工具箱使用。
     仅需登录认证，跳过网关权限校验（与 LogDetailInfoApi 对齐）。
 
-    支持通过 request_id（X-Bkapi-Request-ID）或 x_request_id（X-Request-Id）查询。
-    接口会自动识别传入的 ID 类型并进行相应查询。
+    仅支持入口网关或下游网关生成的 X-Bkapi-Request-ID，不按 X-Request-ID 回退查询。
 
     注意：此接口查询所有层级的日志（HTTP 层、MCP 协议层、审计日志），
     不强制要求 mcp_method 字段存在。
@@ -278,7 +277,7 @@ class MCPServerLogQueryApi(generics.RetrieveAPIView):
     gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        result = search_chain_logs_with_gateway_by_any_id(request_id)
+        result = search_chain_logs_with_gateway_by_any_id(request_id, allow_x_request_id=False)
         return OKJsonResponse(data=result)
 
 
@@ -286,12 +285,12 @@ class MCPServerLogQueryApi(generics.RetrieveAPIView):
     name="get",
     decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogQuerySummaryOutputSLZ()},
-        description="根据 request_id 或 x_request_id 查询 MCP Server 调用链汇总信息（工具箱，无需网关权限）",
+        description="根据 X-Bkapi-Request-ID 查询 MCP Server 调用链汇总信息（工具箱，无需网关权限）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
 class MCPServerLogQuerySummaryApi(generics.RetrieveAPIView):
-    """工具箱中根据 request_id 或 x_request_id 查询 MCP Server 调用链汇总信息
+    """工具箱中根据 X-Bkapi-Request-ID 查询 MCP Server 调用链汇总信息
 
     该接口注册在不带 gateway_id 的顶层路径，供平台工具箱使用。
     仅需登录认证，跳过网关权限校验。
@@ -303,7 +302,7 @@ class MCPServerLogQuerySummaryApi(generics.RetrieveAPIView):
     gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        summary = search_chain_summary_by_any_id(request_id)
+        summary = search_chain_summary_by_any_id(request_id, allow_x_request_id=False)
         slz = MCPServerLogQuerySummaryOutputSLZ(instance=summary)
         return OKJsonResponse(data=slz.data)
 
@@ -312,12 +311,12 @@ class MCPServerLogQuerySummaryApi(generics.RetrieveAPIView):
     name="get",
     decorator=extend_schema(
         responses={status.HTTP_200_OK: MCPServerLogChainOutputSLZ()},
-        description="根据 request_id 或 x_request_id 查询 MCP Server 调用链路详情（工具箱，无需网关权限）",
+        description="根据 X-Bkapi-Request-ID 查询 MCP Server 调用链路详情（工具箱，无需网关权限）",
         tags=["WebAPI.MCPServer.Log"],
     ),
 )
 class MCPServerLogQueryChainApi(generics.RetrieveAPIView):
-    """工具箱中根据 request_id 或 x_request_id 查询 MCP Server 调用链路详情
+    """工具箱中根据 X-Bkapi-Request-ID 查询 MCP Server 调用链路详情
 
     该接口注册在不带 gateway_id 的顶层路径，供平台工具箱使用。
     仅需登录认证，跳过网关权限校验。
@@ -335,6 +334,6 @@ class MCPServerLogQueryChainApi(generics.RetrieveAPIView):
     gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        chain_data = search_chain_with_summary_by_any_id(request_id)
+        chain_data = search_chain_with_summary_by_any_id(request_id, allow_x_request_id=False)
         slz = MCPServerLogChainOutputSLZ(instance=chain_data)
         return OKJsonResponse(data=slz.data)
