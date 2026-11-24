@@ -551,10 +551,7 @@ var _ = Describe("MCPProxy", func() {
 			}
 
 			Expect(completeLog).NotTo(BeNil())
-			Expect(completeLog["params"]).To(Equal(util.TruncateJSON(
-				arguments,
-				config.G.McpServer.LogTruncate.GetAuditLogMaxBodySize(),
-			)))
+			Expect(completeLog["params"]).To(Equal(util.HiddenLogBody))
 			Expect(completeLog).To(HaveKeyWithValue("request_body_size", float64(len(canonicalArguments))))
 			Expect(completeLog).NotTo(HaveKey("request"))
 			Expect(upstreamBody).To(MatchJSON(`{"value":"` + strings.Repeat("x", 5000) + `"}`))
@@ -786,7 +783,7 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(auditStatus).To(Equal("failed"))
 			Expect(auditLatency).To(BeNumerically(">", 0))
-			Expect(auditResponse).To(ContainSubstring("unexpected submit result type"))
+			Expect(auditResponse).To(Equal(util.HiddenLogBody))
 			Expect(auditResponseSize).To(Equal(int64(0)))
 			Expect(auditUpstreamReqID).To(BeEmpty())
 			Expect(result).NotTo(BeNil())
@@ -854,7 +851,7 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(status).To(Equal("failed"))
 			Expect(latency).To(BeNumerically(">", 0))
-			Expect(response).To(Equal("decode arguments failed"))
+			Expect(response).To(Equal(util.HiddenLogBody))
 		})
 
 		It("marks panic as failed and keeps the panic available for outer recovery", func() {
@@ -945,7 +942,7 @@ var _ = Describe("MCPProxy", func() {
 			},
 		)
 
-		It("preserves non-JSON error body verbatim in envelope preview", func() {
+		It("hides non-JSON error bodies in envelope preview", func() {
 			payload := newToolResponsePayload(
 				500, "req-1", "text/html",
 				[]byte(`<html><body>upstream 500</body></html>`),
@@ -964,7 +961,7 @@ var _ = Describe("MCPProxy", func() {
 				"request_id": "req-1",
 				"trace_id": "",
 				"x_request_id": "",
-				"response_body": "<html><body>upstream 500</body></html>"
+				"response_body": "正文已屏蔽：截断或格式未知，无法可靠脱敏"
 			}`))
 			Expect(upstreamReq).To(Equal("req-1"))
 		})

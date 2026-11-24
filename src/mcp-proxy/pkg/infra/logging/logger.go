@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/util"
 )
 
 // newSentryLogCore
@@ -97,14 +98,8 @@ func newZapJSONLogger(cfg *config.LogConfig, options []zap.Option) *zap.Logger {
 		w,
 		l,
 	)
-	// 日志脱敏
-	if cfg.Desensitization.Enabled {
-		fieldMap := make(map[string][]string)
-		for _, filed := range cfg.Desensitization.Fields {
-			fieldMap[filed.Key] = filed.JsonPath
-		}
-		options = append(options, WithDesensitize(fieldMap))
-	}
+	// Protect all destinations, including an optional Sentry tee, with the same boundary.
+	options = append(options, withLogSanitizer(util.NewLogSanitizer(cfg.Desensitization)))
 
 	return zap.New(core, options...)
 }

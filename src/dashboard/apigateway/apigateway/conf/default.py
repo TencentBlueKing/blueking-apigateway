@@ -807,6 +807,9 @@ API_RESPONSE_ERR_CODE_DOC_DIR = os.path.join(BASE_DIR, "data/knowledge_doc/api_r
 # ==============================================================================
 # 访问日志
 # ==============================================================================
+# Additional credential keys/headers; built-in log masking rules always apply.
+LOG_SENSITIVE_KEYS = env.list("BK_APIGW_LOG_SENSITIVE_KEYS", default=[])
+
 ACCESS_LOG_CONFIG = {
     "es_time_field_name": "dtEventTimeStamp",
     "es_index": env.str("BK_APIGW_API_LOG_ES_INDEX", "2_bklog_bkapigateway_apigateway_container*"),

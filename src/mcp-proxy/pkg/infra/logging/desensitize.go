@@ -16,96 +16,115 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-// Package logging ...
+// Package logging provides bounded credential-safe JSON loggers.
 package logging
 
 import (
-	"strconv"
-	"strings"
-
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/util"
 )
 
-const mask = "***************"
-
-// Desensitize ...
+// Desensitize sanitizes both bound and per-entry fields without mutating caller fields.
 type Desensitize struct {
-	core           zapcore.Core
-	sensitiveField map[string][]string
+	core      zapcore.Core
+	sanitizer *util.LogSanitizer
 }
 
-// With ...
+// With sanitizes fields before the underlying core stores them.
 func (r *Desensitize) With(fields []zapcore.Field) zapcore.Core {
-	return &Desensitize{
-		core:           r.core.With(fields),
-		sensitiveField: r.sensitiveField,
-	}
+	return &Desensitize{core: r.core.With(r.fields(fields)), sanitizer: r.sanitizer}
 }
 
-// Check ...
+// Check registers this core only when its underlying core accepts the entry.
 func (r *Desensitize) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	if r.Enabled(entry.Level) {
+	if r.core.Check(entry, nil) != nil {
 		return ce.AddCore(entry, r)
 	}
 	return ce
 }
 
-// Write ...
+// Write emits only sanitized copies of structured fields.
 func (r *Desensitize) Write(entry zapcore.Entry, fields []zapcore.Field) error {
-	for i := range fields {
-		if jsonPathList, ok := r.sensitiveField[fields[i].Key]; ok {
-			for _, jsonPath := range jsonPathList {
-				// 进行脱敏处理
-				result := gjson.Get(fields[i].String, jsonPath)
-				if !result.Exists() {
-					continue
+	return r.core.Write(entry, r.fields(fields))
+}
+
+func (r *Desensitize) fields(fields []zapcore.Field) []zapcore.Field {
+	out := make([]zapcore.Field, 0, len(fields))
+	for _, field := range fields {
+		if field.Type == zapcore.SkipType {
+			continue
+		}
+		if field.Type == zapcore.NamespaceType {
+			out = append(out, field)
+			continue
+		}
+		var value any
+		switch field.Type {
+		case zapcore.StringType:
+			value = field.String
+		case zapcore.ErrorType:
+			value = util.CredentialMask
+		case zapcore.ObjectMarshalerType, zapcore.InlineMarshalerType, zapcore.ArrayMarshalerType,
+			zapcore.StringerType:
+			// Marshal into a disposable map, then sanitize the resulting field graph.
+			encoded := zapcore.NewMapObjectEncoder()
+			field.AddTo(encoded)
+			if field.Type == zapcore.InlineMarshalerType {
+				safe := r.sanitizer.Sanitize("", encoded.Fields)
+				if values, ok := safe.(map[string]any); ok {
+					for key, item := range values {
+						out = append(out, zap.Any(key, item))
+					}
+				} else {
+					out = append(out, zap.String("body", util.HiddenLogBody))
 				}
-				if !result.IsArray() {
-					maskValue := getSensitiveFieldMaskValue(result.String())
-					fields[i].String, _ = sjson.Set(fields[i].String, jsonPath, maskValue)
-					continue
-				}
-				for index, value := range result.Array() {
-					fileValue := value.String()
-					maskValue := getSensitiveFieldMaskValue(fileValue)
-					indexJsonPath := strings.ReplaceAll(jsonPath, "#", strconv.Itoa(index))
-					fields[i].String, _ = sjson.Set(fields[i].String, indexJsonPath, maskValue)
-				}
+				continue
 			}
+			value = encoded.Fields[field.Key]
+		default:
+			encoded := zapcore.NewMapObjectEncoder()
+			field.AddTo(encoded)
+			value = encoded.Fields[field.Key]
 		}
+		out = append(out, zap.Any(field.Key, r.sanitizer.Sanitize(field.Key, value)))
 	}
-	return r.core.Write(entry, fields)
+	return out
 }
 
-// Sync ...
-func (r *Desensitize) Sync() error {
-	return r.core.Sync()
-}
+// Sync flushes the underlying logger.
+func (r *Desensitize) Sync() error { return r.core.Sync() }
 
-// Enabled ...
-func (r *Desensitize) Enabled(level zapcore.Level) bool {
-	return r.core.Enabled(level)
-}
+// Enabled delegates the level filter to the underlying core.
+func (r *Desensitize) Enabled(level zapcore.Level) bool { return r.core.Enabled(level) }
 
-// WithDesensitize ...
+// WithDesensitize retains additive legacy JSON-path rules with default credential protection.
 func WithDesensitize(paths map[string][]string) zap.Option {
-	return zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return &Desensitize{
-			core:           core,
-			sensitiveField: paths,
-		}
-	})
+	cfg := config.DesensitizationConfig{Enabled: true}
+	for key, path := range paths {
+		cfg.Fields = append(cfg.Fields, config.DesensitizationFiled{Key: key, JsonPath: path})
+	}
+	return withLogSanitizer(util.NewLogSanitizer(cfg))
 }
 
-func getSensitiveFieldMaskValue(fileValue string) string {
-	maskValue := mask
-	if len(fileValue) > 6 {
-		prefix := fileValue[:3]
-		suffix := fileValue[len(fileValue)-3:]
-		maskValue = prefix + maskValue + suffix
+func withLogSanitizer(s *util.LogSanitizer) zap.Option {
+	return zap.WrapCore(func(core zapcore.Core) zapcore.Core { return &Desensitize{core: core, sanitizer: s} })
+}
+
+// APILogSanitizer returns the configured API logger rules for sanitization before preview truncation.
+func APILogSanitizer() *util.LogSanitizer {
+	if config.G == nil {
+		return util.NewLogSanitizer(config.DesensitizationConfig{})
 	}
-	return maskValue
+	return util.NewLogSanitizer(config.G.Logger.API.Desensitization)
+}
+
+// AuditLogSanitizer returns the configured audit logger rules for sanitization before preview truncation.
+func AuditLogSanitizer() *util.LogSanitizer {
+	if config.G == nil {
+		return util.NewLogSanitizer(config.DesensitizationConfig{})
+	}
+	return util.NewLogSanitizer(config.G.Logger.Audit.Desensitization)
 }

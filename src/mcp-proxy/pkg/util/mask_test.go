@@ -89,7 +89,7 @@ var _ = Describe("Mask Utilities", func() {
 			}
 			masked := util.MaskSensitiveHeaders(headers)
 
-			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("abc***ijk"))
+			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("***"))
 			Expect(masked["Content-Type"]).To(Equal("application/json"))
 		})
 
@@ -99,7 +99,7 @@ var _ = Describe("Mask Utilities", func() {
 			}
 			masked := util.MaskSensitiveHeaders(headers)
 
-			Expect(masked[constant.BkGatewayJWTHeaderKey]).To(Equal("eyJ***CJ9"))
+			Expect(masked[constant.BkGatewayJWTHeaderKey]).To(Equal("***"))
 		})
 
 		It("should mask short sensitive headers with ***", func() {
@@ -126,7 +126,7 @@ var _ = Describe("Mask Utilities", func() {
 			}
 			masked := util.MaskSensitiveHeaders(headers)
 
-			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("abc***efg"))
+			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("***"))
 		})
 
 		It("should not modify non-sensitive headers", func() {

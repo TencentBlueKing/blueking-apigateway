@@ -21,6 +21,8 @@ package proxy
 import (
 	"strings"
 
+	"mcp_proxy/pkg/util"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -95,7 +97,7 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(out).To(ContainSubstring(truncatedSuffix))
 		})
 
-		It("preserves non-JSON HTML body as a JSON string", func() {
+		It("hides non-JSON HTML body with envelope identifiers", func() {
 			html := []byte(`<html><body>500 Internal Server Error</body></html>`)
 			payload := newToolResponsePayload(500, "upstream-req-1", "text/html", html)
 			out := payload.EnvelopePreview("trace-1", "x-req-1", 16384)
@@ -104,12 +106,12 @@ var _ = Describe("toolResponsePayload", func() {
 				"request_id": "upstream-req-1",
 				"trace_id": "trace-1",
 				"x_request_id": "x-req-1",
-				"response_body": "<html><body>500 Internal Server Error</body></html>"
+				"response_body": "正文已屏蔽：截断或格式未知，无法可靠脱敏"
 			}`))
 			Expect(out).NotTo(ContainSubstring(`"response_body":null`))
 		})
 
-		It("preserves non-JSON plain text body as a JSON string", func() {
+		It("hides unknown plain text bodies", func() {
 			payload := newToolResponsePayload(
 				500,
 				"",
@@ -117,21 +119,21 @@ var _ = Describe("toolResponsePayload", func() {
 				[]byte("upstream timeout"),
 			)
 			out := payload.EnvelopePreview("", "", 16384)
-			Expect(out).To(ContainSubstring(`"response_body":"upstream timeout"`))
+			Expect(out).To(ContainSubstring(`"response_body":"正文已屏蔽：截断或格式未知，无法可靠脱敏"`))
 		})
 
-		It("preserves malformed JSON body (Content-Type lied) as a JSON string", func() {
+		It("hides malformed declared JSON bodies", func() {
 			payload := newToolResponsePayload(500, "", "application/json", []byte(`{not valid json`))
 			out := payload.EnvelopePreview("", "", 16384)
-			Expect(out).To(ContainSubstring(`"response_body":"{not valid json"`))
+			Expect(out).To(ContainSubstring(`"response_body":"正文已屏蔽：截断或格式未知，无法可靠脱敏"`))
 			Expect(out).NotTo(ContainSubstring(`"response_body":null`))
 		})
 
-		It("truncates non-JSON bodies that exceed the limit", func() {
+		It("hides unknown bodies regardless of preview limit", func() {
 			huge := []byte(strings.Repeat("x", 5000))
 			payload := newToolResponsePayload(500, "", "text/plain", huge)
 			out := payload.EnvelopePreview("", "", 100)
-			Expect(out).To(ContainSubstring(truncatedSuffix))
+			Expect(out).To(ContainSubstring(util.HiddenLogBody))
 		})
 	})
 

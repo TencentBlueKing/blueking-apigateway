@@ -66,7 +66,7 @@ var _ = Describe("toolRequestPayload", func() {
 
 		handlerRequest, err := payload.decodeHandlerRequest()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(payload.bodyAuditPreview(handlerRequest.BodyParam, 20)).To(Equal(
+		Expect(payload.bodyAuditPreview(20)).To(Equal(
 			string(handlerRequest.BodyParam[:20]) + truncatedSuffix,
 		))
 	})
@@ -76,9 +76,9 @@ var _ = Describe("toolRequestPayload", func() {
 			payload, err := newToolRequestPayload(arguments)
 			Expect(err).NotTo(HaveOccurred())
 
-			handlerRequest, err := payload.decodeHandlerRequest()
+			_, err = payload.decodeHandlerRequest()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(payload.bodyAuditPreview(handlerRequest.BodyParam, 100)).To(Equal("null"))
+			Expect(payload.bodyAuditPreview(100)).To(Equal("null"))
 		},
 		Entry("missing body_param", json.RawMessage(`{}`)),
 		Entry("explicit null body_param", json.RawMessage(`{"body_param":null}`)),

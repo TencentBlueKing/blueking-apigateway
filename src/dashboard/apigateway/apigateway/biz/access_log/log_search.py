@@ -24,6 +24,7 @@ from elasticsearch_dsl.aggs import A
 
 from apigateway.service.es import BKLogESClient
 from apigateway.utils import time as time_utils
+from apigateway.utils.log_scrubber import LogDataScrubber
 from apigateway.utils.time import SmartTimeRange
 
 from .constants import ES_OUTPUT_FIELDS
@@ -187,7 +188,7 @@ class LogSearchClient:
         }
 
     def _to_log_display(self, hit: Dict) -> Dict:
-        log = hit["_source"]
+        log = LogDataScrubber().scrub_log(hit["_source"])
         # 从 ES 排序结果获取时间戳（排序字段为 dtEventTimeStamp）
         # hit["sort"] 在 order=True 时总是存在
         sort = hit.get("sort")

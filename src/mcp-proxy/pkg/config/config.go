@@ -57,9 +57,12 @@ type LogConfig struct {
 
 // DesensitizationConfig ...
 type DesensitizationConfig struct {
-	// 脱敏日志开关
+	// Enabled controls legacy JSON-path rules; default credential masking is always active.
 	Enabled bool
-	// 敏感字段列表
+	// SensitiveKeys and SensitiveHeaders append case-insensitive exact keys to the defaults.
+	SensitiveKeys    []string
+	SensitiveHeaders []string
+	// Fields retains the legacy additive JSON-path rules.
 	Fields []DesensitizationFiled
 }
 

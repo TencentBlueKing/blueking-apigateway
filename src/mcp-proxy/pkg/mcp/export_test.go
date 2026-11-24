@@ -150,3 +150,6 @@ func PrefetchServerConfigsForTest(
 ) []*ServerLoadResult {
 	return prefetchServerConfigs(ctx, mcpProxy, servers)
 }
+
+// LoggingMiddlewareWithLogger exposes the logger seam for emitted-log tests.
+var LoggingMiddlewareWithLogger = loggingMiddleware
