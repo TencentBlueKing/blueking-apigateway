@@ -57,6 +57,7 @@ export interface IResourceVersionListOutput {
     name: string
   }[]
   sdk_count: number
+  deletable?: boolean
 }
 
 /**

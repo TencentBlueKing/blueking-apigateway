@@ -85,6 +85,9 @@ export interface IMCPServerAppPermissionListOutput {
   bk_app_code: string
   expires: string
   grant_type: string
+  applied_by?: string
+  handled_by?: string
+  effective_time?: string
   mcp_server: {
     id: number
     name: string

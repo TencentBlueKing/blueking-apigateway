@@ -43,8 +43,7 @@
       :expandable="expandableConfig"
       :expanded-row-keys="expandableConfig.expandedRowKeys"
       :show-first-full-row="selectedRows.length > 0"
-      :disabled-check-selection="disabledSelection"
-      :max-limit-config="{ allocatedHeight: 300, mode: 'tdesign' }"
+      :disabled-check-selection="isITSMApproval"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
@@ -56,6 +55,9 @@
       @selection-change="handleSelectionChange"
       @clear-filter="handleClearFilter"
     >
+      <template #selectionPopoverContent>
+        {{ t('单据接入了 ITSM，ITSM 不支持批量审批') }}
+      </template>
       <template #expandedRow="{ row }">
         <BkLoading
           :loading="lastExpandRow?.isLoading"
@@ -110,8 +112,6 @@
 import { Button, Message, Popover } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
 import { locale, t } from '@/locales';
-import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { ITableEmptyType, ITableMethod } from '@/types/common';
 import type { IResource } from '@/types/permission';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
@@ -153,8 +153,18 @@ import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
 import BasicForm from '@/views/personal-workbench/components/Form.vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableEmptyType,
+  type ITableSelection,
+  type RowEventContext,
+  type TableRow,
+} from '@/components/base/ag-table';
 import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
+
+type IWorkbenchRow = TableRow<IPersonalWorkbenchUIState>;
 
 interface IProps {
   activeTab?: ITabKey
@@ -172,9 +182,9 @@ const featureFlagStore = useFeatureFlag();
 const { getMyPendingData } = usePersonalWorkbench();
 
 const basicFormRef = useTemplateRef<InstanceType<typeof BasicForm>>('basicFormRef');
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const childTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('childTableRef');
-const tableData = ref<IPersonalWorkbenchListResponse[]>([]);
+const tableRef = useTemplateRef<IAgTableInstance<IPersonalWorkbenchUIState>>('tableRef');
+const childTableRef = useTemplateRef<IAgTableInstance<IResource>>('childTableRef');
+const tableData = ref<IPersonalWorkbenchUIState[]>([]);
 const selectedRows = ref<IPersonalWorkbenchUIState[]>([]);
 const selectedRowKeys = ref<(string | number)[]>([]);
 const settings = ref(null);
@@ -198,8 +208,8 @@ const filterData = ref<FilterValue | IPersonalWorkbenchFilter>(cloneDeep(DEFAULT
 const expandableConfig = ref({
   expandColumn: false,
   expandedRowKeys: [] as number[],
-  canExpand: (row: TableRowData) => {
-    return ['resource'].includes(row.grant_dimension);
+  canExpand: (row: IPersonalWorkbenchUIState) => {
+    return ['resource'].includes(row.grant_dimension ?? '');
   },
 });
 const curAction = ref<IFomDataQuery>({
@@ -216,10 +226,10 @@ const curPermission = ref<IPermission>({
   isSelectAll: true,
 });
 // 缓存上一个展开行
-const lastExpandRow = ref<IPersonalWorkbenchUIState | TableRowData | null>(null);
+const lastExpandRow = ref<IWorkbenchRow | null>(null);
 const gatewayList = ref<IPersonalWorkbenchFilterOptionResponse[]>([]);
 const mcpServerList = ref<IPersonalWorkbenchFilterOptionResponse[]>([]);
-const childrenColumns = shallowRef<PrimaryTableProps['columns']>([
+const childrenColumns = shallowRef<ITableColumn<IResource>[]>([
   {
     title: '',
     colKey: 'serial-number',
@@ -277,27 +287,27 @@ const approvalStatusList = computed(() =>
 );
 
 // 授权维度：资源维度需要带上资源数量
-const getGrantDimensionText = (row: TableRowData) =>
+const getGrantDimensionText = (row: IWorkbenchRow) =>
   `${row.grant_dimension_display} (${row.resources?.length || 0})`;
 
 const checkTextOverflow = (el: HTMLElement | null) => Boolean(el && el.scrollWidth > el.clientWidth);
 
 // 文本溢出时才展示 tooltip，避免完整可见时重复提示
-const handleDimensionMouseEnter = (e: MouseEvent, row: TableRowData) => {
+const handleDimensionMouseEnter = (e: MouseEvent, row: IWorkbenchRow) => {
   const isOverflow = checkTextOverflow(e.currentTarget as HTMLElement);
   if (row.isGrantDimensionOverflow !== isOverflow) {
     row.isGrantDimensionOverflow = isOverflow;
   }
 };
 
-const handleDimensionMouseLeave = (row: TableRowData) => {
+const handleDimensionMouseLeave = (row: IWorkbenchRow) => {
   if (row.isGrantDimensionOverflow) {
     delete row.isGrantDimensionOverflow;
   }
 };
 
-const getWorkbenchGateway = (row: TableRowData) => {
-  const name = row.gateway_name || row?.mcp_server?.gateway_name;
+const getWorkbenchGateway = (row: IWorkbenchRow) => {
+  const name = row.gateway_name || row?.mcp_server?.gateway_name || '';
   const matchedGateway = gatewayList.value.find(item =>
     item.id === row.gateway_id || item.name === name,
   );
@@ -316,16 +326,16 @@ const getWorkbenchGateway = (row: TableRowData) => {
   };
 };
 
-const tableColumns = computed(() => {
-  const gatewayAppCodeColumn: PrimaryTableProps['columns'] = [
+const tableColumns = computed<ITableColumn<IPersonalWorkbenchUIState>[]>(() => {
+  const gatewayAppCodeColumn: ITableColumn<IPersonalWorkbenchUIState>[] = [
     {
       title: t('网关'),
       colKey: 'gateway_id',
       ellipsis: false,
       width: 200,
-      fixed: 'left' as const,
+      fixed: 'left',
       filter: {
-        type: 'single' as const,
+        type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: gatewayList.value.map((item: IPersonalWorkbenchFilterOptionResponse) => ({
@@ -333,7 +343,7 @@ const tableColumns = computed(() => {
           value: item.id,
         })),
       },
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         const { name, displayName, hasDisplayName } = getWorkbenchGateway(row);
 
         // 展示名与 ID 两行共用同一套溢出 tooltip 逻辑，抽成小函数避免重复
@@ -372,13 +382,13 @@ const tableColumns = computed(() => {
     },
   ];
 
-  const columns: PrimaryTableProps['columns'] = [
+  const rawColumns: ITableColumn<IPersonalWorkbenchUIState>[] = [
     {
       colKey: 'applied_by',
       title: t('申请人'),
       ellipsis: true,
       width: 120,
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         if (!row?.applied_by) return '--';
 
         return featureFlagStore.isEnableDisplayName
@@ -391,7 +401,7 @@ const tableColumns = computed(() => {
       colKey: 'applied_time',
       ellipsis: true,
       width: 220,
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         return row?.applied_time || row?.created_time || '--';
       },
     },
@@ -400,13 +410,13 @@ const tableColumns = computed(() => {
       title: t('审批人'),
       ellipsis: true,
       width: 160,
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         if (!row?.approvers?.length && !row?.handled_by) return '--';
 
         return (
           <div class="w-full">
             <AgOverflowTags
-              data={row.approvers || [row?.handled_by]}
+              data={row.approvers || (row.handled_by ? [row.handled_by] : [])}
               is-member={!row.approvers}
             />
           </div>
@@ -419,7 +429,7 @@ const tableColumns = computed(() => {
       ellipsis: true,
       width: 160,
       filter: {
-        type: 'single' as const,
+        type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: approvalStatusList.value.map(({ label, value }) => ({
@@ -427,7 +437,7 @@ const tableColumns = computed(() => {
           value,
         })),
       },
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         const statusKey = row?.status as keyof typeof approvalStatusMap.value;
         const status = approvalStatusMap.value[statusKey] ?? '--';
         return (
@@ -440,9 +450,9 @@ const tableColumns = computed(() => {
     {
       title: t('操作'),
       colKey: 'operate',
-      fixed: 'right' as const,
+      fixed: 'right',
       width: operateColumnWidth.value,
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         const isItsm = isITSMApproval(row);
 
         if (isPending.value) {
@@ -462,7 +472,8 @@ const tableColumns = computed(() => {
 
           if (isGateway.value) {
             // 是否展开了资源行
-            const isExpandResource = expandableConfig.value.expandedRowKeys.includes(row.id) && !['api'].includes(row.grant_dimension);
+            const isExpandResource = expandableConfig.value.expandedRowKeys.includes(row.id)
+              && !['api'].includes(row.grant_dimension ?? '');
 
             // 当前行自己的选中数量
             const selectedLen = row.selection?.length || lastExpandRow.value?.resource_ids?.length || 0;
@@ -596,33 +607,35 @@ const tableColumns = computed(() => {
         );
       },
     },
-  ].filter((col) => {
-    if (['applied_by'].includes(col.colKey) && ['applied'].includes(applyStatus)) {
+  ];
+
+  const columns = rawColumns.filter((col) => {
+    if (['applied_by'].includes(col.colKey ?? '') && ['applied'].includes(applyStatus)) {
       return false;
     }
 
-    if (['handled_by'].includes(col.colKey) && !['applied'].includes(applyStatus)) {
+    if (['handled_by'].includes(col.colKey ?? '') && !['applied'].includes(applyStatus)) {
       return false;
     }
 
     return true;
   });
 
-  const gatewayColumns: PrimaryTableProps['columns'] = [
-    ...gatewayAppCodeColumn!,
+  const gatewayColumns: ITableColumn<IPersonalWorkbenchUIState>[] = [
+    ...gatewayAppCodeColumn,
     {
       title: t('授权维度'),
       colKey: 'grant_dimension',
       ellipsis: true,
       width: 120,
       filter: {
-        type: 'single' as const,
+        type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: GRANT_DIMENSION_TYPE_LIST,
       },
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
-        if (['resource'].includes(row.grant_dimension)) {
+      cell: (_h, { row }) => {
+        if (['resource'].includes(row.grant_dimension ?? '')) {
           return (
             <div class="flex items-center min-w-0">
               <ag-icon
@@ -659,17 +672,17 @@ const tableColumns = computed(() => {
       ellipsis: true,
       width: 100,
     },
-    ...columns!,
+    ...columns,
   ];
 
-  const mcpColumns: PrimaryTableProps['columns'] = [
-    ...gatewayAppCodeColumn!,
+  const mcpColumns: ITableColumn<IPersonalWorkbenchUIState>[] = [
+    ...gatewayAppCodeColumn,
     {
       title: 'MCP Server',
       colKey: 'mcp_server_id',
       ellipsis: true,
       filter: {
-        type: 'single' as const,
+        type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: mcpServerList.value.map((item: IPersonalWorkbenchFilterOptionResponse) => ({
@@ -677,7 +690,7 @@ const tableColumns = computed(() => {
           value: item.id,
         })),
       },
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         const { name, title = '' } = row?.mcp_server ?? {};
 
         if (!name) return '--';
@@ -687,7 +700,7 @@ const tableColumns = computed(() => {
         return validTitle ? `${validTitle} (${name})` : name;
       },
     },
-    ...columns!,
+    ...columns,
   ];
 
   return isGateway.value ? gatewayColumns : mcpColumns;
@@ -714,7 +727,7 @@ const getList = async () => {
 const getTableData = async (params: {
   offset: number
   limit: number
-}) => {
+}): Promise<ICountAndResults<IPersonalWorkbenchUIState>> => {
   // 触发表格组件watch
   settings.value = null;
   const { time_start, time_end, ...filters } = filterData.value;
@@ -760,12 +773,12 @@ const fetchMcpServerFilterOptions = async () => {
 };
 fetchMcpServerFilterOptions();
 
-const isITSMApproval = (row: TableRowData) => {
-  return isEnabledITSMApply.value && Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+const isITSMApproval = (row: IWorkbenchRow) => {
+  return Boolean(isEnabledITSMApply.value && row.itsm_ticket_url && row.itsm_ticket_id);
 };
 
 // 查看申请详情
-const handleShowDetail = (row: TableRowData) => {
+const handleShowDetail = (row: IWorkbenchRow) => {
   if (isITSMApproval(row)) {
     window.open(row?.itsm_ticket_url);
     return;
@@ -775,11 +788,11 @@ const handleShowDetail = (row: TableRowData) => {
     isShow: true,
     title: `${t('申请应用：')}${row.bk_app_code}`,
   };
-  approvalSliderDetail.value = { ...row } as IPersonalWorkbenchUIState;
+  approvalSliderDetail.value = { ...row };
 };
 
 // 撤销申请（仅待审批的申请支持撤销）
-const handleCancelApply = (row: TableRowData) => {
+const handleCancelApply = (row: IWorkbenchRow) => {
   usePopInfoBox({
     isShow: true,
     type: 'warning',
@@ -790,7 +803,7 @@ const handleCancelApply = (row: TableRowData) => {
     onConfirm: async () => {
       try {
         const request = isGateway.value ? cancelGatewayApplied : cancelMcpApplied;
-        await request(row.id as number);
+        await request(row.id);
         Message({
           message: t('撤销成功'),
           theme: 'success',
@@ -809,7 +822,7 @@ const handleCancelApply = (row: TableRowData) => {
 };
 
 // 删除申请（仅已撤销的申请支持删除）
-const handleDeleteApply = (row: TableRowData) => {
+const handleDeleteApply = (row: IWorkbenchRow) => {
   usePopInfoBox({
     isShow: true,
     type: 'warning',
@@ -821,7 +834,7 @@ const handleDeleteApply = (row: TableRowData) => {
     onConfirm: async () => {
       try {
         const request = isGateway.value ? deleteGatewayApplied : deleteMcpApplied;
-        await request(row.id as number);
+        await request(row.id);
         Message({
           message: t('删除成功'),
           theme: 'success',
@@ -837,12 +850,6 @@ const handleDeleteApply = (row: TableRowData) => {
       }
     },
   });
-};
-
-const disabledSelection = (row: TableRowData) => {
-  const isDisabled = isITSMApproval(row);
-  row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
-  return isDisabled;
 };
 
 // 批量网关审批提交
@@ -934,14 +941,11 @@ const handleMcpApproveReject = async () => {
   }
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   filterData.value = { ...filterItem };
 };
 
-const handleRowClick = ({ e, row }: {
-  e: MouseEvent
-  row: TableRowData
-}) => {
+const handleRowClick = ({ e, row }: RowEventContext<IWorkbenchRow>) => {
   e.stopPropagation();
 
   if (!row?.grant_dimension?.includes('resource')) return;
@@ -972,31 +976,20 @@ const handleRowClick = ({ e, row }: {
   }, 300);
 };
 
-const handleSelectionChange = ({
-  selections,
-  selectionsRowKeys,
-}: {
-  selections: TableRowData[]
-  selectionsRowKeys: (string | number)[]
-}) => {
-  selectedRows.value = selections as IPersonalWorkbenchUIState[];
+const handleSelectionChange = ({ selections, selectionsRowKeys }: ITableSelection<IWorkbenchRow>) => {
+  selectedRows.value = selections;
   selectedRowKeys.value = selectionsRowKeys;
 };
 
 const handleChildSelectionChange = (
-  row: TableRowData,
-  { selections,
-    selectionsRowKeys }:
-  {
-    selections: TableRowData[]
-    selectionsRowKeys: (string | number)[]
-  },
+  row: IWorkbenchRow,
+  { selections, selectionsRowKeys }: ITableSelection<TableRow<IResource>>,
 ) => {
   const selectedIds = selectionsRowKeys as number[];
   const total = row.resources?.length ?? 0;
 
   const rowState = {
-    selection: selections as IResource[],
+    selection: selections,
     resource_ids: selectedIds,
     isSelectAll: total > 0 && selectedIds.length === total,
   };
@@ -1014,9 +1007,17 @@ const handleChildSelectionChange = (
 };
 
 // 全部通过/部分通过 Dialog
-const handleShowGatewayApprove = (e: MouseEvent, row: TableRowData) => {
+const handleShowGatewayApprove = (e: MouseEvent, row: IWorkbenchRow) => {
   e.stopPropagation();
-  curPermission.value = (lastExpandRow.value || row) as IPersonalWorkbenchUIState;
+  const targetRow = lastExpandRow.value || row;
+  curPermission.value = {
+    bk_app_code: targetRow.bk_app_code,
+    grant_dimension: targetRow.grant_dimension,
+    resources: targetRow.resources,
+    selection: targetRow.selection,
+    resource_ids: targetRow.resource_ids ?? [],
+    isSelectAll: targetRow.isSelectAll ?? true,
+  };
   curAction.value = {
     ids: [row.id],
     gateway_id: row.gateway_id,
@@ -1039,15 +1040,23 @@ const handleShowGatewayApprove = (e: MouseEvent, row: TableRowData) => {
 };
 
 // 全部驳回 Dialog
-const handleShowGatewayReject = (e: MouseEvent, row: TableRowData) => {
+const handleShowGatewayReject = (e: MouseEvent, row: IWorkbenchRow) => {
   e.stopPropagation();
-  curPermission.value = (lastExpandRow.value || row) as IPersonalWorkbenchUIState;
+  const targetRow = lastExpandRow.value || row;
+  curPermission.value = {
+    bk_app_code: targetRow.bk_app_code,
+    grant_dimension: targetRow.grant_dimension,
+    resources: targetRow.resources,
+    selection: targetRow.selection,
+    resource_ids: targetRow.resource_ids ?? [],
+    isSelectAll: targetRow.isSelectAll ?? true,
+  };
   if (curPermission.value.isSelectAll) {
     curPermission.value.resource_ids = [];
     curPermission.value.selection = [];
   }
   curAction.value = {
-    ids: [row.id!],
+    ids: [row.id],
     gateway_id: row.gateway_id,
     status: 'rejected',
     comment: t('全部驳回'),
@@ -1060,12 +1069,12 @@ const handleShowGatewayReject = (e: MouseEvent, row: TableRowData) => {
 };
 
 // Mcp审批 Dialog
-const handleShowMcpApprove = (row: TableRowData, status: string, e: MouseEvent) => {
+const handleShowMcpApprove = (row: IWorkbenchRow, status: string, e: MouseEvent) => {
   e?.stopPropagation();
   curAction.value = {
-    id: row.id as number,
-    mcp_server_id: row?.mcp_server?.id as number,
-    gateway_id: row?.mcp_server?.gateway_id as number,
+    id: row.id,
+    mcp_server_id: row?.mcp_server?.id,
+    gateway_id: row?.mcp_server?.gateway_id,
     status: status as IApplyStatus,
     comment: status === 'approved' ? t('通过') : t('驳回'),
   };
@@ -1145,23 +1154,14 @@ const handleClearFilter = () => {
   handleClearSelection();
 };
 
-const getRowClass = ({ row }: { row: TableRowData }) => {
+const getRowClass = ({ row }: { row: IWorkbenchRow }) => {
   if (row?.grant_dimension?.includes('resource')) {
     return 'hover:cursor-pointer';
   }
   return '';
 };
 
-// 搜索McpServer列表
-const debounceSearch = debounce(async () => {
-  await getList();
-  // 处理非清除筛选条件后勾选数据回显
-  if (lastExpandRow.value?.selection?.length) {
-    setTimeout(() => {
-      childTableRef.value?.setSelectionData(lastExpandRow.value?.selection);
-    }, 200);
-  }
-}, 200);
+const debounceSearch = debounce(getList, 200);
 
 watch(() => filterData, () => {
   tableEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value))?.length > 0 ? 'searchEmpty' : 'empty';

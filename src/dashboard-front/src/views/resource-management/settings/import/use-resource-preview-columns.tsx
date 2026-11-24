@@ -16,12 +16,12 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import type { ITableColumn } from '@/components/base/ag-table';
 import { RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import type { ILocalImportedResource } from '@/types/resource';
 
-type PreviewColumn = NonNullable<PrimaryTableProps<ILocalImportedResource>['columns']>[number];
+type PreviewColumn = ITableColumn<ILocalImportedResource>;
 
 interface IPreviewColumns {
   identity: PreviewColumn[]
@@ -54,17 +54,19 @@ export const useResourcePreviewColumns = (getIsAiGateway: () => boolean, pathWid
           ellipsis: true,
         },
         ...(isAiGateway
-          ? [{
-            title: t('资源类型'),
-            colKey: 'kind',
-            minWidth: 100,
-            ellipsis: true,
-            cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
-              <bk-tag theme={getResourceTypeData(row.kind)?.theme ?? 'default'}>
-                {getResourceTypeData(row.kind)?.label ?? t('普通 API')}
-              </bk-tag>
-            ),
-          }]
+          ? [
+            {
+              title: t('资源类型'),
+              colKey: 'kind',
+              minWidth: 100,
+              ellipsis: true,
+              cell: (_h, { row }) => (
+                <bk-tag theme={getResourceTypeData(row.kind)?.theme ?? 'default'}>
+                  {getResourceTypeData(row.kind)?.label ?? t('普通 API')}
+                </bk-tag>
+              ),
+            },
+          ] satisfies PreviewColumn[]
           : []),
       ],
       requestAndBackend: [
@@ -73,14 +75,14 @@ export const useResourcePreviewColumns = (getIsAiGateway: () => boolean, pathWid
           colKey: 'path',
           ...pathSizing,
           ellipsis: true,
-          cell: (h: unknown, { row }: { row: ILocalImportedResource & { path_display?: string } }) => (
+          cell: (_h, { row }) => (
             <span>{row.match_subpath ? row.path_display : row.path}</span>
           ),
         },
         {
           title: t('前端请求方法'),
           colKey: 'method',
-          cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+          cell: (_h, { row }) => (
             <bk-tag theme={(METHOD_THEMES as any)[row.method!]}>
               {row.method}
             </bk-tag>
@@ -90,14 +92,14 @@ export const useResourcePreviewColumns = (getIsAiGateway: () => boolean, pathWid
           title: isAiGateway ? t('后端/模型服务') : t('后端服务'),
           colKey: 'backend',
           ellipsis: true,
-          cell: (h: unknown, { row }: { row: ILocalImportedResource }) => row.backend?.name ?? 'default',
+          cell: (_h, { row }) => row.backend?.name ?? 'default',
         },
         ...(!isAiGateway
           ? [
             {
               title: t('后端请求方法'),
               colKey: 'backend_method',
-              cell: (h: unknown, { row }: { row: ILocalImportedResource }) => {
+              cell: (_h, { row }) => {
                 const method = row.backend?.config?.method ?? row.method;
                 return <bk-tag theme={method && METHOD_THEMES[method]}>{method}</bk-tag>;
               },
@@ -107,11 +109,11 @@ export const useResourcePreviewColumns = (getIsAiGateway: () => boolean, pathWid
               colKey: 'backend_path',
               ...pathSizing,
               ellipsis: true,
-              cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+              cell: (_h, { row }) => (
                 row.backend?.config?.path ?? row.backend?.path ?? row.path
               ),
             },
-          ]
+          ] satisfies PreviewColumn[]
           : []),
       ],
     };

@@ -37,6 +37,7 @@
           v-model:table-data="tableData"
           resizable
           local-page
+          :auto-height="false"
           :show-pagination="false"
           :columns="tableColumns"
         />
@@ -50,7 +51,7 @@ import dayjs from 'dayjs';
 import { t } from '@/locales';
 import type { ITraceDetail } from '@/types/observability';
 import { useTrace } from '@/stores';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type ITableColumn } from '@/components/base/ag-table';
 
 interface IProps { traceChainDetail?: ITraceDetail }
 
@@ -74,29 +75,29 @@ const logPanels = [
   },
 ];
 
-const tableData = computed(() => {
+const tableData = computed<ITraceDetail[]>(() => {
   if (['proxy_log'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['http', 'mcp'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['http', 'mcp'].includes(item.layer)) ?? [];
   }
 
   if (['gateway_upstream'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['gateway_upstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['gateway_upstream'].includes(item.layer)) ?? [];
   }
 
   if (['gateway_downstream'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['gateway_downstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['gateway_downstream'].includes(item.layer)) ?? [];
   }
 
   return traceChainDetail?.logList ?? [];
 });
 
-const tableColumns = shallowRef<any>([
+const tableColumns = shallowRef<ITableColumn<ITraceDetail>[]>([
   {
     title: t('时间'),
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_: VNode, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return row.timestamp ? <span>{dayjs.unix(row.timestamp).format('YYYY-MM-DD HH:mm:ss ZZ')}</span> : '--';
     },
   },
@@ -104,7 +105,7 @@ const tableColumns = shallowRef<any>([
     title: t('服务'),
     colKey: 'service',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return row.service || '--';
     },
   },
@@ -117,7 +118,7 @@ const tableColumns = shallowRef<any>([
     title: t('方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return row.mcp_method || row.method;
     },
   },
@@ -126,7 +127,7 @@ const tableColumns = shallowRef<any>([
     colKey: 'path',
     ellipsis: true,
     width: 260,
-    cell: (_: VNode, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return row.http_path || row.path || row.operation;
     },
   },
@@ -134,7 +135,7 @@ const tableColumns = shallowRef<any>([
     title: t('状态码'),
     colKey: 'status',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return row.status || '--';
     },
   },
@@ -142,7 +143,7 @@ const tableColumns = shallowRef<any>([
     title: t('耗时'),
     colKey: 'latency',
     ellipsis: true,
-    cell: (_: any, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       const duration = row.latency || `${row.request_duration}ms`;
       if (!duration) {
         return '--';

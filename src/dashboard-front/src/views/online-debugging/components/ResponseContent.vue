@@ -177,6 +177,7 @@
                 size="small"
                 table-row-key="value"
                 local-page
+                :auto-height="false"
                 :show-pagination="false"
                 :show-settings="false"
                 :table-data="tableData"
@@ -200,7 +201,7 @@
 import { useFeatureFlag } from '@/stores';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type ITableColumn } from '@/components/base/ag-table';
 import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
 import AiChatSlider from '@/components/ai/ai-chat-slider/Index.vue';
 
@@ -257,7 +258,7 @@ const data = ref<any>({});
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
-const requestHeaderCols = [
+const requestHeaderCols: ITableColumn<TableDataItem>[] = [
   {
     title: t('名称'),
     colKey: 'name',

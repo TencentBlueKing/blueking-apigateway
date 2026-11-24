@@ -197,8 +197,8 @@
 <script lang="tsx" setup>
 import { Button, Form, Message, PopConfirm } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
-import type { FilterValue, PrimaryTableProps, SortInfo, TableRowData } from '@blueking/tdesign-ui';
-import type { IDropList, IFormMethod, ITableEmptyType, ITableMethod } from '@/types/common';
+import type { IDropList, IFormMethod } from '@/types/common';
+import type { ICountAndResults } from '@/services/types/utils.ts';
 import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
 import { useFeatureFlag, usePermission } from '@/stores';
 import { useMcpPermission } from '@/hooks';
@@ -214,13 +214,22 @@ import { getServers } from '@/services/source/gateway/mcp-server/server';
 import type {
   IGatewaysMcpServersAppPermissionApplyListQuery,
   IMCPServerAppPermissionApplyListOutput,
+  IMCPServerAppPermissionListOutput,
 } from '@/services/types/gateway/mcp-server/permission.ts';
 import type { IMCPServerListOutput } from '@/services/types/gateway/mcp-server/server.ts';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { locale, t } from '@/locales';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
 import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableEmptyType,
+  type TableSort,
+} from '@/components/base/ag-table';
+
+type IMCPPermissionRow = IMCPServerAppPermissionApplyListOutput | IMCPServerAppPermissionListOutput;
 
 interface IProps { gatewayId?: number }
 
@@ -236,7 +245,7 @@ const {
   handleExport,
 } = useMcpPermission();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<IMCPPermissionRow>>('tableRef');
 const tableEmptyType = ref<ITableEmptyType>('empty');
 const filterData = ref<FilterValue | IPermissionApprovalFilterValue>({
   bk_app_code: '',
@@ -254,7 +263,7 @@ const defaultPagination = ref({
   hasNoMore: false,
 });
 const mcpServerPagination = ref(cloneDeep(defaultPagination.value));
-const tableData = ref([]);
+const tableData = ref<IMCPPermissionRow[]>([]);
 const settings = ref(null);
 const lastCount = ref(0);
 const panels = ref([
@@ -310,7 +319,6 @@ const curAction = ref<IPermissionApprovalAction>({
 });
 const cacheIdentifier = ref('permission-apply-unprocessed');
 
-let filterTimer: number | null = null;
 const filterFields = ['bk_app_code', 'mcp_server_id', 'grant_type'] as string[];
 const rules = {
   comment: [
@@ -322,75 +330,85 @@ const rules = {
   ],
 };
 
-const tableColumns = computed(() => {
-  const grantTypeColumn: PrimaryTableProps['columns'] = isAppPerm.value
-    ? [{
-      title: t('授权类型'),
-      colKey: 'grant_type',
-      ellipsis: true,
-      filter: {
-        type: 'single',
-        showConfirmAndReset: true,
-        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-        list: AUTHORIZATION_APPLICATION_OPERATE_TYPE.map((item: Record<string, string>) => ({
-          label: item.name,
-          value: item.id,
-        })),
+const tableColumns = computed<ITableColumn<IMCPPermissionRow>[]>(() => {
+  const grantTypeColumn: ITableColumn<IMCPPermissionRow>[] = isAppPerm.value
+    ? [
+      {
+        title: t('授权类型'),
+        colKey: 'grant_type',
+        ellipsis: true,
+        filter: {
+          type: 'single',
+          showConfirmAndReset: true,
+          popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+          list: AUTHORIZATION_APPLICATION_OPERATE_TYPE.map((item: Record<string, string>) => ({
+            label: item.name,
+            value: item.id,
+          })),
+        },
+        cell: (_h, { row }) => {
+          const grantType = 'grant_type' in row ? row.grant_type : '';
+          const grantTypeText = AUTHORIZATION_APPLICATION_OPERATE_TYPE.find(item => item.id === grantType)?.name ?? '--';
+          return (
+            <span>
+              { grantTypeText }
+            </span>
+          );
+        },
       },
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
-        const grantTypeText = AUTHORIZATION_APPLICATION_OPERATE_TYPE.find(item => item.id === row.grant_type)?.name ?? '--';
-        return (
-          <span>
-            { grantTypeText }
-          </span>
-        );
+    ]
+    : [];
+  const handledByEffectiveColumn: ITableColumn<IMCPPermissionRow>[] = isAppPerm.value
+    ? [
+      {
+        title: t('操作人'),
+        colKey: 'handled_by',
+        cell: (_h, { row }) => renderDisplayNameColumn(row.handled_by ?? ''),
       },
-    }]
+      {
+        title: t('生效时间'),
+        colKey: 'effective_time',
+        ellipsis: true,
+        sorter: true,
+        width: 260,
+      },
+    ]
     : [];
-  const handledByEffectiveColumn: PrimaryTableProps['columns'] = isAppPerm.value
-    ? [{
-      title: t('操作人'),
-      colKey: 'handled_by',
-      cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.handled_by),
-    },
-    {
-      title: t('生效时间'),
-      colKey: 'effective_time',
-      ellipsis: true,
-      sorter: true,
-      width: 260,
-    }]
+  const appliedTimeColumn: ITableColumn<IMCPPermissionRow>[] = !isAppPerm.value
+    ? [
+      {
+        title: t('申请时间'),
+        colKey: 'applied_time',
+        ellipsis: true,
+        width: 260,
+      },
+    ]
     : [];
-  const appliedTimeColumn: PrimaryTableProps['columns'] = !isAppPerm.value
-    ? [{
-      title: t('申请时间'),
-      colKey: 'applied_time',
-      ellipsis: true,
-      width: 260,
-    }]
-    : [];
-  const approvalColumn: PrimaryTableProps['columns'] = !isAppPerm.value
-    ? [{
-      title: t('审批状态'),
-      colKey: 'status',
-      ellipsis: true,
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
-        const statusLabel = statusMap[row?.status as keyof typeof statusMap];
+  const approvalColumn: ITableColumn<IMCPPermissionRow>[] = !isAppPerm.value
+    ? [
+      {
+        title: t('审批状态'),
+        colKey: 'status',
+        ellipsis: true,
+        cell: (_h, { row }) => {
+          const status = 'status' in row ? row.status : '';
+          const statusLabel = statusMap[status as keyof typeof statusMap];
 
-        return (
-          <span class={['ag-tag', { [row.status]: row.status }]}>
-            {statusLabel}
-          </span>
-        );
+          return (
+            <span class={['ag-tag', { [status]: status }]}>
+              {statusLabel}
+            </span>
+          );
+        },
       },
-    }]
+    ]
     : [];
 
-  const columns: PrimaryTableProps['columns'] = [
+  return [
     {
       title: 'MCP Server',
       colKey: 'mcp_server_id',
-      fixed: 'left' as const,
+      fixed: 'left',
       ellipsis: true,
       className: 'need-filter-icon-handler',
       width: 360,
@@ -403,7 +421,7 @@ const tableColumns = computed(() => {
           value: item.id,
         })),
       },
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      cell: (_h, { row }) => {
         return row?.mcp_server?.name;
       },
     },
@@ -416,7 +434,7 @@ const tableColumns = computed(() => {
     {
       title: t('申请人'),
       colKey: 'applied_by',
-      cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.applied_by),
+      cell: (_h, { row }) => renderDisplayNameColumn(row.applied_by ?? ''),
     },
     ...appliedTimeColumn,
     ...handledByEffectiveColumn,
@@ -424,8 +442,8 @@ const tableColumns = computed(() => {
     {
       title: t('操作'),
       colKey: 'operate',
-      fixed: 'right' as const,
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
+      fixed: 'right',
+      cell: (_h, { row }) => {
         if (isAppPerm.value) {
           return (
             <PopConfirm
@@ -447,7 +465,10 @@ const tableColumns = computed(() => {
           );
         }
 
-        const isItsm = isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id);
+        const applyRow = row as IMCPServerAppPermissionApplyListOutput;
+        const isItsm = isEnabledITSMApply.value
+          && Boolean(applyRow?.itsm_ticket_url)
+          && Boolean(applyRow?.itsm_ticket_id);
 
         if (filterData.value.state === 'unprocessed') {
           if (isItsm) {
@@ -456,7 +477,7 @@ const tableColumns = computed(() => {
                 text
                 theme="primary"
                 onClick={() => {
-                  window.open(row?.itsm_ticket_url);
+                  window.open(applyRow?.itsm_ticket_url);
                 }}
               >
                 {t('审批')}
@@ -470,14 +491,14 @@ const tableColumns = computed(() => {
                 text
                 theme="primary"
                 class="mr-8px"
-                onClick={() => handleApprove(row, 'approved')}
+                onClick={() => handleApprove(applyRow, 'approved')}
               >
                 { t('通过') }
               </Button>
               <Button
                 text
                 theme="primary"
-                onClick={() => handleApprove(row, 'rejected')}
+                onClick={() => handleApprove(applyRow, 'rejected')}
               >
                 { t('驳回') }
               </Button>
@@ -491,14 +512,14 @@ const tableColumns = computed(() => {
               theme="primary"
               onClick={() => {
                 if (isItsm) {
-                  window.open(row?.itsm_ticket_url);
+                  window.open(applyRow?.itsm_ticket_url);
                   return;
                 }
                 approvalSliderConf.value = {
                   isShow: true,
-                  title: `${t('申请应用：')}${row.bk_app_code}`,
+                  title: `${t('申请应用：')}${applyRow.bk_app_code}`,
                 };
-                approvalSliderDetail.value = { ...row } as IMCPServerAppPermissionApplyListOutput;
+                approvalSliderDetail.value = { ...applyRow };
               }}
             >
               {t('详情')}
@@ -508,8 +529,6 @@ const tableColumns = computed(() => {
       },
     },
   ];
-
-  return columns;
 });
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
 // 应用权限tab
@@ -540,7 +559,7 @@ const refreshPendingCount = async () => {
 const getTableData = async (params: {
   offset: number
   limit: number
-}) => {
+}): Promise<ICountAndResults<IMCPPermissionRow>> => {
   // 触发表格组件监听刷新
   settings.value = null;
 
@@ -579,10 +598,10 @@ const getTableData = async (params: {
     lastCount.value = res.count ?? 0;
   }
 
-  return res ?? {
+  return (res ?? {
     count: 0,
     results: [],
-  };
+  }) as ICountAndResults<IMCPPermissionRow>;
 };
 
 const getMcpList = async (customLimit?: number) => {
@@ -676,30 +695,16 @@ const handleTabChange = (name: string) => {
 
 const handleFilterIconClick = () => {
   mcpServerName.value = '';
-  if (filterTimer) clearTimeout(filterTimer);
-
-  // 因为popup执行机制是异步的，所以延迟执行, 这里适配表格filter无法滚动加载和搜索未抛出事件
-  filterTimer = setTimeout(() => {
-    const filterPopup = document.querySelector('.mcp-server-filter-popup');
-
-    if (filterPopup) {
-      const MCP_FILTER_ALL_LIMIT = 10000;
-      const { count } = mcpServerPagination.value;
-      const totalCount = Math.max(count, MCP_FILTER_ALL_LIMIT);
-
-      getMcpList(totalCount);
-    }
-
-    filterTimer = null;
-  }, 200);
+  const limit = Math.max(mcpServerPagination.value.count, 10000);
+  getMcpList(limit);
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   filterData.value = { ...filterItem };
 };
 
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
-  const sortData = sort as SortInfo;
+const handleSortChange = (sort: TableSort | null | undefined) => {
+  const sortData = Array.isArray(sort) ? sort[0] : sort;
   if (sortData) {
     const { sortBy: colKey, descending } = sortData;
     filterData.value.order_by = descending ? `-${colKey}` : colKey;
@@ -727,7 +732,7 @@ const handleClearFilter = () => {
   };
 };
 
-const handleApprove = (row: TableRowData, status: string) => {
+const handleApprove = (row: IMCPServerAppPermissionApplyListOutput, status: string) => {
   curAction.value = {
     id: row.id,
     mcp_server_id: row.mcp_server.id,

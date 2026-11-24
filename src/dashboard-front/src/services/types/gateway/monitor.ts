@@ -67,7 +67,7 @@ export interface IAlarmRecordListOutput {
   status: string
   message: string
   created_time: string
-  alarm_strategy_names: string
+  alarm_strategy_names: string[]
   comment: string
 }
 
@@ -81,8 +81,11 @@ export interface IAlarmStrategyListOutput {
   alarm_subtype: string
   enabled: boolean
   updated_time: string | null
-  gateway_labels: string
-  effective_stages: string
+  gateway_labels: {
+    id: number
+    name: string
+  }[]
+  effective_stages: string[]
 }
 
 /**
@@ -96,5 +99,5 @@ export interface IAlarmStrategyRetrieveOutput {
   enabled: boolean
   updated_time: string | null
   gateway_labels: string
-  effective_stages: string
+  effective_stages: string[]
 }

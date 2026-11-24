@@ -26,14 +26,15 @@ export type ITabKey = 'gateway' | 'mcp';
 // 个人工作台 —> MCP Server 列表/ gateway 审批状态
 export type IApplyStatus = '' | 'approved' | 'rejected';
 
-//  个人工作台 —> 接口响应内容和自定义UI界面变量
+// 个人工作台 —> 接口响应内容和自定义UI界面变量
 export type IPersonalWorkbenchUIState = IPersonalWorkbenchListResponse & {
-  isExpand: boolean
-  isSelectAll: boolean
+  isExpand?: boolean
+  isSelectAll?: boolean
   isLoading?: boolean
   gateway_id?: number
-  resource_ids: number[]
+  resource_ids?: number[]
   selection?: IResource[]
+  isGrantDimensionOverflow?: boolean
 };
 
 // 个人工作台 —> 筛选表单状态：时间未选择时为空字符串，请求前用 toTimeRangeQuery 转为接口参数

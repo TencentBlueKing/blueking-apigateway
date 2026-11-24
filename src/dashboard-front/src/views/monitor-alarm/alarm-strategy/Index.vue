@@ -43,6 +43,7 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
+        cache-identifier="MonitorAlarmStrategy"
         show-settings
         resizable
         :filter-value="filterData"
@@ -68,8 +69,6 @@
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
 import { Button, Loading, Message, Switcher } from 'bkui-vue';
-import type { FilterValue } from '@blueking/tdesign-ui';
-import type { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
 import { getLabelList } from '@/services/source/gateway/label';
@@ -79,25 +78,34 @@ import {
   getStrategyList,
   patchStrategyStatus,
 } from '@/services/source/gateway/monitor';
+import type { IAlarmStrategyListOutput } from '@/services/types/gateway/monitor';
 import type { IAlarmStrategy } from '@/types/monitor';
 import { getStageList } from '@/services/source/gateway/stage';
-import type { IExtractApiReturn } from '@/services/types/utils';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import type { ICountAndResults, IExtractApiReturn } from '@/services/types/utils';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+} from '@/components/base/ag-table';
 import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/AddAlarmStrategy.vue';
 
-// 扩展 IAlarmStrategy 以包含运行时动态属性
+// 扩展 IAlarmStrategy 用于新建/编辑弹窗表单
 type IAlarmStrategyRow = IAlarmStrategy & {
   statusUpdating?: boolean
   gateway_label_ids?: number[]
 };
+
+interface IAlarmStrategyTableRow extends IAlarmStrategyListOutput {
+  statusUpdating?: boolean
+}
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const tableColumns = shallowRef<any[]>([
+const tableRef = useTemplateRef<IAgTableInstance<IAlarmStrategyTableRow>>('tableRef');
+const tableColumns = shallowRef<ITableColumn<IAlarmStrategyTableRow>[]>([
   {
     title: t('告警策略名称'),
     colKey: 'name',
@@ -107,9 +115,9 @@ const tableColumns = shallowRef<any[]>([
   {
     title: t('标签'),
     colKey: 'gateway_labels',
-    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
-      if ((row.gateway_labels as any)?.length) {
-        const labels = row!.gateway_labels as any;
+    cell: (_h, { row }) => {
+      if (row.gateway_labels?.length) {
+        const labels = row.gateway_labels;
         return (
           <div class="lh-1 single-hide">
             <span
@@ -120,7 +128,7 @@ const tableColumns = shallowRef<any[]>([
               class="label-box"
             >
               {
-                labels.map((label: any, index: number) => {
+                labels.map((label, index) => {
                   if (index < 4) {
                     return (
                       <span class="ag-label">
@@ -148,7 +156,7 @@ const tableColumns = shallowRef<any[]>([
     title: t('生效环境'),
     colKey: 'effective_stages',
     ellipsis: true,
-    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
+    cell: (_h, { row }) => {
       if (Array.isArray(row.effective_stages)) {
         return (
           <span>{ row.effective_stages.length > 0 ? row.effective_stages.join() : t('所有环境')}</span>
@@ -165,7 +173,7 @@ const tableColumns = shallowRef<any[]>([
   {
     title: t('是否启用'),
     colKey: 'enabled',
-    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
+    cell: (_h, { row }) => {
       if (row.statusUpdating) {
         return (
           <Loading
@@ -181,12 +189,12 @@ const tableColumns = shallowRef<any[]>([
       }
       return (
         <Switcher
-          v-model={row!.enabled}
+          v-model={row.enabled}
           theme="primary"
           true-value
           false-value={false}
           disabled={statusSwitcherDisabled.value}
-          onChange={() => handleIsEnable(row as IAlarmStrategyRow)}
+          onChange={() => handleIsEnable(row)}
         />
       );
     },
@@ -195,24 +203,21 @@ const tableColumns = shallowRef<any[]>([
     title: t('操作'),
     colKey: 'operate',
     fixed: 'right',
-    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
+    cell: (_h, { row }) => {
       return (
         <div>
           <Button
             class="mr-24px"
             theme="primary"
             text
-            onClick={() => handleEdit(row as { id: number })}
+            onClick={() => handleEdit(row)}
           >
             { t('编辑') }
           </Button>
           <Button
             theme="primary"
             text
-            onClick={() => handleDelete(row as {
-              id: number
-              name: string
-            })}
+            onClick={() => handleDelete(row)}
           >
             { t('删除') }
           </Button>
@@ -224,7 +229,7 @@ const tableColumns = shallowRef<any[]>([
 
 const filterData = ref<FilterValue>({});
 const statusSwitcherDisabled = ref(false);
-const tableData = ref([]);
+const tableData = ref<IAlarmStrategyTableRow[]>([]);
 const labelList = ref<IGatewayLabelItem[]>([]);
 const effectiveStage = ref('');
 
@@ -261,9 +266,12 @@ let initData = reactive<Record<string, any>>({});
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
-const getTableData = async (params: Record<string, any> = {}) => {
+const getTableData = async (params: Record<string, any> = {}): Promise<ICountAndResults<IAlarmStrategyTableRow>> => {
   const results = await getStrategyList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const getList = () => {
@@ -326,7 +334,7 @@ const handleAdd = () => {
 };
 
 // 是否启用
-const handleIsEnable = async (item: IAlarmStrategyRow) => {
+const handleIsEnable = async (item: IAlarmStrategyTableRow) => {
   const { enabled, id } = item;
   try {
     if (item.statusUpdating) {
@@ -404,7 +412,7 @@ const getStages = async () => {
 const init = async () => {
   labelList.value = await getLabelList(apigwId.value);
   nextTick(() => {
-    tableData.value.forEach((item: any) => {
+    tableData.value.forEach((item) => {
       item.statusUpdating = false;
     });
   });

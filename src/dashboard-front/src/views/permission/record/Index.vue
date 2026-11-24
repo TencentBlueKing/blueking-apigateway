@@ -74,12 +74,12 @@
       <AgTable
         ref="permissionTableRef"
         v-model:table-data="tableData"
+        cache-identifier="PermissionRecord"
         show-settings
         resizable
         :expand-icon="false"
         :expandable="expandableConfig"
         :expanded-row-keys="expandableConfig.expandedRowKeys"
-        :max-limit-config="{ allocatedHeight: 236, mode: 'tdesign'}"
         :filter-value="filterValue"
         :api-method="getTableData"
         :columns="getTableColumns"
@@ -216,30 +216,38 @@
 <script setup lang="tsx">
 import { Button } from 'bkui-vue';
 import { getPermissionRecordList } from '@/services/source/gateway/permission';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IAppPermissionHandledResource,
+  IAppPermissionRecordListOutput,
+} from '@/services/types/gateway/permission.ts';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
-import type { IApprovalListItem } from '@/types/permission';
-import type { ITableMethod } from '@/types/common';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
 import AgIcon from '@/components/base/ag-icon/Index.vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type RowEventContext,
+  type TableRow,
+} from '@/components/base/ag-table';
 
-// 扩展 IApprovalListItem，补充运行时动态添加的字段
-interface IApprovalListItemExt extends IApprovalListItem {
-  id: number
-  grant_dimension: string
+// 扩展审批记录 DTO，补充运行时展开与详情视图状态
+interface IRecordRow extends IAppPermissionRecordListOutput {
   isExpand?: boolean
-  selection?: any[]
+  selection?: unknown[]
   isSelectAll?: boolean
+  resourceList?: any[]
 }
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
 
-const historyExpandColumn = shallowRef<any[]>([
+const historyExpandColumn = shallowRef<ITableColumn<IAppPermissionHandledResource>[]>([
   {
     title: '#',
     colKey: 'serial-number',
@@ -254,7 +262,7 @@ const historyExpandColumn = shallowRef<any[]>([
     title: t('请求路径'),
     colKey: 'path',
     ellipsis: true,
-    cell: (h: any, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return <span>{row.path || '--'}</span>;
     },
   },
@@ -262,7 +270,7 @@ const historyExpandColumn = shallowRef<any[]>([
     title: t('请求方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (h: any, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return <span>{row.method || '--'}</span>;
     },
   },
@@ -270,7 +278,7 @@ const historyExpandColumn = shallowRef<any[]>([
     title: t('审批状态'),
     colKey: 'status',
     ellipsis: true,
-    cell: (h: any, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return (
         <span class={['ag-tag', { [row.apply_status]: row.apply_status }]}>
           { row.apply_status === 'rejected' ? t('驳回') : t('通过') }
@@ -279,7 +287,7 @@ const historyExpandColumn = shallowRef<any[]>([
     },
   },
 ]);
-const resourceInfoColumn = shallowRef<any[]>([
+const resourceInfoColumn = shallowRef<ITableColumn<IAppPermissionHandledResource>[]>([
   {
     title: t('资源名称'),
     colKey: 'name',
@@ -289,7 +297,7 @@ const resourceInfoColumn = shallowRef<any[]>([
     title: t('审批状态'),
     colKey: 'status',
     ellipsis: true,
-    cell: (h: any, { row }: { row: any }) => {
+    cell: (_h, { row }) => {
       return (
         <span class={['ag-tag', { [row.apply_status]: row.apply_status }]}>
           { row.apply_status === 'rejected' ? t('驳回') : t('通过') }
@@ -298,8 +306,8 @@ const resourceInfoColumn = shallowRef<any[]>([
     },
   },
 ]);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
-const tableData = ref<any[]>([]);
+const tableRef = useTemplateRef<IAgTableInstance<IRecordRow>>('permissionTableRef');
+const tableData = ref<IRecordRow[]>([]);
 const filterData = ref<Record<string, any>>({
   bk_app_code: '',
   grant_dimension: '',
@@ -310,24 +318,27 @@ const filterValue = ref<Record<string, any>>({});
 const resourceList = ref<any[]>([]);
 const expandableConfig = ref({
   expandColumn: false,
-  expandedRowKeys: [] as any[],
-  canExpand: (row: any) => {
+  expandedRowKeys: [] as number[],
+  canExpand: (row: IRecordRow) => {
     return ['resource'].includes(row.grant_dimension);
   },
 });
 const dateKey = ref('dateKey');
-const curRecord = ref<IApprovalListItem>({
+const curRecord = ref<IRecordRow>({
+  id: 0,
   bk_app_code: '',
   applied_by: '',
   applied_time: '',
   handled_by: '',
   handled_time: '',
   status: '',
+  grant_dimension: '',
   comment: '',
   resourceList: [],
   resource_ids: [],
   grant_dimension_display: '',
-  expire_days_display: 0,
+  expire_days: 0,
+  expire_days_display: '',
   reason: '',
   handled_resources: [],
   itsm_ticket_id: '',
@@ -352,7 +363,7 @@ const {
 
 const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
-const getTableColumns = computed((): any[] => {
+const getTableColumns = computed<ITableColumn<IRecordRow>[]>(() => {
   return [
     {
       title: t('蓝鲸应用 ID'),
@@ -372,8 +383,8 @@ const getTableColumns = computed((): any[] => {
           value: id,
         })),
       },
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
-        if (['resource'].includes(row.grant_dimension!)) {
+      cell: (_h, { row }) => {
+        if (['resource'].includes(row.grant_dimension)) {
           return (
             <div class="flex items-center">
               <AgIcon
@@ -392,7 +403,7 @@ const getTableColumns = computed((): any[] => {
       title: t('权限期限'),
       colKey: 'expire_days_display',
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         return row.expire_days_display || '--';
       },
     },
@@ -400,7 +411,7 @@ const getTableColumns = computed((): any[] => {
       title: t('申请人'),
       colKey: 'applied_by',
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
+      cell: (_h, { row }) =>
         !featureFlagStore.isEnableDisplayName
           ? <span>{row.applied_by || '--'}</span>
           : <span><bk-user-display-name user-id={row.applied_by} /></span>,
@@ -415,7 +426,7 @@ const getTableColumns = computed((): any[] => {
       title: t('审批人'),
       colKey: 'handled_by',
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
+      cell: (_h, { row }) =>
         !featureFlagStore.isEnableDisplayName
           ? <span>{row.handled_by}</span>
           : <span><bk-user-display-name user-id={row.handled_by} /></span>,
@@ -424,7 +435,7 @@ const getTableColumns = computed((): any[] => {
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         const status = row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP | undefined;
         if (!status) return <span>--</span>;
         return (
@@ -439,14 +450,14 @@ const getTableColumns = computed((): any[] => {
       colKey: 'operate',
       fixed: 'right',
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         return (
           <div>
             <Button
               theme="primary"
               text
               onClick={(e: MouseEvent) => {
-                handleShowRecord(e, row as IApprovalListItemExt);
+                handleShowRecord(e, row);
               }}
             >
               { t('详情') }
@@ -467,38 +478,38 @@ function getList() {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
 };
 
-const getTableData = async (params: Record<string, any> = {}) => {
+const getTableData = async (params: Record<string, any> = {}): Promise<ICountAndResults<IRecordRow>> => {
   const results = await getPermissionRecordList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
-const handleFilterChange = (filterItem: any) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   filterData.value = Object.assign(filterData.value, filterItem);
   filterValue.value = { ...filterItem };
 };
 
-const handleRowClick = ({ e, row }: {
-  e: Event
-  row: IApprovalListItemExt
-}) => {
+const handleRowClick = ({ e, row }: RowEventContext<TableRow<IRecordRow>>) => {
   e.stopPropagation();
   if (row.grant_dimension.includes('resource')) {
     row.isExpand = !row.isExpand;
     expandableConfig.value.expandedRowKeys
-      = expandableConfig.value.expandedRowKeys.filter((item: any) => item === row.id);
-    const curExpandRow = row.isExpand ? row : {} as any;
+      = expandableConfig.value.expandedRowKeys.filter(item => item === row.id);
+    const curExpandRow = row.isExpand ? row : null;
     if (row.isExpand) {
-      expandableConfig.value.expandedRowKeys.push(row.id as any);
+      expandableConfig.value.expandedRowKeys.push(row.id);
     }
     else {
       expandableConfig.value.expandedRowKeys
-        = expandableConfig.value.expandedRowKeys.filter((item: any) => item !== row.id);
+        = expandableConfig.value.expandedRowKeys.filter(item => item !== row.id);
     }
-    tableData.value.forEach((item: any) => {
-      const isExpand = item.id === curExpandRow.id;
+    tableData.value.forEach((item) => {
+      const isExpand = item.id === curExpandRow?.id;
       item.isExpand = isExpand;
       if (!isExpand) {
-        item = Object.assign(item, {
+        Object.assign(item, {
           isExpand: false,
           selection: [],
           isSelectAll: true,
@@ -516,7 +527,7 @@ const handlePickClear = () => {
   handleClear();
 };
 
-const handleSetRowClass = ({ row }: { row: any }) => {
+const handleSetRowClass = ({ row }: { row: IRecordRow }) => {
   if (row.grant_dimension.includes('resource')) {
     return 'cursor-pointer';
   }
@@ -524,7 +535,7 @@ const handleSetRowClass = ({ row }: { row: any }) => {
 };
 
 // 展示详情
-const handleShowRecord = (e: MouseEvent, data: IApprovalListItemExt) => {
+const handleShowRecord = (e: MouseEvent, data: IRecordRow) => {
   e.stopPropagation();
   // 如果是itsm单据，跳转去itsm查看详情
   if (isEnabledITSMApply.value && Boolean(data?.itsm_ticket_url) && Boolean(data?.itsm_ticket_id)) {
@@ -537,7 +548,7 @@ const handleShowRecord = (e: MouseEvent, data: IApprovalListItemExt) => {
     ...data,
     resourceList: [],
   });
-  curRecord.value.resource_ids.forEach((resourceId: any) => {
+  curRecord.value.resource_ids.forEach((resourceId) => {
     resourceList.value.forEach((item: { id: number }) => {
       if (item.id === resourceId) {
         results.push(item as any);

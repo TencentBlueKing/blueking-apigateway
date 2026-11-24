@@ -252,10 +252,10 @@
               <AgTable
                 ref="tableRef"
                 v-model:table-data="tableData"
+                cache-identifier="ResourceSetting"
                 show-settings
                 :api-method="getTableData"
                 :columns="columns"
-                :max-height="tableMaxHeight"
                 :hidden-column="hiddenColumns"
                 :unchecked-column="['user_auth_method', 'oauth2_personal_client_enabled']"
                 :show-selection="isShowSelection"
@@ -491,7 +491,6 @@ import {
 } from 'lodash-es';
 import { useRouteQuery } from '@vueuse/router';
 import { Divider, Message } from 'bkui-vue';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type {
   IDialog,
   IDropList,
@@ -532,13 +531,27 @@ import ResourcePathConflictTips from '@/views/resource-management/components/Res
 import PageNotFound from '@/views/404.vue';
 import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin/plugin-manage/Index.vue';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableSelection,
+  type TableRow,
+  type TableSort,
+} from '@/components/base/ag-table';
 import CreateResourceVersionSlider from '@/components/release/create-resource-version-slider/Index.vue';
 import VersionDiff from '@/components/release/version-diff/Index.vue';
 import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
-import { useElementSize, useWindowSize } from '@vueuse/core';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
+
+interface IResourceRow extends IResourceListPageOutput {
+  isAfter24h?: boolean
+  tagOrder?: number
+  labelText?: string[]
+  isEditLabel?: boolean
+  highlight?: boolean
+}
 
 interface IProps { gatewayId?: number }
 
@@ -561,11 +574,11 @@ const queryMethod = useRouteQuery('method');
 const queryBackendName = useRouteQuery('backend_name');
 const queryBackendId = useRouteQuery('backend_id');
 
-const tableData = ref<any[]>([]);
-const tableRef = useTemplateRef('tableRef');
+const tableData = ref<IResourceRow[]>([]);
+const tableRef = useTemplateRef<IAgTableInstance<IResourceRow>>('tableRef');
 const tableQueries = ref<Record<string, any>>({});
 const selectedRowKeys = ref<number[]>([]);
-const selectedRows = ref<any[]>([]);
+const selectedRows = ref<IResourceRow[]>([]);
 const deleteLoading = ref(false);
 // 导入下拉
 const importDropData = ref<ApigwIDropList[]>([
@@ -782,388 +795,375 @@ const labelsList = computed(() => {
     value: item.id,
   }));
 });
-const columns = computed<PrimaryTableProps['columns']>(() => {
-  const cols: PrimaryTableProps['columns'] = [
-    {
-      colKey: 'name',
-      title: t('资源名称'),
-      minWidth: 150,
-      fixed: 'left',
-      cell: (h, { row }) => (
-        <div
-          class={[
-            'name color-#3a84ff cursor-pointer flex items-center gap-x-6px w-full',
-            { 'name-updated': row.has_updated },
-          ]}
-          onClick={() => handleShowInfo(row.id)}
-        >
-          {row.has_updated
-            ? (
-              <div
-                v-bk-tooltips={{
-                  content: t('资源已更新'),
-                  delay: 300,
-                }}
-                class="w-8px h-8px border border-solid border-#ff9c01 rounded-full bg-#fff3e1 flex-shrink-0"
-              />
-            )
-            : null}
-          <div
-            v-bk-tooltips={{
-              placement: 'top',
-              content: row.name ?? '',
-              disabled: !row.isOverflow,
-              extCls: 'max-w-480px',
-            }}
-            class="lh-20px truncate"
-            onMouseenter={(e: MouseEvent) =>
-              tableRef.value?.handleCellEnter({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: TableRowData
-              })}
-            onMouseleave={(e: MouseEvent) =>
-              tableRef.value?.handleCellLeave({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: TableRowData
-              })}
-          >
-            { row.name || '--' }
-          </div>
-          {!gatewayStore.isResourceAuthV2 && isAuthConfigEmpty(row.auth_config)
-            ? (
-              <ag-icon
-                v-bk-tooltips={{
-                  content: t('该资源未配置认证方式，存在安全风险。')
-                    + t('请点击"编辑"按钮为资源配置适当的认证方式。')
-                    + t('如当前配置符合预期，可忽略该提示。'),
-                }}
-                name="exclamation-circle-fill"
-                class="min-w-14px flex-shrink-0 color-#f59500"
-              />
-            )
-            : null}
-          {row.is_deprecated
-            ? (
-              <bk-tag
-                theme="danger"
-                v-bk-tooltips={{
-                  content: row.deprecated_note || t('该资源已弃用'),
-                  disabled: !row.deprecated_note,
-                  extCls: 'max-w-480px',
-                }}
-              >
-                deprecated
-              </bk-tag>
-            )
-            : null}
-        </div>
-      ),
-    },
-    {
-      colKey: 'kind',
-      title: t('资源类型'),
-      ellipsis: true,
-      minWidth: 150,
-      filter: {
-        type: 'single',
-        showConfirmAndReset: true,
-        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-        list: RESOURCE_TYPE_LIST,
-      },
-      cell: (h, { row }) => {
-        const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
-        return (
-          <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
-            {resourceTypeData?.label ?? t('普通 API')}
-          </bk-tag>
-        );
-      },
-    },
-    {
-      colKey: 'backend.name',
-      title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
-      width: 120,
-      ellipsis: true,
-    },
-    {
-      colKey: 'method',
-      title: t('前端请求方法'),
-      width: 130,
-      ellipsis: true,
-      cell: (h, { row }) => (
-        <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
-          {row.method}
-        </bk-tag>
-      ),
-      filter: {
-        type: 'multiple',
-        showConfirmAndReset: true,
-        resetValue: [],
-        list: customMethodsList.value,
-      },
-    },
-    {
-      colKey: 'path',
-      title: t('前端请求路径'),
-      minWidth: 170,
-      ellipsis: true,
-    },
-    {
-      colKey: 'auth_config',
-      title: t('认证方式'),
-      width: 110,
-      ellipsis: true,
-      cell: (h, { row }) => {
-        const label = getAuthTypeLabel(row.auth_config, t, gatewayStore.isResourceAuthV2);
-        if (label === '--') return label;
-        if (isAuthConfigEmpty(row.auth_config)) {
-          return (
-            <bk-tag
+const columns = computed<ITableColumn<IResourceRow>[]>(() => [
+  {
+    colKey: 'name',
+    title: t('资源名称'),
+    minWidth: 150,
+    fixed: 'left',
+    cell: (_h, { row }) => (
+      <div
+        class={[
+          'name color-#3a84ff cursor-pointer flex items-center gap-x-6px w-full',
+          { 'name-updated': row.has_updated },
+        ]}
+        onClick={() => handleShowInfo(row.id)}
+      >
+        {row.has_updated
+          ? (
+            <div
               v-bk-tooltips={{
-                content: t('网关不校验调用方身份，请确认接口可以完全公开。'),
+                content: t('资源已更新'),
+                delay: 300,
               }}
-              theme="warning"
+              class="w-8px h-8px border border-solid border-#ff9c01 rounded-full bg-#fff3e1 flex-shrink-0"
+            />
+          )
+          : null}
+        <div
+          v-bk-tooltips={{
+            placement: 'top',
+            content: row.name ?? '',
+            disabled: !row.isOverflow,
+            extCls: 'max-w-480px',
+          }}
+          class="lh-20px truncate"
+          onMouseenter={(e: MouseEvent) =>
+            tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+          onMouseleave={() =>
+            tableRef.value?.handleCellLeave({ row })}
+        >
+          { row.name || '--' }
+        </div>
+        {!gatewayStore.isResourceAuthV2 && isAuthConfigEmpty(row.auth_config)
+          ? (
+            <ag-icon
+              v-bk-tooltips={{
+                content: t('该资源未配置认证方式，存在安全风险。')
+                  + t('请点击"编辑"按钮为资源配置适当的认证方式。')
+                  + t('如当前配置符合预期，可忽略该提示。'),
+              }}
+              name="exclamation-circle-fill"
+              class="min-w-14px flex-shrink-0 color-#f59500"
+            />
+          )
+          : null}
+        {row.is_deprecated
+          ? (
+            <bk-tag
+              theme="danger"
+              v-bk-tooltips={{
+                content: row.deprecated_note || t('该资源已弃用'),
+                disabled: !row.deprecated_note,
+                extCls: 'max-w-480px',
+              }}
             >
-              {label}
+              deprecated
             </bk-tag>
-          );
-        }
+          )
+          : null}
+      </div>
+    ),
+  },
+  {
+    colKey: 'kind',
+    title: t('资源类型'),
+    ellipsis: true,
+    minWidth: 150,
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: RESOURCE_TYPE_LIST,
+    },
+    cell: (_h, { row }) => {
+      const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
+      return (
+        <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
+          {resourceTypeData?.label ?? t('普通 API')}
+        </bk-tag>
+      );
+    },
+  },
+  {
+    colKey: 'backend.name',
+    title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
+    width: 120,
+    ellipsis: true,
+  },
+  {
+    colKey: 'method',
+    title: t('前端请求方法'),
+    width: 130,
+    ellipsis: true,
+    cell: (_h, { row }) => (
+      <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
+        {row.method}
+      </bk-tag>
+    ),
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: customMethodsList.value,
+    },
+  },
+  {
+    colKey: 'path',
+    title: t('前端请求路径'),
+    minWidth: 170,
+    ellipsis: true,
+  },
+  {
+    colKey: 'auth_config',
+    title: t('认证方式'),
+    width: 110,
+    ellipsis: true,
+    cell: (_h, { row }) => {
+      const label = getAuthTypeLabel(row.auth_config, t, gatewayStore.isResourceAuthV2);
+      if (label === '--') return label;
+      if (isAuthConfigEmpty(row.auth_config)) {
         return (
-          <bk-tag theme="info">
+          <bk-tag
+            v-bk-tooltips={{
+              content: t('网关不校验调用方身份，请确认接口可以完全公开。'),
+            }}
+            theme="warning"
+          >
             {label}
           </bk-tag>
         );
-      },
+      }
+      return (
+        <bk-tag theme="info">
+          {label}
+        </bk-tag>
+      );
     },
-    {
-      colKey: 'user_auth_method',
-      title: t('用户认证方式'),
-      minWidth: 240,
-      ellipsis: false,
-      className: 'auth-config-col',
-      cell: (h, { row }) => {
-        const methods = getUserAuthMethodLabels(row.auth_config, t);
-        if (!methods.length) {
-          return '--';
-        }
-        return (
-          <div class="auth-config-tags">
-            {methods.map(method => (
-              <bk-tag
-                key={method}
-                size="small"
-              >
-                {method}
-              </bk-tag>
-            ))}
-          </div>
-        );
-      },
+  },
+  {
+    colKey: 'user_auth_method',
+    title: t('用户认证方式'),
+    minWidth: 240,
+    ellipsis: false,
+    className: 'auth-config-col',
+    cell: (_h, { row }) => {
+      const methods = getUserAuthMethodLabels(row.auth_config, t);
+      if (!methods.length) {
+        return '--';
+      }
+      return (
+        <div class="auth-config-tags">
+          {methods.map(method => (
+            <bk-tag
+              key={method}
+              size="small"
+            >
+              {method}
+            </bk-tag>
+          ))}
+        </div>
+      );
     },
-    {
-      title: t('个人令牌'),
-      colKey: 'oauth2_personal_client_enabled',
-      ellipsis: true,
-      width: 100,
-      cell: (_, { row }) => {
-        return (
-          <bk-tag
-            class={
-              [
-                'border-transparent',
-                { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row?.auth_config?.oauth2_personal_client_enabled },
-              ]
-            }
-          >
-            {t(row?.auth_config?.oauth2_personal_client_enabled ? '已开启' : '未开启')}
-          </bk-tag>
-        );
-      },
+  },
+  {
+    title: t('个人令牌'),
+    colKey: 'oauth2_personal_client_enabled',
+    ellipsis: true,
+    width: 100,
+    cell: (_h, { row }) => {
+      return (
+        <bk-tag
+          class={
+            [
+              'border-transparent',
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row?.auth_config?.oauth2_personal_client_enabled },
+            ]
+          }
+        >
+          {t(row?.auth_config?.oauth2_personal_client_enabled ? '已开启' : '未开启')}
+        </bk-tag>
+      );
     },
-    {
-      colKey: 'plugin_count',
-      title: t('插件数'),
-      width: 70,
-      cell: (h, { row }) => (
+  },
+  {
+    colKey: 'plugin_count',
+    title: t('插件数'),
+    width: 70,
+    cell: (_h, { row }) => (
+      <bk-button
+        text
+        theme="primary"
+        onClick={() => handleShowInfo(row.id, 'pluginManage')}
+      >
+        <span class="mr-4px">{row.plugin_count}</span>
+        <ag-icon name="cog" />
+      </bk-button>
+    ),
+  },
+  {
+    colKey: 'docs',
+    title: t('文档'),
+    width: 70,
+    ellipsis: true,
+    cell: (_h, { row }) => (
+      <div>
+        {row.docs?.length
+          ? (
+            <bk-button text theme="primary" onClick={() => handleShowDoc(row)}>
+              <ag-icon name="document" />
+              { t('详情') }
+            </bk-button>
+          )
+          : (
+            <section class="group">
+              <ag-icon
+                v-bk-tooltips={t('添加文档')}
+                name="plus"
+                size="14"
+                class="hidden group-hover:inline p-4px color-#979ba5 cursor-pointer bg-#eaebf0 hover:color-#3a84ff hover:bg-#e1ecff"
+                onClick={() => handleShowDoc(row)}
+              />
+              <span class="inline group-hover:hidden">--</span>
+            </section>
+          )}
+      </div>
+    ),
+  },
+  {
+    colKey: 'label_ids',
+    title: t('标签'),
+    width: 150,
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: labelsList.value,
+    },
+    cell: (_h, { row }) => (
+      <div>
+        {!row.isEditLabel
+          ? (
+            <div
+              class="flex items-center gap-4px group"
+              onClick={() => handleEditLabel(row)}
+            >
+              {
+                row.labels?.length
+                  ? (
+                    <div class="min-w-0 flex-1">
+                      <AgOverflowTags
+                        data={row.labels.map(label => label.name)}
+                      />
+                    </div>
+                  )
+                  : <span>--</span>
+              }
+              <ag-icon
+                name="edit-small"
+                class="hidden group-hover:inline hover:cursor-pointer hover:color-#3a84ff"
+                size="22"
+                onClick={() => handleEditLabel(row)}
+              />
+            </div>
+          )
+          : (
+            <section ref="selectCheckBoxParentRef">
+              <SelectCheckBox
+                cur-select-label-ids={curLabelIds.value}
+                labels-data={labelsData.value}
+                resource-id={resourceId.value}
+                width={(selectCheckBoxParentRef as any)?.offsetWidth}
+                force-focus
+                onClose={newLabelData => handleCloseSelect(row, newLabelData)}
+                onUpdated={() => handleUpdateLabelSuccess()}
+                onAdded={() => getLabelsData()}
+              />
+            </section>
+          )}
+      </div>
+    ),
+  },
+  {
+    colKey: 'updated_time',
+    title: t('更新时间'),
+    width: 160,
+    ellipsis: true,
+    sorter: true,
+  },
+  {
+    colKey: 'act',
+    title: t('操作'),
+    width: 90,
+    fixed: 'right',
+    cell: (_h, { row }) => (
+      <div class="flex">
         <bk-button
           text
           theme="primary"
-          onClick={() => handleShowInfo(row.id, 'pluginManage')}
+          onClick={() => handleEditResource(row.id, row.kind, 'edit')}
         >
-          <span class="mr-4px">{row.plugin_count}</span>
-          <ag-icon name="cog" />
+          { t('编辑') }
         </bk-button>
-      ),
-    },
-    {
-      colKey: 'docs',
-      title: t('文档'),
-      width: 70,
-      ellipsis: true,
-      cell: (h, { row }) => (
-        <div>
-          {row.docs?.length
-            ? (
-              <bk-button text theme="primary" onClick={() => handleShowDoc(row)}>
-                <ag-icon name="document" />
-                { t('详情') }
-              </bk-button>
-            )
-            : (
-              <section class="group">
-                <ag-icon
-                  v-bk-tooltips={t('添加文档')}
-                  name="plus"
-                  size="14"
-                  class="hidden group-hover:inline p-4px color-#979ba5 cursor-pointer bg-#eaebf0 hover:color-#3a84ff hover:bg-#e1ecff"
-                  onClick={() => handleShowDoc(row)}
-                />
-                <span class="inline group-hover:hidden">--</span>
-              </section>
-            )}
-        </div>
-      ),
-    },
-    {
-      colKey: 'label_ids',
-      title: t('标签'),
-      width: 150,
-      filter: {
-        type: 'multiple',
-        showConfirmAndReset: true,
-        resetValue: [],
-        list: labelsList.value,
-      },
-      cell: (h, { row }) => (
-        <div>
-          {!row.isEditLabel
-            ? (
-              <div
-                class="flex items-center gap-4px group"
-                onClick={() => handleEditLabel(row)}
-              >
-                {
-                  row.labels?.length
-                    ? (
-                      <div class="min-w-0 flex-1">
-                        <AgOverflowTags
-                          data={row.labels.map((label: any) => label.name)}
-                        />
-                      </div>
-                    )
-                    : <span>--</span>
-                }
-                <ag-icon
-                  name="edit-small"
-                  class="hidden group-hover:inline hover:cursor-pointer hover:color-#3a84ff"
-                  size="22"
-                  onClick={() => handleEditLabel(row)}
-                />
-              </div>
-            )
-            : (
-              <section ref="selectCheckBoxParentRef">
-                <SelectCheckBox
-                  cur-select-label-ids={curLabelIds.value}
-                  labels-data={labelsData.value}
-                  resource-id={resourceId.value}
-                  width={(selectCheckBoxParentRef as any)?.offsetWidth}
-                  force-focus
-                  onClose={newLabelData => handleCloseSelect(row, newLabelData)}
-                  onUpdated={() => handleUpdateLabelSuccess()}
-                  onAdded={() => getLabelsData()}
-                />
-              </section>
-            )}
-        </div>
-      ),
-    },
-    {
-      colKey: 'updated_time',
-      title: t('更新时间'),
-      width: 160,
-      ellipsis: true,
-      sorter: true,
-    },
-    {
-      colKey: 'act',
-      title: t('操作'),
-      width: 90,
-      fixed: 'right',
-      cell: (h, { row }) => (
-        <div class="flex">
-          <bk-button
-            text
-            theme="primary"
-            onClick={() => handleEditResource(row.id, row.kind, 'edit')}
+        <div
+          class="ml-12px"
+          onClick={(e: MouseEvent) => e.preventDefault()}
+        >
+          <bk-dropdown
+            trigger="click"
+            popoverOptions={{
+              clickContentAutoHide: true,
+              hideIgnoreReference: true,
+            }}
           >
-            { t('编辑') }
-          </bk-button>
-          <div
-            class="ml-12px"
-            onClick={(e: MouseEvent) => e.preventDefault()}
-          >
-            <bk-dropdown
-              trigger="click"
-              popoverOptions={{
-                clickContentAutoHide: true,
-                hideIgnoreReference: true,
-              }}
-            >
-              {{
-                default: () => (
-                  <ag-icon
-                    class="flex items-center justify-center w-20px h-20px cursor-pointer rounded-2px  hover:bg-#EAEBF0"
-                    name="more-fill"
-                    size="16"
-                  />
-                ),
-                content: () => (
-                  <bk-dropdown-menu>
-                    <div>
-                      <bk-dropdown-item onClick={() => handleEditResource(row.id, row.kind, 'clone')}>
-                        <bk-button
-                          size="small"
-                          text
-                        >
-                          { t('克隆') }
-                        </bk-button>
-                      </bk-dropdown-item>
-                      <bk-dropdown-item onClick={() => handleDeprecation(row)}>
-                        <bk-button
-                          size="small"
-                          text
-                        >
-                          { row.is_deprecated ? t('取消弃用标记') : t('标记为弃用') }
-                        </bk-button>
-                      </bk-dropdown-item>
-                      <bk-dropdown-item onClick={() => handleConfirmDelete(row)}>
-                        <bk-button
-                          size="small"
-                          text
-                        >
-                          { t('删除') }
-                        </bk-button>
-                      </bk-dropdown-item>
-                    </div>
-                  </bk-dropdown-menu>
-                ),
-              }}
-            </bk-dropdown>
-          </div>
+            {{
+              default: () => (
+                <ag-icon
+                  class="flex items-center justify-center w-20px h-20px cursor-pointer rounded-2px  hover:bg-#EAEBF0"
+                  name="more-fill"
+                  size="16"
+                />
+              ),
+              content: () => (
+                <bk-dropdown-menu>
+                  <div>
+                    <bk-dropdown-item onClick={() => handleEditResource(row.id, row.kind, 'clone')}>
+                      <bk-button
+                        size="small"
+                        text
+                      >
+                        { t('克隆') }
+                      </bk-button>
+                    </bk-dropdown-item>
+                    <bk-dropdown-item onClick={() => handleDeprecation(row)}>
+                      <bk-button
+                        size="small"
+                        text
+                      >
+                        { row.is_deprecated ? t('取消弃用标记') : t('标记为弃用') }
+                      </bk-button>
+                    </bk-dropdown-item>
+                    <bk-dropdown-item onClick={() => handleConfirmDelete(row)}>
+                      <bk-button
+                        size="small"
+                        text
+                      >
+                        { t('删除') }
+                      </bk-button>
+                    </bk-dropdown-item>
+                  </div>
+                </bk-dropdown-menu>
+              ),
+            }}
+          </bk-dropdown>
         </div>
-      ),
-    },
-  ];
-
-  return cols;
-});
+      </div>
+    ),
+  },
+]);
 
 const getFilterValue = computed(() => {
   const resultObj: Record<string, string | string[]> = {};
@@ -1182,39 +1182,7 @@ const getFilterValue = computed(() => {
   return resultObj;
 });
 
-// 资源提示框（版本提示 + 路由冲突汇总）整体高度，含其下方 16px 间距；不可见时为 0
-const { height: windowHeight } = useWindowSize();
 const alertTipsRef = useTemplateRef('alertTipsRef');
-const { height: alertTipsHeight } = useElementSize(() => alertTipsRef.value?.$el as HTMLElement | undefined);
-const alertTipsAreaHeight = computed(() => (alertTipsHeight.value > 0 ? alertTipsHeight.value + 16 : 0));
-
-// 表格最大高度
-const tableMaxHeight = computed(() => {
-  const viewportHeight = windowHeight.value;
-  // 通知栏高度
-  const globalNoticeCompHeight = featureFlagStore.isEnabledNotice ? 40 : 0;
-  // 导航栏高度
-  const navBarHeight = 52;
-  // 路由标题高度
-  const routeTitleHeight = 52;
-  // 页面上下padding
-  const pageVerticalPadding = 40;
-  // 操作栏高度
-  const operationBarHeight = 48;
-  // 分页器高度
-  const paginationHeight = 64;
-  // 获取表格的最大可视化区域
-  const usableHeight = viewportHeight
-    - globalNoticeCompHeight
-    - navBarHeight
-    - routeTitleHeight
-    - pageVerticalPadding
-    - alertTipsAreaHeight.value
-    - operationBarHeight
-    - paginationHeight;
-  // 冲突汇总展开后提示框会很高，视口偏矮时给表格留一个可用的最小高度
-  return Math.max(usableHeight, 240);
-});
 
 watch(
   isCollapsed,
@@ -1566,7 +1534,7 @@ const handleEditResource = (id: number, kind: string, type: string) => {
 };
 
 // 删除资源
-const handleConfirmDelete = (row: TableRowData) => {
+const handleConfirmDelete = (row: IResourceRow) => {
   usePopInfoBox({
     isShow: true,
     title: t('确认删除资源{resourceName}？', { resourceName: row.name || '' }),
@@ -1598,11 +1566,11 @@ const deprecationFormRef = ref<InstanceType<typeof import('bkui-vue')['Form']>>(
 const deprecationDialog = reactive({
   isShow: false,
   loading: false,
-  resource: null as TableRowData | null,
+  resource: null as IResourceRow | null,
   formData: { deprecated_note: '' },
 });
 
-const handleDeprecation = (row: TableRowData) => {
+const handleDeprecation = (row: IResourceRow) => {
   if (row.is_deprecated) {
     usePopInfoBox({
       isShow: true,
@@ -1994,7 +1962,7 @@ const handleVersionCreated = () => {
 
 onBeforeRouteLeave((to) => {
   if (to.name === 'ResourceEdit') {
-    const { current, pageSize } = tableRef.value!.getPagination() as any;
+    const { current, pageSize } = tableRef.value!.getPagination();
     resourceSettingStore.setPagination({
       current,
       pageSize,
@@ -2007,7 +1975,7 @@ onBeforeRouteLeave((to) => {
 
 const getTableData = async (
   params: IGatewaysResourcesListQuery,
-): Promise<ICountAndResults<IResourceListPageOutput>> => {
+): Promise<ICountAndResults<IResourceRow>> => {
   const requestParams = { ...params };
   const fieldsToJoin = ['label_ids'] as const;
   fieldsToJoin.forEach((field) => {
@@ -2031,7 +1999,7 @@ const handleClearQueries = () => {
   tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   handleTableFilterChange({
     filterItem,
     filterData: tableQueries,
@@ -2040,17 +2008,18 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem) => 
   });
 };
 
-const handleSelectionChange = ({ selections, selectionsRowKeys }: any) => {
+const handleSelectionChange = ({ selections, selectionsRowKeys }: ITableSelection<TableRow<IResourceRow>>) => {
   selectedRows.value = selections;
-  selectedRowKeys.value = selectionsRowKeys;
+  selectedRowKeys.value = selectionsRowKeys as number[];
 };
 
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort: any) => {
-  if (!sort) {
+const handleSortChange = (sort: TableSort | null | undefined) => {
+  const sortInfo = Array.isArray(sort) ? sort[0] : sort;
+  if (!sortInfo) {
     delete tableQueries.value.order_by;
     return;
   }
-  const { sortBy: colKey, descending } = sort;
+  const { sortBy: colKey, descending } = sortInfo;
   if (colKey === 'updated_time') {
     tableQueries.value.order_by = descending ? `-${colKey}` : colKey;
   }

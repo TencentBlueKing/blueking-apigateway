@@ -83,6 +83,7 @@ interface IImportedResource {
 interface ILocalImportedResource extends Partial<IImportedResource> {
   _localId: number
   _unchecked: boolean
+  path_display?: string
 }
 
 interface ResourcesItem {

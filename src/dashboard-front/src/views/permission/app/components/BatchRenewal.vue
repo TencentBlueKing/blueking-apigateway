@@ -62,6 +62,7 @@
                 <AgTable
                   v-model:table-data="resourceTableList"
                   local-page
+                  :auto-height="false"
                   :columns="tableColumns"
                   :show-pagination="false"
                 />
@@ -87,6 +88,7 @@
                   v-model:table-data="apiTableList"
                   :columns="tableColumns"
                   local-page
+                  :auto-height="false"
                   :show-pagination="false"
                 />
               </template>
@@ -122,7 +124,7 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type ITableColumn } from '@/components/base/ag-table';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
@@ -166,7 +168,7 @@ const emits = defineEmits<IEmits>();
 const permissionStore = usePermission();
 
 const activeIndex = ref(['resource', 'gateway']);
-const tableColumns = shallowRef<any[]>([
+const tableColumns = shallowRef<ITableColumn<IPermission>[]>([
   {
     title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
@@ -176,9 +178,9 @@ const tableColumns = shallowRef<any[]>([
     title: t('资源名称'),
     colKey: 'resource_name',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: IPermission }) => {
+    cell: (_h, { row }) => {
       return (
-        <span>{ row!.resource_name || '--' }</span>
+        <span>{ row.resource_name || '--' }</span>
       );
     },
   },
@@ -186,21 +188,21 @@ const tableColumns = shallowRef<any[]>([
     title: t('有效期'),
     colKey: 'expires',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: IPermission }) => {
+    cell: (_h, { row }) => {
       return (
         <div>
-          <span style={{ color: permissionStore.getDurationTextColor(row!.expires ?? null) }}>
-            { permissionStore.getDurationText(row?.expires ?? null) }
+          <span style={{ color: permissionStore.getDurationTextColor(row.expires ?? null) }}>
+            { permissionStore.getDurationText(row.expires ?? null) }
           </span>
           <span class="ml-4px mr-4px">
             <ag-icon name="arrows--right--line" style="color: #699df4;" />
           </span>
           <span>
             {
-              row!.renewable
+              row.renewable
                 ? (
                   <span class="ag-normal primary">
-                    { permissionStore.getDurationAfterRenew(row?.expires ?? null, expireDays.value) }
+                    { permissionStore.getDurationAfterRenew(row.expires ?? null, expireDays.value) }
                   </span>
                 )
                 : (

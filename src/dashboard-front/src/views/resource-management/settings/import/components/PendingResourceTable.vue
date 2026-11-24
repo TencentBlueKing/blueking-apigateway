@@ -20,9 +20,10 @@
   <AgTable
     ref="tableRef"
     :table-data="tableData"
-    :columns="columns as PrimaryTableProps['columns']"
+    :columns="columns"
     table-row-key="name"
     local-page
+    :auto-height="false"
     :resizable="false"
     v-bind="$attrs"
   >
@@ -42,8 +43,7 @@ import {
   type IPublicConfig,
   type IResourceAuthFormConfig,
 } from '@/types/resource';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/base/ag-table/Index.vue';
+import AgTable, { type IAgTableInstance, type ITableColumn } from '@/components/base/ag-table';
 import { useTextGetter } from '@/hooks';
 import { useGateway } from '@/stores';
 import { DEFAULT_AUTH_CONFIG, applyAuthKind } from '@/utils/auth-config';
@@ -102,17 +102,17 @@ const defaultBulkAuthConfig = () => gatewayStore.isResourceAuthV2
 const tempAuthConfig = ref(defaultBulkAuthConfig());
 const localDocConfig = ref({ ...docConfig });
 
-const tableRef = useTemplateRef('tableRef');
+const tableRef = useTemplateRef<IAgTableInstance<ILocalImportedResource>>('tableRef');
 
 const sharedColumns = useResourcePreviewColumns(() => isAiGateway, 160);
 
-const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>(() => [
+const columns = computed<ITableColumn<ILocalImportedResource>[]>(() => [
   ...sharedColumns.value.identity,
   {
     title: () => renderAuthConfigColLabel(),
     colKey: 'auth_config',
     width: 100,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span v-bk-tooltips={{ content: `${getAuthConfigText(row?.auth_config)}`,
         placement: 'top' }}
       >
@@ -124,7 +124,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: t('校验应用权限'),
     colKey: 'resource_perm_required',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span class={{ 'color-#ffb400': getPermRequiredText(row?.auth_config) === t('是') }}>
         {getPermRequiredText(row?.auth_config)}
       </span>
@@ -135,7 +135,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     colKey: 'is_public',
     width: 100,
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span class={{ 'color-#ffb400': getPublicSettingText(row.is_public) === t('是') }}>
         {getPublicSettingText(row.is_public)}
       </span>
@@ -145,7 +145,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: t('允许申请权限'),
     colKey: 'allow_apply_permission',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <span class={{ 'color-#ffb400': getAllowApplyPermissionText(row.allow_apply_permission) === t('是') }}>
         {getAllowApplyPermissionText(row.allow_apply_permission)}
       </span>
@@ -156,7 +156,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     title: () => action === 'add' ? renderDocColLabel() : t('资源文档'),
     colKey: 'doc',
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       docConfig.showDoc
         ? (
           <bk-button text theme="primary" onClick={() => handleShowResourceDoc(row)}>
@@ -172,7 +172,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     colKey: 'plugin_configs',
     width: 85,
     ellipsis: true,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <bk-button class="text-12px!" text theme="primary" onClick={() => handleShowPluginsSlider(row)}>
         <span v-bk-tooltips={{ content: `${row.plugin_configs?.map(c => c.name || c.type).join('，') || '无插件'}` }}>
           {row.plugin_configs?.length ?? 0}
@@ -185,7 +185,7 @@ const columns = computed<PrimaryTableProps<ILocalImportedResource>['columns']>((
     colKey: 'act',
     fixed: 'right',
     width: 150,
-    cell: (h: unknown, { row }: { row: ILocalImportedResource }) => (
+    cell: (_h, { row }) => (
       <div class="flex gap-12px">
         <bk-button text theme="primary" onClick={() => handleEdit(row)}>
           {t('修改配置')}

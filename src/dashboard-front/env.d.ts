@@ -102,4 +102,6 @@ declare var BK_SITE_PATH: string;
 // eslint-disable-next-line
 declare var BK_STATIC_URL: string;
 
+declare const __APP_BUILD_ID__: string;
+
 type CustomDirective = import('vue').Directive<HTMLElement, any>;
