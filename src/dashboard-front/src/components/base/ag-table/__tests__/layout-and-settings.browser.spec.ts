@@ -23,6 +23,7 @@ import { pruneTablePreferences } from '@/components/base/ag-table/settings/table
 import {
   FIXTURE_ROWS,
   type IMountedFixture,
+  cleanupFixtures,
   createDefaultColumns,
   findVisible,
   getExpectedDomMaxHeight,
@@ -43,10 +44,12 @@ describe('AgTable 布局自适应、列设置与偏好缓存', () => {
   });
 
   afterEach(() => {
-    while (fixtures.length) {
-      fixtures.pop()!.unmount();
+    try {
+      cleanupFixtures(fixtures);
     }
-    localStorage.clear();
+    finally {
+      localStorage.clear();
+    }
   });
 
   it('初始化时读取并清洗缓存偏好、解析渲染函数列标题，并在父级置 null 与卸载时正确同步', async () => {
@@ -150,18 +153,20 @@ describe('AgTable 布局自适应、列设置与偏好缓存', () => {
         ...props,
       }));
 
+      let snapshotSettings: any;
       try {
         await waitUntil(() =>
           appliedSettings?.rowSize === expectedRowSize
           && fixture.container.querySelector('.t-table')?.classList.contains(sizeClass[expectedRowSize])
           && firstLimit === expectedPageSize
           && tableRef.value?.getPagination().pageSize === expectedPageSize, fixture.errors);
-        expect(fixture.errors).toEqual([]);
-        return appliedSettings;
+        snapshotSettings = appliedSettings;
       }
       finally {
         fixture.unmount();
       }
+      expect(fixture.errors).toEqual([]);
+      return snapshotSettings;
     };
 
     // 680px 可用高度预留 64px 分页器后，可容纳 18 行 mini、13 行 medium 或 10 行 large

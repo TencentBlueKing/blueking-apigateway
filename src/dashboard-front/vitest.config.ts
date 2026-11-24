@@ -157,6 +157,27 @@ export default defineConfig({
       },
       {
         extends: true,
+        optimizeDeps: {
+          // 预构建浏览器组件测试高频依赖，避免执行中途触发动态 optimizeDeps 重载导致导入中断
+          include: [
+            '@blueking/login-modal',
+            '@blueking/platform-config',
+            '@blueking/xss-filter',
+            'axios',
+            'bkui-vue',
+            'dayjs',
+            'dayjs/locale/en',
+            'dayjs/locale/zh-cn',
+            'dayjs/plugin/customParseFormat',
+            'dayjs/plugin/localeData',
+            'dayjs/plugin/relativeTime',
+            'dayjs/plugin/utc',
+            'lodash-es',
+            'lodash-es/memoize',
+            'pinia',
+            'vue-i18n',
+          ],
+        },
         test: {
           name: 'browser',
           include: ['src/**/*.browser.{test,spec}.{ts,tsx}'],
