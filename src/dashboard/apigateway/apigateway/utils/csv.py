@@ -22,12 +22,12 @@ from typing import Any
 def sanitize_csv_cell(value: Any) -> Any:
     """Mark formula-like text for spreadsheet CSV downloads.
 
-    Preserve real numbers and the original text after the apostrophe. CSV readers
-    retain this marker; spreadsheet import behavior varies between clients. This
-    does not guarantee safety after a spreadsheet saves and reopens the file.
+    Preserve real numbers and ordinary text, including leading whitespace. Only
+    text with a formula prefix after leading whitespace receives an apostrophe.
+    CSV readers retain this marker; spreadsheet import behavior varies between
+    clients. This does not guarantee safety after a spreadsheet saves and reopens
+    the file.
     """
-    if isinstance(value, str) and (
-        value.startswith(("\t", "\r", "\n")) or value.lstrip().startswith(("=", "+", "-", "@", "＝", "＋", "－", "＠"))
-    ):
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@", "＝", "＋", "－", "＠")):
         return "'" + value
     return value
