@@ -20,12 +20,15 @@
 
 import datetime
 import json
+import logging
 import shlex
+from html import unescape
 
 import pytest
 import requests
 import responses
 from ddf import G
+from django.db import DatabaseError
 
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.service.utils import get_resource_url
@@ -33,6 +36,143 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
+    @pytest.mark.parametrize("failure", ["timeout", "connection", "invalid_json", "bad_response"])
+    @pytest.mark.parametrize("history_unavailable", [False, True])
+    def test_debug_failure_preserves_error(
+        self,
+        failure,
+        history_unavailable,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+        caplog,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        send_request = mocker.patch("apigateway.apis.web.api_test.views.requests.request")
+        body = ""
+        if failure == "invalid_json":
+            body = "{invalid-json"
+            expected_error = str(json.JSONDecodeError("Expecting property name enclosed in double quotes", body, 1))
+        elif failure == "bad_response":
+            send_request.return_value = object()
+            expected_error = "'object' object has no attribute 'request'"
+        else:
+            exception = requests.Timeout if failure == "timeout" else requests.ConnectionError
+            send_request.side_effect = exception("request failed <upstream> with personal-token")
+            expected_error = "request failed <upstream> with ***"
+        create_history = mocker.spy(APIDebugHistory.objects, "create")
+        if history_unavailable:
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError("storage failed with personal-token")
+            )
+        with caplog.at_level(logging.ERROR, logger="apigateway.apis.web.api_test.views"):
+            response = request_view(
+                "POST",
+                "api_test.tests",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data={
+                    "stage_id": fake_stage.id,
+                    "resource_id": fake_resource1.id,
+                    "method": "GET",
+                    "headers": {"Authorization": "Bearer personal-token"},
+                    "path_params": {},
+                    "query_params": {},
+                    "body": body,
+                    "use_test_app": False,
+                },
+            )
+        assert response.status_code == 500
+        assert response.json()["error"]["code"] == "UNKNOWN"
+        message = response.json()["error"]["message"]
+        assert "请求网关资源失败" in message
+        assert expected_error in unescape(message)
+        assert "<upstream>" not in message
+        assert "storage failed" not in message
+        assert "personal-token" not in response.content.decode()
+        create_history.assert_called_once()
+        recorded_response = create_history.call_args.kwargs["response"]
+        assert recorded_response == {"data": None, "spec_version": 1, "error": expected_error}
+        assert create_history.call_args.kwargs["request"]["headers"] == {}
+        if failure == "invalid_json":
+            send_request.assert_not_called()
+        else:
+            send_request.assert_called_once()
+        if history_unavailable:
+            assert not APIDebugHistory.objects.exists()
+            assert expected_error in caplog.text
+            assert "DatabaseError" in caplog.text
+            assert "personal-token" not in caplog.text
+            assert all(record.exc_info is None for record in caplog.records)
+        else:
+            assert APIDebugHistory.objects.get().response == recorded_response
+
+    @pytest.mark.parametrize("failure", ["database", "history_model"])
+    @responses.activate
+    def test_success_is_preserved_when_history_fails(
+        self,
+        failure,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+        caplog,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        responses.add("GET", url, json={"message": "gateway responded"})
+        if failure == "database":
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError("storage failed with personal-token")
+            )
+        else:
+            # Pydantic validation failures may include the input data in their message.
+            mocker.patch(
+                "apigateway.apis.web.api_test.views.ApiDebugHistoryResponse",
+                side_effect=ValueError("history model failed with personal-token"),
+            )
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+        with caplog.at_level(logging.ERROR, logger="apigateway.apis.web.api_test.views"):
+            response = request_view(
+                "POST",
+                "api_test.tests",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data={
+                    "stage_id": fake_stage.id,
+                    "resource_id": fake_resource1.id,
+                    "method": "GET",
+                    "headers": {"Authorization": "Bearer personal-token"},
+                    "path_params": {},
+                    "query_params": {},
+                    "body": "",
+                    "use_test_app": False,
+                },
+            )
+        assert response.status_code == 200
+        assert response.json()["data"]["status_code"] == 200
+        assert json.loads(response.json()["data"]["body"]) == {"message": "gateway responded"}
+        assert "personal-token" not in response.content.decode()
+        assert len(responses.calls) == 1
+        assert not APIDebugHistory.objects.exists()
+        if failure == "database":
+            create_history.assert_called_once()
+            assert create_history.call_args.kwargs["response"]["error"] is None
+            assert create_history.call_args.kwargs["response"]["data"] == response.json()["data"]
+            assert "DatabaseError" in caplog.text
+        else:
+            create_history.assert_not_called()
+            assert "ValueError" in caplog.text
+        assert "personal-token" not in caplog.text
+        assert all(record.exc_info is None for record in caplog.records)
+
     @pytest.mark.parametrize("mode", ["cookie", "ticket", "access_token", "bearer", "legacy_headers"])
     @responses.activate
     def test_authentication_and_sensitive_history(

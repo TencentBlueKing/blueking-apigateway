@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import logging
 from html import escape as html_escape
 from typing import Any, Dict
 
@@ -45,6 +46,7 @@ from .sensitive import DebugDataSanitizer
 from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
 TEST_PERMISSION_EXPIRE_DAYS = 1
+logger = logging.getLogger(__name__)
 
 
 class APITestApi(generics.CreateAPIView):
@@ -119,7 +121,8 @@ class APITestApi(generics.CreateAPIView):
             "use_user_from_cookies": data.get("use_user_from_cookies", False),
             "spec_version": SPEC_VERSION,
         }
-        validated_request = ApiDebugHistoryRequest(**sanitizer.clean_request(history_request))
+        response_data_dict = None
+        error_message = None
         try:
             response = requests.request(
                 method=data["method"],
@@ -139,36 +142,37 @@ class APITestApi(generics.CreateAPIView):
             )
             response_data_dict["curl"] = sanitizer.clean_curl(response_data_dict["curl"])
             response_data_dict = sanitizer.clean(response_data_dict)
-            # 结果检查
-            success_history_response = {
-                "data": response_data_dict,
-                "spec_version": SPEC_VERSION,
-            }
-            validated_response = ApiDebugHistoryResponse(**success_history_response)
-            success_history_data = {
-                "gateway": request.gateway,
-                "stage": stage,
-                "resource_name": released_resource.name,
-                "request": validated_request.model_dump(),
-                "response": validated_response.model_dump(),
-            }
-            APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:  # pylint: disable=broad-except
             error_message = sanitizer.clean(str(err))
-            # 结果检查
-            error_history_response = {
-                "error": error_message,
-                "spec_version": SPEC_VERSION,
-            }
-            validated_response = ApiDebugHistoryResponse(**error_history_response)
-            fail_history_data = {
-                "gateway": request.gateway,
-                "stage": stage,
-                "resource_name": released_resource.name,
-                "request": validated_request.model_dump(),
-                "response": validated_response.model_dump(),
-            }
-            APIDebugHistory.objects.create(**fail_history_data)
+            response_data_dict = None
+
+        # History failures must not replace the gateway result or trigger another save.
+        try:
+            validated_request = ApiDebugHistoryRequest(**sanitizer.clean_request(history_request))
+            validated_response = ApiDebugHistoryResponse(
+                data=response_data_dict, error=error_message, spec_version=SPEC_VERSION
+            )
+            APIDebugHistory.objects.create(
+                gateway=request.gateway,
+                stage=stage,
+                resource_name=released_resource.name,
+                request=validated_request.model_dump(),
+                response=validated_response.model_dump(),
+            )
+        except Exception as err:  # pylint: disable=broad-except
+            # Raw exception tracebacks can contain credentials from SQL or model inputs.
+            logger.error(  # noqa: TRY400
+                "Failed to save API debug history: gateway_id=%s stage_id=%s resource_id=%s "
+                "request_error=%s history_error_type=%s history_error=%s",
+                request.gateway.id,
+                stage.id,
+                released_resource.id,
+                error_message,
+                type(err).__name__,
+                sanitizer.clean(str(err)),
+            )
+
+        if error_message is not None:
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 code="UNKNOWN",
