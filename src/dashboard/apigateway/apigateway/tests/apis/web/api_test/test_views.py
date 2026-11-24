@@ -36,6 +36,77 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
+    @pytest.mark.parametrize("history_failure", ["database", "history_model"])
+    def test_history_failure_logs_do_not_expose_query_credentials(
+        self,
+        history_failure,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+        caplog,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        query_token = "query-only-token"
+        history_secret = "history-only-secret"
+        send_request = mocker.patch(
+            "apigateway.apis.web.api_test.views.requests.request",
+            side_effect=requests.ConnectionError(f"request failed for http://example.com/?access_token={query_token}"),
+        )
+        if history_failure == "database":
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError(f"storage failed with {history_secret}")
+            )
+        else:
+            mocker.patch(
+                "apigateway.apis.web.api_test.views.ApiDebugHistoryResponse",
+                side_effect=ValueError(f"history model failed with {history_secret}"),
+            )
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+
+        with caplog.at_level(logging.ERROR, logger="apigateway.apis.web.api_test.views"):
+            response = request_view(
+                "POST",
+                "api_test.tests",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data={
+                    "stage_id": fake_stage.id,
+                    "resource_id": fake_resource1.id,
+                    "method": "GET",
+                    "headers": {},
+                    "authorization": {},
+                    "path_params": {},
+                    "query_params": {"access_token": query_token},
+                    "body": "",
+                    "use_test_app": False,
+                },
+            )
+
+        assert response.status_code == 500
+        assert response.json()["error"]["code"] == "UNKNOWN"
+        send_request.assert_called_once()
+        assert send_request.call_args.kwargs["params"] == {"access_token": query_token}
+        assert not APIDebugHistory.objects.exists()
+        if history_failure == "database":
+            create_history.assert_called_once()
+            assert create_history.call_args.kwargs["request"]["query_params"] == {"access_token": "***"}
+            assert "DatabaseError" in caplog.text
+        else:
+            create_history.assert_not_called()
+            assert "ValueError" in caplog.text
+        assert "Failed to save API debug history" in caplog.text
+        assert f"gateway_id={fake_gateway.id}" in caplog.text
+        assert f"stage_id={fake_stage.id}" in caplog.text
+        assert f"resource_id={fake_resource1.id}" in caplog.text
+        assert query_token not in caplog.text
+        assert history_secret not in caplog.text
+        assert "ConnectionError" in caplog.text
+        assert all(record.exc_info is None for record in caplog.records)
+
     @pytest.mark.parametrize("failure", ["timeout", "connection", "invalid_json", "bad_response"])
     @pytest.mark.parametrize("history_unavailable", [False, True])
     def test_debug_failure_preserves_error(
@@ -104,7 +175,7 @@ class TestAPITestAPIView:
             send_request.assert_called_once()
         if history_unavailable:
             assert not APIDebugHistory.objects.exists()
-            assert expected_error in caplog.text
+            assert expected_error not in caplog.text
             assert "DatabaseError" in caplog.text
             assert "personal-token" not in caplog.text
             assert all(record.exc_info is None for record in caplog.records)

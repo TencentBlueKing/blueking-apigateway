@@ -123,6 +123,7 @@ class APITestApi(generics.CreateAPIView):
         }
         response_data_dict = None
         error_message = None
+        request_error_type = None
         try:
             response = requests.request(
                 method=data["method"],
@@ -144,6 +145,7 @@ class APITestApi(generics.CreateAPIView):
             response_data_dict = sanitizer.clean(response_data_dict)
         except Exception as err:  # pylint: disable=broad-except
             error_message = sanitizer.clean(str(err))
+            request_error_type = type(err).__name__
             response_data_dict = None
 
         # History failures must not replace the gateway result or trigger another save.
@@ -160,16 +162,15 @@ class APITestApi(generics.CreateAPIView):
                 response=validated_response.model_dump(),
             )
         except Exception as err:  # pylint: disable=broad-except
-            # Raw exception tracebacks can contain credentials from SQL or model inputs.
+            # Exception messages and tracebacks may contain unregistered credentials.
             logger.error(  # noqa: TRY400
                 "Failed to save API debug history: gateway_id=%s stage_id=%s resource_id=%s "
-                "request_error=%s history_error_type=%s history_error=%s",
+                "request_error_type=%s history_error_type=%s",
                 request.gateway.id,
                 stage.id,
                 released_resource.id,
-                error_message,
+                request_error_type,
                 type(err).__name__,
-                sanitizer.clean(str(err)),
             )
 
         if error_message is not None:
