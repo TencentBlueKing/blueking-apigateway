@@ -224,3 +224,122 @@ def test_history_masks_response_authorization_echoes_without_mutating_source():
         "body": "issued: ***",
     }
     assert json.dumps(response) == before
+
+
+def test_history_collects_response_body_credentials_before_cleaning_echoes():
+    request = {"body": json.dumps({"echo": "response-only-secret"})}
+    response = {
+        "data": {
+            "body": json.dumps(
+                {"access_token": "response-only-secret", "nested": [{"echo": "response-only-secret"}], "count": 1}
+            ),
+            "headers": {"X-Echo": "Bearer response-only-secret"},
+        }
+    }
+    before = json.dumps([request, response])
+    cleaned_request, cleaned_response = sanitize_history(request, response)
+    assert json.loads(cleaned_request["body"]) == {"echo": "***"}
+    assert json.loads(cleaned_response["data"]["body"]) == {
+        "access_token": "***",
+        "nested": [{"echo": "***"}],
+        "count": 1,
+    }
+    assert cleaned_response["data"]["headers"] == {"X-Echo": "Bearer ***"}
+    assert json.dumps([request, response]) == before
+
+
+@pytest.mark.parametrize("name", ["bk_token", "BK_TICKET", "custom_login_ticket"])
+def test_set_cookie_registers_recognized_ticket_value_only(name, settings):
+    settings.BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {"bk_ticket": "custom_login_ticket"}
+    _, response = sanitize_history(
+        {},
+        {
+            "data": {
+                "headers": {"sEt-CoOkIe": f'{name}="issued-cookie-ticket"; Path=/; HttpOnly; SameSite=Lax'},
+                "body": json.dumps({"echo": "issued-cookie-ticket", "ordinary": "Lax Path HttpOnly"}),
+            }
+        },
+    )
+    assert response["data"]["headers"] == {"sEt-CoOkIe": "***"}
+    assert json.loads(response["data"]["body"]) == {"echo": "***", "ordinary": "Lax Path HttpOnly"}
+
+
+def test_combined_set_cookie_with_expires_registers_both_tickets():
+    _, response = sanitize_history(
+        {},
+        {
+            "data": {
+                "headers": {
+                    "Set-Cookie": "bk_token=first-ticket; Expires=Wed, 21 Oct 2030 07:28:00 GMT, bk_ticket=second-ticket; Path=/; HttpOnly"
+                },
+                "body": json.dumps(
+                    {"first": "first-ticket", "second": "second-ticket", "ordinary": "Wed GMT HttpOnly"}
+                ),
+            }
+        },
+    )
+    assert json.loads(response["data"]["body"]) == {"first": "***", "second": "***", "ordinary": "Wed GMT HttpOnly"}
+
+
+@pytest.mark.parametrize("secret", ["a", "on", "test", "0.01"])
+def test_credentials_use_value_boundaries_and_preserve_response_metadata(secret):
+    request = {
+        "request_url": "http://example.com/connection/testing",
+        "query_params": {"token": secret, "name": "connection testing"},
+        "body": json.dumps({"token": secret, "echo": secret, "name": "connection testing", "count": 1}),
+    }
+    response = {
+        "data": {
+            "body": json.dumps({"echo": secret, "sentence": f"issued: {secret}", "name": "connection testing"}),
+            "headers": {"Content-Type": "application/json", "X-Trace": "connection testing"},
+            "size": secret,
+            "status_code": 200,
+            "proxy_time": 1,
+            "curl": shlex.join(
+                [
+                    "curl",
+                    "-X",
+                    "POST",
+                    "-H",
+                    "Content-Type: application/json",
+                    "-d",
+                    request["body"],
+                    request["request_url"],
+                ]
+            ),
+        }
+    }
+    cleaned_request, cleaned_response = sanitize_history(request, response)
+    assert cleaned_request["request_url"] == request["request_url"]
+    assert cleaned_request["query_params"] == {"token": "***", "name": "connection testing"}
+    assert json.loads(cleaned_request["body"]) == {
+        "token": "***",
+        "echo": "***",
+        "name": "connection testing",
+        "count": 1,
+    }
+    assert json.loads(cleaned_response["data"]["body"]) == {
+        "echo": "***",
+        "sentence": "issued: ***",
+        "name": "connection testing",
+    }
+    assert cleaned_response["data"]["headers"] == response["data"]["headers"]
+    assert cleaned_response["data"]["size"] == secret
+    assert cleaned_response["data"]["status_code"] == 200
+    assert cleaned_response["data"]["proxy_time"] == 1
+    args = shlex.split(cleaned_response["data"]["curl"])
+    assert args[:5] == ["curl", "-X", "POST", "-H", "Content-Type: application/json"]
+    assert json.loads(args[6])["echo"] == "***"
+    assert args[7] == request["request_url"]
+
+
+def test_curl_structure_and_names_are_not_treated_as_credential_values():
+    sanitizer = DebugDataSanitizer()
+    sanitizer.add_authorization({"token": ["curl", "Content", "POST"]})
+    curl = shlex.join(
+        ["curl", "-X", "POST", "-H", "Content-Type: application/json", "-d", '{"echo":"curl"}', "http://example.com"]
+    )
+    result = sanitizer.clean_curl(curl)
+    args = shlex.split(result)
+    assert args[:5] == ["curl", "-X", "POST", "-H", "Content-Type: application/json"]
+    assert json.loads(args[6]) == {"echo": "***"}

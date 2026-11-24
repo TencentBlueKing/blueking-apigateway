@@ -140,8 +140,9 @@ class APITestApi(generics.CreateAPIView):
                 response, prepared_request_headers.headers_without_sensitive, verify=False
             )
             sanitizer.add_headers(response.headers)
-            response_data_dict["curl"] = sanitizer.clean_curl(response_data_dict["curl"])
-            response_data_dict = sanitizer.clean(response_data_dict)
+            sanitizer.add_authorization(response_data_dict["body"])
+            validated_request = ApiDebugHistoryRequest(**sanitizer.clean_request(history_request))
+            response_data_dict = sanitizer.clean_response_data(response_data_dict)
             # 结果检查
             success_history_response = {
                 "data": response_data_dict,

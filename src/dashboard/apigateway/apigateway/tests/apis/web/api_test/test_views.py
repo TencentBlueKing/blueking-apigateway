@@ -33,6 +33,113 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
+    @pytest.mark.parametrize("source", ["body", "cookie"])
+    @responses.activate
+    def test_response_only_credentials_are_hidden_in_all_debug_representations(
+        self, source, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        secret = "new-response-only-ticket"
+        body = {"echo": secret, "nested": [{"echo": secret}], "count": 1}
+        headers = {"Content-Type": "application/json", "X-Echo": f"issued: {secret}"}
+        if source == "body":
+            body["access_token"] = secret
+        else:
+            headers["Set-Cookie"] = f"bk_token={secret}; Path=/; HttpOnly"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        request_body = {"echo": secret, "name": "ordinary"}
+
+        def respond(req):
+            assert json.loads(req.body) == request_body
+            return 200, headers, json.dumps(body)
+
+        responses.add_callback("POST", url, callback=respond)
+        result = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": "POST",
+                "headers": {},
+                "path_params": {},
+                "query_params": {},
+                "body": json.dumps(request_body),
+                "use_test_app": False,
+            },
+        )
+        assert result.status_code == 200, result.json()
+        history = APIDebugHistory.objects.get()
+        assert result.json()["data"] == history.response["data"]
+        assert json.loads(history.request["body"]) == {"echo": "***", "name": "ordinary"}
+        assert json.loads(history.response["data"]["body"])["count"] == 1
+        assert secret not in json.dumps([history.request, history.response])
+        assert secret not in result.content.decode()
+        for detail in [False, True]:
+            params = {"gateway_id": fake_gateway.id}
+            if detail:
+                params["id"] = history.id
+            response = request_view(
+                "GET",
+                "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list",
+                path_params=params,
+                gateway=fake_gateway,
+            )
+            assert response.status_code == 200
+            assert secret not in response.content.decode()
+
+    @pytest.mark.parametrize("source", ["query", "body", "response_header"])
+    @responses.activate
+    def test_short_credentials_preserve_ordinary_debug_fields(
+        self, source, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        request_body = {"password": "a", "echo": "a", "name": "application"} if source == "body" else {}
+        query = {"token": "a", "name": "application"} if source == "query" else {}
+        headers = {"Content-Type": "application/json"}
+        if source == "response_header":
+            headers["X-Token"] = "a"
+        response_body = json.dumps({"echo": "a", "name": "application", "status": "active"})
+
+        def respond(req):
+            assert json.loads(req.body) == request_body
+            assert req.url.startswith(url)
+            if source == "query":
+                assert "token=a" in req.url
+            return 200, headers, response_body
+
+        responses.add_callback("POST", url, callback=respond)
+        result = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": "POST",
+                "headers": {"Content-Type": "application/json"},
+                "path_params": {},
+                "query_params": query,
+                "body": json.dumps(request_body),
+                "use_test_app": False,
+            },
+        )
+        assert result.status_code == 200, result.json()
+        history = APIDebugHistory.objects.get()
+        for data in [result.json()["data"], history.response["data"]]:
+            assert json.loads(data["body"]) == {"echo": "***", "name": "application", "status": "active"}
+            assert data["headers"]["Content-Type"] == "application/json"
+            assert data["size"] == f"{len(response_body.encode()) / 1024:.2f}"
+            args = shlex.split(data["curl"])
+            assert args[0] == "curl"
+            assert any(arg == "Content-Type: application/json" for arg in args)
+            assert any(arg.startswith(url) for arg in args)
+        assert history.request["request_url"] == url
+
     @pytest.mark.parametrize("fails", [False, True])
     @responses.activate
     def test_credential_headers_are_sent_but_hidden_from_history(
@@ -373,6 +480,39 @@ class TestAPITestAPIView:
 
 
 class TestAPIDebugHistoryApi:
+    @pytest.mark.parametrize("detail", [False, True])
+    @pytest.mark.parametrize("source", ["body", "cookie"])
+    def test_old_response_only_credentials_are_hidden(self, detail, source, request_view, fake_gateway, fake_resource):
+        secret = "legacy-response-only-ticket"
+        body = {"echo": secret, "nested": [{"echo": secret}], "count": 1}
+        headers = {}
+        if source == "body":
+            body["access_token"] = secret
+        else:
+            headers["Set-Cookie"] = f"bk_token={secret}; Path=/; HttpOnly"
+        history = G(
+            APIDebugHistory,
+            gateway=fake_gateway,
+            resource_name=fake_resource.name,
+            request={"body": json.dumps({"echo": secret})},
+            response={"data": {"body": json.dumps(body), "headers": headers}},
+        )
+        params = {"gateway_id": fake_gateway.id}
+        if detail:
+            params["id"] = history.id
+        response = request_view(
+            "GET",
+            "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list",
+            path_params=params,
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 200
+        assert secret not in response.content.decode()
+        item = response.json()["data"] if detail else response.json()["data"][0]
+        assert json.loads(item["response"]["data"]["body"])["count"] == 1
+        history.refresh_from_db()
+        assert secret in history.request["body"]
+
     @pytest.mark.parametrize("detail", [False, True])
     def test_old_history_credentials_are_hidden(self, detail, request_view, fake_gateway, fake_resource):
         history = G(
