@@ -70,12 +70,13 @@ def requests_callback(span: Span, prepared_request: PreparedRequest, response: R
     if not isinstance(json_result, dict):
         return
 
-    # Legacy ESB uses "00"; gateway and IAM responses use numeric codes.
+    # Legacy ESB uses "00"; BK Monitor uses 200 with a true result.
     # Leave HTTP error statuses set by the upstream instrumentation intact.
     if response.status_code == HTTPStatus.OK.value:
         code = _get_result_code(json_result.get("code", 0))
         span.set_attribute("result_code", code)
-        span.set_status(Status(StatusCode.OK if code == 0 else StatusCode.ERROR))
+        success = code == 0 or (code == HTTPStatus.OK.value and bool(json_result.get("result")))
+        span.set_status(Status(StatusCode.OK if success else StatusCode.ERROR))
 
     # Free-form messages and nested errors can contain credentials even without
     # sensitive key names. Keep only their presence, with a fixed-size mask.

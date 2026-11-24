@@ -93,6 +93,36 @@ def test_business_success_preserves_request_id(traced_request, code):
     assert span.attributes["request_id"] == "iam-request-1"
 
 
+@pytest.mark.parametrize("code", [200, "200"])
+def test_monitor_success_marks_span_ok(traced_request, code):
+    payload = {"code": code, "result": True, "message": "OK", "data": {"series": []}}
+    response, span = traced_request(payload, headers={"x-bkapi-request-id": "monitor-request-1"})
+
+    assert response.json() == payload
+    assert span.status.status_code == StatusCode.OK
+    assert span.attributes["result_code"] == 200
+    assert span.attributes["result_message"] == "[redacted]"
+    assert span.attributes["request_id"] == "monitor-request-1"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"code": 200, "result": False},
+        {"code": "200", "result": False},
+        {"code": 200},
+        {"code": "200"},
+        {"code": 1, "result": True},
+        {"code": "1", "result": True},
+    ],
+)
+def test_monitor_failure_marks_span_error(traced_request, payload):
+    _, span = traced_request(payload)
+
+    assert span.status.status_code == StatusCode.ERROR
+    assert span.attributes["result_code"] == int(payload["code"])
+
+
 @pytest.mark.parametrize(
     "headers, expected",
     [
@@ -118,8 +148,9 @@ def test_non_object_response_is_ignored(traced_request, body):
 
 
 @pytest.mark.parametrize("status_code", [400, 500])
-def test_http_error_status_is_preserved(traced_request, status_code):
-    _, span = traced_request({"code": 0}, status_code=status_code)
+@pytest.mark.parametrize("payload", [{"code": 0}, {"code": 200, "result": True}, {"code": "200", "result": True}])
+def test_http_error_status_is_preserved(traced_request, status_code, payload):
+    _, span = traced_request(payload, status_code=status_code)
     assert span.status.status_code == StatusCode.ERROR
 
 
