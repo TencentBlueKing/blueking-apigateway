@@ -36,7 +36,7 @@ from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayLabelHandler
 from apigateway.biz.openapi import ResourceImportChangeTypeEnum
-from apigateway.biz.resource import ResourceAuthConfig, ResourceHandler
+from apigateway.biz.resource import ResourceAuthConfig, ResourceAuthFilterType, ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -85,6 +85,27 @@ class ResourceQueryInputSLZ(serializers.Serializer):
             return [int(x) for x in value.split(",")]
         except ValueError:
             raise serializers.ValidationError(_("标签 ID 请用逗号分割"))
+
+
+class ResourceListQueryInputSLZ(ResourceQueryInputSLZ):
+    auth_type = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="认证方式，多个值用逗号分隔并取并集。none：不认证，app：应用认证，personal：个人令牌，"
+        "public：公开客户端，oauth：OAuth 授权",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceListQueryInputSLZ"
+
+    def validate_auth_type(self, value: str) -> set[ResourceAuthFilterType]:
+        if not value:
+            return set()
+
+        try:
+            return {ResourceAuthFilterType(auth_type.strip()) for auth_type in value.split(",")}
+        except ValueError as err:
+            raise serializers.ValidationError(_("认证方式仅支持 none、app、personal、public、oauth")) from err
 
 
 class ResourceListOutputSLZ(serializers.ModelSerializer):
