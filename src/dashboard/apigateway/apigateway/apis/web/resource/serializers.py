@@ -597,13 +597,19 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
 
         return value
 
-    def validate_label_ids(self, value):
+    def validate(self, attrs):
+        if not attrs["is_update_labels"] or "label_ids" not in attrs:
+            return attrs
+
         gateway_id = self.context["gateway_id"]
+        value = attrs["label_ids"]
         not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway_id, value))
         if not_exist_ids:
-            raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+            raise serializers.ValidationError(
+                {"label_ids": _("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids)))}
+            )
 
-        return value
+        return attrs
 
 
 class ResourceBatchDestroyInputSLZ(serializers.Serializer):
