@@ -19,9 +19,11 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.plugin.views import PluginConfigRetrieveUpdateDestroyApi
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum, PluginTypeScopeEnum
-from apigateway.apps.plugin.models import PluginBinding, PluginType
-from apigateway.core.constants import ResourceKindEnum
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
+from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
+from apigateway.core.models import Gateway
 from apigateway.utils.yaml import yaml_dumps
 
 AI_ONLY_PLUGIN_CODES = (
@@ -431,7 +433,185 @@ class TestPluginConfigCreateApi:
 
 
 class TestPluginConfigRetrieveUpdateDestroyApi:
-    def test_retrieve(self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type):
+    @pytest.mark.parametrize("method", ["GET", "PUT", "DELETE"])
+    @pytest.mark.parametrize("scope_type", ["stage", "resource"])
+    @pytest.mark.parametrize(
+        "mismatch", ["scope_id", "scope_type", "code", "binding_gateway", "config_gateway", "unbound", "config_id"]
+    )
+    def test_details_reject_mismatched_binding(
+        self,
+        request_view,
+        mocker,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_plugin_bk_header_rewrite,
+        fake_plugin_type_bk_header_rewrite,
+        method,
+        scope_type,
+        mismatch,
+    ):
+        publish = mocker.patch("apigateway.apis.web.plugin.views.trigger_gateway_publish")
+        audit = mocker.patch("apigateway.apis.web.plugin.views.Auditor.record_plugin_op_success")
+        scope = fake_stage if scope_type == "stage" else fake_resource
+        binding_scope = scope
+        binding_scope_type = scope_type
+        binding_gateway = fake_gateway
+        code = fake_plugin_type_bk_header_rewrite.code
+        config_id = fake_plugin_bk_header_rewrite.id
+
+        if mismatch == "scope_id":
+            binding_scope = G(type(scope), gateway=fake_gateway)
+        elif mismatch == "scope_type":
+            binding_scope_type = "resource" if scope_type == "stage" else "stage"
+        elif mismatch == "code":
+            code = G(PluginType, code="other-plugin").code
+        elif mismatch == "binding_gateway":
+            binding_gateway = G(Gateway)
+        elif mismatch == "config_gateway":
+            fake_plugin_bk_header_rewrite.gateway = G(Gateway)
+            fake_plugin_bk_header_rewrite.save(update_fields=["gateway"])
+        elif mismatch == "config_id":
+            config_id = G(
+                PluginConfig,
+                gateway=fake_gateway,
+                type=fake_plugin_type_bk_header_rewrite,
+                yaml=fake_plugin_bk_header_rewrite.yaml,
+            ).id
+
+        if mismatch != "unbound":
+            G(
+                PluginBinding,
+                gateway=binding_gateway,
+                scope_type=binding_scope_type,
+                scope_id=binding_scope.id,
+                config=fake_plugin_bk_header_rewrite,
+            )
+
+        configs_before = list(PluginConfig.objects.order_by("id").values())
+        bindings_before = list(PluginBinding.objects.order_by("id").values())
+        response = request_view(
+            method,
+            "plugins.config.details",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": scope_type,
+                "scope_id": scope.id,
+                "code": code,
+                "id": config_id,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.id,
+                "name": "updated-plugin",
+                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "updated"}], "remove": []}),
+            },
+        )
+
+        assert response.status_code == 404
+        assert list(PluginConfig.objects.order_by("id").values()) == configs_before
+        assert list(PluginBinding.objects.order_by("id").values()) == bindings_before
+        scope_updated_time = scope.updated_time
+        scope.refresh_from_db()
+        assert scope.updated_time == scope_updated_time
+        binding_scope_updated_time = binding_scope.updated_time
+        binding_scope.refresh_from_db()
+        assert binding_scope.updated_time == binding_scope_updated_time
+        publish.assert_not_called()
+        audit.assert_not_called()
+
+    @pytest.mark.parametrize("method, status_code", [("GET", 200), ("PUT", 200), ("DELETE", 204)])
+    @pytest.mark.parametrize("scope_type", ["stage", "resource"])
+    def test_details_with_matching_binding(
+        self,
+        request_view,
+        mocker,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_admin_user,
+        fake_plugin_bk_header_rewrite,
+        fake_plugin_type_bk_header_rewrite,
+        method,
+        status_code,
+        scope_type,
+    ):
+        publish = mocker.patch("apigateway.apis.web.plugin.views.trigger_gateway_publish")
+        audit = mocker.patch("apigateway.apis.web.plugin.views.Auditor.record_plugin_op_success")
+        scope = fake_stage if scope_type == "stage" else fake_resource
+        binding = G(
+            PluginBinding,
+            gateway=fake_gateway,
+            scope_type=scope_type,
+            scope_id=scope.id,
+            config=fake_plugin_bk_header_rewrite,
+        )
+        config_before = PluginConfig.objects.get(id=fake_plugin_bk_header_rewrite.id)
+        response = request_view(
+            method,
+            "plugins.config.details",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": scope_type,
+                "scope_id": scope.id,
+                "code": fake_plugin_type_bk_header_rewrite.code,
+                "id": fake_plugin_bk_header_rewrite.id,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.id,
+                "name": "updated-plugin",
+                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "updated"}], "remove": []}),
+            },
+        )
+
+        assert response.status_code == status_code, response.json()
+        if method == "GET":
+            assert response.json()["data"]["id"] == fake_plugin_bk_header_rewrite.id
+            assert response.json()["data"]["yaml"] == config_before.yaml
+            publish.assert_not_called()
+            audit.assert_not_called()
+            return
+
+        if method == "PUT":
+            fake_plugin_bk_header_rewrite.refresh_from_db()
+            binding.refresh_from_db()
+            assert fake_plugin_bk_header_rewrite.config == {
+                "set": [{"key": "foo", "value": "updated"}],
+                "remove": [],
+            }
+            assert fake_plugin_bk_header_rewrite.name == "updated-plugin"
+            assert binding.source == "user_update"
+            source = PublishSourceEnum.PLUGIN_UPDATE
+            op_type = OpTypeEnum.MODIFY
+        else:
+            assert not PluginConfig.objects.filter(id=fake_plugin_bk_header_rewrite.id).exists()
+            assert not PluginBinding.objects.filter(id=binding.id).exists()
+            source = PublishSourceEnum.PLUGIN_UNBIND
+            op_type = OpTypeEnum.DELETE
+
+        if scope_type == "stage":
+            publish.assert_called_once_with(source, fake_admin_user.username, fake_gateway.id, scope.id)
+        else:
+            publish.assert_not_called()
+            scope_updated_time = scope.updated_time
+            scope.refresh_from_db()
+            assert scope.updated_time > scope_updated_time
+
+        audit.assert_called_once()
+        assert audit.call_args.kwargs["op_type"] == op_type
+        assert audit.call_args.kwargs["gateway_id"] == fake_gateway.id
+        assert audit.call_args.kwargs["instance_id"] == fake_plugin_bk_header_rewrite.id
+        assert audit.call_args.kwargs["data_before"]["yaml"] == config_before.yaml
+        if method == "PUT":
+            assert audit.call_args.kwargs["data_after"]["yaml"] == fake_plugin_bk_header_rewrite.yaml
+        else:
+            assert audit.call_args.kwargs["data_after"] == {}
+
+    def test_retrieve(
+        self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, echo_plugin_stage_binding
+    ):
         response = request_view(
             "GET",
             "plugins.config.details",
