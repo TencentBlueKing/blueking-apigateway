@@ -173,3 +173,54 @@ def test_response_authentication_headers_are_always_masked():
             }
         }
     ) == {"headers": {"Set-Cookie": "***", "Authorization": "***", "X-Trace": "trace"}}
+
+
+@pytest.mark.parametrize("header_name", ["X-Api-Key", "X-Auth-Token", "X-Token", "X-Access-Token"])
+def test_history_masks_additional_credential_headers_and_echoes(header_name):
+    request, response = sanitize_history(
+        {"headers": {header_name.swapcase(): "header-secret", "X-Trace": "trace"}},
+        {"data": {"body": "echo: header-secret", "headers": {header_name: "response-secret"}}},
+    )
+    assert request["headers"] == {"X-Trace": "trace"}
+    assert response["data"]["headers"] == {header_name: "***"}
+    assert response["data"]["body"] == "echo: ***"
+
+
+def test_nested_authorization_credentials_and_echoes():
+    authorization = {
+        "bk_app_code": "debug-app",
+        "nested": [{"BK_APP_SECRET": "nested-secret", "TOKEN": ["nested-token"]}, "ordinary", 1],
+    }
+    sanitizer = DebugDataSanitizer()
+    sanitizer.add_headers({"X-Bkapi-Authorization": json.dumps(authorization)})
+    assert sanitizer.clean(authorization) == {
+        "bk_app_code": "debug-app",
+        "nested": [{"BK_APP_SECRET": "***", "TOKEN": "***"}, "ordinary", 1],
+    }
+    assert sanitizer.clean("nested-secret and nested-token") == "*** and ***"
+
+
+@pytest.mark.parametrize("key", ["token", "refresh_token", "id_token", "password", "client_secret", "api_key"])
+def test_history_masks_nested_sensitive_keys(key):
+    request, response = sanitize_history(
+        {"body": json.dumps({"items": [{key.upper(): "body-secret", "name": "ordinary"}]})},
+        {"data": {"body": json.dumps({key: "response-secret", "count": 1})}},
+    )
+    assert json.loads(request["body"]) == {"items": [{key.upper(): "***", "name": "ordinary"}]}
+    assert json.loads(response["data"]["body"]) == {key: "***", "count": 1}
+
+
+def test_history_masks_response_authorization_echoes_without_mutating_source():
+    response = {
+        "data": {
+            "headers": {"aUtHoRiZaTiOn": "Bearer newly-issued-token", "X-Trace": "trace"},
+            "body": "issued: newly-issued-token",
+        }
+    }
+    before = json.dumps(response)
+    _, cleaned = sanitize_history({}, response)
+    assert cleaned["data"] == {
+        "headers": {"aUtHoRiZaTiOn": "***", "X-Trace": "trace"},
+        "body": "issued: ***",
+    }
+    assert json.dumps(response) == before

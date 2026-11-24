@@ -33,6 +33,104 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
+    @pytest.mark.parametrize("fails", [False, True])
+    @responses.activate
+    def test_credential_headers_are_sent_but_hidden_from_history(
+        self, fails, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        authorization = {
+            "bk_app_code": "debug-app",
+            "nested": [{"BK_APP_SECRET": "nested-secret", "TOKEN": ["nested-token"]}, "ordinary", 1],
+        }
+        headers = {
+            "cOoKiE": "bk_token=cookie-secret; theme=dark",
+            "aUtHoRiZaTiOn": "Basic basic-secret",
+            "pRoXy-AuThOrIzAtIoN": "Basic proxy-secret",
+            "x-bKaPi-AuThOrIzAtIoN": json.dumps(authorization),
+            "x-aPi-kEy": "api-key-secret",
+            "x-aUtH-tOkEn": "auth-token-secret",
+            "x-tOkEn": "token-secret",
+            "x-aCcEsS-tOkEn": "access-token-secret",
+            "X-Trace": "trace",
+        }
+        secrets = [
+            "cookie-secret",
+            "basic-secret",
+            "proxy-secret",
+            "nested-secret",
+            "nested-token",
+            "api-key-secret",
+            "auth-token-secret",
+            "token-secret",
+            "access-token-secret",
+        ]
+        body = {"items": [{"PASSWORD": "body-password", "name": "ordinary"}], "body_echo": "body-password", "count": 1}
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+
+        def respond(req):
+            for name, value in headers.items():
+                if name.lower() == "x-bkapi-authorization":
+                    assert json.loads(req.headers[name]) == authorization
+                else:
+                    assert req.headers[name] == value
+            assert json.loads(req.body) == body
+            if fails:
+                raise requests.ConnectionError("failed: " + "/".join(secrets))
+            return (
+                200,
+                {"Content-Type": "application/json", "Authorization": "Bearer issued-secret", "X-Trace": "trace"},
+                json.dumps({"echo": "/".join(secrets), "issued": "issued-secret", **body}),
+            )
+
+        responses.add_callback("POST", url, callback=respond)
+        response = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": "POST",
+                "headers": headers,
+                "path_params": {},
+                "query_params": {"API_KEY": "query-secret", "page": "2"},
+                "body": json.dumps(body),
+                "use_test_app": False,
+            },
+        )
+        assert len(responses.calls) == 1
+        assert response.status_code == (500 if fails else 200), response.json()
+        history = APIDebugHistory.objects.get()
+        assert history.request["headers"] == {"X-Trace": "trace"}
+        assert json.loads(history.request["body"]) == {
+            "items": [{"PASSWORD": "***", "name": "ordinary"}],
+            "body_echo": "***",
+            "count": 1,
+        }
+        assert history.request["query_params"] == {"API_KEY": "***", "page": "2"}
+        assert "authorization" not in history.request
+        if not fails:
+            assert response.json()["data"] == history.response["data"]
+            assert json.loads(history.response["data"]["body"])["count"] == 1
+        for payload in [response.content.decode(), json.dumps([history.request, history.response])]:
+            for secret in [*secrets, "body-password", "query-secret", "issued-secret"]:
+                assert secret not in payload
+        for detail in [False, True]:
+            params = {"gateway_id": fake_gateway.id}
+            if detail:
+                params["id"] = history.id
+            result = request_view(
+                "GET",
+                "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list",
+                path_params=params,
+                gateway=fake_gateway,
+            )
+            assert result.status_code == 200
+            for secret in [*secrets, "body-password", "query-secret", "issued-secret"]:
+                assert secret not in result.content.decode()
+
     @pytest.mark.parametrize("mode", ["cookie", "ticket", "access_token", "bearer", "legacy_headers"])
     @responses.activate
     def test_authentication_and_sensitive_history(
@@ -260,7 +358,7 @@ class TestAPITestAPIView:
         assert response.status_code == 200
         assert result["data"]["headers"] == {
             "Content-Type": "text/plain",
-            "x-token": "test",
+            "x-token": "***",
         }
 
         # 查看是否有记录
@@ -281,11 +379,18 @@ class TestAPIDebugHistoryApi:
             APIDebugHistory,
             resource_name=fake_resource.name,
             gateway=fake_gateway,
-            request={"headers": {"AUTHORIZATION": "Bearer old-personal-token", "X-Trace": "trace"}},
+            request={
+                "headers": {
+                    "AUTHORIZATION": "Bearer old-personal-token",
+                    "X-API-KEY": "old-api-key",
+                    "X-Trace": "trace",
+                }
+            },
             response={
                 "data": {
                     "curl": "curl -H 'Authorization: Bearer old-personal-token' http://example.com",
-                    "body": "old-personal-token",
+                    "body": "old-personal-token/old-api-key/issued-token",
+                    "headers": {"Authorization": "Bearer issued-token", "Set-Cookie": "session=issued-cookie"},
                 }
             },
         )
@@ -297,6 +402,9 @@ class TestAPIDebugHistoryApi:
         )
         assert response.status_code == 200
         assert "old-personal-token" not in response.content.decode()
+        assert "old-api-key" not in response.content.decode()
+        assert "issued-token" not in response.content.decode()
+        assert "issued-cookie" not in response.content.decode()
         item = response.json()["data"] if detail else response.json()["data"][0]
         assert item["request"]["headers"] == {"X-Trace": "trace"}
         history.refresh_from_db()

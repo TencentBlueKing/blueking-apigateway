@@ -23,13 +23,30 @@ from django.conf import settings
 
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
 
-SENSITIVE_KEYS = {"bk_app_secret", "app_secret", "bk_token", "bk_ticket", "skey", "access_token"}
+SENSITIVE_KEYS = {
+    "bk_app_secret",
+    "app_secret",
+    "bk_token",
+    "bk_ticket",
+    "skey",
+    "access_token",
+    "token",
+    "refresh_token",
+    "id_token",
+    "password",
+    "client_secret",
+    "api_key",
+}
 SENSITIVE_HEADER_NAMES = {
     HEADER_BKAPI_AUTHORIZATION.lower(),
     "authorization",
     "proxy-authorization",
     "cookie",
     "set-cookie",
+    "x-api-key",
+    "x-auth-token",
+    "x-token",
+    "x-access-token",
 }
 
 
@@ -44,9 +61,22 @@ class DebugDataSanitizer:
         self._secrets: set[str] = set()
 
     def add_authorization(self, authorization):
-        for key, value in authorization.items():
-            if key.lower() in SENSITIVE_KEYS:
-                self._add_secret(value)
+        if isinstance(authorization, dict):
+            for key, value in authorization.items():
+                if key.lower() in SENSITIVE_KEYS:
+                    self._add_secret(value)
+                else:
+                    self.add_authorization(value)
+        elif isinstance(authorization, list):
+            for value in authorization:
+                self.add_authorization(value)
+        elif isinstance(authorization, str):
+            try:
+                decoded = json.loads(authorization)
+            except ValueError:
+                return
+            if isinstance(decoded, (dict, list)):
+                self.add_authorization(decoded)
 
     def add_headers(self, headers):
         login_cookie_names = SENSITIVE_KEYS | {
@@ -79,14 +109,17 @@ class DebugDataSanitizer:
             self.add_authorization(authorization)
             # Do not register already-masked headers or application metadata as
             # secrets: later output/history cleanup must keep those fields visible.
-            if any(
-                key.lower() in SENSITIVE_KEYS and isinstance(secret, str) and secret and secret != "***"
-                for key, secret in authorization.items()
-            ):
+            if self.clean(authorization) != authorization:
                 self._add_secret(value)
 
     def _add_secret(self, value):
-        if isinstance(value, str) and value and value != "***":
+        if isinstance(value, dict):
+            for item in value.values():
+                self._add_secret(item)
+        elif isinstance(value, list):
+            for item in value:
+                self._add_secret(item)
+        elif isinstance(value, str) and value and value != "***":
             self._secrets.update({value, json.dumps(value)[1:-1], quote(value, safe=""), quote_plus(value)})
 
     def clean(self, data):
@@ -148,9 +181,12 @@ class DebugDataSanitizer:
 def sanitize_history(request, response):
     sanitizer = DebugDataSanitizer()
     sanitizer.add_headers(request.get("headers", {}))
+    sanitizer.add_authorization(request.get("query_params", {}))
+    sanitizer.add_authorization(request.get("body", ""))
     response = dict(response)
     if isinstance(response.get("data"), dict):
         response["data"] = dict(response["data"])
+        sanitizer.add_headers(response["data"].get("headers", {}))
         if response["data"].get("curl"):
             response["data"]["curl"] = sanitizer.clean_curl(response["data"]["curl"])
     return sanitizer.clean_request(request), sanitizer.clean(response)
