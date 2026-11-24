@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from django.utils.translation import override
 
 from apigateway.apis.web.mcp_server_metrics.serializers import (
     MCPServerMetricsQueryInstantInputSLZ,
@@ -89,6 +90,38 @@ def test_serializer_time_range(metrics_endpoint, time_params, valid):
         assert serializer.validated_data == data
     else:
         assert serializer.errors
+
+
+@pytest.mark.no_meta_schema
+@pytest.mark.parametrize("language", ["en", "zh-hans"])
+@pytest.mark.parametrize(
+    "time_params, english_error, chinese_error",
+    [
+        pytest.param(
+            {"time_start": 200, "time_end": 100},
+            "Parameter time_start cannot be later than time_end.",
+            "参数 time_start 不能晚于 time_end。",
+            id="reversed",
+        ),
+        pytest.param(
+            {"time_range": 15552001},
+            "The query time range cannot exceed 180 days.",
+            "查询时间范围不可超过 180 天。",
+            id="over-limit",
+        ),
+    ],
+)
+def test_time_range_error_translation(metrics_endpoint, language, time_params, english_error, chinese_error):
+    serializer_class, view_name, _ = metrics_endpoint
+    data = {"metrics": "requests_total" if view_name.endswith("instant") else "requests", **time_params}
+    if view_name.startswith("metrics."):
+        data["stage_id"] = 1
+
+    with override(language):
+        serializer = serializer_class(data=data)
+        assert not serializer.is_valid()
+        expected_error = english_error if language == "en" else chinese_error
+        assert serializer.errors["non_field_errors"] == [expected_error]
 
 
 @pytest.mark.parametrize(
