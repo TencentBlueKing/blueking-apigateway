@@ -153,9 +153,12 @@ class ResourceHandler:
         - 删除未指定的标签
 
         :param gateway: 网关实例
-        :param resource_ids: 资源ID列表
-        :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
+        :param resource_ids: 资源ID列表，忽略不存在或不属于当前网关的资源
+        :param label_ids: 要关联的网关标签ID列表，忽略不存在或不属于当前网关的标签
         """
+        resource_ids = ResourceHandler.get_valid_ids(gateway.id, resource_ids)
+        label_ids = list(APILabel.objects.filter(gateway=gateway, id__in=label_ids).values_list("id", flat=True))
+
         # while the unique key of resource_label is (resource_id, api_label_id)
         input_resource_labels = {(r_id, l_id): -1 for r_id in resource_ids for l_id in label_ids}
 

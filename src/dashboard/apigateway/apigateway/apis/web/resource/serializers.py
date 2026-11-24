@@ -597,6 +597,14 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
 
         return value
 
+    def validate_label_ids(self, value):
+        gateway_id = self.context["gateway_id"]
+        not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway_id, value))
+        if not_exist_ids:
+            raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
+
 
 class ResourceBatchDestroyInputSLZ(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField(min_value=1), help_text="资源 ID 列表")
